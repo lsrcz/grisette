@@ -1,0 +1,101 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pizza-doctest
+version:        0.1.0.0
+synopsis:       Doctest for Pizza
+description:    Doctest for Pizza
+category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
+homepage:       https://github.com/lsrcz/pizza-haskell#readme
+bug-reports:    https://github.com/lsrcz/pizza-haskell/issues
+author:         Sirui Lu
+maintainer:     Sirui Lu (siruilu@cs.washington.edu)
+copyright:      2021-2022 Sirui Lu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/lsrcz/pizza-haskell
+
+flag fast
+  description: Compile with O2 optimization
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Dummy
+  other-modules:
+      Paths_pizza_doctest
+  hs-source-dirs:
+      src
+  build-depends:
+      array >=0.5.4.0
+    , base >4.14 && <5
+    , bytestring >=0.10.12
+    , deepseq >=1.4.4
+    , generic-deriving >=1.14.1
+    , hashable >=1.3
+    , hashtables >=1.2.3.4
+    , hspec ==2.*
+    , hspec-junit-formatter >=1.0.0.0
+    , intern >=0.9.2
+    , loch-th >=0.2.2
+    , mtl >=2.2.2
+    , sbv >=8.11
+    , template-haskell >=2.16
+    , th-compat >=0.1.2
+    , transformers >=0.5.6.2
+    , typerep-map >=0.3.3
+    , unordered-containers >=0.2.11
+    , vector >=0.12.1.2
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_pizza_doctest
+  hs-source-dirs:
+      test
+  build-depends:
+      Glob
+    , array >=0.5.4.0
+    , base >4.14 && <5
+    , bytestring >=0.10.12
+    , deepseq >=1.4.4
+    , doctest >=0.19.0
+    , generic-deriving >=1.14.1
+    , hashable >=1.3
+    , hashtables >=1.2.3.4
+    , hspec ==2.*
+    , hspec-junit-formatter >=1.0.0.0
+    , intern >=0.9.2
+    , loch-th >=0.2.2
+    , mtl >=2.2.2
+    , pizza
+    , pizza-backend-sbv
+    , pizza-core
+    , pizza-lib
+    , pizza-symir
+    , sbv >=8.11
+    , template-haskell >=2.16
+    , th-compat >=0.1.2
+    , transformers >=0.5.6.2
+    , typerep-map >=0.3.3
+    , unordered-containers >=0.2.11
+    , vector >=0.12.1.2
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010

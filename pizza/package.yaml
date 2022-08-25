@@ -1,0 +1,59 @@
+name: pizza
+version: 0.1.0.0
+synopsis: Monadic symbolic compilation
+description: Monadic library for a symbolic host language in haskell
+category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
+author: "Sirui Lu"
+maintainer: Sirui Lu (siruilu@cs.washington.edu)
+license: BSD3
+license-file: LICENSE
+github: lsrcz/pizza-haskell
+copyright: "2021-2022 Sirui Lu"
+
+dependencies:
+- base > 4.14 && < 5
+- pizza-core == 0.1.0.0
+- pizza-symir == 0.1.0.0
+- pizza-lib == 0.1.0.0
+- pizza-backend-sbv == 0.1.0.0
+- sbv >= 8.11
+- generic-deriving >= 1.14.1
+
+# default-extensions:
+# - BangPatterns
+# - ConstraintKinds
+# - DataKinds
+# - DefaultSignatures
+# - DeriveGeneric
+# - DeriveLift
+# - FlexibleContexts
+# - FlexibleInstances
+# - FunctionalDependencies
+# - GADTs
+# - KindSignatures
+# - LambdaCase
+# - MultiParamTypeClasses
+# - RankNTypes
+# - ScopedTypeVariables
+# - TypeApplications
+# - TypeFamilies
+# - TypeOperators
+# - DeriveAnyClass
+
+flags: {
+  fast: {
+    description: "Compile with O2 optimization",
+    manual: False,
+    default: True,
+  }
+}
+
+when:
+  - condition: flag(fast)
+    then:
+      ghc-options: -O2
+    else:
+      ghc-options: -O0
+
+library:
+  source-dirs: src

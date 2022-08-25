@@ -1,0 +1,136 @@
+# Based on https://gist.github.com/mstksg/11f753d891cee5980326a8ea8c865233
+
+name: Haskell Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'releases/*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+        plan:
+        - { build: stack, arg: "stack-lts-18.28.yaml" }
+        - { build: stack, arg: "stack-lts-18.28-lowerbound.yaml" }
+        - { build: stack, arg: "stack-lts-19.20.yaml" }
+        - { build: stack, arg: "stack-nightly.yaml" }
+        include:
+          - os: macOS-latest
+            brew: z3 md5sha1sum gcc@11 gnu-sed
+          - os: ubuntu-latest
+            apt-get: z3
+  
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Install OS Packages
+      uses: mstksg/get-package@v1
+      with:
+        apt-get: ${{ matrix.apt-get }}
+        brew: ${{ matrix.brew }}
+    
+    - uses: actions/checkout@v3
+
+    - name: Setup stack
+      run: |
+        set -ex
+        mkdir -p "${HOME}/.local/bin"
+        case ${{ matrix.os }} in
+          macOS-latest)
+            curl --insecure -L https://get.haskellstack.org/stable/osx-x86_64.tar.gz | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
+            ;;
+          ubuntu-latest)
+            curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack' 
+            ;;
+        esac
+        echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+    - name: Cache key
+      id: cache_key
+      run: |
+        echo ::set-output name=stack::$(md5sum ${{ matrix.plan.build.arg }} | awk '{print $1}')
+        echo ::set-output name=core::$(md5sum pizza-core/package.yaml | awk '{print $1}')
+        echo ::set-output name=symir::$(md5sum pizza-symir/package.yaml | awk '{print $1}')
+        echo ::set-output name=lib::$(md5sum pizza-lib/package.yaml | awk '{print $1}')
+        echo ::set-output name=sbv::$(md5sum pizza-backend-sbv/package.yaml | awk '{print $1}')
+        echo ::set-output name=doctest::$(md5sum pizza-doctest/package.yaml | awk '{print $1}')
+        echo ::set-output name=pizza::$(md5sum pizza/package.yaml | awk '{print $1}')
+
+    
+    - name: Cache dependencies
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.stack
+        key: stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}-$${{ steps.cache_key.outputs.stack }}-$${{ steps.cache_key.outputs.core }}-$${{ steps.cache_key.outputs.symir }}-$${{ steps.cache_key.outputs.lib }}-$${{ steps.cache_key.outputs.sbv }}-$${{ steps.cache_key.outputs.doctest }}-$${{ steps.cache_key.outputs.pizza }}
+        restore-keys: |
+          stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}-$${{ steps.cache_key.outputs.stack }}
+          stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}
+          stack-${{ matrix.os }}-$${{ steps.cache_key.outputs.stack }}
+          stack-${{ matrix.os }}
+
+    - name: Set up GHC
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack setup --no-terminal --stack-yaml $ARGS 
+            case "${{ matrix.os }}" in
+              macOS-latest)
+                find $(stack --no-terminal --stack-yaml $ARGS path --compiler-bin)/../lib/* -name settings | xargs gsed -ie 's/,("Haskell CPP command", "\w\+")/,("Haskell CPP command", "gcc-11")/g' 
+                find $(stack --no-terminal --stack-yaml $ARGS path --compiler-bin)/../lib/* -name settings | xargs cat
+                ;;
+            esac
+            ;;
+        esac
+        set +ex
+      env:
+        ARGS: ${{ matrix.plan.arg }}
+        BUILD: ${{ matrix.plan.build }}
+
+    - name: Set up dependencies
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            stack --no-terminal --stack-yaml $ARGS test --bench --only-dependencies
+            ;;
+        esac
+        set +ex
+      env:
+        ARGS: ${{ matrix.plan.arg }}
+        BUILD: ${{ matrix.plan.build }}
+    
+
+    - name: Build & Test
+      id: test
+      run: |
+        set -ex
+        case "$BUILD" in
+          stack)
+            JUNIT_ENABLED=enabled JUNIT_OUTPUT_DIRECTORY=/tmp/reports stack --no-terminal --stack-yaml $ARGS test --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps
+            ;;
+        esac
+        set +ex
+      env:
+        ARGS: ${{ matrix.plan.arg }}
+        BUILD: ${{ matrix.plan.build }}
+      continue-on-error: true
+    
+    - uses: test-summary/action@v1
+      with:
+        paths: /tmp/reports/**/*.xml
+
+    - name: Upload Coveralls
+      run: |
+        set -ex
+        wget https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.6.1/shc-linux-x64-8.10.4.tar.bz2 && tar -xjf shc-linux-x64-8.10.4.tar.bz2 && ./shc --repo-token=${{ secrets.COVERALLS_PIZZA_TOKEN }} combined all || true
+        set +ex
+      if: matrix.os == 'ubuntu-latest' && matrix.plan.build == 'stack' && matrix.plan.arg == 'stack-18.28.yaml' && steps.test.outcome == 'success'
+      env:
+        ARGS: ${{ matrix.plan.arg }}
+        BUILD: ${{ matrix.plan.build }}
