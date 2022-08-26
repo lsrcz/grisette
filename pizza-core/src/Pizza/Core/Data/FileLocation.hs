@@ -23,6 +23,7 @@ import Pizza.Core.Data.Class.PrimWrapper
 -- $setup
 -- >>> import Pizza.Core
 -- >>> import Pizza.IR.SymPrim
+-- >>> :set -XTemplateHaskell
 
 -- File location type.
 data FileLocation = FileLocation {locPath :: String, locLineno :: Int, locSpan :: (Int, Int)}

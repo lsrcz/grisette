@@ -152,12 +152,12 @@ packages:
   original:
     hackage: sbv-8.11
 - completed:
-    hackage: doctest-0.20.0@sha256:fd56edde124a92d42c42c74333f0ae74532329d15a6c63d578cbb51f4e7cfd34,7121
+    hackage: cpphs-1.20.9@sha256:cbfc22035785798ce347e7e12f9232a205f47a50234fa1daaa6c9e25a0885eff,2326
     pantry-tree:
-      size: 8027
-      sha256: 40c399bcd0046d5ac7894d0e781d3aa7f36552dd3d35426b4604d0d2c321dfb7
+      size: 1386
+      sha256: 623288bb281457e7a7b82108d86765f188f23169fb5ddb4460ef1217febc0f93
   original:
-    hackage: doctest-0.20.0@sha256:fd56edde124a92d42c42c74333f0ae74532329d15a6c63d578cbb51f4e7cfd34,7121
+    hackage: cpphs-1.20.9
 snapshots:
 - completed:
     size: 590100
