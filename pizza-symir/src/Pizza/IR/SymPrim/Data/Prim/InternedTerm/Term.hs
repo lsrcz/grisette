@@ -61,9 +61,6 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   withPrim _ i = i
   termCache :: Cache (Term t)
   termCache = typeMemoizedCache
-
-  -- termReverseCache :: ReverseCache (Term t)
-  -- termReverseCache = typeMemoizedReverseCache
   pformatConc :: t -> String
   default pformatConc :: (Show t) => t -> String
   pformatConc = show

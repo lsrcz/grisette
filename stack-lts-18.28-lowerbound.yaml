@@ -66,11 +66,11 @@ extra-deps:
   - QuickCheck-2.14.1
   - intern-0.9.2
   - array-0.5.4.0
-  - typerep-map-0.3.3.0
   - vector-0.12.1.2
   - sbv-8.11
   - cpphs-1.20.9
   - doctest-0.17
+  - once-0.2
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

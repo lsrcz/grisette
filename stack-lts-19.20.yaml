@@ -48,7 +48,6 @@ packages:
 #
 # extra-deps: []
 extra-deps:
-  - typerep-map-0.5.0.0@sha256:34f1ba9b268a6d52e26ae460011a5571e8099b50a3f4a7c8db25dd8efe3be8ee,4667
   - hspec-junit-formatter-1.1.0.0 # It is known that hspec-junit-formatter-1.0.3.0 does not build on macOS
 
 # Override default flag values for local packages and extra-deps

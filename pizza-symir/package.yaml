@@ -20,9 +20,9 @@ dependencies:
 - template-haskell >= 2.16
 - deepseq >= 1.4.4
 - array >= 0.5.4.0
-- typerep-map >= 0.3.3
 - vector >= 0.12.1.2
 - th-compat >= 0.1.2
+- once >= 0.2
 
 flags: {
   fast: {

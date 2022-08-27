@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: typerep-map-0.5.0.0@sha256:34f1ba9b268a6d52e26ae460011a5571e8099b50a3f4a7c8db25dd8efe3be8ee,4667
-    pantry-tree:
-      size: 1487
-      sha256: ca5565de307d260dc67f6dae0d4d33eee42a3238183461569b5142ceb909c91d
-  original:
-    hackage: typerep-map-0.5.0.0@sha256:34f1ba9b268a6d52e26ae460011a5571e8099b50a3f4a7c8db25dd8efe3be8ee,4667
-- completed:
     hackage: hspec-junit-formatter-1.1.0.0@sha256:c2f453440fc526cfd8f880b67876ac64d6e0fa13c8e94722a86e7996882e8ed0,3825
     pantry-tree:
       size: 955

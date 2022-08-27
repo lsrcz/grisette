@@ -131,13 +131,6 @@ packages:
   original:
     hackage: array-0.5.4.0
 - completed:
-    hackage: typerep-map-0.3.3.0@sha256:20510efab770158414ac7828d1eca063d795bcc724ac634dd13bc7a50b476f42,4681
-    pantry-tree:
-      size: 1487
-      sha256: 30d61ac00807c3229b7b6ee274853f0ec1e272503a1b210ce10aad3db19f443a
-  original:
-    hackage: typerep-map-0.3.3.0
-- completed:
     hackage: vector-0.12.1.2@sha256:9291bc581f36e51d5bda9fce57cb980fbec3dd292996896f285fef39eb80a9a0,7364
     pantry-tree:
       size: 3784
@@ -158,6 +151,20 @@ packages:
       sha256: 623288bb281457e7a7b82108d86765f188f23169fb5ddb4460ef1217febc0f93
   original:
     hackage: cpphs-1.20.9
+- completed:
+    hackage: doctest-0.17@sha256:684b9736321c255fc8da651a817a14d46afd9aa08a753b344abaa77b343123f2,6988
+    pantry-tree:
+      size: 8050
+      sha256: 4da2f26e2365dcac9cee73e97af4291eeda7b5900cbb8e3c9343644007b2b969
+  original:
+    hackage: doctest-0.17
+- completed:
+    hackage: once-0.2@sha256:c45f7ee109c806fddcba2236415834e799befcabfd914f81374dc7cdc0f57005,1090
+    pantry-tree:
+      size: 405
+      sha256: e5ccf577d104ddc8d7a83423047c12bc5d550a7235b5653eacba32c97c2bc0ec
+  original:
+    hackage: once-0.2
 snapshots:
 - completed:
     size: 590100
