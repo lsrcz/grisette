@@ -48,7 +48,7 @@ packages:
 #
 # extra-deps: []
 extra-deps:
-  - doctest-0.18
+  - doctest-0.18.2
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

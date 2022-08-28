@@ -70,7 +70,7 @@ extra-deps:
   - tasty-hunit-0.10
   - tasty-1.1.0.3
   - tasty-test-reporter-0.1.1.2
-  - doctest-0.18
+  - doctest-0.18.2
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
