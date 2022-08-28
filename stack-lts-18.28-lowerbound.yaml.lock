@@ -124,13 +124,6 @@ packages:
   original:
     hackage: cpphs-1.20.9
 - completed:
-    hackage: doctest-0.17@sha256:684b9736321c255fc8da651a817a14d46afd9aa08a753b344abaa77b343123f2,6988
-    pantry-tree:
-      size: 8050
-      sha256: 4da2f26e2365dcac9cee73e97af4291eeda7b5900cbb8e3c9343644007b2b969
-  original:
-    hackage: doctest-0.17
-- completed:
     hackage: once-0.2@sha256:c45f7ee109c806fddcba2236415834e799befcabfd914f81374dc7cdc0f57005,1090
     pantry-tree:
       size: 405
@@ -165,6 +158,13 @@ packages:
       sha256: cc74ca6b5f4bf0e46ef3e8c364fba6d0217f39896fc97141993a65f1b5429858
   original:
     hackage: tasty-test-reporter-0.1.1.2
+- completed:
+    hackage: doctest-0.18@sha256:03987c50b1793025ddd762f5401c0c775ff0665a4500b4b45e88439ebe3fb5b4,6971
+    pantry-tree:
+      size: 7964
+      sha256: 4b0f5e5e24a4737d7cf431c7bfa3183a639ce194d813e62f7f7eacf0d00e31b4
+  original:
+    hackage: doctest-0.18
 snapshots:
 - completed:
     size: 590100
