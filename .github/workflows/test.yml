@@ -123,7 +123,7 @@ jobs:
     - uses: phoenix-actions/test-reporting@v8
       if: success() || failure ()
       with:
-        name: Tests
+        name: Tests-${{ matrix.plan.arg }}-${{ matrix.plan.build }}
         path: '**/test-report.xml'
         reporter: java-junit
 
