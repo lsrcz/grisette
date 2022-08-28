@@ -17,8 +17,8 @@ jobs:
         plan:
         - { build: stack, arg: "--stack-yaml stack-lts-18.28.yaml" }
         - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml" }
-        - { build: stack, arg: "--stack-yaml stack-lts-19.20.yaml" }
-        - { build: stack, arg: "--stack-yaml stack-nightly.yaml --resolver nightly" }
+        - { build: stack, arg: "--resolver lts-19.20" }
+        - { build: stack, arg: "--resolver nightly" }
         include:
           - os: macOS-latest
             brew: z3 md5sha1sum gcc@11 gnu-sed
