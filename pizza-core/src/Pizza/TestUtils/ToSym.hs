@@ -1,7 +1,7 @@
 module Pizza.TestUtils.ToSym where
 
 import Pizza.Core.Data.Class.ToSym
-import Test.Hspec
+import Test.Tasty.HUnit
 
-toSymForConcreteOkProp :: (HasCallStack, ToSym v v, Show v, Eq v) => v -> Expectation
-toSymForConcreteOkProp v = toSym v `shouldBe` v
+toSymForConcreteOkProp :: (HasCallStack, ToSym v v, Show v, Eq v) => v -> Assertion
+toSymForConcreteOkProp v = toSym v @=? v

@@ -82,34 +82,6 @@ packages:
   original:
     hackage: th-compat-0.1.2
 - completed:
-    hackage: hspec-2.7.8@sha256:d9c8e3a8ff5f8d38eb7ab95aac0b50215def0071de091335dcab2f6e0324f226,1709
-    pantry-tree:
-      size: 583
-      sha256: 68cfb48dcf32e6a12ed9abb36a15e54c94c46f32e665f771ea3642dbf4ba2a7d
-  original:
-    hackage: hspec-2.7.8
-- completed:
-    hackage: hspec-core-2.7.8@sha256:cf7b487eba15177bdf85fcc0871aab8811964fcf570e52bd08aa3c7a30055742,4768
-    pantry-tree:
-      size: 3799
-      sha256: c34db55bd7c647ceeaa690139a3484cb0de3b03bab06a90424f22f0a1afc3a49
-  original:
-    hackage: hspec-core-2.7.8
-- completed:
-    hackage: hspec-discover-2.7.8@sha256:d2a4c026af0878d9da5f67fbe8928b93798eab51a807171b59c43a164feb72ed,2183
-    pantry-tree:
-      size: 1131
-      sha256: 37a471f0da39cbe11800584eb6c744374cf4756d32ae9477627d86403650f1a2
-  original:
-    hackage: hspec-discover-2.7.8
-- completed:
-    hackage: hspec-junit-formatter-1.0.0.0@sha256:b8675a71fb44d0e4546a4caa5fba92b370b35e076dcd13b9c6474508ed15b497,1954
-    pantry-tree:
-      size: 510
-      sha256: 71ad7eb752ce8ce38ff4aafa717885ec7259ee8a1a643fa122ff6ceed86c08ef
-  original:
-    hackage: hspec-junit-formatter-1.0.0.0
-- completed:
     hackage: QuickCheck-2.14.1@sha256:843e6428c2d80656a0cbff61929d3924e8b450841b6dfba463d0b3f41a48265c,8006
     pantry-tree:
       size: 2315
@@ -165,6 +137,34 @@ packages:
       sha256: e5ccf577d104ddc8d7a83423047c12bc5d550a7235b5653eacba32c97c2bc0ec
   original:
     hackage: once-0.2
+- completed:
+    hackage: tasty-quickcheck-0.10.1@sha256:9a6cbb4767c7b339a399e3992afb89f112a92ffdc8101e318ba1a3bb05bc48d7,1555
+    pantry-tree:
+      size: 332
+      sha256: da25efddd83913d61b507a220ad3003df759b8a20bd3414f6d88afc3cf84017a
+  original:
+    hackage: tasty-quickcheck-0.10.1
+- completed:
+    hackage: tasty-hunit-0.10@sha256:043724c8ac8e36b7efe5aac3accc8df757ae83e3fea26f341800fc2ef868490e,1193
+    pantry-tree:
+      size: 399
+      sha256: 66b9e7f694ef5ed680de732a8f71df3980afff1bd249172e7c575040d5f1c9bd
+  original:
+    hackage: tasty-hunit-0.10
+- completed:
+    hackage: tasty-1.1.0.3@sha256:5c5e08411057a184001ddaee88258bcee3dd6712de6e03409642379889113527,2501
+    pantry-tree:
+      size: 1724
+      sha256: 55c0c718d6af1d15defac11f2ede8244c8a3a976262cf1fea1e67429dbbff9ad
+  original:
+    hackage: tasty-1.1.0.3
+- completed:
+    hackage: tasty-test-reporter-0.1.1.2@sha256:405f27fefa88d477188b890e6ce91be6aeed8cdcc89d882e99caed2e4e16047a,1779
+    pantry-tree:
+      size: 411
+      sha256: cc74ca6b5f4bf0e46ef3e8c364fba6d0217f39896fc97141993a65f1b5429858
+  original:
+    hackage: tasty-test-reporter-0.1.1.2
 snapshots:
 - completed:
     size: 590100

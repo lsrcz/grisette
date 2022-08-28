@@ -23,8 +23,8 @@ dependencies:
 - hashtables >= 1.2.3.4
 - loch-th >= 0.2.2
 - th-compat >= 0.1.2
-- hspec == 2.*
-- hspec-junit-formatter >= 1.0.0.0
+- tasty >= 1.1.0.3
+- tasty-hunit >= 0.10
 
 flags: {
   fast: {
@@ -50,6 +50,5 @@ tests:
     source-dirs: test
     dependencies:
       - pizza-core
-    verbatim:
-      build-tool-depends:
-          hspec-discover:hspec-discover == 2.*
+      - tasty-test-reporter >= 0.1.1.2
+      - tasty-quickcheck >= 0.10.1

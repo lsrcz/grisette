@@ -3,14 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: hspec-junit-formatter-1.1.0.0@sha256:c2f453440fc526cfd8f880b67876ac64d6e0fa13c8e94722a86e7996882e8ed0,3825
-    pantry-tree:
-      size: 955
-      sha256: 23789fad1b4c65150a29c6071fa47df58b7a36b9b6af818bb481f98b34fe6811
-  original:
-    hackage: hspec-junit-formatter-1.1.0.0
+packages: []
 snapshots:
 - completed:
     size: 619173

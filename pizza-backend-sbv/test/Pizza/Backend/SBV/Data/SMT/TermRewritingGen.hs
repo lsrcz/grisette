@@ -25,7 +25,7 @@ import Pizza.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Pizza.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Pizza.IR.SymPrim.Data.Prim.PartialEval.Integer
 import Pizza.IR.SymPrim.Data.Prim.PartialEval.Num
-import Test.QuickCheck
+import Test.Tasty.QuickCheck
 
 class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   norewriteVer :: a -> Term b

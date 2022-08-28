@@ -1,7 +1,7 @@
 module Pizza.TestUtils.ToCon where
 
 import Pizza.Core.Data.Class.ToCon
-import Test.Hspec
+import Test.Tasty.HUnit
 
-toConForConcreteOkProp :: (HasCallStack, ToCon v v, Show v, Eq v) => v -> Expectation
-toConForConcreteOkProp v = toCon v `shouldBe` Just v
+toConForConcreteOkProp :: (HasCallStack, ToCon v v, Show v, Eq v) => v -> Assertion
+toConForConcreteOkProp v = toCon v @=? Just v

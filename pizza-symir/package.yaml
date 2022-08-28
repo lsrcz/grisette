@@ -44,7 +44,11 @@ library:
 
 tests:
   spec:
-    defaults: hspec/hspec@master
     main: Main.hs
+    source-dirs: test
     dependencies:
       - pizza-symir
+      - tasty >= 1.1.0.3
+      - tasty-hunit >= 0.10
+      - tasty-test-reporter >= 0.1.1.2
+      - tasty-quickcheck >= 0.10.1

@@ -59,10 +59,6 @@ extra-deps:
   - hashtables-1.2.3.4
   - loch-th-0.2.2
   - th-compat-0.1.2
-  - hspec-2.7.8
-  - hspec-core-2.7.8
-  - hspec-discover-2.7.8
-  - hspec-junit-formatter-1.0.0.0
   - QuickCheck-2.14.1
   - intern-0.9.2
   - array-0.5.4.0
@@ -71,6 +67,10 @@ extra-deps:
   - cpphs-1.20.9
   - doctest-0.17
   - once-0.2
+  - tasty-quickcheck-0.10.1
+  - tasty-hunit-0.10
+  - tasty-1.1.0.3
+  - tasty-test-reporter-0.1.1.2
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

@@ -5,40 +5,40 @@ module Pizza.TestUtils.Mergeable where
 
 import Pizza.Core.Data.Class.Mergeable
 import Pizza.TestUtils.SBool
-import Test.Hspec
+import Test.Tasty.HUnit
 
 testMergeableSimpleEquivClass ::
-  (HasCallStack, Mergeable SBool x, Show x, Eq x) => x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Expectation
+  (HasCallStack, Mergeable SBool x, Show x, Eq x) => x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Assertion
 testMergeableSimpleEquivClass x idxs cases = do
   let (idxsT, s) = resolveStrategy @SBool mergingStrategy x
   case s of
     SimpleStrategy m -> do
-      idxsT `shouldBe` idxs
+      idxsT @=? idxs
       go cases
       where
         go [] = return ()
         go ((c, t, f, r) : xs) = do
-          fst (resolveStrategy @SBool mergingStrategy t) `shouldBe` idxs
-          fst (resolveStrategy @SBool mergingStrategy f) `shouldBe` idxs
-          fst (resolveStrategy @SBool mergingStrategy r) `shouldBe` idxs
-          m c t f `shouldBe` r
+          fst (resolveStrategy @SBool mergingStrategy t) @=? idxs
+          fst (resolveStrategy @SBool mergingStrategy f) @=? idxs
+          fst (resolveStrategy @SBool mergingStrategy r) @=? idxs
+          m c t f @=? r
           go xs
-    _ -> expectationFailure $ "Bad strategy type for " ++ show x
+    _ -> assertFailure $ "Bad strategy type for " ++ show x
 
 testMergeableSimpleEquivClass' ::
-  (HasCallStack, Mergeable SBool x, Show y, Eq y) => (x -> y) -> x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Expectation
+  (HasCallStack, Mergeable SBool x, Show y, Eq y) => (x -> y) -> x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Assertion
 testMergeableSimpleEquivClass' vis x idxs cases = do
   let (idxsT, s) = resolveStrategy @SBool mergingStrategy x
   case s of
     SimpleStrategy m -> do
-      idxsT `shouldBe` idxs
+      idxsT @=? idxs
       go cases
       where
         go [] = return ()
         go ((c, t, f, r) : xs) = do
-          fst (resolveStrategy @SBool mergingStrategy t) `shouldBe` idxs
-          fst (resolveStrategy @SBool mergingStrategy f) `shouldBe` idxs
-          fst (resolveStrategy @SBool mergingStrategy r) `shouldBe` idxs
-          vis (m c t f) `shouldBe` vis r
+          fst (resolveStrategy @SBool mergingStrategy t) @=? idxs
+          fst (resolveStrategy @SBool mergingStrategy f) @=? idxs
+          fst (resolveStrategy @SBool mergingStrategy r) @=? idxs
+          vis (m c t f) @=? vis r
           go xs
-    _ -> expectationFailure $ "Bad strategy type for " ++ show (vis x)
+    _ -> assertFailure $ "Bad strategy type for " ++ show (vis x)

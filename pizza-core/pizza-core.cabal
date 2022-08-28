@@ -67,7 +67,6 @@ library
       Pizza.TestUtils.Evaluate
       Pizza.TestUtils.ExtractSymbolics
       Pizza.TestUtils.Mergeable
-      Pizza.TestUtils.Runner
       Pizza.TestUtils.SBool
       Pizza.TestUtils.SEq
       Pizza.TestUtils.SOrd
@@ -84,10 +83,10 @@ library
     , generic-deriving >=1.14.1
     , hashable >=1.3
     , hashtables >=1.2.3.4
-    , hspec ==2.*
-    , hspec-junit-formatter >=1.0.0.0
     , loch-th >=0.2.2
     , mtl >=2.2.2
+    , tasty >=1.1.0.3
+    , tasty-hunit >=0.10
     , template-haskell >=2.16
     , th-compat >=0.1.2
     , transformers >=0.5.6.2
@@ -102,26 +101,25 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Pizza.Core.Control.ExceptionSpec
-      Pizza.Core.Control.Monad.UnionMBaseSpec
-      Pizza.Core.Control.Monad.UnionSpec
-      Pizza.Core.Data.Class.BoolSpec
-      Pizza.Core.Data.Class.EvaluateSpec
-      Pizza.Core.Data.Class.ExtractSymbolicsSpec
-      Pizza.Core.Data.Class.GenSymSpec
-      Pizza.Core.Data.Class.MergeableSpec
-      Pizza.Core.Data.Class.SEqSpec
-      Pizza.Core.Data.Class.SimpleMergeableSpec
-      Pizza.Core.Data.Class.SOrdSpec
-      Pizza.Core.Data.Class.ToConSpec
-      Pizza.Core.Data.Class.ToSymSpec
-      Pizza.Core.Data.UnionBaseSpec
-      Pizza.Lib.Control.Monad.ExceptSpec
-      Pizza.Lib.Control.Monad.TransSpec
-      Pizza.Lib.Control.MonadSpec
-      Pizza.Lib.Data.FoldableSpec
-      Pizza.Lib.Data.TraversableSpec
-      Spec
+      Pizza.Core.Control.ExceptionTests
+      Pizza.Core.Control.Monad.UnionMBaseTests
+      Pizza.Core.Data.Class.BoolTests
+      Pizza.Core.Data.Class.EvaluateSymTests
+      Pizza.Core.Data.Class.ExtractSymbolicsTests
+      Pizza.Core.Data.Class.GenSymTests
+      Pizza.Core.Data.Class.MergeableTests
+      Pizza.Core.Data.Class.SEqTests
+      Pizza.Core.Data.Class.SimpleMergeableTests
+      Pizza.Core.Data.Class.SOrdTests
+      Pizza.Core.Data.Class.ToConTests
+      Pizza.Core.Data.Class.ToSymTests
+      Pizza.Core.Data.Class.UnionLikeTests
+      Pizza.Core.Data.UnionBaseTests
+      Pizza.Lib.Control.Monad.ExceptTests
+      Pizza.Lib.Control.Monad.TransTests
+      Pizza.Lib.Control.MonadTests
+      Pizza.Lib.Data.FoldableTests
+      Pizza.Lib.Data.TraversableTests
       Paths_pizza_core
   hs-source-dirs:
       test
@@ -132,11 +130,13 @@ test-suite spec
     , generic-deriving >=1.14.1
     , hashable >=1.3
     , hashtables >=1.2.3.4
-    , hspec ==2.*
-    , hspec-junit-formatter >=1.0.0.0
     , loch-th >=0.2.2
     , mtl >=2.2.2
     , pizza-core
+    , tasty >=1.1.0.3
+    , tasty-hunit >=0.10
+    , tasty-quickcheck >=0.10.1
+    , tasty-test-reporter >=0.1.1.2
     , template-haskell >=2.16
     , th-compat >=0.1.2
     , transformers >=0.5.6.2
@@ -146,4 +146,3 @@ test-suite spec
   else
     ghc-options: -O0
   default-language: Haskell2010
-  build-tool-depends: hspec-discover:hspec-discover == 2.*
