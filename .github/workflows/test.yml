@@ -15,10 +15,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         plan:
-        - { build: stack, arg: "stack-lts-18.28.yaml" }
-        - { build: stack, arg: "stack-lts-18.28-lowerbound.yaml" }
-        - { build: stack, arg: "stack-lts-19.20.yaml" }
-        - { build: stack, arg: "stack-nightly.yaml" }
+        - { build: stack, arg: "--stack-yaml stack-lts-18.28.yaml" }
+        - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml" }
+        - { build: stack, arg: "--stack-yaml stack-lts-19.20.yaml" }
+        - { build: stack, arg: "--stack-yaml stack-nightly.yaml --resolver nightly" }
         include:
           - os: macOS-latest
             brew: z3 md5sha1sum gcc@11 gnu-sed
@@ -78,11 +78,11 @@ jobs:
         set -ex
         case "$BUILD" in
           stack)
-            stack setup --no-terminal --stack-yaml $ARGS 
+            stack setup --no-terminal $ARGS 
             case "${{ matrix.os }}" in
               macOS-latest)
-                find $(stack --no-terminal --stack-yaml $ARGS path --compiler-bin)/../lib/* -name settings | xargs gsed -ie 's/,("Haskell CPP command", "\w\+")/,("Haskell CPP command", "gcc-11")/g' 
-                find $(stack --no-terminal --stack-yaml $ARGS path --compiler-bin)/../lib/* -name settings | xargs cat
+                find $(stack --no-terminal $ARGS path --compiler-bin)/../lib/* -name settings | xargs gsed -ie 's/,("Haskell CPP command", "\w\+")/,("Haskell CPP command", "gcc-11")/g' 
+                find $(stack --no-terminal $ARGS path --compiler-bin)/../lib/* -name settings | xargs cat
                 ;;
             esac
             ;;
@@ -97,7 +97,7 @@ jobs:
         set -ex
         case "$BUILD" in
           stack)
-            stack --no-terminal --stack-yaml $ARGS test --bench --only-dependencies
+            stack --no-terminal $ARGS test --bench --only-dependencies
             ;;
         esac
         set +ex
@@ -112,7 +112,7 @@ jobs:
         set -ex
         case "$BUILD" in
           stack)
-            stack --no-terminal --stack-yaml $ARGS test --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--xml=test-report.xml"
+            stack --no-terminal $ARGS test --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--xml=test-report.xml"
             ;;
         esac
         set +ex
