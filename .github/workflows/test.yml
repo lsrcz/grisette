@@ -112,18 +112,20 @@ jobs:
         set -ex
         case "$BUILD" in
           stack)
-            JUNIT_ENABLED=enabled JUNIT_OUTPUT_DIRECTORY=/tmp/reports stack --no-terminal --stack-yaml $ARGS test --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps
+            stack --no-terminal --stack-yaml $ARGS test --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--xml=test-report.xml"
             ;;
         esac
         set +ex
       env:
         ARGS: ${{ matrix.plan.arg }}
         BUILD: ${{ matrix.plan.build }}
-      continue-on-error: true
-    
-    - uses: test-summary/action@v1
+
+    - uses: phoenix-actions/test-reporting@v8
+      if: success() || failure ()
       with:
-        paths: /tmp/reports/**/*.xml
+        name: Tests
+        path: '**/test-report.xml'
+        reporter: java-junit
 
     - name: Upload Coveralls
       run: |
