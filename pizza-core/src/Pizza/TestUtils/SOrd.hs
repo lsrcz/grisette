@@ -3,12 +3,13 @@
 
 module Pizza.TestUtils.SOrd where
 
+import GHC.Stack
 import Pizza.Core.Control.Monad.UnionMBase
 import Pizza.Core.Data.Class.Bool
 import Pizza.Core.Data.Class.SOrd
 import Pizza.Lib.Control.Monad
+import Pizza.TestUtils.Assertions
 import Pizza.TestUtils.SBool
-import Test.Tasty.HUnit
 
 concreteOrdOkProp :: (HasCallStack, SOrd SBool a, Ord a) => (a, a) -> Assertion
 concreteOrdOkProp (i, j) = do

@@ -3,9 +3,10 @@
 
 module Pizza.TestUtils.Mergeable where
 
+import GHC.Stack
 import Pizza.Core.Data.Class.Mergeable
+import Pizza.TestUtils.Assertions
 import Pizza.TestUtils.SBool
-import Test.Tasty.HUnit
 
 testMergeableSimpleEquivClass ::
   (HasCallStack, Mergeable SBool x, Show x, Eq x) => x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Assertion

@@ -2,9 +2,10 @@
 
 module Pizza.TestUtils.SEq where
 
+import GHC.Stack
 import Pizza.Core.Data.Class.Bool
+import Pizza.TestUtils.Assertions
 import Pizza.TestUtils.SBool
-import Test.Tasty.HUnit
 
 concreteSEqOkProp :: (HasCallStack, SEq SBool a, Eq a) => (a, a) -> Assertion
 concreteSEqOkProp (i, j) = do

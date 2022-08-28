@@ -165,6 +165,13 @@ packages:
       sha256: cacfd1af86ef3ec7531c528a2771451a47d218a0eca05db00141d29644aef80f
   original:
     hackage: doctest-0.18.2
+- completed:
+    hackage: call-stack-0.1.0@sha256:3453a0c5ed3a7a7de0cc0703907e05bd251c766cce8a38efe41b7188d228e3fa,1109
+    pantry-tree:
+      size: 500
+      sha256: 3d0b0fb0cd1d488f90653f0741c42ee01870646adcedf89518d558534dce898b
+  original:
+    hackage: call-stack-0.1.0
 snapshots:
 - completed:
     size: 590100

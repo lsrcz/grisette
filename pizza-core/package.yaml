@@ -23,8 +23,7 @@ dependencies:
 - hashtables >= 1.2.3.4
 - loch-th >= 0.2.2
 - th-compat >= 0.1.2
-- tasty >= 1.1.0.3
-- tasty-hunit >= 0.10
+- call-stack
 
 flags: {
   fast: {
@@ -50,5 +49,7 @@ tests:
     source-dirs: test
     dependencies:
       - pizza-core
+      - tasty >= 1.1.0.3
+      - tasty-hunit >= 0.10
       - tasty-test-reporter >= 0.1.1.2
       - tasty-quickcheck >= 0.10.1

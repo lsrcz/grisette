@@ -71,6 +71,7 @@ extra-deps:
   - tasty-1.1.0.3
   - tasty-test-reporter-0.1.1.2
   - doctest-0.18.2
+  - call-stack-0.1.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

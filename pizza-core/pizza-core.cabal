@@ -64,6 +64,7 @@ library
       Pizza.Lib.Data.Foldable
       Pizza.Lib.Data.Traversable
       Pizza.Lib.Mtl
+      Pizza.TestUtils.Assertions
       Pizza.TestUtils.Evaluate
       Pizza.TestUtils.ExtractSymbolics
       Pizza.TestUtils.Mergeable
@@ -79,14 +80,13 @@ library
   build-depends:
       base >4.14 && <5
     , bytestring >=0.10.12
+    , call-stack
     , deepseq >=1.4.4
     , generic-deriving >=1.14.1
     , hashable >=1.3
     , hashtables >=1.2.3.4
     , loch-th >=0.2.2
     , mtl >=2.2.2
-    , tasty >=1.1.0.3
-    , tasty-hunit >=0.10
     , template-haskell >=2.16
     , th-compat >=0.1.2
     , transformers >=0.5.6.2
@@ -126,6 +126,7 @@ test-suite spec
   build-depends:
       base >4.14 && <5
     , bytestring >=0.10.12
+    , call-stack
     , deepseq >=1.4.4
     , generic-deriving >=1.14.1
     , hashable >=1.3
