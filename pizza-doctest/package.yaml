@@ -30,6 +30,7 @@ dependencies:
 - once >= 0.2
 - tasty >= 1.1.0.3
 - tasty-hunit >= 0.10
+- call-stack
 
 flags: {
   fast: {
