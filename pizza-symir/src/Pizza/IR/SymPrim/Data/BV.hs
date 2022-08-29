@@ -18,7 +18,9 @@ import Control.DeepSeq
 import Data.Bits
 import Data.Hashable
 import Data.Proxy
+import GHC.Enum
 import GHC.Generics
+import GHC.Real
 import GHC.TypeNats
 import Language.Haskell.TH.Syntax
 import Numeric
@@ -48,14 +50,11 @@ instance (KnownNat n, 1 <= n) => Show (IntN n) where
       binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
-maxWordN :: forall proxy n. KnownNat n => proxy n -> WordN n
-maxWordN _ = WordN ((1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n))) - 1)
-
 instance (KnownNat n, 1 <= n) => Bits (WordN n) where
   WordN a .&. WordN b = WordN (a .&. b)
   WordN a .|. WordN b = WordN (a .|. b)
   WordN a `xor` WordN b = WordN (a `xor` b)
-  complement a = maxWordN (Proxy :: Proxy n) `xor` a
+  complement a = maxBound `xor` a
 
   -- shift use default implementation
   -- rotate use default implementation
@@ -72,7 +71,7 @@ instance (KnownNat n, 1 <= n) => Bits (WordN n) where
   bitSizeMaybe _ = Just $ fromIntegral (natVal (Proxy :: Proxy n))
   bitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
   isSigned _ = False
-  shiftL (WordN a) i = WordN (a `shiftL` i) .&. maxWordN (Proxy :: Proxy n)
+  shiftL (WordN a) i = WordN (a `shiftL` i) .&. maxBound
 
   -- unsafeShiftL use default implementation
   shiftR (WordN a) i = WordN (a `shiftR` i)
@@ -98,9 +97,45 @@ instance (KnownNat n, 1 <= n) => Bits (WordN n) where
       h = (a - (l `shiftL` k)) `shiftL` s
   popCount (WordN n) = popCount n
 
+instance (KnownNat n, 1 <= n) => FiniteBits (WordN n) where
+  finiteBitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
+
+instance (KnownNat n, 1 <= n) => Bounded (WordN n) where
+  maxBound = WordN ((1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n))) - 1)
+  minBound = WordN 0
+
+instance (KnownNat n, 1 <= n) => Enum (WordN n) where
+  succ x
+    | x /= maxBound = x + 1
+    | otherwise = succError $ "WordN " ++ show (natVal (Proxy :: Proxy n))
+  pred x
+    | x /= minBound = x - 1
+    | otherwise = predError $ "WordN " ++ show (natVal (Proxy :: Proxy n))
+  toEnum i
+    | i >= 0 && toInteger i <= toInteger (maxBound :: WordN n) = WordN (toInteger i)
+    | otherwise = toEnumError ("WordN " ++ show (natVal (Proxy :: Proxy n))) i (minBound :: WordN n, maxBound :: WordN n)
+  fromEnum (WordN n) = fromEnum n
+  enumFrom = boundedEnumFrom
+  {-# INLINE enumFrom #-}
+  enumFromThen = boundedEnumFromThen
+  {-# INLINE enumFromThen #-}
+
+instance (KnownNat n, 1 <= n) => Real (WordN n) where
+  toRational (WordN n) = n % 1
+
+instance (KnownNat n, 1 <= n) => Integral (WordN n) where
+  quot (WordN x) (WordN y) = WordN (x `quot` y)
+  rem (WordN x) (WordN y) = WordN (x `rem` y)
+  quotRem (WordN x) (WordN y) = case quotRem x y of
+    (q, r) -> (WordN q, WordN r)
+  div = quot
+  mod = rem
+  divMod = quotRem
+  toInteger (WordN n) = n
+
 instance (KnownNat n, 1 <= n) => Num (WordN n) where
-  WordN x + WordN y = WordN (x + y) .&. maxWordN (Proxy :: Proxy n)
-  WordN x * WordN y = WordN (x * y) .&. maxWordN (Proxy :: Proxy n)
+  WordN x + WordN y = WordN (x + y) .&. maxBound
+  WordN x * WordN y = WordN (x * y) .&. maxBound
   WordN x - WordN y
     | x >= y = WordN (x - y)
     | otherwise = WordN ((1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n))) + x - y)
@@ -111,7 +146,7 @@ instance (KnownNat n, 1 <= n) => Num (WordN n) where
   signum _ = 1
   fromInteger !x
     | x == 0 = WordN 0
-    | x > 0 = WordN (x .&. unWordN (maxWordN (Proxy :: Proxy n)))
+    | x > 0 = WordN (x .&. unWordN (maxBound :: WordN n))
     | otherwise = -fromInteger (-x)
 
 minusOneIntN :: forall proxy n. KnownNat n => proxy n -> IntN n
@@ -154,6 +189,48 @@ instance (KnownNat n, 1 <= n) => Bits (IntN n) where
   rotateL (IntN i) k = IntN $ unWordN $ rotateL (WordN i :: WordN n) k
   rotateR (IntN i) k = IntN $ unWordN $ rotateR (WordN i :: WordN n) k
   popCount (IntN i) = popCount i
+
+instance (KnownNat n, 1 <= n) => FiniteBits (IntN n) where
+  finiteBitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
+
+instance (KnownNat n, 1 <= n) => Bounded (IntN n) where
+  maxBound = IntN (1 `shiftL` (fromIntegral (natVal (Proxy :: Proxy n)) - 1) - 1)
+  minBound = maxBound + 1
+
+instance (KnownNat n, 1 <= n) => Enum (IntN n) where
+  succ x
+    | x /= maxBound = x + 1
+    | otherwise = succError $ "IntN " ++ show (natVal (Proxy :: Proxy n))
+  pred x
+    | x /= minBound = x - 1
+    | otherwise = predError $ "IntN " ++ show (natVal (Proxy :: Proxy n))
+  toEnum i
+    | i >= fromIntegral (minBound :: IntN n) && i <= fromIntegral (maxBound :: IntN n) = fromIntegral i
+    | otherwise = toEnumError ("IntN " ++ show (natVal (Proxy :: Proxy n))) i (minBound :: WordN n, maxBound :: WordN n)
+  fromEnum = fromEnum . toInteger
+  enumFrom = boundedEnumFrom
+  {-# INLINE enumFrom #-}
+  enumFromThen = boundedEnumFromThen
+  {-# INLINE enumFromThen #-}
+
+instance (KnownNat n, 1 <= n) => Real (IntN n) where
+  toRational i = toInteger i % 1
+
+instance (KnownNat n, 1 <= n) => Integral (IntN n) where
+  quot x y = fromInteger (toInteger x `quot` toInteger y)
+  rem x y = fromInteger (toInteger x `rem` toInteger y)
+  quotRem x y = case quotRem (toInteger x) (toInteger y) of
+    (q, r) -> (fromInteger q, fromInteger r)
+  div x y = fromInteger (toInteger x `div` toInteger y)
+  mod x y = fromInteger (toInteger x `mod` toInteger y)
+  divMod x y = case divMod (toInteger x) (toInteger y) of
+    (q, r) -> (fromInteger q, fromInteger r)
+  toInteger i@(IntN n) = case signum i of
+    0 -> 0
+    1 -> n
+    -1 ->
+      let x = negate i
+       in if signum x == -1 then -n else negate (toInteger x)
 
 instance (KnownNat n, 1 <= n) => Num (IntN n) where
   IntN x + IntN y = IntN (x + y) .&. minusOneIntN (Proxy :: Proxy n)
