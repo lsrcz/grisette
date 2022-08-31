@@ -5,7 +5,9 @@ module Pizza.Core.Data.Class.GenSymTests where
 
 import Control.Monad.Except
 import Control.Monad.Trans.Maybe
+import Data.Proxy
 import Pizza.Core.Control.Monad.UnionMBase
+import Pizza.Core.Data.Class.Bool
 import Pizza.Core.Data.Class.GenSym
 import Pizza.Core.Data.Class.SimpleMergeable
 import Pizza.TestUtils.SBool
@@ -747,5 +749,44 @@ genSymTests =
                     ]
                 ]
             ]
+        ],
+      testGroup
+        "choose*"
+        [ testCase "chooseFresh" $ do
+            (runGenSymFresh (chooseFresh [1, 2, 3]) "a" :: UnionMBase SBool Int)
+              @=? mrgIf (ISBool "a" 0) (mrgSingle 1) (mrgIf (ISBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
+          testCase "choose" $ do
+            (choose [1, 2, 3] "a" :: UnionMBase SBool Int)
+              @=? mrgIf (ISBool "a" 0) (mrgSingle 1) (mrgIf (ISBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
+          testCase "chooseSimpleFresh" $ do
+            (runGenSymFresh (chooseSimpleFresh (Proxy @SBool) ["x", "y", "z"]) "a" :: SBool)
+              @=? ites (ISBool "a" 0) (SSBool "x") (ites (ISBool "a" 1) (SSBool "y") (SSBool "z")),
+          testCase "chooseSimple" $ do
+            (chooseSimple (Proxy @SBool) ["x", "y", "z"] "a" :: SBool)
+              @=? ites (ISBool "a" 0) (SSBool "x") (ites (ISBool "a" 1) (SSBool "y") (SSBool "z")),
+          testCase "chooseUnionFresh" $ do
+            ( runGenSymFresh
+                (chooseUnionFresh [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4])
+                "a" ::
+                UnionMBase SBool Int
+              )
+              @=? mrgIf
+                (ISBool "a" 0)
+                (mrgIf (SSBool "x") 1 2)
+                ( mrgIf
+                    (ISBool "a" 1)
+                    (mrgIf (SSBool "x") 2 3)
+                    (mrgIf (SSBool "x") 3 4)
+                ),
+          testCase "chooseUnion" $ do
+            (chooseUnion [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4] "a" :: UnionMBase SBool Int)
+              @=? mrgIf
+                (ISBool "a" 0)
+                (mrgIf (SSBool "x") 1 2)
+                ( mrgIf
+                    (ISBool "a" 1)
+                    (mrgIf (SSBool "x") 2 3)
+                    (mrgIf (SSBool "x") 3 4)
+                )
         ]
     ]

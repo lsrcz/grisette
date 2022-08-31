@@ -159,9 +159,12 @@ module Pizza.Core
     derivedSameShapeGenSymSimpleFresh,
 
     -- ** Symbolic choice
+    chooseFresh,
+    chooseSimpleFresh,
+    chooseUnionFresh,
     choose,
-    simpleChoose,
-    chooseU,
+    chooseSimple,
+    chooseUnion,
 
     -- ** Useful specifications
     EnumGenBound (..),

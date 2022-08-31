@@ -35,9 +35,12 @@ module Pizza.Core.Data.Class.GenSym
     derivedNoSpecGenSymFresh,
     derivedNoSpecGenSymSimpleFresh,
     derivedSameShapeGenSymSimpleFresh,
+    chooseFresh,
+    chooseSimpleFresh,
+    chooseUnionFresh,
     choose,
-    simpleChoose,
-    chooseU,
+    chooseSimple,
+    chooseUnion,
     ListSpec (..),
     SimpleListSpec (..),
     EnumGenBound (..),
@@ -527,9 +530,9 @@ derivedSameShapeGenSymSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 --
 -- The result will be wrapped in a union-like monad, and also a monad maintaining the 'GenSym' context.
 --
--- >>> runGenSymFresh (choose [1,2,3]) "a" :: UnionM Integer
+-- >>> runGenSymFresh (chooseFresh [1,2,3]) "a" :: UnionM Integer
 -- UMrg (If a@0 (Single 1) (If a@1 (Single 2) (Single 3)))
-choose ::
+chooseFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
     Mergeable bool a,
@@ -539,12 +542,24 @@ choose ::
   ) =>
   [a] ->
   m (u a)
-choose [x] = return $ mrgSingle x
-choose (r : rs) = do
+chooseFresh [x] = return $ mrgSingle x
+chooseFresh (r : rs) = do
   b <- genSymSimpleFresh ()
-  res <- choose rs
+  res <- chooseFresh rs
   return $ mrgIf b (mrgSingle r) res
-choose [] = error "choose expects at least one value"
+chooseFresh [] = error "chooseFresh expects at least one value"
+
+choose ::
+  forall bool a u.
+  ( SymBoolOp bool,
+    Mergeable bool a,
+    GenSymSimple () bool,
+    MonadUnion bool u
+  ) =>
+  [a] ->
+  GenSymIdent ->
+  u a
+choose = runGenSymFresh . chooseFresh
 
 -- | Symbolically chooses one of the provided values.
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
@@ -553,9 +568,9 @@ choose [] = error "choose expects at least one value"
 -- The result will __/not/__ be wrapped in a union-like monad, but will be wrapped in a monad maintaining the 'GenSym' context.
 -- Similar to 'genSymSimpleFresh', you need to tell the system what symbolic boolean type to use.
 --
--- >>> runGenSymFresh (simpleChoose (Proxy @SymBool) [ssymb "b", ssymb "c", ssymb "d"]) "a" :: SymInteger
+-- >>> runGenSymFresh (chooseSimpleFresh (Proxy @SymBool) [ssymb "b", ssymb "c", ssymb "d"]) "a" :: SymInteger
 -- (ite a@0 b (ite a@1 c d))
-simpleChoose ::
+chooseSimpleFresh ::
   forall proxy bool a m.
   ( SymBoolOp bool,
     SimpleMergeable bool a,
@@ -565,12 +580,24 @@ simpleChoose ::
   proxy bool ->
   [a] ->
   m a
-simpleChoose _ [x] = return x
-simpleChoose proxy (r : rs) = do
+chooseSimpleFresh _ [x] = return x
+chooseSimpleFresh proxy (r : rs) = do
   b :: bool <- genSymSimpleFresh ()
-  res <- simpleChoose proxy rs
+  res <- chooseSimpleFresh proxy rs
   return $ mrgIte b r res
-simpleChoose _ [] = error "simpleChoose expects at least one value"
+chooseSimpleFresh _ [] = error "chooseSimpleFresh expects at least one value"
+
+chooseSimple ::
+  forall proxy bool a.
+  ( SymBoolOp bool,
+    SimpleMergeable bool a,
+    GenSymSimple () bool
+  ) =>
+  proxy bool ->
+  [a] ->
+  GenSymIdent ->
+  a
+chooseSimple p = runGenSymFresh . chooseSimpleFresh p
 
 -- | Symbolically chooses one of the provided values wrapped in union-like monads.
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
@@ -578,11 +605,11 @@ simpleChoose _ [] = error "simpleChoose expects at least one value"
 --
 -- The result will be wrapped in a union-like monad, and also a monad maintaining the 'GenSym' context.
 --
--- >>> let a = runGenSymFresh (choose [1, 2]) "a" :: UnionM Integer
--- >>> let b = runGenSymFresh (choose [2, 3]) "b" :: UnionM Integer
--- >>> runGenSymFresh (chooseU [a, b]) "c" :: UnionM Integer
+-- >>> let a = runGenSymFresh (chooseFresh [1, 2]) "a" :: UnionM Integer
+-- >>> let b = runGenSymFresh (chooseFresh [2, 3]) "b" :: UnionM Integer
+-- >>> runGenSymFresh (chooseUnionFresh [a, b]) "c" :: UnionM Integer
 -- UMrg (If (&& c@0 a@0) (Single 1) (If (|| c@0 b@0) (Single 2) (Single 3)))
-chooseU ::
+chooseUnionFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
     Mergeable bool a,
@@ -592,12 +619,24 @@ chooseU ::
   ) =>
   [u a] ->
   m (u a)
-chooseU [x] = return x
-chooseU (r : rs) = do
+chooseUnionFresh [x] = return x
+chooseUnionFresh (r : rs) = do
   b <- genSymSimpleFresh ()
-  res <- chooseU rs
+  res <- chooseUnionFresh rs
   return $ mrgIf b r res
-chooseU [] = error "chooseU expects at least one value"
+chooseUnionFresh [] = error "chooseUnionFresh expects at least one value"
+
+chooseUnion ::
+  forall bool a u.
+  ( SymBoolOp bool,
+    Mergeable bool a,
+    GenSymSimple () bool,
+    MonadUnion bool u
+  ) =>
+  [u a] ->
+  GenSymIdent ->
+  u a
+chooseUnion = runGenSymFresh . chooseUnionFresh
 
 instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Bool Bool where genSymFresh = return . mrgSingle
 
@@ -668,7 +707,7 @@ instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool () Bool where
 newtype EnumGenUpperBound a = EnumGenUpperBound a
 
 instance (SymBoolOp bool, GenSymSimple () bool, Enum v, Mergeable bool v) => GenSym bool (EnumGenUpperBound v) v where
-  genSymFresh (EnumGenUpperBound u) = choose (toEnum <$> [0 .. fromEnum u - 1])
+  genSymFresh (EnumGenUpperBound u) = chooseFresh (toEnum <$> [0 .. fromEnum u - 1])
 
 -- | Specification for numbers with lower bound (inclusive) and upper bound (exclusive)
 --
@@ -677,7 +716,7 @@ instance (SymBoolOp bool, GenSymSimple () bool, Enum v, Mergeable bool v) => Gen
 data EnumGenBound a = EnumGenBound a a
 
 instance (SymBoolOp bool, GenSymSimple () bool, Enum v, Mergeable bool v) => GenSym bool (EnumGenBound v) v where
-  genSymFresh (EnumGenBound l u) = choose (toEnum <$> [fromEnum l .. fromEnum u - 1])
+  genSymFresh (EnumGenBound l u) = chooseFresh (toEnum <$> [fromEnum l .. fromEnum u - 1])
 
 -- Either
 instance
@@ -726,7 +765,7 @@ instance
   genSymFresh v = do
     l <- gl v
     let xs = reverse $ scanr (:) [] l
-    choose xs
+    chooseFresh xs
     where
       gl :: (MonadGenSymFresh m) => Integer -> m [a]
       gl v1
@@ -760,7 +799,7 @@ instance
       else do
         l <- gl maxLen
         let xs = drop (fromInteger minLen) $ reverse $ scanr (:) [] l
-        choose xs
+        chooseFresh xs
     where
       gl :: (MonadGenSymFresh m) => Integer -> m [a]
       gl currLen
