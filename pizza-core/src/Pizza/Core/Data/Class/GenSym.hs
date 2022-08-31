@@ -781,9 +781,9 @@ instance
 -- UMrg (If c@2 (Single []) (If c@3 (Single [c@1]) (Single [c@0,c@1])))
 data ListSpec spec = ListSpec
   { -- | The minimum length of the generated lists
-    genListMinLength :: Integer,
+    genListMinLength :: Int,
     -- | The maximum length of the generated lists
-    genListMaxLength :: Integer,
+    genListMaxLength :: Int,
     -- | Each element in the lists will be generated with the sub-specification
     genListSubSpec :: spec
   }
@@ -798,10 +798,10 @@ instance
       then error $ "Bad lengthes: " ++ show (minLen, maxLen)
       else do
         l <- gl maxLen
-        let xs = drop (fromInteger minLen) $ reverse $ scanr (:) [] l
+        let xs = drop minLen $ reverse $ scanr (:) [] l
         chooseFresh xs
     where
-      gl :: (MonadGenSymFresh m) => Integer -> m [a]
+      gl :: (MonadGenSymFresh m) => Int -> m [a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
@@ -825,7 +825,7 @@ instance
 -- [c@0,c@1]
 data SimpleListSpec spec = SimpleListSpec
   { -- | The length of the generated list
-    genSimpleListLength :: Integer,
+    genSimpleListLength :: Int,
     -- | Each element in the list will be generated with the sub-specification
     genSimpleListSubSpec :: spec
   }
@@ -847,7 +847,7 @@ instance
       else do
         gl len
     where
-      gl :: (MonadGenSymFresh m) => Integer -> m [a]
+      gl :: (MonadGenSymFresh m) => Int -> m [a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
