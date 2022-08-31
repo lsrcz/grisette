@@ -10,7 +10,9 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -111,6 +113,38 @@ instance Show GenSymIdent where
 
 instance IsString GenSymIdent where
   fromString = name
+
+instance Eq GenSymIdent where
+  GenSymIdent l == GenSymIdent r = l == r
+  GenSymIdentWithInfo l (linfo :: linfo) == GenSymIdentWithInfo r (rinfo :: rinfo) = case eqT @linfo @rinfo of
+    Just Refl -> l == r && linfo == rinfo
+    _ -> False
+  _ == _ = False
+
+instance Ord GenSymIdent where
+  GenSymIdent l <= GenSymIdent r = l <= r
+  GenSymIdent _ <= _ = True
+  _ <= GenSymIdent _ = False
+  GenSymIdentWithInfo l (linfo :: linfo) <= GenSymIdentWithInfo r (rinfo :: rinfo) =
+    l < r
+      || ( l == r
+             && ( case eqT @linfo @rinfo of
+                    Just Refl -> linfo <= rinfo
+                    _ -> typeRep (Proxy @linfo) <= typeRep (Proxy @rinfo)
+                )
+         )
+
+instance Hashable GenSymIdent where
+  hashWithSalt s (GenSymIdent n) = s `hashWithSalt` n
+  hashWithSalt s (GenSymIdentWithInfo n i) = s `hashWithSalt` n `hashWithSalt` i
+
+instance Lift GenSymIdent where
+  liftTyped (GenSymIdent n) = [||GenSymIdent n||]
+  liftTyped (GenSymIdentWithInfo n i) = [||GenSymIdentWithInfo n i||]
+
+instance NFData GenSymIdent where
+  rnf (GenSymIdent n) = rnf n
+  rnf (GenSymIdentWithInfo n i) = rnf n `seq` rnf i
 
 -- | Simple name identifier.
 -- The same identifier refers to the same symbolic variable in the whole program.
@@ -565,42 +599,61 @@ chooseU (r : rs) = do
   return $ mrgIf b r res
 chooseU [] = error "chooseU expects at least one value"
 
-#define CONCRETE_GENSYM_SAMESHAPE(type) \
-instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool type type where \
-  genSymFresh = return . mrgSingle;
-#define CONCRETE_GENSYM_SIMPLE_SAMESHAPE(type) \
-instance GenSymSimple type type where \
-  genSymSimpleFresh = return
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Bool Bool where genSymFresh = return . mrgSingle
 
-CONCRETE_GENSYM_SAMESHAPE (Bool)
-CONCRETE_GENSYM_SAMESHAPE (Integer)
-CONCRETE_GENSYM_SAMESHAPE (Char)
-CONCRETE_GENSYM_SAMESHAPE (Int)
-CONCRETE_GENSYM_SAMESHAPE (Int8)
-CONCRETE_GENSYM_SAMESHAPE (Int16)
-CONCRETE_GENSYM_SAMESHAPE (Int32)
-CONCRETE_GENSYM_SAMESHAPE (Int64)
-CONCRETE_GENSYM_SAMESHAPE (Word)
-CONCRETE_GENSYM_SAMESHAPE (Word8)
-CONCRETE_GENSYM_SAMESHAPE (Word16)
-CONCRETE_GENSYM_SAMESHAPE (Word32)
-CONCRETE_GENSYM_SAMESHAPE (Word64)
-CONCRETE_GENSYM_SAMESHAPE (B.ByteString)
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Integer Integer where genSymFresh = return . mrgSingle
 
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Bool)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Integer)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Char)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Int)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Int8)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Int16)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Int32)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Int64)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Word)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Word8)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Word16)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Word32)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (Word64)
-CONCRETE_GENSYM_SIMPLE_SAMESHAPE (B.ByteString)
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Char Char where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Int Int where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Int8 Int8 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Int16 Int16 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Int32 Int32 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Int64 Int64 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Word Word where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Word8 Word8 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Word16 Word16 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Word32 Word32 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool Word64 Word64 where genSymFresh = return . mrgSingle
+
+instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool B.ByteString B.ByteString where genSymFresh = return . mrgSingle
+
+instance GenSymSimple Bool Bool where genSymSimpleFresh = return
+
+instance GenSymSimple Integer Integer where genSymSimpleFresh = return
+
+instance GenSymSimple Char Char where genSymSimpleFresh = return
+
+instance GenSymSimple Int Int where genSymSimpleFresh = return
+
+instance GenSymSimple Int8 Int8 where genSymSimpleFresh = return
+
+instance GenSymSimple Int16 Int16 where genSymSimpleFresh = return
+
+instance GenSymSimple Int32 Int32 where genSymSimpleFresh = return
+
+instance GenSymSimple Int64 Int64 where genSymSimpleFresh = return
+
+instance GenSymSimple Word Word where genSymSimpleFresh = return
+
+instance GenSymSimple Word8 Word8 where genSymSimpleFresh = return
+
+instance GenSymSimple Word16 Word16 where genSymSimpleFresh = return
+
+instance GenSymSimple Word32 Word32 where genSymSimpleFresh = return
+
+instance GenSymSimple Word64 Word64 where genSymSimpleFresh = return
+
+instance GenSymSimple B.ByteString B.ByteString where genSymSimpleFresh = return
 
 -- Bool
 instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool () Bool where
