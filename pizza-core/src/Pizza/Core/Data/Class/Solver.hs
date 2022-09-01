@@ -72,7 +72,7 @@ class
     r <-
       cegisFormulasVarInputs
         config
-        (\x -> if x == 0 then Just (IdGen foralls) else Nothing)
+        [IdGen foralls]
         []
         (\(_ :: IdGen forallArg) -> (assumption, assertion))
     case r of
@@ -82,7 +82,7 @@ class
     forall inputs spec.
     (ExtractSymbolics symbolSet inputs, EvaluateSym model inputs, GenSymSimple spec inputs) =>
     config ->
-    (Int -> Maybe spec) ->
+    [spec] ->
     [inputs] ->
     (inputs -> bool) ->
     IO (Either failure ([inputs], model))
@@ -90,7 +90,7 @@ class
   cegisFormulasVarInputs ::
     (EvaluateSym model inputs, ExtractSymbolics symbolSet inputs, GenSymSimple spec inputs) =>
     config ->
-    (Int -> Maybe spec) ->
+    [spec] ->
     [inputs] ->
     (inputs -> (bool, bool)) ->
     IO (Either failure ([inputs], model))
@@ -155,7 +155,7 @@ cegisFallableVarInputs ::
     SymBoolOp bool
   ) =>
   config ->
-  (Int -> Maybe spec) ->
+  [spec] ->
   [inputs] ->
   (Either e v -> (bool, bool)) ->
   (inputs -> t) ->
@@ -174,7 +174,7 @@ cegisFallableVarInputs' ::
     SymBoolOp bool
   ) =>
   config ->
-  (Int -> Maybe spec) ->
+  [spec] ->
   [inputs] ->
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->

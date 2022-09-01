@@ -102,18 +102,18 @@ instance Solver (PizzaSMTConfig n) SymBool (S.HashSet TermSymbol) SBVC.CheckSatR
     forall inputs spec.
     (ExtractSymbolics (S.HashSet TermSymbol) inputs, EvaluateSym PM.Model inputs, GenSymSimple spec inputs) =>
     PizzaSMTConfig n ->
-    (Int -> Maybe spec) ->
+    [spec] ->
     [inputs] ->
     (inputs -> (SymBool, SymBool)) ->
     IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
   cegisFormulasVarInputs config inputGen initialCexes func =
-    go1 (cexesAssertFunc initialCexes) initialCexes (error "Should have at least one gen") [] (conc False) (conc False) 0
+    go1 (cexesAssertFunc initialCexes) initialCexes (error "Should have at least one gen") [] (conc False) (conc False) inputGen
     where
-      go1 cexFormula cexes previousModel inputs assumption assertion n = do
-        case inputGen n of
-          Nothing -> return $ Right (cexes, previousModel)
-          Just v -> do
-            let newInput = genSymSimple v (nameWithInfo "inputs" $ CegisInternal n)
+      go1 cexFormula cexes previousModel inputs assumption assertion remainingGen = do
+        case remainingGen of
+          [] -> return $ Right (cexes, previousModel)
+          v : vs -> do
+            let newInput = genSymSimple v (nameWithInfo "inputs" $ CegisInternal $ length vs)
             let (newAssumption, newAssertion) = func newInput
             let finalAssumption = assumption ||~ newAssumption
             let finalAssertion = assertion ||~ newAssertion
@@ -128,7 +128,7 @@ instance Solver (PizzaSMTConfig n) SymBool (S.HashSet TermSymbol) SBVC.CheckSatR
                   (newInput : inputs)
                   finalAssumption
                   finalAssertion
-                  (n + 1)
+                  vs
       cexAssertFunc input =
         let (assumption, assertion) = func input in nots assumption &&~ nots assertion
       cexesAssertFunc :: [inputs] -> SymBool
