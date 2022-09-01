@@ -20,6 +20,7 @@ dependencies:
 - sbv >= 8.11
 - template-haskell >= 2.16
 - deepseq >= 1.4.4
+- generic-deriving >= 1.14.1
 
 flags: {
   fast: {

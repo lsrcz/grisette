@@ -40,6 +40,7 @@ import Pizza.Core.Control.Exception
 import Pizza.Core.Data.Class.Bool
 import Pizza.Core.Data.Class.Evaluate
 import Pizza.Core.Data.Class.ExtractSymbolics
+import Pizza.Core.Data.Class.GenSym
 import Pizza.Core.Data.Class.PrimWrapper
 import Pizza.Core.Data.Class.SimpleMergeable
 
@@ -67,6 +68,32 @@ class
     bool ->
     bool ->
     IO (Either failure ([forallArg], model))
+  cegisFormulas config foralls assumption assertion = do
+    r <-
+      cegisFormulasVarInputs
+        config
+        (\x -> if x == 0 then Just (IdGen foralls) else Nothing)
+        []
+        (\(_ :: IdGen forallArg) -> (assumption, assertion))
+    case r of
+      Left f -> return $ Left f
+      Right (cexes, mo) -> return $ Right (runIdGen <$> cexes, mo)
+  cegisFormulaVarInputs ::
+    forall inputs spec.
+    (ExtractSymbolics symbolSet inputs, EvaluateSym model inputs, GenSymSimple spec inputs) =>
+    config ->
+    (Int -> Maybe spec) ->
+    [inputs] ->
+    (inputs -> bool) ->
+    IO (Either failure ([inputs], model))
+  cegisFormulaVarInputs config inputGen cexes func = cegisFormulasVarInputs config inputGen cexes (\x -> (conc False, func x))
+  cegisFormulasVarInputs ::
+    (EvaluateSym model inputs, ExtractSymbolics symbolSet inputs, GenSymSimple spec inputs) =>
+    config ->
+    (Int -> Maybe spec) ->
+    [inputs] ->
+    (inputs -> (bool, bool)) ->
+    IO (Either failure ([inputs], model))
 
 class ExtractUnionEither t u e v | t -> u e v where
   extractUnionEither :: t -> u (Either e v)
@@ -117,6 +144,57 @@ cegisFallable ::
   IO (Either failure ([forallArgs], model))
 cegisFallable config args f v = uncurry (cegisFormulas config args) (getSingle $ f <$> extractUnionEither v)
 
+cegisFallableVarInputs ::
+  ( Solver config bool symbolSet failure model,
+    EvaluateSym model inputs,
+    ExtractSymbolics symbolSet inputs,
+    GenSymSimple spec inputs,
+    ExtractUnionEither t u e v,
+    UnionPrjOp bool u,
+    Monad u,
+    SymBoolOp bool
+  ) =>
+  config ->
+  (Int -> Maybe spec) ->
+  [inputs] ->
+  (Either e v -> (bool, bool)) ->
+  (inputs -> t) ->
+  IO (Either failure ([inputs], model))
+cegisFallableVarInputs config inputGen cexes interpretFunc f =
+  cegisFormulasVarInputs config inputGen cexes (getSingle . (interpretFunc <$>) . extractUnionEither . f)
+
+cegisFallableVarInputs' ::
+  ( Solver config bool symbolSet failure model,
+    EvaluateSym model inputs,
+    ExtractSymbolics symbolSet inputs,
+    GenSymSimple spec inputs,
+    ExtractUnionEither t u e v,
+    UnionPrjOp bool u,
+    Monad u,
+    SymBoolOp bool
+  ) =>
+  config ->
+  (Int -> Maybe spec) ->
+  [inputs] ->
+  (Either e v -> u (Either VerificationConditions ())) ->
+  (inputs -> t) ->
+  IO (Either failure ([inputs], model))
+cegisFallableVarInputs' config inputGen cexes interpretFunc f =
+  cegisFormulasVarInputs
+    config
+    inputGen
+    cexes
+    ( \v ->
+        getSingle
+          ( ( \case
+                Left AssumptionViolation -> (conc True, conc False)
+                Left AssertionViolation -> (conc False, conc True)
+                _ -> (conc False, conc False)
+            )
+              <$> (extractUnionEither (f v) >>= interpretFunc)
+          )
+    )
+
 cegisFallable' ::
   ( ExtractUnionEither t u e v,
     UnionPrjOp bool u,
@@ -142,3 +220,14 @@ cegisFallable' config args f v =
         )
           <$> (extractUnionEither v >>= f)
     )
+
+newtype IdGen x = IdGen {runIdGen :: x}
+
+instance EvaluateSym model x => EvaluateSym model (IdGen x) where
+  evaluateSym fillDefault model (IdGen v) = IdGen (evaluateSym fillDefault model v)
+
+instance ExtractSymbolics set x => ExtractSymbolics set (IdGen x) where
+  extractSymbolics (IdGen v) = extractSymbolics v
+
+instance GenSymSimple (IdGen x) (IdGen x) where
+  genSymSimpleFresh = return
