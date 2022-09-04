@@ -22,6 +22,7 @@ import qualified Data.HashSet as S
 import Data.Hashable
 import Data.Proxy
 import GHC.Generics
+import Pizza.Core.Data.Class.ExtractSymbolics
 import Pizza.Core.Data.Class.ModelOps
 import Pizza.Core.Data.MemoUtils
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -56,6 +57,9 @@ instance SymbolSetOps SymbolSet TermSymbol where
   intersectionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.intersection s1 s2
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
+
+instance ExtractSymbolics SymbolSet SymbolSet where
+  extractSymbolics = id
 
 instance ModelOps Model SymbolSet TermSymbol where
   emptyModel = Model M.empty
