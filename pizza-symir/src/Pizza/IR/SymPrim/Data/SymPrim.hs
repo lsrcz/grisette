@@ -28,7 +28,6 @@ where
 import Control.DeepSeq
 import Control.Monad.Except
 import Data.Bits
-import Data.HashSet as S
 import Data.Hashable
 import Data.Int
 import Data.Proxy
@@ -119,8 +118,8 @@ instance (SupportedPrim a) => ToCon (Sym a) a where
 instance (SupportedPrim a) => EvaluateSym Model (Sym a) where
   evaluateSym fillDefault model (Sym t) = Sym $ evaluateTerm fillDefault model t
 
-instance (SupportedPrim a) => ExtractSymbolics (S.HashSet TermSymbol) (Sym a) where
-  extractSymbolics (Sym t) = extractSymbolicsTerm t
+instance (SupportedPrim a) => ExtractSymbolics SymbolSet (Sym a) where
+  extractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSym (Sym Bool) () (Sym a) where
   genSymFresh _ = mrgReturn <$> genSymSimpleFresh ()

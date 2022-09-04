@@ -44,6 +44,7 @@ library
       Pizza.Core.Data.Class.GenSym
       Pizza.Core.Data.Class.Integer
       Pizza.Core.Data.Class.Mergeable
+      Pizza.Core.Data.Class.ModelOps
       Pizza.Core.Data.Class.PrimWrapper
       Pizza.Core.Data.Class.SimpleMergeable
       Pizza.Core.Data.Class.Solver

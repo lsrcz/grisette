@@ -32,13 +32,12 @@ import Generics.Deriving
 
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
--- >>> extractSymbolics ("a" :: SymBool) :: HashSet TermSymbol
--- fromList [a :: Bool]
+-- >>> extractSymbolics ("a" :: SymBool) :: SymbolSet
+-- SymbolSet {unSymbolSet = fromList [a :: Bool]}
 --
 -- >>> :{
---   sort $
---     HashSet.toList $
---       extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [TermSymbol]
+--   sort $ HashSet.toList $ unSymbolSet $
+--     extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [TermSymbol]
 -- :}
 -- [a :: Bool,b :: Bool,c :: Bool,d :: Bool]
 class (Monoid symbolSet) => ExtractSymbolics symbolSet a where

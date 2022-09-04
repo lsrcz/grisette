@@ -174,6 +174,8 @@ module Pizza.Core
 
     -- * Evaluation and Conversion between Concrete and Symbolic values
     EvaluateSym (..),
+    ModelOps (..),
+    SymbolSetOps (..),
     evaluateSymToCon,
     ToCon (..),
     ToSym (..),
@@ -229,6 +231,7 @@ import Pizza.Core.Data.Class.Function
 import Pizza.Core.Data.Class.GenSym
 import Pizza.Core.Data.Class.Integer
 import Pizza.Core.Data.Class.Mergeable
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.Core.Data.Class.PrimWrapper
 import Pizza.Core.Data.Class.SOrd
 import Pizza.Core.Data.Class.SimpleMergeable

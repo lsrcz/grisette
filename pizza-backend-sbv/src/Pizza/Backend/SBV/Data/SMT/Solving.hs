@@ -21,6 +21,7 @@ import Pizza.Backend.SBV.Data.SMT.Lowering
 import Pizza.Core.Data.Class.Bool
 import Pizza.Core.Data.Class.Evaluate
 import Pizza.Core.Data.Class.ExtractSymbolics
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.Core.Data.Class.Solver
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -44,7 +45,7 @@ solveTermWith config term = SBV.runSMTWith (sbvConfig config) $ do
         return (m, Right $ parseModel config md m)
       _ -> return (m, Left r)
 
-instance Solver (PizzaSMTConfig n) SymBool (S.HashSet TermSymbol) SBVC.CheckSatResult PM.Model where
+instance Solver (PizzaSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
   solveFormula config (Sym t) = snd <$> solveTermWith config t
   solveFormulaMulti config n s@(Sym t)
     | n > 0 = SBV.runSMTWith (sbvConfig config) $ do
@@ -60,14 +61,14 @@ instance Solver (PizzaSMTConfig n) SymBool (S.HashSet TermSymbol) SBVC.CheckSatR
             _ -> return []
     | otherwise = return []
     where
-      allSymbols = extractSymbolics s :: S.HashSet TermSymbol
+      allSymbols = extractSymbolics s :: SymbolSet
       next :: PM.Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
       next md origm = do
         let newtm =
               S.foldl'
                 (\acc v -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation md v)))
                 (concTerm False)
-                allSymbols
+                (unSymbolSet allSymbols)
         let (lowered, newm) = lowerSinglePrim' config newtm origm
         SBV.constrain lowered
         r <- SBVC.checkSat
@@ -90,7 +91,7 @@ instance Solver (PizzaSMTConfig n) SymBool (S.HashSet TermSymbol) SBVC.CheckSatR
   solveFormulaAll = undefined
   cegisFormulas ::
     forall forallArg.
-    (ExtractSymbolics (S.HashSet TermSymbol) forallArg, EvaluateSym PM.Model forallArg) =>
+    (ExtractSymbolics SymbolSet forallArg, EvaluateSym PM.Model forallArg) =>
     PizzaSMTConfig n ->
     forallArg ->
     SymBool ->
@@ -110,7 +111,7 @@ instance Solver (PizzaSMTConfig n) SymBool (S.HashSet TermSymbol) SBVC.CheckSatR
           _ -> return $ Left r
         loop ((`exceptFor` forallSymbols) <$> mr) [] newm
     where
-      forallSymbols :: S.HashSet TermSymbol
+      forallSymbols :: SymbolSet
       forallSymbols = extractSymbolics foralls
       phi = nots assertion &&~ nots assumption
       negphi = assertion &&~ nots assumption

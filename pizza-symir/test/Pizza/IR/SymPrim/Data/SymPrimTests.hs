@@ -22,6 +22,7 @@ import Pizza.Core.Data.Class.Function
 import Pizza.Core.Data.Class.GenSym
 import Pizza.Core.Data.Class.Integer
 import Pizza.Core.Data.Class.Mergeable
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.Core.Data.Class.PrimWrapper
 import Pizza.Core.Data.Class.SOrd
 import Pizza.Core.Data.Class.SimpleMergeable
@@ -31,7 +32,7 @@ import Pizza.IR.SymPrim.Control.Monad.UnionM
 import Pizza.IR.SymPrim.Data.BV
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.Term
-import qualified Pizza.IR.SymPrim.Data.Prim.Model as Model
+import Pizza.IR.SymPrim.Data.Prim.Model
 import Pizza.IR.SymPrim.Data.Prim.PartialEval.BV
 import Pizza.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Pizza.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -99,19 +100,21 @@ symPrimTests =
                 toCon True @=? Just True
             ],
           testCase "EvaluateSym" $ do
-            let m1 = Model.empty
-            let m2 = Model.insert m1 (TermSymbol (typeRep @Integer) (SimpleSymbol "a")) (1 :: Integer)
-            let m3 = Model.insert m2 (TermSymbol (typeRep @Bool) (SimpleSymbol "b")) True
+            let m1 = emptyModel :: Model
+            let m2 = insertValue m1 (TermSymbol (typeRep @Integer) (SimpleSymbol "a")) (1 :: Integer)
+            let m3 = insertValue m2 (TermSymbol (typeRep @Bool) (SimpleSymbol "b")) True
             evaluateSym False m3 (ites ("c" :: Sym Bool) "a" ("a" + "a" :: Sym Integer))
               @=? ites ("c" :: Sym Bool) 1 2
             evaluateSym True m3 (ites ("c" :: Sym Bool) "a" ("a" + "a" :: Sym Integer)) @=? 2,
           testCase "ExtractSymbolics" $ do
             extractSymbolics (ites ("c" :: Sym Bool) ("a" :: Sym Integer) ("b" :: Sym Integer))
-              @=? S.fromList
-                [ TermSymbol (typeRep @Bool) (SimpleSymbol "c"),
-                  TermSymbol (typeRep @Integer) (SimpleSymbol "a"),
-                  TermSymbol (typeRep @Integer) (SimpleSymbol "b")
-                ],
+              @=? SymbolSet
+                ( S.fromList
+                    [ TermSymbol (typeRep @Bool) (SimpleSymbol "c"),
+                      TermSymbol (typeRep @Integer) (SimpleSymbol "a"),
+                      TermSymbol (typeRep @Integer) (SimpleSymbol "b")
+                    ]
+                ),
           testCase "GenSym" $ do
             (genSym () "a" :: UnionM (Sym Bool)) @=? mrgSingle (isymb "a" 0)
             (genSymSimple () "a" :: Sym Bool) @=? isymb "a" 0

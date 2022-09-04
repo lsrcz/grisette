@@ -25,6 +25,7 @@ import Data.Maybe
 import Data.Word
 import Generics.Deriving
 import Generics.Deriving.Instances ()
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.Core.Data.Class.ToCon
 
 -- $setup
@@ -39,7 +40,7 @@ import Pizza.Core.Data.Class.ToCon
 class EvaluateSym model a where
   -- | Evaluate a symbolic variable with some model, possibly fill in values for the missing variables.
   --
-  -- >>> let model = insert empty (termSymbol (Proxy @Integer) (SimpleSymbol "a")) (1 :: Integer)
+  -- >>> let model = insertValue emptyModel (termSymbol (Proxy @Integer) (SimpleSymbol "a")) (1 :: Integer) :: Model
   -- >>> evaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
   -- [1I,b]
   -- >>> evaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
@@ -71,7 +72,7 @@ instance (EvaluateSym' model a, EvaluateSym' model b) => EvaluateSym' model (a :
 -- | Evaluate a symbolic variable with some model, fill in values for the missing variables,
 -- and transform to concrete ones
 --
--- >>> let model = insert empty (termSymbol (Proxy @Integer) (SimpleSymbol "a")) (1 :: Integer)
+-- >>> let model = insertValue emptyModel (termSymbol (Proxy @Integer) (SimpleSymbol "a")) (1 :: Integer) :: Model
 -- >>> evaluateSymToCon model ([ssymb "a", ssymb "b"] :: [SymInteger]) :: [Integer]
 -- [1,0]
 evaluateSymToCon :: (ToCon a b, EvaluateSym model a) => model -> a -> b

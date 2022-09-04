@@ -1,20 +1,18 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Pizza.IR.SymPrim.Data.Prim.Model
-  ( Model (..),
+  ( SymbolSet (..),
+    Model (..),
     equation,
-    empty,
-    valueOf,
-    exceptFor,
-    restrictTo,
-    extendTo,
-    exact,
-    insert,
     evaluateTerm,
   )
 where
@@ -24,6 +22,8 @@ import qualified Data.HashSet as S
 import Data.Hashable
 import Data.Proxy
 import GHC.Generics
+import Pizza.Core.Data.Class.ExtractSymbolics
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.Core.Data.MemoUtils
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
@@ -39,7 +39,10 @@ import Pizza.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
 
-newtype Model = Model (M.HashMap TermSymbol ModelValue) deriving (Show, Eq, Generic, Hashable)
+newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet TermSymbol}
+  deriving (Eq, Show, Generic, Hashable, Semigroup, Monoid)
+
+newtype Model = Model {unModel :: M.HashMap TermSymbol ModelValue} deriving (Show, Eq, Generic, Hashable)
 
 equation :: Model -> TermSymbol -> Maybe (Term Bool)
 equation m tsym@(TermSymbol (_ :: TypeRep a) sym) =
@@ -47,48 +50,46 @@ equation m tsym@(TermSymbol (_ :: TypeRep a) sym) =
     Just (v :: a) -> Just $ pevalEqvTerm (symbTerm sym) (concTerm v)
     Nothing -> Nothing
 
-empty :: Model
-empty = Model M.empty
+instance SymbolSetOps SymbolSet TermSymbol where
+  emptySet = SymbolSet S.empty
+  containsSymbol s = S.member s . unSymbolSet
+  insertSymbol s = SymbolSet . S.insert s . unSymbolSet
+  intersectionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.intersection s1 s2
+  unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
+  differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
 
-valueOf :: forall t. (Typeable t) => Model -> TermSymbol -> Maybe t
-valueOf (Model m) sym =
-  (unsafeFromModelValue @t)
-    <$> M.lookup sym m
+instance ExtractSymbolics SymbolSet SymbolSet where
+  extractSymbolics = id
 
-exceptFor :: Model -> S.HashSet TermSymbol -> Model
-exceptFor (Model m) s =
-  Model $ S.foldl' (flip M.delete) m s
-
-restrictTo :: Model -> S.HashSet TermSymbol -> Model
-restrictTo (Model m) s =
-  Model $
-    S.foldl'
-      ( \acc sym -> case M.lookup sym m of
-          Just v -> M.insert sym v acc
-          Nothing -> acc
-      )
-      M.empty
-      s
-
-extendTo :: Model -> S.HashSet TermSymbol -> Model
-extendTo (Model m) s =
-  Model $
-    S.foldl'
-      ( \acc sym@(TermSymbol (_ :: TypeRep t) _) -> case M.lookup sym acc of
-          Just _ -> acc
-          Nothing -> M.insert sym (defaultValueDynamic (Proxy @t)) acc
-      )
-      m
-      s
-
-exact :: Model -> S.HashSet TermSymbol -> Model
-exact m s = restrictTo (extendTo m s) s
-
-insert :: (Eq a, Show a, Hashable a, Typeable a) => Model -> TermSymbol -> a -> Model
-insert (Model m) sym@(TermSymbol p _) v =
-  case eqTypeRep p (typeOf v) of
-    Just HRefl -> Model $ M.insert sym (toModelValue v) m
-    _ -> error "Bad value type"
+instance ModelOps Model SymbolSet TermSymbol where
+  emptyModel = Model M.empty
+  valueOf :: forall t. (Typeable t) => Model -> TermSymbol -> Maybe t
+  valueOf (Model m) sym =
+    (unsafeFromModelValue @t)
+      <$> M.lookup sym m
+  exceptFor (Model m) (SymbolSet s) = Model $ S.foldl' (flip M.delete) m s
+  restrictTo (Model m) (SymbolSet s) =
+    Model $
+      S.foldl'
+        ( \acc sym -> case M.lookup sym m of
+            Just v -> M.insert sym v acc
+            Nothing -> acc
+        )
+        M.empty
+        s
+  extendTo (Model m) (SymbolSet s) =
+    Model $
+      S.foldl'
+        ( \acc sym@(TermSymbol (_ :: TypeRep t) _) -> case M.lookup sym acc of
+            Just _ -> acc
+            Nothing -> M.insert sym (defaultValueDynamic (Proxy @t)) acc
+        )
+        m
+        s
+  insertValue (Model m) sym@(TermSymbol p _) v =
+    case eqTypeRep p (typeOf v) of
+      Just HRefl -> Model $ M.insert sym (toModelValue v) m
+      _ -> error "Bad value type"
 
 evaluateSomeTerm :: Bool -> Model -> SomeTerm -> SomeTerm
 evaluateSomeTerm fillDefault (Model ma) = gomemo

@@ -39,6 +39,7 @@ import GHC.Stack
 import GHC.TypeNats
 import Pizza.Backend.SBV.Data.SMT.Config
 import Pizza.Backend.SBV.Data.SMT.SymBiMap
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.IR.SymPrim.Data.BV
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
@@ -750,12 +751,12 @@ bvIsNonZeroFromGEq1 r1 = case unsafeAxiom :: w :~: 1 of
   Refl -> r1
 
 parseModel :: forall integerBitWidth. PizzaSMTConfig integerBitWidth -> SBVI.SMTModel -> SymBiMap -> PM.Model
-parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goassoc PM.empty assoc) uifuncs
+parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goassoc emptyModel assoc) uifuncs
   where
     goassoc :: (String, SBVI.CV) -> PM.Model -> PM.Model
     goassoc (name, cv) m = case findStringToSymbol name mp of
       Just s@(TermSymbol (_ :: R.TypeRep t) _) ->
-        PM.insert m s (resolveSingle (R.typeRep @t) cv)
+        insertValue m s (resolveSingle (R.typeRep @t) cv)
       Nothing -> error "Bad"
     resolveSingle :: R.TypeRep a -> SBVI.CV -> a
     resolveSingle t (SBVI.CV SBVI.KBool (SBVI.CInteger n)) =
@@ -873,8 +874,8 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     gouifuncs :: (String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV))) -> PM.Model -> PM.Model
     gouifuncs (name, (SBVI.SBVType _, l)) m = case findStringToSymbol name mp of
       Just s@(TermSymbol (_ :: R.TypeRep t) _) -> case R.typeRep @t of
-        t@(TFunType a r) -> R.withTypeable t $ PM.insert m s $ goutfuncResolve a r l
-        t@(GFunType a r) -> R.withTypeable t $ PM.insert m s $ gougfuncResolve 0 a r l
+        t@(TFunType a r) -> R.withTypeable t $ insertValue m s $ goutfuncResolve a r l
+        t@(GFunType a r) -> R.withTypeable t $ insertValue m s $ gougfuncResolve 0 a r l
         _ -> error "Bad"
       Nothing -> error "Bad"
 
