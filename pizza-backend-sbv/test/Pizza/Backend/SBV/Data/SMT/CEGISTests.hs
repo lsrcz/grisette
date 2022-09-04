@@ -28,7 +28,7 @@ import Pizza.IR.SymPrim.Data.SymPrim
 import Test.Tasty
 import Test.Tasty.HUnit
 
-testCegis :: (HasCallStack, ExtractSymbolics (S.HashSet TermSymbol) a, EvaluateSym Model a, Show a) => PizzaSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
+testCegis :: (HasCallStack, ExtractSymbolics SymbolSet a, EvaluateSym Model a, Show a) => PizzaSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
 testCegis config shouldSuccess a bs = do
   x <- cegisFallable' config (a, ssymb "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
   case x of

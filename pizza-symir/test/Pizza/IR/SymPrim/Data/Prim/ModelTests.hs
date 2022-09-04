@@ -5,6 +5,7 @@ module Pizza.IR.SymPrim.Data.Prim.ModelTests where
 
 import Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Pizza.Core.Data.Class.ModelOps
 import Pizza.IR.SymPrim.Data.BV
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Pizza.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -24,13 +25,13 @@ modelTests =
       dsymbol = TermSymbol (typeRep @Bool) $ SimpleSymbol "d"
       esymbol = TermSymbol (typeRep @(WordN 4)) $ SimpleSymbol "e"
       fsymbol = TermSymbol (typeRep @(IntN 4)) $ SimpleSymbol "f"
-      m1 = Model.empty
-      m2 = Model.insert m1 asymbol (1 :: Integer)
-      m3 = Model.insert m2 bsymbol True
+      m1 = emptyModel
+      m2 = insertValue m1 asymbol (1 :: Integer)
+      m3 = insertValue m2 bsymbol True
    in testGroup
         "ModelTests"
         [ testCase "empty model is really empty" $ do
-            Model.empty @=? Model M.empty,
+            emptyModel @=? Model M.empty,
           testCase "inserting to model" $ do
             m3
               @=? Model
@@ -48,14 +49,14 @@ modelTests =
             valueOf m3 bsymbol @=? Just True
             valueOf m3 csymbol @=? (Nothing :: Maybe Integer),
           testCase "exceptFor" $ do
-            exceptFor m3 (S.fromList [asymbol])
+            exceptFor m3 (SymbolSet $ S.fromList [asymbol])
               @=? Model
                 ( M.fromList
                     [ (bsymbol, toModelValue True)
                     ]
                 ),
           testCase "restrictTo" $ do
-            restrictTo m3 (S.fromList [asymbol])
+            restrictTo m3 (SymbolSet $ S.fromList [asymbol])
               @=? Model
                 ( M.fromList
                     [ (asymbol, toModelValue (1 :: Integer))
@@ -64,12 +65,13 @@ modelTests =
           testCase "extendTo" $ do
             extendTo
               m3
-              ( S.fromList
-                  [ csymbol,
-                    dsymbol,
-                    esymbol,
-                    fsymbol
-                  ]
+              ( SymbolSet $
+                  S.fromList
+                    [ csymbol,
+                      dsymbol,
+                      esymbol,
+                      fsymbol
+                    ]
               )
               @=? Model
                 ( M.fromList
@@ -84,10 +86,11 @@ modelTests =
           testCase "exact" $ do
             exact
               m3
-              ( S.fromList
-                  [ asymbol,
-                    csymbol
-                  ]
+              ( SymbolSet $
+                  S.fromList
+                    [ asymbol,
+                      csymbol
+                    ]
               )
               @=? Model
                 ( M.fromList
