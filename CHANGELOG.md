@@ -1,4 +1,4 @@
-# Changelog for `pizza`
+# Changelog for `grisette`
 
 All notable changes to this project will be documented in this file.
 

@@ -1,0 +1,36 @@
+name: grisette-lib
+version: 0.1.0.0
+synopsis: Extra Grisette library
+description: Extra Grisette library, data structures and lifted functions
+category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
+author: "Sirui Lu"
+maintainer: Sirui Lu (siruilu@cs.washington.edu)
+license: BSD3
+license-file: LICENSE
+github: lsrcz/grisette-haskell
+copyright: "2021-2022 Sirui Lu"
+
+dependencies:
+- base > 4.14 && < 5
+- grisette-core == 0.1.0.0
+- grisette-symir == 0.1.0.0
+- mtl >= 2.2.2
+- transformers >= 0.5.6.2
+
+flags: {
+  fast: {
+    description: "Compile with O2 optimization",
+    manual: False,
+    default: True,
+  }
+}
+
+when:
+  - condition: flag(fast)
+    then:
+      ghc-options: -O2
+    else:
+      ghc-options: -O0
+
+library:
+  source-dirs: src

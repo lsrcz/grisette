@@ -30,12 +30,12 @@ resolver:
 #   - auto-update
 #   - wai
 packages:
-  - pizza-symir
-  - pizza-core
-  - pizza-lib
-  - pizza-backend-sbv
-  - pizza
-  - pizza-doctest
+  - grisette-symir
+  - grisette-core
+  - grisette-lib
+  - grisette-backend-sbv
+  - grisette
+  - grisette-doctest
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as

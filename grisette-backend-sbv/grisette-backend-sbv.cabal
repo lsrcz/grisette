@@ -1,0 +1,88 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           grisette-backend-sbv
+version:        0.1.0.0
+synopsis:       Lowering symbolic primitives to SMT
+description:    Lowering symbolic primitives to SMT
+category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
+homepage:       https://github.com/lsrcz/grisette-haskell#readme
+bug-reports:    https://github.com/lsrcz/grisette-haskell/issues
+author:         Sirui Lu
+maintainer:     Sirui Lu (siruilu@cs.washington.edu)
+copyright:      2021-2022 Sirui Lu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/lsrcz/grisette-haskell
+
+flag fast
+  description: Compile with O2 optimization
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Grisette.Backend.SBV
+      Grisette.Backend.SBV.Data.SMT.Config
+      Grisette.Backend.SBV.Data.SMT.Lowering
+      Grisette.Backend.SBV.Data.SMT.Solving
+      Grisette.Backend.SBV.Data.SMT.SymBiMap
+      Grisette.Internal.Backend.SBV
+  other-modules:
+      Paths_grisette_backend_sbv
+  hs-source-dirs:
+      src
+  build-depends:
+      base >4.14 && <5
+    , deepseq >=1.4.4
+    , grisette-core ==0.1.0.0
+    , grisette-symir ==0.1.0.0
+    , hashable >=1.3
+    , mtl >=2.2.2
+    , sbv >=8.11
+    , template-haskell >=2.16
+    , unordered-containers >=0.2.11
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Grisette.Backend.SBV.Data.SMT.CEGISTests
+      Grisette.Backend.SBV.Data.SMT.LoweringTests
+      Grisette.Backend.SBV.Data.SMT.TermRewritingGen
+      Grisette.Backend.SBV.Data.SMT.TermRewritingTests
+      Paths_grisette_backend_sbv
+  hs-source-dirs:
+      test
+  build-depends:
+      base >4.14 && <5
+    , deepseq >=1.4.4
+    , grisette-backend-sbv
+    , grisette-core ==0.1.0.0
+    , grisette-symir ==0.1.0.0
+    , hashable >=1.3
+    , mtl >=2.2.2
+    , sbv >=8.11
+    , tasty >=1.1.0.3
+    , tasty-hunit >=0.10
+    , tasty-quickcheck >=0.10.1
+    , tasty-test-reporter >=0.1.1.2
+    , template-haskell >=2.16
+    , unordered-containers >=0.2.11
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010

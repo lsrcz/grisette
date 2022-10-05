@@ -1,0 +1,121 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           grisette-symir
+version:        0.1.0.0
+synopsis:       Symbolic IR
+description:    Default symbolic IR implementation for grisette
+category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
+homepage:       https://github.com/lsrcz/grisette-haskell#readme
+bug-reports:    https://github.com/lsrcz/grisette-haskell/issues
+author:         Sirui Lu
+maintainer:     Sirui Lu (siruilu@cs.washington.edu)
+copyright:      2021-2022 Sirui Lu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/lsrcz/grisette-haskell
+
+flag fast
+  description: Compile with O2 optimization
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Grisette.Internal.IR.SymPrim
+      Grisette.IR.SymPrim
+      Grisette.IR.SymPrim.Control.Monad.UnionM
+      Grisette.IR.SymPrim.Data.BV
+      Grisette.IR.SymPrim.Data.IntBitwidth
+      Grisette.IR.SymPrim.Data.Prim.Helpers
+      Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
+      Grisette.IR.SymPrim.Data.Prim.InternedTerm.GeneralFuncSubst
+      Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+      Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+      Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+      Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+      Grisette.IR.SymPrim.Data.Prim.Model
+      Grisette.IR.SymPrim.Data.Prim.ModelValue
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+      Grisette.IR.SymPrim.Data.Prim.Utils
+      Grisette.IR.SymPrim.Data.SymPrim
+      Grisette.IR.SymPrim.Data.TabularFunc
+      Grisette.IR.SymPrim.Data.Union
+  other-modules:
+      Paths_grisette_symir
+  hs-source-dirs:
+      src
+  build-depends:
+      array >=0.5.4.0
+    , base >4.14 && <5
+    , deepseq >=1.4.4
+    , grisette-core ==0.1.0.0
+    , hashable >=1.3
+    , intern >=0.9.2
+    , mtl >=2.2.2
+    , once >=0.2
+    , template-haskell >=2.16
+    , th-compat >=0.1.2
+    , unordered-containers >=0.2.11
+    , vector >=0.12.1.2
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Grisette.IR.SymPrim.Data.BVTests
+      Grisette.IR.SymPrim.Data.Prim.BitsTests
+      Grisette.IR.SymPrim.Data.Prim.BoolTests
+      Grisette.IR.SymPrim.Data.Prim.BVTests
+      Grisette.IR.SymPrim.Data.Prim.IntegerTests
+      Grisette.IR.SymPrim.Data.Prim.ModelTests
+      Grisette.IR.SymPrim.Data.Prim.NumTests
+      Grisette.IR.SymPrim.Data.Prim.TabularFuncTests
+      Grisette.IR.SymPrim.Data.SymPrimTests
+      Grisette.IR.SymPrim.Data.TabularFuncTests
+      Paths_grisette_symir
+  hs-source-dirs:
+      test
+  build-depends:
+      array >=0.5.4.0
+    , base >4.14 && <5
+    , deepseq >=1.4.4
+    , grisette-core ==0.1.0.0
+    , grisette-symir
+    , hashable >=1.3
+    , intern >=0.9.2
+    , mtl >=2.2.2
+    , once >=0.2
+    , tasty >=1.1.0.3
+    , tasty-hunit >=0.10
+    , tasty-quickcheck >=0.10.1
+    , tasty-test-reporter >=0.1.1.2
+    , template-haskell >=2.16
+    , th-compat >=0.1.2
+    , unordered-containers >=0.2.11
+    , vector >=0.12.1.2
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010

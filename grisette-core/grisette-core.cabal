@@ -1,0 +1,150 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           grisette-core
+version:        0.1.0.0
+synopsis:       Monadic symbolic compilation
+description:    Monadic library for a symbolic host language in haskell
+category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
+homepage:       https://github.com/lsrcz/grisette-haskell#readme
+bug-reports:    https://github.com/lsrcz/grisette-haskell/issues
+author:         Sirui Lu
+maintainer:     Sirui Lu (siruilu@cs.washington.edu)
+copyright:      2021-2022 Sirui Lu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/lsrcz/grisette-haskell
+
+flag fast
+  description: Compile with O2 optimization
+  manual: False
+  default: True
+
+library
+  exposed-modules:
+      Grisette.Core
+      Grisette.Core.BuiltinUnionMWrappers
+      Grisette.Core.Control.Exception
+      Grisette.Core.Control.Monad.CBMCExcept
+      Grisette.Core.Control.Monad.Union
+      Grisette.Core.Control.Monad.UnionMBase
+      Grisette.Core.Data.Class.BitVector
+      Grisette.Core.Data.Class.Bool
+      Grisette.Core.Data.Class.Error
+      Grisette.Core.Data.Class.Evaluate
+      Grisette.Core.Data.Class.ExtractSymbolics
+      Grisette.Core.Data.Class.Function
+      Grisette.Core.Data.Class.GenSym
+      Grisette.Core.Data.Class.Integer
+      Grisette.Core.Data.Class.Mergeable
+      Grisette.Core.Data.Class.ModelOps
+      Grisette.Core.Data.Class.PrimWrapper
+      Grisette.Core.Data.Class.SimpleMergeable
+      Grisette.Core.Data.Class.Solver
+      Grisette.Core.Data.Class.SOrd
+      Grisette.Core.Data.Class.ToCon
+      Grisette.Core.Data.Class.ToSym
+      Grisette.Core.Data.FileLocation
+      Grisette.Core.Data.MemoUtils
+      Grisette.Core.Data.UnionBase
+      Grisette.Core.TH
+      Grisette.Core.THCompat
+      Grisette.Internal.Core
+      Grisette.Lib.Base
+      Grisette.Lib.Control.Monad
+      Grisette.Lib.Control.Monad.Except
+      Grisette.Lib.Control.Monad.Trans
+      Grisette.Lib.Control.Monad.Trans.Cont
+      Grisette.Lib.Data.Foldable
+      Grisette.Lib.Data.Traversable
+      Grisette.Lib.Mtl
+      Grisette.TestUtils.Assertions
+      Grisette.TestUtils.Evaluate
+      Grisette.TestUtils.ExtractSymbolics
+      Grisette.TestUtils.Mergeable
+      Grisette.TestUtils.SBool
+      Grisette.TestUtils.SEq
+      Grisette.TestUtils.SOrd
+      Grisette.TestUtils.ToCon
+      Grisette.TestUtils.ToSym
+  other-modules:
+      Paths_grisette_core
+  hs-source-dirs:
+      src
+  build-depends:
+      base >4.14 && <5
+    , bytestring >=0.10.12
+    , call-stack
+    , deepseq >=1.4.4
+    , generic-deriving >=1.14.1
+    , hashable >=1.3
+    , hashtables >=1.2.3.4
+    , loch-th >=0.2.2
+    , mtl >=2.2.2
+    , template-haskell >=2.16
+    , th-compat >=0.1.2
+    , transformers >=0.5.6.2
+    , unordered-containers >=0.2.11
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Grisette.Core.Control.ExceptionTests
+      Grisette.Core.Control.Monad.UnionMBaseTests
+      Grisette.Core.Data.Class.BoolTests
+      Grisette.Core.Data.Class.EvaluateSymTests
+      Grisette.Core.Data.Class.ExtractSymbolicsTests
+      Grisette.Core.Data.Class.GenSymTests
+      Grisette.Core.Data.Class.MergeableTests
+      Grisette.Core.Data.Class.SEqTests
+      Grisette.Core.Data.Class.SimpleMergeableTests
+      Grisette.Core.Data.Class.SOrdTests
+      Grisette.Core.Data.Class.ToConTests
+      Grisette.Core.Data.Class.ToSymTests
+      Grisette.Core.Data.Class.UnionLikeTests
+      Grisette.Core.Data.UnionBaseTests
+      Grisette.Lib.Control.Monad.ExceptTests
+      Grisette.Lib.Control.Monad.TransTests
+      Grisette.Lib.Control.MonadTests
+      Grisette.Lib.Data.FoldableTests
+      Grisette.Lib.Data.TraversableTests
+      Paths_grisette_core
+  hs-source-dirs:
+      test
+  build-depends:
+      base >4.14 && <5
+    , bytestring >=0.10.12
+    , call-stack
+    , deepseq >=1.4.4
+    , generic-deriving >=1.14.1
+    , grisette-core
+    , hashable >=1.3
+    , hashtables >=1.2.3.4
+    , loch-th >=0.2.2
+    , mtl >=2.2.2
+    , tasty >=1.1.0.3
+    , tasty-hunit >=0.10
+    , tasty-quickcheck >=0.10.1
+    , tasty-test-reporter >=0.1.1.2
+    , template-haskell >=2.16
+    , th-compat >=0.1.2
+    , transformers >=0.5.6.2
+    , unordered-containers >=0.2.11
+  if flag(fast)
+    ghc-options: -O2
+  else
+    ghc-options: -O0
+  default-language: Haskell2010

@@ -53,12 +53,12 @@ jobs:
       id: cache_key
       run: |
         echo ::set-output name=stack::$(md5sum ${{ matrix.plan.build.arg }} | awk '{print $1}')
-        echo ::set-output name=core::$(md5sum pizza-core/package.yaml | awk '{print $1}')
-        echo ::set-output name=symir::$(md5sum pizza-symir/package.yaml | awk '{print $1}')
-        echo ::set-output name=lib::$(md5sum pizza-lib/package.yaml | awk '{print $1}')
-        echo ::set-output name=sbv::$(md5sum pizza-backend-sbv/package.yaml | awk '{print $1}')
-        echo ::set-output name=doctest::$(md5sum pizza-doctest/package.yaml | awk '{print $1}')
-        echo ::set-output name=pizza::$(md5sum pizza/package.yaml | awk '{print $1}')
+        echo ::set-output name=core::$(md5sum grisette-core/package.yaml | awk '{print $1}')
+        echo ::set-output name=symir::$(md5sum grisette-symir/package.yaml | awk '{print $1}')
+        echo ::set-output name=lib::$(md5sum grisette-lib/package.yaml | awk '{print $1}')
+        echo ::set-output name=sbv::$(md5sum grisette-backend-sbv/package.yaml | awk '{print $1}')
+        echo ::set-output name=doctest::$(md5sum grisette-doctest/package.yaml | awk '{print $1}')
+        echo ::set-output name=grisette::$(md5sum grisette/package.yaml | awk '{print $1}')
 
     
     - name: Cache dependencies
@@ -66,7 +66,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.stack
-        key: stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}-$${{ steps.cache_key.outputs.stack }}-$${{ steps.cache_key.outputs.core }}-$${{ steps.cache_key.outputs.symir }}-$${{ steps.cache_key.outputs.lib }}-$${{ steps.cache_key.outputs.sbv }}-$${{ steps.cache_key.outputs.doctest }}-$${{ steps.cache_key.outputs.pizza }}
+        key: stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}-$${{ steps.cache_key.outputs.stack }}-$${{ steps.cache_key.outputs.core }}-$${{ steps.cache_key.outputs.symir }}-$${{ steps.cache_key.outputs.lib }}-$${{ steps.cache_key.outputs.sbv }}-$${{ steps.cache_key.outputs.doctest }}-$${{ steps.cache_key.outputs.grisette }}
         restore-keys: |
           stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}-$${{ steps.cache_key.outputs.stack }}
           stack-${{ matrix.os }}-$${{ matrix.plan.build }}-$${{ matrix.plan.arg }}
