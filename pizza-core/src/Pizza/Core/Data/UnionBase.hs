@@ -166,7 +166,7 @@ ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFal
     ssIf cond' ifTrue' ifFalse'
       | idxt < idxf = ifWithLeftMost True cond' ifTrue' ifFalse'
       | idxt == idxf = ifWithStrategyInv (substrategy idxt) cond' ifTrue' ifFalse'
-      | otherwise = ifWithStrategyInv strategy (nots cond') ifFalse' ifTrue'
+      | otherwise = ifWithLeftMost True (nots cond') ifFalse' ifTrue'
       where
         idxt = idxFun $ leftMost ifTrue'
         idxf = idxFun $ leftMost ifFalse'
