@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -49,11 +49,11 @@ library
     , sbv >=8.11
     , template-haskell >=2.16
     , unordered-containers >=0.2.11
+  default-language: Haskell2010
   if flag(fast)
     ghc-options: -O2
   else
     ghc-options: -O0
-  default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -81,8 +81,8 @@ test-suite spec
     , tasty-test-reporter >=0.1.1.2
     , template-haskell >=2.16
     , unordered-containers >=0.2.11
+  default-language: Haskell2010
   if flag(fast)
     ghc-options: -O2
   else
     ghc-options: -O0
-  default-language: Haskell2010
