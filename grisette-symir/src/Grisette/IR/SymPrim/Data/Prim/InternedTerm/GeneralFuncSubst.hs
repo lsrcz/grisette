@@ -20,10 +20,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
 
-generalFuncSubst :: forall a b. (SupportedPrim a, SupportedPrim b) => TermSymbol -> Term a -> Term b -> Term b
-generalFuncSubst sym@(TermSymbol tc _) term input = case eqTypeRep tc (typeRep @a) of
-  Just HRefl -> gov input
-  Nothing -> error "Bad symbol type"
+generalFuncSubst :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
+generalFuncSubst sym term input = gov input
   where
     gov :: (SupportedPrim x) => Term x -> Term x
     gov b = case go (SomeTerm b) of
@@ -35,13 +33,13 @@ generalFuncSubst sym@(TermSymbol tc _) term input = case eqTypeRep tc (typeRep @
           App (App gf _) _ ->
             case eqTypeRep gf (typeRep @(-->)) of
               Just HRefl -> case cv of
-                GeneralFunc p1 sym1 tm1 ->
-                  if TermSymbol p1 sym1 == sym
+                GeneralFunc sym1 tm1 ->
+                  if someTypedSymbol sym1 == someTypedSymbol sym
                     then stm
-                    else SomeTerm $ concTerm $ GeneralFunc p1 sym1 (gov tm1)
+                    else SomeTerm $ concTerm $ GeneralFunc sym1 (gov tm1)
               Nothing -> stm
           _ -> stm
-        SymbTerm _ ts -> SomeTerm $ if ts == sym then unsafeCoerce term else tm
+        SymbTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
         UnaryTerm _ tag te -> SomeTerm $ partialEvalUnary tag (gov te)
         BinaryTerm _ tag te te' -> SomeTerm $ partialEvalBinary tag (gov te) (gov te')
         TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ partialEvalTernary tag (gov op1) (gov op2) (gov op3)

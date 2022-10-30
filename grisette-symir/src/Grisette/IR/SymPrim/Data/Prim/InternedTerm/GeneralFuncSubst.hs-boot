@@ -4,4 +4,4 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.GeneralFuncSubst (generalFuncS
 
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 
-generalFuncSubst :: forall a b. (SupportedPrim a, SupportedPrim b) => TermSymbol -> Term a -> Term b -> Term b
+generalFuncSubst :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b

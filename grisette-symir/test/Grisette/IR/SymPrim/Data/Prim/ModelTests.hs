@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Grisette.IR.SymPrim.Data.Prim.ModelTests where
@@ -19,14 +20,14 @@ import Type.Reflection
 
 modelTests :: TestTree
 modelTests =
-  let asymbol = TermSymbol (typeRep @Integer) (SimpleSymbol "a")
-      bsymbol = TermSymbol (typeRep @Bool) (SimpleSymbol "b")
-      csymbol = TermSymbol (typeRep @Integer) (SimpleSymbol "c")
-      dsymbol = TermSymbol (typeRep @Bool) $ SimpleSymbol "d"
-      esymbol = TermSymbol (typeRep @(WordN 4)) $ SimpleSymbol "e"
-      fsymbol = TermSymbol (typeRep @(IntN 4)) $ SimpleSymbol "f"
+  let asymbol :: TypedSymbol Integer = TypedSymbol (SimpleSymbol "a")
+      bsymbol :: TypedSymbol Bool = TypedSymbol (SimpleSymbol "b")
+      csymbol :: TypedSymbol Integer = TypedSymbol (SimpleSymbol "c")
+      dsymbol :: TypedSymbol Bool = TypedSymbol $ SimpleSymbol "d"
+      esymbol :: TypedSymbol (WordN 4) = TypedSymbol $ SimpleSymbol "e"
+      fsymbol :: TypedSymbol (IntN 4) = TypedSymbol $ SimpleSymbol "f"
       m1 = emptyModel
-      m2 = insertValue asymbol (1 :: Integer) m1
+      m2 = insertValue asymbol 1 m1
       m3 = insertValue bsymbol True m2
    in testGroup
         "ModelTests"
@@ -36,8 +37,8 @@ modelTests =
             m3
               @=? Model
                 ( M.fromList
-                    [ (asymbol, toModelValue (1 :: Integer)),
-                      (bsymbol, toModelValue True)
+                    [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                      (someTypedSymbol bsymbol, toModelValue True)
                     ]
                 ),
           testCase "equation" $ do
@@ -49,53 +50,53 @@ modelTests =
             valueOf bsymbol m3 @=? Just True
             valueOf csymbol m3 @=? (Nothing :: Maybe Integer),
           testCase "exceptFor" $ do
-            exceptFor (SymbolSet $ S.fromList [asymbol]) m3
+            exceptFor (SymbolSet $ S.fromList [someTypedSymbol asymbol]) m3
               @=? Model
                 ( M.fromList
-                    [ (bsymbol, toModelValue True)
+                    [ (someTypedSymbol bsymbol, toModelValue True)
                     ]
                 ),
           testCase "restrictTo" $ do
-            restrictTo (SymbolSet $ S.fromList [asymbol]) m3
+            restrictTo (SymbolSet $ S.fromList [someTypedSymbol asymbol]) m3
               @=? Model
                 ( M.fromList
-                    [ (asymbol, toModelValue (1 :: Integer))
+                    [ (someTypedSymbol asymbol, toModelValue (1 :: Integer))
                     ]
                 ),
           testCase "extendTo" $ do
             extendTo
               ( SymbolSet $
                   S.fromList
-                    [ csymbol,
-                      dsymbol,
-                      esymbol,
-                      fsymbol
+                    [ someTypedSymbol csymbol,
+                      someTypedSymbol dsymbol,
+                      someTypedSymbol esymbol,
+                      someTypedSymbol fsymbol
                     ]
               )
               m3
               @=? Model
                 ( M.fromList
-                    [ (asymbol, toModelValue (1 :: Integer)),
-                      (bsymbol, toModelValue True),
-                      (csymbol, toModelValue (0 :: Integer)),
-                      (dsymbol, toModelValue False),
-                      (esymbol, toModelValue (0 :: WordN 4)),
-                      (fsymbol, toModelValue (0 :: IntN 4))
+                    [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                      (someTypedSymbol bsymbol, toModelValue True),
+                      (someTypedSymbol csymbol, toModelValue (0 :: Integer)),
+                      (someTypedSymbol dsymbol, toModelValue False),
+                      (someTypedSymbol esymbol, toModelValue (0 :: WordN 4)),
+                      (someTypedSymbol fsymbol, toModelValue (0 :: IntN 4))
                     ]
                 ),
           testCase "exact" $ do
             exact
               ( SymbolSet $
                   S.fromList
-                    [ asymbol,
-                      csymbol
+                    [ someTypedSymbol asymbol,
+                      someTypedSymbol csymbol
                     ]
               )
               m3
               @=? Model
                 ( M.fromList
-                    [ (asymbol, toModelValue (1 :: Integer)),
-                      (csymbol, toModelValue (0 :: Integer))
+                    [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                      (someTypedSymbol csymbol, toModelValue (0 :: Integer))
                     ]
                 ),
           testCase "evaluateTerm" $ do

@@ -355,7 +355,7 @@ buildUTFunc11 config ta tb term@(SymbTerm _ ts) m = case ((config, ta), (config,
   (ResolvedSimpleType, ResolvedSimpleType) ->
     let name = "ufunc_" ++ show (sizeBiMap m)
         f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name ts m, f)
+     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
 buildUTFunc11 _ _ _ _ _ = error "Should only be called on SymbTerm"
 
@@ -375,7 +375,7 @@ buildUTFunc111 config ta tb tc term@(SymbTerm _ ts) m = case ((config, ta), (con
         f =
           SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3)
             name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name ts m, f)
+     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
 buildUTFunc111 _ _ _ _ _ _ = error "Should only be called on SymbTerm"
 
@@ -392,7 +392,7 @@ buildUGFunc11 config ta tb term@(SymbTerm _ ts) m = case ((config, ta), (config,
   (ResolvedSimpleType, ResolvedSimpleType) ->
     let name = "ufunc_" ++ show (sizeBiMap m)
         f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name ts m, f)
+     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
 buildUGFunc11 _ _ _ _ _ = error "Should only be called on SymbTerm"
 
@@ -412,7 +412,7 @@ buildUGFunc111 config ta tb tc term@(SymbTerm _ ts) m = case ((config, ta), (con
         f =
           SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3)
             name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name ts m, f)
+     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
 buildUGFunc111 _ _ _ _ _ _ = error "Should only be called on SymbTerm"
 
@@ -555,7 +555,7 @@ lowerSinglePrimImpl config t@(SymbTerm _ ts) m =
       ResolvedSimpleType -> Just $ do
         let name = show ts
         (g :: TermTy integerBitWidth a) <- SBV.free name
-        return (addBiMap (SomeTerm t) (toDyn g) name ts m, g)
+        return (addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m, g)
       _ -> Nothing
     ufunc :: (Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)))
     ufunc = lowerSinglePrimUFunc config t m
@@ -755,7 +755,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
   where
     goassoc :: (String, SBVI.CV) -> PM.Model -> PM.Model
     goassoc (name, cv) m = case findStringToSymbol name mp of
-      Just s@(TermSymbol (_ :: R.TypeRep t) _) ->
+      Just (SomeTypedSymbol (_ :: R.TypeRep t) s@(TypedSymbol _)) ->
         insertValue s (resolveSingle (R.typeRep @t) cv) m
       Nothing -> error "Bad"
     resolveSingle :: R.TypeRep a -> SBVI.CV -> a
@@ -831,7 +831,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
                   )
                   (concTerm def)
                   funs
-           in GeneralFunc R.typeRep symb body
+           in GeneralFunc (TypedSymbol symb) body
         _ ->
           let symb = WithInfo (IndexedSymbol "arg" idx) FuncArg
               vs = bimap (resolveSingle ta1 . head) (resolveSingle ta2) <$> l
@@ -846,7 +846,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
                   )
                   (concTerm def)
                   vs
-           in GeneralFunc R.typeRep symb body
+           in GeneralFunc (TypedSymbol symb) body
     partition :: R.TypeRep a -> [([SBVI.CV], SBVI.CV)] -> [(a, [([SBVI.CV], SBVI.CV)])]
     partition t = case (R.eqTypeRep t (R.typeRep @Bool), R.eqTypeRep t (R.typeRep @Integer)) of
       (Just R.HRefl, _) -> partitionWithOrd . resolveFirst t
@@ -873,7 +873,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
 
     gouifuncs :: (String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV))) -> PM.Model -> PM.Model
     gouifuncs (name, (SBVI.SBVType _, l)) m = case findStringToSymbol name mp of
-      Just s@(TermSymbol (_ :: R.TypeRep t) _) -> case R.typeRep @t of
+      Just (SomeTypedSymbol (_ :: R.TypeRep t) s@(TypedSymbol _)) -> case R.typeRep @t of
         t@(TFunType a r) -> R.withTypeable t $ insertValue s (goutfuncResolve a r l) m
         t@(GFunType a r) -> R.withTypeable t $ insertValue s (gougfuncResolve 0 a r l) m
         _ -> error "Bad"

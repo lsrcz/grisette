@@ -14,7 +14,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     BinaryOp (..),
     TernaryOp (..),
     Symbol (..),
-    TermSymbol (..),
+    TypedSymbol (..),
+    SomeTypedSymbol (..),
     Term (..),
     UTerm (..),
     type (-->) (..),
@@ -101,12 +102,15 @@ data Symbol where
   IndexedSymbol :: String -> Int -> Symbol
   WithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => Symbol -> a -> Symbol
 
-data TermSymbol where
-  TermSymbol :: forall t. (SupportedPrim t) => TypeRep t -> Symbol -> TermSymbol
+data TypedSymbol t where
+  TypedSymbol :: (SupportedPrim t) => Symbol -> TypedSymbol t
+
+data SomeTypedSymbol where
+  SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
 
 data Term t where
   ConcTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !TermSymbol -> Term t
+  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -206,7 +210,7 @@ data Term t where
 
 data UTerm t where
   UConcTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymbTerm :: (SupportedPrim t) => !TermSymbol -> UTerm t
+  USymbTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -293,6 +297,6 @@ data UTerm t where
   UModIntegerTerm :: Term Integer -> Term Integer -> UTerm Integer
 
 data (-->) a b where
-  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypeRep a -> Symbol -> Term b -> a --> b
+  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 infixr 0 -->
