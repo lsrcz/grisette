@@ -66,7 +66,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
       next md origm = do
         let newtm =
               S.foldl'
-                (\acc v -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation md v)))
+                (\acc v -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md)))
                 (concTerm False)
                 (unSymbolSet allSymbols)
         let (lowered, newm) = lowerSinglePrim' config newtm origm
@@ -109,7 +109,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
             md <- SBVC.getModel
             return $ Right $ parseModel config md newm
           _ -> return $ Left r
-        loop ((`exceptFor` forallSymbols) <$> mr) [] newm
+        loop (exceptFor forallSymbols <$> mr) [] newm
     where
       forallSymbols :: SymbolSet
       forallSymbols = extractSymbolics foralls
@@ -121,7 +121,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
         r <- solveFormula config evaluated
         return $ do
           m <- r
-          let newm = exact m forallSymbols
+          let newm = exact forallSymbols m
           return (evaluateSym False newm foralls, newm)
       guess :: Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
       guess candidate origm = do
@@ -133,7 +133,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
           SBVC.Sat -> do
             md <- SBVC.getModel
             let model = parseModel config md newm
-            return (newm, Right $ exceptFor model forallSymbols)
+            return (newm, Right $ exceptFor forallSymbols model)
           _ -> return (newm, Left r)
       loop ::
         Either SBVC.CheckSatResult PM.Model ->

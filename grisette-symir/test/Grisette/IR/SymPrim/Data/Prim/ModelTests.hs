@@ -26,8 +26,8 @@ modelTests =
       esymbol = TermSymbol (typeRep @(WordN 4)) $ SimpleSymbol "e"
       fsymbol = TermSymbol (typeRep @(IntN 4)) $ SimpleSymbol "f"
       m1 = emptyModel
-      m2 = insertValue m1 asymbol (1 :: Integer)
-      m3 = insertValue m2 bsymbol True
+      m2 = insertValue asymbol (1 :: Integer) m1
+      m3 = insertValue bsymbol True m2
    in testGroup
         "ModelTests"
         [ testCase "empty model is really empty" $ do
@@ -41,22 +41,22 @@ modelTests =
                     ]
                 ),
           testCase "equation" $ do
-            equation m3 asymbol @=? Just (pevalEqvTerm (ssymbTerm "a") (concTerm 1 :: Term Integer))
-            equation m3 bsymbol @=? Just (pevalEqvTerm (ssymbTerm "b") (concTerm True))
-            equation m3 csymbol @=? Nothing,
+            equation asymbol m3 @=? Just (pevalEqvTerm (ssymbTerm "a") (concTerm 1 :: Term Integer))
+            equation bsymbol m3 @=? Just (pevalEqvTerm (ssymbTerm "b") (concTerm True))
+            equation csymbol m3 @=? Nothing,
           testCase "valueOf" $ do
-            valueOf m3 asymbol @=? Just (1 :: Integer)
-            valueOf m3 bsymbol @=? Just True
-            valueOf m3 csymbol @=? (Nothing :: Maybe Integer),
+            valueOf asymbol m3 @=? Just (1 :: Integer)
+            valueOf bsymbol m3 @=? Just True
+            valueOf csymbol m3 @=? (Nothing :: Maybe Integer),
           testCase "exceptFor" $ do
-            exceptFor m3 (SymbolSet $ S.fromList [asymbol])
+            exceptFor (SymbolSet $ S.fromList [asymbol]) m3
               @=? Model
                 ( M.fromList
                     [ (bsymbol, toModelValue True)
                     ]
                 ),
           testCase "restrictTo" $ do
-            restrictTo m3 (SymbolSet $ S.fromList [asymbol])
+            restrictTo (SymbolSet $ S.fromList [asymbol]) m3
               @=? Model
                 ( M.fromList
                     [ (asymbol, toModelValue (1 :: Integer))
@@ -64,7 +64,6 @@ modelTests =
                 ),
           testCase "extendTo" $ do
             extendTo
-              m3
               ( SymbolSet $
                   S.fromList
                     [ csymbol,
@@ -73,6 +72,7 @@ modelTests =
                       fsymbol
                     ]
               )
+              m3
               @=? Model
                 ( M.fromList
                     [ (asymbol, toModelValue (1 :: Integer)),
@@ -85,13 +85,13 @@ modelTests =
                 ),
           testCase "exact" $ do
             exact
-              m3
               ( SymbolSet $
                   S.fromList
                     [ asymbol,
                       csymbol
                     ]
               )
+              m3
               @=? Model
                 ( M.fromList
                     [ (asymbol, toModelValue (1 :: Integer)),
