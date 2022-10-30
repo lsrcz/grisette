@@ -24,6 +24,7 @@ import Data.Typeable
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFunc ()
+import qualified Type.Reflection as R
 
 identity :: Term t -> Id
 identity (ConcTerm i _) = i
@@ -124,10 +125,10 @@ introSupportedPrimConstraint DivIntegerTerm {} x = x
 introSupportedPrimConstraint ModIntegerTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
-extractSymbolicsSomeTerm :: SomeTerm -> S.HashSet TermSymbol
+extractSymbolicsSomeTerm :: SomeTerm -> S.HashSet SomeTypedSymbol
 extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
   where
-    gocached :: SomeTerm -> State (M.HashMap SomeTerm (S.HashSet TermSymbol)) (S.HashSet TermSymbol)
+    gocached :: SomeTerm -> State (M.HashMap SomeTerm (S.HashSet SomeTypedSymbol)) (S.HashSet SomeTypedSymbol)
     gocached t = do
       v <- gets (M.lookup t)
       case v of
@@ -137,9 +138,9 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
           st <- get
           put $ M.insert t res st
           return res
-    go :: SomeTerm -> State (M.HashMap SomeTerm (S.HashSet TermSymbol)) (S.HashSet TermSymbol)
+    go :: SomeTerm -> State (M.HashMap SomeTerm (S.HashSet SomeTypedSymbol)) (S.HashSet SomeTypedSymbol)
     go (SomeTerm ConcTerm {}) = return S.empty
-    go (SomeTerm (SymbTerm _ symb)) = return $ S.singleton symb
+    go (SomeTerm (SymbTerm _ (symb :: TypedSymbol a))) = return $ S.singleton $ SomeTypedSymbol (R.typeRep @a) symb
     go (SomeTerm (UnaryTerm _ _ arg)) = goUnary arg
     go (SomeTerm (BinaryTerm _ _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (TernaryTerm _ _ arg1 arg2 arg3)) = goTernary arg1 arg2 arg3
@@ -180,7 +181,7 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
       return $ r1 <> r2 <> r3
 {-# INLINEABLE extractSymbolicsSomeTerm #-}
 
-extractSymbolicsTerm :: (SupportedPrim a) => Term a -> S.HashSet TermSymbol
+extractSymbolicsTerm :: (SupportedPrim a) => Term a -> S.HashSet SomeTypedSymbol
 extractSymbolicsTerm t = extractSymbolicsSomeTerm (SomeTerm t)
 {-# INLINE extractSymbolicsTerm #-}
 
@@ -219,7 +220,7 @@ castTerm t@ModIntegerTerm {} = cast t
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
 pformat (ConcTerm _ t) = pformatConc t
-pformat (SymbTerm _ (TermSymbol _ symb)) = pformatSymb (Proxy @t) symb
+pformat (SymbTerm _ symb) = pformatSymb symb
 pformat (UnaryTerm _ tag arg1) = pformatUnary tag arg1
 pformat (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
 pformat (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3

@@ -11,18 +11,22 @@ where
 import Data.Hashable
 import Data.Typeable
 
-class Monoid symbolSet => SymbolSetOps symbolSet symbol | symbolSet -> symbol where
+class Monoid symbolSet => SymbolSetOps symbolSet typedSymbol | symbolSet -> typedSymbol where
   emptySet :: symbolSet
-  containsSymbol :: symbol -> symbolSet -> Bool
-  insertSymbol :: symbol -> symbolSet -> symbolSet
+  containsSymbol :: forall a. typedSymbol a -> symbolSet -> Bool
+  insertSymbol :: forall a. typedSymbol a -> symbolSet -> symbolSet
   intersectionSet :: symbolSet -> symbolSet -> symbolSet
   unionSet :: symbolSet -> symbolSet -> symbolSet
   differenceSet :: symbolSet -> symbolSet -> symbolSet
 
-class SymbolSetOps symbolSet symbol => ModelOps model symbolSet symbol | model -> symbolSet symbol where
+class
+  SymbolSetOps symbolSet typedSymbol =>
+  ModelOps model symbolSet typedSymbol
+    | model -> symbolSet typedSymbol
+  where
   emptyModel :: model
-  valueOf :: forall t. (Typeable t) => symbol -> model -> Maybe t
-  insertValue :: (Eq a, Show a, Hashable a, Typeable a) => symbol -> a -> model -> model
+  valueOf :: typedSymbol t -> model -> Maybe t
+  insertValue :: typedSymbol t -> t -> model -> model
   exceptFor :: symbolSet -> model -> model
   restrictTo :: symbolSet -> model -> model
   extendTo :: symbolSet -> model -> model

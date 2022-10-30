@@ -39,21 +39,22 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
 
-newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet TermSymbol}
+newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
   deriving (Eq, Show, Generic, Hashable, Semigroup, Monoid)
 
-newtype Model = Model {unModel :: M.HashMap TermSymbol ModelValue} deriving (Show, Eq, Generic, Hashable)
+newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Show, Eq, Generic, Hashable)
 
-equation :: TermSymbol -> Model -> Maybe (Term Bool)
-equation tsym@(TermSymbol (_ :: TypeRep a) sym) m =
+equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
+equation tsym m = withSymbolSupported tsym $
   case valueOf tsym m of
-    Just (v :: a) -> Just $ pevalEqvTerm (symbTerm sym) (concTerm v)
+    Just v -> Just $ pevalEqvTerm (symbTerm tsym) (concTerm v)
     Nothing -> Nothing
 
-instance SymbolSetOps SymbolSet TermSymbol where
+instance SymbolSetOps SymbolSet TypedSymbol where
   emptySet = SymbolSet S.empty
-  containsSymbol s = S.member s . unSymbolSet
-  insertSymbol s = SymbolSet . S.insert s . unSymbolSet
+  containsSymbol s =
+    S.member (someTypedSymbol s) . unSymbolSet
+  insertSymbol s = SymbolSet . S.insert (someTypedSymbol s) . unSymbolSet
   intersectionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.intersection s1 s2
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
@@ -61,12 +62,13 @@ instance SymbolSetOps SymbolSet TermSymbol where
 instance ExtractSymbolics SymbolSet SymbolSet where
   extractSymbolics = id
 
-instance ModelOps Model SymbolSet TermSymbol where
+instance ModelOps Model SymbolSet TypedSymbol where
   emptyModel = Model M.empty
-  valueOf :: forall t. (Typeable t) => TermSymbol -> Model -> Maybe t
+  valueOf :: forall t. TypedSymbol t -> Model -> Maybe t
   valueOf sym (Model m) =
-    (unsafeFromModelValue @t)
-      <$> M.lookup sym m
+    withSymbolSupported sym $
+      (unsafeFromModelValue @t)
+        <$> M.lookup (someTypedSymbol sym) m
   exceptFor (SymbolSet s) (Model m) = Model $ S.foldl' (flip M.delete) m s
   restrictTo (SymbolSet s) (Model m) =
     Model $
@@ -80,16 +82,16 @@ instance ModelOps Model SymbolSet TermSymbol where
   extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
-        ( \acc sym@(TermSymbol (_ :: TypeRep t) _) -> case M.lookup sym acc of
+        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedSymbol t)) -> case M.lookup sym acc of
             Just _ -> acc
-            Nothing -> M.insert sym (defaultValueDynamic (Proxy @t)) acc
+            Nothing -> withSymbolSupported tsym $ M.insert sym (defaultValueDynamic (Proxy @t)) acc
         )
         m
         s
-  insertValue sym@(TermSymbol p _) v (Model m) =
-    case eqTypeRep p (typeOf v) of
-      Just HRefl -> Model $ M.insert sym (toModelValue v) m
-      _ -> error "Bad value type"
+  insertValue sym (v :: t) (Model m) =
+    withSymbolSupported sym $
+      Model $
+        M.insert (someTypedSymbol sym) (toModelValue v) m
 
 evaluateSomeTerm :: Bool -> Model -> SomeTerm -> SomeTerm
 evaluateSomeTerm fillDefault (Model ma) = gomemo
@@ -99,9 +101,10 @@ evaluateSomeTerm fillDefault (Model ma) = gomemo
     gotyped a = case gomemo (SomeTerm a) of
       SomeTerm v -> unsafeCoerce v
     go c@(SomeTerm ConcTerm {}) = c
-    go c@(SomeTerm ((SymbTerm _ sym@(TermSymbol (_ :: TypeRep t) _)) :: Term a)) = case M.lookup sym ma of
-      Nothing -> if fillDefault then SomeTerm $ concTerm (defaultValue @t) else c
-      Just dy -> SomeTerm $ concTerm (unsafeFromModelValue @a dy)
+    go c@(SomeTerm ((SymbTerm _ sym) :: Term a)) =
+      case M.lookup (someTypedSymbol sym) ma of
+        Nothing -> if fillDefault then SomeTerm $ concTerm (defaultValue @a) else c
+        Just dy -> SomeTerm $ concTerm (unsafeFromModelValue @a dy)
     go (SomeTerm (UnaryTerm _ tag (arg :: Term a))) = goUnary (partialEvalUnary tag) arg
     go (SomeTerm (BinaryTerm _ tag (arg1 :: Term a1) (arg2 :: Term a2))) =
       goBinary (partialEvalBinary tag) arg1 arg2

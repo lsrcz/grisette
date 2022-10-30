@@ -20,7 +20,7 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 identity :: Term t -> Id
 identityWithTypeRep :: forall t. Term t -> (TypeRep, Id)
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
-extractSymbolicsTerm :: (SupportedPrim a) => Term a -> S.HashSet TermSymbol
+extractSymbolicsTerm :: (SupportedPrim a) => Term a -> S.HashSet SomeTypedSymbol
 castTerm :: forall a b. (Typeable b) => Term a -> Maybe (Term b)
 pformat :: forall t. (SupportedPrim t) => Term t -> String
 termsSize :: [Term a] -> Int

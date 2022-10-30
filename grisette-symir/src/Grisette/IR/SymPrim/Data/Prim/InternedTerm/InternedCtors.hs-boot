@@ -73,7 +73,7 @@ constructTernary ::
   Term arg3 ->
   Term t
 concTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
-symbTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
+symbTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
 ssymbTerm :: (SupportedPrim t, Typeable t) => String -> Term t
 isymbTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
 sinfosymbTerm ::

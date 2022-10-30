@@ -66,7 +66,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
       next md origm = do
         let newtm =
               S.foldl'
-                (\acc v -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md)))
+                (\acc (SomeTypedSymbol _ v) -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md)))
                 (concTerm False)
                 (unSymbolSet allSymbols)
         let (lowered, newm) = lowerSinglePrim' config newtm origm

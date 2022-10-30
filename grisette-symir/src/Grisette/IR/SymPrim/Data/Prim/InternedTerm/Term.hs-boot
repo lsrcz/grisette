@@ -13,8 +13,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),
-    Symbol (..),
-    TermSymbol (..),
+    TypedSymbol (..),
+    SomeTypedSymbol (..),
     Term (..),
     UTerm (..),
     type (-->) (..),
@@ -47,8 +47,8 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   pformatConc :: t -> String
   default pformatConc :: (Show t) => t -> String
   pformatConc = show
-  pformatSymb :: proxy t -> Symbol -> String
-  pformatSymb _ = show
+  pformatSymb :: TypedSymbol t -> String
+  pformatSymb _ = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
@@ -96,17 +96,29 @@ class
   partialEvalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
-data Symbol where
-  SimpleSymbol :: String -> Symbol
-  IndexedSymbol :: String -> Int -> Symbol
-  WithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => Symbol -> a -> Symbol
+data TypedSymbol t where
+  SimpleSymbol :: SupportedPrim t => String -> TypedSymbol t
+  IndexedSymbol :: SupportedPrim t => String -> Int -> TypedSymbol t
+  WithInfo ::
+    forall t a.
+    ( SupportedPrim t,
+      Typeable a,
+      Ord a,
+      Lift a,
+      NFData a,
+      Show a,
+      Hashable a
+    ) =>
+    TypedSymbol t ->
+    a ->
+    TypedSymbol t
 
-data TermSymbol where
-  TermSymbol :: forall t. (SupportedPrim t) => TypeRep t -> Symbol -> TermSymbol
+data SomeTypedSymbol where
+  SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
 
 data Term t where
   ConcTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !TermSymbol -> Term t
+  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -206,7 +218,7 @@ data Term t where
 
 data UTerm t where
   UConcTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymbTerm :: (SupportedPrim t) => !TermSymbol -> UTerm t
+  USymbTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -293,6 +305,6 @@ data UTerm t where
   UModIntegerTerm :: Term Integer -> Term Integer -> UTerm Integer
 
 data (-->) a b where
-  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypeRep a -> Symbol -> Term b -> a --> b
+  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 infixr 0 -->

@@ -37,7 +37,7 @@ import Generics.Deriving
 --
 -- >>> :{
 --   sort $ HashSet.toList $ unSymbolSet $
---     extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [TermSymbol]
+--     extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [SomeTypedSymbol]
 -- :}
 -- [a :: Bool,b :: Bool,c :: Bool,d :: Bool]
 class (Monoid symbolSet) => ExtractSymbolics symbolSet a where

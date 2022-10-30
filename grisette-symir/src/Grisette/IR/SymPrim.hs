@@ -18,9 +18,10 @@ module Grisette.IR.SymPrim
     SymWordN,
     SymbolSet (..),
     Model (..),
-    Symbol (..),
-    TermSymbol (..),
-    termSymbol,
+    TypedSymbol (..),
+    withSymbolSupported,
+    SomeTypedSymbol (..),
+    someTypedSymbol,
     evaluateTerm,
     SupportedPrim,
   )

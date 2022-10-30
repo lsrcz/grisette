@@ -19,7 +19,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 
 data SymBiMap = SymBiMap
   { biMapToSBV :: M.HashMap SomeTerm Dynamic,
-    biMapFromSBV :: M.HashMap String TermSymbol
+    biMapFromSBV :: M.HashMap String SomeTypedSymbol
   }
   deriving (Show)
 
@@ -29,13 +29,13 @@ emptySymBiMap = SymBiMap M.empty M.empty
 sizeBiMap :: SymBiMap -> Int
 sizeBiMap = M.size . biMapToSBV
 
-addBiMap :: HasCallStack => SomeTerm -> Dynamic -> String -> TermSymbol -> SymBiMap -> SymBiMap
+addBiMap :: HasCallStack => SomeTerm -> Dynamic -> String -> SomeTypedSymbol -> SymBiMap -> SymBiMap
 addBiMap s d n sb (SymBiMap t f) = SymBiMap (M.insert s d t) (M.insert n sb f)
 
 addBiMapIntermediate :: HasCallStack => SomeTerm -> Dynamic -> SymBiMap -> SymBiMap
 addBiMapIntermediate s d (SymBiMap t f) = SymBiMap (M.insert s d t) f
 
-findStringToSymbol :: String -> SymBiMap -> Maybe TermSymbol
+findStringToSymbol :: String -> SymBiMap -> Maybe SomeTypedSymbol
 findStringToSymbol s (SymBiMap _ f) = M.lookup s f
 
 lookupTerm :: HasCallStack => SomeTerm -> SymBiMap -> Maybe Dynamic
