@@ -110,9 +110,9 @@ symPrimTests =
             extractSymbolics (ites ("c" :: Sym Bool) ("a" :: Sym Integer) ("b" :: Sym Integer))
               @=? SymbolSet
                 ( S.fromList
-                    [ (someTypedSymbol (SimpleSymbol "c" :: TypedSymbol Bool)),
-                      (someTypedSymbol (SimpleSymbol "a" :: TypedSymbol Integer)),
-                      (someTypedSymbol (SimpleSymbol "b" :: TypedSymbol Integer))
+                    [ someTypedSymbol (SimpleSymbol "c" :: TypedSymbol Bool),
+                      someTypedSymbol (SimpleSymbol "a" :: TypedSymbol Integer),
+                      someTypedSymbol (SimpleSymbol "b" :: TypedSymbol Integer)
                     ]
                 ),
           testCase "GenSym" $ do

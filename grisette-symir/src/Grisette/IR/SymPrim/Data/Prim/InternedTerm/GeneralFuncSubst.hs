@@ -21,7 +21,7 @@ import Type.Reflection
 import Unsafe.Coerce
 
 generalFuncSubst :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
-generalFuncSubst sym term input = gov input
+generalFuncSubst sym term = gov
   where
     gov :: (SupportedPrim x) => Term x -> Term x
     gov b = case go (SomeTerm b) of
