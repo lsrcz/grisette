@@ -220,7 +220,7 @@ castTerm t@ModIntegerTerm {} = cast t
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
 pformat (ConcTerm _ t) = pformatConc t
-pformat (SymbTerm _ (TypedSymbol symb)) = pformatSymb (Proxy @t) symb
+pformat (SymbTerm _ symb) = pformatSymb symb
 pformat (UnaryTerm _ tag arg1) = pformatUnary tag arg1
 pformat (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
 pformat (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3

@@ -101,8 +101,8 @@ symPrimTests =
             ],
           testCase "EvaluateSym" $ do
             let m1 = emptyModel :: Model
-            let m2 = insertValue (TypedSymbol (SimpleSymbol "a")) (1 :: Integer) m1
-            let m3 = insertValue (TypedSymbol (SimpleSymbol "b")) True m2
+            let m2 = insertValue (SimpleSymbol "a") (1 :: Integer) m1
+            let m3 = insertValue (SimpleSymbol "b") True m2
             evaluateSym False m3 (ites ("c" :: Sym Bool) "a" ("a" + "a" :: Sym Integer))
               @=? ites ("c" :: Sym Bool) 1 2
             evaluateSym True m3 (ites ("c" :: Sym Bool) "a" ("a" + "a" :: Sym Integer)) @=? 2,
@@ -110,9 +110,9 @@ symPrimTests =
             extractSymbolics (ites ("c" :: Sym Bool) ("a" :: Sym Integer) ("b" :: Sym Integer))
               @=? SymbolSet
                 ( S.fromList
-                    [ (someTypedSymbol (TypedSymbol (SimpleSymbol "c") :: TypedSymbol Bool)),
-                      (someTypedSymbol (TypedSymbol (SimpleSymbol "a") :: TypedSymbol Integer)),
-                      (someTypedSymbol (TypedSymbol (SimpleSymbol "b") :: TypedSymbol Integer))
+                    [ (someTypedSymbol (SimpleSymbol "c" :: TypedSymbol Bool)),
+                      (someTypedSymbol (SimpleSymbol "a" :: TypedSymbol Integer)),
+                      (someTypedSymbol (SimpleSymbol "b" :: TypedSymbol Integer))
                     ]
                 ),
           testCase "GenSym" $ do

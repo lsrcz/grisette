@@ -45,16 +45,16 @@ newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
 newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Show, Eq, Generic, Hashable)
 
 equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
-equation tsym@(TypedSymbol sym) m =
+equation tsym m = withSymbolSupported tsym $
   case valueOf tsym m of
-    Just v -> Just $ pevalEqvTerm (symbTerm sym) (concTerm v)
+    Just v -> Just $ pevalEqvTerm (symbTerm tsym) (concTerm v)
     Nothing -> Nothing
 
 instance SymbolSetOps SymbolSet TypedSymbol where
   emptySet = SymbolSet S.empty
-  containsSymbol s@(TypedSymbol _ :: TypedSymbol a) =
+  containsSymbol s =
     S.member (someTypedSymbol s) . unSymbolSet
-  insertSymbol s@(TypedSymbol _ :: TypedSymbol a) = SymbolSet . S.insert (someTypedSymbol s) . unSymbolSet
+  insertSymbol s = SymbolSet . S.insert (someTypedSymbol s) . unSymbolSet
   intersectionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.intersection s1 s2
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
@@ -65,9 +65,10 @@ instance ExtractSymbolics SymbolSet SymbolSet where
 instance ModelOps Model SymbolSet TypedSymbol where
   emptyModel = Model M.empty
   valueOf :: forall t. TypedSymbol t -> Model -> Maybe t
-  valueOf sym@(TypedSymbol _) (Model m) =
-    (unsafeFromModelValue @t)
-      <$> M.lookup (someTypedSymbol sym) m
+  valueOf sym (Model m) =
+    withSymbolSupported sym $
+      (unsafeFromModelValue @t)
+        <$> M.lookup (someTypedSymbol sym) m
   exceptFor (SymbolSet s) (Model m) = Model $ S.foldl' (flip M.delete) m s
   restrictTo (SymbolSet s) (Model m) =
     Model $
@@ -81,14 +82,16 @@ instance ModelOps Model SymbolSet TypedSymbol where
   extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
-        ( \acc sym@(SomeTypedSymbol _ (TypedSymbol _ :: TypedSymbol t)) -> case M.lookup sym acc of
+        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedSymbol t)) -> case M.lookup sym acc of
             Just _ -> acc
-            Nothing -> M.insert sym (defaultValueDynamic (Proxy @t)) acc
+            Nothing -> withSymbolSupported tsym $ M.insert sym (defaultValueDynamic (Proxy @t)) acc
         )
         m
         s
-  insertValue sym@(TypedSymbol _) (v :: t) (Model m) =
-    Model $ M.insert (someTypedSymbol sym) (toModelValue v) m
+  insertValue sym (v :: t) (Model m) =
+    withSymbolSupported sym $
+      Model $
+        M.insert (someTypedSymbol sym) (toModelValue v) m
 
 evaluateSomeTerm :: Bool -> Model -> SomeTerm -> SomeTerm
 evaluateSomeTerm fillDefault (Model ma) = gomemo
@@ -98,9 +101,9 @@ evaluateSomeTerm fillDefault (Model ma) = gomemo
     gotyped a = case gomemo (SomeTerm a) of
       SomeTerm v -> unsafeCoerce v
     go c@(SomeTerm ConcTerm {}) = c
-    go c@(SomeTerm ((SymbTerm _ sym@(TypedSymbol _ :: TypedSymbol t)) :: Term a)) =
-      case M.lookup (SomeTypedSymbol (typeRep @t) sym) ma of
-        Nothing -> if fillDefault then SomeTerm $ concTerm (defaultValue @t) else c
+    go c@(SomeTerm ((SymbTerm _ sym) :: Term a)) =
+      case M.lookup (someTypedSymbol sym) ma of
+        Nothing -> if fillDefault then SomeTerm $ concTerm (defaultValue @a) else c
         Just dy -> SomeTerm $ concTerm (unsafeFromModelValue @a dy)
     go (SomeTerm (UnaryTerm _ tag (arg :: Term a))) = goUnary (partialEvalUnary tag) arg
     go (SomeTerm (BinaryTerm _ tag (arg1 :: Term a1) (arg2 :: Term a2))) =

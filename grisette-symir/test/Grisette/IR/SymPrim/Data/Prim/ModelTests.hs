@@ -20,12 +20,12 @@ import Type.Reflection
 
 modelTests :: TestTree
 modelTests =
-  let asymbol :: TypedSymbol Integer = TypedSymbol (SimpleSymbol "a")
-      bsymbol :: TypedSymbol Bool = TypedSymbol (SimpleSymbol "b")
-      csymbol :: TypedSymbol Integer = TypedSymbol (SimpleSymbol "c")
-      dsymbol :: TypedSymbol Bool = TypedSymbol $ SimpleSymbol "d"
-      esymbol :: TypedSymbol (WordN 4) = TypedSymbol $ SimpleSymbol "e"
-      fsymbol :: TypedSymbol (IntN 4) = TypedSymbol $ SimpleSymbol "f"
+  let asymbol :: TypedSymbol Integer = SimpleSymbol "a"
+      bsymbol :: TypedSymbol Bool = SimpleSymbol "b"
+      csymbol :: TypedSymbol Integer = SimpleSymbol "c"
+      dsymbol :: TypedSymbol Bool = SimpleSymbol "d"
+      esymbol :: TypedSymbol (WordN 4) = SimpleSymbol "e"
+      fsymbol :: TypedSymbol (IntN 4) = SimpleSymbol "f"
       m1 = emptyModel
       m2 = insertValue asymbol 1 m1
       m3 = insertValue bsymbol True m2

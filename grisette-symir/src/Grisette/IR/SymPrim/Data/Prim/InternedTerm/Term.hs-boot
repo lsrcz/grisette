@@ -13,7 +13,6 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),
-    Symbol (..),
     TypedSymbol (..),
     SomeTypedSymbol (..),
     Term (..),
@@ -48,8 +47,8 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   pformatConc :: t -> String
   default pformatConc :: (Show t) => t -> String
   pformatConc = show
-  pformatSymb :: proxy t -> Symbol -> String
-  pformatSymb _ = show
+  pformatSymb :: TypedSymbol t -> String
+  pformatSymb _ = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
@@ -97,13 +96,22 @@ class
   partialEvalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
-data Symbol where
-  SimpleSymbol :: String -> Symbol
-  IndexedSymbol :: String -> Int -> Symbol
-  WithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => Symbol -> a -> Symbol
-
 data TypedSymbol t where
-  TypedSymbol :: (SupportedPrim t) => Symbol -> TypedSymbol t
+  SimpleSymbol :: SupportedPrim t => String -> TypedSymbol t
+  IndexedSymbol :: SupportedPrim t => String -> Int -> TypedSymbol t
+  WithInfo ::
+    forall t a.
+    ( SupportedPrim t,
+      Typeable a,
+      Ord a,
+      Lift a,
+      NFData a,
+      Show a,
+      Hashable a
+    ) =>
+    TypedSymbol t ->
+    a ->
+    TypedSymbol t
 
 data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol

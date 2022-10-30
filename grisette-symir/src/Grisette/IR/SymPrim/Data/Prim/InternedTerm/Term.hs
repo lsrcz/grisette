@@ -20,10 +20,9 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),
-    Symbol (..),
     TypedSymbol (..),
     SomeTypedSymbol (..),
-    typedSymbol,
+    withSymbolSupported,
     someTypedSymbol,
     Term (..),
     UTerm (..),
@@ -66,8 +65,8 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   pformatConc :: t -> String
   default pformatConc :: (Show t) => t -> String
   pformatConc = show
-  pformatSymb :: proxy t -> Symbol -> String
-  pformatSymb _ = show
+  pformatSymb :: TypedSymbol t -> String
+  pformatSymb = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
@@ -115,14 +114,26 @@ class
   partialEvalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
-data Symbol where
-  SimpleSymbol :: String -> Symbol
-  IndexedSymbol :: String -> Int -> Symbol
-  WithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => Symbol -> a -> Symbol
+data TypedSymbol t where
+  SimpleSymbol :: SupportedPrim t => String -> TypedSymbol t
+  IndexedSymbol :: SupportedPrim t => String -> Int -> TypedSymbol t
+  WithInfo ::
+    forall t a.
+    ( SupportedPrim t,
+      Typeable a,
+      Ord a,
+      Lift a,
+      NFData a,
+      Show a,
+      Hashable a
+    ) =>
+    TypedSymbol t ->
+    a ->
+    TypedSymbol t
 
 -- deriving (Eq, Ord, Generic, Lift, NFData)
 
-instance Eq Symbol where
+instance Eq (TypedSymbol t) where
   SimpleSymbol x == SimpleSymbol y = x == y
   IndexedSymbol x i == IndexedSymbol y j = i == j && x == y
   WithInfo s1 (i1 :: a) == WithInfo s2 (i2 :: b) = case eqTypeRep (typeRep @a) (typeRep @b) of
@@ -130,7 +141,7 @@ instance Eq Symbol where
     _ -> False
   _ == _ = False
 
-instance Ord Symbol where
+instance Ord (TypedSymbol t) where
   SimpleSymbol x <= SimpleSymbol y = x <= y
   IndexedSymbol x i <= IndexedSymbol y j = i < j || (i == j && x <= y)
   WithInfo s1 (i1 :: a) <= WithInfo s2 (i2 :: b) = case eqTypeRep (typeRep @a) (typeRep @b) of
@@ -138,26 +149,37 @@ instance Ord Symbol where
     _ -> False
   _ <= _ = False
 
-instance Lift Symbol where
+instance Lift (TypedSymbol t) where
   liftTyped (SimpleSymbol x) = [||SimpleSymbol x||]
   liftTyped (IndexedSymbol x i) = [||IndexedSymbol x i||]
   liftTyped (WithInfo s1 i1) = [||WithInfo s1 i1||]
 
-instance Show Symbol where
-  show (SimpleSymbol str) = str
-  show (IndexedSymbol str i) = str ++ "@" ++ show i
-  show (WithInfo s info) = show s ++ ":" ++ show info
+instance Show (TypedSymbol t) where
+  show (SimpleSymbol str) = str ++ " :: " ++ show (typeRep @t)
+  show (IndexedSymbol str i) = str ++ "@" ++ show i ++ " :: " ++ show (typeRep @t)
+  show (WithInfo s info) = showUntyped s ++ ":" ++ show info ++ " :: " ++ show (typeRep @t)
 
-instance Hashable Symbol where
+showUntyped :: TypedSymbol t -> String
+showUntyped (SimpleSymbol str) = str
+showUntyped (IndexedSymbol str i) = str ++ "@" ++ show i
+showUntyped (WithInfo s info) = showUntyped s ++ ":" ++ show info
+
+instance Hashable (TypedSymbol t) where
   s `hashWithSalt` SimpleSymbol x = s `hashWithSalt` x
   s `hashWithSalt` IndexedSymbol x i = s `hashWithSalt` x `hashWithSalt` i
   s `hashWithSalt` WithInfo sym info = s `hashWithSalt` sym `hashWithSalt` info
 
-instance NFData Symbol where
+instance NFData (TypedSymbol t) where
   rnf (SimpleSymbol str) = rnf str
   rnf (IndexedSymbol str i) = rnf str `seq` rnf i
   rnf (WithInfo s info) = rnf s `seq` rnf info
 
+withSymbolSupported :: TypedSymbol t -> (SupportedPrim t => a) -> a
+withSymbolSupported (SimpleSymbol _) a = a
+withSymbolSupported (IndexedSymbol _ _) a = a
+withSymbolSupported (WithInfo _ _) a = a
+
+{-
 data TypedSymbol t where
   TypedSymbol :: (SupportedPrim t) => Symbol -> TypedSymbol t
 
@@ -181,6 +203,7 @@ instance Show (TypedSymbol t) where
 
 instance Lift (TypedSymbol t) where
   liftTyped (TypedSymbol s) = [||TypedSymbol s||]
+  -}
 
 data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
@@ -208,7 +231,9 @@ instance Show SomeTypedSymbol where
   show (SomeTypedSymbol _ s) = show s
 
 someTypedSymbol :: forall t. TypedSymbol t -> SomeTypedSymbol
-someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
+someTypedSymbol s@(SimpleSymbol _) = SomeTypedSymbol (typeRep @t) s
+someTypedSymbol s@(IndexedSymbol _ _) = SomeTypedSymbol (typeRep @t) s
+someTypedSymbol s@(WithInfo _ _) = SomeTypedSymbol (typeRep @t) s
 
 data Term t where
   ConcTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
@@ -316,7 +341,7 @@ instance NFData (Term a) where
 instance Lift (Term t) where
   lift = unTypeSplice . liftTyped
   liftTyped (ConcTerm _ i) = [||concTerm i||]
-  liftTyped (SymbTerm _ (TypedSymbol sym)) = [||symbTerm sym||]
+  liftTyped (SymbTerm _ sym) = [||symbTerm sym||]
   liftTyped (UnaryTerm _ tag arg) = [||constructUnary tag arg||]
   liftTyped (BinaryTerm _ tag arg1 arg2) = [||constructBinary tag arg1 arg2||]
   liftTyped (TernaryTerm _ tag arg1 arg2 arg3) = [||constructTernary tag arg1 arg2 arg3||]
@@ -815,7 +840,7 @@ instance NFData (a --> b) where
 
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = GeneralFunc (TypedSymbol $ WithInfo (SimpleSymbol "a") FuncArg) (concTerm defaultValue)
+  defaultValue = GeneralFunc (WithInfo (SimpleSymbol "a") FuncArg) (concTerm defaultValue)
 
 instance (SupportedPrim a, SupportedPrim b) => Function (a --> b) where
   type Arg (a --> b) = Term a

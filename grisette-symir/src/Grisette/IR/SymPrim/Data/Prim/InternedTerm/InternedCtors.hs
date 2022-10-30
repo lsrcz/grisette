@@ -107,8 +107,8 @@ concTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term
 concTerm t = internTerm $ UConcTerm t
 {-# INLINE concTerm #-}
 
-symbTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
-symbTerm t = internTerm $ USymbTerm (TypedSymbol t :: TypedSymbol t)
+symbTerm :: forall t. (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
+symbTerm t = internTerm $ USymbTerm t
 {-# INLINE symbTerm #-}
 
 ssymbTerm :: (SupportedPrim t, Typeable t) => String -> Term t

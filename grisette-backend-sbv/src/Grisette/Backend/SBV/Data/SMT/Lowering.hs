@@ -755,8 +755,8 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
   where
     goassoc :: (String, SBVI.CV) -> PM.Model -> PM.Model
     goassoc (name, cv) m = case findStringToSymbol name mp of
-      Just (SomeTypedSymbol (_ :: R.TypeRep t) s@(TypedSymbol _)) ->
-        insertValue s (resolveSingle (R.typeRep @t) cv) m
+      Just (SomeTypedSymbol tr s) ->
+        insertValue s (resolveSingle tr cv) m
       Nothing -> error "Bad"
     resolveSingle :: R.TypeRep a -> SBVI.CV -> a
     resolveSingle t (SBVI.CV SBVI.KBool (SBVI.CInteger n)) =
@@ -831,7 +831,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
                   )
                   (concTerm def)
                   funs
-           in GeneralFunc (TypedSymbol symb) body
+           in GeneralFunc symb body
         _ ->
           let symb = WithInfo (IndexedSymbol "arg" idx) FuncArg
               vs = bimap (resolveSingle ta1 . head) (resolveSingle ta2) <$> l
@@ -846,7 +846,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
                   )
                   (concTerm def)
                   vs
-           in GeneralFunc (TypedSymbol symb) body
+           in GeneralFunc symb body
     partition :: R.TypeRep a -> [([SBVI.CV], SBVI.CV)] -> [(a, [([SBVI.CV], SBVI.CV)])]
     partition t = case (R.eqTypeRep t (R.typeRep @Bool), R.eqTypeRep t (R.typeRep @Integer)) of
       (Just R.HRefl, _) -> partitionWithOrd . resolveFirst t
@@ -873,7 +873,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
 
     gouifuncs :: (String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV))) -> PM.Model -> PM.Model
     gouifuncs (name, (SBVI.SBVType _, l)) m = case findStringToSymbol name mp of
-      Just (SomeTypedSymbol (_ :: R.TypeRep t) s@(TypedSymbol _)) -> case R.typeRep @t of
+      Just (SomeTypedSymbol tr s) -> withSymbolSupported s $ case tr of
         t@(TFunType a r) -> R.withTypeable t $ insertValue s (goutfuncResolve a r l) m
         t@(GFunType a r) -> R.withTypeable t $ insertValue s (gougfuncResolve 0 a r l) m
         _ -> error "Bad"
