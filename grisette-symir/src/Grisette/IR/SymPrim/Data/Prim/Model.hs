@@ -44,9 +44,9 @@ newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet TermSymbol}
 
 newtype Model = Model {unModel :: M.HashMap TermSymbol ModelValue} deriving (Show, Eq, Generic, Hashable)
 
-equation :: Model -> TermSymbol -> Maybe (Term Bool)
-equation m tsym@(TermSymbol (_ :: TypeRep a) sym) =
-  case valueOf m tsym of
+equation :: TermSymbol -> Model -> Maybe (Term Bool)
+equation tsym@(TermSymbol (_ :: TypeRep a) sym) m =
+  case valueOf tsym m of
     Just (v :: a) -> Just $ pevalEqvTerm (symbTerm sym) (concTerm v)
     Nothing -> Nothing
 
@@ -63,12 +63,12 @@ instance ExtractSymbolics SymbolSet SymbolSet where
 
 instance ModelOps Model SymbolSet TermSymbol where
   emptyModel = Model M.empty
-  valueOf :: forall t. (Typeable t) => Model -> TermSymbol -> Maybe t
-  valueOf (Model m) sym =
+  valueOf :: forall t. (Typeable t) => TermSymbol -> Model -> Maybe t
+  valueOf sym (Model m) =
     (unsafeFromModelValue @t)
       <$> M.lookup sym m
-  exceptFor (Model m) (SymbolSet s) = Model $ S.foldl' (flip M.delete) m s
-  restrictTo (Model m) (SymbolSet s) =
+  exceptFor (SymbolSet s) (Model m) = Model $ S.foldl' (flip M.delete) m s
+  restrictTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
         ( \acc sym -> case M.lookup sym m of
@@ -77,7 +77,7 @@ instance ModelOps Model SymbolSet TermSymbol where
         )
         M.empty
         s
-  extendTo (Model m) (SymbolSet s) =
+  extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
         ( \acc sym@(TermSymbol (_ :: TypeRep t) _) -> case M.lookup sym acc of
@@ -86,7 +86,7 @@ instance ModelOps Model SymbolSet TermSymbol where
         )
         m
         s
-  insertValue (Model m) sym@(TermSymbol p _) v =
+  insertValue sym@(TermSymbol p _) v (Model m) =
     case eqTypeRep p (typeOf v) of
       Just HRefl -> Model $ M.insert sym (toModelValue v) m
       _ -> error "Bad value type"

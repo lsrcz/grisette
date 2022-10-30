@@ -21,10 +21,10 @@ class Monoid symbolSet => SymbolSetOps symbolSet symbol | symbolSet -> symbol wh
 
 class SymbolSetOps symbolSet symbol => ModelOps model symbolSet symbol | model -> symbolSet symbol where
   emptyModel :: model
-  valueOf :: forall t. (Typeable t) => model -> symbol -> Maybe t
-  insertValue :: (Eq a, Show a, Hashable a, Typeable a) => model -> symbol -> a -> model
-  exceptFor :: model -> symbolSet -> model
-  restrictTo :: model -> symbolSet -> model
-  extendTo :: model -> symbolSet -> model
-  exact :: model -> symbolSet -> model
-  exact m s = restrictTo (extendTo m s) s
+  valueOf :: forall t. (Typeable t) => symbol -> model -> Maybe t
+  insertValue :: (Eq a, Show a, Hashable a, Typeable a) => symbol -> a -> model -> model
+  exceptFor :: symbolSet -> model -> model
+  restrictTo :: symbolSet -> model -> model
+  extendTo :: symbolSet -> model -> model
+  exact :: symbolSet -> model -> model
+  exact s = restrictTo s . extendTo s

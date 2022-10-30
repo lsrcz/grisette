@@ -101,8 +101,8 @@ symPrimTests =
             ],
           testCase "EvaluateSym" $ do
             let m1 = emptyModel :: Model
-            let m2 = insertValue m1 (TermSymbol (typeRep @Integer) (SimpleSymbol "a")) (1 :: Integer)
-            let m3 = insertValue m2 (TermSymbol (typeRep @Bool) (SimpleSymbol "b")) True
+            let m2 = insertValue (TermSymbol (typeRep @Integer) (SimpleSymbol "a")) (1 :: Integer) m1
+            let m3 = insertValue (TermSymbol (typeRep @Bool) (SimpleSymbol "b")) True m2
             evaluateSym False m3 (ites ("c" :: Sym Bool) "a" ("a" + "a" :: Sym Integer))
               @=? ites ("c" :: Sym Bool) 1 2
             evaluateSym True m3 (ites ("c" :: Sym Bool) "a" ("a" + "a" :: Sym Integer)) @=? 2,

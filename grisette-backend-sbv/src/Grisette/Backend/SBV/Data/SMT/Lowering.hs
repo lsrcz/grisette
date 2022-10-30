@@ -756,7 +756,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     goassoc :: (String, SBVI.CV) -> PM.Model -> PM.Model
     goassoc (name, cv) m = case findStringToSymbol name mp of
       Just s@(TermSymbol (_ :: R.TypeRep t) _) ->
-        insertValue m s (resolveSingle (R.typeRep @t) cv)
+        insertValue s (resolveSingle (R.typeRep @t) cv) m
       Nothing -> error "Bad"
     resolveSingle :: R.TypeRep a -> SBVI.CV -> a
     resolveSingle t (SBVI.CV SBVI.KBool (SBVI.CInteger n)) =
@@ -874,8 +874,8 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     gouifuncs :: (String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV))) -> PM.Model -> PM.Model
     gouifuncs (name, (SBVI.SBVType _, l)) m = case findStringToSymbol name mp of
       Just s@(TermSymbol (_ :: R.TypeRep t) _) -> case R.typeRep @t of
-        t@(TFunType a r) -> R.withTypeable t $ insertValue m s $ goutfuncResolve a r l
-        t@(GFunType a r) -> R.withTypeable t $ insertValue m s $ gougfuncResolve 0 a r l
+        t@(TFunType a r) -> R.withTypeable t $ insertValue s (goutfuncResolve a r l) m
+        t@(GFunType a r) -> R.withTypeable t $ insertValue s (gougfuncResolve 0 a r l) m
         _ -> error "Bad"
       Nothing -> error "Bad"
 
