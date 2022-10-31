@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -5,6 +6,7 @@
 module Grisette.Core.Data.Class.ModelOps
   ( ModelOps (..),
     SymbolSetOps (..),
+    ModelRep (..),
   )
 where
 
@@ -32,3 +34,6 @@ class
   extendTo :: symbolSet -> model -> model
   exact :: symbolSet -> model -> model
   exact s = restrictTo s . extendTo s
+
+class ModelOps model symbolSet typedSymbol => ModelRep rep model symbolSet (typedSymbol :: * -> *) where
+  buildModel :: rep -> model

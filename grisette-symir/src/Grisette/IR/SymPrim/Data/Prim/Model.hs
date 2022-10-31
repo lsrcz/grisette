@@ -12,6 +12,7 @@
 module Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (..),
     Model (..),
+    ModelValuePair (..),
     equation,
     evaluateTerm,
   )
@@ -176,3 +177,190 @@ evaluateSomeTerm fillDefault (Model ma) = gomemo
 evaluateTerm :: forall a. (SupportedPrim a) => Bool -> Model -> Term a -> Term a
 evaluateTerm fillDefault m t = case evaluateSomeTerm fillDefault m $ SomeTerm t of
   SomeTerm (t1 :: Term b) -> unsafeCoerce @(Term b) @(Term a) t1
+
+data ModelValuePair t = (TypedSymbol t) ::= t deriving (Show)
+
+instance ModelRep (ModelValuePair t) Model SymbolSet TypedSymbol where
+  buildModel (sym ::= val) = insertValue sym val emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2
+      ) =
+      insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b,
+      ModelValuePair c
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2,
+      sym3 ::= val3
+      ) =
+      insertValue sym3 val3
+        . insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b,
+      ModelValuePair c,
+      ModelValuePair d
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2,
+      sym3 ::= val3,
+      sym4 ::= val4
+      ) =
+      insertValue sym4 val4
+        . insertValue sym3 val3
+        . insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b,
+      ModelValuePair c,
+      ModelValuePair d,
+      ModelValuePair e
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2,
+      sym3 ::= val3,
+      sym4 ::= val4,
+      sym5 ::= val5
+      ) =
+      insertValue sym5 val5
+        . insertValue sym4 val4
+        . insertValue sym3 val3
+        . insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b,
+      ModelValuePair c,
+      ModelValuePair d,
+      ModelValuePair e,
+      ModelValuePair f
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2,
+      sym3 ::= val3,
+      sym4 ::= val4,
+      sym5 ::= val5,
+      sym6 ::= val6
+      ) =
+      insertValue sym6 val6
+        . insertValue sym5 val5
+        . insertValue sym4 val4
+        . insertValue sym3 val3
+        . insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b,
+      ModelValuePair c,
+      ModelValuePair d,
+      ModelValuePair e,
+      ModelValuePair f,
+      ModelValuePair g
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2,
+      sym3 ::= val3,
+      sym4 ::= val4,
+      sym5 ::= val5,
+      sym6 ::= val6,
+      sym7 ::= val7
+      ) =
+      insertValue sym7 val7
+        . insertValue sym6 val6
+        . insertValue sym5 val5
+        . insertValue sym4 val4
+        . insertValue sym3 val3
+        . insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
+
+instance
+  ModelRep
+    ( ModelValuePair a,
+      ModelValuePair b,
+      ModelValuePair c,
+      ModelValuePair d,
+      ModelValuePair e,
+      ModelValuePair f,
+      ModelValuePair g,
+      ModelValuePair h
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( sym1 ::= val1,
+      sym2 ::= val2,
+      sym3 ::= val3,
+      sym4 ::= val4,
+      sym5 ::= val5,
+      sym6 ::= val6,
+      sym7 ::= val7,
+      sym8 ::= val8
+      ) =
+      insertValue sym8 val8
+        . insertValue sym7 val7
+        . insertValue sym6 val6
+        . insertValue sym5 val5
+        . insertValue sym4 val4
+        . insertValue sym3 val3
+        . insertValue sym2 val2
+        . insertValue sym1 val1
+        $ emptyModel
