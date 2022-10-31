@@ -10,6 +10,7 @@ module Grisette.IR.SymPrim.Data.SymPrimTests where
 
 import Control.Monad.Except
 import Data.Bits
+import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 import Data.Int
 import Data.Proxy
@@ -33,6 +34,7 @@ import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model
+import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -408,5 +410,134 @@ symPrimTests =
             symSize (ites (ssymb "a" :: Sym Bool) (ssymb "b") (ssymb "c") :: Sym Integer) @=? 4,
           testCase "symsSize" $ do
             symsSize [ssymb "a" :: Sym Integer, ssymb "a" + ssymb "a"] @=? 2
-        ]
+        ],
+      let asymbol :: TypedSymbol Integer = "a"
+          bsymbol :: TypedSymbol Bool = "b"
+          csymbol :: TypedSymbol Integer = "c"
+          dsymbol :: TypedSymbol Bool = "d"
+          esymbol :: TypedSymbol (WordN 4) = "e"
+          fsymbol :: TypedSymbol (IntN 4) = "f"
+          gsymbol :: TypedSymbol (WordN 16) = "g"
+          hsymbol :: TypedSymbol (IntN 16) = "h"
+          a :: Sym Integer = ssymb "a"
+          b :: Sym Bool = "b"
+          c :: Sym Integer = "c"
+          d :: Sym Bool = "d"
+          e :: Sym (WordN 4) = "e"
+          f :: Sym (IntN 4) = "f"
+          g :: Sym (WordN 16) = "g"
+          h :: Sym (IntN 16) = "h"
+       in testCase
+            "construting Model from ModelSymPair"
+            $ do
+              buildModel (a := 1) @=? Model (M.singleton (someTypedSymbol asymbol) (toModelValue (1 :: Integer)))
+              buildModel (a := 1, b := True)
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True)
+                      ]
+                  )
+              buildModel
+                ( a := 1,
+                  b := True,
+                  c := 2
+                )
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True),
+                        (someTypedSymbol csymbol, toModelValue (2 :: Integer))
+                      ]
+                  )
+              buildModel
+                ( a := 1,
+                  b := True,
+                  c := 2,
+                  d := False
+                )
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True),
+                        (someTypedSymbol csymbol, toModelValue (2 :: Integer)),
+                        (someTypedSymbol dsymbol, toModelValue False)
+                      ]
+                  )
+              buildModel
+                ( a := 1,
+                  b := True,
+                  c := 2,
+                  d := False,
+                  e := 3
+                )
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True),
+                        (someTypedSymbol csymbol, toModelValue (2 :: Integer)),
+                        (someTypedSymbol dsymbol, toModelValue False),
+                        (someTypedSymbol esymbol, toModelValue (3 :: WordN 4))
+                      ]
+                  )
+              buildModel
+                ( a := 1,
+                  b := True,
+                  c := 2,
+                  d := False,
+                  e := 3,
+                  f := 4
+                )
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True),
+                        (someTypedSymbol csymbol, toModelValue (2 :: Integer)),
+                        (someTypedSymbol dsymbol, toModelValue False),
+                        (someTypedSymbol esymbol, toModelValue (3 :: WordN 4)),
+                        (someTypedSymbol fsymbol, toModelValue (4 :: IntN 4))
+                      ]
+                  )
+              buildModel
+                ( a := 1,
+                  b := True,
+                  c := 2,
+                  d := False,
+                  e := 3,
+                  f := 4,
+                  g := 5
+                )
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True),
+                        (someTypedSymbol csymbol, toModelValue (2 :: Integer)),
+                        (someTypedSymbol dsymbol, toModelValue False),
+                        (someTypedSymbol esymbol, toModelValue (3 :: WordN 4)),
+                        (someTypedSymbol fsymbol, toModelValue (4 :: IntN 4)),
+                        (someTypedSymbol gsymbol, toModelValue (5 :: WordN 16))
+                      ]
+                  )
+              buildModel
+                ( a := 1,
+                  b := True,
+                  c := 2,
+                  d := False,
+                  e := 3,
+                  f := 4,
+                  g := 5,
+                  h := 6
+                )
+                @=? Model
+                  ( M.fromList
+                      [ (someTypedSymbol asymbol, toModelValue (1 :: Integer)),
+                        (someTypedSymbol bsymbol, toModelValue True),
+                        (someTypedSymbol csymbol, toModelValue (2 :: Integer)),
+                        (someTypedSymbol dsymbol, toModelValue False),
+                        (someTypedSymbol esymbol, toModelValue (3 :: WordN 4)),
+                        (someTypedSymbol fsymbol, toModelValue (4 :: IntN 4)),
+                        (someTypedSymbol gsymbol, toModelValue (5 :: WordN 16)),
+                        (someTypedSymbol hsymbol, toModelValue (6 :: IntN 16))
+                      ]
+                  )
     ]

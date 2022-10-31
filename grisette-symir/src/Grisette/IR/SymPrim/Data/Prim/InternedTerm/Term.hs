@@ -37,6 +37,7 @@ import Data.Function (on)
 import Data.Hashable
 import Data.Interned
 import Data.Kind
+import Data.String
 import Data.Typeable (Proxy (..), cast)
 import GHC.Generics
 import GHC.TypeNats
@@ -173,6 +174,9 @@ instance NFData (TypedSymbol t) where
   rnf (SimpleSymbol str) = rnf str
   rnf (IndexedSymbol str i) = rnf str `seq` rnf i
   rnf (WithInfo s info) = rnf s `seq` rnf info
+
+instance SupportedPrim t => IsString (TypedSymbol t) where
+  fromString = SimpleSymbol
 
 withSymbolSupported :: TypedSymbol t -> (SupportedPrim t => a) -> a
 withSymbolSupported (SimpleSymbol _) a = a

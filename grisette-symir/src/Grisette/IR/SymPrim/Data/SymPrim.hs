@@ -22,6 +22,7 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SymIntN,
     symSize,
     symsSize,
+    ModelSymPair (..),
   )
 where
 
@@ -44,6 +45,7 @@ import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
+import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -399,3 +401,198 @@ symsSize = termsSize . fmap underlyingTerm
 
 symSize :: Sym a -> Int
 symSize = termSize . underlyingTerm
+
+data ModelSymPair t = (Sym t) := t deriving (Show)
+
+instance ModelRep (ModelSymPair t) Model SymbolSet TypedSymbol where
+  buildModel (Sym (SymbTerm _ sym) := val) = insertValue sym val emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b,
+      ModelSymPair c
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2,
+      Sym (SymbTerm _ sym3) := val3
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        . insertValue sym3 val3
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b,
+      ModelSymPair c,
+      ModelSymPair d
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2,
+      Sym (SymbTerm _ sym3) := val3,
+      Sym (SymbTerm _ sym4) := val4
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        . insertValue sym3 val3
+        . insertValue sym4 val4
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b,
+      ModelSymPair c,
+      ModelSymPair d,
+      ModelSymPair e
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2,
+      Sym (SymbTerm _ sym3) := val3,
+      Sym (SymbTerm _ sym4) := val4,
+      Sym (SymbTerm _ sym5) := val5
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        . insertValue sym3 val3
+        . insertValue sym4 val4
+        . insertValue sym5 val5
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b,
+      ModelSymPair c,
+      ModelSymPair d,
+      ModelSymPair e,
+      ModelSymPair f
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2,
+      Sym (SymbTerm _ sym3) := val3,
+      Sym (SymbTerm _ sym4) := val4,
+      Sym (SymbTerm _ sym5) := val5,
+      Sym (SymbTerm _ sym6) := val6
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        . insertValue sym3 val3
+        . insertValue sym4 val4
+        . insertValue sym5 val5
+        . insertValue sym6 val6
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b,
+      ModelSymPair c,
+      ModelSymPair d,
+      ModelSymPair e,
+      ModelSymPair f,
+      ModelSymPair g
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2,
+      Sym (SymbTerm _ sym3) := val3,
+      Sym (SymbTerm _ sym4) := val4,
+      Sym (SymbTerm _ sym5) := val5,
+      Sym (SymbTerm _ sym6) := val6,
+      Sym (SymbTerm _ sym7) := val7
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        . insertValue sym3 val3
+        . insertValue sym4 val4
+        . insertValue sym5 val5
+        . insertValue sym6 val6
+        . insertValue sym7 val7
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance
+  ModelRep
+    ( ModelSymPair a,
+      ModelSymPair b,
+      ModelSymPair c,
+      ModelSymPair d,
+      ModelSymPair e,
+      ModelSymPair f,
+      ModelSymPair g,
+      ModelSymPair h
+    )
+    Model
+    SymbolSet
+    TypedSymbol
+  where
+  buildModel
+    ( Sym (SymbTerm _ sym1) := val1,
+      Sym (SymbTerm _ sym2) := val2,
+      Sym (SymbTerm _ sym3) := val3,
+      Sym (SymbTerm _ sym4) := val4,
+      Sym (SymbTerm _ sym5) := val5,
+      Sym (SymbTerm _ sym6) := val6,
+      Sym (SymbTerm _ sym7) := val7,
+      Sym (SymbTerm _ sym8) := val8
+      ) =
+      insertValue sym1 val1
+        . insertValue sym2 val2
+        . insertValue sym3 val3
+        . insertValue sym4 val4
+        . insertValue sym5 val5
+        . insertValue sym6 val6
+        . insertValue sym7 val7
+        . insertValue sym8 val8
+        $ emptyModel
+  buildModel _ = error "buildModel: should only use symbolic constants"
