@@ -45,8 +45,8 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.GeneralFuncSubst
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import Grisette.IR.SymPrim.Data.Prim.Utils
@@ -849,4 +849,4 @@ instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
 instance (SupportedPrim a, SupportedPrim b) => Function (a --> b) where
   type Arg (a --> b) = Term a
   type Ret (a --> b) = Term b
-  (GeneralFunc arg tm) # v = generalFuncSubst arg v tm
+  (GeneralFunc arg tm) # v = substTerm arg v tm

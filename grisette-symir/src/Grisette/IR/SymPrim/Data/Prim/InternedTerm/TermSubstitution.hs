@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Grisette.IR.SymPrim.Data.Prim.InternedTerm.GeneralFuncSubst (generalFuncSubst) where
+module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution (substTerm) where
 
 import Grisette.Core.Data.MemoUtils
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -20,8 +20,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
 
-generalFuncSubst :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
-generalFuncSubst sym term = gov
+substTerm :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
+substTerm sym term = gov
   where
     gov :: (SupportedPrim x) => Term x -> Term x
     gov b = case go (SomeTerm b) of

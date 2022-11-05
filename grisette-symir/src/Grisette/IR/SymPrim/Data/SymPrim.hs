@@ -54,9 +54,9 @@ import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.IntBitwidth
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.GeneralFuncSubst
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
@@ -604,6 +604,6 @@ instance SubstituteSym TypedSymbol Sym (Sym a) where
     introSupportedPrimConstraint val $
       introSupportedPrimConstraint x $
         Sym $
-          generalFuncSubst sym val x
+          substTerm sym val x
 
 instance SubstituteSymSymbol TypedSymbol Sym
