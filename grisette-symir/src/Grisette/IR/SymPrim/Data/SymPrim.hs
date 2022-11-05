@@ -89,8 +89,8 @@ pattern SymConc c <-
 instance (SupportedPrim a) => ITEOp (Sym Bool) (Sym a) where
   ites (Sym c) (Sym t) (Sym f) = Sym $ pevalITETerm c t f
 
-instance (SupportedPrim a) => Mergeable (Sym Bool) (Sym a) where
-  mergingStrategy = SimpleStrategy ites
+instance (SupportedPrim a) => GMergeable (Sym Bool) (Sym a) where
+  gmergingStrategy = SimpleStrategy ites
 
 instance (SupportedPrim a) => SimpleMergeable (Sym Bool) (Sym a) where
   mrgIte = ites

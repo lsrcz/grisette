@@ -36,8 +36,8 @@ instance {-# OVERLAPPING #-} TransformError () () where
 -- Terminate the current execution path with the specified error.
 symThrowTransformableError ::
   ( SymBoolOp bool,
-    Mergeable bool to,
-    Mergeable bool a,
+    GMergeable bool to,
+    GMergeable bool a,
     TransformError from to,
     MonadError to erm,
     MonadUnion bool erm
@@ -52,7 +52,7 @@ symThrowTransformableError = merge . throwError . transformError
 -- Terminate the current execution path with the specified error if the condition does not hold.
 symFailIfNot ::
   ( SymBoolOp bool,
-    Mergeable bool to,
+    GMergeable bool to,
     TransformError from to,
     MonadError to erm,
     MonadUnion bool erm

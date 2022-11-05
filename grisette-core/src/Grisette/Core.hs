@@ -46,20 +46,20 @@ module Grisette.Core
     liftToMonadUnion,
 
     -- * Merging
-    MergingStrategy (..),
-    derivedMergingStrategy,
-    wrapStrategy,
-    product2Strategy,
-    Mergeable (..),
-    Mergeable1 (..),
-    Mergeable2 (..),
-    mergingStrategy1,
-    mergingStrategy2,
+    GMergingStrategy (..),
+    derivedGMergingStrategy,
+    gwrapStrategy,
+    gproduct2Strategy,
+    GMergeable (..),
+    GMergeable1 (..),
+    GMergeable2 (..),
+    gmergingStrategy1,
+    gmergingStrategy2,
     DynamicSortedIdx (..),
     StrategyList (..),
-    buildStrategyList,
-    resolveStrategy,
-    resolveStrategy',
+    gbuildStrategyList,
+    gresolveStrategy,
+    gresolveStrategy',
     -- withMergeable,
     SimpleMergeable (..),
     SimpleMergeable1 (..),
@@ -84,7 +84,7 @@ module Grisette.Core
     -}
 
     {-
-        -- * Wrapped Monadic Combinators with Mergeable Knowledge Propagaion
+        -- * Wrapped Monadic Combinators with GMergeable Knowledge Propagaion
         mrgFoldM,
         (>>~),
         mrgMzero,

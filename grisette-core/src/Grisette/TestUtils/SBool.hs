@@ -64,8 +64,8 @@ instance Eq SBool where
   ITE c1 l1 r1 == ITE c2 l2 r2 = c1 == c2 && l1 == l2 && r1 == r2
   _ == _ = False
 
-instance Mergeable SBool SBool where
-  mergingStrategy = SimpleStrategy ites
+instance GMergeable SBool SBool where
+  gmergingStrategy = SimpleStrategy ites
 
 instance SimpleMergeable SBool SBool where
   mrgIte = ites

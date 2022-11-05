@@ -81,8 +81,8 @@ newtype GenSymIndex = GenSymIndex Int
   deriving (Show)
   deriving (Eq, Ord, Num) via Int
 
-instance (SymBoolOp bool) => Mergeable bool GenSymIndex where
-  mergingStrategy = SimpleStrategy $ \_ t f -> max t f
+instance (SymBoolOp bool) => GMergeable bool GenSymIndex where
+  gmergingStrategy = SimpleStrategy $ \_ t f -> max t f
 
 instance (SymBoolOp bool) => SimpleMergeable bool GenSymIndex where
   mrgIte _ = max
@@ -176,21 +176,21 @@ class Monad m => MonadGenSymFresh m where
 newtype GenSymFreshT m a = GenSymFreshT {runGenSymFreshT' :: GenSymIdent -> GenSymIndex -> m (a, GenSymIndex)}
 
 instance
-  (SymBoolOp bool, Mergeable bool a, Mergeable1 bool m) =>
-  Mergeable bool (GenSymFreshT m a)
+  (SymBoolOp bool, GMergeable bool a, GMergeable1 bool m) =>
+  GMergeable bool (GenSymFreshT m a)
   where
-  mergingStrategy =
-    wrapStrategy (liftMergingStrategy (liftMergingStrategy mergingStrategy1)) GenSymFreshT runGenSymFreshT'
+  gmergingStrategy =
+    gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy gmergingStrategy1)) GenSymFreshT runGenSymFreshT'
 
-instance (SymBoolOp bool, Mergeable1 bool m) => Mergeable1 bool (GenSymFreshT m) where
-  liftMergingStrategy m =
-    wrapStrategy
-      (liftMergingStrategy (liftMergingStrategy (liftMergingStrategy (liftMergingStrategy2 m mergingStrategy))))
+instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (GenSymFreshT m) where
+  liftGMergingStrategy m =
+    gwrapStrategy
+      (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy))))
       GenSymFreshT
       runGenSymFreshT'
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool a) =>
+  (SymBoolOp bool, UnionLike bool m, GMergeable bool a) =>
   SimpleMergeable bool (GenSymFreshT m a)
   where
   mrgIte = mrgIf
@@ -206,9 +206,9 @@ instance
   UnionLike bool (GenSymFreshT m)
   where
   mergeWithStrategy s (GenSymFreshT f) =
-    GenSymFreshT $ \ident index -> mergeWithStrategy (liftMergingStrategy2 s mergingStrategy) $ f ident index
+    GenSymFreshT $ \ident index -> mergeWithStrategy (liftGMergingStrategy2 s gmergingStrategy) $ f ident index
   mrgIfWithStrategy s cond (GenSymFreshT t) (GenSymFreshT f) =
-    GenSymFreshT $ \ident index -> mrgIfWithStrategy (liftMergingStrategy2 s mergingStrategy) cond (t ident index) (f ident index)
+    GenSymFreshT $ \ident index -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t ident index) (f ident index)
   single x = GenSymFreshT $ \_ i -> single (x, i)
   unionIf cond (GenSymFreshT t) (GenSymFreshT f) =
     GenSymFreshT $ \ident index -> unionIf cond (t ident index) (f ident index)
@@ -272,7 +272,7 @@ instance (Monad m) => MonadReader GenSymIdent (GenSymFreshT m) where
 -- This ensures that we can generate those types with complex merging rules.
 --
 -- The uniqueness with be managed with the a monadic context. 'GenSymFresh' and 'GenSymFreshT' can be useful.
-class (SymBoolOp bool, Mergeable bool a) => GenSym bool spec a where
+class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
   -- | Generate a symbolic value given some specification. The uniqueness is ensured.
   --
   -- The following example generates a symbolic boolean. No specification is needed.
@@ -381,8 +381,8 @@ instance
     GenSymSimple () bool,
     GenSymNoSpec bool a,
     GenSymNoSpec bool b,
-    forall x. Mergeable bool (a x),
-    forall x. Mergeable bool (b x)
+    forall x. GMergeable bool (a x),
+    forall x. GMergeable bool (b x)
   ) =>
   GenSymNoSpec bool (a :+: b)
   where
@@ -428,7 +428,7 @@ derivedNoSpecGenSymFresh ::
   ( Generic a,
     SymBoolOp bool,
     GenSymNoSpec bool (Rep a),
-    Mergeable bool a,
+    GMergeable bool a,
     MonadGenSymFresh m,
     MonadUnion bool u
   ) =>
@@ -535,7 +535,7 @@ derivedSameShapeGenSymSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 chooseFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSymSimple () bool,
     MonadGenSymFresh m,
     MonadUnion bool u
@@ -552,7 +552,7 @@ chooseFresh [] = error "chooseFresh expects at least one value"
 choose ::
   forall bool a u.
   ( SymBoolOp bool,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSymSimple () bool,
     MonadUnion bool u
   ) =>
@@ -612,7 +612,7 @@ chooseSimple p = runGenSymFresh . chooseSimpleFresh p
 chooseUnionFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSymSimple () bool,
     MonadGenSymFresh m,
     MonadUnion bool u
@@ -629,7 +629,7 @@ chooseUnionFresh [] = error "chooseUnionFresh expects at least one value"
 chooseUnion ::
   forall bool a u.
   ( SymBoolOp bool,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSymSimple () bool,
     MonadUnion bool u
   ) =>
@@ -706,7 +706,7 @@ instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool () Bool where
 -- UMrg (If c@0 (Single 0) (If c@1 (Single 1) (If c@2 (Single 2) (Single 3))))
 newtype EnumGenUpperBound a = EnumGenUpperBound a
 
-instance (SymBoolOp bool, GenSymSimple () bool, Enum v, Mergeable bool v) => GenSym bool (EnumGenUpperBound v) v where
+instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => GenSym bool (EnumGenUpperBound v) v where
   genSymFresh (EnumGenUpperBound u) = chooseFresh (toEnum <$> [0 .. fromEnum u - 1])
 
 -- | Specification for numbers with lower bound (inclusive) and upper bound (exclusive)
@@ -715,7 +715,7 @@ instance (SymBoolOp bool, GenSymSimple () bool, Enum v, Mergeable bool v) => Gen
 -- UMrg (If c@0 (Single 0) (If c@1 (Single 1) (If c@2 (Single 2) (Single 3))))
 data EnumGenBound a = EnumGenBound a a
 
-instance (SymBoolOp bool, GenSymSimple () bool, Enum v, Mergeable bool v) => GenSym bool (EnumGenBound v) v where
+instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => GenSym bool (EnumGenBound v) v where
   genSymFresh (EnumGenBound l u) = chooseFresh (toEnum <$> [fromEnum l .. fromEnum u - 1])
 
 -- Either
@@ -723,9 +723,9 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSymSimple a a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSymSimple b b,
-    Mergeable bool b
+    GMergeable bool b
   ) =>
   GenSym bool (Either a b) (Either a b)
 
@@ -738,14 +738,14 @@ instance
   genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, Mergeable bool a, GenSym bool () b, Mergeable bool b) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, GMergeable bool a, GenSym bool () b, GMergeable bool b) =>
   GenSym bool () (Either a b)
   where
   genSymFresh = derivedNoSpecGenSymFresh
 
 -- Maybe
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple a a, Mergeable bool a) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple a a, GMergeable bool a) =>
   GenSym bool (Maybe a) (Maybe a)
 
 instance
@@ -754,12 +754,12 @@ instance
   where
   genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
 
-instance (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, Mergeable bool a) => GenSym bool () (Maybe a) where
+instance (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, GMergeable bool a) => GenSym bool () (Maybe a) where
   genSymFresh = derivedNoSpecGenSymFresh
 
 -- List
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple () a, Mergeable bool a) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple () a, GMergeable bool a) =>
   GenSym bool Integer [a]
   where
   genSymFresh v = do
@@ -790,7 +790,7 @@ data ListSpec spec = ListSpec
   deriving (Show)
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple spec a, Mergeable bool a) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple spec a, GMergeable bool a) =>
   GenSym bool (ListSpec spec) [a]
   where
   genSymFresh (ListSpec minLen maxLen subSpec) =
@@ -810,7 +810,7 @@ instance
             return $ l : r
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple a a, Mergeable bool a) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple a a, GMergeable bool a) =>
   GenSym bool [a] [a]
 
 instance
@@ -832,7 +832,7 @@ data SimpleListSpec spec = SimpleListSpec
   deriving (Show)
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple spec a, Mergeable bool a) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSymSimple spec a, GMergeable bool a) =>
   GenSym bool (SimpleListSpec spec) [a]
   where
   genSymFresh = fmap mrgSingle . genSymSimpleFresh
@@ -866,9 +866,9 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b
+    GMergeable bool b
   ) =>
   GenSym bool (aspec, bspec) (a, b)
   where
@@ -892,7 +892,7 @@ instance
       <*> genSymSimpleFresh bspec
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, Mergeable bool a, GenSym bool () b, Mergeable bool b) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, GMergeable bool a, GenSym bool () b, GMergeable bool b) =>
   GenSym bool () (a, b)
   where
   genSymFresh = derivedNoSpecGenSymFresh
@@ -910,11 +910,11 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool cspec c,
-    Mergeable bool c
+    GMergeable bool c
   ) =>
   GenSym bool (aspec, bspec, cspec) (a, b, c)
   where
@@ -945,11 +945,11 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool () a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool () b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool () c,
-    Mergeable bool c
+    GMergeable bool c
   ) =>
   GenSym bool () (a, b, c)
   where
@@ -969,13 +969,13 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool cspec c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool dspec d,
-    Mergeable bool d
+    GMergeable bool d
   ) =>
   GenSym bool (aspec, bspec, cspec, dspec) (a, b, c, d)
   where
@@ -1010,13 +1010,13 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool () a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool () b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool () c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool () d,
-    Mergeable bool d
+    GMergeable bool d
   ) =>
   GenSym bool () (a, b, c, d)
   where
@@ -1037,15 +1037,15 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool cspec c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool dspec d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool espec e,
-    Mergeable bool e
+    GMergeable bool e
   ) =>
   GenSym bool (aspec, bspec, cspec, dspec, espec) (a, b, c, d, e)
   where
@@ -1084,15 +1084,15 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool () a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool () b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool () c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool () d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool () e,
-    Mergeable bool e
+    GMergeable bool e
   ) =>
   GenSym bool () (a, b, c, d, e)
   where
@@ -1114,17 +1114,17 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool cspec c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool dspec d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool espec e,
-    Mergeable bool e,
+    GMergeable bool e,
     GenSym bool fspec f,
-    Mergeable bool f
+    GMergeable bool f
   ) =>
   GenSym bool (aspec, bspec, cspec, dspec, espec, fspec) (a, b, c, d, e, f)
   where
@@ -1167,17 +1167,17 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool () a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool () b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool () c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool () d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool () e,
-    Mergeable bool e,
+    GMergeable bool e,
     GenSym bool () f,
-    Mergeable bool f
+    GMergeable bool f
   ) =>
   GenSym bool () (a, b, c, d, e, f)
   where
@@ -1200,19 +1200,19 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool cspec c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool dspec d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool espec e,
-    Mergeable bool e,
+    GMergeable bool e,
     GenSym bool fspec f,
-    Mergeable bool f,
+    GMergeable bool f,
     GenSym bool gspec g,
-    Mergeable bool g
+    GMergeable bool g
   ) =>
   GenSym bool (aspec, bspec, cspec, dspec, espec, fspec, gspec) (a, b, c, d, e, f, g)
   where
@@ -1259,19 +1259,19 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool () a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool () b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool () c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool () d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool () e,
-    Mergeable bool e,
+    GMergeable bool e,
     GenSym bool () f,
-    Mergeable bool f,
+    GMergeable bool f,
     GenSym bool () g,
-    Mergeable bool g
+    GMergeable bool g
   ) =>
   GenSym bool () (a, b, c, d, e, f, g)
   where
@@ -1295,21 +1295,21 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool aspec a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool bspec b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool cspec c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool dspec d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool espec e,
-    Mergeable bool e,
+    GMergeable bool e,
     GenSym bool fspec f,
-    Mergeable bool f,
+    GMergeable bool f,
     GenSym bool gspec g,
-    Mergeable bool g,
+    GMergeable bool g,
     GenSym bool hspec h,
-    Mergeable bool h
+    GMergeable bool h
   ) =>
   GenSym bool (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) (a, b, c, d, e, f, g, h)
   where
@@ -1360,21 +1360,21 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool () a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSym bool () b,
-    Mergeable bool b,
+    GMergeable bool b,
     GenSym bool () c,
-    Mergeable bool c,
+    GMergeable bool c,
     GenSym bool () d,
-    Mergeable bool d,
+    GMergeable bool d,
     GenSym bool () e,
-    Mergeable bool e,
+    GMergeable bool e,
     GenSym bool () f,
-    Mergeable bool f,
+    GMergeable bool f,
     GenSym bool () g,
-    Mergeable bool g,
+    GMergeable bool g,
     GenSym bool () h,
-    Mergeable bool h
+    GMergeable bool h
   ) =>
   GenSym bool () (a, b, c, d, e, f, g, h)
   where
@@ -1400,8 +1400,8 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool spec (m (Maybe a)),
-    Mergeable1 bool m,
-    Mergeable bool a
+    GMergeable1 bool m,
+    GMergeable bool a
   ) =>
   GenSym bool spec (MaybeT m a)
   where
@@ -1430,8 +1430,8 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSymSimple (m (Maybe a)) (m (Maybe a)),
-    Mergeable1 bool m,
-    Mergeable bool a
+    GMergeable1 bool m,
+    GMergeable bool a
   ) =>
   GenSym bool (MaybeT m a) (MaybeT m a)
 
@@ -1441,9 +1441,9 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool spec (m (Either a b)),
-    Mergeable1 bool m,
-    Mergeable bool a,
-    Mergeable bool b
+    GMergeable1 bool m,
+    GMergeable bool a,
+    GMergeable bool b
   ) =>
   GenSym bool spec (ExceptT a m b)
   where
@@ -1472,8 +1472,8 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSymSimple (m (Either e a)) (m (Either e a)),
-    Mergeable1 bool m,
-    Mergeable bool e,
-    Mergeable bool a
+    GMergeable1 bool m,
+    GMergeable bool e,
+    GMergeable bool a
   ) =>
   GenSym bool (ExceptT e m a) (ExceptT e m a)

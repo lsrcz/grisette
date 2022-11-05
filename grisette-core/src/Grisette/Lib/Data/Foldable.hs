@@ -20,14 +20,14 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
 
 -- | 'foldlM' with 'Mergeable' knowledge propagation.
-mrgFoldlM :: (MonadUnion bool m, Mergeable bool b, Foldable t) => (b -> a -> m b) -> b -> t a -> m b
+mrgFoldlM :: (MonadUnion bool m, GMergeable bool b, Foldable t) => (b -> a -> m b) -> b -> t a -> m b
 mrgFoldlM f z0 xs = foldr c mrgReturn xs z0
   where
     c x k z = merge (f z x) >>= k
 {-# INLINE mrgFoldlM #-}
 
 -- | 'foldrM' with 'Mergeable' knowledge propagation.
-mrgFoldrM :: (MonadUnion bool m, Mergeable bool b, Foldable t) => (a -> b -> m b) -> b -> t a -> m b
+mrgFoldrM :: (MonadUnion bool m, GMergeable bool b, Foldable t) => (a -> b -> m b) -> b -> t a -> m b
 mrgFoldrM f z0 xs = foldl c mrgReturn xs z0
   where
     c k x z = merge (f x z) >>= k
@@ -63,6 +63,6 @@ mrgSequence_ = foldr c (mrgReturn ())
 {-# INLINE mrgSequence_ #-}
 
 -- | 'msum' with 'Mergeable' knowledge propagation.
-mrgMsum :: forall bool m a t. (MonadUnion bool m, Mergeable bool a, MonadPlus m, Foldable t) => t (m a) -> m a
+mrgMsum :: forall bool m a t. (MonadUnion bool m, GMergeable bool a, MonadPlus m, Foldable t) => t (m a) -> m a
 mrgMsum = foldr mrgMplus mrgMzero
 {-# INLINE mrgMsum #-}

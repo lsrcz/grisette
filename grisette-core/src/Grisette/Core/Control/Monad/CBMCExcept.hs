@@ -60,9 +60,9 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSymSimple a a,
-    Mergeable bool a,
+    GMergeable bool a,
     GenSymSimple b b,
-    Mergeable bool b
+    GMergeable bool b
   ) =>
   GenSym bool (CBMCEither a b) (CBMCEither a b)
 
@@ -75,7 +75,7 @@ instance
   genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, Mergeable bool a, GenSym bool () b, Mergeable bool b) =>
+  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, GMergeable bool a, GenSym bool () b, GMergeable bool b) =>
   GenSym bool () (CBMCEither a b)
   where
   genSymFresh = derivedNoSpecGenSymFresh
@@ -100,11 +100,11 @@ instance (ToSym e1 e2, ToSym a1 a2) => ToSym (CBMCEither e1 a1) (Either e2 a2) w
 
 data EitherIdx idx = L idx | R deriving (Eq, Ord, Show)
 
-instance (SymBoolOp bool, Mergeable bool e, Mergeable bool a) => Mergeable bool (CBMCEither e a) where
-  mergingStrategy = mergingStrategy1
+instance (SymBoolOp bool, GMergeable bool e, GMergeable bool a) => GMergeable bool (CBMCEither e a) where
+  gmergingStrategy = gmergingStrategy1
 
-instance (SymBoolOp bool, Mergeable bool e) => Mergeable1 bool (CBMCEither e) where
-  liftMergingStrategy ms = case mergingStrategy of
+instance (SymBoolOp bool, GMergeable bool e) => GMergeable1 bool (CBMCEither e) where
+  liftGMergingStrategy ms = case gmergingStrategy of
     SimpleStrategy m ->
       SortedStrategy
         ( \(CBMCEither e) -> case e of
@@ -116,7 +116,7 @@ instance (SymBoolOp bool, Mergeable bool e) => Mergeable1 bool (CBMCEither e) wh
               \cond (CBMCEither le) (CBMCEither re) -> case (le, re) of
                 (Left l, Left r) -> CBMCEither $ Left $ m cond l r
                 _ -> error "impossible"
-            True -> wrapStrategy ms (CBMCEither . Right) (\case (CBMCEither (Right x)) -> x; _ -> error "impossible")
+            True -> gwrapStrategy ms (CBMCEither . Right) (\case (CBMCEither (Right x)) -> x; _ -> error "impossible")
         )
     NoStrategy ->
       SortedStrategy
@@ -126,7 +126,7 @@ instance (SymBoolOp bool, Mergeable bool e) => Mergeable1 bool (CBMCEither e) wh
         )
         ( \case
             False -> NoStrategy
-            True -> wrapStrategy ms (CBMCEither . Right) (\case (CBMCEither (Right x)) -> x; _ -> error "impossible")
+            True -> gwrapStrategy ms (CBMCEither . Right) (\case (CBMCEither (Right x)) -> x; _ -> error "impossible")
         )
     SortedStrategy idx sub ->
       SortedStrategy
@@ -135,8 +135,8 @@ instance (SymBoolOp bool, Mergeable bool e) => Mergeable1 bool (CBMCEither e) wh
             Right _ -> R
         )
         ( \case
-            L i -> wrapStrategy (sub i) (CBMCEither . Left) (\case (CBMCEither (Left x)) -> x; _ -> error "impossible")
-            R -> wrapStrategy ms (CBMCEither . Right) (\case (CBMCEither (Right x)) -> x; _ -> error "impossible")
+            L i -> gwrapStrategy (sub i) (CBMCEither . Left) (\case (CBMCEither (Left x)) -> x; _ -> error "impossible")
+            R -> gwrapStrategy ms (CBMCEither . Right) (\case (CBMCEither (Right x)) -> x; _ -> error "impossible")
         )
 
 cbmcEither :: forall a c b. (a -> c) -> (b -> c) -> CBMCEither a b -> c
@@ -309,24 +309,24 @@ instance
   gextractSymbolics (CBMCExceptT v) = gextractSymbolics v
 
 instance
-  (SymBoolOp bool, Mergeable1 bool m, Mergeable bool e, Mergeable bool a) =>
-  Mergeable bool (CBMCExceptT e m a)
+  (SymBoolOp bool, GMergeable1 bool m, GMergeable bool e, GMergeable bool a) =>
+  GMergeable bool (CBMCExceptT e m a)
   where
-  mergingStrategy = wrapStrategy mergingStrategy1 CBMCExceptT runCBMCExceptT
-  {-# INLINE mergingStrategy #-}
+  gmergingStrategy = gwrapStrategy gmergingStrategy1 CBMCExceptT runCBMCExceptT
+  {-# INLINE gmergingStrategy #-}
 
-instance (SymBoolOp bool, Mergeable1 bool m, Mergeable bool e) => Mergeable1 bool (CBMCExceptT e m) where
-  liftMergingStrategy m = wrapStrategy (liftMergingStrategy (liftMergingStrategy m)) CBMCExceptT runCBMCExceptT
-  {-# INLINE liftMergingStrategy #-}
+instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool e) => GMergeable1 bool (CBMCExceptT e m) where
+  liftGMergingStrategy m = gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy m)) CBMCExceptT runCBMCExceptT
+  {-# INLINE liftGMergingStrategy #-}
 
 instance
   {-# OVERLAPPABLE #-}
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSym bool spec (m (CBMCEither a b)),
-    Mergeable1 bool m,
-    Mergeable bool a,
-    Mergeable bool b
+    GMergeable1 bool m,
+    GMergeable bool a,
+    GMergeable bool b
   ) =>
   GenSym bool spec (CBMCExceptT a m b)
   where
@@ -355,33 +355,33 @@ instance
   ( SymBoolOp bool,
     GenSymSimple () bool,
     GenSymSimple (m (CBMCEither e a)) (m (CBMCEither e a)),
-    Mergeable1 bool m,
-    Mergeable bool e,
-    Mergeable bool a
+    GMergeable1 bool m,
+    GMergeable bool e,
+    GMergeable bool a
   ) =>
   GenSym bool (CBMCExceptT e m a) (CBMCExceptT e m a)
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool e, Mergeable bool a) =>
+  (SymBoolOp bool, UnionLike bool m, GMergeable bool e, GMergeable bool a) =>
   SimpleMergeable bool (CBMCExceptT e m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool e) =>
+  (SymBoolOp bool, UnionLike bool m, GMergeable bool e) =>
   SimpleMergeable1 bool (CBMCExceptT e m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool e) =>
+  (SymBoolOp bool, UnionLike bool m, GMergeable bool e) =>
   UnionLike bool (CBMCExceptT e m)
   where
-  mergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ mergeWithStrategy (liftMergingStrategy s) v
+  mergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ mergeWithStrategy (liftGMergingStrategy s) v
   {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfWithStrategy (liftMergingStrategy s) cond t f
+  mrgIfWithStrategy s cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfWithStrategy (liftGMergingStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single = CBMCExceptT . single . return
   {-# INLINE single #-}

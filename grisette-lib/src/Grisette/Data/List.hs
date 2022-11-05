@@ -25,7 +25,7 @@ import Grisette.Lib.Control.Monad
     MonadUnion bool uf,
     MonadError e uf,
     TransformError ArrayException e,
-    Mergeable bool a
+    GMergeable bool a
   ) =>
   [a] ->
   integer ->
@@ -35,7 +35,7 @@ l !!~ p = go l p 0
     go [] _ _ = throwError $ transformError (IndexOutOfBounds "!!~")
     go (x : xs) p1 i = mrgIf (p1 `gsymeq` i) (mrgReturn x) (go xs p1 $ i + 1)
 
-symFilter :: (SymBoolOp bool, MonadUnion bool u, Mergeable bool a) => (a -> bool) -> [a] -> u [a]
+symFilter :: (SymBoolOp bool, MonadUnion bool u, GMergeable bool a) => (a -> bool) -> [a] -> u [a]
 symFilter f = go
   where
     go [] = mrgReturn []
@@ -43,10 +43,10 @@ symFilter f = go
       r <- go xs
       mrgIf (f x) (mrgReturn (x : r)) (mrgReturn r)
 
-symTake :: (SymBoolOp bool, MonadUnion bool u, Mergeable bool a, GSymIntegerOp bool integer) => integer -> [a] -> u [a]
+symTake :: (SymBoolOp bool, MonadUnion bool u, GMergeable bool a, GSymIntegerOp bool integer) => integer -> [a] -> u [a]
 symTake _ [] = mrgReturn []
 symTake x (v : vs) = mrgIf (x `gsymle` 0) (mrgReturn []) (mrgFmap (v :) $ symTake (x - 1) vs)
 
-symDrop :: (SymBoolOp bool, MonadUnion bool u, Mergeable bool a, GSymIntegerOp bool integer) => integer -> [a] -> u [a]
+symDrop :: (SymBoolOp bool, MonadUnion bool u, GMergeable bool a, GSymIntegerOp bool integer) => integer -> [a] -> u [a]
 symDrop _ [] = mrgReturn []
 symDrop x r@(_ : vs) = mrgIf (x `gsymle` 0) (mrgReturn r) (symDrop (x - 1) vs)

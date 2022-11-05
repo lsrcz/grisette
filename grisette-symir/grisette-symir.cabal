@@ -35,6 +35,7 @@ library
       Grisette.IR.SymPrim.Data.BV
       Grisette.IR.SymPrim.Data.Class.Evaluate
       Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
+      Grisette.IR.SymPrim.Data.Class.Mergeable
       Grisette.IR.SymPrim.Data.Class.SEq
       Grisette.IR.SymPrim.Data.Class.SOrd
       Grisette.IR.SymPrim.Data.Class.SymIntegerOp

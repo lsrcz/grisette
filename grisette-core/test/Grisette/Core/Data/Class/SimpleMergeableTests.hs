@@ -29,7 +29,7 @@ import Test.Tasty.HUnit
 
 newtype AndMonoidSBool = AndMonoidSBool SBool
   deriving (Show, Generic, Eq)
-  deriving (Mergeable SBool) via (Default AndMonoidSBool)
+  deriving (GMergeable SBool) via (Default AndMonoidSBool)
 
 instance Semigroup AndMonoidSBool where
   (AndMonoidSBool a) <> (AndMonoidSBool b) = AndMonoidSBool (And a b)

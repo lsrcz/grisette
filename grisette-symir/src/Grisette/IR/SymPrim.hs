@@ -45,6 +45,25 @@ module Grisette.IR.SymPrim
     evaluateSymToCon,
     ExtractSymbolics,
     extractSymbolics,
+    MergingStrategy,
+    Mergeable,
+    Mergeable',
+    mergingStrategy,
+    Mergeable1,
+    liftMergingStrategy,
+    mergingStrategy1,
+    Mergeable2,
+    liftMergingStrategy2,
+    mergingStrategy2,
+    Mergeable3,
+    liftMergingStrategy3,
+    mergingStrategy3,
+    derivedMergingStrategy,
+    wrapStrategy,
+    product2Strategy,
+    buildStrategyList,
+    resolveStrategy,
+    resolveStrategy',
   )
 where
 
@@ -52,6 +71,7 @@ import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Class.Evaluate
 import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
+import Grisette.IR.SymPrim.Data.Class.Mergeable
 import Grisette.IR.SymPrim.Data.Class.SEq
 import Grisette.IR.SymPrim.Data.Class.SOrd
 import Grisette.IR.SymPrim.Data.Class.SymIntegerOp

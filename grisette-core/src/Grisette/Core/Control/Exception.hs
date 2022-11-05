@@ -43,7 +43,7 @@ data AssertionError = AssertionError
   deriving (Show, Eq, Ord, Generic, NFData)
   deriving (ToCon AssertionError, ToSym AssertionError) via (Default AssertionError)
 
-deriving via (Default AssertionError) instance (SymBoolOp bool) => Mergeable bool AssertionError
+deriving via (Default AssertionError) instance (SymBoolOp bool) => GMergeable bool AssertionError
 
 deriving via (Default AssertionError) instance (SymBoolOp bool) => SimpleMergeable bool AssertionError
 
@@ -68,7 +68,7 @@ data VerificationConditions
   deriving (Show, Eq, Ord, Generic, NFData)
   deriving (ToCon VerificationConditions, ToSym VerificationConditions) via (Default VerificationConditions)
 
-deriving via (Default VerificationConditions) instance (SymBoolOp bool) => Mergeable bool VerificationConditions
+deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GMergeable bool VerificationConditions
 
 deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GSEq bool VerificationConditions
 
@@ -138,7 +138,7 @@ instance TransformError AssertionError AssertionError where
 -- >>> symAssert (ssymb "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionViolation)) (Single (Right ()))))
 symAssert ::
-  (TransformError AssertionError to, Mergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
+  (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
   bool ->
   erm ()
 symAssert = symFailIfNot AssertionError
@@ -152,7 +152,7 @@ symAssert = symFailIfNot AssertionError
 -- >>> symAssume (ssymb "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssumptionViolation)) (Single (Right ()))))
 symAssume ::
-  (TransformError VerificationConditions to, Mergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
+  (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
   bool ->
   erm ()
 symAssume = symFailIfNot AssumptionViolation

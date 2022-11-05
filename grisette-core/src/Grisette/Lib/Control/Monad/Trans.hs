@@ -14,7 +14,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
 -- | 'lift' with 'Mergeable' knowledge propagation.
 mrgLift ::
   forall bool t m a.
-  (MonadUnion bool (t m), MonadTrans t, Monad m, Mergeable bool a) =>
+  (MonadUnion bool (t m), MonadTrans t, Monad m, GMergeable bool a) =>
   m a ->
   t m a
 mrgLift v = merge $ lift v

@@ -94,7 +94,7 @@ data UnionMBase bool a where
     UnionMBase bool a
   -- | 'UnionMBase' with 'Mergeable' knowledge.
   UMrg ::
-    MergingStrategy bool a ->
+    GMergingStrategy bool a ->
     UnionBase bool a ->
     UnionMBase bool a
 
@@ -167,17 +167,17 @@ instance (SymBoolOp bool) => Monad (UnionMBase bool) where
   a >>= f = bindUnion (underlyingUnion a) f
   {-# INLINE (>>=) #-}
 
-instance (SymBoolOp bool, Mergeable bool a) => Mergeable bool (UnionMBase bool a) where
-  mergingStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
-  {-# INLINE mergingStrategy #-}
+instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (UnionMBase bool a) where
+  gmergingStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
+  {-# INLINE gmergingStrategy #-}
 
-instance (SymBoolOp bool, Mergeable bool a) => SimpleMergeable bool (UnionMBase bool a) where
+instance (SymBoolOp bool, GMergeable bool a) => SimpleMergeable bool (UnionMBase bool a) where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
-instance (SymBoolOp bool) => Mergeable1 bool (UnionMBase bool) where
-  liftMergingStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
-  {-# INLINE liftMergingStrategy #-}
+instance (SymBoolOp bool) => GMergeable1 bool (UnionMBase bool) where
+  liftGMergingStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
+  {-# INLINE liftGMergingStrategy #-}
 
 instance SymBoolOp bool => SimpleMergeable1 bool (UnionMBase bool) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
@@ -210,7 +210,7 @@ instance (SymBoolOp bool, GSEq bool a) => GSEq bool (UnionMBase bool a) where
     mrgSingle $ x1 `gsymeq` y1
 
 -- | Lift the 'UnionMBase' to any 'MonadUnion'.
-liftToMonadUnion :: (SymBoolOp bool, Mergeable bool a, MonadUnion bool u) => UnionMBase bool a -> u a
+liftToMonadUnion :: (SymBoolOp bool, GMergeable bool a, MonadUnion bool u) => UnionMBase bool a -> u a
 liftToMonadUnion u = go (underlyingUnion u)
   where
     go (Single v) = mrgSingle v
@@ -238,13 +238,13 @@ instance (SymBoolOp bool, GSOrd bool a) => GSOrd bool (UnionMBase bool a) where
     y1 <- y
     x1 `gsymCompare` y1
 
-instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToSym a b, Mergeable bool b) => ToSym a (UnionMBase bool b) where
+instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym a (UnionMBase bool b) where
   toSym = mrgSingle . toSym
 
-instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, Mergeable bool b) => ToSym (UnionMBase bool a) (UnionMBase bool b) where
+instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym (UnionMBase bool a) (UnionMBase bool b) where
   toSym = merge . fmap toSym
 
-instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, Mergeable bool b) => ToSym (Identity a) (UnionMBase bool b) where
+instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym (Identity a) (UnionMBase bool b) where
   toSym (Identity x) = toSym x
 
 instance (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
@@ -253,7 +253,7 @@ instance (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
       go (Single x) = toCon x
       go _ = Nothing
 
-instance (SymBoolOp bool, Mergeable bool a, GEvaluateSym model a, GEvaluateSym model bool) => GEvaluateSym model (UnionMBase bool a) where
+instance (SymBoolOp bool, GMergeable bool a, GEvaluateSym model a, GEvaluateSym model bool) => GEvaluateSym model (UnionMBase bool a) where
   gevaluateSym fillDefault model x = go $ underlyingUnion x
     where
       go :: UnionBase bool a -> UnionMBase bool a
@@ -285,7 +285,7 @@ instance (Eq bool, Eq a) => Eq (UnionMBase bool a) where
 instance (Eq bool) => Eq1 (UnionMBase bool) where
   liftEq e l r = liftEq e (underlyingUnion l) (underlyingUnion r)
 
-instance (SymBoolOp bool, Num a, Mergeable bool a) => Num (UnionMBase bool a) where
+instance (SymBoolOp bool, Num a, GMergeable bool a) => Num (UnionMBase bool a) where
   fromInteger = mrgSingle . fromInteger
   negate x = x >>= (mrgSingle . negate)
   x + y = x >>= \x1 -> y >>= \y1 -> mrgSingle $ x1 + y1
@@ -294,10 +294,10 @@ instance (SymBoolOp bool, Num a, Mergeable bool a) => Num (UnionMBase bool a) wh
   abs x = x >>= mrgSingle . abs
   signum x = x >>= mrgSingle . signum
 
-instance (SymBoolOp bool, ITEOp bool a, Mergeable bool a) => ITEOp bool (UnionMBase bool a) where
+instance (SymBoolOp bool, ITEOp bool a, GMergeable bool a) => ITEOp bool (UnionMBase bool a) where
   ites = mrgIf
 
-instance (SymBoolOp bool, LogicalOp a, Mergeable bool a) => LogicalOp (UnionMBase bool a) where
+instance (SymBoolOp bool, LogicalOp a, GMergeable bool a) => LogicalOp (UnionMBase bool a) where
   a ||~ b = do
     a1 <- a
     b1 <- b
@@ -318,7 +318,7 @@ instance (SymBoolOp bool, LogicalOp a, Mergeable bool a) => LogicalOp (UnionMBas
     b1 <- b
     mrgSingle $ a1 `implies` b1
 
-instance (SymBoolOp bool, PrimWrapper t c, Mergeable bool t) => PrimWrapper (UnionMBase bool t) c where
+instance (SymBoolOp bool, PrimWrapper t c, GMergeable bool t) => PrimWrapper (UnionMBase bool t) c where
   conc = mrgSingle . conc
   {-# INLINE conc #-}
   ssymb = mrgSingle . ssymb
@@ -335,7 +335,7 @@ instance (SymBoolOp bool, PrimWrapper t c, Mergeable bool t) => PrimWrapper (Uni
   {-# INLINE concView #-}
 
 instance
-  (SymBoolOp bool, Function f, Mergeable bool f, Mergeable bool a, Ret f ~ a) =>
+  (SymBoolOp bool, Function f, GMergeable bool f, GMergeable bool a, Ret f ~ a) =>
   Function (UnionMBase bool f)
   where
   type Arg (UnionMBase bool f) = Arg f
@@ -344,7 +344,7 @@ instance
     f1 <- f
     mrgSingle $ f1 # a
 
-instance (SymBoolOp bool, IsString a, Mergeable bool a) => IsString (UnionMBase bool a) where
+instance (SymBoolOp bool, IsString a, GMergeable bool a) => IsString (UnionMBase bool a) where
   fromString = mrgSingle . fromString
 
 {-
@@ -364,7 +364,7 @@ instance (SymBoolOp bool) => Traversable (UnionMBase bool) where
   -}
 
 -- GenSym
-instance (SymBoolOp bool, GenSym bool spec a, Mergeable bool a) => GenSym bool spec (UnionMBase bool a)
+instance (SymBoolOp bool, GenSym bool spec a, GMergeable bool a) => GenSym bool spec (UnionMBase bool a)
 
 instance (SymBoolOp bool, GenSym bool spec a) => GenSymSimple spec (UnionMBase bool a) where
   genSymSimpleFresh spec = do
@@ -372,7 +372,7 @@ instance (SymBoolOp bool, GenSym bool spec a) => GenSymSimple spec (UnionMBase b
     if not (isMerged res) then error "Not merged" else return res
 
 instance
-  (SymBoolOp bool, GenSym bool a a, GenSymSimple () bool, Mergeable bool a) =>
+  (SymBoolOp bool, GenSym bool a a, GenSymSimple () bool, GMergeable bool a) =>
   GenSym bool (UnionMBase bool a) a
   where
   genSymFresh spec = go (underlyingUnion $ merge spec)
@@ -391,10 +391,10 @@ instance IsConcrete Bool
 
 instance IsConcrete Integer
 
-instance (SymBoolOp bool, IsConcrete k, Mergeable bool t) => Mergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
-  mergingStrategy = SimpleStrategy mrgIte
+instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
+  gmergingStrategy = SimpleStrategy mrgIte
 
-instance (SymBoolOp bool, IsConcrete k, Mergeable bool t) => SimpleMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
+instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => SimpleMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
   mrgIte cond l r =
     HML.unionWith (mrgIf cond) ul ur
     where
