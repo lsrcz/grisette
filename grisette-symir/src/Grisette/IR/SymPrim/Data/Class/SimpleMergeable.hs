@@ -22,14 +22,17 @@ type SimpleMergeable a = GSimpleMergeable SymBool a
 
 mrgIte :: (SimpleMergeable a) => SymBool -> a -> a -> a
 mrgIte = gmrgIte
+{-# INLINE mrgIte #-}
 
 type SimpleMergeable1 f = GSimpleMergeable1 SymBool f
 
 liftMrgIte :: (SimpleMergeable1 f) => (SymBool -> a -> a -> a) -> SymBool -> f a -> f a -> f a
 liftMrgIte = liftGMrgIte
+{-# INLINE liftMrgIte #-}
 
 mrgIte1 :: (SimpleMergeable1 f, SimpleMergeable a) => SymBool -> f a -> f a -> f a
 mrgIte1 = gmrgIte1
+{-# INLINE mrgIte1 #-}
 
 type SimpleMergeable2 f = GSimpleMergeable2 SymBool f
 
@@ -42,6 +45,7 @@ liftMrgIte2 ::
   f a b ->
   f a b
 liftMrgIte2 = liftGMrgIte2
+{-# INLINE liftMrgIte2 #-}
 
 mrgIte2 ::
   ( SimpleMergeable2 f,
@@ -53,6 +57,7 @@ mrgIte2 ::
   f a b ->
   f a b
 mrgIte2 = gmrgIte2
+{-# INLINE mrgIte2 #-}
 
 type UnionLike u = GUnionLike SymBool u
 
