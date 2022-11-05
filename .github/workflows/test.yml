@@ -126,9 +126,11 @@ jobs:
         path: '**/test-report.xml'
         reporter: java-junit
 
-    - name: Upload Coveralls
-      run: |
-        set -ex
-        wget https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.6.1/shc-linux-x64-8.10.4.tar.bz2 && tar -xjf shc-linux-x64-8.10.4.tar.bz2 && ./shc --repo-token=${{ secrets.COVERALLS_PIZZA_TOKEN }} combined all || true
-        set +ex
+    - name: Generate coverage report 
+      uses: 8c6794b6/hpc-codecov-action@v2
+      with:
+        target: stack:all
       if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
+
+    - name: Send coverage report
+      uses: codecov/codecov-action@v3
