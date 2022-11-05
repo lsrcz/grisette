@@ -49,6 +49,7 @@ library
       Grisette.Core.Data.Class.SimpleMergeable
       Grisette.Core.Data.Class.Solver
       Grisette.Core.Data.Class.SOrd
+      Grisette.Core.Data.Class.Substitute
       Grisette.Core.Data.Class.ToCon
       Grisette.Core.Data.Class.ToSym
       Grisette.Core.Data.FileLocation

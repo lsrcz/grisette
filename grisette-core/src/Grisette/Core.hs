@@ -179,6 +179,9 @@ module Grisette.Core
     evaluateSymToCon,
     ToCon (..),
     ToSym (..),
+    SubstituteSym (..),
+    SubstituteSym' (..),
+    SubstituteSymSymbol (..),
 
     -- * Solver interface
     Solver (..),
@@ -236,6 +239,7 @@ import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solver
+import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.FileLocation
