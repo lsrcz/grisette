@@ -129,6 +129,6 @@ jobs:
     - name: Upload Coveralls
       run: |
         set -ex
-        wget https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.6.1/shc-linux-x64-8.10.4.tar.bz2 && tar -xjf shc-linux-x64-8.10.4.tar.bz2 && ./shc --repo-token=${{ secrets.COVERALLS_PIZZA_TOKEN }} combined all || true
+        wget https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.6.1/shc-linux-x64-8.10.4.tar.bz2 && tar -xjf shc-linux-x64-8.10.4.tar.bz2 && ./shc --repo-token=${{ secrets.COVERALLS_GRISETTE_TOKEN }} combined all || true
         set +ex
       if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
