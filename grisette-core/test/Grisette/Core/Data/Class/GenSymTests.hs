@@ -25,7 +25,7 @@ genSymTests =
             [ testGroup
                 "() spec"
                 [ testCase "genSym" $
-                    (genSym @SBool () "a" :: UnionMBase SBool SBool)
+                    (ggenSym @SBool () "a" :: UnionMBase SBool SBool)
                       @=? mrgSingle (ISBool "a" 0),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: SBool)
@@ -34,7 +34,7 @@ genSymTests =
               testGroup
                 "SBool spec"
                 [ testCase "genSym" $
-                    (genSym @SBool (CBool True) "a" :: UnionMBase SBool SBool)
+                    (ggenSym @SBool (CBool True) "a" :: UnionMBase SBool SBool)
                       @=? mrgSingle (ISBool "a" 0),
                   testCase "genSymSimple" $
                     (genSymSimple (CBool True) "a" :: SBool)
@@ -44,17 +44,17 @@ genSymTests =
           testGroup
             "Bool"
             [ testCase "() spec" $
-                (genSym @SBool () "a" :: UnionMBase SBool Bool)
+                (ggenSym @SBool () "a" :: UnionMBase SBool Bool)
                   @=? mrgIf (ISBool "a" 0) (mrgSingle False) (mrgSingle True),
               testGroup
                 "Bool spec"
                 [ testGroup
                     "genSym"
                     [ testCase "True" $
-                        (genSym @SBool True "a" :: UnionMBase SBool Bool)
+                        (ggenSym @SBool True "a" :: UnionMBase SBool Bool)
                           @=? mrgSingle True,
                       testCase "False" $
-                        (genSym @SBool False "a" :: UnionMBase SBool Bool)
+                        (ggenSym @SBool False "a" :: UnionMBase SBool Bool)
                           @=? mrgSingle False
                     ],
                   testGroup
@@ -73,17 +73,17 @@ genSymTests =
             [ testGroup
                 "Integer spec"
                 [ testCase "genSym" $
-                    (genSym @SBool (1 :: Integer) "a" :: UnionMBase SBool Integer)
+                    (ggenSym @SBool (1 :: Integer) "a" :: UnionMBase SBool Integer)
                       @=? mrgSingle 1,
                   testCase "genSymSimple" $
                     (genSymSimple (1 :: Integer) "a" :: Integer)
                       @=? 1
                 ],
               testCase "Upper bound spec" $
-                (genSym @SBool (EnumGenUpperBound (3 :: Integer)) "a" :: UnionMBase SBool Integer)
+                (ggenSym @SBool (EnumGenUpperBound (3 :: Integer)) "a" :: UnionMBase SBool Integer)
                   @=? mrgIf (ISBool "a" 0) (mrgSingle 0) (mrgIf (ISBool "a" 1) (mrgSingle 1) (mrgSingle 2)),
               testCase "Bound spec" $
-                (genSym @SBool (EnumGenBound (-1 :: Integer) 2) "a" :: UnionMBase SBool Integer)
+                (ggenSym @SBool (EnumGenBound (-1 :: Integer) 2) "a" :: UnionMBase SBool Integer)
                   @=? mrgIf (ISBool "a" 0) (mrgSingle (-1)) (mrgIf (ISBool "a" 1) (mrgSingle 0) (mrgSingle 1))
             ],
           testGroup
@@ -91,16 +91,16 @@ genSymTests =
             [ testGroup
                 "Char spec"
                 [ testCase "genSym" $
-                    (genSym @SBool 'x' "a" :: UnionMBase SBool Char)
+                    (ggenSym @SBool 'x' "a" :: UnionMBase SBool Char)
                       @=? mrgSingle 'x',
                   testCase "genSymSimple" $
                     (genSymSimple 'x' "a" :: Char) @=? 'x'
                 ],
               testCase "Upper bound spec" $
-                (genSym @SBool (EnumGenUpperBound @Char (toEnum 3)) "a" :: UnionMBase SBool Char)
+                (ggenSym @SBool (EnumGenUpperBound @Char (toEnum 3)) "a" :: UnionMBase SBool Char)
                   @=? mrgIf (ISBool "a" 0) (mrgSingle $ toEnum 0) (mrgIf (ISBool "a" 1) (mrgSingle $ toEnum 1) (mrgSingle $ toEnum 2)),
               testCase "Bound spec" $
-                (genSym @SBool (EnumGenBound 'a' 'd') "a" :: UnionMBase SBool Char)
+                (ggenSym @SBool (EnumGenBound 'a' 'd') "a" :: UnionMBase SBool Char)
                   @=? mrgIf (ISBool "a" 0) (mrgSingle 'a') (mrgIf (ISBool "a" 1) (mrgSingle 'b') (mrgSingle 'c'))
             ],
           testGroup
@@ -110,20 +110,20 @@ genSymTests =
                 [ testGroup
                     "Nothing"
                     [ testCase "genSym" $
-                        (genSym (Nothing :: Maybe SBool) "a" :: UnionMBase SBool (Maybe SBool)) @=? mrgSingle Nothing,
+                        (ggenSym (Nothing :: Maybe SBool) "a" :: UnionMBase SBool (Maybe SBool)) @=? mrgSingle Nothing,
                       testCase "genSymSimple" $
                         (genSymSimple (Nothing :: Maybe SBool) "a" :: Maybe SBool) @=? Nothing
                     ],
                   testGroup
                     "Just v"
                     [ testCase "genSym" $
-                        (genSym (Just (SSBool "a")) "a" :: UnionMBase SBool (Maybe SBool)) @=? mrgSingle (Just (ISBool "a" 0)),
+                        (ggenSym (Just (SSBool "a")) "a" :: UnionMBase SBool (Maybe SBool)) @=? mrgSingle (Just (ISBool "a" 0)),
                       testCase "genSymSimple" $
                         (genSymSimple (Just (SSBool "a")) "a" :: Maybe SBool) @=? Just (ISBool "a" 0)
                     ]
                 ],
               testCase "() spec" $
-                (genSym () "a" :: UnionMBase SBool (Maybe SBool))
+                (ggenSym () "a" :: UnionMBase SBool (Maybe SBool))
                   @=? mrgIf (ISBool "a" 0) (mrgSingle Nothing) (mrgSingle (Just (ISBool "a" 1)))
             ],
           testGroup
@@ -133,7 +133,7 @@ genSymTests =
                 [ testGroup
                     "Left v"
                     [ testCase "genSym" $
-                        (genSym (Left (SSBool "a") :: Either SBool SBool) "a" :: UnionMBase SBool (Either SBool SBool))
+                        (ggenSym (Left (SSBool "a") :: Either SBool SBool) "a" :: UnionMBase SBool (Either SBool SBool))
                           @=? mrgSingle (Left (ISBool "a" 0)),
                       testCase "genSymSimple" $
                         (genSymSimple (Left (SSBool "a") :: Either SBool SBool) "a" :: Either SBool SBool)
@@ -142,7 +142,7 @@ genSymTests =
                   testGroup
                     "Right v"
                     [ testCase "genSym" $
-                        (genSym (Right (SSBool "a") :: Either SBool SBool) "a" :: UnionMBase SBool (Either SBool SBool))
+                        (ggenSym (Right (SSBool "a") :: Either SBool SBool) "a" :: UnionMBase SBool (Either SBool SBool))
                           @=? mrgSingle (Right (ISBool "a" 0)),
                       testCase "genSymSimple" $
                         (genSymSimple (Right (SSBool "a") :: Either SBool SBool) "a" :: Either SBool SBool)
@@ -150,7 +150,7 @@ genSymTests =
                     ]
                 ],
               testCase "() spec" $ do
-                (genSym () "a" :: UnionMBase SBool (Either SBool SBool))
+                (ggenSym () "a" :: UnionMBase SBool (Either SBool SBool))
                   @=? mrgIf (ISBool "a" 0) (mrgSingle $ Left $ ISBool "a" 1) (mrgSingle $ Right $ ISBool "a" 2)
             ],
           testGroup
@@ -158,9 +158,9 @@ genSymTests =
             [ testGroup
                 "Max length spec"
                 [ testCase "max length = 0" $
-                    (genSym (0 :: Integer) "a" :: UnionMBase SBool [SBool]) @=? mrgSingle [],
+                    (ggenSym (0 :: Integer) "a" :: UnionMBase SBool [SBool]) @=? mrgSingle [],
                   testCase "max length = 3" $
-                    (genSym (3 :: Integer) "a" :: UnionMBase SBool [SBool])
+                    (ggenSym (3 :: Integer) "a" :: UnionMBase SBool [SBool])
                       @=? mrgIf
                         (ISBool "a" 3)
                         (mrgSingle [])
@@ -177,7 +177,7 @@ genSymTests =
               testGroup
                 "Min & max length spec"
                 [ testCase "min length = 1, max length = 3" $
-                    (genSym (ListSpec 1 3 ()) "a" :: UnionMBase SBool [SBool])
+                    (ggenSym (ListSpec 1 3 ()) "a" :: UnionMBase SBool [SBool])
                       @=? mrgIf
                         (ISBool "a" 3)
                         (mrgSingle [ISBool "a" 2])
@@ -187,7 +187,7 @@ genSymTests =
                             (mrgSingle [ISBool "a" 0, ISBool "a" 1, ISBool "a" 2])
                         ),
                   testCase "min length = 1, max length = 2, nested" $
-                    (genSym (ListSpec 1 2 (ListSpec 1 2 ())) "a" :: UnionMBase SBool [UnionMBase SBool [SBool]])
+                    (ggenSym (ListSpec 1 2 (ListSpec 1 2 ())) "a" :: UnionMBase SBool [UnionMBase SBool [SBool]])
                       @=? mrgIf
                         (ISBool "a" 6)
                         ( mrgSingle
@@ -214,7 +214,7 @@ genSymTests =
                 [ testGroup
                     "length = 2"
                     [ testCase "genSym" $
-                        (genSym (SimpleListSpec 2 ()) "a" :: UnionMBase SBool [SBool])
+                        (ggenSym (SimpleListSpec 2 ()) "a" :: UnionMBase SBool [SBool])
                           @=? mrgSingle [ISBool "a" 0, ISBool "a" 1],
                       testCase "genSymSimple" $
                         (genSymSimple (SimpleListSpec 2 ()) "a" :: [SBool])
@@ -223,7 +223,7 @@ genSymTests =
                   testGroup
                     "length = 2, nested"
                     [ testCase "genSym" $
-                        (genSym (SimpleListSpec 2 (SimpleListSpec 2 ())) "a" :: UnionMBase SBool [[SBool]])
+                        (ggenSym (SimpleListSpec 2 (SimpleListSpec 2 ())) "a" :: UnionMBase SBool [[SBool]])
                           @=? mrgSingle [[ISBool "a" 0, ISBool "a" 1], [ISBool "a" 2, ISBool "a" 3]],
                       testCase "genSymSimple" $
                         (genSymSimple (SimpleListSpec 2 (SimpleListSpec 2 ())) "a" :: [[SBool]])
@@ -233,7 +233,7 @@ genSymTests =
               testGroup
                 "List with same shape spec"
                 [ testCase "genSym" $
-                    (genSym [[CBool True], [SSBool "a", SSBool "b"]] "a" :: UnionMBase SBool [[SBool]])
+                    (ggenSym [[CBool True], [SSBool "a", SSBool "b"]] "a" :: UnionMBase SBool [[SBool]])
                       @=? mrgSingle [[ISBool "a" 0], [ISBool "a" 1, ISBool "a" 2]],
                   testCase "genSymSimple" $
                     (genSymSimple [[CBool True], [SSBool "a", SSBool "b"]] "a" :: [[SBool]])
@@ -243,7 +243,7 @@ genSymTests =
           testGroup
             "()"
             [ testCase "() spec" $ do
-                (genSym () "a" :: UnionMBase SBool ()) @=? mrgSingle ()
+                (ggenSym () "a" :: UnionMBase SBool ()) @=? mrgSingle ()
                 (genSymSimple () "a" :: ()) @=? ()
             ],
           testGroup
@@ -251,7 +251,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    (genSym (EnumGenUpperBound @Integer 2, EnumGenUpperBound @Integer 2) "a" :: UnionMBase SBool (Integer, Integer))
+                    (ggenSym (EnumGenUpperBound @Integer 2, EnumGenUpperBound @Integer 2) "a" :: UnionMBase SBool (Integer, Integer))
                       @=? do
                         x1 <- mrgIf (ISBool "a" 0) (mrgSingle 0) (mrgSingle 1)
                         x2 <- mrgIf (ISBool "a" 1) (mrgSingle 0) (mrgSingle 1)
@@ -263,7 +263,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool)) @=? mrgSingle (ISBool "a" 0, ISBool "a" 1),
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool)) @=? mrgSingle (ISBool "a" 0, ISBool "a" 1),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: (SBool, SBool)) @=? (ISBool "a" 0, ISBool "a" 1)
                 ]
@@ -273,7 +273,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
+                    ( ggenSym
                         ( EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2
@@ -293,7 +293,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool, SBool))
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool, SBool))
                       @=? mrgSingle (ISBool "a" 0, ISBool "a" 1, ISBool "a" 2),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: (SBool, SBool, SBool))
@@ -305,7 +305,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
+                    ( ggenSym
                         ( EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
@@ -335,7 +335,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool))
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool))
                       @=? mrgSingle (ISBool "a" 0, ISBool "a" 1, ISBool "a" 2, ISBool "a" 3),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: (SBool, SBool, SBool, SBool))
@@ -347,7 +347,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
+                    ( ggenSym
                         ( EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
@@ -380,7 +380,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool))
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool))
                       @=? mrgSingle
                         (ISBool "a" 0, ISBool "a" 1, ISBool "a" 2, ISBool "a" 3, ISBool "a" 4),
                   testCase "genSymSimple" $
@@ -398,7 +398,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
+                    ( ggenSym
                         ( EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
@@ -434,7 +434,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool, SBool))
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool, SBool))
                       @=? mrgSingle
                         ( ISBool "a" 0,
                           ISBool "a" 1,
@@ -459,7 +459,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
+                    ( ggenSym
                         ( EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
@@ -498,7 +498,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool, SBool, SBool))
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool, SBool, SBool))
                       @=? mrgSingle
                         ( ISBool "a" 0,
                           ISBool "a" 1,
@@ -525,7 +525,7 @@ genSymTests =
             [ testGroup
                 "Some spec"
                 [ testCase "genSym" $
-                    ( genSym
+                    ( ggenSym
                         ( EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
                           EnumGenUpperBound @Integer 2,
@@ -567,7 +567,7 @@ genSymTests =
               testGroup
                 "No spec"
                 [ testCase "genSym" $
-                    (genSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool, SBool, SBool, SBool))
+                    (ggenSym () "a" :: UnionMBase SBool (SBool, SBool, SBool, SBool, SBool, SBool, SBool, SBool))
                       @=? mrgSingle
                         ( ISBool "a" 0,
                           ISBool "a" 1,
@@ -598,7 +598,7 @@ genSymTests =
                 [ testGroup
                     "MaybeT Nothing"
                     [ testCase "genSym" $
-                        (genSym (MaybeT Nothing :: MaybeT Maybe SBool) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                        (ggenSym (MaybeT Nothing :: MaybeT Maybe SBool) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                           @=? mrgSingle (MaybeT Nothing),
                       testCase "genSymSimple" $
                         (genSymSimple (MaybeT Nothing :: MaybeT Maybe SBool) "a" :: MaybeT Maybe SBool)
@@ -607,7 +607,7 @@ genSymTests =
                   testGroup
                     "MaybeT (Just Nothing)"
                     [ testCase "genSym" $
-                        (genSym (MaybeT (Just Nothing) :: MaybeT Maybe SBool) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                        (ggenSym (MaybeT (Just Nothing) :: MaybeT Maybe SBool) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                           @=? mrgSingle (MaybeT (Just Nothing)),
                       testCase "genSymSimple" $
                         (genSymSimple (MaybeT (Just (Just $ SSBool "a")) :: MaybeT Maybe SBool) "a" :: MaybeT Maybe SBool)
@@ -616,7 +616,7 @@ genSymTests =
                   testGroup
                     "MaybeT (Just (Just v))"
                     [ testCase "genSym" $
-                        (genSym (MaybeT (Just (Just $ SSBool "a")) :: MaybeT Maybe SBool) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                        (ggenSym (MaybeT (Just (Just $ SSBool "a")) :: MaybeT Maybe SBool) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                           @=? mrgSingle (MaybeT (Just (Just $ ISBool "a" 0))),
                       testCase "genSymSimple" $
                         (genSymSimple (MaybeT (Just (Just $ SSBool "a")) :: MaybeT Maybe SBool) "a" :: MaybeT Maybe SBool)
@@ -624,7 +624,7 @@ genSymTests =
                     ]
                 ],
               testCase "No spec" $
-                (genSym () "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                (ggenSym () "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                   @=? mrgIf
                     (ISBool "a" 0)
                     (mrgSingle $ MaybeT Nothing)
@@ -638,7 +638,7 @@ genSymTests =
                 [ testGroup
                     "Nothing"
                     [ testCase "genSym" $
-                        (genSym (Nothing :: Maybe (Maybe SBool)) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                        (ggenSym (Nothing :: Maybe (Maybe SBool)) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                           @=? mrgSingle (MaybeT Nothing),
                       testCase "genSymSimple" $
                         (genSymSimple (Nothing :: Maybe (Maybe SBool)) "a" :: MaybeT Maybe SBool)
@@ -647,7 +647,7 @@ genSymTests =
                   testGroup
                     "Just Nothing"
                     [ testCase "genSym" $
-                        (genSym (Just Nothing :: Maybe (Maybe SBool)) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                        (ggenSym (Just Nothing :: Maybe (Maybe SBool)) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                           @=? mrgSingle (MaybeT (Just Nothing)),
                       testCase "genSymSimple" $
                         (genSymSimple (Just Nothing :: Maybe (Maybe SBool)) "a" :: MaybeT Maybe SBool)
@@ -656,7 +656,7 @@ genSymTests =
                   testGroup
                     "Just (Just v)"
                     [ testCase "genSym" $
-                        (genSym (Just $ Just $ SSBool "a" :: Maybe (Maybe SBool)) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
+                        (ggenSym (Just $ Just $ SSBool "a" :: Maybe (Maybe SBool)) "a" :: UnionMBase SBool (MaybeT Maybe SBool))
                           @=? mrgSingle (MaybeT (Just (Just $ ISBool "a" 0))),
                       testCase "genSymSimple" $
                         (genSymSimple (Just $ Just $ SSBool "a" :: Maybe (Maybe SBool)) "a" :: MaybeT Maybe SBool)
@@ -671,7 +671,7 @@ genSymTests =
                 [ testGroup
                     "ExceptT Nothing"
                     [ testCase "genSym" $
-                        (genSym (ExceptT Nothing :: ExceptT SBool Maybe SBool) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
+                        (ggenSym (ExceptT Nothing :: ExceptT SBool Maybe SBool) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
                           @=? mrgSingle (ExceptT Nothing),
                       testCase "genSymSimple" $
                         (genSymSimple (ExceptT Nothing :: ExceptT SBool Maybe SBool) "a" :: ExceptT SBool Maybe SBool)
@@ -680,7 +680,7 @@ genSymTests =
                   testGroup
                     "ExceptT (Just (Left v))"
                     [ testCase "genSym" $
-                        ( genSym (ExceptT $ Just $ Left $ SSBool "a" :: ExceptT SBool Maybe SBool) "a" ::
+                        ( ggenSym (ExceptT $ Just $ Left $ SSBool "a" :: ExceptT SBool Maybe SBool) "a" ::
                             UnionMBase SBool (ExceptT SBool Maybe SBool)
                         )
                           @=? mrgSingle (ExceptT $ Just $ Left $ ISBool "a" 0),
@@ -695,7 +695,7 @@ genSymTests =
                   testGroup
                     "ExceptT (Just (Right v))"
                     [ testCase "genSym" $
-                        ( genSym (ExceptT $ Just $ Right $ SSBool "a" :: ExceptT SBool Maybe SBool) "a" ::
+                        ( ggenSym (ExceptT $ Just $ Right $ SSBool "a" :: ExceptT SBool Maybe SBool) "a" ::
                             UnionMBase SBool (ExceptT SBool Maybe SBool)
                         )
                           @=? mrgSingle (ExceptT $ Just $ Right $ ISBool "a" 0),
@@ -709,7 +709,7 @@ genSymTests =
                     ]
                 ],
               testCase "() spec" $ do
-                (genSym () "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
+                (ggenSym () "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
                   @=? mrgIf
                     (ISBool "a" 0)
                     (mrgSingle $ ExceptT Nothing)
@@ -723,7 +723,7 @@ genSymTests =
                 [ testGroup
                     "Nothing"
                     [ testCase "genSym" $
-                        (genSym (Nothing :: Maybe (Either SBool SBool)) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
+                        (ggenSym (Nothing :: Maybe (Either SBool SBool)) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
                           @=? mrgSingle (ExceptT Nothing),
                       testCase "genSymSimple" $
                         (genSymSimple (Nothing :: Maybe (Either SBool SBool)) "a" :: ExceptT SBool Maybe SBool)
@@ -732,7 +732,7 @@ genSymTests =
                   testGroup
                     "Just (left v)"
                     [ testCase "genSym" $
-                        (genSym (Just $ Left $ SSBool "a" :: Maybe (Either SBool SBool)) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
+                        (ggenSym (Just $ Left $ SSBool "a" :: Maybe (Either SBool SBool)) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
                           @=? mrgSingle (ExceptT (Just (Left $ ISBool "a" 0))),
                       testCase "genSymSimple" $
                         (genSymSimple (Just $ Left $ SSBool "a" :: Maybe (Either SBool SBool)) "a" :: ExceptT SBool Maybe SBool)
@@ -741,7 +741,7 @@ genSymTests =
                   testGroup
                     "Just (left v)"
                     [ testCase "genSym" $
-                        (genSym (Just $ Right $ SSBool "a" :: Maybe (Either SBool SBool)) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
+                        (ggenSym (Just $ Right $ SSBool "a" :: Maybe (Either SBool SBool)) "a" :: UnionMBase SBool (ExceptT SBool Maybe SBool))
                           @=? mrgSingle (ExceptT (Just (Right $ ISBool "a" 0))),
                       testCase "genSymSimple" $
                         (genSymSimple (Just $ Right $ SSBool "a" :: Maybe (Either SBool SBool)) "a" :: ExceptT SBool Maybe SBool)
@@ -751,22 +751,22 @@ genSymTests =
             ]
         ],
       testGroup
-        "choose*"
-        [ testCase "chooseFresh" $ do
-            (runGenSymFresh (chooseFresh [1, 2, 3]) "a" :: UnionMBase SBool Int)
+        "gchoose*"
+        [ testCase "gchooseFresh" $ do
+            (runGenSymFresh (gchooseFresh [1, 2, 3]) "a" :: UnionMBase SBool Int)
               @=? mrgIf (ISBool "a" 0) (mrgSingle 1) (mrgIf (ISBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
-          testCase "choose" $ do
-            (choose [1, 2, 3] "a" :: UnionMBase SBool Int)
+          testCase "gchoose" $ do
+            (gchoose [1, 2, 3] "a" :: UnionMBase SBool Int)
               @=? mrgIf (ISBool "a" 0) (mrgSingle 1) (mrgIf (ISBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
-          testCase "chooseSimpleFresh" $ do
-            (runGenSymFresh (chooseSimpleFresh (Proxy @SBool) ["x", "y", "z"]) "a" :: SBool)
+          testCase "gchooseSimpleFresh" $ do
+            (runGenSymFresh (gchooseSimpleFresh (Proxy @SBool) ["x", "y", "z"]) "a" :: SBool)
               @=? ites (ISBool "a" 0) (SSBool "x") (ites (ISBool "a" 1) (SSBool "y") (SSBool "z")),
-          testCase "chooseSimple" $ do
-            (chooseSimple (Proxy @SBool) ["x", "y", "z"] "a" :: SBool)
+          testCase "gchooseSimple" $ do
+            (gchooseSimple (Proxy @SBool) ["x", "y", "z"] "a" :: SBool)
               @=? ites (ISBool "a" 0) (SSBool "x") (ites (ISBool "a" 1) (SSBool "y") (SSBool "z")),
-          testCase "chooseUnionFresh" $ do
+          testCase "gchooseUnionFresh" $ do
             ( runGenSymFresh
-                (chooseUnionFresh [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4])
+                (gchooseUnionFresh [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4])
                 "a" ::
                 UnionMBase SBool Int
               )
@@ -778,8 +778,8 @@ genSymTests =
                     (mrgIf (SSBool "x") 2 3)
                     (mrgIf (SSBool "x") 3 4)
                 ),
-          testCase "chooseUnion" $ do
-            (chooseUnion [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4] "a" :: UnionMBase SBool Int)
+          testCase "gchooseUnion" $ do
+            (gchooseUnion [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4] "a" :: UnionMBase SBool Int)
               @=? mrgIf
                 (ISBool "a" 0)
                 (mrgIf (SSBool "x") 1 2)

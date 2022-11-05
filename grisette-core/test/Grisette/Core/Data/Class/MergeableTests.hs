@@ -38,7 +38,7 @@ mergeableTests =
     "MergeableTests"
     [ testGroup
         "Mergeable for common types"
-        [ let SimpleStrategy f = mergingStrategy :: MergingStrategy SBool SBool
+        [ let SimpleStrategy f = gmergingStrategy :: GMergingStrategy SBool SBool
            in testGroup
                 "Mergeable for SBool"
                 [ testCase "true condition" $
@@ -114,12 +114,12 @@ mergeableTests =
               testGroup
                 "Either SBool SBool"
                 [ testCase "Left v" $ do
-                    let (idxsL, SimpleStrategy fL) = resolveStrategy @SBool mergingStrategy (Left (SSBool "a") :: Either SBool SBool)
+                    let (idxsL, SimpleStrategy fL) = gresolveStrategy @SBool gmergingStrategy (Left (SSBool "a") :: Either SBool SBool)
                     idxsL @=? [DynamicSortedIdx False]
                     fL (SSBool "a") (Left $ SSBool "b") (Left $ SSBool "c")
                       @=? Left (ITE (SSBool "a") (SSBool "b") (SSBool "c")),
                   testCase "Right v" $ do
-                    let (idxsR, SimpleStrategy fR) = resolveStrategy @SBool mergingStrategy (Right (SSBool "a") :: Either SBool SBool)
+                    let (idxsR, SimpleStrategy fR) = gresolveStrategy @SBool gmergingStrategy (Right (SSBool "a") :: Either SBool SBool)
                     idxsR @=? [DynamicSortedIdx True]
                     fR (SSBool "a") (Right $ SSBool "b") (Right $ SSBool "c")
                       @=? Right (ITE (SSBool "a") (SSBool "b") (SSBool "c"))
@@ -143,7 +143,7 @@ mergeableTests =
                         [(SSBool "a", Just x, Just x, Just x)]
                 ],
               testCase "Maybe SBool / Just v" $ do
-                let (idxsJ, SimpleStrategy fJ) = resolveStrategy @SBool mergingStrategy (Just (SSBool "a") :: Maybe SBool)
+                let (idxsJ, SimpleStrategy fJ) = gresolveStrategy @SBool gmergingStrategy (Just (SSBool "a") :: Maybe SBool)
                 idxsJ @=? [DynamicSortedIdx True]
                 fJ (SSBool "a") (Just $ SSBool "b") (Just $ SSBool "c")
                   @=? Just (ITE (SSBool "a") (SSBool "b") (SSBool "c"))
@@ -151,7 +151,7 @@ mergeableTests =
           testGroup
             "List"
             [ testCase "BuildStrategyList" $ do
-                case buildStrategyList @SBool @Integer mergingStrategy [1, 2, 3] of
+                case gbuildStrategyList @SBool @Integer gmergingStrategy [1, 2, 3] of
                   StrategyList idxs _ -> do
                     idxs
                       @=? [ [DynamicSortedIdx (1 :: Integer)],
@@ -162,13 +162,13 @@ mergeableTests =
                 ioProperty . \(x :: [Integer]) -> do
                   testMergeableSimpleEquivClass
                     x
-                    [DynamicSortedIdx (length x), DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy x]
+                    [DynamicSortedIdx (length x), DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy x]
                     [(SSBool "a", x, x, x)],
               testProperty "Nested List for ordered type" $
                 ioProperty . \(x :: [[Integer]]) -> do
                   testMergeableSimpleEquivClass
                     x
-                    [DynamicSortedIdx (length x), DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy x]
+                    [DynamicSortedIdx (length x), DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy x]
                     [(SSBool "a", x, x, x)],
               testGroup
                 "[SBool]"
@@ -193,7 +193,7 @@ mergeableTests =
             testMergeableSimpleEquivClass
               ([1 :: Integer], [SSBool "b", SSBool "c"])
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int)
               ]
               [ ( SSBool "a",
@@ -210,7 +210,7 @@ mergeableTests =
             testMergeableSimpleEquivClass
               ([1 :: Integer], [SSBool "b", SSBool "c"], SSBool "d")
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int)
               ]
               [ ( SSBool "a",
@@ -228,7 +228,7 @@ mergeableTests =
             testMergeableSimpleEquivClass
               ([1 :: Integer], [SSBool "b", SSBool "c"], SSBool "d", [SSBool "f"])
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int),
                 DynamicSortedIdx (1 :: Int)
               ]
@@ -248,11 +248,11 @@ mergeableTests =
             testMergeableSimpleEquivClass
               ([1 :: Integer], [SSBool "b", SSBool "c"], SSBool "d", [SSBool "f"], [2 :: Integer, 3])
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int),
                 DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx (2 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [2 :: Integer, 3]
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [2 :: Integer, 3]
               ]
               [ ( SSBool "a",
                   ([1], [SSBool "c", SSBool "d"], SSBool "e", [SSBool "i"], [2, 3]),
@@ -271,11 +271,11 @@ mergeableTests =
             testMergeableSimpleEquivClass
               ([1 :: Integer], [SSBool "b", SSBool "c"], SSBool "d", [SSBool "f"], [2 :: Integer, 3], 2 :: Integer)
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int),
                 DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx (2 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [2 :: Integer, 3],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [2 :: Integer, 3],
                 DynamicSortedIdx (2 :: Integer)
               ]
               [ ( SSBool "a",
@@ -303,11 +303,11 @@ mergeableTests =
                 Just (SSBool "a")
               )
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int),
                 DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx (2 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [2 :: Integer, 3],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [2 :: Integer, 3],
                 DynamicSortedIdx (2 :: Integer),
                 DynamicSortedIdx True
               ]
@@ -338,11 +338,11 @@ mergeableTests =
                 Left 1 :: Either Integer Integer
               )
               [ DynamicSortedIdx (1 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [1 :: Integer],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [1 :: Integer],
                 DynamicSortedIdx (2 :: Int),
                 DynamicSortedIdx (1 :: Int),
                 DynamicSortedIdx (2 :: Int),
-                DynamicSortedIdx $ buildStrategyList @SBool mergingStrategy [2 :: Integer, 3],
+                DynamicSortedIdx $ gbuildStrategyList @SBool gmergingStrategy [2 :: Integer, 3],
                 DynamicSortedIdx (2 :: Integer),
                 DynamicSortedIdx True,
                 DynamicSortedIdx False,
@@ -369,14 +369,14 @@ mergeableTests =
            in testGroup
                 "Function"
                 [ testCase "Simply mergeable result" $ do
-                    case mergingStrategy :: MergingStrategy SBool (Maybe SBool -> SBool) of
+                    case gmergingStrategy :: GMergingStrategy SBool (Maybe SBool -> SBool) of
                       SimpleStrategy f -> do
                         let r = f (SSBool "a") f1 f2
                         r (Just (SSBool "x")) @=? ITE (SSBool "a") (SSBool "x") (Not (SSBool "x"))
                         r Nothing @=? ITE (SSBool "a") (CBool True) (CBool False)
                       _ -> assertFailure "Bad mergeable strategy type",
                   testCase "Other mergeable result" $ do
-                    case mergingStrategy :: MergingStrategy SBool (Maybe SBool -> Integer) of
+                    case gmergingStrategy :: GMergingStrategy SBool (Maybe SBool -> Integer) of
                       NoStrategy -> return ()
                       _ -> assertFailure "Bad mergeable strategy type"
                 ],
@@ -403,8 +403,8 @@ mergeableTests =
                 ],
               testCase "MaybeT Maybe SBool / MaybeT (Just (Just v))" $ do
                 let (idxsJ, SimpleStrategy fJ) =
-                      resolveStrategy @SBool
-                        mergingStrategy
+                      gresolveStrategy @SBool
+                        gmergingStrategy
                         (MaybeT (Just (Just (SSBool "a"))) :: MaybeT Maybe SBool)
                 idxsJ @=? [DynamicSortedIdx True, DynamicSortedIdx True]
                 fJ (SSBool "a") (MaybeT $ Just $ Just $ SSBool "b") (MaybeT $ Just $ Just $ SSBool "c")
@@ -436,16 +436,16 @@ mergeableTests =
                 "ExceptT SBool Maybe SBool"
                 [ testCase "ExceptT (Just (Left v))" $ do
                     let (idxsJL, SimpleStrategy fJL) =
-                          resolveStrategy @SBool
-                            mergingStrategy
+                          gresolveStrategy @SBool
+                            gmergingStrategy
                             (ExceptT (Just (Left (SSBool "a"))) :: ExceptT SBool Maybe SBool)
                     idxsJL @=? [DynamicSortedIdx True, DynamicSortedIdx False]
                     fJL (SSBool "a") (ExceptT $ Just $ Left $ SSBool "b") (ExceptT $ Just $ Left $ SSBool "c")
                       @=? ExceptT (Just (Left (ITE (SSBool "a") (SSBool "b") (SSBool "c")))),
                   testCase "ExceptT (Just (Right v))" $ do
                     let (idxsJR, SimpleStrategy fJR) =
-                          resolveStrategy @SBool
-                            mergingStrategy
+                          gresolveStrategy @SBool
+                            gmergingStrategy
                             (ExceptT (Just (Right (SSBool "a"))) :: ExceptT SBool Maybe SBool)
                     idxsJR @=? [DynamicSortedIdx True, DynamicSortedIdx True]
                     fJR (SSBool "a") (ExceptT $ Just $ Right $ SSBool "b") (ExceptT $ Just $ Right $ SSBool "c")
@@ -455,7 +455,7 @@ mergeableTests =
           testGroup
             "StateT"
             [ testCase "Lazy StateT" $ do
-                let SimpleStrategy s = mergingStrategy :: MergingStrategy SBool (StateLazy.StateT Integer (UnionMBase SBool) SBool)
+                let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool (StateLazy.StateT Integer (UnionMBase SBool) SBool)
                 let st1 :: StateLazy.StateT Integer (UnionMBase SBool) SBool =
                       StateLazy.StateT $ \(x :: Integer) -> mrgSingle (SSBool "a", x + 2)
                 let st2 :: StateLazy.StateT Integer (UnionMBase SBool) SBool =
@@ -464,7 +464,7 @@ mergeableTests =
                 StateLazy.runStateT st3 2 @=? mrgSingle (ITE (SSBool "c") (SSBool "a") (SSBool "b"), 4)
                 StateLazy.runStateT st3 3 @=? mrgIf (SSBool "c") (mrgSingle (SSBool "a", 5)) (mrgSingle (SSBool "b", 6)),
               testCase "Strict StateT" $ do
-                let SimpleStrategy s = mergingStrategy :: MergingStrategy SBool (StateStrict.StateT Integer (UnionMBase SBool) SBool)
+                let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool (StateStrict.StateT Integer (UnionMBase SBool) SBool)
                 let st1 :: StateStrict.StateT Integer (UnionMBase SBool) SBool =
                       StateStrict.StateT $ \(x :: Integer) -> mrgSingle (SSBool "a", x + 2)
                 let st2 :: StateStrict.StateT Integer (UnionMBase SBool) SBool =
@@ -474,7 +474,7 @@ mergeableTests =
                 StateStrict.runStateT st3 3 @=? mrgIf (SSBool "c") (mrgSingle (SSBool "a", 5)) (mrgSingle (SSBool "b", 6))
             ],
           testCase "ContT" $ do
-            let SimpleStrategy s = mergingStrategy :: MergingStrategy SBool (ContT (SBool, Integer) (UnionMBase SBool) (SBool, Integer))
+            let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool (ContT (SBool, Integer) (UnionMBase SBool) (SBool, Integer))
             let c1 :: ContT (SBool, Integer) (UnionMBase SBool) (SBool, Integer) = ContT $ \f -> f (SSBool "a", 2)
             let c2 :: ContT (SBool, Integer) (UnionMBase SBool) (SBool, Integer) = ContT $ \f -> f (SSBool "b", 3)
             let c3 = s (SSBool "c") c1 c2
@@ -487,8 +487,8 @@ mergeableTests =
             "RWST"
             [ testCase "Lazy RWST" $ do
                 let SimpleStrategy s =
-                      mergingStrategy ::
-                        MergingStrategy
+                      gmergingStrategy ::
+                        GMergingStrategy
                           SBool
                           ( RWSTLazy.RWST
                               (Integer, SBool)
@@ -525,8 +525,8 @@ mergeableTests =
                 RWSTLazy.runRWST rws3 (0, SSBool "a") (1, SSBool "b") @=? res1,
               testCase "Strict RWST" $ do
                 let SimpleStrategy s =
-                      mergingStrategy ::
-                        MergingStrategy
+                      gmergingStrategy ::
+                        GMergingStrategy
                           SBool
                           ( RWSTStrict.RWST
                               (Integer, SBool)
@@ -565,7 +565,7 @@ mergeableTests =
           testGroup
             "WriterT"
             [ testCase "Lazy WriterT" $ do
-                let SimpleStrategy s = mergingStrategy :: MergingStrategy SBool (WriterLazy.WriterT Integer (UnionMBase SBool) SBool)
+                let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool (WriterLazy.WriterT Integer (UnionMBase SBool) SBool)
                 let w1 :: WriterLazy.WriterT Integer (UnionMBase SBool) SBool =
                       WriterLazy.WriterT $ mrgSingle (SSBool "a", 1)
                 let w2 :: WriterLazy.WriterT Integer (UnionMBase SBool) SBool =
@@ -577,7 +577,7 @@ mergeableTests =
                 WriterLazy.runWriterT w4 @=? mrgIf (SSBool "d") (mrgSingle (SSBool "a", 1)) (mrgSingle (SSBool "b", 2))
                 WriterLazy.runWriterT w5 @=? mrgSingle (ITE (SSBool "d") (SSBool "a") (SSBool "c"), 1),
               testCase "Strict WriterT" $ do
-                let SimpleStrategy s = mergingStrategy :: MergingStrategy SBool (WriterStrict.WriterT Integer (UnionMBase SBool) SBool)
+                let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool (WriterStrict.WriterT Integer (UnionMBase SBool) SBool)
                 let w1 :: WriterStrict.WriterT Integer (UnionMBase SBool) SBool =
                       WriterStrict.WriterT $ mrgSingle (SSBool "a", 1)
                 let w2 :: WriterStrict.WriterT Integer (UnionMBase SBool) SBool =
@@ -590,7 +590,7 @@ mergeableTests =
                 WriterStrict.runWriterT w5 @=? mrgSingle (ITE (SSBool "d") (SSBool "a") (SSBool "c"), 1)
             ],
           testCase "ReaderT" $ do
-            let SimpleStrategy s = mergingStrategy :: MergingStrategy SBool (ReaderT Integer (UnionMBase SBool) Integer)
+            let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool (ReaderT Integer (UnionMBase SBool) Integer)
             let r1 :: ReaderT Integer (UnionMBase SBool) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x + 2
             let r2 :: ReaderT Integer (UnionMBase SBool) Integer =

@@ -66,7 +66,7 @@ ifWithLeftMost _ (Conc c) t f
 ifWithLeftMost inv cond t f = If (leftMost t) inv cond t f
 {-# INLINE ifWithLeftMost #-}
 
-instance SymBoolOp bool => UnionPrjOp bool (UnionBase bool) where
+instance SymBoolOp bool => GUnionPrjOp bool (UnionBase bool) where
   singleView (Single a) = Just a
   singleView _ = Nothing
   {-# INLINE singleView #-}
@@ -77,21 +77,21 @@ instance SymBoolOp bool => UnionPrjOp bool (UnionBase bool) where
   leftMost (If a _ _ _ _) = a
   {-# INLINE leftMost #-}
 
-instance (SymBoolOp bool, Mergeable bool a) => Mergeable bool (UnionBase bool a) where
-  mergingStrategy = SimpleStrategy $ ifWithStrategy mergingStrategy
-  {-# INLINE mergingStrategy #-}
+instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (UnionBase bool a) where
+  gmergingStrategy = SimpleStrategy $ ifWithStrategy gmergingStrategy
+  {-# INLINE gmergingStrategy #-}
 
-instance (SymBoolOp bool) => Mergeable1 bool (UnionBase bool) where
-  liftMergingStrategy ms = SimpleStrategy $ ifWithStrategy ms
-  {-# INLINE liftMergingStrategy #-}
+instance (SymBoolOp bool) => GMergeable1 bool (UnionBase bool) where
+  liftGMergingStrategy ms = SimpleStrategy $ ifWithStrategy ms
+  {-# INLINE liftGMergingStrategy #-}
 
-instance (SymBoolOp bool, Mergeable bool a) => SimpleMergeable bool (UnionBase bool a) where
-  mrgIte = mrgIf
+instance (SymBoolOp bool, GMergeable bool a) => GSimpleMergeable bool (UnionBase bool a) where
+  gmrgIte = mrgIf
 
-instance (SymBoolOp bool) => SimpleMergeable1 bool (UnionBase bool) where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+instance (SymBoolOp bool) => GSimpleMergeable1 bool (UnionBase bool) where
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
-instance (SymBoolOp bool) => UnionLike bool (UnionBase bool) where
+instance (SymBoolOp bool) => GUnionLike bool (UnionBase bool) where
   mergeWithStrategy = fullReconstruct
   {-# INLINE mergeWithStrategy #-}
   single = Single
@@ -119,7 +119,7 @@ instance (Hashable b, Hashable a) => Hashable (UnionBase b a) where
   s `hashWithSalt` (If _ _ c l r) = s `hashWithSalt` (1 :: Int) `hashWithSalt` c `hashWithSalt` l `hashWithSalt` r
 
 -- | Fully reconstruct a 'UnionBase' to maintain the merged invariant.
-fullReconstruct :: (SymBoolOp bool) => MergingStrategy bool a -> UnionBase bool a -> UnionBase bool a
+fullReconstruct :: (SymBoolOp bool) => GMergingStrategy bool a -> UnionBase bool a -> UnionBase bool a
 fullReconstruct strategy (If _ False cond t f) =
   ifWithStrategyInv strategy cond (fullReconstruct strategy t) (fullReconstruct strategy f)
 fullReconstruct _ u = u
@@ -130,7 +130,7 @@ fullReconstruct _ u = u
 -- The merged invariant will be maintained in the result.
 ifWithStrategy ::
   (SymBoolOp bool) =>
-  MergingStrategy bool a ->
+  GMergingStrategy bool a ->
   bool ->
   UnionBase bool a ->
   UnionBase bool a ->
@@ -142,7 +142,7 @@ ifWithStrategy strategy cond t f = ifWithStrategyInv strategy cond t f
 
 ifWithStrategyInv ::
   (SymBoolOp bool) =>
-  MergingStrategy bool a ->
+  GMergingStrategy bool a ->
   bool ->
   UnionBase bool a ->
   UnionBase bool a ->

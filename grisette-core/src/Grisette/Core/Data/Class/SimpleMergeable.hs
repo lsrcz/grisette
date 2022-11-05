@@ -11,16 +11,16 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (..),
-    SimpleMergeable1 (..),
-    mrgIte1,
-    SimpleMergeable2 (..),
-    mrgIte2,
-    UnionLike (..),
+  ( GSimpleMergeable (..),
+    GSimpleMergeable1 (..),
+    gmrgIte1,
+    GSimpleMergeable2 (..),
+    gmrgIte2,
+    GUnionLike (..),
     mrgIf,
     merge,
     mrgSingle,
-    UnionPrjOp (..),
+    GUnionPrjOp (..),
     pattern SingleU,
     pattern IfU,
     getSingle,
@@ -50,64 +50,64 @@ import Grisette.Core.Data.Class.Mergeable
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 
--- | Auxiliary class for the generic derivation for the 'SimpleMergeable' class.
-class SimpleMergeable' bool f where
-  mrgIte' :: bool -> f a -> f a -> f a
+-- | Auxiliary class for the generic derivation for the 'GSimpleMergeable' class.
+class GSimpleMergeable' bool f where
+  gmrgIte' :: bool -> f a -> f a -> f a
 
-instance (SimpleMergeable' bool U1) where
-  mrgIte' _ t _ = t
-  {-# INLINE mrgIte' #-}
+instance (GSimpleMergeable' bool U1) where
+  gmrgIte' _ t _ = t
+  {-# INLINE gmrgIte' #-}
 
-instance (SimpleMergeable' bool V1) where
-  mrgIte' _ t _ = t
-  {-# INLINE mrgIte' #-}
+instance (GSimpleMergeable' bool V1) where
+  gmrgIte' _ t _ = t
+  {-# INLINE gmrgIte' #-}
 
-instance (SimpleMergeable bool c) => (SimpleMergeable' bool (K1 i c)) where
-  mrgIte' cond (K1 a) (K1 b) = K1 $ mrgIte cond a b
-  {-# INLINE mrgIte' #-}
+instance (GSimpleMergeable bool c) => (GSimpleMergeable' bool (K1 i c)) where
+  gmrgIte' cond (K1 a) (K1 b) = K1 $ gmrgIte cond a b
+  {-# INLINE gmrgIte' #-}
 
-instance (SimpleMergeable' bool a) => (SimpleMergeable' bool (M1 i c a)) where
-  mrgIte' cond (M1 a) (M1 b) = M1 $ mrgIte' cond a b
-  {-# INLINE mrgIte' #-}
+instance (GSimpleMergeable' bool a) => (GSimpleMergeable' bool (M1 i c a)) where
+  gmrgIte' cond (M1 a) (M1 b) = M1 $ gmrgIte' cond a b
+  {-# INLINE gmrgIte' #-}
 
-instance (SimpleMergeable' bool a, SimpleMergeable' bool b) => (SimpleMergeable' bool (a :*: b)) where
-  mrgIte' cond (a1 :*: a2) (b1 :*: b2) = mrgIte' cond a1 b1 :*: mrgIte' cond a2 b2
-  {-# INLINE mrgIte' #-}
+instance (GSimpleMergeable' bool a, GSimpleMergeable' bool b) => (GSimpleMergeable' bool (a :*: b)) where
+  gmrgIte' cond (a1 :*: a2) (b1 :*: b2) = gmrgIte' cond a1 b1 :*: gmrgIte' cond a2 b2
+  {-# INLINE gmrgIte' #-}
 
 -- | This class indicates that a type has a simple root merge strategy.
-class Mergeable bool a => SimpleMergeable bool a where
+class GMergeable bool a => GSimpleMergeable bool a where
   -- | Performs if-then-else with the simple root merge strategy.
-  mrgIte :: bool -> a -> a -> a
+  gmrgIte :: bool -> a -> a -> a
 
-instance (Generic a, Mergeable' bool (Rep a), SimpleMergeable' bool (Rep a)) => SimpleMergeable bool (Default a) where
-  mrgIte cond (Default a) (Default b) = Default $ to $ mrgIte' cond (from a) (from b)
-  {-# INLINE mrgIte #-}
+instance (Generic a, GMergeable' bool (Rep a), GSimpleMergeable' bool (Rep a)) => GSimpleMergeable bool (Default a) where
+  gmrgIte cond (Default a) (Default b) = Default $ to $ gmrgIte' cond (from a) (from b)
+  {-# INLINE gmrgIte #-}
 
--- | Lifting of the 'SimpleMergeable' class to unary type constructors.
-class SimpleMergeable1 bool u where
-  -- | Lift 'mrgIte' through the type constructor.
-  liftMrgIte :: (bool -> a -> a -> a) -> bool -> u a -> u a -> u a
+-- | Lifting of the 'GSimpleMergeable' class to unary type constructors.
+class GSimpleMergeable1 bool u where
+  -- | Lift 'gmrgIte' through the type constructor.
+  liftGMrgIte :: (bool -> a -> a -> a) -> bool -> u a -> u a -> u a
 
--- | Lift the standard 'mrgIte' function through the type constructor.
-mrgIte1 :: (SimpleMergeable1 bool u, SimpleMergeable bool a) => bool -> u a -> u a -> u a
-mrgIte1 = liftMrgIte mrgIte
-{-# INLINE mrgIte1 #-}
+-- | Lift the standard 'gmrgIte' function through the type constructor.
+gmrgIte1 :: (GSimpleMergeable1 bool u, GSimpleMergeable bool a) => bool -> u a -> u a -> u a
+gmrgIte1 = liftGMrgIte gmrgIte
+{-# INLINE gmrgIte1 #-}
 
--- | Lifting of the 'SimpleMergeable' class to binary type constructors.
-class (Mergeable2 bool u) => SimpleMergeable2 bool u where
-  -- | Lift 'mrgIte' through the type constructor.
-  liftMrgIte2 :: (bool -> a -> a -> a) -> (bool -> b -> b -> b) -> bool -> u a b -> u a b -> u a b
+-- | Lifting of the 'GSimpleMergeable' class to binary type constructors.
+class (GMergeable2 bool u) => GSimpleMergeable2 bool u where
+  -- | Lift 'gmrgIte' through the type constructor.
+  liftGMrgIte2 :: (bool -> a -> a -> a) -> (bool -> b -> b -> b) -> bool -> u a b -> u a b -> u a b
 
--- | Lift the standard 'mrgIte' function through the type constructor.
-mrgIte2 :: (SimpleMergeable2 bool u, SimpleMergeable bool a, SimpleMergeable bool b) => bool -> u a b -> u a b -> u a b
-mrgIte2 = liftMrgIte2 mrgIte mrgIte
-{-# INLINE mrgIte2 #-}
+-- | Lift the standard 'gmrgIte' function through the type constructor.
+gmrgIte2 :: (GSimpleMergeable2 bool u, GSimpleMergeable bool a, GSimpleMergeable bool b) => bool -> u a b -> u a b -> u a b
+gmrgIte2 = liftGMrgIte2 gmrgIte gmrgIte
+{-# INLINE gmrgIte2 #-}
 
--- | Special case of the 'Mergeable1' and 'SimpleMergeable1' class for type constructors
--- that are 'SimpleMergeable' when applied to any 'Mergeable' types.
+-- | Special case of the 'Mergeable1' and 'GSimpleMergeable1' class for type constructors
+-- that are 'GSimpleMergeable' when applied to any 'Mergeable' types.
 --
 -- Usually it is Union-like structures.
-class (SimpleMergeable1 bool u, Mergeable1 bool u, SymBoolOp bool) => UnionLike bool u | u -> bool where
+class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLike bool u | u -> bool where
   -- | Wrap a single value in the union.
   single :: a -> u a
 
@@ -123,7 +123,7 @@ class (SimpleMergeable1 bool u, Mergeable1 bool u, SymBoolOp bool) => UnionLike 
   -- This function is to be called when the 'Mergeable' constraint can not be resolved,
   -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'merge' is usually a better alternative.
-  mergeWithStrategy :: MergingStrategy bool a -> u a -> u a
+  mergeWithStrategy :: GMergingStrategy bool a -> u a -> u a
 
   -- | Symbolic @if@ control flow with the result merged with some merge strategy.
   --
@@ -134,168 +134,168 @@ class (SimpleMergeable1 bool u, Mergeable1 bool u, SymBoolOp bool) => UnionLike 
   -- This function to to be called when the 'Mergeable' constraint can not be resolved,
   -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'mrgIf' is usually a better alternative.
-  mrgIfWithStrategy :: MergingStrategy bool a -> bool -> u a -> u a -> u a
+  mrgIfWithStrategy :: GMergingStrategy bool a -> bool -> u a -> u a -> u a
   mrgIfWithStrategy s cond l r = mergeWithStrategy s $ unionIf cond l r
   {-# INLINE mrgIfWithStrategy #-}
 
-  mrgSingleWithStrategy :: MergingStrategy bool a -> a -> u a
+  mrgSingleWithStrategy :: GMergingStrategy bool a -> a -> u a
   mrgSingleWithStrategy s = mergeWithStrategy s . single
   {-# INLINE mrgSingleWithStrategy #-}
 
 -- | Symbolic @if@ control flow with the result merged with the type's root merge strategy.
 --
--- | Equivalent to @mrgIfWithStrategy mergingStrategy@.
-mrgIf :: (UnionLike bool u, Mergeable bool a) => bool -> u a -> u a -> u a
-mrgIf = mrgIfWithStrategy mergingStrategy
+-- | Equivalent to @mrgIfWithStrategy gmergingStrategy@.
+mrgIf :: (GUnionLike bool u, GMergeable bool a) => bool -> u a -> u a -> u a
+mrgIf = mrgIfWithStrategy gmergingStrategy
 {-# INLINE mrgIf #-}
 
 -- | Merge the contents with the type's root merge strategy.
 --
--- | Equivalent to @mergeWithStrategy mergingStrategy@.
-merge :: (UnionLike bool u, Mergeable bool a) => u a -> u a
-merge = mergeWithStrategy mergingStrategy
+-- | Equivalent to @mergeWithStrategy gmergingStrategy@.
+merge :: (GUnionLike bool u, GMergeable bool a) => u a -> u a
+merge = mergeWithStrategy gmergingStrategy
 {-# INLINE merge #-}
 
 -- | Wrap a single value in the type and propagate the type's root merge strategy.
 --
--- | Equivalent to @mrgSingleWithStrategy mergingStrategy@.
-mrgSingle :: (UnionLike bool u, Mergeable bool a) => a -> u a
-mrgSingle = mrgSingleWithStrategy mergingStrategy
+-- | Equivalent to @mrgSingleWithStrategy gmergingStrategy@.
+mrgSingle :: (GUnionLike bool u, GMergeable bool a) => a -> u a
+mrgSingle = mrgSingleWithStrategy gmergingStrategy
 {-# INLINE mrgSingle #-}
 
-instance (SymBoolOp bool) => SimpleMergeable bool () where
-  mrgIte _ t _ = t
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool) => GSimpleMergeable bool () where
+  gmrgIte _ t _ = t
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool, SimpleMergeable bool a, SimpleMergeable bool b) => SimpleMergeable bool (a, b) where
-  mrgIte cond (a1, b1) (a2, b2) = (mrgIte cond a1 a2, mrgIte cond b1 b2)
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GSimpleMergeable bool a, GSimpleMergeable bool b) => GSimpleMergeable bool (a, b) where
+  gmrgIte cond (a1, b1) (a2, b2) = (gmrgIte cond a1 a2, gmrgIte cond b1 b2)
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool, SimpleMergeable bool a) => SimpleMergeable1 bool ((,) a) where
-  liftMrgIte mb cond (a1, b1) (a2, b2) = (mrgIte cond a1 a2, mb cond b1 b2)
-  {-# INLINE liftMrgIte #-}
+instance (SymBoolOp bool, GSimpleMergeable bool a) => GSimpleMergeable1 bool ((,) a) where
+  liftGMrgIte mb cond (a1, b1) (a2, b2) = (gmrgIte cond a1 a2, mb cond b1 b2)
+  {-# INLINE liftGMrgIte #-}
 
-instance (SymBoolOp bool) => SimpleMergeable2 bool (,) where
-  liftMrgIte2 ma mb cond (a1, b1) (a2, b2) = (ma cond a1 a2, mb cond b1 b2)
-  {-# INLINE liftMrgIte2 #-}
-
-instance
-  (SymBoolOp bool, SimpleMergeable bool a, SimpleMergeable bool b, SimpleMergeable bool c) =>
-  SimpleMergeable bool (a, b, c)
-  where
-  mrgIte cond (a1, b1, c1) (a2, b2, c2) = (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2)
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool) => GSimpleMergeable2 bool (,) where
+  liftGMrgIte2 ma mb cond (a1, b1) (a2, b2) = (ma cond a1 a2, mb cond b1 b2)
+  {-# INLINE liftGMrgIte2 #-}
 
 instance
-  ( SymBoolOp bool,
-    SimpleMergeable bool a,
-    SimpleMergeable bool b,
-    SimpleMergeable bool c,
-    SimpleMergeable bool d
-  ) =>
-  SimpleMergeable bool (a, b, c, d)
+  (SymBoolOp bool, GSimpleMergeable bool a, GSimpleMergeable bool b, GSimpleMergeable bool c) =>
+  GSimpleMergeable bool (a, b, c)
   where
-  mrgIte cond (a1, b1, c1, d1) (a2, b2, c2, d2) =
-    (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2, mrgIte cond d1 d2)
-  {-# INLINE mrgIte #-}
+  gmrgIte cond (a1, b1, c1) (a2, b2, c2) = (gmrgIte cond a1 a2, gmrgIte cond b1 b2, gmrgIte cond c1 c2)
+  {-# INLINE gmrgIte #-}
 
 instance
   ( SymBoolOp bool,
-    SimpleMergeable bool a,
-    SimpleMergeable bool b,
-    SimpleMergeable bool c,
-    SimpleMergeable bool d,
-    SimpleMergeable bool e
+    GSimpleMergeable bool a,
+    GSimpleMergeable bool b,
+    GSimpleMergeable bool c,
+    GSimpleMergeable bool d
   ) =>
-  SimpleMergeable bool (a, b, c, d, e)
+  GSimpleMergeable bool (a, b, c, d)
   where
-  mrgIte cond (a1, b1, c1, d1, e1) (a2, b2, c2, d2, e2) =
-    (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2, mrgIte cond d1 d2, mrgIte cond e1 e2)
-  {-# INLINE mrgIte #-}
+  gmrgIte cond (a1, b1, c1, d1) (a2, b2, c2, d2) =
+    (gmrgIte cond a1 a2, gmrgIte cond b1 b2, gmrgIte cond c1 c2, gmrgIte cond d1 d2)
+  {-# INLINE gmrgIte #-}
 
 instance
   ( SymBoolOp bool,
-    SimpleMergeable bool a,
-    SimpleMergeable bool b,
-    SimpleMergeable bool c,
-    SimpleMergeable bool d,
-    SimpleMergeable bool e,
-    SimpleMergeable bool f
+    GSimpleMergeable bool a,
+    GSimpleMergeable bool b,
+    GSimpleMergeable bool c,
+    GSimpleMergeable bool d,
+    GSimpleMergeable bool e
   ) =>
-  SimpleMergeable bool (a, b, c, d, e, f)
+  GSimpleMergeable bool (a, b, c, d, e)
   where
-  mrgIte cond (a1, b1, c1, d1, e1, f1) (a2, b2, c2, d2, e2, f2) =
-    (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2, mrgIte cond d1 d2, mrgIte cond e1 e2, mrgIte cond f1 f2)
-  {-# INLINE mrgIte #-}
+  gmrgIte cond (a1, b1, c1, d1, e1) (a2, b2, c2, d2, e2) =
+    (gmrgIte cond a1 a2, gmrgIte cond b1 b2, gmrgIte cond c1 c2, gmrgIte cond d1 d2, gmrgIte cond e1 e2)
+  {-# INLINE gmrgIte #-}
 
 instance
   ( SymBoolOp bool,
-    SimpleMergeable bool a,
-    SimpleMergeable bool b,
-    SimpleMergeable bool c,
-    SimpleMergeable bool d,
-    SimpleMergeable bool e,
-    SimpleMergeable bool f,
-    SimpleMergeable bool g
+    GSimpleMergeable bool a,
+    GSimpleMergeable bool b,
+    GSimpleMergeable bool c,
+    GSimpleMergeable bool d,
+    GSimpleMergeable bool e,
+    GSimpleMergeable bool f
   ) =>
-  SimpleMergeable bool (a, b, c, d, e, f, g)
+  GSimpleMergeable bool (a, b, c, d, e, f)
   where
-  mrgIte cond (a1, b1, c1, d1, e1, f1, g1) (a2, b2, c2, d2, e2, f2, g2) =
-    ( mrgIte cond a1 a2,
-      mrgIte cond b1 b2,
-      mrgIte cond c1 c2,
-      mrgIte cond d1 d2,
-      mrgIte cond e1 e2,
-      mrgIte cond f1 f2,
-      mrgIte cond g1 g2
+  gmrgIte cond (a1, b1, c1, d1, e1, f1) (a2, b2, c2, d2, e2, f2) =
+    (gmrgIte cond a1 a2, gmrgIte cond b1 b2, gmrgIte cond c1 c2, gmrgIte cond d1 d2, gmrgIte cond e1 e2, gmrgIte cond f1 f2)
+  {-# INLINE gmrgIte #-}
+
+instance
+  ( SymBoolOp bool,
+    GSimpleMergeable bool a,
+    GSimpleMergeable bool b,
+    GSimpleMergeable bool c,
+    GSimpleMergeable bool d,
+    GSimpleMergeable bool e,
+    GSimpleMergeable bool f,
+    GSimpleMergeable bool g
+  ) =>
+  GSimpleMergeable bool (a, b, c, d, e, f, g)
+  where
+  gmrgIte cond (a1, b1, c1, d1, e1, f1, g1) (a2, b2, c2, d2, e2, f2, g2) =
+    ( gmrgIte cond a1 a2,
+      gmrgIte cond b1 b2,
+      gmrgIte cond c1 c2,
+      gmrgIte cond d1 d2,
+      gmrgIte cond e1 e2,
+      gmrgIte cond f1 f2,
+      gmrgIte cond g1 g2
     )
-  {-# INLINE mrgIte #-}
+  {-# INLINE gmrgIte #-}
 
 instance
   ( SymBoolOp bool,
-    SimpleMergeable bool a,
-    SimpleMergeable bool b,
-    SimpleMergeable bool c,
-    SimpleMergeable bool d,
-    SimpleMergeable bool e,
-    SimpleMergeable bool f,
-    SimpleMergeable bool g,
-    SimpleMergeable bool h
+    GSimpleMergeable bool a,
+    GSimpleMergeable bool b,
+    GSimpleMergeable bool c,
+    GSimpleMergeable bool d,
+    GSimpleMergeable bool e,
+    GSimpleMergeable bool f,
+    GSimpleMergeable bool g,
+    GSimpleMergeable bool h
   ) =>
-  SimpleMergeable bool (a, b, c, d, e, f, g, h)
+  GSimpleMergeable bool (a, b, c, d, e, f, g, h)
   where
-  mrgIte cond (a1, b1, c1, d1, e1, f1, g1, h1) (a2, b2, c2, d2, e2, f2, g2, h2) =
-    ( mrgIte cond a1 a2,
-      mrgIte cond b1 b2,
-      mrgIte cond c1 c2,
-      mrgIte cond d1 d2,
-      mrgIte cond e1 e2,
-      mrgIte cond f1 f2,
-      mrgIte cond g1 g2,
-      mrgIte cond h1 h2
+  gmrgIte cond (a1, b1, c1, d1, e1, f1, g1, h1) (a2, b2, c2, d2, e2, f2, g2, h2) =
+    ( gmrgIte cond a1 a2,
+      gmrgIte cond b1 b2,
+      gmrgIte cond c1 c2,
+      gmrgIte cond d1 d2,
+      gmrgIte cond e1 e2,
+      gmrgIte cond f1 f2,
+      gmrgIte cond g1 g2,
+      gmrgIte cond h1 h2
     )
-  {-# INLINE mrgIte #-}
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool, SimpleMergeable bool b) => SimpleMergeable bool (a -> b) where
-  mrgIte = mrgIte1
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GSimpleMergeable bool b) => GSimpleMergeable bool (a -> b) where
+  gmrgIte = gmrgIte1
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool) => SimpleMergeable1 bool ((->) a) where
-  liftMrgIte ms cond t f v = ms cond (t v) (f v)
-  {-# INLINE liftMrgIte #-}
+instance (SymBoolOp bool) => GSimpleMergeable1 bool ((->) a) where
+  liftGMrgIte ms cond t f v = ms cond (t v) (f v)
+  {-# INLINE liftGMrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m, Mergeable bool a) => SimpleMergeable bool (MaybeT m a) where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GUnionLike bool m, GMergeable bool a) => GSimpleMergeable bool (MaybeT m a) where
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m) => SimpleMergeable1 bool (MaybeT m) where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+instance (SymBoolOp bool, GUnionLike bool m) => GSimpleMergeable1 bool (MaybeT m) where
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m) => UnionLike bool (MaybeT m) where
-  mergeWithStrategy s (MaybeT v) = MaybeT $ mergeWithStrategy (liftMergingStrategy s) v
+instance (SymBoolOp bool, GUnionLike bool m) => GUnionLike bool (MaybeT m) where
+  mergeWithStrategy s (MaybeT v) = MaybeT $ mergeWithStrategy (liftGMergingStrategy s) v
   {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (MaybeT t) (MaybeT f) = MaybeT $ mrgIfWithStrategy (liftMergingStrategy s) cond t f
+  mrgIfWithStrategy s cond (MaybeT t) (MaybeT f) = MaybeT $ mrgIfWithStrategy (liftGMergingStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single = MaybeT . single . return
   {-# INLINE single #-}
@@ -303,26 +303,26 @@ instance (SymBoolOp bool, UnionLike bool m) => UnionLike bool (MaybeT m) where
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool e, Mergeable bool a) =>
-  SimpleMergeable bool (ExceptT e m a)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool e, GMergeable bool a) =>
+  GSimpleMergeable bool (ExceptT e m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool e) =>
-  SimpleMergeable1 bool (ExceptT e m)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool e) =>
+  GSimpleMergeable1 bool (ExceptT e m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, Mergeable bool e) =>
-  UnionLike bool (ExceptT e m)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool e) =>
+  GUnionLike bool (ExceptT e m)
   where
-  mergeWithStrategy s (ExceptT v) = ExceptT $ mergeWithStrategy (liftMergingStrategy s) v
+  mergeWithStrategy s (ExceptT v) = ExceptT $ mergeWithStrategy (liftGMergingStrategy s) v
   {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) = ExceptT $ mrgIfWithStrategy (liftMergingStrategy s) cond t f
+  mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) = ExceptT $ mrgIfWithStrategy (liftGMergingStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single = ExceptT . single . return
   {-# INLINE single #-}
@@ -330,28 +330,28 @@ instance
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool a, UnionLike bool m) =>
-  SimpleMergeable bool (StateLazy.StateT s m a)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GUnionLike bool m) =>
+  GSimpleMergeable bool (StateLazy.StateT s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m) =>
-  SimpleMergeable1 bool (StateLazy.StateT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m) =>
+  GSimpleMergeable1 bool (StateLazy.StateT s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m) =>
-  UnionLike bool (StateLazy.StateT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m) =>
+  GUnionLike bool (StateLazy.StateT s m)
   where
   mergeWithStrategy ms (StateLazy.StateT f) =
-    StateLazy.StateT $ \v -> mergeWithStrategy (liftMergingStrategy2 ms mergingStrategy) $ f v
+    StateLazy.StateT $ \v -> mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) $ f v
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (StateLazy.StateT t) (StateLazy.StateT f) =
-    StateLazy.StateT $ \v -> mrgIfWithStrategy (liftMergingStrategy2 s mergingStrategy) cond (t v) (f v)
+    StateLazy.StateT $ \v -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
   single x = StateLazy.StateT $ \s -> single (x, s)
   {-# INLINE single #-}
@@ -360,28 +360,28 @@ instance
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool a, UnionLike bool m) =>
-  SimpleMergeable bool (StateStrict.StateT s m a)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GUnionLike bool m) =>
+  GSimpleMergeable bool (StateStrict.StateT s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m) =>
-  SimpleMergeable1 bool (StateStrict.StateT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m) =>
+  GSimpleMergeable1 bool (StateStrict.StateT s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m) =>
-  UnionLike bool (StateStrict.StateT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m) =>
+  GUnionLike bool (StateStrict.StateT s m)
   where
   mergeWithStrategy ms (StateStrict.StateT f) =
-    StateStrict.StateT $ \v -> mergeWithStrategy (liftMergingStrategy2 ms mergingStrategy) $ f v
+    StateStrict.StateT $ \v -> mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) $ f v
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (StateStrict.StateT t) (StateStrict.StateT f) =
-    StateStrict.StateT $ \v -> mrgIfWithStrategy (liftMergingStrategy2 s mergingStrategy) cond (t v) (f v)
+    StateStrict.StateT $ \v -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
   single x = StateStrict.StateT $ \s -> single (x, s)
   {-# INLINE single #-}
@@ -390,27 +390,27 @@ instance
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool a, UnionLike bool m, Monoid s) =>
-  SimpleMergeable bool (WriterLazy.WriterT s m a)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GUnionLike bool m, Monoid s) =>
+  GSimpleMergeable bool (WriterLazy.WriterT s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m, Monoid s) =>
-  SimpleMergeable1 bool (WriterLazy.WriterT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m, Monoid s) =>
+  GSimpleMergeable1 bool (WriterLazy.WriterT s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m, Monoid s) =>
-  UnionLike bool (WriterLazy.WriterT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m, Monoid s) =>
+  GUnionLike bool (WriterLazy.WriterT s m)
   where
-  mergeWithStrategy ms (WriterLazy.WriterT f) = WriterLazy.WriterT $ mergeWithStrategy (liftMergingStrategy2 ms mergingStrategy) f
+  mergeWithStrategy ms (WriterLazy.WriterT f) = WriterLazy.WriterT $ mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) f
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (WriterLazy.WriterT t) (WriterLazy.WriterT f) =
-    WriterLazy.WriterT $ mrgIfWithStrategy (liftMergingStrategy2 s mergingStrategy) cond t f
+    WriterLazy.WriterT $ mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single x = WriterLazy.WriterT $ single (x, mempty)
   {-# INLINE single #-}
@@ -419,27 +419,27 @@ instance
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool a, UnionLike bool m, Monoid s) =>
-  SimpleMergeable bool (WriterStrict.WriterT s m a)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GUnionLike bool m, Monoid s) =>
+  GSimpleMergeable bool (WriterStrict.WriterT s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m, Monoid s) =>
-  SimpleMergeable1 bool (WriterStrict.WriterT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m, Monoid s) =>
+  GSimpleMergeable1 bool (WriterStrict.WriterT s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, UnionLike bool m, Monoid s) =>
-  UnionLike bool (WriterStrict.WriterT s m)
+  (SymBoolOp bool, GMergeable bool s, GUnionLike bool m, Monoid s) =>
+  GUnionLike bool (WriterStrict.WriterT s m)
   where
-  mergeWithStrategy ms (WriterStrict.WriterT f) = WriterStrict.WriterT $ mergeWithStrategy (liftMergingStrategy2 ms mergingStrategy) f
+  mergeWithStrategy ms (WriterStrict.WriterT f) = WriterStrict.WriterT $ mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) f
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (WriterStrict.WriterT t) (WriterStrict.WriterT f) =
-    WriterStrict.WriterT $ mrgIfWithStrategy (liftMergingStrategy2 s mergingStrategy) cond t f
+    WriterStrict.WriterT $ mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single x = WriterStrict.WriterT $ single (x, mempty)
   {-# INLINE single #-}
@@ -448,22 +448,22 @@ instance
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool a, UnionLike bool m) =>
-  SimpleMergeable bool (ReaderT s m a)
+  (SymBoolOp bool, GMergeable bool a, GUnionLike bool m) =>
+  GSimpleMergeable bool (ReaderT s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m) =>
-  SimpleMergeable1 bool (ReaderT s m)
+  (SymBoolOp bool, GUnionLike bool m) =>
+  GSimpleMergeable1 bool (ReaderT s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m) =>
-  UnionLike bool (ReaderT s m)
+  (SymBoolOp bool, GUnionLike bool m) =>
+  GUnionLike bool (ReaderT s m)
   where
   mergeWithStrategy ms (ReaderT f) = ReaderT $ \v -> mergeWithStrategy ms $ f v
   {-# INLINE mergeWithStrategy #-}
@@ -475,23 +475,23 @@ instance
   unionIf cond (ReaderT l) (ReaderT r) = ReaderT $ \s -> unionIf cond (l s) (r s)
   {-# INLINE unionIf #-}
 
-instance (SymBoolOp bool, SimpleMergeable bool a) => SimpleMergeable bool (Identity a) where
-  mrgIte cond (Identity l) (Identity r) = Identity $ mrgIte cond l r
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GSimpleMergeable bool a) => GSimpleMergeable bool (Identity a) where
+  gmrgIte cond (Identity l) (Identity r) = Identity $ gmrgIte cond l r
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool) => SimpleMergeable1 bool Identity where
-  liftMrgIte mite cond (Identity l) (Identity r) = Identity $ mite cond l r
-  {-# INLINE liftMrgIte #-}
+instance (SymBoolOp bool) => GSimpleMergeable1 bool Identity where
+  liftGMrgIte mite cond (Identity l) (Identity r) = Identity $ mite cond l r
+  {-# INLINE liftGMrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m, Mergeable bool a) => SimpleMergeable bool (IdentityT m a) where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GUnionLike bool m, GMergeable bool a) => GSimpleMergeable bool (IdentityT m a) where
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m) => SimpleMergeable1 bool (IdentityT m) where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+instance (SymBoolOp bool, GUnionLike bool m) => GSimpleMergeable1 bool (IdentityT m) where
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m) => UnionLike bool (IdentityT m) where
+instance (SymBoolOp bool, GUnionLike bool m) => GUnionLike bool (IdentityT m) where
   mergeWithStrategy ms (IdentityT f) =
     IdentityT $ mergeWithStrategy ms f
   {-# INLINE mergeWithStrategy #-}
@@ -502,15 +502,15 @@ instance (SymBoolOp bool, UnionLike bool m) => UnionLike bool (IdentityT m) wher
   unionIf cond (IdentityT l) (IdentityT r) = IdentityT $ unionIf cond l r
   {-# INLINE unionIf #-}
 
-instance (SymBoolOp bool, UnionLike bool m, Mergeable bool r) => SimpleMergeable bool (ContT r m a) where
-  mrgIte cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GUnionLike bool m, GMergeable bool r) => GSimpleMergeable bool (ContT r m a) where
+  gmrgIte cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
+  {-# INLINE gmrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m, Mergeable bool r) => SimpleMergeable1 bool (ContT r m) where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+instance (SymBoolOp bool, GUnionLike bool m, GMergeable bool r) => GSimpleMergeable1 bool (ContT r m) where
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
-instance (SymBoolOp bool, UnionLike bool m, Mergeable bool r) => UnionLike bool (ContT r m) where
+instance (SymBoolOp bool, GUnionLike bool m, GMergeable bool r) => GUnionLike bool (ContT r m) where
   mergeWithStrategy _ (ContT f) = ContT $ \c -> merge (f c)
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy _ cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
@@ -521,28 +521,28 @@ instance (SymBoolOp bool, UnionLike bool m, Mergeable bool r) => UnionLike bool 
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool w, Monoid w, Mergeable bool a, UnionLike bool m) =>
-  SimpleMergeable bool (RWSLazy.RWST r w s m a)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool w, Monoid w, GMergeable bool a, GUnionLike bool m) =>
+  GSimpleMergeable bool (RWSLazy.RWST r w s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool w, Monoid w, UnionLike bool m) =>
-  SimpleMergeable1 bool (RWSLazy.RWST r w s m)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool w, Monoid w, GUnionLike bool m) =>
+  GSimpleMergeable1 bool (RWSLazy.RWST r w s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool w, Monoid w, UnionLike bool m) =>
-  UnionLike bool (RWSLazy.RWST r w s m)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool w, Monoid w, GUnionLike bool m) =>
+  GUnionLike bool (RWSLazy.RWST r w s m)
   where
   mergeWithStrategy ms (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> mergeWithStrategy (liftMergingStrategy3 ms mergingStrategy mergingStrategy) $ f r s
+    RWSLazy.RWST $ \r s -> mergeWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) $ f r s
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy ms cond (RWSLazy.RWST t) (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> mrgIfWithStrategy (liftMergingStrategy3 ms mergingStrategy mergingStrategy) cond (t r s) (f r s)
+    RWSLazy.RWST $ \r s -> mrgIfWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) cond (t r s) (f r s)
   {-# INLINE mrgIfWithStrategy #-}
   single x = RWSLazy.RWST $ \_ s -> single (x, s, mempty)
   {-# INLINE single #-}
@@ -551,28 +551,28 @@ instance
   {-# INLINE unionIf #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool w, Monoid w, Mergeable bool a, UnionLike bool m) =>
-  SimpleMergeable bool (RWSStrict.RWST r w s m a)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool w, Monoid w, GMergeable bool a, GUnionLike bool m) =>
+  GSimpleMergeable bool (RWSStrict.RWST r w s m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool w, Monoid w, UnionLike bool m) =>
-  SimpleMergeable1 bool (RWSStrict.RWST r w s m)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool w, Monoid w, GUnionLike bool m) =>
+  GSimpleMergeable1 bool (RWSStrict.RWST r w s m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, Mergeable bool s, Mergeable bool w, Monoid w, UnionLike bool m) =>
-  UnionLike bool (RWSStrict.RWST r w s m)
+  (SymBoolOp bool, GMergeable bool s, GMergeable bool w, Monoid w, GUnionLike bool m) =>
+  GUnionLike bool (RWSStrict.RWST r w s m)
   where
   mergeWithStrategy ms (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> mergeWithStrategy (liftMergingStrategy3 ms mergingStrategy mergingStrategy) $ f r s
+    RWSStrict.RWST $ \r s -> mergeWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) $ f r s
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy ms cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> mrgIfWithStrategy (liftMergingStrategy3 ms mergingStrategy mergingStrategy) cond (t r s) (f r s)
+    RWSStrict.RWST $ \r s -> mrgIfWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) cond (t r s) (f r s)
   {-# INLINE mrgIfWithStrategy #-}
   single x = RWSStrict.RWST $ \_ s -> single (x, s, mempty)
   {-# INLINE single #-}
@@ -580,7 +580,7 @@ instance
     RWSStrict.RWST $ \r s -> unionIf cond (t r s) (f r s)
   {-# INLINE unionIf #-}
 
-class (UnionLike bool u) => UnionPrjOp bool (u :: Type -> Type) | u -> bool where
+class (GUnionLike bool u) => GUnionPrjOp bool (u :: Type -> Type) | u -> bool where
   -- | Pattern match to extract single values.
   singleView :: u a -> Maybe a
 
@@ -591,14 +591,14 @@ class (UnionLike bool u) => UnionPrjOp bool (u :: Type -> Type) | u -> bool wher
   leftMost :: u a -> a
 
 -- | Pattern match to extract single values with 'singleView'.
-pattern SingleU :: UnionPrjOp bool u => a -> u a
+pattern SingleU :: GUnionPrjOp bool u => a -> u a
 pattern SingleU x <-
   (singleView -> Just x)
   where
     SingleU x = single x
 
 -- | Pattern match to extract guard values with 'guardView'
-pattern IfU :: UnionPrjOp bool u => bool -> u a -> u a -> u a
+pattern IfU :: GUnionPrjOp bool u => bool -> u a -> u a -> u a
 pattern IfU c t f <-
   (ifView -> Just (c, t, f))
   where
@@ -613,19 +613,19 @@ pattern IfU c t f <-
 -- UAny (If a (Single b) (Single c))
 -- >>> getSingle $ (unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool)
 -- (ite a b c)
-getSingle :: forall bool u a. (SimpleMergeable bool a, UnionLike bool u, UnionPrjOp bool u) => u a -> a
+getSingle :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
 getSingle u = case merge u of
   SingleU x -> x
   _ -> error "Should not happen"
 {-# INLINE getSingle #-}
 
--- | Helper for applying functions on 'UnionPrjOp' and 'SimpleMergeable'.
+-- | Helper for applying functions on 'GUnionPrjOp' and 'GSimpleMergeable'.
 --
 -- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssymb "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
 -- >>> f #~ (mrgIf (ssymb "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
 -- UMrg (If (&& b a) (Single 1) (If b (Single 2) (If a (Single 3) (Single 4))))
 (#~) ::
-  (SymBoolOp bool, Function f, SimpleMergeable bool (Ret f), UnionPrjOp bool u, Functor u) =>
+  (SymBoolOp bool, Function f, GSimpleMergeable bool (Ret f), GUnionPrjOp bool u, Functor u) =>
   f ->
   u (Arg f) ->
   Ret f

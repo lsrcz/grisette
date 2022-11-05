@@ -8,7 +8,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (..),
+  ( GExtractSymbolics (..),
   )
 where
 
@@ -32,50 +32,50 @@ import Generics.Deriving
 
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
--- >>> extractSymbolics ("a" :: SymBool) :: SymbolSet
+-- >>> gextractSymbolics ("a" :: SymBool) :: SymbolSet
 -- SymbolSet {unSymbolSet = fromList [a :: Bool]}
 --
 -- >>> :{
 --   sort $ HashSet.toList $ unSymbolSet $
---     extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [SomeTypedSymbol]
+--     gextractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [SomeTypedSymbol]
 -- :}
 -- [a :: Bool,b :: Bool,c :: Bool,d :: Bool]
-class (Monoid symbolSet) => ExtractSymbolics symbolSet a where
-  extractSymbolics :: a -> symbolSet
+class (Monoid symbolSet) => GExtractSymbolics symbolSet a where
+  gextractSymbolics :: a -> symbolSet
 
-instance (Generic a, Monoid symbolSet, ExtractSymbolics' symbolSet (Rep a)) => ExtractSymbolics symbolSet (Default a) where
-  extractSymbolics = extractSymbolics' . from . unDefault
+instance (Generic a, Monoid symbolSet, GExtractSymbolics' symbolSet (Rep a)) => GExtractSymbolics symbolSet (Default a) where
+  gextractSymbolics = gextractSymbolics' . from . unDefault
 
-class (Monoid symbolSet) => ExtractSymbolics' symbolSet a where
-  extractSymbolics' :: a c -> symbolSet
+class (Monoid symbolSet) => GExtractSymbolics' symbolSet a where
+  gextractSymbolics' :: a c -> symbolSet
 
-instance (Monoid symbolSet) => ExtractSymbolics' symbolSet U1 where
-  extractSymbolics' _ = mempty
+instance (Monoid symbolSet) => GExtractSymbolics' symbolSet U1 where
+  gextractSymbolics' _ = mempty
 
-instance (Monoid symbolSet, ExtractSymbolics symbolSet c) => ExtractSymbolics' symbolSet (K1 i c) where
-  extractSymbolics' = extractSymbolics . unK1
+instance (Monoid symbolSet, GExtractSymbolics symbolSet c) => GExtractSymbolics' symbolSet (K1 i c) where
+  gextractSymbolics' = gextractSymbolics . unK1
 
-instance (Monoid symbolSet, ExtractSymbolics' symbolSet a) => ExtractSymbolics' symbolSet (M1 i c a) where
-  extractSymbolics' = extractSymbolics' . unM1
-
-instance
-  (Monoid symbolSet, ExtractSymbolics' symbolSet a, ExtractSymbolics' symbolSet b) =>
-  ExtractSymbolics' symbolSet (a :+: b)
-  where
-  extractSymbolics' (L1 l) = extractSymbolics' l
-  extractSymbolics' (R1 r) = extractSymbolics' r
+instance (Monoid symbolSet, GExtractSymbolics' symbolSet a) => GExtractSymbolics' symbolSet (M1 i c a) where
+  gextractSymbolics' = gextractSymbolics' . unM1
 
 instance
-  (Monoid symbolSet, ExtractSymbolics' symbolSet a, ExtractSymbolics' symbolSet b) =>
-  ExtractSymbolics' symbolSet (a :*: b)
+  (Monoid symbolSet, GExtractSymbolics' symbolSet a, GExtractSymbolics' symbolSet b) =>
+  GExtractSymbolics' symbolSet (a :+: b)
   where
-  extractSymbolics' (l :*: r) = extractSymbolics' l <> extractSymbolics' r
+  gextractSymbolics' (L1 l) = gextractSymbolics' l
+  gextractSymbolics' (R1 r) = gextractSymbolics' r
+
+instance
+  (Monoid symbolSet, GExtractSymbolics' symbolSet a, GExtractSymbolics' symbolSet b) =>
+  GExtractSymbolics' symbolSet (a :*: b)
+  where
+  gextractSymbolics' (l :*: r) = gextractSymbolics' l <> gextractSymbolics' r
 
 -- instances
 
 #define CONCRETE_EXTRACT_SYMBOLICS(type) \
-instance (Monoid symbolSet) => ExtractSymbolics symbolSet type where \
-  extractSymbolics _ = mempty
+instance (Monoid symbolSet) => GExtractSymbolics symbolSet type where \
+  gextractSymbolics _ = mempty
 
 CONCRETE_EXTRACT_SYMBOLICS (Bool)
 CONCRETE_EXTRACT_SYMBOLICS (Integer)
@@ -93,77 +93,77 @@ CONCRETE_EXTRACT_SYMBOLICS (Word64)
 CONCRETE_EXTRACT_SYMBOLICS (B.ByteString)
 
 -- ()
-instance (Monoid symbolSet) => ExtractSymbolics symbolSet () where
-  extractSymbolics _ = mempty
+instance (Monoid symbolSet) => GExtractSymbolics symbolSet () where
+  gextractSymbolics _ = mempty
 
 -- Either
 deriving via
   (Default (Either a b))
   instance
-    (Monoid symbolSet, ExtractSymbolics symbolSet a, ExtractSymbolics symbolSet b) =>
-    ExtractSymbolics symbolSet (Either a b)
+    (Monoid symbolSet, GExtractSymbolics symbolSet a, GExtractSymbolics symbolSet b) =>
+    GExtractSymbolics symbolSet (Either a b)
 
 -- Maybe
 deriving via
   (Default (Maybe a))
   instance
-    (Monoid symbolSet, ExtractSymbolics symbolSet a) => ExtractSymbolics symbolSet (Maybe a)
+    (Monoid symbolSet, GExtractSymbolics symbolSet a) => GExtractSymbolics symbolSet (Maybe a)
 
 -- List
 deriving via
   (Default [a])
   instance
-    (Monoid symbolSet, ExtractSymbolics symbolSet a) => ExtractSymbolics symbolSet [a]
+    (Monoid symbolSet, GExtractSymbolics symbolSet a) => GExtractSymbolics symbolSet [a]
 
 -- (,)
 deriving via
   (Default (a, b))
   instance
-    (Monoid symbolSet, ExtractSymbolics symbolSet a, ExtractSymbolics symbolSet b) =>
-    ExtractSymbolics symbolSet (a, b)
+    (Monoid symbolSet, GExtractSymbolics symbolSet a, GExtractSymbolics symbolSet b) =>
+    GExtractSymbolics symbolSet (a, b)
 
 -- (,,)
 deriving via
   (Default (a, b, c))
   instance
-    (Monoid symbolSet, ExtractSymbolics symbolSet a, ExtractSymbolics symbolSet b, ExtractSymbolics symbolSet c) =>
-    ExtractSymbolics symbolSet (a, b, c)
+    (Monoid symbolSet, GExtractSymbolics symbolSet a, GExtractSymbolics symbolSet b, GExtractSymbolics symbolSet c) =>
+    GExtractSymbolics symbolSet (a, b, c)
 
 -- MaybeT
-instance (Monoid symbolSet, ExtractSymbolics symbolSet (m (Maybe a))) => ExtractSymbolics symbolSet (MaybeT m a) where
-  extractSymbolics (MaybeT v) = extractSymbolics v
+instance (Monoid symbolSet, GExtractSymbolics symbolSet (m (Maybe a))) => GExtractSymbolics symbolSet (MaybeT m a) where
+  gextractSymbolics (MaybeT v) = gextractSymbolics v
 
 -- ExceptT
 instance
-  (Monoid symbolSet, ExtractSymbolics symbolSet (m (Either e a))) =>
-  ExtractSymbolics symbolSet (ExceptT e m a)
+  (Monoid symbolSet, GExtractSymbolics symbolSet (m (Either e a))) =>
+  GExtractSymbolics symbolSet (ExceptT e m a)
   where
-  extractSymbolics (ExceptT v) = extractSymbolics v
+  gextractSymbolics (ExceptT v) = gextractSymbolics v
 
 -- Sum
 deriving via
   (Default (Sum f g a))
   instance
-    (Monoid symbolSet, ExtractSymbolics symbolSet (f a), ExtractSymbolics symbolSet (g a)) =>
-    ExtractSymbolics symbolSet (Sum f g a)
+    (Monoid symbolSet, GExtractSymbolics symbolSet (f a), GExtractSymbolics symbolSet (g a)) =>
+    GExtractSymbolics symbolSet (Sum f g a)
 
 -- WriterT
 instance
-  (Monoid symbolSet, ExtractSymbolics symbolSet (m (a, s))) =>
-  ExtractSymbolics symbolSet (WriterLazy.WriterT s m a)
+  (Monoid symbolSet, GExtractSymbolics symbolSet (m (a, s))) =>
+  GExtractSymbolics symbolSet (WriterLazy.WriterT s m a)
   where
-  extractSymbolics (WriterLazy.WriterT f) = extractSymbolics f
+  gextractSymbolics (WriterLazy.WriterT f) = gextractSymbolics f
 
 instance
-  (Monoid symbolSet, ExtractSymbolics symbolSet (m (a, s))) =>
-  ExtractSymbolics symbolSet (WriterStrict.WriterT s m a)
+  (Monoid symbolSet, GExtractSymbolics symbolSet (m (a, s))) =>
+  GExtractSymbolics symbolSet (WriterStrict.WriterT s m a)
   where
-  extractSymbolics (WriterStrict.WriterT f) = extractSymbolics f
+  gextractSymbolics (WriterStrict.WriterT f) = gextractSymbolics f
 
 -- Identity
-instance (Monoid symbolSet, ExtractSymbolics symbolSet a) => ExtractSymbolics symbolSet (Identity a) where
-  extractSymbolics (Identity a) = extractSymbolics a
+instance (Monoid symbolSet, GExtractSymbolics symbolSet a) => GExtractSymbolics symbolSet (Identity a) where
+  gextractSymbolics (Identity a) = gextractSymbolics a
 
 -- IdentityT
-instance (Monoid symbolSet, ExtractSymbolics symbolSet (m a)) => ExtractSymbolics symbolSet (IdentityT m a) where
-  extractSymbolics (IdentityT a) = extractSymbolics a
+instance (Monoid symbolSet, GExtractSymbolics symbolSet (m a)) => GExtractSymbolics symbolSet (IdentityT m a) where
+  gextractSymbolics (IdentityT a) = gextractSymbolics a

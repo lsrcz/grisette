@@ -31,6 +31,13 @@ import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.BV
+import Grisette.IR.SymPrim.Data.Class.Evaluate
+import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
+import Grisette.IR.SymPrim.Data.Class.GenSym
+import Grisette.IR.SymPrim.Data.Class.Mergeable
+import Grisette.IR.SymPrim.Data.Class.SEq
+import Grisette.IR.SymPrim.Data.Class.SOrd
+import Grisette.IR.SymPrim.Data.Class.SimpleMergeable
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model
@@ -79,7 +86,7 @@ symPrimTests =
                   @=? Sym (pevalITETerm (ssymbTerm "a") (ssymbTerm "b") (ssymbTerm "c"))
             ],
           testCase "Mergeable" $ do
-            let SimpleStrategy s = mergingStrategy :: MergingStrategy (Sym Bool) (Sym Integer)
+            let SimpleStrategy s = mergingStrategy :: MergingStrategy (Sym Integer)
             s (ssymb "a") (ssymb "b") (ssymb "c")
               @=? ites (ssymb "a" :: Sym Bool) (ssymb "b" :: Sym Integer) (ssymb "c"),
           testCase "SimpleMergeable" $ do

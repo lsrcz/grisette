@@ -64,56 +64,56 @@ instance Eq SBool where
   ITE c1 l1 r1 == ITE c2 l2 r2 = c1 == c2 && l1 == l2 && r1 == r2
   _ == _ = False
 
-instance Mergeable SBool SBool where
-  mergingStrategy = SimpleStrategy ites
+instance GMergeable SBool SBool where
+  gmergingStrategy = SimpleStrategy ites
 
-instance SimpleMergeable SBool SBool where
-  mrgIte = ites
+instance GSimpleMergeable SBool SBool where
+  gmrgIte = ites
 
-instance EvaluateSym (M.HashMap Symbol Bool) SBool where
-  evaluateSym _ _ c@(CBool _) = c
-  evaluateSym fillDefault model s@(SSBool sym) = case M.lookup (SSymbol sym) model of
+instance GEvaluateSym (M.HashMap Symbol Bool) SBool where
+  gevaluateSym _ _ c@(CBool _) = c
+  gevaluateSym fillDefault model s@(SSBool sym) = case M.lookup (SSymbol sym) model of
     Just v -> CBool v
     Nothing -> if fillDefault then CBool False else s
-  evaluateSym fillDefault model s@(ISSBool sym info) = case M.lookup (ISSymbol sym info) model of
+  gevaluateSym fillDefault model s@(ISSBool sym info) = case M.lookup (ISSymbol sym info) model of
     Just v -> CBool v
     Nothing -> if fillDefault then CBool False else s
-  evaluateSym fillDefault model s@(ISBool sym i) = case M.lookup (ISymbol sym i) model of
+  gevaluateSym fillDefault model s@(ISBool sym i) = case M.lookup (ISymbol sym i) model of
     Just v -> CBool v
     Nothing -> if fillDefault then CBool False else s
-  evaluateSym fillDefault model s@(IISBool sym i info) = case M.lookup (IISymbol sym i info) model of
+  gevaluateSym fillDefault model s@(IISBool sym i info) = case M.lookup (IISymbol sym i info) model of
     Just v -> CBool v
     Nothing -> if fillDefault then CBool False else s
-  evaluateSym fillDefault model (Or l r) = evaluateSym fillDefault model l ||~ evaluateSym fillDefault model r
-  evaluateSym fillDefault model (And l r) = evaluateSym fillDefault model l &&~ evaluateSym fillDefault model r
-  evaluateSym fillDefault model (Not v) = nots (evaluateSym fillDefault model v)
-  evaluateSym fillDefault model (Equal l r) = evaluateSym fillDefault model l ==~ evaluateSym fillDefault model r
-  evaluateSym fillDefault model (ITE c l r) =
+  gevaluateSym fillDefault model (Or l r) = gevaluateSym fillDefault model l ||~ gevaluateSym fillDefault model r
+  gevaluateSym fillDefault model (And l r) = gevaluateSym fillDefault model l &&~ gevaluateSym fillDefault model r
+  gevaluateSym fillDefault model (Not v) = nots (gevaluateSym fillDefault model v)
+  gevaluateSym fillDefault model (Equal l r) = gevaluateSym fillDefault model l `gsymeq` gevaluateSym fillDefault model r
+  gevaluateSym fillDefault model (ITE c l r) =
     ites
-      (evaluateSym fillDefault model c)
-      (evaluateSym fillDefault model l)
-      (evaluateSym fillDefault model r)
+      (gevaluateSym fillDefault model c)
+      (gevaluateSym fillDefault model l)
+      (gevaluateSym fillDefault model r)
 
-instance SEq SBool SBool where
-  (CBool l) ==~ (CBool r) = CBool (l == r)
-  (CBool True) ==~ r = r
-  (CBool False) ==~ r = nots r
-  l ==~ (CBool True) = l
-  l ==~ (CBool False) = nots l
-  l ==~ r
+instance GSEq SBool SBool where
+  (CBool l) `gsymeq` (CBool r) = CBool (l == r)
+  (CBool True) `gsymeq` r = r
+  (CBool False) `gsymeq` r = nots r
+  l `gsymeq` (CBool True) = l
+  l `gsymeq` (CBool False) = nots l
+  l `gsymeq` r
     | l == r = CBool True
     | otherwise = Equal l r
 
-instance SOrd SBool SBool where
-  l <=~ r = nots l ||~ r
-  l <~ r = nots l &&~ r
-  l >=~ r = l ||~ nots r
-  l >~ r = l &&~ nots r
-  symCompare l r =
+instance GSOrd SBool SBool where
+  l `gsymle` r = nots l ||~ r
+  l `gsymlt` r = nots l &&~ r
+  l `gsymge` r = l ||~ nots r
+  l `gsymgt` r = l &&~ nots r
+  gsymCompare l r =
     mrgIf
       (nots l &&~ r)
       (mrgReturn LT)
-      (mrgIf (l ==~ r) (mrgReturn EQ) (mrgReturn GT))
+      (mrgIf (l `gsymeq` r) (mrgReturn EQ) (mrgReturn GT))
 
 instance IsString SBool where
   fromString = ssymb
@@ -181,8 +181,8 @@ instance Hashable Symbol where
   s `hashWithSalt` ISymbol i1 s1 = s `hashWithSalt` i1 `hashWithSalt` s1
   s `hashWithSalt` IISymbol i1 s1 info1 = s `hashWithSalt` i1 `hashWithSalt` s1 `hashWithSalt` info1
 
-instance ExtractSymbolics (S.HashSet Symbol) SBool where
-  extractSymbolics = go S.empty
+instance GExtractSymbolics (S.HashSet Symbol) SBool where
+  gextractSymbolics = go S.empty
     where
       go s (CBool _) = s
       go s (SSBool sym) = S.insert (SSymbol sym) s
@@ -208,7 +208,7 @@ instance ToSym Bool SBool where
 instance ToSym SBool SBool where
   toSym = id
 
-instance GenSym SBool () SBool
+instance GGenSym SBool () SBool
 
 instance GenSymSimple () SBool where
   genSymSimpleFresh _ = do
@@ -218,7 +218,7 @@ instance GenSymSimple () SBool where
       GenSymIdent s -> return $ ISBool s i
       GenSymIdentWithInfo s info -> return $ IISBool s i info
 
-instance GenSym SBool SBool SBool
+instance GGenSym SBool SBool SBool
 
 instance GenSymSimple SBool SBool where
   genSymSimpleFresh _ = genSymSimpleFresh ()

@@ -43,22 +43,22 @@ data AssertionError = AssertionError
   deriving (Show, Eq, Ord, Generic, NFData)
   deriving (ToCon AssertionError, ToSym AssertionError) via (Default AssertionError)
 
-deriving via (Default AssertionError) instance (SymBoolOp bool) => Mergeable bool AssertionError
+deriving via (Default AssertionError) instance (SymBoolOp bool) => GMergeable bool AssertionError
 
-deriving via (Default AssertionError) instance (SymBoolOp bool) => SimpleMergeable bool AssertionError
+deriving via (Default AssertionError) instance (SymBoolOp bool) => GSimpleMergeable bool AssertionError
 
-deriving via (Default AssertionError) instance (SymBoolOp bool) => SEq bool AssertionError
+deriving via (Default AssertionError) instance (SymBoolOp bool) => GSEq bool AssertionError
 
-instance (SymBoolOp bool) => SOrd bool AssertionError where
-  _ <=~ _ = conc True
-  _ <~ _ = conc False
-  _ >=~ _ = conc True
-  _ >~ _ = conc False
-  _ `symCompare` _ = mrgSingle EQ
+instance (SymBoolOp bool) => GSOrd bool AssertionError where
+  _ `gsymle` _ = conc True
+  _ `gsymlt` _ = conc False
+  _ `gsymge` _ = conc True
+  _ `gsymgt` _ = conc False
+  _ `gsymCompare` _ = mrgSingle EQ
 
-deriving via (Default AssertionError) instance EvaluateSym a AssertionError
+deriving via (Default AssertionError) instance GEvaluateSym a AssertionError
 
-deriving via (Default AssertionError) instance (Monoid a) => ExtractSymbolics a AssertionError
+deriving via (Default AssertionError) instance (Monoid a) => GExtractSymbolics a AssertionError
 
 -- | Verification conditions.
 -- A crashed program path can terminate with either assertion violation errors or assumption violation errors.
@@ -68,20 +68,20 @@ data VerificationConditions
   deriving (Show, Eq, Ord, Generic, NFData)
   deriving (ToCon VerificationConditions, ToSym VerificationConditions) via (Default VerificationConditions)
 
-deriving via (Default VerificationConditions) instance (SymBoolOp bool) => Mergeable bool VerificationConditions
+deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GMergeable bool VerificationConditions
 
-deriving via (Default VerificationConditions) instance (SymBoolOp bool) => SEq bool VerificationConditions
+deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GSEq bool VerificationConditions
 
-instance (SymBoolOp bool) => SOrd bool VerificationConditions where
-  l <=~ r = conc $ l <= r
-  l <~ r = conc $ l < r
-  l >=~ r = conc $ l >= r
-  l >~ r = conc $ l > r
-  l `symCompare` r = mrgSingle $ l `compare` r
+instance (SymBoolOp bool) => GSOrd bool VerificationConditions where
+  l `gsymle` r = conc $ l <= r
+  l `gsymlt` r = conc $ l < r
+  l `gsymge` r = conc $ l >= r
+  l `gsymgt` r = conc $ l > r
+  l `gsymCompare` r = mrgSingle $ l `compare` r
 
-deriving via (Default VerificationConditions) instance EvaluateSym a VerificationConditions
+deriving via (Default VerificationConditions) instance GEvaluateSym a VerificationConditions
 
-deriving via (Default VerificationConditions) instance (Monoid a) => ExtractSymbolics a VerificationConditions
+deriving via (Default VerificationConditions) instance (Monoid a) => GExtractSymbolics a VerificationConditions
 
 instance TransformError VerificationConditions VerificationConditions where
   transformError = id
@@ -138,7 +138,7 @@ instance TransformError AssertionError AssertionError where
 -- >>> symAssert (ssymb "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionViolation)) (Single (Right ()))))
 symAssert ::
-  (TransformError AssertionError to, Mergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
+  (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
   erm ()
 symAssert = symFailIfNot AssertionError
@@ -152,7 +152,7 @@ symAssert = symFailIfNot AssertionError
 -- >>> symAssume (ssymb "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssumptionViolation)) (Single (Right ()))))
 symAssume ::
-  (TransformError VerificationConditions to, Mergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
+  (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
   erm ()
 symAssume = symFailIfNot AssumptionViolation

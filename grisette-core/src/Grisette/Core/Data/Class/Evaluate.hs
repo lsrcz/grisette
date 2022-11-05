@@ -8,8 +8,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.Evaluate
-  ( EvaluateSym (..),
-    evaluateSymToCon,
+  ( GEvaluateSym (..),
+    gevaluateSymToCon,
   )
 where
 
@@ -37,52 +37,52 @@ import Grisette.Core.Data.Class.ToCon
 -- | Evaluating symbolic variables with some model.
 --
 -- Usually the model is created with the solver, rather than by hand.
-class EvaluateSym model a where
+class GEvaluateSym model a where
   -- | Evaluate a symbolic variable with some model, possibly fill in values for the missing variables.
   --
   -- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
-  -- >>> evaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
+  -- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
   -- [1I,b]
-  -- >>> evaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
+  -- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
   -- [1I,0I]
-  evaluateSym :: Bool -> model -> a -> a
+  gevaluateSym :: Bool -> model -> a -> a
 
-instance (Generic a, EvaluateSym' model (Rep a)) => EvaluateSym model (Default a) where
-  evaluateSym fillDefault model = Default . to . evaluateSym' fillDefault model . from . unDefault
+instance (Generic a, GEvaluateSym' model (Rep a)) => GEvaluateSym model (Default a) where
+  gevaluateSym fillDefault model = Default . to . gevaluateSym' fillDefault model . from . unDefault
 
-class EvaluateSym' model a where
-  evaluateSym' :: Bool -> model -> a c -> a c
+class GEvaluateSym' model a where
+  gevaluateSym' :: Bool -> model -> a c -> a c
 
-instance EvaluateSym' model U1 where
-  evaluateSym' _ _ = id
+instance GEvaluateSym' model U1 where
+  gevaluateSym' _ _ = id
 
-instance EvaluateSym model c => EvaluateSym' model (K1 i c) where
-  evaluateSym' fillDefault model (K1 v) = K1 $ evaluateSym fillDefault model v
+instance GEvaluateSym model c => GEvaluateSym' model (K1 i c) where
+  gevaluateSym' fillDefault model (K1 v) = K1 $ gevaluateSym fillDefault model v
 
-instance EvaluateSym' model a => EvaluateSym' model (M1 i c a) where
-  evaluateSym' fillDefault model (M1 v) = M1 $ evaluateSym' fillDefault model v
+instance GEvaluateSym' model a => GEvaluateSym' model (M1 i c a) where
+  gevaluateSym' fillDefault model (M1 v) = M1 $ gevaluateSym' fillDefault model v
 
-instance (EvaluateSym' model a, EvaluateSym' model b) => EvaluateSym' model (a :+: b) where
-  evaluateSym' fillDefault model (L1 l) = L1 $ evaluateSym' fillDefault model l
-  evaluateSym' fillDefault model (R1 r) = R1 $ evaluateSym' fillDefault model r
+instance (GEvaluateSym' model a, GEvaluateSym' model b) => GEvaluateSym' model (a :+: b) where
+  gevaluateSym' fillDefault model (L1 l) = L1 $ gevaluateSym' fillDefault model l
+  gevaluateSym' fillDefault model (R1 r) = R1 $ gevaluateSym' fillDefault model r
 
-instance (EvaluateSym' model a, EvaluateSym' model b) => EvaluateSym' model (a :*: b) where
-  evaluateSym' fillDefault model (a :*: b) = evaluateSym' fillDefault model a :*: evaluateSym' fillDefault model b
+instance (GEvaluateSym' model a, GEvaluateSym' model b) => GEvaluateSym' model (a :*: b) where
+  gevaluateSym' fillDefault model (a :*: b) = gevaluateSym' fillDefault model a :*: gevaluateSym' fillDefault model b
 
 -- | Evaluate a symbolic variable with some model, fill in values for the missing variables,
 -- and transform to concrete ones
 --
 -- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
--- >>> evaluateSymToCon model ([ssymb "a", ssymb "b"] :: [SymInteger]) :: [Integer]
+-- >>> gevaluateSymToCon model ([ssymb "a", ssymb "b"] :: [SymInteger]) :: [Integer]
 -- [1,0]
-evaluateSymToCon :: (ToCon a b, EvaluateSym model a) => model -> a -> b
-evaluateSymToCon model a = fromJust $ toCon $ evaluateSym True model a
+gevaluateSymToCon :: (ToCon a b, GEvaluateSym model a) => model -> a -> b
+gevaluateSymToCon model a = fromJust $ toCon $ gevaluateSym True model a
 
 -- instances
 
 #define CONCRETE_EVALUATESYM(type) \
-instance EvaluateSym model type where \
-  evaluateSym _ _ = id
+instance GEvaluateSym model type where \
+  gevaluateSym _ _ = id
 
 CONCRETE_EVALUATESYM (Bool)
 CONCRETE_EVALUATESYM (Integer)
@@ -100,98 +100,98 @@ CONCRETE_EVALUATESYM (Word64)
 CONCRETE_EVALUATESYM (B.ByteString)
 
 -- ()
-instance EvaluateSym model () where
-  evaluateSym _ _ = id
+instance GEvaluateSym model () where
+  gevaluateSym _ _ = id
 
 -- Either
-deriving via (Default (Either a b)) instance (EvaluateSym model a, EvaluateSym model b) => EvaluateSym model (Either a b)
+deriving via (Default (Either a b)) instance (GEvaluateSym model a, GEvaluateSym model b) => GEvaluateSym model (Either a b)
 
 -- Maybe
-deriving via (Default (Maybe a)) instance (EvaluateSym model a) => EvaluateSym model (Maybe a)
+deriving via (Default (Maybe a)) instance (GEvaluateSym model a) => GEvaluateSym model (Maybe a)
 
 -- List
-deriving via (Default [a]) instance (EvaluateSym model a) => EvaluateSym model [a]
+deriving via (Default [a]) instance (GEvaluateSym model a) => GEvaluateSym model [a]
 
 -- (,)
-deriving via (Default (a, b)) instance (EvaluateSym model a, EvaluateSym model b) => EvaluateSym model (a, b)
+deriving via (Default (a, b)) instance (GEvaluateSym model a, GEvaluateSym model b) => GEvaluateSym model (a, b)
 
 -- (,,)
-deriving via (Default (a, b, c)) instance (EvaluateSym model a, EvaluateSym model b, EvaluateSym model c) => EvaluateSym model (a, b, c)
+deriving via (Default (a, b, c)) instance (GEvaluateSym model a, GEvaluateSym model b, GEvaluateSym model c) => GEvaluateSym model (a, b, c)
 
 -- (,,,)
 deriving via
   (Default (a, b, c, d))
   instance
-    (EvaluateSym model a, EvaluateSym model b, EvaluateSym model c, EvaluateSym model d) => EvaluateSym model (a, b, c, d)
+    (GEvaluateSym model a, GEvaluateSym model b, GEvaluateSym model c, GEvaluateSym model d) => GEvaluateSym model (a, b, c, d)
 
 -- (,,,,)
 deriving via
   (Default (a, b, c, d, e))
   instance
-    (EvaluateSym model a, EvaluateSym model b, EvaluateSym model c, EvaluateSym model d, EvaluateSym model e) =>
-    EvaluateSym model (a, b, c, d, e)
+    (GEvaluateSym model a, GEvaluateSym model b, GEvaluateSym model c, GEvaluateSym model d, GEvaluateSym model e) =>
+    GEvaluateSym model (a, b, c, d, e)
 
 -- (,,,,,)
 deriving via
   (Default (a, b, c, d, e, f))
   instance
-    (EvaluateSym model a, EvaluateSym model b, EvaluateSym model c, EvaluateSym model d, EvaluateSym model e, EvaluateSym model f) =>
-    EvaluateSym model (a, b, c, d, e, f)
+    (GEvaluateSym model a, GEvaluateSym model b, GEvaluateSym model c, GEvaluateSym model d, GEvaluateSym model e, GEvaluateSym model f) =>
+    GEvaluateSym model (a, b, c, d, e, f)
 
 -- (,,,,,,)
 deriving via
   (Default (a, b, c, d, e, f, g))
   instance
-    ( EvaluateSym model a,
-      EvaluateSym model b,
-      EvaluateSym model c,
-      EvaluateSym model d,
-      EvaluateSym model e,
-      EvaluateSym model f,
-      EvaluateSym model g
+    ( GEvaluateSym model a,
+      GEvaluateSym model b,
+      GEvaluateSym model c,
+      GEvaluateSym model d,
+      GEvaluateSym model e,
+      GEvaluateSym model f,
+      GEvaluateSym model g
     ) =>
-    EvaluateSym model (a, b, c, d, e, f, g)
+    GEvaluateSym model (a, b, c, d, e, f, g)
 
 -- (,,,,,,,)
 deriving via
   (Default (a, b, c, d, e, f, g, h))
   instance
-    ( EvaluateSym model a,
-      EvaluateSym model b,
-      EvaluateSym model c,
-      EvaluateSym model d,
-      EvaluateSym model e,
-      EvaluateSym model f,
-      EvaluateSym model g,
-      EvaluateSym model h
+    ( GEvaluateSym model a,
+      GEvaluateSym model b,
+      GEvaluateSym model c,
+      GEvaluateSym model d,
+      GEvaluateSym model e,
+      GEvaluateSym model f,
+      GEvaluateSym model g,
+      GEvaluateSym model h
     ) =>
-    EvaluateSym model ((,,,,,,,) a b c d e f g h)
+    GEvaluateSym model ((,,,,,,,) a b c d e f g h)
 
 -- MaybeT
-instance (EvaluateSym model (m (Maybe a))) => EvaluateSym model (MaybeT m a) where
-  evaluateSym fillDefault model (MaybeT v) = MaybeT $ evaluateSym fillDefault model v
+instance (GEvaluateSym model (m (Maybe a))) => GEvaluateSym model (MaybeT m a) where
+  gevaluateSym fillDefault model (MaybeT v) = MaybeT $ gevaluateSym fillDefault model v
 
 -- ExceptT
-instance (EvaluateSym model (m (Either e a))) => EvaluateSym model (ExceptT e m a) where
-  evaluateSym fillDefault model (ExceptT v) = ExceptT $ evaluateSym fillDefault model v
+instance (GEvaluateSym model (m (Either e a))) => GEvaluateSym model (ExceptT e m a) where
+  gevaluateSym fillDefault model (ExceptT v) = ExceptT $ gevaluateSym fillDefault model v
 
 -- Sum
 deriving via
   (Default (Sum f g a))
   instance
-    (EvaluateSym model (f a), EvaluateSym model (g a)) => EvaluateSym model (Sum f g a)
+    (GEvaluateSym model (f a), GEvaluateSym model (g a)) => GEvaluateSym model (Sum f g a)
 
 -- WriterT
-instance EvaluateSym model (m (a, s)) => EvaluateSym model (WriterLazy.WriterT s m a) where
-  evaluateSym fillDefault model (WriterLazy.WriterT v) = WriterLazy.WriterT $ evaluateSym fillDefault model v
+instance GEvaluateSym model (m (a, s)) => GEvaluateSym model (WriterLazy.WriterT s m a) where
+  gevaluateSym fillDefault model (WriterLazy.WriterT v) = WriterLazy.WriterT $ gevaluateSym fillDefault model v
 
-instance EvaluateSym model (m (a, s)) => EvaluateSym model (WriterStrict.WriterT s m a) where
-  evaluateSym fillDefault model (WriterStrict.WriterT v) = WriterStrict.WriterT $ evaluateSym fillDefault model v
+instance GEvaluateSym model (m (a, s)) => GEvaluateSym model (WriterStrict.WriterT s m a) where
+  gevaluateSym fillDefault model (WriterStrict.WriterT v) = WriterStrict.WriterT $ gevaluateSym fillDefault model v
 
 -- Identity
-instance EvaluateSym model a => EvaluateSym model (Identity a) where
-  evaluateSym fillDefault model (Identity a) = Identity $ evaluateSym fillDefault model a
+instance GEvaluateSym model a => GEvaluateSym model (Identity a) where
+  gevaluateSym fillDefault model (Identity a) = Identity $ gevaluateSym fillDefault model a
 
 -- IdentityT
-instance EvaluateSym model (m a) => EvaluateSym model (IdentityT m a) where
-  evaluateSym fillDefault model (IdentityT a) = IdentityT $ evaluateSym fillDefault model a
+instance GEvaluateSym model (m a) => GEvaluateSym model (IdentityT m a) where
+  gevaluateSym fillDefault model (IdentityT a) = IdentityT $ gevaluateSym fillDefault model a

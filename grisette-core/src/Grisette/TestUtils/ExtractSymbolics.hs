@@ -8,5 +8,5 @@ import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.TestUtils.Assertions
 import Grisette.TestUtils.SBool
 
-concreteExtractSymbolicsOkProp :: (HasCallStack, ExtractSymbolics (S.HashSet Symbol) a) => (a, a) -> Assertion
-concreteExtractSymbolicsOkProp x = extractSymbolics x @=? (S.empty :: S.HashSet Symbol)
+concreteGExtractSymbolicsOkProp :: (HasCallStack, GExtractSymbolics (S.HashSet Symbol) a) => (a, a) -> Assertion
+concreteGExtractSymbolicsOkProp x = gextractSymbolics x @=? (S.empty :: S.HashSet Symbol)

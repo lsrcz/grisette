@@ -11,13 +11,13 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
 -- | 'throwError' with 'Mergeable' knowledge propagation.
-mrgThrowError :: (SymBoolOp bool, MonadError e m, MonadUnion bool m, Mergeable bool a) => e -> m a
+mrgThrowError :: (SymBoolOp bool, MonadError e m, GMonadUnion bool m, GMergeable bool a) => e -> m a
 mrgThrowError = merge . throwError
 {-# INLINE mrgThrowError #-}
 
 -- | 'catchError' with 'Mergeable' knowledge propagation.
 mrgCatchError ::
-  (SymBoolOp bool, MonadError e m, MonadUnion bool m, Mergeable bool a) =>
+  (SymBoolOp bool, MonadError e m, GMonadUnion bool m, GMergeable bool a) =>
   m a ->
   (e -> m a) ->
   m a

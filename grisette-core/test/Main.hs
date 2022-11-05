@@ -48,8 +48,8 @@ tests =
                 [ testGroup
                     "Class"
                     [ boolTests,
-                      evaluateSymTests,
-                      extractSymbolicsTests,
+                      gevaluateSymTests,
+                      gextractSymbolicsTests,
                       genSymTests,
                       mergeableTests,
                       seqTests,

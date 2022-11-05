@@ -6,7 +6,7 @@ module Grisette.Core.Data.Class.Integer
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),
-    SymIntegerOp,
+    GSymIntegerOp,
   )
 where
 
@@ -28,19 +28,19 @@ class SignedDivMod bool a where
   --
   -- >>> divs (ssymb "a") (ssymb "b") :: ExceptT AssertionError UnionM SymInteger
   -- ExceptT (UMrg (If (= b 0I) (Single (Left AssertionError)) (Single (Right (div a b)))))
-  divs :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
+  divs :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
-  mods :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
+  mods :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
 -- | Safe unsigned 'div' and 'mod' with monadic error handling in multi-path execution.
 class UnsignedDivMod bool a where
-  udivs :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
-  umods :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
+  udivs :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
+  umods :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
 -- | Safe signed 'quot' and 'rem' with monadic error handling in multi-path execution.
 class SignedQuotRem bool a where
-  quots :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
-  rems :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
+  quots :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
+  rems :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
 -- | Aggregation for the operations on symbolic integer types
-class (Num a, SEq bool a, SOrd bool a, PrimWrapper a Integer) => SymIntegerOp bool a
+class (Num a, GSEq bool a, GSOrd bool a, PrimWrapper a Integer) => GSymIntegerOp bool a

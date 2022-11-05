@@ -46,7 +46,7 @@ import Language.Haskell.TH.Syntax
 data SolveInternal = SolveInternal deriving (Eq, Show, Ord, Generic, Hashable, Lift, NFData)
 
 class
-  (SymBoolOp bool, EvaluateSym model bool) =>
+  (SymBoolOp bool, GEvaluateSym model bool) =>
   Solver config bool symbolSet failure model
     | config -> bool symbolSet failure model
   where
@@ -54,14 +54,14 @@ class
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
   cegisFormula ::
-    (EvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
+    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
     config ->
     forallArg ->
     bool ->
     IO (Either failure ([forallArg], model))
   cegisFormula config forallArg = cegisFormulas config forallArg (conc False)
   cegisFormulas ::
-    (EvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
+    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
     config ->
     forallArg ->
     bool ->
@@ -76,7 +76,7 @@ instance ExtractUnionEither (ExceptT e u v) u e v where
 
 solveFallable ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
     Solver config bool symbolSet failure model
@@ -89,7 +89,7 @@ solveFallable config f v = solveFormula config (getSingle $ f <$> extractUnionEi
 
 solveMultiFallable ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
     Solver config bool symbolSet failure model
@@ -103,11 +103,11 @@ solveMultiFallable config n f v = solveFormulaMulti config n (getSingle $ f <$> 
 
 cegisFallable ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
-    EvaluateSym model forallArgs,
-    ExtractSymbolics symbolSet forallArgs,
+    GEvaluateSym model forallArgs,
+    GExtractSymbolics symbolSet forallArgs,
     Solver config bool symbolSet failure model
   ) =>
   config ->
@@ -119,11 +119,11 @@ cegisFallable config args f v = uncurry (cegisFormulas config args) (getSingle $
 
 cegisFallable' ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool,
-    EvaluateSym model forallArgs,
-    ExtractSymbolics symbolSet forallArgs,
+    GEvaluateSym model forallArgs,
+    GExtractSymbolics symbolSet forallArgs,
     Solver config bool symbolSet failure model
   ) =>
   config ->

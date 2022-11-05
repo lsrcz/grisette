@@ -26,91 +26,91 @@ import Test.Tasty.QuickCheck
 
 data A = A1 | A2 SBool | A3 SBool SBool
   deriving (Generic, Show, Eq)
-  deriving (ExtractSymbolics (S.HashSet Symbol)) via (Default A)
+  deriving (GExtractSymbolics (S.HashSet Symbol)) via (Default A)
 
-extractSymbolicsTests :: TestTree
-extractSymbolicsTests =
+gextractSymbolicsTests :: TestTree
+gextractSymbolicsTests =
   testGroup
-    "ExtractSymbolicsTests"
+    "GExtractSymbolicsTests"
     [ testGroup
         "Common types"
         [ testGroup
             "SBool"
             [ testCase "CBool" $
-                extractSymbolics (CBool True) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics (CBool True) @=? (S.empty :: S.HashSet Symbol),
               testCase "SSBool" $
-                extractSymbolics (SSBool "a") @=? S.singleton (SSymbol "a"),
+                gextractSymbolics (SSBool "a") @=? S.singleton (SSymbol "a"),
               testCase "ISBool" $
-                extractSymbolics (ISBool "a" 1) @=? S.singleton (ISymbol "a" 1),
+                gextractSymbolics (ISBool "a" 1) @=? S.singleton (ISymbol "a" 1),
               testCase "And" $
-                extractSymbolics (And (SSBool "a") (ISBool "b" 1))
+                gextractSymbolics (And (SSBool "a") (ISBool "b" 1))
                   @=? S.fromList [SSymbol "a", ISymbol "b" 1],
               testCase "Or" $
-                extractSymbolics (Or (SSBool "a") (ISBool "b" 1))
+                gextractSymbolics (Or (SSBool "a") (ISBool "b" 1))
                   @=? S.fromList [SSymbol "a", ISymbol "b" 1],
               testCase "Equal" $
-                extractSymbolics (Equal (SSBool "a") (ISBool "b" 1))
+                gextractSymbolics (Equal (SSBool "a") (ISBool "b" 1))
                   @=? S.fromList [SSymbol "a", ISymbol "b" 1],
               testCase "ITE" $
-                extractSymbolics (ITE (SSBool "a") (ISBool "b" 1) (SSBool "c"))
+                gextractSymbolics (ITE (SSBool "a") (ISBool "b" 1) (SSBool "c"))
                   @=? S.fromList [SSymbol "a", ISymbol "b" 1, SSymbol "c"],
               testCase "Not" $
-                extractSymbolics (Not $ ISBool "a" 1) @=? S.singleton (ISymbol "a" 1)
+                gextractSymbolics (Not $ ISBool "a" 1) @=? S.singleton (ISymbol "a" 1)
             ],
-          testProperty "Bool" (ioProperty . concreteExtractSymbolicsOkProp @Bool),
-          testProperty "Integer" (ioProperty . concreteExtractSymbolicsOkProp @Integer),
-          testProperty "Char" (ioProperty . concreteExtractSymbolicsOkProp @Char),
-          testProperty "Int" (ioProperty . concreteExtractSymbolicsOkProp @Int),
-          testProperty "Int8" (ioProperty . concreteExtractSymbolicsOkProp @Int8),
-          testProperty "Int16" (ioProperty . concreteExtractSymbolicsOkProp @Int16),
-          testProperty "Int32" (ioProperty . concreteExtractSymbolicsOkProp @Int32),
-          testProperty "Int64" (ioProperty . concreteExtractSymbolicsOkProp @Int64),
-          testProperty "Word" (ioProperty . concreteExtractSymbolicsOkProp @Word),
-          testProperty "Word8" (ioProperty . concreteExtractSymbolicsOkProp @Word8),
-          testProperty "Word16" (ioProperty . concreteExtractSymbolicsOkProp @Word16),
-          testProperty "Word32" (ioProperty . concreteExtractSymbolicsOkProp @Word32),
-          testProperty "Word64" (ioProperty . concreteExtractSymbolicsOkProp @Word64),
+          testProperty "Bool" (ioProperty . concreteGExtractSymbolicsOkProp @Bool),
+          testProperty "Integer" (ioProperty . concreteGExtractSymbolicsOkProp @Integer),
+          testProperty "Char" (ioProperty . concreteGExtractSymbolicsOkProp @Char),
+          testProperty "Int" (ioProperty . concreteGExtractSymbolicsOkProp @Int),
+          testProperty "Int8" (ioProperty . concreteGExtractSymbolicsOkProp @Int8),
+          testProperty "Int16" (ioProperty . concreteGExtractSymbolicsOkProp @Int16),
+          testProperty "Int32" (ioProperty . concreteGExtractSymbolicsOkProp @Int32),
+          testProperty "Int64" (ioProperty . concreteGExtractSymbolicsOkProp @Int64),
+          testProperty "Word" (ioProperty . concreteGExtractSymbolicsOkProp @Word),
+          testProperty "Word8" (ioProperty . concreteGExtractSymbolicsOkProp @Word8),
+          testProperty "Word16" (ioProperty . concreteGExtractSymbolicsOkProp @Word16),
+          testProperty "Word32" (ioProperty . concreteGExtractSymbolicsOkProp @Word32),
+          testProperty "Word64" (ioProperty . concreteGExtractSymbolicsOkProp @Word64),
           testGroup
             "[SBool]"
             [ testCase "[]" $
-                extractSymbolics ([] :: [SBool]) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics ([] :: [SBool]) @=? (S.empty :: S.HashSet Symbol),
               testCase "[v]" $
-                extractSymbolics [SSBool "a"] @=? S.singleton (SSymbol "a"),
+                gextractSymbolics [SSBool "a"] @=? S.singleton (SSymbol "a"),
               testCase "[v1, v2]" $
-                extractSymbolics [SSBool "a", SSBool "b"] @=? S.fromList [SSymbol "a", SSymbol "b"]
+                gextractSymbolics [SSBool "a", SSBool "b"] @=? S.fromList [SSymbol "a", SSymbol "b"]
             ],
           testGroup
             "Maybe SBool"
             [ testCase "Nothing" $
-                extractSymbolics (Nothing :: Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics (Nothing :: Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
               testCase "Just v" $
-                extractSymbolics (Just (SSBool "a")) @=? S.singleton (SSymbol "a")
+                gextractSymbolics (Just (SSBool "a")) @=? S.singleton (SSymbol "a")
             ],
           testGroup
             "Either SBool SBool"
             [ testCase "Left v" $
-                extractSymbolics (Left (SSBool "a") :: Either SBool SBool) @=? S.singleton (SSymbol "a"),
+                gextractSymbolics (Left (SSBool "a") :: Either SBool SBool) @=? S.singleton (SSymbol "a"),
               testCase "Right v" $
-                extractSymbolics (Right (SSBool "a") :: Either SBool SBool) @=? S.singleton (SSymbol "a")
+                gextractSymbolics (Right (SSBool "a") :: Either SBool SBool) @=? S.singleton (SSymbol "a")
             ],
           testGroup
             "MaybeT Maybe SBool"
             [ testCase "MaybeT Nothing" $
-                extractSymbolics (MaybeT Nothing :: MaybeT Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics (MaybeT Nothing :: MaybeT Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
               testCase "MaybeT (Just Nothing)" $
-                extractSymbolics (MaybeT (Just Nothing) :: MaybeT Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics (MaybeT (Just Nothing) :: MaybeT Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
               testCase "MaybeT (Just (Just v))" $
-                extractSymbolics (MaybeT (Just (Just (SSBool "a")))) @=? S.singleton (SSymbol "a")
+                gextractSymbolics (MaybeT (Just (Just (SSBool "a")))) @=? S.singleton (SSymbol "a")
             ],
           testGroup
             "ExceptT SBool Maybe SBool"
             [ testCase "ExceptT Nothing" $
-                extractSymbolics (ExceptT Nothing :: ExceptT SBool Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics (ExceptT Nothing :: ExceptT SBool Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
               testCase "ExceptT (Just (Left v))" $
-                extractSymbolics (ExceptT (Just (Left (SSBool "a"))) :: ExceptT SBool Maybe SBool)
+                gextractSymbolics (ExceptT (Just (Left (SSBool "a"))) :: ExceptT SBool Maybe SBool)
                   @=? S.singleton (SSymbol "a"),
               testCase "ExceptT (Just (Right v))" $
-                extractSymbolics (ExceptT (Just (Right (SSBool "a"))) :: ExceptT SBool Maybe SBool)
+                gextractSymbolics (ExceptT (Just (Right (SSBool "a"))) :: ExceptT SBool Maybe SBool)
                   @=? S.singleton (SSymbol "a")
             ],
           testGroup
@@ -118,53 +118,53 @@ extractSymbolicsTests =
             [ testGroup
                 "Lazy"
                 [ testCase "WriterT Nothing" $
-                    extractSymbolics (WriterLazy.WriterT Nothing :: WriterLazy.WriterT SBool Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
+                    gextractSymbolics (WriterLazy.WriterT Nothing :: WriterLazy.WriterT SBool Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
                   testCase "WriterT (Just (v1, v2))" $
-                    extractSymbolics (WriterLazy.WriterT (Just (SSBool "a", SSBool "b")) :: WriterLazy.WriterT SBool Maybe SBool)
+                    gextractSymbolics (WriterLazy.WriterT (Just (SSBool "a", SSBool "b")) :: WriterLazy.WriterT SBool Maybe SBool)
                       @=? S.fromList [SSymbol "a", SSymbol "b"]
                 ],
               testGroup
                 "Strict"
                 [ testCase "WriterT Nothing" $
-                    extractSymbolics (WriterStrict.WriterT Nothing :: WriterStrict.WriterT SBool Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
+                    gextractSymbolics (WriterStrict.WriterT Nothing :: WriterStrict.WriterT SBool Maybe SBool) @=? (S.empty :: S.HashSet Symbol),
                   testCase "WriterT (Just (v1, v2))" $
-                    extractSymbolics (WriterStrict.WriterT (Just (SSBool "a", SSBool "b")) :: WriterStrict.WriterT SBool Maybe SBool)
+                    gextractSymbolics (WriterStrict.WriterT (Just (SSBool "a", SSBool "b")) :: WriterStrict.WriterT SBool Maybe SBool)
                       @=? S.fromList [SSymbol "a", SSymbol "b"]
                 ]
             ],
-          testProperty "()" (ioProperty . concreteExtractSymbolicsOkProp @()),
+          testProperty "()" (ioProperty . concreteGExtractSymbolicsOkProp @()),
           testCase "(,)" $
-            extractSymbolics (SSBool "a", SSBool "b") @=? S.fromList [SSymbol "a", SSymbol "b"],
+            gextractSymbolics (SSBool "a", SSBool "b") @=? S.fromList [SSymbol "a", SSymbol "b"],
           testCase "(,,)" $
-            extractSymbolics (SSBool "a", SSBool "b", SSBool "c")
+            gextractSymbolics (SSBool "a", SSBool "b", SSBool "c")
               @=? S.fromList [SSymbol "a", SSymbol "b", SSymbol "c"],
           testGroup
             "ByteString"
             [ testCase "\"\"" $
-                extractSymbolics ("" :: B.ByteString) @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics ("" :: B.ByteString) @=? (S.empty :: S.HashSet Symbol),
               testCase "\"a\"" $
-                extractSymbolics ("a" :: B.ByteString) @=? (S.empty :: S.HashSet Symbol)
+                gextractSymbolics ("a" :: B.ByteString) @=? (S.empty :: S.HashSet Symbol)
             ],
           testCase "Identity SBool" $
-            extractSymbolics (Identity $ SSBool "a") @=? S.singleton (SSymbol "a"),
+            gextractSymbolics (Identity $ SSBool "a") @=? S.singleton (SSymbol "a"),
           testGroup
             "IdentityT (Either SBool) SBool"
             [ testCase "Identity (Left v)" $
-                extractSymbolics (IdentityT $ Left $ SSBool "a" :: IdentityT (Either SBool) SBool) @=? S.singleton (SSymbol "a"),
+                gextractSymbolics (IdentityT $ Left $ SSBool "a" :: IdentityT (Either SBool) SBool) @=? S.singleton (SSymbol "a"),
               testCase "Identity (Right v)" $
-                extractSymbolics (IdentityT $ Right $ SSBool "a" :: IdentityT (Either SBool) SBool) @=? S.singleton (SSymbol "a")
+                gextractSymbolics (IdentityT $ Right $ SSBool "a" :: IdentityT (Either SBool) SBool) @=? S.singleton (SSymbol "a")
             ]
         ],
       testGroup
-        "deriving ExtractSymbolics for ADT"
+        "deriving GExtractSymbolics for ADT"
         [ testGroup
             "Simple ADT"
             [ testCase "A1" $
-                extractSymbolics A1 @=? (S.empty :: S.HashSet Symbol),
+                gextractSymbolics A1 @=? (S.empty :: S.HashSet Symbol),
               testCase "A2" $
-                extractSymbolics (A2 (SSBool "a")) @=? S.singleton (SSymbol "a"),
+                gextractSymbolics (A2 (SSBool "a")) @=? S.singleton (SSymbol "a"),
               testCase "A3" $
-                extractSymbolics (A3 (SSBool "a") (SSBool "b")) @=? S.fromList [SSymbol "a", SSymbol "b"]
+                gextractSymbolics (A3 (SSBool "a") (SSBool "b")) @=? S.fromList [SSymbol "a", SSymbol "b"]
             ]
         ]
     ]

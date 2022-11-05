@@ -28,8 +28,8 @@ augmentFinalType unionTypeName boolTypeName t = do
   let unionType = VarT unionTypeName
   symBoolOp <- [t|SymBoolOp|]
   monad <- [t|Monad|]
-  mergeable <- [t|Mergeable|]
-  monadUnion <- [t|MonadUnion|]
+  mergeable <- [t|GMergeable|]
+  monadUnion <- [t|GMonadUnion|]
 #if MIN_VERSION_template_haskell(2,17,0)
   return
     ( ( [ 

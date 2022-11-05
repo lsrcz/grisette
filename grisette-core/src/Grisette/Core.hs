@@ -12,8 +12,8 @@ module Grisette.Core
     -- * Symbolic Operators
 
     -- | #symop#
-    SEq (..),
-    SOrd (..),
+    GSEq (..),
+    GSOrd (..),
     LogicalOp (..),
     SymBoolOp,
     ITEOp (..),
@@ -24,7 +24,7 @@ module Grisette.Core
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),
-    SymIntegerOp,
+    GSymIntegerOp,
     Function (..),
     (#~),
 
@@ -33,48 +33,48 @@ module Grisette.Core
     pattern Conc,
     slocsymb,
     ilocsymb,
-    ExtractSymbolics (..),
+    GExtractSymbolics (..),
 
     -- * UnionM Monad
     UnionMBase,
     IsConcrete,
-    UnionPrjOp (..),
+    GUnionPrjOp (..),
     pattern SingleU,
     pattern IfU,
     makeUnionMWrapper,
     makeUnionMWrapper',
-    liftToMonadUnion,
+    liftToGMonadUnion,
 
     -- * Merging
-    MergingStrategy (..),
-    derivedMergingStrategy,
-    wrapStrategy,
-    product2Strategy,
-    Mergeable (..),
-    Mergeable1 (..),
-    Mergeable2 (..),
-    mergingStrategy1,
-    mergingStrategy2,
+    GMergingStrategy (..),
+    derivedGMergingStrategy,
+    gwrapStrategy,
+    gproduct2Strategy,
+    GMergeable (..),
+    GMergeable1 (..),
+    GMergeable2 (..),
+    gmergingStrategy1,
+    gmergingStrategy2,
     DynamicSortedIdx (..),
     StrategyList (..),
-    buildStrategyList,
-    resolveStrategy,
-    resolveStrategy',
+    gbuildStrategyList,
+    gresolveStrategy,
+    gresolveStrategy',
     -- withMergeable,
-    SimpleMergeable (..),
-    SimpleMergeable1 (..),
-    mrgIte1,
-    SimpleMergeable2 (..),
-    mrgIte2,
-    -- withSimpleMergeable,
-    -- withSimpleMergeableU,
-    UnionLike (..),
+    GSimpleMergeable (..),
+    GSimpleMergeable1 (..),
+    gmrgIte1,
+    GSimpleMergeable2 (..),
+    gmrgIte2,
+    -- withGSimpleMergeable,
+    -- withGSimpleMergeableU,
+    GUnionLike (..),
     mrgIf,
     mrgSingle,
     merge,
-    -- withUnionSimpleMergeable,
-    -- withUnionSimpleMergeableU,
-    MonadUnion,
+    -- withUnionGSimpleMergeable,
+    -- withUnionGSimpleMergeableU,
+    GMonadUnion,
     getSingle,
     {-
     mrgReturnWithStrategy,
@@ -84,7 +84,7 @@ module Grisette.Core
     -}
 
     {-
-        -- * Wrapped Monadic Combinators with Mergeable Knowledge Propagaion
+        -- * Wrapped Monadic Combinators with GMergeable Knowledge Propagaion
         mrgFoldM,
         (>>~),
         mrgMzero,
@@ -148,23 +148,23 @@ module Grisette.Core
     runGenSymFreshT,
 
     -- ** Symbolic Generation Class
-    GenSym (..),
+    GGenSym (..),
     GenSymSimple (..),
-    genSym,
+    ggenSym,
     genSymSimple,
 
     -- ** Symbolic Generation Class Derivation
-    derivedNoSpecGenSymFresh,
+    derivedNoSpecGGenSymFresh,
     derivedNoSpecGenSymSimpleFresh,
     derivedSameShapeGenSymSimpleFresh,
 
     -- ** Symbolic choice
-    chooseFresh,
-    chooseSimpleFresh,
-    chooseUnionFresh,
-    choose,
-    chooseSimple,
-    chooseUnion,
+    gchooseFresh,
+    gchooseSimpleFresh,
+    gchooseUnionFresh,
+    gchoose,
+    gchooseSimple,
+    gchooseUnion,
 
     -- ** Useful specifications
     EnumGenBound (..),
@@ -173,15 +173,15 @@ module Grisette.Core
     SimpleListSpec (..),
 
     -- * Evaluation and Conversion between Concrete and Symbolic values
-    EvaluateSym (..),
+    GEvaluateSym (..),
     ModelOps (..),
     SymbolSetOps (..),
-    evaluateSymToCon,
+    gevaluateSymToCon,
     ToCon (..),
     ToSym (..),
-    SubstituteSym (..),
-    SubstituteSym' (..),
-    SubstituteSymSymbol (..),
+    GSubstituteSym (..),
+    GSubstituteSym' (..),
+    GSubstituteSymSymbol (..),
 
     -- * Solver interface
     Solver (..),

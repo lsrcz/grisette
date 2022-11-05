@@ -18,23 +18,23 @@ import Grisette.Core.Data.Class.SimpleMergeable
 -- | 'traverse' with 'Mergeable' knowledge propagation.
 mrgTraverse ::
   forall bool a b t f.
-  ( Mergeable bool b,
-    Mergeable1 bool t,
-    MonadUnion bool f,
+  ( GMergeable bool b,
+    GMergeable1 bool t,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   (a -> f b) ->
   t a ->
   f (t b)
-mrgTraverse f = mergeWithStrategy mergingStrategy1 . traverse (merge . f)
+mrgTraverse f = mergeWithStrategy gmergingStrategy1 . traverse (merge . f)
 {-# INLINE mrgTraverse #-}
 
 -- | 'sequenceA' with 'Mergeable' knowledge propagation.
 mrgSequenceA ::
   forall bool a t f.
-  ( Mergeable bool a,
-    Mergeable1 bool t,
-    MonadUnion bool f,
+  ( GMergeable bool a,
+    GMergeable1 bool t,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   t (f a) ->
@@ -45,9 +45,9 @@ mrgSequenceA = mrgTraverse id
 -- | 'mapM' with 'Mergeable' knowledge propagation.
 mrgMapM ::
   forall bool a b t f.
-  ( Mergeable bool b,
-    Mergeable1 bool t,
-    MonadUnion bool f,
+  ( GMergeable bool b,
+    GMergeable1 bool t,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   (a -> f b) ->
@@ -59,9 +59,9 @@ mrgMapM = mrgTraverse
 -- | 'sequence' with 'Mergeable' knowledge propagation.
 mrgSequence ::
   forall bool a t f.
-  ( Mergeable bool a,
-    Mergeable1 bool t,
-    MonadUnion bool f,
+  ( GMergeable bool a,
+    GMergeable1 bool t,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   t (f a) ->
@@ -71,10 +71,10 @@ mrgSequence = mrgSequenceA
 
 -- | 'for' with 'Mergeable' knowledge propagation.
 mrgFor ::
-  ( Mergeable bool b,
-    Mergeable1 bool t,
+  ( GMergeable bool b,
+    GMergeable1 bool t,
     Traversable t,
-    MonadUnion bool m
+    GMonadUnion bool m
   ) =>
   t a ->
   (a -> m b) ->
@@ -84,10 +84,10 @@ mrgFor = flip mrgTraverse
 
 -- | 'forM' with 'Mergeable' knowledge propagation.
 mrgForM ::
-  ( Mergeable bool b,
-    Mergeable1 bool t,
+  ( GMergeable bool b,
+    GMergeable1 bool t,
     Traversable t,
-    MonadUnion bool m
+    GMonadUnion bool m
   ) =>
   t a ->
   (a -> m b) ->

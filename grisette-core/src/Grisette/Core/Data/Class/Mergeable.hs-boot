@@ -5,17 +5,17 @@ module Grisette.Core.Data.Class.Mergeable where
 
 import Data.Typeable
 
-data MergingStrategy bool a where
-  SimpleStrategy :: (bool -> a -> a -> a) -> MergingStrategy bool a
+data GMergingStrategy bool a where
+  SimpleStrategy :: (bool -> a -> a -> a) -> GMergingStrategy bool a
   SortedStrategy ::
     (Ord idx, Typeable idx, Show idx) =>
     (a -> idx) ->
-    (idx -> MergingStrategy bool a) ->
-    MergingStrategy bool a
-  NoStrategy :: MergingStrategy bool a
+    (idx -> GMergingStrategy bool a) ->
+    GMergingStrategy bool a
+  NoStrategy :: GMergingStrategy bool a
 
-class Mergeable' bool f where
-  mergingStrategy' :: MergingStrategy bool (f a)
+class GMergeable' bool f where
+  gmergingStrategy' :: GMergingStrategy bool (f a)
 
-class Mergeable bool a where
-  mergingStrategy :: MergingStrategy bool a
+class GMergeable bool a where
+  gmergingStrategy :: GMergingStrategy bool a

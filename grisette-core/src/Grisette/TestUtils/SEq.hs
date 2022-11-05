@@ -7,7 +7,7 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.TestUtils.Assertions
 import Grisette.TestUtils.SBool
 
-concreteSEqOkProp :: (HasCallStack, SEq SBool a, Eq a) => (a, a) -> Assertion
+concreteSEqOkProp :: (HasCallStack, GSEq SBool a, Eq a) => (a, a) -> Assertion
 concreteSEqOkProp (i, j) = do
-  i ==~ j @=? CBool (i == j)
-  i /=~ j @=? CBool (i /= j)
+  i `gsymeq` j @=? CBool (i == j)
+  i `gsymne` j @=? CBool (i /= j)
