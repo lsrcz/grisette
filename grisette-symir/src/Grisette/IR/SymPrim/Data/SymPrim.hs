@@ -151,20 +151,20 @@ instance (SupportedPrim a) => Eq (Sym a) where
   (Sym l) == (Sym r) = l == r
 
 #define SEQ_SYM(type) \
-instance (SupportedPrim type) => SEq (Sym Bool) (Sym type) where \
-  (Sym l) ==~ (Sym r) = Sym $ pevalEqvTerm l r
+instance (SupportedPrim type) => GSEq (Sym Bool) (Sym type) where \
+  (Sym l) `gsymeq` (Sym r) = Sym $ pevalEqvTerm l r
 
 #define SORD_SYM(type) \
-instance (SupportedPrim type) => SOrd (Sym Bool) (Sym type) where \
-  (Sym a) <=~ (Sym b) = Sym $ withPrim (Proxy @type) $ pevalLeNumTerm a b; \
-  (Sym a) <~ (Sym b) = Sym $ withPrim (Proxy @type) $ pevalLtNumTerm a b; \
-  (Sym a) >=~ (Sym b) = Sym $ withPrim (Proxy @type) $ pevalGeNumTerm a b; \
-  (Sym a) >~ (Sym b) = Sym $ withPrim (Proxy @type) $ pevalGtNumTerm a b; \
-  a `symCompare` b = \
+instance (SupportedPrim type) => GSOrd (Sym Bool) (Sym type) where \
+  (Sym a) `gsymle` (Sym b) = Sym $ withPrim (Proxy @type) $ pevalLeNumTerm a b; \
+  (Sym a) `gsymlt` (Sym b) = Sym $ withPrim (Proxy @type) $ pevalLtNumTerm a b; \
+  (Sym a) `gsymge` (Sym b) = Sym $ withPrim (Proxy @type) $ pevalGeNumTerm a b; \
+  (Sym a) `gsymgt` (Sym b) = Sym $ withPrim (Proxy @type) $ pevalGtNumTerm a b; \
+  a `gsymCompare` b = \
     withPrim (Proxy @type) $ mrgIf \
-      (a <~ b) \
+      (a `gsymlt` b) \
       (mrgReturn LT) \
-      (mrgIf (a ==~ b) (mrgReturn EQ) (mrgReturn GT))
+      (mrgIf (a `gsymeq` b) (mrgReturn EQ) (mrgReturn GT))
 
 SEQ_SYM (Bool)
 SEQ_SYM (Integer)
@@ -177,16 +177,16 @@ SORD_SYM ((WordN n))
 -- bool
 type SymBool = Sym Bool
 
-instance SOrd (Sym Bool) (Sym Bool) where
-  l <=~ r = nots l ||~ r
-  l <~ r = nots l &&~ r
-  l >=~ r = l ||~ nots r
-  l >~ r = l &&~ nots r
-  symCompare l r =
+instance GSOrd (Sym Bool) (Sym Bool) where
+  l `gsymle` r = nots l ||~ r
+  l `gsymlt` r = nots l &&~ r
+  l `gsymge` r = l ||~ nots r
+  l `gsymgt` r = l &&~ nots r
+  gsymCompare l r =
     mrgIf
       (nots l &&~ r)
       (mrgReturn LT)
-      (mrgIf (l ==~ r) (mrgReturn EQ) (mrgReturn GT))
+      (mrgIf (l `gsymeq` r) (mrgReturn EQ) (mrgReturn GT))
 
 instance LogicalOp (Sym Bool) where
   (Sym l) ||~ (Sym r) = Sym $ pevalOrTerm l r
@@ -212,16 +212,16 @@ instance Num (Sym Integer) where
 instance SignedDivMod (Sym Bool) (Sym Integer) where
   divs (Sym l) rs@(Sym r) =
     mrgIf @(Sym Bool)
-      (rs ==~ conc 0)
+      (rs `gsymeq` conc 0)
       (throwError $ transformError DivideByZero)
       (mrgReturn $ Sym $ pevalDivIntegerTerm l r)
   mods (Sym l) rs@(Sym r) =
     mrgIf @(Sym Bool)
-      (rs ==~ conc 0)
+      (rs `gsymeq` conc 0)
       (throwError $ transformError DivideByZero)
       (mrgReturn $ Sym $ pevalModIntegerTerm l r)
 
-instance SymIntegerOp (Sym Bool) (Sym Integer)
+instance GSymIntegerOp (Sym Bool) (Sym Integer)
 
 -- signed bv
 type SymIntN n = Sym (IntN n)

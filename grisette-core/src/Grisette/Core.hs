@@ -12,8 +12,8 @@ module Grisette.Core
     -- * Symbolic Operators
 
     -- | #symop#
-    SEq (..),
-    SOrd (..),
+    GSEq (..),
+    GSOrd (..),
     LogicalOp (..),
     SymBoolOp,
     ITEOp (..),
@@ -24,7 +24,7 @@ module Grisette.Core
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),
-    SymIntegerOp,
+    GSymIntegerOp,
     Function (..),
     (#~),
 

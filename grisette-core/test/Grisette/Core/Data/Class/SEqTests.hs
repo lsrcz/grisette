@@ -28,7 +28,7 @@ import Test.Tasty.QuickCheck
 
 data A = A1 | A2 SBool | A3 SBool SBool
   deriving (Generic, Show, Eq)
-  deriving (SEq SBool) via (Default A)
+  deriving (GSEq SBool) via (Default A)
 
 seqTests :: TestTree
 seqTests =
@@ -40,19 +40,19 @@ seqTests =
             "SBool"
             [ testCase "CBool" $ do
                 let bools :: [Bool] = [True, False]
-                traverse_ (\(i, j) -> CBool i ==~ CBool j @=? CBool (i == j)) [(x, y) | x <- bools, y <- bools],
+                traverse_ (\(i, j) -> CBool i `gsymeq` CBool j @=? CBool (i == j)) [(x, y) | x <- bools, y <- bools],
               testCase "CBool True vs SBool" $ do
-                CBool True ==~ SSBool "a" @=? SSBool "a",
+                CBool True `gsymeq` SSBool "a" @=? SSBool "a",
               testCase "CBool False vs SBool" $ do
-                CBool False ==~ SSBool "a" @=? Not (SSBool "a"),
+                CBool False `gsymeq` SSBool "a" @=? Not (SSBool "a"),
               testCase "SBool vs CBool True" $ do
-                SSBool "a" ==~ CBool True @=? SSBool "a",
+                SSBool "a" `gsymeq` CBool True @=? SSBool "a",
               testCase "SBool vs CBool False" $ do
-                SSBool "a" ==~ CBool False @=? Not (SSBool "a"),
+                SSBool "a" `gsymeq` CBool False @=? Not (SSBool "a"),
               testCase "SBool vs same SBool" $ do
-                SSBool "a" ==~ SSBool "a" @=? CBool True,
+                SSBool "a" `gsymeq` SSBool "a" @=? CBool True,
               testCase "SBool vs different SBool" $ do
-                SSBool "a" ==~ SSBool "b" @=? Equal (SSBool "a") (SSBool "b")
+                SSBool "a" `gsymeq` SSBool "b" @=? Equal (SSBool "a") (SSBool "b")
             ],
           testProperty "Bool" (ioProperty . concreteSEqOkProp @Bool),
           testProperty "Integer" (ioProperty . concreteSEqOkProp @Integer),
@@ -73,14 +73,15 @@ seqTests =
               testGroup
                 "[SBool]"
                 [ testCase "Same length 1" $
-                    [SSBool "a"] ==~ [SSBool "b"] @=? Equal (SSBool "a") (SSBool "b"),
+                    [SSBool "a"] `gsymeq` [SSBool "b"] @=? Equal (SSBool "a") (SSBool "b"),
                   testCase "Same length 2" $
-                    [SSBool "a", SSBool "b"] ==~ [SSBool "c", SSBool "d"]
-                      @=? And (SSBool "a" ==~ SSBool "c") (SSBool "b" ==~ SSBool "d"),
+                    [SSBool "a", SSBool "b"]
+                      `gsymeq` [SSBool "c", SSBool "d"]
+                      @=? And (SSBool "a" `gsymeq` SSBool "c") (SSBool "b" `gsymeq` SSBool "d"),
                   testCase "length 1 vs length 0" $
-                    [SSBool "a"] ==~ [] @=? CBool False,
+                    [SSBool "a"] `gsymeq` [] @=? CBool False,
                   testCase "length 1 vs length 2" $
-                    [SSBool "a"] ==~ [SSBool "c", SSBool "d"] @=? CBool False
+                    [SSBool "a"] `gsymeq` [SSBool "c", SSBool "d"] @=? CBool False
                 ]
             ],
           testGroup
@@ -89,13 +90,13 @@ seqTests =
               testGroup
                 "Maybe SBool"
                 [ testCase "Nothing vs Nothing" $
-                    (Nothing :: Maybe SBool) ==~ Nothing @=? CBool True,
+                    (Nothing :: Maybe SBool) `gsymeq` Nothing @=? CBool True,
                   testCase "Just vs Nothing" $
-                    Just (SSBool "a") ==~ Nothing @=? CBool False,
+                    Just (SSBool "a") `gsymeq` Nothing @=? CBool False,
                   testCase "Nothing vs Just" $
-                    Nothing ==~ Just (SSBool "a") @=? CBool False,
+                    Nothing `gsymeq` Just (SSBool "a") @=? CBool False,
                   testCase "Just vs Just" $
-                    Just (SSBool "a") ==~ Just (SSBool "b") @=? Equal (SSBool "a") (SSBool "b")
+                    Just (SSBool "a") `gsymeq` Just (SSBool "b") @=? Equal (SSBool "a") (SSBool "b")
                 ]
             ],
           testGroup
@@ -104,14 +105,16 @@ seqTests =
               testGroup
                 "Either SBool SBool"
                 [ testCase "Left vs Left" $
-                    (Left (SSBool "a") :: Either SBool SBool) ==~ Left (SSBool "b")
+                    (Left (SSBool "a") :: Either SBool SBool)
+                      `gsymeq` Left (SSBool "b")
                       @=? Equal (SSBool "a") (SSBool "b"),
                   testCase "Right vs Left" $
-                    (Right (SSBool "a") :: Either SBool SBool) ==~ Left (SSBool "b") @=? CBool False,
+                    (Right (SSBool "a") :: Either SBool SBool) `gsymeq` Left (SSBool "b") @=? CBool False,
                   testCase "Left vs Right" $
-                    (Left (SSBool "a") :: Either SBool SBool) ==~ Right (SSBool "b") @=? CBool False,
+                    (Left (SSBool "a") :: Either SBool SBool) `gsymeq` Right (SSBool "b") @=? CBool False,
                   testCase "Right vs Right" $
-                    (Right (SSBool "a") :: Either SBool SBool) ==~ Right (SSBool "b")
+                    (Right (SSBool "a") :: Either SBool SBool)
+                      `gsymeq` Right (SSBool "b")
                       @=? Equal (SSBool "a") (SSBool "b")
                 ]
             ],
@@ -121,23 +124,24 @@ seqTests =
               testGroup
                 "MaybeT Maybe SBool"
                 [ testCase "MaybeT Nothing vs MaybeT Nothing" $
-                    (MaybeT Nothing :: MaybeT Maybe SBool) ==~ MaybeT Nothing @=? CBool True,
+                    (MaybeT Nothing :: MaybeT Maybe SBool) `gsymeq` MaybeT Nothing @=? CBool True,
                   testCase "MaybeT Nothing vs MaybeT (Just Nothing)" $
-                    (MaybeT Nothing :: MaybeT Maybe SBool) ==~ MaybeT (Just Nothing) @=? CBool False,
+                    (MaybeT Nothing :: MaybeT Maybe SBool) `gsymeq` MaybeT (Just Nothing) @=? CBool False,
                   testCase "MaybeT Nothing vs MaybeT (Just (Just v))" $
-                    (MaybeT Nothing :: MaybeT Maybe SBool) ==~ MaybeT (Just (Just (SSBool "a"))) @=? CBool False,
+                    (MaybeT Nothing :: MaybeT Maybe SBool) `gsymeq` MaybeT (Just (Just (SSBool "a"))) @=? CBool False,
                   testCase "MaybeT (Just Nothing) vs MaybeT Nothing" $
-                    MaybeT (Just Nothing) ==~ (MaybeT Nothing :: MaybeT Maybe SBool) @=? CBool False,
+                    MaybeT (Just Nothing) `gsymeq` (MaybeT Nothing :: MaybeT Maybe SBool) @=? CBool False,
                   testCase "MaybeT (Just (Just v)) vs MaybeT Nothing" $
-                    MaybeT (Just (Just (SSBool "a"))) ==~ (MaybeT Nothing :: MaybeT Maybe SBool) @=? CBool False,
+                    MaybeT (Just (Just (SSBool "a"))) `gsymeq` (MaybeT Nothing :: MaybeT Maybe SBool) @=? CBool False,
                   testCase "MaybeT (Just Nothing) vs MaybeT (Just Nothing)" $
-                    MaybeT (Just Nothing) ==~ (MaybeT (Just Nothing) :: MaybeT Maybe SBool) @=? CBool True,
+                    MaybeT (Just Nothing) `gsymeq` (MaybeT (Just Nothing) :: MaybeT Maybe SBool) @=? CBool True,
                   testCase "MaybeT (Just (Just v)) vs MaybeT (Just Nothing)" $
-                    MaybeT (Just (Just (SSBool "a"))) ==~ (MaybeT (Just Nothing) :: MaybeT Maybe SBool) @=? CBool False,
+                    MaybeT (Just (Just (SSBool "a"))) `gsymeq` (MaybeT (Just Nothing) :: MaybeT Maybe SBool) @=? CBool False,
                   testCase "MaybeT (Just Nothing) vs MaybeT (Just (Just v))" $
-                    MaybeT (Just Nothing) ==~ (MaybeT (Just (Just (SSBool "b"))) :: MaybeT Maybe SBool) @=? CBool False,
+                    MaybeT (Just Nothing) `gsymeq` (MaybeT (Just (Just (SSBool "b"))) :: MaybeT Maybe SBool) @=? CBool False,
                   testCase "MaybeT (Just (Just v)) vs MaybeT (Just (Just v))" $
-                    MaybeT (Just (Just (SSBool "a"))) ==~ (MaybeT (Just (Just (SSBool "b"))) :: MaybeT Maybe SBool)
+                    MaybeT (Just (Just (SSBool "a")))
+                      `gsymeq` (MaybeT (Just (Just (SSBool "b"))) :: MaybeT Maybe SBool)
                       @=? Equal (SSBool "a") (SSBool "b")
                 ]
             ],
@@ -147,26 +151,30 @@ seqTests =
               testGroup
                 "ExceptT SBool Maybe SBool"
                 [ testCase "ExceptT Nothing vs ExceptT Nothing" $
-                    (ExceptT Nothing :: ExceptT SBool Maybe SBool) ==~ ExceptT Nothing @=? CBool True,
+                    (ExceptT Nothing :: ExceptT SBool Maybe SBool) `gsymeq` ExceptT Nothing @=? CBool True,
                   testCase "ExceptT Nothing vs ExceptT (Just (Left v))" $
-                    (ExceptT Nothing :: ExceptT SBool Maybe SBool) ==~ ExceptT (Just (Left (SSBool "a"))) @=? CBool False,
+                    (ExceptT Nothing :: ExceptT SBool Maybe SBool) `gsymeq` ExceptT (Just (Left (SSBool "a"))) @=? CBool False,
                   testCase "ExceptT Nothing vs ExceptT (Just (Right v))" $
-                    (ExceptT Nothing :: ExceptT SBool Maybe SBool) ==~ ExceptT (Just (Right (SSBool "a"))) @=? CBool False,
+                    (ExceptT Nothing :: ExceptT SBool Maybe SBool) `gsymeq` ExceptT (Just (Right (SSBool "a"))) @=? CBool False,
                   testCase "ExceptT (Just (Left v)) vs ExceptT Nothing" $
-                    ExceptT (Just (Left (SSBool "a"))) ==~ (ExceptT Nothing :: ExceptT SBool Maybe SBool) @=? CBool False,
+                    ExceptT (Just (Left (SSBool "a"))) `gsymeq` (ExceptT Nothing :: ExceptT SBool Maybe SBool) @=? CBool False,
                   testCase "ExceptT (Just (Right v)) vs ExceptT Nothing" $
-                    ExceptT (Just (Right (SSBool "a"))) ==~ (ExceptT Nothing :: ExceptT SBool Maybe SBool) @=? CBool False,
+                    ExceptT (Just (Right (SSBool "a"))) `gsymeq` (ExceptT Nothing :: ExceptT SBool Maybe SBool) @=? CBool False,
                   testCase "ExceptT (Just (Left v)) vs ExceptT (Just (Left v))" $
-                    ExceptT (Just (Left (SSBool "a"))) ==~ (ExceptT (Just (Left (SSBool "b"))) :: ExceptT SBool Maybe SBool)
+                    ExceptT (Just (Left (SSBool "a")))
+                      `gsymeq` (ExceptT (Just (Left (SSBool "b"))) :: ExceptT SBool Maybe SBool)
                       @=? Equal (SSBool "a") (SSBool "b"),
                   testCase "ExceptT (Just (Right v)) vs ExceptT (Just (Left v))" $
-                    ExceptT (Just (Right (SSBool "a"))) ==~ (ExceptT (Just (Left (SSBool "b"))) :: ExceptT SBool Maybe SBool)
+                    ExceptT (Just (Right (SSBool "a")))
+                      `gsymeq` (ExceptT (Just (Left (SSBool "b"))) :: ExceptT SBool Maybe SBool)
                       @=? CBool False,
                   testCase "ExceptT (Just (Left v)) vs ExceptT (Just (Right v))" $
-                    ExceptT (Just (Left (SSBool "a"))) ==~ (ExceptT (Just (Right (SSBool "b"))) :: ExceptT SBool Maybe SBool)
+                    ExceptT (Just (Left (SSBool "a")))
+                      `gsymeq` (ExceptT (Just (Right (SSBool "b"))) :: ExceptT SBool Maybe SBool)
                       @=? CBool False,
                   testCase "ExceptT (Just (Right v)) vs ExceptT (Just (Right v))" $
-                    ExceptT (Just (Right (SSBool "a"))) ==~ (ExceptT (Just (Right (SSBool "b"))) :: ExceptT SBool Maybe SBool)
+                    ExceptT (Just (Right (SSBool "a")))
+                      `gsymeq` (ExceptT (Just (Right (SSBool "b"))) :: ExceptT SBool Maybe SBool)
                       @=? Equal (SSBool "a") (SSBool "b")
                 ]
             ],
@@ -175,14 +183,16 @@ seqTests =
             "(,)"
             [ testProperty "(Integer, Integer)" (ioProperty . concreteSEqOkProp @(Integer, Integer)),
               testCase "(SBool, SBool)" $ do
-                (SSBool "a", SSBool "c") ==~ (SSBool "b", SSBool "d")
+                (SSBool "a", SSBool "c")
+                  `gsymeq` (SSBool "b", SSBool "d")
                   @=? And (Equal (SSBool "a") (SSBool "b")) (Equal (SSBool "c") (SSBool "d"))
             ],
           testGroup
             "(,,)"
             [ testProperty "(Integer, Integer, Integer)" (ioProperty . concreteSEqOkProp @(Integer, Integer, Integer)),
               testCase "(SBool, SBool, SBool)" $
-                (SSBool "a", SSBool "c", SSBool "e") ==~ (SSBool "b", SSBool "d", SSBool "f")
+                (SSBool "a", SSBool "c", SSBool "e")
+                  `gsymeq` (SSBool "b", SSBool "d", SSBool "f")
                   @=? And
                     (Equal (SSBool "a") (SSBool "b"))
                     (And (Equal (SSBool "c") (SSBool "d")) (Equal (SSBool "e") (SSBool "f")))
@@ -193,7 +203,8 @@ seqTests =
                 "(Integer, Integer, Integer, Integer)"
                 (ioProperty . concreteSEqOkProp @(Integer, Integer, Integer, Integer)),
               testCase "(SBool, SBool, SBool, SBool)" $ do
-                (SSBool "a", SSBool "c", SSBool "e", SSBool "g") ==~ (SSBool "b", SSBool "d", SSBool "f", SSBool "h")
+                (SSBool "a", SSBool "c", SSBool "e", SSBool "g")
+                  `gsymeq` (SSBool "b", SSBool "d", SSBool "f", SSBool "h")
                   @=? And
                     ( And
                         (Equal (SSBool "a") (SSBool "b"))
@@ -211,7 +222,7 @@ seqTests =
                 (ioProperty . concreteSEqOkProp @(Integer, Integer, Integer, Integer, Integer)),
               testCase "(SBool, SBool, SBool, SBool, SBool)" $ do
                 (SSBool "a", SSBool "c", SSBool "e", SSBool "g", SSBool "i")
-                  ==~ (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j")
+                  `gsymeq` (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j")
                   @=? And
                     ( And
                         (Equal (SSBool "a") (SSBool "b"))
@@ -232,7 +243,7 @@ seqTests =
                 (ioProperty . concreteSEqOkProp @(Integer, Integer, Integer, Integer, Integer, Integer)),
               testCase "(SBool, SBool, SBool, SBool, SBool, SBool)" $
                 (SSBool "a", SSBool "c", SSBool "e", SSBool "g", SSBool "i", SSBool "k")
-                  ==~ (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j", SSBool "l")
+                  `gsymeq` (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j", SSBool "l")
                   @=? And
                     ( And
                         (Equal (SSBool "a") (SSBool "b"))
@@ -256,7 +267,7 @@ seqTests =
                 (ioProperty . concreteSEqOkProp @(Integer, Integer, Integer, Integer, Integer, Integer, Integer)),
               testCase "(SBool, SBool, SBool, SBool, SBool, SBool, SBool)" $ do
                 (SSBool "a", SSBool "c", SSBool "e", SSBool "g", SSBool "i", SSBool "k", SSBool "m")
-                  ==~ (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j", SSBool "l", SSBool "n")
+                  `gsymeq` (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j", SSBool "l", SSBool "n")
                   @=? And
                     ( And
                         (Equal (SSBool "a") (SSBool "b"))
@@ -283,7 +294,7 @@ seqTests =
                 (ioProperty . concreteSEqOkProp @(Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer)),
               testCase "(SBool, SBool, SBool, SBool, SBool, SBool, SBool, SBool)" $
                 (SSBool "a", SSBool "c", SSBool "e", SSBool "g", SSBool "i", SSBool "k", SSBool "m", SSBool "o")
-                  ==~ (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j", SSBool "l", SSBool "n", SSBool "p")
+                  `gsymeq` (SSBool "b", SSBool "d", SSBool "f", SSBool "h", SSBool "j", SSBool "l", SSBool "n", SSBool "p")
                   @=? And
                     ( And
                         ( And
@@ -308,7 +319,7 @@ seqTests =
             ],
           testCase "ByteString" $ do
             let bytestrings :: [B.ByteString] = ["", "a", "ab"]
-            traverse_ (\(i, j) -> i ==~ j @=? CBool (i == j)) [(x, y) | x <- bytestrings, y <- bytestrings],
+            traverse_ (\(i, j) -> i `gsymeq` j @=? CBool (i == j)) [(x, y) | x <- bytestrings, y <- bytestrings],
           testGroup
             "Sum"
             [ testProperty "Sum Maybe Maybe Integer" $
@@ -322,15 +333,17 @@ seqTests =
               testGroup
                 "Sum Maybe Maybe SBool"
                 [ testCase "InL (Just v) vs InL (Just v)" $
-                    (InL $ Just $ SSBool "a" :: Sum Maybe Maybe SBool) ==~ InL (Just $ SSBool "b")
+                    (InL $ Just $ SSBool "a" :: Sum Maybe Maybe SBool)
+                      `gsymeq` InL (Just $ SSBool "b")
                       @=? Equal (SSBool "a") (SSBool "b"),
                   testCase "InL (Just v) vs InR (Just v)" $
-                    (InL $ Just $ SSBool "a" :: Sum Maybe Maybe SBool) ==~ InR (Just $ SSBool "b") @=? CBool False,
+                    (InL $ Just $ SSBool "a" :: Sum Maybe Maybe SBool) `gsymeq` InR (Just $ SSBool "b") @=? CBool False,
                   testCase "InR (Just v) vs InR (Just v)" $
-                    (InR $ Just $ SSBool "a" :: Sum Maybe Maybe SBool) ==~ InR (Just $ SSBool "b")
+                    (InR $ Just $ SSBool "a" :: Sum Maybe Maybe SBool)
+                      `gsymeq` InR (Just $ SSBool "b")
                       @=? Equal (SSBool "a") (SSBool "b"),
                   testCase "InR (Just v) vs InL (Just v)" $
-                    (InR $ Just $ SSBool "a" :: Sum Maybe Maybe SBool) ==~ InL (Just $ SSBool "b") @=? CBool False
+                    (InR $ Just $ SSBool "a" :: Sum Maybe Maybe SBool) `gsymeq` InL (Just $ SSBool "b") @=? CBool False
                 ]
             ],
           testGroup
@@ -346,19 +359,19 @@ seqTests =
                     "WriterT SBool (Either SBool) SBool"
                     [ testCase "WriterT (Left v) vs WriterT (Left v)" $
                         (WriterLazy.WriterT (Left $ SSBool "a") :: WriterLazy.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterLazy.WriterT (Left $ SSBool "b")
+                          `gsymeq` WriterLazy.WriterT (Left $ SSBool "b")
                           @=? Equal (SSBool "a") (SSBool "b"),
                       testCase "WriterT (Left v) vs WriterT (Right v)" $
                         (WriterLazy.WriterT (Left $ SSBool "a") :: WriterLazy.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterLazy.WriterT (Right (SSBool "b", SSBool "c"))
+                          `gsymeq` WriterLazy.WriterT (Right (SSBool "b", SSBool "c"))
                           @=? CBool False,
                       testCase "WriterT (Right v) vs WriterT (Left v)" $
                         (WriterLazy.WriterT (Right (SSBool "b", SSBool "c")) :: WriterLazy.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterLazy.WriterT (Left $ SSBool "a")
+                          `gsymeq` WriterLazy.WriterT (Left $ SSBool "a")
                           @=? CBool False,
                       testCase "WriterT (Right v) vs WriterT (Right v)" $
                         (WriterLazy.WriterT (Right (SSBool "a", SSBool "b")) :: WriterLazy.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterLazy.WriterT (Right (SSBool "c", SSBool "d"))
+                          `gsymeq` WriterLazy.WriterT (Right (SSBool "c", SSBool "d"))
                           @=? And (Equal (SSBool "a") (SSBool "c")) (Equal (SSBool "b") (SSBool "d"))
                     ]
                 ],
@@ -373,19 +386,19 @@ seqTests =
                     "WriterT SBool (Either SBool) SBool"
                     [ testCase "WriterT (Left v) vs WriterT (Left v)" $
                         (WriterStrict.WriterT (Left $ SSBool "a") :: WriterStrict.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterStrict.WriterT (Left $ SSBool "b")
+                          `gsymeq` WriterStrict.WriterT (Left $ SSBool "b")
                           @=? Equal (SSBool "a") (SSBool "b"),
                       testCase "WriterT (Left v) vs WriterT (Right v)" $
                         (WriterStrict.WriterT (Left $ SSBool "a") :: WriterStrict.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterStrict.WriterT (Right (SSBool "b", SSBool "c"))
+                          `gsymeq` WriterStrict.WriterT (Right (SSBool "b", SSBool "c"))
                           @=? CBool False,
                       testCase "WriterT (Right v) vs WriterT (Left v)" $
                         (WriterStrict.WriterT (Right (SSBool "b", SSBool "c")) :: WriterStrict.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterStrict.WriterT (Left $ SSBool "a")
+                          `gsymeq` WriterStrict.WriterT (Left $ SSBool "a")
                           @=? CBool False,
                       testCase "WriterT (Right v) vs WriterT (Right v)" $
                         (WriterStrict.WriterT (Right (SSBool "a", SSBool "b")) :: WriterStrict.WriterT SBool (Either SBool) SBool)
-                          ==~ WriterStrict.WriterT (Right (SSBool "c", SSBool "d"))
+                          `gsymeq` WriterStrict.WriterT (Right (SSBool "c", SSBool "d"))
                           @=? And (Equal (SSBool "a") (SSBool "c")) (Equal (SSBool "b") (SSBool "d"))
                     ]
                 ]
@@ -396,7 +409,8 @@ seqTests =
                 "Identity Integer"
                 (ioProperty . \(v1 :: Integer, v2) -> concreteSEqOkProp (Identity v1, Identity v2)),
               testCase "Identity SBool" $ do
-                (Identity $ SSBool "a" :: Identity SBool) ==~ Identity (SSBool "b")
+                (Identity $ SSBool "a" :: Identity SBool)
+                  `gsymeq` Identity (SSBool "b")
                   @=? Equal (SSBool "a") (SSBool "b")
             ],
           testGroup
@@ -407,16 +421,20 @@ seqTests =
               testGroup
                 "IdentityT (Either SBool) SBool"
                 [ testCase "IdentityT (Left v) vs IdentityT (Left v)" $
-                    (IdentityT $ Left $ SSBool "a" :: IdentityT (Either SBool) SBool) ==~ IdentityT (Left $ SSBool "b")
+                    (IdentityT $ Left $ SSBool "a" :: IdentityT (Either SBool) SBool)
+                      `gsymeq` IdentityT (Left $ SSBool "b")
                       @=? Equal (SSBool "a") (SSBool "b"),
                   testCase "IdentityT (Left v) vs IdentityT (Right v)" $
-                    (IdentityT $ Left $ SSBool "a" :: IdentityT (Either SBool) SBool) ==~ IdentityT (Right $ SSBool "b")
+                    (IdentityT $ Left $ SSBool "a" :: IdentityT (Either SBool) SBool)
+                      `gsymeq` IdentityT (Right $ SSBool "b")
                       @=? CBool False,
                   testCase "IdentityT (Right v) vs IdentityT (Left v)" $
-                    (IdentityT $ Right $ SSBool "a" :: IdentityT (Either SBool) SBool) ==~ IdentityT (Left $ SSBool "b")
+                    (IdentityT $ Right $ SSBool "a" :: IdentityT (Either SBool) SBool)
+                      `gsymeq` IdentityT (Left $ SSBool "b")
                       @=? CBool False,
                   testCase "IdentityT (Right v) vs IdentityT (Right v)" $
-                    (IdentityT $ Right $ SSBool "a" :: IdentityT (Either SBool) SBool) ==~ IdentityT (Right $ SSBool "b")
+                    (IdentityT $ Right $ SSBool "a" :: IdentityT (Either SBool) SBool)
+                      `gsymeq` IdentityT (Right $ SSBool "b")
                       @=? Equal (SSBool "a") (SSBool "b")
                 ]
             ]
@@ -426,23 +444,24 @@ seqTests =
         [ testGroup
             "Simple ADT"
             [ testCase "A1 vs A1" $
-                A1 ==~ A1 @=? CBool True,
+                A1 `gsymeq` A1 @=? CBool True,
               testCase "A1 vs A2" $
-                A1 ==~ A2 (SSBool "a") @=? CBool False,
+                A1 `gsymeq` A2 (SSBool "a") @=? CBool False,
               testCase "A1 vs A3" $
-                A1 ==~ A3 (SSBool "a") (SSBool "b") @=? CBool False,
+                A1 `gsymeq` A3 (SSBool "a") (SSBool "b") @=? CBool False,
               testCase "A2 vs A1" $
-                A2 (SSBool "a") ==~ A1 @=? CBool False,
+                A2 (SSBool "a") `gsymeq` A1 @=? CBool False,
               testCase "A2 vs A2" $
-                A2 (SSBool "a") ==~ A2 (SSBool "b") @=? Equal (SSBool "a") (SSBool "b"),
+                A2 (SSBool "a") `gsymeq` A2 (SSBool "b") @=? Equal (SSBool "a") (SSBool "b"),
               testCase "A2 vs A3" $
-                A2 (SSBool "a") ==~ A3 (SSBool "b") (SSBool "c") @=? CBool False,
+                A2 (SSBool "a") `gsymeq` A3 (SSBool "b") (SSBool "c") @=? CBool False,
               testCase "A3 vs A1" $
-                A3 (SSBool "a") (SSBool "b") ==~ A1 @=? CBool False,
+                A3 (SSBool "a") (SSBool "b") `gsymeq` A1 @=? CBool False,
               testCase "A3 vs A2" $
-                A3 (SSBool "a") (SSBool "b") ==~ A2 (SSBool "c") @=? CBool False,
+                A3 (SSBool "a") (SSBool "b") `gsymeq` A2 (SSBool "c") @=? CBool False,
               testCase "A3 vs A3" $
-                A3 (SSBool "a") (SSBool "b") ==~ A3 (SSBool "c") (SSBool "d")
+                A3 (SSBool "a") (SSBool "b")
+                  `gsymeq` A3 (SSBool "c") (SSBool "d")
                   @=? And (Equal (SSBool "a") (SSBool "c")) (Equal (SSBool "b") (SSBool "d"))
             ]
         ]

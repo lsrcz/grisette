@@ -48,7 +48,7 @@ newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}
   deriving newtype (Eq, Eq1, Ord, Ord1, Read, Read1, Show, Show1, Functor, Applicative, Monad, Hashable, NFData)
   deriving stock (Generic, Lift)
 
-deriving newtype instance (SymBoolOp bool, SEq bool e, SEq bool a) => SEq bool (CBMCEither e a)
+deriving newtype instance (SymBoolOp bool, GSEq bool e, GSEq bool a) => GSEq bool (CBMCEither e a)
 
 deriving newtype instance (EvaluateSym model a, EvaluateSym model b) => EvaluateSym model (CBMCEither a b)
 
@@ -80,7 +80,7 @@ instance
   where
   genSymFresh = derivedNoSpecGenSymFresh
 
-deriving newtype instance (SymBoolOp bool, SOrd bool a, SOrd bool b) => SOrd bool (CBMCEither a b)
+deriving newtype instance (SymBoolOp bool, GSOrd bool a, GSOrd bool b) => GSOrd bool (CBMCEither a b)
 
 deriving newtype instance (ToCon e1 e2, ToCon a1 a2) => ToCon (Either e1 a1) (CBMCEither e2 a2)
 
@@ -294,9 +294,9 @@ instance Monad m => OrigExcept.MonadError e (CBMCExceptT e m) where
   catchError = catchE
   {-# INLINE catchError #-}
 
-instance (SymBoolOp bool, SEq bool (m (CBMCEither e a))) => SEq bool (CBMCExceptT e m a) where
-  (CBMCExceptT a) ==~ (CBMCExceptT b) = a ==~ b
-  {-# INLINE (==~) #-}
+instance (SymBoolOp bool, GSEq bool (m (CBMCEither e a))) => GSEq bool (CBMCExceptT e m a) where
+  (CBMCExceptT a) `gsymeq` (CBMCExceptT b) = a `gsymeq` b
+  {-# INLINE gsymeq #-}
 
 instance (EvaluateSym model (m (CBMCEither e a))) => EvaluateSym model (CBMCExceptT e m a) where
   evaluateSym fillDefault model (CBMCExceptT v) = CBMCExceptT $ evaluateSym fillDefault model v
@@ -388,12 +388,12 @@ instance
   unionIf cond (CBMCExceptT l) (CBMCExceptT r) = CBMCExceptT $ unionIf cond l r
   {-# INLINE unionIf #-}
 
-instance (SymBoolOp bool, SOrd bool (m (CBMCEither e a))) => SOrd bool (CBMCExceptT e m a) where
-  (CBMCExceptT l) <=~ (CBMCExceptT r) = l <=~ r
-  (CBMCExceptT l) <~ (CBMCExceptT r) = l <~ r
-  (CBMCExceptT l) >=~ (CBMCExceptT r) = l >=~ r
-  (CBMCExceptT l) >~ (CBMCExceptT r) = l >~ r
-  symCompare (CBMCExceptT l) (CBMCExceptT r) = symCompare l r
+instance (SymBoolOp bool, GSOrd bool (m (CBMCEither e a))) => GSOrd bool (CBMCExceptT e m a) where
+  (CBMCExceptT l) `gsymle` (CBMCExceptT r) = l `gsymle` r
+  (CBMCExceptT l) `gsymlt` (CBMCExceptT r) = l `gsymlt` r
+  (CBMCExceptT l) `gsymge` (CBMCExceptT r) = l `gsymge` r
+  (CBMCExceptT l) `gsymgt` (CBMCExceptT r) = l `gsymgt` r
+  gsymCompare (CBMCExceptT l) (CBMCExceptT r) = gsymCompare l r
 
 instance
   ToCon (m1 (CBMCEither e1 a)) (m2 (CBMCEither e2 b)) =>

@@ -87,33 +87,33 @@ instance EvaluateSym (M.HashMap Symbol Bool) SBool where
   evaluateSym fillDefault model (Or l r) = evaluateSym fillDefault model l ||~ evaluateSym fillDefault model r
   evaluateSym fillDefault model (And l r) = evaluateSym fillDefault model l &&~ evaluateSym fillDefault model r
   evaluateSym fillDefault model (Not v) = nots (evaluateSym fillDefault model v)
-  evaluateSym fillDefault model (Equal l r) = evaluateSym fillDefault model l ==~ evaluateSym fillDefault model r
+  evaluateSym fillDefault model (Equal l r) = evaluateSym fillDefault model l `gsymeq` evaluateSym fillDefault model r
   evaluateSym fillDefault model (ITE c l r) =
     ites
       (evaluateSym fillDefault model c)
       (evaluateSym fillDefault model l)
       (evaluateSym fillDefault model r)
 
-instance SEq SBool SBool where
-  (CBool l) ==~ (CBool r) = CBool (l == r)
-  (CBool True) ==~ r = r
-  (CBool False) ==~ r = nots r
-  l ==~ (CBool True) = l
-  l ==~ (CBool False) = nots l
-  l ==~ r
+instance GSEq SBool SBool where
+  (CBool l) `gsymeq` (CBool r) = CBool (l == r)
+  (CBool True) `gsymeq` r = r
+  (CBool False) `gsymeq` r = nots r
+  l `gsymeq` (CBool True) = l
+  l `gsymeq` (CBool False) = nots l
+  l `gsymeq` r
     | l == r = CBool True
     | otherwise = Equal l r
 
-instance SOrd SBool SBool where
-  l <=~ r = nots l ||~ r
-  l <~ r = nots l &&~ r
-  l >=~ r = l ||~ nots r
-  l >~ r = l &&~ nots r
-  symCompare l r =
+instance GSOrd SBool SBool where
+  l `gsymle` r = nots l ||~ r
+  l `gsymlt` r = nots l &&~ r
+  l `gsymge` r = l ||~ nots r
+  l `gsymgt` r = l &&~ nots r
+  gsymCompare l r =
     mrgIf
       (nots l &&~ r)
       (mrgReturn LT)
-      (mrgIf (l ==~ r) (mrgReturn EQ) (mrgReturn GT))
+      (mrgIf (l `gsymeq` r) (mrgReturn EQ) (mrgReturn GT))
 
 instance IsString SBool where
   fromString = ssymb

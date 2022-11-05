@@ -22,8 +22,8 @@ instance Show StringError where
 instance (SymBoolOp bool) => Mergeable bool StringError where
   mergingStrategy = SortedStrategy (\(StringError s) -> s) (\_ -> SimpleStrategy $ \_ t _ -> t)
 
-instance (SymBoolOp bool) => SEq bool StringError where
-  l ==~ r = conc $ l == r
+instance (SymBoolOp bool) => GSEq bool StringError where
+  l `gsymeq` r = conc $ l == r
 
 instance TransformError ArithException StringError where
   transformError = StringError . show

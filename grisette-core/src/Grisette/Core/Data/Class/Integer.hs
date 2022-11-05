@@ -6,7 +6,7 @@ module Grisette.Core.Data.Class.Integer
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),
-    SymIntegerOp,
+    GSymIntegerOp,
   )
 where
 
@@ -43,4 +43,4 @@ class SignedQuotRem bool a where
   rems :: (MonadError e uf, MonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
 -- | Aggregation for the operations on symbolic integer types
-class (Num a, SEq bool a, SOrd bool a, PrimWrapper a Integer) => SymIntegerOp bool a
+class (Num a, GSEq bool a, GSOrd bool a, PrimWrapper a Integer) => GSymIntegerOp bool a

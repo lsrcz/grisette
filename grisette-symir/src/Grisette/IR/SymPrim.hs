@@ -24,11 +24,30 @@ module Grisette.IR.SymPrim
     someTypedSymbol,
     evaluateTerm,
     SupportedPrim,
+    SEq,
+    symeq,
+    symne,
+    (==~),
+    (/=~),
+    SOrd,
+    symlt,
+    symle,
+    symgt,
+    symge,
+    symCompare,
+    (>~),
+    (>=~),
+    (<~),
+    (<=~),
+    SymIntegerOp,
   )
 where
 
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.BV
+import Grisette.IR.SymPrim.Data.Class.SEq
+import Grisette.IR.SymPrim.Data.Class.SOrd
+import Grisette.IR.SymPrim.Data.Class.SymIntegerOp
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.SymPrim

@@ -203,11 +203,11 @@ instance SymBoolOp bool => UnionLike bool (UnionMBase bool) where
   unionIf cond a (UMrg m b) = UMrg m $ ifWithStrategy m cond (underlyingUnion a) b
   {-# INLINE unionIf #-}
 
-instance (SymBoolOp bool, SEq bool a) => SEq bool (UnionMBase bool a) where
-  x ==~ y = getSingle $ do
+instance (SymBoolOp bool, GSEq bool a) => GSEq bool (UnionMBase bool a) where
+  x `gsymeq` y = getSingle $ do
     x1 <- x
     y1 <- y
-    mrgSingle $ x1 ==~ y1
+    mrgSingle $ x1 `gsymeq` y1
 
 -- | Lift the 'UnionMBase' to any 'MonadUnion'.
 liftToMonadUnion :: (SymBoolOp bool, Mergeable bool a, MonadUnion bool u) => UnionMBase bool a -> u a
@@ -216,27 +216,27 @@ liftToMonadUnion u = go (underlyingUnion u)
     go (Single v) = mrgSingle v
     go (If _ _ c t f) = mrgIf c (go t) (go f)
 
-instance (SymBoolOp bool, SOrd bool a) => SOrd bool (UnionMBase bool a) where
-  x <=~ y = getSingle $ do
+instance (SymBoolOp bool, GSOrd bool a) => GSOrd bool (UnionMBase bool a) where
+  x `gsymle` y = getSingle $ do
     x1 <- x
     y1 <- y
-    mrgSingle $ x1 <=~ y1
-  x <~ y = getSingle $ do
+    mrgSingle $ x1 `gsymle` y1
+  x `gsymlt` y = getSingle $ do
     x1 <- x
     y1 <- y
-    mrgSingle $ x1 <~ y1
-  x >=~ y = getSingle $ do
+    mrgSingle $ x1 `gsymlt` y1
+  x `gsymge` y = getSingle $ do
     x1 <- x
     y1 <- y
-    mrgSingle $ x1 >=~ y1
-  x >~ y = getSingle $ do
+    mrgSingle $ x1 `gsymge` y1
+  x `gsymgt` y = getSingle $ do
     x1 <- x
     y1 <- y
-    mrgSingle $ x1 >~ y1
-  x `symCompare` y = liftToMonadUnion $ do
+    mrgSingle $ x1 `gsymgt` y1
+  x `gsymCompare` y = liftToMonadUnion $ do
     x1 <- x
     y1 <- y
-    x1 `symCompare` y1
+    x1 `gsymCompare` y1
 
 instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToSym a b, Mergeable bool b) => ToSym a (UnionMBase bool b) where
   toSym = mrgSingle . toSym

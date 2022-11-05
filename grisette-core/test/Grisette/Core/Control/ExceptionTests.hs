@@ -31,13 +31,13 @@ exceptionTests =
           testCase "ToSym" $ do
             toSym AssertionError @=? AssertionError,
           testCase "SEq" $ do
-            AssertionError ==~ AssertionError @=? CBool True,
+            AssertionError `gsymeq` AssertionError @=? CBool True,
           testCase "SOrd" $ do
-            AssertionError <=~ AssertionError @=? CBool True
-            AssertionError <~ AssertionError @=? CBool False
-            AssertionError >=~ AssertionError @=? CBool True
-            AssertionError >~ AssertionError @=? CBool False
-            AssertionError `symCompare` AssertionError @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
+            AssertionError `gsymle` AssertionError @=? CBool True
+            AssertionError `gsymlt` AssertionError @=? CBool False
+            AssertionError `gsymge` AssertionError @=? CBool True
+            AssertionError `gsymgt` AssertionError @=? CBool False
+            AssertionError `gsymCompare` AssertionError @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
           testCase "EvaluateSym" $ do
             evaluateSym False () AssertionError @=? AssertionError,
           testCase "ExtractSymbolics" $ do
@@ -65,34 +65,34 @@ exceptionTests =
             toSym AssertionViolation @=? AssertionViolation
             toSym AssumptionViolation @=? AssumptionViolation,
           testCase "SEq" $ do
-            AssertionViolation ==~ AssertionViolation @=? CBool True
-            AssertionViolation ==~ AssumptionViolation @=? CBool False
-            AssumptionViolation ==~ AssertionViolation @=? CBool False
-            AssumptionViolation ==~ AssumptionViolation @=? CBool True,
+            AssertionViolation `gsymeq` AssertionViolation @=? CBool True
+            AssertionViolation `gsymeq` AssumptionViolation @=? CBool False
+            AssumptionViolation `gsymeq` AssertionViolation @=? CBool False
+            AssumptionViolation `gsymeq` AssumptionViolation @=? CBool True,
           testCase "SOrd" $ do
-            AssertionViolation <=~ AssertionViolation @=? CBool True
-            AssertionViolation <~ AssertionViolation @=? CBool False
-            AssertionViolation >=~ AssertionViolation @=? CBool True
-            AssertionViolation >~ AssertionViolation @=? CBool False
-            AssertionViolation `symCompare` AssertionViolation @=? (mrgSingle EQ :: UnionMBase SBool Ordering)
+            AssertionViolation `gsymle` AssertionViolation @=? CBool True
+            AssertionViolation `gsymlt` AssertionViolation @=? CBool False
+            AssertionViolation `gsymge` AssertionViolation @=? CBool True
+            AssertionViolation `gsymgt` AssertionViolation @=? CBool False
+            AssertionViolation `gsymCompare` AssertionViolation @=? (mrgSingle EQ :: UnionMBase SBool Ordering)
 
-            AssertionViolation <=~ AssumptionViolation @=? CBool True
-            AssertionViolation <~ AssumptionViolation @=? CBool True
-            AssertionViolation >=~ AssumptionViolation @=? CBool False
-            AssertionViolation >~ AssumptionViolation @=? CBool False
-            AssertionViolation `symCompare` AssumptionViolation @=? (mrgSingle LT :: UnionMBase SBool Ordering)
+            AssertionViolation `gsymle` AssumptionViolation @=? CBool True
+            AssertionViolation `gsymlt` AssumptionViolation @=? CBool True
+            AssertionViolation `gsymge` AssumptionViolation @=? CBool False
+            AssertionViolation `gsymgt` AssumptionViolation @=? CBool False
+            AssertionViolation `gsymCompare` AssumptionViolation @=? (mrgSingle LT :: UnionMBase SBool Ordering)
 
-            AssumptionViolation <=~ AssertionViolation @=? CBool False
-            AssumptionViolation <~ AssertionViolation @=? CBool False
-            AssumptionViolation >=~ AssertionViolation @=? CBool True
-            AssumptionViolation >~ AssertionViolation @=? CBool True
-            AssumptionViolation `symCompare` AssertionViolation @=? (mrgSingle GT :: UnionMBase SBool Ordering)
+            AssumptionViolation `gsymle` AssertionViolation @=? CBool False
+            AssumptionViolation `gsymlt` AssertionViolation @=? CBool False
+            AssumptionViolation `gsymge` AssertionViolation @=? CBool True
+            AssumptionViolation `gsymgt` AssertionViolation @=? CBool True
+            AssumptionViolation `gsymCompare` AssertionViolation @=? (mrgSingle GT :: UnionMBase SBool Ordering)
 
-            AssumptionViolation <=~ AssumptionViolation @=? CBool True
-            AssumptionViolation <~ AssumptionViolation @=? CBool False
-            AssumptionViolation >=~ AssumptionViolation @=? CBool True
-            AssumptionViolation >~ AssumptionViolation @=? CBool False
-            AssumptionViolation `symCompare` AssumptionViolation @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
+            AssumptionViolation `gsymle` AssumptionViolation @=? CBool True
+            AssumptionViolation `gsymlt` AssumptionViolation @=? CBool False
+            AssumptionViolation `gsymge` AssumptionViolation @=? CBool True
+            AssumptionViolation `gsymgt` AssumptionViolation @=? CBool False
+            AssumptionViolation `gsymCompare` AssumptionViolation @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
           testCase "EvaluateSym" $ do
             evaluateSym False () AssertionViolation @=? AssertionViolation
             evaluateSym False () AssumptionViolation @=? AssumptionViolation,

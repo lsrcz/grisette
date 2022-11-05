@@ -11,16 +11,16 @@ import Grisette.Lib.Control.Monad
 import Grisette.TestUtils.Assertions
 import Grisette.TestUtils.SBool
 
-concreteOrdOkProp :: (HasCallStack, SOrd SBool a, Ord a) => (a, a) -> Assertion
+concreteOrdOkProp :: (HasCallStack, GSOrd SBool a, Ord a) => (a, a) -> Assertion
 concreteOrdOkProp (i, j) = do
-  i <=~ j @=? CBool (i <= j)
-  i <~ j @=? CBool (i < j)
-  i >=~ j @=? CBool (i >= j)
-  i >~ j @=? CBool (i > j)
-  symCompare i j @=? (mrgReturn $ compare i j :: UnionMBase SBool Ordering)
+  i `gsymle` j @=? CBool (i <= j)
+  i `gsymlt` j @=? CBool (i < j)
+  i `gsymge` j @=? CBool (i >= j)
+  i `gsymgt` j @=? CBool (i > j)
+  gsymCompare i j @=? (mrgReturn $ compare i j :: UnionMBase SBool Ordering)
 
 symbolicProdOrdOkProp ::
-  (HasCallStack, Show v, Show vl, Show vr, SOrd SBool v, SOrd SBool vl, SOrd SBool vr) =>
+  (HasCallStack, Show v, Show vl, Show vr, GSOrd SBool v, GSOrd SBool vl, GSOrd SBool vr) =>
   v ->
   v ->
   vl ->
@@ -29,16 +29,16 @@ symbolicProdOrdOkProp ::
   vr ->
   Assertion
 symbolicProdOrdOkProp l r ll lr rl rr = do
-  l <=~ r @=? ((ll <~ rl) ||~ ((ll ==~ rl) &&~ (lr <=~ rr)) :: SBool)
-  l <~ r @=? ((ll <~ rl) ||~ ((ll ==~ rl) &&~ (lr <~ rr)) :: SBool)
-  l >=~ r @=? ((ll >~ rl) ||~ ((ll ==~ rl) &&~ (lr >=~ rr)) :: SBool)
-  l >~ r @=? ((ll >~ rl) ||~ ((ll ==~ rl) &&~ (lr >~ rr)) :: SBool)
+  l `gsymle` r @=? ((ll `gsymlt` rl) ||~ ((ll `gsymeq` rl) &&~ (lr `gsymle` rr)) :: SBool)
+  l `gsymlt` r @=? ((ll `gsymlt` rl) ||~ ((ll `gsymeq` rl) &&~ (lr `gsymlt` rr)) :: SBool)
+  l `gsymge` r @=? ((ll `gsymgt` rl) ||~ ((ll `gsymeq` rl) &&~ (lr `gsymge` rr)) :: SBool)
+  l `gsymgt` r @=? ((ll `gsymgt` rl) ||~ ((ll `gsymeq` rl) &&~ (lr `gsymgt` rr)) :: SBool)
   l
-    `symCompare` r
+    `gsymCompare` r
     @=? ( ( do
-              lc <- symCompare ll rl
+              lc <- gsymCompare ll rl
               case lc of
-                EQ -> symCompare lr rr
+                EQ -> gsymCompare lr rr
                 _ -> mrgReturn lc
           ) ::
             UnionMBase SBool Ordering
@@ -46,7 +46,7 @@ symbolicProdOrdOkProp l r ll lr rl rr = do
 
 symbolicSumOrdOkProp ::
   forall v vl vr.
-  (HasCallStack, Show v, Show vl, Show vr, SOrd SBool v, SOrd SBool vl, SOrd SBool vr) =>
+  (HasCallStack, Show v, Show vl, Show vr, GSOrd SBool v, GSOrd SBool vl, GSOrd SBool vr) =>
   [v] ->
   [v] ->
   [vl] ->
@@ -64,20 +64,20 @@ symbolicSumOrdOkProp li ri lli lri rli rri = go li ri lli lri rli rri (0 :: Int)
     gor _ [] _ _ [] [] _ _ = return ()
     gor lv (rv : rs) llv lrv (rlv : rls) (rrv : rrs) ln rn
       | ln < rn = do
-          lv <=~ rv @=? CBool True
-          lv <~ rv @=? CBool True
-          lv >=~ rv @=? CBool False
-          lv >~ rv @=? CBool False
-          lv `symCompare` rv @=? (mrgReturn LT :: UnionMBase SBool Ordering)
+          lv `gsymle` rv @=? CBool True
+          lv `gsymlt` rv @=? CBool True
+          lv `gsymge` rv @=? CBool False
+          lv `gsymgt` rv @=? CBool False
+          lv `gsymCompare` rv @=? (mrgReturn LT :: UnionMBase SBool Ordering)
           gor lv rs llv lrv rls rrs ln (rn + 1)
       | ln == rn = do
           symbolicProdOrdOkProp lv rv llv lrv rlv rrv
           gor lv rs llv lrv rls rrs ln (rn + 1)
       | otherwise = do
-          lv <=~ rv @=? CBool False
-          lv <~ rv @=? CBool False
-          lv >=~ rv @=? CBool True
-          lv >~ rv @=? CBool True
-          lv `symCompare` rv @=? (mrgReturn GT :: UnionMBase SBool Ordering)
+          lv `gsymle` rv @=? CBool False
+          lv `gsymlt` rv @=? CBool False
+          lv `gsymge` rv @=? CBool True
+          lv `gsymgt` rv @=? CBool True
+          lv `gsymCompare` rv @=? (mrgReturn GT :: UnionMBase SBool Ordering)
           gor lv rs llv lrv rls rrs ln (rn + 1)
     gor _ _ _ _ _ _ _ _ = False @=? True

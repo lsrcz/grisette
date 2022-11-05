@@ -208,20 +208,26 @@ unionMBaseTests =
        in testGroup
             "SEq"
             [ testCase "Single/Single" $ do
-                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool) ==~ mrgSingle (SSBool "b")
+                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+                  `gsymeq` mrgSingle (SSBool "b")
                   @=? Equal (SSBool "a") (SSBool "b"),
               testCase "If/Single" $ do
-                g1 ==~ mrgSingle (Left $ SSBool "d")
+                g1
+                  `gsymeq` mrgSingle (Left $ SSBool "d")
                   @=? ITE (SSBool "a") (Equal (SSBool "b") (SSBool "d")) (CBool False)
-                g1 ==~ mrgSingle (Right $ SSBool "d")
+                g1
+                  `gsymeq` mrgSingle (Right $ SSBool "d")
                   @=? ITE (SSBool "a") (CBool False) (Equal (SSBool "c") (SSBool "d")),
               testCase "Single/If" $ do
-                mrgSingle (Left $ SSBool "d") ==~ g1
+                mrgSingle (Left $ SSBool "d")
+                  `gsymeq` g1
                   @=? ITE (SSBool "a") (Equal (SSBool "d") (SSBool "b")) (CBool False)
-                mrgSingle (Right $ SSBool "d") ==~ g1
+                mrgSingle (Right $ SSBool "d")
+                  `gsymeq` g1
                   @=? ITE (SSBool "a") (CBool False) (Equal (SSBool "d") (SSBool "c")),
               testCase "If/If" $ do
-                g1 ==~ g2
+                g1
+                  `gsymeq` g2
                   @=? ITE
                     (SSBool "a")
                     (ITE (SSBool "d") (Equal (SSBool "b") (SSBool "e")) (CBool False))
@@ -234,110 +240,128 @@ unionMBaseTests =
        in testGroup
             "SOrd"
             [ testCase "Single/Single" $ do
-                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool) <=~ mrgSingle (SSBool "b")
-                  @=? (SSBool "a" <=~ SSBool "b" :: SBool)
                 (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
-                  <~ mrgSingle (SSBool "b")
-                  @=? (SSBool "a" <~ SSBool "b" :: SBool)
-                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool) >=~ mrgSingle (SSBool "b")
-                  @=? (SSBool "a" >=~ SSBool "b" :: SBool)
-                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool) >~ mrgSingle (SSBool "b")
-                  @=? (SSBool "a" >~ SSBool "b" :: SBool)
+                  `gsymle` mrgSingle (SSBool "b")
+                  @=? (SSBool "a" `gsymle` SSBool "b" :: SBool)
                 (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
-                  `symCompare` mrgSingle (SSBool "b")
-                  @=? (SSBool "a" `symCompare` SSBool "b" :: UnionMBase SBool Ordering),
+                  `gsymlt` mrgSingle (SSBool "b")
+                  @=? (SSBool "a" `gsymlt` SSBool "b" :: SBool)
+                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+                  `gsymge` mrgSingle (SSBool "b")
+                  @=? (SSBool "a" `gsymge` SSBool "b" :: SBool)
+                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+                  `gsymgt` mrgSingle (SSBool "b")
+                  @=? (SSBool "a" `gsymgt` SSBool "b" :: SBool)
+                (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+                  `gsymCompare` mrgSingle (SSBool "b")
+                  @=? (SSBool "a" `gsymCompare` SSBool "b" :: UnionMBase SBool Ordering),
               testCase "If/Single" $ do
-                g1 <=~ mrgSingle (Left $ SSBool "d")
-                  @=? ITE (SSBool "a") (SSBool "b" <=~ SSBool "d") (CBool False)
                 g1
-                  <~ mrgSingle (Left $ SSBool "d")
-                  @=? ITE (SSBool "a") (SSBool "b" <~ SSBool "d") (CBool False)
-                g1 >=~ mrgSingle (Left $ SSBool "d")
-                  @=? ITE (SSBool "a") (SSBool "b" >=~ SSBool "d") (CBool True)
-                g1 >~ mrgSingle (Left $ SSBool "d")
-                  @=? ITE (SSBool "a") (SSBool "b" >~ SSBool "d") (CBool True)
+                  `gsymle` mrgSingle (Left $ SSBool "d")
+                  @=? ITE (SSBool "a") (SSBool "b" `gsymle` SSBool "d") (CBool False)
+                g1
+                  `gsymlt` mrgSingle (Left $ SSBool "d")
+                  @=? ITE (SSBool "a") (SSBool "b" `gsymlt` SSBool "d") (CBool False)
+                g1
+                  `gsymge` mrgSingle (Left $ SSBool "d")
+                  @=? ITE (SSBool "a") (SSBool "b" `gsymge` SSBool "d") (CBool True)
+                g1
+                  `gsymgt` mrgSingle (Left $ SSBool "d")
+                  @=? ITE (SSBool "a") (SSBool "b" `gsymgt` SSBool "d") (CBool True)
 
                 g1
-                  `symCompare` mrgSingle (Left $ SSBool "d")
-                  @=? ( mrgIf (SSBool "a") (SSBool "b" `symCompare` SSBool "d") (mrgSingle GT) ::
+                  `gsymCompare` mrgSingle (Left $ SSBool "d")
+                  @=? ( mrgIf (SSBool "a") (SSBool "b" `gsymCompare` SSBool "d") (mrgSingle GT) ::
                           UnionMBase SBool Ordering
                       )
 
-                g1 <=~ mrgSingle (Right $ SSBool "d")
-                  @=? ITE (SSBool "a") (CBool True) (SSBool "c" <=~ SSBool "d")
                 g1
-                  <~ mrgSingle (Right $ SSBool "d")
-                  @=? ITE (SSBool "a") (CBool True) (SSBool "c" <~ SSBool "d")
-                g1 >=~ mrgSingle (Right $ SSBool "d")
-                  @=? ITE (SSBool "a") (CBool False) (SSBool "c" >=~ SSBool "d")
-                g1 >~ mrgSingle (Right $ SSBool "d")
-                  @=? ITE (SSBool "a") (CBool False) (SSBool "c" >~ SSBool "d")
+                  `gsymle` mrgSingle (Right $ SSBool "d")
+                  @=? ITE (SSBool "a") (CBool True) (SSBool "c" `gsymle` SSBool "d")
+                g1
+                  `gsymlt` mrgSingle (Right $ SSBool "d")
+                  @=? ITE (SSBool "a") (CBool True) (SSBool "c" `gsymlt` SSBool "d")
+                g1
+                  `gsymge` mrgSingle (Right $ SSBool "d")
+                  @=? ITE (SSBool "a") (CBool False) (SSBool "c" `gsymge` SSBool "d")
+                g1
+                  `gsymgt` mrgSingle (Right $ SSBool "d")
+                  @=? ITE (SSBool "a") (CBool False) (SSBool "c" `gsymgt` SSBool "d")
 
                 g1
-                  `symCompare` mrgSingle (Right $ SSBool "d")
-                  @=? ( mrgIf (SSBool "a") (mrgSingle LT) (SSBool "c" `symCompare` SSBool "d") ::
+                  `gsymCompare` mrgSingle (Right $ SSBool "d")
+                  @=? ( mrgIf (SSBool "a") (mrgSingle LT) (SSBool "c" `gsymCompare` SSBool "d") ::
                           UnionMBase SBool Ordering
                       ),
               testCase "Single/If" $ do
-                mrgSingle (Left $ SSBool "d") <=~ g1
-                  @=? ITE (SSBool "a") (SSBool "d" <=~ SSBool "b") (CBool True)
                 mrgSingle (Left $ SSBool "d")
-                  <~ g1
-                  @=? ITE (SSBool "a") (SSBool "d" <~ SSBool "b") (CBool True)
-                mrgSingle (Left $ SSBool "d") >=~ g1
-                  @=? ITE (SSBool "a") (SSBool "d" >=~ SSBool "b") (CBool False)
-                mrgSingle (Left $ SSBool "d") >~ g1
-                  @=? ITE (SSBool "a") (SSBool "d" >~ SSBool "b") (CBool False)
+                  `gsymle` g1
+                  @=? ITE (SSBool "a") (SSBool "d" `gsymle` SSBool "b") (CBool True)
+                mrgSingle (Left $ SSBool "d")
+                  `gsymlt` g1
+                  @=? ITE (SSBool "a") (SSBool "d" `gsymlt` SSBool "b") (CBool True)
+                mrgSingle (Left $ SSBool "d")
+                  `gsymge` g1
+                  @=? ITE (SSBool "a") (SSBool "d" `gsymge` SSBool "b") (CBool False)
+                mrgSingle (Left $ SSBool "d")
+                  `gsymgt` g1
+                  @=? ITE (SSBool "a") (SSBool "d" `gsymgt` SSBool "b") (CBool False)
 
                 mrgSingle (Left $ SSBool "d")
-                  `symCompare` g1
-                  @=? ( mrgIf (SSBool "a") (SSBool "d" `symCompare` SSBool "b") (mrgSingle LT) ::
+                  `gsymCompare` g1
+                  @=? ( mrgIf (SSBool "a") (SSBool "d" `gsymCompare` SSBool "b") (mrgSingle LT) ::
                           UnionMBase SBool Ordering
                       )
 
-                mrgSingle (Right $ SSBool "d") <=~ g1
-                  @=? ITE (SSBool "a") (CBool False) (SSBool "d" <=~ SSBool "c")
                 mrgSingle (Right $ SSBool "d")
-                  <~ g1
-                  @=? ITE (SSBool "a") (CBool False) (SSBool "d" <~ SSBool "c")
-                mrgSingle (Right $ SSBool "d") >=~ g1
-                  @=? ITE (SSBool "a") (CBool True) (SSBool "d" >=~ SSBool "c")
-                mrgSingle (Right $ SSBool "d") >~ g1
-                  @=? ITE (SSBool "a") (CBool True) (SSBool "d" >~ SSBool "c")
+                  `gsymle` g1
+                  @=? ITE (SSBool "a") (CBool False) (SSBool "d" `gsymle` SSBool "c")
+                mrgSingle (Right $ SSBool "d")
+                  `gsymlt` g1
+                  @=? ITE (SSBool "a") (CBool False) (SSBool "d" `gsymlt` SSBool "c")
+                mrgSingle (Right $ SSBool "d")
+                  `gsymge` g1
+                  @=? ITE (SSBool "a") (CBool True) (SSBool "d" `gsymge` SSBool "c")
+                mrgSingle (Right $ SSBool "d")
+                  `gsymgt` g1
+                  @=? ITE (SSBool "a") (CBool True) (SSBool "d" `gsymgt` SSBool "c")
 
                 mrgSingle (Right $ SSBool "d")
-                  `symCompare` g1
-                  @=? ( mrgIf (SSBool "a") (mrgSingle GT) (SSBool "d" `symCompare` SSBool "c") ::
+                  `gsymCompare` g1
+                  @=? ( mrgIf (SSBool "a") (mrgSingle GT) (SSBool "d" `gsymCompare` SSBool "c") ::
                           UnionMBase SBool Ordering
                       ),
               testCase "If/If" $ do
-                g1 <=~ g2
-                  @=? ITE
-                    (SSBool "a")
-                    (ITE (SSBool "d") (SSBool "b" <=~ SSBool "e") (CBool True))
-                    (ITE (SSBool "d") (CBool False) (SSBool "c" <=~ SSBool "f"))
                 g1
-                  <~ g2
+                  `gsymle` g2
                   @=? ITE
                     (SSBool "a")
-                    (ITE (SSBool "d") (SSBool "b" <~ SSBool "e") (CBool True))
-                    (ITE (SSBool "d") (CBool False) (SSBool "c" <~ SSBool "f"))
-                g1 >=~ g2
-                  @=? ITE
-                    (SSBool "a")
-                    (ITE (SSBool "d") (SSBool "b" >=~ SSBool "e") (CBool False))
-                    (ITE (SSBool "d") (CBool True) (SSBool "c" >=~ SSBool "f"))
-                g1 >~ g2
-                  @=? ITE
-                    (SSBool "a")
-                    (ITE (SSBool "d") (SSBool "b" >~ SSBool "e") (CBool False))
-                    (ITE (SSBool "d") (CBool True) (SSBool "c" >~ SSBool "f"))
+                    (ITE (SSBool "d") (SSBool "b" `gsymle` SSBool "e") (CBool True))
+                    (ITE (SSBool "d") (CBool False) (SSBool "c" `gsymle` SSBool "f"))
                 g1
-                  `symCompare` g2
+                  `gsymlt` g2
+                  @=? ITE
+                    (SSBool "a")
+                    (ITE (SSBool "d") (SSBool "b" `gsymlt` SSBool "e") (CBool True))
+                    (ITE (SSBool "d") (CBool False) (SSBool "c" `gsymlt` SSBool "f"))
+                g1
+                  `gsymge` g2
+                  @=? ITE
+                    (SSBool "a")
+                    (ITE (SSBool "d") (SSBool "b" `gsymge` SSBool "e") (CBool False))
+                    (ITE (SSBool "d") (CBool True) (SSBool "c" `gsymge` SSBool "f"))
+                g1
+                  `gsymgt` g2
+                  @=? ITE
+                    (SSBool "a")
+                    (ITE (SSBool "d") (SSBool "b" `gsymgt` SSBool "e") (CBool False))
+                    (ITE (SSBool "d") (CBool True) (SSBool "c" `gsymgt` SSBool "f"))
+                g1
+                  `gsymCompare` g2
                   @=? ( mrgIf
                           (SSBool "a")
-                          (mrgIf (SSBool "d") (SSBool "b" `symCompare` SSBool "e") (mrgSingle LT))
-                          (mrgIf (SSBool "d") (mrgSingle GT) (SSBool "c" `symCompare` SSBool "f")) ::
+                          (mrgIf (SSBool "d") (SSBool "b" `gsymCompare` SSBool "e") (mrgSingle LT))
+                          (mrgIf (SSBool "d") (mrgSingle GT) (SSBool "c" `gsymCompare` SSBool "f")) ::
                           UnionMBase SBool Ordering
                       )
             ],

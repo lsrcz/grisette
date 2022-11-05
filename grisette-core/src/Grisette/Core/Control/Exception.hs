@@ -47,14 +47,14 @@ deriving via (Default AssertionError) instance (SymBoolOp bool) => Mergeable boo
 
 deriving via (Default AssertionError) instance (SymBoolOp bool) => SimpleMergeable bool AssertionError
 
-deriving via (Default AssertionError) instance (SymBoolOp bool) => SEq bool AssertionError
+deriving via (Default AssertionError) instance (SymBoolOp bool) => GSEq bool AssertionError
 
-instance (SymBoolOp bool) => SOrd bool AssertionError where
-  _ <=~ _ = conc True
-  _ <~ _ = conc False
-  _ >=~ _ = conc True
-  _ >~ _ = conc False
-  _ `symCompare` _ = mrgSingle EQ
+instance (SymBoolOp bool) => GSOrd bool AssertionError where
+  _ `gsymle` _ = conc True
+  _ `gsymlt` _ = conc False
+  _ `gsymge` _ = conc True
+  _ `gsymgt` _ = conc False
+  _ `gsymCompare` _ = mrgSingle EQ
 
 deriving via (Default AssertionError) instance EvaluateSym a AssertionError
 
@@ -70,14 +70,14 @@ data VerificationConditions
 
 deriving via (Default VerificationConditions) instance (SymBoolOp bool) => Mergeable bool VerificationConditions
 
-deriving via (Default VerificationConditions) instance (SymBoolOp bool) => SEq bool VerificationConditions
+deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GSEq bool VerificationConditions
 
-instance (SymBoolOp bool) => SOrd bool VerificationConditions where
-  l <=~ r = conc $ l <= r
-  l <~ r = conc $ l < r
-  l >=~ r = conc $ l >= r
-  l >~ r = conc $ l > r
-  l `symCompare` r = mrgSingle $ l `compare` r
+instance (SymBoolOp bool) => GSOrd bool VerificationConditions where
+  l `gsymle` r = conc $ l <= r
+  l `gsymlt` r = conc $ l < r
+  l `gsymge` r = conc $ l >= r
+  l `gsymgt` r = conc $ l > r
+  l `gsymCompare` r = mrgSingle $ l `compare` r
 
 deriving via (Default VerificationConditions) instance EvaluateSym a VerificationConditions
 
