@@ -49,10 +49,12 @@ import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.IntBitwidth
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.GeneralFuncSubst
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
@@ -596,3 +598,12 @@ instance
         . insertValue sym8 val8
         $ emptyModel
   buildModel _ = error "buildModel: should only use symbolic constants"
+
+instance SubstituteSym TypedSymbol Sym (Sym a) where
+  substituteSym sym (Sym val) (Sym x) =
+    introSupportedPrimConstraint val $
+      introSupportedPrimConstraint x $
+        Sym $
+          generalFuncSubst sym val x
+
+instance SubstituteSymSymbol TypedSymbol Sym
