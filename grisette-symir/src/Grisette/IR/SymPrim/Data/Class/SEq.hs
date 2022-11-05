@@ -27,6 +27,10 @@ symne = gsymne
 (==~) = symeq
 {-# INLINE (==~) #-}
 
+infix 4 ==~
+
 (/=~) :: (SEq a) => a -> a -> SymBool
 (/=~) = symne
 {-# INLINE (/=~) #-}
+
+infix 4 /=~

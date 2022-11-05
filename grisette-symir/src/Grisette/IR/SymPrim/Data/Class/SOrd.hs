@@ -46,14 +46,22 @@ symCompare = gsymCompare
 (>~) = symgt
 {-# INLINE (>~) #-}
 
+infix 4 >~
+
 (>=~) :: (SOrd a) => a -> a -> SymBool
 (>=~) = symge
 {-# INLINE (>=~) #-}
+
+infix 4 >=~
 
 (<~) :: (SOrd a) => a -> a -> SymBool
 (<~) = symlt
 {-# INLINE (<~) #-}
 
+infix 4 <~
+
 (<=~) :: (SOrd a) => a -> a -> SymBool
 (<=~) = symle
 {-# INLINE (<=~) #-}
+
+infix 4 <=~
