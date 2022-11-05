@@ -13,6 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install OS Packages
+      uses: mstksg/get-package@v1
+      with:
+        apt-get: libncurses5
+
     - name: 'Set up HLint'
       uses: haskell/actions/hlint-setup@v2
 
