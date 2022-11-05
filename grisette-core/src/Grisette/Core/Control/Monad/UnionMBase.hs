@@ -253,14 +253,14 @@ instance (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
       go (Single x) = toCon x
       go _ = Nothing
 
-instance (SymBoolOp bool, Mergeable bool a, EvaluateSym model a, EvaluateSym model bool) => EvaluateSym model (UnionMBase bool a) where
-  evaluateSym fillDefault model x = go $ underlyingUnion x
+instance (SymBoolOp bool, Mergeable bool a, GEvaluateSym model a, GEvaluateSym model bool) => GEvaluateSym model (UnionMBase bool a) where
+  gevaluateSym fillDefault model x = go $ underlyingUnion x
     where
       go :: UnionBase bool a -> UnionMBase bool a
-      go (Single v) = mrgSingle $ evaluateSym fillDefault model v
+      go (Single v) = mrgSingle $ gevaluateSym fillDefault model v
       go (If _ _ cond t f) =
         mrgIf
-          (evaluateSym fillDefault model cond)
+          (gevaluateSym fillDefault model cond)
           (go t)
           (go f)
 

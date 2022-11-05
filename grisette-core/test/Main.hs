@@ -48,7 +48,7 @@ tests =
                 [ testGroup
                     "Class"
                     [ boolTests,
-                      evaluateSymTests,
+                      gevaluateSymTests,
                       extractSymbolicsTests,
                       genSymTests,
                       mergeableTests,

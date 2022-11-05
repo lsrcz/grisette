@@ -50,7 +50,7 @@ newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}
 
 deriving newtype instance (SymBoolOp bool, GSEq bool e, GSEq bool a) => GSEq bool (CBMCEither e a)
 
-deriving newtype instance (EvaluateSym model a, EvaluateSym model b) => EvaluateSym model (CBMCEither a b)
+deriving newtype instance (GEvaluateSym model a, GEvaluateSym model b) => GEvaluateSym model (CBMCEither a b)
 
 deriving newtype instance
   (Monoid symbolSet, ExtractSymbolics symbolSet a, ExtractSymbolics symbolSet b) =>
@@ -298,9 +298,9 @@ instance (SymBoolOp bool, GSEq bool (m (CBMCEither e a))) => GSEq bool (CBMCExce
   (CBMCExceptT a) `gsymeq` (CBMCExceptT b) = a `gsymeq` b
   {-# INLINE gsymeq #-}
 
-instance (EvaluateSym model (m (CBMCEither e a))) => EvaluateSym model (CBMCExceptT e m a) where
-  evaluateSym fillDefault model (CBMCExceptT v) = CBMCExceptT $ evaluateSym fillDefault model v
-  {-# INLINE evaluateSym #-}
+instance (GEvaluateSym model (m (CBMCEither e a))) => GEvaluateSym model (CBMCExceptT e m a) where
+  gevaluateSym fillDefault model (CBMCExceptT v) = CBMCExceptT $ gevaluateSym fillDefault model v
+  {-# INLINE gevaluateSym #-}
 
 instance
   (Monoid symbolSet, ExtractSymbolics symbolSet (m (CBMCEither e a))) =>

@@ -46,7 +46,7 @@ import Language.Haskell.TH.Syntax
 data SolveInternal = SolveInternal deriving (Eq, Show, Ord, Generic, Hashable, Lift, NFData)
 
 class
-  (SymBoolOp bool, EvaluateSym model bool) =>
+  (SymBoolOp bool, GEvaluateSym model bool) =>
   Solver config bool symbolSet failure model
     | config -> bool symbolSet failure model
   where
@@ -54,14 +54,14 @@ class
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
   cegisFormula ::
-    (EvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
+    (GEvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
     config ->
     forallArg ->
     bool ->
     IO (Either failure ([forallArg], model))
   cegisFormula config forallArg = cegisFormulas config forallArg (conc False)
   cegisFormulas ::
-    (EvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
+    (GEvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
     config ->
     forallArg ->
     bool ->
@@ -106,7 +106,7 @@ cegisFallable ::
     UnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
-    EvaluateSym model forallArgs,
+    GEvaluateSym model forallArgs,
     ExtractSymbolics symbolSet forallArgs,
     Solver config bool symbolSet failure model
   ) =>
@@ -122,7 +122,7 @@ cegisFallable' ::
     UnionPrjOp bool u,
     Monad u,
     SymBoolOp bool,
-    EvaluateSym model forallArgs,
+    GEvaluateSym model forallArgs,
     ExtractSymbolics symbolSet forallArgs,
     Solver config bool symbolSet failure model
   ) =>

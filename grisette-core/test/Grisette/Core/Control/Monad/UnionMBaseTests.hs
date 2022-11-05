@@ -390,21 +390,21 @@ unionMBaseTests =
                   (SSymbol "c", True)
                 ] ::
                 M.HashMap Symbol Bool
-        evaluateSym False model (mrgSingle $ SSBool "a") @=? (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
-        evaluateSym True model (mrgSingle $ SSBool "a") @=? (mrgSingle $ CBool False :: UnionMBase SBool SBool)
-        evaluateSym False model1 (mrgSingle $ SSBool "a") @=? (mrgSingle $ CBool True :: UnionMBase SBool SBool)
-        evaluateSym True model1 (mrgSingle $ SSBool "a") @=? (mrgSingle $ CBool True :: UnionMBase SBool SBool)
-        evaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "d")) (mrgSingle $ Right (SSBool "e")))
+        gevaluateSym False model (mrgSingle $ SSBool "a") @=? (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+        gevaluateSym True model (mrgSingle $ SSBool "a") @=? (mrgSingle $ CBool False :: UnionMBase SBool SBool)
+        gevaluateSym False model1 (mrgSingle $ SSBool "a") @=? (mrgSingle $ CBool True :: UnionMBase SBool SBool)
+        gevaluateSym True model1 (mrgSingle $ SSBool "a") @=? (mrgSingle $ CBool True :: UnionMBase SBool SBool)
+        gevaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "d")) (mrgSingle $ Right (SSBool "e")))
           @=? (mrgSingle $ Left $ SSBool "d" :: UnionMBase SBool (Either SBool SBool))
-        evaluateSym True model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "d")) (mrgSingle $ Right (SSBool "e")))
+        gevaluateSym True model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "d")) (mrgSingle $ Right (SSBool "e")))
           @=? (mrgSingle $ Left $ CBool False :: UnionMBase SBool (Either SBool SBool))
-        evaluateSym False model1 (mrgIf (SSBool "d") (mrgSingle $ Left (SSBool "a")) (mrgSingle $ Right (SSBool "b")))
+        gevaluateSym False model1 (mrgIf (SSBool "d") (mrgSingle $ Left (SSBool "a")) (mrgSingle $ Right (SSBool "b")))
           @=? ( mrgIf (SSBool "d") (mrgSingle $ Left $ CBool True) (mrgSingle $ Right $ CBool False) ::
                   UnionMBase SBool (Either SBool SBool)
               )
-        evaluateSym True model1 (mrgIf (SSBool "d") (mrgSingle $ Left (SSBool "a")) (mrgSingle $ Right (SSBool "b")))
+        gevaluateSym True model1 (mrgIf (SSBool "d") (mrgSingle $ Left (SSBool "a")) (mrgSingle $ Right (SSBool "b")))
           @=? (mrgSingle $ Right $ CBool False :: UnionMBase SBool (Either SBool SBool))
-        evaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "b")) (mrgSingle $ Right (SSBool "c")))
+        gevaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "b")) (mrgSingle $ Right (SSBool "c")))
           @=? (mrgSingle $ Left $ CBool False :: UnionMBase SBool (Either SBool SBool)),
       testCase "ExtractSymbolic" $ do
         extractSymbolics (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)

@@ -33,6 +33,7 @@ library
       Grisette.IR.SymPrim
       Grisette.IR.SymPrim.Control.Monad.UnionM
       Grisette.IR.SymPrim.Data.BV
+      Grisette.IR.SymPrim.Data.Class.Evaluate
       Grisette.IR.SymPrim.Data.Class.SEq
       Grisette.IR.SymPrim.Data.Class.SOrd
       Grisette.IR.SymPrim.Data.Class.SymIntegerOp

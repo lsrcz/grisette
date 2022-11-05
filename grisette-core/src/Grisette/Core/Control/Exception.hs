@@ -56,7 +56,7 @@ instance (SymBoolOp bool) => GSOrd bool AssertionError where
   _ `gsymgt` _ = conc False
   _ `gsymCompare` _ = mrgSingle EQ
 
-deriving via (Default AssertionError) instance EvaluateSym a AssertionError
+deriving via (Default AssertionError) instance GEvaluateSym a AssertionError
 
 deriving via (Default AssertionError) instance (Monoid a) => ExtractSymbolics a AssertionError
 
@@ -79,7 +79,7 @@ instance (SymBoolOp bool) => GSOrd bool VerificationConditions where
   l `gsymgt` r = conc $ l > r
   l `gsymCompare` r = mrgSingle $ l `compare` r
 
-deriving via (Default VerificationConditions) instance EvaluateSym a VerificationConditions
+deriving via (Default VerificationConditions) instance GEvaluateSym a VerificationConditions
 
 deriving via (Default VerificationConditions) instance (Monoid a) => ExtractSymbolics a VerificationConditions
 

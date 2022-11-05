@@ -119,8 +119,8 @@ instance (SupportedPrim a) => ToCon (Sym a) (Sym a) where
 instance (SupportedPrim a) => ToCon (Sym a) a where
   toCon = concView
 
-instance (SupportedPrim a) => EvaluateSym Model (Sym a) where
-  evaluateSym fillDefault model (Sym t) = Sym $ evaluateTerm fillDefault model t
+instance (SupportedPrim a) => GEvaluateSym Model (Sym a) where
+  gevaluateSym fillDefault model (Sym t) = Sym $ evaluateTerm fillDefault model t
 
 instance (SupportedPrim a) => ExtractSymbolics SymbolSet (Sym a) where
   extractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t

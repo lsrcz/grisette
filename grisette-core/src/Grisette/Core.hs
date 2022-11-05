@@ -173,10 +173,10 @@ module Grisette.Core
     SimpleListSpec (..),
 
     -- * Evaluation and Conversion between Concrete and Symbolic values
-    EvaluateSym (..),
+    GEvaluateSym (..),
     ModelOps (..),
     SymbolSetOps (..),
-    evaluateSymToCon,
+    gevaluateSymToCon,
     ToCon (..),
     ToSym (..),
     SubstituteSym (..),

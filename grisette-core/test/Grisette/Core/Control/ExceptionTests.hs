@@ -38,8 +38,8 @@ exceptionTests =
             AssertionError `gsymge` AssertionError @=? CBool True
             AssertionError `gsymgt` AssertionError @=? CBool False
             AssertionError `gsymCompare` AssertionError @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
-          testCase "EvaluateSym" $ do
-            evaluateSym False () AssertionError @=? AssertionError,
+          testCase "GEvaluateSym" $ do
+            gevaluateSym False () AssertionError @=? AssertionError,
           testCase "ExtractSymbolics" $ do
             extractSymbolics AssertionError @=? (S.empty :: S.HashSet Symbol),
           testCase "SimpleMergeable" $ do
@@ -93,9 +93,9 @@ exceptionTests =
             AssumptionViolation `gsymge` AssumptionViolation @=? CBool True
             AssumptionViolation `gsymgt` AssumptionViolation @=? CBool False
             AssumptionViolation `gsymCompare` AssumptionViolation @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
-          testCase "EvaluateSym" $ do
-            evaluateSym False () AssertionViolation @=? AssertionViolation
-            evaluateSym False () AssumptionViolation @=? AssumptionViolation,
+          testCase "GEvaluateSym" $ do
+            gevaluateSym False () AssertionViolation @=? AssertionViolation
+            gevaluateSym False () AssumptionViolation @=? AssumptionViolation,
           testCase "ExtractSymbolics" $ do
             extractSymbolics AssertionViolation @=? (S.empty :: S.HashSet Symbol)
             extractSymbolics AssumptionViolation @=? (S.empty :: S.HashSet Symbol),
