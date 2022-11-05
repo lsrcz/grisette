@@ -148,23 +148,23 @@ module Grisette.Core
     runGenSymFreshT,
 
     -- ** Symbolic Generation Class
-    GenSym (..),
+    GGenSym (..),
     GenSymSimple (..),
-    genSym,
+    ggenSym,
     genSymSimple,
 
     -- ** Symbolic Generation Class Derivation
-    derivedNoSpecGenSymFresh,
+    derivedNoSpecGGenSymFresh,
     derivedNoSpecGenSymSimpleFresh,
     derivedSameShapeGenSymSimpleFresh,
 
     -- ** Symbolic choice
-    chooseFresh,
-    chooseSimpleFresh,
-    chooseUnionFresh,
-    choose,
-    chooseSimple,
-    chooseUnion,
+    gchooseFresh,
+    gchooseSimpleFresh,
+    gchooseUnionFresh,
+    gchoose,
+    gchooseSimple,
+    gchooseUnion,
 
     -- ** Useful specifications
     EnumGenBound (..),
