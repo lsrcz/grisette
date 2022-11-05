@@ -599,11 +599,11 @@ instance
         $ emptyModel
   buildModel _ = error "buildModel: should only use symbolic constants"
 
-instance SubstituteSym TypedSymbol Sym (Sym a) where
-  substituteSym sym (Sym val) (Sym x) =
+instance GSubstituteSym TypedSymbol Sym (Sym a) where
+  gsubstituteSym sym (Sym val) (Sym x) =
     introSupportedPrimConstraint val $
       introSupportedPrimConstraint x $
         Sym $
           substTerm sym val x
 
-instance SubstituteSymSymbol TypedSymbol Sym
+instance GSubstituteSymSymbol TypedSymbol Sym

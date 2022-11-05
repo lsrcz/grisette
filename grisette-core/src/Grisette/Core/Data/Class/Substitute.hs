@@ -9,9 +9,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.Substitute
-  ( SubstituteSymSymbol (..),
-    SubstituteSym (..),
-    SubstituteSym' (..),
+  ( GSubstituteSymSymbol (..),
+    GSubstituteSym (..),
+    GSubstituteSym' (..),
   )
 where
 
@@ -27,42 +27,42 @@ import Data.Word
 import Generics.Deriving
 import Generics.Deriving.Instances ()
 
-class SubstituteSymSymbol (typedSymbol :: * -> *) (sym :: * -> *) | sym -> typedSymbol
+class GSubstituteSymSymbol (typedSymbol :: * -> *) (sym :: * -> *) | sym -> typedSymbol
 
-class SubstituteSymSymbol typedSymbol sym => SubstituteSym typedSymbol sym a | sym -> typedSymbol where
-  substituteSym :: typedSymbol b -> sym b -> a -> a
+class GSubstituteSymSymbol typedSymbol sym => GSubstituteSym typedSymbol sym a | sym -> typedSymbol where
+  gsubstituteSym :: typedSymbol b -> sym b -> a -> a
 
-class SubstituteSym' typedSymbol sym a | sym -> typedSymbol where
-  substituteSym' :: typedSymbol b -> sym b -> a c -> a c
+class GSubstituteSym' typedSymbol sym a | sym -> typedSymbol where
+  gsubstituteSym' :: typedSymbol b -> sym b -> a c -> a c
 
 instance
   ( Generic a,
-    SubstituteSymSymbol typedSymbol sym,
-    SubstituteSym' typedSymbol sym (Rep a)
+    GSubstituteSymSymbol typedSymbol sym,
+    GSubstituteSym' typedSymbol sym (Rep a)
   ) =>
-  SubstituteSym typedSymbol sym (Default a)
+  GSubstituteSym typedSymbol sym (Default a)
   where
-  substituteSym sym val = Default . to . substituteSym' sym val . from . unDefault
+  gsubstituteSym sym val = Default . to . gsubstituteSym' sym val . from . unDefault
 
-instance SubstituteSymSymbol typedSymbol sym => SubstituteSym' typedSymbol sym U1 where
-  substituteSym' _ _ = id
+instance GSubstituteSymSymbol typedSymbol sym => GSubstituteSym' typedSymbol sym U1 where
+  gsubstituteSym' _ _ = id
 
-instance SubstituteSym typedSymbol sym c => SubstituteSym' typedSymbol sym (K1 i c) where
-  substituteSym' sym val (K1 v) = K1 $ substituteSym sym val v
+instance GSubstituteSym typedSymbol sym c => GSubstituteSym' typedSymbol sym (K1 i c) where
+  gsubstituteSym' sym val (K1 v) = K1 $ gsubstituteSym sym val v
 
-instance SubstituteSym' typedSymbol sym a => SubstituteSym' typedSymbol sym (M1 i c a) where
-  substituteSym' sym val (M1 v) = M1 $ substituteSym' sym val v
+instance GSubstituteSym' typedSymbol sym a => GSubstituteSym' typedSymbol sym (M1 i c a) where
+  gsubstituteSym' sym val (M1 v) = M1 $ gsubstituteSym' sym val v
 
-instance (SubstituteSym' typedSymbol sym a, SubstituteSym' typedSymbol sym b) => SubstituteSym' typedSymbol sym (a :+: b) where
-  substituteSym' sym val (L1 l) = L1 $ substituteSym' sym val l
-  substituteSym' sym val (R1 r) = R1 $ substituteSym' sym val r
+instance (GSubstituteSym' typedSymbol sym a, GSubstituteSym' typedSymbol sym b) => GSubstituteSym' typedSymbol sym (a :+: b) where
+  gsubstituteSym' sym val (L1 l) = L1 $ gsubstituteSym' sym val l
+  gsubstituteSym' sym val (R1 r) = R1 $ gsubstituteSym' sym val r
 
-instance (SubstituteSym' typedSymbol sym a, SubstituteSym' typedSymbol sym b) => SubstituteSym' typedSymbol sym (a :*: b) where
-  substituteSym' sym val (a :*: b) = substituteSym' sym val a :*: substituteSym' sym val b
+instance (GSubstituteSym' typedSymbol sym a, GSubstituteSym' typedSymbol sym b) => GSubstituteSym' typedSymbol sym (a :*: b) where
+  gsubstituteSym' sym val (a :*: b) = gsubstituteSym' sym val a :*: gsubstituteSym' sym val b
 
 #define CONCRETE_SUBSTITUTESYM(type) \
-instance SubstituteSymSymbol typedSymbol sym => SubstituteSym typedSymbol sym type where \
-  substituteSym _ _ = id
+instance GSubstituteSymSymbol typedSymbol sym => GSubstituteSym typedSymbol sym type where \
+  gsubstituteSym _ _ = id
 
 CONCRETE_SUBSTITUTESYM (Bool)
 CONCRETE_SUBSTITUTESYM (Integer)
@@ -79,144 +79,144 @@ CONCRETE_SUBSTITUTESYM (Word32)
 CONCRETE_SUBSTITUTESYM (Word64)
 CONCRETE_SUBSTITUTESYM (B.ByteString)
 
-instance SubstituteSymSymbol typedSymbol sym => SubstituteSym typedSymbol sym () where
-  substituteSym _ _ = id
+instance GSubstituteSymSymbol typedSymbol sym => GSubstituteSym typedSymbol sym () where
+  gsubstituteSym _ _ = id
 
 -- Either
 deriving via
   (Default (Either a b))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b
     ) =>
-    SubstituteSym typedSymbol sym (Either a b)
+    GSubstituteSym typedSymbol sym (Either a b)
 
 -- Maybe
-deriving via (Default (Maybe a)) instance (SubstituteSym typedSymbol sym a) => SubstituteSym typedSymbol sym (Maybe a)
+deriving via (Default (Maybe a)) instance (GSubstituteSym typedSymbol sym a) => GSubstituteSym typedSymbol sym (Maybe a)
 
 -- List
-deriving via (Default [a]) instance (SubstituteSym typedSymbol sym a) => SubstituteSym typedSymbol sym [a]
+deriving via (Default [a]) instance (GSubstituteSym typedSymbol sym a) => GSubstituteSym typedSymbol sym [a]
 
 -- (,)
 deriving via
   (Default (a, b))
   instance
-    (SubstituteSym typedSymbol sym a, SubstituteSym typedSymbol sym b) =>
-    SubstituteSym typedSymbol sym (a, b)
+    (GSubstituteSym typedSymbol sym a, GSubstituteSym typedSymbol sym b) =>
+    GSubstituteSym typedSymbol sym (a, b)
 
 -- (,,)
 deriving via
   (Default (a, b, c))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b,
-      SubstituteSym typedSymbol sym c
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b,
+      GSubstituteSym typedSymbol sym c
     ) =>
-    SubstituteSym typedSymbol sym (a, b, c)
+    GSubstituteSym typedSymbol sym (a, b, c)
 
 -- (,,,)
 deriving via
   (Default (a, b, c, d))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b,
-      SubstituteSym typedSymbol sym c,
-      SubstituteSym typedSymbol sym d
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b,
+      GSubstituteSym typedSymbol sym c,
+      GSubstituteSym typedSymbol sym d
     ) =>
-    SubstituteSym typedSymbol sym (a, b, c, d)
+    GSubstituteSym typedSymbol sym (a, b, c, d)
 
 -- (,,,,)
 deriving via
   (Default (a, b, c, d, e))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b,
-      SubstituteSym typedSymbol sym c,
-      SubstituteSym typedSymbol sym d,
-      SubstituteSym typedSymbol sym e
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b,
+      GSubstituteSym typedSymbol sym c,
+      GSubstituteSym typedSymbol sym d,
+      GSubstituteSym typedSymbol sym e
     ) =>
-    SubstituteSym typedSymbol sym (a, b, c, d, e)
+    GSubstituteSym typedSymbol sym (a, b, c, d, e)
 
 -- (,,,,,)
 deriving via
   (Default (a, b, c, d, e, f))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b,
-      SubstituteSym typedSymbol sym c,
-      SubstituteSym typedSymbol sym d,
-      SubstituteSym typedSymbol sym e,
-      SubstituteSym typedSymbol sym f
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b,
+      GSubstituteSym typedSymbol sym c,
+      GSubstituteSym typedSymbol sym d,
+      GSubstituteSym typedSymbol sym e,
+      GSubstituteSym typedSymbol sym f
     ) =>
-    SubstituteSym typedSymbol sym (a, b, c, d, e, f)
+    GSubstituteSym typedSymbol sym (a, b, c, d, e, f)
 
 -- (,,,,,,)
 deriving via
   (Default (a, b, c, d, e, f, g))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b,
-      SubstituteSym typedSymbol sym c,
-      SubstituteSym typedSymbol sym d,
-      SubstituteSym typedSymbol sym e,
-      SubstituteSym typedSymbol sym f,
-      SubstituteSym typedSymbol sym g
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b,
+      GSubstituteSym typedSymbol sym c,
+      GSubstituteSym typedSymbol sym d,
+      GSubstituteSym typedSymbol sym e,
+      GSubstituteSym typedSymbol sym f,
+      GSubstituteSym typedSymbol sym g
     ) =>
-    SubstituteSym typedSymbol sym (a, b, c, d, e, f, g)
+    GSubstituteSym typedSymbol sym (a, b, c, d, e, f, g)
 
 -- (,,,,,,,)
 deriving via
   (Default (a, b, c, d, e, f, g, h))
   instance
-    ( SubstituteSym typedSymbol sym a,
-      SubstituteSym typedSymbol sym b,
-      SubstituteSym typedSymbol sym c,
-      SubstituteSym typedSymbol sym d,
-      SubstituteSym typedSymbol sym e,
-      SubstituteSym typedSymbol sym f,
-      SubstituteSym typedSymbol sym g,
-      SubstituteSym typedSymbol sym h
+    ( GSubstituteSym typedSymbol sym a,
+      GSubstituteSym typedSymbol sym b,
+      GSubstituteSym typedSymbol sym c,
+      GSubstituteSym typedSymbol sym d,
+      GSubstituteSym typedSymbol sym e,
+      GSubstituteSym typedSymbol sym f,
+      GSubstituteSym typedSymbol sym g,
+      GSubstituteSym typedSymbol sym h
     ) =>
-    SubstituteSym typedSymbol sym ((,,,,,,,) a b c d e f g h)
+    GSubstituteSym typedSymbol sym ((,,,,,,,) a b c d e f g h)
 
 -- MaybeT
 instance
-  (SubstituteSymSymbol typedSymbol sym, SubstituteSym typedSymbol sym (m (Maybe a))) =>
-  SubstituteSym typedSymbol sym (MaybeT m a)
+  (GSubstituteSymSymbol typedSymbol sym, GSubstituteSym typedSymbol sym (m (Maybe a))) =>
+  GSubstituteSym typedSymbol sym (MaybeT m a)
   where
-  substituteSym sym val (MaybeT v) = MaybeT $ substituteSym sym val v
+  gsubstituteSym sym val (MaybeT v) = MaybeT $ gsubstituteSym sym val v
 
 -- ExceptT
 instance
-  (SubstituteSymSymbol typedSymbol sym, SubstituteSym typedSymbol sym (m (Either e a))) =>
-  SubstituteSym typedSymbol sym (ExceptT e m a)
+  (GSubstituteSymSymbol typedSymbol sym, GSubstituteSym typedSymbol sym (m (Either e a))) =>
+  GSubstituteSym typedSymbol sym (ExceptT e m a)
   where
-  substituteSym sym val (ExceptT v) = ExceptT $ substituteSym sym val v
+  gsubstituteSym sym val (ExceptT v) = ExceptT $ gsubstituteSym sym val v
 
 -- Sum
 deriving via
   (Default (Sum f g a))
   instance
-    (SubstituteSym typedSymbol sym (f a), SubstituteSym typedSymbol sym (g a)) =>
-    SubstituteSym typedSymbol sym (Sum f g a)
+    (GSubstituteSym typedSymbol sym (f a), GSubstituteSym typedSymbol sym (g a)) =>
+    GSubstituteSym typedSymbol sym (Sum f g a)
 
 -- WriterT
 instance
-  (SubstituteSymSymbol typedSymbol sym, SubstituteSym typedSymbol sym (m (a, s))) =>
-  SubstituteSym typedSymbol sym (WriterLazy.WriterT s m a)
+  (GSubstituteSymSymbol typedSymbol sym, GSubstituteSym typedSymbol sym (m (a, s))) =>
+  GSubstituteSym typedSymbol sym (WriterLazy.WriterT s m a)
   where
-  substituteSym sym val (WriterLazy.WriterT v) = WriterLazy.WriterT $ substituteSym sym val v
+  gsubstituteSym sym val (WriterLazy.WriterT v) = WriterLazy.WriterT $ gsubstituteSym sym val v
 
 instance
-  (SubstituteSymSymbol typedSymbol sym, SubstituteSym typedSymbol sym (m (a, s))) =>
-  SubstituteSym typedSymbol sym (WriterStrict.WriterT s m a)
+  (GSubstituteSymSymbol typedSymbol sym, GSubstituteSym typedSymbol sym (m (a, s))) =>
+  GSubstituteSym typedSymbol sym (WriterStrict.WriterT s m a)
   where
-  substituteSym sym val (WriterStrict.WriterT v) = WriterStrict.WriterT $ substituteSym sym val v
+  gsubstituteSym sym val (WriterStrict.WriterT v) = WriterStrict.WriterT $ gsubstituteSym sym val v
 
 -- Identity
-instance SubstituteSym typedSymbol sym a => SubstituteSym typedSymbol sym (Identity a) where
-  substituteSym sym val (Identity a) = Identity $ substituteSym sym val a
+instance GSubstituteSym typedSymbol sym a => GSubstituteSym typedSymbol sym (Identity a) where
+  gsubstituteSym sym val (Identity a) = Identity $ gsubstituteSym sym val a
 
 -- IdentityT
-instance SubstituteSym typedSymbol sym (m a) => SubstituteSym typedSymbol sym (IdentityT m a) where
-  substituteSym sym val (IdentityT a) = IdentityT $ substituteSym sym val a
+instance GSubstituteSym typedSymbol sym (m a) => GSubstituteSym typedSymbol sym (IdentityT m a) where
+  gsubstituteSym sym val (IdentityT a) = IdentityT $ gsubstituteSym sym val a

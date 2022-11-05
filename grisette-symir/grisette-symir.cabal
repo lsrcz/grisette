@@ -40,6 +40,7 @@ library
       Grisette.IR.SymPrim.Data.Class.SEq
       Grisette.IR.SymPrim.Data.Class.SimpleMergeable
       Grisette.IR.SymPrim.Data.Class.SOrd
+      Grisette.IR.SymPrim.Data.Class.Substitute
       Grisette.IR.SymPrim.Data.Class.SymIntegerOp
       Grisette.IR.SymPrim.Data.IntBitwidth
       Grisette.IR.SymPrim.Data.Prim.Helpers

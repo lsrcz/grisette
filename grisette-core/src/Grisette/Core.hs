@@ -179,9 +179,9 @@ module Grisette.Core
     gevaluateSymToCon,
     ToCon (..),
     ToSym (..),
-    SubstituteSym (..),
-    SubstituteSym' (..),
-    SubstituteSymSymbol (..),
+    GSubstituteSym (..),
+    GSubstituteSym' (..),
+    GSubstituteSymSymbol (..),
 
     -- * Solver interface
     Solver (..),
