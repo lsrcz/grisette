@@ -16,6 +16,8 @@ type EvaluateSym a = GEvaluateSym Model a
 
 evaluateSym :: (EvaluateSym a) => Bool -> Model -> a -> a
 evaluateSym = gevaluateSym
+{-# INLINE evaluateSym #-}
 
 evaluateSymToCon :: (EvaluateSym a, ToCon a b) => Model -> a -> b
 evaluateSymToCon = gevaluateSymToCon
+{-# INLINE evaluateSymToCon #-}
