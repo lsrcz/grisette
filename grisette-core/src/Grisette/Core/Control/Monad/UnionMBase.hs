@@ -19,7 +19,7 @@
 module Grisette.Core.Control.Monad.UnionMBase
   ( UnionMBase (..),
     IsConcrete,
-    liftToMonadUnion,
+    liftToGMonadUnion,
     underlyingUnion,
     isMerged,
     (#~),
@@ -134,7 +134,7 @@ isMerged UAny {} = False
 isMerged UMrg {} = True
 {-# INLINE isMerged #-}
 
-instance SymBoolOp bool => UnionPrjOp bool (UnionMBase bool) where
+instance SymBoolOp bool => GUnionPrjOp bool (UnionMBase bool) where
   singleView = singleView . underlyingUnion
   {-# INLINE singleView #-}
   ifView (UAny _ u) = case ifView u of
@@ -171,19 +171,19 @@ instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (UnionMBase bool
   gmergingStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
   {-# INLINE gmergingStrategy #-}
 
-instance (SymBoolOp bool, GMergeable bool a) => SimpleMergeable bool (UnionMBase bool a) where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+instance (SymBoolOp bool, GMergeable bool a) => GSimpleMergeable bool (UnionMBase bool a) where
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance (SymBoolOp bool) => GMergeable1 bool (UnionMBase bool) where
   liftGMergingStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
   {-# INLINE liftGMergingStrategy #-}
 
-instance SymBoolOp bool => SimpleMergeable1 bool (UnionMBase bool) where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+instance SymBoolOp bool => GSimpleMergeable1 bool (UnionMBase bool) where
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
-instance SymBoolOp bool => UnionLike bool (UnionMBase bool) where
+instance SymBoolOp bool => GUnionLike bool (UnionMBase bool) where
   mergeWithStrategy _ m@(UMrg _ _) = m
   mergeWithStrategy s (UAny ref u) = unsafeDupablePerformIO $
     atomicModifyIORef' ref $ \case
@@ -209,9 +209,9 @@ instance (SymBoolOp bool, GSEq bool a) => GSEq bool (UnionMBase bool a) where
     y1 <- y
     mrgSingle $ x1 `gsymeq` y1
 
--- | Lift the 'UnionMBase' to any 'MonadUnion'.
-liftToMonadUnion :: (SymBoolOp bool, GMergeable bool a, MonadUnion bool u) => UnionMBase bool a -> u a
-liftToMonadUnion u = go (underlyingUnion u)
+-- | Lift the 'UnionMBase' to any 'GMonadUnion'.
+liftToGMonadUnion :: (SymBoolOp bool, GMergeable bool a, GMonadUnion bool u) => UnionMBase bool a -> u a
+liftToGMonadUnion u = go (underlyingUnion u)
   where
     go (Single v) = mrgSingle v
     go (If _ _ c t f) = mrgIf c (go t) (go f)
@@ -233,7 +233,7 @@ instance (SymBoolOp bool, GSOrd bool a) => GSOrd bool (UnionMBase bool a) where
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymgt` y1
-  x `gsymCompare` y = liftToMonadUnion $ do
+  x `gsymCompare` y = liftToGMonadUnion $ do
     x1 <- x
     y1 <- y
     x1 `gsymCompare` y1
@@ -392,10 +392,10 @@ instance IsConcrete Bool
 instance IsConcrete Integer
 
 instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
-  gmergingStrategy = SimpleStrategy mrgIte
+  gmergingStrategy = SimpleStrategy gmrgIte
 
-instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => SimpleMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
-  mrgIte cond l r =
+instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GSimpleMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
+  gmrgIte cond l r =
     HML.unionWith (mrgIf cond) ul ur
     where
       ul =

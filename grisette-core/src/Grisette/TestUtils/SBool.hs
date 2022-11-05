@@ -67,8 +67,8 @@ instance Eq SBool where
 instance GMergeable SBool SBool where
   gmergingStrategy = SimpleStrategy ites
 
-instance SimpleMergeable SBool SBool where
-  mrgIte = ites
+instance GSimpleMergeable SBool SBool where
+  gmrgIte = ites
 
 instance GEvaluateSym (M.HashMap Symbol Bool) SBool where
   gevaluateSym _ _ c@(CBool _) = c

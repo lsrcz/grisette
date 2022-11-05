@@ -76,7 +76,7 @@ instance ExtractUnionEither (ExceptT e u v) u e v where
 
 solveFallable ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
     Solver config bool symbolSet failure model
@@ -89,7 +89,7 @@ solveFallable config f v = solveFormula config (getSingle $ f <$> extractUnionEi
 
 solveMultiFallable ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
     Solver config bool symbolSet failure model
@@ -103,7 +103,7 @@ solveMultiFallable config n f v = solveFormulaMulti config n (getSingle $ f <$> 
 
 cegisFallable ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
     GEvaluateSym model forallArgs,
@@ -119,7 +119,7 @@ cegisFallable config args f v = uncurry (cegisFormulas config args) (getSingle $
 
 cegisFallable' ::
   ( ExtractUnionEither t u e v,
-    UnionPrjOp bool u,
+    GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool,
     GEvaluateSym model forallArgs,

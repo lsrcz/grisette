@@ -84,8 +84,8 @@ newtype GenSymIndex = GenSymIndex Int
 instance (SymBoolOp bool) => GMergeable bool GenSymIndex where
   gmergingStrategy = SimpleStrategy $ \_ t f -> max t f
 
-instance (SymBoolOp bool) => SimpleMergeable bool GenSymIndex where
-  mrgIte _ = max
+instance (SymBoolOp bool) => GSimpleMergeable bool GenSymIndex where
+  gmrgIte _ = max
 
 -- | Identifier type used for 'GenSym'
 --
@@ -190,20 +190,20 @@ instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (GenSymFreshT 
       runGenSymFreshT'
 
 instance
-  (SymBoolOp bool, UnionLike bool m, GMergeable bool a) =>
-  SimpleMergeable bool (GenSymFreshT m a)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool a) =>
+  GSimpleMergeable bool (GenSymFreshT m a)
   where
-  mrgIte = mrgIf
+  gmrgIte = mrgIf
 
 instance
-  (SymBoolOp bool, UnionLike bool m) =>
-  SimpleMergeable1 bool (GenSymFreshT m)
+  (SymBoolOp bool, GUnionLike bool m) =>
+  GSimpleMergeable1 bool (GenSymFreshT m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
 instance
-  (SymBoolOp bool, UnionLike bool m) =>
-  UnionLike bool (GenSymFreshT m)
+  (SymBoolOp bool, GUnionLike bool m) =>
+  GUnionLike bool (GenSymFreshT m)
   where
   mergeWithStrategy s (GenSymFreshT f) =
     GenSymFreshT $ \ident index -> mergeWithStrategy (liftGMergingStrategy2 s gmergingStrategy) $ f ident index
@@ -306,14 +306,14 @@ class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
   -- N.B.: the examples are not executable solely with @grisette-core@ package, and need support from @grisette-symprim@ package.
   genSymFresh ::
     ( MonadGenSymFresh m,
-      MonadUnion bool u
+      GMonadUnion bool u
     ) =>
     spec ->
     m (u a)
   default genSymFresh ::
     (GenSymSimple spec a) =>
     ( MonadGenSymFresh m,
-      MonadUnion bool u
+      GMonadUnion bool u
     ) =>
     spec ->
     m (u a)
@@ -321,7 +321,7 @@ class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
 -- The uniqueness need to be ensured by the uniqueness of the provided identifier.
-genSym :: (GenSym bool spec a, MonadUnion bool u) => spec -> GenSymIdent -> u a
+genSym :: (GenSym bool spec a, GMonadUnion bool u) => spec -> GenSymIdent -> u a
 genSym = runGenSymFresh . genSymFresh
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
@@ -363,7 +363,7 @@ genSymSimple = runGenSymFresh . genSymSimpleFresh
 class GenSymNoSpec bool a where
   genSymFreshNoSpec ::
     ( MonadGenSymFresh m,
-      MonadUnion bool u
+      GMonadUnion bool u
     ) =>
     m (u (a c))
 
@@ -389,7 +389,7 @@ instance
   genSymFreshNoSpec ::
     forall m u c.
     ( MonadGenSymFresh m,
-      MonadUnion bool u
+      GMonadUnion bool u
     ) =>
     m (u ((a :+: b) c))
   genSymFreshNoSpec = do
@@ -405,7 +405,7 @@ instance
   genSymFreshNoSpec ::
     forall m u c.
     ( MonadGenSymFresh m,
-      MonadUnion bool u
+      GMonadUnion bool u
     ) =>
     m (u ((a :*: b) c))
   genSymFreshNoSpec = do
@@ -430,7 +430,7 @@ derivedNoSpecGenSymFresh ::
     GenSymNoSpec bool (Rep a),
     GMergeable bool a,
     MonadGenSymFresh m,
-    MonadUnion bool u
+    GMonadUnion bool u
   ) =>
   () ->
   m (u a)
@@ -538,7 +538,7 @@ chooseFresh ::
     GMergeable bool a,
     GenSymSimple () bool,
     MonadGenSymFresh m,
-    MonadUnion bool u
+    GMonadUnion bool u
   ) =>
   [a] ->
   m (u a)
@@ -554,7 +554,7 @@ choose ::
   ( SymBoolOp bool,
     GMergeable bool a,
     GenSymSimple () bool,
-    MonadUnion bool u
+    GMonadUnion bool u
   ) =>
   [a] ->
   GenSymIdent ->
@@ -573,7 +573,7 @@ choose = runGenSymFresh . chooseFresh
 chooseSimpleFresh ::
   forall proxy bool a m.
   ( SymBoolOp bool,
-    SimpleMergeable bool a,
+    GSimpleMergeable bool a,
     GenSymSimple () bool,
     MonadGenSymFresh m
   ) =>
@@ -584,13 +584,13 @@ chooseSimpleFresh _ [x] = return x
 chooseSimpleFresh proxy (r : rs) = do
   b :: bool <- genSymSimpleFresh ()
   res <- chooseSimpleFresh proxy rs
-  return $ mrgIte b r res
+  return $ gmrgIte b r res
 chooseSimpleFresh _ [] = error "chooseSimpleFresh expects at least one value"
 
 chooseSimple ::
   forall proxy bool a.
   ( SymBoolOp bool,
-    SimpleMergeable bool a,
+    GSimpleMergeable bool a,
     GenSymSimple () bool
   ) =>
   proxy bool ->
@@ -615,7 +615,7 @@ chooseUnionFresh ::
     GMergeable bool a,
     GenSymSimple () bool,
     MonadGenSymFresh m,
-    MonadUnion bool u
+    GMonadUnion bool u
   ) =>
   [u a] ->
   m (u a)
@@ -631,7 +631,7 @@ chooseUnion ::
   ( SymBoolOp bool,
     GMergeable bool a,
     GenSymSimple () bool,
-    MonadUnion bool u
+    GMonadUnion bool u
   ) =>
   [u a] ->
   GenSymIdent ->

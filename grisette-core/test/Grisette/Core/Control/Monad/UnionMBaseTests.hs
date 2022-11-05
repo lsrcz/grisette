@@ -50,7 +50,7 @@ unionMBaseTests =
       testCase "SimpleMergeable" $ do
         let l :: UnionMBase SBool (Either SBool SBool) = mrgIf (SSBool "b") (mrgSingle $ Left $ SSBool "c") (mrgSingle $ Right $ SSBool "d")
         let r = mrgIf (SSBool "e") (mrgSingle $ Left $ SSBool "f") (mrgSingle $ Right $ SSBool "g")
-        let res = mrgIte (SSBool "a") l r
+        let res = gmrgIte (SSBool "a") l r
         let ref =
               If
                 (Left $ ITE (SSBool "a") (SSBool "c") (SSBool "f"))
@@ -63,7 +63,7 @@ unionMBaseTests =
       testCase "SimpleMergeable1" $ do
         let l :: UnionMBase SBool SBool = mrgIf (SSBool "b") (mrgSingle $ SSBool "c") (mrgSingle $ SSBool "d")
         let r :: UnionMBase SBool SBool = mrgIf (SSBool "e") (mrgSingle $ SSBool "f") (mrgSingle $ SSBool "g")
-        let res = mrgIte1 (SSBool "a") l r
+        let res = gmrgIte1 (SSBool "a") l r
         isMerged res @=? True
         underlyingUnion res
           @=? Single
@@ -554,7 +554,7 @@ unionMBaseTests =
       testGroup
         "Concrete Key HashMaps"
         [ testCase "Concrete Key HashMap should work" $ do
-            mrgIte
+            gmrgIte
               (SSBool "a")
               ( ML.fromList [(1, mrgSingle $ Just 1), (2, mrgSingle $ Just 2)] ::
                   ML.HashMap Integer (UnionMBase SBool (Maybe Integer))

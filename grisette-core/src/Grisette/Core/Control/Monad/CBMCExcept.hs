@@ -362,22 +362,22 @@ instance
   GenSym bool (CBMCExceptT e m a) (CBMCExceptT e m a)
 
 instance
-  (SymBoolOp bool, UnionLike bool m, GMergeable bool e, GMergeable bool a) =>
-  SimpleMergeable bool (CBMCExceptT e m a)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool e, GMergeable bool a) =>
+  GSimpleMergeable bool (CBMCExceptT e m a)
   where
-  mrgIte = mrgIf
-  {-# INLINE mrgIte #-}
+  gmrgIte = mrgIf
+  {-# INLINE gmrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, GMergeable bool e) =>
-  SimpleMergeable1 bool (CBMCExceptT e m)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool e) =>
+  GSimpleMergeable1 bool (CBMCExceptT e m)
   where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
-  {-# INLINE liftMrgIte #-}
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+  {-# INLINE liftGMrgIte #-}
 
 instance
-  (SymBoolOp bool, UnionLike bool m, GMergeable bool e) =>
-  UnionLike bool (CBMCExceptT e m)
+  (SymBoolOp bool, GUnionLike bool m, GMergeable bool e) =>
+  GUnionLike bool (CBMCExceptT e m)
   where
   mergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ mergeWithStrategy (liftGMergingStrategy s) v
   {-# INLINE mergeWithStrategy #-}

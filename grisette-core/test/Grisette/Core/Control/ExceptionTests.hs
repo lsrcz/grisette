@@ -43,7 +43,7 @@ exceptionTests =
           testCase "GExtractSymbolics" $ do
             gextractSymbolics AssertionError @=? (S.empty :: S.HashSet Symbol),
           testCase "SimpleMergeable" $ do
-            mrgIte (SSBool "a") AssertionError AssertionError @=? AssertionError,
+            gmrgIte (SSBool "a") AssertionError AssertionError @=? AssertionError,
           testCase "Mergeable" $ do
             let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool AssertionError
             s (SSBool "a") AssertionError AssertionError @=? AssertionError,

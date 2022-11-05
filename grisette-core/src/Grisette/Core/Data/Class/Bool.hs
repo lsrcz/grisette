@@ -110,7 +110,7 @@ class ITEOp b v where
   ites :: b -> v -> v -> v
 
 -- | Aggregation for the operations on symbolic boolean types
-class (SimpleMergeable b b, GSEq b b, Eq b, LogicalOp b, PrimWrapper b Bool, ITEOp b b) => SymBoolOp b
+class (GSimpleMergeable b b, GSEq b b, Eq b, LogicalOp b, PrimWrapper b Bool, ITEOp b b) => SymBoolOp b
 
 #define CONCRETE_SEQ(type) \
 instance (SymBoolOp bool) => GSEq bool type where \

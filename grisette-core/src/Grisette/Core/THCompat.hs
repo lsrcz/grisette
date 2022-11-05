@@ -29,7 +29,7 @@ augmentFinalType unionTypeName boolTypeName t = do
   symBoolOp <- [t|SymBoolOp|]
   monad <- [t|Monad|]
   mergeable <- [t|GMergeable|]
-  monadUnion <- [t|MonadUnion|]
+  monadUnion <- [t|GMonadUnion|]
 #if MIN_VERSION_template_haskell(2,17,0)
   return
     ( ( [ 

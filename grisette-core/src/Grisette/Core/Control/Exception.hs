@@ -45,7 +45,7 @@ data AssertionError = AssertionError
 
 deriving via (Default AssertionError) instance (SymBoolOp bool) => GMergeable bool AssertionError
 
-deriving via (Default AssertionError) instance (SymBoolOp bool) => SimpleMergeable bool AssertionError
+deriving via (Default AssertionError) instance (SymBoolOp bool) => GSimpleMergeable bool AssertionError
 
 deriving via (Default AssertionError) instance (SymBoolOp bool) => GSEq bool AssertionError
 
@@ -138,7 +138,7 @@ instance TransformError AssertionError AssertionError where
 -- >>> symAssert (ssymb "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionViolation)) (Single (Right ()))))
 symAssert ::
-  (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
+  (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
   erm ()
 symAssert = symFailIfNot AssertionError
@@ -152,7 +152,7 @@ symAssert = symFailIfNot AssertionError
 -- >>> symAssume (ssymb "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssumptionViolation)) (Single (Right ()))))
 symAssume ::
-  (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, MonadUnion bool erm) =>
+  (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
   erm ()
 symAssume = symFailIfNot AssumptionViolation

@@ -17,6 +17,7 @@ where
 
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.IR.SymPrim.Data.Class.SimpleMergeable
 import Grisette.IR.SymPrim.Data.SymPrim
 
 type SOrd a = GSOrd SymBool a
@@ -37,7 +38,7 @@ symge :: (SOrd a) => a -> a -> SymBool
 symge = gsymge
 {-# INLINE symge #-}
 
-symCompare :: (UnionLike SymBool u, Monad u, SOrd a) => a -> a -> u Ordering
+symCompare :: (UnionLike u, Monad u, SOrd a) => a -> a -> u Ordering
 symCompare = gsymCompare
 {-# INLINE symCompare #-}
 

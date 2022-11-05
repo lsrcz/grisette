@@ -20,7 +20,7 @@ mrgTraverse ::
   forall bool a b t f.
   ( GMergeable bool b,
     GMergeable1 bool t,
-    MonadUnion bool f,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   (a -> f b) ->
@@ -34,7 +34,7 @@ mrgSequenceA ::
   forall bool a t f.
   ( GMergeable bool a,
     GMergeable1 bool t,
-    MonadUnion bool f,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   t (f a) ->
@@ -47,7 +47,7 @@ mrgMapM ::
   forall bool a b t f.
   ( GMergeable bool b,
     GMergeable1 bool t,
-    MonadUnion bool f,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   (a -> f b) ->
@@ -61,7 +61,7 @@ mrgSequence ::
   forall bool a t f.
   ( GMergeable bool a,
     GMergeable1 bool t,
-    MonadUnion bool f,
+    GMonadUnion bool f,
     Traversable t
   ) =>
   t (f a) ->
@@ -74,7 +74,7 @@ mrgFor ::
   ( GMergeable bool b,
     GMergeable1 bool t,
     Traversable t,
-    MonadUnion bool m
+    GMonadUnion bool m
   ) =>
   t a ->
   (a -> m b) ->
@@ -87,7 +87,7 @@ mrgForM ::
   ( GMergeable bool b,
     GMergeable1 bool t,
     Traversable t,
-    MonadUnion bool m
+    GMonadUnion bool m
   ) =>
   t a ->
   (a -> m b) ->

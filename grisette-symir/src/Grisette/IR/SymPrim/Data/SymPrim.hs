@@ -92,8 +92,8 @@ instance (SupportedPrim a) => ITEOp (Sym Bool) (Sym a) where
 instance (SupportedPrim a) => GMergeable (Sym Bool) (Sym a) where
   gmergingStrategy = SimpleStrategy ites
 
-instance (SupportedPrim a) => SimpleMergeable (Sym Bool) (Sym a) where
-  mrgIte = ites
+instance (SupportedPrim a) => GSimpleMergeable (Sym Bool) (Sym a) where
+  gmrgIte = ites
 
 instance (SupportedPrim a) => PrimWrapper (Sym a) a where
   conc = Sym . concTerm

@@ -34,7 +34,7 @@ class (GSEq' bool f) => GSOrd' bool f where
   gsymle' :: f a -> f a -> bool
   gsymgt' :: f a -> f a -> bool
   gsymge' :: f a -> f a -> bool
-  gsymCompare' :: (UnionLike bool u, Monad u) => f a -> f a -> u Ordering
+  gsymCompare' :: (GUnionLike bool u, Monad u) => f a -> f a -> u Ordering
 
 instance (SymBoolOp bool) => GSOrd' bool U1 where
   _ `gsymlt'` _ = conc False
@@ -111,7 +111,7 @@ derivedGSymGt x y = from x `gsymgt'` from y
 derivedGSymGe :: (Generic a, GSOrd' bool (Rep a)) => a -> a -> bool
 derivedGSymGe x y = from x `gsymge'` from y
 
-derivedGSymCompare :: (Generic a, GSOrd' bool (Rep a), UnionLike bool u, Monad u) => a -> a -> u Ordering
+derivedGSymCompare :: (Generic a, GSOrd' bool (Rep a), GUnionLike bool u, Monad u) => a -> a -> u Ordering
 derivedGSymCompare x y = gsymCompare' (from x) (from y)
 
 -- | Symbolic total order. Note that we can't use Haskell's 'Ord' class since symbolic comparison won't necessarily return
@@ -126,7 +126,7 @@ class (GSEq bool a) => GSOrd bool a where
   x `gsymlt` y = x `gsymle` y &&~ x `gsymne` y
   x `gsymgt` y = y `gsymlt` x
   x `gsymge` y = y `gsymle` x
-  gsymCompare :: (UnionLike bool u, Monad u) => a -> a -> u Ordering
+  gsymCompare :: (GUnionLike bool u, Monad u) => a -> a -> u Ordering
   gsymCompare l r =
     mrgIf
       (l `gsymlt` r :: bool)
@@ -172,7 +172,7 @@ symCompareSingleList isLess isStrict = go
     go [] _ = if isLess then conc True else conc False
     go _ [] = if isLess then conc False else conc True
 
-symCompareList :: (SymBoolOp bool, GSOrd bool a, UnionLike bool u, Monad u) => [a] -> [a] -> u Ordering
+symCompareList :: (SymBoolOp bool, GSOrd bool a, GUnionLike bool u, Monad u) => [a] -> [a] -> u Ordering
 symCompareList [] [] = mrgSingle EQ
 symCompareList (x : xs) (y : ys) = do
   oxy <- gsymCompare x y

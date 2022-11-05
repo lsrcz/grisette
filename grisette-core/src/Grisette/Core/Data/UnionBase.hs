@@ -66,7 +66,7 @@ ifWithLeftMost _ (Conc c) t f
 ifWithLeftMost inv cond t f = If (leftMost t) inv cond t f
 {-# INLINE ifWithLeftMost #-}
 
-instance SymBoolOp bool => UnionPrjOp bool (UnionBase bool) where
+instance SymBoolOp bool => GUnionPrjOp bool (UnionBase bool) where
   singleView (Single a) = Just a
   singleView _ = Nothing
   {-# INLINE singleView #-}
@@ -85,13 +85,13 @@ instance (SymBoolOp bool) => GMergeable1 bool (UnionBase bool) where
   liftGMergingStrategy ms = SimpleStrategy $ ifWithStrategy ms
   {-# INLINE liftGMergingStrategy #-}
 
-instance (SymBoolOp bool, GMergeable bool a) => SimpleMergeable bool (UnionBase bool a) where
-  mrgIte = mrgIf
+instance (SymBoolOp bool, GMergeable bool a) => GSimpleMergeable bool (UnionBase bool a) where
+  gmrgIte = mrgIf
 
-instance (SymBoolOp bool) => SimpleMergeable1 bool (UnionBase bool) where
-  liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
+instance (SymBoolOp bool) => GSimpleMergeable1 bool (UnionBase bool) where
+  liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
-instance (SymBoolOp bool) => UnionLike bool (UnionBase bool) where
+instance (SymBoolOp bool) => GUnionLike bool (UnionBase bool) where
   mergeWithStrategy = fullReconstruct
   {-# INLINE mergeWithStrategy #-}
   single = Single

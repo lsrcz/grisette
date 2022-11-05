@@ -40,7 +40,7 @@ symThrowTransformableError ::
     GMergeable bool a,
     TransformError from to,
     MonadError to erm,
-    MonadUnion bool erm
+    GMonadUnion bool erm
   ) =>
   from ->
   erm a
@@ -55,7 +55,7 @@ symFailIfNot ::
     GMergeable bool to,
     TransformError from to,
     MonadError to erm,
-    MonadUnion bool erm
+    GMonadUnion bool erm
   ) =>
   from ->
   bool ->

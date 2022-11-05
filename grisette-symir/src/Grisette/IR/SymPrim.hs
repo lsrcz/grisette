@@ -64,9 +64,21 @@ module Grisette.IR.SymPrim
     buildStrategyList,
     resolveStrategy,
     resolveStrategy',
+    SimpleMergeable,
+    mrgIte,
+    SimpleMergeable1,
+    liftMrgIte,
+    mrgIte1,
+    SimpleMergeable2,
+    liftMrgIte2,
+    mrgIte2,
+    UnionLike,
+    UnionPrjOp,
+    MonadUnion,
   )
 where
 
+import Grisette.IR.SymPrim.Control.Monad.Union
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Class.Evaluate
@@ -74,6 +86,7 @@ import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
 import Grisette.IR.SymPrim.Data.Class.Mergeable
 import Grisette.IR.SymPrim.Data.Class.SEq
 import Grisette.IR.SymPrim.Data.Class.SOrd
+import Grisette.IR.SymPrim.Data.Class.SimpleMergeable
 import Grisette.IR.SymPrim.Data.Class.SymIntegerOp
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model

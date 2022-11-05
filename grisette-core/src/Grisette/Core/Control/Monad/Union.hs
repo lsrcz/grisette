@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Control.Monad.Union
-  ( MonadUnion,
+  ( GMonadUnion,
   )
 where
 
@@ -16,4 +16,4 @@ import Grisette.Core.Data.Class.SimpleMergeable
 -- >>> import Grisette.IR.SymPrim
 
 -- | Class for monads that support union-like operations and 'Mergeable' knowledge propagation.
-type MonadUnion bool u = (UnionLike bool u, Monad u)
+type GMonadUnion bool u = (GUnionLike bool u, Monad u)
