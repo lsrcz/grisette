@@ -181,8 +181,8 @@ instance Hashable Symbol where
   s `hashWithSalt` ISymbol i1 s1 = s `hashWithSalt` i1 `hashWithSalt` s1
   s `hashWithSalt` IISymbol i1 s1 info1 = s `hashWithSalt` i1 `hashWithSalt` s1 `hashWithSalt` info1
 
-instance ExtractSymbolics (S.HashSet Symbol) SBool where
-  extractSymbolics = go S.empty
+instance GExtractSymbolics (S.HashSet Symbol) SBool where
+  gextractSymbolics = go S.empty
     where
       go s (CBool _) = s
       go s (SSBool sym) = S.insert (SSymbol sym) s

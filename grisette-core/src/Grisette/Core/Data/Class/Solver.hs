@@ -54,14 +54,14 @@ class
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
   cegisFormula ::
-    (GEvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
+    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
     config ->
     forallArg ->
     bool ->
     IO (Either failure ([forallArg], model))
   cegisFormula config forallArg = cegisFormulas config forallArg (conc False)
   cegisFormulas ::
-    (GEvaluateSym model forallArg, ExtractSymbolics symbolSet forallArg) =>
+    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
     config ->
     forallArg ->
     bool ->
@@ -107,7 +107,7 @@ cegisFallable ::
     Functor u,
     SymBoolOp bool,
     GEvaluateSym model forallArgs,
-    ExtractSymbolics symbolSet forallArgs,
+    GExtractSymbolics symbolSet forallArgs,
     Solver config bool symbolSet failure model
   ) =>
   config ->
@@ -123,7 +123,7 @@ cegisFallable' ::
     Monad u,
     SymBoolOp bool,
     GEvaluateSym model forallArgs,
-    ExtractSymbolics symbolSet forallArgs,
+    GExtractSymbolics symbolSet forallArgs,
     Solver config bool symbolSet failure model
   ) =>
   config ->

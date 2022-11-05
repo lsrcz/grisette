@@ -122,8 +122,8 @@ instance (SupportedPrim a) => ToCon (Sym a) a where
 instance (SupportedPrim a) => GEvaluateSym Model (Sym a) where
   gevaluateSym fillDefault model (Sym t) = Sym $ evaluateTerm fillDefault model t
 
-instance (SupportedPrim a) => ExtractSymbolics SymbolSet (Sym a) where
-  extractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t
+instance (SupportedPrim a) => GExtractSymbolics SymbolSet (Sym a) where
+  gextractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSym (Sym Bool) () (Sym a) where
   genSymFresh _ = mrgReturn <$> genSymSimpleFresh ()

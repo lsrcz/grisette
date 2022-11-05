@@ -60,8 +60,8 @@ instance SymbolSetOps SymbolSet TypedSymbol where
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
 
-instance ExtractSymbolics SymbolSet SymbolSet where
-  extractSymbolics = id
+instance GExtractSymbolics SymbolSet SymbolSet where
+  gextractSymbolics = id
 
 instance ModelOps Model SymbolSet TypedSymbol where
   emptyModel = Model M.empty

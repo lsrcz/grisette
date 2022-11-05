@@ -407,9 +407,9 @@ unionMBaseTests =
         gevaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "b")) (mrgSingle $ Right (SSBool "c")))
           @=? (mrgSingle $ Left $ CBool False :: UnionMBase SBool (Either SBool SBool)),
       testCase "ExtractSymbolic" $ do
-        extractSymbolics (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+        gextractSymbolics (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
           @=? S.singleton (SSymbol "a")
-        extractSymbolics
+        gextractSymbolics
           ( mrgIf (SSBool "a") (mrgSingle $ Left $ SSBool "b") (mrgSingle $ Right $ SSBool "c") ::
               UnionMBase SBool (Either SBool SBool)
           )

@@ -32,6 +32,7 @@ import Grisette.Core.Data.Class.ToSym
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Class.Evaluate
+import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
 import Grisette.IR.SymPrim.Data.Class.SEq
 import Grisette.IR.SymPrim.Data.Class.SOrd
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors

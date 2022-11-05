@@ -49,7 +49,7 @@ tests =
                     "Class"
                     [ boolTests,
                       gevaluateSymTests,
-                      extractSymbolicsTests,
+                      gextractSymbolicsTests,
                       genSymTests,
                       mergeableTests,
                       seqTests,

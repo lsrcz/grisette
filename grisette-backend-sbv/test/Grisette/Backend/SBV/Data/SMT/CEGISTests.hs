@@ -23,13 +23,14 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.Class.Evaluate
+import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.SymPrim
 import Test.Tasty
 import Test.Tasty.HUnit
 
-testCegis :: (HasCallStack, ExtractSymbolics SymbolSet a, EvaluateSym a, Show a) => GrisetteSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
+testCegis :: (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a) => GrisetteSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
 testCegis config shouldSuccess a bs = do
   x <- cegisFallable' config (a, ssymb "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
   case x of

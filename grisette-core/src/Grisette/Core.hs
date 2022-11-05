@@ -33,7 +33,7 @@ module Grisette.Core
     pattern Conc,
     slocsymb,
     ilocsymb,
-    ExtractSymbolics (..),
+    GExtractSymbolics (..),
 
     -- * UnionM Monad
     UnionMBase,

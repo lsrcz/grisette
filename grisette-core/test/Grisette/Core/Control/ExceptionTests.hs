@@ -40,8 +40,8 @@ exceptionTests =
             AssertionError `gsymCompare` AssertionError @=? (mrgSingle EQ :: UnionMBase SBool Ordering),
           testCase "GEvaluateSym" $ do
             gevaluateSym False () AssertionError @=? AssertionError,
-          testCase "ExtractSymbolics" $ do
-            extractSymbolics AssertionError @=? (S.empty :: S.HashSet Symbol),
+          testCase "GExtractSymbolics" $ do
+            gextractSymbolics AssertionError @=? (S.empty :: S.HashSet Symbol),
           testCase "SimpleMergeable" $ do
             mrgIte (SSBool "a") AssertionError AssertionError @=? AssertionError,
           testCase "Mergeable" $ do
@@ -96,9 +96,9 @@ exceptionTests =
           testCase "GEvaluateSym" $ do
             gevaluateSym False () AssertionViolation @=? AssertionViolation
             gevaluateSym False () AssumptionViolation @=? AssumptionViolation,
-          testCase "ExtractSymbolics" $ do
-            extractSymbolics AssertionViolation @=? (S.empty :: S.HashSet Symbol)
-            extractSymbolics AssumptionViolation @=? (S.empty :: S.HashSet Symbol),
+          testCase "GExtractSymbolics" $ do
+            gextractSymbolics AssertionViolation @=? (S.empty :: S.HashSet Symbol)
+            gextractSymbolics AssumptionViolation @=? (S.empty :: S.HashSet Symbol),
           testCase "Mergeable" $ do
             mrgIf (SSBool "a") (mrgSingle AssumptionViolation) (mrgSingle AssertionViolation)
               @=? ( mrgIf (Not $ SSBool "a") (mrgSingle AssertionViolation) (mrgSingle AssumptionViolation) ::

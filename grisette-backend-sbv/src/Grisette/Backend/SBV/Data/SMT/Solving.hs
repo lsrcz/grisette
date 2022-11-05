@@ -61,7 +61,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
             _ -> return []
     | otherwise = return []
     where
-      allSymbols = extractSymbolics s :: SymbolSet
+      allSymbols = gextractSymbolics s :: SymbolSet
       next :: PM.Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
       next md origm = do
         let newtm =
@@ -91,7 +91,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
   solveFormulaAll = undefined
   cegisFormulas ::
     forall forallArg.
-    (ExtractSymbolics SymbolSet forallArg, GEvaluateSym PM.Model forallArg) =>
+    (GExtractSymbolics SymbolSet forallArg, GEvaluateSym PM.Model forallArg) =>
     GrisetteSMTConfig n ->
     forallArg ->
     SymBool ->
@@ -112,7 +112,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
         loop (exceptFor forallSymbols <$> mr) [] newm
     where
       forallSymbols :: SymbolSet
-      forallSymbols = extractSymbolics foralls
+      forallSymbols = gextractSymbolics foralls
       phi = nots assertion &&~ nots assumption
       negphi = assertion &&~ nots assumption
       check :: Model -> IO (Either SBVC.CheckSatResult (forallArg, PM.Model))

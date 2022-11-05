@@ -265,13 +265,13 @@ instance (SymBoolOp bool, Mergeable bool a, GEvaluateSym model a, GEvaluateSym m
           (go f)
 
 instance
-  (Monoid symbolSet, SymBoolOp bool, ExtractSymbolics symbolSet a, ExtractSymbolics symbolSet bool) =>
-  ExtractSymbolics symbolSet (UnionMBase bool a)
+  (Monoid symbolSet, SymBoolOp bool, GExtractSymbolics symbolSet a, GExtractSymbolics symbolSet bool) =>
+  GExtractSymbolics symbolSet (UnionMBase bool a)
   where
-  extractSymbolics v = go $ underlyingUnion v
+  gextractSymbolics v = go $ underlyingUnion v
     where
-      go (Single x) = extractSymbolics x
-      go (If _ _ cond t f) = extractSymbolics cond <> go t <> go f
+      go (Single x) = gextractSymbolics x
+      go (If _ _ cond t f) = gextractSymbolics cond <> go t <> go f
 
 instance (Hashable bool, Hashable a) => Hashable (UnionMBase bool a) where
   s `hashWithSalt` (UAny _ u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u

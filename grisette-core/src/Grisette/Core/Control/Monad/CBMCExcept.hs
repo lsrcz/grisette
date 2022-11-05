@@ -53,8 +53,8 @@ deriving newtype instance (SymBoolOp bool, GSEq bool e, GSEq bool a) => GSEq boo
 deriving newtype instance (GEvaluateSym model a, GEvaluateSym model b) => GEvaluateSym model (CBMCEither a b)
 
 deriving newtype instance
-  (Monoid symbolSet, ExtractSymbolics symbolSet a, ExtractSymbolics symbolSet b) =>
-  ExtractSymbolics symbolSet (CBMCEither a b)
+  (Monoid symbolSet, GExtractSymbolics symbolSet a, GExtractSymbolics symbolSet b) =>
+  GExtractSymbolics symbolSet (CBMCEither a b)
 
 instance
   ( SymBoolOp bool,
@@ -303,10 +303,10 @@ instance (GEvaluateSym model (m (CBMCEither e a))) => GEvaluateSym model (CBMCEx
   {-# INLINE gevaluateSym #-}
 
 instance
-  (Monoid symbolSet, ExtractSymbolics symbolSet (m (CBMCEither e a))) =>
-  ExtractSymbolics symbolSet (CBMCExceptT e m a)
+  (Monoid symbolSet, GExtractSymbolics symbolSet (m (CBMCEither e a))) =>
+  GExtractSymbolics symbolSet (CBMCExceptT e m a)
   where
-  extractSymbolics (CBMCExceptT v) = extractSymbolics v
+  gextractSymbolics (CBMCExceptT v) = gextractSymbolics v
 
 instance
   (SymBoolOp bool, Mergeable1 bool m, Mergeable bool e, Mergeable bool a) =>

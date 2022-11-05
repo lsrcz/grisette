@@ -58,7 +58,7 @@ instance (SymBoolOp bool) => GSOrd bool AssertionError where
 
 deriving via (Default AssertionError) instance GEvaluateSym a AssertionError
 
-deriving via (Default AssertionError) instance (Monoid a) => ExtractSymbolics a AssertionError
+deriving via (Default AssertionError) instance (Monoid a) => GExtractSymbolics a AssertionError
 
 -- | Verification conditions.
 -- A crashed program path can terminate with either assertion violation errors or assumption violation errors.
@@ -81,7 +81,7 @@ instance (SymBoolOp bool) => GSOrd bool VerificationConditions where
 
 deriving via (Default VerificationConditions) instance GEvaluateSym a VerificationConditions
 
-deriving via (Default VerificationConditions) instance (Monoid a) => ExtractSymbolics a VerificationConditions
+deriving via (Default VerificationConditions) instance (Monoid a) => GExtractSymbolics a VerificationConditions
 
 instance TransformError VerificationConditions VerificationConditions where
   transformError = id
