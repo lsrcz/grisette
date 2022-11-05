@@ -33,11 +33,11 @@ import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Class.Evaluate
 import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
+import Grisette.IR.SymPrim.Data.Class.GenSym
 import Grisette.IR.SymPrim.Data.Class.Mergeable
 import Grisette.IR.SymPrim.Data.Class.SEq
 import Grisette.IR.SymPrim.Data.Class.SOrd
 import Grisette.IR.SymPrim.Data.Class.SimpleMergeable
-import Grisette.IR.SymPrim.Data.Class.GenSym
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model

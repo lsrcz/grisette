@@ -15,10 +15,13 @@ module Grisette.IR.SymPrim.Data.Class.GenSym
   )
 where
 
-import Grisette.Core.Data.Class.GenSym
-import Grisette.IR.SymPrim
-import GHC.Generics
 import Data.Proxy
+import GHC.Generics
+import Grisette.Core.Data.Class.GenSym
+import Grisette.IR.SymPrim.Control.Monad.Union
+import Grisette.IR.SymPrim.Data.Class.Mergeable
+import Grisette.IR.SymPrim.Data.Class.SimpleMergeable
+import Grisette.IR.SymPrim.Data.SymPrim
 
 type GenSym spec a = GGenSym SymBool spec a
 
