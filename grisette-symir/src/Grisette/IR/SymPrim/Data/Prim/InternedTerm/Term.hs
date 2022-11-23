@@ -22,6 +22,7 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     TernaryOp (..),
     TypedSymbol (..),
     SomeTypedSymbol (..),
+    showUntyped,
     withSymbolSupported,
     someTypedSymbol,
     Term (..),

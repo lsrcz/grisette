@@ -41,9 +41,23 @@ import Type.Reflection
 import Unsafe.Coerce
 
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
-  deriving (Eq, Show, Generic, Hashable, Semigroup, Monoid)
+  deriving (Eq, Generic, Hashable, Semigroup, Monoid)
 
-newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Show, Eq, Generic, Hashable)
+instance Show SymbolSet where
+  showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x -> "SymbolSet {" ++ go0 (S.toList s) ++ "}" ++ x
+    where
+      go0 [] = ""
+      go0 [x] = show x
+      go0 (x : xs) = show x ++ ", " ++ go0 xs
+
+newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable)
+
+instance Show Model where
+  showsPrec prec (Model m) = showParen (prec >= 10) $ \x -> "Model {" ++ go0 (M.toList m) ++ "}" ++ x
+    where
+      go0 [] = ""
+      go0 [(SomeTypedSymbol _ s, v)] = showUntyped s ++ " -> " ++ show v
+      go0 ((SomeTypedSymbol _ s, v) : xs) = showUntyped s ++ " -> " ++ show v ++ ", " ++ go0 xs
 
 equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
 equation tsym m = withSymbolSupported tsym $
