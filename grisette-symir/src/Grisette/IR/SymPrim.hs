@@ -19,6 +19,7 @@ module Grisette.IR.SymPrim
     SymbolSet (..),
     Model (..),
     TypedSymbol (..),
+    showUntyped,
     withSymbolSupported,
     SomeTypedSymbol (..),
     someTypedSymbol,

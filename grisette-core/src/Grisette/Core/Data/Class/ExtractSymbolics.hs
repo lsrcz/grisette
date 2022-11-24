@@ -33,7 +33,7 @@ import Generics.Deriving
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
 -- >>> gextractSymbolics ("a" :: SymBool) :: SymbolSet
--- SymbolSet {unSymbolSet = fromList [a :: Bool]}
+-- SymbolSet {a :: Bool}
 --
 -- >>> :{
 --   sort $ HashSet.toList $ unSymbolSet $
