@@ -15,10 +15,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         plan:
-        - { build: stack, arg: "--stack-yaml stack-lts-18.28.yaml", ismain: false }
-        - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false }
-        - { build: stack, arg: "--resolver lts-19.20", ismain: true }
-        - { build: stack, arg: "--resolver nightly", ismain: false }
+        - { build: stack, arg: "--stack-yaml stack-lts-18.28.yaml", ismain: false, experimental: false}
+        - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false, experimental: false }
+        - { build: stack, arg: "--resolver lts-19.20", ismain: true, experimental: false }
+        - { build: stack, arg: "--resolver nightly", ismain: false, experimental: true }
         include:
           - os: macOS-latest
             brew: z3 md5sha1sum gcc@11 gnu-sed
@@ -26,6 +26,7 @@ jobs:
             apt-get: z3
   
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.plan.experimental }}
     steps:
     - name: Install OS Packages
       uses: mstksg/get-package@v1
