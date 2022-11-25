@@ -367,18 +367,18 @@ instance (SymBoolOp bool) => Traversable (UnionMBase bool) where
 instance (SymBoolOp bool, GGenSym bool spec a, GMergeable bool a) => GGenSym bool spec (UnionMBase bool a)
 
 instance (SymBoolOp bool, GGenSym bool spec a) => GenSymSimple spec (UnionMBase bool a) where
-  genSymSimpleFresh spec = do
-    res <- ggenSymFresh spec
+  simpleFresh spec = do
+    res <- gfresh spec
     if not (isMerged res) then error "Not merged" else return res
 
 instance
   (SymBoolOp bool, GGenSym bool a a, GenSymSimple () bool, GMergeable bool a) =>
   GGenSym bool (UnionMBase bool a) a
   where
-  ggenSymFresh spec = go (underlyingUnion $ merge spec)
+  gfresh spec = go (underlyingUnion $ merge spec)
     where
-      go (Single x) = ggenSymFresh x
-      go (If _ _ _ t f) = mrgIf <$> genSymSimpleFresh () <*> go t <*> go f
+      go (Single x) = gfresh x
+      go (If _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
 
 -- Concrete Key HashMaps
 

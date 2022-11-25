@@ -211,14 +211,14 @@ instance ToSym SBool SBool where
 instance GGenSym SBool () SBool
 
 instance GenSymSimple () SBool where
-  genSymSimpleFresh _ = do
-    ident <- getGenSymIdent
-    GenSymIndex i <- nextGenSymIndex
+  simpleFresh _ = do
+    ident <- getFreshIdent
+    FreshIndex i <- nextFreshIndex
     case ident of
-      GenSymIdent s -> return $ ISBool s i
-      GenSymIdentWithInfo s info -> return $ IISBool s i info
+      FreshIdent s -> return $ ISBool s i
+      FreshIdentWithInfo s info -> return $ IISBool s i info
 
 instance GGenSym SBool SBool SBool
 
 instance GenSymSimple SBool SBool where
-  genSymSimpleFresh _ = genSymSimpleFresh ()
+  simpleFresh _ = simpleFresh ()

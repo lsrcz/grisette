@@ -4,7 +4,7 @@
 
 module Grisette.IR.SymPrim.Data.Class.GenSym
   ( GenSym,
-    genSymFresh,
+    fresh,
     genSym,
     chooseFresh,
     chooseSimpleFresh,
@@ -25,34 +25,34 @@ import Grisette.IR.SymPrim.Data.SymPrim
 
 type GenSym spec a = GGenSym SymBool spec a
 
-genSymFresh :: (GenSym spec a, MonadGenSymFresh m, MonadUnion u) => spec -> m (u a)
-genSymFresh = ggenSymFresh
-{-# INLINE genSymFresh #-}
+fresh :: (GenSym spec a, MonadFresh m, MonadUnion u) => spec -> m (u a)
+fresh = gfresh
+{-# INLINE fresh #-}
 
-genSym :: (GenSym spec a, MonadUnion u) => spec -> GenSymIdent -> u a
+genSym :: (GenSym spec a, MonadUnion u) => spec -> FreshIdent -> u a
 genSym = ggenSym
 {-# INLINE genSym #-}
 
-chooseFresh :: (Mergeable a, MonadGenSymFresh m, MonadUnion u) => [a] -> m (u a)
+chooseFresh :: (Mergeable a, MonadFresh m, MonadUnion u) => [a] -> m (u a)
 chooseFresh = gchooseFresh
 {-# INLINE chooseFresh #-}
 
-choose :: (Mergeable a, MonadUnion u) => [a] -> GenSymIdent -> u a
+choose :: (Mergeable a, MonadUnion u) => [a] -> FreshIdent -> u a
 choose = gchoose
 {-# INLINE choose #-}
 
-chooseSimpleFresh :: (SimpleMergeable a, MonadGenSymFresh m) => [a] -> m a
+chooseSimpleFresh :: (SimpleMergeable a, MonadFresh m) => [a] -> m a
 chooseSimpleFresh = gchooseSimpleFresh (Proxy @SymBool)
 {-# INLINE chooseSimpleFresh #-}
 
-chooseSimple :: (SimpleMergeable a) => [a] -> GenSymIdent -> a
+chooseSimple :: (SimpleMergeable a) => [a] -> FreshIdent -> a
 chooseSimple = gchooseSimple (Proxy @SymBool)
 {-# INLINE chooseSimple #-}
 
-chooseUnionFresh :: (Mergeable a, MonadGenSymFresh m, MonadUnion u) => [u a] -> m (u a)
+chooseUnionFresh :: (Mergeable a, MonadFresh m, MonadUnion u) => [u a] -> m (u a)
 chooseUnionFresh = gchooseUnionFresh
 {-# INLINE chooseUnionFresh #-}
 
-chooseUnion :: (Mergeable a, MonadUnion u) => [u a] -> GenSymIdent -> u a
+chooseUnion :: (Mergeable a, MonadUnion u) => [u a] -> FreshIdent -> u a
 chooseUnion = gchooseUnion
 {-# INLINE chooseUnion #-}

@@ -79,7 +79,7 @@ module Grisette.IR.SymPrim
     SubstituteSym,
     substituteSym,
     GenSym,
-    genSymFresh,
+    fresh,
     genSym,
     chooseFresh,
     chooseSimpleFresh,
