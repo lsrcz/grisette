@@ -72,13 +72,13 @@ instance
   ) =>
   GenSymSimple (CBMCEither a b) (CBMCEither a b)
   where
-  genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
+  simpleFresh = derivedSameShapeSimpleFresh
 
 instance
   (SymBoolOp bool, GenSymSimple () bool, GGenSym bool () a, GMergeable bool a, GGenSym bool () b, GMergeable bool b) =>
   GGenSym bool () (CBMCEither a b)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 deriving newtype instance (SymBoolOp bool, GSOrd bool a, GSOrd bool b) => GSOrd bool (CBMCEither a b)
 
@@ -330,8 +330,8 @@ instance
   ) =>
   GGenSym bool spec (CBMCExceptT a m b)
   where
-  ggenSymFresh v = do
-    x <- ggenSymFresh v
+  gfresh v = do
+    x <- gfresh v
     return $ merge . fmap CBMCExceptT $ x
 
 instance
@@ -340,7 +340,7 @@ instance
   ) =>
   GenSymSimple spec (CBMCExceptT a m b)
   where
-  genSymSimpleFresh v = CBMCExceptT <$> genSymSimpleFresh v
+  simpleFresh v = CBMCExceptT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
@@ -348,7 +348,7 @@ instance
   ) =>
   GenSymSimple (CBMCExceptT e m a) (CBMCExceptT e m a)
   where
-  genSymSimpleFresh (CBMCExceptT v) = CBMCExceptT <$> genSymSimpleFresh v
+  simpleFresh (CBMCExceptT v) = CBMCExceptT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}

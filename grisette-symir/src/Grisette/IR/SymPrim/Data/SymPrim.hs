@@ -126,20 +126,20 @@ instance (SupportedPrim a) => GExtractSymbolics SymbolSet (Sym a) where
   gextractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GGenSym (Sym Bool) () (Sym a) where
-  ggenSymFresh _ = mrgReturn <$> genSymSimpleFresh ()
+  gfresh _ = mrgReturn <$> simpleFresh ()
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSymSimple () (Sym a) where
-  genSymSimpleFresh _ = do
-    ident <- getGenSymIdent
-    GenSymIndex i <- nextGenSymIndex
+  simpleFresh _ = do
+    ident <- getFreshIdent
+    FreshIndex i <- nextFreshIndex
     case ident of
-      GenSymIdent s -> return $ isymb s i
-      GenSymIdentWithInfo s info -> return $ iinfosymb s i info
+      FreshIdent s -> return $ isymb s i
+      FreshIdentWithInfo s info -> return $ iinfosymb s i info
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GGenSym (Sym Bool) (Sym a) (Sym a)
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSymSimple (Sym a) (Sym a) where
-  genSymSimpleFresh _ = genSymSimpleFresh ()
+  simpleFresh _ = simpleFresh ()
 
 instance (SupportedPrim a) => Show (Sym a) where
   show (Sym t) = pformat t

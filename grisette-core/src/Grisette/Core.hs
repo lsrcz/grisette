@@ -132,20 +132,20 @@ module Grisette.Core
     -- * Symbolic Generation
 
     -- ** Symbolic Generation Context
-    GenSymIndex (..),
-    GenSymIdent,
-    pattern GenSymIdent,
+    FreshIndex (..),
+    FreshIdent,
+    pattern FreshIdent,
     name,
     nameWithInfo,
     FileLocation (..),
     nameWithLoc,
 
     -- ** Symbolic Generation Monad
-    MonadGenSymFresh (..),
-    GenSymFresh,
-    GenSymFreshT,
-    runGenSymFresh,
-    runGenSymFreshT,
+    MonadFresh (..),
+    Fresh,
+    FreshT,
+    runFresh,
+    runFreshT,
 
     -- ** Symbolic Generation Class
     GGenSym (..),
@@ -154,9 +154,9 @@ module Grisette.Core
     genSymSimple,
 
     -- ** Symbolic Generation Class Derivation
-    derivedNoSpecGGenSymFresh,
-    derivedNoSpecGenSymSimpleFresh,
-    derivedSameShapeGenSymSimpleFresh,
+    derivedNoSpecGFresh,
+    derivedNoSpecSimpleFresh,
+    derivedSameShapeSimpleFresh,
 
     -- ** Symbolic choice
     gchooseFresh,

@@ -17,24 +17,24 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.GenSym
-  ( GenSymIndex (..),
-    GenSymIdent,
-    pattern GenSymIdent,
-    pattern GenSymIdentWithInfo,
+  ( FreshIndex (..),
+    FreshIdent,
+    pattern FreshIdent,
+    pattern FreshIdentWithInfo,
     name,
     nameWithInfo,
-    MonadGenSymFresh (..),
-    GenSymFreshT,
-    GenSymFresh,
-    runGenSymFreshT,
-    runGenSymFresh,
+    MonadFresh (..),
+    FreshT,
+    Fresh,
+    runFreshT,
+    runFresh,
     ggenSym,
     genSymSimple,
     GGenSym (..),
     GenSymSimple (..),
-    derivedNoSpecGGenSymFresh,
-    derivedNoSpecGenSymSimpleFresh,
-    derivedSameShapeGenSymSimpleFresh,
+    derivedNoSpecGFresh,
+    derivedNoSpecSimpleFresh,
+    derivedSameShapeSimpleFresh,
     gchooseFresh,
     gchooseSimpleFresh,
     gchooseUnionFresh,
@@ -77,14 +77,14 @@ import Language.Haskell.TH.Syntax hiding (lift)
 --
 -- To generate fresh variables, a monadic stateful context will be maintained.
 -- Every time a new variable is generated, the index will be increased.
-newtype GenSymIndex = GenSymIndex Int
+newtype FreshIndex = FreshIndex Int
   deriving (Show)
   deriving (Eq, Ord, Num) via Int
 
-instance (SymBoolOp bool) => GMergeable bool GenSymIndex where
+instance (SymBoolOp bool) => GMergeable bool FreshIndex where
   gmergingStrategy = SimpleStrategy $ \_ t f -> max t f
 
-instance (SymBoolOp bool) => GSimpleMergeable bool GenSymIndex where
+instance (SymBoolOp bool) => GSimpleMergeable bool FreshIndex where
   gmrgIte _ = max
 
 -- | Identifier type used for 'GenSym'
@@ -106,29 +106,29 @@ instance (SymBoolOp bool) => GSimpleMergeable bool GenSymIndex where
 --
 -- >>> nameWithInfo "a" (1 :: Int)
 -- a:1
-data GenSymIdent where
-  GenSymIdent :: String -> GenSymIdent
-  GenSymIdentWithInfo :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> GenSymIdent
+data FreshIdent where
+  FreshIdent :: String -> FreshIdent
+  FreshIdentWithInfo :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> FreshIdent
 
-instance Show GenSymIdent where
-  show (GenSymIdent i) = i
-  show (GenSymIdentWithInfo s i) = s ++ ":" ++ show i
+instance Show FreshIdent where
+  show (FreshIdent i) = i
+  show (FreshIdentWithInfo s i) = s ++ ":" ++ show i
 
-instance IsString GenSymIdent where
+instance IsString FreshIdent where
   fromString = name
 
-instance Eq GenSymIdent where
-  GenSymIdent l == GenSymIdent r = l == r
-  GenSymIdentWithInfo l (linfo :: linfo) == GenSymIdentWithInfo r (rinfo :: rinfo) = case eqT @linfo @rinfo of
+instance Eq FreshIdent where
+  FreshIdent l == FreshIdent r = l == r
+  FreshIdentWithInfo l (linfo :: linfo) == FreshIdentWithInfo r (rinfo :: rinfo) = case eqT @linfo @rinfo of
     Just Refl -> l == r && linfo == rinfo
     _ -> False
   _ == _ = False
 
-instance Ord GenSymIdent where
-  GenSymIdent l <= GenSymIdent r = l <= r
-  GenSymIdent _ <= _ = True
-  _ <= GenSymIdent _ = False
-  GenSymIdentWithInfo l (linfo :: linfo) <= GenSymIdentWithInfo r (rinfo :: rinfo) =
+instance Ord FreshIdent where
+  FreshIdent l <= FreshIdent r = l <= r
+  FreshIdent _ <= _ = True
+  _ <= FreshIdent _ = False
+  FreshIdentWithInfo l (linfo :: linfo) <= FreshIdentWithInfo r (rinfo :: rinfo) =
     l < r
       || ( l == r
              && ( case eqT @linfo @rinfo of
@@ -137,133 +137,133 @@ instance Ord GenSymIdent where
                 )
          )
 
-instance Hashable GenSymIdent where
-  hashWithSalt s (GenSymIdent n) = s `hashWithSalt` n
-  hashWithSalt s (GenSymIdentWithInfo n i) = s `hashWithSalt` n `hashWithSalt` i
+instance Hashable FreshIdent where
+  hashWithSalt s (FreshIdent n) = s `hashWithSalt` n
+  hashWithSalt s (FreshIdentWithInfo n i) = s `hashWithSalt` n `hashWithSalt` i
 
-instance Lift GenSymIdent where
-  liftTyped (GenSymIdent n) = [||GenSymIdent n||]
-  liftTyped (GenSymIdentWithInfo n i) = [||GenSymIdentWithInfo n i||]
+instance Lift FreshIdent where
+  liftTyped (FreshIdent n) = [||FreshIdent n||]
+  liftTyped (FreshIdentWithInfo n i) = [||FreshIdentWithInfo n i||]
 
-instance NFData GenSymIdent where
-  rnf (GenSymIdent n) = rnf n
-  rnf (GenSymIdentWithInfo n i) = rnf n `seq` rnf i
+instance NFData FreshIdent where
+  rnf (FreshIdent n) = rnf n
+  rnf (FreshIdentWithInfo n i) = rnf n `seq` rnf i
 
 -- | Simple name identifier.
 -- The same identifier refers to the same symbolic variable in the whole program.
 --
 -- The user need to ensure uniqueness by themselves if they need to.
-name :: String -> GenSymIdent
-name = GenSymIdent
+name :: String -> FreshIdent
+name = FreshIdent
 
 -- | Identifier with extra information.
 -- The same name with the same information
 -- refers to the same symbolic variable in the whole program.
 --
 -- The user need to ensure uniqueness by themselves if they need to.
-nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> GenSymIdent
-nameWithInfo = GenSymIdentWithInfo
+nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> FreshIdent
+nameWithInfo = FreshIdentWithInfo
 
-class Monad m => MonadGenSymFresh m where
-  nextGenSymIndex :: m GenSymIndex
-  getGenSymIdent :: m GenSymIdent
+class Monad m => MonadFresh m where
+  nextFreshIndex :: m FreshIndex
+  getFreshIdent :: m FreshIdent
 
 -- | A symbolic generation monad transformer.
 -- It is a reader monad transformer for identifiers and
 -- a state monad transformer for indices.
 --
 -- Each time a fresh symbolic variable is generated, the index should be increased.
-newtype GenSymFreshT m a = GenSymFreshT {runGenSymFreshT' :: GenSymIdent -> GenSymIndex -> m (a, GenSymIndex)}
+newtype FreshT m a = FreshT {runFreshT' :: FreshIdent -> FreshIndex -> m (a, FreshIndex)}
 
 instance
   (SymBoolOp bool, GMergeable bool a, GMergeable1 bool m) =>
-  GMergeable bool (GenSymFreshT m a)
+  GMergeable bool (FreshT m a)
   where
   gmergingStrategy =
-    gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy gmergingStrategy1)) GenSymFreshT runGenSymFreshT'
+    gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy gmergingStrategy1)) FreshT runFreshT'
 
-instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (GenSymFreshT m) where
+instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (FreshT m) where
   liftGMergingStrategy m =
     gwrapStrategy
       (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy))))
-      GenSymFreshT
-      runGenSymFreshT'
+      FreshT
+      runFreshT'
 
 instance
   (SymBoolOp bool, GUnionLike bool m, GMergeable bool a) =>
-  GSimpleMergeable bool (GenSymFreshT m a)
+  GSimpleMergeable bool (FreshT m a)
   where
   gmrgIte = mrgIf
 
 instance
   (SymBoolOp bool, GUnionLike bool m) =>
-  GSimpleMergeable1 bool (GenSymFreshT m)
+  GSimpleMergeable1 bool (FreshT m)
   where
   liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
 instance
   (SymBoolOp bool, GUnionLike bool m) =>
-  GUnionLike bool (GenSymFreshT m)
+  GUnionLike bool (FreshT m)
   where
-  mergeWithStrategy s (GenSymFreshT f) =
-    GenSymFreshT $ \ident index -> mergeWithStrategy (liftGMergingStrategy2 s gmergingStrategy) $ f ident index
-  mrgIfWithStrategy s cond (GenSymFreshT t) (GenSymFreshT f) =
-    GenSymFreshT $ \ident index -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t ident index) (f ident index)
-  single x = GenSymFreshT $ \_ i -> single (x, i)
-  unionIf cond (GenSymFreshT t) (GenSymFreshT f) =
-    GenSymFreshT $ \ident index -> unionIf cond (t ident index) (f ident index)
+  mergeWithStrategy s (FreshT f) =
+    FreshT $ \ident index -> mergeWithStrategy (liftGMergingStrategy2 s gmergingStrategy) $ f ident index
+  mrgIfWithStrategy s cond (FreshT t) (FreshT f) =
+    FreshT $ \ident index -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t ident index) (f ident index)
+  single x = FreshT $ \_ i -> single (x, i)
+  unionIf cond (FreshT t) (FreshT f) =
+    FreshT $ \ident index -> unionIf cond (t ident index) (f ident index)
 
 -- | Run the symbolic generation with the given identifier and 0 as the initial index.
-runGenSymFreshT :: (Monad m) => GenSymFreshT m a -> GenSymIdent -> m a
-runGenSymFreshT m ident = fst <$> runGenSymFreshT' m ident (GenSymIndex 0)
+runFreshT :: (Monad m) => FreshT m a -> FreshIdent -> m a
+runFreshT m ident = fst <$> runFreshT' m ident (FreshIndex 0)
 
-instance (Functor f) => Functor (GenSymFreshT f) where
-  fmap f (GenSymFreshT s) = GenSymFreshT $ \ident idx -> first f <$> s ident idx
+instance (Functor f) => Functor (FreshT f) where
+  fmap f (FreshT s) = FreshT $ \ident idx -> first f <$> s ident idx
 
-instance (Applicative m, Monad m) => Applicative (GenSymFreshT m) where
-  pure a = GenSymFreshT $ \_ idx -> pure (a, idx)
-  GenSymFreshT fs <*> GenSymFreshT as = GenSymFreshT $ \ident idx -> do
+instance (Applicative m, Monad m) => Applicative (FreshT m) where
+  pure a = FreshT $ \_ idx -> pure (a, idx)
+  FreshT fs <*> FreshT as = FreshT $ \ident idx -> do
     (f, idx') <- fs ident idx
     (a, idx'') <- as ident idx'
     return (f a, idx'')
 
-instance (Monad m) => Monad (GenSymFreshT m) where
-  (GenSymFreshT s) >>= f = GenSymFreshT $ \ident idx -> do
+instance (Monad m) => Monad (FreshT m) where
+  (FreshT s) >>= f = FreshT $ \ident idx -> do
     (a, idx') <- s ident idx
-    runGenSymFreshT' (f a) ident idx'
+    runFreshT' (f a) ident idx'
 
-instance MonadTrans GenSymFreshT where
-  lift x = GenSymFreshT $ \_ index -> (,index) <$> x
+instance MonadTrans FreshT where
+  lift x = FreshT $ \_ index -> (,index) <$> x
 
-liftGenSymFreshTCache :: (Functor m) => Catch e m (a, GenSymIndex) -> Catch e (GenSymFreshT m) a
-liftGenSymFreshTCache catchE (GenSymFreshT m) h =
-  GenSymFreshT $ \ident index -> m ident index `catchE` \e -> runGenSymFreshT' (h e) ident index
+liftFreshTCache :: (Functor m) => Catch e m (a, FreshIndex) -> Catch e (FreshT m) a
+liftFreshTCache catchE (FreshT m) h =
+  FreshT $ \ident index -> m ident index `catchE` \e -> runFreshT' (h e) ident index
 
-instance (MonadError e m) => MonadError e (GenSymFreshT m) where
+instance (MonadError e m) => MonadError e (FreshT m) where
   throwError = lift . throwError
-  catchError = liftGenSymFreshTCache catchError
+  catchError = liftFreshTCache catchError
 
--- | 'GenSymFreshT' specialized with Identity.
-type GenSymFresh = GenSymFreshT Identity
+-- | 'FreshT' specialized with Identity.
+type Fresh = FreshT Identity
 
 -- | Run the symbolic generation with the given identifier and 0 as the initial index.
-runGenSymFresh :: GenSymFresh a -> GenSymIdent -> a
-runGenSymFresh m ident = runIdentity $ runGenSymFreshT m ident
+runFresh :: Fresh a -> FreshIdent -> a
+runFresh m ident = runIdentity $ runFreshT m ident
 
-instance Monad m => MonadGenSymFresh (GenSymFreshT m) where
-  nextGenSymIndex = GenSymFreshT $ \_ idx -> return (idx, idx + 1)
-  getGenSymIdent = GenSymFreshT $ curry return
+instance Monad m => MonadFresh (FreshT m) where
+  nextFreshIndex = FreshT $ \_ idx -> return (idx, idx + 1)
+  getFreshIdent = FreshT $ curry return
 
 {-
-instance (Monad m) => MonadState GenSymIndex (GenSymFreshT m) where
-  state f = GenSymFreshT $ \_ idx -> return $ f idx
-  put newidx = GenSymFreshT $ \_ _ -> return ((), newidx)
-  get = GenSymFreshT $ \_ idx -> return (idx, idx)
+instance (Monad m) => MonadState FreshIndex (FreshT m) where
+  state f = FreshT $ \_ idx -> return $ f idx
+  put newidx = FreshT $ \_ _ -> return ((), newidx)
+  get = FreshT $ \_ idx -> return (idx, idx)
 
-instance (Monad m) => MonadReader GenSymIdent (GenSymFreshT m) where
-  ask = GenSymFreshT $ curry return
-  local f (GenSymFreshT s) = GenSymFreshT $ \ident idx -> s (f ident) idx
-  reader f = GenSymFreshT $ \r s -> return (f r, s)
+instance (Monad m) => MonadReader FreshIdent (FreshT m) where
+  ask = FreshT $ curry return
+  local f (FreshT s) = FreshT $ \ident idx -> s (f ident) idx
+  reader f = FreshT $ \r s -> return (f r, s)
   -}
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
@@ -271,110 +271,110 @@ instance (Monad m) => MonadReader GenSymIdent (GenSymFreshT m) where
 -- The result will be wrapped in a union-like monad.
 -- This ensures that we can generate those types with complex merging rules.
 --
--- The uniqueness with be managed with the a monadic context. 'GenSymFresh' and 'GenSymFreshT' can be useful.
+-- The uniqueness with be managed with the a monadic context. 'Fresh' and 'FreshT' can be useful.
 class (SymBoolOp bool, GMergeable bool a) => GGenSym bool spec a where
   -- | Generate a symbolic value given some specification. The uniqueness is ensured.
   --
   -- The following example generates a symbolic boolean. No specification is needed.
   --
-  -- >>> runGenSymFresh (ggenSymFresh ()) "a" :: UnionM SymBool
+  -- >>> runFresh (gfresh ()) "a" :: UnionM SymBool
   -- UMrg (Single a@0)
   --
   -- The following example generates booleans, which cannot be merged into a single value with type 'Bool'.
   -- No specification is needed.
   --
-  -- >>> runGenSymFresh (ggenSymFresh ()) "a" :: UnionM Bool
+  -- >>> runFresh (gfresh ()) "a" :: UnionM Bool
   -- UMrg (If a@0 (Single False) (Single True))
   --
   -- The following example generates @Maybe Bool@s.
   -- There are more than one symbolic primitives introduced, and their uniqueness is ensured.
   -- No specification is needed.
   --
-  -- >>> runGenSymFresh (ggenSymFresh ()) "a" :: UnionM (Maybe Bool)
+  -- >>> runFresh (gfresh ()) "a" :: UnionM (Maybe Bool)
   -- UMrg (If a@0 (Single Nothing) (If a@1 (Single (Just False)) (Single (Just True))))
   --
   -- The following example generates lists of symbolic booleans with length 1 to 2.
   --
-  -- >>> runGenSymFresh (ggenSymFresh (ListSpec 1 2 ())) "a" :: UnionM [SymBool]
+  -- >>> runFresh (gfresh (ListSpec 1 2 ())) "a" :: UnionM [SymBool]
   -- UMrg (If a@2 (Single [a@1]) (Single [a@0,a@1]))
   --
   -- When multiple symbolic variables are generated, the uniqueness can be ensured.
   --
-  -- >>> runGenSymFresh (do; a <- ggenSymFresh (); b <- ggenSymFresh (); return (a, b)) "a" :: (UnionM SymBool, UnionM SymBool)
+  -- >>> runFresh (do; a <- gfresh (); b <- gfresh (); return (a, b)) "a" :: (UnionM SymBool, UnionM SymBool)
   -- (UMrg (Single a@0),UMrg (Single a@1))
   --
   -- N.B.: the examples are not executable solely with @grisette-core@ package, and need support from @grisette-symprim@ package.
-  ggenSymFresh ::
-    ( MonadGenSymFresh m,
+  gfresh ::
+    ( MonadFresh m,
       GMonadUnion bool u
     ) =>
     spec ->
     m (u a)
-  default ggenSymFresh ::
+  default gfresh ::
     (GenSymSimple spec a) =>
-    ( MonadGenSymFresh m,
+    ( MonadFresh m,
       GMonadUnion bool u
     ) =>
     spec ->
     m (u a)
-  ggenSymFresh spec = mrgSingle <$> genSymSimpleFresh spec
+  gfresh spec = mrgSingle <$> simpleFresh spec
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
 -- The uniqueness need to be ensured by the uniqueness of the provided identifier.
-ggenSym :: (GGenSym bool spec a, GMonadUnion bool u) => spec -> GenSymIdent -> u a
-ggenSym = runGenSymFresh . ggenSymFresh
+ggenSym :: (GGenSym bool spec a, GMonadUnion bool u) => spec -> FreshIdent -> u a
+ggenSym = runFresh . gfresh
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
 --
 -- The result will __/not/__ be wrapped in a union-like monad.
 --
--- The uniqueness with be managed with the a monadic context. 'GenSymFresh' and 'GenSymFreshT' can be useful.
+-- The uniqueness with be managed with the a monadic context. 'Fresh' and 'FreshT' can be useful.
 class GenSymSimple spec a where
   -- | Generate a symbolic value given some specification. The uniqueness is ensured.
   --
   -- The following example generates a symbolic boolean. No specification is needed.
   --
-  -- >>> runGenSymFresh (genSymSimpleFresh ()) "a" :: SymBool
+  -- >>> runFresh (simpleFresh ()) "a" :: SymBool
   -- a@0
   --
   -- The example shows that why the system cannot infer the symbolic boolean type.
   --
-  -- >>> runGenSymFresh (genSymSimpleFresh ()) "a" :: ()
+  -- >>> runFresh (simpleFresh ()) "a" :: ()
   -- ()
   --
   -- The following code generates list of symbolic boolean with length 2.
   -- As the length is fixed, we don't have to wrap the result in unions.
   --
-  -- >>> runGenSymFresh (genSymSimpleFresh (SimpleListSpec 2 ())) "a" :: [SymBool]
+  -- >>> runFresh (simpleFresh (SimpleListSpec 2 ())) "a" :: [SymBool]
   -- [a@0,a@1]
   --
   -- N.B.: the examples are not executable solely with @grisette-core@ package, and need support from @grisette-symprim@ package.
-  genSymSimpleFresh ::
-    ( MonadGenSymFresh m
+  simpleFresh ::
+    ( MonadFresh m
     ) =>
     spec ->
     m a
 
 -- | Generate a simple symbolic variable wrapped in a Union without the monadic context.
 -- The uniqueness need to be ensured by the uniqueness of the provided identifier.
-genSymSimple :: forall spec a. (GenSymSimple spec a) => spec -> GenSymIdent -> a
-genSymSimple = runGenSymFresh . genSymSimpleFresh
+genSymSimple :: forall spec a. (GenSymSimple spec a) => spec -> FreshIdent -> a
+genSymSimple = runFresh . simpleFresh
 
 class GenSymNoSpec bool a where
-  genSymFreshNoSpec ::
-    ( MonadGenSymFresh m,
+  freshNoSpec ::
+    ( MonadFresh m,
       GMonadUnion bool u
     ) =>
     m (u (a c))
 
 instance (SymBoolOp bool) => GenSymNoSpec bool U1 where
-  genSymFreshNoSpec = return $ mrgSingle U1
+  freshNoSpec = return $ mrgSingle U1
 
 instance (SymBoolOp bool, GGenSym bool () c) => GenSymNoSpec bool (K1 i c) where
-  genSymFreshNoSpec = fmap K1 <$> ggenSymFresh ()
+  freshNoSpec = fmap K1 <$> gfresh ()
 
 instance (SymBoolOp bool, GenSymNoSpec bool a) => GenSymNoSpec bool (M1 i c a) where
-  genSymFreshNoSpec = fmap M1 <$> genSymFreshNoSpec
+  freshNoSpec = fmap M1 <$> freshNoSpec
 
 instance
   ( SymBoolOp bool,
@@ -386,31 +386,31 @@ instance
   ) =>
   GenSymNoSpec bool (a :+: b)
   where
-  genSymFreshNoSpec ::
+  freshNoSpec ::
     forall m u c.
-    ( MonadGenSymFresh m,
+    ( MonadFresh m,
       GMonadUnion bool u
     ) =>
     m (u ((a :+: b) c))
-  genSymFreshNoSpec = do
-    cond :: bool <- genSymSimpleFresh ()
-    l :: u (a c) <- genSymFreshNoSpec
-    r :: u (b c) <- genSymFreshNoSpec
+  freshNoSpec = do
+    cond :: bool <- simpleFresh ()
+    l :: u (a c) <- freshNoSpec
+    r :: u (b c) <- freshNoSpec
     return $ mrgIf cond (fmap L1 l) (fmap R1 r)
 
 instance
   (SymBoolOp bool, GenSymSimple () bool, GenSymNoSpec bool a, GenSymNoSpec bool b) =>
   GenSymNoSpec bool (a :*: b)
   where
-  genSymFreshNoSpec ::
+  freshNoSpec ::
     forall m u c.
-    ( MonadGenSymFresh m,
+    ( MonadFresh m,
       GMonadUnion bool u
     ) =>
     m (u ((a :*: b) c))
-  genSymFreshNoSpec = do
-    l :: u (a c) <- genSymFreshNoSpec
-    r :: u (b c) <- genSymFreshNoSpec
+  freshNoSpec = do
+    l :: u (a c) <- freshNoSpec
+    r :: u (b c) <- freshNoSpec
     return $ do
       l1 <- l
       r1 <- r
@@ -418,65 +418,65 @@ instance
 
 -- | We cannot provide DerivingVia style derivation for 'GenSym'.
 --
--- This 'genSymFresh' implementation is for the types that does not need any specification.
+-- This 'fresh' implementation is for the types that does not need any specification.
 -- It will generate product types by generating each fields with '()' as specification,
 -- and generate all possible values for a sum type.
 --
 -- N.B. Never use on recursive types
-derivedNoSpecGGenSymFresh ::
+derivedNoSpecGFresh ::
   forall bool a m u.
   ( Generic a,
     SymBoolOp bool,
     GenSymNoSpec bool (Rep a),
     GMergeable bool a,
-    MonadGenSymFresh m,
+    MonadFresh m,
     GMonadUnion bool u
   ) =>
   () ->
   m (u a)
-derivedNoSpecGGenSymFresh _ = merge . fmap to <$> genSymFreshNoSpec
+derivedNoSpecGFresh _ = merge . fmap to <$> freshNoSpec
 
 class GenSymSimpleNoSpec a where
-  genSymSimpleFreshNoSpec :: (MonadGenSymFresh m) => m (a c)
+  simpleFreshNoSpec :: (MonadFresh m) => m (a c)
 
 instance GenSymSimpleNoSpec U1 where
-  genSymSimpleFreshNoSpec = return U1
+  simpleFreshNoSpec = return U1
 
 instance (GenSymSimple () c) => GenSymSimpleNoSpec (K1 i c) where
-  genSymSimpleFreshNoSpec = K1 <$> genSymSimpleFresh ()
+  simpleFreshNoSpec = K1 <$> simpleFresh ()
 
 instance (GenSymSimpleNoSpec a) => GenSymSimpleNoSpec (M1 i c a) where
-  genSymSimpleFreshNoSpec = M1 <$> genSymSimpleFreshNoSpec
+  simpleFreshNoSpec = M1 <$> simpleFreshNoSpec
 
 instance
   (GenSymSimpleNoSpec a, GenSymSimpleNoSpec b) =>
   GenSymSimpleNoSpec (a :*: b)
   where
-  genSymSimpleFreshNoSpec = do
-    l :: a c <- genSymSimpleFreshNoSpec
-    r :: b c <- genSymSimpleFreshNoSpec
+  simpleFreshNoSpec = do
+    l :: a c <- simpleFreshNoSpec
+    r :: b c <- simpleFreshNoSpec
     return $ l :*: r
 
 -- | We cannot provide DerivingVia style derivation for 'GenSymSimple'.
 --
--- This 'genSymSimpleFresh' implementation is for the types that does not need any specification.
+-- This 'simpleFresh' implementation is for the types that does not need any specification.
 -- It will generate product types by generating each fields with '()' as specification.
 -- It will not work on sum types.
 --
 -- N.B. Never use on recursive types
-derivedNoSpecGenSymSimpleFresh ::
+derivedNoSpecSimpleFresh ::
   forall a m.
   ( Generic a,
     GenSymSimpleNoSpec (Rep a),
-    MonadGenSymFresh m
+    MonadFresh m
   ) =>
   () ->
   m a
-derivedNoSpecGenSymSimpleFresh _ = to <$> genSymSimpleFreshNoSpec
+derivedNoSpecSimpleFresh _ = to <$> simpleFreshNoSpec
 
 class GenSymSameShape a where
   genSymSameShapeFresh ::
-    ( MonadGenSymFresh m
+    ( MonadFresh m
     ) =>
     a c ->
     m (a c)
@@ -485,7 +485,7 @@ instance GenSymSameShape U1 where
   genSymSameShapeFresh _ = return U1
 
 instance (GenSymSimple c c) => GenSymSameShape (K1 i c) where
-  genSymSameShapeFresh (K1 c) = K1 <$> genSymSimpleFresh c
+  genSymSameShapeFresh (K1 c) = K1 <$> simpleFresh c
 
 instance (GenSymSameShape a) => GenSymSameShape (M1 i c a) where
   genSymSameShapeFresh (M1 a) = M1 <$> genSymSameShapeFresh a
@@ -508,21 +508,21 @@ instance
 
 -- | We cannot provide DerivingVia style derivation for 'GenSymSimple'.
 --
--- This 'genSymSimpleFresh' implementation is for the types that can be generated with a reference value of the same type.
+-- This 'simpleFresh' implementation is for the types that can be generated with a reference value of the same type.
 --
 -- For sum types, it will generate the result with the same data constructor.
 -- For product types, it will generate the result by generating each field with the corresponding reference value.
 --
 -- N.B. Can be used on recursive types
-derivedSameShapeGenSymSimpleFresh ::
+derivedSameShapeSimpleFresh ::
   forall a m.
   ( Generic a,
     GenSymSameShape (Rep a),
-    MonadGenSymFresh m
+    MonadFresh m
   ) =>
   a ->
   m a
-derivedSameShapeGenSymSimpleFresh a = to <$> genSymSameShapeFresh (from a)
+derivedSameShapeSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 
 -- | Symbolically chooses one of the provided values.
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
@@ -530,21 +530,21 @@ derivedSameShapeGenSymSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 --
 -- The result will be wrapped in a union-like monad, and also a monad maintaining the 'GenSym' context.
 --
--- >>> runGenSymFresh (gchooseFresh [1,2,3]) "a" :: UnionM Integer
+-- >>> runFresh (gchooseFresh [1,2,3]) "a" :: UnionM Integer
 -- UMrg (If a@0 (Single 1) (If a@1 (Single 2) (Single 3)))
 gchooseFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
     GMergeable bool a,
     GenSymSimple () bool,
-    MonadGenSymFresh m,
+    MonadFresh m,
     GMonadUnion bool u
   ) =>
   [a] ->
   m (u a)
 gchooseFresh [x] = return $ mrgSingle x
 gchooseFresh (r : rs) = do
-  b <- genSymSimpleFresh ()
+  b <- simpleFresh ()
   res <- gchooseFresh rs
   return $ mrgIf b (mrgSingle r) res
 gchooseFresh [] = error "gchooseFresh expects at least one value"
@@ -557,32 +557,32 @@ gchoose ::
     GMonadUnion bool u
   ) =>
   [a] ->
-  GenSymIdent ->
+  FreshIdent ->
   u a
-gchoose = runGenSymFresh . gchooseFresh
+gchoose = runFresh . gchooseFresh
 
 -- | Symbolically chooses one of the provided values.
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
 -- these variables to conditionally select one of the @n@ provided expressions.
 --
 -- The result will __/not/__ be wrapped in a union-like monad, but will be wrapped in a monad maintaining the 'GenSym' context.
--- Similar to 'genSymSimpleFresh', you need to tell the system what symbolic boolean type to use.
+-- Similar to 'simpleFresh', you need to tell the system what symbolic boolean type to use.
 --
--- >>> runGenSymFresh (gchooseSimpleFresh (Proxy @SymBool) [ssymb "b", ssymb "c", ssymb "d"]) "a" :: SymInteger
+-- >>> runFresh (gchooseSimpleFresh (Proxy @SymBool) [ssymb "b", ssymb "c", ssymb "d"]) "a" :: SymInteger
 -- (ite a@0 b (ite a@1 c d))
 gchooseSimpleFresh ::
   forall proxy bool a m.
   ( SymBoolOp bool,
     GSimpleMergeable bool a,
     GenSymSimple () bool,
-    MonadGenSymFresh m
+    MonadFresh m
   ) =>
   proxy bool ->
   [a] ->
   m a
 gchooseSimpleFresh _ [x] = return x
 gchooseSimpleFresh proxy (r : rs) = do
-  b :: bool <- genSymSimpleFresh ()
+  b :: bool <- simpleFresh ()
   res <- gchooseSimpleFresh proxy rs
   return $ gmrgIte b r res
 gchooseSimpleFresh _ [] = error "gchooseSimpleFresh expects at least one value"
@@ -595,9 +595,9 @@ gchooseSimple ::
   ) =>
   proxy bool ->
   [a] ->
-  GenSymIdent ->
+  FreshIdent ->
   a
-gchooseSimple p = runGenSymFresh . gchooseSimpleFresh p
+gchooseSimple p = runFresh . gchooseSimpleFresh p
 
 -- | Symbolically chooses one of the provided values wrapped in union-like monads.
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
@@ -605,23 +605,23 @@ gchooseSimple p = runGenSymFresh . gchooseSimpleFresh p
 --
 -- The result will be wrapped in a union-like monad, and also a monad maintaining the 'GenSym' context.
 --
--- >>> let a = runGenSymFresh (gchooseFresh [1, 2]) "a" :: UnionM Integer
--- >>> let b = runGenSymFresh (gchooseFresh [2, 3]) "b" :: UnionM Integer
--- >>> runGenSymFresh (gchooseUnionFresh [a, b]) "c" :: UnionM Integer
+-- >>> let a = runFresh (gchooseFresh [1, 2]) "a" :: UnionM Integer
+-- >>> let b = runFresh (gchooseFresh [2, 3]) "b" :: UnionM Integer
+-- >>> runFresh (gchooseUnionFresh [a, b]) "c" :: UnionM Integer
 -- UMrg (If (&& c@0 a@0) (Single 1) (If (|| c@0 b@0) (Single 2) (Single 3)))
 gchooseUnionFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
     GMergeable bool a,
     GenSymSimple () bool,
-    MonadGenSymFresh m,
+    MonadFresh m,
     GMonadUnion bool u
   ) =>
   [u a] ->
   m (u a)
 gchooseUnionFresh [x] = return x
 gchooseUnionFresh (r : rs) = do
-  b <- genSymSimpleFresh ()
+  b <- simpleFresh ()
   res <- gchooseUnionFresh rs
   return $ mrgIf b r res
 gchooseUnionFresh [] = error "gchooseUnionFresh expects at least one value"
@@ -634,89 +634,89 @@ gchooseUnion ::
     GMonadUnion bool u
   ) =>
   [u a] ->
-  GenSymIdent ->
+  FreshIdent ->
   u a
-gchooseUnion = runGenSymFresh . gchooseUnionFresh
+gchooseUnion = runFresh . gchooseUnionFresh
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Bool Bool where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Bool Bool where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Integer Integer where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Integer Integer where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Char Char where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Char Char where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int Int where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int Int where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int8 Int8 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int8 Int8 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int16 Int16 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int16 Int16 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int32 Int32 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int32 Int32 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int64 Int64 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int64 Int64 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word Word where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word Word where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word8 Word8 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word8 Word8 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word16 Word16 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word16 Word16 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word32 Word32 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word32 Word32 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word64 Word64 where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word64 Word64 where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool B.ByteString B.ByteString where ggenSymFresh = return . mrgSingle
+instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool B.ByteString B.ByteString where gfresh = return . mrgSingle
 
-instance GenSymSimple Bool Bool where genSymSimpleFresh = return
+instance GenSymSimple Bool Bool where simpleFresh = return
 
-instance GenSymSimple Integer Integer where genSymSimpleFresh = return
+instance GenSymSimple Integer Integer where simpleFresh = return
 
-instance GenSymSimple Char Char where genSymSimpleFresh = return
+instance GenSymSimple Char Char where simpleFresh = return
 
-instance GenSymSimple Int Int where genSymSimpleFresh = return
+instance GenSymSimple Int Int where simpleFresh = return
 
-instance GenSymSimple Int8 Int8 where genSymSimpleFresh = return
+instance GenSymSimple Int8 Int8 where simpleFresh = return
 
-instance GenSymSimple Int16 Int16 where genSymSimpleFresh = return
+instance GenSymSimple Int16 Int16 where simpleFresh = return
 
-instance GenSymSimple Int32 Int32 where genSymSimpleFresh = return
+instance GenSymSimple Int32 Int32 where simpleFresh = return
 
-instance GenSymSimple Int64 Int64 where genSymSimpleFresh = return
+instance GenSymSimple Int64 Int64 where simpleFresh = return
 
-instance GenSymSimple Word Word where genSymSimpleFresh = return
+instance GenSymSimple Word Word where simpleFresh = return
 
-instance GenSymSimple Word8 Word8 where genSymSimpleFresh = return
+instance GenSymSimple Word8 Word8 where simpleFresh = return
 
-instance GenSymSimple Word16 Word16 where genSymSimpleFresh = return
+instance GenSymSimple Word16 Word16 where simpleFresh = return
 
-instance GenSymSimple Word32 Word32 where genSymSimpleFresh = return
+instance GenSymSimple Word32 Word32 where simpleFresh = return
 
-instance GenSymSimple Word64 Word64 where genSymSimpleFresh = return
+instance GenSymSimple Word64 Word64 where simpleFresh = return
 
-instance GenSymSimple B.ByteString B.ByteString where genSymSimpleFresh = return
+instance GenSymSimple B.ByteString B.ByteString where simpleFresh = return
 
 -- Bool
 instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool () Bool where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 -- Enums
 
 -- | Specification for enum values with upper bound (exclusive). The result would chosen from [0 .. upperbound].
 --
--- >>> runGenSymFresh (ggenSymFresh (EnumGenUpperBound @Integer 4)) "c" :: UnionM Integer
+-- >>> runFresh (gfresh (EnumGenUpperBound @Integer 4)) "c" :: UnionM Integer
 -- UMrg (If c@0 (Single 0) (If c@1 (Single 1) (If c@2 (Single 2) (Single 3))))
 newtype EnumGenUpperBound a = EnumGenUpperBound a
 
 instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => GGenSym bool (EnumGenUpperBound v) v where
-  ggenSymFresh (EnumGenUpperBound u) = gchooseFresh (toEnum <$> [0 .. fromEnum u - 1])
+  gfresh (EnumGenUpperBound u) = gchooseFresh (toEnum <$> [0 .. fromEnum u - 1])
 
 -- | Specification for numbers with lower bound (inclusive) and upper bound (exclusive)
 --
--- >>> runGenSymFresh (ggenSymFresh (EnumGenBound @Integer 0 4)) "c" :: UnionM Integer
+-- >>> runFresh (gfresh (EnumGenBound @Integer 0 4)) "c" :: UnionM Integer
 -- UMrg (If c@0 (Single 0) (If c@1 (Single 1) (If c@2 (Single 2) (Single 3))))
 data EnumGenBound a = EnumGenBound a a
 
 instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => GGenSym bool (EnumGenBound v) v where
-  ggenSymFresh (EnumGenBound l u) = gchooseFresh (toEnum <$> [fromEnum l .. fromEnum u - 1])
+  gfresh (EnumGenBound l u) = gchooseFresh (toEnum <$> [fromEnum l .. fromEnum u - 1])
 
 -- Either
 instance
@@ -735,13 +735,13 @@ instance
   ) =>
   GenSymSimple (Either a b) (Either a b)
   where
-  genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
+  simpleFresh = derivedSameShapeSimpleFresh
 
 instance
   (SymBoolOp bool, GenSymSimple () bool, GGenSym bool () a, GMergeable bool a, GGenSym bool () b, GMergeable bool b) =>
   GGenSym bool () (Either a b)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 -- Maybe
 instance
@@ -752,32 +752,32 @@ instance
   (GenSymSimple a a) =>
   GenSymSimple (Maybe a) (Maybe a)
   where
-  genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
+  simpleFresh = derivedSameShapeSimpleFresh
 
 instance (SymBoolOp bool, GenSymSimple () bool, GGenSym bool () a, GMergeable bool a) => GGenSym bool () (Maybe a) where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 -- List
 instance
   (SymBoolOp bool, GenSymSimple () bool, GenSymSimple () a, GMergeable bool a) =>
   GGenSym bool Integer [a]
   where
-  ggenSymFresh v = do
+  gfresh v = do
     l <- gl v
     let xs = reverse $ scanr (:) [] l
     gchooseFresh xs
     where
-      gl :: (MonadGenSymFresh m) => Integer -> m [a]
+      gl :: (MonadFresh m) => Integer -> m [a]
       gl v1
         | v1 <= 0 = return []
         | otherwise = do
-            l <- genSymSimpleFresh ()
+            l <- simpleFresh ()
             r <- gl (v1 - 1)
             return $ l : r
 
 -- | Specification for list generation.
 --
--- >>> runGenSymFresh (ggenSymFresh (ListSpec 0 2 ())) "c" :: UnionM [SymBool]
+-- >>> runFresh (gfresh (ListSpec 0 2 ())) "c" :: UnionM [SymBool]
 -- UMrg (If c@2 (Single []) (If c@3 (Single [c@1]) (Single [c@0,c@1])))
 data ListSpec spec = ListSpec
   { -- | The minimum length of the generated lists
@@ -793,7 +793,7 @@ instance
   (SymBoolOp bool, GenSymSimple () bool, GenSymSimple spec a, GMergeable bool a) =>
   GGenSym bool (ListSpec spec) [a]
   where
-  ggenSymFresh (ListSpec minLen maxLen subSpec) =
+  gfresh (ListSpec minLen maxLen subSpec) =
     if minLen < 0 || maxLen < 0 || minLen >= maxLen
       then error $ "Bad lengthes: " ++ show (minLen, maxLen)
       else do
@@ -801,11 +801,11 @@ instance
         let xs = drop minLen $ reverse $ scanr (:) [] l
         gchooseFresh xs
     where
-      gl :: (MonadGenSymFresh m) => Int -> m [a]
+      gl :: (MonadFresh m) => Int -> m [a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
-            l <- genSymSimpleFresh subSpec
+            l <- simpleFresh subSpec
             r <- gl (currLen - 1)
             return $ l : r
 
@@ -817,11 +817,11 @@ instance
   (GenSymSimple a a) =>
   GenSymSimple [a] [a]
   where
-  genSymSimpleFresh = derivedSameShapeGenSymSimpleFresh
+  simpleFresh = derivedSameShapeSimpleFresh
 
 -- | Specification for list generation of a specific length.
 --
--- >>> runGenSymFresh (genSymSimpleFresh (SimpleListSpec 2 ())) "c" :: [SymBool]
+-- >>> runFresh (simpleFresh (SimpleListSpec 2 ())) "c" :: [SymBool]
 -- [c@0,c@1]
 data SimpleListSpec spec = SimpleListSpec
   { -- | The length of the generated list
@@ -835,23 +835,23 @@ instance
   (SymBoolOp bool, GenSymSimple () bool, GenSymSimple spec a, GMergeable bool a) =>
   GGenSym bool (SimpleListSpec spec) [a]
   where
-  ggenSymFresh = fmap mrgSingle . genSymSimpleFresh
+  gfresh = fmap mrgSingle . simpleFresh
 
 instance
   (GenSymSimple spec a) =>
   GenSymSimple (SimpleListSpec spec) [a]
   where
-  genSymSimpleFresh (SimpleListSpec len subSpec) =
+  simpleFresh (SimpleListSpec len subSpec) =
     if len < 0
       then error $ "Bad lengthes: " ++ show len
       else do
         gl len
     where
-      gl :: (MonadGenSymFresh m) => Int -> m [a]
+      gl :: (MonadFresh m) => Int -> m [a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
-            l <- genSymSimpleFresh subSpec
+            l <- simpleFresh subSpec
             r <- gl (currLen - 1)
             return $ l : r
 
@@ -859,7 +859,7 @@ instance
 instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool () ()
 
 instance GenSymSimple () () where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,)
 instance
@@ -872,9 +872,9 @@ instance
   ) =>
   GGenSym bool (aspec, bspec) (a, b)
   where
-  ggenSymFresh (aspec, bspec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
+  gfresh (aspec, bspec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
     return $ do
       ax <- a1
       bx <- b1
@@ -886,16 +886,16 @@ instance
   ) =>
   GenSymSimple (aspec, bspec) (a, b)
   where
-  genSymSimpleFresh (aspec, bspec) = do
+  simpleFresh (aspec, bspec) = do
     (,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
 
 instance
   (SymBoolOp bool, GenSymSimple () bool, GGenSym bool () a, GMergeable bool a, GGenSym bool () b, GMergeable bool b) =>
   GGenSym bool () (a, b)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -903,7 +903,7 @@ instance
   ) =>
   GenSymSimple () (a, b)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,,)
 instance
@@ -918,10 +918,10 @@ instance
   ) =>
   GGenSym bool (aspec, bspec, cspec) (a, b, c)
   where
-  ggenSymFresh (aspec, bspec, cspec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
-    c1 <- ggenSymFresh cspec
+  gfresh (aspec, bspec, cspec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
+    c1 <- gfresh cspec
     return $ do
       ax <- a1
       bx <- b1
@@ -935,11 +935,11 @@ instance
   ) =>
   GenSymSimple (aspec, bspec, cspec) (a, b, c)
   where
-  genSymSimpleFresh (aspec, bspec, cspec) = do
+  simpleFresh (aspec, bspec, cspec) = do
     (,,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
-      <*> genSymSimpleFresh cspec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
+      <*> simpleFresh cspec
 
 instance
   ( SymBoolOp bool,
@@ -953,7 +953,7 @@ instance
   ) =>
   GGenSym bool () (a, b, c)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -962,7 +962,7 @@ instance
   ) =>
   GenSymSimple () (a, b, c)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,,,)
 instance
@@ -979,11 +979,11 @@ instance
   ) =>
   GGenSym bool (aspec, bspec, cspec, dspec) (a, b, c, d)
   where
-  ggenSymFresh (aspec, bspec, cspec, dspec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
-    c1 <- ggenSymFresh cspec
-    d1 <- ggenSymFresh dspec
+  gfresh (aspec, bspec, cspec, dspec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
+    c1 <- gfresh cspec
+    d1 <- gfresh dspec
     return $ do
       ax <- a1
       bx <- b1
@@ -999,12 +999,12 @@ instance
   ) =>
   GenSymSimple (aspec, bspec, cspec, dspec) (a, b, c, d)
   where
-  genSymSimpleFresh (aspec, bspec, cspec, dspec) = do
+  simpleFresh (aspec, bspec, cspec, dspec) = do
     (,,,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
-      <*> genSymSimpleFresh cspec
-      <*> genSymSimpleFresh dspec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
+      <*> simpleFresh cspec
+      <*> simpleFresh dspec
 
 instance
   ( SymBoolOp bool,
@@ -1020,7 +1020,7 @@ instance
   ) =>
   GGenSym bool () (a, b, c, d)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -1030,7 +1030,7 @@ instance
   ) =>
   GenSymSimple () (a, b, c, d)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,,,,)
 instance
@@ -1049,12 +1049,12 @@ instance
   ) =>
   GGenSym bool (aspec, bspec, cspec, dspec, espec) (a, b, c, d, e)
   where
-  ggenSymFresh (aspec, bspec, cspec, dspec, espec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
-    c1 <- ggenSymFresh cspec
-    d1 <- ggenSymFresh dspec
-    e1 <- ggenSymFresh espec
+  gfresh (aspec, bspec, cspec, dspec, espec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
+    c1 <- gfresh cspec
+    d1 <- gfresh dspec
+    e1 <- gfresh espec
     return $ do
       ax <- a1
       bx <- b1
@@ -1072,13 +1072,13 @@ instance
   ) =>
   GenSymSimple (aspec, bspec, cspec, dspec, espec) (a, b, c, d, e)
   where
-  genSymSimpleFresh (aspec, bspec, cspec, dspec, espec) = do
+  simpleFresh (aspec, bspec, cspec, dspec, espec) = do
     (,,,,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
-      <*> genSymSimpleFresh cspec
-      <*> genSymSimpleFresh dspec
-      <*> genSymSimpleFresh espec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
+      <*> simpleFresh cspec
+      <*> simpleFresh dspec
+      <*> simpleFresh espec
 
 instance
   ( SymBoolOp bool,
@@ -1096,7 +1096,7 @@ instance
   ) =>
   GGenSym bool () (a, b, c, d, e)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -1107,7 +1107,7 @@ instance
   ) =>
   GenSymSimple () (a, b, c, d, e)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,,,,,)
 instance
@@ -1128,13 +1128,13 @@ instance
   ) =>
   GGenSym bool (aspec, bspec, cspec, dspec, espec, fspec) (a, b, c, d, e, f)
   where
-  ggenSymFresh (aspec, bspec, cspec, dspec, espec, fspec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
-    c1 <- ggenSymFresh cspec
-    d1 <- ggenSymFresh dspec
-    e1 <- ggenSymFresh espec
-    f1 <- ggenSymFresh fspec
+  gfresh (aspec, bspec, cspec, dspec, espec, fspec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
+    c1 <- gfresh cspec
+    d1 <- gfresh dspec
+    e1 <- gfresh espec
+    f1 <- gfresh fspec
     return $ do
       ax <- a1
       bx <- b1
@@ -1154,14 +1154,14 @@ instance
   ) =>
   GenSymSimple (aspec, bspec, cspec, dspec, espec, fspec) (a, b, c, d, e, f)
   where
-  genSymSimpleFresh (aspec, bspec, cspec, dspec, espec, fspec) = do
+  simpleFresh (aspec, bspec, cspec, dspec, espec, fspec) = do
     (,,,,,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
-      <*> genSymSimpleFresh cspec
-      <*> genSymSimpleFresh dspec
-      <*> genSymSimpleFresh espec
-      <*> genSymSimpleFresh fspec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
+      <*> simpleFresh cspec
+      <*> simpleFresh dspec
+      <*> simpleFresh espec
+      <*> simpleFresh fspec
 
 instance
   ( SymBoolOp bool,
@@ -1181,7 +1181,7 @@ instance
   ) =>
   GGenSym bool () (a, b, c, d, e, f)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -1193,7 +1193,7 @@ instance
   ) =>
   GenSymSimple () (a, b, c, d, e, f)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,,,,,,)
 instance
@@ -1216,14 +1216,14 @@ instance
   ) =>
   GGenSym bool (aspec, bspec, cspec, dspec, espec, fspec, gspec) (a, b, c, d, e, f, g)
   where
-  ggenSymFresh (aspec, bspec, cspec, dspec, espec, fspec, gspec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
-    c1 <- ggenSymFresh cspec
-    d1 <- ggenSymFresh dspec
-    e1 <- ggenSymFresh espec
-    f1 <- ggenSymFresh fspec
-    g1 <- ggenSymFresh gspec
+  gfresh (aspec, bspec, cspec, dspec, espec, fspec, gspec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
+    c1 <- gfresh cspec
+    d1 <- gfresh dspec
+    e1 <- gfresh espec
+    f1 <- gfresh fspec
+    g1 <- gfresh gspec
     return $ do
       ax <- a1
       bx <- b1
@@ -1245,15 +1245,15 @@ instance
   ) =>
   GenSymSimple (aspec, bspec, cspec, dspec, espec, fspec, gspec) (a, b, c, d, e, f, g)
   where
-  genSymSimpleFresh (aspec, bspec, cspec, dspec, espec, fspec, gspec) = do
+  simpleFresh (aspec, bspec, cspec, dspec, espec, fspec, gspec) = do
     (,,,,,,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
-      <*> genSymSimpleFresh cspec
-      <*> genSymSimpleFresh dspec
-      <*> genSymSimpleFresh espec
-      <*> genSymSimpleFresh fspec
-      <*> genSymSimpleFresh gspec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
+      <*> simpleFresh cspec
+      <*> simpleFresh dspec
+      <*> simpleFresh espec
+      <*> simpleFresh fspec
+      <*> simpleFresh gspec
 
 instance
   ( SymBoolOp bool,
@@ -1275,7 +1275,7 @@ instance
   ) =>
   GGenSym bool () (a, b, c, d, e, f, g)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -1288,7 +1288,7 @@ instance
   ) =>
   GenSymSimple () (a, b, c, d, e, f, g)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- (,,,,,,,)
 instance
@@ -1313,15 +1313,15 @@ instance
   ) =>
   GGenSym bool (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) (a, b, c, d, e, f, g, h)
   where
-  ggenSymFresh (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) = do
-    a1 <- ggenSymFresh aspec
-    b1 <- ggenSymFresh bspec
-    c1 <- ggenSymFresh cspec
-    d1 <- ggenSymFresh dspec
-    e1 <- ggenSymFresh espec
-    f1 <- ggenSymFresh fspec
-    g1 <- ggenSymFresh gspec
-    h1 <- ggenSymFresh hspec
+  gfresh (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) = do
+    a1 <- gfresh aspec
+    b1 <- gfresh bspec
+    c1 <- gfresh cspec
+    d1 <- gfresh dspec
+    e1 <- gfresh espec
+    f1 <- gfresh fspec
+    g1 <- gfresh gspec
+    h1 <- gfresh hspec
     return $ do
       ax <- a1
       bx <- b1
@@ -1345,16 +1345,16 @@ instance
   ) =>
   GenSymSimple (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) (a, b, c, d, e, f, g, h)
   where
-  genSymSimpleFresh (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) = do
+  simpleFresh (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) = do
     (,,,,,,,)
-      <$> genSymSimpleFresh aspec
-      <*> genSymSimpleFresh bspec
-      <*> genSymSimpleFresh cspec
-      <*> genSymSimpleFresh dspec
-      <*> genSymSimpleFresh espec
-      <*> genSymSimpleFresh fspec
-      <*> genSymSimpleFresh gspec
-      <*> genSymSimpleFresh hspec
+      <$> simpleFresh aspec
+      <*> simpleFresh bspec
+      <*> simpleFresh cspec
+      <*> simpleFresh dspec
+      <*> simpleFresh espec
+      <*> simpleFresh fspec
+      <*> simpleFresh gspec
+      <*> simpleFresh hspec
 
 instance
   ( SymBoolOp bool,
@@ -1378,7 +1378,7 @@ instance
   ) =>
   GGenSym bool () (a, b, c, d, e, f, g, h)
   where
-  ggenSymFresh = derivedNoSpecGGenSymFresh
+  gfresh = derivedNoSpecGFresh
 
 instance
   ( GenSymSimple () a,
@@ -1392,7 +1392,7 @@ instance
   ) =>
   GenSymSimple () (a, b, c, d, e, f, g, h)
   where
-  genSymSimpleFresh = derivedNoSpecGenSymSimpleFresh
+  simpleFresh = derivedNoSpecSimpleFresh
 
 -- MaybeT
 instance
@@ -1405,8 +1405,8 @@ instance
   ) =>
   GGenSym bool spec (MaybeT m a)
   where
-  ggenSymFresh v = do
-    x <- ggenSymFresh v
+  gfresh v = do
+    x <- gfresh v
     return $ merge . fmap MaybeT $ x
 
 instance
@@ -1415,7 +1415,7 @@ instance
   ) =>
   GenSymSimple spec (MaybeT m a)
   where
-  genSymSimpleFresh v = MaybeT <$> genSymSimpleFresh v
+  simpleFresh v = MaybeT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
@@ -1423,7 +1423,7 @@ instance
   ) =>
   GenSymSimple (MaybeT m a) (MaybeT m a)
   where
-  genSymSimpleFresh (MaybeT v) = MaybeT <$> genSymSimpleFresh v
+  simpleFresh (MaybeT v) = MaybeT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
@@ -1447,8 +1447,8 @@ instance
   ) =>
   GGenSym bool spec (ExceptT a m b)
   where
-  ggenSymFresh v = do
-    x <- ggenSymFresh v
+  gfresh v = do
+    x <- gfresh v
     return $ merge . fmap ExceptT $ x
 
 instance
@@ -1457,7 +1457,7 @@ instance
   ) =>
   GenSymSimple spec (ExceptT a m b)
   where
-  genSymSimpleFresh v = ExceptT <$> genSymSimpleFresh v
+  simpleFresh v = ExceptT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}
@@ -1465,7 +1465,7 @@ instance
   ) =>
   GenSymSimple (ExceptT e m a) (ExceptT e m a)
   where
-  genSymSimpleFresh (ExceptT v) = ExceptT <$> genSymSimpleFresh v
+  simpleFresh (ExceptT v) = ExceptT <$> simpleFresh v
 
 instance
   {-# OVERLAPPING #-}

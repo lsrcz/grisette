@@ -46,7 +46,7 @@ parseFileLocation str =
 -- a:<interactive>:...
 --
 -- The uniqueness is ensured for the call to 'nameWithLoc' at different location.
-nameWithLoc :: String -> SpliceQ GenSymIdent
+nameWithLoc :: String -> SpliceQ FreshIdent
 nameWithLoc s = [||nameWithInfo s (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
 
 -- | Generate simply-named symbolic variables. The file location will be attached to identifier.

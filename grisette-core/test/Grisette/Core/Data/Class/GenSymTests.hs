@@ -753,19 +753,19 @@ genSymTests =
       testGroup
         "gchoose*"
         [ testCase "gchooseFresh" $ do
-            (runGenSymFresh (gchooseFresh [1, 2, 3]) "a" :: UnionMBase SBool Int)
+            (runFresh (gchooseFresh [1, 2, 3]) "a" :: UnionMBase SBool Int)
               @=? mrgIf (ISBool "a" 0) (mrgSingle 1) (mrgIf (ISBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
           testCase "gchoose" $ do
             (gchoose [1, 2, 3] "a" :: UnionMBase SBool Int)
               @=? mrgIf (ISBool "a" 0) (mrgSingle 1) (mrgIf (ISBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
           testCase "gchooseSimpleFresh" $ do
-            (runGenSymFresh (gchooseSimpleFresh (Proxy @SBool) ["x", "y", "z"]) "a" :: SBool)
+            (runFresh (gchooseSimpleFresh (Proxy @SBool) ["x", "y", "z"]) "a" :: SBool)
               @=? ites (ISBool "a" 0) (SSBool "x") (ites (ISBool "a" 1) (SSBool "y") (SSBool "z")),
           testCase "gchooseSimple" $ do
             (gchooseSimple (Proxy @SBool) ["x", "y", "z"] "a" :: SBool)
               @=? ites (ISBool "a" 0) (SSBool "x") (ites (ISBool "a" 1) (SSBool "y") (SSBool "z")),
           testCase "gchooseUnionFresh" $ do
-            ( runGenSymFresh
+            ( runFresh
                 (gchooseUnionFresh [mrgIf (SSBool "x") 1 2, mrgIf (SSBool "x") 2 3, mrgIf (SSBool "x") 3 4])
                 "a" ::
                 UnionMBase SBool Int
