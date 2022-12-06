@@ -9,7 +9,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.SOrd
-  ( GSOrd (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Symbolic total order relation
+
+    GSOrd (..),
     GSOrd' (..),
   )
 where
@@ -25,15 +35,29 @@ import Data.Int
 import Data.Word
 import Generics.Deriving
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SimpleMergeable
+
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+-- >>> :set -XDataKinds
+-- >>> :set -XBinaryLiterals
+-- >>> :set -XFlexibleContexts
+-- >>> :set -XFlexibleInstances
+-- >>> :set -XFunctionalDependencies
 
 -- | Auxiliary class for 'SOrd' instance derivation
 class (GSEq' bool f) => GSOrd' bool f where
+  -- | Auxiliary function for 'gsymlt' derivation
   gsymlt' :: f a -> f a -> bool
+  -- | Auxiliary function for 'gsymle' derivation
   gsymle' :: f a -> f a -> bool
+  -- | Auxiliary function for 'gsymgt' derivation
   gsymgt' :: f a -> f a -> bool
+  -- | Auxiliary function for 'gsymge' derivation
   gsymge' :: f a -> f a -> bool
+  -- | Auxiliary function for 'gsymCompare' derivation
   gsymCompare' :: (GUnionLike bool u, Monad u) => f a -> f a -> u Ordering
 
 instance (SymBoolOp bool) => GSOrd' bool U1 where
@@ -114,10 +138,41 @@ derivedGSymGe x y = from x `gsymge'` from y
 derivedGSymCompare :: (Generic a, GSOrd' bool (Rep a), GUnionLike bool u, Monad u) => a -> a -> u Ordering
 derivedGSymCompare x y = gsymCompare' (from x) (from y)
 
--- | Symbolic total order. Note that we can't use Haskell's 'Ord' class since symbolic comparison won't necessarily return
--- a concrete 'Bool' or 'Ordering' value.
+-- | Symbolic total order. Note that we can't use Haskell's 'Ord' class since
+-- symbolic comparison won't necessarily return a concrete 'Bool' or 'Ordering'
+-- value.
 --
--- The @bool@ type is the symbolic boolean type to return.
+-- __Note:__ The @bool@ type is the symbolic boolean type to return. It should
+-- be an instance of `SymBoolOp`. If you do not need to use an alternative
+-- symbolic Boolean type, and will use the 'SymBool' type provided by the
+-- @grisette-symir@ package, you can use the specialized `SOrd` type synonym for
+-- the constraints and use specialized operators like `(<~)` and `(<=~)` from
+-- @grisette-symir@ to write code with fewer type annotations.
+--
+-- >>> let a = 1 :: SymInteger
+-- >>> let b = 2 :: SymInteger
+-- >>> a `gsymlt` b :: SymBool
+-- true
+-- >>> a `gsymgt` b :: SymBool
+-- false
+--
+-- >>> let a = "a" :: SymInteger
+-- >>> let b = "b" :: SymInteger
+-- >>> a `gsymlt` b :: SymBool
+-- (< a b)
+-- >>> a `gsymle` b :: SymBool
+-- (<= a b)
+-- >>> a `gsymgt` b :: SymBool
+-- (< b a)
+-- >>> a `gsymge` b :: SymBool
+-- (<= b a)
+--
+-- For `gsymCompare`, `Ordering` is not a solvable type, and the result would
+-- be wrapped in a union-like monad. See `UnionMBase` and `GUnionLike` for more
+-- information.
+--
+-- >>> a `gsymCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool
+-- UMrg (If (< a b) (Single LT) (If (= a b) (Single EQ) (Single GT)))
 class (GSEq bool a) => GSOrd bool a where
   gsymlt :: a -> a -> bool
   gsymle :: a -> a -> bool

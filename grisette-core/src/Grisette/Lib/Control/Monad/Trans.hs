@@ -11,7 +11,7 @@ import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'lift' with 'Mergeable' knowledge propagation.
+-- | 'lift' with 'GMergingStrategy' knowledge propagation.
 mrgLift ::
   forall bool t m a.
   (GMonadUnion bool (t m), MonadTrans t, Monad m, GMergeable bool a) =>

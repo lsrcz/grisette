@@ -8,7 +8,16 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.ExtractSymbolics
-  ( GExtractSymbolics (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Extracting symbolic constant set from a value
+    GExtractSymbolics (..),
   )
 where
 
@@ -32,14 +41,19 @@ import Generics.Deriving
 
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
+-- __Note:__ The @symbolSet@ type is the symbolic constant set type for the
+-- solver backend. It should be an instance of `SymbolSetOp`. If you do not need
+-- to use an alternative solver backend, and will use the 'SymbolSet' type
+-- provided by the @grisette-symir@ package, you can use the specialized
+-- `ExtractSymbolics` type synonym for the constraints and use specialized
+-- `extractSymbolics` combinator from @grisette-symir@ to write code with fewer
+-- type annotations.
+--
 -- >>> gextractSymbolics ("a" :: SymBool) :: SymbolSet
 -- SymbolSet {a :: Bool}
 --
--- >>> :{
---   sort $ HashSet.toList $ unSymbolSet $
---     gextractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: [SomeTypedSymbol]
--- :}
--- [a :: Bool,b :: Bool,c :: Bool,d :: Bool]
+-- >>> gextractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: SymbolSet
+-- SymbolSet {a :: Bool, b :: Bool, c :: Bool, d :: Bool}
 class (Monoid symbolSet) => GExtractSymbolics symbolSet a where
   gextractSymbolics :: a -> symbolSet
 

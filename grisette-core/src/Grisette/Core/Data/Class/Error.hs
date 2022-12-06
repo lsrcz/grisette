@@ -2,9 +2,20 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Grisette.Core.Data.Class.Error
-  ( TransformError (..),
-    symThrowTransformableError,
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Error transformation
+    TransformError (..),
+
+    -- * Throwing error
     symFailIfNot,
+    symThrowTransformableError,
   )
 where
 
@@ -14,7 +25,24 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | This class indicates error type @to@ can always represent the error type @from@.
+-- $setup
+-- >>> import Control.Exception
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XFlexibleContexts
+
+-- | This class indicates error type @to@ can always represent the error type
+-- @from@.
+--
+-- This is useful in implementing generic procedures that may throw errors.
+-- For example, we support symbolic division and modulo operations. These
+-- operations should throw an error when the divisor is zero, and we use the
+-- standard error type 'Control.Exception.ArithException' for this purpose.
+--
+-- However, the user may use other type to represent errors, so we need this
+-- type class to transform the 'Control.Exception.ArithException' to the
+-- user-defined types.
 class TransformError from to where
   -- | Transforms an error with type @from@ to an error with type @to@.
   transformError :: from -> to
@@ -33,7 +61,11 @@ instance {-# OVERLAPPING #-} TransformError () () where
 
 -- | Used within a monadic multi path computation to begin exception processing.
 --
--- Terminate the current execution path with the specified error.
+-- Terminate the current execution path with the specified error. Compatible
+-- errors can be transformed.
+--
+-- >>> symThrowTransformableError Overflow :: ExceptT AssertionError UnionM ()
+-- ExceptT (UMrg (Single (Left AssertionError)))
 symThrowTransformableError ::
   ( SymBoolOp bool,
     GMergeable bool to,
@@ -50,6 +82,10 @@ symThrowTransformableError = merge . throwError . transformError
 -- | Used within a monadic multi path computation for exception processing.
 --
 -- Terminate the current execution path with the specified error if the condition does not hold.
+--
+-- >>> let assert = symFailIfNot AssertionError
+-- >>> assert "a" :: ExceptT AssertionError UnionM ()
+-- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right ()))))
 symFailIfNot ::
   ( SymBoolOp bool,
     GMergeable bool to,

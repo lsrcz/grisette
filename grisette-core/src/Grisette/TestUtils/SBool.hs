@@ -16,7 +16,7 @@ import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.ToCon
@@ -118,7 +118,7 @@ instance GSOrd SBool SBool where
 instance IsString SBool where
   fromString = ssymb
 
-instance PrimWrapper SBool Bool where
+instance Solvable Bool SBool where
   conc = CBool
   concView (CBool x) = Just x
   concView _ = Nothing

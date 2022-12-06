@@ -2,7 +2,9 @@
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Grisette.Core.TH
-  ( makeUnionMWrapper,
+  ( -- * Template Haskell procedures for building constructor wrappers
+
+    makeUnionMWrapper,
     makeUnionMWrapper',
   )
 where

@@ -5,7 +5,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Control.Monad.Union
-  ( GMonadUnion,
+  ( -- * MonadUnion
+    GMonadUnion,
   )
 where
 

@@ -4,7 +4,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Grisette.Core.BuiltinUnionMWrappers
-  ( uTrue,
+  ( -- * Builtin constructor wrappers for some common data types
+
+    uTrue,
     uFalse,
     uunit,
     uTuple2,

@@ -24,7 +24,7 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.ToCon
@@ -62,7 +62,7 @@ symPrimTests =
     [ testGroup
         "General SymPrim"
         [ testGroup
-            "PrimWrapper"
+            "Solvable"
             [ testCase "conc" $ do
                 (conc 1 :: Sym Integer) @=? Sym (concTerm 1),
               testCase "ssymb" $ do

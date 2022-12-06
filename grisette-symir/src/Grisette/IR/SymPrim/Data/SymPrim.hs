@@ -46,7 +46,7 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Substitute
@@ -95,7 +95,7 @@ instance (SupportedPrim a) => GMergeable (Sym Bool) (Sym a) where
 instance (SupportedPrim a) => GSimpleMergeable (Sym Bool) (Sym a) where
   gmrgIte = ites
 
-instance (SupportedPrim a) => PrimWrapper (Sym a) a where
+instance (SupportedPrim a) => Solvable a (Sym a) where
   conc = Sym . concTerm
   ssymb = Sym . ssymbTerm
   isymb str i = Sym $ isymbTerm str i

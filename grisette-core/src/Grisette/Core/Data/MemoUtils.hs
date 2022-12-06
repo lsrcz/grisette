@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Grisette.Core.Data.MemoUtils
-  ( htmemo,
+  ( -- * Hashtable-based memoization
+    htmemo,
     htmemo2,
     htmemo3,
     htmup,

@@ -17,30 +17,45 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.GenSym
-  ( FreshIndex (..),
-    FreshIdent,
-    pattern FreshIdent,
-    pattern FreshIdentWithInfo,
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Indices and identifiers for fresh symbolic value generation
+    FreshIndex (..),
+    FreshIdent (..),
     name,
     nameWithInfo,
+
+    -- * Monad for fresh symbolic value generation
     MonadFresh (..),
     FreshT,
     Fresh,
     runFreshT,
     runFresh,
-    ggenSym,
-    genSymSimple,
+
+    -- * Symbolic value generation
     GGenSym (..),
     GenSymSimple (..),
+    ggenSym,
+    genSymSimple,
     derivedNoSpecGFresh,
     derivedNoSpecSimpleFresh,
     derivedSameShapeSimpleFresh,
+
+    -- * Symbolic choices
     gchooseFresh,
     gchooseSimpleFresh,
     gchooseUnionFresh,
     gchoose,
     gchooseSimple,
     gchooseUnion,
+
+    -- * Some common GenSym specifications
     ListSpec (..),
     SimpleListSpec (..),
     EnumGenBound (..),
@@ -76,7 +91,8 @@ import Language.Haskell.TH.Syntax hiding (lift)
 -- | Index type used for 'GenSym'.
 --
 -- To generate fresh variables, a monadic stateful context will be maintained.
--- Every time a new variable is generated, the index will be increased.
+-- The index should be increased every time a new symbolic constant is
+-- generated.
 newtype FreshIndex = FreshIndex Int
   deriving (Show)
   deriving (Eq, Ord, Num) via Int
@@ -94,18 +110,32 @@ instance (SymBoolOp bool) => GSimpleMergeable bool FreshIndex where
 --
 --   * a raw name
 --
+--     The following two expressions will refer to the same identifier (the
+--     solver won't distinguish them and would assign the same value to them).
+--     The user may need to use unique names to avoid unintentional identifier
+--     collision.
+--
 --     >>> name "a"
+--     a
+--
+--     >>> "a" :: FreshIdent -- available when OverloadedStrings is enabled
 --     a
 --
 --   * bundle the calling file location with the name to ensure global uniqueness
 --
--- >>> $$(nameWithLoc "a") -- a sample result could be "a:<interactive>:18:4-18"
--- a:<interactive>:...
+--     Identifiers created at different locations will not be the
+--     same. The identifiers created at the same location will be the same.
+--
+--     >>> $$(nameWithLoc "a") -- a sample result could be "a:<interactive>:18:4-18"
+--     a:<interactive>:...
 --
 --   * bundle the calling file location with some user provided information
 --
--- >>> nameWithInfo "a" (1 :: Int)
--- a:1
+--     Identifiers created with different name or different additional
+--     information will not be the same.
+--
+--     >>> nameWithInfo "a" (1 :: Int)
+--     a:1
 data FreshIdent where
   FreshIdent :: String -> FreshIdent
   FreshIdentWithInfo :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> FreshIdent
@@ -152,7 +182,8 @@ instance NFData FreshIdent where
 -- | Simple name identifier.
 -- The same identifier refers to the same symbolic variable in the whole program.
 --
--- The user need to ensure uniqueness by themselves if they need to.
+-- The user may need to use unique names to avoid unintentional identifier
+-- collision.
 name :: String -> FreshIdent
 name = FreshIdent
 
@@ -160,12 +191,19 @@ name = FreshIdent
 -- The same name with the same information
 -- refers to the same symbolic variable in the whole program.
 --
--- The user need to ensure uniqueness by themselves if they need to.
+-- The user may need to use unique names or additional information to avoid
+-- unintentional identifier collision.
 nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> FreshIdent
 nameWithInfo = FreshIdentWithInfo
 
+-- | Monad class for fresh symbolic value generation.
+-- 
+-- The monad should be a reader monad for the 'FreshIdent' and a state monad for
+-- the 'FreshIndex'.
 class Monad m => MonadFresh m where
+  -- | Increase the index by one and return the new index.
   nextFreshIndex :: m FreshIndex
+  -- | Get the identifier.
   getFreshIdent :: m FreshIdent
 
 -- | A symbolic generation monad transformer.
@@ -254,41 +292,40 @@ instance Monad m => MonadFresh (FreshT m) where
   nextFreshIndex = FreshT $ \_ idx -> return (idx, idx + 1)
   getFreshIdent = FreshT $ curry return
 
-{-
-instance (Monad m) => MonadState FreshIndex (FreshT m) where
-  state f = FreshT $ \_ idx -> return $ f idx
-  put newidx = FreshT $ \_ _ -> return ((), newidx)
-  get = FreshT $ \_ idx -> return (idx, idx)
-
-instance (Monad m) => MonadReader FreshIdent (FreshT m) where
-  ask = FreshT $ curry return
-  local f (FreshT s) = FreshT $ \ident idx -> s (f ident) idx
-  reader f = FreshT $ \r s -> return (f r, s)
-  -}
-
 -- | Class of types in which symbolic values can be generated with respect to some specification.
 --
 -- The result will be wrapped in a union-like monad.
 -- This ensures that we can generate those types with complex merging rules.
 --
--- The uniqueness with be managed with the a monadic context. 'Fresh' and 'FreshT' can be useful.
+-- The uniqueness of symbolic constants is managed with the a monadic context.
+-- 'Fresh' and 'FreshT' can be useful.
+--
+-- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
+-- be an instance of `SymBoolOp`. If you do not need to use an alternative
+-- symbolic Boolean type, and will use the 'SymBool' type provided by the
+-- `grisette-symir` package, you can use the specialized `GenSym` type synonym
+-- for the constraints and use specialized operators like `fresh`, `genSym`,
+-- and `choose` to write code with fewer type annotations.
 class (SymBoolOp bool, GMergeable bool a) => GGenSym bool spec a where
-  -- | Generate a symbolic value given some specification. The uniqueness is ensured.
+  -- | Generate a symbolic value given some specification. Within a single
+  -- `MonadFresh` context, calls to `gfresh` would generate unique symbolic
+  -- constants.
   --
-  -- The following example generates a symbolic boolean. No specification is needed.
+  -- The following example generates a symbolic boolean. No specification is
+  -- needed.
   --
   -- >>> runFresh (gfresh ()) "a" :: UnionM SymBool
   -- UMrg (Single a@0)
   --
-  -- The following example generates booleans, which cannot be merged into a single value with type 'Bool'.
-  -- No specification is needed.
+  -- The following example generates booleans, which cannot be merged into a
+  -- single value with type 'Bool'. No specification is needed.
   --
   -- >>> runFresh (gfresh ()) "a" :: UnionM Bool
   -- UMrg (If a@0 (Single False) (Single True))
   --
   -- The following example generates @Maybe Bool@s.
-  -- There are more than one symbolic primitives introduced, and their uniqueness is ensured.
-  -- No specification is needed.
+  -- There are more than one symbolic constants introduced, and their uniqueness
+  -- is ensured. No specification is needed.
   --
   -- >>> runFresh (gfresh ()) "a" :: UnionM (Maybe Bool)
   -- UMrg (If a@0 (Single Nothing) (If a@1 (Single (Just False)) (Single (Just True))))
@@ -298,12 +335,11 @@ class (SymBoolOp bool, GMergeable bool a) => GGenSym bool spec a where
   -- >>> runFresh (gfresh (ListSpec 1 2 ())) "a" :: UnionM [SymBool]
   -- UMrg (If a@2 (Single [a@1]) (Single [a@0,a@1]))
   --
-  -- When multiple symbolic variables are generated, the uniqueness can be ensured.
+  -- When multiple symbolic values are generated, there will not be any
+  -- identifier collision
   --
   -- >>> runFresh (do; a <- gfresh (); b <- gfresh (); return (a, b)) "a" :: (UnionM SymBool, UnionM SymBool)
   -- (UMrg (Single a@0),UMrg (Single a@1))
-  --
-  -- N.B.: the examples are not executable solely with @grisette-core@ package, and need support from @grisette-symprim@ package.
   gfresh ::
     ( MonadFresh m,
       GMonadUnion bool u
@@ -320,7 +356,11 @@ class (SymBoolOp bool, GMergeable bool a) => GGenSym bool spec a where
   gfresh spec = mrgSingle <$> simpleFresh spec
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
--- The uniqueness need to be ensured by the uniqueness of the provided identifier.
+-- A globally unique identifier should be supplied to ensure the uniqueness of
+-- symbolic constants in the generated symbolic values.
+--
+-- >>> ggenSym (ListSpec 1 2 ()) "a" :: UnionM [SymBool]
+-- UMrg (If a@2 (Single [a@1]) (Single [a@0,a@1]))
 ggenSym :: (GGenSym bool spec a, GMonadUnion bool u) => spec -> FreshIdent -> u a
 ggenSym = runFresh . gfresh
 
@@ -328,7 +368,8 @@ ggenSym = runFresh . gfresh
 --
 -- The result will __/not/__ be wrapped in a union-like monad.
 --
--- The uniqueness with be managed with the a monadic context. 'Fresh' and 'FreshT' can be useful.
+-- The uniqueness of symbolic constants is managed with the a monadic context.
+-- 'Fresh' and 'FreshT' can be useful.
 class GenSymSimple spec a where
   -- | Generate a symbolic value given some specification. The uniqueness is ensured.
   --
@@ -337,18 +378,11 @@ class GenSymSimple spec a where
   -- >>> runFresh (simpleFresh ()) "a" :: SymBool
   -- a@0
   --
-  -- The example shows that why the system cannot infer the symbolic boolean type.
-  --
-  -- >>> runFresh (simpleFresh ()) "a" :: ()
-  -- ()
-  --
   -- The following code generates list of symbolic boolean with length 2.
   -- As the length is fixed, we don't have to wrap the result in unions.
   --
   -- >>> runFresh (simpleFresh (SimpleListSpec 2 ())) "a" :: [SymBool]
   -- [a@0,a@1]
-  --
-  -- N.B.: the examples are not executable solely with @grisette-core@ package, and need support from @grisette-symprim@ package.
   simpleFresh ::
     ( MonadFresh m
     ) =>
@@ -356,7 +390,11 @@ class GenSymSimple spec a where
     m a
 
 -- | Generate a simple symbolic variable wrapped in a Union without the monadic context.
--- The uniqueness need to be ensured by the uniqueness of the provided identifier.
+-- A globally unique identifier should be supplied to ensure the uniqueness of
+-- symbolic constants in the generated symbolic values.
+--
+-- >>> genSymSimple (SimpleListSpec 2 ()) "a" :: [SymBool]
+-- [a@0,a@1]
 genSymSimple :: forall spec a. (GenSymSimple spec a) => spec -> FreshIdent -> a
 genSymSimple = runFresh . simpleFresh
 
@@ -416,13 +454,14 @@ instance
       r1 <- r
       return $ l1 :*: r1
 
--- | We cannot provide DerivingVia style derivation for 'GenSym'.
+-- | We cannot provide DerivingVia style derivation for 'GGenSym', while you can
+-- use this 'gfresh' implementation to implement 'GGenSym' for your own types.
 --
--- This 'fresh' implementation is for the types that does not need any specification.
+-- This 'gfresh' implementation is for the types that does not need any specification.
 -- It will generate product types by generating each fields with '()' as specification,
 -- and generate all possible values for a sum type.
 --
--- N.B. Never use on recursive types
+-- __Note:__ __Never__ use on recursive types.
 derivedNoSpecGFresh ::
   forall bool a m u.
   ( Generic a,
@@ -457,13 +496,15 @@ instance
     r :: b c <- simpleFreshNoSpec
     return $ l :*: r
 
--- | We cannot provide DerivingVia style derivation for 'GenSymSimple'.
+-- | We cannot provide DerivingVia style derivation for 'GenSymSimple', while
+-- you can use this 'simpleFresh' implementation to implement 'GenSymSimple' fo
+-- your own types.
 --
 -- This 'simpleFresh' implementation is for the types that does not need any specification.
 -- It will generate product types by generating each fields with '()' as specification.
 -- It will not work on sum types.
 --
--- N.B. Never use on recursive types
+-- __Note:__ __Never__ use on recursive types.
 derivedNoSpecSimpleFresh ::
   forall a m.
   ( Generic a,
@@ -506,14 +547,18 @@ instance
     r :: b c <- genSymSameShapeFresh b
     return $ l :*: r
 
--- | We cannot provide DerivingVia style derivation for 'GenSymSimple'.
+-- | We cannot provide DerivingVia style derivation for 'GenSymSimple', while
+-- you can use this 'simpleFresh' implementation to implement 'GenSymSimple' fo
+-- your own types.
 --
--- This 'simpleFresh' implementation is for the types that can be generated with a reference value of the same type.
+-- This 'simpleFresh' implementation is for the types that can be generated with
+-- a reference value of the same type.
 --
 -- For sum types, it will generate the result with the same data constructor.
--- For product types, it will generate the result by generating each field with the corresponding reference value.
+-- For product types, it will generate the result by generating each field with
+-- the corresponding reference value.
 --
--- N.B. Can be used on recursive types
+-- __Note:__ __Can__ be used on recursive types.
 derivedSameShapeSimpleFresh ::
   forall a m.
   ( Generic a,
@@ -525,10 +570,12 @@ derivedSameShapeSimpleFresh ::
 derivedSameShapeSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 
 -- | Symbolically chooses one of the provided values.
--- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
--- these variables to conditionally select one of the @n@ provided expressions.
+-- The procedure creates @n - 1@ fresh symbolic boolean variables every time it
+-- is evaluated, and use these variables to conditionally select one of the @n@
+-- provided expressions.
 --
--- The result will be wrapped in a union-like monad, and also a monad maintaining the 'GenSym' context.
+-- The result will be wrapped in a union-like monad, and also a monad
+-- maintaining the 'MonadFresh' context.
 --
 -- >>> runFresh (gchooseFresh [1,2,3]) "a" :: UnionM Integer
 -- UMrg (If a@0 (Single 1) (If a@1 (Single 2) (Single 3)))
@@ -549,6 +596,9 @@ gchooseFresh (r : rs) = do
   return $ mrgIf b (mrgSingle r) res
 gchooseFresh [] = error "gchooseFresh expects at least one value"
 
+-- | A wrapper for `gchooseFresh` that executes the `MonadFresh` context.
+-- A globally unique identifier should be supplied to ensure the uniqueness of
+-- symbolic constants in the generated symbolic values.
 gchoose ::
   forall bool a u.
   ( SymBoolOp bool,
@@ -565,8 +615,8 @@ gchoose = runFresh . gchooseFresh
 -- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
 -- these variables to conditionally select one of the @n@ provided expressions.
 --
--- The result will __/not/__ be wrapped in a union-like monad, but will be wrapped in a monad maintaining the 'GenSym' context.
--- Similar to 'simpleFresh', you need to tell the system what symbolic boolean type to use.
+-- The result will __/not/__ be wrapped in a union-like monad, but will be
+-- wrapped in a monad maintaining the 'Fresh' context.
 --
 -- >>> runFresh (gchooseSimpleFresh (Proxy @SymBool) [ssymb "b", ssymb "c", ssymb "d"]) "a" :: SymInteger
 -- (ite a@0 b (ite a@1 c d))
@@ -587,6 +637,9 @@ gchooseSimpleFresh proxy (r : rs) = do
   return $ gmrgIte b r res
 gchooseSimpleFresh _ [] = error "gchooseSimpleFresh expects at least one value"
 
+-- | A wrapper for `gchooseSimpleFresh` that executes the `MonadFresh` context.
+-- A globally unique identifier should be supplied to ensure the uniqueness of
+-- symbolic constants in the generated symbolic values.
 gchooseSimple ::
   forall proxy bool a.
   ( SymBoolOp bool,
@@ -599,11 +652,13 @@ gchooseSimple ::
   a
 gchooseSimple p = runFresh . gchooseSimpleFresh p
 
--- | Symbolically chooses one of the provided values wrapped in union-like monads.
--- The procedure creates @n - 1@ fresh symbolic boolean variables every time it is evaluated, and use
--- these variables to conditionally select one of the @n@ provided expressions.
+-- | Symbolically chooses one of the provided values wrapped in union-like
+-- monads. The procedure creates @n - 1@ fresh symbolic boolean variables every
+-- time it is evaluated, and use these variables to conditionally select one of
+-- the @n@ provided expressions.
 --
--- The result will be wrapped in a union-like monad, and also a monad maintaining the 'GenSym' context.
+-- The result will be wrapped in a union-like monad, and also a monad
+-- maintaining the 'Fresh' context.
 --
 -- >>> let a = runFresh (gchooseFresh [1, 2]) "a" :: UnionM Integer
 -- >>> let b = runFresh (gchooseFresh [2, 3]) "b" :: UnionM Integer
@@ -626,6 +681,9 @@ gchooseUnionFresh (r : rs) = do
   return $ mrgIf b r res
 gchooseUnionFresh [] = error "gchooseUnionFresh expects at least one value"
 
+-- | A wrapper for `gchooseUnionFresh` that executes the `MonadFresh` context.
+-- A globally unique identifier should be supplied to ensure the uniqueness of
+-- symbolic constants in the generated symbolic values.
 gchooseUnion ::
   forall bool a u.
   ( SymBoolOp bool,
@@ -779,6 +837,9 @@ instance
 --
 -- >>> runFresh (gfresh (ListSpec 0 2 ())) "c" :: UnionM [SymBool]
 -- UMrg (If c@2 (Single []) (If c@3 (Single [c@1]) (Single [c@0,c@1])))
+--
+-- >>> runFresh (gfresh (ListSpec 0 2 (SimpleListSpec 1 ()))) "c" :: UnionM [[SymBool]]
+-- UMrg (If c@2 (Single []) (If c@3 (Single [[c@1]]) (Single [[c@0],[c@1]])))
 data ListSpec spec = ListSpec
   { -- | The minimum length of the generated lists
     genListMinLength :: Int,

@@ -5,7 +5,8 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Grisette.Core.Data.UnionBase
-  ( UnionBase (..),
+  ( -- The union data structure. Please consider using 'UnionM' instead.
+    UnionBase (..),
     ifWithLeftMost,
     ifWithStrategy,
     fullReconstruct,
@@ -18,7 +19,7 @@ import Data.Hashable
 import GHC.Generics
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Language.Haskell.TH.Syntax
 

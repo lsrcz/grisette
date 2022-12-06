@@ -45,8 +45,8 @@ library
       Grisette.Core.Data.Class.Integer
       Grisette.Core.Data.Class.Mergeable
       Grisette.Core.Data.Class.ModelOps
-      Grisette.Core.Data.Class.PrimWrapper
       Grisette.Core.Data.Class.SimpleMergeable
+      Grisette.Core.Data.Class.Solvable
       Grisette.Core.Data.Class.Solver
       Grisette.Core.Data.Class.SOrd
       Grisette.Core.Data.Class.Substitute

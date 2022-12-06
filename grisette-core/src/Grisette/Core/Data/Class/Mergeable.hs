@@ -16,17 +16,29 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.Mergeable
-  ( GMergingStrategy (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Merging strategy
+    GMergingStrategy (..),
+
+    -- * Mergeable
     GMergeable (..),
-    GMergeable' (..),
     GMergeable1 (..),
     gmergingStrategy1,
     GMergeable2 (..),
     gmergingStrategy2,
     GMergeable3 (..),
     gmergingStrategy3,
-    -- withGMergeable,
+    GMergeable' (..),
     derivedGMergingStrategy,
+
+    -- * Combinators for manually building merging strategies
     gwrapStrategy,
     gproduct2Strategy,
     DynamicSortedIdx (..),
@@ -61,7 +73,7 @@ import Grisette.Core.Data.Class.Bool
 import Unsafe.Coerce
 
 -- | Helper type for combining arbitrary number of indices into one.
--- Useful when trying to write efficient merge strategy for lists / vectors.
+-- Useful when trying to write efficient merge strategy for lists/vectors.
 data DynamicSortedIdx where
   DynamicSortedIdx :: forall idx. (Show idx, Ord idx, Typeable idx) => idx -> DynamicSortedIdx
 
@@ -80,12 +92,12 @@ instance Ord DynamicSortedIdx where
 instance Show DynamicSortedIdx where
   show (DynamicSortedIdx a) = show a
 
--- Resolves the indices and the terminal merge strategy for a value of some 'GMergeable' type.
+-- | Resolves the indices and the terminal merge strategy for a value of some 'GMergeable' type.
 gresolveStrategy :: forall bool x. GMergingStrategy bool x -> x -> ([DynamicSortedIdx], GMergingStrategy bool x)
 gresolveStrategy s x = gresolveStrategy' x s
 {-# INLINE gresolveStrategy #-}
 
--- Resolves the indices and the terminal merge strategy for a value given a merge strategy for its type.
+-- | Resolves the indices and the terminal merge strategy for a value given a merge strategy for its type.
 gresolveStrategy' :: forall bool x. x -> GMergingStrategy bool x -> ([DynamicSortedIdx], GMergingStrategy bool x)
 gresolveStrategy' x = go
   where
@@ -98,9 +110,28 @@ gresolveStrategy' x = go
     go s = ([], s)
 {-# INLINE gresolveStrategy' #-}
 
--- | Merge strategy types.
+-- | Merging strategy types.
 --
--- A merge strategy encodes how to merge a __/subset/__ of the values of a given type.
+-- In Grisette, a merged union (if-then-else tree) follows __/hierarical
+-- sorted representation invariant/__ with regards to some merging strategy.
+-- To better show the invariant, we will use a more friendly representation of a
+-- union structure. The following two
+-- representations are equivalent:
+--
+-- > If      c1    (If c11 (Single v11) (If c12 (Single v12) (Single v13)))
+-- >   (If   c2    (Single v2)
+-- >               (Single v3))
+--
+-- \[
+--   \left\{\begin{aligned}&t_1&&\mathrm{if}&&c_1\\&v_2&&\mathrm{else if}&&c_2\\&v_3&&\mathrm{otherwise}&&\end{aligned}\right.\hspace{2em}\mathrm{where}\hspace{2em}t_1 = \left\{\begin{aligned}&v_{11}&&\mathrm{if}&&c_{11}\\&v_{12}&&\mathrm{else if}&&c_{12}\\&v_{13}&&\mathrm{otherwise}&&\end{aligned}\right.
+-- \]
+--
+-- A merging strategy encodes how to merge a __/subset/__ of the values of a
+-- given type. We have three types of merging strategies:
+--
+-- * Simple strategy
+-- * Sorted strategy
+-- * No strategy
 --
 -- The 'SimpleStrategy' merges values with a simple merge function.
 -- For example,
@@ -111,24 +142,50 @@ gresolveStrategy' x = go
 --        can be simply merged as the set contains only a single value.
 --
 --    (3) all the 'Just' values of the type @Maybe SymBool@ can be simply merged
---        by merging the wrapped symbolic boolean with ites.
+--        by merging the wrapped symbolic boolean with 'ites'.
 --
--- The 'SortedStrategy' merges values by first grouping the values with an indexing
--- function. Each group with be merged in a subtree with a sub-strategy for the index.
--- Grisette will use these information to generate efficient SMT formula.
--- For example,
+-- The 'SortedStrategy' merges values by first grouping the values with an
+-- indexing function, and the values with the same index will be organized as
+-- a sub-tree in the if-then-else structure of 'UnionBase'.
+-- Each group (sub-tree) will be further merged with a sub-strategy for the
+-- index.
+-- The index type should be a totally ordered type (with the 'Ord'
+-- type class). Grisette will use the indexing function to partition the values
+-- into sub-trees, and organize them in a sorted way. The sub-trees will further
+-- be merged with the sub-strategies. For example,
 --
---    (1) all the integers can be merged with 'SortedStrategy' by indexing with identity map
---        and use the 'SimpleStrategy' shown before as the sub-strategies.
+--    (1) all the integers can be merged with 'SortedStrategy' by indexing with
+--        the identity function and use the 'SimpleStrategy' shown before as the
+--        sub-strategies.
 --
 --    (2) all the @Maybe SymBool@ values can be merged with 'SortedStrategy' by
 --        indexing with 'Data.Maybe.isJust'.
 --
 -- The 'NoStrategy' does not perform any merging.
--- For example, we cannot merge functions that returns concrete lists.
+-- For example, we cannot merge values with function types that returns concrete
+-- lists.
 --
--- Usually the user does not have to implement 'GMergingStrategy' manually,
--- and the derived 'GMergeable' type class for ADTs is sufficient.
+-- For ADTs, we can automatically derive the 'GMergeable' type class, which
+-- provides a merging strategy. 
+--
+-- If the derived version does not work for you, you should determine
+-- if your type can be directly merged with a merging function. If so, you can
+-- implement the merging strategy as a 'SimpleStrategy'.
+-- If the type cannot be directly merged with a merging function, but could be
+-- partitioned into subsets of values that can be simply merged with a function,
+-- you should implement the merging strategy as a 'SortedStrategy'.
+-- For easier building of the merging strategies, check out the combinators
+-- like `gwrapStrategy`.
+--
+-- For more details, please see
+-- [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf).
+--
+-- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
+-- be an instance of `SymBoolOp`. If you do not need to use an alternative
+-- symbolic Boolean type, and will use the 'SymBool' type provided by the
+-- `grisette-symir` package, you can use the specialized `MergingStrategy` type
+-- instead. The specialized versions for the combinators for building
+-- `MergingStrategy` are also provided.
 data GMergingStrategy bool a where
   -- | Simple mergeable strategy.
   --
@@ -160,11 +217,17 @@ data GMergingStrategy bool a where
     -- | Sub-strategy function
     (idx -> GMergingStrategy bool a) ->
     GMergingStrategy bool a
+  -- | For preventing the merging intentionally. This could be
+  -- useful for keeping some value concrete and may help generate more efficient
+  -- formulas. 
+  --
+  -- See [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf) for
+  -- details.
   NoStrategy :: GMergingStrategy bool a
 
 -- | Useful utility function for building merge strategies manually.
 --
--- For example, to build the merge strategy for the just branch of 'Maybe a',
+-- For example, to build the merge strategy for the just branch of @Maybe a@,
 -- one could write
 --
 -- > gwrapStrategy Just fromMaybe gmergingStrategy :: GMergingStrategy (Maybe a)
@@ -190,8 +253,16 @@ gwrapStrategy NoStrategy _ _ = NoStrategy
 
 -- | Each type is associated with a root merge strategy given by 'gmergingStrategy'.
 -- The root merge strategy should be able to merge every value of the type.
--- Grisette will use the root merge strategy to merge the values of the type.
+-- Grisette will use the root merge strategy to merge the values of the type in
+-- a union.
+--
+-- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
+-- be an instance of `SymBoolOp`. If you do not need to use an alternative
+-- symbolic Boolean type, and will use the 'SymBool' type provided by the
+-- `grisette-symir` package, you can use the specialized `Mergeable` type
+-- synonym for constraints.
 class GMergeable bool a where
+  -- | The root merging strategy for the type.
   gmergingStrategy :: GMergingStrategy bool a
 
 instance (Generic a, GMergeable' bool (Rep a)) => GMergeable bool (Default a) where
@@ -324,10 +395,23 @@ instance (GMergeable' bool a, GMergeable' bool b) => GMergeable' bool (a :+: b) 
       )
   {-# INLINE gmergingStrategy' #-}
 
+-- | Useful utility function for building merge strategies for product types
+-- manually.
+--
+-- For example, to build the merge strategy for the following product type,
+-- one could write
+--
+-- > data X = X { x1 :: Int, x2 :: Bool }
+-- > gproduct2Strategy X (\(X a b) -> (a, b)) gmergingStrategy gmergingStrategy
+-- >   :: GMergingStrategy X
 gproduct2Strategy ::
+  -- | The wrap function
   (a -> b -> r) ->
+  -- | The unwrap function, which does not have to be defined for every value
   (r -> (a, b)) ->
+  -- | The first merge strategy to be wrapped
   GMergingStrategy bool a ->
+  -- | The second merge strategy to be wrapped
   GMergingStrategy bool b ->
   GMergingStrategy bool r
 gproduct2Strategy wrap unwrap strategy1 strategy2 =

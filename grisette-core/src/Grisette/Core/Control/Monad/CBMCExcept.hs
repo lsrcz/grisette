@@ -11,7 +11,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Control.Monad.CBMCExcept
-  ( CBMCEither (..),
+  ( -- * CBMC-like error handling
+    CBMCEither (..),
     CBMCExceptT (..),
     cbmcExcept,
     mapCBMCExceptT,
@@ -44,6 +45,7 @@ import Grisette.Core.Data.Class.ToSym
 import Language.Haskell.TH.Syntax (Lift)
 import Unsafe.Coerce
 
+-- | A wrapper type for 'Either'. Uses different merging strategies.
 newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}
   deriving newtype (Eq, Eq1, Ord, Ord1, Read, Read1, Show, Show1, Functor, Applicative, Monad, Hashable, NFData)
   deriving stock (Generic, Lift)
@@ -142,15 +144,19 @@ instance (SymBoolOp bool, GMergeable bool e) => GMergeable1 bool (CBMCEither e) 
 cbmcEither :: forall a c b. (a -> c) -> (b -> c) -> CBMCEither a b -> c
 cbmcEither l r v = either l r (unsafeCoerce v)
 
+-- | Wrap an 'Either' value in 'CBMCExceptT'
 cbmcExcept :: (Monad m) => Either e a -> CBMCExceptT e m a
 cbmcExcept m = CBMCExceptT (return $ CBMCEither m)
 
+-- | Map the error and values in a 'CBMCExceptT'
 mapCBMCExceptT :: (m (Either e a) -> n (Either e' b)) -> CBMCExceptT e m a -> CBMCExceptT e' n b
 mapCBMCExceptT f m = CBMCExceptT $ (unsafeCoerce . f . unsafeCoerce) (runCBMCExceptT m)
 
+-- | Map the error in a 'CBMCExceptT'
 withCBMCExceptT :: Functor m => (e -> e') -> CBMCExceptT e m a -> CBMCExceptT e' m a
 withCBMCExceptT f = mapCBMCExceptT $ fmap $ either (Left . f) Right
 
+-- | Similar to 'ExceptT', but with different error handling mechanism.
 newtype CBMCExceptT e m a = CBMCExceptT {runCBMCExceptT :: m (CBMCEither e a)} deriving stock (Generic, Generic1)
 
 instance (Eq e, Eq1 m) => Eq1 (CBMCExceptT e m) where

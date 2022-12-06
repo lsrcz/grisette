@@ -26,7 +26,7 @@ import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.ToCon
@@ -106,6 +106,9 @@ instance TransformError AssertionError AssertionError where
 -- If the condition is symbolic, Grisette will split the execution into two paths based on the condition.
 -- The symbolic execution will continue on the then-branch, where the condition is true.
 -- For the else branch, where the condition is false, the execution will be terminated.
+--
+-- The resulting monadic environment should be compatible with the 'AssertionError'
+-- error type. See 'TransformError' type class for details.
 --
 -- /Examples/:
 --

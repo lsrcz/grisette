@@ -15,14 +15,18 @@ import Control.Monad.Except
 import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 
--- | Safe signed 'div' and 'mod' with monadic error handling in multi-path execution.
+-- | Safe signed 'div' and 'mod' with monadic error handling in multi-path
+-- execution. These procedures show throw 'DivideByZero' exception when the
+-- divisor is zero. The result should be able to handle errors with
+-- `MonadError`, and the error type should be compatible with 'ArithException'
+-- (see 'TransformError' for more details).
 class SignedDivMod bool a where
   -- | Safe signed 'div' with monadic error handling in multi-path execution.
   --
@@ -30,17 +34,29 @@ class SignedDivMod bool a where
   -- ExceptT (UMrg (If (= b 0I) (Single (Left AssertionError)) (Single (Right (div a b)))))
   divs :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
+  -- | Safe signed 'mod' with monadic error handling in multi-path execution.
+  --
+  -- >>> mods (ssymb "a") (ssymb "b") :: ExceptT AssertionError UnionM SymInteger
+  -- ExceptT (UMrg (If (= b 0I) (Single (Left AssertionError)) (Single (Right (mod a b)))))
   mods :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
--- | Safe unsigned 'div' and 'mod' with monadic error handling in multi-path execution.
+-- | Safe unsigned 'div' and 'mod' with monadic error handling in multi-path
+-- execution. These procedures show throw 'DivideByZero' exception when the
+-- divisor is zero. The result should be able to handle errors with
+-- `MonadError`, and the error type should be compatible with 'ArithException'
+-- (see 'TransformError' for more details).
 class UnsignedDivMod bool a where
   udivs :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
   umods :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
--- | Safe signed 'quot' and 'rem' with monadic error handling in multi-path execution.
+-- | Safe signed 'quot' and 'rem' with monadic error handling in multi-path
+-- execution. These procedures show throw 'DivideByZero' exception when the
+-- divisor is zero. The result should be able to handle errors with
+-- `MonadError`, and the error type should be compatible with 'ArithException'
+-- (see 'TransformError' for more details).
 class SignedQuotRem bool a where
   quots :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
   rems :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
 -- | Aggregation for the operations on symbolic integer types
-class (Num a, GSEq bool a, GSOrd bool a, PrimWrapper a Integer) => GSymIntegerOp bool a
+class (Num a, GSEq bool a, GSOrd bool a, Solvable Integer a) => GSymIntegerOp bool a

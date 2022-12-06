@@ -4,7 +4,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Grisette.Core.Data.FileLocation
-  ( FileLocation (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Symbolic constant generation with location
+
+    FileLocation (..),
     nameWithLoc,
     slocsymb,
     ilocsymb,
@@ -16,7 +26,7 @@ import Data.Hashable
 import Debug.Trace.LocationTH (__LOCATION__)
 import GHC.Generics
 import Grisette.Core.Data.Class.GenSym
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat
 
@@ -49,13 +59,22 @@ parseFileLocation str =
 nameWithLoc :: String -> SpliceQ FreshIdent
 nameWithLoc s = [||nameWithInfo s (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
 
--- | Generate simply-named symbolic variables. The file location will be attached to identifier.
+-- | Generate simply-named symbolic variables. The file location will be
+-- attached to the identifier.
 --
 -- >>> $$(slocsymb "a") :: SymBool
 -- a:<interactive>:...
 --
--- The uniqueness is ensured for the call to 'slocsymb' at different location.
-slocsymb :: (PrimWrapper s c) => String -> SpliceQ s
+-- Calling 'slocsymb' with the same name at different location will always
+-- generate different symbolic constants. Calling 'slocsymb' at the same
+-- location for multiple times will generate the same symbolic constants.
+--
+-- >>> ($$(slocsymb "a") :: SymBool) == $$(slocsymb "a")
+-- False
+-- >>> let f _ = $$(slocsymb "a") :: SymBool
+-- >>> f () == f ()
+-- True
+slocsymb :: (Solvable c s) => String -> SpliceQ s
 slocsymb nm = [||sinfosymb nm (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
 
 -- | Generate indexed symbolic variables. The file location will be attached to identifier.
@@ -63,6 +82,8 @@ slocsymb nm = [||sinfosymb nm (parseFileLocation $$(liftSplice $ unsafeTExpCoerc
 -- >>> $$(ilocsymb "a" 1) :: SymBool
 -- a@1:<interactive>:...
 --
--- The uniqueness is ensured for the call to 'ilocsymb' at different location.
-ilocsymb :: (PrimWrapper s c) => String -> Int -> SpliceQ s
+-- Calling 'ilocsymb' with the same name and index at different location will
+-- always generate different symbolic constants. Calling 'slocsymb' at the same
+-- location for multiple times will generate the same symbolic constants.
+ilocsymb :: (Solvable c s) => String -> Int -> SpliceQ s
 ilocsymb nm idx = [||iinfosymb nm idx (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]

@@ -8,7 +8,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.Evaluate
-  ( GEvaluateSym (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Evaluating symbolic values with model
+
+    GEvaluateSym (..),
     gevaluateSymToCon,
   )
 where
@@ -35,16 +45,24 @@ import Grisette.Core.Data.Class.ToCon
 -- >>> :set -XTypeApplications
 
 -- | Evaluating symbolic variables with some model.
+-- When given a satisfiable formula, a solver can return a model that specifies
+-- the concrete assignments of the variables in the formula to make the formula
+-- true.
 --
--- Usually the model is created with the solver, rather than by hand.
+-- __Note:__ The @model@ type is the model type for the solver backend. It
+-- should be an instance of `ModelOp`. If you do not need to use an alternative
+-- solver backend, and will use the 'Model' type provided by the
+-- `grisette-symir` package, you can use the specialized `EvaluateSym` type
+-- synonym for the constraints and use specialized `evaluateSym`,
+-- `evaluateSymToCon` combinators to write code with fewer type annotations.
+--
+-- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
+-- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
+-- [1I,b]
+-- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
+-- [1I,0I]
 class GEvaluateSym model a where
   -- | Evaluate a symbolic variable with some model, possibly fill in values for the missing variables.
-  --
-  -- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
-  -- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
-  -- [1I,b]
-  -- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
-  -- [1I,0I]
   gevaluateSym :: Bool -> model -> a -> a
 
 instance (Generic a, GEvaluateSym' model (Rep a)) => GEvaluateSym model (Default a) where

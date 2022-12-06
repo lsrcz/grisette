@@ -15,7 +15,7 @@ import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'traverse' with 'Mergeable' knowledge propagation.
+-- | 'traverse' with 'GMergingStrategy' knowledge propagation.
 mrgTraverse ::
   forall bool a b t f.
   ( GMergeable bool b,
@@ -29,7 +29,7 @@ mrgTraverse ::
 mrgTraverse f = mergeWithStrategy gmergingStrategy1 . traverse (merge . f)
 {-# INLINE mrgTraverse #-}
 
--- | 'sequenceA' with 'Mergeable' knowledge propagation.
+-- | 'sequenceA' with 'GMergingStrategy' knowledge propagation.
 mrgSequenceA ::
   forall bool a t f.
   ( GMergeable bool a,
@@ -42,7 +42,7 @@ mrgSequenceA ::
 mrgSequenceA = mrgTraverse id
 {-# INLINE mrgSequenceA #-}
 
--- | 'mapM' with 'Mergeable' knowledge propagation.
+-- | 'mapM' with 'GMergingStrategy' knowledge propagation.
 mrgMapM ::
   forall bool a b t f.
   ( GMergeable bool b,
@@ -56,7 +56,7 @@ mrgMapM ::
 mrgMapM = mrgTraverse
 {-# INLINE mrgMapM #-}
 
--- | 'sequence' with 'Mergeable' knowledge propagation.
+-- | 'sequence' with 'GMergingStrategy' knowledge propagation.
 mrgSequence ::
   forall bool a t f.
   ( GMergeable bool a,
@@ -69,7 +69,7 @@ mrgSequence ::
 mrgSequence = mrgSequenceA
 {-# INLINE mrgSequence #-}
 
--- | 'for' with 'Mergeable' knowledge propagation.
+-- | 'for' with 'GMergingStrategy' knowledge propagation.
 mrgFor ::
   ( GMergeable bool b,
     GMergeable1 bool t,
@@ -82,7 +82,7 @@ mrgFor ::
 mrgFor = flip mrgTraverse
 {-# INLINE mrgFor #-}
 
--- | 'forM' with 'Mergeable' knowledge propagation.
+-- | 'forM' with 'GMergingStrategy' knowledge propagation.
 mrgForM ::
   ( GMergeable bool b,
     GMergeable1 bool t,

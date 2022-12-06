@@ -10,7 +10,7 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 

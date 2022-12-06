@@ -9,7 +9,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.Substitute
-  ( GSubstituteSymSymbol (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Substituting symbolic constants
+
+    GSubstituteSymSymbol (..),
     GSubstituteSym (..),
     GSubstituteSym' (..),
   )
@@ -27,12 +37,28 @@ import Data.Word
 import Generics.Deriving
 import Generics.Deriving.Instances ()
 
+-- | An empty type class to link the typed symbol and the solvable type.
+-- This is used to help Haskell compiler with functional dependency.
 class GSubstituteSymSymbol (typedSymbol :: * -> *) (sym :: * -> *) | sym -> typedSymbol
 
+-- | Substitution of symbolic constants.
+--
+-- __Note:__ The @typedSymbol@ type is the typed symbol type for the symbolic
+-- constants, and the @sym@ type is the solvable type. If you do not need to use
+-- an alternative solvable type implementation, and will use the 'TypedSymbol'
+-- and 'Sym' types provided by the `grisette-symir` package, you can use the
+-- specialized `SubstituteSym` type synonym for the constraints and use the
+-- specialized `substituteSym` function to write code.
 class GSubstituteSymSymbol typedSymbol sym => GSubstituteSym typedSymbol sym a | sym -> typedSymbol where
+  -- Substitute a symbolic constant to some symbolic value
+  --
+  -- >>> gsubstituteSym "a" ("c" &&~ "d" :: Sym Bool) ["a" &&~ "b" :: Sym Bool, "a"]
+  -- [(&& (&& c d) b),(&& c d)]
   gsubstituteSym :: typedSymbol b -> sym b -> a -> a
 
+-- | Auxiliary class for 'GSubstituteSym' instance derivation
 class GSubstituteSym' typedSymbol sym a | sym -> typedSymbol where
+  -- | Auxiliary function for 'gsubstituteSym' derivation
   gsubstituteSym' :: typedSymbol b -> sym b -> a c -> a c
 
 instance

@@ -8,7 +8,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.ToSym
-  ( ToSym (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain actual implementation for symbolic primitive types, and
+    -- the examples in this module cannot be executed solely with @grisette-core@ package.
+    -- They rely on the implementation in @grisette-symir@ package.
+
+    -- * Converting to symbolic values
+
+    ToSym (..),
   )
 where
 
@@ -30,10 +40,10 @@ import Generics.Deriving
 class ToSym a b where
   -- | Convert a concrete value to symbolic value.
   --
-  -- toSym False :: SymBool
+  -- >>> toSym False :: SymBool
   -- false
   --
-  -- toSym [False, True] :: [SymBool]
+  -- >>> toSym [False, True] :: [SymBool]
   -- [false,true]
   toSym :: a -> b
 
