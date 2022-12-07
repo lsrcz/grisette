@@ -19,6 +19,7 @@ import qualified Data.SBV.Control as SBVC
 import Grisette.Backend.SBV.Data.SMT.Config
 import Grisette.Backend.SBV.Data.SMT.Lowering
 import Grisette.Core.Data.Class.Bool
+import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.ModelOps
@@ -45,7 +46,7 @@ solveTermWith config term = SBV.runSMTWith (sbvConfig config) $ do
         return (m, Right $ parseModel config md m)
       _ -> return (m, Left r)
 
-instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
+instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
   solveFormula config (Sym t) = snd <$> solveTermWith config t
   solveFormulaMulti config n s@(Sym t)
     | n > 0 = SBV.runSMTWith (sbvConfig config) $ do
@@ -89,6 +90,8 @@ instance Solver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.M
                 return $ md : rmmd
         | otherwise = return [md]
   solveFormulaAll = undefined
+
+instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
   cegisFormulas ::
     forall forallArg.
     (GExtractSymbolics SymbolSet forallArg, GEvaluateSym PM.Model forallArg) =>

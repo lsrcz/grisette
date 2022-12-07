@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,8 +18,6 @@ module Grisette.Core.Data.Class.Solver
     ExtractUnionEither (..),
     solveFallable,
     solveMultiFallable,
-    cegisFallable,
-    cegisFallable',
   )
 where
 
@@ -47,26 +44,13 @@ data SolveInternal = SolveInternal deriving (Eq, Show, Ord, Generic, Hashable, L
 
 class
   (SymBoolOp bool, GEvaluateSym model bool) =>
-  Solver config bool symbolSet failure model
-    | config -> bool symbolSet failure model
+  Solver config bool failure model
+    | config -> bool failure model
   where
   solveFormula :: config -> bool -> IO (Either failure model)
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
-  cegisFormula ::
-    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
-    config ->
-    forallArg ->
-    bool ->
-    IO (Either failure ([forallArg], model))
-  cegisFormula config forallArg = cegisFormulas config forallArg (conc False)
-  cegisFormulas ::
-    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
-    config ->
-    forallArg ->
-    bool ->
-    bool ->
-    IO (Either failure ([forallArg], model))
+
 
 class ExtractUnionEither t u e v | t -> u e v where
   extractUnionEither :: t -> u (Either e v)
@@ -79,7 +63,7 @@ solveFallable ::
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
-    Solver config bool symbolSet failure model
+    Solver config bool failure model
   ) =>
   config ->
   (Either e v -> bool) ->
@@ -92,7 +76,7 @@ solveMultiFallable ::
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
-    Solver config bool symbolSet failure model
+    Solver config bool failure model
   ) =>
   config ->
   Int ->
@@ -100,45 +84,3 @@ solveMultiFallable ::
   t ->
   IO [model]
 solveMultiFallable config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionEither v)
-
-cegisFallable ::
-  ( ExtractUnionEither t u e v,
-    GUnionPrjOp bool u,
-    Functor u,
-    SymBoolOp bool,
-    GEvaluateSym model forallArgs,
-    GExtractSymbolics symbolSet forallArgs,
-    Solver config bool symbolSet failure model
-  ) =>
-  config ->
-  forallArgs ->
-  (Either e v -> (bool, bool)) ->
-  t ->
-  IO (Either failure ([forallArgs], model))
-cegisFallable config args f v = uncurry (cegisFormulas config args) (getSingle $ f <$> extractUnionEither v)
-
-cegisFallable' ::
-  ( ExtractUnionEither t u e v,
-    GUnionPrjOp bool u,
-    Monad u,
-    SymBoolOp bool,
-    GEvaluateSym model forallArgs,
-    GExtractSymbolics symbolSet forallArgs,
-    Solver config bool symbolSet failure model
-  ) =>
-  config ->
-  forallArgs ->
-  (Either e v -> u (Either VerificationConditions ())) ->
-  t ->
-  IO (Either failure ([forallArgs], model))
-cegisFallable' config args f v =
-  uncurry
-    (cegisFormulas config args)
-    ( getSingle $
-        ( \case
-            Left AssumptionViolation -> (conc True, conc False)
-            Left AssertionViolation -> (conc False, conc True)
-            _ -> (conc False, conc False)
-        )
-          <$> (extractUnionEither v >>= f)
-    )

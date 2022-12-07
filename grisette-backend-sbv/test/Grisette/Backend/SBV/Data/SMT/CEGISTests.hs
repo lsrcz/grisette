@@ -14,6 +14,7 @@ import Grisette.Backend.SBV.Data.SMT.Solving ()
 import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
+import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
