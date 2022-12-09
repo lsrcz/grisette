@@ -6,8 +6,16 @@ cabal-version: 1.12
 
 name:           grisette
 version:        0.1.0.0
-synopsis:       Monadic symbolic compilation
-description:    Monadic library for a symbolic host language in haskell
+synopsis:       Symbolic evaluation as a library
+description:    Grisette is a reusable symbolic evaluation library for Haskell. By
+                translating programs into constraints, Grisette can help the development of
+                program reasoning tools, including verification, synthesis, and more.
+                .
+                grisette exports all constructs you need for building a symbolic evaluation
+                tool.
+                .
+                For more details, please checkout the README at
+                <https://github.com/lsrcz/grisette>
 category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
 homepage:       https://github.com/lsrcz/grisette-haskell#readme
 bug-reports:    https://github.com/lsrcz/grisette-haskell/issues
@@ -17,6 +25,8 @@ copyright:      2021-2022 Sirui Lu
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
+extra-source-files:
+    README.md
 
 source-repository head
   type: git
