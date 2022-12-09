@@ -16,8 +16,8 @@ dependencies:
 - grisette-symir == 0.1.0.0
 - grisette-lib == 0.1.0.0
 - grisette-backend-sbv == 0.1.0.0
-- sbv >= 8.11
-- generic-deriving >= 1.14.1
+- sbv >= 8.11 && < 9.1
+- generic-deriving >= 1.14.1 && < 1.15
 
 # default-extensions:
 # - BangPatterns
