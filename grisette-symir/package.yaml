@@ -1,7 +1,18 @@
 name: grisette-symir
 version: 0.1.0.0
-synopsis: Symbolic IR
-description: Default symbolic IR implementation for grisette
+synopsis: Symbolic evaluation as a library (solvable type/symbolic IR)
+description: |
+  Grisette is a reusable symbolic evaluation library for Haskell. By
+  translating programs into constraints, Grisette can help the development of
+  program reasoning tools, including verification, synthesis, and more.
+  .
+  grisette-symir provides the solvable types (i.e. symbolic intermediate
+  representation) for Grisette.
+  <https://hackage.haskell.org/package/grisette> exports all constructs
+  you need for building a symbolic evaluation tool.
+  .
+  For more details, please checkout the README at
+  <https://github.com/lsrcz/grisette>
 category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
 author: "Sirui Lu"
 maintainer: Sirui Lu (siruilu@cs.washington.edu)
