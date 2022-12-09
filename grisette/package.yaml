@@ -18,7 +18,7 @@ license: BSD3
 license-file: LICENSE
 github: lsrcz/grisette-haskell
 copyright: "2021-2022 Sirui Lu"
-extra-source-files: README.md
+extra-source-files: README.md CHANGES.md
 
 dependencies:
 - base > 4.14 && < 5
