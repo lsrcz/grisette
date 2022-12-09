@@ -1,7 +1,17 @@
 name: grisette-backend-sbv
 version: 0.1.0.0
-synopsis: Lowering symbolic primitives to SMT
-description: Lowering symbolic primitives to SMT
+synopsis: Symbolic evaluation as a library (solver backend)
+description: |
+  Grisette is a reusable symbolic evaluation library for Haskell. By
+  translating programs into constraints, Grisette can help the development of
+  program reasoning tools, including verification, synthesis, and more.
+  .
+  grisette-backend-sbv provides a solver backend with sbv for Grisette.
+  <https://hackage.haskell.org/package/grisette> exports all constructs
+  you need for building a symbolic evaluation tool.
+  .
+  For more details, please checkout the README at
+  <https://github.com/lsrcz/grisette>
 category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
 author: "Sirui Lu"
 maintainer: Sirui Lu (siruilu@cs.washington.edu)
@@ -14,12 +24,12 @@ dependencies:
 - base > 4.14 && < 5
 - grisette-core == 0.1.0.0
 - grisette-symir == 0.1.0.0
-- hashable >= 1.3
-- mtl >= 2.2.2
-- unordered-containers >= 0.2.11
-- sbv >= 8.11
-- template-haskell >= 2.16
-- deepseq >= 1.4.4
+- hashable >= 1.3 && < 1.5
+- mtl >= 2.2.2 && < 2.3
+- unordered-containers >= 0.2.11 && < 0.3
+- sbv >= 8.11 && < 9.1
+- template-haskell >= 2.16 && < 2.20
+- deepseq >= 1.4.4 && < 1.5
 
 flags: {
   fast: {
@@ -45,7 +55,7 @@ tests:
     source-dirs: test
     dependencies:
       - grisette-backend-sbv
-      - tasty >= 1.1.0.3
-      - tasty-hunit >= 0.10
-      - tasty-test-reporter >= 0.1.1.2
-      - tasty-quickcheck >= 0.10.1
+      - tasty >= 1.1.0.3 && < 1.5
+      - tasty-hunit >= 0.10 && < 0.11
+      - tasty-test-reporter >= 0.1.1.2 && < 0.2
+      - tasty-quickcheck >= 0.10.1 && < 0.11

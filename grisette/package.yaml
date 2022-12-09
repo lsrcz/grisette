@@ -1,7 +1,16 @@
 name: grisette
 version: 0.1.0.0
-synopsis: Monadic symbolic compilation
-description: Monadic library for a symbolic host language in haskell
+synopsis: Symbolic evaluation as a library
+description: |
+  Grisette is a reusable symbolic evaluation library for Haskell. By
+  translating programs into constraints, Grisette can help the development of
+  program reasoning tools, including verification, synthesis, and more.
+  .
+  grisette exports all constructs you need for building a symbolic evaluation
+  tool.
+  .
+  For more details, please checkout the README at
+  <https://github.com/lsrcz/grisette>
 category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
 author: "Sirui Lu"
 maintainer: Sirui Lu (siruilu@cs.washington.edu)
@@ -9,6 +18,7 @@ license: BSD3
 license-file: LICENSE
 github: lsrcz/grisette-haskell
 copyright: "2021-2022 Sirui Lu"
+extra-source-files: README.md
 
 dependencies:
 - base > 4.14 && < 5
@@ -16,8 +26,8 @@ dependencies:
 - grisette-symir == 0.1.0.0
 - grisette-lib == 0.1.0.0
 - grisette-backend-sbv == 0.1.0.0
-- sbv >= 8.11
-- generic-deriving >= 1.14.1
+- sbv >= 8.11 && < 9.1
+- generic-deriving >= 1.14.1 && < 1.15
 
 # default-extensions:
 # - BangPatterns
