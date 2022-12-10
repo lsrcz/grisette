@@ -5,8 +5,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+-- |
+-- Module      :   Grisette.Core.Data.Class.SOrd
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 
 module Grisette.Core.Data.Class.SOrd
   ( -- * Note for the examples
@@ -168,7 +178,7 @@ derivedGSymCompare x y = gsymCompare' (from x) (from y)
 -- (<= b a)
 --
 -- For `gsymCompare`, `Ordering` is not a solvable type, and the result would
--- be wrapped in a union-like monad. See `UnionMBase` and `GUnionLike` for more
+-- be wrapped in a union-like monad. See `Grisette.Core.Control.Monad.UnionMBase` and `GUnionLike` for more
 -- information.
 --
 -- >>> a `gsymCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool

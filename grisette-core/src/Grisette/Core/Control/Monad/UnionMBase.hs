@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -15,6 +16,15 @@
 {-# HLINT ignore "Use <&>" #-}
 
 -- {-# OPTIONS_GHC -fno-full-laziness #-}
+
+-- |
+-- Module      :   Grisette.Core.Control.Monad.UnionMBase
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 
 module Grisette.Core.Control.Monad.UnionMBase
   ( -- * Note for the examples

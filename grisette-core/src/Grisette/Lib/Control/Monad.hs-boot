@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Trustworthy #-}
 
 module Grisette.Lib.Control.Monad where
 

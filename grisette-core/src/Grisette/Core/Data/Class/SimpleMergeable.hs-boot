@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Trustworthy #-}
 
 module Grisette.Core.Data.Class.SimpleMergeable (GSimpleMergeable) where
 

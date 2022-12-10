@@ -4,8 +4,18 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+-- |
+-- Module      :   Grisette.Core.Data.Class.ExtractSymbolics
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 
 module Grisette.Core.Data.Class.ExtractSymbolics
   ( -- * Note for the examples
@@ -42,7 +52,7 @@ import Generics.Deriving
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
 -- __Note:__ The @symbolSet@ type is the symbolic constant set type for the
--- solver backend. It should be an instance of `SymbolSetOp`. If you do not need
+-- solver backend. It should be an instance of `SymbolSetOps`. If you do not need
 -- to use an alternative solver backend, and will use the 'SymbolSet' type
 -- provided by the @grisette-symir@ package, you can use the specialized
 -- `ExtractSymbolics` type synonym for the constraints and use specialized

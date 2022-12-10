@@ -6,9 +6,19 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
+
+-- |
+-- Module      :   Grisette.Core.Data.Class.SimpleMergeable
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 
 module Grisette.Core.Data.Class.SimpleMergeable
   ( -- * Note for the examples
@@ -695,7 +705,7 @@ pattern SingleU x <-
   where
     SingleU x = single x
 
--- | Pattern match to extract guard values with 'guardView'
+-- | Pattern match to extract guard values with 'ifView'
 -- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of IfU c t f -> (c,t,f)
 -- (a,UAny (Single 1),UAny (Single 2))
 pattern IfU :: GUnionPrjOp bool u => bool -> u a -> u a -> u a

@@ -11,9 +11,19 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+-- |
+-- Module      :   Grisette.Core.Data.Class.Mergeable
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 
 module Grisette.Core.Data.Class.Mergeable
   ( -- * Note for the examples
@@ -146,7 +156,7 @@ gresolveStrategy' x = go
 --
 -- The 'SortedStrategy' merges values by first grouping the values with an
 -- indexing function, and the values with the same index will be organized as
--- a sub-tree in the if-then-else structure of 'UnionBase'.
+-- a sub-tree in the if-then-else structure of 'Grisette.Core.Data.UnionBase.UnionBase'.
 -- Each group (sub-tree) will be further merged with a sub-strategy for the
 -- index.
 -- The index type should be a totally ordered type (with the 'Ord'
@@ -286,6 +296,7 @@ gmergingStrategy1 = liftGMergingStrategy gmergingStrategy
 
 -- | Lifting of the 'GMergeable' class to binary type constructors.
 class GMergeable2 bool (u :: Type -> Type -> Type) where
+  -- | Lift merge strategy through the type constructor.
   liftGMergingStrategy2 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool (u a b)
 
 -- | Lift the root merge strategy through the binary type constructor.
@@ -293,10 +304,12 @@ gmergingStrategy2 :: (GMergeable bool a, GMergeable bool b, GMergeable2 bool u) 
 gmergingStrategy2 = liftGMergingStrategy2 gmergingStrategy gmergingStrategy
 {-# INLINE gmergingStrategy2 #-}
 
+-- | Lifting of the 'GMergeable' class to ternery type constructors.
 class GMergeable3 bool (u :: Type -> Type -> Type -> Type) where
+  -- | Lift merge strategy through the type constructor.
   liftGMergingStrategy3 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool c -> GMergingStrategy bool (u a b c)
 
--- | Lift the root merge strategy through the binary type constructor.
+-- | Lift the root merge strategy through the ternery type constructor.
 gmergingStrategy3 :: (GMergeable bool a, GMergeable bool b, GMergeable bool c, GMergeable3 bool u) => GMergingStrategy bool (u a b c)
 gmergingStrategy3 = liftGMergingStrategy3 gmergingStrategy gmergingStrategy gmergingStrategy
 {-# INLINE gmergingStrategy3 #-}
