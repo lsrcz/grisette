@@ -52,7 +52,7 @@ import Generics.Deriving
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
 -- __Note:__ The @symbolSet@ type is the symbolic constant set type for the
--- solver backend. It should be an instance of `SymbolSetOps`. If you do not need
+-- solver backend. It should be an instance of `Grisette.Core.Data.Class.ModelOps.SymbolSetOps`. If you do not need
 -- to use an alternative solver backend, and will use the 'SymbolSet' type
 -- provided by the @grisette-symir@ package, you can use the specialized
 -- `ExtractSymbolics` type synonym for the constraints and use specialized
