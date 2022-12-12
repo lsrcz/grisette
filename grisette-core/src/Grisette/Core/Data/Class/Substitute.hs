@@ -53,12 +53,24 @@ class GSubstituteSymSymbol (typedSymbol :: * -> *) (sym :: * -> *) | sym -> type
 
 -- | Substitution of symbolic constants.
 --
--- __Note:__ The @typedSymbol@ type is the typed symbol type for the symbolic
+-- >>> a = "a" :: TypedSymbol Bool
+-- >>> v = "x" &&~ "y" :: SymBool
+-- >>> substituteSym a v (["a" &&~ "b", "a"] :: [SymBool])
+-- [(&& (&& x y) b), (&& x y)]
+--
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving (GSubstituteSym TypedSymbol Sym) via (Default X)
+--
+-- __Note 2:__ The @typedSymbol@ type is the typed symbol type for the symbolic
 -- constants, and the @sym@ type is the solvable type. If you do not need to use
 -- an alternative solvable type implementation, and will use the 'TypedSymbol'
--- and 'Sym' types provided by the `grisette-symir` package, you can use the
--- specialized `SubstituteSym` type synonym for the constraints and use the
--- specialized `substituteSym` function to write code.
+-- and 'Sym' types provided by the @grisette-symir@ package, you can use the
+-- specialized 'SubstituteSym' type synonym for the constraints and use the
+-- specialized 'substituteSym' function to write code with fewer type annotations.
+-- However, You still need @'GSubstituteSym' TypedSymbol Symbol@ for implementing
+-- or deriving the type class due to GHC's limitation.
 class GSubstituteSymSymbol typedSymbol sym => GSubstituteSym typedSymbol sym a | sym -> typedSymbol where
   -- Substitute a symbolic constant to some symbolic value
   --

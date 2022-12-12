@@ -120,21 +120,14 @@ gresolveStrategy' x = go
     go s = ([], s)
 {-# INLINE gresolveStrategy' #-}
 
--- | Merging strategy types.
+-- | Merging strategies.
 --
--- In Grisette, a merged union (if-then-else tree) follows __/hierarical
--- sorted representation invariant/__ with regards to some merging strategy.
--- To better show the invariant, we will use a more friendly representation of a
--- union structure. The following two
--- representations are equivalent:
+-- __You probably do not need to know the details of this type if you are only going__
+-- __to use algebraic data types. You can get merging strategies for them with type__
+-- __derivation.__
 --
--- > If      c1    (If c11 (Single v11) (If c12 (Single v12) (Single v13)))
--- >   (If   c2    (Single v2)
--- >               (Single v3))
---
--- \[
---   \left\{\begin{aligned}&t_1&&\mathrm{if}&&c_1\\&v_2&&\mathrm{else if}&&c_2\\&v_3&&\mathrm{otherwise}&&\end{aligned}\right.\hspace{2em}\mathrm{where}\hspace{2em}t_1 = \left\{\begin{aligned}&v_{11}&&\mathrm{if}&&c_{11}\\&v_{12}&&\mathrm{else if}&&c_{12}\\&v_{13}&&\mathrm{otherwise}&&\end{aligned}\right.
--- \]
+-- In Grisette, a merged union (if-then-else tree) follows the __/hierarchical/__
+-- __/sorted representation invariant/__ with regards to some merging strategy.
 --
 -- A merging strategy encodes how to merge a __/subset/__ of the values of a
 -- given type. We have three types of merging strategies:
@@ -146,12 +139,12 @@ gresolveStrategy' x = go
 -- The 'SimpleStrategy' merges values with a simple merge function.
 -- For example,
 --
---    (1) the symbolic boolean values can be directly merged with 'ites'.
+--    * the symbolic boolean values can be directly merged with 'ites'.
 --
---    (2) the set @{1}@, which is a subset of the values of the type @Integer@,
+--    * the set @{1}@, which is a subset of the values of the type @Integer@,
 --        can be simply merged as the set contains only a single value.
 --
---    (3) all the 'Just' values of the type @Maybe SymBool@ can be simply merged
+--    * all the 'Just' values of the type @Maybe SymBool@ can be simply merged
 --        by merging the wrapped symbolic boolean with 'ites'.
 --
 -- The 'SortedStrategy' merges values by first grouping the values with an
@@ -164,12 +157,13 @@ gresolveStrategy' x = go
 -- into sub-trees, and organize them in a sorted way. The sub-trees will further
 -- be merged with the sub-strategies. For example,
 --
---    (1) all the integers can be merged with 'SortedStrategy' by indexing with
---        the identity function and use the 'SimpleStrategy' shown before as the
---        sub-strategies.
+--    * all the integers can be merged with 'SortedStrategy' by indexing with
+--      the identity function and use the 'SimpleStrategy' shown before as the
+--      sub-strategies.
 --
---    (2) all the @Maybe SymBool@ values can be merged with 'SortedStrategy' by
---        indexing with 'Data.Maybe.isJust'.
+--    * all the @Maybe SymBool@ values can be merged with 'SortedStrategy' by
+--      indexing with 'Data.Maybe.isJust', the 'None' and 'Just' values can then
+--      then be merged with different simple strategies as sub-strategies.
 --
 -- The 'NoStrategy' does not perform any merging.
 -- For example, we cannot merge values with function types that returns concrete
@@ -187,7 +181,7 @@ gresolveStrategy' x = go
 -- For easier building of the merging strategies, check out the combinators
 -- like `gwrapStrategy`.
 --
--- For more details, please see
+-- For more details, please see the documents of the constructors, or refer to
 -- [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf).
 --
 -- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
@@ -266,11 +260,18 @@ gwrapStrategy NoStrategy _ _ = NoStrategy
 -- Grisette will use the root merge strategy to merge the values of the type in
 -- a union.
 --
--- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving (GMergeable SymBool) via (Default X)
+--
+-- __Note 2:__ The @bool@ type is the symbolic boolean type to use. It should
 -- be an instance of `SymBoolOp`. If you do not need to use an alternative
 -- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- `grisette-symir` package, you can use the specialized `Mergeable` type
+-- @grisette-symir@ package, you can use the specialized `Mergeable` type
 -- synonym for constraints.
+-- You still need @'GMergeable' SymBool@ for implementing or deriving the
+-- type class due to GHC's limitation.
 class GMergeable bool a where
   -- | The root merging strategy for the type.
   gmergingStrategy :: GMergingStrategy bool a
@@ -280,6 +281,11 @@ instance (Generic a, GMergeable' bool (Rep a)) => GMergeable bool (Default a) wh
   {-# NOINLINE gmergingStrategy #-}
 
 -- | Generic derivation for the 'GMergeable' class.
+--
+-- Usually you can derive the merging strategy with the @DerivingVia@ and
+-- @DerivingStrategies@ extension.
+--
+-- > data X = ... deriving (Generic) deriving (GMergeable SymBool) via (Default X)
 derivedGMergingStrategy :: (Generic a, GMergeable' bool (Rep a)) => GMergingStrategy bool a
 derivedGMergingStrategy = gwrapStrategy gmergingStrategy' to from
 {-# INLINE derivedGMergingStrategy #-}
@@ -304,12 +310,12 @@ gmergingStrategy2 :: (GMergeable bool a, GMergeable bool b, GMergeable2 bool u) 
 gmergingStrategy2 = liftGMergingStrategy2 gmergingStrategy gmergingStrategy
 {-# INLINE gmergingStrategy2 #-}
 
--- | Lifting of the 'GMergeable' class to ternery type constructors.
+-- | Lifting of the 'GMergeable' class to ternary type constructors.
 class GMergeable3 bool (u :: Type -> Type -> Type -> Type) where
   -- | Lift merge strategy through the type constructor.
   liftGMergingStrategy3 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool c -> GMergingStrategy bool (u a b c)
 
--- | Lift the root merge strategy through the ternery type constructor.
+-- | Lift the root merge strategy through the ternary type constructor.
 gmergingStrategy3 :: (GMergeable bool a, GMergeable bool b, GMergeable bool c, GMergeable3 bool u) => GMergingStrategy bool (u a b c)
 gmergingStrategy3 = liftGMergingStrategy3 gmergingStrategy gmergingStrategy gmergingStrategy
 {-# INLINE gmergingStrategy3 #-}
@@ -447,27 +453,27 @@ instance (GMergeable' bool a, GMergeable' bool b) => GMergeable' bool (a :*: b) 
 
 -- instances
 
-#define CONCRETE_ORD_MERGABLE(type) \
+#define CONCRETE_ORD_MERGEABLE(type) \
 instance (SymBoolOp bool) => GMergeable bool type where \
   gmergingStrategy = \
     let sub = SimpleStrategy $ \_ t _ -> t \
      in SortedStrategy id $ const sub; \
   {-# INLINE gmergingStrategy #-}
 
-CONCRETE_ORD_MERGABLE (Bool)
-CONCRETE_ORD_MERGABLE (Integer)
-CONCRETE_ORD_MERGABLE (Char)
-CONCRETE_ORD_MERGABLE (Int)
-CONCRETE_ORD_MERGABLE (Int8)
-CONCRETE_ORD_MERGABLE (Int16)
-CONCRETE_ORD_MERGABLE (Int32)
-CONCRETE_ORD_MERGABLE (Int64)
-CONCRETE_ORD_MERGABLE (Word)
-CONCRETE_ORD_MERGABLE (Word8)
-CONCRETE_ORD_MERGABLE (Word16)
-CONCRETE_ORD_MERGABLE (Word32)
-CONCRETE_ORD_MERGABLE (Word64)
-CONCRETE_ORD_MERGABLE (B.ByteString)
+CONCRETE_ORD_MERGEABLE (Bool)
+CONCRETE_ORD_MERGEABLE (Integer)
+CONCRETE_ORD_MERGEABLE (Char)
+CONCRETE_ORD_MERGEABLE (Int)
+CONCRETE_ORD_MERGEABLE (Int8)
+CONCRETE_ORD_MERGEABLE (Int16)
+CONCRETE_ORD_MERGEABLE (Int32)
+CONCRETE_ORD_MERGEABLE (Int64)
+CONCRETE_ORD_MERGEABLE (Word)
+CONCRETE_ORD_MERGEABLE (Word8)
+CONCRETE_ORD_MERGEABLE (Word16)
+CONCRETE_ORD_MERGEABLE (Word32)
+CONCRETE_ORD_MERGEABLE (Word64)
+CONCRETE_ORD_MERGEABLE (B.ByteString)
 
 -- ()
 deriving via (Default ()) instance (SymBoolOp bool) => GMergeable bool ()

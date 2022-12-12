@@ -866,7 +866,7 @@ instance
   where
   gfresh (ListSpec minLen maxLen subSpec) =
     if minLen < 0 || maxLen < 0 || minLen >= maxLen
-      then error $ "Bad lengthes: " ++ show (minLen, maxLen)
+      then error $ "Bad lengths: " ++ show (minLen, maxLen)
       else do
         l <- gl maxLen
         let xs = drop minLen $ reverse $ scanr (:) [] l
@@ -914,7 +914,7 @@ instance
   where
   simpleFresh (SimpleListSpec len subSpec) =
     if len < 0
-      then error $ "Bad lengthes: " ++ show len
+      then error $ "Bad lengths: " ++ show len
       else do
         gl len
     where

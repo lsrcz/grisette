@@ -152,13 +152,6 @@ derivedGSymCompare x y = gsymCompare' (from x) (from y)
 -- symbolic comparison won't necessarily return a concrete 'Bool' or 'Ordering'
 -- value.
 --
--- __Note:__ The @bool@ type is the symbolic boolean type to return. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- @grisette-symir@ package, you can use the specialized `SOrd` type synonym for
--- the constraints and use specialized operators like `(<~)` and `(<=~)` from
--- @grisette-symir@ to write code with fewer type annotations.
---
 -- >>> let a = 1 :: SymInteger
 -- >>> let b = 2 :: SymInteger
 -- >>> a `gsymlt` b :: SymBool
@@ -183,6 +176,20 @@ derivedGSymCompare x y = gsymCompare' (from x) (from y)
 --
 -- >>> a `gsymCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool
 -- UMrg (If (< a b) (Single LT) (If (= a b) (Single EQ) (Single GT)))
+--
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving (GMergeable SymBool) via (Default X)
+--
+-- __Note 2:__ The @bool@ type is the symbolic boolean type to return. It should
+-- be an instance of `SymBoolOp`. If you do not need to use an alternative
+-- symbolic Boolean type, and will use the 'SymBool' type provided by the
+-- @grisette-symir@ package, you can use the specialized `SOrd` type synonym for
+-- the constraints and use specialized operators like `(<~)` and `(<=~)` from
+-- @grisette-symir@ to write code with fewer type annotations.
+-- However, you still need @'GSOrd' SymBool@ for implementing or deriving the
+-- type class due to GHC's limitation.
 class (GSEq bool a) => GSOrd bool a where
   gsymlt :: a -> a -> bool
   gsymle :: a -> a -> bool

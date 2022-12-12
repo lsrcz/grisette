@@ -77,7 +77,8 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> import Grisette.IR.SymPrim
 -- >>> :set -XScopedTypeVariables
 
--- | 'UnionMBase' is the 'UnionBase' container enhanced with 'GMergingStrategy'
+-- | 'UnionMBase' is the 'UnionBase' container (hidden) enhanced with
+-- 'GMergingStrategy'
 -- [knowledge propagation](https://okmij.org/ftp/Haskell/set-monad.html#PE).
 --
 -- The 'UnionBase' models the underlying semantics evaluation semantics for
@@ -89,10 +90,8 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >   | If bool (UnionBase bool a) (UnionBase bool a)
 --
 -- The 'Single' constructor is for a single value with the path condition
--- @true@, and the 'If' constructor is the nested if-then-else. For better
--- understanding, we introduce a more friendly mathematical representation for
--- a union container, and the following two representations has the same
--- semantics.
+-- @true@, and the 'If' constructor is the if operator in an if-then-else
+-- tree. The following two representations has the same semantics.
 --
 -- > If      c1    (If c11 (Single v11) (If c12 (Single v12) (Single v13)))
 -- >   (If   c2    (Single v2)
@@ -110,7 +109,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --
 -- 'UnionBase' is a monad, so we can easily write code with the do-notation and
 -- monadic combinators. However, the standard monadic operators cannot
--- resolve any extra constraints (see
+-- resolve any extra constraints, including the 'GMergeable' constraint (see
 -- [The constrained-monad
 -- problem](https://dl.acm.org/doi/10.1145/2500365.2500602)
 -- by Sculthorpe et al.).
@@ -119,34 +118,39 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --
 -- To reduce this boilerplate, Grisette provide another monad, 'UnionMBase' that
 -- would try to cache the merging strategy.
--- The 'UnionMBase' has two data constructors, 'UAny' and 'UMrg' (hidden
--- intentionally). The 'UAny' data constructor wraps an arbitrary (probably
--- unmerged) 'UnionBase'. It is constructed when no 'Mergeable' knowledge is
+-- The 'UnionMBase' has two data constructors (hidden intentionally), 'UAny' and 'UMrg'.
+-- The 'UAny' data constructor wraps an arbitrary (probably
+-- unmerged) 'UnionBase'. It is constructed when no 'GMergeable' knowledge is
 -- available (for example, when constructed with Haskell\'s 'return').
 -- The 'UMrg' data constructor wraps a merged 'UnionMBase' along with the
--- 'Mergeable' constraint. This constraint can be propagated to the context
--- without 'Mergeable' knowledge, and helps the system to merge the resulting
+-- 'GMergeable' constraint. This constraint can be propagated to the contexts
+-- without 'GMergeable' knowledge, and helps the system to merge the resulting
 -- 'UnionBase'.
 --
--- /Examples:/
+-- __/Examples:/__
 --
 -- 'return' cannot resolve the 'GMergeable' constraint.
 --
 -- >>> return 1 :: UnionM Integer
 -- UAny (Single 1)
 --
--- 'mrgReturn' can resolve the 'GMergeable' constraint.
+-- 'Grisette.Lib.Control.Monad.mrgReturn' can resolve the 'GMergeable' constraint.
 --
 -- >>> mrgReturn 1 :: UnionM Integer
 -- UMrg (Single 1)
 --
 -- 'unionIf' cannot resolve the 'GMergeable' constraint.
 --
--- >>> unionIf (ssymb "a") (return 1) (unionIf (ssymb "b") (return 1) (return 2)) :: UnionM Integer
+-- >>> unionIf "a" (return 1) (unionIf "b" (return 1) (return 2)) :: UnionM Integer
 -- UAny (If a (Single 1) (If b (Single 1) (Single 2)))
 --
--- The system can merge the final result if the 'GMergingStrategy' knowledge is
--- introduced by 'mrgSingle' or 'mrgReturn':
+-- But 'unionIf' is able to merge the result if some of the branches are merged:
+--
+-- >>> unionIf "a" (return 1) (unionIf "b" (mrgReturn 1) (return 2)) :: UnionM Integer
+-- UMrg (If (|| a b) (Single 1) (Single 2))
+--
+-- The '>>=' operator uses 'unionIf' internally. When the final statement in a do-block
+-- merges the values, the system can then merge the final result.
 --
 -- >>> :{
 --   do

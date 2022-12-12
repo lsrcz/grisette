@@ -54,23 +54,31 @@ import Grisette.Core.Data.Class.ToCon
 -- >>> import Data.Proxy
 -- >>> :set -XTypeApplications
 
--- | Evaluating symbolic variables with some model.
--- When given a satisfiable formula, a solver can return a model that specifies
--- the concrete assignments of the variables in the formula to make the formula
--- true.
+-- | Evaluating symbolic values with some model.
 --
--- __Note:__ The @model@ type is the model type for the solver backend. It
+-- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
+-- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
+-- [1I,b]
+--
+-- If we set the first argument true, the missing variables will be filled in with
+-- some default values:
+--
+-- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
+-- [1I,0I]
+--
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving (GEvaluateSym Model) via (Default X)
+--
+-- __Note 2:__ The @model@ type is the model type for the solver backend. It
 -- should be an instance of `ModelOp`. If you do not need to use an alternative
 -- solver backend, and will use the 'Model' type provided by the
 -- `grisette-symir` package, you can use the specialized `EvaluateSym` type
 -- synonym for the constraints and use specialized `evaluateSym`,
 -- `evaluateSymToCon` combinators to write code with fewer type annotations.
---
--- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
--- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
--- [1I,b]
--- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
--- [1I,0I]
+-- However, You still need @'GEvaluateSym' Model@ for implementing
+-- or deriving the type class due to GHC's limitation.
 class GEvaluateSym model a where
   -- | Evaluate a symbolic variable with some model, possibly fill in values for the missing variables.
   gevaluateSym :: Bool -> model -> a -> a

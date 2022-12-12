@@ -51,7 +51,7 @@ htmup mem f = htmemo (mem . f)
 htmemo2 :: (Eq k1, Hashable k1, Eq k2, Hashable k2) => (k1 -> k2 -> a) -> (k1 -> k2 -> a)
 htmemo2 = htmup htmemo
 
--- | Function memoizer with mutable hash table. Works on ternery functions.
+-- | Function memoizer with mutable hash table. Works on ternary functions.
 htmemo3 ::
   (Eq k1, Hashable k1, Eq k2, Hashable k2, Eq k3, Hashable k3) =>
   (k1 -> k2 -> k3 -> a) ->

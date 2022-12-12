@@ -51,19 +51,26 @@ import Generics.Deriving
 
 -- | Extracts all the symbolic variables that are transitively contained in the given value.
 --
--- __Note:__ The @symbolSet@ type is the symbolic constant set type for the
+-- >>> gextractSymbolics ("a" :: SymBool) :: SymbolSet
+-- SymbolSet {a :: Bool}
+--
+-- >>> gextractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: SymbolSet
+-- SymbolSet {a :: Bool, b :: Bool, c :: Bool, d :: Bool}
+--
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving (GExtractSymbolics SymBool) via (Default X)
+--
+-- __Note 2:__ The @symbolSet@ type is the symbolic constant set type for the
 -- solver backend. It should be an instance of `Grisette.Core.Data.Class.ModelOps.SymbolSetOps`. If you do not need
 -- to use an alternative solver backend, and will use the 'SymbolSet' type
 -- provided by the @grisette-symir@ package, you can use the specialized
 -- `ExtractSymbolics` type synonym for the constraints and use specialized
 -- `extractSymbolics` combinator from @grisette-symir@ to write code with fewer
 -- type annotations.
---
--- >>> gextractSymbolics ("a" :: SymBool) :: SymbolSet
--- SymbolSet {a :: Bool}
---
--- >>> gextractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: SymbolSet
--- SymbolSet {a :: Bool, b :: Bool, c :: Bool, d :: Bool}
+-- However, You still need @'GMergeable' SymBool@ for implementing or deriving the
+-- type class due to GHC's limitation.
 class (Monoid symbolSet) => GExtractSymbolics symbolSet a where
   gextractSymbolics :: a -> symbolSet
 

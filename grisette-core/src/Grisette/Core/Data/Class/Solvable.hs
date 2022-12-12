@@ -86,8 +86,8 @@ class IsString t => Solvable c t | t -> c where
   -- Two symbolic constants with the same name but different extra information
   -- (including info with different types) are considered to be different.
   --
-  -- >>> sinfosymb "a" "someinfo" :: SymInteger
-  -- a:"someinfo"
+  -- >>> sinfosymb "a" "someInfo" :: SymInteger
+  -- a:"someInfo"
   sinfosymb :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> t
 
   -- | Generate indexed symbolic constants with some extra information for
@@ -97,8 +97,8 @@ class IsString t => Solvable c t | t -> c where
   -- information (including info with different types) are considered to be
   -- different.
   --
-  -- >>> iinfosymb "a" 1 "someinfo" :: SymInteger
-  -- a@1:"someinfo"
+  -- >>> iinfosymb "a" 1 "someInfo" :: SymInteger
+  -- a@1:"someInfo"
   iinfosymb :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> Int -> a -> t
 
 -- | Extract the concrete value from a solvable value with 'concView'.

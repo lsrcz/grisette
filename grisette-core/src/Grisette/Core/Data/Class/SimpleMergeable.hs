@@ -98,12 +98,21 @@ instance (GSimpleMergeable' bool a, GSimpleMergeable' bool b) => (GSimpleMergeab
 
 -- | This class indicates that a type has a simple root merge strategy.
 --
--- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ...
+-- >   deriving Generic
+-- >   deriving (GMergeable SymBool, GSimpleMergeable SymBool) via (Default X)
+--
+-- __Note 2:__ The @bool@ type is the symbolic boolean type to use. It should
 -- be an instance of `SymBoolOp`. If you do not need to use an alternative
 -- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- `grisette-symir` package, you can use the specialized `SimpleMergeable` type
--- for constraints instead. The specialized combinators like 'mrgIte' are also
--- provided.
+-- @grisette-symir@ package, you can use the specialized `SimpleMergeable` type
+-- synonym for constraints.
+-- The specialized combinators like 'mrgIte' are also provided.
+-- However, you still need @'GMergeable' SymBool@ for implementing or deriving the
+-- type class due to GHC's limitation.
 class GMergeable bool a => GSimpleMergeable bool a where
   -- | Performs if-then-else with the simple root merge strategy.
   --
@@ -151,8 +160,8 @@ gmrgIte2 = liftGMrgIte2 gmrgIte gmrgIte
 -- constructors that are 'GSimpleMergeable' when applied to any 'GMergeable'
 -- types.
 --
--- Usually it is Union-like structures, for example, monad transformer
--- transformed Unions.
+-- This type class is used to generalize the 'mrgIf' function to other
+-- containers, for example, monad transformer transformed Unions.
 class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLike bool u | u -> bool where
   -- | Wrap a single value in the union.
   --
@@ -180,7 +189,7 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
   -- >>> mergeWithStrategy gmergingStrategy $ unionIf "a" (single "b") (single "c") :: UnionM SymInteger
   -- UMrg (Single (ite a b c))
   --
-  -- Be careful to call this directly in your code.
+  -- __Note:__ Be careful to call this directly in your code.
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
   -- or some internal invariants would be broken and the program can crash.
   --

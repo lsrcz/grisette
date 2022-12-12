@@ -142,8 +142,8 @@ class
   -- | Returns a model that extends the assignments for the symbolic constants
   -- in the set by assigning default values to them
   extendTo :: symbolSet -> model -> model
-  -- | Returns a model that containes the assignments for exactly the symbolic
-  -- contants in the set by removing assignments for the symbolic constants that
+  -- | Returns a model that contains the assignments for exactly the symbolic
+  -- constants in the set by removing assignments for the symbolic constants that
   -- are not in the set and add assignments for the missing symbolic constants
   -- by assigning default values to them.
   exact :: symbolSet -> model -> model

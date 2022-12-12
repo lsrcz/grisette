@@ -28,7 +28,7 @@ import Data.Typeable (Typeable)
 -- Test cases are composed of a sequence of one or more assertions.
 type Assertion = IO ()
 
--- | Unconditionally signals that a failure has occured.  All
+-- | Unconditionally signals that a failure has occurred.  All
 -- other assertions can be expressed with the form:
 --
 -- @

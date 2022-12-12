@@ -95,13 +95,6 @@ instance (SymBoolOp bool, GSEq' bool a, GSEq' bool b) => GSEq' bool (a :*: b) wh
 -- | Symbolic Equality. Note that we can't use Haskell's 'Eq' class since
 -- symbolic comparison won't necessarily return a concrete 'Bool' value.
 --
--- __Note:__ The @bool@ type is the symbolic boolean type to return. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- @grisette-symir@ package, you can use the specialized `SEq` type synonym for
--- the constraints and use specialized `(==~)`, `(/=~)` operators from
--- @grisette-symir@ to write code with fewer type annotations.
---
 -- >>> let a = 1 :: SymInteger
 -- >>> let b = 2 :: SymInteger
 -- >>> a `gsymeq` b :: SymBool
@@ -115,6 +108,20 @@ instance (SymBoolOp bool, GSEq' bool a, GSEq' bool b) => GSEq' bool (a :*: b) wh
 -- (! (= a b))
 -- >>> a `gsymne` b :: SymBool
 -- (! (= a b))
+--
+-- __Note 1:__ This type class can be derived for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving (GMergeable SymBool) via (Default X)
+--
+-- __Note 2:__ The @bool@ type is the symbolic Boolean type to return. It should
+-- be an instance of `SymBoolOp`. If you do not need to use an alternative
+-- symbolic Boolean type, and will use the 'SymBool' type provided by the
+-- @grisette-symir@ package, you can use the specialized `SEq` type synonym for
+-- the constraints and use specialized `(==~)`, `(/=~)` operators from
+-- @grisette-symir@ to write code with fewer type annotations.
+-- However, you still need @'GSEq' SymBool@ for implementing or deriving the
+-- type class due to GHC's limitation.
 class LogicalOp bool => GSEq bool a where
   gsymeq :: a -> a -> bool
   a `gsymeq` b = nots $ a `gsymne` b
