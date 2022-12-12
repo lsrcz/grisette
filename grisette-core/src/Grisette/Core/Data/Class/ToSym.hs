@@ -16,7 +16,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.ToSym
   ( -- * Note for the examples
 
@@ -27,7 +26,6 @@ module Grisette.Core.Data.Class.ToSym
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Converting to symbolic values
-
     ToSym (..),
   )
 where

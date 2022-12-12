@@ -9,7 +9,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.TestUtils.ExtractSymbolics where
 
 import qualified Data.HashSet as S

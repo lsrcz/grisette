@@ -11,7 +11,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Solvable
   ( -- * Note for the examples
 
@@ -22,7 +21,6 @@ module Grisette.Core.Data.Class.Solvable
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Solvable type interface
-
     Solvable (..),
     pattern Conc,
   )

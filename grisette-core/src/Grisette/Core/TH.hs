@@ -10,10 +10,8 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.TH
   ( -- * Template Haskell procedures for building constructor wrappers
-
     makeUnionMWrapper,
     makeUnionMWrapper',
   )

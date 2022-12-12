@@ -8,7 +8,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Lib.Base
   ( mrgReturnWithStrategy,
     mrgBindWithStrategy,

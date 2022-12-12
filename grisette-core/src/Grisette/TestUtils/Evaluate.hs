@@ -9,7 +9,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.TestUtils.Evaluate (concreteGEvaluateSymOkProp) where
 
 import qualified Data.HashMap.Strict as M

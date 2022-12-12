@@ -17,7 +17,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.SOrd
   ( -- * Note for the examples
 
@@ -28,7 +27,6 @@ module Grisette.Core.Data.Class.SOrd
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Symbolic total order relation
-
     GSOrd (..),
     GSOrd' (..),
   )
@@ -45,8 +43,8 @@ import Data.Int
 import Data.Word
 import Generics.Deriving
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 
 -- $setup
 -- >>> import Grisette.Core
@@ -61,12 +59,16 @@ import Grisette.Core.Data.Class.SimpleMergeable
 class (GSEq' bool f) => GSOrd' bool f where
   -- | Auxiliary function for 'gsymlt' derivation
   gsymlt' :: f a -> f a -> bool
+
   -- | Auxiliary function for 'gsymle' derivation
   gsymle' :: f a -> f a -> bool
+
   -- | Auxiliary function for 'gsymgt' derivation
   gsymgt' :: f a -> f a -> bool
+
   -- | Auxiliary function for 'gsymge' derivation
   gsymge' :: f a -> f a -> bool
+
   -- | Auxiliary function for 'gsymCompare' derivation
   gsymCompare' :: (GUnionLike bool u, Monad u) => f a -> f a -> u Ordering
 

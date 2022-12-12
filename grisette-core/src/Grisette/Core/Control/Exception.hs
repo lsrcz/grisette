@@ -16,7 +16,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Control.Exception
   ( AssertionError (..),
     VerificationConditions (..),
@@ -36,9 +35,9 @@ import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 

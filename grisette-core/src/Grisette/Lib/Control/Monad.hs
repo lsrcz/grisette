@@ -11,7 +11,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Lib.Control.Monad
   ( mrgReturnWithStrategy,
     mrgBindWithStrategy,

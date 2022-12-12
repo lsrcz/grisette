@@ -17,7 +17,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Substitute
   ( -- * Note for the examples
 
@@ -28,7 +27,6 @@ module Grisette.Core.Data.Class.Substitute
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Substituting symbolic constants
-
     GSubstituteSymSymbol (..),
     GSubstituteSym (..),
     GSubstituteSym' (..),

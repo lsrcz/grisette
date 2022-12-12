@@ -12,7 +12,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.FileLocation
   ( -- * Note for the examples
 
@@ -23,7 +22,6 @@ module Grisette.Core.Data.FileLocation
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Symbolic constant generation with location
-
     FileLocation (..),
     nameWithLoc,
     slocsymb,

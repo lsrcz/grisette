@@ -10,7 +10,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.TestUtils.Mergeable where
 
 import GHC.Stack

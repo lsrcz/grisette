@@ -9,7 +9,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Function
   ( -- * Note for the examples
 

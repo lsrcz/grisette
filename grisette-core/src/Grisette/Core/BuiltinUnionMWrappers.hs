@@ -12,10 +12,8 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.BuiltinUnionMWrappers
   ( -- * Builtin constructor wrappers for some common data types
-
     uTrue,
     uFalse,
     uunit,

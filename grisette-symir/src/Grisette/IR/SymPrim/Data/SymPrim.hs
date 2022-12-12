@@ -46,9 +46,9 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym

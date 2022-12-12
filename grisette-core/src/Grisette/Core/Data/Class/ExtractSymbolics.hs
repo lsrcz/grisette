@@ -16,7 +16,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.ExtractSymbolics
   ( -- * Note for the examples
 

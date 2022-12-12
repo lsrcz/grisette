@@ -19,7 +19,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Control.Monad.CBMCExcept
   ( -- * CBMC-like error handling
     CBMCEither (..),

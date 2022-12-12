@@ -10,7 +10,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Integer
   ( ArithException (..),
     SignedDivMod (..),
@@ -25,8 +24,8 @@ import Control.Monad.Except
 import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
+import Grisette.Core.Data.Class.Solvable
 
 -- $setup
 -- >>> import Grisette.Core

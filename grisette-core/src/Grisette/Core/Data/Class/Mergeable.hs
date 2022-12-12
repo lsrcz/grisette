@@ -24,7 +24,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Mergeable
   ( -- * Note for the examples
 
@@ -170,7 +169,7 @@ gresolveStrategy' x = go
 -- lists.
 --
 -- For ADTs, we can automatically derive the 'GMergeable' type class, which
--- provides a merging strategy. 
+-- provides a merging strategy.
 --
 -- If the derived version does not work for you, you should determine
 -- if your type can be directly merged with a merging function. If so, you can
@@ -223,7 +222,7 @@ data GMergingStrategy bool a where
     GMergingStrategy bool a
   -- | For preventing the merging intentionally. This could be
   -- useful for keeping some value concrete and may help generate more efficient
-  -- formulas. 
+  -- formulas.
   --
   -- See [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf) for
   -- details.

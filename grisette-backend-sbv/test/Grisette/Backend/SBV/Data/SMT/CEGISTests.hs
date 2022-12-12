@@ -17,9 +17,9 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.Class.Evaluate

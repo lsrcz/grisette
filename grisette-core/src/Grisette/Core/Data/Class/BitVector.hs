@@ -17,7 +17,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.BitVector
   ( -- * Note for the examples
 
@@ -28,7 +27,6 @@ module Grisette.Core.Data.Class.BitVector
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Bit vector operations
-
     BVConcat (..),
     BVExtend (..),
     BVSelect (..),

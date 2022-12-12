@@ -25,7 +25,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Control.Monad.UnionMBase
   ( -- * Note for the examples
 
@@ -36,7 +35,6 @@ module Grisette.Core.Control.Monad.UnionMBase
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * UnionMBase and helpers
-
     UnionMBase (..),
     liftToGMonadUnion,
     underlyingUnion,
@@ -62,9 +60,9 @@ import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym

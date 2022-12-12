@@ -12,7 +12,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.ModelOps
   ( -- * Note for the examples
 
@@ -23,7 +22,6 @@ module Grisette.Core.Data.Class.ModelOps
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Model and symbolic set operations
-
     SymbolSetOps (..),
     SymbolSetRep (..),
     ModelOps (..),
@@ -32,8 +30,8 @@ module Grisette.Core.Data.Class.ModelOps
 where
 
 import Data.Hashable
-import Data.Typeable
 import Data.Kind
+import Data.Typeable
 
 -- $setup
 -- >>> import Grisette.Core
@@ -72,14 +70,19 @@ class
   where
   -- | Construct an empty set
   emptySet :: symbolSet
+
   -- | Check if the set contains the given symbol
   containsSymbol :: forall a. typedSymbol a -> symbolSet -> Bool
+
   -- | Insert a symbol into the set
   insertSymbol :: forall a. typedSymbol a -> symbolSet -> symbolSet
+
   -- | Set intersection
   intersectionSet :: symbolSet -> symbolSet -> symbolSet
+
   -- | Set union
   unionSet :: symbolSet -> symbolSet -> symbolSet
+
   -- | Set difference
   differenceSet :: symbolSet -> symbolSet -> symbolSet
 
@@ -94,7 +97,6 @@ class
   where
   -- | Build a symbolic constant set
   buildSymbolSet :: rep -> symbolSet
-
 
 -- | The operations on Models.
 --
@@ -129,19 +131,25 @@ class
   where
   -- | Construct an empty model
   emptyModel :: model
+
   -- | Extract the assigned value for a given symbolic constant
   valueOf :: typedSymbol t -> model -> Maybe t
+
   -- | Insert an assignment into the model
   insertValue :: typedSymbol t -> t -> model -> model
+
   -- | Returns a model that removed all the assignments for the symbolic
   -- constants in the set
   exceptFor :: symbolSet -> model -> model
+
   -- | Returns a model that only keeps the assignments for the symbolic
   -- constants in the set
   restrictTo :: symbolSet -> model -> model
+
   -- | Returns a model that extends the assignments for the symbolic constants
   -- in the set by assigning default values to them
   extendTo :: symbolSet -> model -> model
+
   -- | Returns a model that contains the assignments for exactly the symbolic
   -- constants in the set by removing assignments for the symbolic constants that
   -- are not in the set and add assignments for the missing symbolic constants

@@ -9,7 +9,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core
   ( -- * Note for the examples
 
@@ -29,7 +28,7 @@ module Grisette.Core
     -- and only a single control flow is explored. In contrast, with symbolic
     -- evaluation, multiple paths are explored simultaneously, and we can
     -- analyze the program paths for a whole space of programs or inputs.
-    -- 
+    --
     -- With symbolic evaluation,
     -- the inputs (or the program itself) are represented as symbolic
     -- values, and the evaluation result would become symbolic constraints
@@ -52,9 +51,9 @@ module Grisette.Core
     -- execute, and works well in practice.
     --
     -- As a result, the symbolic value representation and the merging algorithm
-    -- becomes critical to the performance of symbolic evaluation. 
+    -- becomes critical to the performance of symbolic evaluation.
     -- In Grisette, we make a distinction between two kinds of symbolic values:
-    -- __/solvable types/__ and __/unsolvable types/__. 
+    -- __/solvable types/__ and __/unsolvable types/__.
     --
     -- __/Solvable types/__ are types that are directly supported by the
     -- underlying solver, and will be represented directly as symbolic formulas.
@@ -74,7 +73,7 @@ module Grisette.Core
     --
     -- > x + 1
     -- > -- result (+ 1 (ite a b c))
-    -- 
+    --
     -- __/Unsolvable types/__ are the types that are not directly supported by
     -- the solver. These types cannot hold values from different execution paths
     -- by themselves, and cannot be fully merged into a single formula.
@@ -248,7 +247,7 @@ module Grisette.Core
     --            y <- mrgIf "d" (single ["e"]) (single ["e","f"])
     --            mrgReturn $ x ++ y
     -- :}
-    -- 
+    --
     -- >>> ret
     -- UMrg (If (&& a d) (Single [b,e]) (If (|| a d) (Single [b,(ite a e c),(ite a f e)]) (Single [b,c,e,f])))
     --
@@ -335,7 +334,7 @@ module Grisette.Core
     -- __The following is the details of the merging algorithm.__
     -- __If you are not going to manually configure the system by writing a__
     -- __`GMergingStrategy`, you can safely ignore the following contents in this section.__
-    -- 
+    --
     -- In Grisette, the symbolic union has the Ordered Guards (ORG)
     -- representation, which can be viewed as a nested if-then-else with some
     -- representation invariant.
@@ -472,7 +471,7 @@ module Grisette.Core
     --     &\texttt{A 4 (&& x y)}&&\mathrm{otherwise}&&
     --   \end{aligned}\right.
     -- \]
-    -- 
+    --
     -- In Haskell syntax, it can be represented as follows:
     --
     -- > If      c1    (If c11 (Single (A 1 a)) (If c12 (Single (A 3 b)) (Single (A 4 (&& x y)))))
@@ -544,10 +543,10 @@ module Grisette.Core
     --       \end{aligned}\right.
     --   \end{aligned}
     -- \]
-    -- 
+    --
     -- For more details of the algorithm, please refer to
     -- [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf).
-   
+
     -- *** UnionM Monad
     UnionMBase,
     IsConcrete,
@@ -599,10 +598,9 @@ module Grisette.Core
     (#~),
 
     -- * Conversion between Concrete and Symbolic values
-
     ToCon (..),
     ToSym (..),
-    
+
     -- * Symbolic Generation
 
     -- | It is usually useful to generate complex symbolic values. For example,
@@ -733,7 +731,7 @@ module Grisette.Core
     -- Grisette supports using 'Control.Monad.Except.ExceptT' to handle errors,
     -- and provides the @mrg*@ variants for the combinators in "Grisette.Lib.Mtl",
     -- for example, 'Grisette.Lib.Control.Monad.Except.mrgThrowError'.
-    -- 
+    --
     -- >>> import Grisette.Lib.Mtl
     -- >>> mrgThrowError AssertionError :: ExceptT AssertionError UnionM ()
     -- ExceptT (UMrg (Single (Left AssertionError)))
@@ -745,7 +743,7 @@ module Grisette.Core
     -- See their documentation for details.
 
     -- | #errors#
-    
+
     -- ** Predefined errors
     AssertionError (..),
     VerificationConditions (..),
@@ -830,9 +828,9 @@ module Grisette.Core
     uInR,
     uAssertionViolation,
     uAssumptionViolation,
-
   )
 where
+
 import Generics.Deriving (Default (..), Default1 (..))
 import Grisette.Core.BuiltinUnionMWrappers
 import Grisette.Core.Control.Exception
@@ -849,9 +847,9 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
 import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
@@ -866,4 +864,3 @@ import Grisette.Core.TH
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
-

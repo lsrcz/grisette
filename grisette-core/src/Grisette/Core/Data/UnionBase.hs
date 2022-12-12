@@ -13,7 +13,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.UnionBase
   ( -- The union data structure. Please consider using 'UnionM' instead.
     UnionBase (..),
@@ -29,8 +28,8 @@ import Data.Hashable
 import GHC.Generics
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Language.Haskell.TH.Syntax
 
 -- | The default union implementation.

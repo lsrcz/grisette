@@ -25,7 +25,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.GenSym
   ( -- * Note for the examples
 
@@ -207,12 +206,13 @@ nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable
 nameWithInfo = FreshIdentWithInfo
 
 -- | Monad class for fresh symbolic value generation.
--- 
+--
 -- The monad should be a reader monad for the 'FreshIdent' and a state monad for
 -- the 'FreshIndex'.
 class Monad m => MonadFresh m where
   -- | Increase the index by one and return the new index.
   nextFreshIndex :: m FreshIndex
+
   -- | Get the identifier.
   getFreshIdent :: m FreshIdent
 

@@ -21,6 +21,7 @@ where
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 import Data.Hashable
+import Data.List
 import Data.Proxy
 import GHC.Generics
 import Grisette.Core.Data.Class.ExtractSymbolics
@@ -39,14 +40,16 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
-import Data.List
 
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
   deriving (Eq, Generic, Hashable, Semigroup, Monoid)
 
 instance Show SymbolSet where
-  showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x -> "SymbolSet {" ++
-    go0 (sort $ show <$> S.toList s) ++ "}" ++ x
+  showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x ->
+    "SymbolSet {"
+      ++ go0 (sort $ show <$> S.toList s)
+      ++ "}"
+      ++ x
     where
       go0 [] = ""
       go0 [x] = x
@@ -55,8 +58,11 @@ instance Show SymbolSet where
 newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable)
 
 instance Show Model where
-  showsPrec prec (Model m) = showParen (prec >= 10) $ \x -> "Model {" ++
-    go0 (sortOn (\(x, _) -> show x) $ M.toList m) ++ "}" ++ x
+  showsPrec prec (Model m) = showParen (prec >= 10) $ \x ->
+    "Model {"
+      ++ go0 (sortOn (\(x, _) -> show x) $ M.toList m)
+      ++ "}"
+      ++ x
     where
       go0 [] = ""
       go0 [(SomeTypedSymbol _ s, v)] = showUntyped s ++ " -> " ++ show v
@@ -102,11 +108,11 @@ instance
     SymbolSet
     TypedSymbol
   where
-    buildSymbolSet (sym1, sym2, sym3) =
-      insertSymbol sym3
-        . insertSymbol sym2
-        . insertSymbol sym1
-        $ emptySet
+  buildSymbolSet (sym1, sym2, sym3) =
+    insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance
   SymbolSetRep
@@ -118,12 +124,12 @@ instance
     SymbolSet
     TypedSymbol
   where
-    buildSymbolSet (sym1, sym2, sym3, sym4) =
-      insertSymbol sym4
-        . insertSymbol sym3
-        . insertSymbol sym2
-        . insertSymbol sym1
-        $ emptySet
+  buildSymbolSet (sym1, sym2, sym3, sym4) =
+    insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance
   SymbolSetRep
@@ -136,13 +142,13 @@ instance
     SymbolSet
     TypedSymbol
   where
-    buildSymbolSet (sym1, sym2, sym3, sym4, sym5) =
-      insertSymbol sym5
-        . insertSymbol sym4
-        . insertSymbol sym3
-        . insertSymbol sym2
-        . insertSymbol sym1
-        $ emptySet
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5) =
+    insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance
   SymbolSetRep
@@ -156,14 +162,14 @@ instance
     SymbolSet
     TypedSymbol
   where
-    buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6) =
-      insertSymbol sym6
-        . insertSymbol sym5
-        . insertSymbol sym4
-        . insertSymbol sym3
-        . insertSymbol sym2
-        . insertSymbol sym1
-        $ emptySet
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6) =
+    insertSymbol sym6
+      . insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance
   SymbolSetRep
@@ -178,15 +184,15 @@ instance
     SymbolSet
     TypedSymbol
   where
-    buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7) =
-      insertSymbol sym7
-        . insertSymbol sym6
-        . insertSymbol sym5
-        . insertSymbol sym4
-        . insertSymbol sym3
-        . insertSymbol sym2
-        . insertSymbol sym1
-        $ emptySet
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7) =
+    insertSymbol sym7
+      . insertSymbol sym6
+      . insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance
   SymbolSetRep
@@ -202,16 +208,16 @@ instance
     SymbolSet
     TypedSymbol
   where
-    buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7, sym8) =
-      insertSymbol sym8
-        . insertSymbol sym7
-        . insertSymbol sym6
-        . insertSymbol sym5
-        . insertSymbol sym4
-        . insertSymbol sym3
-        . insertSymbol sym2
-        . insertSymbol sym1
-        $ emptySet
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7, sym8) =
+    insertSymbol sym8
+      . insertSymbol sym7
+      . insertSymbol sym6
+      . insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance GExtractSymbolics SymbolSet SymbolSet where
   gextractSymbolics = id

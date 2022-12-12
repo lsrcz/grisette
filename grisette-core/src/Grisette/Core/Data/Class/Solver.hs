@@ -23,7 +23,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Solver
   ( -- * Note for the examples
 
@@ -63,8 +62,8 @@ import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Language.Haskell.TH.Syntax
 
 data SolveInternal = SolveInternal deriving (Eq, Show, Ord, Generic, Hashable, Lift, NFData)
@@ -88,18 +87,21 @@ class
   -- >>> solveFormula (UnboundedReasoning z3) ("a" &&~ nots "a")
   -- Left Unsat
   solveFormula :: config -> bool -> IO (Either failure model)
+
   -- | Solve a single formula while returning multiple models to make it true.
   -- The maximum number of desired models are given.
   --
   -- > >>> solveFormulaMulti (UnboundedReasoning z3) 4 ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
+
   -- | Solve a single formula while returning multiple models to make it true.
   -- All models are returned.
   --
   -- > >>> solveFormulaAll (UnboundedReasoning z3) ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
+
   cegisFormula ::
     (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
     config ->

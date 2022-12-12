@@ -16,7 +16,6 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.Data.Class.Bool
   ( -- * Note for the examples
 
@@ -27,7 +26,6 @@ module Grisette.Core.Data.Class.Bool
     -- They rely on the implementation in @grisette-symir@ package.
 
     -- * Symbolic equality
-
     GSEq (..),
     GSEq' (..),
 
@@ -40,7 +38,9 @@ where
 
 import Control.Monad.Except
 import Control.Monad.Identity
-    ( Identity(Identity), IdentityT(IdentityT) )
+  ( Identity (Identity),
+    IdentityT (IdentityT),
+  )
 import Control.Monad.Trans.Maybe
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
@@ -49,8 +49,8 @@ import Data.Functor.Sum
 import Data.Int
 import Data.Word
 import Generics.Deriving
-import Grisette.Core.Data.Class.Solvable
 import {-# SOURCE #-} Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 
 -- $setup
 -- >>> import Grisette.Core
@@ -179,22 +179,29 @@ class LogicalOp b where
   (||~) :: b -> b -> b
   a ||~ b = nots $ nots a &&~ nots b
   {-# INLINE (||~) #-}
+
   infixr 2 ||~
+
   -- | Symbolic conjunction
   (&&~) :: b -> b -> b
   a &&~ b = nots $ nots a ||~ nots b
   {-# INLINE (&&~) #-}
+
   infixr 3 &&~
+
   -- | Symbolic negation
   nots :: b -> b
+
   -- | Symbolic exclusive disjunction
   xors :: b -> b -> b
   a `xors` b = (a &&~ nots b) ||~ (nots a &&~ b)
   {-# INLINE xors #-}
+
   -- | Symbolic implication
   implies :: b -> b -> b
   a `implies` b = nots a ||~ b
   {-# INLINE implies #-}
+
   {-# MINIMAL (||~), nots | (&&~), nots #-}
 
 instance LogicalOp Bool where
