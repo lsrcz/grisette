@@ -51,7 +51,6 @@ class
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
 
-
 class ExtractUnionEither t u e v | t -> u e v where
   extractUnionEither :: t -> u (Either e v)
 

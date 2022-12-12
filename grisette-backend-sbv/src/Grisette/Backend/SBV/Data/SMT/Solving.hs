@@ -1,6 +1,9 @@
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
@@ -10,8 +13,10 @@
 
 module Grisette.Backend.SBV.Data.SMT.Solving () where
 
+import Control.DeepSeq
 import Control.Monad.Except
 import qualified Data.HashSet as S
+import Data.Hashable
 import Data.Maybe
 import qualified Data.SBV as SBV
 import Data.SBV.Control (Query)
@@ -22,13 +27,16 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
+import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.ModelOps
+import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.SymPrim
+import Language.Haskell.TH.Syntax
 
 solveTermWith ::
   forall integerBitWidth.
@@ -92,63 +100,102 @@ instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
   solveFormulaAll = undefined
 
 instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
-  cegisFormulas ::
-    forall forallArg.
-    (GExtractSymbolics SymbolSet forallArg, GEvaluateSym PM.Model forallArg) =>
+  cegisFormulasGenForalls ::
+    forall inputs spec.
+    (GExtractSymbolics SymbolSet inputs, GEvaluateSym PM.Model inputs, GenSymSimple spec inputs) =>
     GrisetteSMTConfig n ->
-    forallArg ->
-    SymBool ->
-    SymBool ->
-    IO (Either SBVC.CheckSatResult ([forallArg], PM.Model))
-  cegisFormulas config foralls assumption assertion = SBV.runSMTWith (sbvConfig config) $ do
-    let Sym t = phi
-    (newm, a) <- lowerSinglePrim config t
-    SBVC.query $
-      snd <$> do
-        SBV.constrain a
-        r <- SBVC.checkSat
-        mr <- case r of
-          SBVC.Sat -> do
-            md <- SBVC.getModel
-            return $ Right $ parseModel config md newm
-          _ -> return $ Left r
-        loop (exceptFor forallSymbols <$> mr) [] newm
+    [spec] ->
+    [inputs] ->
+    (inputs -> CEGISFormulas SymBool) ->
+    IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
+  cegisFormulasGenForalls config inputGen initialCexes func =
+    go1 (cexesAssertFunc initialCexes) initialCexes (error "Should have at least one gen") [] (conc True) (conc True) inputGen
     where
-      forallSymbols :: SymbolSet
-      forallSymbols = gextractSymbolics foralls
-      phi = nots assertion &&~ nots assumption
-      negphi = assertion &&~ nots assumption
-      check :: Model -> IO (Either SBVC.CheckSatResult (forallArg, PM.Model))
-      check candidate = do
-        let evaluated = gevaluateSym False candidate negphi
-        r <- solveFormula config evaluated
-        return $ do
-          m <- r
-          let newm = exact forallSymbols m
-          return (gevaluateSym False newm foralls, newm)
-      guess :: Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
-      guess candidate origm = do
-        let Sym evaluated = gevaluateSym False candidate phi
-        let (lowered, newm) = lowerSinglePrim' config evaluated origm
-        SBV.constrain lowered
-        r <- SBVC.checkSat
-        case r of
-          SBVC.Sat -> do
-            md <- SBVC.getModel
-            let model = parseModel config md newm
-            return (newm, Right $ exceptFor forallSymbols model)
-          _ -> return (newm, Left r)
-      loop ::
-        Either SBVC.CheckSatResult PM.Model ->
-        [forallArg] ->
-        SymBiMap ->
-        Query (SymBiMap, Either SBVC.CheckSatResult ([forallArg], PM.Model))
-      loop (Right mo) cexs origm = do
-        r <- liftIO $ check mo
-        case r of
-          Left SBVC.Unsat -> return (origm, Right (cexs, mo))
-          Left v -> return (origm, Left v)
-          Right (cex, cexm) -> do
-            (newm, res) <- guess cexm origm
-            loop res (cex : cexs) newm
-      loop (Left v) _ origm = return (origm, Left v)
+      go1 cexFormula cexes previousModel inputs pre post remainingGen = do
+        case remainingGen of
+          [] -> return $ Right (cexes, previousModel)
+          v : vs -> do
+            let newInput = genSymSimple v (nameWithInfo "inputs" $ CegisInternal $ length vs)
+            let CEGISFormulas newPre newPost = func newInput
+            let finalPre = pre &&~ newPre
+            let finalPost = post &&~ newPost
+            r <- go cexFormula newInput (newInput : inputs) finalPre finalPost
+            case r of
+              Left failure -> return $ Left failure
+              Right (newCexes, mo) -> do
+                go1
+                  (cexFormula &&~ cexesAssertFunc newCexes)
+                  (cexes ++ newCexes)
+                  mo
+                  (newInput : inputs)
+                  finalPre
+                  finalPost
+                  vs
+      cexAssertFunc input =
+        let CEGISFormulas pre post = func input in pre &&~ post
+      cexesAssertFunc :: [inputs] -> SymBool
+      cexesAssertFunc = foldl (\acc x -> acc &&~ cexAssertFunc x) (conc True)
+      go ::
+        SymBool ->
+        inputs ->
+        [inputs] ->
+        SymBool ->
+        SymBool ->
+        IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
+      go cexFormula inputs allInputs pre post =
+        SBV.runSMTWith (sbvConfig config) $ do
+          let Sym t = phi &&~ cexFormula
+          (newm, a) <- lowerSinglePrim config t
+          SBVC.query $
+            snd <$> do
+              SBV.constrain a
+              r <- SBVC.checkSat
+              mr <- case r of
+                SBVC.Sat -> do
+                  md <- SBVC.getModel
+                  return $ Right $ parseModel config md newm
+                _ -> return $ Left r
+              loop ((forallSymbols `exceptFor`) <$> mr) [] newm
+        where
+          forallSymbols :: SymbolSet
+          forallSymbols = gextractSymbolics allInputs
+          phi = pre &&~ post
+          negphi = pre &&~ nots post
+          check :: Model -> IO (Either SBVC.CheckSatResult (inputs, PM.Model))
+          check candidate = do
+            let evaluated = gevaluateSym False candidate negphi
+            r <- solveFormula config evaluated
+            return $ do
+              m <- r
+              let newm = exact forallSymbols m
+              return (gevaluateSym False newm inputs, newm)
+          guess :: Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
+          guess candidate origm = do
+            let Sym evaluated = gevaluateSym False candidate phi
+            let (lowered, newm) = lowerSinglePrim' config evaluated origm
+            SBV.constrain lowered
+            r <- SBVC.checkSat
+            case r of
+              SBVC.Sat -> do
+                md <- SBVC.getModel
+                let model = parseModel config md newm
+                return (newm, Right $ exceptFor forallSymbols model)
+              _ -> return (newm, Left r)
+          loop ::
+            Either SBVC.CheckSatResult PM.Model ->
+            [inputs] ->
+            SymBiMap ->
+            Query (SymBiMap, Either SBVC.CheckSatResult ([inputs], PM.Model))
+          loop (Right mo) cexs origm = do
+            r <- liftIO $ check mo
+            case r of
+              Left SBVC.Unsat -> return (origm, Right (cexs, mo))
+              Left v -> return (origm, Left v)
+              Right (cex, cexm) -> do
+                (newm, res) <- guess cexm origm
+                loop res (cex : cexs) newm
+          loop (Left v) _ origm = return (origm, Left v)
+
+newtype CegisInternal = CegisInternal Int
+  deriving (Eq, Show, Ord, Lift)
+  deriving newtype (Hashable, NFData)
