@@ -54,7 +54,7 @@ class GSubstituteSymSymbol (typedSymbol :: * -> *) (sym :: * -> *) | sym -> type
 -- >>> a = "a" :: TypedSymbol Bool
 -- >>> v = "x" &&~ "y" :: SymBool
 -- >>> substituteSym a v (["a" &&~ "b", "a"] :: [SymBool])
--- [(&& (&& x y) b), (&& x y)]
+-- [(&& (&& x y) b),(&& x y)]
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
