@@ -732,6 +732,7 @@ module Grisette.Core
     -- and provides the @mrg*@ variants for the combinators in "Grisette.Lib.Mtl",
     -- for example, 'Grisette.Lib.Control.Monad.Except.mrgThrowError'.
     --
+    -- >>> import Control.Monad.Except
     -- >>> import Grisette.Lib.Mtl
     -- >>> mrgThrowError AssertionError :: ExceptT AssertionError UnionM ()
     -- ExceptT (UMrg (Single (Left AssertionError)))
