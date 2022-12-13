@@ -9,8 +9,7 @@ import Control.Monad.Except
 import qualified Data.HashSet as S
 import Data.Proxy
 import qualified Data.SBV as SBV
-import Grisette.Backend.SBV.Data.SMT.Config
-import Grisette.Backend.SBV.Data.SMT.Solving ()
+import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool

@@ -37,7 +37,7 @@ import GHC.Exts (sortWith)
 import GHC.Natural
 import GHC.Stack
 import GHC.TypeNats
-import Grisette.Backend.SBV.Data.SMT.Config
+import {-# SOURCE #-} Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.IR.SymPrim.Data.BV

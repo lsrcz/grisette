@@ -5,5 +5,5 @@ module Grisette.Internal.Backend.SBV
   )
 where
 
-import Grisette.Backend.SBV.Data.SMT.Config
 import Grisette.Backend.SBV.Data.SMT.Lowering
+import Grisette.Backend.SBV.Data.SMT.Solving

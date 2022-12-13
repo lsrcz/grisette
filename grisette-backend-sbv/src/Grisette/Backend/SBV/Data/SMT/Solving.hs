@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -8,20 +9,28 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
-module Grisette.Backend.SBV.Data.SMT.Solving () where
+module Grisette.Backend.SBV.Data.SMT.Solving
+  ( GrisetteSMTConfig (..),
+    sbvConfig,
+    TermTy,
+  )
+where
 
 import Control.DeepSeq
 import Control.Monad.Except
 import qualified Data.HashSet as S
 import Data.Hashable
+import Data.Kind
 import Data.Maybe
 import qualified Data.SBV as SBV
 import Data.SBV.Control (Query)
 import qualified Data.SBV.Control as SBVC
-import Grisette.Backend.SBV.Data.SMT.Config
+import GHC.TypeNats
 import Grisette.Backend.SBV.Data.SMT.Lowering
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.CEGISSolver
@@ -31,12 +40,45 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
+import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.SymPrim
-import Language.Haskell.TH.Syntax
+import Grisette.IR.SymPrim.Data.TabularFunc
+import Language.Haskell.TH.Syntax (Lift)
+
+type Aux :: Bool -> Nat -> Type
+type family Aux o n where
+  Aux 'True n = SBV.SInteger
+  Aux 'False n = SBV.SInt n
+
+type IsZero :: Nat -> Bool
+type family IsZero n where
+  IsZero 0 = 'True
+  IsZero _ = 'False
+
+type TermTy :: Nat -> Type -> Type
+type family TermTy bitWidth b where
+  TermTy _ Bool = SBV.SBool
+  TermTy n Integer = Aux (IsZero n) n
+  TermTy n (IntN x) = SBV.SBV (SBV.IntN x)
+  TermTy n (WordN x) = SBV.SBV (SBV.WordN x)
+  TermTy n (a =-> b) = TermTy n a -> TermTy n b
+  TermTy n (a --> b) = TermTy n a -> TermTy n b
+  TermTy _ v = v
+
+data GrisetteSMTConfig (integerBitWidth :: Nat) where
+  UnboundedReasoning :: SBV.SMTConfig -> GrisetteSMTConfig 0
+  BoundedReasoning ::
+    (KnownNat integerBitWidth, IsZero integerBitWidth ~ 'False, SBV.BVIsNonZero integerBitWidth) =>
+    SBV.SMTConfig ->
+    GrisetteSMTConfig integerBitWidth
+
+sbvConfig :: forall integerBitWidth. GrisetteSMTConfig integerBitWidth -> SBV.SMTConfig
+sbvConfig (UnboundedReasoning config) = config
+sbvConfig (BoundedReasoning config) = config
 
 solveTermWith ::
   forall integerBitWidth.

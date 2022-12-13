@@ -8,8 +8,7 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingTests where
 
 import Data.Foldable
 import qualified Data.SBV as SBV
-import Grisette.Backend.SBV.Data.SMT.Config
-import Grisette.Backend.SBV.Data.SMT.Solving ()
+import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Data.BV
