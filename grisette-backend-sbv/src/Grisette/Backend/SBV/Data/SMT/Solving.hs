@@ -100,15 +100,15 @@ instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
   solveFormulaAll = undefined
 
 instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
-  cegisFormulasGenForalls ::
+  cegisGenInputs ::
     forall inputs spec.
     (GExtractSymbolics SymbolSet inputs, GEvaluateSym PM.Model inputs, GenSymSimple spec inputs) =>
     GrisetteSMTConfig n ->
     [spec] ->
     [inputs] ->
-    (inputs -> CEGISFormulas SymBool) ->
+    (inputs -> CEGISCondition SymBool) ->
     IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
-  cegisFormulasGenForalls config inputGen initialCexes func =
+  cegisGenInputs config inputGen initialCexes func =
     go1 (cexesAssertFunc initialCexes) initialCexes (error "Should have at least one gen") [] (conc True) (conc True) inputGen
     where
       go1 cexFormula cexes previousModel inputs pre post remainingGen = do
@@ -116,7 +116,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
           [] -> return $ Right (cexes, previousModel)
           v : vs -> do
             let newInput = genSymSimple v (nameWithInfo "inputs" $ CegisInternal $ length vs)
-            let CEGISFormulas newPre newPost = func newInput
+            let CEGISCondition newPre newPost = func newInput
             let finalPre = pre &&~ newPre
             let finalPost = post &&~ newPost
             r <- go cexFormula newInput (newInput : inputs) finalPre finalPost
@@ -132,7 +132,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
                   finalPost
                   vs
       cexAssertFunc input =
-        let CEGISFormulas pre post = func input in pre &&~ post
+        let CEGISCondition pre post = func input in pre &&~ post
       cexesAssertFunc :: [inputs] -> SymBool
       cexesAssertFunc = foldl (\acc x -> acc &&~ cexAssertFunc x) (conc True)
       go ::

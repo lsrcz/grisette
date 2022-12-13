@@ -185,12 +185,16 @@ module Grisette.Core
 
     -- * Solver interface
     Solver (..),
+    UnionWithExcept (..),
+    solveExcept,
+    solveMultiExcept,
     CEGISSolver (..),
-    ExtractUnionEither (..),
-    solveFallable,
-    solveMultiFallable,
-    cegisFallable,
-    cegisFallable',
+    CEGISCondition (..),
+    cegisPostCond,
+    cegisExcept,
+    cegisExceptVC,
+    cegisExceptGenInputs,
+    cegisExceptVCGenInputs,
 
     -- * Memoization
     htmemo,

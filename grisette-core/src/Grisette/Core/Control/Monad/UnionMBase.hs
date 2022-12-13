@@ -415,8 +415,8 @@ instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GSimpleMergeable b
           r
           (HML.keys l)
 
-instance ExtractUnionEither (UnionMBase bool (Either e v)) (UnionMBase bool) e v where
-  extractUnionEither = id
+instance UnionWithExcept (UnionMBase bool (Either e v)) (UnionMBase bool) e v where
+  extractUnionExcept = id
 
-instance SymBoolOp bool => ExtractUnionEither (UnionMBase bool (CBMCEither e v)) (UnionMBase bool) e v where
-  extractUnionEither = fmap runCBMCEither
+instance SymBoolOp bool => UnionWithExcept (UnionMBase bool (CBMCEither e v)) (UnionMBase bool) e v where
+  extractUnionExcept = fmap runCBMCEither

@@ -15,9 +15,9 @@
 
 module Grisette.Core.Data.Class.Solver
   ( Solver (..),
-    ExtractUnionEither (..),
-    solveFallable,
-    solveMultiFallable,
+    UnionWithExcept (..),
+    solveExcept,
+    solveMultiExcept,
   )
 where
 
@@ -51,14 +51,14 @@ class
   solveFormulaMulti :: config -> Int -> bool -> IO [model]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
 
-class ExtractUnionEither t u e v | t -> u e v where
-  extractUnionEither :: t -> u (Either e v)
+class UnionWithExcept t u e v | t -> u e v where
+  extractUnionExcept :: t -> u (Either e v)
 
-instance ExtractUnionEither (ExceptT e u v) u e v where
-  extractUnionEither = runExceptT
+instance UnionWithExcept (ExceptT e u v) u e v where
+  extractUnionExcept = runExceptT
 
-solveFallable ::
-  ( ExtractUnionEither t u e v,
+solveExcept ::
+  ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
@@ -68,10 +68,10 @@ solveFallable ::
   (Either e v -> bool) ->
   t ->
   IO (Either failure model)
-solveFallable config f v = solveFormula config (getSingle $ f <$> extractUnionEither v)
+solveExcept config f v = solveFormula config (getSingle $ f <$> extractUnionExcept v)
 
-solveMultiFallable ::
-  ( ExtractUnionEither t u e v,
+solveMultiExcept ::
+  ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
@@ -82,4 +82,4 @@ solveMultiFallable ::
   (Either e v -> bool) ->
   t ->
   IO [model]
-solveMultiFallable config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionEither v)
+solveMultiExcept config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionExcept v)

@@ -10,14 +10,14 @@
 
 module Grisette.Core.Data.Class.CEGISSolver
   ( CEGISSolver (..),
-    CEGISFormulas (..),
-    cegisPostOnly,
+    CEGISCondition (..),
+    cegisPostCond,
     cegisPrePost,
-    cegisFormulas,
-    cegisFallable,
-    cegisFallable',
-    cegisFallableGenForalls,
-    cegisFallableGenForalls',
+    cegis,
+    cegisExcept,
+    cegisExceptVC,
+    cegisExceptGenInputs,
+    cegisExceptVCGenInputs,
   )
 where
 
@@ -33,43 +33,43 @@ import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solver
 
-data CEGISFormulas bool = CEGISFormulas bool bool deriving (Generic)
+data CEGISCondition bool = CEGISCondition bool bool deriving (Generic)
 
-cegisPostOnly :: SymBoolOp bool => bool -> CEGISFormulas bool
-cegisPostOnly = CEGISFormulas (conc True)
+cegisPostCond :: SymBoolOp bool => bool -> CEGISCondition bool
+cegisPostCond = CEGISCondition (conc True)
 
-cegisPrePost :: SymBoolOp bool => bool -> bool -> CEGISFormulas bool
-cegisPrePost = CEGISFormulas
+cegisPrePost :: SymBoolOp bool => bool -> bool -> CEGISCondition bool
+cegisPrePost = CEGISCondition
 
-deriving via (Default (CEGISFormulas bool)) instance SymBoolOp bool => GMergeable bool (CEGISFormulas bool)
+deriving via (Default (CEGISCondition bool)) instance SymBoolOp bool => GMergeable bool (CEGISCondition bool)
 
-deriving via (Default (CEGISFormulas bool)) instance SymBoolOp bool => GSimpleMergeable bool (CEGISFormulas bool)
+deriving via (Default (CEGISCondition bool)) instance SymBoolOp bool => GSimpleMergeable bool (CEGISCondition bool)
 
 class
   (SymBoolOp bool, GEvaluateSym model bool) =>
   CEGISSolver config bool symbolSet failure model
     | config -> bool symbolSet failure model
   where
-  cegisFormulasGenForalls ::
+  cegisGenInputs ::
     (GEvaluateSym model inputs, GExtractSymbolics symbolSet inputs, GenSymSimple spec inputs) =>
     config ->
     [spec] ->
     [inputs] ->
-    (inputs -> CEGISFormulas bool) ->
+    (inputs -> CEGISCondition bool) ->
     IO (Either failure ([inputs], model))
 
-cegisFormulas ::
+cegis ::
   ( CEGISSolver config bool symbolSet failure model,
     GEvaluateSym model forallArg,
     GExtractSymbolics symbolSet forallArg
   ) =>
   config ->
   forallArg ->
-  CEGISFormulas bool ->
+  CEGISCondition bool ->
   IO (Either failure ([forallArg], model))
-cegisFormulas config forallArg formula = do
+cegis config forallArg formula = do
   r <-
-    cegisFormulasGenForalls
+    cegisGenInputs
       config
       [IdGen forallArg]
       []
@@ -78,12 +78,12 @@ cegisFormulas config forallArg formula = do
     Left f -> return $ Left f
     Right (cexes, mo) -> return $ Right (runIdGen <$> cexes, mo)
 
-cegisFallableGenForalls ::
+cegisExceptGenInputs ::
   ( CEGISSolver config bool symbolSet failure model,
     GEvaluateSym model inputs,
     GExtractSymbolics symbolSet inputs,
     GenSymSimple spec inputs,
-    ExtractUnionEither t u e v,
+    UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool
@@ -91,18 +91,18 @@ cegisFallableGenForalls ::
   config ->
   [spec] ->
   [inputs] ->
-  (Either e v -> CEGISFormulas bool) ->
+  (Either e v -> CEGISCondition bool) ->
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
-cegisFallableGenForalls config inputGen cexes interpretFunc f =
-  cegisFormulasGenForalls config inputGen cexes (getSingle . (interpretFunc <$>) . extractUnionEither . f)
+cegisExceptGenInputs config inputGen cexes interpretFunc f =
+  cegisGenInputs config inputGen cexes (getSingle . (interpretFunc <$>) . extractUnionExcept . f)
 
-cegisFallableGenForalls' ::
+cegisExceptVCGenInputs ::
   ( CEGISSolver config bool symbolSet failure model,
     GEvaluateSym model inputs,
     GExtractSymbolics symbolSet inputs,
     GenSymSimple spec inputs,
-    ExtractUnionEither t u e v,
+    UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool
@@ -113,8 +113,8 @@ cegisFallableGenForalls' ::
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
-cegisFallableGenForalls' config inputGen cexes interpretFunc f =
-  cegisFormulasGenForalls
+cegisExceptVCGenInputs config inputGen cexes interpretFunc f =
+  cegisGenInputs
     config
     inputGen
     cexes
@@ -122,15 +122,15 @@ cegisFallableGenForalls' config inputGen cexes interpretFunc f =
         getSingle
           ( ( \case
                 Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
-                Left AssertionViolation -> cegisPostOnly (conc False)
-                _ -> cegisPostOnly (conc True)
+                Left AssertionViolation -> cegisPostCond (conc False)
+                _ -> cegisPostCond (conc True)
             )
-              <$> (extractUnionEither (f v) >>= interpretFunc)
+              <$> (extractUnionExcept (f v) >>= interpretFunc)
           )
     )
 
-cegisFallable ::
-  ( ExtractUnionEither t u e v,
+cegisExcept ::
+  ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
@@ -140,13 +140,13 @@ cegisFallable ::
   ) =>
   config ->
   forallArgs ->
-  (Either e v -> CEGISFormulas bool) ->
+  (Either e v -> CEGISCondition bool) ->
   t ->
   IO (Either failure ([forallArgs], model))
-cegisFallable config args f v = cegisFormulas config args $ getSingle $ f <$> extractUnionEither v
+cegisExcept config args f v = cegis config args $ getSingle $ f <$> extractUnionExcept v
 
-cegisFallable' ::
-  ( ExtractUnionEither t u e v,
+cegisExceptVC ::
+  ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool,
@@ -159,15 +159,15 @@ cegisFallable' ::
   (Either e v -> u (Either VerificationConditions ())) ->
   t ->
   IO (Either failure ([forallArgs], model))
-cegisFallable' config args f v =
-  cegisFormulas config args $
+cegisExceptVC config args f v =
+  cegis config args $
     getSingle $
       ( \case
           Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
-          Left AssertionViolation -> cegisPostOnly (conc False)
-          _ -> cegisPostOnly (conc True)
+          Left AssertionViolation -> cegisPostCond (conc False)
+          _ -> cegisPostCond (conc True)
       )
-        <$> (extractUnionEither v >>= f)
+        <$> (extractUnionExcept v >>= f)
 
 newtype IdGen x = IdGen {runIdGen :: x}
 
