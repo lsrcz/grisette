@@ -859,6 +859,9 @@ import Grisette.Core.Data.MemoUtils
 import Grisette.Core.TH
 
 -- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.Lib.Base
+-- >>> import Grisette.IR.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts
