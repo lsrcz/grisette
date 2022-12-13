@@ -44,6 +44,9 @@ import Data.Int
 import Data.Word
 import Generics.Deriving
 
+-- $setup
+-- >>> import Grisette.IR.SymPrim
+
 -- | Convert a concrete value to symbolic value.
 class ToSym a b where
   -- | Convert a concrete value to symbolic value.

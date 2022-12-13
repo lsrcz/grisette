@@ -134,7 +134,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --
 -- 'Grisette.Lib.Control.Monad.mrgReturn' can resolve the 'GMergeable' constraint.
 --
--- >>> import Grisette.Lib.Mtl
+-- >>> import Grisette.Lib.Base
 -- >>> mrgReturn 1 :: UnionM Integer
 -- UMrg (Single 1)
 --

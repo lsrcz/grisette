@@ -45,6 +45,10 @@ import Data.Word
 import Generics.Deriving
 import Generics.Deriving.Instances ()
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+
 -- | An empty type class to link the typed symbol and the solvable type.
 -- This is used to help Haskell compiler with functional dependency.
 class GSubstituteSymSymbol (typedSymbol :: * -> *) (sym :: * -> *) | sym -> typedSymbol
