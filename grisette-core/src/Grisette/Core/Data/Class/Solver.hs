@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -35,15 +34,13 @@ module Grisette.Core.Data.Class.Solver
     --
     -- The examples also assumes a z3 solver available in @PATH@.
 
-    -- * General error handling types
-    ExtractUnionEither (..),
+    -- * Union with exceptions
+    UnionWithExcept (..),
 
     -- * Solver interfaces
     Solver (..),
-    solveFallable,
-    solveMultiFallable,
-    cegisFallable,
-    cegisFallable',
+    solveExcept,
+    solveMultiExcept,
   )
 where
 
@@ -77,8 +74,8 @@ data SolveInternal = SolveInternal deriving (Eq, Show, Ord, Generic, Hashable, L
 -- | A solver interface.
 class
   (SymBoolOp bool, GEvaluateSym model bool) =>
-  Solver config bool symbolSet failure model
-    | config -> bool symbolSet failure model
+  Solver config bool failure model
+    | config -> bool failure model
   where
   -- | Solve a single formula. Find an assignment to it to make it true.
   --
@@ -102,93 +99,35 @@ class
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveFormulaAll :: config -> Int -> bool -> IO [model]
 
-  cegisFormula ::
-    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
-    config ->
-    forallArg ->
-    bool ->
-    IO (Either failure ([forallArg], model))
-  cegisFormula config forallArg = cegisFormulas config forallArg (conc False)
-  cegisFormulas ::
-    (GEvaluateSym model forallArg, GExtractSymbolics symbolSet forallArg) =>
-    config ->
-    forallArg ->
-    bool ->
-    bool ->
-    IO (Either failure ([forallArg], model))
+class UnionWithExcept t u e v | t -> u e v where
+  extractUnionExcept :: t -> u (Either e v)
 
--- | For those types that are capable to handle errors.
-class ExtractUnionEither t u e v | t -> u e v where
-  extractUnionEither :: t -> u (Either e v)
+instance UnionWithExcept (ExceptT e u v) u e v where
+  extractUnionExcept = runExceptT
 
-instance ExtractUnionEither (ExceptT e u v) u e v where
-  extractUnionEither = runExceptT
-
-solveFallable ::
-  ( ExtractUnionEither t u e v,
+solveExcept ::
+  ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
-    Solver config bool symbolSet failure model
+    Solver config bool failure model
   ) =>
   config ->
   (Either e v -> bool) ->
   t ->
   IO (Either failure model)
-solveFallable config f v = solveFormula config (getSingle $ f <$> extractUnionEither v)
+solveExcept config f v = solveFormula config (getSingle $ f <$> extractUnionExcept v)
 
-solveMultiFallable ::
-  ( ExtractUnionEither t u e v,
+solveMultiExcept ::
+  ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Functor u,
     SymBoolOp bool,
-    Solver config bool symbolSet failure model
+    Solver config bool failure model
   ) =>
   config ->
   Int ->
   (Either e v -> bool) ->
   t ->
   IO [model]
-solveMultiFallable config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionEither v)
-
-cegisFallable ::
-  ( ExtractUnionEither t u e v,
-    GUnionPrjOp bool u,
-    Functor u,
-    SymBoolOp bool,
-    GEvaluateSym model forallArgs,
-    GExtractSymbolics symbolSet forallArgs,
-    Solver config bool symbolSet failure model
-  ) =>
-  config ->
-  forallArgs ->
-  (Either e v -> (bool, bool)) ->
-  t ->
-  IO (Either failure ([forallArgs], model))
-cegisFallable config args f v = uncurry (cegisFormulas config args) (getSingle $ f <$> extractUnionEither v)
-
-cegisFallable' ::
-  ( ExtractUnionEither t u e v,
-    GUnionPrjOp bool u,
-    Monad u,
-    SymBoolOp bool,
-    GEvaluateSym model forallArgs,
-    GExtractSymbolics symbolSet forallArgs,
-    Solver config bool symbolSet failure model
-  ) =>
-  config ->
-  forallArgs ->
-  (Either e v -> u (Either VerificationConditions ())) ->
-  t ->
-  IO (Either failure ([forallArgs], model))
-cegisFallable' config args f v =
-  uncurry
-    (cegisFormulas config args)
-    ( getSingle $
-        ( \case
-            Left AssumptionViolation -> (conc True, conc False)
-            Left AssertionViolation -> (conc False, conc True)
-            _ -> (conc False, conc False)
-        )
-          <$> (extractUnionEither v >>= f)
-    )
+solveMultiExcept config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionExcept v)

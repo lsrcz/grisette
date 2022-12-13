@@ -15,6 +15,7 @@
 module Grisette.IR.SymPrim.Data.BV where
 
 import Control.DeepSeq
+import Control.Exception
 import Data.Bits
 import Data.Hashable
 import Data.Proxy
@@ -217,20 +218,39 @@ instance (KnownNat n, 1 <= n) => Real (IntN n) where
   toRational i = toInteger i % 1
 
 instance (KnownNat n, 1 <= n) => Integral (IntN n) where
-  quot x y = fromInteger (toInteger x `quot` toInteger y)
-  rem x y = fromInteger (toInteger x `rem` toInteger y)
-  quotRem x y = case quotRem (toInteger x) (toInteger y) of
-    (q, r) -> (fromInteger q, fromInteger r)
-  div x y = fromInteger (toInteger x `div` toInteger y)
-  mod x y = fromInteger (toInteger x `mod` toInteger y)
-  divMod x y = case divMod (toInteger x) (toInteger y) of
-    (q, r) -> (fromInteger q, fromInteger r)
+  quot x y =
+    if x == minBound && y == -1
+      then throw Overflow
+      else fromInteger (toInteger x `quot` toInteger y)
+  rem x y =
+    if x == minBound && y == -1
+      then throw Overflow
+      else fromInteger (toInteger x `rem` toInteger y)
+  quotRem x y =
+    if x == minBound && y == -1
+      then throw Overflow
+      else case quotRem (toInteger x) (toInteger y) of
+        (q, r) -> (fromInteger q, fromInteger r)
+  div x y =
+    if x == minBound && y == -1
+      then throw Overflow
+      else fromInteger (toInteger x `div` toInteger y)
+  mod x y =
+    if x == minBound && y == -1
+      then throw Overflow
+      else fromInteger (toInteger x `mod` toInteger y)
+  divMod x y =
+    if x == minBound && y == -1
+      then throw Overflow
+      else case divMod (toInteger x) (toInteger y) of
+        (q, r) -> (fromInteger q, fromInteger r)
   toInteger i@(IntN n) = case signum i of
     0 -> 0
     1 -> n
     -1 ->
       let x = negate i
        in if signum x == -1 then -n else negate (toInteger x)
+    _ -> undefined
 
 instance (KnownNat n, 1 <= n) => Num (IntN n) where
   IntN x + IntN y = IntN (x + y) .&. minusOneIntN (Proxy :: Proxy n)

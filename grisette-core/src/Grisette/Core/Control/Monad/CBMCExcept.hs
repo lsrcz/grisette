@@ -49,6 +49,7 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solver
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Language.Haskell.TH.Syntax (Lift)
@@ -427,3 +428,9 @@ instance
   ToSym (CBMCExceptT e1 m1 a) (CBMCExceptT e2 m2 b)
   where
   toSym (CBMCExceptT v) = CBMCExceptT $ toSym v
+
+instance
+  (Monad u, GUnionLike bool u, GMergeable bool e, GMergeable bool v) =>
+  UnionWithExcept (CBMCExceptT e u v) u e v
+  where
+  extractUnionExcept = merge . fmap runCBMCEither . runCBMCExceptT

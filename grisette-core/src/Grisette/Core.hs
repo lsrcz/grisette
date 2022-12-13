@@ -769,11 +769,16 @@ module Grisette.Core
 
     -- | #solver#
     Solver (..),
-    ExtractUnionEither (..),
-    solveFallable,
-    solveMultiFallable,
-    cegisFallable,
-    cegisFallable',
+    UnionWithExcept (..),
+    solveExcept,
+    solveMultiExcept,
+    CEGISSolver (..),
+    CEGISCondition (..),
+    cegisPostCond,
+    cegisExcept,
+    cegisExceptVC,
+    cegisExceptGenInputs,
+    cegisExceptVCGenInputs,
 
     -- ** Symbolic constant extraction
 
@@ -839,6 +844,7 @@ import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Control.Monad.UnionMBase
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
+import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics

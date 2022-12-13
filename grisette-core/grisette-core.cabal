@@ -48,6 +48,7 @@ library
       Grisette.Core.Control.Monad.UnionMBase
       Grisette.Core.Data.Class.BitVector
       Grisette.Core.Data.Class.Bool
+      Grisette.Core.Data.Class.CEGISSolver
       Grisette.Core.Data.Class.Error
       Grisette.Core.Data.Class.Evaluate
       Grisette.Core.Data.Class.ExtractSymbolics
