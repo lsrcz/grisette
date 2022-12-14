@@ -766,6 +766,109 @@ module Grisette.Core
 
     -- * Solver backend
 
+    -- | Grisette abstracts the solver backend with the 'Solver' type class,
+    -- and the most basic solver call is the 'solve' function.
+    -- 
+    -- In the following code, we will search for the integer solutions to two
+    -- equation systems.
+    -- The first equation system, as shown below, has the solution @(x, y) = (13, -7)@.
+    --
+    -- \[
+    --   \left\{
+    --     \begin{aligned}
+    --       x + y &= 6 \\
+    --       x - y &= 20
+    --     \end{aligned}
+    --   \right.
+    -- \]
+    --
+    -- The second equation system, as shown below, has no integer solutions.
+    --
+    -- \[
+    --   \left\{
+    --     \begin{aligned}
+    --       x + y &= 6 \\
+    --       x - y &= 19
+    --     \end{aligned}
+    --   \right.
+    -- \]
+    --
+    -- >>> import Grisette.IR.SymPrim
+    -- >>> import Grisette.Backend.SBV
+    -- >>> let x = "x" :: SymInteger
+    -- >>> let y = "y" :: SymInteger
+    -- >>> solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 20)
+    -- Right (Model {x -> 13 :: Integer, y -> -7 :: Integer})
+    -- >>> solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 19)
+    -- Left Unsat 
+    --
+    -- The first parameter of 'solve' is the solver configuration.
+    -- Here it means that we should not perform any approximation, and should
+    -- use the Z3 solver. For more details, see the documentation of
+    -- the @grisette-backend-sbv@ package.
+    --
+    -- The second parameter is the formula to be solved. With the
+    -- @grisette-backend-sbv@ backend, it have the type @SymBool@.
+    --
+    -- The 'solve' function would return a model if the formula is satisfiable.
+    -- The model is a mapping from symbolic variables to concrete values,
+    -- as shown in the following example.
+    --
+    -- > Right (Model {x -> 13 :: Integer, y -> -7 :: Integer})
+    --
+    -- This model maps x to 13, and y to -7. With this model, we can then
+    -- evaluate symbolic values. The following code evaluates the product of
+    -- x and y under the solution of the equation system.
+    --
+    -- >>> Right m <- solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 20)
+    -- >>> evaluateSym False m (x * y)
+    -- -91I
+    --
+    -- You may notice that the first argument to the 'evaluateSym' function is
+    -- a Boolean value 'False'. This argument controls whether the evaluation
+    -- should assign a default value to the symbolic constants that does not
+    -- appear in the model. When the argument is 'False', the evaluation would
+    -- preserve any symbolic constants that does not appear in the model, and
+    -- partially evaluate the expression. When the argument is 'True', the
+    -- evaluation would assign a default value to the symbolic constants that
+    -- does not appear in the model, e.g., 0 for integers, and the evaluation
+    -- result would become a concrete value -91.
+    --
+    -- >>> let z = "z" :: SymInteger
+    -- >>> evaluateSym False m (x * y + z)
+    -- (+ -91I z)
+    -- >>> evaluateSym True m (x * y + z)
+    -- -91I
+    --
+    -- Grisette also provides convenient functions to solve problems with error
+    -- handling. The lambda case function used in the following code means that
+    -- we would like the solver to find path that would not lead to an error.
+    -- This is done by mapping left values (failed paths) to false, and right
+    -- values (successful paths) to true.
+    --
+    -- >>> :set -XLambdaCase
+    -- >>> let x = "x" :: SymInteger
+    -- >>> :{
+    --   res :: ExceptT AssertionError UnionM ()
+    --   res = do
+    --     symAssert $ x >~ 0       -- constrain that x is positive
+    --     symAssert $ x <~ 2       -- constrain that x is less than 2
+    -- :}
+    --
+    -- >>> :{
+    --  solveExcept
+    --    (UnboundedReasoning z3)
+    --    (\case
+    --      Left _ -> conc False    -- errors are undesirable
+    --      _ -> Conc True)         -- non-errors are desirable
+    --    res 
+    -- :}
+    -- Right (Model {x -> 1 :: Integer})
+    --
+    -- Grisette also provide implementation for counter-example guided inductive
+    -- synthesis (CEGIS) algorithm. See the documentation for 'CEGISSolver' for
+    -- more details.
+    
     -- ** Solver interface
 
     -- | #solver#
@@ -773,9 +876,12 @@ module Grisette.Core
     UnionWithExcept (..),
     solveExcept,
     solveMultiExcept,
+
+    -- ** Counter-example Guided Inductive Synthesis (CEGIS)
     CEGISSolver (..),
     CEGISCondition (..),
     cegisPostCond,
+    cegisPrePost,
     cegisExcept,
     cegisExceptVC,
     cegisExceptGenInputs,
