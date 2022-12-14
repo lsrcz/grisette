@@ -768,7 +768,7 @@ module Grisette.Core
 
     -- | Grisette abstracts the solver backend with the 'Solver' type class,
     -- and the most basic solver call is the 'solve' function.
-    -- 
+    --
     -- In the following code, we will search for the integer solutions to two
     -- equation systems.
     -- The first equation system, as shown below, has the solution @(x, y) = (13, -7)@.
@@ -800,7 +800,7 @@ module Grisette.Core
     -- >>> solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 20)
     -- Right (Model {x -> 13 :: Integer, y -> -7 :: Integer})
     -- >>> solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 19)
-    -- Left Unsat 
+    -- Left Unsat
     --
     -- The first parameter of 'solve' is the solver configuration.
     -- Here it means that we should not perform any approximation, and should
@@ -861,14 +861,14 @@ module Grisette.Core
     --    (\case
     --      Left _ -> conc False    -- errors are undesirable
     --      _ -> Conc True)         -- non-errors are desirable
-    --    res 
+    --    res
     -- :}
     -- Right (Model {x -> 1 :: Integer})
     --
     -- Grisette also provide implementation for counter-example guided inductive
     -- synthesis (CEGIS) algorithm. See the documentation for 'CEGISSolver' for
     -- more details.
-    
+
     -- ** Solver interface
 
     -- | #solver#
