@@ -822,7 +822,7 @@ module Grisette.Core
     --
     -- >>> Right m <- solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 20)
     -- >>> evaluateSym False m (x * y)
-    -- -91I
+    -- -91
     --
     -- You may notice that the first argument to the 'evaluateSym' function is
     -- a Boolean value 'False'. This argument controls whether the evaluation
@@ -836,9 +836,9 @@ module Grisette.Core
     --
     -- >>> let z = "z" :: SymInteger
     -- >>> evaluateSym False m (x * y + z)
-    -- (+ -91I z)
+    -- (+ -91 z)
     -- >>> evaluateSym True m (x * y + z)
-    -- -91I
+    -- -91
     --
     -- Grisette also provides convenient functions to solve problems with error
     -- handling. The lambda case function used in the following code means that

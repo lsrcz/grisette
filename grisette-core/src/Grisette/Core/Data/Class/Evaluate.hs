@@ -56,13 +56,13 @@ import Grisette.Core.Data.Class.ToCon
 --
 -- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
 -- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
--- [1I,b]
+-- [1,b]
 --
 -- If we set the first argument true, the missing variables will be filled in with
 -- some default values:
 --
 -- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
--- [1I,0I]
+-- [1,0]
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.

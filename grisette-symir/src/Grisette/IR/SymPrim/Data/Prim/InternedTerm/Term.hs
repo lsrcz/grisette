@@ -805,7 +805,7 @@ defaultValueForIntegerDyn = toModelValue defaultValueForInteger
 
 -- Basic Integer
 instance SupportedPrim Integer where
-  pformatConc i = show i ++ "I"
+  pformatConc = show
   defaultValue = defaultValueForInteger
   defaultValueDynamic _ = defaultValueForIntegerDyn
 
