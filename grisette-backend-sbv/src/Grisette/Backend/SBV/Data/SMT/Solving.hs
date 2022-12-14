@@ -97,8 +97,8 @@ solveTermWith config term = SBV.runSMTWith (sbvConfig config) $ do
       _ -> return (m, Left r)
 
 instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
-  solveFormula config (Sym t) = snd <$> solveTermWith config t
-  solveFormulaMulti config n s@(Sym t)
+  solve config (Sym t) = snd <$> solveTermWith config t
+  solveMulti config n s@(Sym t)
     | n > 0 = SBV.runSMTWith (sbvConfig config) $ do
         (newm, a) <- lowerSinglePrim config t
         SBVC.query $ do
@@ -139,7 +139,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
                 rmmd <- remainingModels (n1 - 1) mo newm
                 return $ md : rmmd
         | otherwise = return [md]
-  solveFormulaAll = undefined
+  solveAll = undefined
 
 instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
   cegisGenInputs ::
@@ -206,7 +206,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
           check :: Model -> IO (Either SBVC.CheckSatResult (inputs, PM.Model))
           check candidate = do
             let evaluated = gevaluateSym False candidate negphi
-            r <- solveFormula config evaluated
+            r <- solve config evaluated
             return $ do
               m <- r
               let newm = exact forallSymbols m

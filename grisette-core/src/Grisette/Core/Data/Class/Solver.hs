@@ -79,25 +79,25 @@ class
   where
   -- | Solve a single formula. Find an assignment to it to make it true.
   --
-  -- >>> solveFormula (UnboundedReasoning z3) ("a" &&~ ("b" :: SymInteger) ==~ 1)
+  -- >>> solve (UnboundedReasoning z3) ("a" &&~ ("b" :: SymInteger) ==~ 1)
   -- Right (Model {a -> True :: Bool, b -> 1 :: Integer})
-  -- >>> solveFormula (UnboundedReasoning z3) ("a" &&~ nots "a")
+  -- >>> solve (UnboundedReasoning z3) ("a" &&~ nots "a")
   -- Left Unsat
-  solveFormula :: config -> bool -> IO (Either failure model)
+  solve :: config -> bool -> IO (Either failure model)
 
   -- | Solve a single formula while returning multiple models to make it true.
   -- The maximum number of desired models are given.
   --
-  -- > >>> solveFormulaMulti (UnboundedReasoning z3) 4 ("a" ||~ "b")
+  -- > >>> solveMulti (UnboundedReasoning z3) 4 ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
-  solveFormulaMulti :: config -> Int -> bool -> IO [model]
+  solveMulti :: config -> Int -> bool -> IO [model]
 
   -- | Solve a single formula while returning multiple models to make it true.
   -- All models are returned.
   --
-  -- > >>> solveFormulaAll (UnboundedReasoning z3) ("a" ||~ "b")
+  -- > >>> solveAll (UnboundedReasoning z3) ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
-  solveFormulaAll :: config -> Int -> bool -> IO [model]
+  solveAll :: config -> Int -> bool -> IO [model]
 
 class UnionWithExcept t u e v | t -> u e v where
   extractUnionExcept :: t -> u (Either e v)
@@ -116,7 +116,7 @@ solveExcept ::
   (Either e v -> bool) ->
   t ->
   IO (Either failure model)
-solveExcept config f v = solveFormula config (getSingle $ f <$> extractUnionExcept v)
+solveExcept config f v = solve config (getSingle $ f <$> extractUnionExcept v)
 
 solveMultiExcept ::
   ( UnionWithExcept t u e v,
@@ -130,4 +130,4 @@ solveMultiExcept ::
   (Either e v -> bool) ->
   t ->
   IO [model]
-solveMultiExcept config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionExcept v)
+solveMultiExcept config n f v = solveMulti config n (getSingle $ f <$> extractUnionExcept v)

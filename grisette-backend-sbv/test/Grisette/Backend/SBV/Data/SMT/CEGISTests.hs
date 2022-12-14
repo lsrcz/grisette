@@ -41,7 +41,7 @@ testCegis config shouldSuccess a bs = do
       where
         verify [] = return ()
         verify (v : vs) = do
-          y <- solveFormula config (evaluateSym False m $ nots v)
+          y <- solve config (evaluateSym False m $ nots v)
           case y of
             Left _ -> do
               verify vs
