@@ -847,6 +847,7 @@ module Grisette.Core
     -- values (successful paths) to true.
     --
     -- >>> :set -XLambdaCase
+    -- >>> import Control.Monad.Except
     -- >>> let x = "x" :: SymInteger
     -- >>> :{
     --   res :: ExceptT AssertionError UnionM ()
