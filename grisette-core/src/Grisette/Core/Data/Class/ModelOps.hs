@@ -15,6 +15,7 @@ import Data.Typeable
 
 class Monoid symbolSet => SymbolSetOps symbolSet typedSymbol | symbolSet -> typedSymbol where
   emptySet :: symbolSet
+  isEmptySet :: symbolSet -> Bool
   containsSymbol :: forall a. typedSymbol a -> symbolSet -> Bool
   insertSymbol :: forall a. typedSymbol a -> symbolSet -> symbolSet
   intersectionSet :: symbolSet -> symbolSet -> symbolSet
@@ -27,6 +28,7 @@ class
     | model -> symbolSet typedSymbol
   where
   emptyModel :: model
+  isEmptyModel :: model -> Bool
   valueOf :: typedSymbol t -> model -> Maybe t
   insertValue :: typedSymbol t -> t -> model -> model
   exceptFor :: symbolSet -> model -> model
