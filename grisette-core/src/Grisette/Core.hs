@@ -193,8 +193,8 @@ module Grisette.Core
     cegisPostCond,
     cegisExcept,
     cegisExceptVC,
-    cegisExceptGenInputs,
-    cegisExceptVCGenInputs,
+    cegisExceptMultiInputs,
+    cegisExceptVCMultiInputs,
 
     -- * Memoization
     htmemo,
