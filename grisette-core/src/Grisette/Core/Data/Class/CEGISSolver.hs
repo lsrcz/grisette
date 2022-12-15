@@ -16,8 +16,8 @@ module Grisette.Core.Data.Class.CEGISSolver
     cegis,
     cegisExcept,
     cegisExceptVC,
-    cegisExceptGenInputs,
-    cegisExceptVCGenInputs,
+    cegisExceptMultiInputs,
+    cegisExceptVCMultiInputs,
   )
 where
 
@@ -27,7 +27,6 @@ import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
@@ -50,10 +49,9 @@ class
   CEGISSolver config bool symbolSet failure model
     | config -> bool symbolSet failure model
   where
-  cegisGenInputs ::
-    (GEvaluateSym model inputs, GExtractSymbolics symbolSet inputs, GenSymSimple spec inputs) =>
+  cegisMultiInputs ::
+    (GEvaluateSym model inputs, GExtractSymbolics symbolSet inputs) =>
     config ->
-    [spec] ->
     [inputs] ->
     (inputs -> CEGISCondition bool) ->
     IO (Either failure ([inputs], model))
@@ -67,56 +65,42 @@ cegis ::
   forallArg ->
   CEGISCondition bool ->
   IO (Either failure ([forallArg], model))
-cegis config forallArg formula = do
-  r <-
-    cegisGenInputs
-      config
-      [IdGen forallArg]
-      []
-      (\(_ :: IdGen forallArg) -> formula)
-  case r of
-    Left f -> return $ Left f
-    Right (cexes, mo) -> return $ Right (runIdGen <$> cexes, mo)
+cegis config forallArg cond = cegisMultiInputs config [forallArg] (const cond)
 
-cegisExceptGenInputs ::
+cegisExceptMultiInputs ::
   ( CEGISSolver config bool symbolSet failure model,
     GEvaluateSym model inputs,
     GExtractSymbolics symbolSet inputs,
-    GenSymSimple spec inputs,
     UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool
   ) =>
   config ->
-  [spec] ->
   [inputs] ->
   (Either e v -> CEGISCondition bool) ->
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
-cegisExceptGenInputs config inputGen cexes interpretFunc f =
-  cegisGenInputs config inputGen cexes (getSingle . (interpretFunc <$>) . extractUnionExcept . f)
+cegisExceptMultiInputs config cexes interpretFunc f =
+  cegisMultiInputs config cexes (getSingle . (interpretFunc <$>) . extractUnionExcept . f)
 
-cegisExceptVCGenInputs ::
+cegisExceptVCMultiInputs ::
   ( CEGISSolver config bool symbolSet failure model,
     GEvaluateSym model inputs,
     GExtractSymbolics symbolSet inputs,
-    GenSymSimple spec inputs,
     UnionWithExcept t u e v,
     GUnionPrjOp bool u,
     Monad u,
     SymBoolOp bool
   ) =>
   config ->
-  [spec] ->
   [inputs] ->
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
-cegisExceptVCGenInputs config inputGen cexes interpretFunc f =
-  cegisGenInputs
+cegisExceptVCMultiInputs config cexes interpretFunc f =
+  cegisMultiInputs
     config
-    inputGen
     cexes
     ( \v ->
         getSingle
@@ -168,14 +152,3 @@ cegisExceptVC config args f v =
           _ -> cegisPostCond (conc True)
       )
         <$> (extractUnionExcept v >>= f)
-
-newtype IdGen x = IdGen {runIdGen :: x}
-
-instance GEvaluateSym model x => GEvaluateSym model (IdGen x) where
-  gevaluateSym fillDefault model (IdGen v) = IdGen (gevaluateSym fillDefault model v)
-
-instance GExtractSymbolics set x => GExtractSymbolics set (IdGen x) where
-  gextractSymbolics (IdGen v) = gextractSymbolics v
-
-instance GenSymSimple (IdGen x) (IdGen x) where
-  simpleFresh = return

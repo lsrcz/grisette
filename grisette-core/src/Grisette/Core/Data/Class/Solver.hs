@@ -45,13 +45,6 @@ module Grisette.Core.Data.Class.Solver
 where
 
 import Control.DeepSeq
--- import Control.Monad.Except
-
--- import Grisette.Core.Control.Monad.UnionMBase
-
--- import Grisette.Core.Data.Class.GenSym
--- import Grisette.Core.Data.Class.Mergeable
-
 import Control.Monad.Except
 import Data.Hashable
 import Generics.Deriving

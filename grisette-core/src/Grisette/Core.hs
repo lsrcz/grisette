@@ -885,8 +885,8 @@ module Grisette.Core
     cegisPrePost,
     cegisExcept,
     cegisExceptVC,
-    cegisExceptGenInputs,
-    cegisExceptVCGenInputs,
+    cegisExceptMultiInputs,
+    cegisExceptVCMultiInputs,
 
     -- ** Symbolic constant extraction
 

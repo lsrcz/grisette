@@ -71,6 +71,9 @@ class
   -- | Construct an empty set
   emptySet :: symbolSet
 
+  -- | Check if the set is empty
+  isEmptySet :: symbolSet -> Bool
+
   -- | Check if the set contains the given symbol
   containsSymbol :: forall a. typedSymbol a -> symbolSet -> Bool
 
@@ -131,6 +134,9 @@ class
   where
   -- | Construct an empty model
   emptyModel :: model
+
+  -- | Check if the model is empty
+  isEmptyModel :: model -> Bool
 
   -- | Extract the assigned value for a given symbolic constant
   valueOf :: typedSymbol t -> model -> Maybe t

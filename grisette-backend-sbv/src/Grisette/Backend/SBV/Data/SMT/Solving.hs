@@ -26,6 +26,7 @@ import Control.Monad.Except
 import qualified Data.HashSet as S
 import Data.Hashable
 import Data.Kind
+import Data.List (partition)
 import Data.Maybe
 import qualified Data.SBV as SBV
 import Data.SBV.Control (Query)
@@ -41,6 +42,7 @@ import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Data.BV
+import Grisette.IR.SymPrim.Data.Class.ExtractSymbolics
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
@@ -142,25 +144,24 @@ instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
   solveAll = undefined
 
 instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult PM.Model where
-  cegisGenInputs ::
+  cegisMultiInputs ::
     forall inputs spec.
-    (GExtractSymbolics SymbolSet inputs, GEvaluateSym PM.Model inputs, GenSymSimple spec inputs) =>
+    (GExtractSymbolics SymbolSet inputs, GEvaluateSym PM.Model inputs) =>
     GrisetteSMTConfig n ->
-    [spec] ->
     [inputs] ->
     (inputs -> CEGISCondition SymBool) ->
     IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
-  cegisGenInputs config inputGen initialCexes func =
-    go1 (cexesAssertFunc initialCexes) initialCexes (error "Should have at least one gen") [] (conc True) (conc True) inputGen
+  cegisMultiInputs config inputs func =
+    go1 (cexesAssertFunc conInputs) conInputs (error "Should have at least one gen") [] (conc True) (conc True) symInputs
     where
-      go1 cexFormula cexes previousModel inputs pre post remainingGen = do
-        case remainingGen of
+      (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
+      go1 cexFormula cexes previousModel inputs pre post remainingSymInputs = do
+        case remainingSymInputs of
           [] -> return $ Right (cexes, previousModel)
-          v : vs -> do
-            let newInput = genSymSimple v (nameWithInfo "inputs" $ CegisInternal $ length vs)
-            let CEGISCondition newPre newPost = func newInput
-            let finalPre = pre &&~ newPre
-            let finalPost = post &&~ newPost
+          newInput : vs -> do
+            let CEGISCondition nextPre nextPost = func newInput
+            let finalPre = pre &&~ nextPre
+            let finalPost = post &&~ nextPost
             r <- go cexFormula newInput (newInput : inputs) finalPre finalPost
             case r of
               Left failure -> return $ Left failure
