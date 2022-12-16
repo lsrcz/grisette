@@ -921,8 +921,9 @@ module Grisette.Core
     --
     -- >>> res
     -- ExceptT (UMrg (If (|| (= y 0) (&& (< 0 (div x y)) (! (<= y x)))) (If (= y 0) (Single (Left Arith)) (Single (Left Assert))) (Single (Right ()))))
-    -- >>> solveExcept (UnboundedReasoning z3) (==~ Left Assert) res
-    -- Right (Model {x -> -6 :: Integer, y -> -3 :: Integer})
+    --
+    -- > >>> solveExcept (UnboundedReasoning z3) (==~ Left Assert) res
+    -- > Right (Model {x -> -6 :: Integer, y -> -3 :: Integer}) -- possible output
     --
     -- Grisette also provide implementation for counter-example guided inductive
     -- synthesis (CEGIS) algorithm. See the documentation for 'CEGISSolver' for

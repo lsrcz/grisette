@@ -131,13 +131,11 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- :}
 --
 -- >>> :{
---  solveExcept
---    (UnboundedReasoning z3)
---    (\case
---      Left _ -> conc False    -- errors are undesirable
---      _ -> Conc True)         -- non-errors are desirable
---    res
+--   translate (Left _) = conc False -- errors are not desirable
+--   translate _ = conc True         -- non-errors are desirable
 -- :}
+--
+-- >>> solveExcept (UnboundedReasoning z3) translate res
 -- Right (Model {x -> 1 :: Integer})
 solveExcept ::
   ( UnionWithExcept t u e v,
