@@ -49,7 +49,7 @@ testCegis config shouldSuccess a bs = do
   where
     buildFormula :: [SymBool] -> ExceptT VerificationConditions UnionM ()
     buildFormula l = do
-      symFailIfNot AssumptionViolation ((ssymb "internal" :: SymInteger) `gsymge` 0)
+      symAssume ((ssymb "internal" :: SymInteger) `gsymge` 0)
       go l 0
       where
         go :: [SymBool] -> SymInteger -> ExceptT VerificationConditions UnionM ()
@@ -57,7 +57,7 @@ testCegis config shouldSuccess a bs = do
         go (x : xs) i =
           mrgIf
             (ssymb "internal" `gsymge` i &&~ ssymb "internal" `gsymlt` (i + 1))
-            (symFailIfNot AssertionViolation x)
+            (symAssert x)
             (go xs (i + 1))
 
 cegisTests :: TestTree
