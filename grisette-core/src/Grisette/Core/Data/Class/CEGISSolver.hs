@@ -235,6 +235,7 @@ cegisExceptStdVCMultiInputs config cexes =
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
+-- >>> import Control.Monad.Except
 -- >>> :{
 --   res :: ExceptT VerificationConditions UnionM ()
 --   res = do
@@ -312,6 +313,7 @@ cegisExceptVC config inputs f v =
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
+-- >>> import Control.Monad.Except
 -- >>> :{
 --   res :: ExceptT VerificationConditions UnionM ()
 --   res = do
