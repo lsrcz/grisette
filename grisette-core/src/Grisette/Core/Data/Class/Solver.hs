@@ -76,28 +76,69 @@ class
   -- Right (Model {a -> True :: Bool, b -> 1 :: Integer})
   -- >>> solve (UnboundedReasoning z3) ("a" &&~ nots "a")
   -- Left Unsat
-  solve :: config -> bool -> IO (Either failure model)
+  solve ::
+    -- | solver configuration
+    config ->
+    -- | formula to solve, the solver will try to make it true
+    bool ->
+    IO (Either failure model)
 
   -- | Solve a single formula while returning multiple models to make it true.
   -- The maximum number of desired models are given.
   --
   -- > >>> solveMulti (UnboundedReasoning z3) 4 ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
-  solveMulti :: config -> Int -> bool -> IO [model]
+  solveMulti ::
+    -- | solver configuration
+    config ->
+    -- | maximum number of models to return
+    Int ->
+    -- | formula to solve, the solver will try to make it true
+    bool ->
+    IO [model]
 
   -- | Solve a single formula while returning multiple models to make it true.
   -- All models are returned.
   --
   -- > >>> solveAll (UnboundedReasoning z3) ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
-  solveAll :: config -> Int -> bool -> IO [model]
+  solveAll ::
+    -- | solver configuration
+    config ->
+    -- | formula to solve, the solver will try to make it true
+    bool ->
+    IO [model]
 
+-- | A class that abstracts the union-like structures that contains exceptions.
 class UnionWithExcept t u e v | t -> u e v where
+  -- | Extract a union of exceptions and values from the structure.
   extractUnionExcept :: t -> u (Either e v)
 
 instance UnionWithExcept (ExceptT e u v) u e v where
   extractUnionExcept = runExceptT
 
+-- |
+-- Solver procedure for programs with error handling.
+--
+-- >>> :set -XLambdaCase
+-- >>> import Control.Monad.Except
+-- >>> let x = "x" :: SymInteger
+-- >>> :{
+--   res :: ExceptT AssertionError UnionM ()
+--   res = do
+--     symAssert $ x >~ 0       -- constrain that x is positive
+--     symAssert $ x <~ 2       -- constrain that x is less than 2
+-- :}
+--
+-- >>> :{
+--  solveExcept
+--    (UnboundedReasoning z3)
+--    (\case
+--      Left _ -> conc False    -- errors are undesirable
+--      _ -> Conc True)         -- non-errors are desirable
+--    res
+-- :}
+-- Right (Model {x -> 1 :: Integer})
 solveExcept ::
   ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
@@ -105,12 +146,18 @@ solveExcept ::
     SymBoolOp bool,
     Solver config bool failure model
   ) =>
+  -- | solver configuration
   config ->
+  -- | mapping the results to symbolic boolean formulas, the solver would try to find a model to make the formula true
   (Either e v -> bool) ->
+  -- | the program to be solved, should be a union of exception and values
   t ->
   IO (Either failure model)
 solveExcept config f v = solve config (getSingle $ f <$> extractUnionExcept v)
 
+-- |
+-- Solver procedure for programs with error handling. Would return multiple
+-- models if possible.
 solveMultiExcept ::
   ( UnionWithExcept t u e v,
     GUnionPrjOp bool u,
@@ -118,9 +165,13 @@ solveMultiExcept ::
     SymBoolOp bool,
     Solver config bool failure model
   ) =>
+  -- | solver configuration
   config ->
+  -- | maximum number of models to return
   Int ->
+  -- | mapping the results to symbolic boolean formulas, the solver would try to find a model to make the formula true
   (Either e v -> bool) ->
+  -- | the program to be solved, should be a union of exception and values
   t ->
   IO [model]
 solveMultiExcept config n f v = solveMulti config n (getSingle $ f <$> extractUnionExcept v)

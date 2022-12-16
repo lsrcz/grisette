@@ -23,7 +23,7 @@ module Grisette.Core.Data.Class.Error
     TransformError (..),
 
     -- * Throwing error
-    symFailIfNot,
+    symAssertTransformableError,
     symThrowTransformableError,
   )
 where
@@ -41,17 +41,22 @@ import Grisette.Core.Data.Class.SimpleMergeable
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XFlexibleContexts
 
--- | This class indicates error type @to@ can always represent the error type
--- @from@.
+-- | This class indicates that the error type @to@ can always represent the
+-- error type @from@.
 --
 -- This is useful in implementing generic procedures that may throw errors.
 -- For example, we support symbolic division and modulo operations. These
 -- operations should throw an error when the divisor is zero, and we use the
 -- standard error type 'Control.Exception.ArithException' for this purpose.
---
 -- However, the user may use other type to represent errors, so we need this
 -- type class to transform the 'Control.Exception.ArithException' to the
 -- user-defined types.
+--
+-- Another example of these generic procedures is the
+-- 'Grisette.Core.symAssert' and 'Grisette.Core.symAssume' functions.
+-- They can be used with any error types that are
+-- compatible with the 'Grisette.Core.AssertionError' and
+-- 'Grisette.Core.VerificationConditions' types, respectively.
 class TransformError from to where
   -- | Transforms an error with type @from@ to an error with type @to@.
   transformError :: from -> to
@@ -91,11 +96,12 @@ symThrowTransformableError = merge . throwError . transformError
 -- | Used within a monadic multi path computation for exception processing.
 --
 -- Terminate the current execution path with the specified error if the condition does not hold.
+-- Compatible error can be transformed.
 --
--- >>> let assert = symFailIfNot AssertionError
+-- >>> let assert = symAssertTransformableError AssertionError
 -- >>> assert "a" :: ExceptT AssertionError UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right ()))))
-symFailIfNot ::
+symAssertTransformableError ::
   ( SymBoolOp bool,
     GMergeable bool to,
     TransformError from to,
@@ -105,5 +111,5 @@ symFailIfNot ::
   from ->
   bool ->
   erm ()
-symFailIfNot err cond = mrgIf cond (return ()) (symThrowTransformableError err)
-{-# INLINE symFailIfNot #-}
+symAssertTransformableError err cond = mrgIf cond (return ()) (symThrowTransformableError err)
+{-# INLINE symAssertTransformableError #-}

@@ -166,6 +166,7 @@ class
 -- | A type class for building a model manually from a model representation
 class ModelOps model symbolSet typedSymbol => ModelRep rep model symbolSet (typedSymbol :: * -> *) where
   -- | Build a model
+  --
   -- >>> let aBool = "a" :: TypedSymbol Bool
   -- >>> let bBool = "b" :: TypedSymbol Bool
   -- >>> buildModel (aBool ::= True, bBool ::= False) :: Model

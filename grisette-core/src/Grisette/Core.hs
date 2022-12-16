@@ -737,6 +737,30 @@ module Grisette.Core
     -- >>> mrgThrowError AssertionError :: ExceptT AssertionError UnionM ()
     -- ExceptT (UMrg (Single (Left AssertionError)))
     --
+    -- You can define your own error types, and reason about them with the
+    -- solver APIs.
+    --
+    -- >>> :set -XDerivingVia -XDeriveGeneric -XDerivingStrategies -XLambdaCase
+    -- >>> import GHC.Generics
+    -- >>> import Grisette.Backend.SBV
+    -- >>> :{
+    --   data Error = Error1 | Error2 | Error3
+    --     deriving (Show, Generic)
+    --     deriving (GMergeable SymBool) via Default Error
+    -- :}
+    --
+    -- >>> let [a,b,c] = ["a","b","c"] :: [SymBool]
+    -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error UnionM SymBool
+    -- >>> res
+    -- ExceptT (UMrg (If (|| a (! b)) (If a (Single (Left Error1)) (Single (Left Error2))) (Single (Right c))))
+    -- >>> solveExcept (UnboundedReasoning z3) (\case Left _ -> conc False; Right x -> x) res
+    -- Right (Model {a -> False :: Bool, b -> True :: Bool, c -> True :: Bool})
+    --
+    -- The solver call in the above example means that we want the solver to
+    -- find the conditions under which no error is thrown, and the result is
+    -- true. For more details, please refer to the
+    -- [documentation of the solver APIs](#solver).
+    --
     -- For those who prefer to encode errors as assertions and assumptions,
     -- we provide the 'symAssert' and 'symAssume' functions. These functions
     -- relies on the 'TransformError' type class to transform the assertions
@@ -748,13 +772,12 @@ module Grisette.Core
     -- ** Predefined errors
     AssertionError (..),
     VerificationConditions (..),
-    ArithException (..),
 
     -- ** Error transformation
     TransformError (..),
     symAssert,
     symAssume,
-    symFailIfNot,
+    symAssertTransformableError,
     symThrowTransformableError,
 
     -- ** Simulate CBMC error handling
@@ -765,6 +788,8 @@ module Grisette.Core
     withCBMCExceptT,
 
     -- * Solver backend
+
+    -- | #solver#
 
     -- | Grisette abstracts the solver backend with the 'Solver' type class,
     -- and the most basic solver call is the 'solve' function.
@@ -846,33 +871,64 @@ module Grisette.Core
     -- This is done by mapping left values (failed paths) to false, and right
     -- values (successful paths) to true.
     --
-    -- >>> :set -XLambdaCase
+    -- The following example finds bugs in a program in the hard way. It is an
+    -- overkill for such a simple program, but it is a good example to show how
+    -- to use Grisette to solve problems with error handling.
+    --
+    -- We can first define the error type used in the program.
+    --
+    -- >>> :set -XLambdaCase -XDeriveGeneric -XDerivingStrategies -XDerivingVia
     -- >>> import Control.Monad.Except
-    -- >>> let x = "x" :: SymInteger
+    -- >>> import Control.Exception
+    -- >>> import GHC.Generics
     -- >>> :{
-    --   res :: ExceptT AssertionError UnionM ()
-    --   res = do
-    --     symAssert $ x >~ 0       -- constrain that x is positive
-    --     symAssert $ x <~ 2       -- constrain that x is less than 2
+    -- data Error = Arith | Assert
+    --   deriving (Show, Generic)
+    --   deriving (GMergeable SymBool, GSEq SymBool) via (Default Error)
     -- :}
     --
+    -- Then we define how to transform the generic errors to the error type.
+    --
     -- >>> :{
-    --  solveExcept
-    --    (UnboundedReasoning z3)
-    --    (\case
-    --      Left _ -> conc False    -- errors are undesirable
-    --      _ -> Conc True)         -- non-errors are desirable
-    --    res
+    --   instance TransformError ArithException Error where
+    --     transformError _ = Arith
+    --   instance TransformError AssertionError Error where
+    --     transformError _ = Assert
     -- :}
-    -- Right (Model {x -> 1 :: Integer})
+    --
+    -- Then we can perform the symbolic evaluation. The `divs` function throws
+    -- 'ArithException' when the divisor is 0, which would be transformed to
+    -- @Arith@, and the `symAssert` function would throw 'AssertionError' when
+    -- the condition is false, which would be transformed to @Assert@.
+    --
+    -- >>> let x = "x" :: SymInteger
+    -- >>> let y = "y" :: SymInteger
+    -- >>> :{
+    --   -- equivalent concrete program:
+    --   -- let x = x `div` y
+    --   -- if z > 0 then assert (x >= y) else return ()
+    --   res :: ExceptT Error UnionM ()
+    --   res = do
+    --     z <- x `divs` y
+    --     mrgIf (z >~ 0) (symAssert (x >=~ y)) (return ())
+    -- :}
+    --
+    -- Then we can ask the solver to find a counter-example that would lead to
+    -- an assertion violation error, but do not trigger the division by zero
+    -- error.
+    -- This can be done by asking the solver to find a path that produce
+    -- @Left Assert@.
+    --
+    -- >>> res
+    -- ExceptT (UMrg (If (|| (= y 0) (&& (< 0 (div x y)) (! (<= y x)))) (If (= y 0) (Single (Left Arith)) (Single (Left Assert))) (Single (Right ()))))
+    -- >>> solveExcept (UnboundedReasoning z3) (==~ Left Assert) res
+    -- Right (Model {x -> -6 :: Integer, y -> -3 :: Integer})
     --
     -- Grisette also provide implementation for counter-example guided inductive
     -- synthesis (CEGIS) algorithm. See the documentation for 'CEGISSolver' for
     -- more details.
 
     -- ** Solver interface
-
-    -- | #solver#
     Solver (..),
     UnionWithExcept (..),
     solveExcept,
@@ -883,9 +939,12 @@ module Grisette.Core
     CEGISCondition (..),
     cegisPostCond,
     cegisPrePost,
+    cegis,
     cegisExcept,
+    cegisExceptStdVC,
     cegisExceptVC,
     cegisExceptMultiInputs,
+    cegisExceptStdVCMultiInputs,
     cegisExceptVCMultiInputs,
 
     -- ** Symbolic constant extraction
