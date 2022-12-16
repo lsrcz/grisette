@@ -12,12 +12,13 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Control.Monad
-  ( mrgReturnWithStrategy,
+  ( -- * mrg* variants for operations in "Control.Monad"
+    mrgReturnWithStrategy,
     mrgBindWithStrategy,
     mrgReturn,
     (>>=~),
-    mrgFoldM,
     (>>~),
+    mrgFoldM,
     mrgMzero,
     mrgMplus,
     mrgFmap,

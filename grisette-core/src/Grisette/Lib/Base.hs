@@ -9,15 +9,20 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Base
-  ( mrgReturnWithStrategy,
+  ( -- * Symbolic or mrg* variants for the operations in the base package
+
+    -- ** mrg* variants for operations in "Control.Monad"
+    mrgReturnWithStrategy,
     mrgBindWithStrategy,
     mrgReturn,
     (>>=~),
-    mrgFoldM,
     (>>~),
+    mrgFoldM,
     mrgMzero,
     mrgMplus,
     mrgFmap,
+
+    -- ** mrg* variants for operations in "Data.Foldable"
     mrgFoldlM,
     mrgFoldrM,
     mrgTraverse_,
@@ -26,6 +31,8 @@ module Grisette.Lib.Base
     mrgForM_,
     mrgSequence_,
     mrgMsum,
+
+    -- ** mrg* variants for operations in "Data.Traversable"
     mrgTraverse,
     mrgSequenceA,
     mrgFor,

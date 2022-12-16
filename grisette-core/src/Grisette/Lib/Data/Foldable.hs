@@ -10,7 +10,8 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Data.Foldable
-  ( mrgFoldlM,
+  ( -- * mrg* variants for operations in "Data.Foldable"
+    mrgFoldlM,
     mrgFoldrM,
     mrgTraverse_,
     mrgFor_,

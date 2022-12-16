@@ -9,10 +9,13 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.Core
-  ( UnionBase (..),
+  ( -- * The UnionBase type
+    UnionBase (..),
     ifWithLeftMost,
     ifWithStrategy,
     fullReconstruct,
+
+    -- * The UnionMBase type
     UnionMBase (..),
     underlyingUnion,
     isMerged,

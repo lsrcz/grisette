@@ -11,7 +11,8 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Data.Traversable
-  ( mrgTraverse,
+  ( -- * mrg* variants for operations in "Data.Traversable"
+    mrgTraverse,
     mrgSequenceA,
     mrgFor,
     mrgMapM,

@@ -9,7 +9,8 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Control.Monad.Trans.Cont
-  ( mrgRunContT,
+  ( -- * mrg* variants for operations in "Control.Monad.Trans.Cont"
+    mrgRunContT,
     mrgEvalContT,
     mrgResetT,
   )

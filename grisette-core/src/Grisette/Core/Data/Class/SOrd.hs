@@ -22,9 +22,9 @@ module Grisette.Core.Data.Class.SOrd
 
     --
 
-    -- | This module does not contain actual implementation for symbolic primitive types, and
-    -- the examples in this module cannot be executed solely with @grisette-core@ package.
-    -- They rely on the implementation in @grisette-symir@ package.
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
 
     -- * Symbolic total order relation
     GSOrd (..),
@@ -187,9 +187,9 @@ derivedGSymCompare x y = gsymCompare' (from x) (from y)
 -- __Note 2:__ The @bool@ type is the symbolic boolean type to return. It should
 -- be an instance of `SymBoolOp`. If you do not need to use an alternative
 -- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- @grisette-symir@ package, you can use the specialized `SOrd` type synonym for
+-- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `SOrd` type synonym for
 -- the constraints and use specialized operators like `(<~)` and `(<=~)` from
--- @grisette-symir@ to write code with fewer type annotations.
+-- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) to write code with fewer type annotations.
 -- However, you still need @'GSOrd' SymBool@ for implementing or deriving the
 -- type class due to GHC's limitation.
 class (GSEq bool a) => GSOrd bool a where

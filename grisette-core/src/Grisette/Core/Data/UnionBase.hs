@@ -14,7 +14,9 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.UnionBase
-  ( -- The union data structure. Please consider using 'UnionM' instead.
+  ( -- * The union data structure.
+
+    -- | Please consider using 'UnionM' instead.
     UnionBase (..),
     ifWithLeftMost,
     ifWithStrategy,

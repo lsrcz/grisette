@@ -14,11 +14,14 @@ module Grisette.Core
 
     --
 
-    -- | This module does not contain actual implementation for symbolic primitive types, and
-    -- the examples in this module cannot be executed solely with @grisette-core@ package.
-    -- They rely on the implementation in @grisette-symir@ and @grisette-backend-sbv@ packages,
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir/)
+    -- and [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) packages,
     -- which provides the solvable type and the solver backend implementations,
     -- respectively.
+    --
+    -- The examples may also assume a z3 solver available in @PATH@.
 
     -- * Symbolic values
 
@@ -128,12 +131,12 @@ module Grisette.Core
 
     -- | A solvable type is a type that can be represented as a formula and is
     -- directly supported by the underlying constraint solvers.
-    -- The solvable type implementation provided by @grisette-symir@ package
+    -- The solvable type implementation provided by [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package
     -- currently supports symbolic Boolean types (@SymBool@ or @Sym Bool@),
     -- symbolic unbounded integers (@SymInteger@ or @Sym Integer@),
     -- and symbolic bit vectors (signed bit vectors has the type @SymIntN 5@ or
     -- @Sym (IntN 5)@, and unsigned bit vectors has the type @SymWordN 5@ or
-    -- @Sym (WordN 5)@). Please see the documentation for the @grisette-symir@
+    -- @Sym (WordN 5)@). Please see the documentation for the [grisette-symir](https://hackage.haskell.org/package/grisette-symir)
     -- package for details.
     --
     -- A solvable type value can consist of the following constructs:
@@ -166,12 +169,12 @@ module Grisette.Core
     -- We provide the symbolic operations via a set of type classes,
     -- including 'GSEq', 'GSOrd', and 'Num', etc. As our system supports
     -- alternative solvable type implementation other than the one from the
-    -- @grisette-symir@ package, the 'GSEq' and 'GSOrd' type classes are
+    -- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, the 'GSEq' and 'GSOrd' type classes are
     -- parametrized with the solvable type implementation (the symbolic Boolean
     -- type provided by the implementation). In most
-    -- cases, you can just work with the implementation in @grisette-symir@
+    -- cases, you can just work with the implementation in [grisette-symir](https://hackage.haskell.org/package/grisette-symir)
     -- package, and you can use specialized 'SEq' and 'SOrd'
-    -- constraints and the specialized operators in @grisette-symir@.
+    -- constraints and the specialized operators in [grisette-symir](https://hackage.haskell.org/package/grisette-symir).
     -- This may reduce the need for manual type annotations.
     --
     -- >>> let a = "a" :: SymInteger
@@ -219,7 +222,7 @@ module Grisette.Core
     --
     -- The symbolic union type in Grisette is 'UnionMBase'. It is parametrized
     -- with the symbolic Boolean type, and usually you can just use the
-    -- 'UnionM' type provided by @grisette-symir@.
+    -- 'UnionM' type provided by [grisette-symir](https://hackage.haskell.org/package/grisette-symir).
     -- Two constructs are useful in constructing such values: 'mrgIf' and
     -- 'mrgSingle'.
     -- The 'mrgSingle' construct unconditionally wraps a value into
@@ -640,7 +643,7 @@ module Grisette.Core
     -- The 'GGenSym' class helps generate symbolic values that require a symbolic
     -- union, for example, lists with different lengths.
     -- It provides the 'gfresh' function, which accepts a specification
-    -- for the symbolic values to generate. (@grisette-symir@ provides specialized
+    -- for the symbolic values to generate. ([grisette-symir](https://hackage.haskell.org/package/grisette-symir) provides specialized
     -- @GenSym@ constraint and @fresh@ function)
     --
     -- We can generate a list of length 0, 1, or 2 by specifying the minimum
@@ -663,7 +666,7 @@ module Grisette.Core
     --
     -- When you are just generating a symbolic value, and do not need to compose
     -- multiple 'simpleFresh' or 'gfresh' calls, you can use the 'ggenSym'
-    -- (@genSym@ in @grisette-symir@) and 'genSymSimple' functions instead.
+    -- (@genSym@ in [grisette-symir](https://hackage.haskell.org/package/grisette-symir)) and 'genSymSimple' functions instead.
     --
     -- >>> genSymSimple (SimpleListSpec 2 ()) "x" :: [SymBool]
     -- [x@0,x@1]
@@ -671,7 +674,7 @@ module Grisette.Core
     -- UMrg (If x@2 (Single []) (If x@3 (Single [x@1]) (Single [x@0,x@1])))
     --
     -- Symbolic choices from a list of symbolic values is very useful.
-    -- With the 'gchooseFresh' function (specialized as @chooseFresh@ in @grisette-symir@),
+    -- With the 'gchooseFresh' function (specialized as @chooseFresh@ in [grisette-symir](https://hackage.haskell.org/package/grisette-symir)),
     -- we can generate a symbolic value by choosing from a list of
     -- alternative values.
     -- Grisette would generate symbolic Boolean guards to perform the symbolic
@@ -830,10 +833,10 @@ module Grisette.Core
     -- The first parameter of 'solve' is the solver configuration.
     -- Here it means that we should not perform any approximation, and should
     -- use the Z3 solver. For more details, see the documentation of
-    -- the @grisette-backend-sbv@ package.
+    -- the [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) package.
     --
     -- The second parameter is the formula to be solved. With the
-    -- @grisette-backend-sbv@ backend, it have the type @SymBool@.
+    -- [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) backend, it have the type @SymBool@.
     --
     -- The 'solve' function would return a model if the formula is satisfiable.
     -- The model is a mapping from symbolic variables to concrete values,

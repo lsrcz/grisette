@@ -9,7 +9,21 @@
 {-# LANGUAGE StandaloneDeriving #-}
 
 module Grisette.Core.Data.Class.CEGISSolver
-  ( CEGISSolver (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir/)
+    -- and [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) packages,
+    -- which provides the solvable type and the solver backend implementations,
+    -- respectively.
+    --
+    -- The examples also assumes a z3 solver available in @PATH@.
+
+    -- * CEGIS solver interfaces
+    CEGISSolver (..),
     CEGISCondition (..),
     cegisPostCond,
     cegisPrePost,

@@ -11,7 +11,8 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Control.Monad.Trans
-  ( mrgLift,
+  ( -- * mrg* variants for operations in "Control.Monad.Trans"
+    mrgLift,
   )
 where
 

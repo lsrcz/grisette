@@ -29,9 +29,9 @@ module Grisette.Core.Data.Class.Mergeable
 
     --
 
-    -- | This module does not contain actual implementation for symbolic primitive types, and
-    -- the examples in this module cannot be executed solely with @grisette-core@ package.
-    -- They rely on the implementation in @grisette-symir@ package.
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
 
     -- * Merging strategy
     GMergingStrategy (..),
@@ -267,7 +267,7 @@ gwrapStrategy NoStrategy _ _ = NoStrategy
 -- __Note 2:__ The @bool@ type is the symbolic boolean type to use. It should
 -- be an instance of `SymBoolOp`. If you do not need to use an alternative
 -- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- @grisette-symir@ package, you can use the specialized `Mergeable` type
+-- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `Mergeable` type
 -- synonym for constraints.
 -- You still need @'GMergeable' SymBool@ for implementing or deriving the
 -- type class due to GHC's limitation.

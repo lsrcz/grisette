@@ -9,7 +9,8 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Control.Monad.Except
-  ( mrgThrowError,
+  ( -- * mrg* variants for operations in "Control.Monad.Except"
+    mrgThrowError,
     mrgCatchError,
   )
 where

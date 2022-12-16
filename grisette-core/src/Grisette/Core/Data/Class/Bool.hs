@@ -21,9 +21,9 @@ module Grisette.Core.Data.Class.Bool
 
     --
 
-    -- | This module does not contain actual implementation for symbolic primitive types, and
-    -- the examples in this module cannot be executed solely with @grisette-core@ package.
-    -- They rely on the implementation in @grisette-symir@ package.
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
 
     -- * Symbolic equality
     GSEq (..),
@@ -117,9 +117,9 @@ instance (SymBoolOp bool, GSEq' bool a, GSEq' bool b) => GSEq' bool (a :*: b) wh
 -- __Note 2:__ The @bool@ type is the symbolic Boolean type to return. It should
 -- be an instance of `SymBoolOp`. If you do not need to use an alternative
 -- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- @grisette-symir@ package, you can use the specialized `SEq` type synonym for
+-- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `SEq` type synonym for
 -- the constraints and use specialized `(==~)`, `(/=~)` operators from
--- @grisette-symir@ to write code with fewer type annotations.
+-- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) to write code with fewer type annotations.
 -- However, you still need @'GSEq' SymBool@ for implementing or deriving the
 -- type class due to GHC's limitation.
 class LogicalOp bool => GSEq bool a where

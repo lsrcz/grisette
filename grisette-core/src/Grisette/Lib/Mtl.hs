@@ -9,9 +9,16 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Mtl
-  ( mrgThrowError,
+  ( -- * Symbolic or mrg* variants for the operations in the mtl (and transformers) package
+
+    -- ** mrg* variants for operations in "Control.Monad.Except"
+    mrgThrowError,
     mrgCatchError,
+
+    -- ** mrg* variants for operations in "Control.Monad.Trans"
     mrgLift,
+
+    -- ** mrg* variants for operations in "Control.Monad.Trans.Cont"
     mrgRunContT,
     mrgEvalContT,
     mrgResetT,

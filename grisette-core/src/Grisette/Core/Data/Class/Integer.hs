@@ -11,7 +11,16 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.Integer
-  ( ArithException (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
+
+    -- * Symbolic integer operations
+    ArithException (..),
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),

@@ -21,9 +21,9 @@ module Grisette.Core.Data.Class.ExtractSymbolics
 
     --
 
-    -- | This module does not contain actual implementation for symbolic primitive types, and
-    -- the examples in this module cannot be executed solely with @grisette-core@ package.
-    -- They rely on the implementation in @grisette-symir@ package.
+    -- | This module does not contain the implementation for symbolic primitive
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
 
     -- * Extracting symbolic constant set from a value
     GExtractSymbolics (..),
@@ -64,9 +64,9 @@ import Generics.Deriving
 -- __Note 2:__ The @symbolSet@ type is the symbolic constant set type for the
 -- solver backend. It should be an instance of `Grisette.Core.Data.Class.ModelOps.SymbolSetOps`. If you do not need
 -- to use an alternative solver backend, and will use the 'SymbolSet' type
--- provided by the @grisette-symir@ package, you can use the specialized
+-- provided by the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized
 -- `ExtractSymbolics` type synonym for the constraints and use specialized
--- `extractSymbolics` combinator from @grisette-symir@ to write code with fewer
+-- `extractSymbolics` combinator from [grisette-symir](https://hackage.haskell.org/package/grisette-symir) to write code with fewer
 -- type annotations.
 -- However, You still need @'GMergeable' SymBool@ for implementing or deriving the
 -- type class due to GHC's limitation.
