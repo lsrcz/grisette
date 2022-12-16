@@ -518,7 +518,7 @@ unionMBaseTests =
       testGroup
         "GenSym"
         [ testCase "GenSym with spec" $ do
-            (ggenSym (ListSpec 1 3 ()) "a" :: UnionMBase SBool (UnionMBase SBool [SBool]))
+            (genSym (ListSpec 1 3 ()) "a" :: UnionMBase SBool (UnionMBase SBool [SBool]))
               @=? mrgSingle
                 ( mrgIf
                     (ISBool "a" 3)
@@ -539,7 +539,7 @@ unionMBaseTests =
                     (mrgSingle [ISBool "a" 0, ISBool "a" 1, ISBool "a" 2])
                 ),
           testCase "GenSym with same shape" $ do
-            ( ggenSym
+            ( genSym
                 ( mrgIf
                     (SSBool "a")
                     (mrgSingle [SSBool "x"])

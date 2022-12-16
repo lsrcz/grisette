@@ -612,7 +612,7 @@ module Grisette.Core
     --
     -- To help with this, we provide a set of classes and functions. The core
     -- of the symbolic generation is the 'Fresh' monad, the 'GenSymSimple' class,
-    -- and the 'GGenSym' class.
+    -- and the 'GenSym' class.
     --
     -- The 'Fresh' monad is a combination of specialized state and reader
     -- monads. It keeps an identifier, and an index. The generated symbolic
@@ -640,11 +640,10 @@ module Grisette.Core
     -- >>> runFresh (simpleFresh (SimpleListSpec 2 (SimpleListSpec 1 ()))) "x" :: [[SymBool]]
     -- [[x@0],[x@1]]
     --
-    -- The 'GGenSym' class helps generate symbolic values that require a symbolic
+    -- The 'GenSym' class helps generate symbolic values that require a symbolic
     -- union, for example, lists with different lengths.
-    -- It provides the 'gfresh' function, which accepts a specification
-    -- for the symbolic values to generate. ([grisette-symir](https://hackage.haskell.org/package/grisette-symir) provides specialized
-    -- @GenSym@ constraint and @fresh@ function)
+    -- It provides the 'fresh' function, which accepts a specification
+    -- for the symbolic values to generate.
     --
     -- We can generate a list of length 0, 1, or 2 by specifying the minimum
     -- and maximum lengths, and the specification for the elements:
@@ -665,8 +664,8 @@ module Grisette.Core
     -- (x@0,UMrg (If x@3 (Single []) (If x@4 (Single [x@2]) (Single [x@1,x@2]))))
     --
     -- When you are just generating a symbolic value, and do not need to compose
-    -- multiple 'simpleFresh' or 'gfresh' calls, you can use the 'ggenSym'
-    -- (@genSym@ in [grisette-symir](https://hackage.haskell.org/package/grisette-symir)) and 'genSymSimple' functions instead.
+    -- multiple 'simpleFresh' or 'fresh' calls, you can use the 'genSym' and
+    -- 'genSymSimple' functions instead.
     --
     -- >>> genSymSimple (SimpleListSpec 2 ()) "x" :: [SymBool]
     -- [x@0,x@1]
@@ -704,13 +703,13 @@ module Grisette.Core
     runFreshT,
 
     -- ** Symbolic Generation Class
-    GGenSym (..),
+    GenSym (..),
     GenSymSimple (..),
-    ggenSym,
+    genSym,
     genSymSimple,
 
     -- ** Symbolic Generation Class Derivation
-    derivedNoSpecGFresh,
+    derivedNoSpecFresh,
     derivedNoSpecSimpleFresh,
     derivedSameShapeSimpleFresh,
 

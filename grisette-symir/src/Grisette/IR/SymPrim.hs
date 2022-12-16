@@ -26,11 +26,17 @@ module Grisette.IR.SymPrim
     someTypedSymbol,
     evaluateTerm,
     SupportedPrim,
+
+    -- * Specialized functions from the [grisette-core](https://hackage.haskell.org/package/grisette-core) package.
+
+    -- ** Symbolic equality
     SEq,
     symeq,
     symne,
     (==~),
     (/=~),
+
+    -- ** Symbolic ordering
     SOrd,
     symlt,
     symle,
@@ -41,12 +47,11 @@ module Grisette.IR.SymPrim
     (>=~),
     (<~),
     (<=~),
+
+    -- ** Symbolic integer operation
     SymIntegerOp,
-    EvaluateSym,
-    evaluateSym,
-    evaluateSymToCon,
-    ExtractSymbolics,
-    extractSymbolics,
+    
+    -- ** Merging
     MergingStrategy,
     Mergeable,
     Mergeable',
@@ -66,6 +71,8 @@ module Grisette.IR.SymPrim
     buildStrategyList,
     resolveStrategy,
     resolveStrategy',
+
+    -- ** Simple mergeable and union operations
     SimpleMergeable,
     mrgIte,
     SimpleMergeable1,
@@ -77,11 +84,19 @@ module Grisette.IR.SymPrim
     UnionLike,
     UnionPrjOp,
     MonadUnion,
+
+    -- ** Symbolic evaluation
+    EvaluateSym,
+    evaluateSym,
+    evaluateSymToCon,
+
+    -- ** Symbolic constant extraction
+    ExtractSymbolics,
+    extractSymbolics,
+
+    -- ** Term substitution
     SubstituteSym,
     substituteSym,
-    GenSym,
-    fresh,
-    genSym,
     chooseFresh,
     chooseSimpleFresh,
     chooseUnionFresh,

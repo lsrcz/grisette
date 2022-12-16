@@ -3,10 +3,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Grisette.IR.SymPrim.Data.Class.GenSym
-  ( GenSym,
-    fresh,
-    genSym,
-    chooseFresh,
+  ( chooseFresh,
     chooseSimpleFresh,
     chooseUnionFresh,
     choose,
@@ -22,16 +19,6 @@ import Grisette.IR.SymPrim.Control.Monad.Union
 import Grisette.IR.SymPrim.Data.Class.Mergeable
 import Grisette.IR.SymPrim.Data.Class.SimpleMergeable
 import Grisette.IR.SymPrim.Data.SymPrim
-
-type GenSym spec a = GGenSym SymBool spec a
-
-fresh :: (GenSym spec a, MonadFresh m, MonadUnion u) => spec -> m (u a)
-fresh = gfresh
-{-# INLINE fresh #-}
-
-genSym :: (GenSym spec a, MonadUnion u) => spec -> FreshIdent -> u a
-genSym = ggenSym
-{-# INLINE genSym #-}
 
 chooseFresh :: (Mergeable a, MonadFresh m, MonadUnion u) => [a] -> m (u a)
 chooseFresh = gchooseFresh

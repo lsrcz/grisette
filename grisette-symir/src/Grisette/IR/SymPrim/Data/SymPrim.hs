@@ -125,8 +125,8 @@ instance (SupportedPrim a) => GEvaluateSym Model (Sym a) where
 instance (SupportedPrim a) => GExtractSymbolics SymbolSet (Sym a) where
   gextractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t
 
-instance (SymBoolOp (Sym Bool), SupportedPrim a) => GGenSym (Sym Bool) () (Sym a) where
-  gfresh _ = mrgReturn <$> simpleFresh ()
+instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSym (Sym Bool) () (Sym a) where
+  fresh _ = mrgReturn <$> simpleFresh ()
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSymSimple () (Sym a) where
   simpleFresh _ = do
@@ -136,7 +136,7 @@ instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSymSimple () (Sym a) wher
       FreshIdent s -> return $ isymb s i
       FreshIdentWithInfo s info -> return $ iinfosymb s i info
 
-instance (SymBoolOp (Sym Bool), SupportedPrim a) => GGenSym (Sym Bool) (Sym a) (Sym a)
+instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSym (Sym Bool) (Sym a) (Sym a)
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSymSimple (Sym a) (Sym a) where
   simpleFresh _ = simpleFresh ()

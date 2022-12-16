@@ -217,7 +217,7 @@ instance ToSym Bool SBool where
 instance ToSym SBool SBool where
   toSym = id
 
-instance GGenSym SBool () SBool
+instance GenSym SBool () SBool
 
 instance GenSymSimple () SBool where
   simpleFresh _ = do
@@ -227,7 +227,7 @@ instance GenSymSimple () SBool where
       FreshIdent s -> return $ ISBool s i
       FreshIdentWithInfo s info -> return $ IISBool s i info
 
-instance GGenSym SBool SBool SBool
+instance GenSym SBool SBool SBool
 
 instance GenSymSimple SBool SBool where
   simpleFresh _ = simpleFresh ()
