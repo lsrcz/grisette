@@ -39,6 +39,8 @@ module Grisette.Lib.Base
     mrgMapM,
     mrgForM,
     mrgSequence,
+
+    -- ** Symbolic versions for operations in "Data.List"
     (!!~),
     symFilter,
     symTake,
