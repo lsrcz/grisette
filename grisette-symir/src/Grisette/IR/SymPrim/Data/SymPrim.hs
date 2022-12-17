@@ -12,10 +12,19 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.SymPrim
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.SymPrim
   ( Sym (..),
     SymBool,
     SymInteger,
+    (-->),
     type (=~>),
     type (-~>),
     SymWordN,
@@ -70,6 +79,53 @@ import Grisette.IR.SymPrim.Data.TabularFunc
 import Grisette.Lib.Control.Monad
 import Language.Haskell.TH.Syntax
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.Backend.SBV
+
+-- | Symbolic primitive type.
+--
+-- Symbolic Boolean, integer, and bit vector types are supported.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> "a" :: Sym Bool
+-- a
+-- >>> "a" &&~ "b" :: Sym Bool
+-- (&& a b)
+-- >>> "i" + 1 :: Sym Integer
+-- (+ 1 i)
+--
+-- For more symbolic operations, please refer to the documentation of the
+-- [grisette-core](https://hackage.haskell.org/package/grisette-core) package.
+--
+-- Grisette also supports uninterpreted functions. You can use the '-->'
+-- (general function) or '=->' (tabular function) types to define uninterpreted
+-- functions. The following code shows the examples
+--
+-- >>> :set -XTypeOperators
+-- >>> let ftab = "ftab" :: Sym (Integer =-> Integer)
+-- >>> ftab # "x"
+-- (apply ftab x)
+--
+-- > >>> solve (UnboundedReasoning z3) (ftab # 1 ==~ 2 &&~ ftab # 2 ==~ 3 &&~ ftab # 3 ==~ 4)
+-- > Right (Model {
+-- >   ftab ->
+-- >     TabularFunc {funcTable = [(3,4),(2,3)], defaultFuncValue = 2}
+-- >       :: (=->) Integer Integer
+-- > }) -- possible result (reformatted)
+--
+-- >>> let fgen = "fgen" :: Sym (Integer --> Integer)
+-- >>> fgen # "x"
+-- (apply fgen x)
+--
+-- > >>> solve (UnboundedReasoning z3) (fgen # 1 ==~ 2 &&~ fgen # 2 ==~ 3 &&~ fgen # 3 ==~ 4)
+-- > Right (Model {
+-- >   fgen ->
+-- >     \(arg@0:FuncArg :: Integer) ->
+-- >       (ite (= arg@0:FuncArg 2) 3 (ite (= arg@0:FuncArg 3) 4 2))
+-- >         :: (-->) Integer Integer
+-- > }) -- possible result (reformatted)
 newtype Sym a = Sym {underlyingTerm :: Term a} deriving (Lift, Generic)
 
 instance NFData (Sym a) where
@@ -174,7 +230,7 @@ SORD_SYM (Integer)
 SORD_SYM ((IntN n))
 SORD_SYM ((WordN n))
 
--- bool
+-- | Symbolic Boolean type.
 type SymBool = Sym Bool
 
 instance GSOrd (Sym Bool) (Sym Bool) where
@@ -197,7 +253,7 @@ instance LogicalOp (Sym Bool) where
 
 instance SymBoolOp (Sym Bool)
 
--- integer
+-- | Symbolic integer type (unbounded, mathematical integer).
 type SymInteger = Sym Integer
 
 instance Num (Sym Integer) where
@@ -223,7 +279,7 @@ instance SignedDivMod (Sym Bool) (Sym Integer) where
 
 instance GSymIntegerOp (Sym Bool) (Sym Integer)
 
--- signed bv
+-- | Symbolic signed bit vector type.
 type SymIntN n = Sym (IntN n)
 
 instance (SupportedPrim (IntN n)) => Num (Sym (IntN n)) where
@@ -316,7 +372,7 @@ TOCON_MACHINE_INTEGER (WordN, 64, Word64)
 TOCON_MACHINE_INTEGER (IntN, $intBitwidthQ, Int)
 TOCON_MACHINE_INTEGER (WordN, $intBitwidthQ, Word)
 
--- unsigned bv
+-- | Symbolic unsigned bit vector type.
 type SymWordN n = Sym (WordN n)
 
 instance (SupportedPrim (WordN n)) => Num (Sym (WordN n)) where
@@ -378,7 +434,8 @@ instance (SupportedPrim (WordN n)) => Bits (Sym (WordN n)) where
   popCount (Conc n) = withPrim (Proxy @(WordN n)) $ popCount n
   popCount _ = error "You cannot call popCount on symbolic variables"
 
--- tabular func
+-- |
+-- Symbolic tabular function type.
 type a =~> b = Sym (a =-> b)
 
 infixr 0 =~>
@@ -388,7 +445,8 @@ instance (SupportedPrim a, SupportedPrim b) => Function (a =~> b) where
   type Ret (a =~> b) = Sym b
   (Sym f) # (Sym t) = Sym $ pevalTabularFuncApplyTerm f t
 
--- general func
+-- |
+-- Symbolic general function type.
 type a -~> b = Sym (a --> b)
 
 infixr 0 -~>
@@ -398,9 +456,13 @@ instance (SupportedPrim a, SupportedPrim b) => Function (a -~> b) where
   type Ret (a -~> b) = Sym b
   (Sym f) # (Sym t) = Sym $ pevalGeneralFuncApplyTerm f t
 
+-- | Get the sum of the sizes of a list of symbolic terms.
+-- Duplicate sub-terms are counted for only once.
 symsSize :: [Sym a] -> Int
 symsSize = termsSize . fmap underlyingTerm
 
+-- | Get the size of a symbolic term.
+-- Duplicate sub-terms are counted for only once.
 symSize :: Sym a -> Int
 symSize = termSize . underlyingTerm
 
@@ -607,3 +669,12 @@ instance GSubstituteSym TypedSymbol Sym (Sym a) where
           substTerm sym val x
 
 instance GSubstituteSymSymbol TypedSymbol Sym
+
+instance (SupportedPrim a, SupportedPrim b) => Function (a --> b) where
+  type Arg (a --> b) = Sym a
+  type Ret (a --> b) = Sym b
+  (GeneralFunc arg tm) # (Sym v) = Sym $ substTerm arg v tm
+
+-- | Construction of general symbolic functions.
+(-->) :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Sym b -> a --> b
+(-->) arg (Sym v) = GeneralFunc arg v

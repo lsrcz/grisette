@@ -1,33 +1,47 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim
-  ( UnionM,
-    type (=->) (..),
-    type (-->),
-    FuncArg (..),
-    Sym (..),
-    symSize,
-    symsSize,
-    SymBool,
-    SymInteger,
-    type (=~>),
-    type (-~>),
+  ( -- * Symbolic type implementation
+
+    -- ** Extended types
     IntN,
     WordN,
+    type (=->) (..),
+    type (-->),
+    (-->),
+
+    -- ** Symbolic types
+    SupportedPrim,
+    Sym,
+    TypedSymbol (..),
+    symSize,
+    symsSize,
+
+    -- ** Symbolic type synonyms
+    SymBool,
+    SymInteger,
     SymIntN,
     SymWordN,
+    type (=~>),
+    type (-~>),
+
+    -- ** Symbolic constant sets and models
     SymbolSet (..),
     Model (..),
     ModelValuePair (..),
-    TypedSymbol (..),
-    showUntyped,
-    withSymbolSupported,
-    SomeTypedSymbol (..),
-    someTypedSymbol,
-    evaluateTerm,
-    SupportedPrim,
 
-    -- * Specialized functions from the [grisette-core](https://hackage.haskell.org/package/grisette-core) package.
+    -- * Specialized functions and types from the [grisette-core](https://hackage.haskell.org/package/grisette-core) package.
+
+    -- ** UnionM
+    UnionM,
 
     -- ** Symbolic equality
     SEq,
@@ -50,7 +64,7 @@ module Grisette.IR.SymPrim
 
     -- ** Symbolic integer operation
     SymIntegerOp,
-    
+
     -- ** Merging
     MergingStrategy,
     Mergeable,
@@ -97,6 +111,8 @@ module Grisette.IR.SymPrim
     -- ** Term substitution
     SubstituteSym,
     substituteSym,
+
+    -- ** Symbolic choices
     chooseFresh,
     chooseSimpleFresh,
     chooseUnionFresh,

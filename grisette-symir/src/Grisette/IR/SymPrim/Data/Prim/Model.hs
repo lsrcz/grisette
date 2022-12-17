@@ -9,6 +9,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.Model
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (..),
     Model (..),
@@ -41,6 +49,12 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+-- >>> :set -XFlexibleContexts
+
+-- | Symbolic constant set.
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
   deriving (Eq, Generic, Hashable, Semigroup, Monoid)
 
@@ -55,6 +69,7 @@ instance Show SymbolSet where
       go0 [x] = x
       go0 (x : xs) = x ++ ", " ++ go0 xs
 
+-- | Model returned by the solver.
 newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable)
 
 instance Show Model where
@@ -339,6 +354,11 @@ evaluateTerm :: forall a. (SupportedPrim a) => Bool -> Model -> Term a -> Term a
 evaluateTerm fillDefault m t = case evaluateSomeTerm fillDefault m $ SomeTerm t of
   SomeTerm (t1 :: Term b) -> unsafeCoerce @(Term b) @(Term a) t1
 
+-- |
+-- A type used for building a model by hand.
+--
+-- >>> buildModel ("x" ::= (1 :: Integer), "y" ::= True) :: Model
+-- Model {x -> 1 :: Integer, y -> True :: Bool}
 data ModelValuePair t = (TypedSymbol t) ::= t deriving (Show)
 
 instance ModelRep (ModelValuePair t) Model SymbolSet TypedSymbol where
