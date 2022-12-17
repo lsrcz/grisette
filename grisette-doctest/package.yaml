@@ -55,7 +55,6 @@ tests:
       - call-stack >= 0.1 && < 0.5
       - grisette-core == 0.1.0.0
       - grisette-symir == 0.1.0.0
-      - grisette-lib == 0.1.0.0
       - grisette-backend-sbv == 0.1.0.0
       - grisette == 0.1.0.0
       - doctest >= 0.18.2 && < 0.21

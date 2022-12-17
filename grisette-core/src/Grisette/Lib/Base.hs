@@ -22,9 +22,14 @@ module Grisette.Lib.Base
     mrgMapM,
     mrgForM,
     mrgSequence,
+    (!!~),
+    symFilter,
+    symTake,
+    symDrop,
   )
 where
 
 import Grisette.Lib.Control.Monad
 import Grisette.Lib.Data.Foldable
+import Grisette.Lib.Data.List
 import Grisette.Lib.Data.Traversable
