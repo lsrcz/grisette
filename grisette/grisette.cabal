@@ -11,11 +11,11 @@ description:    Grisette is a reusable symbolic evaluation library for Haskell. 
                 translating programs into constraints, Grisette can help the development of
                 program reasoning tools, including verification, synthesis, and more.
                 .
-                grisette exports all constructs you need for building a symbolic evaluation
-                tool.
+                This package exports all constructs you need for building a symbolic evaluation
+                tool from [grisette-core](https://hackage.haskell.org/package/grisette-core), [grisette-symir](https://hackage.haskell.org/package/grisette-symir),
+                and [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) packages.
                 .
-                For more details, please checkout the README at
-                <https://github.com/lsrcz/grisette>
+                For more details, please checkout the README.
 category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
 homepage:       https://github.com/lsrcz/grisette-haskell#readme
 bug-reports:    https://github.com/lsrcz/grisette-haskell/issues
@@ -47,11 +47,9 @@ library
       src
   build-depends:
       base >4.14 && <5
-    , generic-deriving >=1.14.1 && <1.15
     , grisette-backend-sbv ==0.1.0.0
     , grisette-core ==0.1.0.0
     , grisette-symir ==0.1.0.0
-    , sbv >=8.11 && <9.1
   default-language: Haskell2010
   if flag(fast)
     ghc-options: -O2
