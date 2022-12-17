@@ -76,6 +76,7 @@ library
       Grisette.Lib.Control.Monad.Trans
       Grisette.Lib.Control.Monad.Trans.Cont
       Grisette.Lib.Data.Foldable
+      Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Mtl
       Grisette.TestUtils.Assertions

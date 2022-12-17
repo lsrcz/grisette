@@ -32,7 +32,6 @@ resolver:
 packages:
   - grisette-symir
   - grisette-core
-  - grisette-lib
   - grisette-backend-sbv
   - grisette
   - grisette-doctest

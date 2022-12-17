@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Grisette.Data.List
+module Grisette.Lib.Data.List
   ( (!!~),
     symFilter,
     symTake,
