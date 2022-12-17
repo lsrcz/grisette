@@ -14,6 +14,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Backend.SBV.Data.SMT.Solving
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Backend.SBV.Data.SMT.Solving
   ( GrisetteSMTConfig (..),
     sbvConfig,
@@ -51,6 +59,11 @@ import Grisette.IR.SymPrim.Data.SymPrim
 import Grisette.IR.SymPrim.Data.TabularFunc
 import Language.Haskell.TH.Syntax (Lift)
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.Backend.SBV
+
 type Aux :: Bool -> Nat -> Type
 type family Aux o n where
   Aux 'True n = SBV.SInteger
@@ -71,6 +84,64 @@ type family TermTy bitWidth b where
   TermTy n (a --> b) = TermTy n a -> TermTy n b
   TermTy _ v = v
 
+-- | Solver configuration for the Grisette SBV backend.
+-- A Grisette solver configuration consists of a SBV solver configuration and
+-- the reasoning precision.
+--
+-- Integers can be unbounded (mathematical integer) or bounded (machine
+-- integer/bit vector). The two types of integers have their own use cases,
+-- and should be used to model different systems.
+-- However, the solvers are known to have bad performance on some unbounded
+-- integer operations, for example, when reason about non-linear integer
+-- algebraic (e.g., multiplication or division),
+-- the solver may not be able to get a result in a reasonable time.
+-- In contrast, reasoning about bounded integers is usually more efficient.
+--
+-- To bridge the performance gap between the two types of integers, Grisette
+-- allows to model the system with unbounded integers, and evaluate them with
+-- infinite precision during the symbolic evaluation, but when solving the
+-- queries, they are translated to bit vectors for better performance.
+--
+-- For example, the Grisette term @5 * "a" :: SymInteger@ should be translated
+-- to the following SMT with the unbounded reasoning configuration (the term
+-- is @t1@):
+--
+-- > (declare-fun a () Int)           ; declare symbolic constant a
+-- > (define-fun c1 () Int 5)         ; define the concrete value 5
+-- > (define-fun t1 () Int (* c1 a))  ; define the term
+--
+-- While with reasoning precision 4, it would be translated to the following
+-- SMT (the term is @t1@):
+--
+-- > ; declare symbolic constant a, the type is a bit vector with bit width 4
+-- > (declare-fun a () (_ BitVec 4))
+-- > ; define the concrete value 1, translated to the bit vector #x1
+-- > (define-fun c1 () (_ BitVec 4) #x5)
+-- > ; define the term, using bit vector addition rather than integer addition
+-- > (define-fun t1 () (_ BitVec 4) (bvmul c1 a))
+--
+-- This bounded translation can usually be solved faster than the unbounded
+-- one, and should work well when no overflow is possible, in which case the
+-- performance can be improved with almost no cost.
+--
+-- We must note that the bounded translation is an approximation and is __/not/__
+-- __/sound/__. As the approximation happens only during the final translation,
+-- the symbolic evaluation may aggressively optimize the term based on the
+-- properties of mathematical integer arithmetic. This may cause the solver yield
+-- results that is incorrect under both unbounded or bounded semantics.
+--
+-- The following is an example that is correct under bounded semantics, while is
+-- incorrect under the unbounded semantics:
+--
+-- >>> :set -XTypeApplications -XOverloadedStrings -XDataKinds
+-- >>> let a = "a" :: SymInteger
+-- >>> solve (UnboundedReasoning z3) $ a >~ 7 &&~ a <~ 9
+-- Right (Model {a -> 8 :: Integer})
+-- >>> solve (BoundedReasoning @4 z3) $ a >~ 7 &&~ a <~ 9
+-- Left Unsat
+--
+-- This should be avoided by setting an large enough reasoning precision to prevent
+-- overflows.
 data GrisetteSMTConfig (integerBitWidth :: Nat) where
   UnboundedReasoning :: SBV.SMTConfig -> GrisetteSMTConfig 0
   BoundedReasoning ::
@@ -78,6 +149,7 @@ data GrisetteSMTConfig (integerBitWidth :: Nat) where
     SBV.SMTConfig ->
     GrisetteSMTConfig integerBitWidth
 
+-- | Extract the SBV solver configuration from the Grisette solver configuration.
 sbvConfig :: forall integerBitWidth. GrisetteSMTConfig integerBitWidth -> SBV.SMTConfig
 sbvConfig (UnboundedReasoning config) = config
 sbvConfig (BoundedReasoning config) = config
