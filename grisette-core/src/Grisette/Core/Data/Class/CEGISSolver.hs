@@ -21,14 +21,14 @@ module Grisette.Core.Data.Class.CEGISSolver
 
     --
 
-    -- | This module does not contain the implementation for symbolic primitive
+    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
     -- types, and the examples in this module rely on the implementations in
     -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir/)
     -- and [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) packages,
     -- which provides the solvable type and the solver backend implementations,
     -- respectively.
     --
-    -- The examples also assumes a z3 solver available in @PATH@.
+    -- The examples also assumes a [z3](https://github.com/Z3Prover/z3) solver available in @PATH@.
 
     -- * CEGIS solver interfaces
     CEGISSolver (..),

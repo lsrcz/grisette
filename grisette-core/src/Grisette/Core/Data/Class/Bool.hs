@@ -21,7 +21,7 @@ module Grisette.Core.Data.Class.Bool
 
     --
 
-    -- | This module does not contain the implementation for symbolic primitive
+    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
     -- types, and the examples in this module rely on the implementations in
     -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
 
@@ -212,7 +212,7 @@ instance LogicalOp Bool where
   nots = not
   {-# INLINE nots #-}
 
--- | ITE operator for symbolic primitives, including symbolic boolean, integer, etc.
+-- | ITE operator for solvable (see "Grisette.Core#solvable")s, including symbolic boolean, integer, etc.
 --
 -- >>> let a = "a" :: SymBool
 -- >>> let b = "b" :: SymBool
