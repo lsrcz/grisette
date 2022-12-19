@@ -3,17 +3,33 @@
 [![Haskell Tests](https://github.com/lsrcz/grisette/actions/workflows/test.yml/badge.svg)](https://github.com/lsrcz/grisette/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/lsrcz/grisette/branch/main/graph/badge.svg?token=MNDRFY2JEB)](https://codecov.io/gh/lsrcz/grisette)
 
-Grisette is a reusable symbolic evaluation library for Haskell. By translating
+Grisette is a symbolic evaluation library for Haskell. By translating
 programs into constraints, Grisette can help the development of program
-reasoning tools, including verification, synthesis, and more.
+reasoning tools, including verification and synthesis.
 
 ## Features
 
-- Fast state merging with efficiently constraint generation.
+- **Multi-path** symbolic evaluation with efficient (customizable) state merging.
+- Symbolic evaluation is **purely functional**. The propagated symbolic value includes the assertion/error state of the execution, yet it is just a data structure. As a result, Grisette is a library that does not modify the Haskell compiler.  
+- The separation of symbolic and concrete values is enforced with **static types**. These types help discover opportunities for partial evaluation as well as safe use of Haskell libraries. 
+
+## Design and Benefits 
+
+- monad => benefits 
+- functional => benefits 
 - Symbolic evaluating monadic effects with monad transformers, including error handling, stateful
   computation, etc.
-- Extensible symbolic evaluation framework with Haskell library
-  interoperability.
+- functional => memoization 
+
+- monad 
+  - symeval of unstructured c.f.
+  - symeval of imperative code 
+- functional 
+  - memoization 
+  - assertions as well as assumptions 
+
+- a monad => hence not restricted to structured c.f. (regexes) 
+
 
 ## Installation
 
