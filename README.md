@@ -149,8 +149,10 @@ main = do
   -- more details.
   ioPair [(1, 1), (2, 4), (3, 9)]
   -- UMrg (Single (SMul (UMrg (Single (SInt x))) (UMrg (Single (SInt x))))) 
+  -- The results means the program \x -> x * x
   ioPair [(1, 2), (2, 4), (3, 6)]
   -- UMrg (Single (SPlus (UMrg (Single (SInt x))) (UMrg (Single (SInt x)))))
+  -- The results means the program \x -> x + x
 ```
 
 ## Documentation
