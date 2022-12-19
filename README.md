@@ -74,7 +74,9 @@ interpret (SPlus x y) = interpretU x + interpretU y
 interpret (SMul x y) = interpretU x * interpretU y
 ```
 
-Then we can define the program space with the `Fresh` monad. 
+Then we can define the program space with the `Fresh` monad. The program space 
+is represented as a symbolic program. The solver will figure out what program
+in the space meets the specifications.
 
 ```haskell
 -- A function that generates a program space.
@@ -103,8 +105,9 @@ space :: SymInteger -> UnionM SProgram
 space x = runFresh (freshExpr [SInt x, SInt 1, SInt 2]) "space"
 ```
 
-Finally, we can define the solver configuration and build the constraints.
-Then we can call the solver to solve the constraints, and we will get a
+Finally, we can define the solver configuration and build the constraints
+for the program space.
+We can call the solver to solve the constraints, and we will get a
 synthesizer from I/O pairs.
 
 ```haskell
