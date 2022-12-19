@@ -168,16 +168,16 @@ instance (SymBoolOp bool) => Monad (UnionMBase bool) where
   {-# INLINE (>>=) #-}
 
 instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (UnionMBase bool a) where
-  gmergingStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool a) => GSimpleMergeable bool (UnionMBase bool a) where
   gmrgIte = mrgIf
   {-# INLINE gmrgIte #-}
 
 instance (SymBoolOp bool) => GMergeable1 bool (UnionMBase bool) where
-  liftGMergingStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
+  {-# INLINE liftGRootStrategy #-}
 
 instance SymBoolOp bool => GSimpleMergeable1 bool (UnionMBase bool) where
   liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
@@ -392,7 +392,7 @@ instance IsConcrete Bool
 instance IsConcrete Integer
 
 instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
-  gmergingStrategy = SimpleStrategy gmrgIte
+  grootStrategy = SimpleStrategy gmrgIte
 
 instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GSimpleMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
   gmrgIte cond l r =
