@@ -45,7 +45,7 @@ module Grisette.Core
     -- significantly improve the performance of symbolic evaluation, especially
     -- for tasks such as program synthesis that are prone to the path explosion
     -- problem.
-    -- 
+    --
     -- In Grisette, we make a distinction between two kinds of symbolic values:
     -- __/solvable types/__ and __/unsolvable types/__. These two types of
     -- values are merged differently.
@@ -126,7 +126,7 @@ module Grisette.Core
     -- are going to work with non-algebraic data types.
 
     -- ** Solvable types
-    
+
     -- | A solvable type is a type that can be represented as a formula and is
     -- directly supported by the underlying constraint solvers.
     -- The [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package
@@ -136,7 +136,7 @@ module Grisette.Core
     -- * @SymInteger@ or @Sym Integer@ (symbolic unbounded integers)
     -- * @SymIntN n@ or @Sym (IntN n)@ (symbolic signed bit vectors of length @n@)
     -- * @SymWordN n@ or @Sym (WordN n)@ (symbolic unsigned bit vectors of length @n@)
-    -- 
+    --
     -- Values of a solvable type can consist of concrete values, symbolic
     -- constants (placeholders for concrete values that can be assigned by a
     -- solver to satisfy a formula), and complex symbolic formulas with
