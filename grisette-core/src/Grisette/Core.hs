@@ -580,7 +580,7 @@ module Grisette.Core
     grootStrategy2,
     GMergeable3 (..),
     grootStrategy3,
-    
+
     -- **** Merging strategy
     GMergingStrategy (..),
     derivedGRootStrategy,
