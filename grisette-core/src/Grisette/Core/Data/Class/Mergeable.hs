@@ -39,13 +39,13 @@ module Grisette.Core.Data.Class.Mergeable
     -- * Mergeable
     GMergeable (..),
     GMergeable1 (..),
-    gmergingStrategy1,
+    grootStrategy1,
     GMergeable2 (..),
-    gmergingStrategy2,
+    grootStrategy2,
     GMergeable3 (..),
-    gmergingStrategy3,
+    grootStrategy3,
     GMergeable' (..),
-    derivedGMergingStrategy,
+    derivedGRootStrategy,
 
     -- * Combinators for manually building merging strategies
     gwrapStrategy,
@@ -233,7 +233,7 @@ data GMergingStrategy bool a where
 -- For example, to build the merge strategy for the just branch of @Maybe a@,
 -- one could write
 --
--- > gwrapStrategy Just fromMaybe gmergingStrategy :: GMergingStrategy (Maybe a)
+-- > gwrapStrategy Just fromMaybe grootStrategy :: GMergingStrategy (Maybe a)
 gwrapStrategy ::
   -- | The merge strategy to be wrapped
   GMergingStrategy bool a ->
@@ -254,7 +254,7 @@ gwrapStrategy (SortedStrategy idxFun substrategy) wrap unwrap =
 gwrapStrategy NoStrategy _ _ = NoStrategy
 {-# INLINE gwrapStrategy #-}
 
--- | Each type is associated with a root merge strategy given by 'gmergingStrategy'.
+-- | Each type is associated with a root merge strategy given by 'grootStrategy'.
 -- The root merge strategy should be able to merge every value of the type.
 -- Grisette will use the root merge strategy to merge the values of the type in
 -- a union.
@@ -273,11 +273,11 @@ gwrapStrategy NoStrategy _ _ = NoStrategy
 -- type class due to GHC's limitation.
 class GMergeable bool a where
   -- | The root merging strategy for the type.
-  gmergingStrategy :: GMergingStrategy bool a
+  grootStrategy :: GMergingStrategy bool a
 
 instance (Generic a, GMergeable' bool (Rep a)) => GMergeable bool (Default a) where
-  gmergingStrategy = unsafeCoerce (derivedGMergingStrategy :: GMergingStrategy bool a)
-  {-# NOINLINE gmergingStrategy #-}
+  grootStrategy = unsafeCoerce (derivedGRootStrategy :: GMergingStrategy bool a)
+  {-# NOINLINE grootStrategy #-}
 
 -- | Generic derivation for the 'GMergeable' class.
 --
@@ -285,73 +285,73 @@ instance (Generic a, GMergeable' bool (Rep a)) => GMergeable bool (Default a) wh
 -- @DerivingStrategies@ extension.
 --
 -- > data X = ... deriving (Generic) deriving (GMergeable SymBool) via (Default X)
-derivedGMergingStrategy :: (Generic a, GMergeable' bool (Rep a)) => GMergingStrategy bool a
-derivedGMergingStrategy = gwrapStrategy gmergingStrategy' to from
-{-# INLINE derivedGMergingStrategy #-}
+derivedGRootStrategy :: (Generic a, GMergeable' bool (Rep a)) => GMergingStrategy bool a
+derivedGRootStrategy = gwrapStrategy grootStrategy' to from
+{-# INLINE derivedGRootStrategy #-}
 
 -- | Lifting of the 'GMergeable' class to unary type constructors.
 class GMergeable1 bool (u :: Type -> Type) where
   -- | Lift merge strategy through the type constructor.
-  liftGMergingStrategy :: GMergingStrategy bool a -> GMergingStrategy bool (u a)
+  liftGRootStrategy :: GMergingStrategy bool a -> GMergingStrategy bool (u a)
 
 -- | Lift the root merge strategy through the unary type constructor.
-gmergingStrategy1 :: (GMergeable bool a, GMergeable1 bool u) => GMergingStrategy bool (u a)
-gmergingStrategy1 = liftGMergingStrategy gmergingStrategy
-{-# INLINE gmergingStrategy1 #-}
+grootStrategy1 :: (GMergeable bool a, GMergeable1 bool u) => GMergingStrategy bool (u a)
+grootStrategy1 = liftGRootStrategy grootStrategy
+{-# INLINE grootStrategy1 #-}
 
 -- | Lifting of the 'GMergeable' class to binary type constructors.
 class GMergeable2 bool (u :: Type -> Type -> Type) where
   -- | Lift merge strategy through the type constructor.
-  liftGMergingStrategy2 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool (u a b)
+  liftGRootStrategy2 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool (u a b)
 
 -- | Lift the root merge strategy through the binary type constructor.
-gmergingStrategy2 :: (GMergeable bool a, GMergeable bool b, GMergeable2 bool u) => GMergingStrategy bool (u a b)
-gmergingStrategy2 = liftGMergingStrategy2 gmergingStrategy gmergingStrategy
-{-# INLINE gmergingStrategy2 #-}
+grootStrategy2 :: (GMergeable bool a, GMergeable bool b, GMergeable2 bool u) => GMergingStrategy bool (u a b)
+grootStrategy2 = liftGRootStrategy2 grootStrategy grootStrategy
+{-# INLINE grootStrategy2 #-}
 
 -- | Lifting of the 'GMergeable' class to ternary type constructors.
 class GMergeable3 bool (u :: Type -> Type -> Type -> Type) where
   -- | Lift merge strategy through the type constructor.
-  liftGMergingStrategy3 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool c -> GMergingStrategy bool (u a b c)
+  liftGRootStrategy3 :: GMergingStrategy bool a -> GMergingStrategy bool b -> GMergingStrategy bool c -> GMergingStrategy bool (u a b c)
 
--- | Lift the root merge strategy through the ternary type constructor.
-gmergingStrategy3 :: (GMergeable bool a, GMergeable bool b, GMergeable bool c, GMergeable3 bool u) => GMergingStrategy bool (u a b c)
-gmergingStrategy3 = liftGMergingStrategy3 gmergingStrategy gmergingStrategy gmergingStrategy
-{-# INLINE gmergingStrategy3 #-}
+-- | Lift the root merge strategy through the binary type constructor.
+grootStrategy3 :: (GMergeable bool a, GMergeable bool b, GMergeable bool c, GMergeable3 bool u) => GMergingStrategy bool (u a b c)
+grootStrategy3 = liftGRootStrategy3 grootStrategy grootStrategy grootStrategy
+{-# INLINE grootStrategy3 #-}
 
 instance (Generic1 u, GMergeable1' bool (Rep1 u)) => GMergeable1 bool (Default1 u) where
-  liftGMergingStrategy = unsafeCoerce (derivedLiftGMergingStrategy :: GMergingStrategy bool a -> GMergingStrategy bool (u a))
-  {-# NOINLINE liftGMergingStrategy #-}
+  liftGRootStrategy = unsafeCoerce (derivedLiftGMergingStrategy :: GMergingStrategy bool a -> GMergingStrategy bool (u a))
+  {-# NOINLINE liftGRootStrategy #-}
 
 class GMergeable1' bool (u :: Type -> Type) where
-  liftGMergingStrategy' :: GMergingStrategy bool a -> GMergingStrategy bool (u a)
+  liftGRootStrategy' :: GMergingStrategy bool a -> GMergingStrategy bool (u a)
 
 instance GMergeable1' bool U1 where
-  liftGMergingStrategy' _ = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' _ = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE liftGRootStrategy' #-}
 
 instance GMergeable1' bool V1 where
-  liftGMergingStrategy' _ = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' _ = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE liftGRootStrategy' #-}
 
 instance GMergeable1' bool Par1 where
-  liftGMergingStrategy' m = gwrapStrategy m Par1 unPar1
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' m = gwrapStrategy m Par1 unPar1
+  {-# INLINE liftGRootStrategy' #-}
 
 instance GMergeable1 bool f => GMergeable1' bool (Rec1 f) where
-  liftGMergingStrategy' m = gwrapStrategy (liftGMergingStrategy m) Rec1 unRec1
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' m = gwrapStrategy (liftGRootStrategy m) Rec1 unRec1
+  {-# INLINE liftGRootStrategy' #-}
 
 instance GMergeable bool c => GMergeable1' bool (K1 i c) where
-  liftGMergingStrategy' _ = gwrapStrategy gmergingStrategy K1 unK1
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' _ = gwrapStrategy grootStrategy K1 unK1
+  {-# INLINE liftGRootStrategy' #-}
 
 instance GMergeable1' bool a => GMergeable1' bool (M1 i c a) where
-  liftGMergingStrategy' m = gwrapStrategy (liftGMergingStrategy' m) M1 unM1
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' m = gwrapStrategy (liftGRootStrategy' m) M1 unM1
+  {-# INLINE liftGRootStrategy' #-}
 
 instance (GMergeable1' bool a, GMergeable1' bool b) => GMergeable1' bool (a :+: b) where
-  liftGMergingStrategy' m =
+  liftGRootStrategy' m =
     SortedStrategy
       ( \case
           L1 _ -> False
@@ -359,18 +359,18 @@ instance (GMergeable1' bool a, GMergeable1' bool b) => GMergeable1' bool (a :+: 
       )
       ( \idx ->
           if not idx
-            then gwrapStrategy (liftGMergingStrategy' m) L1 (\case (L1 v) -> v; _ -> error "impossible")
-            else gwrapStrategy (liftGMergingStrategy' m) R1 (\case (R1 v) -> v; _ -> error "impossible")
+            then gwrapStrategy (liftGRootStrategy' m) L1 (\case (L1 v) -> v; _ -> error "impossible")
+            else gwrapStrategy (liftGRootStrategy' m) R1 (\case (R1 v) -> v; _ -> error "impossible")
       )
-  {-# INLINE liftGMergingStrategy' #-}
+  {-# INLINE liftGRootStrategy' #-}
 
 instance (GMergeable1' bool a, GMergeable1' bool b) => GMergeable1' bool (a :*: b) where
-  liftGMergingStrategy' m = gproduct2Strategy (:*:) (\(a :*: b) -> (a, b)) (liftGMergingStrategy' m) (liftGMergingStrategy' m)
-  {-# INLINE liftGMergingStrategy' #-}
+  liftGRootStrategy' m = gproduct2Strategy (:*:) (\(a :*: b) -> (a, b)) (liftGRootStrategy' m) (liftGRootStrategy' m)
+  {-# INLINE liftGRootStrategy' #-}
 
 -- | Generic derivation for the 'GMergeable' class.
 derivedLiftGMergingStrategy :: (Generic1 u, GMergeable1' bool (Rep1 u)) => GMergingStrategy bool a -> GMergingStrategy bool (u a)
-derivedLiftGMergingStrategy m = gwrapStrategy (liftGMergingStrategy' m) to1 from1
+derivedLiftGMergingStrategy m = gwrapStrategy (liftGRootStrategy' m) to1 from1
 {-# INLINE derivedLiftGMergingStrategy #-}
 
 {-
@@ -381,26 +381,26 @@ withGMergeable v = unCConst $ withGMergeableT @bool @u @a @(CConst (GMergeable b
 
 -- | Auxiliary class for the generic derivation for the 'GMergeable' class.
 class GMergeable' bool f where
-  gmergingStrategy' :: GMergingStrategy bool (f a)
+  grootStrategy' :: GMergingStrategy bool (f a)
 
 instance GMergeable' bool U1 where
-  gmergingStrategy' = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE gmergingStrategy' #-}
+  grootStrategy' = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE grootStrategy' #-}
 
 instance GMergeable' bool V1 where
-  gmergingStrategy' = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE gmergingStrategy' #-}
+  grootStrategy' = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE grootStrategy' #-}
 
 instance (GMergeable bool c) => GMergeable' bool (K1 i c) where
-  gmergingStrategy' = gwrapStrategy gmergingStrategy K1 unK1
-  {-# INLINE gmergingStrategy' #-}
+  grootStrategy' = gwrapStrategy grootStrategy K1 unK1
+  {-# INLINE grootStrategy' #-}
 
 instance (GMergeable' bool a) => GMergeable' bool (M1 i c a) where
-  gmergingStrategy' = gwrapStrategy gmergingStrategy' M1 unM1
-  {-# INLINE gmergingStrategy' #-}
+  grootStrategy' = gwrapStrategy grootStrategy' M1 unM1
+  {-# INLINE grootStrategy' #-}
 
 instance (GMergeable' bool a, GMergeable' bool b) => GMergeable' bool (a :+: b) where
-  gmergingStrategy' =
+  grootStrategy' =
     SortedStrategy
       ( \case
           L1 _ -> False
@@ -408,10 +408,10 @@ instance (GMergeable' bool a, GMergeable' bool b) => GMergeable' bool (a :+: b) 
       )
       ( \idx ->
           if not idx
-            then gwrapStrategy gmergingStrategy' L1 (\case (L1 v) -> v; _ -> undefined)
-            else gwrapStrategy gmergingStrategy' R1 (\case (R1 v) -> v; _ -> undefined)
+            then gwrapStrategy grootStrategy' L1 (\case (L1 v) -> v; _ -> undefined)
+            else gwrapStrategy grootStrategy' R1 (\case (R1 v) -> v; _ -> undefined)
       )
-  {-# INLINE gmergingStrategy' #-}
+  {-# INLINE grootStrategy' #-}
 
 -- | Useful utility function for building merge strategies for product types
 -- manually.
@@ -420,7 +420,7 @@ instance (GMergeable' bool a, GMergeable' bool b) => GMergeable' bool (a :+: b) 
 -- one could write
 --
 -- > data X = X { x1 :: Int, x2 :: Bool }
--- > gproduct2Strategy X (\(X a b) -> (a, b)) gmergingStrategy gmergingStrategy
+-- > gproduct2Strategy X (\(X a b) -> (a, b)) grootStrategy grootStrategy
 -- >   :: GMergingStrategy X
 gproduct2Strategy ::
   -- | The wrap function
@@ -447,17 +447,17 @@ gproduct2Strategy wrap unwrap strategy1 strategy2 =
 {-# INLINE gproduct2Strategy #-}
 
 instance (GMergeable' bool a, GMergeable' bool b) => GMergeable' bool (a :*: b) where
-  gmergingStrategy' = gproduct2Strategy (:*:) (\(a :*: b) -> (a, b)) gmergingStrategy' gmergingStrategy'
-  {-# INLINE gmergingStrategy' #-}
+  grootStrategy' = gproduct2Strategy (:*:) (\(a :*: b) -> (a, b)) grootStrategy' grootStrategy'
+  {-# INLINE grootStrategy' #-}
 
 -- instances
 
 #define CONCRETE_ORD_MERGEABLE(type) \
 instance (SymBoolOp bool) => GMergeable bool type where \
-  gmergingStrategy = \
+  grootStrategy = \
     let sub = SimpleStrategy $ \_ t _ -> t \
      in SortedStrategy id $ const sub; \
-  {-# INLINE gmergingStrategy #-}
+  {-# INLINE grootStrategy #-}
 
 CONCRETE_ORD_MERGEABLE (Bool)
 CONCRETE_ORD_MERGEABLE (Integer)
@@ -483,7 +483,7 @@ deriving via (Default (Either e a)) instance (SymBoolOp bool, GMergeable bool e,
 deriving via (Default1 (Either e)) instance (SymBoolOp bool, GMergeable bool e) => GMergeable1 bool (Either e)
 
 instance (SymBoolOp bool) => GMergeable2 bool Either where
-  liftGMergingStrategy2 m1 m2 =
+  liftGRootStrategy2 m1 m2 =
     SortedStrategy
       ( \case
           Left _ -> False
@@ -493,7 +493,7 @@ instance (SymBoolOp bool) => GMergeable2 bool Either where
           False -> gwrapStrategy m1 Left (\case (Left v) -> v; _ -> undefined)
           True -> gwrapStrategy m2 Right (\case (Right v) -> v; _ -> undefined)
       )
-  {-# INLINE liftGMergingStrategy2 #-}
+  {-# INLINE liftGRootStrategy2 #-}
 
 -- Maybe
 deriving via (Default (Maybe a)) instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (Maybe a)
@@ -535,24 +535,24 @@ instance Show1 container => Show (StrategyList container) where
 
 -- List
 instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool [a] where
-  gmergingStrategy = case gmergingStrategy :: GMergingStrategy bool a of
+  grootStrategy = case grootStrategy :: GMergingStrategy bool a of
     SimpleStrategy m ->
       SortedStrategy length $ \_ ->
         SimpleStrategy $ \cond -> zipWith (m cond)
     NoStrategy ->
       SortedStrategy length $ const NoStrategy
     _ -> SortedStrategy length $ \_ ->
-      SortedStrategy (gbuildStrategyList @bool gmergingStrategy) $ \(StrategyList _ strategies) ->
+      SortedStrategy (gbuildStrategyList @bool grootStrategy) $ \(StrategyList _ strategies) ->
         let s :: [GMergingStrategy bool a] = unsafeCoerce strategies
             allSimple = all (\case SimpleStrategy _ -> True; _ -> False) s
          in if allSimple
               then SimpleStrategy $ \cond l r ->
                 (\case (SimpleStrategy f, l1, r1) -> f cond l1 r1; _ -> error "impossible") <$> zip3 s l r
               else NoStrategy
-  {-# INLINE gmergingStrategy #-}
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool) => GMergeable1 bool [] where
-  liftGMergingStrategy (ms :: GMergingStrategy bool a) = case ms of
+  liftGRootStrategy (ms :: GMergingStrategy bool a) = case ms of
     SimpleStrategy m ->
       SortedStrategy length $ \_ ->
         SimpleStrategy $ \cond -> zipWith (m cond)
@@ -566,7 +566,7 @@ instance (SymBoolOp bool) => GMergeable1 bool [] where
               then SimpleStrategy $ \cond l r ->
                 (\case (SimpleStrategy f, l1, r1) -> f cond l1 r1; _ -> error "impossible") <$> zip3 s l r
               else NoStrategy
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- (,)
 deriving via (Default (a, b)) instance (SymBoolOp bool, GMergeable bool a, GMergeable bool b) => GMergeable bool (a, b)
@@ -574,8 +574,8 @@ deriving via (Default (a, b)) instance (SymBoolOp bool, GMergeable bool a, GMerg
 deriving via (Default1 ((,) a)) instance (SymBoolOp bool, GMergeable bool a) => GMergeable1 bool ((,) a)
 
 instance SymBoolOp bool => GMergeable2 bool (,) where
-  liftGMergingStrategy2 = gproduct2Strategy (,) id
-  {-# INLINE liftGMergingStrategy2 #-}
+  liftGRootStrategy2 = gproduct2Strategy (,) id
+  {-# INLINE liftGRootStrategy2 #-}
 
 -- (,,)
 deriving via
@@ -589,17 +589,17 @@ deriving via
     (SymBoolOp bool, GMergeable bool a, GMergeable bool b) => GMergeable1 bool ((,,) a b)
 
 instance (SymBoolOp bool, GMergeable bool a) => GMergeable2 bool ((,,) a) where
-  liftGMergingStrategy2 = liftGMergingStrategy3 gmergingStrategy
-  {-# INLINE liftGMergingStrategy2 #-}
+  liftGRootStrategy2 = liftGRootStrategy3 grootStrategy
+  {-# INLINE liftGRootStrategy2 #-}
 
 instance SymBoolOp bool => GMergeable3 bool (,,) where
-  liftGMergingStrategy3 m1 m2 m3 =
+  liftGRootStrategy3 m1 m2 m3 =
     gproduct2Strategy
       (\a (b, c) -> (a, b, c))
       (\(a, b, c) -> (a, (b, c)))
       m1
-      (liftGMergingStrategy2 m2 m3)
-  {-# INLINE liftGMergingStrategy3 #-}
+      (liftGRootStrategy2 m2 m3)
+  {-# INLINE liftGRootStrategy3 #-}
 
 -- (,,,)
 deriving via
@@ -707,146 +707,146 @@ deriving via
 
 -- function
 instance (SymBoolOp bool, GMergeable bool b) => GMergeable bool (a -> b) where
-  gmergingStrategy = case gmergingStrategy @bool @b of
+  grootStrategy = case grootStrategy @bool @b of
     SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
     _ -> NoStrategy
-  {-# INLINE gmergingStrategy #-}
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool) => GMergeable1 bool ((->) a) where
-  liftGMergingStrategy ms = case ms of
+  liftGRootStrategy ms = case ms of
     SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
     _ -> NoStrategy
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- MaybeT
 instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool a) => GMergeable bool (MaybeT m a) where
-  gmergingStrategy = gwrapStrategy gmergingStrategy1 MaybeT runMaybeT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy grootStrategy1 MaybeT runMaybeT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (MaybeT m) where
-  liftGMergingStrategy m = gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy m)) MaybeT runMaybeT
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = gwrapStrategy (liftGRootStrategy (liftGRootStrategy m)) MaybeT runMaybeT
+  {-# INLINE liftGRootStrategy #-}
 
 -- ExceptT
 instance
   (SymBoolOp bool, GMergeable1 bool m, GMergeable bool e, GMergeable bool a) =>
   GMergeable bool (ExceptT e m a)
   where
-  gmergingStrategy = gwrapStrategy gmergingStrategy1 ExceptT runExceptT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy grootStrategy1 ExceptT runExceptT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool e) => GMergeable1 bool (ExceptT e m) where
-  liftGMergingStrategy m = gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy m)) ExceptT runExceptT
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = gwrapStrategy (liftGRootStrategy (liftGRootStrategy m)) ExceptT runExceptT
+  {-# INLINE liftGRootStrategy #-}
 
 -- state
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (StateLazy.StateT s m a)
   where
-  gmergingStrategy = gwrapStrategy (liftGMergingStrategy gmergingStrategy1) StateLazy.StateT StateLazy.runStateT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy (liftGRootStrategy grootStrategy1) StateLazy.StateT StateLazy.runStateT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool s, GMergeable1 bool m) => GMergeable1 bool (StateLazy.StateT s m) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy)))
+      (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy2 m grootStrategy)))
       StateLazy.StateT
       StateLazy.runStateT
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (StateStrict.StateT s m a)
   where
-  gmergingStrategy =
-    gwrapStrategy (liftGMergingStrategy gmergingStrategy1) StateStrict.StateT StateStrict.runStateT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy =
+    gwrapStrategy (liftGRootStrategy grootStrategy1) StateStrict.StateT StateStrict.runStateT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool s, GMergeable1 bool m) => GMergeable1 bool (StateStrict.StateT s m) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy)))
+      (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy2 m grootStrategy)))
       StateStrict.StateT
       StateStrict.runStateT
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- writer
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (WriterLazy.WriterT s m a)
   where
-  gmergingStrategy = gwrapStrategy (liftGMergingStrategy gmergingStrategy1) WriterLazy.WriterT WriterLazy.runWriterT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy (liftGRootStrategy grootStrategy1) WriterLazy.WriterT WriterLazy.runWriterT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool s, GMergeable1 bool m) => GMergeable1 bool (WriterLazy.WriterT s m) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy))
+      (liftGRootStrategy (liftGRootStrategy2 m grootStrategy))
       WriterLazy.WriterT
       WriterLazy.runWriterT
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (WriterStrict.WriterT s m a)
   where
-  gmergingStrategy = gwrapStrategy (liftGMergingStrategy gmergingStrategy1) WriterStrict.WriterT WriterStrict.runWriterT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy (liftGRootStrategy grootStrategy1) WriterStrict.WriterT WriterStrict.runWriterT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool s, GMergeable1 bool m) => GMergeable1 bool (WriterStrict.WriterT s m) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy))
+      (liftGRootStrategy (liftGRootStrategy2 m grootStrategy))
       WriterStrict.WriterT
       WriterStrict.runWriterT
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- reader
 instance
   (SymBoolOp bool, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (ReaderT s m a)
   where
-  gmergingStrategy = gwrapStrategy (liftGMergingStrategy gmergingStrategy1) ReaderT runReaderT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy (liftGRootStrategy grootStrategy1) ReaderT runReaderT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (ReaderT s m) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy m))
+      (liftGRootStrategy (liftGRootStrategy m))
       ReaderT
       runReaderT
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- Sum
 instance
   (SymBoolOp bool, GMergeable1 bool l, GMergeable1 bool r, GMergeable bool x) =>
   GMergeable bool (Sum l r x)
   where
-  gmergingStrategy =
+  grootStrategy =
     SortedStrategy
       ( \case
           InL _ -> False
           InR _ -> True
       )
       ( \case
-          False -> gwrapStrategy gmergingStrategy1 InL (\case (InL v) -> v; _ -> error "impossible")
-          True -> gwrapStrategy gmergingStrategy1 InR (\case (InR v) -> v; _ -> error "impossible")
+          False -> gwrapStrategy grootStrategy1 InL (\case (InL v) -> v; _ -> error "impossible")
+          True -> gwrapStrategy grootStrategy1 InR (\case (InR v) -> v; _ -> error "impossible")
       )
-  {-# INLINE gmergingStrategy #-}
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool l, GMergeable1 bool r) => GMergeable1 bool (Sum l r) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     SortedStrategy
       ( \case
           InL _ -> False
           InR _ -> True
       )
       ( \case
-          False -> gwrapStrategy (liftGMergingStrategy m) InL (\case (InL v) -> v; _ -> error "impossible")
-          True -> gwrapStrategy (liftGMergingStrategy m) InR (\case (InR v) -> v; _ -> error "impossible")
+          False -> gwrapStrategy (liftGRootStrategy m) InL (\case (InL v) -> v; _ -> error "impossible")
+          True -> gwrapStrategy (liftGRootStrategy m) InR (\case (InR v) -> v; _ -> error "impossible")
       )
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- Ordering
 deriving via
@@ -887,75 +887,75 @@ deriving via
 
 -- Identity
 instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (Identity a) where
-  gmergingStrategy = gwrapStrategy gmergingStrategy Identity runIdentity
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy grootStrategy Identity runIdentity
+  {-# INLINE grootStrategy #-}
 
 instance SymBoolOp bool => GMergeable1 bool Identity where
-  liftGMergingStrategy m = gwrapStrategy m Identity runIdentity
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = gwrapStrategy m Identity runIdentity
+  {-# INLINE liftGRootStrategy #-}
 
 -- IdentityT
 instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool a) => GMergeable bool (IdentityT m a) where
-  gmergingStrategy = gwrapStrategy gmergingStrategy1 IdentityT runIdentityT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy grootStrategy1 IdentityT runIdentityT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (IdentityT m) where
-  liftGMergingStrategy m = gwrapStrategy (liftGMergingStrategy m) IdentityT runIdentityT
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = gwrapStrategy (liftGRootStrategy m) IdentityT runIdentityT
+  {-# INLINE liftGRootStrategy #-}
 
 -- ContT
 instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool r) => GMergeable bool (ContT r m a) where
-  gmergingStrategy =
+  grootStrategy =
     gwrapStrategy
-      (liftGMergingStrategy gmergingStrategy1)
+      (liftGRootStrategy grootStrategy1)
       ContT
       (\(ContT v) -> v)
-  {-# INLINE gmergingStrategy #-}
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool r) => GMergeable1 bool (ContT r m) where
-  liftGMergingStrategy _ =
+  liftGRootStrategy _ =
     gwrapStrategy
-      (liftGMergingStrategy gmergingStrategy1)
+      (liftGRootStrategy grootStrategy1)
       ContT
       (\(ContT v) -> v)
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- RWS
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool w, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (RWSLazy.RWST r w s m a)
   where
-  gmergingStrategy = gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy gmergingStrategy1)) RWSLazy.RWST (\(RWSLazy.RWST m) -> m)
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy (liftGRootStrategy (liftGRootStrategy grootStrategy1)) RWSLazy.RWST (\(RWSLazy.RWST m) -> m)
+  {-# INLINE grootStrategy #-}
 
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool w, GMergeable1 bool m) =>
   GMergeable1 bool (RWSLazy.RWST r w s m)
   where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy3 m gmergingStrategy gmergingStrategy))))
+      (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy3 m grootStrategy grootStrategy))))
       RWSLazy.RWST
       (\(RWSLazy.RWST rws) -> rws)
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool w, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (RWSStrict.RWST r w s m a)
   where
-  gmergingStrategy = gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy gmergingStrategy1)) RWSStrict.RWST (\(RWSStrict.RWST m) -> m)
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy (liftGRootStrategy (liftGRootStrategy grootStrategy1)) RWSStrict.RWST (\(RWSStrict.RWST m) -> m)
+  {-# INLINE grootStrategy #-}
 
 instance
   (SymBoolOp bool, GMergeable bool s, GMergeable bool w, GMergeable1 bool m) =>
   GMergeable1 bool (RWSStrict.RWST r w s m)
   where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy3 m gmergingStrategy gmergingStrategy))))
+      (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy3 m grootStrategy grootStrategy))))
       RWSStrict.RWST
       (\(RWSStrict.RWST rws) -> rws)
-  {-# INLINE liftGMergingStrategy #-}
+  {-# INLINE liftGRootStrategy #-}
 
 -- Data.Monoid module
 deriving via

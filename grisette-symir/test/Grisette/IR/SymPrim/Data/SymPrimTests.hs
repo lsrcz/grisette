@@ -86,7 +86,7 @@ symPrimTests =
                   @=? Sym (pevalITETerm (ssymbTerm "a") (ssymbTerm "b") (ssymbTerm "c"))
             ],
           testCase "Mergeable" $ do
-            let SimpleStrategy s = mergingStrategy :: MergingStrategy (Sym Integer)
+            let SimpleStrategy s = rootStrategy :: MergingStrategy (Sym Integer)
             s (ssymb "a") (ssymb "b") (ssymb "c")
               @=? ites (ssymb "a" :: Sym Bool) (ssymb "b" :: Sym Integer) (ssymb "c"),
           testCase "SimpleMergeable" $ do

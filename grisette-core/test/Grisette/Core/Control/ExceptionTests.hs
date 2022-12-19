@@ -45,7 +45,7 @@ exceptionTests =
           testCase "SimpleMergeable" $ do
             gmrgIte (SSBool "a") AssertionError AssertionError @=? AssertionError,
           testCase "Mergeable" $ do
-            let SimpleStrategy s = gmergingStrategy :: GMergingStrategy SBool AssertionError
+            let SimpleStrategy s = grootStrategy :: GMergingStrategy SBool AssertionError
             s (SSBool "a") AssertionError AssertionError @=? AssertionError,
           testCase "Transform AssertionError to VerificationConditions" $ do
             transformError AssertionError @=? AssertionViolation,

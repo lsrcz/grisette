@@ -90,12 +90,12 @@ instance SymBoolOp bool => GUnionPrjOp bool (UnionBase bool) where
   {-# INLINE leftMost #-}
 
 instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (UnionBase bool a) where
-  gmergingStrategy = SimpleStrategy $ ifWithStrategy gmergingStrategy
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = SimpleStrategy $ ifWithStrategy grootStrategy
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool) => GMergeable1 bool (UnionBase bool) where
-  liftGMergingStrategy ms = SimpleStrategy $ ifWithStrategy ms
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy ms = SimpleStrategy $ ifWithStrategy ms
+  {-# INLINE liftGRootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool a) => GSimpleMergeable bool (UnionBase bool a) where
   gmrgIte = mrgIf

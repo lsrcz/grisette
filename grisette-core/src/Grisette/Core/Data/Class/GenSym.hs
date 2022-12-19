@@ -107,7 +107,7 @@ newtype FreshIndex = FreshIndex Int
   deriving (Eq, Ord, Num) via Int
 
 instance (SymBoolOp bool) => GMergeable bool FreshIndex where
-  gmergingStrategy = SimpleStrategy $ \_ t f -> max t f
+  grootStrategy = SimpleStrategy $ \_ t f -> max t f
 
 instance (SymBoolOp bool) => GSimpleMergeable bool FreshIndex where
   gmrgIte _ = max
@@ -227,13 +227,13 @@ instance
   (SymBoolOp bool, GMergeable bool a, GMergeable1 bool m) =>
   GMergeable bool (FreshT m a)
   where
-  gmergingStrategy =
-    gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy gmergingStrategy1)) FreshT runFreshT'
+  grootStrategy =
+    gwrapStrategy (liftGRootStrategy (liftGRootStrategy grootStrategy1)) FreshT runFreshT'
 
 instance (SymBoolOp bool, GMergeable1 bool m) => GMergeable1 bool (FreshT m) where
-  liftGMergingStrategy m =
+  liftGRootStrategy m =
     gwrapStrategy
-      (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy (liftGMergingStrategy2 m gmergingStrategy))))
+      (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy (liftGRootStrategy2 m grootStrategy))))
       FreshT
       runFreshT'
 
@@ -254,9 +254,9 @@ instance
   GUnionLike bool (FreshT m)
   where
   mergeWithStrategy s (FreshT f) =
-    FreshT $ \ident index -> mergeWithStrategy (liftGMergingStrategy2 s gmergingStrategy) $ f ident index
+    FreshT $ \ident index -> mergeWithStrategy (liftGRootStrategy2 s grootStrategy) $ f ident index
   mrgIfWithStrategy s cond (FreshT t) (FreshT f) =
-    FreshT $ \ident index -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t ident index) (f ident index)
+    FreshT $ \ident index -> mrgIfWithStrategy (liftGRootStrategy2 s grootStrategy) cond (t ident index) (f ident index)
   single x = FreshT $ \_ i -> single (x, i)
   unionIf cond (FreshT t) (FreshT f) =
     FreshT $ \ident index -> unionIf cond (t ident index) (f ident index)

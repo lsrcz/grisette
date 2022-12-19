@@ -575,15 +575,15 @@ module Grisette.Core
     -- **** Mergeable
     GMergeable (..),
     GMergeable1 (..),
-    gmergingStrategy1,
+    grootStrategy1,
     GMergeable2 (..),
-    gmergingStrategy2,
+    grootStrategy2,
     GMergeable3 (..),
-    gmergingStrategy3,
-
+    grootStrategy3,
+    
     -- **** Merging strategy
     GMergingStrategy (..),
-    derivedGMergingStrategy,
+    derivedGRootStrategy,
 
     -- **** Manual merging strategy construction
     gwrapStrategy,

@@ -36,7 +36,7 @@ mrgTraverse ::
   (a -> f b) ->
   t a ->
   f (t b)
-mrgTraverse f = mergeWithStrategy gmergingStrategy1 . traverse (merge . f)
+mrgTraverse f = mergeWithStrategy grootStrategy1 . traverse (merge . f)
 {-# INLINE mrgTraverse #-}
 
 -- | 'Data.Traversable.sequenceA' with 'GMergingStrategy' knowledge propagation.
