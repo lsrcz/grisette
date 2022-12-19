@@ -11,7 +11,7 @@ import Grisette.TestUtils.SBool
 testMergeableSimpleEquivClass ::
   (HasCallStack, GMergeable SBool x, Show x, Eq x) => x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Assertion
 testMergeableSimpleEquivClass x idxs cases = do
-  let (idxsT, s) = gresolveStrategy @SBool gmergingStrategy x
+  let (idxsT, s) = gresolveStrategy @SBool grootStrategy x
   case s of
     SimpleStrategy m -> do
       idxsT @=? idxs
@@ -19,9 +19,9 @@ testMergeableSimpleEquivClass x idxs cases = do
       where
         go [] = return ()
         go ((c, t, f, r) : xs) = do
-          fst (gresolveStrategy @SBool gmergingStrategy t) @=? idxs
-          fst (gresolveStrategy @SBool gmergingStrategy f) @=? idxs
-          fst (gresolveStrategy @SBool gmergingStrategy r) @=? idxs
+          fst (gresolveStrategy @SBool grootStrategy t) @=? idxs
+          fst (gresolveStrategy @SBool grootStrategy f) @=? idxs
+          fst (gresolveStrategy @SBool grootStrategy r) @=? idxs
           m c t f @=? r
           go xs
     _ -> assertFailure $ "Bad strategy type for " ++ show x
@@ -29,7 +29,7 @@ testMergeableSimpleEquivClass x idxs cases = do
 testMergeableSimpleEquivClass' ::
   (HasCallStack, GMergeable SBool x, Show y, Eq y) => (x -> y) -> x -> [DynamicSortedIdx] -> [(SBool, x, x, x)] -> Assertion
 testMergeableSimpleEquivClass' vis x idxs cases = do
-  let (idxsT, s) = gresolveStrategy @SBool gmergingStrategy x
+  let (idxsT, s) = gresolveStrategy @SBool grootStrategy x
   case s of
     SimpleStrategy m -> do
       idxsT @=? idxs
@@ -37,9 +37,9 @@ testMergeableSimpleEquivClass' vis x idxs cases = do
       where
         go [] = return ()
         go ((c, t, f, r) : xs) = do
-          fst (gresolveStrategy @SBool gmergingStrategy t) @=? idxs
-          fst (gresolveStrategy @SBool gmergingStrategy f) @=? idxs
-          fst (gresolveStrategy @SBool gmergingStrategy r) @=? idxs
+          fst (gresolveStrategy @SBool grootStrategy t) @=? idxs
+          fst (gresolveStrategy @SBool grootStrategy f) @=? idxs
+          fst (gresolveStrategy @SBool grootStrategy r) @=? idxs
           vis (m c t f) @=? vis r
           go xs
     _ -> assertFailure $ "Bad strategy type for " ++ show (vis x)

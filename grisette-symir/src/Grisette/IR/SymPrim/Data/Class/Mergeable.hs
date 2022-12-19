@@ -5,17 +5,17 @@ module Grisette.IR.SymPrim.Data.Class.Mergeable
   ( MergingStrategy,
     Mergeable,
     Mergeable',
-    mergingStrategy,
+    rootStrategy,
     Mergeable1,
-    liftMergingStrategy,
-    mergingStrategy1,
+    liftRootStrategy,
+    rootStrategy1,
     Mergeable2,
-    liftMergingStrategy2,
-    mergingStrategy2,
+    liftRootStrategy2,
+    rootStrategy2,
     Mergeable3,
-    liftMergingStrategy3,
-    mergingStrategy3,
-    derivedMergingStrategy,
+    liftRootStrategy3,
+    rootStrategy3,
+    derivedRootStrategy,
     wrapStrategy,
     product2Strategy,
     buildStrategyList,
@@ -34,54 +34,54 @@ type Mergeable a = GMergeable SymBool a
 
 type Mergeable' a = GMergeable' SymBool a
 
-mergingStrategy :: Mergeable a => MergingStrategy a
-mergingStrategy = gmergingStrategy
-{-# INLINE mergingStrategy #-}
+rootStrategy :: Mergeable a => MergingStrategy a
+rootStrategy = grootStrategy
+{-# INLINE rootStrategy #-}
 
 type Mergeable1 f = GMergeable1 SymBool f
 
-liftMergingStrategy :: (Mergeable1 f) => MergingStrategy b -> MergingStrategy (f b)
-liftMergingStrategy = liftGMergingStrategy
-{-# INLINE liftMergingStrategy #-}
+liftRootStrategy :: (Mergeable1 f) => MergingStrategy b -> MergingStrategy (f b)
+liftRootStrategy = liftGRootStrategy
+{-# INLINE liftRootStrategy #-}
 
-mergingStrategy1 :: (Mergeable1 f, Mergeable b) => MergingStrategy (f b)
-mergingStrategy1 = gmergingStrategy1
-{-# INLINE mergingStrategy1 #-}
+rootStrategy1 :: (Mergeable1 f, Mergeable b) => MergingStrategy (f b)
+rootStrategy1 = grootStrategy1
+{-# INLINE rootStrategy1 #-}
 
 type Mergeable2 f = GMergeable2 SymBool f
 
-liftMergingStrategy2 ::
+liftRootStrategy2 ::
   (Mergeable2 f) =>
   MergingStrategy a ->
   MergingStrategy b ->
   MergingStrategy (f a b)
-liftMergingStrategy2 = liftGMergingStrategy2
-{-# INLINE liftMergingStrategy2 #-}
+liftRootStrategy2 = liftGRootStrategy2
+{-# INLINE liftRootStrategy2 #-}
 
-mergingStrategy2 :: (Mergeable2 f, Mergeable a, Mergeable b) => MergingStrategy (f a b)
-mergingStrategy2 = gmergingStrategy2
-{-# INLINE mergingStrategy2 #-}
+rootStrategy2 :: (Mergeable2 f, Mergeable a, Mergeable b) => MergingStrategy (f a b)
+rootStrategy2 = grootStrategy2
+{-# INLINE rootStrategy2 #-}
 
 type Mergeable3 f = GMergeable3 SymBool f
 
-liftMergingStrategy3 ::
+liftRootStrategy3 ::
   (Mergeable3 f) =>
   MergingStrategy a ->
   MergingStrategy b ->
   MergingStrategy c ->
   MergingStrategy (f a b c)
-liftMergingStrategy3 = liftGMergingStrategy3
-{-# INLINE liftMergingStrategy3 #-}
+liftRootStrategy3 = liftGRootStrategy3
+{-# INLINE liftRootStrategy3 #-}
 
-mergingStrategy3 ::
+rootStrategy3 ::
   (Mergeable3 f, Mergeable a, Mergeable b, Mergeable c) =>
   MergingStrategy (f a b c)
-mergingStrategy3 = gmergingStrategy3
-{-# INLINE mergingStrategy3 #-}
+rootStrategy3 = grootStrategy3
+{-# INLINE rootStrategy3 #-}
 
-derivedMergingStrategy :: (Generic a, Mergeable' (Rep a)) => MergingStrategy a
-derivedMergingStrategy = derivedGMergingStrategy
-{-# INLINE derivedMergingStrategy #-}
+derivedRootStrategy :: (Generic a, Mergeable' (Rep a)) => MergingStrategy a
+derivedRootStrategy = derivedGRootStrategy
+{-# INLINE derivedRootStrategy #-}
 
 wrapStrategy ::
   -- | The merge strategy to be wrapped
