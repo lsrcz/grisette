@@ -16,7 +16,10 @@ reasoning tools, including verification, synthesis, and more.
   interoperability.
 
 ## Installation
-[TODO] after publishing to Hackage, we will list the cabal command here.
+
+```bash
+$ cabal install grisette
+```
 
 You also need to install an SMT solver and make it available through `PATH`.
 Grisette currently uses [sbv](http://leventerkok.github.io/sbv/) as the backend
@@ -31,30 +34,17 @@ The example is adapted from [this blog
 post](https://www.cs.utexas.edu/~bornholt/post/building-synthesizer.html) by
 James Bornholt.
 In the example, we build a simple program synthesizer with Grisette,
-including the definition of the syntax tree, the interpreter, the sketch, and
+including the definition of the syntax tree, the interpreter, the program space, and
 the solver calls.
 The code is commented with explanations.
 
+First, we can define the symbolic program type and its interpreter.
+Unlike the concrete program type, a symbolic program can represent a whole
+space of programs. The interpreter for it will interpret all the programs in
+the program space at once, and generate a single symbolic value to represent
+the results.
+
 ```haskell
--- allows the creation of symbolic constants from strings
-{-# LANGUAGE OverloadedStrings #-}
--- type class derivations
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DeriveGeneric #-}
--- type signature for locally defined variable
-{-# LANGUAGE ScopedTypeVariables #-} 
--- used for Grisette SMT config
-{-# LANGUAGE DataKinds #-}
-
-module Main where
-
--- Grisette is a module that exports almost everything you need to write a
--- symbolic evaluation tool with Grisette.
-import Grisette
--- GHC.Generics is used for deriving type class instances.
-import GHC.Generics
-
 -- The definition of the syntax tree for a symbolic program.
 data SProgram
   -- SInt represent a constant in the syntax tree. A solver can find out what
@@ -82,14 +72,18 @@ interpret :: SProgram -> SymInteger
 interpret (SInt x) = x
 interpret (SPlus x y) = interpretU x + interpretU y
 interpret (SMul x y) = interpretU x * interpretU y
+```
 
--- A function that generates a program sketch.
+Then we can define the program space with the `Fresh` monad. 
+
+```haskell
+-- A function that generates a program space.
 -- The result is maintained in the Fresh monad, which allows us to generate
 -- fresh symbolic variables. These fresh symbolic variables will be instantiated
 -- with 'runFresh'.
 --
 -- For example, when 'freshExpr' is called with [SInt 1, SInt 2], it will
--- generate a program sketch as follows:
+-- generate a program space as follows:
 -- {1 or 2} {+ or *} {1 or 2}
 --
 -- It represents either
@@ -103,17 +97,24 @@ freshExpr terminals = do
   -- choose the operator
   chooseFresh [SPlus l r, SMul l r]
 
--- A program sketch that represents a program space:
+-- A program space:
 -- \x -> {x or 1 or 2} {+ or *} {x or 1 or 2}
-sketch :: SymInteger -> UnionM SProgram
-sketch x = runFresh (freshExpr [SInt x, SInt 1, SInt 2]) "sketch"
+space :: SymInteger -> UnionM SProgram
+space x = runFresh (freshExpr [SInt x, SInt 1, SInt 2]) "space"
+```
 
+Finally, we can define the solver configuration and build the constraints.
+Then we can call the solver to solve the constraints, and we will get a
+synthesizer from I/O pairs.
+
+```haskell
 -- The solver configuration. We use the bounded reasoning mode with Boolector
 -- for faster (but may be unsound) solving.
 solverConfig :: GrisetteSMTConfig 5
 solverConfig = BoundedReasoning boolector
 
--- A function that synthesizes programs with the sketch given some input-output pairs.
+-- A function that synthesizes programs within the search space given some
+-- input-output pairs.
 ioPair :: [(Integer, Integer)] -> IO ()
 ioPair pairs = do
   -- Call the solver. The result may be an error or a model.
@@ -127,15 +128,15 @@ ioPair pairs = do
     Left err -> print err
     Right model -> do
       let x :: SymInteger = "x"
-      -- Evaluate the program sketch to get the concrete program.
-      print $ evaluateSym False model (sketch x)
+      -- Evaluate the program space to get the concrete program.
+      print $ evaluateSym False model (space x)
   where
     constraint :: [(SymInteger, SymInteger)] -> SymBool
     -- The conc function converts a concrete Boolean to a symbolic Boolean.
     constraint [] = conc True
     -- The '~' postfixed operators are the symbolic versions of the
     -- corresponding Haskell operators.
-    constraint ((x, y) : xs) = interpretU (sketch x) ==~ y &&~ constraint xs
+    constraint ((x, y) : xs) = interpretU (space x) ==~ y &&~ constraint xs
 
 main :: IO ()
 main = do
@@ -150,7 +151,10 @@ main = do
 ```
 
 ## Documentation
-TODO
+
+- Haddock documentation: [grisette-core](https://hackage.haskell.org/package/grisette-core) (core constructs), [grisette-symir](https://hackage.haskell.org/package/grisette-symir) (solvable type/symbolic IR), [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) (solver backend), [grisette](https://hackage.haskell.org/package/grisette) (aggregated package, exports constructs from the other three packages).
+- Grisette essentials (WIP).
+- Grisette tutorials (WIP).
 
 ## License
 The Grisette library is distributed under the terms of the BSD3 license. The
