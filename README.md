@@ -65,6 +65,11 @@ The example has three parts:
 - We define the candidate program space of the synthesizer by creating a particular symbolic syntax tree. The synthesizer will search the space of concrete trees for a solution. 
 - We interpret the symbolic syntax tree and pass the resulting constraints to the solver. If a solution exists, the solver returns a concrete tree that agrees with the input-out example. 
 
+given io (2,5)
+-- would be nice to show how we get from syntax to space 
+model <- solve $ interpretU (space 2) ==~ 5 
+-- print the program given space and model 
+
 
 This code block defines the symbolic syntax and the interpreter.
 A single input program will be (\x -> E), where E is defined by the grammar E -> c | x | E + E | E * E. 
@@ -124,6 +129,7 @@ in the space meets the specifications.
 -- It represents either
 -- 1 + 1, 1 * 1, 1 + 2, 1 * 2, 2 + 1, 2 * 1, 2 + 2, or 2 * 2.
 freshExpr :: [SProgram] -> Fresh (UnionM SProgram)
+-- TODO: in the future, can we hide this under a rosette syntax-grammar like construct 
 freshExpr terminals = do
   -- choose the left hand side operand
   l <- chooseFresh terminals
@@ -168,7 +174,7 @@ ioPair pairs = do
     Right model -> do
       let x :: SymInteger = "x"
       -- Evaluate the program space to get the concrete program.
-      print $ evaluateSym False model (space x)
+      print $ evaluateSym False model (space x) -- TODO: in the future, it would be nice to reduce ht eboiler plate here 
   where    
     -- make it top level since it's important 
     constraint :: [(SymInteger, SymInteger)] -> SymBool
