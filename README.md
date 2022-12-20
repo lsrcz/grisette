@@ -37,39 +37,49 @@ reasoning tools, including verification and synthesis.
 $ cabal install grisette
 ```
 
-You also need to install an SMT solver and make it available through `PATH`.
-Grisette currently uses [sbv](http://leventerkok.github.io/sbv/) as the backend
-and supports whatever solvers sbv supports, including
-[Z3](http://github.com/Z3Prover/z3/wiki), [CVC4](http://cvc4.github.io/),
-[Yices](http://yices.csl.sri.com/), [Boolector](http://fmv.jku.at/boolector/),
-etc.
+You also need to install an SMT solver and make it available through `PATH`. We recommend that you start with z3, as it supports all our examples. You can install z3 with these steps:
+
+```
+TODO z3 install 
+```
+
+Boolector is significantly efficient on some examples. You can install it as follows:
+
+```
+TODO boolector install 
+```
+
+The solver is chosen via [sbv](http://leventerkok.github.io/sbv/) which is a library for interacting with SMT solvers. 
 
 ## Example
 
-The example is adapted from [this blog
+The following example uses Grisette to build a synthesizer of arithmetic programs. Given the input-output pair (2,5), the synthesizer outputs the program (\x -> x+3).  The example is adapted from [this blog
 post](https://www.cs.utexas.edu/~bornholt/post/building-synthesizer.html) by
 James Bornholt.
-In the example, we build a simple program synthesizer with Grisette,
-including the definition of the syntax tree, the interpreter, the program space, and
-the solver calls.
-The code is commented with explanations.
 
-First, we can define the symbolic program type and its interpreter.
-Unlike the concrete program type, a symbolic program can represent a whole
-space of programs. The interpreter for it will interpret all the programs in
-the program space at once, and generate a single symbolic value to represent
-the results.
+
+The example has three parts:
+- We define the arithmetic language. The language is _symbolic_:
+  - its syntax tree represents a set of concrete syntax trees. 
+  - its interpreter accepts such symbolic syntax trees, interpreting at once all represented concrete syntax trees. 
+- We define the candidate program space of the synthesizer by creating a particular symbolic syntax tree. The synthesizer will search the space of concrete trees for a solution. 
+- We interpret the symbolic syntax tree and pass the resulting constraints to the solver. If a solution exists, the solver returns a concrete tree that agrees with the input-out example. 
+
+
+This code block defines the symbolic syntax and the interpreter.
+A single input program will be (\x -> E), where E is defined by the grammar E -> c | x | E + E | E * E. 
+
+If we defined it with SPlus SProgram SProgram, we get a grammar. Each _instance_ is a single tree, such as XXX. 
+If we instead define it as SPlus (UnionM SProgram) (UnionM SProgram), we get a data structure that represents sets of trees (with shared subtrees). The instance {...} + { x+y, x-y } represents four trees. 
+The UnionM container represents a symbolic set of SPrograms. It's a select. Each solution from the solver will select exactly one member of this set. 
 
 ```haskell
 -- The definition of the syntax tree for a symbolic program.
 data SProgram
-  -- SInt represent a constant in the syntax tree. A solver can find out what
+  -- SInt represent a **constant** in the syntax tree. A solver can find out what -- TODO: this is a variable leaf, not a ?? leaf
   -- value this constant should be.
   = SInt SymInteger
-  -- SPlus and SMul represent the addition and multiplication operators.
-  -- They take two arguments, which are also symbolic programs.
-  -- The UnionM container allows us to represent a space of possible programs
-  -- rather than a single program as operands.
+  -- SPlus and SMul are binary nodes whose children are **sets** of symbolic symbolic programs. A union is such a set. 
   | SPlus (UnionM SProgram) (UnionM SProgram)
   | SMul (UnionM SProgram) (UnionM SProgram)
   -- Generic helps us derive other type class instances for SProgram.
@@ -79,18 +89,24 @@ data SProgram
   deriving (GMergeable SymBool, GEvaluateSym Model) via (Default SProgram)
 
 -- An interpreter for SProgram.
--- The interpreter would interpret all the programs in a program space at
--- once, and generate a single symbolic formula to represent all the results.
-interpretU :: UnionM SProgram -> SymInteger
-interpretU = getSingle . fmap interpret
-
+-- The interpreter interprets all trees represented by an SProgram.
+-- The result of the interpretation is a single symbolic formula (an SymInteger) that represents the evaluation of all trees. 
+-- To switch among those results, the formula uses the symbolic variables that _select_ the members of the Unions.  -- TODO: call these guards? 
 interpret :: SProgram -> SymInteger
 interpret (SInt x) = x
 interpret (SPlus x y) = interpretU x + interpretU y
 interpret (SMul x y) = interpretU x * interpretU y
+
+-- interpet the set of programs
+interpretU :: UnionM SProgram -> SymInteger
+interpretU = getSingle . fmap interpret -- the result is. union of formulas that can be merged (because they are SymIngeters). getSingle merges them into a single value. 
+-- TODO: rename getSingle to suggest that merging happens here ?
 ```
 
-Then we can define the program space with the `Fresh` monad. The program space 
+Now we want to generat a particular instance of SProgram, such as XXX. This set of trees will prresnet the candidate space of the synthesizer. 
+We need symbolic guards for the unions in the SProgram. These control what concrete tree the synthesizer selects. -- Say this in Part 1 (i. unions have guards that select; ii. the sovler finds the values for hte guards, thus selecting a tree). 
+
+We are now ready to define the program space with the `Fresh` monad. The program space 
 is represented as a symbolic program. The solver will figure out what program
 in the space meets the specifications.
 
@@ -102,6 +118,7 @@ in the space meets the specifications.
 --
 -- For example, when 'freshExpr' is called with [SInt 1, SInt 2], it will
 -- generate a program space as follows:
+-- TODO: use this example above 
 -- {1 or 2} {+ or *} {1 or 2}
 --
 -- It represents either
@@ -114,17 +131,20 @@ freshExpr terminals = do
   r <- chooseFresh terminals
   -- choose the operator
   chooseFresh [SPlus l r, SMul l r]
+  
+  -- TODO: the full code should create ASTs of a given depth k 
+  -- say see full code for depth-k trees 
 
+-- move this above freshExpr because it states the goal of our exercise here (it defiens the API). 
 -- A program space:
 -- \x -> {x or 1 or 2} {+ or *} {x or 1 or 2}
 space :: SymInteger -> UnionM SProgram
 space x = runFresh (freshExpr [SInt x, SInt 1, SInt 2]) "space"
 ```
 
-Finally, we can define the solver configuration and build the constraints
+Finally, we define the solver configuration and build the constraints
 for the program space.
-We can call the solver to solve the constraints, and we will get a
-synthesizer from I/O pairs.
+We call the solver to solve the constraints. The solution represents the program that satisfies the io pair(s). 
 
 ```haskell
 -- The solver configuration. We use the bounded reasoning mode with Boolector
@@ -143,20 +163,21 @@ ioPair pairs = do
   -- symbolic ones.
   res <- solveFormula solverConfig (constraint $ toSym pairs)
   case res of
-    -- Print the error if the solver fails.
+    -- Print an error message if no solution was found in the space. 
     Left err -> print err
     Right model -> do
       let x :: SymInteger = "x"
       -- Evaluate the program space to get the concrete program.
       print $ evaluateSym False model (space x)
-  where
+  where    
+    -- make it top level since it's important 
     constraint :: [(SymInteger, SymInteger)] -> SymBool
-    -- The conc function converts a concrete Boolean to a symbolic Boolean.
-    constraint [] = conc True
+    constraint [] = conc True   -- 'conc' type-converts from concrete to symbolic values 
     -- The '~' postfixed operators are the symbolic versions of the
     -- corresponding Haskell operators.
     constraint ((x, y) : xs) = interpretU (space x) ==~ y &&~ constraint xs
 
+-- TODO: give this first 
 main :: IO ()
 main = do
   -- Call the synthesizer. The printed result could be verbose.
