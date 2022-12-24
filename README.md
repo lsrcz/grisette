@@ -15,41 +15,73 @@ reasoning tools, including verification and synthesis.
 
 ## Design and Benefits 
 
-- monad => benefits 
-- functional => benefits 
-- Symbolic evaluating monadic effects with monad transformers, including error handling, stateful
-  computation, etc.
-- functional => memoization 
-
-- monad 
-  - symeval of unstructured c.f.
-  - symeval of imperative code 
-- functional 
-  - memoization 
-  - assertions as well as assumptions 
-
-- a monad => hence not restricted to structured c.f. (regexes) 
-
+- Modular purely functional design, with a focus on composability.
+  - Allows for symbolic evaluation of user-defined data structures / data
+    structures from third-party libraries.
+  - Allows for symbolic evaluation of error-handling code with user-defined
+    error types.
+  - Allows for memoization (tested and benchmarked) / parallelization (not
+    tested and benchmarked yet) of symbolic evaluation.
+- Core multi-path symbolic evaluation semantics modeled as a monad, allowing for
+  easy integration with other monadic effects, for example:
+  - error handling via `ExceptT`,
+  - stateful computation via `StateT`,
+  - unstructured control flow via `ContT`, etc.
 
 ## Installation
+
+### Install Grisette
+
+Grisette is available via
+[Hackage](https://hackage.haskell.org/package/grisette). You can install it with
+`cabal`:
 
 ```bash
 $ cabal install grisette
 ```
 
-You also need to install an SMT solver and make it available through `PATH`. We recommend that you start with z3, as it supports all our examples. You can install z3 with these steps:
+However, Grisette is a library and is usually used as a dependency of other
+packages. You can add it to your project's `.cabal` file:
 
-```
-TODO z3 install 
-```
-
-Boolector is significantly efficient on some examples. You can install it as follows:
-
-```
-TODO boolector install 
+```cabal
+library
+  ...
+  build-depends: grisette >= 0.1 < 0.2
 ```
 
-The solver is chosen via [sbv](http://leventerkok.github.io/sbv/) which is a library for interacting with SMT solvers. 
+### Install SMT Solvers
+
+To run the examples, you also need to install an SMT solver and make it 
+available through `PATH`. We recommend that you start with
+[Z3](https://github.com/Z3Prover/z3), as it supports all our examples.
+[Boolector](https://github.com/Boolector/boolector) is significantly more
+efficient on some examples, but it does not support all of them.
+
+#### Install Z3
+
+On Ubuntu, you can install Z3 with:
+
+```bash
+$ apt update && apt install z3
+```
+
+On macOS, with [Homebrew](https://brew.sh/), you can install Z3 with:
+
+```bash
+brew install z3
+```
+
+You may also build Z3 from source, which may be more efficient on your system.
+Please refer to the [Z3 homepage](https://github.com/Z3Prover/z3) for more
+details.
+
+#### Install Boolector
+
+Boolector from major package managers are usually outdated or inexist. We
+recommend that you build Boolector from source, and recommend that you use the
+CaDiCaL SAT solver, which is usually efficient on our examples. Please refer to
+the [Boolector homepage](https://github.com/Boolector/boolector) for more
+details.
 
 ## Example
 
