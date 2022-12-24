@@ -295,11 +295,11 @@ module Grisette.Core
     -- This will enable Grisette to properly merge the results of the entire do-block
     -- and scale symbolic evaluation to real-world problems.
     -- Those functions that merges the results can also further propagate the
-    -- cached merging strategy:
+    -- cached merging strategy, note that the result is merged:
     --
     -- >>> f x y = mrgIf "f" (return x) (return y)
     -- >>> do; a <- mrgIf "a" (return 1) (return 2); f a (a + 1) :: UnionM Integer
-    -- UMrg (If (&& a f) (Single 1) (If (|| a f) (Single 2) (Single 3))) -- the result is merged
+    -- UMrg (If (&& a f) (Single 1) (If (|| a f) (Single 2) (Single 3)))
     --
     -- For more details of this, see the documentation for 'UnionMBase' and
     -- 'GMergingStrategy'.
@@ -339,6 +339,12 @@ module Grisette.Core
     -- to model error handling in Grisette:
     --
     -- >>> import Control.Monad.Except
+    -- >>> :{
+    --   data Error = Fail
+    --     deriving (Show, Generic)
+    --     deriving (GMergeable SymBool) via (Default Error)
+    -- :}
+    --
     -- >>> mrgIf "a" (throwError Fail) (return "x") :: ExceptT Error UnionM SymInteger
     -- ExceptT (UMrg (If a (Single (Left Fail)) (Single (Right x))))
     --
