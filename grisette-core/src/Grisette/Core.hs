@@ -77,7 +77,7 @@ module Grisette.Core
     -- withUnionGSimpleMergeable,
     -- withUnionGSimpleMergeableU,
     GMonadUnion,
-    getSingle,
+    simpleMerge,
     {-
     mrgReturnWithStrategy,
     mrgBindWithStrategy,

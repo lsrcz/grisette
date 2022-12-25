@@ -82,7 +82,7 @@ cegisExceptMultiInputs ::
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
 cegisExceptMultiInputs config cexes interpretFunc f =
-  cegisMultiInputs config cexes (getSingle . (interpretFunc <$>) . extractUnionExcept . f)
+  cegisMultiInputs config cexes (simpleMerge . (interpretFunc <$>) . extractUnionExcept . f)
 
 cegisExceptVCMultiInputs ::
   ( CEGISSolver config bool symbolSet failure model,
@@ -103,7 +103,7 @@ cegisExceptVCMultiInputs config cexes interpretFunc f =
     config
     cexes
     ( \v ->
-        getSingle
+        simpleMerge
           ( ( \case
                 Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
                 Left AssertionViolation -> cegisPostCond (conc False)
@@ -127,7 +127,7 @@ cegisExcept ::
   (Either e v -> CEGISCondition bool) ->
   t ->
   IO (Either failure ([forallArgs], model))
-cegisExcept config args f v = cegis config args $ getSingle $ f <$> extractUnionExcept v
+cegisExcept config args f v = cegis config args $ simpleMerge $ f <$> extractUnionExcept v
 
 cegisExceptVC ::
   ( UnionWithExcept t u e v,
@@ -145,7 +145,7 @@ cegisExceptVC ::
   IO (Either failure ([forallArgs], model))
 cegisExceptVC config args f v =
   cegis config args $
-    getSingle $
+    simpleMerge $
       ( \case
           Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
           Left AssertionViolation -> cegisPostCond (conc False)
