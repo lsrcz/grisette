@@ -90,7 +90,7 @@ instance (SupportedPrim a) => ITEOp (Sym Bool) (Sym a) where
   ites (Sym c) (Sym t) (Sym f) = Sym $ pevalITETerm c t f
 
 instance (SupportedPrim a) => GMergeable (Sym Bool) (Sym a) where
-  gmergingStrategy = SimpleStrategy ites
+  grootStrategy = SimpleStrategy ites
 
 instance (SupportedPrim a) => GSimpleMergeable (Sym Bool) (Sym a) where
   gmrgIte = ites

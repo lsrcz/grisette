@@ -168,16 +168,16 @@ instance (SymBoolOp bool) => Monad (UnionMBase bool) where
   {-# INLINE (>>=) #-}
 
 instance (SymBoolOp bool, GMergeable bool a) => GMergeable bool (UnionMBase bool a) where
-  gmergingStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable bool a) => GSimpleMergeable bool (UnionMBase bool a) where
   gmrgIte = mrgIf
   {-# INLINE gmrgIte #-}
 
 instance (SymBoolOp bool) => GMergeable1 bool (UnionMBase bool) where
-  liftGMergingStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
+  {-# INLINE liftGRootStrategy #-}
 
 instance SymBoolOp bool => GSimpleMergeable1 bool (UnionMBase bool) where
   liftGMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
@@ -204,7 +204,7 @@ instance SymBoolOp bool => GUnionLike bool (UnionMBase bool) where
   {-# INLINE unionIf #-}
 
 instance (SymBoolOp bool, GSEq bool a) => GSEq bool (UnionMBase bool a) where
-  x `gsymeq` y = getSingle $ do
+  x `gsymeq` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymeq` y1
@@ -217,19 +217,19 @@ liftToGMonadUnion u = go (underlyingUnion u)
     go (If _ _ c t f) = mrgIf c (go t) (go f)
 
 instance (SymBoolOp bool, GSOrd bool a) => GSOrd bool (UnionMBase bool a) where
-  x `gsymle` y = getSingle $ do
+  x `gsymle` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymle` y1
-  x `gsymlt` y = getSingle $ do
+  x `gsymlt` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymlt` y1
-  x `gsymge` y = getSingle $ do
+  x `gsymge` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymge` y1
-  x `gsymgt` y = getSingle $ do
+  x `gsymgt` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymgt` y1
@@ -392,7 +392,7 @@ instance IsConcrete Bool
 instance IsConcrete Integer
 
 instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
-  gmergingStrategy = SimpleStrategy gmrgIte
+  grootStrategy = SimpleStrategy gmrgIte
 
 instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GSimpleMergeable bool (HML.HashMap k (UnionMBase bool (Maybe t))) where
   gmrgIte cond l r =
@@ -415,8 +415,8 @@ instance (SymBoolOp bool, IsConcrete k, GMergeable bool t) => GSimpleMergeable b
           r
           (HML.keys l)
 
-instance ExtractUnionEither (UnionMBase bool (Either e v)) (UnionMBase bool) e v where
-  extractUnionEither = id
+instance UnionWithExcept (UnionMBase bool (Either e v)) (UnionMBase bool) e v where
+  extractUnionExcept = id
 
-instance SymBoolOp bool => ExtractUnionEither (UnionMBase bool (CBMCEither e v)) (UnionMBase bool) e v where
-  extractUnionEither = fmap runCBMCEither
+instance SymBoolOp bool => UnionWithExcept (UnionMBase bool (CBMCEither e v)) (UnionMBase bool) e v where
+  extractUnionExcept = fmap runCBMCEither

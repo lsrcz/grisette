@@ -14,6 +14,7 @@ import Grisette.Backend.SBV.Data.SMT.Solving ()
 import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
+import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
@@ -32,7 +33,7 @@ import Test.Tasty.HUnit
 
 testCegis :: (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a) => GrisetteSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
 testCegis config shouldSuccess a bs = do
-  x <- cegisFallable' config (a, ssymb "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
+  x <- cegisExceptVC config (a, ssymb "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
   case x of
     Left _ -> shouldSuccess @=? False
     Right (_, m) -> do

@@ -18,7 +18,7 @@
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
 resolver:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/20.yaml
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/32.yaml
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -32,7 +32,6 @@ resolver:
 packages:
   - grisette-symir
   - grisette-core
-  - grisette-lib
   - grisette-backend-sbv
   - grisette
   - grisette-doctest

@@ -67,6 +67,7 @@ equation tsym m = withSymbolSupported tsym $
 
 instance SymbolSetOps SymbolSet TypedSymbol where
   emptySet = SymbolSet S.empty
+  isEmptySet (SymbolSet s) = S.null s
   containsSymbol s =
     S.member (someTypedSymbol s) . unSymbolSet
   insertSymbol s = SymbolSet . S.insert (someTypedSymbol s) . unSymbolSet
@@ -79,6 +80,7 @@ instance GExtractSymbolics SymbolSet SymbolSet where
 
 instance ModelOps Model SymbolSet TypedSymbol where
   emptyModel = Model M.empty
+  isEmptyModel (Model m) = M.null m
   valueOf :: forall t. TypedSymbol t -> Model -> Maybe t
   valueOf sym (Model m) =
     withSymbolSupported sym $

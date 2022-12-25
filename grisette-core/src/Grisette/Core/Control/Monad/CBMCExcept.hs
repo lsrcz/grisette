@@ -39,6 +39,7 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solver
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Language.Haskell.TH.Syntax (Lift)
@@ -101,10 +102,10 @@ instance (ToSym e1 e2, ToSym a1 a2) => ToSym (CBMCEither e1 a1) (Either e2 a2) w
 data EitherIdx idx = L idx | R deriving (Eq, Ord, Show)
 
 instance (SymBoolOp bool, GMergeable bool e, GMergeable bool a) => GMergeable bool (CBMCEither e a) where
-  gmergingStrategy = gmergingStrategy1
+  grootStrategy = grootStrategy1
 
 instance (SymBoolOp bool, GMergeable bool e) => GMergeable1 bool (CBMCEither e) where
-  liftGMergingStrategy ms = case gmergingStrategy of
+  liftGRootStrategy ms = case grootStrategy of
     SimpleStrategy m ->
       SortedStrategy
         ( \(CBMCEither e) -> case e of
@@ -312,12 +313,12 @@ instance
   (SymBoolOp bool, GMergeable1 bool m, GMergeable bool e, GMergeable bool a) =>
   GMergeable bool (CBMCExceptT e m a)
   where
-  gmergingStrategy = gwrapStrategy gmergingStrategy1 CBMCExceptT runCBMCExceptT
-  {-# INLINE gmergingStrategy #-}
+  grootStrategy = gwrapStrategy grootStrategy1 CBMCExceptT runCBMCExceptT
+  {-# INLINE grootStrategy #-}
 
 instance (SymBoolOp bool, GMergeable1 bool m, GMergeable bool e) => GMergeable1 bool (CBMCExceptT e m) where
-  liftGMergingStrategy m = gwrapStrategy (liftGMergingStrategy (liftGMergingStrategy m)) CBMCExceptT runCBMCExceptT
-  {-# INLINE liftGMergingStrategy #-}
+  liftGRootStrategy m = gwrapStrategy (liftGRootStrategy (liftGRootStrategy m)) CBMCExceptT runCBMCExceptT
+  {-# INLINE liftGRootStrategy #-}
 
 instance
   {-# OVERLAPPABLE #-}
@@ -379,9 +380,9 @@ instance
   (SymBoolOp bool, GUnionLike bool m, GMergeable bool e) =>
   GUnionLike bool (CBMCExceptT e m)
   where
-  mergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ mergeWithStrategy (liftGMergingStrategy s) v
+  mergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ mergeWithStrategy (liftGRootStrategy s) v
   {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfWithStrategy (liftGMergingStrategy s) cond t f
+  mrgIfWithStrategy s cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfWithStrategy (liftGRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single = CBMCExceptT . single . return
   {-# INLINE single #-}
@@ -412,3 +413,9 @@ instance
   ToSym (CBMCExceptT e1 m1 a) (CBMCExceptT e2 m2 b)
   where
   toSym (CBMCExceptT v) = CBMCExceptT $ toSym v
+
+instance
+  (Monad u, GUnionLike bool u, GMergeable bool e, GMergeable bool v) =>
+  UnionWithExcept (CBMCExceptT e u v) u e v
+  where
+  extractUnionExcept = merge . fmap runCBMCEither . runCBMCExceptT

@@ -35,26 +35,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      array >=0.5.4.0
-    , base >4.14 && <5
-    , bytestring >=0.10.12
-    , call-stack
-    , deepseq >=1.4.4
-    , generic-deriving >=1.14.1
-    , hashable >=1.3
-    , hashtables >=1.2.3.4
-    , intern >=0.9.2
-    , loch-th >=0.2.2
-    , mtl >=2.2.2
-    , once >=0.2
-    , sbv >=8.11
-    , tasty >=1.1.0.3
-    , tasty-hunit >=0.10
-    , template-haskell >=2.16
-    , th-compat >=0.1.2
-    , transformers >=0.5.6.2
-    , unordered-containers >=0.2.11
-    , vector >=0.12.1.2
+      base >4.14 && <5
   default-language: Haskell2010
   if flag(fast)
     ghc-options: -O2
@@ -70,32 +51,29 @@ test-suite spec
       test
   build-depends:
       Glob
-    , array >=0.5.4.0
+    , array >=0.5.4 && <0.6
     , base >4.14 && <5
-    , bytestring >=0.10.12
-    , call-stack
-    , deepseq >=1.4.4
-    , doctest >=0.18.2
-    , generic-deriving >=1.14.1
-    , grisette
-    , grisette-backend-sbv
-    , grisette-core
-    , grisette-lib
-    , grisette-symir
-    , hashable >=1.3
-    , hashtables >=1.2.3.4
-    , intern >=0.9.2
-    , loch-th >=0.2.2
-    , mtl >=2.2.2
-    , once >=0.2
-    , sbv >=8.11
-    , tasty >=1.1.0.3
-    , tasty-hunit >=0.10
-    , template-haskell >=2.16
-    , th-compat >=0.1.2
-    , transformers >=0.5.6.2
-    , unordered-containers >=0.2.11
-    , vector >=0.12.1.2
+    , bytestring >=0.10.12 && <0.12
+    , call-stack >=0.1 && <0.5
+    , deepseq >=1.4.4 && <1.5
+    , doctest >=0.18.2 && <0.21
+    , generic-deriving >=1.14.1 && <1.15
+    , grisette ==0.1.0.0
+    , grisette-backend-sbv ==0.1.0.0
+    , grisette-core ==0.1.0.0
+    , grisette-symir ==0.1.0.0
+    , hashable >=1.3 && <1.5
+    , hashtables >=1.2.3 && <1.5
+    , intern >=0.9.2 && <0.10
+    , loch-th >=0.2.2 && <0.3
+    , mtl >=2.2.2 && <2.3
+    , once >=0.2 && <0.5
+    , sbv >=8.11 && <9.1
+    , template-haskell >=2.16 && <2.20
+    , th-compat >=0.1.2 && <0.2
+    , transformers >=0.5.6 && <0.6
+    , unordered-containers >=0.2.11 && <0.3
+    , vector >=0.12.1 && <0.14
   default-language: Haskell2010
   if flag(fast)
     ghc-options: -O2

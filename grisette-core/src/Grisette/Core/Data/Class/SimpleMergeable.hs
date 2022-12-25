@@ -23,7 +23,7 @@ module Grisette.Core.Data.Class.SimpleMergeable
     GUnionPrjOp (..),
     pattern SingleU,
     pattern IfU,
-    getSingle,
+    simpleMerge,
     (#~),
   )
 where
@@ -144,23 +144,23 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
 
 -- | Symbolic @if@ control flow with the result merged with the type's root merge strategy.
 --
--- | Equivalent to @mrgIfWithStrategy gmergingStrategy@.
+-- | Equivalent to @mrgIfWithStrategy grootStrategy@.
 mrgIf :: (GUnionLike bool u, GMergeable bool a) => bool -> u a -> u a -> u a
-mrgIf = mrgIfWithStrategy gmergingStrategy
+mrgIf = mrgIfWithStrategy grootStrategy
 {-# INLINE mrgIf #-}
 
 -- | Merge the contents with the type's root merge strategy.
 --
--- | Equivalent to @mergeWithStrategy gmergingStrategy@.
+-- | Equivalent to @mergeWithStrategy grootStrategy@.
 merge :: (GUnionLike bool u, GMergeable bool a) => u a -> u a
-merge = mergeWithStrategy gmergingStrategy
+merge = mergeWithStrategy grootStrategy
 {-# INLINE merge #-}
 
 -- | Wrap a single value in the type and propagate the type's root merge strategy.
 --
--- | Equivalent to @mrgSingleWithStrategy gmergingStrategy@.
+-- | Equivalent to @mrgSingleWithStrategy grootStrategy@.
 mrgSingle :: (GUnionLike bool u, GMergeable bool a) => a -> u a
-mrgSingle = mrgSingleWithStrategy gmergingStrategy
+mrgSingle = mrgSingleWithStrategy grootStrategy
 {-# INLINE mrgSingle #-}
 
 instance (SymBoolOp bool) => GSimpleMergeable bool () where
@@ -293,9 +293,9 @@ instance (SymBoolOp bool, GUnionLike bool m) => GSimpleMergeable1 bool (MaybeT m
   {-# INLINE liftGMrgIte #-}
 
 instance (SymBoolOp bool, GUnionLike bool m) => GUnionLike bool (MaybeT m) where
-  mergeWithStrategy s (MaybeT v) = MaybeT $ mergeWithStrategy (liftGMergingStrategy s) v
+  mergeWithStrategy s (MaybeT v) = MaybeT $ mergeWithStrategy (liftGRootStrategy s) v
   {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (MaybeT t) (MaybeT f) = MaybeT $ mrgIfWithStrategy (liftGMergingStrategy s) cond t f
+  mrgIfWithStrategy s cond (MaybeT t) (MaybeT f) = MaybeT $ mrgIfWithStrategy (liftGRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single = MaybeT . single . return
   {-# INLINE single #-}
@@ -320,9 +320,9 @@ instance
   (SymBoolOp bool, GUnionLike bool m, GMergeable bool e) =>
   GUnionLike bool (ExceptT e m)
   where
-  mergeWithStrategy s (ExceptT v) = ExceptT $ mergeWithStrategy (liftGMergingStrategy s) v
+  mergeWithStrategy s (ExceptT v) = ExceptT $ mergeWithStrategy (liftGRootStrategy s) v
   {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) = ExceptT $ mrgIfWithStrategy (liftGMergingStrategy s) cond t f
+  mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) = ExceptT $ mrgIfWithStrategy (liftGRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single = ExceptT . single . return
   {-# INLINE single #-}
@@ -348,10 +348,10 @@ instance
   GUnionLike bool (StateLazy.StateT s m)
   where
   mergeWithStrategy ms (StateLazy.StateT f) =
-    StateLazy.StateT $ \v -> mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) $ f v
+    StateLazy.StateT $ \v -> mergeWithStrategy (liftGRootStrategy2 ms grootStrategy) $ f v
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (StateLazy.StateT t) (StateLazy.StateT f) =
-    StateLazy.StateT $ \v -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t v) (f v)
+    StateLazy.StateT $ \v -> mrgIfWithStrategy (liftGRootStrategy2 s grootStrategy) cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
   single x = StateLazy.StateT $ \s -> single (x, s)
   {-# INLINE single #-}
@@ -378,10 +378,10 @@ instance
   GUnionLike bool (StateStrict.StateT s m)
   where
   mergeWithStrategy ms (StateStrict.StateT f) =
-    StateStrict.StateT $ \v -> mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) $ f v
+    StateStrict.StateT $ \v -> mergeWithStrategy (liftGRootStrategy2 ms grootStrategy) $ f v
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (StateStrict.StateT t) (StateStrict.StateT f) =
-    StateStrict.StateT $ \v -> mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond (t v) (f v)
+    StateStrict.StateT $ \v -> mrgIfWithStrategy (liftGRootStrategy2 s grootStrategy) cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
   single x = StateStrict.StateT $ \s -> single (x, s)
   {-# INLINE single #-}
@@ -407,10 +407,10 @@ instance
   (SymBoolOp bool, GMergeable bool s, GUnionLike bool m, Monoid s) =>
   GUnionLike bool (WriterLazy.WriterT s m)
   where
-  mergeWithStrategy ms (WriterLazy.WriterT f) = WriterLazy.WriterT $ mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) f
+  mergeWithStrategy ms (WriterLazy.WriterT f) = WriterLazy.WriterT $ mergeWithStrategy (liftGRootStrategy2 ms grootStrategy) f
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (WriterLazy.WriterT t) (WriterLazy.WriterT f) =
-    WriterLazy.WriterT $ mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond t f
+    WriterLazy.WriterT $ mrgIfWithStrategy (liftGRootStrategy2 s grootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single x = WriterLazy.WriterT $ single (x, mempty)
   {-# INLINE single #-}
@@ -436,10 +436,10 @@ instance
   (SymBoolOp bool, GMergeable bool s, GUnionLike bool m, Monoid s) =>
   GUnionLike bool (WriterStrict.WriterT s m)
   where
-  mergeWithStrategy ms (WriterStrict.WriterT f) = WriterStrict.WriterT $ mergeWithStrategy (liftGMergingStrategy2 ms gmergingStrategy) f
+  mergeWithStrategy ms (WriterStrict.WriterT f) = WriterStrict.WriterT $ mergeWithStrategy (liftGRootStrategy2 ms grootStrategy) f
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (WriterStrict.WriterT t) (WriterStrict.WriterT f) =
-    WriterStrict.WriterT $ mrgIfWithStrategy (liftGMergingStrategy2 s gmergingStrategy) cond t f
+    WriterStrict.WriterT $ mrgIfWithStrategy (liftGRootStrategy2 s grootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
   single x = WriterStrict.WriterT $ single (x, mempty)
   {-# INLINE single #-}
@@ -539,10 +539,10 @@ instance
   GUnionLike bool (RWSLazy.RWST r w s m)
   where
   mergeWithStrategy ms (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> mergeWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) $ f r s
+    RWSLazy.RWST $ \r s -> mergeWithStrategy (liftGRootStrategy3 ms grootStrategy grootStrategy) $ f r s
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy ms cond (RWSLazy.RWST t) (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> mrgIfWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) cond (t r s) (f r s)
+    RWSLazy.RWST $ \r s -> mrgIfWithStrategy (liftGRootStrategy3 ms grootStrategy grootStrategy) cond (t r s) (f r s)
   {-# INLINE mrgIfWithStrategy #-}
   single x = RWSLazy.RWST $ \_ s -> single (x, s, mempty)
   {-# INLINE single #-}
@@ -569,10 +569,10 @@ instance
   GUnionLike bool (RWSStrict.RWST r w s m)
   where
   mergeWithStrategy ms (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> mergeWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) $ f r s
+    RWSStrict.RWST $ \r s -> mergeWithStrategy (liftGRootStrategy3 ms grootStrategy grootStrategy) $ f r s
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy ms cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> mrgIfWithStrategy (liftGMergingStrategy3 ms gmergingStrategy gmergingStrategy) cond (t r s) (f r s)
+    RWSStrict.RWST $ \r s -> mrgIfWithStrategy (liftGRootStrategy3 ms grootStrategy grootStrategy) cond (t r s) (f r s)
   {-# INLINE mrgIfWithStrategy #-}
   single x = RWSStrict.RWST $ \_ s -> single (x, s, mempty)
   {-# INLINE single #-}
@@ -604,20 +604,20 @@ pattern IfU c t f <-
   where
     IfU c t f = unionIf c t f
 
--- | Extract the value from a union-like monad if the value has a simply mergeable type.
+-- | Merge the simply mergeable values in a union, and extract the merged value.
 --
--- 'unionIf' will not merge the results.
--- 'getSingle' will merge it and extract the single value.
+-- In the following example, 'unionIf' will not merge the results, and
+-- 'simpleMerge' will merge it and extract the single merged value.
 --
 -- >>> unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool
 -- UAny (If a (Single b) (Single c))
--- >>> getSingle $ (unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool)
+-- >>> simpleMerge $ (unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool)
 -- (ite a b c)
-getSingle :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
-getSingle u = case merge u of
+simpleMerge :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
+simpleMerge u = case merge u of
   SingleU x -> x
   _ -> error "Should not happen"
-{-# INLINE getSingle #-}
+{-# INLINE simpleMerge #-}
 
 -- | Helper for applying functions on 'GUnionPrjOp' and 'GSimpleMergeable'.
 --
@@ -629,7 +629,7 @@ getSingle u = case merge u of
   f ->
   u (Arg f) ->
   Ret f
-(#~) f u = getSingle $ fmap (f #) u
+(#~) f u = simpleMerge $ fmap (f #) u
 {-# INLINE (#~) #-}
 
 infixl 9 #~

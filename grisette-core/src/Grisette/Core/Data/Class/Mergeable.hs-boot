@@ -15,7 +15,7 @@ data GMergingStrategy bool a where
   NoStrategy :: GMergingStrategy bool a
 
 class GMergeable' bool f where
-  gmergingStrategy' :: GMergingStrategy bool (f a)
+  grootStrategy' :: GMergingStrategy bool (f a)
 
 class GMergeable bool a where
-  gmergingStrategy :: GMergingStrategy bool a
+  grootStrategy :: GMergingStrategy bool a
