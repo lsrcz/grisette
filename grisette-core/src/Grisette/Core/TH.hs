@@ -2,8 +2,8 @@
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Grisette.Core.TH
-  ( makeUnionMWrapper,
-    makeUnionMWrapper',
+  ( makeUnionWrapper,
+    makeUnionWrapper',
   )
 where
 
@@ -14,19 +14,19 @@ import Language.Haskell.TH.Syntax
 
 -- | Generate constructor wrappers that wraps the result in a union-like monad with provided names.
 --
--- > $(makeUnionMWrapper' ["uTuple2"] ''(,))
+-- > $(makeUnionWrapper' ["mrgTuple2"] ''(,))
 --
 -- generates
 --
--- > uTuple2 :: (SymBoolOp bool, Monad u, Mergeable bool t1, Mergeable bool t2, MonadUnion bool u) => t1 -> t2 -> u (t1, t2)
--- > uTuple2 = \v1 v2 -> mrgSingle (v1, v2)
-makeUnionMWrapper' ::
+-- > mrgTuple2 :: (SymBoolOp bool, Monad u, Mergeable bool t1, Mergeable bool t2, MonadUnion bool u) => t1 -> t2 -> u (t1, t2)
+-- > mrgTuple2 = \v1 v2 -> mrgSingle (v1, v2)
+makeUnionWrapper' ::
   -- | Names for generated wrappers
   [String] ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makeUnionMWrapper' names typName = do
+makeUnionWrapper' names typName = do
   constructors <- getConstructors typName
   when (length names /= length constructors) $
     fail "Number of names does not match the number of constructors"
@@ -40,7 +40,7 @@ getConstructorName :: Con -> Q String
 getConstructorName (NormalC name _) = return $ occName name
 getConstructorName (RecC name _) = return $ occName name
 getConstructorName InfixC {} =
-  fail "You should use makeUnionMWrapper' to manually provide the name for infix constructors"
+  fail "You should use makeUnionWrapper' to manually provide the name for infix constructors"
 getConstructorName (ForallC _ _ c) = getConstructorName c
 getConstructorName (GadtC [name] _ _) = return $ occName name
 getConstructorName (RecGadtC [name] _ _) = return $ occName name
@@ -56,24 +56,24 @@ getConstructors typName = do
 
 -- | Generate constructor wrappers that wraps the result in a union-like monad.
 --
--- > $(makeUnionMWrapper "u" ''Maybe)
+-- > $(makeUnionWrapper "mrg" ''Maybe)
 --
 -- generates
 --
--- > uNothing :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => u (Maybe t)
--- > uNothing = mrgSingle Nothing
--- > uJust :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => t -> u (Maybe t)
--- > uJust = \x -> mrgSingle (Just x)
-makeUnionMWrapper ::
+-- > mrgNothing :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => u (Maybe t)
+-- > mrgNothing = mrgSingle Nothing
+-- > mrgJust :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => t -> u (Maybe t)
+-- > mrgJust = \x -> mrgSingle (Just x)
+makeUnionWrapper ::
   -- | Prefix for generated wrappers
   String ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makeUnionMWrapper prefix typName = do
+makeUnionWrapper prefix typName = do
   constructors <- getConstructors typName
   constructorNames <- mapM getConstructorName constructors
-  makeUnionMWrapper' ((prefix ++) <$> constructorNames) typName
+  makeUnionWrapper' ((prefix ++) <$> constructorNames) typName
 
 augmentNormalCExpr :: Int -> Exp -> Q Exp
 augmentNormalCExpr n f = do
