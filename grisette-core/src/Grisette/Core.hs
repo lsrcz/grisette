@@ -616,9 +616,9 @@ module Grisette.Core
     pattern SingleU,
     pattern IfU,
     GMonadUnion,
-    getSingle,
+    simpleMerge,
     (#~),
-
+    
     -- * Conversion between Concrete and Symbolic values
     ToCon (..),
     ToSym (..),

@@ -181,7 +181,7 @@ cegisExceptMultiInputs ::
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
 cegisExceptMultiInputs config cexes interpretFunc f =
-  cegisMultiInputs config cexes (getSingle . (interpretFunc <$>) . extractUnionExcept . f)
+  cegisMultiInputs config cexes (simpleMerge . (interpretFunc <$>) . extractUnionExcept . f)
 
 -- |
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
@@ -207,7 +207,7 @@ cegisExceptVCMultiInputs config cexes interpretFunc f =
     config
     cexes
     ( \v ->
-        getSingle
+        simpleMerge
           ( ( \case
                 Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
                 Left AssertionViolation -> cegisPostCond (conc False)
@@ -288,7 +288,7 @@ cegisExcept ::
   (Either e v -> CEGISCondition bool) ->
   t ->
   IO (Either failure ([inputs], model))
-cegisExcept config inputs f v = cegis config inputs $ getSingle $ f <$> extractUnionExcept v
+cegisExcept config inputs f v = cegis config inputs $ simpleMerge $ f <$> extractUnionExcept v
 
 -- |
 -- CEGIS for symbolic programs with error handling, using a single symbolic
@@ -311,7 +311,7 @@ cegisExceptVC ::
   IO (Either failure ([inputs], model))
 cegisExceptVC config inputs f v =
   cegis config inputs $
-    getSingle $
+    simpleMerge $
       ( \case
           Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
           Left AssertionViolation -> cegisPostCond (conc False)

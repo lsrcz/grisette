@@ -298,7 +298,7 @@ instance SymBoolOp bool => GUnionLike bool (UnionMBase bool) where
   {-# INLINE unionIf #-}
 
 instance (SymBoolOp bool, GSEq bool a) => GSEq bool (UnionMBase bool a) where
-  x `gsymeq` y = getSingle $ do
+  x `gsymeq` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymeq` y1
@@ -311,19 +311,19 @@ liftToGMonadUnion u = go (underlyingUnion u)
     go (If _ _ c t f) = mrgIf c (go t) (go f)
 
 instance (SymBoolOp bool, GSOrd bool a) => GSOrd bool (UnionMBase bool a) where
-  x `gsymle` y = getSingle $ do
+  x `gsymle` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymle` y1
-  x `gsymlt` y = getSingle $ do
+  x `gsymlt` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymlt` y1
-  x `gsymge` y = getSingle $ do
+  x `gsymge` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymge` y1
-  x `gsymgt` y = getSingle $ do
+  x `gsymgt` y = simpleMerge $ do
     x1 <- x
     y1 <- y
     mrgSingle $ x1 `gsymgt` y1

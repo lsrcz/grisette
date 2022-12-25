@@ -153,7 +153,7 @@ solveExcept ::
   -- | the program to be solved, should be a union of exception and values
   t ->
   IO (Either failure model)
-solveExcept config f v = solve config (getSingle $ f <$> extractUnionExcept v)
+solveExcept config f v = solve config (simpleMerge $ f <$> extractUnionExcept v)
 
 -- |
 -- Solver procedure for programs with error handling. Would return multiple
@@ -174,4 +174,4 @@ solveMultiExcept ::
   -- | the program to be solved, should be a union of exception and values
   t ->
   IO [model]
-solveMultiExcept config n f v = solveMulti config n (getSingle $ f <$> extractUnionExcept v)
+solveMultiExcept config n f v = solveMulti config n (simpleMerge $ f <$> extractUnionExcept v)

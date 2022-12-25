@@ -43,7 +43,7 @@ module Grisette.Core.Data.Class.SimpleMergeable
     GUnionPrjOp (..),
     pattern SingleU,
     pattern IfU,
-    getSingle,
+    simpleMerge,
     (#~),
   )
 where
@@ -722,20 +722,20 @@ pattern IfU c t f <-
   where
     IfU c t f = unionIf c t f
 
--- | Extract the value from a union-like monad if the value has a simply mergeable type.
+-- | Merge the simply mergeable values in a union, and extract the merged value.
 --
--- 'unionIf' will not merge the results.
--- 'getSingle' will merge it and extract the single value.
+-- In the following example, 'unionIf' will not merge the results, and
+-- 'simpleMerge' will merge it and extract the single merged value.
 --
 -- >>> unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool
 -- UAny (If a (Single b) (Single c))
--- >>> getSingle $ (unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool)
+-- >>> simpleMerge $ (unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool)
 -- (ite a b c)
-getSingle :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
-getSingle u = case merge u of
+simpleMerge :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
+simpleMerge u = case merge u of
   SingleU x -> x
   _ -> error "Should not happen"
-{-# INLINE getSingle #-}
+{-# INLINE simpleMerge #-}
 
 -- | Helper for applying functions on 'GUnionPrjOp' and 'GSimpleMergeable'.
 --
@@ -747,7 +747,7 @@ getSingle u = case merge u of
   f ->
   u (Arg f) ->
   Ret f
-(#~) f u = getSingle $ fmap (f #) u
+(#~) f u = simpleMerge $ fmap (f #) u
 {-# INLINE (#~) #-}
 
 infixl 9 #~

@@ -21,8 +21,8 @@ unionLikeTests :: TestTree
 unionLikeTests =
   testGroup
     "UnionLikeTests"
-    [ testCase "getSingle" $
-        getSingle (unionIf (SSBool "a") (single $ SSBool "b") (single $ SSBool "c") :: UnionMBase SBool SBool)
+    [ testCase "simpleMerge" $
+        simpleMerge (unionIf (SSBool "a") (single $ SSBool "b") (single $ SSBool "c") :: UnionMBase SBool SBool)
           @=? ITE (SSBool "a") (SSBool "b") (SSBool "c"),
       testGroup
         "UnionLike"
