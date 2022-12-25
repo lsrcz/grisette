@@ -1,35 +1,56 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim
-  ( UnionM,
-    type (=->) (..),
-    type (-->),
-    FuncArg (..),
-    Sym (..),
-    symSize,
-    symsSize,
-    SymBool,
-    SymInteger,
-    type (=~>),
-    type (-~>),
+  ( -- * Symbolic type implementation
+
+    -- ** Extended types
     IntN,
     WordN,
+    type (=->) (..),
+    type (-->),
+    (-->),
+
+    -- ** Symbolic types
+    SupportedPrim,
+    Sym,
+    TypedSymbol (..),
+    symSize,
+    symsSize,
+
+    -- ** Symbolic type synonyms
+    SymBool,
+    SymInteger,
     SymIntN,
     SymWordN,
+    type (=~>),
+    type (-~>),
+
+    -- ** Symbolic constant sets and models
     SymbolSet (..),
     Model (..),
-    TypedSymbol (..),
-    showUntyped,
-    withSymbolSupported,
-    SomeTypedSymbol (..),
-    someTypedSymbol,
-    evaluateTerm,
-    SupportedPrim,
+    ModelValuePair (..),
+
+    -- * Specialized functions and types from the [grisette-core](https://hackage.haskell.org/package/grisette-core) package.
+
+    -- ** UnionM
+    UnionM,
+
+    -- ** Symbolic equality
     SEq,
     symeq,
     symne,
     (==~),
     (/=~),
+
+    -- ** Symbolic ordering
     SOrd,
     symlt,
     symle,
@@ -40,12 +61,11 @@ module Grisette.IR.SymPrim
     (>=~),
     (<~),
     (<=~),
+
+    -- ** Symbolic integer operation
     SymIntegerOp,
-    EvaluateSym,
-    evaluateSym,
-    evaluateSymToCon,
-    ExtractSymbolics,
-    extractSymbolics,
+
+    -- ** Merging
     MergingStrategy,
     Mergeable,
     Mergeable',
@@ -65,6 +85,8 @@ module Grisette.IR.SymPrim
     buildStrategyList,
     resolveStrategy,
     resolveStrategy',
+
+    -- ** Simple mergeable and union operations
     SimpleMergeable,
     mrgIte,
     SimpleMergeable1,
@@ -76,11 +98,21 @@ module Grisette.IR.SymPrim
     UnionLike,
     UnionPrjOp,
     MonadUnion,
+
+    -- ** Symbolic evaluation
+    EvaluateSym,
+    evaluateSym,
+    evaluateSymToCon,
+
+    -- ** Symbolic constant extraction
+    ExtractSymbolics,
+    extractSymbolics,
+
+    -- ** Term substitution
     SubstituteSym,
     substituteSym,
-    GenSym,
-    fresh,
-    genSym,
+
+    -- ** Symbolic choices
     chooseFresh,
     chooseSimpleFresh,
     chooseUnionFresh,

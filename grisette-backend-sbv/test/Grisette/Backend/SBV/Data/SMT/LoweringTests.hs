@@ -15,8 +15,8 @@ import qualified Data.HashMap.Strict as M
 import Data.Proxy
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBV
-import Grisette.Backend.SBV.Data.SMT.Config
 import Grisette.Backend.SBV.Data.SMT.Lowering
+import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors

@@ -1,8 +1,18 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Trustworthy #-}
 
+-- |
+-- Module      :   Grisette.Lib.Control.Traversable
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Lib.Data.Traversable
-  ( mrgTraverse,
+  ( -- * mrg* variants for operations in "Data.Traversable"
+    mrgTraverse,
     mrgSequenceA,
     mrgFor,
     mrgMapM,
@@ -15,7 +25,7 @@ import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'traverse' with 'Mergeable' knowledge propagation.
+-- | 'Data.Traversable.traverse' with 'GMergingStrategy' knowledge propagation.
 mrgTraverse ::
   forall bool a b t f.
   ( GMergeable bool b,
@@ -29,7 +39,7 @@ mrgTraverse ::
 mrgTraverse f = mergeWithStrategy grootStrategy1 . traverse (merge . f)
 {-# INLINE mrgTraverse #-}
 
--- | 'sequenceA' with 'Mergeable' knowledge propagation.
+-- | 'Data.Traversable.sequenceA' with 'GMergingStrategy' knowledge propagation.
 mrgSequenceA ::
   forall bool a t f.
   ( GMergeable bool a,
@@ -42,7 +52,7 @@ mrgSequenceA ::
 mrgSequenceA = mrgTraverse id
 {-# INLINE mrgSequenceA #-}
 
--- | 'mapM' with 'Mergeable' knowledge propagation.
+-- | 'Data.Traversable.mapM' with 'GMergingStrategy' knowledge propagation.
 mrgMapM ::
   forall bool a b t f.
   ( GMergeable bool b,
@@ -56,7 +66,7 @@ mrgMapM ::
 mrgMapM = mrgTraverse
 {-# INLINE mrgMapM #-}
 
--- | 'sequence' with 'Mergeable' knowledge propagation.
+-- | 'Data.Traversable.sequence' with 'GMergingStrategy' knowledge propagation.
 mrgSequence ::
   forall bool a t f.
   ( GMergeable bool a,
@@ -69,7 +79,7 @@ mrgSequence ::
 mrgSequence = mrgSequenceA
 {-# INLINE mrgSequence #-}
 
--- | 'for' with 'Mergeable' knowledge propagation.
+-- | 'Data.Traversable.for' with 'GMergingStrategy' knowledge propagation.
 mrgFor ::
   ( GMergeable bool b,
     GMergeable1 bool t,
@@ -82,7 +92,7 @@ mrgFor ::
 mrgFor = flip mrgTraverse
 {-# INLINE mrgFor #-}
 
--- | 'forM' with 'Mergeable' knowledge propagation.
+-- | 'Data.Traversable.forM' with 'GMergingStrategy' knowledge propagation.
 mrgForM ::
   ( GMergeable bool b,
     GMergeable1 bool t,

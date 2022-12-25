@@ -10,7 +10,4 @@ main = do
   lib <- glob "../grisette-lib/src/**/*.hs"
   sbv <- glob "../grisette-backend-sbv/src/**/*.hs"
   grisette <- glob "../grisette/src/**/*.hs"
-  doctest $ core ++ symir
-  doctest lib
-  doctest sbv
-  doctest grisette
+  doctest $ core ++ symir ++ lib ++ sbv ++ grisette

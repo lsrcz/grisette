@@ -9,6 +9,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.Model
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (..),
     Model (..),
@@ -21,6 +29,7 @@ where
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 import Data.Hashable
+import Data.List
 import Data.Proxy
 import GHC.Generics
 import Grisette.Core.Data.Class.ExtractSymbolics
@@ -40,20 +49,35 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
 import Type.Reflection
 import Unsafe.Coerce
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+-- >>> :set -XFlexibleContexts
+
+-- | Symbolic constant set.
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
   deriving (Eq, Generic, Hashable, Semigroup, Monoid)
 
 instance Show SymbolSet where
-  showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x -> "SymbolSet {" ++ go0 (S.toList s) ++ "}" ++ x
+  showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x ->
+    "SymbolSet {"
+      ++ go0 (sort $ show <$> S.toList s)
+      ++ "}"
+      ++ x
     where
       go0 [] = ""
-      go0 [x] = show x
-      go0 (x : xs) = show x ++ ", " ++ go0 xs
+      go0 [x] = x
+      go0 (x : xs) = x ++ ", " ++ go0 xs
 
+-- | Model returned by the solver.
 newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable)
 
 instance Show Model where
-  showsPrec prec (Model m) = showParen (prec >= 10) $ \x -> "Model {" ++ go0 (M.toList m) ++ "}" ++ x
+  showsPrec prec (Model m) = showParen (prec >= 10) $ \x ->
+    "Model {"
+      ++ go0 (sortOn (\(x, _) -> show x) $ M.toList m)
+      ++ "}"
+      ++ x
     where
       go0 [] = ""
       go0 [(SomeTypedSymbol _ s, v)] = showUntyped s ++ " -> " ++ show v
@@ -74,6 +98,142 @@ instance SymbolSetOps SymbolSet TypedSymbol where
   intersectionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.intersection s1 s2
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
+
+instance SymbolSetRep (TypedSymbol t) SymbolSet TypedSymbol where
+  buildSymbolSet sym = insertSymbol sym emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2) =
+    insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b,
+      TypedSymbol c
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2, sym3) =
+    insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b,
+      TypedSymbol c,
+      TypedSymbol d
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2, sym3, sym4) =
+    insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b,
+      TypedSymbol c,
+      TypedSymbol d,
+      TypedSymbol e
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5) =
+    insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b,
+      TypedSymbol c,
+      TypedSymbol d,
+      TypedSymbol e,
+      TypedSymbol f
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6) =
+    insertSymbol sym6
+      . insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b,
+      TypedSymbol c,
+      TypedSymbol d,
+      TypedSymbol e,
+      TypedSymbol f,
+      TypedSymbol g
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7) =
+    insertSymbol sym7
+      . insertSymbol sym6
+      . insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
+
+instance
+  SymbolSetRep
+    ( TypedSymbol a,
+      TypedSymbol b,
+      TypedSymbol c,
+      TypedSymbol d,
+      TypedSymbol e,
+      TypedSymbol f,
+      TypedSymbol g,
+      TypedSymbol h
+    )
+    SymbolSet
+    TypedSymbol
+  where
+  buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7, sym8) =
+    insertSymbol sym8
+      . insertSymbol sym7
+      . insertSymbol sym6
+      . insertSymbol sym5
+      . insertSymbol sym4
+      . insertSymbol sym3
+      . insertSymbol sym2
+      . insertSymbol sym1
+      $ emptySet
 
 instance GExtractSymbolics SymbolSet SymbolSet where
   gextractSymbolics = id
@@ -194,6 +354,11 @@ evaluateTerm :: forall a. (SupportedPrim a) => Bool -> Model -> Term a -> Term a
 evaluateTerm fillDefault m t = case evaluateSomeTerm fillDefault m $ SomeTerm t of
   SomeTerm (t1 :: Term b) -> unsafeCoerce @(Term b) @(Term a) t1
 
+-- |
+-- A type used for building a model by hand.
+--
+-- >>> buildModel ("x" ::= (1 :: Integer), "y" ::= True) :: Model
+-- Model {x -> 1 :: Integer, y -> True :: Bool}
 data ModelValuePair t = (TypedSymbol t) ::= t deriving (Show)
 
 instance ModelRep (ModelValuePair t) Model SymbolSet TypedSymbol where

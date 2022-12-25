@@ -6,6 +6,14 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.TabularFunc
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.TabularFunc
   ( type (=->) (..),
   )
@@ -18,6 +26,21 @@ import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Language.Haskell.TH.Syntax
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+
+-- |
+-- Functions as a table. Use the `#` operator to apply the function.
+--
+-- >>> :set -XTypeOperators
+-- >>> let f = TabularFunc [(1, 2), (3, 4)] 0 :: Int =-> Int
+-- >>> f # 1
+-- 2
+-- >>> f # 2
+-- 0
+-- >>> f # 3
+-- 4
 data (=->) a b = TabularFunc {funcTable :: [(a, b)], defaultFuncValue :: b}
   deriving (Show, Eq, Generic, Generic1, Lift, NFData, NFData1)
 

@@ -2,6 +2,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   ( unaryUnfoldOnce,
     binaryUnfoldOnce,

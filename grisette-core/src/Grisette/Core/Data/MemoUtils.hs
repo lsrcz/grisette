@@ -1,10 +1,19 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
+-- |
+-- Module      :   Grisette.Core.Data.MemoUtils
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Data.MemoUtils
-  ( htmemo,
+  ( -- * Hashtable-based memoization
+    htmemo,
     htmemo2,
     htmemo3,
     htmup,
@@ -41,7 +50,7 @@ htmup mem f = htmemo (mem . f)
 htmemo2 :: (Eq k1, Hashable k1, Eq k2, Hashable k2) => (k1 -> k2 -> a) -> (k1 -> k2 -> a)
 htmemo2 = htmup htmemo
 
--- | Function memoizer with mutable hash table. Works on ternery functions.
+-- | Function memoizer with mutable hash table. Works on ternary functions.
 htmemo3 ::
   (Eq k1, Hashable k1, Eq k2, Hashable k2, Eq k3, Hashable k3) =>
   (k1 -> k2 -> k3 -> a) ->

@@ -2,10 +2,22 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
+-- |
+-- Module      :   Grisette.Core.Data.UnionBase
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Data.UnionBase
-  ( UnionBase (..),
+  ( -- * The union data structure.
+
+    -- | Please consider using 'UnionM' instead.
+    UnionBase (..),
     ifWithLeftMost,
     ifWithStrategy,
     fullReconstruct,
@@ -18,8 +30,8 @@ import Data.Hashable
 import GHC.Generics
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Language.Haskell.TH.Syntax
 
 -- | The default union implementation.

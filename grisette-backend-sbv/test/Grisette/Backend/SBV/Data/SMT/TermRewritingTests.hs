@@ -8,8 +8,7 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingTests where
 
 import Data.Foldable
 import qualified Data.SBV as SBV
-import Grisette.Backend.SBV.Data.SMT.Config
-import Grisette.Backend.SBV.Data.SMT.Solving ()
+import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Data.BV
@@ -22,8 +21,8 @@ import Test.Tasty.QuickCheck
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
-  r <- solveFormula config (Sym $ counterExample a)
-  rs <- solveFormula config (Sym $ same a)
+  r <- solve config (Sym $ counterExample a)
+  rs <- solve config (Sym $ same a)
   case (r, rs) of
     (Left _, Right _) -> do
       return ()

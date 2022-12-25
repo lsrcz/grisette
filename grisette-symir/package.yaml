@@ -6,13 +6,15 @@ description: |
   translating programs into constraints, Grisette can help the development of
   program reasoning tools, including verification, synthesis, and more.
   .
-  grisette-symir provides the solvable types (i.e. symbolic intermediate
+  This package provides the solvable types (i.e. symbolic intermediate
   representation) for Grisette.
-  <https://hackage.haskell.org/package/grisette> exports all constructs
-  you need for building a symbolic evaluation tool.
+  The [grisette](https://hackage.haskell.org/package/grisette) package
+  exports all constructs you need for building a symbolic evaluation tool.
+  If you are using this package directly, you may want to
+  use the "Grisette.IR.SymPrim" module and read its documentation.
   .
   For more details, please checkout the README at
-  <https://github.com/lsrcz/grisette>
+  <https://github.com/lsrcz/grisette>.
 category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
 author: "Sirui Lu"
 maintainer: Sirui Lu (siruilu@cs.washington.edu)

@@ -1,9 +1,14 @@
 module Grisette
-  ( module Grisette.Core,
-    module Grisette.Backend.SBV,
-    module Grisette.IR.SymPrim,
+  ( -- * Modules from [grisette-core](https://hackage.haskell.org/package/grisette-core)
+    module Grisette.Core,
     module Grisette.Lib.Base,
     module Grisette.Lib.Mtl,
+
+    -- * Modules from [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-symir)
+    module Grisette.IR.SymPrim,
+
+    -- * Modules from [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv)
+    module Grisette.Backend.SBV,
   )
 where
 
