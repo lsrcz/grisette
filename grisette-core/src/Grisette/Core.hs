@@ -618,7 +618,7 @@ module Grisette.Core
     GMonadUnion,
     simpleMerge,
     (#~),
-    
+
     -- * Conversion between Concrete and Symbolic values
     ToCon (..),
     ToSym (..),
