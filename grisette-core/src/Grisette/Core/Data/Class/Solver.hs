@@ -61,7 +61,7 @@ solveExcept ::
   (Either e v -> bool) ->
   t ->
   IO (Either failure model)
-solveExcept config f v = solveFormula config (getSingle $ f <$> extractUnionExcept v)
+solveExcept config f v = solveFormula config (simpleMerge $ f <$> extractUnionExcept v)
 
 solveMultiExcept ::
   ( UnionWithExcept t u e v,
@@ -75,4 +75,4 @@ solveMultiExcept ::
   (Either e v -> bool) ->
   t ->
   IO [model]
-solveMultiExcept config n f v = solveFormulaMulti config n (getSingle $ f <$> extractUnionExcept v)
+solveMultiExcept config n f v = solveFormulaMulti config n (simpleMerge $ f <$> extractUnionExcept v)
