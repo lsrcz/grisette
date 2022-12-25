@@ -10,7 +10,7 @@ reasoning tools, including verification and synthesis.
 ## Features
 
 - **Multi-path** symbolic evaluation with efficient (customizable) state merging.
-- Symbolic evaluation is **purely functional**. The propagated symbolic value includes the assertion/error state of the execution, yet it is just a data structure. As a result, Grisette is a library that does not modify the Haskell compiler.  
+- Symbolic evaluation is **purely functional**. The propagated symbolic value includes the assertion / error state of the execution, yet it is just a data structure. As a result, Grisette is a library that does not modify the Haskell compiler.  
 - The separation of symbolic and concrete values is enforced with **static types**. These types help discover opportunities for partial evaluation as well as safe use of Haskell libraries. 
 
 ## Design and Benefits 
@@ -53,7 +53,8 @@ library
 
 To run the examples, you also need to install an SMT solver and make it 
 available through `PATH`. We recommend that you start with
-[Z3](https://github.com/Z3Prover/z3), as it supports all our examples.
+[Z3](https://github.com/Z3Prover/z3), as it supports all our examples and is
+usually easier to install.
 [Boolector](https://github.com/Boolector/boolector) is significantly more
 efficient on some examples, but it does not support all of them.
 
@@ -72,16 +73,16 @@ brew install z3
 ```
 
 You may also build Z3 from source, which may be more efficient on your system.
-Please refer to the [Z3 homepage](https://github.com/Z3Prover/z3) for more
-details.
+Please refer to the [Z3 homepage](https://github.com/Z3Prover/z3) for the build
+instructions.
 
 #### Install Boolector
 
 Boolector from major package managers are usually outdated or inexist. We
-recommend that you build Boolector from source, and recommend that you use the
-CaDiCaL SAT solver, which is usually efficient on our examples. Please refer to
-the [Boolector homepage](https://github.com/Boolector/boolector) for more
-details.
+recommend that you build Boolector from source with the CaDiCaL SAT solver,
+which is usually more efficient on our examples.
+Please refer to the [Boolector homepage](https://github.com/Boolector/boolector)
+for the build instructions.
 
 ## Example
 
