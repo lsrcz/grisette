@@ -244,14 +244,22 @@ instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => 
 instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym (UnionMBase bool a) (UnionMBase bool b) where
   toSym = merge . fmap toSym
 
-instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym (Identity a) (UnionMBase bool b) where
-  toSym (Identity x) = toSym x
-
-instance (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
+instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
   toCon v = go $ underlyingUnion v
     where
       go (Single x) = toCon x
       go _ = Nothing
+
+instance {-# OVERLAPPING #-} (SymBoolOp bool, ToCon a b, GMergeable bool b) => ToCon (UnionMBase bool a) (UnionMBase bool b) where
+  toCon v = go $ underlyingUnion v
+    where
+      go (Single x) = case toCon x of
+        Nothing -> Nothing
+        Just v -> Just $ mrgSingle v
+      go (If _ _ c t f) = do
+        t' <- go t
+        f' <- go f
+        return $ mrgIf c t' f'
 
 instance (SymBoolOp bool, GMergeable bool a, GEvaluateSym model a, GEvaluateSym model bool) => GEvaluateSym model (UnionMBase bool a) where
   gevaluateSym fillDefault model x = go $ underlyingUnion x
