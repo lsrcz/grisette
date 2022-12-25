@@ -44,7 +44,7 @@ flag fast
 library
   exposed-modules:
       Grisette.Core
-      Grisette.Core.BuiltinUnionMWrappers
+      Grisette.Core.BuiltinUnionWrappers
       Grisette.Core.Control.Exception
       Grisette.Core.Control.Monad.CBMCExcept
       Grisette.Core.Control.Monad.Union

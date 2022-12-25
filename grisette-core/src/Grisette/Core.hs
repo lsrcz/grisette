@@ -572,8 +572,8 @@ module Grisette.Core
     -- *** UnionM Monad
     UnionMBase,
     IsConcrete,
-    makeUnionMWrapper,
-    makeUnionMWrapper',
+    makeUnionWrapper,
+    makeUnionWrapper',
     liftToGMonadUnion,
 
     -- *** Merging
@@ -1009,24 +1009,24 @@ module Grisette.Core
     htmemoFix,
 
     -- ** Bundled Constructor Wrappers
-    uTrue,
-    uFalse,
-    uunit,
-    uTuple2,
-    uTuple3,
-    uJust,
-    uNothing,
-    uLeft,
-    uRight,
-    uInL,
-    uInR,
-    uAssertionViolation,
-    uAssumptionViolation,
+    mrgTrue,
+    mrgFalse,
+    mrgUnit,
+    mrgTuple2,
+    mrgTuple3,
+    mrgJust,
+    mrgNothing,
+    mrgLeft,
+    mrgRight,
+    mrgInL,
+    mrgInR,
+    mrgAssertionViolation,
+    mrgAssumptionViolation,
   )
 where
 
 import Generics.Deriving (Default (..), Default1 (..))
-import Grisette.Core.BuiltinUnionMWrappers
+import Grisette.Core.BuiltinUnionWrappers
 import Grisette.Core.Control.Exception
 import Grisette.Core.Control.Monad.CBMCExcept
 import Grisette.Core.Control.Monad.Union
