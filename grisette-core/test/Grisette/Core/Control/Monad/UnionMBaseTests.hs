@@ -9,6 +9,7 @@ import qualified Data.ByteString as B
 import qualified Data.HashMap.Lazy as ML
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Grisette.Core.BuiltinUnionWrappers
 import Grisette.Core.Control.Monad.UnionMBase
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
@@ -21,7 +22,6 @@ import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.UnionBase
-import Grisette.Core.BuiltinUnionWrappers
 import Grisette.TestUtils.SBool
 import Test.Tasty
 import Test.Tasty.HUnit
