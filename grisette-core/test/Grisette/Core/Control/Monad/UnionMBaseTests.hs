@@ -9,6 +9,7 @@ import qualified Data.ByteString as B
 import qualified Data.HashMap.Lazy as ML
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Grisette.Core.BuiltinUnionWrappers
 import Grisette.Core.Control.Monad.UnionMBase
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
@@ -370,17 +371,29 @@ unionMBaseTests =
         [ testCase "From single" $ do
             (toSym True :: UnionMBase SBool SBool) @=? mrgSingle (CBool True),
           testCase "From UnionMBase" $ do
-            (toSym (mrgSingle True :: UnionMBase SBool Bool) :: UnionMBase SBool SBool) @=? mrgSingle (CBool True),
-          testCase "From Identity" $ do
-            (toSym (Identity True :: Identity Bool) :: UnionMBase SBool SBool) @=? mrgSingle (CBool True)
+            (toSym (mrgSingle True :: UnionMBase SBool Bool) :: UnionMBase SBool SBool) @=? mrgSingle (CBool True)
         ],
-      testCase "ToCon" $ do
-        (toCon (mrgSingle (CBool True) :: UnionMBase SBool SBool) :: Maybe Bool) @=? Just True
-        (toCon (mrgSingle (SSBool "a") :: UnionMBase SBool SBool) :: Maybe Bool) @=? Nothing
-        ( toCon (mrgIf (SSBool "a") (mrgSingle (1 :: Integer)) (mrgSingle (2 :: Integer)) :: UnionMBase SBool Integer) ::
-            Maybe Integer
-          )
-          @=? Nothing,
+      testGroup
+        "ToCon"
+        [ testCase "To single" $ do
+            (toCon (mrgSingle (CBool True) :: UnionMBase SBool SBool) :: Maybe Bool) @=? Just True
+            (toCon (mrgSingle (SSBool "a") :: UnionMBase SBool SBool) :: Maybe Bool) @=? Nothing
+            ( toCon (mrgIf (SSBool "a") (mrgLeft $ CBool False) (mrgRight $ CBool True) :: UnionMBase SBool (Either SBool SBool)) ::
+                Maybe (Either Bool Bool)
+              )
+              @=? Nothing,
+          testCase "To UnionMBase" $ do
+            (toCon (mrgSingle (CBool True) :: UnionMBase SBool SBool) :: Maybe (UnionMBase SBool Bool)) @=? Just (mrgSingle True)
+            (toCon (mrgSingle (SSBool "a") :: UnionMBase SBool SBool) :: Maybe (UnionMBase SBool Bool)) @=? Nothing
+            ( toCon (mrgIf (SSBool "a") (mrgLeft $ CBool False) (mrgRight $ CBool True) :: UnionMBase SBool (Either SBool SBool)) ::
+                Maybe (UnionMBase SBool (Either Bool Bool))
+              )
+              @=? Just (mrgIf (SSBool "a") (mrgLeft False) (mrgRight True))
+            ( toCon (mrgIf (SSBool "a") (mrgLeft $ SSBool "b") (mrgRight $ CBool True) :: UnionMBase SBool (Either SBool SBool)) ::
+                Maybe (UnionMBase SBool (Either Bool Bool))
+              )
+              @=? Nothing
+        ],
       testCase "Evaluate" $ do
         let model = M.empty :: M.HashMap Symbol Bool
         let model1 =
