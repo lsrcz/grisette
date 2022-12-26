@@ -86,6 +86,7 @@ library
       Grisette.TestUtils.SBool
       Grisette.TestUtils.SEq
       Grisette.TestUtils.SOrd
+      Grisette.TestUtils.Substitute
       Grisette.TestUtils.ToCon
       Grisette.TestUtils.ToSym
   other-modules:
@@ -126,6 +127,7 @@ test-suite spec
       Grisette.Core.Data.Class.SEqTests
       Grisette.Core.Data.Class.SimpleMergeableTests
       Grisette.Core.Data.Class.SOrdTests
+      Grisette.Core.Data.Class.SubstituteSymTests
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.UnionLikeTests

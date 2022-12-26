@@ -19,6 +19,7 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.UnionBase
@@ -419,6 +420,41 @@ unionMBaseTests =
           @=? (mrgSingle $ Right $ CBool False :: UnionMBase SBool (Either SBool SBool))
         gevaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "b")) (mrgSingle $ Right (SSBool "c")))
           @=? (mrgSingle $ Left $ CBool False :: UnionMBase SBool (Either SBool SBool)),
+      testCase "SubstituteSym" $ do
+        let asym = TSymbol $ SSymbol "a"
+        let a = SSBool "a"
+        let b = SSBool "b"
+        let c = SSBool "c"
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Left a :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Left b)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Left c :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Left c)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Right a :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Right b)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Right c :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Right c)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgIf a (mrgSingle $ Left a) (mrgSingle $ Right c) :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgIf b (mrgSingle $ Left b) (mrgSingle $ Right c)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgIf c (mrgSingle $ Left c) (mrgSingle $ Right a) :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgIf c (mrgSingle $ Left c) (mrgSingle $ Right b),
       testCase "ExtractSymbolic" $ do
         gextractSymbolics (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
           @=? S.singleton (SSymbol "a")
