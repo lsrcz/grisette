@@ -9,6 +9,7 @@ import qualified Data.ByteString as B
 import qualified Data.HashMap.Lazy as ML
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Grisette.Core.BuiltinUnionWrappers
 import Grisette.Core.Control.Monad.UnionMBase
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
@@ -18,6 +19,7 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.UnionBase
@@ -370,17 +372,29 @@ unionMBaseTests =
         [ testCase "From single" $ do
             (toSym True :: UnionMBase SBool SBool) @=? mrgSingle (CBool True),
           testCase "From UnionMBase" $ do
-            (toSym (mrgSingle True :: UnionMBase SBool Bool) :: UnionMBase SBool SBool) @=? mrgSingle (CBool True),
-          testCase "From Identity" $ do
-            (toSym (Identity True :: Identity Bool) :: UnionMBase SBool SBool) @=? mrgSingle (CBool True)
+            (toSym (mrgSingle True :: UnionMBase SBool Bool) :: UnionMBase SBool SBool) @=? mrgSingle (CBool True)
         ],
-      testCase "ToCon" $ do
-        (toCon (mrgSingle (CBool True) :: UnionMBase SBool SBool) :: Maybe Bool) @=? Just True
-        (toCon (mrgSingle (SSBool "a") :: UnionMBase SBool SBool) :: Maybe Bool) @=? Nothing
-        ( toCon (mrgIf (SSBool "a") (mrgSingle (1 :: Integer)) (mrgSingle (2 :: Integer)) :: UnionMBase SBool Integer) ::
-            Maybe Integer
-          )
-          @=? Nothing,
+      testGroup
+        "ToCon"
+        [ testCase "To single" $ do
+            (toCon (mrgSingle (CBool True) :: UnionMBase SBool SBool) :: Maybe Bool) @=? Just True
+            (toCon (mrgSingle (SSBool "a") :: UnionMBase SBool SBool) :: Maybe Bool) @=? Nothing
+            ( toCon (mrgIf (SSBool "a") (mrgLeft $ CBool False) (mrgRight $ CBool True) :: UnionMBase SBool (Either SBool SBool)) ::
+                Maybe (Either Bool Bool)
+              )
+              @=? Nothing,
+          testCase "To UnionMBase" $ do
+            (toCon (mrgSingle (CBool True) :: UnionMBase SBool SBool) :: Maybe (UnionMBase SBool Bool)) @=? Just (mrgSingle True)
+            (toCon (mrgSingle (SSBool "a") :: UnionMBase SBool SBool) :: Maybe (UnionMBase SBool Bool)) @=? Nothing
+            ( toCon (mrgIf (SSBool "a") (mrgLeft $ CBool False) (mrgRight $ CBool True) :: UnionMBase SBool (Either SBool SBool)) ::
+                Maybe (UnionMBase SBool (Either Bool Bool))
+              )
+              @=? Just (mrgIf (SSBool "a") (mrgLeft False) (mrgRight True))
+            ( toCon (mrgIf (SSBool "a") (mrgLeft $ SSBool "b") (mrgRight $ CBool True) :: UnionMBase SBool (Either SBool SBool)) ::
+                Maybe (UnionMBase SBool (Either Bool Bool))
+              )
+              @=? Nothing
+        ],
       testCase "Evaluate" $ do
         let model = M.empty :: M.HashMap Symbol Bool
         let model1 =
@@ -406,6 +420,41 @@ unionMBaseTests =
           @=? (mrgSingle $ Right $ CBool False :: UnionMBase SBool (Either SBool SBool))
         gevaluateSym False model1 (mrgIf (SSBool "a") (mrgSingle $ Left (SSBool "b")) (mrgSingle $ Right (SSBool "c")))
           @=? (mrgSingle $ Left $ CBool False :: UnionMBase SBool (Either SBool SBool)),
+      testCase "SubstituteSym" $ do
+        let asym = TSymbol $ SSymbol "a"
+        let a = SSBool "a"
+        let b = SSBool "b"
+        let c = SSBool "c"
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Left a :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Left b)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Left c :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Left c)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Right a :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Right b)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgSingle $ Right c :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgSingle (Right c)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgIf a (mrgSingle $ Left a) (mrgSingle $ Right c) :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgIf b (mrgSingle $ Left b) (mrgSingle $ Right c)
+        gsubstituteSym
+          asym
+          (TSBool b)
+          (mrgIf c (mrgSingle $ Left c) (mrgSingle $ Right a) :: UnionMBase SBool (Either SBool SBool))
+          @=? mrgIf c (mrgSingle $ Left c) (mrgSingle $ Right b),
       testCase "ExtractSymbolic" $ do
         gextractSymbolics (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
           @=? S.singleton (SSymbol "a")

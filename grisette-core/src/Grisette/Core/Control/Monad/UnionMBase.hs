@@ -46,6 +46,7 @@ import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solver
+import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.UnionBase
@@ -244,14 +245,22 @@ instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => 
 instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym (UnionMBase bool a) (UnionMBase bool b) where
   toSym = merge . fmap toSym
 
-instance {-# OVERLAPPING #-} (SymBoolOp bool, ToSym a b, GMergeable bool b) => ToSym (Identity a) (UnionMBase bool b) where
-  toSym (Identity x) = toSym x
-
-instance (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
+instance {-# OVERLAPPABLE #-} (SymBoolOp bool, ToCon a b) => ToCon (UnionMBase bool a) b where
   toCon v = go $ underlyingUnion v
     where
       go (Single x) = toCon x
       go _ = Nothing
+
+instance {-# OVERLAPPING #-} (SymBoolOp bool, ToCon a b, GMergeable bool b) => ToCon (UnionMBase bool a) (UnionMBase bool b) where
+  toCon v = go $ underlyingUnion v
+    where
+      go (Single x) = case toCon x of
+        Nothing -> Nothing
+        Just v -> Just $ mrgSingle v
+      go (If _ _ c t f) = do
+        t' <- go t
+        f' <- go f
+        return $ mrgIf c t' f'
 
 instance (SymBoolOp bool, GMergeable bool a, GEvaluateSym model a, GEvaluateSym model bool) => GEvaluateSym model (UnionMBase bool a) where
   gevaluateSym fillDefault model x = go $ underlyingUnion x
@@ -261,6 +270,17 @@ instance (SymBoolOp bool, GMergeable bool a, GEvaluateSym model a, GEvaluateSym 
       go (If _ _ cond t f) =
         mrgIf
           (gevaluateSym fillDefault model cond)
+          (go t)
+          (go f)
+
+instance (SymBoolOp bool, GMergeable bool a, GSubstituteSym ts s a, GSubstituteSym ts s bool) => GSubstituteSym ts s (UnionMBase bool a) where
+  gsubstituteSym sym val x = go $ underlyingUnion x
+    where
+      go :: UnionBase bool a -> UnionMBase bool a
+      go (Single v) = mrgSingle $ gsubstituteSym sym val v
+      go (If _ _ cond t f) =
+        mrgIf
+          (gsubstituteSym sym val cond)
           (go t)
           (go f)
 

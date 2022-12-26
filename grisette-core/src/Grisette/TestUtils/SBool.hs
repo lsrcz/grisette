@@ -19,6 +19,7 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Lib.Control.Monad
@@ -154,8 +155,6 @@ data Symbol where
   ISymbol :: String -> Int -> Symbol
   IISymbol :: (Typeable a, Show a, Eq a, Hashable a) => String -> Int -> a -> Symbol
 
--- deriving (Generic, Show, Eq, Hashable)
-
 instance Show Symbol where
   show (SSymbol s) = "SSymbol " ++ s
   show (ISSymbol s info) = "ISSymbol " ++ s ++ " " ++ show info
@@ -222,3 +221,25 @@ instance GGenSym SBool SBool SBool
 
 instance GenSymSimple SBool SBool where
   simpleFresh _ = simpleFresh ()
+
+data TSymbol a where
+  TSymbol :: Symbol -> TSymbol a
+
+data TSBool a where
+  TSBool :: SBool -> TSBool Bool
+
+instance GSubstituteSymSymbol TSymbol TSBool
+
+instance GSubstituteSym TSymbol TSBool SBool where
+  gsubstituteSym (TSymbol s) (TSBool t) v = go s v
+    where
+      go s (CBool v) = CBool v
+      go s (SSBool sym) = if s == SSymbol sym then t else SSBool sym
+      go s (ISSBool sym info) = if s == ISSymbol sym info then t else ISSBool sym info
+      go s (ISBool sym i) = if s == ISymbol sym i then t else ISBool sym i
+      go s (IISBool sym i info) = if s == IISymbol sym i info then t else IISBool sym i info
+      go s (Or l r) = Or (go s l) (go s r)
+      go s (And l r) = And (go s l) (go s r)
+      go s (Not v) = Not (go s v)
+      go s (Equal l r) = Equal (go s l) (go s r)
+      go s (ITE c l r) = ITE (go s c) (go s l) (go s r)
