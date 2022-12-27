@@ -1,2 +1,19 @@
 cradle:
   stack:
+    components:
+    - path: "grisette-core/src"
+      component: "grisette-core:lib"
+    - path: "grisette-core/test"
+      component: "grisette-core:test:spec"
+    - path: "grisette-symir/src"
+      component: "grisette-symir:lib"
+    - path: "grisette-symir/test"
+      component: "grisette-symir:test:spec"
+    - path: "grisette-backend-sbv/src"
+      component: "grisette-backend-sbv:lib"
+    - path: "grisette-backend-sbv/test"
+      component: "grisette-backend-sbv:test:spec"
+    - path: "grisette/src"
+      component: "grisette:lib"
+    - path: "grisette/test"
+      component: "grisette:test:spec"
