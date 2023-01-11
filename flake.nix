@@ -18,7 +18,9 @@
           hPkgs.haskell-language-server # LSP server for editor
           hPkgs.cabal-install
           stack-wrapped
-          # pkgs.zlib # External C library needed by some Haskell packages
+          pkgs.zlib # External C library needed by some Haskell packages
+          pkgs.boolector
+          pkgs.z3
         ];
         # Wrap Stack to work with our Nix integration. We don't want to modify
         # stack.yaml so non-Nix users don't notice anything.
