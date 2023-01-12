@@ -100,13 +100,6 @@ jobs:
           stack)
             nix develop --allow-dirty --no-warn-dirty -c stack config set system-ghc --global true
             nix develop --allow-dirty --no-warn-dirty -c stack setup --no-terminal $ARGS 
-            # nix develop --allow-dirty --no-warn-dirty -c which gcc
-            # case "${{ matrix.os }}" in
-            #   macOS-latest)
-            #     find $(stack --no-terminal $ARGS path --compiler-bin)/../lib/* -name settings | xargs sed -i '' -E 's/,("Haskell CPP command", "\w\+")/,("Haskell CPP command", "gcc")/g' 
-            #     find $(stack --no-terminal $ARGS path --compiler-bin)/../lib/* -name settings | xargs cat
-            #     ;;
-            # esac
             ;;
         esac
         set +ex

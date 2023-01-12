@@ -638,61 +638,44 @@ gchooseUnion ::
   u a
 gchooseUnion = runFresh . gchooseUnionFresh
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Bool Bool where gfresh = return . mrgSingle
+#define CONCRETE_GENSYM_SAME_SHAPE(type) \
+instance (SymBoolOp bool, GenSymSimple () bool) => \
+  GGenSym bool type type where gfresh = return . mrgSingle
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Integer Integer where gfresh = return . mrgSingle
+#define CONCRETE_GENSYMSIMPLE_SAME_SHAPE(type) \
+instance GenSymSimple type type where simpleFresh = return
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Char Char where gfresh = return . mrgSingle
+#if 1
+CONCRETE_GENSYM_SAME_SHAPE(Bool)
+CONCRETE_GENSYM_SAME_SHAPE(Integer)
+CONCRETE_GENSYM_SAME_SHAPE(Char)
+CONCRETE_GENSYM_SAME_SHAPE(Int)
+CONCRETE_GENSYM_SAME_SHAPE(Int8)
+CONCRETE_GENSYM_SAME_SHAPE(Int16)
+CONCRETE_GENSYM_SAME_SHAPE(Int32)
+CONCRETE_GENSYM_SAME_SHAPE(Int64)
+CONCRETE_GENSYM_SAME_SHAPE(Word)
+CONCRETE_GENSYM_SAME_SHAPE(Word8)
+CONCRETE_GENSYM_SAME_SHAPE(Word16)
+CONCRETE_GENSYM_SAME_SHAPE(Word32)
+CONCRETE_GENSYM_SAME_SHAPE(Word64)
+CONCRETE_GENSYM_SAME_SHAPE(B.ByteString)
 
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int Int where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int8 Int8 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int16 Int16 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int32 Int32 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Int64 Int64 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word Word where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word8 Word8 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word16 Word16 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word32 Word32 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool Word64 Word64 where gfresh = return . mrgSingle
-
-instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool B.ByteString B.ByteString where gfresh = return . mrgSingle
-
-instance GenSymSimple Bool Bool where simpleFresh = return
-
-instance GenSymSimple Integer Integer where simpleFresh = return
-
-instance GenSymSimple Char Char where simpleFresh = return
-
-instance GenSymSimple Int Int where simpleFresh = return
-
-instance GenSymSimple Int8 Int8 where simpleFresh = return
-
-instance GenSymSimple Int16 Int16 where simpleFresh = return
-
-instance GenSymSimple Int32 Int32 where simpleFresh = return
-
-instance GenSymSimple Int64 Int64 where simpleFresh = return
-
-instance GenSymSimple Word Word where simpleFresh = return
-
-instance GenSymSimple Word8 Word8 where simpleFresh = return
-
-instance GenSymSimple Word16 Word16 where simpleFresh = return
-
-instance GenSymSimple Word32 Word32 where simpleFresh = return
-
-instance GenSymSimple Word64 Word64 where simpleFresh = return
-
-instance GenSymSimple B.ByteString B.ByteString where simpleFresh = return
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Bool)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Integer)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Char)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Int)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Int8)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Int16)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Int32)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Int64)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word8)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word16)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word32)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word64)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(B.ByteString)
+#endif
 
 -- Bool
 instance (SymBoolOp bool, GenSymSimple () bool) => GGenSym bool () Bool where

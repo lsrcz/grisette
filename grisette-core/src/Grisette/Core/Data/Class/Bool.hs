@@ -117,20 +117,22 @@ instance (SymBoolOp bool) => GSEq bool type where \
   l `gsymeq` r = conc $ l == r; \
   {-# INLINE gsymeq #-}
 
-CONCRETE_SEQ (Bool)
-CONCRETE_SEQ (Integer)
-CONCRETE_SEQ (Char)
-CONCRETE_SEQ (Int)
-CONCRETE_SEQ (Int8)
-CONCRETE_SEQ (Int16)
-CONCRETE_SEQ (Int32)
-CONCRETE_SEQ (Int64)
-CONCRETE_SEQ (Word)
-CONCRETE_SEQ (Word8)
-CONCRETE_SEQ (Word16)
-CONCRETE_SEQ (Word32)
-CONCRETE_SEQ (Word64)
-CONCRETE_SEQ (B.ByteString)
+#if 1
+CONCRETE_SEQ(Bool)
+CONCRETE_SEQ(Integer)
+CONCRETE_SEQ(Char)
+CONCRETE_SEQ(Int)
+CONCRETE_SEQ(Int8)
+CONCRETE_SEQ(Int16)
+CONCRETE_SEQ(Int32)
+CONCRETE_SEQ(Int64)
+CONCRETE_SEQ(Word)
+CONCRETE_SEQ(Word8)
+CONCRETE_SEQ(Word16)
+CONCRETE_SEQ(Word32)
+CONCRETE_SEQ(Word64)
+CONCRETE_SEQ(B.ByteString)
+#endif
 
 -- List
 deriving via (Default [a]) instance (SymBoolOp bool, GSEq bool a) => GSEq bool [a]
