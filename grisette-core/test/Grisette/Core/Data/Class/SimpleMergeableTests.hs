@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Grisette.Core.Data.Class.SimpleMergeableTests where
@@ -331,5 +332,21 @@ simpleMergeableTests =
             runIdentityT i3 @=? mrgSingle (ITE (SSBool "c") (SSBool "a") (SSBool "b"))
             runIdentityT i31 @=? mrgSingle (ITE (SSBool "c") (SSBool "a") (SSBool "b"))
             runIdentityT i3u1 @=? mrgSingle (ITE (SSBool "c") (SSBool "a") (SSBool "b"))
+        ],
+      testGroup
+        "Combinators"
+        [ testCase "simpleMerge" $ do
+            simpleMerge
+              (unionIf "a" (return "b") (return "c") :: UnionMBase SBool SBool)
+              @=? ITE (SSBool "a") (SSBool "b") (SSBool "c"),
+          testCase "onUnion" $ do
+            let symAll = foldl (&&~) (CBool True)
+            let symAllU = onUnion symAll
+            symAllU (unionIf "cond" (return ["a"]) (return ["b", "c"]) :: UnionMBase SBool [SBool])
+              @=? ITE "cond" "a" ("b" &&~ "c"),
+          testCase "(#~)" $ do
+            let symAll = foldl (&&~) (CBool True)
+            symAll #~ (unionIf "cond" (return ["a"]) (return ["b", "c"]) :: UnionMBase SBool [SBool])
+              @=? ITE "cond" "a" ("b" &&~ "c")
         ]
     ]
