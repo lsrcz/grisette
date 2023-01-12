@@ -149,20 +149,22 @@ instance (SymBoolOp bool) => GSOrd bool type where \
   l `gsymgt` r = conc $ l > r; \
   gsymCompare l r = mrgSingle $ compare l r
 
-CONCRETE_SORD (Bool)
-CONCRETE_SORD (Integer)
-CONCRETE_SORD (Char)
-CONCRETE_SORD (Int)
-CONCRETE_SORD (Int8)
-CONCRETE_SORD (Int16)
-CONCRETE_SORD (Int32)
-CONCRETE_SORD (Int64)
-CONCRETE_SORD (Word)
-CONCRETE_SORD (Word8)
-CONCRETE_SORD (Word16)
-CONCRETE_SORD (Word32)
-CONCRETE_SORD (Word64)
-CONCRETE_SORD (B.ByteString)
+#if 1
+CONCRETE_SORD(Bool)
+CONCRETE_SORD(Integer)
+CONCRETE_SORD(Char)
+CONCRETE_SORD(Int)
+CONCRETE_SORD(Int8)
+CONCRETE_SORD(Int16)
+CONCRETE_SORD(Int32)
+CONCRETE_SORD(Int64)
+CONCRETE_SORD(Word)
+CONCRETE_SORD(Word8)
+CONCRETE_SORD(Word16)
+CONCRETE_SORD(Word32)
+CONCRETE_SORD(Word64)
+CONCRETE_SORD(B.ByteString)
+#endif
 
 symCompareSingleList :: (SymBoolOp bool, GSOrd bool a) => Bool -> Bool -> [a] -> [a] -> bool
 symCompareSingleList isLess isStrict = go
