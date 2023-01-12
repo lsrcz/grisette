@@ -78,6 +78,10 @@ module Grisette.Core
     -- withUnionGSimpleMergeableU,
     GMonadUnion,
     simpleMerge,
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
     {-
     mrgReturnWithStrategy,
     mrgBindWithStrategy,
