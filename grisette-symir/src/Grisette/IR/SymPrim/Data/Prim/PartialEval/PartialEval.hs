@@ -15,7 +15,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
-  ( PartialFunc,
+  ( PartialFun,
     PartialRuleUnary,
     TotalRuleUnary,
     PartialRuleBinary,
@@ -33,23 +33,23 @@ where
 import Control.Monad.Except
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 
-type PartialFunc a b = a -> Maybe b
+type PartialFun a b = a -> Maybe b
 
-type PartialRuleUnary a b = PartialFunc (Term a) (Term b)
+type PartialRuleUnary a b = PartialFun (Term a) (Term b)
 
 type TotalRuleUnary a b = Term a -> Term b
 
-type PartialRuleBinary a b c = Term a -> PartialFunc (Term b) (Term c)
+type PartialRuleBinary a b c = Term a -> PartialFun (Term b) (Term c)
 
 type TotalRuleBinary a b c = Term a -> Term b -> Term c
 
-totalize :: PartialFunc a b -> (a -> b) -> a -> b
+totalize :: PartialFun a b -> (a -> b) -> a -> b
 totalize partial fallback a =
   case partial a of
     Just b -> b
     Nothing -> fallback a
 
-totalize2 :: (a -> PartialFunc b c) -> (a -> b -> c) -> a -> b -> c
+totalize2 :: (a -> PartialFun b c) -> (a -> b -> c) -> a -> b -> c
 totalize2 partial fallback a b =
   case partial a b of
     Just c -> c

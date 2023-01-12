@@ -180,8 +180,8 @@ cegisExceptMultiInputs ::
   (Either e v -> CEGISCondition bool) ->
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
-cegisExceptMultiInputs config cexes interpretFunc f =
-  cegisMultiInputs config cexes (simpleMerge . (interpretFunc <$>) . extractUnionExcept . f)
+cegisExceptMultiInputs config cexes interpretFun f =
+  cegisMultiInputs config cexes (simpleMerge . (interpretFun <$>) . extractUnionExcept . f)
 
 -- |
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
@@ -202,7 +202,7 @@ cegisExceptVCMultiInputs ::
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->
   IO (Either failure ([inputs], model))
-cegisExceptVCMultiInputs config cexes interpretFunc f =
+cegisExceptVCMultiInputs config cexes interpretFun f =
   cegisMultiInputs
     config
     cexes
@@ -213,7 +213,7 @@ cegisExceptVCMultiInputs config cexes interpretFunc f =
                 Left AssertionViolation -> cegisPostCond (con False)
                 _ -> cegisPostCond (con True)
             )
-              <$> (extractUnionExcept (f v) >>= interpretFunc)
+              <$> (extractUnionExcept (f v) >>= interpretFun)
           )
     )
 

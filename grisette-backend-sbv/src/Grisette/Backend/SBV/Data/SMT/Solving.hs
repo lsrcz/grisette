@@ -56,7 +56,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.IR.SymPrim.Data.TabularFunc
+import Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
@@ -224,7 +224,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
     (inputs -> CEGISCondition SymBool) ->
     IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
   cegisMultiInputs config inputs func =
-    go1 (cexesAssertFunc conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
+    go1 (cexesAssertFun conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
     where
       (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
       go1 cexFormula cexes previousModel inputs pre post remainingSymInputs = do
@@ -239,17 +239,17 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
               Left failure -> return $ Left failure
               Right (newCexes, mo) -> do
                 go1
-                  (cexFormula &&~ cexesAssertFunc newCexes)
+                  (cexFormula &&~ cexesAssertFun newCexes)
                   (cexes ++ newCexes)
                   mo
                   (newInput : inputs)
                   finalPre
                   finalPost
                   vs
-      cexAssertFunc input =
+      cexAssertFun input =
         let CEGISCondition pre post = func input in pre &&~ post
-      cexesAssertFunc :: [inputs] -> SymBool
-      cexesAssertFunc = foldl (\acc x -> acc &&~ cexAssertFunc x) (con True)
+      cexesAssertFun :: [inputs] -> SymBool
+      cexesAssertFun = foldl (\acc x -> acc &&~ cexAssertFun x) (con True)
       go ::
         SymBool ->
         inputs ->

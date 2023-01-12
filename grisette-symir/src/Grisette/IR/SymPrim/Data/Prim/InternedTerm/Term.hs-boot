@@ -29,7 +29,7 @@ import Data.Kind
 import GHC.TypeNats
 import Grisette.Core
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFunc
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Type.Reflection
 
@@ -194,7 +194,7 @@ data Term t where
     !(TypeRep n) ->
     !(Term (bv a)) ->
     Term (bv b)
-  TabularFuncApplyTerm ::
+  TabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -202,7 +202,7 @@ data Term t where
     Term (a =-> b) ->
     Term a ->
     Term b
-  GeneralFuncApplyTerm ::
+  GeneralFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -284,14 +284,14 @@ data UTerm t where
     !(TypeRep n) ->
     !(Term (bv a)) ->
     UTerm (bv b)
-  UTabularFuncApplyTerm ::
+  UTabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
     Term (a =-> b) ->
     Term a ->
     UTerm b
-  UGeneralFuncApplyTerm ::
+  UGeneralFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -302,6 +302,6 @@ data UTerm t where
   UModIntegerTerm :: Term Integer -> Term Integer -> UTerm Integer
 
 data (-->) a b where
-  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+  GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 infixr 0 -->

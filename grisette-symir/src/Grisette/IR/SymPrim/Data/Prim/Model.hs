@@ -42,10 +42,10 @@ import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Type.Reflection
 import Unsafe.Coerce
 
@@ -324,10 +324,10 @@ evaluateSomeTerm fillDefault (Model ma) = gomemo
       goUnary (pevalBVSelectTerm ix w) arg
     go (SomeTerm (BVExtendTerm _ n signed arg)) =
       goUnary (pevalBVExtendTerm n signed) arg
-    go (SomeTerm (TabularFuncApplyTerm _ f arg)) =
-      goBinary pevalTabularFuncApplyTerm f arg
-    go (SomeTerm (GeneralFuncApplyTerm _ f arg)) =
-      goBinary pevalGeneralFuncApplyTerm f arg
+    go (SomeTerm (TabularFunApplyTerm _ f arg)) =
+      goBinary pevalTabularFunApplyTerm f arg
+    go (SomeTerm (GeneralFunApplyTerm _ f arg)) =
+      goBinary pevalGeneralFunApplyTerm f arg
     go (SomeTerm (DivIntegerTerm _ arg1 arg2)) =
       goBinary pevalDivIntegerTerm arg1 arg2
     go (SomeTerm (ModIntegerTerm _ arg1 arg2)) =

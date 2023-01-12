@@ -47,9 +47,9 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.IR.SymPrim.Data.TabularFunc
+import Grisette.IR.SymPrim.Data.TabularFun
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding ((.&.))
@@ -400,11 +400,11 @@ symPrimTests =
                 ]
             ],
       testGroup
-        "TabularFunc"
+        "TabularFun"
         [ testCase "apply" $ do
             (ssym "a" :: Integer =~> Integer)
               # ssym "b"
-              @=? Sym (pevalTabularFuncApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b"))
+              @=? Sym (pevalTabularFunApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b"))
         ],
       testGroup
         "Symbolic size"

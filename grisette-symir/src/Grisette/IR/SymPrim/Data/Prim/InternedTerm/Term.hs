@@ -35,7 +35,7 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     someTypedSymbol,
     Term (..),
     UTerm (..),
-    FuncArg (..),
+    FunArg (..),
     type (-->) (..),
   )
 where
@@ -59,7 +59,7 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitutio
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import Grisette.IR.SymPrim.Data.Prim.Utils
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFunc
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat
 import Type.Reflection
@@ -344,7 +344,7 @@ data Term t where
     !(TypeRep n) ->
     !(Term (bv a)) ->
     Term (bv b)
-  TabularFuncApplyTerm ::
+  TabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -352,7 +352,7 @@ data Term t where
     Term (a =-> b) ->
     Term a ->
     Term b
-  GeneralFuncApplyTerm ::
+  GeneralFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -394,8 +394,8 @@ instance Lift (Term t) where
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
   liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) = [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
   liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) = [||bvextendTerm signed (Proxy @n) arg||]
-  liftTyped (TabularFuncApplyTerm _ func arg) = [||tabularFuncApplyTerm func arg||]
-  liftTyped (GeneralFuncApplyTerm _ func arg) = [||generalFuncApplyTerm func arg||]
+  liftTyped (TabularFunApplyTerm _ func arg) = [||tabularFunApplyTerm func arg||]
+  liftTyped (GeneralFunApplyTerm _ func arg) = [||generalFunApplyTerm func arg||]
   liftTyped (DivIntegerTerm _ arg1 arg2) = [||divIntegerTerm arg1 arg2||]
   liftTyped (ModIntegerTerm _ arg1 arg2) = [||modIntegerTerm arg1 arg2||]
 
@@ -464,10 +464,10 @@ instance Show (Term ty) where
     "BVSelect{id=" ++ show i ++ ", ix=" ++ show ix ++ ", w=" ++ show w ++ ", arg=" ++ show arg ++ "}"
   show (BVExtendTerm i signed n arg) =
     "BVExtend{id=" ++ show i ++ ", signed=" ++ show signed ++ ", n=" ++ show n ++ ", arg=" ++ show arg ++ "}"
-  show (TabularFuncApplyTerm i func arg) =
-    "TabularFuncApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
-  show (GeneralFuncApplyTerm i func arg) =
-    "GeneralFuncApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
+  show (TabularFunApplyTerm i func arg) =
+    "TabularFunApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
+  show (GeneralFunApplyTerm i func arg) =
+    "GeneralFunApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
   show (DivIntegerTerm i arg1 arg2) =
     "DivInteger{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (ModIntegerTerm i arg1 arg2) =
@@ -550,14 +550,14 @@ data UTerm t where
     !(TypeRep n) ->
     !(Term (bv a)) ->
     UTerm (bv b)
-  UTabularFuncApplyTerm ::
+  UTabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
     Term (a =-> b) ->
     Term a ->
     UTerm b
-  UGeneralFuncApplyTerm ::
+  UGeneralFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -628,11 +628,11 @@ instance (SupportedPrim t) => Interned (Term t) where
       !(TypeRep n) ->
       {-# UNPACK #-} !(TypeRep (bv a), Id) ->
       Description (Term (bv b))
-    DTabularFuncApplyTerm ::
+    DTabularFunApplyTerm ::
       {-# UNPACK #-} !(TypeRep (a =-> b), Id) ->
       {-# UNPACK #-} !(TypeRep a, Id) ->
       Description (Term b)
-    DGeneralFuncApplyTerm ::
+    DGeneralFunApplyTerm ::
       {-# UNPACK #-} !(TypeRep (a --> b), Id) ->
       {-# UNPACK #-} !(TypeRep a, Id) ->
       Description (Term b)
@@ -675,10 +675,10 @@ instance (SupportedPrim t) => Interned (Term t) where
     DBVSelectTerm ix (typeRep :: TypeRep arg, identity arg)
   describe (UBVExtendTerm signed (n :: TypeRep n) (arg :: Term arg)) =
     DBVExtendTerm signed n (typeRep :: TypeRep arg, identity arg)
-  describe (UTabularFuncApplyTerm (func :: Term f) (arg :: Term a)) =
-    DTabularFuncApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
-  describe (UGeneralFuncApplyTerm (func :: Term f) (arg :: Term a)) =
-    DGeneralFuncApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
+  describe (UTabularFunApplyTerm (func :: Term f) (arg :: Term a)) =
+    DTabularFunApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
+  describe (UGeneralFunApplyTerm (func :: Term f) (arg :: Term a)) =
+    DGeneralFunApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
   describe (UDivIntegerTerm arg1 arg2) = DDivIntegerTerm (identity arg1) (identity arg2)
   describe (UModIntegerTerm arg1 arg2) = DModIntegerTerm (identity arg1) (identity arg2)
   identify i = go
@@ -709,8 +709,8 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
       go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
       go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
-      go (UTabularFuncApplyTerm func arg) = TabularFuncApplyTerm i func arg
-      go (UGeneralFuncApplyTerm func arg) = GeneralFuncApplyTerm i func arg
+      go (UTabularFunApplyTerm func arg) = TabularFunApplyTerm i func arg
+      go (UGeneralFunApplyTerm func arg) = GeneralFunApplyTerm i func arg
       go (UDivIntegerTerm arg1 arg2) = DivIntegerTerm i arg1 arg2
       go (UModIntegerTerm arg1 arg2) = ModIntegerTerm i arg1 arg2
   cache = termCache
@@ -749,8 +749,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
     lIsSigned == rIsSigned
       && eqTypeRepBool ln rn
       && eqTypedId li ri
-  DTabularFuncApplyTerm lf li == DTabularFuncApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
-  DGeneralFuncApplyTerm lf li == DGeneralFuncApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
+  DTabularFunApplyTerm lf li == DTabularFunApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
+  DGeneralFunApplyTerm lf li == DGeneralFunApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
   DDivIntegerTerm li1 li2 == DDivIntegerTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DModIntegerTerm li1 li2 == DModIntegerTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   _ == _ = False
@@ -802,8 +802,8 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
       `hashWithSalt` signed
       `hashWithSalt` n
       `hashWithSalt` id1
-  hashWithSalt s (DTabularFuncApplyTerm id1 id2) = s `hashWithSalt` (26 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DGeneralFuncApplyTerm id1 id2) = s `hashWithSalt` (27 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DTabularFunApplyTerm id1 id2) = s `hashWithSalt` (26 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DGeneralFunApplyTerm id1 id2) = s `hashWithSalt` (27 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DDivIntegerTerm id1 id2) = s `hashWithSalt` (28 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DModIntegerTerm id1 id2) = s `hashWithSalt` (29 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
 
@@ -844,7 +844,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   pformatCon = show
   defaultValue = 0
 
-data FuncArg = FuncArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
+data FunArg = FunArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
 
 -- | General symbolic function type. Use the '#' operator to apply the function.
 -- Note that this function should be applied to symbolic values only. It is by
@@ -862,25 +862,25 @@ data FuncArg = FuncArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
 -- >>> f # "a"  -- "a" has the type SymInteger
 -- (+ 1 (+ a y))
 data (-->) a b where
-  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+  GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 infixr 0 -->
 
 instance Eq (a --> b) where
-  GeneralFunc sym1 tm1 == GeneralFunc sym2 tm2 = sym1 == sym2 && tm1 == tm2
+  GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
 
 instance Show (a --> b) where
-  show (GeneralFunc sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
+  show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
 
 instance Lift (a --> b) where
-  liftTyped (GeneralFunc sym tm) = [||GeneralFunc sym tm||]
+  liftTyped (GeneralFun sym tm) = [||GeneralFun sym tm||]
 
 instance Hashable (a --> b) where
-  s `hashWithSalt` (GeneralFunc sym tm) = s `hashWithSalt` sym `hashWithSalt` tm
+  s `hashWithSalt` (GeneralFun sym tm) = s `hashWithSalt` sym `hashWithSalt` tm
 
 instance NFData (a --> b) where
-  rnf (GeneralFunc sym tm) = rnf sym `seq` rnf tm
+  rnf (GeneralFun sym tm) = rnf sym `seq` rnf tm
 
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = GeneralFunc (WithInfo (SimpleSymbol "a") FuncArg) (conTerm defaultValue)
+  defaultValue = GeneralFun (WithInfo (SimpleSymbol "a") FunArg) (conTerm defaultValue)

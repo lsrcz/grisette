@@ -89,11 +89,11 @@ augmentNormalCExpr :: Int -> Exp -> Q Exp
 augmentNormalCExpr n f = do
   xs <- replicateM n (newName "x")
   let args = map VarP xs
-  mrgSingleFunc <- [|mrgSingle|]
+  mrgSingleFun <- [|mrgSingle|]
   return $
     LamE
       args
-      ( AppE mrgSingleFunc $
+      ( AppE mrgSingleFun $
           foldl AppE f (map VarE xs)
       )
 

@@ -34,8 +34,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     bvextendTerm,
     bvsignExtendTerm,
     bvzeroExtendTerm,
-    tabularFuncApplyTerm,
-    generalFuncApplyTerm,
+    tabularFunApplyTerm,
+    generalFunApplyTerm,
     divIntegerTerm,
     modIntegerTerm,
   )
@@ -48,7 +48,7 @@ import Data.Typeable
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFunc
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 
 constructUnary ::
@@ -167,7 +167,7 @@ bvzeroExtendTerm ::
   proxy n ->
   Term (bv a) ->
   Term (bv w)
-tabularFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
-generalFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
+tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
+generalFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
 divIntegerTerm :: Term Integer -> Term Integer -> Term Integer
 modIntegerTerm :: Term Integer -> Term Integer -> Term Integer

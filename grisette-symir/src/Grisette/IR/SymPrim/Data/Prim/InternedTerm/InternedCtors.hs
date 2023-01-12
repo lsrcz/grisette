@@ -46,8 +46,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     bvextendTerm,
     bvsignExtendTerm,
     bvzeroExtendTerm,
-    tabularFuncApplyTerm,
-    generalFuncApplyTerm,
+    tabularFunApplyTerm,
+    generalFunApplyTerm,
     divIntegerTerm,
     modIntegerTerm,
   )
@@ -65,7 +65,7 @@ import GHC.IO (unsafeDupablePerformIO)
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFunc
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Type.Reflection
 
@@ -293,13 +293,13 @@ bvzeroExtendTerm ::
 bvzeroExtendTerm _ v = internTerm $ UBVExtendTerm False (typeRep @n) v
 {-# INLINE bvzeroExtendTerm #-}
 
-tabularFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
-tabularFuncApplyTerm f a = internTerm $ UTabularFuncApplyTerm f a
-{-# INLINE tabularFuncApplyTerm #-}
+tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
+tabularFunApplyTerm f a = internTerm $ UTabularFunApplyTerm f a
+{-# INLINE tabularFunApplyTerm #-}
 
-generalFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
-generalFuncApplyTerm f a = internTerm $ UGeneralFuncApplyTerm f a
-{-# INLINE generalFuncApplyTerm #-}
+generalFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
+generalFunApplyTerm f a = internTerm $ UGeneralFunApplyTerm f a
+{-# INLINE generalFunApplyTerm #-}
 
 divIntegerTerm :: Term Integer -> Term Integer -> Term Integer
 divIntegerTerm l r = internTerm $ UDivIntegerTerm l r

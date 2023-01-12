@@ -71,11 +71,11 @@ import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
-import Grisette.IR.SymPrim.Data.TabularFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
+import Grisette.IR.SymPrim.Data.TabularFun
 import Grisette.Lib.Control.Monad
 import Language.Haskell.TH.Syntax
 
@@ -111,7 +111,7 @@ import Language.Haskell.TH.Syntax
 -- > >>> solve (UnboundedReasoning z3) (ftab # 1 ==~ 2 &&~ ftab # 2 ==~ 3 &&~ ftab # 3 ==~ 4)
 -- > Right (Model {
 -- >   ftab ->
--- >     TabularFunc {funcTable = [(3,4),(2,3)], defaultFuncValue = 2}
+-- >     TabularFun {funcTable = [(3,4),(2,3)], defaultFuncValue = 2}
 -- >       :: (=->) Integer Integer
 -- > }) -- possible result (reformatted)
 --
@@ -436,7 +436,7 @@ infixr 0 =~>
 instance (SupportedPrim a, SupportedPrim b) => Function (a =~> b) where
   type Arg (a =~> b) = Sym a
   type Ret (a =~> b) = Sym b
-  (Sym f) # (Sym t) = Sym $ pevalTabularFuncApplyTerm f t
+  (Sym f) # (Sym t) = Sym $ pevalTabularFunApplyTerm f t
 
 -- |
 -- Symbolic general function type.
@@ -447,7 +447,7 @@ infixr 0 -~>
 instance (SupportedPrim a, SupportedPrim b) => Function (a -~> b) where
   type Arg (a -~> b) = Sym a
   type Ret (a -~> b) = Sym b
-  (Sym f) # (Sym t) = Sym $ pevalGeneralFuncApplyTerm f t
+  (Sym f) # (Sym t) = Sym $ pevalGeneralFunApplyTerm f t
 
 -- | Get the sum of the sizes of a list of symbolic terms.
 -- Duplicate sub-terms are counted for only once.
@@ -666,8 +666,8 @@ instance GSubstituteSymSymbol TypedSymbol Sym
 instance (SupportedPrim a, SupportedPrim b) => Function (a --> b) where
   type Arg (a --> b) = Sym a
   type Ret (a --> b) = Sym b
-  (GeneralFunc arg tm) # (Sym v) = Sym $ substTerm arg v tm
+  (GeneralFun arg tm) # (Sym v) = Sym $ substTerm arg v tm
 
 -- | Construction of general symbolic functions.
 (-->) :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Sym b -> a --> b
-(-->) arg (Sym v) = GeneralFunc arg v
+(-->) arg (Sym v) = GeneralFun arg v

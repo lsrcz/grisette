@@ -7,9 +7,9 @@ import Grisette.IR.SymPrim.Data.Prim.BoolTests
 import Grisette.IR.SymPrim.Data.Prim.IntegerTests
 import Grisette.IR.SymPrim.Data.Prim.ModelTests
 import Grisette.IR.SymPrim.Data.Prim.NumTests
-import qualified Grisette.IR.SymPrim.Data.Prim.TabularFuncTests
+import qualified Grisette.IR.SymPrim.Data.Prim.TabularFunTests
 import Grisette.IR.SymPrim.Data.SymPrimTests
-import qualified Grisette.IR.SymPrim.Data.TabularFuncTests
+import qualified Grisette.IR.SymPrim.Data.TabularFunTests
 import Test.Tasty
 import Test.Tasty.Ingredients
 import qualified Test.Tasty.Ingredients.ConsoleReporter as ConsoleReporter
@@ -32,10 +32,10 @@ tests =
               integerTests,
               modelTests,
               numTests,
-              Grisette.IR.SymPrim.Data.Prim.TabularFuncTests.tabularFuncTests
+              Grisette.IR.SymPrim.Data.Prim.TabularFunTests.tabularFunTests
             ],
           Grisette.IR.SymPrim.Data.BVTests.bvTests,
           symPrimTests,
-          Grisette.IR.SymPrim.Data.TabularFuncTests.tabularFuncTests
+          Grisette.IR.SymPrim.Data.TabularFunTests.tabularFunTests
         ]
     ]
