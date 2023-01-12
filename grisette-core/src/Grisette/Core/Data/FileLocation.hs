@@ -24,8 +24,8 @@ module Grisette.Core.Data.FileLocation
     -- * Symbolic constant generation with location
     FileLocation (..),
     nameWithLoc,
-    slocsymb,
-    ilocsymb,
+    slocsym,
+    ilocsym,
   )
 where
 
@@ -70,28 +70,28 @@ nameWithLoc s = [||nameWithInfo s (parseFileLocation $$(liftSplice $ unsafeTExpC
 -- | Generate simply-named symbolic variables. The file location will be
 -- attached to the identifier.
 --
--- >>> $$(slocsymb "a") :: SymBool
+-- >>> $$(slocsym "a") :: SymBool
 -- a:<interactive>:...
 --
 -- Calling 'slocsymb' with the same name at different location will always
 -- generate different symbolic constants. Calling 'slocsymb' at the same
 -- location for multiple times will generate the same symbolic constants.
 --
--- >>> ($$(slocsymb "a") :: SymBool) == $$(slocsymb "a")
+-- >>> ($$(slocsym "a") :: SymBool) == $$(slocsym "a")
 -- False
--- >>> let f _ = $$(slocsymb "a") :: SymBool
+-- >>> let f _ = $$(slocsym "a") :: SymBool
 -- >>> f () == f ()
 -- True
-slocsymb :: (Solvable c s) => String -> SpliceQ s
-slocsymb nm = [||sinfosymb nm (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
+slocsym :: (Solvable c s) => String -> SpliceQ s
+slocsym nm = [||sinfosym nm (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
 
 -- | Generate indexed symbolic variables. The file location will be attached to identifier.
 --
--- >>> $$(ilocsymb "a" 1) :: SymBool
+-- >>> $$(ilocsym "a" 1) :: SymBool
 -- a@1:<interactive>:...
 --
 -- Calling 'ilocsymb' with the same name and index at different location will
 -- always generate different symbolic constants. Calling 'slocsymb' at the same
 -- location for multiple times will generate the same symbolic constants.
-ilocsymb :: (Solvable c s) => String -> Int -> SpliceQ s
-ilocsymb nm idx = [||iinfosymb nm idx (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
+ilocsym :: (Solvable c s) => String -> Int -> SpliceQ s
+ilocsym nm idx = [||iinfosym nm idx (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]

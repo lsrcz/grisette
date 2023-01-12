@@ -23,5 +23,5 @@ pevalGeneralFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b
 pevalGeneralFuncApplyTerm = totalize2 doPevalGeneralFuncApplyTerm generalFuncApplyTerm
 
 doPevalGeneralFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Maybe (Term b)
-doPevalGeneralFuncApplyTerm (ConcTerm _ (GeneralFunc arg tm)) v = Just $ substTerm arg v tm
+doPevalGeneralFuncApplyTerm (ConTerm _ (GeneralFunc arg tm)) v = Just $ substTerm arg v tm
 doPevalGeneralFuncApplyTerm _ _ = Nothing

@@ -131,17 +131,6 @@ newtype Sym a = Sym {underlyingTerm :: Term a} deriving (Lift, Generic)
 instance NFData (Sym a) where
   rnf (Sym t) = rnf t
 
-{-
-class SupportedPrim a => SymConcView a where
-  symConcView :: Sym a -> Maybe a
-
-pattern SymConc :: SymConcView a => a -> Sym a
-pattern SymConc c <-
-  (Sym (ConcTerm _ c))
-  where
-    SymConc c = conc c
-    -}
-
 instance (SupportedPrim a) => ITEOp (Sym Bool) (Sym a) where
   ites (Sym c) (Sym t) (Sym f) = Sym $ pevalITETerm c t f
 
@@ -152,28 +141,28 @@ instance (SupportedPrim a) => GSimpleMergeable (Sym Bool) (Sym a) where
   gmrgIte = ites
 
 instance (SupportedPrim a) => Solvable a (Sym a) where
-  conc = Sym . concTerm
-  ssymb = Sym . ssymbTerm
-  isymb str i = Sym $ isymbTerm str i
-  sinfosymb str info = Sym $ sinfosymbTerm str info
-  iinfosymb str i info = Sym $ iinfosymbTerm str i info
-  concView (Sym (ConcTerm _ t)) = Just t
-  concView _ = Nothing
+  con = Sym . conTerm
+  ssym = Sym . ssymTerm
+  isym str i = Sym $ isymTerm str i
+  sinfosym str info = Sym $ sinfosymTerm str info
+  iinfosym str i info = Sym $ iinfosymTerm str i info
+  conView (Sym (ConTerm _ t)) = Just t
+  conView _ = Nothing
 
 instance (SupportedPrim t) => IsString (Sym t) where
-  fromString = ssymb
+  fromString = ssym
 
 instance (SupportedPrim a) => ToSym (Sym a) (Sym a) where
   toSym = id
 
 instance (SupportedPrim a) => ToSym a (Sym a) where
-  toSym = conc
+  toSym = con
 
 instance (SupportedPrim a) => ToCon (Sym a) (Sym a) where
   toCon = Just
 
 instance (SupportedPrim a) => ToCon (Sym a) a where
-  toCon = concView
+  toCon = conView
 
 instance (SupportedPrim a) => GEvaluateSym Model (Sym a) where
   gevaluateSym fillDefault model (Sym t) = Sym $ evaluateTerm fillDefault model t
@@ -189,8 +178,8 @@ instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSymSimple () (Sym a) wher
     ident <- getFreshIdent
     FreshIndex i <- nextFreshIndex
     case ident of
-      FreshIdent s -> return $ isymb s i
-      FreshIdentWithInfo s info -> return $ iinfosymb s i info
+      FreshIdent s -> return $ isym s i
+      FreshIdentWithInfo s info -> return $ iinfosym s i info
 
 instance (SymBoolOp (Sym Bool), SupportedPrim a) => GenSym (Sym Bool) (Sym a) (Sym a)
 
@@ -265,17 +254,17 @@ instance Num (Sym Integer) where
   negate (Sym v) = Sym $ pevalUMinusNumTerm v
   abs (Sym v) = Sym $ pevalAbsNumTerm v
   signum (Sym v) = Sym $ pevalSignumNumTerm v
-  fromInteger = conc
+  fromInteger = con
 
 instance SignedDivMod (Sym Bool) (Sym Integer) where
   divs (Sym l) rs@(Sym r) =
     mrgIf @(Sym Bool)
-      (rs `gsymeq` conc 0)
+      (rs `gsymeq` con 0)
       (throwError $ transformError DivideByZero)
       (mrgReturn $ Sym $ pevalDivIntegerTerm l r)
   mods (Sym l) rs@(Sym r) =
     mrgIf @(Sym Bool)
-      (rs `gsymeq` conc 0)
+      (rs `gsymeq` con 0)
       (throwError $ transformError DivideByZero)
       (mrgReturn $ Sym $ pevalModIntegerTerm l r)
 
@@ -291,7 +280,7 @@ instance (SupportedPrim (IntN n)) => Num (Sym (IntN n)) where
   negate (Sym v) = Sym $ withPrim (Proxy @(IntN n)) $ pevalUMinusNumTerm v
   abs (Sym v) = Sym $ withPrim (Proxy @(IntN n)) $ pevalAbsNumTerm v
   signum (Sym v) = Sym $ withPrim (Proxy @(IntN n)) $ pevalSignumNumTerm v
-  fromInteger i = withPrim (Proxy @(IntN n)) $ conc $ fromInteger i
+  fromInteger i = withPrim (Proxy @(IntN n)) $ con $ fromInteger i
 
 instance (SupportedPrim (IntN n)) => Bits (Sym (IntN n)) where
   Sym l .&. Sym r = Sym $ withPrim (Proxy @(IntN n)) $ pevalAndBitsTerm l r
@@ -303,10 +292,10 @@ instance (SupportedPrim (IntN n)) => Bits (Sym (IntN n)) where
   bitSize _ = fromInteger $ withPrim (Proxy @(IntN n)) $ natVal (Proxy @n)
   bitSizeMaybe _ = Just $ fromInteger $ withPrim (Proxy @(IntN n)) $ natVal (Proxy @n)
   isSigned _ = True
-  testBit (Conc n) = withPrim (Proxy @(IntN n)) $ testBit n
+  testBit (Con n) = withPrim (Proxy @(IntN n)) $ testBit n
   testBit _ = error "You cannot call testBit on symbolic variables"
-  bit = withPrim (Proxy @(IntN n)) $ conc . bit
-  popCount (Conc n) = withPrim (Proxy @(IntN n)) $ popCount n
+  bit = withPrim (Proxy @(IntN n)) $ con . bit
+  popCount (Con n) = withPrim (Proxy @(IntN n)) $ popCount n
   popCount _ = error "You cannot call popCount on symbolic variables"
 
 instance
@@ -349,7 +338,7 @@ instance ToSym int (Sym (bv)) where \
 
 #define TOCON_MACHINE_INTEGER(bvw, n, int) \
 instance ToCon (Sym (bvw n)) int where \
-  toCon (Conc (bvw v :: bvw n)) = Just $ fromIntegral v; \
+  toCon (Con (bvw v :: bvw n)) = Just $ fromIntegral v; \
   toCon _ = Nothing
 
 #if 1
@@ -386,7 +375,7 @@ instance (SupportedPrim (WordN n)) => Num (Sym (WordN n)) where
   negate (Sym v) = Sym $ withPrim (Proxy @(WordN n)) $ pevalUMinusNumTerm v
   abs (Sym v) = Sym $ withPrim (Proxy @(WordN n)) $ pevalAbsNumTerm v
   signum (Sym v) = Sym $ withPrim (Proxy @(WordN n)) $ pevalSignumNumTerm v
-  fromInteger i = withPrim (Proxy @(WordN n)) $ conc $ fromInteger i
+  fromInteger i = withPrim (Proxy @(WordN n)) $ con $ fromInteger i
 
 instance
   (KnownNat w', KnownNat n, KnownNat w, w' ~ (n + w), 1 <= n, 1 <= w, 1 <= w') =>
@@ -432,10 +421,10 @@ instance (SupportedPrim (WordN n)) => Bits (Sym (WordN n)) where
   bitSize _ = fromInteger $ withPrim (Proxy @(WordN n)) $ natVal (Proxy @n)
   bitSizeMaybe _ = Just $ fromInteger $ withPrim (Proxy @(WordN n)) $ natVal (Proxy @n)
   isSigned _ = False
-  testBit (Conc n) = withPrim (Proxy @(WordN n)) $ testBit n
+  testBit (Con n) = withPrim (Proxy @(WordN n)) $ testBit n
   testBit _ = error "You cannot call testBit on symbolic variables"
-  bit = withPrim (Proxy @(WordN n)) $ conc . bit
-  popCount (Conc n) = withPrim (Proxy @(WordN n)) $ popCount n
+  bit = withPrim (Proxy @(WordN n)) $ con . bit
+  popCount (Con n) = withPrim (Proxy @(WordN n)) $ popCount n
   popCount _ = error "You cannot call popCount on symbolic variables"
 
 -- |
@@ -473,7 +462,7 @@ symSize = termSize . underlyingTerm
 data ModelSymPair t = (Sym t) := t deriving (Show)
 
 instance ModelRep (ModelSymPair t) Model SymbolSet TypedSymbol where
-  buildModel (Sym (SymbTerm _ sym) := val) = insertValue sym val emptyModel
+  buildModel (Sym (SymTerm _ sym) := val) = insertValue sym val emptyModel
   buildModel _ = error "buildModel: should only use symbolic constants"
 
 instance
@@ -486,8 +475,8 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2
@@ -505,9 +494,9 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2,
-      Sym (SymbTerm _ sym3) := val3
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2,
+      Sym (SymTerm _ sym3) := val3
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2
@@ -527,10 +516,10 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2,
-      Sym (SymbTerm _ sym3) := val3,
-      Sym (SymbTerm _ sym4) := val4
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2,
+      Sym (SymTerm _ sym3) := val3,
+      Sym (SymTerm _ sym4) := val4
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2
@@ -552,11 +541,11 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2,
-      Sym (SymbTerm _ sym3) := val3,
-      Sym (SymbTerm _ sym4) := val4,
-      Sym (SymbTerm _ sym5) := val5
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2,
+      Sym (SymTerm _ sym3) := val3,
+      Sym (SymTerm _ sym4) := val4,
+      Sym (SymTerm _ sym5) := val5
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2
@@ -580,12 +569,12 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2,
-      Sym (SymbTerm _ sym3) := val3,
-      Sym (SymbTerm _ sym4) := val4,
-      Sym (SymbTerm _ sym5) := val5,
-      Sym (SymbTerm _ sym6) := val6
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2,
+      Sym (SymTerm _ sym3) := val3,
+      Sym (SymTerm _ sym4) := val4,
+      Sym (SymTerm _ sym5) := val5,
+      Sym (SymTerm _ sym6) := val6
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2
@@ -611,13 +600,13 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2,
-      Sym (SymbTerm _ sym3) := val3,
-      Sym (SymbTerm _ sym4) := val4,
-      Sym (SymbTerm _ sym5) := val5,
-      Sym (SymbTerm _ sym6) := val6,
-      Sym (SymbTerm _ sym7) := val7
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2,
+      Sym (SymTerm _ sym3) := val3,
+      Sym (SymTerm _ sym4) := val4,
+      Sym (SymTerm _ sym5) := val5,
+      Sym (SymTerm _ sym6) := val6,
+      Sym (SymTerm _ sym7) := val7
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2
@@ -645,14 +634,14 @@ instance
     TypedSymbol
   where
   buildModel
-    ( Sym (SymbTerm _ sym1) := val1,
-      Sym (SymbTerm _ sym2) := val2,
-      Sym (SymbTerm _ sym3) := val3,
-      Sym (SymbTerm _ sym4) := val4,
-      Sym (SymbTerm _ sym5) := val5,
-      Sym (SymbTerm _ sym6) := val6,
-      Sym (SymbTerm _ sym7) := val7,
-      Sym (SymbTerm _ sym8) := val8
+    ( Sym (SymTerm _ sym1) := val1,
+      Sym (SymTerm _ sym2) := val2,
+      Sym (SymTerm _ sym3) := val3,
+      Sym (SymTerm _ sym4) := val4,
+      Sym (SymTerm _ sym5) := val5,
+      Sym (SymTerm _ sym6) := val6,
+      Sym (SymTerm _ sym7) := val7,
+      Sym (SymTerm _ sym8) := val8
       ) =
       insertValue sym1 val1
         . insertValue sym2 val2

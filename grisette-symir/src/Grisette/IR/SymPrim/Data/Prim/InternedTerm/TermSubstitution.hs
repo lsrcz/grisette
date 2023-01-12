@@ -37,17 +37,17 @@ substTerm sym term = gov
     go :: SomeTerm -> SomeTerm
     go = htmemo $ \stm@(SomeTerm (tm :: Term v)) ->
       case tm of
-        ConcTerm _ cv -> case (typeRep :: TypeRep v) of
+        ConTerm _ cv -> case (typeRep :: TypeRep v) of
           App (App gf _) _ ->
             case eqTypeRep gf (typeRep @(-->)) of
               Just HRefl -> case cv of
                 GeneralFunc sym1 tm1 ->
                   if someTypedSymbol sym1 == someTypedSymbol sym
                     then stm
-                    else SomeTerm $ concTerm $ GeneralFunc sym1 (gov tm1)
+                    else SomeTerm $ conTerm $ GeneralFunc sym1 (gov tm1)
               Nothing -> stm
           _ -> stm
-        SymbTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
+        SymTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
         UnaryTerm _ tag te -> SomeTerm $ partialEvalUnary tag (gov te)
         BinaryTerm _ tag te te' -> SomeTerm $ partialEvalBinary tag (gov te) (gov te')
         TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ partialEvalTernary tag (gov op1) (gov op2) (gov op3)

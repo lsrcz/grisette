@@ -86,7 +86,7 @@ instance Show Model where
 equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
 equation tsym m = withSymbolSupported tsym $
   case valueOf tsym m of
-    Just v -> Just $ pevalEqvTerm (symbTerm tsym) (concTerm v)
+    Just v -> Just $ pevalEqvTerm (symTerm tsym) (conTerm v)
     Nothing -> Nothing
 
 instance SymbolSetOps SymbolSet TypedSymbol where
@@ -277,11 +277,11 @@ evaluateSomeTerm fillDefault (Model ma) = gomemo
     gotyped :: (SupportedPrim a) => Term a -> Term a
     gotyped a = case gomemo (SomeTerm a) of
       SomeTerm v -> unsafeCoerce v
-    go c@(SomeTerm ConcTerm {}) = c
-    go c@(SomeTerm ((SymbTerm _ sym) :: Term a)) =
+    go c@(SomeTerm ConTerm {}) = c
+    go c@(SomeTerm ((SymTerm _ sym) :: Term a)) =
       case M.lookup (someTypedSymbol sym) ma of
-        Nothing -> if fillDefault then SomeTerm $ concTerm (defaultValue @a) else c
-        Just dy -> SomeTerm $ concTerm (unsafeFromModelValue @a dy)
+        Nothing -> if fillDefault then SomeTerm $ conTerm (defaultValue @a) else c
+        Just dy -> SomeTerm $ conTerm (unsafeFromModelValue @a dy)
     go (SomeTerm (UnaryTerm _ tag (arg :: Term a))) = goUnary (partialEvalUnary tag) arg
     go (SomeTerm (BinaryTerm _ tag (arg1 :: Term a1) (arg2 :: Term a2))) =
       goBinary (partialEvalBinary tag) arg1 arg2

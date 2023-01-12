@@ -133,8 +133,8 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- :}
 --
 -- >>> :{
---   translate (Left _) = conc False -- errors are not desirable
---   translate _ = conc True         -- non-errors are desirable
+--   translate (Left _) = con False -- errors are not desirable
+--   translate _ = con True         -- non-errors are desirable
 -- :}
 --
 -- >>> solveExcept (UnboundedReasoning z3) translate res

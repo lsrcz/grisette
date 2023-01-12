@@ -104,7 +104,7 @@ class BVSelect bv1 (ix :: Nat) (w :: Nat) bv2 | bv1 w -> bv2 where
   --
   -- The indices are counting from zero from the least significant bit.
   --
-  -- >>> bvselect (Proxy @1) (Proxy @3) (conc 0b001010 :: SymIntN 6)
+  -- >>> bvselect (Proxy @1) (Proxy @3) (con 0b001010 :: SymIntN 6)
   -- 0b101
   bvselect ::
     -- | Index to start selecting from
@@ -119,7 +119,7 @@ class BVSelect bv1 (ix :: Nat) (w :: Nat) bv2 | bv1 w -> bv2 where
 -- | Extract a smaller bit vector from a larger one from bits @i@ down to @j@.
 --
 -- The indices are counting from zero from the least significant bit.
--- >>> bvextract (Proxy @3) (Proxy @1) (conc 0b001010 :: SymIntN 6)
+-- >>> bvextract (Proxy @3) (Proxy @1) (con 0b001010 :: SymIntN 6)
 -- 0b101
 bvextract ::
   forall proxy i j bv1 bv2.

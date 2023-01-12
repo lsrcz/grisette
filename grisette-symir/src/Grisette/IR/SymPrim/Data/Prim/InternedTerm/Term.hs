@@ -78,11 +78,11 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   withPrim _ i = i
   termCache :: Cache (Term t)
   termCache = typeMemoizedCache
-  pformatConc :: t -> String
-  default pformatConc :: (Show t) => t -> String
-  pformatConc = show
-  pformatSymb :: TypedSymbol t -> String
-  pformatSymb = showUntyped
+  pformatCon :: t -> String
+  default pformatCon :: (Show t) => t -> String
+  pformatCon = show
+  pformatSym :: TypedSymbol t -> String
+  pformatSym = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
@@ -264,8 +264,8 @@ someTypedSymbol s@(IndexedSymbol _ _) = SomeTypedSymbol (typeRep @t) s
 someTypedSymbol s@(WithInfo _ _) = SomeTypedSymbol (typeRep @t) s
 
 data Term t where
-  ConcTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
+  ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
+  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -368,8 +368,8 @@ instance NFData (Term a) where
 
 instance Lift (Term t) where
   lift = unTypeSplice . liftTyped
-  liftTyped (ConcTerm _ i) = [||concTerm i||]
-  liftTyped (SymbTerm _ sym) = [||symbTerm sym||]
+  liftTyped (ConTerm _ i) = [||conTerm i||]
+  liftTyped (SymTerm _ sym) = [||symTerm sym||]
   liftTyped (UnaryTerm _ tag arg) = [||constructUnary tag arg||]
   liftTyped (BinaryTerm _ tag arg1 arg2) = [||constructBinary tag arg1 arg2||]
   liftTyped (TernaryTerm _ tag arg1 arg2 arg3) = [||constructTernary tag arg1 arg2 arg3||]
@@ -400,9 +400,9 @@ instance Lift (Term t) where
   liftTyped (ModIntegerTerm _ arg1 arg2) = [||modIntegerTerm arg1 arg2||]
 
 instance Show (Term ty) where
-  show (ConcTerm i v) = "ConcTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
-  show (SymbTerm i name) =
-    "SymbTerm{id="
+  show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
+  show (SymTerm i name) =
+    "SymTerm{id="
       ++ show i
       ++ ", name="
       ++ show name
@@ -480,8 +480,8 @@ instance (SupportedPrim t) => Hashable (Term t) where
   hashWithSalt s t = hashWithSalt s $ identity t
 
 data UTerm t where
-  UConcTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymbTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
+  UConTerm :: (SupportedPrim t) => !t -> UTerm t
+  USymTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -578,8 +578,8 @@ eqHeteroTag (tpa, taga) (tpb, tagb) = eqHeteroRep tpa tpb taga tagb
 instance (SupportedPrim t) => Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
-    DConcTerm :: t -> Description (Term t)
-    DSymbTerm :: TypedSymbol t -> Description (Term t)
+    DConTerm :: t -> Description (Term t)
+    DSymTerm :: TypedSymbol t -> Description (Term t)
     DUnaryTerm ::
       (Eq tag, Hashable tag) =>
       {-# UNPACK #-} !(TypeRep tag, tag) ->
@@ -639,8 +639,8 @@ instance (SupportedPrim t) => Interned (Term t) where
     DDivIntegerTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Integer)
     DModIntegerTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Integer)
 
-  describe (UConcTerm v) = DConcTerm v
-  describe ((USymbTerm name) :: UTerm t) = DSymbTerm @t name
+  describe (UConTerm v) = DConTerm v
+  describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
   describe ((UUnaryTerm (tag :: tagt) (tm :: Term arg)) :: UTerm t) =
     DUnaryTerm (typeRep, tag) (typeRep :: TypeRep arg, identity tm)
   describe ((UBinaryTerm (tag :: tagt) (tm1 :: Term arg1) (tm2 :: Term arg2)) :: UTerm t) =
@@ -683,8 +683,8 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UModIntegerTerm arg1 arg2) = DModIntegerTerm (identity arg1) (identity arg2)
   identify i = go
     where
-      go (UConcTerm v) = ConcTerm i v
-      go (USymbTerm v) = SymbTerm i v
+      go (UConTerm v) = ConTerm i v
+      go (USymTerm v) = SymTerm i v
       go (UUnaryTerm tag tm) = UnaryTerm i tag tm
       go (UBinaryTerm tag tm1 tm2) = BinaryTerm i tag tm1 tm2
       go (UTernaryTerm tag tm1 tm2 tm3) = TernaryTerm i tag tm1 tm2 tm3
@@ -716,8 +716,8 @@ instance (SupportedPrim t) => Interned (Term t) where
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
-  DConcTerm (l :: tyl) == DConcTerm (r :: tyr) = cast @tyl @tyr l == Just r
-  DSymbTerm ls == DSymbTerm rs = ls == rs
+  DConTerm (l :: tyl) == DConTerm (r :: tyr) = cast @tyl @tyr l == Just r
+  DSymTerm ls == DSymTerm rs = ls == rs
   DUnaryTerm (tagl :: tagl) li == DUnaryTerm (tagr :: tagr) ri = eqHeteroTag tagl tagr && eqTypedId li ri
   DBinaryTerm (tagl :: tagl) li1 li2 == DBinaryTerm (tagr :: tagr) ri1 ri2 =
     eqHeteroTag tagl tagr && eqTypedId li1 ri1 && eqTypedId li2 ri2
@@ -756,8 +756,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
-  hashWithSalt s (DConcTerm c) = s `hashWithSalt` (0 :: Int) `hashWithSalt` c
-  hashWithSalt s (DSymbTerm name) = s `hashWithSalt` (1 :: Int) `hashWithSalt` name
+  hashWithSalt s (DConTerm c) = s `hashWithSalt` (0 :: Int) `hashWithSalt` c
+  hashWithSalt s (DSymTerm name) = s `hashWithSalt` (1 :: Int) `hashWithSalt` name
   hashWithSalt s (DUnaryTerm tag id1) = s `hashWithSalt` (2 :: Int) `hashWithSalt` tag `hashWithSalt` id1
   hashWithSalt s (DBinaryTerm tag id1 id2) =
     s `hashWithSalt` (3 :: Int) `hashWithSalt` tag `hashWithSalt` id1 `hashWithSalt` id2
@@ -815,8 +815,8 @@ defaultValueForBoolDyn :: ModelValue
 defaultValueForBoolDyn = toModelValue defaultValueForBool
 
 instance SupportedPrim Bool where
-  pformatConc True = "true"
-  pformatConc False = "false"
+  pformatCon True = "true"
+  pformatCon False = "false"
   defaultValue = defaultValueForBool
   defaultValueDynamic _ = defaultValueForBoolDyn
 
@@ -828,20 +828,20 @@ defaultValueForIntegerDyn = toModelValue defaultValueForInteger
 
 -- Basic Integer
 instance SupportedPrim Integer where
-  pformatConc = show
+  pformatCon = show
   defaultValue = defaultValueForInteger
   defaultValueDynamic _ = defaultValueForIntegerDyn
 
 -- Signed BV
 instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   type PrimConstraint (IntN w) = (KnownNat w, 1 <= w)
-  pformatConc = show
+  pformatCon = show
   defaultValue = 0
 
 -- Unsigned BV
 instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   type PrimConstraint (WordN w) = (KnownNat w, 1 <= w)
-  pformatConc = show
+  pformatCon = show
   defaultValue = 0
 
 data FuncArg = FuncArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
@@ -883,4 +883,4 @@ instance NFData (a --> b) where
 
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = GeneralFunc (WithInfo (SimpleSymbol "a") FuncArg) (concTerm defaultValue)
+  defaultValue = GeneralFunc (WithInfo (SimpleSymbol "a") FuncArg) (conTerm defaultValue)

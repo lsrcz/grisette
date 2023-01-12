@@ -67,10 +67,10 @@ deriving via (Default AssertionError) instance (SymBoolOp bool) => GSimpleMergea
 deriving via (Default AssertionError) instance (SymBoolOp bool) => GSEq bool AssertionError
 
 instance (SymBoolOp bool) => GSOrd bool AssertionError where
-  _ `gsymle` _ = conc True
-  _ `gsymlt` _ = conc False
-  _ `gsymge` _ = conc True
-  _ `gsymgt` _ = conc False
+  _ `gsymle` _ = con True
+  _ `gsymlt` _ = con False
+  _ `gsymge` _ = con True
+  _ `gsymgt` _ = con False
   _ `gsymCompare` _ = mrgSingle EQ
 
 deriving via (Default AssertionError) instance GEvaluateSym a AssertionError
@@ -90,10 +90,10 @@ deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GMerg
 deriving via (Default VerificationConditions) instance (SymBoolOp bool) => GSEq bool VerificationConditions
 
 instance (SymBoolOp bool) => GSOrd bool VerificationConditions where
-  l `gsymle` r = conc $ l <= r
-  l `gsymlt` r = conc $ l < r
-  l `gsymge` r = conc $ l >= r
-  l `gsymgt` r = conc $ l > r
+  l `gsymle` r = con $ l <= r
+  l `gsymlt` r = con $ l < r
+  l `gsymge` r = con $ l >= r
+  l `gsymgt` r = con $ l > r
   l `gsymCompare` r = mrgSingle $ l `compare` r
 
 deriving via (Default VerificationConditions) instance GEvaluateSym a VerificationConditions
@@ -135,28 +135,28 @@ instance TransformError AssertionError AssertionError where
 -- should not be a problem as all paths are terminated and no further evaluation
 -- would be performed.
 --
--- >>> symAssert (conc False) :: ExceptT AssertionError UnionM ()
+-- >>> symAssert (con False) :: ExceptT AssertionError UnionM ()
 -- ExceptT (UMrg (Single (Left AssertionError)))
--- >>> do; symAssert (conc False); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
+-- >>> do; symAssert (con False); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
 -- ExceptT (UAny (Single (Left AssertionError)))
 --
 -- No effect if the condition is true:
 --
--- >>> symAssert (conc True) :: ExceptT AssertionError UnionM ()
+-- >>> symAssert (con True) :: ExceptT AssertionError UnionM ()
 -- ExceptT (UMrg (Single (Right ())))
--- >>> do; symAssert (conc True); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
+-- >>> do; symAssert (con True); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
 -- ExceptT (UMrg (Single (Right 1)))
 --
 -- Splitting the path and terminate one of them when the condition is symbolic.
 --
--- >>> symAssert (ssymb "a") :: ExceptT AssertionError UnionM ()
+-- >>> symAssert (ssym "a") :: ExceptT AssertionError UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right ()))))
--- >>> do; symAssert (ssymb "a"); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
+-- >>> do; symAssert (ssym "a"); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right 1))))
 --
 -- 'AssertionError' is compatible with 'VerificationConditions':
 --
--- >>> symAssert (ssymb "a") :: ExceptT VerificationConditions UnionM ()
+-- >>> symAssert (ssym "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionViolation)) (Single (Right ()))))
 symAssert ::
   (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
@@ -170,7 +170,7 @@ symAssert = symAssertTransformableError AssertionError
 --
 -- /Examples/:
 --
--- >>> symAssume (ssymb "a") :: ExceptT VerificationConditions UnionM ()
+-- >>> symAssume (ssym "a") :: ExceptT VerificationConditions UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssumptionViolation)) (Single (Right ()))))
 symAssume ::
   (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>

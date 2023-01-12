@@ -53,7 +53,7 @@ import Grisette.IR.SymPrim.Data.TabularFunc
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding ((.&.))
-import Type.Reflection
+import Type.Reflection hiding (Con)
 
 symPrimTests :: TestTree
 symPrimTests =
@@ -63,48 +63,48 @@ symPrimTests =
         "General SymPrim"
         [ testGroup
             "Solvable"
-            [ testCase "conc" $ do
-                (conc 1 :: Sym Integer) @=? Sym (concTerm 1),
-              testCase "ssymb" $ do
-                (ssymb "a" :: Sym Integer) @=? Sym (ssymbTerm "a"),
-              testCase "isymb" $ do
-                (isymb "a" 1 :: Sym Integer) @=? Sym (isymbTerm "a" 1),
-              testCase "concView" $ do
-                concView (conc 1 :: Sym Integer) @=? Just 1
-                concView (ssymb "a" :: Sym Integer) @=? Nothing
-                case conc 1 :: Sym Integer of
-                  Conc 1 -> return ()
+            [ testCase "con" $ do
+                (con 1 :: Sym Integer) @=? Sym (conTerm 1),
+              testCase "ssym" $ do
+                (ssym "a" :: Sym Integer) @=? Sym (ssymTerm "a"),
+              testCase "isym" $ do
+                (isym "a" 1 :: Sym Integer) @=? Sym (isymTerm "a" 1),
+              testCase "conView" $ do
+                conView (con 1 :: Sym Integer) @=? Just 1
+                conView (ssym "a" :: Sym Integer) @=? Nothing
+                case con 1 :: Sym Integer of
+                  Con 1 -> return ()
                   _ -> assertFailure "Bad match"
-                case ssymb "a" :: Sym Integer of
-                  Conc _ -> assertFailure "Bad match"
+                case ssym "a" :: Sym Integer of
+                  Con _ -> assertFailure "Bad match"
                   _ -> return ()
             ],
           testGroup
             "ITEOp"
             [ testCase "ites" $
-                ites (ssymb "a" :: Sym Bool) (ssymb "b" :: Sym Integer) (ssymb "c")
-                  @=? Sym (pevalITETerm (ssymbTerm "a") (ssymbTerm "b") (ssymbTerm "c"))
+                ites (ssym "a" :: Sym Bool) (ssym "b" :: Sym Integer) (ssym "c")
+                  @=? Sym (pevalITETerm (ssymTerm "a") (ssymTerm "b") (ssymTerm "c"))
             ],
           testCase "Mergeable" $ do
             let SimpleStrategy s = rootStrategy :: MergingStrategy (Sym Integer)
-            s (ssymb "a") (ssymb "b") (ssymb "c")
-              @=? ites (ssymb "a" :: Sym Bool) (ssymb "b" :: Sym Integer) (ssymb "c"),
+            s (ssym "a") (ssym "b") (ssym "c")
+              @=? ites (ssym "a" :: Sym Bool) (ssym "b" :: Sym Integer) (ssym "c"),
           testCase "SimpleMergeable" $ do
-            mrgIte (ssymb "a" :: Sym Bool) (ssymb "b") (ssymb "c")
-              @=? ites (ssymb "a" :: Sym Bool) (ssymb "b" :: Sym Integer) (ssymb "c"),
+            mrgIte (ssym "a" :: Sym Bool) (ssym "b") (ssym "c")
+              @=? ites (ssym "a" :: Sym Bool) (ssym "b" :: Sym Integer) (ssym "c"),
           testCase "IsString" $ do
-            ("a" :: Sym Bool) @=? Sym (ssymbTerm "a"),
+            ("a" :: Sym Bool) @=? Sym (ssymTerm "a"),
           testGroup
             "ToSym"
             [ testCase "From self" $ do
-                toSym (ssymb "a" :: Sym Bool) @=? (ssymb "a" :: Sym Bool),
+                toSym (ssym "a" :: Sym Bool) @=? (ssym "a" :: Sym Bool),
               testCase "From concrete" $ do
-                toSym True @=? (conc True :: Sym Bool)
+                toSym True @=? (con True :: Sym Bool)
             ],
           testGroup
             "ToCon"
             [ testCase "To self" $ do
-                toCon (ssymb "a" :: Sym Bool) @=? (Nothing :: Maybe Bool),
+                toCon (ssym "a" :: Sym Bool) @=? (Nothing :: Maybe Bool),
               testCase "To concrete" $ do
                 toCon True @=? Just True
             ],
@@ -125,30 +125,30 @@ symPrimTests =
                     ]
                 ),
           testCase "GenSym" $ do
-            (genSym () "a" :: UnionM (Sym Bool)) @=? mrgSingle (isymb "a" 0)
-            (genSymSimple () "a" :: Sym Bool) @=? isymb "a" 0
-            (genSym (ssymb "a" :: Sym Bool) "a" :: UnionM (Sym Bool)) @=? mrgSingle (isymb "a" 0)
-            (genSymSimple (ssymb "a" :: Sym Bool) "a" :: Sym Bool) @=? isymb "a" 0
-            (genSym () (nameWithInfo "a" True) :: UnionM (Sym Bool)) @=? mrgSingle (iinfosymb "a" 0 True)
-            (genSymSimple () (nameWithInfo "a" True) :: Sym Bool) @=? iinfosymb "a" 0 True,
+            (genSym () "a" :: UnionM (Sym Bool)) @=? mrgSingle (isym "a" 0)
+            (genSymSimple () "a" :: Sym Bool) @=? isym "a" 0
+            (genSym (ssym "a" :: Sym Bool) "a" :: UnionM (Sym Bool)) @=? mrgSingle (isym "a" 0)
+            (genSymSimple (ssym "a" :: Sym Bool) "a" :: Sym Bool) @=? isym "a" 0
+            (genSym () (nameWithInfo "a" True) :: UnionM (Sym Bool)) @=? mrgSingle (iinfosym "a" 0 True)
+            (genSymSimple () (nameWithInfo "a" True) :: Sym Bool) @=? iinfosym "a" 0 True,
           testCase "SEq" $ do
-            (ssymb "a" :: Sym Bool) ==~ ssymb "b" @=? Sym (pevalEqvTerm (ssymbTerm "a" :: Term Bool) (ssymbTerm "b"))
-            (ssymb "a" :: Sym Bool) /=~ ssymb "b" @=? Sym (pevalNotTerm $ pevalEqvTerm (ssymbTerm "a" :: Term Bool) (ssymbTerm "b"))
+            (ssym "a" :: Sym Bool) ==~ ssym "b" @=? Sym (pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
+            (ssym "a" :: Sym Bool) /=~ ssym "b" @=? Sym (pevalNotTerm $ pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
         ],
       testGroup
         "Sym Bool"
         [ testGroup
             "LogicalOp"
             [ testCase "||~" $ do
-                ssymb "a" ||~ ssymb "b" @=? Sym (pevalOrTerm (ssymbTerm "a") (ssymbTerm "b")),
+                ssym "a" ||~ ssym "b" @=? Sym (pevalOrTerm (ssymTerm "a") (ssymTerm "b")),
               testCase "&&~" $ do
-                ssymb "a" &&~ ssymb "b" @=? Sym (pevalAndTerm (ssymbTerm "a") (ssymbTerm "b")),
+                ssym "a" &&~ ssym "b" @=? Sym (pevalAndTerm (ssymTerm "a") (ssymTerm "b")),
               testCase "nots" $ do
-                nots (ssymb "a") @=? Sym (pevalNotTerm (ssymbTerm "a")),
+                nots (ssym "a") @=? Sym (pevalNotTerm (ssymTerm "a")),
               testCase "xors" $ do
-                xors (ssymb "a") (ssymb "b") @=? Sym (pevalXorTerm (ssymbTerm "a") (ssymbTerm "b")),
+                xors (ssym "a") (ssym "b") @=? Sym (pevalXorTerm (ssymTerm "a") (ssymTerm "b")),
               testCase "implies" $ do
-                implies (ssymb "a") (ssymb "b") @=? Sym (pevalImplyTerm (ssymbTerm "a") (ssymbTerm "b"))
+                implies (ssym "a") (ssym "b") @=? Sym (pevalImplyTerm (ssymTerm "a") (ssymTerm "b"))
             ]
         ],
       testGroup
@@ -156,95 +156,95 @@ symPrimTests =
         [ testGroup
             "Num"
             [ testCase "fromInteger" $ do
-                (1 :: Sym Integer) @=? Sym (concTerm 1),
+                (1 :: Sym Integer) @=? Sym (conTerm 1),
               testCase "(+)" $ do
-                (ssymb "a" :: Sym Integer) + ssymb "b" @=? Sym (pevalAddNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+                (ssym "a" :: Sym Integer) + ssym "b" @=? Sym (pevalAddNumTerm (ssymTerm "a") (ssymTerm "b")),
               testCase "(-)" $ do
-                (ssymb "a" :: Sym Integer) - ssymb "b" @=? Sym (pevalMinusNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+                (ssym "a" :: Sym Integer) - ssym "b" @=? Sym (pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b")),
               testCase "(*)" $ do
-                (ssymb "a" :: Sym Integer) * ssymb "b" @=? Sym (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+                (ssym "a" :: Sym Integer) * ssym "b" @=? Sym (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b")),
               testCase "negate" $ do
-                negate (ssymb "a" :: Sym Integer) @=? Sym (pevalUMinusNumTerm (ssymbTerm "a")),
+                negate (ssym "a" :: Sym Integer) @=? Sym (pevalUMinusNumTerm (ssymTerm "a")),
               testCase "abs" $ do
-                abs (ssymb "a" :: Sym Integer) @=? Sym (pevalAbsNumTerm (ssymbTerm "a")),
+                abs (ssym "a" :: Sym Integer) @=? Sym (pevalAbsNumTerm (ssymTerm "a")),
               testCase "signum" $ do
-                signum (ssymb "a" :: Sym Integer) @=? Sym (pevalSignumNumTerm (ssymbTerm "a"))
+                signum (ssym "a" :: Sym Integer) @=? Sym (pevalSignumNumTerm (ssymTerm "a"))
             ],
           testGroup
             "SignedDivMod"
             [ testProperty "divs on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $
-                  divs (conc i :: Sym Integer) (conc j)
+                  divs (con i :: Sym Integer) (con j)
                     @=? if j == 0
                       then merge $ throwError () :: ExceptT () UnionM SymInteger
-                      else mrgSingle $ conc $ i `div` j,
+                      else mrgSingle $ con $ i `div` j,
               testCase "divs when divided by zero" $ do
-                divs (ssymb "a" :: Sym Integer) (conc 0)
+                divs (ssym "a" :: Sym Integer) (con 0)
                   @=? (merge $ throwError () :: ExceptT () UnionM SymInteger),
               testCase "divs on symbolic" $ do
-                divs (ssymb "a" :: Sym Integer) (ssymb "b")
+                divs (ssym "a" :: Sym Integer) (ssym "b")
                   @=? ( mrgIf
-                          ((ssymb "b" :: Sym Integer) ==~ conc (0 :: Integer) :: SymBool)
+                          ((ssym "b" :: Sym Integer) ==~ con (0 :: Integer) :: SymBool)
                           (throwError ())
-                          (mrgSingle $ Sym $ pevalDivIntegerTerm (ssymbTerm "a") (ssymbTerm "b")) ::
+                          (mrgSingle $ Sym $ pevalDivIntegerTerm (ssymTerm "a") (ssymTerm "b")) ::
                           ExceptT () UnionM SymInteger
                       ),
               testProperty "mods on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $
-                  mods (conc i :: Sym Integer) (conc j)
+                  mods (con i :: Sym Integer) (con j)
                     @=? if j == 0
                       then merge $ throwError () :: ExceptT () UnionM SymInteger
-                      else mrgSingle $ conc $ i `mod` j,
+                      else mrgSingle $ con $ i `mod` j,
               testCase "mods when divided by zero" $ do
-                mods (ssymb "a" :: Sym Integer) (conc 0)
+                mods (ssym "a" :: Sym Integer) (con 0)
                   @=? (merge $ throwError () :: ExceptT () UnionM SymInteger),
               testCase "mods on symbolic" $ do
-                mods (ssymb "a" :: Sym Integer) (ssymb "b")
+                mods (ssym "a" :: Sym Integer) (ssym "b")
                   @=? ( mrgIf
-                          ((ssymb "b" :: Sym Integer) ==~ conc (0 :: Integer) :: SymBool)
+                          ((ssym "b" :: Sym Integer) ==~ con (0 :: Integer) :: SymBool)
                           (throwError ())
-                          (mrgSingle $ Sym $ pevalModIntegerTerm (ssymbTerm "a") (ssymbTerm "b")) ::
+                          (mrgSingle $ Sym $ pevalModIntegerTerm (ssymTerm "a") (ssymTerm "b")) ::
                           ExceptT () UnionM SymInteger
                       )
             ],
           testGroup
             "SOrd"
             [ testProperty "SOrd on concrete" $ \(i :: Integer, j :: Integer) -> ioProperty $ do
-                (conc i :: Sym Integer) <=~ conc j @=? (conc (i <= j) :: SymBool)
-                (conc i :: Sym Integer) <~ conc j @=? (conc (i < j) :: SymBool)
-                (conc i :: Sym Integer) >=~ conc j @=? (conc (i >= j) :: SymBool)
-                (conc i :: Sym Integer) >~ conc j @=? (conc (i > j) :: SymBool)
-                (conc i :: Sym Integer)
-                  `symCompare` conc j
+                (con i :: Sym Integer) <=~ con j @=? (con (i <= j) :: SymBool)
+                (con i :: Sym Integer) <~ con j @=? (con (i < j) :: SymBool)
+                (con i :: Sym Integer) >=~ con j @=? (con (i >= j) :: SymBool)
+                (con i :: Sym Integer) >~ con j @=? (con (i > j) :: SymBool)
+                (con i :: Sym Integer)
+                  `symCompare` con j
                   @=? (i `symCompare` j :: UnionM Ordering),
               testCase "SOrd on symbolic" $ do
-                let a :: Sym Integer = ssymb "a"
-                let b :: Sym Integer = ssymb "b"
-                let at :: Term Integer = ssymbTerm "a"
-                let bt :: Term Integer = ssymbTerm "b"
+                let a :: Sym Integer = ssym "a"
+                let b :: Sym Integer = ssym "b"
+                let at :: Term Integer = ssymTerm "a"
+                let bt :: Term Integer = ssymTerm "b"
                 a <=~ b @=? Sym (pevalLeNumTerm at bt)
                 a <~ b @=? Sym (pevalLtNumTerm at bt)
                 a >=~ b @=? Sym (pevalGeNumTerm at bt)
                 a >~ b @=? Sym (pevalGtNumTerm at bt)
-                (a `symCompare` ssymb "b" :: UnionM Ordering)
+                (a `symCompare` ssym "b" :: UnionM Ordering)
                   @=? mrgIf (a <~ b) (mrgSingle LT) (mrgIf (a ==~ b) (mrgSingle EQ) (mrgSingle GT))
             ]
         ],
-      let au :: Sym (WordN 4) = ssymb "a"
-          bu :: Sym (WordN 4) = ssymb "b"
-          as :: Sym (IntN 4) = ssymb "a"
-          bs :: Sym (IntN 4) = ssymb "b"
-          aut :: Term (WordN 4) = ssymbTerm "a"
-          but :: Term (WordN 4) = ssymbTerm "b"
-          ast :: Term (IntN 4) = ssymbTerm "a"
-          bst :: Term (IntN 4) = ssymbTerm "b"
+      let au :: Sym (WordN 4) = ssym "a"
+          bu :: Sym (WordN 4) = ssym "b"
+          as :: Sym (IntN 4) = ssym "a"
+          bs :: Sym (IntN 4) = ssym "b"
+          aut :: Term (WordN 4) = ssymTerm "a"
+          but :: Term (WordN 4) = ssymTerm "b"
+          ast :: Term (IntN 4) = ssymTerm "a"
+          bst :: Term (IntN 4) = ssymTerm "b"
        in testGroup
             "Sym BV"
             [ testGroup
                 "Num"
                 [ testCase "fromInteger" $ do
-                    (1 :: Sym (WordN 4)) @=? Sym (concTerm 1)
-                    (1 :: Sym (IntN 4)) @=? Sym (concTerm 1),
+                    (1 :: Sym (WordN 4)) @=? Sym (conTerm 1)
+                    (1 :: Sym (IntN 4)) @=? Sym (conTerm 1),
                   testCase "(+)" $ do
                     au + bu @=? Sym (pevalAddNumTerm aut but)
                     as + bs @=? Sym (pevalAddNumTerm ast bst),
@@ -273,19 +273,19 @@ symPrimTests =
                     let js :: IntN 4 = fromInteger j
                     let normalizeu k = k - k `div` 16 * 16
                     let normalizes k = if normalizeu k >= 8 then normalizeu k - 16 else normalizeu k
-                    (conc iu :: Sym (WordN 4)) <=~ conc ju @=? (conc (normalizeu i <= normalizeu j) :: SymBool)
-                    (conc iu :: Sym (WordN 4)) <~ conc ju @=? (conc (normalizeu i < normalizeu j) :: SymBool)
-                    (conc iu :: Sym (WordN 4)) >=~ conc ju @=? (conc (normalizeu i >= normalizeu j) :: SymBool)
-                    (conc iu :: Sym (WordN 4)) >~ conc ju @=? (conc (normalizeu i > normalizeu j) :: SymBool)
-                    (conc iu :: Sym (WordN 4))
-                      `symCompare` conc ju
+                    (con iu :: Sym (WordN 4)) <=~ con ju @=? (con (normalizeu i <= normalizeu j) :: SymBool)
+                    (con iu :: Sym (WordN 4)) <~ con ju @=? (con (normalizeu i < normalizeu j) :: SymBool)
+                    (con iu :: Sym (WordN 4)) >=~ con ju @=? (con (normalizeu i >= normalizeu j) :: SymBool)
+                    (con iu :: Sym (WordN 4)) >~ con ju @=? (con (normalizeu i > normalizeu j) :: SymBool)
+                    (con iu :: Sym (WordN 4))
+                      `symCompare` con ju
                       @=? (normalizeu i `symCompare` normalizeu j :: UnionM Ordering)
-                    (conc is :: Sym (IntN 4)) <=~ conc js @=? (conc (normalizes i <= normalizes j) :: SymBool)
-                    (conc is :: Sym (IntN 4)) <~ conc js @=? (conc (normalizes i < normalizes j) :: SymBool)
-                    (conc is :: Sym (IntN 4)) >=~ conc js @=? (conc (normalizes i >= normalizes j) :: SymBool)
-                    (conc is :: Sym (IntN 4)) >~ conc js @=? (conc (normalizes i > normalizes j) :: SymBool)
-                    (conc is :: Sym (IntN 4))
-                      `symCompare` conc js
+                    (con is :: Sym (IntN 4)) <=~ con js @=? (con (normalizes i <= normalizes j) :: SymBool)
+                    (con is :: Sym (IntN 4)) <~ con js @=? (con (normalizes i < normalizes j) :: SymBool)
+                    (con is :: Sym (IntN 4)) >=~ con js @=? (con (normalizes i >= normalizes j) :: SymBool)
+                    (con is :: Sym (IntN 4)) >~ con js @=? (con (normalizes i > normalizes j) :: SymBool)
+                    (con is :: Sym (IntN 4))
+                      `symCompare` con js
                       @=? (normalizes i `symCompare` normalizes j :: UnionM Ordering),
                   testCase "SOrd on symbolic" $ do
                     au <=~ bu @=? Sym (pevalLeNumTerm aut but)
@@ -329,29 +329,29 @@ symPrimTests =
                     isSigned au @=? False
                     isSigned as @=? True,
                   testCase "testBit would only work on concrete ones" $ do
-                    testBit (Conc 3 :: Sym (WordN 4)) 1 @=? True
-                    testBit (Conc 3 :: Sym (WordN 4)) 2 @=? False
-                    testBit (Conc 3 :: Sym (IntN 4)) 1 @=? True
-                    testBit (Conc 3 :: Sym (IntN 4)) 2 @=? False,
+                    testBit (con 3 :: Sym (WordN 4)) 1 @=? True
+                    testBit (con 3 :: Sym (WordN 4)) 2 @=? False
+                    testBit (con 3 :: Sym (IntN 4)) 1 @=? True
+                    testBit (con 3 :: Sym (IntN 4)) 2 @=? False,
                   testCase "bit would work" $ do
-                    bit 1 @=? (Conc 2 :: Sym (WordN 4))
-                    bit 1 @=? (Conc 2 :: Sym (IntN 4)),
+                    bit 1 @=? (con 2 :: Sym (WordN 4))
+                    bit 1 @=? (con 2 :: Sym (IntN 4)),
                   testCase "popCount would only work on concrete ones" $ do
-                    popCount (Conc 3 :: Sym (WordN 4)) @=? 2
-                    popCount (Conc 3 :: Sym (WordN 4)) @=? 2
-                    popCount (Conc 3 :: Sym (IntN 4)) @=? 2
-                    popCount (Conc 3 :: Sym (IntN 4)) @=? 2
+                    popCount (con 3 :: Sym (WordN 4)) @=? 2
+                    popCount (con 3 :: Sym (WordN 4)) @=? 2
+                    popCount (con 3 :: Sym (IntN 4)) @=? 2
+                    popCount (con 3 :: Sym (IntN 4)) @=? 2
                 ],
               testGroup
                 "BVConcat"
                 [ testCase "bvconcat" $ do
                     bvconcat
-                      (ssymb "a" :: Sym (WordN 4))
-                      (ssymb "b" :: Sym (WordN 3))
+                      (ssym "a" :: Sym (WordN 4))
+                      (ssym "b" :: Sym (WordN 3))
                       @=? Sym
                         ( pevalBVConcatTerm
-                            (ssymbTerm "a" :: Term (WordN 4))
-                            (ssymbTerm "b" :: Term (WordN 3))
+                            (ssymTerm "a" :: Term (WordN 4))
+                            (ssymTerm "b" :: Term (WordN 3))
                         )
                 ],
               testGroup
@@ -377,46 +377,46 @@ symPrimTests =
               testGroup
                 "conversion between Int8 and Sym BV"
                 [ testCase "toSym" $ do
-                    toSym (0 :: Int8) @=? (conc 0 :: SymIntN 8)
-                    toSym (-127 :: Int8) @=? (conc $ -127 :: SymIntN 8)
-                    toSym (-128 :: Int8) @=? (conc $ -128 :: SymIntN 8)
-                    toSym (127 :: Int8) @=? (conc 127 :: SymIntN 8),
+                    toSym (0 :: Int8) @=? (con 0 :: SymIntN 8)
+                    toSym (-127 :: Int8) @=? (con $ -127 :: SymIntN 8)
+                    toSym (-128 :: Int8) @=? (con $ -128 :: SymIntN 8)
+                    toSym (127 :: Int8) @=? (con 127 :: SymIntN 8),
                   testCase "toCon" $ do
-                    toCon (conc 0 :: SymIntN 8) @=? Just (0 :: Int8)
-                    toCon (conc $ -127 :: SymIntN 8) @=? Just (-127 :: Int8)
-                    toCon (conc $ -128 :: SymIntN 8) @=? Just (-128 :: Int8)
-                    toCon (conc 127 :: SymIntN 8) @=? Just (127 :: Int8)
+                    toCon (con 0 :: SymIntN 8) @=? Just (0 :: Int8)
+                    toCon (con $ -127 :: SymIntN 8) @=? Just (-127 :: Int8)
+                    toCon (con $ -128 :: SymIntN 8) @=? Just (-128 :: Int8)
+                    toCon (con 127 :: SymIntN 8) @=? Just (127 :: Int8)
                 ],
               testGroup
                 "conversion between Word8 and Sym BV"
                 [ testCase "toSym" $ do
-                    toSym (0 :: Word8) @=? (conc 0 :: SymWordN 8)
-                    toSym (1 :: Word8) @=? (conc 1 :: SymWordN 8)
-                    toSym (255 :: Word8) @=? (conc 255 :: SymWordN 8),
+                    toSym (0 :: Word8) @=? (con 0 :: SymWordN 8)
+                    toSym (1 :: Word8) @=? (con 1 :: SymWordN 8)
+                    toSym (255 :: Word8) @=? (con 255 :: SymWordN 8),
                   testCase "toCon" $ do
-                    toCon (conc 0 :: SymWordN 8) @=? Just (0 :: Word8)
-                    toCon (conc 1 :: SymWordN 8) @=? Just (1 :: Word8)
-                    toCon (conc 255 :: SymWordN 8) @=? Just (255 :: Word8)
+                    toCon (con 0 :: SymWordN 8) @=? Just (0 :: Word8)
+                    toCon (con 1 :: SymWordN 8) @=? Just (1 :: Word8)
+                    toCon (con 255 :: SymWordN 8) @=? Just (255 :: Word8)
                 ]
             ],
       testGroup
         "TabularFunc"
         [ testCase "apply" $ do
-            (ssymb "a" :: Integer =~> Integer)
-              # ssymb "b"
-              @=? Sym (pevalTabularFuncApplyTerm (ssymbTerm "a" :: Term (Integer =-> Integer)) (ssymbTerm "b"))
+            (ssym "a" :: Integer =~> Integer)
+              # ssym "b"
+              @=? Sym (pevalTabularFuncApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b"))
         ],
       testGroup
         "Symbolic size"
         [ testCase "symSize" $ do
-            symSize (ssymb "a" :: Sym Integer) @=? 1
-            symSize (conc 1 :: Sym Integer) @=? 1
-            symSize (conc 1 + ssymb "a" :: Sym Integer) @=? 3
-            symSize (ssymb "a" + ssymb "a" :: Sym Integer) @=? 2
-            symSize (-(ssymb "a") :: Sym Integer) @=? 2
-            symSize (ites (ssymb "a" :: Sym Bool) (ssymb "b") (ssymb "c") :: Sym Integer) @=? 4,
+            symSize (ssym "a" :: Sym Integer) @=? 1
+            symSize (con 1 :: Sym Integer) @=? 1
+            symSize (con 1 + ssym "a" :: Sym Integer) @=? 3
+            symSize (ssym "a" + ssym "a" :: Sym Integer) @=? 2
+            symSize (-(ssym "a") :: Sym Integer) @=? 2
+            symSize (ites (ssym "a" :: Sym Bool) (ssym "b") (ssym "c") :: Sym Integer) @=? 4,
           testCase "symsSize" $ do
-            symsSize [ssymb "a" :: Sym Integer, ssymb "a" + ssymb "a"] @=? 2
+            symsSize [ssym "a" :: Sym Integer, ssym "a" + ssym "a"] @=? 2
         ],
       let asymbol :: TypedSymbol Integer = "a"
           bsymbol :: TypedSymbol Bool = "b"
@@ -426,7 +426,7 @@ symPrimTests =
           fsymbol :: TypedSymbol (IntN 4) = "f"
           gsymbol :: TypedSymbol (WordN 16) = "g"
           hsymbol :: TypedSymbol (IntN 16) = "h"
-          a :: Sym Integer = ssymb "a"
+          a :: Sym Integer = ssym "a"
           b :: Sym Bool = "b"
           c :: Sym Integer = "c"
           d :: Sym Bool = "d"

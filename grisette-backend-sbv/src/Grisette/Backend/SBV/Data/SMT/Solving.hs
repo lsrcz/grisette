@@ -192,7 +192,7 @@ instance Solver (GrisetteSMTConfig n) SymBool SBVC.CheckSatResult PM.Model where
         let newtm =
               S.foldl'
                 (\acc (SomeTypedSymbol _ v) -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md)))
-                (concTerm False)
+                (conTerm False)
                 (unSymbolSet allSymbols)
         let (lowered, newm) = lowerSinglePrim' config newtm origm
         SBV.constrain lowered
@@ -224,7 +224,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
     (inputs -> CEGISCondition SymBool) ->
     IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
   cegisMultiInputs config inputs func =
-    go1 (cexesAssertFunc conInputs) conInputs (error "Should have at least one gen") [] (conc True) (conc True) symInputs
+    go1 (cexesAssertFunc conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
     where
       (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
       go1 cexFormula cexes previousModel inputs pre post remainingSymInputs = do
@@ -249,7 +249,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SymBool SymbolSet SBVC.CheckSatResult
       cexAssertFunc input =
         let CEGISCondition pre post = func input in pre &&~ post
       cexesAssertFunc :: [inputs] -> SymBool
-      cexesAssertFunc = foldl (\acc x -> acc &&~ cexAssertFunc x) (conc True)
+      cexesAssertFunc = foldl (\acc x -> acc &&~ cexAssertFunc x) (con True)
       go ::
         SymBool ->
         inputs ->

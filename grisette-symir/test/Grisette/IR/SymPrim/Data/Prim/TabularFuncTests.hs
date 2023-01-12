@@ -20,27 +20,27 @@ tabularFuncTests =
         [ testCase "On concrete" $ do
             let f :: Integer =-> Integer =
                   TabularFunc [(1, 2), (3, 4)] 5
-            pevalTabularFuncApplyTerm (concTerm f) (concTerm 0) @=? concTerm 5
-            pevalTabularFuncApplyTerm (concTerm f) (concTerm 1) @=? concTerm 2
-            pevalTabularFuncApplyTerm (concTerm f) (concTerm 2) @=? concTerm 5
-            pevalTabularFuncApplyTerm (concTerm f) (concTerm 3) @=? concTerm 4
-            pevalTabularFuncApplyTerm (concTerm f) (concTerm 4) @=? concTerm 5,
+            pevalTabularFuncApplyTerm (conTerm f) (conTerm 0) @=? conTerm 5
+            pevalTabularFuncApplyTerm (conTerm f) (conTerm 1) @=? conTerm 2
+            pevalTabularFuncApplyTerm (conTerm f) (conTerm 2) @=? conTerm 5
+            pevalTabularFuncApplyTerm (conTerm f) (conTerm 3) @=? conTerm 4
+            pevalTabularFuncApplyTerm (conTerm f) (conTerm 4) @=? conTerm 5,
           testCase "On concrete function" $ do
             let f :: Integer =-> Integer =
                   TabularFunc [(1, 2), (3, 4)] 5
-            pevalTabularFuncApplyTerm (concTerm f) (ssymbTerm "b")
+            pevalTabularFuncApplyTerm (conTerm f) (ssymTerm "b")
               @=? pevalITETerm
-                (pevalEqvTerm (concTerm 1 :: Term Integer) (ssymbTerm "b"))
-                (concTerm 2)
+                (pevalEqvTerm (conTerm 1 :: Term Integer) (ssymTerm "b"))
+                (conTerm 2)
                 ( pevalITETerm
-                    (pevalEqvTerm (concTerm 3 :: Term Integer) (ssymbTerm "b"))
-                    (concTerm 4)
-                    (concTerm 5)
+                    (pevalEqvTerm (conTerm 3 :: Term Integer) (ssymTerm "b"))
+                    (conTerm 4)
+                    (conTerm 5)
                 ),
           testCase "On symbolic" $ do
-            pevalTabularFuncApplyTerm (ssymbTerm "f" :: Term (Integer =-> Integer)) (ssymbTerm "a")
+            pevalTabularFuncApplyTerm (ssymTerm "f" :: Term (Integer =-> Integer)) (ssymTerm "a")
               @=? tabularFuncApplyTerm
-                (ssymbTerm "f" :: Term (Integer =-> Integer))
-                (ssymbTerm "a" :: Term Integer)
+                (ssymTerm "f" :: Term (Integer =-> Integer))
+                (ssymTerm "a" :: Term Integer)
         ]
     ]

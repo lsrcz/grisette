@@ -35,8 +35,8 @@ import Grisette.IR.SymPrim.Data.TabularFunc ()
 import qualified Type.Reflection as R
 
 identity :: Term t -> Id
-identity (ConcTerm i _) = i
-identity (SymbTerm i _) = i
+identity (ConTerm i _) = i
+identity (SymTerm i _) = i
 identity (UnaryTerm i _ _) = i
 identity (BinaryTerm i _ _ _) = i
 identity (TernaryTerm i _ _ _ _) = i
@@ -68,8 +68,8 @@ identity (ModIntegerTerm i _ _) = i
 {-# INLINE identity #-}
 
 identityWithTypeRep :: forall t. Term t -> (TypeRep, Id)
-identityWithTypeRep (ConcTerm i _) = (typeRep (Proxy @t), i)
-identityWithTypeRep (SymbTerm i _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (ConTerm i _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (SymTerm i _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (UnaryTerm i _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (BinaryTerm i _ _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (TernaryTerm i _ _ _ _) = (typeRep (Proxy @t), i)
@@ -101,8 +101,8 @@ identityWithTypeRep (ModIntegerTerm i _ _) = (typeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
-introSupportedPrimConstraint ConcTerm {} x = x
-introSupportedPrimConstraint SymbTerm {} x = x
+introSupportedPrimConstraint ConTerm {} x = x
+introSupportedPrimConstraint SymTerm {} x = x
 introSupportedPrimConstraint UnaryTerm {} x = x
 introSupportedPrimConstraint BinaryTerm {} x = x
 introSupportedPrimConstraint TernaryTerm {} x = x
@@ -147,8 +147,8 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
           put $ M.insert t res st
           return res
     go :: SomeTerm -> State (M.HashMap SomeTerm (S.HashSet SomeTypedSymbol)) (S.HashSet SomeTypedSymbol)
-    go (SomeTerm ConcTerm {}) = return S.empty
-    go (SomeTerm (SymbTerm _ (symb :: TypedSymbol a))) = return $ S.singleton $ SomeTypedSymbol (R.typeRep @a) symb
+    go (SomeTerm ConTerm {}) = return S.empty
+    go (SomeTerm (SymTerm _ (sym :: TypedSymbol a))) = return $ S.singleton $ SomeTypedSymbol (R.typeRep @a) sym
     go (SomeTerm (UnaryTerm _ _ arg)) = goUnary arg
     go (SomeTerm (BinaryTerm _ _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (TernaryTerm _ _ arg1 arg2 arg3)) = goTernary arg1 arg2 arg3
@@ -194,8 +194,8 @@ extractSymbolicsTerm t = extractSymbolicsSomeTerm (SomeTerm t)
 {-# INLINE extractSymbolicsTerm #-}
 
 castTerm :: forall a b. (Typeable b) => Term a -> Maybe (Term b)
-castTerm t@ConcTerm {} = cast t
-castTerm t@SymbTerm {} = cast t
+castTerm t@ConTerm {} = cast t
+castTerm t@SymTerm {} = cast t
 castTerm t@UnaryTerm {} = cast t
 castTerm t@BinaryTerm {} = cast t
 castTerm t@TernaryTerm {} = cast t
@@ -227,8 +227,8 @@ castTerm t@ModIntegerTerm {} = cast t
 {-# INLINE castTerm #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
-pformat (ConcTerm _ t) = pformatConc t
-pformat (SymbTerm _ symb) = pformatSymb symb
+pformat (ConTerm _ t) = pformatCon t
+pformat (SymTerm _ sym) = pformatSym sym
 pformat (UnaryTerm _ tag arg1) = pformatUnary tag arg1
 pformat (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
 pformat (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
@@ -266,8 +266,8 @@ termsSize terms = S.size $ execState (traverse go terms) S.empty
     exists t = gets (S.member (SomeTerm t))
     add t = modify' (S.insert (SomeTerm t))
     go :: forall b. Term b -> State (S.HashSet SomeTerm) ()
-    go t@ConcTerm {} = add t
-    go t@SymbTerm {} = add t
+    go t@ConTerm {} = add t
+    go t@SymTerm {} = add t
     go t@(UnaryTerm _ _ arg) = goUnary t arg
     go t@(BinaryTerm _ _ arg1 arg2) = goBinary t arg1 arg2
     go t@(TernaryTerm _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3

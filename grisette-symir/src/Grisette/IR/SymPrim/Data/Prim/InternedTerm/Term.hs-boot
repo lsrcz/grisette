@@ -41,14 +41,11 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   withPrim _ i = i
   termCache :: Cache (Term t)
   termCache = typeMemoizedCache
-
-  -- termReverseCache :: ReverseCache (Term t)
-  -- termReverseCache = typeMemoizedReverseCache
-  pformatConc :: t -> String
-  default pformatConc :: (Show t) => t -> String
-  pformatConc = show
-  pformatSymb :: TypedSymbol t -> String
-  pformatSymb _ = showUntyped
+  pformatCon :: t -> String
+  default pformatCon :: (Show t) => t -> String
+  pformatCon = show
+  pformatSym :: TypedSymbol t -> String
+  pformatSym _ = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
@@ -117,8 +114,8 @@ data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
 
 data Term t where
-  ConcTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
+  ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
+  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -217,8 +214,8 @@ data Term t where
   ModIntegerTerm :: !Id -> Term Integer -> Term Integer -> Term Integer
 
 data UTerm t where
-  UConcTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymbTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
+  UConTerm :: (SupportedPrim t) => !t -> UTerm t
+  USymTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>

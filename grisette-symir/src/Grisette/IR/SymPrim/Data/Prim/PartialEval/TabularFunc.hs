@@ -27,9 +27,9 @@ pevalTabularFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b
 pevalTabularFuncApplyTerm = totalize2 doPevalTabularFuncApplyTerm tabularFuncApplyTerm
 
 doPevalTabularFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Maybe (Term b)
-doPevalTabularFuncApplyTerm (ConcTerm _ f) (ConcTerm _ a) = Just $ concTerm $ f # a
-doPevalTabularFuncApplyTerm (ConcTerm _ (TabularFunc f d)) a = Just $ go f
+doPevalTabularFuncApplyTerm (ConTerm _ f) (ConTerm _ a) = Just $ conTerm $ f # a
+doPevalTabularFuncApplyTerm (ConTerm _ (TabularFunc f d)) a = Just $ go f
   where
-    go [] = concTerm d
-    go ((x, y) : xs) = pevalITETerm (pevalEqvTerm a (concTerm x)) (concTerm y) (go xs)
+    go [] = conTerm d
+    go ((x, y) : xs) = pevalITETerm (pevalEqvTerm a (conTerm x)) (conTerm y) (go xs)
 doPevalTabularFuncApplyTerm _ _ = Nothing

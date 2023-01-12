@@ -34,10 +34,10 @@ class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   same :: a -> Term Bool
   counterExample :: a -> Term Bool
   counterExample = notTerm . same
-  symbSpec :: String -> a
-  symbSpec s = wrap (ssymbTerm s) (ssymbTerm s)
-  concSpec :: b -> a
-  concSpec v = wrap (concTerm v) (concTerm v)
+  symSpec :: String -> a
+  symSpec s = wrap (ssymTerm s) (ssymTerm s)
+  conSpec :: b -> a
+  conSpec v = wrap (conTerm v) (conTerm v)
 
 constructUnarySpec ::
   forall a av b bv.
@@ -243,9 +243,9 @@ boolonly :: Int -> Gen BoolOnlySpec
 boolonly 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bool")
+          return . symSpec . (++ "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = oneof $ return . concSpec <$> [True, False]
+      r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
 boolonly n | n > 0 = do
   v1 <- boolonly (n - 1)
@@ -290,9 +290,9 @@ boolWithLIA :: Int -> Gen BoolWithLIASpec
 boolWithLIA 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bool")
+          return . symSpec . (++ "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = oneof $ return . concSpec <$> [True, False]
+      r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
 boolWithLIA n | n > 0 = do
   v1 <- boolWithLIA (n - 1)
@@ -316,9 +316,9 @@ liaWithBool :: Int -> Gen LIAWithBoolSpec
 liaWithBool 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "int")
+          return . symSpec . (++ "int")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = concSpec <$> arbitrary
+      r = conSpec <$> arbitrary
    in oneof [r, s]
 liaWithBool n | n > 0 = do
   v1b <- boolWithLIA (n - 1)
@@ -366,9 +366,9 @@ boolWithFSBV :: forall proxy bv. (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), 
 boolWithFSBV _ 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bool")
+          return . symSpec . (++ "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = oneof $ return . concSpec <$> [True, False]
+      r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
 boolWithFSBV p n | n > 0 = do
   v1 <- boolWithFSBV p (n - 1)
@@ -397,9 +397,9 @@ fsbvWithBool ::
 fsbvWithBool _ 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "int")
+          return . symSpec . (++ "int")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = concSpec . fromInteger <$> arbitrary
+      r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
 fsbvWithBool p n | n > 0 = do
   v1b <- boolWithFSBV p (n - 1)
@@ -488,9 +488,9 @@ dsbv1 ::
 dsbv1 _ 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bv1")
+          return . symSpec . (++ "bv1")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = concSpec . fromInteger <$> arbitrary
+      r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
 dsbv1 p depth | depth > 0 = do
   v1 <- dsbv1 p (depth - 1)
@@ -570,9 +570,9 @@ dsbv2 ::
 dsbv2 _ 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bv2")
+          return . symSpec . (++ "bv2")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = concSpec . fromInteger <$> arbitrary
+      r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
 dsbv2 p depth | depth > 0 = do
   v1 <- dsbv1 p (depth - 1)
@@ -652,9 +652,9 @@ dsbv3 ::
 dsbv3 _ 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bv3")
+          return . symSpec . (++ "bv3")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = concSpec . fromInteger <$> arbitrary
+      r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
 dsbv3 p depth | depth > 0 = do
   v1 <- dsbv1 p (depth - 1)
@@ -733,9 +733,9 @@ dsbv4 ::
 dsbv4 _ 0 =
   let s =
         oneof $
-          return . symbSpec . (++ "bv4")
+          return . symSpec . (++ "bv4")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = concSpec . fromInteger <$> arbitrary
+      r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
 dsbv4 p depth | depth > 0 = do
   v1 <- dsbv1 p (depth - 1)

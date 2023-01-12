@@ -17,12 +17,12 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,
     constructBinary,
     constructTernary,
-    concTerm,
-    symbTerm,
-    ssymbTerm,
-    isymbTerm,
-    sinfosymbTerm,
-    iinfosymbTerm,
+    conTerm,
+    symTerm,
+    ssymTerm,
+    isymTerm,
+    sinfosymTerm,
+    iinfosymTerm,
     notTerm,
     orTerm,
     andTerm,
@@ -111,38 +111,38 @@ constructTernary ::
 constructTernary tag tm1 tm2 tm3 = internTerm $ UTernaryTerm tag tm1 tm2 tm3
 {-# INLINE constructTernary #-}
 
-concTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
-concTerm t = internTerm $ UConcTerm t
-{-# INLINE concTerm #-}
+conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
+conTerm t = internTerm $ UConTerm t
+{-# INLINE conTerm #-}
 
-symbTerm :: forall t. (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
-symbTerm t = internTerm $ USymbTerm t
-{-# INLINE symbTerm #-}
+symTerm :: forall t. (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
+symTerm t = internTerm $ USymTerm t
+{-# INLINE symTerm #-}
 
-ssymbTerm :: (SupportedPrim t, Typeable t) => String -> Term t
-ssymbTerm = symbTerm . SimpleSymbol
-{-# INLINE ssymbTerm #-}
+ssymTerm :: (SupportedPrim t, Typeable t) => String -> Term t
+ssymTerm = symTerm . SimpleSymbol
+{-# INLINE ssymTerm #-}
 
-isymbTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
-isymbTerm str idx = symbTerm $ IndexedSymbol str idx
-{-# INLINE isymbTerm #-}
+isymTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
+isymTerm str idx = symTerm $ IndexedSymbol str idx
+{-# INLINE isymTerm #-}
 
-sinfosymbTerm ::
+sinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
   String ->
   a ->
   Term t
-sinfosymbTerm s info = symbTerm $ WithInfo (SimpleSymbol s) info
-{-# INLINE sinfosymbTerm #-}
+sinfosymTerm s info = symTerm $ WithInfo (SimpleSymbol s) info
+{-# INLINE sinfosymTerm #-}
 
-iinfosymbTerm ::
+iinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
   String ->
   Int ->
   a ->
   Term t
-iinfosymbTerm str idx info = symbTerm $ WithInfo (IndexedSymbol str idx) info
-{-# INLINE iinfosymbTerm #-}
+iinfosymTerm str idx info = symTerm $ WithInfo (IndexedSymbol str idx) info
+{-# INLINE iinfosymTerm #-}
 
 notTerm :: Term Bool -> Term Bool
 notTerm = internTerm . UNotTerm

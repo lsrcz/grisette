@@ -5,12 +5,12 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,
     constructBinary,
     constructTernary,
-    concTerm,
-    symbTerm,
-    ssymbTerm,
-    isymbTerm,
-    sinfosymbTerm,
-    iinfosymbTerm,
+    conTerm,
+    symTerm,
+    ssymTerm,
+    isymTerm,
+    sinfosymTerm,
+    iinfosymTerm,
     notTerm,
     orTerm,
     andTerm,
@@ -72,16 +72,16 @@ constructTernary ::
   Term arg2 ->
   Term arg3 ->
   Term t
-concTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
-symbTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
-ssymbTerm :: (SupportedPrim t, Typeable t) => String -> Term t
-isymbTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
-sinfosymbTerm ::
+conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
+symTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
+ssymTerm :: (SupportedPrim t, Typeable t) => String -> Term t
+isymTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
+sinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
   String ->
   a ->
   Term t
-iinfosymbTerm ::
+iinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
   String ->
   Int ->

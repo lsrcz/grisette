@@ -85,7 +85,7 @@ data CEGISCondition bool = CEGISCondition bool bool deriving (Generic)
 -- would be set to true, meaning that all programs in the program space are
 -- allowed.
 cegisPostCond :: SymBoolOp bool => bool -> CEGISCondition bool
-cegisPostCond = CEGISCondition (conc True)
+cegisPostCond = CEGISCondition (con True)
 
 -- | Construct a CEGIS condition with both pre- and post-conditions.
 cegisPrePost :: SymBoolOp bool => bool -> bool -> CEGISCondition bool
@@ -209,9 +209,9 @@ cegisExceptVCMultiInputs config cexes interpretFunc f =
     ( \v ->
         simpleMerge
           ( ( \case
-                Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
-                Left AssertionViolation -> cegisPostCond (conc False)
-                _ -> cegisPostCond (conc True)
+                Left AssumptionViolation -> cegisPrePost (con False) (con True)
+                Left AssertionViolation -> cegisPostCond (con False)
+                _ -> cegisPostCond (con True)
             )
               <$> (extractUnionExcept (f v) >>= interpretFunc)
           )
@@ -267,9 +267,9 @@ cegisExceptStdVCMultiInputs config cexes =
 -- :}
 --
 -- >>> :{
---   translation (Left AssumptionViolation) = cegisPrePost (conc False) (conc True)
---   translation (Left AssertionViolation) = cegisPostCond (conc False)
---   translation _ = cegisPostCond (conc True)
+--   translation (Left AssumptionViolation) = cegisPrePost (con False) (con True)
+--   translation (Left AssertionViolation) = cegisPostCond (con False)
+--   translation _ = cegisPostCond (con True)
 -- :}
 --
 -- >>> cegisExcept (UnboundedReasoning z3) x translation res
@@ -313,9 +313,9 @@ cegisExceptVC config inputs f v =
   cegis config inputs $
     simpleMerge $
       ( \case
-          Left AssumptionViolation -> cegisPrePost (conc False) (conc True)
-          Left AssertionViolation -> cegisPostCond (conc False)
-          _ -> cegisPostCond (conc True)
+          Left AssumptionViolation -> cegisPrePost (con False) (con True)
+          Left AssertionViolation -> cegisPostCond (con False)
+          _ -> cegisPostCond (con True)
       )
         <$> (extractUnionExcept v >>= f)
 

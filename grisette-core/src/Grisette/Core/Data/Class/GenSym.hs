@@ -624,7 +624,7 @@ gchoose = runFresh . gchooseFresh
 -- The result will __/not/__ be wrapped in a union-like monad, but will be
 -- wrapped in a monad maintaining the 'Fresh' context.
 --
--- >>> runFresh (gchooseSimpleFresh (Proxy @SymBool) [ssymb "b", ssymb "c", ssymb "d"]) "a" :: SymInteger
+-- >>> runFresh (gchooseSimpleFresh (Proxy @SymBool) [ssym "b", ssym "c", ssym "d"]) "a" :: SymInteger
 -- (ite a@0 b (ite a@1 c d))
 gchooseSimpleFresh ::
   forall proxy bool a m.

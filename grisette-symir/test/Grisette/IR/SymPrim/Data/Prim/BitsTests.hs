@@ -18,193 +18,193 @@ bitsTests =
         "AndBits"
         [ testCase "On both concrete" $ do
             pevalAndBitsTerm
-              (concTerm 3 :: Term (WordN 4))
-              (concTerm 5)
-              @=? concTerm 1,
+              (conTerm 3 :: Term (WordN 4))
+              (conTerm 5)
+              @=? conTerm 1,
           testCase "On zeroBits" $ do
             pevalAndBitsTerm
-              (concTerm 0 :: Term (WordN 4))
-              (ssymbTerm "a")
-              @=? concTerm 0
+              (conTerm 0 :: Term (WordN 4))
+              (ssymTerm "a")
+              @=? conTerm 0
             pevalAndBitsTerm
-              (ssymbTerm "a")
-              (concTerm 0 :: Term (WordN 4))
-              @=? concTerm 0,
+              (ssymTerm "a")
+              (conTerm 0 :: Term (WordN 4))
+              @=? conTerm 0,
           testCase "On all one bits" $ do
             pevalAndBitsTerm
-              (concTerm 15 :: Term (WordN 4))
-              (ssymbTerm "a")
-              @=? ssymbTerm "a"
+              (conTerm 15 :: Term (WordN 4))
+              (ssymTerm "a")
+              @=? ssymTerm "a"
             pevalAndBitsTerm
-              (ssymbTerm "a")
-              (concTerm 15 :: Term (WordN 4))
-              @=? ssymbTerm "a",
+              (ssymTerm "a")
+              (conTerm 15 :: Term (WordN 4))
+              @=? ssymTerm "a",
           testCase "On symbolic" $ do
             pevalAndBitsTerm
-              (ssymbTerm "a" :: Term (WordN 4))
-              (ssymbTerm "b")
+              (ssymTerm "a" :: Term (WordN 4))
+              (ssymTerm "b")
               @=? andBitsTerm
-                (ssymbTerm "a" :: Term (WordN 4))
-                (ssymbTerm "b" :: Term (WordN 4))
+                (ssymTerm "a" :: Term (WordN 4))
+                (ssymTerm "b" :: Term (WordN 4))
         ],
       testGroup
         "OrBits"
         [ testCase "On both concrete" $ do
             pevalOrBitsTerm
-              (concTerm 3 :: Term (WordN 4))
-              (concTerm 5)
-              @=? concTerm 7,
+              (conTerm 3 :: Term (WordN 4))
+              (conTerm 5)
+              @=? conTerm 7,
           testCase "On zeroBits" $ do
             pevalOrBitsTerm
-              (concTerm 0 :: Term (WordN 4))
-              (ssymbTerm "a")
-              @=? ssymbTerm "a"
+              (conTerm 0 :: Term (WordN 4))
+              (ssymTerm "a")
+              @=? ssymTerm "a"
             pevalOrBitsTerm
-              (ssymbTerm "a")
-              (concTerm 0 :: Term (WordN 4))
-              @=? ssymbTerm "a",
+              (ssymTerm "a")
+              (conTerm 0 :: Term (WordN 4))
+              @=? ssymTerm "a",
           testCase "On all one bits" $ do
             pevalOrBitsTerm
-              (concTerm 15 :: Term (WordN 4))
-              (ssymbTerm "a")
-              @=? concTerm 15
+              (conTerm 15 :: Term (WordN 4))
+              (ssymTerm "a")
+              @=? conTerm 15
             pevalOrBitsTerm
-              (ssymbTerm "a")
-              (concTerm 15 :: Term (WordN 4))
-              @=? concTerm 15,
+              (ssymTerm "a")
+              (conTerm 15 :: Term (WordN 4))
+              @=? conTerm 15,
           testCase "On symbolic" $ do
             pevalOrBitsTerm
-              (ssymbTerm "a" :: Term (WordN 4))
-              (ssymbTerm "b")
+              (ssymTerm "a" :: Term (WordN 4))
+              (ssymTerm "b")
               @=? orBitsTerm
-                (ssymbTerm "a" :: Term (WordN 4))
-                (ssymbTerm "b" :: Term (WordN 4))
+                (ssymTerm "a" :: Term (WordN 4))
+                (ssymTerm "b" :: Term (WordN 4))
         ],
       testGroup
         "XorBits"
         [ testCase "On both concrete" $ do
             pevalXorBitsTerm
-              (concTerm 3 :: Term (WordN 4))
-              (concTerm 5)
-              @=? concTerm 6,
+              (conTerm 3 :: Term (WordN 4))
+              (conTerm 5)
+              @=? conTerm 6,
           testCase "On zeroBits" $ do
             pevalXorBitsTerm
-              (concTerm 0 :: Term (WordN 4))
-              (ssymbTerm "a")
-              @=? ssymbTerm "a"
+              (conTerm 0 :: Term (WordN 4))
+              (ssymTerm "a")
+              @=? ssymTerm "a"
             pevalXorBitsTerm
-              (ssymbTerm "a")
-              (concTerm 0 :: Term (WordN 4))
-              @=? ssymbTerm "a",
+              (ssymTerm "a")
+              (conTerm 0 :: Term (WordN 4))
+              @=? ssymTerm "a",
           testCase "On all one bits" $ do
             pevalXorBitsTerm
-              (concTerm 15 :: Term (WordN 4))
-              (ssymbTerm "a")
-              @=? pevalComplementBitsTerm (ssymbTerm "a")
+              (conTerm 15 :: Term (WordN 4))
+              (ssymTerm "a")
+              @=? pevalComplementBitsTerm (ssymTerm "a")
             pevalXorBitsTerm
-              (ssymbTerm "a")
-              (concTerm 15 :: Term (WordN 4))
-              @=? pevalComplementBitsTerm (ssymbTerm "a"),
+              (ssymTerm "a")
+              (conTerm 15 :: Term (WordN 4))
+              @=? pevalComplementBitsTerm (ssymTerm "a"),
           testCase "On single complement" $ do
             pevalXorBitsTerm
-              (pevalComplementBitsTerm $ ssymbTerm "a" :: Term (WordN 4))
-              (ssymbTerm "b")
-              @=? pevalComplementBitsTerm (pevalXorBitsTerm (ssymbTerm "a") (ssymbTerm "b"))
+              (pevalComplementBitsTerm $ ssymTerm "a" :: Term (WordN 4))
+              (ssymTerm "b")
+              @=? pevalComplementBitsTerm (pevalXorBitsTerm (ssymTerm "a") (ssymTerm "b"))
             pevalXorBitsTerm
-              (ssymbTerm "a" :: Term (WordN 4))
-              (pevalComplementBitsTerm $ ssymbTerm "b")
-              @=? pevalComplementBitsTerm (pevalXorBitsTerm (ssymbTerm "a") (ssymbTerm "b")),
+              (ssymTerm "a" :: Term (WordN 4))
+              (pevalComplementBitsTerm $ ssymTerm "b")
+              @=? pevalComplementBitsTerm (pevalXorBitsTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On both complement" $ do
             pevalXorBitsTerm
-              (pevalComplementBitsTerm $ ssymbTerm "a" :: Term (WordN 4))
-              (pevalComplementBitsTerm $ ssymbTerm "b")
-              @=? pevalXorBitsTerm (ssymbTerm "a") (ssymbTerm "b"),
+              (pevalComplementBitsTerm $ ssymTerm "a" :: Term (WordN 4))
+              (pevalComplementBitsTerm $ ssymTerm "b")
+              @=? pevalXorBitsTerm (ssymTerm "a") (ssymTerm "b"),
           testCase "On symbolic" $ do
             pevalXorBitsTerm
-              (ssymbTerm "a" :: Term (WordN 4))
-              (ssymbTerm "b")
+              (ssymTerm "a" :: Term (WordN 4))
+              (ssymTerm "b")
               @=? xorBitsTerm
-                (ssymbTerm "a" :: Term (WordN 4))
-                (ssymbTerm "b" :: Term (WordN 4))
+                (ssymTerm "a" :: Term (WordN 4))
+                (ssymTerm "b" :: Term (WordN 4))
         ],
       testGroup
         "ComplementBits"
         [ testCase "On concrete" $ do
-            pevalComplementBitsTerm (concTerm 5 :: Term (WordN 4)) @=? concTerm 10,
+            pevalComplementBitsTerm (conTerm 5 :: Term (WordN 4)) @=? conTerm 10,
           testCase "On complement" $ do
-            pevalComplementBitsTerm (pevalComplementBitsTerm (ssymbTerm "a") :: Term (WordN 4)) @=? ssymbTerm "a",
+            pevalComplementBitsTerm (pevalComplementBitsTerm (ssymTerm "a") :: Term (WordN 4)) @=? ssymTerm "a",
           testCase "On symbolic" $ do
-            pevalComplementBitsTerm (ssymbTerm "a" :: Term (WordN 4))
-              @=? complementBitsTerm (ssymbTerm "a" :: Term (WordN 4))
+            pevalComplementBitsTerm (ssymTerm "a" :: Term (WordN 4))
+              @=? complementBitsTerm (ssymTerm "a" :: Term (WordN 4))
         ],
       testGroup
         "ShiftBits"
         [ testCase "On concrete" $ do
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) (-5) @=? concTerm 0
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) (-4) @=? concTerm 0
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) (-3) @=? concTerm 1
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) (-2) @=? concTerm 3
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) (-1) @=? concTerm 7
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) 0 @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) 1 @=? concTerm 14
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) 2 @=? concTerm 12
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) 3 @=? concTerm 8
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) 4 @=? concTerm 0
-            pevalShiftBitsTerm (concTerm 15 :: Term (WordN 4)) 5 @=? concTerm 0
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-5) @=? conTerm 0
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-4) @=? conTerm 0
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-3) @=? conTerm 1
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-2) @=? conTerm 3
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-1) @=? conTerm 7
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 0 @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 1 @=? conTerm 14
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 2 @=? conTerm 12
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 3 @=? conTerm 8
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 4 @=? conTerm 0
+            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 5 @=? conTerm 0
 
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) (-5) @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) (-4) @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) (-3) @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) (-2) @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) (-1) @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) 0 @=? concTerm 15
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) 1 @=? concTerm 14
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) 2 @=? concTerm 12
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) 3 @=? concTerm 8
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) 4 @=? concTerm 0
-            pevalShiftBitsTerm (concTerm 15 :: Term (IntN 4)) 5 @=? concTerm 0,
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-5) @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-4) @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-3) @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-2) @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-1) @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 0 @=? conTerm 15
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 1 @=? conTerm 14
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 2 @=? conTerm 12
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 3 @=? conTerm 8
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 4 @=? conTerm 0
+            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 5 @=? conTerm 0,
           testCase "shift 0" $ do
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 0 @=? ssymbTerm "a"
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (IntN 4)) 0 @=? ssymbTerm "a",
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 0 @=? ssymTerm "a"
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (IntN 4)) 0 @=? ssymTerm "a",
           testCase "shift left bitsize" $ do
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 4 @=? concTerm 0
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (IntN 4)) 4 @=? concTerm 0
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 5 @=? concTerm 0
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (IntN 4)) 5 @=? concTerm 0,
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 4 @=? conTerm 0
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (IntN 4)) 4 @=? conTerm 0
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 5 @=? conTerm 0
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (IntN 4)) 5 @=? conTerm 0,
           testCase "shift same direction twice" $ do
-            pevalShiftBitsTerm (pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 1) 2
-              @=? pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 3
-            pevalShiftBitsTerm (pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) (-1)) (-2)
-              @=? pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) (-3),
+            pevalShiftBitsTerm (pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 1) 2
+              @=? pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 3
+            pevalShiftBitsTerm (pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) (-1)) (-2)
+              @=? pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) (-3),
           testCase "shift symbolic" $ do
-            pevalShiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 2
-              @=? shiftBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 2
+            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
+              @=? shiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
         ],
       testGroup
         "Rotate"
         [ testCase "On concrete" $ do
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) (-4) @=? concTerm 3
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) (-3) @=? concTerm 6
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) (-2) @=? concTerm 12
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) (-1) @=? concTerm 9
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) 0 @=? concTerm 3
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) 1 @=? concTerm 6
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) 2 @=? concTerm 12
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) 3 @=? concTerm 9
-            pevalRotateBitsTerm (concTerm 3 :: Term (WordN 4)) 4 @=? concTerm 3,
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-4) @=? conTerm 3
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-3) @=? conTerm 6
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-2) @=? conTerm 12
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-1) @=? conTerm 9
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 0 @=? conTerm 3
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 1 @=? conTerm 6
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 2 @=? conTerm 12
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 3 @=? conTerm 9
+            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 4 @=? conTerm 3,
           testCase "rotate 0" $ do
-            pevalRotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 0 @=? ssymbTerm "a",
+            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 0 @=? ssymTerm "a",
           testCase "rotate extra bits" $ do
-            pevalRotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 4 @=? ssymbTerm "a"
-            pevalRotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 5
-              @=? pevalRotateBitsTerm (ssymbTerm "a") 1
-            pevalRotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) (-1)
-              @=? pevalRotateBitsTerm (ssymbTerm "a") 3,
+            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 4 @=? ssymTerm "a"
+            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 5
+              @=? pevalRotateBitsTerm (ssymTerm "a") 1
+            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) (-1)
+              @=? pevalRotateBitsTerm (ssymTerm "a") 3,
           testCase "rotate twice" $ do
-            pevalRotateBitsTerm (pevalRotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 1) 2
-              @=? pevalRotateBitsTerm (ssymbTerm "a") 3,
+            pevalRotateBitsTerm (pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 1) 2
+              @=? pevalRotateBitsTerm (ssymTerm "a") 3,
           testCase "rotate symbolic" $ do
-            pevalRotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 2
-              @=? rotateBitsTerm (ssymbTerm "a" :: Term (WordN 4)) 2
+            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
+              @=? rotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
         ]
     ]

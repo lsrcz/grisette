@@ -148,9 +148,9 @@ module Grisette.Core
     -- >>> import Grisette.Core
     -- >>> import Grisette.Lib.Base
     -- >>> import Grisette.IR.SymPrim -- provided by grisette-symir package
-    -- >>> conc True :: SymBool -- a concrete value
+    -- >>> con True :: SymBool -- a concrete value
     -- true
-    -- >>> ssymb "a" :: SymBool -- a symbolic constant
+    -- >>> ssym "a" :: SymBool -- a symbolic constant
     -- a
     --
     -- With the @OverloadedStrings@ GHC extension enabled, symbolic constants
@@ -180,9 +180,9 @@ module Grisette.Core
 
     -- *** Creation of solvable type values
     Solvable (..),
-    pattern Conc,
-    slocsymb,
-    ilocsymb,
+    pattern Con,
+    slocsym,
+    ilocsym,
 
     -- *** Symbolic operators
 
@@ -778,7 +778,7 @@ module Grisette.Core
     -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error UnionM SymBool
     -- >>> res
     -- ExceptT (UMrg (If (|| a (! b)) (If a (Single (Left Error1)) (Single (Left Error2))) (Single (Right c))))
-    -- >>> solveExcept (UnboundedReasoning z3) (\case Left _ -> conc False; Right x -> x) res
+    -- >>> solveExcept (UnboundedReasoning z3) (\case Left _ -> con False; Right x -> x) res
     -- Right (Model {a -> False :: Bool, b -> True :: Bool, c -> True :: Bool})
     --
     -- The solver call in the above example means that we want the solver to
