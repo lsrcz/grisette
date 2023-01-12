@@ -56,7 +56,7 @@ available through `PATH`. We recommend that you start with
 [Z3](https://github.com/Z3Prover/z3), as it supports all our examples and is
 usually easier to install.
 [Boolector](https://github.com/Boolector/boolector) is significantly more
-efficient on some examples, but it does not support all of them.
+efficient on some examples, but it does not support all of the examples.
 
 #### Install Z3
 
@@ -93,10 +93,52 @@ James Bornholt.
 
 The example has three parts:
 - We define the arithmetic language. The language is _symbolic_:
-  - its syntax tree represents a set of concrete syntax trees. 
-  - its interpreter accepts such symbolic syntax trees, interpreting at once all represented concrete syntax trees. 
+  - its syntax tree represents a set of concrete syntax trees, and
+  - its interpreter accepts such symbolic syntax trees, and interprete at once all represented concrete syntax trees. 
 - We define the candidate program space of the synthesizer by creating a particular symbolic syntax tree. The synthesizer will search the space of concrete trees for a solution. 
 - We interpret the symbolic syntax tree and pass the resulting constraints to the solver. If a solution exists, the solver returns a concrete tree that agrees with the input-out example. 
+
+### Defining the Arithmetic Language
+
+We will synthesize single-input programs in this example.
+A single input program will be `\x -> E`, where `E` is defined by the following
+grammar:
+
+```
+E -> c      -- constant
+   | x      -- value for input variable
+   | E + E  -- addition
+   | E * E  -- multiplication
+```
+
+The syntax defines how a concrete program is represented. In Grisette, to
+synthesis a program, we need to define a symbolic program that represents a
+whole space of program.
+
+```haskell
+-- The definition of the syntax tree for a symbolic program.
+data SProgram
+  -- SInt represent a constant in the syntax tree. A solver can find out what
+  -- value this constant should be.
+  -- TODO: this is a variable leaf, not a ?? leaf
+  = SConst SymInteger
+  | SInput SymInteger
+  -- SPlus and SMul are binary nodes whose children are **sets** of symbolic symbolic programs. A union is such a set. 
+  | SPlus (UnionM SProgram) (UnionM SProgram)
+  | SMul (UnionM SProgram) (UnionM SProgram)
+  -- Generic helps us derive other type class instances for SProgram.
+  deriving (Generic, Show)
+  -- Some type classes provided by Grisette for building symbolic evaluation
+  -- tools. See the documentation for more details.
+  deriving (GMergeable SymBool, GEvaluateSym Model) via (Default SProgram)
+```
+
+```haskell
+space :: SymInteger -> UnionM SProgram
+space x = SPlus
+  (mrgSingle $ SInput x)
+  (mrgIf "choice" (mrgSingle $ SInput x) (mrgSingle $ SConst "c"))
+```
 
 given io (2,5)
 -- would be nice to show how we get from syntax to space 
@@ -112,20 +154,6 @@ If we instead define it as SPlus (UnionM SProgram) (UnionM SProgram), we get a d
 The UnionM container represents a symbolic set of SPrograms. It's a select. Each solution from the solver will select exactly one member of this set. 
 
 ```haskell
--- The definition of the syntax tree for a symbolic program.
-data SProgram
-  -- SInt represent a **constant** in the syntax tree. A solver can find out what -- TODO: this is a variable leaf, not a ?? leaf
-  -- value this constant should be.
-  = SInt SymInteger
-  -- SPlus and SMul are binary nodes whose children are **sets** of symbolic symbolic programs. A union is such a set. 
-  | SPlus (UnionM SProgram) (UnionM SProgram)
-  | SMul (UnionM SProgram) (UnionM SProgram)
-  -- Generic helps us derive other type class instances for SProgram.
-  deriving (Generic, Show)
-  -- Some type classes provided by Grisette for building symbolic evaluation
-  -- tools. See the documentation for more details.
-  deriving (GMergeable SymBool, GEvaluateSym Model) via (Default SProgram)
-
 -- An interpreter for SProgram.
 -- The interpreter interprets all trees represented by an SProgram.
 -- The result of the interpretation is a single symbolic formula (an SymInteger) that represents the evaluation of all trees. 
@@ -245,5 +273,22 @@ The Grisette library is distributed under the terms of the BSD3 license. The
 If you use Grisette in your research, please use the following bibtex entry:
 
 ```bibtex
-TODO
+@article{10.1145/3571209,
+author = {Lu, Sirui and Bod\'{\i}k, Rastislav},
+title = {Grisette: Symbolic Compilation as a Functional Programming Library},
+year = {2023},
+issue_date = {January 2023},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {7},
+number = {POPL},
+url = {https://doi.org/10.1145/3571209},
+doi = {10.1145/3571209},
+abstract = {The development of constraint solvers simplified automated reasoning about programs and shifted the engineering burden to implementing symbolic compilation tools that translate programs into efficiently solvable constraints. We describe Grisette, a reusable symbolic evaluation framework for implementing domain-specific symbolic compilers. Grisette evaluates all execution paths and merges their states into a normal form that avoids making guards mutually exclusive. This ordered-guards representation reduces the constraint size 5-fold and the solving time more than 2-fold. Grisette is designed entirely as a library, which sidesteps the complications of lifting the host language into the symbolic domain. Grisette is purely functional, enabling memoization of symbolic compilation as well as monadic integration with host libraries. Grisette is statically typed, which allows catching programming errors at compile time rather than delaying their detection to the constraint solver. We implemented Grisette in Haskell and evaluated it on benchmarks that stress both the symbolic evaluation and constraint solving.},
+journal = {Proc. ACM Program. Lang.},
+month = {jan},
+articleno = {16},
+numpages = {33},
+keywords = {State Merging, Symbolic Compilation}
+}
 ```
