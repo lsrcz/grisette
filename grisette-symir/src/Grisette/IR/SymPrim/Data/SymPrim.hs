@@ -222,13 +222,15 @@ instance (SupportedPrim type) => GSOrd (Sym Bool) (Sym type) where \
       (mrgReturn LT) \
       (mrgIf (a `gsymeq` b) (mrgReturn EQ) (mrgReturn GT))
 
-SEQ_SYM (Bool)
-SEQ_SYM (Integer)
-SEQ_SYM ((IntN n))
-SEQ_SYM ((WordN n))
-SORD_SYM (Integer)
-SORD_SYM ((IntN n))
-SORD_SYM ((WordN n))
+#if 1
+SEQ_SYM(Bool)
+SEQ_SYM(Integer)
+SEQ_SYM((IntN n))
+SEQ_SYM((WordN n))
+SORD_SYM(Integer)
+SORD_SYM((IntN n))
+SORD_SYM((WordN n))
+#endif
 
 -- | Symbolic Boolean type.
 type SymBool = Sym Bool
@@ -350,27 +352,29 @@ instance ToCon (Sym (bvw n)) int where \
   toCon (Conc (bvw v :: bvw n)) = Just $ fromIntegral v; \
   toCon _ = Nothing
 
-TOSYM_MACHINE_INTEGER (Int8, IntN 8)
-TOSYM_MACHINE_INTEGER (Int16, IntN 16)
-TOSYM_MACHINE_INTEGER (Int32, IntN 32)
-TOSYM_MACHINE_INTEGER (Int64, IntN 64)
-TOSYM_MACHINE_INTEGER (Word8, WordN 8)
-TOSYM_MACHINE_INTEGER (Word16, WordN 16)
-TOSYM_MACHINE_INTEGER (Word32, WordN 32)
-TOSYM_MACHINE_INTEGER (Word64, WordN 64)
-TOSYM_MACHINE_INTEGER (Int, IntN $intBitwidthQ)
-TOSYM_MACHINE_INTEGER (Word, WordN $intBitwidthQ)
+#if 1
+TOSYM_MACHINE_INTEGER(Int8, IntN 8)
+TOSYM_MACHINE_INTEGER(Int16, IntN 16)
+TOSYM_MACHINE_INTEGER(Int32, IntN 32)
+TOSYM_MACHINE_INTEGER(Int64, IntN 64)
+TOSYM_MACHINE_INTEGER(Word8, WordN 8)
+TOSYM_MACHINE_INTEGER(Word16, WordN 16)
+TOSYM_MACHINE_INTEGER(Word32, WordN 32)
+TOSYM_MACHINE_INTEGER(Word64, WordN 64)
+TOSYM_MACHINE_INTEGER(Int, IntN $intBitwidthQ)
+TOSYM_MACHINE_INTEGER(Word, WordN $intBitwidthQ)
 
-TOCON_MACHINE_INTEGER (IntN, 8, Int8)
-TOCON_MACHINE_INTEGER (IntN, 16, Int16)
-TOCON_MACHINE_INTEGER (IntN, 32, Int32)
-TOCON_MACHINE_INTEGER (IntN, 64, Int64)
-TOCON_MACHINE_INTEGER (WordN, 8, Word8)
-TOCON_MACHINE_INTEGER (WordN, 16, Word16)
-TOCON_MACHINE_INTEGER (WordN, 32, Word32)
-TOCON_MACHINE_INTEGER (WordN, 64, Word64)
-TOCON_MACHINE_INTEGER (IntN, $intBitwidthQ, Int)
-TOCON_MACHINE_INTEGER (WordN, $intBitwidthQ, Word)
+TOCON_MACHINE_INTEGER(IntN, 8, Int8)
+TOCON_MACHINE_INTEGER(IntN, 16, Int16)
+TOCON_MACHINE_INTEGER(IntN, 32, Int32)
+TOCON_MACHINE_INTEGER(IntN, 64, Int64)
+TOCON_MACHINE_INTEGER(WordN, 8, Word8)
+TOCON_MACHINE_INTEGER(WordN, 16, Word16)
+TOCON_MACHINE_INTEGER(WordN, 32, Word32)
+TOCON_MACHINE_INTEGER(WordN, 64, Word64)
+TOCON_MACHINE_INTEGER(IntN, $intBitwidthQ, Int)
+TOCON_MACHINE_INTEGER(WordN, $intBitwidthQ, Word)
+#endif
 
 -- | Symbolic unsigned bit vector type.
 type SymWordN n = Sym (WordN n)

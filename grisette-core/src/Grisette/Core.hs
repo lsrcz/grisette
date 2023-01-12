@@ -617,6 +617,10 @@ module Grisette.Core
     pattern IfU,
     GMonadUnion,
     simpleMerge,
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
     (#~),
 
     -- * Conversion between Concrete and Symbolic values
