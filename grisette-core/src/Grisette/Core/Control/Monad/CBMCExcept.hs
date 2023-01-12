@@ -8,10 +8,20 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Core.Control.Monad.CBMCExcept
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Control.Monad.CBMCExcept
-  ( CBMCEither (..),
+  ( -- * CBMC-like error handling
+    CBMCEither (..),
     CBMCExceptT (..),
     cbmcExcept,
     mapCBMCExceptT,
@@ -45,6 +55,7 @@ import Grisette.Core.Data.Class.ToSym
 import Language.Haskell.TH.Syntax (Lift)
 import Unsafe.Coerce
 
+-- | A wrapper type for 'Either'. Uses different merging strategies.
 newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}
   deriving newtype (Eq, Eq1, Ord, Ord1, Read, Read1, Show, Show1, Functor, Applicative, Monad, Hashable, NFData)
   deriving stock (Generic, Lift)
@@ -65,7 +76,7 @@ instance
     GenSymSimple b b,
     GMergeable bool b
   ) =>
-  GGenSym bool (CBMCEither a b) (CBMCEither a b)
+  GenSym bool (CBMCEither a b) (CBMCEither a b)
 
 instance
   ( GenSymSimple a a,
@@ -76,10 +87,10 @@ instance
   simpleFresh = derivedSameShapeSimpleFresh
 
 instance
-  (SymBoolOp bool, GenSymSimple () bool, GGenSym bool () a, GMergeable bool a, GGenSym bool () b, GMergeable bool b) =>
-  GGenSym bool () (CBMCEither a b)
+  (SymBoolOp bool, GenSymSimple () bool, GenSym bool () a, GMergeable bool a, GenSym bool () b, GMergeable bool b) =>
+  GenSym bool () (CBMCEither a b)
   where
-  gfresh = derivedNoSpecGFresh
+  fresh = derivedNoSpecFresh
 
 deriving newtype instance (SymBoolOp bool, GSOrd bool a, GSOrd bool b) => GSOrd bool (CBMCEither a b)
 
@@ -143,15 +154,19 @@ instance (SymBoolOp bool, GMergeable bool e) => GMergeable1 bool (CBMCEither e) 
 cbmcEither :: forall a c b. (a -> c) -> (b -> c) -> CBMCEither a b -> c
 cbmcEither l r v = either l r (unsafeCoerce v)
 
+-- | Wrap an 'Either' value in 'CBMCExceptT'
 cbmcExcept :: (Monad m) => Either e a -> CBMCExceptT e m a
 cbmcExcept m = CBMCExceptT (return $ CBMCEither m)
 
+-- | Map the error and values in a 'CBMCExceptT'
 mapCBMCExceptT :: (m (Either e a) -> n (Either e' b)) -> CBMCExceptT e m a -> CBMCExceptT e' n b
 mapCBMCExceptT f m = CBMCExceptT $ (unsafeCoerce . f . unsafeCoerce) (runCBMCExceptT m)
 
+-- | Map the error in a 'CBMCExceptT'
 withCBMCExceptT :: Functor m => (e -> e') -> CBMCExceptT e m a -> CBMCExceptT e' m a
 withCBMCExceptT f = mapCBMCExceptT $ fmap $ either (Left . f) Right
 
+-- | Similar to 'ExceptT', but with different error handling mechanism.
 newtype CBMCExceptT e m a = CBMCExceptT {runCBMCExceptT :: m (CBMCEither e a)} deriving stock (Generic, Generic1)
 
 instance (Eq e, Eq1 m) => Eq1 (CBMCExceptT e m) where
@@ -324,15 +339,15 @@ instance
   {-# OVERLAPPABLE #-}
   ( SymBoolOp bool,
     GenSymSimple () bool,
-    GGenSym bool spec (m (CBMCEither a b)),
+    GenSym bool spec (m (CBMCEither a b)),
     GMergeable1 bool m,
     GMergeable bool a,
     GMergeable bool b
   ) =>
-  GGenSym bool spec (CBMCExceptT a m b)
+  GenSym bool spec (CBMCExceptT a m b)
   where
-  gfresh v = do
-    x <- gfresh v
+  fresh v = do
+    x <- fresh v
     return $ merge . fmap CBMCExceptT $ x
 
 instance
@@ -360,7 +375,7 @@ instance
     GMergeable bool e,
     GMergeable bool a
   ) =>
-  GGenSym bool (CBMCExceptT e m a) (CBMCExceptT e m a)
+  GenSym bool (CBMCExceptT e m a) (CBMCExceptT e m a)
 
 instance
   (SymBoolOp bool, GUnionLike bool m, GMergeable bool e, GMergeable bool a) =>

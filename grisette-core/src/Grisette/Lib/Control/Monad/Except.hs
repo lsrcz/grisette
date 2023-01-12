@@ -1,5 +1,16 @@
+{-# LANGUAGE Trustworthy #-}
+
+-- |
+-- Module      :   Grisette.Lib.Control.Monad.Except
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Lib.Control.Monad.Except
-  ( mrgThrowError,
+  ( -- * mrg* variants for operations in "Control.Monad.Except"
+    mrgThrowError,
     mrgCatchError,
   )
 where
@@ -10,12 +21,12 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'throwError' with 'Mergeable' knowledge propagation.
+-- | 'throwError' with 'GMergingStrategy' knowledge propagation.
 mrgThrowError :: (SymBoolOp bool, MonadError e m, GMonadUnion bool m, GMergeable bool a) => e -> m a
 mrgThrowError = merge . throwError
 {-# INLINE mrgThrowError #-}
 
--- | 'catchError' with 'Mergeable' knowledge propagation.
+-- | 'catchError' with 'GMergingStrategy' knowledge propagation.
 mrgCatchError ::
   (SymBoolOp bool, MonadError e m, GMonadUnion bool m, GMergeable bool a) =>
   m a ->

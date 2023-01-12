@@ -4,11 +4,29 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Core.Data.Class.ToSym
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Data.Class.ToSym
-  ( ToSym (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
+
+    -- * Converting to symbolic values
+    ToSym (..),
   )
 where
 
@@ -26,14 +44,17 @@ import Data.Int
 import Data.Word
 import Generics.Deriving
 
+-- $setup
+-- >>> import Grisette.IR.SymPrim
+
 -- | Convert a concrete value to symbolic value.
 class ToSym a b where
   -- | Convert a concrete value to symbolic value.
   --
-  -- toSym False :: SymBool
+  -- >>> toSym False :: SymBool
   -- false
   --
-  -- toSym [False, True] :: [SymBool]
+  -- >>> toSym [False, True] :: [SymBool]
   -- [false,true]
   toSym :: a -> b
 

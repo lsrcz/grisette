@@ -9,8 +9,7 @@ import Control.Monad.Except
 import qualified Data.HashSet as S
 import Data.Proxy
 import qualified Data.SBV as SBV
-import Grisette.Backend.SBV.Data.SMT.Config
-import Grisette.Backend.SBV.Data.SMT.Solving ()
+import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
@@ -18,9 +17,9 @@ import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
 import Grisette.IR.SymPrim.Control.Monad.UnionM
 import Grisette.IR.SymPrim.Data.Class.Evaluate
@@ -42,7 +41,7 @@ testCegis config shouldSuccess a bs = do
       where
         verify [] = return ()
         verify (v : vs) = do
-          y <- solveFormula config (evaluateSym False m $ nots v)
+          y <- solve config (evaluateSym False m $ nots v)
           case y of
             Left _ -> do
               verify vs
@@ -50,7 +49,7 @@ testCegis config shouldSuccess a bs = do
   where
     buildFormula :: [SymBool] -> ExceptT VerificationConditions UnionM ()
     buildFormula l = do
-      symFailIfNot AssumptionViolation ((ssymb "internal" :: SymInteger) `gsymge` 0)
+      symAssume ((ssymb "internal" :: SymInteger) `gsymge` 0)
       go l 0
       where
         go :: [SymBool] -> SymInteger -> ExceptT VerificationConditions UnionM ()
@@ -58,7 +57,7 @@ testCegis config shouldSuccess a bs = do
         go (x : xs) i =
           mrgIf
             (ssymb "internal" `gsymge` i &&~ ssymb "internal" `gsymlt` (i + 1))
-            (symFailIfNot AssertionViolation x)
+            (symAssert x)
             (go xs (i + 1))
 
 cegisTests :: TestTree

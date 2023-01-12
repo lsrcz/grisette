@@ -2,8 +2,17 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      :   Grisette.TestUtils.SBool
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.TestUtils.SBool where
 
 import qualified Data.HashMap.Strict as M
@@ -16,9 +25,9 @@ import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
@@ -119,7 +128,7 @@ instance GSOrd SBool SBool where
 instance IsString SBool where
   fromString = ssymb
 
-instance PrimWrapper SBool Bool where
+instance Solvable Bool SBool where
   conc = CBool
   concView (CBool x) = Just x
   concView _ = Nothing
@@ -207,7 +216,7 @@ instance ToSym Bool SBool where
 instance ToSym SBool SBool where
   toSym = id
 
-instance GGenSym SBool () SBool
+instance GenSym SBool () SBool
 
 instance GenSymSimple () SBool where
   simpleFresh _ = do
@@ -217,7 +226,7 @@ instance GenSymSimple () SBool where
       FreshIdent s -> return $ ISBool s i
       FreshIdentWithInfo s info -> return $ IISBool s i info
 
-instance GGenSym SBool SBool SBool
+instance GenSym SBool SBool SBool
 
 instance GenSymSimple SBool SBool where
   simpleFresh _ = simpleFresh ()

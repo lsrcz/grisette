@@ -5,9 +5,27 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 
+-- |
+-- Module      :   Grisette.Core.Control.Exception
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Control.Exception
-  ( AssertionError (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
+
+    -- * Predefined exceptions
+    AssertionError (..),
     VerificationConditions (..),
     symAssert,
     symAssume,
@@ -25,9 +43,9 @@ import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 
@@ -106,12 +124,16 @@ instance TransformError AssertionError AssertionError where
 -- The symbolic execution will continue on the then-branch, where the condition is true.
 -- For the else branch, where the condition is false, the execution will be terminated.
 --
--- /Examples/:
+-- The resulting monadic environment should be compatible with the 'AssertionError'
+-- error type. See 'TransformError' type class for details.
+--
+-- __/Examples/__:
 --
 -- Terminates the execution if the condition is false.
--- Note that we may lose the 'Mergeable' knowledge here if no possible execution path is viable.
--- This may affect the efficiency in theory, but in practice this should not be a problem
--- because Grisette will not try to further execute the terminated paths.
+-- Note that we may lose the 'GMergeable' knowledge here if no possible execution
+-- path is viable. This may affect the efficiency in theory, but in practice this
+-- should not be a problem as all paths are terminated and no further evaluation
+-- would be performed.
 --
 -- >>> symAssert (conc False) :: ExceptT AssertionError UnionM ()
 -- ExceptT (UMrg (Single (Left AssertionError)))
@@ -125,7 +147,7 @@ instance TransformError AssertionError AssertionError where
 -- >>> do; symAssert (conc True); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
 -- ExceptT (UMrg (Single (Right 1)))
 --
--- Splitting the path and terminate one of them.
+-- Splitting the path and terminate one of them when the condition is symbolic.
 --
 -- >>> symAssert (ssymb "a") :: ExceptT AssertionError UnionM ()
 -- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right ()))))
@@ -140,11 +162,11 @@ symAssert ::
   (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
   erm ()
-symAssert = symFailIfNot AssertionError
+symAssert = symAssertTransformableError AssertionError
 
 -- | Used within a monadic multi path computation to begin exception processing.
 --
--- Similar to 'gassert', but terminates the execution path with 'AssumptionViolation' error.
+-- Similar to 'symAssert', but terminates the execution path with 'AssumptionViolation' error.
 --
 -- /Examples/:
 --
@@ -154,4 +176,4 @@ symAssume ::
   (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
   erm ()
-symAssume = symFailIfNot AssumptionViolation
+symAssume = symAssertTransformableError AssumptionViolation
