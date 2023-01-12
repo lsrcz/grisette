@@ -15,6 +15,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim (..),
     UnaryOp (..),
@@ -56,6 +64,12 @@ import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat
 import Type.Reflection
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+
+-- | Indicates that a type is supported and can be represented as a symbolic
+-- term.
 class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim t where
   type PrimConstraint t :: Constraint
   type PrimConstraint t = ()
@@ -116,6 +130,15 @@ class
   partialEvalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
+-- | A typed symbol is a symbol that is associated with a type. Note that the
+-- same symbol bodies with different types are considered different symbols
+-- and can coexist in a term.
+--
+-- Simple symbols can be created with the 'OverloadedStrings' extension:
+--
+-- >>> :set -XOverloadedStrings
+-- >>> "a" :: TypedSymbol Bool
+-- a :: Bool
 data TypedSymbol t where
   SimpleSymbol :: SupportedPrim t => String -> TypedSymbol t
   IndexedSymbol :: SupportedPrim t => String -> Int -> TypedSymbol t
@@ -805,7 +828,7 @@ defaultValueForIntegerDyn = toModelValue defaultValueForInteger
 
 -- Basic Integer
 instance SupportedPrim Integer where
-  pformatConc i = show i ++ "I"
+  pformatConc = show
   defaultValue = defaultValueForInteger
   defaultValueDynamic _ = defaultValueForIntegerDyn
 
@@ -823,6 +846,21 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
 
 data FuncArg = FuncArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
 
+-- | General symbolic function type. Use the '#' operator to apply the function.
+-- Note that this function should be applied to symbolic values only. It is by
+-- itself already a symbolic value, but can be considered partially concrete
+-- as the function body is specified. Use 'Grisette.IR.SymPrim.Data.SymPrim.-~>' for uninterpreted general
+-- symbolic functions.
+--
+-- The result would be partially evaluated.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeOperators
+-- >>> let f = ("x" :: TypedSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
+-- >>> f # 1    -- 1 has the type SymInteger
+-- (+ 2 y)
+-- >>> f # "a"  -- "a" has the type SymInteger
+-- (+ 1 (+ a y))
 data (-->) a b where
   GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
@@ -846,8 +884,3 @@ instance NFData (a --> b) where
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = GeneralFunc (WithInfo (SimpleSymbol "a") FuncArg) (concTerm defaultValue)
-
-instance (SupportedPrim a, SupportedPrim b) => Function (a --> b) where
-  type Arg (a --> b) = Term a
-  type Ret (a --> b) = Term b
-  (GeneralFunc arg tm) # v = substTerm arg v tm

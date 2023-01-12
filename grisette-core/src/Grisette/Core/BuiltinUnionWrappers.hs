@@ -2,9 +2,19 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE Trustworthy #-}
 
+-- |
+-- Module      :   Grisette.Core.BuiltinUnionWrapper
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.BuiltinUnionWrappers
-  ( mrgTrue,
+  ( -- * Builtin constructor wrappers for some common data types
+    mrgTrue,
     mrgFalse,
     mrgUnit,
     mrgTuple2,

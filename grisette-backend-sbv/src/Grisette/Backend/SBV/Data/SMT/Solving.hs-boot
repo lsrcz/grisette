@@ -1,14 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Backend.SBV.Data.SMT.Config
+module Grisette.Backend.SBV.Data.SMT.Solving
   ( GrisetteSMTConfig (..),
-    sbvConfig,
     TermTy,
   )
 where
@@ -46,7 +44,3 @@ data GrisetteSMTConfig (integerBitWidth :: Nat) where
     (KnownNat integerBitWidth, IsZero integerBitWidth ~ 'False, SBV.BVIsNonZero integerBitWidth) =>
     SBV.SMTConfig ->
     GrisetteSMTConfig integerBitWidth
-
-sbvConfig :: forall integerBitWidth. GrisetteSMTConfig integerBitWidth -> SBV.SMTConfig
-sbvConfig (UnboundedReasoning config) = config
-sbvConfig (BoundedReasoning config) = config

@@ -16,9 +16,9 @@ import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.GenSym
-import Grisette.Core.Data.Class.PrimWrapper
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
@@ -567,7 +567,7 @@ unionMBaseTests =
       testGroup
         "GenSym"
         [ testCase "GenSym with spec" $ do
-            (ggenSym (ListSpec 1 3 ()) "a" :: UnionMBase SBool (UnionMBase SBool [SBool]))
+            (genSym (ListSpec 1 3 ()) "a" :: UnionMBase SBool (UnionMBase SBool [SBool]))
               @=? mrgSingle
                 ( mrgIf
                     (ISBool "a" 3)
@@ -588,7 +588,7 @@ unionMBaseTests =
                     (mrgSingle [ISBool "a" 0, ISBool "a" 1, ISBool "a" 2])
                 ),
           testCase "GenSym with same shape" $ do
-            ( ggenSym
+            ( genSym
                 ( mrgIf
                     (SSBool "a")
                     (mrgSingle [SSBool "x"])

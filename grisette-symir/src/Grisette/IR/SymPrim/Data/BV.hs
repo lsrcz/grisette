@@ -12,7 +12,15 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
-module Grisette.IR.SymPrim.Data.BV where
+-- |
+-- Module      :   Grisette.IR.SymPrim.Data.BV
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
+module Grisette.IR.SymPrim.Data.BV (IntN (..), WordN (..)) where
 
 import Control.DeepSeq
 import Control.Exception
@@ -27,6 +35,8 @@ import Grisette.Core.Data.Class.BitVector
 import Language.Haskell.TH.Syntax
 import Numeric
 
+-- |
+-- Symbolic unsigned bit vectors.
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
   deriving (Eq, Ord, Generic, Lift, Hashable, NFData)
 
@@ -39,6 +49,8 @@ instance (KnownNat n, 1 <= n) => Show (WordN n) where
       binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
+-- |
+-- Symbolic signed bit vectors.
 newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
   deriving (Eq, Generic, Lift, Hashable, NFData)
 

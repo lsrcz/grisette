@@ -4,11 +4,29 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Core.Data.Class.ToCon
+-- Copyright   :   (c) Sirui Lu 2021-2022
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Data.Class.ToCon
-  ( ToCon (..),
+  ( -- * Note for the examples
+
+    --
+
+    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
+    -- types, and the examples in this module rely on the implementations in
+    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
+
+    -- * Converting to concrete values
+    ToCon (..),
   )
 where
 
@@ -78,20 +96,22 @@ instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :*: b1) (a2 :*: b2) where
 instance ToCon type type where \
   toCon = Just
 
-CONCRETE_TOCON (Bool)
-CONCRETE_TOCON (Integer)
-CONCRETE_TOCON (Char)
-CONCRETE_TOCON (Int)
-CONCRETE_TOCON (Int8)
-CONCRETE_TOCON (Int16)
-CONCRETE_TOCON (Int32)
-CONCRETE_TOCON (Int64)
-CONCRETE_TOCON (Word)
-CONCRETE_TOCON (Word8)
-CONCRETE_TOCON (Word16)
-CONCRETE_TOCON (Word32)
-CONCRETE_TOCON (Word64)
-CONCRETE_TOCON (B.ByteString)
+#if 1
+CONCRETE_TOCON(Bool)
+CONCRETE_TOCON(Integer)
+CONCRETE_TOCON(Char)
+CONCRETE_TOCON(Int)
+CONCRETE_TOCON(Int8)
+CONCRETE_TOCON(Int16)
+CONCRETE_TOCON(Int32)
+CONCRETE_TOCON(Int64)
+CONCRETE_TOCON(Word)
+CONCRETE_TOCON(Word8)
+CONCRETE_TOCON(Word16)
+CONCRETE_TOCON(Word32)
+CONCRETE_TOCON(Word64)
+CONCRETE_TOCON(B.ByteString)
+#endif
 
 -- Unit
 instance ToCon () () where
