@@ -321,31 +321,31 @@ class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
   -- needed.
   --
   -- >>> runFresh (fresh ()) "a" :: UnionM SymBool
-  -- UMrg (Single a@0)
+  -- {a@0}
   --
   -- The following example generates booleans, which cannot be merged into a
   -- single value with type 'Bool'. No specification is needed.
   --
   -- >>> runFresh (fresh ()) "a" :: UnionM Bool
-  -- UMrg (If a@0 (Single False) (Single True))
+  -- {If a@0 False True}
   --
   -- The following example generates @Maybe Bool@s.
   -- There are more than one symbolic constants introduced, and their uniqueness
   -- is ensured. No specification is needed.
   --
   -- >>> runFresh (fresh ()) "a" :: UnionM (Maybe Bool)
-  -- UMrg (If a@0 (Single Nothing) (If a@1 (Single (Just False)) (Single (Just True))))
+  -- {If a@0 Nothing (If a@1 (Just False) (Just True))}
   --
   -- The following example generates lists of symbolic booleans with length 1 to 2.
   --
   -- >>> runFresh (fresh (ListSpec 1 2 ())) "a" :: UnionM [SymBool]
-  -- UMrg (If a@2 (Single [a@1]) (Single [a@0,a@1]))
+  -- {If a@2 [a@1] [a@0,a@1]}
   --
   -- When multiple symbolic values are generated, there will not be any
   -- identifier collision
   --
   -- >>> runFresh (do; a <- fresh (); b <- fresh (); return (a, b)) "a" :: (UnionM SymBool, UnionM SymBool)
-  -- (UMrg (Single a@0),UMrg (Single a@1))
+  -- ({a@0},{a@1})
   fresh ::
     ( MonadFresh m,
       GMonadUnion bool u
@@ -366,7 +366,7 @@ class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
 -- symbolic constants in the generated symbolic values.
 --
 -- >>> genSym (ListSpec 1 2 ()) "a" :: UnionM [SymBool]
--- UMrg (If a@2 (Single [a@1]) (Single [a@0,a@1]))
+-- {If a@2 [a@1] [a@0,a@1]}
 genSym :: (GenSym bool spec a, GMonadUnion bool u) => spec -> FreshIdent -> u a
 genSym = runFresh . fresh
 
@@ -584,7 +584,7 @@ derivedSameShapeSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 -- maintaining the 'MonadFresh' context.
 --
 -- >>> runFresh (gchooseFresh [1,2,3]) "a" :: UnionM Integer
--- UMrg (If a@0 (Single 1) (If a@1 (Single 2) (Single 3)))
+-- {If a@0 1 (If a@1 2 3)}
 gchooseFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
@@ -669,7 +669,7 @@ gchooseSimple p = runFresh . gchooseSimpleFresh p
 -- >>> let a = runFresh (gchooseFresh [1, 2]) "a" :: UnionM Integer
 -- >>> let b = runFresh (gchooseFresh [2, 3]) "b" :: UnionM Integer
 -- >>> runFresh (gchooseUnionFresh [a, b]) "c" :: UnionM Integer
--- UMrg (If (&& c@0 a@0) (Single 1) (If (|| c@0 b@0) (Single 2) (Single 3)))
+-- {If (&& c@0 a@0) 1 (If (|| c@0 b@0) 2 3)}
 gchooseUnionFresh ::
   forall bool a m u.
   ( SymBoolOp bool,
@@ -750,7 +750,7 @@ instance (SymBoolOp bool, GenSymSimple () bool) => GenSym bool () Bool where
 -- | Specification for enum values with upper bound (exclusive). The result would chosen from [0 .. upperbound].
 --
 -- >>> runFresh (fresh (EnumGenUpperBound @Integer 4)) "c" :: UnionM Integer
--- UMrg (If c@0 (Single 0) (If c@1 (Single 1) (If c@2 (Single 2) (Single 3))))
+-- {If c@0 0 (If c@1 1 (If c@2 2 3))}
 newtype EnumGenUpperBound a = EnumGenUpperBound a
 
 instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => GenSym bool (EnumGenUpperBound v) v where
@@ -759,7 +759,7 @@ instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => Ge
 -- | Specification for numbers with lower bound (inclusive) and upper bound (exclusive)
 --
 -- >>> runFresh (fresh (EnumGenBound @Integer 0 4)) "c" :: UnionM Integer
--- UMrg (If c@0 (Single 0) (If c@1 (Single 1) (If c@2 (Single 2) (Single 3))))
+-- {If c@0 0 (If c@1 1 (If c@2 2 3))}
 data EnumGenBound a = EnumGenBound a a
 
 instance (SymBoolOp bool, GenSymSimple () bool, Enum v, GMergeable bool v) => GenSym bool (EnumGenBound v) v where
@@ -825,10 +825,10 @@ instance
 -- | Specification for list generation.
 --
 -- >>> runFresh (fresh (ListSpec 0 2 ())) "c" :: UnionM [SymBool]
--- UMrg (If c@2 (Single []) (If c@3 (Single [c@1]) (Single [c@0,c@1])))
+-- {If c@2 [] (If c@3 [c@1] [c@0,c@1])}
 --
 -- >>> runFresh (fresh (ListSpec 0 2 (SimpleListSpec 1 ()))) "c" :: UnionM [[SymBool]]
--- UMrg (If c@2 (Single []) (If c@3 (Single [[c@1]]) (Single [[c@0],[c@1]])))
+-- {If c@2 [] (If c@3 [[c@1]] [[c@0],[c@1]])}
 data ListSpec spec = ListSpec
   { -- | The minimum length of the generated lists
     genListMinLength :: Int,

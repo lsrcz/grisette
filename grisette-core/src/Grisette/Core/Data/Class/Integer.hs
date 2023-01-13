@@ -49,13 +49,13 @@ class SignedDivMod bool a where
   -- | Safe signed 'div' with monadic error handling in multi-path execution.
   --
   -- >>> divs (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
-  -- ExceptT (UMrg (If (= b 0) (Single (Left AssertionError)) (Single (Right (div a b)))))
+  -- ExceptT {If (= b 0) (Left AssertionError) (Right (div a b))}
   divs :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
   -- | Safe signed 'mod' with monadic error handling in multi-path execution.
   --
   -- >>> mods (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
-  -- ExceptT (UMrg (If (= b 0) (Single (Left AssertionError)) (Single (Right (mod a b)))))
+  -- ExceptT {If (= b 0) (Left AssertionError) (Right (mod a b))}
   mods :: (MonadError e uf, GMonadUnion bool uf, TransformError ArithException e) => a -> a -> uf a
 
 -- | Safe unsigned 'div' and 'mod' with monadic error handling in multi-path

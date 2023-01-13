@@ -171,9 +171,9 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
   -- Note that this function cannot propagate the 'GMergeable' knowledge.
   --
   -- >>> single "a" :: UnionM SymInteger
-  -- UAny (Single a)
+  -- <a>
   -- >>> mrgSingle "a" :: UnionM SymInteger
-  -- UMrg (Single a)
+  -- {a}
   single :: a -> u a
 
   -- | If-then-else on two union values.
@@ -182,15 +182,15 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
   -- it may use the merging strategy from the branches to merge the results.
   --
   -- >>> unionIf "a" (single "b") (single "c") :: UnionM SymInteger
-  -- UAny (If a (Single b) (Single c))
+  -- <If a b c>
   -- >>> unionIf "a" (mrgSingle "b") (single "c") :: UnionM SymInteger
-  -- UMrg (Single (ite a b c))
+  -- {(ite a b c)}
   unionIf :: bool -> u a -> u a -> u a
 
   -- | Merge the contents with some merge strategy.
   --
   -- >>> mergeWithStrategy grootStrategy $ unionIf "a" (single "b") (single "c") :: UnionM SymInteger
-  -- UMrg (Single (ite a b c))
+  -- {(ite a b c)}
   --
   -- __Note:__ Be careful to call this directly in your code.
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
@@ -204,7 +204,7 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
   -- | Symbolic @if@ control flow with the result merged with some merge strategy.
   --
   -- >>> mrgIfWithStrategy grootStrategy "a" (mrgSingle "b") (single "c") :: UnionM SymInteger
-  -- UMrg (Single (ite a b c))
+  -- {(ite a b c)}
   --
   -- __Note:__ Be careful to call this directly in your code.
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
@@ -220,7 +220,7 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
   -- | Wrap a single value in the union and capture the 'GMergeable' knowledge.
   --
   -- >>> mrgSingleWithStrategy grootStrategy "a" :: UnionM SymInteger
-  -- UMrg (Single a)
+  -- {a}
   --
   -- __Note:__ Be careful to call this directly in your code.
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
@@ -238,7 +238,7 @@ class (GSimpleMergeable1 bool u, GMergeable1 bool u, SymBoolOp bool) => GUnionLi
 -- Equivalent to @'mrgIfWithStrategy' 'grootStrategy'@.
 --
 -- >>> mrgIf "a" (single "b") (single "c") :: UnionM SymInteger
--- UMrg (Single (ite a b c))
+-- {(ite a b c)}
 mrgIf :: (GUnionLike bool u, GMergeable bool a) => bool -> u a -> u a -> u a
 mrgIf = mrgIfWithStrategy grootStrategy
 {-# INLINE mrgIf #-}
@@ -248,7 +248,7 @@ mrgIf = mrgIfWithStrategy grootStrategy
 -- Equivalent to @'mergeWithStrategy' 'grootStrategy'@.
 --
 -- >>> merge $ unionIf "a" (single "b") (single "c") :: UnionM SymInteger
--- UMrg (Single (ite a b c))
+-- {(ite a b c)}
 merge :: (GUnionLike bool u, GMergeable bool a) => u a -> u a
 merge = mergeWithStrategy grootStrategy
 {-# INLINE merge #-}
@@ -258,7 +258,7 @@ merge = mergeWithStrategy grootStrategy
 -- Equivalent to @'mrgSingleWithStrategy' 'grootStrategy'@.
 --
 -- >>> mrgSingle "a" :: UnionM SymInteger
--- UMrg (Single a)
+-- {a}
 mrgSingle :: (GUnionLike bool u, GMergeable bool a) => a -> u a
 mrgSingle = mrgSingleWithStrategy grootStrategy
 {-# INLINE mrgSingle #-}
@@ -696,9 +696,9 @@ class (GUnionLike bool u) => GUnionPrjOp bool (u :: Type -> Type) | u -> bool wh
   -- >>> ifView (single 1 :: UnionM Integer)
   -- Nothing
   -- >>> ifView (unionIf "a" (single 1) (single 2) :: UnionM Integer)
-  -- Just (a,UAny (Single 1),UAny (Single 2))
+  -- Just (a,<1>,<2>)
   -- >>> ifView (mrgIf "a" (single 1) (single 2) :: UnionM Integer)
-  -- Just (a,UMrg (Single 1),UMrg (Single 2))
+  -- Just (a,{1},{2})
   ifView :: u a -> Maybe (bool, u a, u a)
 
   -- | The leftmost value in the union.
@@ -719,7 +719,7 @@ pattern SingleU x <-
 
 -- | Pattern match to extract guard values with 'ifView'
 -- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of IfU c t f -> (c,t,f)
--- (a,UAny (Single 1),UAny (Single 2))
+-- (a,<1>,<2>)
 pattern IfU :: GUnionPrjOp bool u => bool -> u a -> u a -> u a
 pattern IfU c t f <-
   (ifView -> Just (c, t, f))
@@ -732,7 +732,7 @@ pattern IfU c t f <-
 -- 'simpleMerge' will merge it and extract the single merged value.
 --
 -- >>> unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool
--- UAny (If a (Single b) (Single c))
+-- <If a b c>
 -- >>> simpleMerge $ (unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
 -- (ite a b c)
 simpleMerge :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
@@ -781,7 +781,7 @@ onUnion4 f ua ub uc ud = simpleMerge $ f <$> ua <*> ub <*> uc <*> ud
 --
 -- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
 -- >>> f #~ (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
--- UMrg (If (&& b a) (Single 1) (If b (Single 2) (If a (Single 3) (Single 4))))
+-- {If (&& b a) 1 (If b 2 (If a 3 4))}
 (#~) ::
   (SymBoolOp bool, Function f, GSimpleMergeable bool (Ret f), GUnionPrjOp bool u, Functor u) =>
   f ->
