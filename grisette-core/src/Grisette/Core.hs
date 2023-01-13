@@ -228,9 +228,9 @@ module Grisette.Core
     -- Here are some examples of using 'mrgSingle' and 'mrgIf':
     --
     -- >>> mrgSingle ["a"] :: UnionM [SymInteger]
-    -- UMrg (Single [a])
+    -- {[a]}
     -- >>> mrgIf "a" (mrgSingle ["b"]) (mrgSingle ["c", "d"]) :: UnionM [SymInteger]
-    -- UMrg (If a (Single [b]) (Single [c,d]))
+    -- {If a [b] [c,d]}
     --
     -- 'UnionM' is a monad, and its bind operation is similar to tree
     -- substitution.
@@ -252,7 +252,7 @@ module Grisette.Core
     -- When this code is evaluated, the result would be as follows:
     --
     -- >>> ret
-    -- UMrg (If (&& a d) (Single [b,e]) (If (|| a d) (Single [b,(ite a e c),(ite a f e)]) (Single [b,c,e,f])))
+    -- {If (&& a d) [b,e] (If (|| a d) [b,(ite a e c),(ite a f e)] [b,c,e,f])}
     --
     -- In the result, we can see that the results are reorganized and the two
     -- lists with the same length are merged together.
@@ -278,16 +278,17 @@ module Grisette.Core
     -- Consider the following code:
     --
     -- >>> return 1 :: UnionM Integer
-    -- UAny (Single 1)
+    -- <1>
     -- >>> mrgReturn 1 :: UnionM Integer
-    -- UMrg (Single 1)
+    -- {1}
     -- >>> mrgIf "a" (return 1) (return 2) :: UnionM Integer
-    -- UMrg (If a (Single 1) (Single 2))
+    -- {If a 1 2}
     --
     -- In the first example, using 'return' instead of 'mrgReturn' results in a
-    -- 'UAny' container, which means that no merging strategy is cached.
+    -- 'UAny' container (printed as @<@@...@@>@), which means that no merging
+    -- strategy is cached.
     -- In the second and third example, using 'mrgReturn' or 'mrgIf' results in
-    -- a 'UMrg' container,
+    -- a 'UMrg' container (printed as @{...}@),
     -- which means that the merging strategy is cached.
     --
     -- When working with 'UnionM', it is important to always use the @mrg@ prefixed
@@ -299,7 +300,7 @@ module Grisette.Core
     --
     -- >>> f x y = mrgIf "f" (return x) (return y)
     -- >>> do; a <- mrgIf "a" (return 1) (return 2); f a (a + 1) :: UnionM Integer
-    -- UMrg (If (&& a f) (Single 1) (If (|| a f) (Single 2) (Single 3)))
+    -- {If (&& a f) 1 (If (|| a f) 2 3)}
     --
     -- For more details of this, see the documentation for 'UnionMBase' and
     -- 'GMergingStrategy'.
@@ -324,7 +325,7 @@ module Grisette.Core
     -- and have them merged with the 'mrgIf' combinator:
     --
     -- >>> mrgIf "c1" (mrgSingle $ X "b" 1) (mrgIf "c2" (mrgSingle $ X "c" 2) (mrgSingle $ X "d" 1)) :: UnionM X
-    -- UMrg (If (|| c1 (! c2)) (Single (X (ite c1 b d) 1)) (Single (X c 2)))
+    -- {If (|| c1 (! c2)) (X (ite c1 b d) 1) (X c 2)}
     --
     -- It is also possible to apply monad transformers onto @UnionM@ to extend
     -- it with various mechanisms.
@@ -346,7 +347,7 @@ module Grisette.Core
     -- :}
     --
     -- >>> mrgIf "a" (throwError Fail) (return "x") :: ExceptT Error UnionM SymInteger
-    -- ExceptT (UMrg (If a (Single (Left Fail)) (Single (Right x))))
+    -- ExceptT {If a (Left Fail) (Right x)}
     --
     -- This will return a symbolic union value representing a program that
     -- throws an error in the @then@ branch and returns a value in the @else@
@@ -377,7 +378,7 @@ module Grisette.Core
     -- In Haskell syntax, the container is represented as the following nested
     -- if-then-else tree
     --
-    -- > If c1 (Single [a]) (If c2 (Single [b,b]) (Single [a,b,c]))
+    -- > If c1 [a] (If c2 [b,b] [a,b,c])
     --
     -- The representations means that when @c1@ is true, then the value is a
     -- list @[a]@, or when @c1@ is false and @c2@ is true, the value is a list
@@ -496,9 +497,9 @@ module Grisette.Core
     --
     -- In Haskell syntax, it can be represented as follows:
     --
-    -- > If      c1    (If c11 (Single (A 1 a)) (If c12 (Single (A 3 b)) (Single (A 4 (&& x y)))))
-    -- >   (If   c2    (Single B)
-    -- >               (Single C))
+    -- > If      c1    (If c11 (A 1 a) (If c12 (A 3 b) (A 4 (&& x y))))
+    -- >   (If   c2    B
+    -- >               C)
     --
     -- All the symbolic unions in Grisette should maintain the hierarchical
     -- sorted invariant, and are sorted in the same way, with respect to the same
@@ -672,7 +673,7 @@ module Grisette.Core
     -- and maximum lengths, and the specification for the elements:
     --
     -- >>> runFresh (fresh (ListSpec 0 2 ())) "x" :: UnionM [SymBool]
-    -- UMrg (If x@2 (Single []) (If x@3 (Single [x@1]) (Single [x@0,x@1])))
+    -- {If x@2 [] (If x@3 [x@1] [x@0,x@1])}
     --
     -- We can generate many symbolic values at once with the 'Fresh' monad.
     -- The symbolic constants are ensured to be unique:
@@ -684,7 +685,7 @@ module Grisette.Core
     --     b :: UnionM [SymBool] <- fresh (ListSpec 0 2 ())
     --     return (a, b)
     -- :}
-    -- (x@0,UMrg (If x@3 (Single []) (If x@4 (Single [x@2]) (Single [x@1,x@2]))))
+    -- (x@0,{If x@3 [] (If x@4 [x@2] [x@1,x@2])})
     --
     -- When you are just generating a symbolic value, and do not need to compose
     -- multiple 'simpleFresh' or 'fresh' calls, you can use the 'genSym' and
@@ -693,7 +694,7 @@ module Grisette.Core
     -- >>> genSymSimple (SimpleListSpec 2 ()) "x" :: [SymBool]
     -- [x@0,x@1]
     -- >>> genSym (ListSpec 0 2 ()) "x" :: UnionM [SymBool]
-    -- UMrg (If x@2 (Single []) (If x@3 (Single [x@1]) (Single [x@0,x@1])))
+    -- {If x@2 [] (If x@3 [x@1] [x@0,x@1])}
     --
     -- Symbolic choices from a list of symbolic values is very useful.
     -- With the 'gchooseFresh' function (specialized as @chooseFresh@ in [grisette-symir](https://hackage.haskell.org/package/grisette-symir)),
@@ -708,7 +709,7 @@ module Grisette.Core
     --     b <- simpleFresh ()
     --     chooseFresh [[a],[a,b],[a,a,b]]) :: UnionM [SymBool]
     -- :}
-    -- UMrg (If x@2 (Single [x@0]) (If x@3 (Single [x@0,x@1]) (Single [x@0,x@0,x@1])))
+    -- {If x@2 [x@0] (If x@3 [x@0,x@1] [x@0,x@0,x@1])}
 
     -- ** Symbolic Generation Context
     FreshIndex (..),
@@ -760,7 +761,7 @@ module Grisette.Core
     -- >>> import Control.Monad.Except
     -- >>> import Grisette.Lib.Mtl
     -- >>> mrgThrowError AssertionError :: ExceptT AssertionError UnionM ()
-    -- ExceptT (UMrg (Single (Left AssertionError)))
+    -- ExceptT {Left AssertionError}
     --
     -- You can define your own error types, and reason about them with the
     -- solver APIs.
@@ -777,7 +778,7 @@ module Grisette.Core
     -- >>> let [a,b,c] = ["a","b","c"] :: [SymBool]
     -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error UnionM SymBool
     -- >>> res
-    -- ExceptT (UMrg (If (|| a (! b)) (If a (Single (Left Error1)) (Single (Left Error2))) (Single (Right c))))
+    -- ExceptT {If (|| a (! b)) (If a (Left Error1) (Left Error2)) (Right c)}
     -- >>> solveExcept (UnboundedReasoning z3) (\case Left _ -> con False; Right x -> x) res
     -- Right (Model {a -> False :: Bool, b -> True :: Bool, c -> True :: Bool})
     --
@@ -945,7 +946,7 @@ module Grisette.Core
     -- @Left Assert@.
     --
     -- >>> res
-    -- ExceptT (UMrg (If (|| (= y 0) (&& (< 0 (div x y)) (! (<= y x)))) (If (= y 0) (Single (Left Arith)) (Single (Left Assert))) (Single (Right ()))))
+    -- ExceptT {If (|| (= y 0) (&& (< 0 (div x y)) (! (<= y x)))) (If (= y 0) (Left Arith) (Left Assert)) (Right ())}
     --
     -- > >>> solveExcept (UnboundedReasoning z3) (==~ Left Assert) res
     -- > Right (Model {x -> -6 :: Integer, y -> -3 :: Integer}) -- possible output

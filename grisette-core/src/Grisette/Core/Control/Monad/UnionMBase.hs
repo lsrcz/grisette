@@ -90,11 +90,13 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --
 -- The 'Single' constructor is for a single value with the path condition
 -- @true@, and the 'If' constructor is the if operator in an if-then-else
--- tree. The following two representations has the same semantics.
+-- tree.
+-- For clarity, when printing a 'UnionMBase' value, we will omit the 'Single'
+-- constructor. The following two representations has the same semantics.
 --
--- > If      c1    (If c11 (Single v11) (If c12 (Single v12) (Single v13)))
--- >   (If   c2    (Single v2)
--- >               (Single v3))
+-- > If      c1    (If c11 v11 (If c12 v12 v13))
+-- >   (If   c2    v2
+-- >               v3)
 --
 -- \[
 --   \left\{\begin{aligned}&t_1&&\mathrm{if}&&c_1\\&v_2&&\mathrm{else if}&&c_2\\&v_3&&\mathrm{otherwise}&&\end{aligned}\right.\hspace{2em}\mathrm{where}\hspace{2em}t_1 = \left\{\begin{aligned}&v_{11}&&\mathrm{if}&&c_{11}\\&v_{12}&&\mathrm{else if}&&c_{12}\\&v_{13}&&\mathrm{otherwise}&&\end{aligned}\right.
@@ -118,10 +120,10 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- To reduce this boilerplate, Grisette provide another monad, 'UnionMBase' that
 -- would try to cache the merging strategy.
 -- The 'UnionMBase' has two data constructors (hidden intentionally), 'UAny' and 'UMrg'.
--- The 'UAny' data constructor wraps an arbitrary (probably
+-- The 'UAny' data constructor (printed as @<@@...@@>@) wraps an arbitrary (probably
 -- unmerged) 'UnionBase'. It is constructed when no 'GMergeable' knowledge is
 -- available (for example, when constructed with Haskell\'s 'return').
--- The 'UMrg' data constructor wraps a merged 'UnionMBase' along with the
+-- The 'UMrg' data constructor (printed as @{...}@) wraps a merged 'UnionMBase' along with the
 -- 'GMergeable' constraint. This constraint can be propagated to the contexts
 -- without 'GMergeable' knowledge, and helps the system to merge the resulting
 -- 'UnionBase'.
@@ -131,23 +133,23 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- 'return' cannot resolve the 'GMergeable' constraint.
 --
 -- >>> return 1 :: UnionM Integer
--- UAny (Single 1)
+-- <1>
 --
 -- 'Grisette.Lib.Control.Monad.mrgReturn' can resolve the 'GMergeable' constraint.
 --
 -- >>> import Grisette.Lib.Base
 -- >>> mrgReturn 1 :: UnionM Integer
--- UMrg (Single 1)
+-- {1}
 --
 -- 'unionIf' cannot resolve the 'GMergeable' constraint.
 --
 -- >>> unionIf "a" (return 1) (unionIf "b" (return 1) (return 2)) :: UnionM Integer
--- UAny (If a (Single 1) (If b (Single 1) (Single 2)))
+-- <If a 1 (If b 1 2)>
 --
 -- But 'unionIf' is able to merge the result if some of the branches are merged:
 --
 -- >>> unionIf "a" (return 1) (unionIf "b" (mrgReturn 1) (return 2)) :: UnionM Integer
--- UMrg (If (|| a b) (Single 1) (Single 2))
+-- {If (|| a b) 1 2}
 --
 -- The '>>=' operator uses 'unionIf' internally. When the final statement in a do-block
 -- merges the values, the system can then merge the final result.
@@ -157,7 +159,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
 --     mrgSingle $ x + 1 :: UnionM Integer
 -- :}
--- UMrg (If (|| a b) (Single 2) (Single 3))
+-- {If (|| a b) 2 3}
 --
 -- Calling a function that merges a result at the last line of a do-notation
 -- will also merge the whole block. If you stick to these @mrg*@ combinators and
@@ -170,7 +172,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
 --     f x (x + 1) :: UnionM Integer
 -- :}
--- UMrg (If (&& c (|| a b)) (Single 1) (If (|| a (|| b c)) (Single 2) (Single 3)))
+-- {If (&& c (|| a b)) 1 (If (|| a (|| b c)) 2 3)}
 --
 -- In "Grisette.Lib.Base", "Grisette.Lib.Mtl", we also provided more @mrg*@
 -- variants of other combinators. You should stick to these combinators to
@@ -213,9 +215,39 @@ freshUAny v = UAny (unsafeDupablePerformIO $ newIORef $ Left v) v
 instance (Show a, Show bool) => (Show (UnionMBase bool a)) where
   showsPrec = showsPrec1
 
+liftShowsPrecUnion ::
+  forall b a.
+  (Show b) =>
+  (Int -> a -> ShowS) ->
+  ([a] -> ShowS) ->
+  Int ->
+  UnionBase b a ->
+  ShowS
+liftShowsPrecUnion sp _ i (Single a) = sp i a
+liftShowsPrecUnion sp sl i (If _ _ cond t f) =
+  showParen (i > 10) $
+    showString "If"
+      . showChar ' '
+      . showsPrec 11 cond
+      . showChar ' '
+      . sp1 11 t
+      . showChar ' '
+      . sp1 11 f
+  where
+    sp1 = liftShowsPrecUnion sp sl
+
+wrapBracket :: Char -> Char -> ShowS -> ShowS
+wrapBracket l r p = showChar l . p . showChar r
+
 instance (Show b) => Show1 (UnionMBase b) where
-  liftShowsPrec sp sl i (UAny _ a) = showsUnaryWith (liftShowsPrec sp sl) "UAny" i a
-  liftShowsPrec sp sl i (UMrg _ a) = showsUnaryWith (liftShowsPrec sp sl) "UMrg" i a
+  liftShowsPrec sp sl i (UAny _ a) =
+    wrapBracket '<' '>'
+      . liftShowsPrecUnion sp sl 0
+      $ a
+  liftShowsPrec sp sl i (UMrg _ a) =
+    wrapBracket '{' '}'
+      . liftShowsPrecUnion sp sl 0
+      $ a
 
 -- | Extract the underlying UnionBase. May be unmerged.
 underlyingUnion :: UnionMBase bool a -> UnionBase bool a

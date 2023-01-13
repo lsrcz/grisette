@@ -177,7 +177,7 @@ derivedGSymCompare x y = gsymCompare' (from x) (from y)
 -- information.
 --
 -- >>> a `gsymCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool
--- UMrg (If (< a b) (Single LT) (If (= a b) (Single EQ) (Single GT)))
+-- {If (< a b) LT (If (= a b) EQ GT)}
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.

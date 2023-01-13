@@ -136,28 +136,28 @@ instance TransformError AssertionError AssertionError where
 -- would be performed.
 --
 -- >>> symAssert (con False) :: ExceptT AssertionError UnionM ()
--- ExceptT (UMrg (Single (Left AssertionError)))
+-- ExceptT {Left AssertionError}
 -- >>> do; symAssert (con False); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
--- ExceptT (UAny (Single (Left AssertionError)))
+-- ExceptT <Left AssertionError>
 --
 -- No effect if the condition is true:
 --
 -- >>> symAssert (con True) :: ExceptT AssertionError UnionM ()
--- ExceptT (UMrg (Single (Right ())))
+-- ExceptT {Right ()}
 -- >>> do; symAssert (con True); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
--- ExceptT (UMrg (Single (Right 1)))
+-- ExceptT {Right 1}
 --
 -- Splitting the path and terminate one of them when the condition is symbolic.
 --
 -- >>> symAssert (ssym "a") :: ExceptT AssertionError UnionM ()
--- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right ()))))
+-- ExceptT {If (! a) (Left AssertionError) (Right ())}
 -- >>> do; symAssert (ssym "a"); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
--- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right 1))))
+-- ExceptT {If (! a) (Left AssertionError) (Right 1)}
 --
 -- 'AssertionError' is compatible with 'VerificationConditions':
 --
 -- >>> symAssert (ssym "a") :: ExceptT VerificationConditions UnionM ()
--- ExceptT (UMrg (If (! a) (Single (Left AssertionViolation)) (Single (Right ()))))
+-- ExceptT {If (! a) (Left AssertionViolation) (Right ())}
 symAssert ::
   (TransformError AssertionError to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->
@@ -171,7 +171,7 @@ symAssert = symAssertTransformableError AssertionError
 -- /Examples/:
 --
 -- >>> symAssume (ssym "a") :: ExceptT VerificationConditions UnionM ()
--- ExceptT (UMrg (If (! a) (Single (Left AssumptionViolation)) (Single (Right ()))))
+-- ExceptT {If (! a) (Left AssumptionViolation) (Right ())}
 symAssume ::
   (TransformError VerificationConditions to, GMergeable bool to, MonadError to erm, SymBoolOp bool, GMonadUnion bool erm) =>
   bool ->

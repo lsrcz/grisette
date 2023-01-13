@@ -79,7 +79,7 @@ instance {-# OVERLAPPING #-} TransformError () () where
 -- errors can be transformed.
 --
 -- >>> symThrowTransformableError Overflow :: ExceptT AssertionError UnionM ()
--- ExceptT (UMrg (Single (Left AssertionError)))
+-- ExceptT {Left AssertionError}
 symThrowTransformableError ::
   ( SymBoolOp bool,
     GMergeable bool to,
@@ -100,7 +100,7 @@ symThrowTransformableError = merge . throwError . transformError
 --
 -- >>> let assert = symAssertTransformableError AssertionError
 -- >>> assert "a" :: ExceptT AssertionError UnionM ()
--- ExceptT (UMrg (If (! a) (Single (Left AssertionError)) (Single (Right ()))))
+-- ExceptT {If (! a) (Left AssertionError) (Right ())}
 symAssertTransformableError ::
   ( SymBoolOp bool,
     GMergeable bool to,
