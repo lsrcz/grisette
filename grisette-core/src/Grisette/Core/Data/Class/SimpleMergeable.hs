@@ -731,9 +731,9 @@ pattern IfU c t f <-
 -- In the following example, 'unionIf' will not merge the results, and
 -- 'simpleMerge' will merge it and extract the single merged value.
 --
--- >>> unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool
+-- >>> unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool
 -- UAny (If a (Single b) (Single c))
--- >>> simpleMerge $ (unionIf (ssymb "a") (return $ ssymb "b") (return $ ssymb "c") :: UnionM SymBool)
+-- >>> simpleMerge $ (unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
 -- (ite a b c)
 simpleMerge :: forall bool u a. (GSimpleMergeable bool a, GUnionLike bool u, GUnionPrjOp bool u) => u a -> a
 simpleMerge u = case merge u of
@@ -779,8 +779,8 @@ onUnion4 f ua ub uc ud = simpleMerge $ f <$> ua <*> ub <*> uc <*> ud
 
 -- | Helper for applying functions on 'GUnionPrjOp' and 'GSimpleMergeable'.
 --
--- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssymb "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
--- >>> f #~ (mrgIf (ssymb "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
+-- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
+-- >>> f #~ (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
 -- UMrg (If (&& b a) (Single 1) (If b (Single 2) (If a (Single 3) (Single 4))))
 (#~) ::
   (SymBoolOp bool, Function f, GSimpleMergeable bool (Ret f), GUnionPrjOp bool u, Functor u) =>

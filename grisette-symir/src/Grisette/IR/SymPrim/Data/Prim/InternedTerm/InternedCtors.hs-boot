@@ -5,12 +5,12 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,
     constructBinary,
     constructTernary,
-    concTerm,
-    symbTerm,
-    ssymbTerm,
-    isymbTerm,
-    sinfosymbTerm,
-    iinfosymbTerm,
+    conTerm,
+    symTerm,
+    ssymTerm,
+    isymTerm,
+    sinfosymTerm,
+    iinfosymTerm,
     notTerm,
     orTerm,
     andTerm,
@@ -34,8 +34,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     bvextendTerm,
     bvsignExtendTerm,
     bvzeroExtendTerm,
-    tabularFuncApplyTerm,
-    generalFuncApplyTerm,
+    tabularFunApplyTerm,
+    generalFunApplyTerm,
     divIntegerTerm,
     modIntegerTerm,
   )
@@ -48,7 +48,7 @@ import Data.Typeable
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFunc
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 
 constructUnary ::
@@ -72,16 +72,16 @@ constructTernary ::
   Term arg2 ->
   Term arg3 ->
   Term t
-concTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
-symbTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
-ssymbTerm :: (SupportedPrim t, Typeable t) => String -> Term t
-isymbTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
-sinfosymbTerm ::
+conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
+symTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
+ssymTerm :: (SupportedPrim t, Typeable t) => String -> Term t
+isymTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
+sinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
   String ->
   a ->
   Term t
-iinfosymbTerm ::
+iinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
   String ->
   Int ->
@@ -167,7 +167,7 @@ bvzeroExtendTerm ::
   proxy n ->
   Term (bv a) ->
   Term (bv w)
-tabularFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
-generalFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
+tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
+generalFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
 divIntegerTerm :: Term Integer -> Term Integer -> Term Integer
 modIntegerTerm :: Term Integer -> Term Integer -> Term Integer

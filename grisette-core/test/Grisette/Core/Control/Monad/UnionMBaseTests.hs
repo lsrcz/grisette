@@ -534,12 +534,12 @@ unionMBaseTests =
                       )
             ],
       testCase "PrimWrapper" $ do
-        conc True @=? (mrgSingle $ CBool True :: UnionMBase SBool SBool)
-        ssymb "a" @=? (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
-        isymb "a" 0 @=? (mrgSingle $ ISBool "a" 0 :: UnionMBase SBool SBool)
-        concView (mrgSingle $ CBool True :: UnionMBase SBool SBool) @=? Just True
-        concView (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool) @=? Nothing
-        concView
+        con True @=? (mrgSingle $ CBool True :: UnionMBase SBool SBool)
+        ssym "a" @=? (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool)
+        isym "a" 0 @=? (mrgSingle $ ISBool "a" 0 :: UnionMBase SBool SBool)
+        conView (mrgSingle $ CBool True :: UnionMBase SBool SBool) @=? Just True
+        conView (mrgSingle $ SSBool "a" :: UnionMBase SBool SBool) @=? Nothing
+        conView
           ( mrgIf
               (SSBool "a")
               (mrgSingle $ CBool False)

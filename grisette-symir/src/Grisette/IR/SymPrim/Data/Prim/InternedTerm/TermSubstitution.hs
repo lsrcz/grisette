@@ -21,10 +21,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Type.Reflection
 import Unsafe.Coerce
 
@@ -37,17 +37,17 @@ substTerm sym term = gov
     go :: SomeTerm -> SomeTerm
     go = htmemo $ \stm@(SomeTerm (tm :: Term v)) ->
       case tm of
-        ConcTerm _ cv -> case (typeRep :: TypeRep v) of
+        ConTerm _ cv -> case (typeRep :: TypeRep v) of
           App (App gf _) _ ->
             case eqTypeRep gf (typeRep @(-->)) of
               Just HRefl -> case cv of
-                GeneralFunc sym1 tm1 ->
+                GeneralFun sym1 tm1 ->
                   if someTypedSymbol sym1 == someTypedSymbol sym
                     then stm
-                    else SomeTerm $ concTerm $ GeneralFunc sym1 (gov tm1)
+                    else SomeTerm $ conTerm $ GeneralFun sym1 (gov tm1)
               Nothing -> stm
           _ -> stm
-        SymbTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
+        SymTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
         UnaryTerm _ tag te -> SomeTerm $ partialEvalUnary tag (gov te)
         BinaryTerm _ tag te te' -> SomeTerm $ partialEvalBinary tag (gov te) (gov te')
         TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ partialEvalTernary tag (gov op1) (gov op2) (gov op3)
@@ -72,7 +72,7 @@ substTerm sym term = gov
         BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)
         BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)
         BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)
-        TabularFuncApplyTerm _ f op -> SomeTerm $ pevalTabularFuncApplyTerm (gov f) (gov op)
-        GeneralFuncApplyTerm _ f op -> SomeTerm $ pevalGeneralFuncApplyTerm (gov f) (gov op)
+        TabularFunApplyTerm _ f op -> SomeTerm $ pevalTabularFunApplyTerm (gov f) (gov op)
+        GeneralFunApplyTerm _ f op -> SomeTerm $ pevalGeneralFunApplyTerm (gov f) (gov op)
         DivIntegerTerm _ op1 op2 -> SomeTerm $ pevalDivIntegerTerm (gov op1) (gov op2)
         ModIntegerTerm _ op1 op2 -> SomeTerm $ pevalModIntegerTerm (gov op1) (gov op2)

@@ -20,7 +20,7 @@
 module Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( trueTerm,
     falseTerm,
-    pattern BoolConcTerm,
+    pattern BoolConTerm,
     pattern TrueTerm,
     pattern FalseTerm,
     pattern BoolTerm,
@@ -45,26 +45,26 @@ import Grisette.IR.SymPrim.Data.Prim.Utils
 import Unsafe.Coerce
 
 trueTerm :: Term Bool
-trueTerm = concTerm True
+trueTerm = conTerm True
 {-# INLINE trueTerm #-}
 
 falseTerm :: Term Bool
-falseTerm = concTerm False
+falseTerm = conTerm False
 {-# INLINE falseTerm #-}
 
-boolConcTermView :: forall a. Term a -> Maybe Bool
-boolConcTermView (ConcTerm _ b) = cast b
-boolConcTermView _ = Nothing
-{-# INLINE boolConcTermView #-}
+boolConTermView :: forall a. Term a -> Maybe Bool
+boolConTermView (ConTerm _ b) = cast b
+boolConTermView _ = Nothing
+{-# INLINE boolConTermView #-}
 
-pattern BoolConcTerm :: Bool -> Term a
-pattern BoolConcTerm b <- (boolConcTermView -> Just b)
+pattern BoolConTerm :: Bool -> Term a
+pattern BoolConTerm b <- (boolConTermView -> Just b)
 
 pattern TrueTerm :: Term a
-pattern TrueTerm <- BoolConcTerm True
+pattern TrueTerm <- BoolConTerm True
 
 pattern FalseTerm :: Term a
-pattern FalseTerm <- BoolConcTerm False
+pattern FalseTerm <- BoolConTerm False
 
 pattern BoolTerm :: Term Bool -> Term a
 pattern BoolTerm b <- (castTerm -> Just b)
@@ -72,7 +72,7 @@ pattern BoolTerm b <- (castTerm -> Just b)
 -- Not
 pevalNotTerm :: Term Bool -> Term Bool
 pevalNotTerm (NotTerm _ tm) = tm
-pevalNotTerm (ConcTerm _ a) = if a then falseTerm else trueTerm
+pevalNotTerm (ConTerm _ a) = if a then falseTerm else trueTerm
 pevalNotTerm (OrTerm _ (NotTerm _ n1) n2) = pevalAndTerm n1 (pevalNotTerm n2)
 pevalNotTerm (OrTerm _ n1 (NotTerm _ n2)) = pevalAndTerm (pevalNotTerm n1) n2
 pevalNotTerm (AndTerm _ (NotTerm _ n1) n2) = pevalOrTerm n1 (pevalNotTerm n2)
@@ -82,33 +82,33 @@ pevalNotTerm tm = notTerm tm
 
 -- Eqv
 pevalEqvTerm :: forall a. (SupportedPrim a) => Term a -> Term a -> Term Bool
-pevalEqvTerm l@ConcTerm {} r@ConcTerm {} = concTerm $ l == r
-pevalEqvTerm l@ConcTerm {} r = pevalEqvTerm r l
-pevalEqvTerm l (BoolConcTerm rv) = if rv then unsafeCoerce l else pevalNotTerm $ unsafeCoerce l
+pevalEqvTerm l@ConTerm {} r@ConTerm {} = conTerm $ l == r
+pevalEqvTerm l@ConTerm {} r = pevalEqvTerm r l
+pevalEqvTerm l (BoolConTerm rv) = if rv then unsafeCoerce l else pevalNotTerm $ unsafeCoerce l
 pevalEqvTerm (NotTerm _ lv) r
   | lv == unsafeCoerce r = falseTerm
 pevalEqvTerm l (NotTerm _ rv)
   | unsafeCoerce l == rv = falseTerm
 {-
-pevalBinary _ (ConcTerm l) (ConcTerm r) =
+pevalBinary _ (ConTerm l) (ConTerm r) =
   if l == r then trueTerm else falseTerm
   -}
 pevalEqvTerm
   ( AddNumTerm
       _
-      (ConcTerm _ c :: Term a)
+      (ConTerm _ c :: Term a)
       (Dyn (v :: Term a))
     )
-  (Dyn (ConcTerm _ c2 :: Term a)) =
-    pevalEqvTerm v (concTerm $ c2 - c)
+  (Dyn (ConTerm _ c2 :: Term a)) =
+    pevalEqvTerm v (conTerm $ c2 - c)
 pevalEqvTerm
-  (Dyn (ConcTerm _ c2 :: Term a))
+  (Dyn (ConTerm _ c2 :: Term a))
   ( AddNumTerm
       _
-      (Dyn (ConcTerm _ c :: Term a))
+      (Dyn (ConTerm _ c :: Term a))
       (Dyn (v :: Term a))
     ) =
-    pevalEqvTerm v (concTerm $ c2 - c)
+    pevalEqvTerm v (conTerm $ c2 - c)
 pevalEqvTerm l (ITETerm _ c t f)
   | l == t = pevalOrTerm c (pevalEqvTerm l f)
   | l == f = pevalOrTerm (pevalNotTerm c) (pevalEqvTerm l t)
@@ -125,11 +125,11 @@ pevalNotEqvTerm l r = pevalNotTerm $ pevalEqvTerm l r
 {-# INLINE pevalNotEqvTerm #-}
 
 pevalImpliesTerm :: Term Bool -> Term Bool -> Bool
-pevalImpliesTerm (ConcTerm _ False) _ = True
-pevalImpliesTerm _ (ConcTerm _ True) = True
+pevalImpliesTerm (ConTerm _ False) _ = True
+pevalImpliesTerm _ (ConTerm _ True) = True
 pevalImpliesTerm
-  (EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b))
-  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b))))
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
     | e1 == e2 && ec1 /= ec2 = True
 pevalImpliesTerm a b
   | a == b = True
@@ -137,10 +137,10 @@ pevalImpliesTerm a b
 {-# INLINE pevalImpliesTerm #-}
 
 orEqFirst :: Term Bool -> Term Bool -> Bool
-orEqFirst _ (ConcTerm _ False) = True
+orEqFirst _ (ConTerm _ False) = True
 orEqFirst
-  (NotTerm _ (EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b)))
-  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b)))
+  (NotTerm _ (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
 orEqFirst x y
   | x == y = True
@@ -148,12 +148,12 @@ orEqFirst x y
 {-# INLINE orEqFirst #-}
 
 orEqTrue :: Term Bool -> Term Bool -> Bool
-orEqTrue (ConcTerm _ True) _ = True
-orEqTrue _ (ConcTerm _ True) = True
+orEqTrue (ConTerm _ True) _ = True
+orEqTrue _ (ConTerm _ True) = True
 -- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
 orEqTrue
-  (NotTerm _ (EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b)))
-  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b))))
+  (NotTerm _ (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
     | e1 == e2 && ec1 /= ec2 = True
 orEqTrue (NotTerm _ l) r | l == r = True
 orEqTrue l (NotTerm _ r) | l == r = True
@@ -161,11 +161,11 @@ orEqTrue _ _ = False
 {-# INLINE orEqTrue #-}
 
 andEqFirst :: Term Bool -> Term Bool -> Bool
-andEqFirst _ (ConcTerm _ True) = True
+andEqFirst _ (ConTerm _ True) = True
 -- andEqFirst x (NotTerm _ y) = andEqFalse x y
 andEqFirst
-  (EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b))
-  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b))))
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
     | e1 == e2 && ec1 /= ec2 = True
 andEqFirst x y
   | x == y = True
@@ -173,12 +173,12 @@ andEqFirst x y
 {-# INLINE andEqFirst #-}
 
 andEqFalse :: Term Bool -> Term Bool -> Bool
-andEqFalse (ConcTerm _ False) _ = True
-andEqFalse _ (ConcTerm _ False) = True
+andEqFalse (ConTerm _ False) _ = True
+andEqFalse _ (ConTerm _ False) = True
 -- andEqFalse (NotTerm _ e1) (NotTerm _ e2) = orEqTrue e1 e2
 andEqFalse
-  (EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b))
-  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b)))
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
 andEqFalse (NotTerm _ x) y | x == y = True
 andEqFalse x (NotTerm _ y) | x == y = True
@@ -285,14 +285,14 @@ pevalInferImplies :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (
 pevalInferImplies cond (NotTerm _ nt1) trueRes falseRes
   | cond == nt1 = Just falseRes
   | otherwise = case (cond, nt1) of
-      ( EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b),
-        EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b))
+      ( EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b),
+        EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))
         )
           | e1 == e2 && ec1 /= ec2 -> Just trueRes
       _ -> Nothing
 pevalInferImplies
-  (EqvTerm _ (e1 :: Term a) (ec1@(ConcTerm _ _) :: Term b))
-  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConcTerm _ _) :: Term b)))
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
   _
   falseRes
     | e1 == e2 && ec1 /= ec2 = Just falseRes
@@ -382,8 +382,8 @@ pevalITEBoolNoLeft cond ifTrue (NotTerm _ nIfFalse) = pevalITEBoolRightNot cond 
 pevalITEBoolNoLeft _ _ _ = Nothing
 
 pevalITEBasic :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Maybe (Term a)
-pevalITEBasic (ConcTerm _ True) ifTrue _ = Just ifTrue
-pevalITEBasic (ConcTerm _ False) _ ifFalse = Just ifFalse
+pevalITEBasic (ConTerm _ True) ifTrue _ = Just ifTrue
+pevalITEBasic (ConTerm _ False) _ ifFalse = Just ifFalse
 pevalITEBasic (NotTerm _ ncond) ifTrue ifFalse = Just $ pevalITETerm ncond ifFalse ifTrue
 pevalITEBasic _ ifTrue ifFalse | ifTrue == ifFalse = Just ifTrue
 pevalITEBasic (ITETerm _ cc ct cf) (ITETerm _ tc tt tf) (ITETerm _ fc ft ff) -- later
@@ -402,10 +402,10 @@ pevalITEBoolBasic :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
 pevalITEBoolBasic cond ifTrue ifFalse
   | cond == ifTrue = Just $ pevalOrTerm cond ifFalse
   | cond == ifFalse = Just $ pevalAndTerm cond ifTrue
-pevalITEBoolBasic cond (ConcTerm _ v) ifFalse
+pevalITEBoolBasic cond (ConTerm _ v) ifFalse
   | v = Just $ pevalOrTerm cond ifFalse
   | otherwise = Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
-pevalITEBoolBasic cond ifTrue (ConcTerm _ v)
+pevalITEBoolBasic cond ifTrue (ConTerm _ v)
   | v = Just $ pevalOrTerm (pevalNotTerm cond) ifTrue
   | otherwise = Just $ pevalAndTerm cond ifTrue
 pevalITEBoolBasic _ _ _ = Nothing

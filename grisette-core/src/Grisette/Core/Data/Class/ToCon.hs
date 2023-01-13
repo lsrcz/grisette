@@ -52,18 +52,18 @@ class ToCon a b where
   -- | Convert a symbolic value to concrete value if possible.
   -- If the symbolic value cannot be converted to concrete, the result will be 'Nothing'.
   --
-  -- >>> toCon (ssymb "a" :: SymInteger) :: Maybe Integer
+  -- >>> toCon (ssym "a" :: SymInteger) :: Maybe Integer
   -- Nothing
   --
-  -- >>> toCon (conc 1 :: SymInteger) :: Maybe Integer
+  -- >>> toCon (con 1 :: SymInteger) :: Maybe Integer
   -- Just 1
   --
   -- 'toCon' works on complex types too.
   --
-  -- >>> toCon ([conc 1, conc 2] :: [SymInteger]) :: Maybe [Integer]
+  -- >>> toCon ([con 1, con 2] :: [SymInteger]) :: Maybe [Integer]
   -- Just [1,2]
   --
-  -- >>> toCon ([conc 1, ssymb "a"] :: [SymInteger]) :: Maybe [Integer]
+  -- >>> toCon ([con 1, ssym "a"] :: [SymInteger]) :: Maybe [Integer]
   -- Nothing
   toCon :: a -> Maybe b
 

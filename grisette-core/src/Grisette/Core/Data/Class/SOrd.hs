@@ -73,17 +73,17 @@ class (GSEq' bool f) => GSOrd' bool f where
   gsymCompare' :: (GUnionLike bool u, Monad u) => f a -> f a -> u Ordering
 
 instance (SymBoolOp bool) => GSOrd' bool U1 where
-  _ `gsymlt'` _ = conc False
-  _ `gsymle'` _ = conc True
-  _ `gsymgt'` _ = conc False
-  _ `gsymge'` _ = conc True
+  _ `gsymlt'` _ = con False
+  _ `gsymle'` _ = con True
+  _ `gsymgt'` _ = con False
+  _ `gsymge'` _ = con True
   gsymCompare' _ _ = mrgSingle EQ
 
 instance (SymBoolOp bool) => GSOrd' bool V1 where
-  _ `gsymlt'` _ = conc False
-  _ `gsymle'` _ = conc True
-  _ `gsymgt'` _ = conc False
-  _ `gsymge'` _ = conc True
+  _ `gsymlt'` _ = con False
+  _ `gsymle'` _ = con True
+  _ `gsymgt'` _ = con False
+  _ `gsymge'` _ = con True
   gsymCompare' _ _ = mrgSingle EQ
 
 instance (SymBoolOp bool, GSOrd bool c) => GSOrd' bool (K1 i c) where
@@ -101,22 +101,22 @@ instance (SymBoolOp bool, GSOrd' bool a) => GSOrd' bool (M1 i c a) where
   gsymCompare' (M1 a) (M1 b) = gsymCompare' a b
 
 instance (SymBoolOp bool, GSOrd' bool a, GSOrd' bool b) => GSOrd' bool (a :+: b) where
-  (L1 _) `gsymlt'` (R1 _) = conc True
+  (L1 _) `gsymlt'` (R1 _) = con True
   (L1 a) `gsymlt'` (L1 b) = a `gsymlt'` b
-  (R1 _) `gsymlt'` (L1 _) = conc False
+  (R1 _) `gsymlt'` (L1 _) = con False
   (R1 a) `gsymlt'` (R1 b) = a `gsymlt'` b
-  (L1 _) `gsymle'` (R1 _) = conc True
+  (L1 _) `gsymle'` (R1 _) = con True
   (L1 a) `gsymle'` (L1 b) = a `gsymle'` b
-  (R1 _) `gsymle'` (L1 _) = conc False
+  (R1 _) `gsymle'` (L1 _) = con False
   (R1 a) `gsymle'` (R1 b) = a `gsymle'` b
 
-  (L1 _) `gsymgt'` (R1 _) = conc False
+  (L1 _) `gsymgt'` (R1 _) = con False
   (L1 a) `gsymgt'` (L1 b) = a `gsymgt'` b
-  (R1 _) `gsymgt'` (L1 _) = conc True
+  (R1 _) `gsymgt'` (L1 _) = con True
   (R1 a) `gsymgt'` (R1 b) = a `gsymgt'` b
-  (L1 _) `gsymge'` (R1 _) = conc False
+  (L1 _) `gsymge'` (R1 _) = con False
   (L1 a) `gsymge'` (L1 b) = a `gsymge'` b
-  (R1 _) `gsymge'` (L1 _) = conc True
+  (R1 _) `gsymge'` (L1 _) = con True
   (R1 a) `gsymge'` (R1 b) = a `gsymge'` b
 
   gsymCompare' (L1 a) (L1 b) = gsymCompare' a b
@@ -217,10 +217,10 @@ instance (GSEq bool a, Generic a, GSOrd' bool (Rep a)) => GSOrd bool (Default a)
 
 #define CONCRETE_SORD(type) \
 instance (SymBoolOp bool) => GSOrd bool type where \
-  l `gsymle` r = conc $ l <= r; \
-  l `gsymlt` r = conc $ l < r; \
-  l `gsymge` r = conc $ l >= r; \
-  l `gsymgt` r = conc $ l > r; \
+  l `gsymle` r = con $ l <= r; \
+  l `gsymlt` r = con $ l < r; \
+  l `gsymge` r = con $ l >= r; \
+  l `gsymgt` r = con $ l > r; \
   gsymCompare l r = mrgSingle $ compare l r
 
 #if 1
@@ -243,10 +243,10 @@ CONCRETE_SORD(B.ByteString)
 symCompareSingleList :: (SymBoolOp bool, GSOrd bool a) => Bool -> Bool -> [a] -> [a] -> bool
 symCompareSingleList isLess isStrict = go
   where
-    go [] [] = conc (not isStrict)
+    go [] [] = con (not isStrict)
     go (x : xs) (y : ys) = (if isLess then x `gsymlt` y else x `gsymgt` y) ||~ (x `gsymeq` y &&~ go xs ys)
-    go [] _ = if isLess then conc True else conc False
-    go _ [] = if isLess then conc False else conc True
+    go [] _ = if isLess then con True else con False
+    go _ [] = if isLess then con False else con True
 
 symCompareList :: (SymBoolOp bool, GSOrd bool a, GUnionLike bool u, Monad u) => [a] -> [a] -> u Ordering
 symCompareList [] [] = mrgSingle EQ

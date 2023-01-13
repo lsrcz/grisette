@@ -18,31 +18,31 @@ integerTests =
         [ testProperty "On concrete" $
             ioProperty . \(i :: Integer, j :: Integer) -> do
               if j /= 0
-                then pevalDivIntegerTerm (concTerm i) (concTerm j) @=? concTerm (i `div` j)
+                then pevalDivIntegerTerm (conTerm i) (conTerm j) @=? conTerm (i `div` j)
                 else
-                  pevalDivIntegerTerm (concTerm i) (concTerm j)
-                    @=? divIntegerTerm (concTerm i) (concTerm j),
+                  pevalDivIntegerTerm (conTerm i) (conTerm j)
+                    @=? divIntegerTerm (conTerm i) (conTerm j),
           testCase "divide by 1" $ do
-            pevalDivIntegerTerm (ssymbTerm "a" :: Term Integer) (concTerm 1) @=? ssymbTerm "a",
+            pevalDivIntegerTerm (ssymTerm "a" :: Term Integer) (conTerm 1) @=? ssymTerm "a",
           testCase "On symbolic" $ do
-            pevalDivIntegerTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-              @=? divIntegerTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b" :: Term Integer)
+            pevalDivIntegerTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+              @=? divIntegerTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b" :: Term Integer)
         ],
       testGroup
         "ModI"
         [ testProperty "On concrete" $
             ioProperty . \(i :: Integer, j :: Integer) -> do
               if j /= 0
-                then pevalModIntegerTerm (concTerm i) (concTerm j) @=? concTerm (i `mod` j)
+                then pevalModIntegerTerm (conTerm i) (conTerm j) @=? conTerm (i `mod` j)
                 else
-                  pevalModIntegerTerm (concTerm i) (concTerm j)
-                    @=? modIntegerTerm (concTerm i) (concTerm j),
+                  pevalModIntegerTerm (conTerm i) (conTerm j)
+                    @=? modIntegerTerm (conTerm i) (conTerm j),
           testCase "mod by 1" $ do
-            pevalModIntegerTerm (ssymbTerm "a" :: Term Integer) (concTerm 1) @=? concTerm 0,
+            pevalModIntegerTerm (ssymTerm "a" :: Term Integer) (conTerm 1) @=? conTerm 0,
           testCase "mod by -1" $ do
-            pevalModIntegerTerm (ssymbTerm "a" :: Term Integer) (concTerm $ -1) @=? concTerm 0,
+            pevalModIntegerTerm (ssymTerm "a" :: Term Integer) (conTerm $ -1) @=? conTerm 0,
           testCase "On symbolic" $ do
-            pevalModIntegerTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-              @=? modIntegerTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b" :: Term Integer)
+            pevalModIntegerTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+              @=? modIntegerTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b" :: Term Integer)
         ]
     ]

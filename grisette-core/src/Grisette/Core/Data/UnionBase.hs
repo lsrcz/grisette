@@ -72,7 +72,7 @@ instance NFData2 UnionBase where
 --
 -- Usually you should never directly try to build a 'If' with its constructor.
 ifWithLeftMost :: (SymBoolOp b) => Bool -> b -> UnionBase b a -> UnionBase b a -> UnionBase b a
-ifWithLeftMost _ (Conc c) t f
+ifWithLeftMost _ (Con c) t f
   | c = t
   | otherwise = f
 ifWithLeftMost inv cond t f = If (leftMost t) inv cond t f
@@ -159,7 +159,7 @@ ifWithStrategyInv ::
   UnionBase bool a ->
   UnionBase bool a ->
   UnionBase bool a
-ifWithStrategyInv _ (Conc v) t f
+ifWithStrategyInv _ (Con v) t f
   | v = t
   | otherwise = f
 ifWithStrategyInv strategy cond (If _ True condTrue tt _) f

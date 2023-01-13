@@ -126,16 +126,16 @@ instance GSOrd SBool SBool where
       (mrgIf (l `gsymeq` r) (mrgReturn EQ) (mrgReturn GT))
 
 instance IsString SBool where
-  fromString = ssymb
+  fromString = ssym
 
 instance Solvable Bool SBool where
-  conc = CBool
-  concView (CBool x) = Just x
-  concView _ = Nothing
-  ssymb = SSBool
-  sinfosymb = ISSBool
-  isymb = ISBool
-  iinfosymb = IISBool
+  con = CBool
+  conView (CBool x) = Just x
+  conView _ = Nothing
+  ssym = SSBool
+  sinfosym = ISSBool
+  isym = ISBool
+  iinfosym = IISBool
 
 instance ITEOp SBool SBool where
   ites (CBool True) l _ = l

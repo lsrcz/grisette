@@ -4,14 +4,14 @@
 {-# LANGUAGE TypeOperators #-}
 
 -- |
--- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
 -- Copyright   :   (c) Sirui Lu 2021-2022
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc (pevalGeneralFuncApplyTerm) where
+module Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun (pevalGeneralFunApplyTerm) where
 
 import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -19,9 +19,9 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
 
-pevalGeneralFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
-pevalGeneralFuncApplyTerm = totalize2 doPevalGeneralFuncApplyTerm generalFuncApplyTerm
+pevalGeneralFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
+pevalGeneralFunApplyTerm = totalize2 doPevalGeneralFunApplyTerm generalFunApplyTerm
 
-doPevalGeneralFuncApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Maybe (Term b)
-doPevalGeneralFuncApplyTerm (ConcTerm _ (GeneralFunc arg tm)) v = Just $ substTerm arg v tm
-doPevalGeneralFuncApplyTerm _ _ = Nothing
+doPevalGeneralFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Maybe (Term b)
+doPevalGeneralFunApplyTerm (ConTerm _ (GeneralFun arg tm)) v = Just $ substTerm arg v tm
+doPevalGeneralFunApplyTerm _ _ = Nothing

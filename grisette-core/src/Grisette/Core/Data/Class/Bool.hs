@@ -67,11 +67,11 @@ class (SymBoolOp bool) => GSEq' bool f where
   gsymeq' :: f a -> f a -> bool
 
 instance (SymBoolOp bool) => GSEq' bool U1 where
-  _ `gsymeq'` _ = conc True
+  _ `gsymeq'` _ = con True
   {-# INLINE gsymeq' #-}
 
 instance (SymBoolOp bool) => GSEq' bool V1 where
-  _ `gsymeq'` _ = conc True
+  _ `gsymeq'` _ = con True
   {-# INLINE gsymeq' #-}
 
 instance (SymBoolOp bool, GSEq bool c) => GSEq' bool (K1 i c) where
@@ -85,7 +85,7 @@ instance (SymBoolOp bool, GSEq' bool a) => GSEq' bool (M1 i c a) where
 instance (SymBoolOp bool, GSEq' bool a, GSEq' bool b) => GSEq' bool (a :+: b) where
   (L1 a) `gsymeq'` (L1 b) = a `gsymeq'` b
   (R1 a) `gsymeq'` (R1 b) = a `gsymeq'` b
-  _ `gsymeq'` _ = conc False
+  _ `gsymeq'` _ = con False
   {-# INLINE gsymeq' #-}
 
 instance (SymBoolOp bool, GSEq' bool a, GSEq' bool b) => GSEq' bool (a :*: b) where
@@ -138,8 +138,8 @@ instance (Generic a, SymBoolOp bool, GSEq' bool (Rep a)) => GSEq bool (Default a
 
 -- | Symbolic logical operators for symbolic booleans.
 --
--- >>> let t = conc True :: SymBool
--- >>> let f = conc False :: SymBool
+-- >>> let t = con True :: SymBool
+-- >>> let f = con False :: SymBool
 -- >>> let a = "a" :: SymBool
 -- >>> let b = "b" :: SymBool
 -- >>> t ||~ f
@@ -227,7 +227,7 @@ class (GSimpleMergeable b b, GSEq b b, Eq b, LogicalOp b, Solvable Bool b, ITEOp
 
 #define CONCRETE_SEQ(type) \
 instance (SymBoolOp bool) => GSEq bool type where \
-  l `gsymeq` r = conc $ l == r; \
+  l `gsymeq` r = con $ l == r; \
   {-# INLINE gsymeq #-}
 
 #if 1
@@ -268,7 +268,7 @@ instance (SymBoolOp bool, GSEq bool (m (Maybe a))) => GSEq bool (MaybeT m a) whe
 
 -- ()
 instance (SymBoolOp bool) => GSEq bool () where
-  _ `gsymeq` _ = conc True
+  _ `gsymeq` _ = con True
   {-# INLINE gsymeq #-}
 
 -- (,)

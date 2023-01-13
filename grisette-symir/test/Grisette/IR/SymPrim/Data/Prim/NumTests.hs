@@ -18,357 +18,357 @@ numTests =
     [ testGroup
         "Add"
         [ testCase "On concrete" $ do
-            pevalAddNumTerm (concTerm 1 :: Term Integer) (concTerm 2) @=? concTerm 3
-            pevalAddNumTerm (concTerm 1 :: Term (WordN 3)) (concTerm 2) @=? concTerm 3
-            pevalAddNumTerm (concTerm 1 :: Term (IntN 3)) (concTerm 2) @=? concTerm 3,
+            pevalAddNumTerm (conTerm 1 :: Term Integer) (conTerm 2) @=? conTerm 3
+            pevalAddNumTerm (conTerm 1 :: Term (WordN 3)) (conTerm 2) @=? conTerm 3
+            pevalAddNumTerm (conTerm 1 :: Term (IntN 3)) (conTerm 2) @=? conTerm 3,
           testCase "On left 0" $ do
-            pevalAddNumTerm (concTerm 0 :: Term Integer) (ssymbTerm "a") @=? ssymbTerm "a",
+            pevalAddNumTerm (conTerm 0 :: Term Integer) (ssymTerm "a") @=? ssymTerm "a",
           testCase "On right 0" $ do
-            pevalAddNumTerm (ssymbTerm "a") (concTerm 0 :: Term Integer) @=? ssymbTerm "a",
+            pevalAddNumTerm (ssymTerm "a") (conTerm 0 :: Term Integer) @=? ssymTerm "a",
           testCase "On left concrete" $ do
-            pevalAddNumTerm (concTerm 1 :: Term Integer) (ssymbTerm "a")
-              @=? addNumTerm (concTerm 1 :: Term Integer) (ssymbTerm "a" :: Term Integer),
+            pevalAddNumTerm (conTerm 1 :: Term Integer) (ssymTerm "a")
+              @=? addNumTerm (conTerm 1 :: Term Integer) (ssymTerm "a" :: Term Integer),
           testCase "On right concrete" $ do
-            pevalAddNumTerm (ssymbTerm "a") (concTerm 1 :: Term Integer)
-              @=? addNumTerm (concTerm 1 :: Term Integer) (ssymbTerm "a" :: Term Integer),
+            pevalAddNumTerm (ssymTerm "a") (conTerm 1 :: Term Integer)
+              @=? addNumTerm (conTerm 1 :: Term Integer) (ssymTerm "a" :: Term Integer),
           testCase "On no concrete" $ do
-            pevalAddNumTerm (ssymbTerm "a") (ssymbTerm "b" :: Term Integer)
-              @=? addNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b" :: Term Integer),
+            pevalAddNumTerm (ssymTerm "a") (ssymTerm "b" :: Term Integer)
+              @=? addNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b" :: Term Integer),
           testCase "On left concrete and right add concrete value" $ do
-            pevalAddNumTerm (concTerm 1 :: Term Integer) (pevalAddNumTerm (concTerm 2 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalAddNumTerm (concTerm 3 :: Term Integer) (ssymbTerm "a"),
+            pevalAddNumTerm (conTerm 1 :: Term Integer) (pevalAddNumTerm (conTerm 2 :: Term Integer) (ssymTerm "a"))
+              @=? pevalAddNumTerm (conTerm 3 :: Term Integer) (ssymTerm "a"),
           testCase "On right concrete and left add concrete value" $ do
-            pevalAddNumTerm (pevalAddNumTerm (concTerm 2 :: Term Integer) (ssymbTerm "a")) (concTerm 1 :: Term Integer)
-              @=? pevalAddNumTerm (concTerm 3 :: Term Integer) (ssymbTerm "a"),
+            pevalAddNumTerm (pevalAddNumTerm (conTerm 2 :: Term Integer) (ssymTerm "a")) (conTerm 1 :: Term Integer)
+              @=? pevalAddNumTerm (conTerm 3 :: Term Integer) (ssymTerm "a"),
           testCase "On left add concrete" $ do
-            pevalAddNumTerm (pevalAddNumTerm (concTerm 2 :: Term Integer) (ssymbTerm "a")) (ssymbTerm "b")
-              @=? pevalAddNumTerm (concTerm 2 :: Term Integer) (pevalAddNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+            pevalAddNumTerm (pevalAddNumTerm (conTerm 2 :: Term Integer) (ssymTerm "a")) (ssymTerm "b")
+              @=? pevalAddNumTerm (conTerm 2 :: Term Integer) (pevalAddNumTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On right add concrete" $ do
-            pevalAddNumTerm (ssymbTerm "b") (pevalAddNumTerm (concTerm 2 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalAddNumTerm (concTerm 2 :: Term Integer) (pevalAddNumTerm (ssymbTerm "b") (ssymbTerm "a")),
+            pevalAddNumTerm (ssymTerm "b") (pevalAddNumTerm (conTerm 2 :: Term Integer) (ssymTerm "a"))
+              @=? pevalAddNumTerm (conTerm 2 :: Term Integer) (pevalAddNumTerm (ssymTerm "b") (ssymTerm "a")),
           testCase "On both uminus" $ do
-            pevalAddNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term Integer) (pevalUMinusNumTerm $ ssymbTerm "b")
-              @=? pevalUMinusNumTerm (pevalAddNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+            pevalAddNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term Integer) (pevalUMinusNumTerm $ ssymTerm "b")
+              @=? pevalUMinusNumTerm (pevalAddNumTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On both times the same concrete" $ do
             pevalAddNumTerm
-              (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a") :: Term Integer)
-              (pevalTimesNumTerm (concTerm 3) (ssymbTerm "b"))
-              @=? pevalTimesNumTerm (concTerm 3) (pevalAddNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+              (pevalTimesNumTerm (conTerm 3) (ssymTerm "a") :: Term Integer)
+              (pevalTimesNumTerm (conTerm 3) (ssymTerm "b"))
+              @=? pevalTimesNumTerm (conTerm 3) (pevalAddNumTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On both times the same symbolic" $ do
             pevalAddNumTerm
-              (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a") :: Term Integer)
-              (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a"))
-              @=? pevalTimesNumTerm (concTerm 6) (ssymbTerm "a")
+              (pevalTimesNumTerm (conTerm 3) (ssymTerm "a") :: Term Integer)
+              (pevalTimesNumTerm (conTerm 3) (ssymTerm "a"))
+              @=? pevalTimesNumTerm (conTerm 6) (ssymTerm "a")
             pevalAddNumTerm
-              (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a") :: Term Integer)
-              (pevalTimesNumTerm (concTerm 4) (ssymbTerm "a"))
-              @=? pevalTimesNumTerm (concTerm 7) (ssymbTerm "a"),
+              (pevalTimesNumTerm (conTerm 3) (ssymTerm "a") :: Term Integer)
+              (pevalTimesNumTerm (conTerm 4) (ssymTerm "a"))
+              @=? pevalTimesNumTerm (conTerm 7) (ssymTerm "a"),
           testCase "Unfold 1" $ do
             pevalAddNumTerm
-              (concTerm 3)
-              (pevalITETerm (ssymbTerm "a") (concTerm 1 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalITETerm (ssymbTerm "a") (concTerm 4) (pevalAddNumTerm (concTerm 3) (ssymbTerm "a"))
+              (conTerm 3)
+              (pevalITETerm (ssymTerm "a") (conTerm 1 :: Term Integer) (ssymTerm "a"))
+              @=? pevalITETerm (ssymTerm "a") (conTerm 4) (pevalAddNumTerm (conTerm 3) (ssymTerm "a"))
             pevalAddNumTerm
-              (pevalITETerm (ssymbTerm "a") (concTerm 1 :: Term Integer) (ssymbTerm "a"))
-              (concTerm 3)
-              @=? pevalITETerm (ssymbTerm "a") (concTerm 4) (pevalAddNumTerm (ssymbTerm "a") (concTerm 3))
+              (pevalITETerm (ssymTerm "a") (conTerm 1 :: Term Integer) (ssymTerm "a"))
+              (conTerm 3)
+              @=? pevalITETerm (ssymTerm "a") (conTerm 4) (pevalAddNumTerm (ssymTerm "a") (conTerm 3))
         ],
       testGroup
         "minus"
         [ testCase "minus num should be delegated to add and uminus" $ do
-            pevalMinusNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-              @=? pevalAddNumTerm (ssymbTerm "a") (pevalUMinusNumTerm $ ssymbTerm "b")
+            pevalMinusNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+              @=? pevalAddNumTerm (ssymTerm "a") (pevalUMinusNumTerm $ ssymTerm "b")
         ],
       testGroup
         "UMinus"
         [ testCase "On concrete" $ do
-            pevalUMinusNumTerm (concTerm 1 :: Term Integer) @=? concTerm (-1)
-            pevalUMinusNumTerm (concTerm 1 :: Term (WordN 3)) @=? concTerm (-1),
+            pevalUMinusNumTerm (conTerm 1 :: Term Integer) @=? conTerm (-1)
+            pevalUMinusNumTerm (conTerm 1 :: Term (WordN 3)) @=? conTerm (-1),
           testCase "On UMinus" $ do
-            pevalUMinusNumTerm (pevalUMinusNumTerm (ssymbTerm "a" :: Term Integer)) @=? ssymbTerm "a",
+            pevalUMinusNumTerm (pevalUMinusNumTerm (ssymTerm "a" :: Term Integer)) @=? ssymTerm "a",
           testCase "On Add concrete" $ do
-            pevalUMinusNumTerm (pevalAddNumTerm (concTerm 1) (ssymbTerm "a" :: Term Integer))
-              @=? pevalAddNumTerm (concTerm $ -1) (pevalUMinusNumTerm $ ssymbTerm "a"),
+            pevalUMinusNumTerm (pevalAddNumTerm (conTerm 1) (ssymTerm "a" :: Term Integer))
+              @=? pevalAddNumTerm (conTerm $ -1) (pevalUMinusNumTerm $ ssymTerm "a"),
           testCase "On Add uminus" $ do
-            pevalUMinusNumTerm (pevalAddNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (ssymbTerm "b" :: Term Integer))
-              @=? pevalAddNumTerm (ssymbTerm "a") (pevalUMinusNumTerm $ ssymbTerm "b")
-            pevalUMinusNumTerm (pevalAddNumTerm (ssymbTerm "a") (pevalUMinusNumTerm $ ssymbTerm "b" :: Term Integer))
-              @=? pevalAddNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (ssymbTerm "b"),
+            pevalUMinusNumTerm (pevalAddNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (ssymTerm "b" :: Term Integer))
+              @=? pevalAddNumTerm (ssymTerm "a") (pevalUMinusNumTerm $ ssymTerm "b")
+            pevalUMinusNumTerm (pevalAddNumTerm (ssymTerm "a") (pevalUMinusNumTerm $ ssymTerm "b" :: Term Integer))
+              @=? pevalAddNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (ssymTerm "b"),
           testCase "On Times concrete" $ do
-            pevalUMinusNumTerm (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a" :: Term Integer))
-              @=? pevalTimesNumTerm (concTerm $ -3) (ssymbTerm "a"),
+            pevalUMinusNumTerm (pevalTimesNumTerm (conTerm 3) (ssymTerm "a" :: Term Integer))
+              @=? pevalTimesNumTerm (conTerm $ -3) (ssymTerm "a"),
           testCase "On symbolic" $ do
-            pevalUMinusNumTerm (ssymbTerm "a" :: Term Integer)
-              @=? uminusNumTerm (ssymbTerm "a")
+            pevalUMinusNumTerm (ssymTerm "a" :: Term Integer)
+              @=? uminusNumTerm (ssymTerm "a")
         ],
       testGroup
         "Times"
         [ testCase "On both concrete" $ do
-            pevalTimesNumTerm (concTerm 3 :: Term Integer) (concTerm 5)
-              @=? concTerm 15,
+            pevalTimesNumTerm (conTerm 3 :: Term Integer) (conTerm 5)
+              @=? conTerm 15,
           testCase "On left 0" $ do
-            pevalTimesNumTerm (concTerm 0 :: Term Integer) (ssymbTerm "a")
-              @=? concTerm 0,
+            pevalTimesNumTerm (conTerm 0 :: Term Integer) (ssymTerm "a")
+              @=? conTerm 0,
           testCase "On right 0" $ do
-            pevalTimesNumTerm (ssymbTerm "a") (concTerm 0 :: Term Integer)
-              @=? concTerm 0,
+            pevalTimesNumTerm (ssymTerm "a") (conTerm 0 :: Term Integer)
+              @=? conTerm 0,
           testCase "On left 1" $ do
-            pevalTimesNumTerm (concTerm 1 :: Term Integer) (ssymbTerm "a")
-              @=? ssymbTerm "a",
+            pevalTimesNumTerm (conTerm 1 :: Term Integer) (ssymTerm "a")
+              @=? ssymTerm "a",
           testCase "On right 1" $ do
-            pevalTimesNumTerm (ssymbTerm "a") (concTerm 1 :: Term Integer)
-              @=? ssymbTerm "a",
+            pevalTimesNumTerm (ssymTerm "a") (conTerm 1 :: Term Integer)
+              @=? ssymTerm "a",
           testCase "On left -1" $ do
-            pevalTimesNumTerm (concTerm $ -1 :: Term Integer) (ssymbTerm "a")
-              @=? pevalUMinusNumTerm (ssymbTerm "a"),
+            pevalTimesNumTerm (conTerm $ -1 :: Term Integer) (ssymTerm "a")
+              @=? pevalUMinusNumTerm (ssymTerm "a"),
           testCase "On right -1" $ do
-            pevalTimesNumTerm (ssymbTerm "a") (concTerm $ -1 :: Term Integer)
-              @=? pevalUMinusNumTerm (ssymbTerm "a"),
+            pevalTimesNumTerm (ssymTerm "a") (conTerm $ -1 :: Term Integer)
+              @=? pevalUMinusNumTerm (ssymTerm "a"),
           testCase "On left concrete and right times concrete symbolics" $ do
-            pevalTimesNumTerm (concTerm 3) (pevalTimesNumTerm (concTerm 5 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalTimesNumTerm (concTerm 15) (ssymbTerm "a"),
+            pevalTimesNumTerm (conTerm 3) (pevalTimesNumTerm (conTerm 5 :: Term Integer) (ssymTerm "a"))
+              @=? pevalTimesNumTerm (conTerm 15) (ssymTerm "a"),
           testCase "On right concrete and left times concrete symbolics" $ do
-            pevalTimesNumTerm (pevalTimesNumTerm (concTerm 5 :: Term Integer) (ssymbTerm "a")) (concTerm 3)
-              @=? pevalTimesNumTerm (concTerm 15) (ssymbTerm "a"),
+            pevalTimesNumTerm (pevalTimesNumTerm (conTerm 5 :: Term Integer) (ssymTerm "a")) (conTerm 3)
+              @=? pevalTimesNumTerm (conTerm 15) (ssymTerm "a"),
           testCase "On left concrete and right add concrete symbolics" $ do
-            pevalTimesNumTerm (concTerm 3) (pevalAddNumTerm (concTerm 5 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalAddNumTerm (concTerm 15) (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a")),
+            pevalTimesNumTerm (conTerm 3) (pevalAddNumTerm (conTerm 5 :: Term Integer) (ssymTerm "a"))
+              @=? pevalAddNumTerm (conTerm 15) (pevalTimesNumTerm (conTerm 3) (ssymTerm "a")),
           testCase "On right concrete and left add concrete symbolics" $ do
-            pevalTimesNumTerm (pevalAddNumTerm (concTerm 5 :: Term Integer) (ssymbTerm "a")) (concTerm 3)
-              @=? pevalAddNumTerm (concTerm 15) (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a")),
+            pevalTimesNumTerm (pevalAddNumTerm (conTerm 5 :: Term Integer) (ssymTerm "a")) (conTerm 3)
+              @=? pevalAddNumTerm (conTerm 15) (pevalTimesNumTerm (conTerm 3) (ssymTerm "a")),
           testCase "On left concrete and right uminus" $ do
-            pevalTimesNumTerm (concTerm 3 :: Term Integer) (pevalUMinusNumTerm (ssymbTerm "a"))
-              @=? pevalTimesNumTerm (concTerm $ -3) (ssymbTerm "a"),
+            pevalTimesNumTerm (conTerm 3 :: Term Integer) (pevalUMinusNumTerm (ssymTerm "a"))
+              @=? pevalTimesNumTerm (conTerm $ -3) (ssymTerm "a"),
           testCase "On left times concrete symbolics" $ do
-            pevalTimesNumTerm (pevalTimesNumTerm (concTerm 3 :: Term Integer) (ssymbTerm "a")) (ssymbTerm "b")
-              @=? pevalTimesNumTerm (concTerm 3) (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+            pevalTimesNumTerm (pevalTimesNumTerm (conTerm 3 :: Term Integer) (ssymTerm "a")) (ssymTerm "b")
+              @=? pevalTimesNumTerm (conTerm 3) (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On right times concrete symbolics" $ do
-            pevalTimesNumTerm (ssymbTerm "b") (pevalTimesNumTerm (concTerm 3 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalTimesNumTerm (concTerm 3) (pevalTimesNumTerm (ssymbTerm "b") (ssymbTerm "a")),
+            pevalTimesNumTerm (ssymTerm "b") (pevalTimesNumTerm (conTerm 3 :: Term Integer) (ssymTerm "a"))
+              @=? pevalTimesNumTerm (conTerm 3) (pevalTimesNumTerm (ssymTerm "b") (ssymTerm "a")),
           testCase "On left uminus" $ do
-            pevalTimesNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (ssymbTerm "b" :: Term Integer)
-              @=? pevalUMinusNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+            pevalTimesNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (ssymTerm "b" :: Term Integer)
+              @=? pevalUMinusNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On right uminus" $ do
-            pevalTimesNumTerm (ssymbTerm "a") (pevalUMinusNumTerm $ ssymbTerm "b" :: Term Integer)
-              @=? pevalUMinusNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b")),
+            pevalTimesNumTerm (ssymTerm "a") (pevalUMinusNumTerm $ ssymTerm "b" :: Term Integer)
+              @=? pevalUMinusNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b")),
           testCase "On right concrete and left uminus" $ do
-            pevalTimesNumTerm (pevalUMinusNumTerm (ssymbTerm "a")) (concTerm 3 :: Term Integer)
-              @=? pevalTimesNumTerm (concTerm $ -3) (ssymbTerm "a"),
+            pevalTimesNumTerm (pevalUMinusNumTerm (ssymTerm "a")) (conTerm 3 :: Term Integer)
+              @=? pevalTimesNumTerm (conTerm $ -3) (ssymTerm "a"),
           testCase "On left concrete" $ do
-            pevalTimesNumTerm (concTerm 3 :: Term Integer) (ssymbTerm "a")
+            pevalTimesNumTerm (conTerm 3 :: Term Integer) (ssymTerm "a")
               @=? timesNumTerm
-                (concTerm 3 :: Term Integer)
-                (ssymbTerm "a" :: Term Integer),
+                (conTerm 3 :: Term Integer)
+                (ssymTerm "a" :: Term Integer),
           testCase "On right concrete" $ do
-            pevalTimesNumTerm (ssymbTerm "a") (concTerm 3 :: Term Integer)
+            pevalTimesNumTerm (ssymTerm "a") (conTerm 3 :: Term Integer)
               @=? timesNumTerm
-                (concTerm 3 :: Term Integer)
-                (ssymbTerm "a" :: Term Integer),
+                (conTerm 3 :: Term Integer)
+                (ssymTerm "a" :: Term Integer),
           testCase "On no concrete" $ do
-            pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b" :: Term Integer)
-              @=? timesNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b" :: Term Integer),
+            pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b" :: Term Integer)
+              @=? timesNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b" :: Term Integer),
           testCase "Unfold 1" $ do
             pevalTimesNumTerm
-              (concTerm 3)
-              (pevalITETerm (ssymbTerm "a") (concTerm 5 :: Term Integer) (ssymbTerm "a"))
-              @=? pevalITETerm (ssymbTerm "a") (concTerm 15) (pevalTimesNumTerm (concTerm 3) (ssymbTerm "a"))
+              (conTerm 3)
+              (pevalITETerm (ssymTerm "a") (conTerm 5 :: Term Integer) (ssymTerm "a"))
+              @=? pevalITETerm (ssymTerm "a") (conTerm 15) (pevalTimesNumTerm (conTerm 3) (ssymTerm "a"))
             pevalTimesNumTerm
-              (pevalITETerm (ssymbTerm "a") (concTerm 5 :: Term Integer) (ssymbTerm "a"))
-              (concTerm 3)
-              @=? pevalITETerm (ssymbTerm "a") (concTerm 15) (pevalTimesNumTerm (ssymbTerm "a") (concTerm 3))
+              (pevalITETerm (ssymTerm "a") (conTerm 5 :: Term Integer) (ssymTerm "a"))
+              (conTerm 3)
+              @=? pevalITETerm (ssymTerm "a") (conTerm 15) (pevalTimesNumTerm (ssymTerm "a") (conTerm 3))
         ],
       testGroup
         "Abs"
         [ testCase "On concrete" $ do
-            pevalAbsNumTerm (concTerm 10 :: Term Integer) @=? concTerm 10
-            pevalAbsNumTerm (concTerm $ -10 :: Term Integer) @=? concTerm 10,
+            pevalAbsNumTerm (conTerm 10 :: Term Integer) @=? conTerm 10
+            pevalAbsNumTerm (conTerm $ -10 :: Term Integer) @=? conTerm 10,
           testCase "On UMinus" $ do
-            pevalAbsNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term Integer) @=? pevalAbsNumTerm (ssymbTerm "a"),
+            pevalAbsNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term Integer) @=? pevalAbsNumTerm (ssymTerm "a"),
           testCase "On Abs" $ do
-            pevalAbsNumTerm (pevalAbsNumTerm $ ssymbTerm "a" :: Term Integer) @=? pevalAbsNumTerm (ssymbTerm "a"),
+            pevalAbsNumTerm (pevalAbsNumTerm $ ssymTerm "a" :: Term Integer) @=? pevalAbsNumTerm (ssymTerm "a"),
           testCase "On Times Integer" $ do
-            pevalAbsNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term Integer)
-              @=? pevalTimesNumTerm (pevalAbsNumTerm (ssymbTerm "a")) (pevalAbsNumTerm (ssymbTerm "b")),
+            pevalAbsNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term Integer)
+              @=? pevalTimesNumTerm (pevalAbsNumTerm (ssymTerm "a")) (pevalAbsNumTerm (ssymTerm "b")),
           testCase "On Times BV" $ do
-            pevalAbsNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (IntN 5))
-              @=? absNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (IntN 5))
-            pevalAbsNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (WordN 5))
-              @=? absNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (WordN 5)),
+            pevalAbsNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (IntN 5))
+              @=? absNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (IntN 5))
+            pevalAbsNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (WordN 5))
+              @=? absNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (WordN 5)),
           testCase "On symbolic" $ do
-            pevalAbsNumTerm (ssymbTerm "a" :: Term Integer)
-              @=? absNumTerm (ssymbTerm "a")
+            pevalAbsNumTerm (ssymTerm "a" :: Term Integer)
+              @=? absNumTerm (ssymTerm "a")
         ],
       testGroup
         "Signum"
         [ testCase "On concrete" $ do
-            pevalSignumNumTerm (concTerm 10 :: Term Integer) @=? concTerm 1
-            pevalSignumNumTerm (concTerm 0 :: Term Integer) @=? concTerm 0
-            pevalSignumNumTerm (concTerm $ -10 :: Term Integer) @=? concTerm (-1),
+            pevalSignumNumTerm (conTerm 10 :: Term Integer) @=? conTerm 1
+            pevalSignumNumTerm (conTerm 0 :: Term Integer) @=? conTerm 0
+            pevalSignumNumTerm (conTerm $ -10 :: Term Integer) @=? conTerm (-1),
           testCase "On UMinus Integer" $ do
-            pevalSignumNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term Integer)
-              @=? pevalUMinusNumTerm (pevalSignumNumTerm $ ssymbTerm "a"),
+            pevalSignumNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term Integer)
+              @=? pevalUMinusNumTerm (pevalSignumNumTerm $ ssymTerm "a"),
           testCase "On UMinus BV" $ do
-            pevalSignumNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (IntN 5))
-              @=? signumNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (IntN 5))
-            pevalSignumNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (WordN 5))
-              @=? signumNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (WordN 5)),
+            pevalSignumNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (IntN 5))
+              @=? signumNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (IntN 5))
+            pevalSignumNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (WordN 5))
+              @=? signumNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (WordN 5)),
           testCase "On Times Integer" $ do
-            pevalSignumNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term Integer)
-              @=? pevalTimesNumTerm (pevalSignumNumTerm $ ssymbTerm "a") (pevalSignumNumTerm $ ssymbTerm "b"),
+            pevalSignumNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term Integer)
+              @=? pevalTimesNumTerm (pevalSignumNumTerm $ ssymTerm "a") (pevalSignumNumTerm $ ssymTerm "b"),
           testCase "On Times BV" $ do
-            pevalSignumNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (IntN 5))
-              @=? signumNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (IntN 5))
-            pevalSignumNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (WordN 5))
-              @=? signumNumTerm (pevalTimesNumTerm (ssymbTerm "a") (ssymbTerm "b") :: Term (WordN 5)),
+            pevalSignumNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (IntN 5))
+              @=? signumNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (IntN 5))
+            pevalSignumNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (WordN 5))
+              @=? signumNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (WordN 5)),
           testCase "On symbolics" $ do
-            pevalSignumNumTerm (ssymbTerm "a" :: Term Integer)
-              @=? signumNumTerm (ssymbTerm "a")
+            pevalSignumNumTerm (ssymTerm "a" :: Term Integer)
+              @=? signumNumTerm (ssymTerm "a")
         ],
-      let concSignedBV :: Integer -> Term (IntN 5) = concTerm . fromInteger
-          concUnsignedBV :: Integer -> Term (WordN 5) = concTerm . fromInteger
+      let concSignedBV :: Integer -> Term (IntN 5) = conTerm . fromInteger
+          concUnsignedBV :: Integer -> Term (WordN 5) = conTerm . fromInteger
        in testGroup
             "Lt"
             [ testCase "On both concrete" $ do
-                pevalLtNumTerm (concTerm 1 :: Term Integer) (concTerm 2) @=? concTerm True
-                pevalLtNumTerm (concTerm 2 :: Term Integer) (concTerm 2) @=? concTerm False
-                pevalLtNumTerm (concTerm 3 :: Term Integer) (concTerm 2) @=? concTerm False
-                pevalLtNumTerm (concTerm 1 :: Term (IntN 2)) (concTerm 0) @=? concTerm False
-                pevalLtNumTerm (concTerm 2 :: Term (IntN 2)) (concTerm 0) @=? concTerm True
-                pevalLtNumTerm (concTerm 3 :: Term (IntN 2)) (concTerm 0) @=? concTerm True
-                pevalLtNumTerm (concTerm 1 :: Term (WordN 2)) (concTerm 2) @=? concTerm True
-                pevalLtNumTerm (concTerm 2 :: Term (WordN 2)) (concTerm 2) @=? concTerm False
-                pevalLtNumTerm (concTerm 3 :: Term (WordN 2)) (concTerm 2) @=? concTerm False,
+                pevalLtNumTerm (conTerm 1 :: Term Integer) (conTerm 2) @=? conTerm True
+                pevalLtNumTerm (conTerm 2 :: Term Integer) (conTerm 2) @=? conTerm False
+                pevalLtNumTerm (conTerm 3 :: Term Integer) (conTerm 2) @=? conTerm False
+                pevalLtNumTerm (conTerm 1 :: Term (IntN 2)) (conTerm 0) @=? conTerm False
+                pevalLtNumTerm (conTerm 2 :: Term (IntN 2)) (conTerm 0) @=? conTerm True
+                pevalLtNumTerm (conTerm 3 :: Term (IntN 2)) (conTerm 0) @=? conTerm True
+                pevalLtNumTerm (conTerm 1 :: Term (WordN 2)) (conTerm 2) @=? conTerm True
+                pevalLtNumTerm (conTerm 2 :: Term (WordN 2)) (conTerm 2) @=? conTerm False
+                pevalLtNumTerm (conTerm 3 :: Term (WordN 2)) (conTerm 2) @=? conTerm False,
               testCase "On left constant and right add concrete Integers" $ do
-                pevalLtNumTerm (concTerm 1 :: Term Integer) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? pevalLtNumTerm (concTerm $ -1 :: Term Integer) (ssymbTerm "a"),
+                pevalLtNumTerm (conTerm 1 :: Term Integer) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? pevalLtNumTerm (conTerm $ -1 :: Term Integer) (ssymTerm "a"),
               testCase "On right constant left add concrete Integers" $ do
-                pevalLtNumTerm (pevalAddNumTerm (concTerm 2) (ssymbTerm "a")) (concTerm 1 :: Term Integer)
-                  @=? pevalLtNumTerm (concTerm 1 :: Term Integer) (pevalUMinusNumTerm $ ssymbTerm "a"),
+                pevalLtNumTerm (pevalAddNumTerm (conTerm 2) (ssymTerm "a")) (conTerm 1 :: Term Integer)
+                  @=? pevalLtNumTerm (conTerm 1 :: Term Integer) (pevalUMinusNumTerm $ ssymTerm "a"),
               testCase "On right constant Integers" $ do
-                pevalLtNumTerm (ssymbTerm "a") (concTerm 1 :: Term Integer)
-                  @=? pevalLtNumTerm (concTerm $ -1 :: Term Integer) (pevalUMinusNumTerm $ ssymbTerm "a"),
+                pevalLtNumTerm (ssymTerm "a") (conTerm 1 :: Term Integer)
+                  @=? pevalLtNumTerm (conTerm $ -1 :: Term Integer) (pevalUMinusNumTerm $ ssymTerm "a"),
               testCase "On right constant and left uminus Integers" $ do
-                pevalLtNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (concTerm 1 :: Term Integer)
-                  @=? pevalLtNumTerm (concTerm $ -1 :: Term Integer) (ssymbTerm "a"),
+                pevalLtNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (conTerm 1 :: Term Integer)
+                  @=? pevalLtNumTerm (conTerm $ -1 :: Term Integer) (ssymTerm "a"),
               testCase "On left add concrete Integers" $ do
-                pevalLtNumTerm (pevalAddNumTerm (concTerm 2) (ssymbTerm "a")) (ssymbTerm "b" :: Term Integer)
-                  @=? pevalLtNumTerm (concTerm 2 :: Term Integer) (pevalAddNumTerm (ssymbTerm "b") (pevalUMinusNumTerm $ ssymbTerm "a")),
+                pevalLtNumTerm (pevalAddNumTerm (conTerm 2) (ssymTerm "a")) (ssymTerm "b" :: Term Integer)
+                  @=? pevalLtNumTerm (conTerm 2 :: Term Integer) (pevalAddNumTerm (ssymTerm "b") (pevalUMinusNumTerm $ ssymTerm "a")),
               testCase "On right add concrete Integers" $ do
-                pevalLtNumTerm (ssymbTerm "b" :: Term Integer) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? pevalLtNumTerm (concTerm $ -2 :: Term Integer) (pevalAddNumTerm (ssymbTerm "a") (pevalUMinusNumTerm $ ssymbTerm "b")),
+                pevalLtNumTerm (ssymTerm "b" :: Term Integer) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? pevalLtNumTerm (conTerm $ -2 :: Term Integer) (pevalAddNumTerm (ssymTerm "a") (pevalUMinusNumTerm $ ssymTerm "b")),
               testCase "On left constant and right add concrete BVs should not be simplified" $ do
-                pevalLtNumTerm (concSignedBV 1) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? ltNumTerm (concSignedBV 1) (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a"))
-                pevalLtNumTerm (concUnsignedBV 1) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? ltNumTerm (concUnsignedBV 1) (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")),
+                pevalLtNumTerm (concSignedBV 1) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? ltNumTerm (concSignedBV 1) (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a"))
+                pevalLtNumTerm (concUnsignedBV 1) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? ltNumTerm (concUnsignedBV 1) (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")),
               testCase "On right constant and left add concrete BVs should not be simplified" $ do
-                pevalLtNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (concTerm 1)
-                  @=? ltNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (concSignedBV 1)
-                pevalLtNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (concTerm 1)
-                  @=? ltNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (concUnsignedBV 1),
+                pevalLtNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (conTerm 1)
+                  @=? ltNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (concSignedBV 1)
+                pevalLtNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (conTerm 1)
+                  @=? ltNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (concUnsignedBV 1),
               testCase "On right constant BVs should not be simplified" $ do
-                pevalLtNumTerm (ssymbTerm "a") (concSignedBV 1)
-                  @=? ltNumTerm (ssymbTerm "a" :: Term (IntN 5)) (concSignedBV 1)
-                pevalLtNumTerm (ssymbTerm "a") (concUnsignedBV 1)
-                  @=? ltNumTerm (ssymbTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
+                pevalLtNumTerm (ssymTerm "a") (concSignedBV 1)
+                  @=? ltNumTerm (ssymTerm "a" :: Term (IntN 5)) (concSignedBV 1)
+                pevalLtNumTerm (ssymTerm "a") (concUnsignedBV 1)
+                  @=? ltNumTerm (ssymTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
               testCase "On right constant and left uminus BVs should not be simplified" $ do
-                pevalLtNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (concSignedBV 1)
-                  @=? ltNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (IntN 5)) (concSignedBV 1)
-                pevalLtNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (concUnsignedBV 1)
-                  @=? ltNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
+                pevalLtNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (concSignedBV 1)
+                  @=? ltNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (IntN 5)) (concSignedBV 1)
+                pevalLtNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (concUnsignedBV 1)
+                  @=? ltNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
               testCase "On left add concrete BVs should not be simplified" $ do
-                pevalLtNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (ssymbTerm "b")
-                  @=? ltNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (ssymbTerm "b" :: Term (IntN 5))
-                pevalLtNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (ssymbTerm "b")
-                  @=? ltNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (ssymbTerm "b" :: Term (WordN 5)),
+                pevalLtNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (ssymTerm "b")
+                  @=? ltNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (ssymTerm "b" :: Term (IntN 5))
+                pevalLtNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (ssymTerm "b")
+                  @=? ltNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (ssymTerm "b" :: Term (WordN 5)),
               testCase "On right add concrete BVs should not be simplified" $ do
-                pevalLtNumTerm (ssymbTerm "b") (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a"))
+                pevalLtNumTerm (ssymTerm "b") (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a"))
                   @=? ltNumTerm
-                    (ssymbTerm "b" :: Term (IntN 5))
-                    (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a"))
-                pevalLtNumTerm (ssymbTerm "b") (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a"))
+                    (ssymTerm "b" :: Term (IntN 5))
+                    (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a"))
+                pevalLtNumTerm (ssymTerm "b") (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a"))
                   @=? ltNumTerm
-                    (ssymbTerm "b" :: Term (WordN 5))
-                    (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")),
+                    (ssymTerm "b" :: Term (WordN 5))
+                    (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")),
               testCase "On symbolic" $ do
-                pevalLtNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-                  @=? ltNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b" :: Term Integer)
+                pevalLtNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+                  @=? ltNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b" :: Term Integer)
             ],
-      let concSignedBV :: Integer -> Term (IntN 5) = concTerm . fromInteger
-          concUnsignedBV :: Integer -> Term (WordN 5) = concTerm . fromInteger
+      let concSignedBV :: Integer -> Term (IntN 5) = conTerm . fromInteger
+          concUnsignedBV :: Integer -> Term (WordN 5) = conTerm . fromInteger
        in testGroup
             "Le"
             [ testCase "On both concrete" $ do
-                pevalLeNumTerm (concTerm 1 :: Term Integer) (concTerm 2) @=? concTerm True
-                pevalLeNumTerm (concTerm 2 :: Term Integer) (concTerm 2) @=? concTerm True
-                pevalLeNumTerm (concTerm 3 :: Term Integer) (concTerm 2) @=? concTerm False
-                pevalLeNumTerm (concTerm 0 :: Term (IntN 2)) (concTerm 0) @=? concTerm True
-                pevalLeNumTerm (concTerm 1 :: Term (IntN 2)) (concTerm 0) @=? concTerm False
-                pevalLeNumTerm (concTerm 2 :: Term (IntN 2)) (concTerm 0) @=? concTerm True
-                pevalLeNumTerm (concTerm 3 :: Term (IntN 2)) (concTerm 0) @=? concTerm True
-                pevalLeNumTerm (concTerm 1 :: Term (WordN 2)) (concTerm 2) @=? concTerm True
-                pevalLeNumTerm (concTerm 2 :: Term (WordN 2)) (concTerm 2) @=? concTerm True
-                pevalLeNumTerm (concTerm 3 :: Term (WordN 2)) (concTerm 2) @=? concTerm False,
+                pevalLeNumTerm (conTerm 1 :: Term Integer) (conTerm 2) @=? conTerm True
+                pevalLeNumTerm (conTerm 2 :: Term Integer) (conTerm 2) @=? conTerm True
+                pevalLeNumTerm (conTerm 3 :: Term Integer) (conTerm 2) @=? conTerm False
+                pevalLeNumTerm (conTerm 0 :: Term (IntN 2)) (conTerm 0) @=? conTerm True
+                pevalLeNumTerm (conTerm 1 :: Term (IntN 2)) (conTerm 0) @=? conTerm False
+                pevalLeNumTerm (conTerm 2 :: Term (IntN 2)) (conTerm 0) @=? conTerm True
+                pevalLeNumTerm (conTerm 3 :: Term (IntN 2)) (conTerm 0) @=? conTerm True
+                pevalLeNumTerm (conTerm 1 :: Term (WordN 2)) (conTerm 2) @=? conTerm True
+                pevalLeNumTerm (conTerm 2 :: Term (WordN 2)) (conTerm 2) @=? conTerm True
+                pevalLeNumTerm (conTerm 3 :: Term (WordN 2)) (conTerm 2) @=? conTerm False,
               testCase "On left constant and right add concrete Integers" $ do
-                pevalLeNumTerm (concTerm 1 :: Term Integer) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? pevalLeNumTerm (concTerm $ -1 :: Term Integer) (ssymbTerm "a"),
+                pevalLeNumTerm (conTerm 1 :: Term Integer) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? pevalLeNumTerm (conTerm $ -1 :: Term Integer) (ssymTerm "a"),
               testCase "On right constant and left add concrete Integers" $ do
-                pevalLeNumTerm (pevalAddNumTerm (concTerm 2) (ssymbTerm "a")) (concTerm 1 :: Term Integer)
-                  @=? pevalLeNumTerm (concTerm 1 :: Term Integer) (pevalUMinusNumTerm $ ssymbTerm "a"),
+                pevalLeNumTerm (pevalAddNumTerm (conTerm 2) (ssymTerm "a")) (conTerm 1 :: Term Integer)
+                  @=? pevalLeNumTerm (conTerm 1 :: Term Integer) (pevalUMinusNumTerm $ ssymTerm "a"),
               testCase "On right constant Integers" $ do
-                pevalLeNumTerm (ssymbTerm "a") (concTerm 1 :: Term Integer)
-                  @=? pevalLeNumTerm (concTerm $ -1 :: Term Integer) (pevalUMinusNumTerm $ ssymbTerm "a"),
+                pevalLeNumTerm (ssymTerm "a") (conTerm 1 :: Term Integer)
+                  @=? pevalLeNumTerm (conTerm $ -1 :: Term Integer) (pevalUMinusNumTerm $ ssymTerm "a"),
               testCase "On right constant left uminus Integers" $ do
-                pevalLeNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (concTerm 1 :: Term Integer)
-                  @=? pevalLeNumTerm (concTerm $ -1 :: Term Integer) (ssymbTerm "a"),
+                pevalLeNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (conTerm 1 :: Term Integer)
+                  @=? pevalLeNumTerm (conTerm $ -1 :: Term Integer) (ssymTerm "a"),
               testCase "On left add concrete Integers" $ do
-                pevalLeNumTerm (pevalAddNumTerm (concTerm 2) (ssymbTerm "a")) (ssymbTerm "b" :: Term Integer)
-                  @=? pevalLeNumTerm (concTerm 2 :: Term Integer) (pevalAddNumTerm (ssymbTerm "b") (pevalUMinusNumTerm $ ssymbTerm "a")),
+                pevalLeNumTerm (pevalAddNumTerm (conTerm 2) (ssymTerm "a")) (ssymTerm "b" :: Term Integer)
+                  @=? pevalLeNumTerm (conTerm 2 :: Term Integer) (pevalAddNumTerm (ssymTerm "b") (pevalUMinusNumTerm $ ssymTerm "a")),
               testCase "On right add concrete Integers" $ do
-                pevalLeNumTerm (ssymbTerm "b" :: Term Integer) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? pevalLeNumTerm (concTerm $ -2 :: Term Integer) (pevalAddNumTerm (ssymbTerm "a") (pevalUMinusNumTerm $ ssymbTerm "b")),
+                pevalLeNumTerm (ssymTerm "b" :: Term Integer) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? pevalLeNumTerm (conTerm $ -2 :: Term Integer) (pevalAddNumTerm (ssymTerm "a") (pevalUMinusNumTerm $ ssymTerm "b")),
               testCase "On left constant and right add concrete BVs should not be simplified" $ do
-                pevalLeNumTerm (concSignedBV 1) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? leNumTerm (concSignedBV 1) (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a"))
-                pevalLeNumTerm (concUnsignedBV 1) (pevalAddNumTerm (concTerm 2) (ssymbTerm "a"))
-                  @=? leNumTerm (concUnsignedBV 1) (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")),
+                pevalLeNumTerm (concSignedBV 1) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? leNumTerm (concSignedBV 1) (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a"))
+                pevalLeNumTerm (concUnsignedBV 1) (pevalAddNumTerm (conTerm 2) (ssymTerm "a"))
+                  @=? leNumTerm (concUnsignedBV 1) (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")),
               testCase "On right constant and left add concrete BVs should not be simplified" $ do
-                pevalLeNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (concTerm 1)
-                  @=? leNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (concSignedBV 1)
-                pevalLeNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (concTerm 1)
-                  @=? leNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (concUnsignedBV 1),
+                pevalLeNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (conTerm 1)
+                  @=? leNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (concSignedBV 1)
+                pevalLeNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (conTerm 1)
+                  @=? leNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (concUnsignedBV 1),
               testCase "On right constant BVs should not be simplified" $ do
-                pevalLeNumTerm (ssymbTerm "a") (concSignedBV 1)
-                  @=? leNumTerm (ssymbTerm "a" :: Term (IntN 5)) (concSignedBV 1)
-                pevalLeNumTerm (ssymbTerm "a") (concUnsignedBV 1)
-                  @=? leNumTerm (ssymbTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
+                pevalLeNumTerm (ssymTerm "a") (concSignedBV 1)
+                  @=? leNumTerm (ssymTerm "a" :: Term (IntN 5)) (concSignedBV 1)
+                pevalLeNumTerm (ssymTerm "a") (concUnsignedBV 1)
+                  @=? leNumTerm (ssymTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
               testCase "On right constant and left uminus BVs should not be simplified" $ do
-                pevalLeNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (concSignedBV 1)
-                  @=? leNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (IntN 5)) (concSignedBV 1)
-                pevalLeNumTerm (pevalUMinusNumTerm $ ssymbTerm "a") (concUnsignedBV 1)
-                  @=? leNumTerm (pevalUMinusNumTerm $ ssymbTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
+                pevalLeNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (concSignedBV 1)
+                  @=? leNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (IntN 5)) (concSignedBV 1)
+                pevalLeNumTerm (pevalUMinusNumTerm $ ssymTerm "a") (concUnsignedBV 1)
+                  @=? leNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (WordN 5)) (concUnsignedBV 1),
               testCase "On left add concrete BVs should not be simplified" $ do
-                pevalLeNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (ssymbTerm "b")
-                  @=? leNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a")) (ssymbTerm "b" :: Term (IntN 5))
-                pevalLeNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (ssymbTerm "b")
-                  @=? leNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")) (ssymbTerm "b" :: Term (WordN 5)),
+                pevalLeNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (ssymTerm "b")
+                  @=? leNumTerm (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a")) (ssymTerm "b" :: Term (IntN 5))
+                pevalLeNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (ssymTerm "b")
+                  @=? leNumTerm (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")) (ssymTerm "b" :: Term (WordN 5)),
               testCase "Lt on right add concrete BVs should not be simplified" $ do
-                pevalLeNumTerm (ssymbTerm "b") (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a"))
+                pevalLeNumTerm (ssymTerm "b") (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a"))
                   @=? leNumTerm
-                    (ssymbTerm "b" :: Term (IntN 5))
-                    (pevalAddNumTerm (concSignedBV 2) (ssymbTerm "a"))
-                pevalLeNumTerm (ssymbTerm "b") (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a"))
+                    (ssymTerm "b" :: Term (IntN 5))
+                    (pevalAddNumTerm (concSignedBV 2) (ssymTerm "a"))
+                pevalLeNumTerm (ssymTerm "b") (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a"))
                   @=? leNumTerm
-                    (ssymbTerm "b" :: Term (WordN 5))
-                    (pevalAddNumTerm (concUnsignedBV 2) (ssymbTerm "a")),
+                    (ssymTerm "b" :: Term (WordN 5))
+                    (pevalAddNumTerm (concUnsignedBV 2) (ssymTerm "a")),
               testCase "On symbolic" $ do
-                pevalLeNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-                  @=? leNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b" :: Term Integer)
+                pevalLeNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+                  @=? leNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b" :: Term Integer)
             ],
       testCase "Gt should be delegated to Lt" $
-        pevalGtNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-          @=? pevalLtNumTerm (ssymbTerm "b" :: Term Integer) (ssymbTerm "a"),
+        pevalGtNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+          @=? pevalLtNumTerm (ssymTerm "b" :: Term Integer) (ssymTerm "a"),
       testCase "Ge should be delegated to Le" $ do
-        pevalGeNumTerm (ssymbTerm "a" :: Term Integer) (ssymbTerm "b")
-          @=? pevalLeNumTerm (ssymbTerm "b" :: Term Integer) (ssymbTerm "a")
+        pevalGeNumTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b")
+          @=? pevalLeNumTerm (ssymTerm "b" :: Term Integer) (ssymTerm "a")
     ]

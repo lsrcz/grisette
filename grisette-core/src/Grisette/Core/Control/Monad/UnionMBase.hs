@@ -154,7 +154,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 --
 -- >>> :{
 --   do
---     x <- unionIf (ssymb "a") (return 1) (unionIf (ssymb "b") (return 1) (return 2))
+--     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
 --     mrgSingle $ x + 1 :: UnionM Integer
 -- :}
 -- UMrg (If (|| a b) (Single 2) (Single 3))
@@ -167,7 +167,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> f x y = mrgIf "c" x y
 -- >>> :{
 --   do
---     x <- unionIf (ssymb "a") (return 1) (unionIf (ssymb "b") (return 1) (return 2))
+--     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
 --     f x (x + 1) :: UnionM Integer
 -- :}
 -- UMrg (If (&& c (|| a b)) (Single 1) (If (|| a (|| b c)) (Single 2) (Single 3)))
@@ -287,7 +287,7 @@ instance SymBoolOp bool => GUnionLike bool (UnionMBase bool) where
         where
           !r = UMrg s $ fullReconstruct s u -- m >>= mrgSingle
   {-# NOINLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s (Conc c) l r = if c then mergeWithStrategy s l else mergeWithStrategy s r
+  mrgIfWithStrategy s (Con c) l r = if c then mergeWithStrategy s l else mergeWithStrategy s r
   mrgIfWithStrategy s cond l r =
     mergeWithStrategy s $ unionIf cond l r
   {-# INLINE mrgIfWithStrategy #-}
@@ -433,20 +433,20 @@ instance (SymBoolOp bool, LogicalOp a, GMergeable bool a) => LogicalOp (UnionMBa
     mrgSingle $ a1 `implies` b1
 
 instance (SymBoolOp bool, Solvable c t, GMergeable bool t) => Solvable c (UnionMBase bool t) where
-  conc = mrgSingle . conc
-  {-# INLINE conc #-}
-  ssymb = mrgSingle . ssymb
-  {-# INLINE ssymb #-}
-  isymb i s = mrgSingle $ isymb i s
-  {-# INLINE isymb #-}
-  sinfosymb s info = mrgSingle $ sinfosymb s info
-  {-# INLINE sinfosymb #-}
-  iinfosymb i s info = mrgSingle $ iinfosymb i s info
-  {-# INLINE iinfosymb #-}
-  concView v = do
+  con = mrgSingle . con
+  {-# INLINE con #-}
+  ssym = mrgSingle . ssym
+  {-# INLINE ssym #-}
+  isym i s = mrgSingle $ isym i s
+  {-# INLINE isym #-}
+  sinfosym s info = mrgSingle $ sinfosym s info
+  {-# INLINE sinfosym #-}
+  iinfosym i s info = mrgSingle $ iinfosym i s info
+  {-# INLINE iinfosym #-}
+  conView v = do
     c <- singleView v
-    concView c
-  {-# INLINE concView #-}
+    conView c
+  {-# INLINE conView #-}
 
 instance
   (SymBoolOp bool, Function f, GMergeable bool f, GMergeable bool a, Ret f ~ a) =>

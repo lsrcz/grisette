@@ -70,15 +70,15 @@ library
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
       Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-      Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
       Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
-      Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
+      Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
       Grisette.IR.SymPrim.Data.Prim.Utils
       Grisette.IR.SymPrim.Data.SymPrim
-      Grisette.IR.SymPrim.Data.TabularFunc
+      Grisette.IR.SymPrim.Data.TabularFun
       Grisette.IR.SymPrim.Data.Union
   other-modules:
       Paths_grisette_symir
@@ -114,9 +114,9 @@ test-suite spec
       Grisette.IR.SymPrim.Data.Prim.IntegerTests
       Grisette.IR.SymPrim.Data.Prim.ModelTests
       Grisette.IR.SymPrim.Data.Prim.NumTests
-      Grisette.IR.SymPrim.Data.Prim.TabularFuncTests
+      Grisette.IR.SymPrim.Data.Prim.TabularFunTests
       Grisette.IR.SymPrim.Data.SymPrimTests
-      Grisette.IR.SymPrim.Data.TabularFuncTests
+      Grisette.IR.SymPrim.Data.TabularFunTests
       Paths_grisette_symir
   hs-source-dirs:
       test

@@ -9,7 +9,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.IR.SymPrim
-  ( FuncArg (..),
+  ( FunArg (..),
     Sym (..),
     Union,
     UnaryOp (..),
@@ -31,18 +31,18 @@ module Grisette.Internal.IR.SymPrim
     constructUnary,
     constructBinary,
     constructTernary,
-    concTerm,
-    symbTerm,
-    ssymbTerm,
-    isymbTerm,
-    sinfosymbTerm,
-    iinfosymbTerm,
+    conTerm,
+    symTerm,
+    ssymTerm,
+    isymTerm,
+    sinfosymTerm,
+    iinfosymTerm,
     termSize,
     termsSize,
     extractSymbolicsTerm,
     trueTerm,
     falseTerm,
-    pattern BoolConcTerm,
+    pattern BoolConTerm,
     pattern TrueTerm,
     pattern FalseTerm,
     pattern BoolTerm,
@@ -59,7 +59,7 @@ module Grisette.Internal.IR.SymPrim
     pattern UnaryTermPatt,
     pattern BinaryTermPatt,
     pattern TernaryTermPatt,
-    PartialFunc,
+    PartialFun,
     PartialRuleUnary,
     TotalRuleUnary,
     PartialRuleBinary,
@@ -71,8 +71,8 @@ module Grisette.Internal.IR.SymPrim
     BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
     binaryPartial,
-    pattern NumConcTerm,
-    pattern NumOrdConcTerm,
+    pattern NumConTerm,
+    pattern NumOrdConTerm,
     pevalAddNumTerm,
     pevalMinusNumTerm,
     pevalUMinusNumTerm,
@@ -83,8 +83,8 @@ module Grisette.Internal.IR.SymPrim
     pevalLeNumTerm,
     pevalGtNumTerm,
     pevalGeNumTerm,
-    pevalTabularFuncApplyTerm,
-    pevalGeneralFuncApplyTerm,
+    pevalTabularFunApplyTerm,
+    pevalGeneralFunApplyTerm,
     pevalDivIntegerTerm,
     pevalModIntegerTerm,
   )
@@ -97,11 +97,11 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFunc
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
 import Grisette.IR.SymPrim.Data.SymPrim
 import Grisette.IR.SymPrim.Data.Union

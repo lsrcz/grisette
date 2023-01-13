@@ -55,7 +55,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.TabularFunc
+import Grisette.IR.SymPrim.Data.TabularFun
 import qualified Type.Reflection as R
 import Unsafe.Coerce
 
@@ -159,7 +159,7 @@ lowerSinglePrimImpl' ::
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
   State SymBiMap (TermTy integerBitWidth a)
-lowerSinglePrimImpl' ResolvedConfig {} (ConcTerm _ v) =
+lowerSinglePrimImpl' ResolvedConfig {} (ConTerm _ v) =
   case R.typeRep @a of
     BoolType -> return $ if v then SBV.sTrue else SBV.sFalse
     IntegerType -> return $ fromInteger v
@@ -168,7 +168,7 @@ lowerSinglePrimImpl' ResolvedConfig {} (ConcTerm _ v) =
     UnsignedBVType _ -> case v of
       WordN x -> return $ fromInteger x
     _ -> translateTypeError (R.typeRep @a)
-lowerSinglePrimImpl' _ t@SymbTerm {} =
+lowerSinglePrimImpl' _ t@SymTerm {} =
   error $
     "The symbolic term should have already been lowered "
       ++ show t
@@ -322,7 +322,7 @@ lowerSinglePrimImpl' config t@(BVExtendTerm _ signed (n :: R.TypeRep n) (bv :: T
                         (SBV.zeroExtend (SBV.sFromIntegral x :: SBV.SBV (SBV.WordN nx)) :: SBV.SBV (SBV.WordN na))
                 )
     _ -> translateTernaryError "bvextend" (R.typeRep @Bool) n (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(TabularFuncApplyTerm _ (f :: Term (b =-> a)) (arg :: Term b)) =
+lowerSinglePrimImpl' config t@(TabularFunApplyTerm _ (f :: Term (b =-> a)) (arg :: Term b)) =
   case (config, R.typeRep @a) of
     ResolvedDeepType -> do
       l1 <- lowerSinglePrimCached' config f
@@ -331,7 +331,7 @@ lowerSinglePrimImpl' config t@(TabularFuncApplyTerm _ (f :: Term (b =-> a)) (arg
       addResult @integerBitWidth t g
       return g
     _ -> translateBinaryError "tabularApply" (R.typeRep @(b =-> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(GeneralFuncApplyTerm _ (f :: Term (b --> a)) (arg :: Term b)) =
+lowerSinglePrimImpl' config t@(GeneralFunApplyTerm _ (f :: Term (b --> a)) (arg :: Term b)) =
   case (config, R.typeRep @a) of
     ResolvedDeepType -> do
       l1 <- lowerSinglePrimCached' config f
@@ -350,7 +350,7 @@ lowerSinglePrimImpl' config t@(ModIntegerTerm _ arg1 arg2) =
     _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
 lowerSinglePrimImpl' _ _ = undefined
 
-buildUTFunc11 ::
+buildUTFun11 ::
   forall integerBitWidth s1 s2 a.
   (SupportedPrim a, SupportedPrim s1, SupportedPrim s2) =>
   GrisetteSMTConfig integerBitWidth ->
@@ -359,15 +359,15 @@ buildUTFunc11 ::
   Term a ->
   SymBiMap ->
   Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2)))
-buildUTFunc11 config ta tb term@(SymbTerm _ ts) m = case ((config, ta), (config, tb)) of
+buildUTFun11 config ta tb term@(SymTerm _ ts) m = case ((config, ta), (config, tb)) of
   (ResolvedSimpleType, ResolvedSimpleType) ->
     let name = "ufunc_" ++ show (sizeBiMap m)
         f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
      in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
-buildUTFunc11 _ _ _ _ _ = error "Should only be called on SymbTerm"
+buildUTFun11 _ _ _ _ _ = error "Should only be called on SymTerm"
 
-buildUTFunc111 ::
+buildUTFun111 ::
   forall integerBitWidth s1 s2 s3 a.
   (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3) =>
   GrisetteSMTConfig integerBitWidth ->
@@ -377,7 +377,7 @@ buildUTFunc111 ::
   Term a ->
   SymBiMap ->
   Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3)))
-buildUTFunc111 config ta tb tc term@(SymbTerm _ ts) m = case ((config, ta), (config, tb), (config, tc)) of
+buildUTFun111 config ta tb tc term@(SymTerm _ ts) m = case ((config, ta), (config, tb), (config, tc)) of
   (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
     let name = "ufunc_" ++ show (sizeBiMap m)
         f =
@@ -385,9 +385,9 @@ buildUTFunc111 config ta tb tc term@(SymbTerm _ ts) m = case ((config, ta), (con
             name
      in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
-buildUTFunc111 _ _ _ _ _ _ = error "Should only be called on SymbTerm"
+buildUTFun111 _ _ _ _ _ _ = error "Should only be called on SymTerm"
 
-buildUGFunc11 ::
+buildUGFun11 ::
   forall integerBitWidth s1 s2 a.
   (SupportedPrim a, SupportedPrim s1, SupportedPrim s2) =>
   GrisetteSMTConfig integerBitWidth ->
@@ -396,15 +396,15 @@ buildUGFunc11 ::
   Term a ->
   SymBiMap ->
   Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2)))
-buildUGFunc11 config ta tb term@(SymbTerm _ ts) m = case ((config, ta), (config, tb)) of
+buildUGFun11 config ta tb term@(SymTerm _ ts) m = case ((config, ta), (config, tb)) of
   (ResolvedSimpleType, ResolvedSimpleType) ->
     let name = "ufunc_" ++ show (sizeBiMap m)
         f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
      in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
-buildUGFunc11 _ _ _ _ _ = error "Should only be called on SymbTerm"
+buildUGFun11 _ _ _ _ _ = error "Should only be called on SymTerm"
 
-buildUGFunc111 ::
+buildUGFun111 ::
   forall integerBitWidth s1 s2 s3 a.
   (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3) =>
   GrisetteSMTConfig integerBitWidth ->
@@ -414,7 +414,7 @@ buildUGFunc111 ::
   Term a ->
   SymBiMap ->
   Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3)))
-buildUGFunc111 config ta tb tc term@(SymbTerm _ ts) m = case ((config, ta), (config, tb), (config, tc)) of
+buildUGFun111 config ta tb tc term@(SymTerm _ ts) m = case ((config, ta), (config, tb), (config, tc)) of
   (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
     let name = "ufunc_" ++ show (sizeBiMap m)
         f =
@@ -422,22 +422,22 @@ buildUGFunc111 config ta tb tc term@(SymbTerm _ ts) m = case ((config, ta), (con
             name
      in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
   _ -> Nothing
-buildUGFunc111 _ _ _ _ _ _ = error "Should only be called on SymbTerm"
+buildUGFun111 _ _ _ _ _ _ = error "Should only be called on SymTerm"
 
-lowerSinglePrimUFunc ::
+lowerSinglePrimUFun ::
   forall integerBitWidth a.
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
   SymBiMap ->
   Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth a))
-lowerSinglePrimUFunc config t@(SymbTerm _ _) m =
+lowerSinglePrimUFun config t@(SymTerm _ _) m =
   case R.typeRep @a of
-    TFun3Type (t1 :: R.TypeRep a1) (t2 :: R.TypeRep a2) (t3 :: R.TypeRep a3) -> buildUTFunc111 config t1 t2 t3 t m
-    TFunType (ta :: R.TypeRep b) (tb :: R.TypeRep b1) -> buildUTFunc11 config ta tb t m
-    GFun3Type (t1 :: R.TypeRep a1) (t2 :: R.TypeRep a2) (t3 :: R.TypeRep a3) -> buildUGFunc111 config t1 t2 t3 t m
-    GFunType (ta :: R.TypeRep b) (tb :: R.TypeRep b1) -> buildUGFunc11 config ta tb t m
+    TFun3Type (t1 :: R.TypeRep a1) (t2 :: R.TypeRep a2) (t3 :: R.TypeRep a3) -> buildUTFun111 config t1 t2 t3 t m
+    TFunType (ta :: R.TypeRep b) (tb :: R.TypeRep b1) -> buildUTFun11 config ta tb t m
+    GFun3Type (t1 :: R.TypeRep a1) (t2 :: R.TypeRep a2) (t3 :: R.TypeRep a3) -> buildUGFun111 config t1 t2 t3 t m
+    GFunType (ta :: R.TypeRep b) (tb :: R.TypeRep b1) -> buildUGFun11 config ta tb t m
     _ -> Nothing
-lowerSinglePrimUFunc _ _ _ = error "Should not call this function"
+lowerSinglePrimUFun _ _ _ = error "Should not call this function"
 
 lowerUnaryTerm ::
   forall integerBitWidth a a1 x x1.
@@ -544,7 +544,7 @@ lowerSinglePrimImpl ::
   Term a ->
   SymBiMap ->
   SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)
-lowerSinglePrimImpl ResolvedConfig {} (ConcTerm _ v) m =
+lowerSinglePrimImpl ResolvedConfig {} (ConTerm _ v) m =
   case R.typeRep @a of
     BoolType -> return (m, if v then SBV.sTrue else SBV.sFalse)
     IntegerType -> return (m, fromInteger v)
@@ -553,7 +553,7 @@ lowerSinglePrimImpl ResolvedConfig {} (ConcTerm _ v) m =
     UnsignedBVType _ -> case v of
       WordN x -> return (m, fromInteger x)
     _ -> translateTypeError (R.typeRep @a)
-lowerSinglePrimImpl config t@(SymbTerm _ ts) m =
+lowerSinglePrimImpl config t@(SymTerm _ ts) m =
   fromMaybe errorMsg $ asum [simple, ufunc]
   where
     errorMsg :: forall x. x
@@ -566,7 +566,7 @@ lowerSinglePrimImpl config t@(SymbTerm _ ts) m =
         return (addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m, g)
       _ -> Nothing
     ufunc :: (Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)))
-    ufunc = lowerSinglePrimUFunc config t m
+    ufunc = lowerSinglePrimUFun config t m
 lowerSinglePrimImpl _ (UnaryTerm _ op (_ :: Term x)) _ = errorMsg
   where
     errorMsg :: forall t1. t1
@@ -716,7 +716,7 @@ lowerSinglePrimImpl config t@(BVExtendTerm _ signed (n :: R.TypeRep n) (bv :: Te
                 )
                 m
     _ -> translateTernaryError "bvextend" (R.typeRep @Bool) n (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl config t@(TabularFuncApplyTerm _ (f :: Term (b =-> a)) (arg :: Term b)) m =
+lowerSinglePrimImpl config t@(TabularFunApplyTerm _ (f :: Term (b =-> a)) (arg :: Term b)) m =
   case (config, R.typeRep @a) of
     ResolvedDeepType -> do
       (m1, l1) <- lowerSinglePrimCached config f m
@@ -724,7 +724,7 @@ lowerSinglePrimImpl config t@(TabularFuncApplyTerm _ (f :: Term (b =-> a)) (arg 
       let g = l1 l2
       return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
     _ -> translateBinaryError "tabularApply" (R.typeRep @(b =-> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl config t@(GeneralFuncApplyTerm _ (f :: Term (b --> a)) (arg :: Term b)) m =
+lowerSinglePrimImpl config t@(GeneralFunApplyTerm _ (f :: Term (b --> a)) (arg :: Term b)) m =
   case (config, R.typeRep @a) of
     ResolvedDeepType -> do
       (m1, l1) <- lowerSinglePrimCached config f m
@@ -792,10 +792,10 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
           _ -> error "Bad type"
     resolveSingle _ _ = error "Unknown cv"
 
-    buildConstFunc :: (SupportedPrim a, SupportedPrim r) => R.TypeRep a -> R.TypeRep r -> SBVI.CV -> a =-> r
-    buildConstFunc _ tr v = case tr of
-      TFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2) -> TabularFunc [] $ buildConstFunc ta2' tr2' v
-      _ -> TabularFunc [] $ resolveSingle tr v
+    buildConstFun :: (SupportedPrim a, SupportedPrim r) => R.TypeRep a -> R.TypeRep r -> SBVI.CV -> a =-> r
+    buildConstFun _ tr v = case tr of
+      TFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2) -> TabularFun [] $ buildConstFun ta2' tr2' v
+      _ -> TabularFun [] $ resolveSingle tr v
 
     goutfuncResolve ::
       forall a r.
@@ -807,11 +807,11 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     goutfuncResolve ta1 ta2 (l, s) =
       case ta2 of
         TFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2) ->
-          TabularFunc
+          TabularFun
             (second (\r -> goutfuncResolve ta2' tr2' (r, s)) <$> partition ta1 l)
-            (buildConstFunc ta2' tr2' s)
+            (buildConstFun ta2' tr2' s)
         _ ->
-          TabularFunc
+          TabularFun
             (bimap (resolveSingle ta1 . head) (resolveSingle ta2) <$> l)
             (resolveSingle ta2 s)
 
@@ -826,35 +826,35 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     gougfuncResolve idx ta1 ta2 (l, s) =
       case ta2 of
         GFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2) ->
-          let symb = WithInfo (IndexedSymbol "arg" idx) FuncArg
+          let sym = WithInfo (IndexedSymbol "arg" idx) FunArg
               funs = second (\r -> gougfuncResolve (idx + 1) ta2' tr2' (r, s)) <$> partition ta1 l
               def = gougfuncResolve (idx + 1) ta2' tr2' ([], s)
               body =
                 foldl'
                   ( \acc (v, f) ->
                       pevalITETerm
-                        (pevalEqvTerm (iinfosymbTerm "arg" idx FuncArg) (concTerm v))
-                        (concTerm f)
+                        (pevalEqvTerm (iinfosymTerm "arg" idx FunArg) (conTerm v))
+                        (conTerm f)
                         acc
                   )
-                  (concTerm def)
+                  (conTerm def)
                   funs
-           in GeneralFunc symb body
+           in GeneralFun sym body
         _ ->
-          let symb = WithInfo (IndexedSymbol "arg" idx) FuncArg
+          let sym = WithInfo (IndexedSymbol "arg" idx) FunArg
               vs = bimap (resolveSingle ta1 . head) (resolveSingle ta2) <$> l
               def = resolveSingle ta2 s
               body =
                 foldl'
                   ( \acc (v, a) ->
                       pevalITETerm
-                        (pevalEqvTerm (iinfosymbTerm "arg" idx FuncArg) (concTerm v))
-                        (concTerm a)
+                        (pevalEqvTerm (iinfosymTerm "arg" idx FunArg) (conTerm v))
+                        (conTerm a)
                         acc
                   )
-                  (concTerm def)
+                  (conTerm def)
                   vs
-           in GeneralFunc symb body
+           in GeneralFun sym body
     partition :: R.TypeRep a -> [([SBVI.CV], SBVI.CV)] -> [(a, [([SBVI.CV], SBVI.CV)])]
     partition t = case (R.eqTypeRep t (R.typeRep @Bool), R.eqTypeRep t (R.typeRep @Integer)) of
       (Just R.HRefl, _) -> partitionWithOrd . resolveFirst t

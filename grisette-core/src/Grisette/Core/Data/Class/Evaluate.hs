@@ -55,13 +55,13 @@ import Grisette.Core.Data.Class.ToCon
 -- | Evaluating symbolic values with some model.
 --
 -- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
--- >>> gevaluateSym False model ([ssymb "a", ssymb "b"] :: [SymInteger])
+-- >>> gevaluateSym False model ([ssym "a", ssym "b"] :: [SymInteger])
 -- [1,b]
 --
 -- If we set the first argument true, the missing variables will be filled in with
 -- some default values:
 --
--- >>> gevaluateSym True model ([ssymb "a", ssymb "b"] :: [SymInteger])
+-- >>> gevaluateSym True model ([ssym "a", ssym "b"] :: [SymInteger])
 -- [1,0]
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.
@@ -107,7 +107,7 @@ instance (GEvaluateSym' model a, GEvaluateSym' model b) => GEvaluateSym' model (
 -- and transform to concrete ones
 --
 -- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
--- >>> gevaluateSymToCon model ([ssymb "a", ssymb "b"] :: [SymInteger]) :: [Integer]
+-- >>> gevaluateSymToCon model ([ssym "a", ssym "b"] :: [SymInteger]) :: [Integer]
 -- [1,0]
 gevaluateSymToCon :: (ToCon a b, GEvaluateSym model a) => model -> a -> b
 gevaluateSymToCon model a = fromJust $ toCon $ gevaluateSym True model a

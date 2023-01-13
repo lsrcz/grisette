@@ -32,7 +32,7 @@ import Test.Tasty.HUnit
 
 testCegis :: (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a) => GrisetteSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
 testCegis config shouldSuccess a bs = do
-  x <- cegisExceptVC config (a, ssymb "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
+  x <- cegisExceptVC config (a, ssym "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
   case x of
     Left _ -> shouldSuccess @=? False
     Right (_, m) -> do
@@ -49,14 +49,14 @@ testCegis config shouldSuccess a bs = do
   where
     buildFormula :: [SymBool] -> ExceptT VerificationConditions UnionM ()
     buildFormula l = do
-      symAssume ((ssymb "internal" :: SymInteger) `gsymge` 0)
+      symAssume ((ssym "internal" :: SymInteger) `gsymge` 0)
       go l 0
       where
         go :: [SymBool] -> SymInteger -> ExceptT VerificationConditions UnionM ()
         go [] _ = return ()
         go (x : xs) i =
           mrgIf
-            (ssymb "internal" `gsymge` i &&~ ssymb "internal" `gsymlt` (i + 1))
+            (ssym "internal" `gsymge` i &&~ ssym "internal" `gsymlt` (i + 1))
             (symAssert x)
             (go xs (i + 1))
 
@@ -72,172 +72,172 @@ cegisTests =
                   unboundedConfig
                   True
                   ()
-                  [ssymb "a", ssymb "b", ssymb "c"]
+                  [ssym "a", ssym "b", ssym "c"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ssymb "a", nots $ ssymb "a"],
+                  [ssym "a", nots $ ssym "a"],
               testCase "And" $ do
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ssymb "a" &&~ ssymb "b", ssymb "b" &&~ nots (ssymb "c"), ssymb "a", ssymb "b", nots (ssymb "c")]
+                  [ssym "a" &&~ ssym "b", ssym "b" &&~ nots (ssym "c"), ssym "a", ssym "b", nots (ssym "c")]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ssymb "a" &&~ ssymb "b", ssymb "b" &&~ nots (ssymb "c"), ssymb "a", ssymb "b", ssymb "c"]
+                  [ssym "a" &&~ ssym "b", ssym "b" &&~ nots (ssym "c"), ssym "a", ssym "b", ssym "c"]
                 testCegis
                   unboundedConfig
                   True
-                  (ssymb "a" :: SymBool)
-                  [nots $ ssymb "a" &&~ ssymb "b", nots $ ssymb "b"]
+                  (ssym "a" :: SymBool)
+                  [nots $ ssym "a" &&~ ssym "b", nots $ ssym "b"]
                 testCegis
                   unboundedConfig
                   False
-                  (ssymb "a" :: SymBool)
-                  [nots $ ssymb "a" &&~ ssymb "b", ssymb "b"],
+                  (ssym "a" :: SymBool)
+                  [nots $ ssym "a" &&~ ssym "b", ssym "b"],
               testCase "Or" $ do
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ssymb "a" ||~ ssymb "b", ssymb "b" ||~ nots (ssymb "c"), ssymb "a", ssymb "b", nots (ssymb "c")]
+                  [ssym "a" ||~ ssym "b", ssym "b" ||~ nots (ssym "c"), ssym "a", ssym "b", nots (ssym "c")]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ssymb "a" ||~ ssymb "b", ssymb "b" ||~ nots (ssymb "c"), ssymb "a", ssymb "b", ssymb "c"]
+                  [ssym "a" ||~ ssym "b", ssym "b" ||~ nots (ssym "c"), ssym "a", ssym "b", ssym "c"]
                 testCegis
                   unboundedConfig
                   True
-                  (ssymb "a" :: SymBool)
-                  [ssymb "a" ||~ ssymb "b", ssymb "b"]
+                  (ssym "a" :: SymBool)
+                  [ssym "a" ||~ ssym "b", ssym "b"]
                 testCegis
                   unboundedConfig
                   False
-                  (ssymb "a" :: SymBool)
-                  [ssymb "a" ||~ ssymb "b", nots $ ssymb "b"],
+                  (ssym "a" :: SymBool)
+                  [ssym "a" ||~ ssym "b", nots $ ssym "b"],
               testCase "And / Or should be consistent" $ do
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ssymb "a" &&~ ssymb "b", ssymb "a" ||~ ssymb "b"]
+                  [ssym "a" &&~ ssym "b", ssym "a" ||~ ssym "b"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [nots $ ssymb "a" &&~ ssymb "b", ssymb "a" ||~ ssymb "b"]
+                  [nots $ ssym "a" &&~ ssym "b", ssym "a" ||~ ssym "b"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ssymb "a" &&~ ssymb "b", nots $ ssymb "a" ||~ ssymb "b"]
+                  [ssym "a" &&~ ssym "b", nots $ ssym "a" ||~ ssym "b"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [nots $ ssymb "a" &&~ ssymb "b", nots $ ssymb "a" ||~ ssymb "b"],
+                  [nots $ ssym "a" &&~ ssym "b", nots $ ssym "a" ||~ ssym "b"],
               testCase "Eqv" $ do
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [(ssymb "a" :: SymBool) `gsymeq` ssymb "b", ssymb "a", ssymb "b"]
+                  [(ssym "a" :: SymBool) `gsymeq` ssym "b", ssym "a", ssym "b"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [(ssymb "a" :: SymBool) `gsymeq` ssymb "b", nots $ ssymb "a", nots $ ssymb "b"]
+                  [(ssym "a" :: SymBool) `gsymeq` ssym "b", nots $ ssym "a", nots $ ssym "b"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [(ssymb "a" :: SymBool) `gsymeq` ssymb "b", nots $ ssymb "a", ssymb "b"]
+                  [(ssym "a" :: SymBool) `gsymeq` ssym "b", nots $ ssym "a", ssym "b"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [(ssymb "a" :: SymBool) `gsymeq` ssymb "b", nots $ ssymb "a", ssymb "b"]
+                  [(ssym "a" :: SymBool) `gsymeq` ssym "b", nots $ ssym "a", ssym "b"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [(ssymb "a" :: SymBool) `gsymeq` ssymb "b", nots (ssymb "a") `xors` ssymb "b"]
+                  [(ssym "a" :: SymBool) `gsymeq` ssym "b", nots (ssym "a") `xors` ssym "b"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [(ssymb "a" :: SymBool) `gsymeq` ssymb "b", ssymb "a" `xors` ssymb "b"],
+                  [(ssym "a" :: SymBool) `gsymeq` ssym "b", ssym "a" `xors` ssym "b"],
               testCase "ites" $ do
                 testCegis
                   unboundedConfig
                   True
-                  (ssymb "c" :: SymBool)
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), ssymb "a", ssymb "b"]
+                  (ssym "c" :: SymBool)
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), ssym "a", ssym "b"]
                 testCegis
                   unboundedConfig
                   False
-                  (ssymb "c" :: SymBool)
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), nots $ ssymb "a"]
+                  (ssym "c" :: SymBool)
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), nots $ ssym "a"]
                 testCegis
                   unboundedConfig
                   True
-                  (ssymb "b" :: SymBool)
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), nots $ ssymb "a", ssymb "c"]
+                  (ssym "b" :: SymBool)
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), nots $ ssym "a", ssym "c"]
                 testCegis
                   unboundedConfig
                   False
-                  (ssymb "b" :: SymBool)
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), ssymb "a"]
-                testCegis
-                  unboundedConfig
-                  True
-                  ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), ssymb "a", ssymb "b", ssymb "c"]
+                  (ssym "b" :: SymBool)
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), ssym "a"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), ssymb "a", ssymb "b", nots $ ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), ssym "a", ssym "b", ssym "c"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), nots $ ssymb "a", ssymb "b", ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), ssym "a", ssym "b", nots $ ssym "c"]
                 testCegis
                   unboundedConfig
                   True
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), nots $ ssymb "a", nots $ ssymb "b", ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), nots $ ssym "a", ssym "b", ssym "c"]
+                testCegis
+                  unboundedConfig
+                  True
+                  ()
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), nots $ ssym "a", nots $ ssym "b", ssym "c"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), ssymb "a", nots $ ssymb "b", ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), ssym "a", nots $ ssym "b", ssym "c"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), ssymb "a", nots $ ssymb "b", nots $ ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), ssym "a", nots $ ssym "b", nots $ ssym "c"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), nots $ ssymb "a", ssymb "b", nots $ ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), nots $ ssym "a", ssym "b", nots $ ssym "c"]
                 testCegis
                   unboundedConfig
                   False
                   ()
-                  [ites (ssymb "a" :: SymBool) (ssymb "b") (ssymb "c"), nots $ ssymb "a", nots $ ssymb "b", nots $ ssymb "c"]
+                  [ites (ssym "a" :: SymBool) (ssym "b") (ssym "c"), nots $ ssym "a", nots $ ssym "b", nots $ ssym "c"]
             ],
-          let a = ssymb "a" :: SymIntN 5
-              b = ssymb "b" :: SymIntN 5
-              c = ssymb "c" :: SymIntN 5
-              d = ssymb "c" :: SymIntN 10
+          let a = ssym "a" :: SymIntN 5
+              b = ssym "b" :: SymIntN 5
+              c = ssym "c" :: SymIntN 5
+              d = ssym "c" :: SymIntN 10
            in testGroup
                 "Different sized BV"
                 [ testGroup
@@ -247,23 +247,23 @@ cegisTests =
                           unboundedConfig
                           True
                           ()
-                          [bvselect (Proxy @2) (Proxy @2) a `gsymeq` (conc 1 :: SymIntN 2), a `gsymeq` conc 0b10101]
+                          [bvselect (Proxy @2) (Proxy @2) a `gsymeq` (con 1 :: SymIntN 2), a `gsymeq` con 0b10101]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvselect (Proxy @2) (Proxy @2) a `gsymeq` (conc 1 :: SymIntN 2), a `gsymeq` conc 0b10001],
+                          [bvselect (Proxy @2) (Proxy @2) a `gsymeq` (con 1 :: SymIntN 2), a `gsymeq` con 0b10001],
                       testCase "Extract when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           a
-                          [bvselect (Proxy @2) (Proxy @2) (bvconcat a b) `gsymeq` (conc 1 :: SymIntN 2)]
+                          [bvselect (Proxy @2) (Proxy @2) (bvconcat a b) `gsymeq` (con 1 :: SymIntN 2)]
                         testCegis
                           unboundedConfig
                           True
                           b
-                          [bvselect (Proxy @7) (Proxy @2) (bvconcat a b) `gsymeq` (conc 1 :: SymIntN 2)]
+                          [bvselect (Proxy @7) (Proxy @2) (bvconcat a b) `gsymeq` (con 1 :: SymIntN 2)]
                     ],
                   testGroup
                     "Concat"
@@ -272,23 +272,23 @@ cegisTests =
                           unboundedConfig
                           True
                           ()
-                          [bvconcat a b `gsymeq` d, a `gsymeq` conc 1, b `gsymeq` conc 1, d `gsymeq` conc 0b100001]
+                          [bvconcat a b `gsymeq` d, a `gsymeq` con 1, b `gsymeq` con 1, d `gsymeq` con 0b100001]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvconcat a b `gsymeq` d, a `gsymeq` conc 1, b `gsymeq` conc 1, d `gsymeq` conc 0b100010],
+                          [bvconcat a b `gsymeq` d, a `gsymeq` con 1, b `gsymeq` con 1, d `gsymeq` con 0b100010],
                       testCase "Concat when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           (a, c)
-                          [bvconcat c (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` bvconcat c (conc 1 :: SymIntN 2)]
+                          [bvconcat c (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` bvconcat c (con 1 :: SymIntN 2)]
                         testCegis
                           unboundedConfig
                           True
                           (b, c)
-                          [bvconcat c (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` bvconcat c (conc 1 :: SymIntN 2)]
+                          [bvconcat c (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` bvconcat c (con 1 :: SymIntN 2)]
                     ],
                   testGroup
                     "Zext"
@@ -297,33 +297,33 @@ cegisTests =
                           unboundedConfig
                           True
                           ()
-                          [bvzeroExtend (Proxy @10) a `gsymeq` d, a `gsymeq` conc 1, d `gsymeq` (conc 1 :: SymIntN 10)]
+                          [bvzeroExtend (Proxy @10) a `gsymeq` d, a `gsymeq` con 1, d `gsymeq` (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvzeroExtend (Proxy @10) a `gsymeq` d, a `gsymeq` conc 0b11111, d `gsymeq` (conc 0b11111 :: SymIntN 10)]
+                          [bvzeroExtend (Proxy @10) a `gsymeq` d, a `gsymeq` con 0b11111, d `gsymeq` (con 0b11111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvzeroExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (conc 0b111111 :: SymIntN 10)]
+                          [bvzeroExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (con 0b111111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvzeroExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (conc 0b1111111111 :: SymIntN 10)],
+                          [bvzeroExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (con 0b1111111111 :: SymIntN 10)],
                       testCase "bvzeroExtend when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           a
-                          [bvzeroExtend (Proxy @10) (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (conc 1 :: SymIntN 10)]
+                          [bvzeroExtend (Proxy @10) (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           b
-                          [bvzeroExtend (Proxy @10) (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (conc 1 :: SymIntN 10)]
+                          [bvzeroExtend (Proxy @10) (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (con 1 :: SymIntN 10)]
                     ],
                   testGroup
                     "Sext"
@@ -332,33 +332,33 @@ cegisTests =
                           unboundedConfig
                           True
                           ()
-                          [bvsignExtend (Proxy @10) a `gsymeq` d, a `gsymeq` conc 1, d `gsymeq` (conc 1 :: SymIntN 10)]
+                          [bvsignExtend (Proxy @10) a `gsymeq` d, a `gsymeq` con 1, d `gsymeq` (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvsignExtend (Proxy @10) a `gsymeq` d, a `gsymeq` conc 0b11111, d `gsymeq` (conc 0b1111111111 :: SymIntN 10)]
+                          [bvsignExtend (Proxy @10) a `gsymeq` d, a `gsymeq` con 0b11111, d `gsymeq` (con 0b1111111111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvsignExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (conc 0b111111 :: SymIntN 10)]
+                          [bvsignExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (con 0b111111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvsignExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (conc 0b11111 :: SymIntN 10)],
+                          [bvsignExtend (Proxy @10) a `gsymeq` d, d `gsymeq` (con 0b11111 :: SymIntN 10)],
                       testCase "bvsignExtend when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           a
-                          [bvsignExtend (Proxy @10) (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (conc 1 :: SymIntN 10)]
+                          [bvsignExtend (Proxy @10) (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           b
-                          [bvsignExtend (Proxy @10) (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (conc 1 :: SymIntN 10)]
+                          [bvsignExtend (Proxy @10) (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) `gsymeq` (con 1 :: SymIntN 10)]
                     ]
                 ]
         ]

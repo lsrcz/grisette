@@ -29,7 +29,7 @@ import Data.Kind
 import GHC.TypeNats
 import Grisette.Core
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFunc
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Type.Reflection
 
@@ -41,14 +41,11 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   withPrim _ i = i
   termCache :: Cache (Term t)
   termCache = typeMemoizedCache
-
-  -- termReverseCache :: ReverseCache (Term t)
-  -- termReverseCache = typeMemoizedReverseCache
-  pformatConc :: t -> String
-  default pformatConc :: (Show t) => t -> String
-  pformatConc = show
-  pformatSymb :: TypedSymbol t -> String
-  pformatSymb _ = showUntyped
+  pformatCon :: t -> String
+  default pformatCon :: (Show t) => t -> String
+  pformatCon = show
+  pformatSym :: TypedSymbol t -> String
+  pformatSym _ = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
@@ -117,8 +114,8 @@ data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
 
 data Term t where
-  ConcTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymbTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
+  ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
+  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -197,7 +194,7 @@ data Term t where
     !(TypeRep n) ->
     !(Term (bv a)) ->
     Term (bv b)
-  TabularFuncApplyTerm ::
+  TabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -205,7 +202,7 @@ data Term t where
     Term (a =-> b) ->
     Term a ->
     Term b
-  GeneralFuncApplyTerm ::
+  GeneralFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -217,8 +214,8 @@ data Term t where
   ModIntegerTerm :: !Id -> Term Integer -> Term Integer -> Term Integer
 
 data UTerm t where
-  UConcTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymbTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
+  UConTerm :: (SupportedPrim t) => !t -> UTerm t
+  USymTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -287,14 +284,14 @@ data UTerm t where
     !(TypeRep n) ->
     !(Term (bv a)) ->
     UTerm (bv b)
-  UTabularFuncApplyTerm ::
+  UTabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
     Term (a =-> b) ->
     Term a ->
     UTerm b
-  UGeneralFuncApplyTerm ::
+  UGeneralFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
@@ -305,6 +302,6 @@ data UTerm t where
   UModIntegerTerm :: Term Integer -> Term Integer -> UTerm Integer
 
 data (-->) a b where
-  GeneralFunc :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+  GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 infixr 0 -->

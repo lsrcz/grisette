@@ -41,7 +41,7 @@ testUnaryOpLowering ::
   (TermTy n a -> TermTy n b) ->
   Assertion
 testUnaryOpLowering config f name sbvfun = do
-  let a :: Term a = ssymbTerm "a"
+  let a :: Term a = ssymTerm "a"
   let fa :: Term b = f a
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fa
@@ -106,8 +106,8 @@ testBinaryOpLowering ::
   (TermTy n a -> TermTy n b -> TermTy n c) ->
   Assertion
 testBinaryOpLowering config f name sbvfun = do
-  let a :: Term a = ssymbTerm "a"
-  let b :: Term b = ssymbTerm "b"
+  let a :: Term a = ssymTerm "a"
+  let b :: Term b = ssymTerm "b"
   let fab :: Term c = f a b
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fab
@@ -184,9 +184,9 @@ testTernaryOpLowering ::
   (TermTy n a -> TermTy n b -> TermTy n c -> TermTy n d) ->
   Assertion
 testTernaryOpLowering config f name sbvfun = do
-  let a :: Term a = ssymbTerm "a"
-  let b :: Term b = ssymbTerm "b"
-  let c :: Term c = ssymbTerm "c"
+  let a :: Term a = ssymTerm "a"
+  let b :: Term b = ssymTerm "b"
+  let c :: Term c = ssymTerm "c"
   let fabc :: Term d = f a b c
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc

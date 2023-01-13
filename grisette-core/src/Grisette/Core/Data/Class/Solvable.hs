@@ -22,7 +22,7 @@ module Grisette.Core.Data.Class.Solvable
 
     -- * Solvable type interface
     Solvable (..),
-    pattern Conc,
+    pattern Con,
   )
 where
 
@@ -41,42 +41,42 @@ import Language.Haskell.TH.Syntax
 class IsString t => Solvable c t | t -> c where
   -- | Wrap a concrete value in a symbolic value.
   --
-  -- >>> conc True :: SymBool
+  -- >>> con True :: SymBool
   -- true
-  conc :: c -> t
+  con :: c -> t
 
   -- | Extract the concrete value from a symbolic value.
   --
-  -- >>> concView (conc True :: SymBool)
+  -- >>> conView (con True :: SymBool)
   -- Just True
   --
-  -- >>> concView (ssymb "a" :: SymBool)
+  -- >>> conView (ssym "a" :: SymBool)
   -- Nothing
-  concView :: t -> Maybe c
+  conView :: t -> Maybe c
 
   -- | Generate simply-named symbolic constants.
   --
   -- Two symbolic constants with the same name are the same symbolic constant,
   -- and will always be assigned with the same value by the solver.
   --
-  -- >>> ssymb "a" :: SymBool
+  -- >>> ssym "a" :: SymBool
   -- a
-  -- >>> (ssymb "a" :: SymBool) == ssymb "a"
+  -- >>> (ssym "a" :: SymBool) == ssym "a"
   -- True
-  -- >>> (ssymb "a" :: SymBool) == ssymb "b"
+  -- >>> (ssym "a" :: SymBool) == ssym "b"
   -- False
-  -- >>> (ssymb "a" :: SymBool) &&~ ssymb "a"
+  -- >>> (ssym "a" :: SymBool) &&~ ssym "a"
   -- a
-  ssymb :: String -> t
+  ssym :: String -> t
 
   -- | Generate indexed symbolic constants.
   --
   -- Two symbolic constants with the same name but different indices are
   -- not the same symbolic constants.
   --
-  -- >>> isymb "a" 1 :: SymBool
+  -- >>> isym "a" 1 :: SymBool
   -- a@1
-  isymb :: String -> Int -> t
+  isym :: String -> Int -> t
 
   -- | Generate simply-named symbolic constants with some extra information for
   -- disambiguation.
@@ -84,9 +84,9 @@ class IsString t => Solvable c t | t -> c where
   -- Two symbolic constants with the same name but different extra information
   -- (including info with different types) are considered to be different.
   --
-  -- >>> sinfosymb "a" "someInfo" :: SymInteger
+  -- >>> sinfosym "a" "someInfo" :: SymInteger
   -- a:"someInfo"
-  sinfosymb :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> t
+  sinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> t
 
   -- | Generate indexed symbolic constants with some extra information for
   -- disambiguation.
@@ -95,16 +95,16 @@ class IsString t => Solvable c t | t -> c where
   -- information (including info with different types) are considered to be
   -- different.
   --
-  -- >>> iinfosymb "a" 1 "someInfo" :: SymInteger
+  -- >>> iinfosym "a" 1 "someInfo" :: SymInteger
   -- a@1:"someInfo"
-  iinfosymb :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> Int -> a -> t
+  iinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> Int -> a -> t
 
 -- | Extract the concrete value from a solvable value with 'concView'.
 --
--- >>> case conc True :: SymBool of Conc v -> v
+-- >>> case con True :: SymBool of Con v -> v
 -- True
-pattern Conc :: Solvable c t => c -> t
-pattern Conc c <-
-  (concView -> Just c)
+pattern Con :: Solvable c t => c -> t
+pattern Con c <-
+  (conView -> Just c)
   where
-    Conc c = conc c
+    Con c = con c
