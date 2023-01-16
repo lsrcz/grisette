@@ -116,21 +116,23 @@ synthesis a program, we need to define a symbolic program that represents a
 whole space of program.
 
 ```haskell
--- The definition of the syntax tree for a symbolic program.
 data SProgram
-  -- SInt represent a constant in the syntax tree. A solver can find out what
-  -- value this constant should be.
-  -- TODO: this is a variable leaf, not a ?? leaf
+  -- `SConst` represents a constant in the syntax tree.
+  --
+  -- `SConst 1` is the constant 1, while `SConst "c1"` is a symbolic constant,
+  -- and the solver can be used to find out what the concrete value should be.
   = SConst SymInteger
+  -- `SInput` represents an input.
+  --
+  -- It is similar to the `SConst`, and only differs in the semantics.
   | SInput SymInteger
-  -- SPlus and SMul are binary nodes whose children are **sets** of symbolic symbolic programs. A union is such a set. 
   | SPlus (UnionM SProgram) (UnionM SProgram)
   | SMul (UnionM SProgram) (UnionM SProgram)
-  -- Generic helps us derive other type class instances for SProgram.
-  deriving (Generic, Show)
-  -- Some type classes provided by Grisette for building symbolic evaluation
-  -- tools. See the documentation for more details.
-  deriving (GMergeable SymBool, GEvaluateSym Model) via (Default SProgram)
+  deriving stock (Generic, Show)
+  deriving (GMergeable SymBool, GEvaluateSym Model, ToCon SProgram)
+    via (Default SProgram)
+
+$(makeUnionWrapper "mrg" ''SProgram)
 ```
 
 ```haskell
