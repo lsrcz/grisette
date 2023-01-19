@@ -86,6 +86,7 @@ import Data.Typeable
 import Data.Word
 import Generics.Deriving hiding (index)
 import Grisette.Core.Control.Monad.Union
+import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionMBase
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -347,18 +348,15 @@ class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
   -- >>> runFresh (do; a <- fresh (); b <- fresh (); return (a, b)) "a" :: (UnionM SymBool, UnionM SymBool)
   -- ({a@0},{a@1})
   fresh ::
-    ( MonadFresh m,
-      GMonadUnion bool u
-    ) =>
+    (MonadFresh m) =>
     spec ->
-    m (u a)
+    m (UnionMBase bool a)
   default fresh ::
     (GenSymSimple spec a) =>
-    ( MonadFresh m,
-      GMonadUnion bool u
+    ( MonadFresh m
     ) =>
     spec ->
-    m (u a)
+    m (UnionMBase bool a)
   fresh spec = mrgSingle <$> simpleFresh spec
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
@@ -367,7 +365,7 @@ class (SymBoolOp bool, GMergeable bool a) => GenSym bool spec a where
 --
 -- >>> genSym (ListSpec 1 2 ()) "a" :: UnionM [SymBool]
 -- {If a@2 [a@1] [a@0,a@1]}
-genSym :: (GenSym bool spec a, GMonadUnion bool u) => spec -> FreshIdent -> u a
+genSym :: (GenSym bool spec a) => spec -> FreshIdent -> UnionMBase bool a
 genSym = runFresh . fresh
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
@@ -406,10 +404,9 @@ genSymSimple = runFresh . simpleFresh
 
 class GenSymNoSpec bool a where
   freshNoSpec ::
-    ( MonadFresh m,
-      GMonadUnion bool u
+    ( MonadFresh m
     ) =>
-    m (u (a c))
+    m (UnionMBase bool (a c))
 
 instance (SymBoolOp bool) => GenSymNoSpec bool U1 where
   freshNoSpec = return $ mrgSingle U1
@@ -432,14 +429,13 @@ instance
   where
   freshNoSpec ::
     forall m u c.
-    ( MonadFresh m,
-      GMonadUnion bool u
+    ( MonadFresh m
     ) =>
-    m (u ((a :+: b) c))
+    m (UnionMBase bool ((a :+: b) c))
   freshNoSpec = do
     cond :: bool <- simpleFresh ()
-    l :: u (a c) <- freshNoSpec
-    r :: u (b c) <- freshNoSpec
+    l :: UnionMBase bool (a c) <- freshNoSpec
+    r :: UnionMBase bool (b c) <- freshNoSpec
     return $ mrgIf cond (fmap L1 l) (fmap R1 r)
 
 instance
@@ -448,13 +444,12 @@ instance
   where
   freshNoSpec ::
     forall m u c.
-    ( MonadFresh m,
-      GMonadUnion bool u
+    ( MonadFresh m
     ) =>
-    m (u ((a :*: b) c))
+    m (UnionMBase bool ((a :*: b) c))
   freshNoSpec = do
-    l :: u (a c) <- freshNoSpec
-    r :: u (b c) <- freshNoSpec
+    l :: UnionMBase bool (a c) <- freshNoSpec
+    r :: UnionMBase bool (b c) <- freshNoSpec
     return $ do
       l1 <- l
       r1 <- r
@@ -474,11 +469,10 @@ derivedNoSpecFresh ::
     SymBoolOp bool,
     GenSymNoSpec bool (Rep a),
     GMergeable bool a,
-    MonadFresh m,
-    GMonadUnion bool u
+    MonadFresh m
   ) =>
   () ->
-  m (u a)
+  m (UnionMBase bool a)
 derivedNoSpecFresh _ = merge . fmap to <$> freshNoSpec
 
 class GenSymSimpleNoSpec a where
@@ -590,11 +584,10 @@ gchooseFresh ::
   ( SymBoolOp bool,
     GMergeable bool a,
     GenSymSimple () bool,
-    MonadFresh m,
-    GMonadUnion bool u
+    MonadFresh m
   ) =>
   [a] ->
-  m (u a)
+  m (UnionMBase bool a)
 gchooseFresh [x] = return $ mrgSingle x
 gchooseFresh (r : rs) = do
   b <- simpleFresh ()
@@ -609,12 +602,11 @@ gchoose ::
   forall bool a u.
   ( SymBoolOp bool,
     GMergeable bool a,
-    GenSymSimple () bool,
-    GMonadUnion bool u
+    GenSymSimple () bool
   ) =>
   [a] ->
   FreshIdent ->
-  u a
+  UnionMBase bool a
 gchoose = runFresh . gchooseFresh
 
 -- | Symbolically chooses one of the provided values.
@@ -624,6 +616,7 @@ gchoose = runFresh . gchooseFresh
 -- The result will __/not/__ be wrapped in a union-like monad, but will be
 -- wrapped in a monad maintaining the 'Fresh' context.
 --
+-- >>> import Data.Proxy
 -- >>> runFresh (gchooseSimpleFresh (Proxy @SymBool) [ssym "b", ssym "c", ssym "d"]) "a" :: SymInteger
 -- (ite a@0 b (ite a@1 c d))
 gchooseSimpleFresh ::
@@ -675,11 +668,10 @@ gchooseUnionFresh ::
   ( SymBoolOp bool,
     GMergeable bool a,
     GenSymSimple () bool,
-    MonadFresh m,
-    GMonadUnion bool u
+    MonadFresh m
   ) =>
-  [u a] ->
-  m (u a)
+  [UnionMBase bool a] ->
+  m (UnionMBase bool a)
 gchooseUnionFresh [x] = return x
 gchooseUnionFresh (r : rs) = do
   b <- simpleFresh ()
@@ -694,12 +686,11 @@ gchooseUnion ::
   forall bool a u.
   ( SymBoolOp bool,
     GMergeable bool a,
-    GenSymSimple () bool,
-    GMonadUnion bool u
+    GenSymSimple () bool
   ) =>
-  [u a] ->
+  [UnionMBase bool a] ->
   FreshIdent ->
-  u a
+  UnionMBase bool a
 gchooseUnion = runFresh . gchooseUnionFresh
 
 #define CONCRETE_GENSYM_SAME_SHAPE(type) \
