@@ -1,7 +1,6 @@
 # Grisette
 
 [![Haskell Tests](https://github.com/lsrcz/grisette/actions/workflows/test.yml/badge.svg)](https://github.com/lsrcz/grisette/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/lsrcz/grisette/branch/main/graph/badge.svg?token=MNDRFY2JEB)](https://codecov.io/gh/lsrcz/grisette)
 
 Grisette is a symbolic evaluation library for Haskell. By translating
 programs into constraints, Grisette can help the development of program
@@ -86,7 +85,7 @@ for the build instructions.
 
 ## Example
 
-The following example uses Grisette to build a synthesizer of arithmetic programs. Given the input-output pair (2,5), the synthesizer outputs the program (\x -> x+3).  The example is adapted from [this blog
+The following example uses Grisette to build a synthesizer of arithmetic programs. Given the input-output pair (2,5), the synthesizer may output the program (\x -> x+3).  The example is adapted from [this blog
 post](https://www.cs.utexas.edu/~bornholt/post/building-synthesizer.html) by
 James Bornholt.
 
@@ -101,8 +100,8 @@ The example has three parts:
 ### Defining the Arithmetic Language
 
 We will synthesize single-input programs in this example.
-A single input program will be `\x -> E`, where `E` is defined by the following
-grammar:
+A single input program will be `\x -> E`, where `E` is an expression defined by
+the following grammar:
 
 ```
 E -> c      -- constant
@@ -111,155 +110,98 @@ E -> c      -- constant
    | E * E  -- multiplication
 ```
 
-The syntax defines how a concrete program is represented. In Grisette, to
-synthesis a program, we need to define a symbolic program that represents a
-whole space of program.
+The syntax defines how a concrete expression is represented. To synthesis a
+program, we need to define symbolic program spaces. This relies on the `UnionM`
+container provided by the library to represent multiple ASTs compactly in a
+single value.
+
+To make this expression space type work with Grisette, a set of type classes
+should be derived. This includes `Mergeable`, `EvaluateSym`, etc.
+The `Mergeable` type classes allows to represent multiple ASTs compactly in a
+`UnionM`, while the `EvaluateSym` type class allows to evaluate it given a model
+returned by a solver to replace the symbolic holes inside to concrete values.
 
 ```haskell
-data SProgram
+data SExpr
   -- `SConst` represents a constant in the syntax tree.
   --
   -- `SConst 1` is the constant 1, while `SConst "c1"` is a symbolic constant,
   -- and the solver can be used to find out what the concrete value should be.
   = SConst SymInteger
-  -- `SInput` represents an input.
-  --
-  -- It is similar to the `SConst`, and only differs in the semantics.
+  -- `SInput` is very similar to the `SConst`, but is for inputs. We separate
+  -- these two mainly for clarity.
   | SInput SymInteger
-  | SPlus (UnionM SProgram) (UnionM SProgram)
-  | SMul (UnionM SProgram) (UnionM SProgram)
+  -- `SPlus` and `SMul` represent the addition and multiplication operators.
+  --
+  -- The children are **sets** of symbolic programs. Here `UnionM`s are such
+  -- sets.
+  --
+  -- The solver will try to pick one concrete program from the set of programs.
+  | SPlus (UnionM SExpr) (UnionM SExpr)
+  | SMul (UnionM SExpr) (UnionM SExpr)
+  -- `Generic` helps us derive other type class instances for `SExpr`.
   deriving stock (Generic, Show)
-  deriving (GMergeable SymBool, GEvaluateSym Model, ToCon SProgram)
-    via (Default SProgram)
+  -- Some type classes provided by Grisette for building symbolic evaluation
+  -- tools. See the documentation for more details.
+  deriving (Mergeable, EvaluateSym)
+    via (Default SExpr)
 
-$(makeUnionWrapper "mrg" ''SProgram)
+-- A template haskell procedure to help the construction of `SExpr` sets.
+--
+-- >>> SConst 1 :: SExpr
+-- SConst 1
+-- >>> mrgSConst 1 :: UnionM SExpr
+-- UMrg (Single (SConst 1))
+$(makeUnionWrapper "mrg" ''SExpr)
 ```
 
-```haskell
-space :: SymInteger -> UnionM SProgram
-space x = SPlus
-  (mrgSingle $ SInput x)
-  (mrgIf "choice" (mrgSingle $ SInput x) (mrgSingle $ SConst "c"))
-```
-
-given io (2,5)
--- would be nice to show how we get from syntax to space 
-model <- solve $ interpretU (space 2) ==~ 5 
--- print the program given space and model 
-
-
-This code block defines the symbolic syntax and the interpreter.
-A single input program will be (\x -> E), where E is defined by the grammar E -> c | x | E + E | E * E. 
-
-If we defined it with SPlus SProgram SProgram, we get a grammar. Each _instance_ is a single tree, such as XXX. 
-If we instead define it as SPlus (UnionM SProgram) (UnionM SProgram), we get a data structure that represents sets of trees (with shared subtrees). The instance {...} + { x+y, x-y } represents four trees. 
-The UnionM container represents a symbolic set of SPrograms. It's a select. Each solution from the solver will select exactly one member of this set. 
+After defining the types, we can then write an interpreter to interpret all the
+expressions represented by an `SExpr` all at once. The interpreter looks very
+similar to a normal interpreter, except that the `onUnion` combinator is used
+to lift the interpreter to work on `UnionM` values.
 
 ```haskell
--- An interpreter for SProgram.
--- The interpreter interprets all trees represented by an SProgram.
--- The result of the interpretation is a single symbolic formula (an SymInteger) that represents the evaluation of all trees. 
--- To switch among those results, the formula uses the symbolic variables that _select_ the members of the Unions.  -- TODO: call these guards? 
-interpret :: SProgram -> SymInteger
+interpret :: SExpr -> SymInteger
 interpret (SInt x) = x
 interpret (SPlus x y) = interpretU x + interpretU y
 interpret (SMul x y) = interpretU x * interpretU y
 
--- interpet the set of programs
-interpretU :: UnionM SProgram -> SymInteger
-interpretU = getSingle . fmap interpret -- the result is. union of formulas that can be merged (because they are SymIngeters). getSingle merges them into a single value. 
--- TODO: rename getSingle to suggest that merging happens here ?
+-- interpet a set of programs
+interpretU :: UnionM SExpr -> SymInteger
+interpretU = onUnion interpret
 ```
 
-Now we want to generat a particular instance of SProgram, such as XXX. This set of trees will prresnet the candidate space of the synthesizer. 
-We need symbolic guards for the unions in the SProgram. These control what concrete tree the synthesizer selects. -- Say this in Part 1 (i. unions have guards that select; ii. the sovler finds the values for hte guards, thus selecting a tree). 
-
-We are now ready to define the program space with the `Fresh` monad. The program space 
-is represented as a symbolic program. The solver will figure out what program
-in the space meets the specifications.
+Another 
+The following code defines a program space `\x -> x + {x, c}`. Some example
+programs in this space are `\x -> x + x`, `\x -> x + 1`, and `\x -> x + 2`.
+The solver will be used to choose the right hand side of the addition. It may
+choose to use the input variable `x`, or synthesize a constant `c`.
 
 ```haskell
--- A function that generates a program space.
--- The result is maintained in the Fresh monad, which allows us to generate
--- fresh symbolic variables. These fresh symbolic variables will be instantiated
--- with 'runFresh'.
---
--- For example, when 'freshExpr' is called with [SInt 1, SInt 2], it will
--- generate a program space as follows:
--- TODO: use this example above 
--- {1 or 2} {+ or *} {1 or 2}
---
--- It represents either
--- 1 + 1, 1 * 1, 1 + 2, 1 * 2, 2 + 1, 2 * 1, 2 + 2, or 2 * 2.
-freshExpr :: [SProgram] -> Fresh (UnionM SProgram)
--- TODO: in the future, can we hide this under a rosette syntax-grammar like construct 
-freshExpr terminals = do
-  -- choose the left hand side operand
-  l <- chooseFresh terminals
-  -- choose the right hand side operand
-  r <- chooseFresh terminals
-  -- choose the operator
-  chooseFresh [SPlus l r, SMul l r]
-  
-  -- TODO: the full code should create ASTs of a given depth k 
-  -- say see full code for depth-k trees 
-
--- move this above freshExpr because it states the goal of our exercise here (it defiens the API). 
--- A program space:
--- \x -> {x or 1 or 2} {+ or *} {x or 1 or 2}
-space :: SymInteger -> UnionM SProgram
-space x = runFresh (freshExpr [SInt x, SInt 1, SInt 2]) "space"
+space :: SymInteger -> SExpr
+space x = SPlus
+  (mrgSInput x)
+  (mrgIf "choice" (mrgSInput x) (mrgSConst "c"))
 ```
-
-Finally, we define the solver configuration and build the constraints
-for the program space.
-We call the solver to solve the constraints. The solution represents the program that satisfies the io pair(s). 
 
 ```haskell
--- The solver configuration. We use the bounded reasoning mode with Boolector
--- for faster (but may be unsound) solving.
-solverConfig :: GrisetteSMTConfig 5
-solverConfig = BoundedReasoning boolector
-
--- A function that synthesizes programs within the search space given some
--- input-output pairs.
-ioPair :: [(Integer, Integer)] -> IO ()
-ioPair pairs = do
-  -- Call the solver. The result may be an error or a model.
-  -- Here we use the 'constraint' function to construct the constraint.
-  -- The 'constraint' function takes a list of symbolic input-output pairs and
-  -- we use the 'toSym' function to convert the concrete input-output pairs to
-  -- symbolic ones.
-  res <- solveFormula solverConfig (constraint $ toSym pairs)
-  case res of
-    -- Print an error message if no solution was found in the space. 
-    Left err -> print err
-    Right model -> do
-      let x :: SymInteger = "x"
-      -- Evaluate the program space to get the concrete program.
-      print $ evaluateSym False model (space x) -- TODO: in the future, it would be nice to reduce ht eboiler plate here 
-  where    
-    -- make it top level since it's important 
-    constraint :: [(SymInteger, SymInteger)] -> SymBool
-    constraint [] = conc True   -- 'conc' type-converts from concrete to symbolic values 
-    -- The '~' postfixed operators are the symbolic versions of the
-    -- corresponding Haskell operators.
-    constraint ((x, y) : xs) = interpretU (space x) ==~ y &&~ constraint xs
-
--- TODO: give this first 
-main :: IO ()
-main = do
-  -- Call the synthesizer. The printed result could be verbose.
-  -- Grisette provides functionalities to convert it to easier-to-print
-  -- programs via the 'ToCon' type class. Please check the documentation for 
-  -- more details.
-  ioPair [(1, 1), (2, 4), (3, 9)]
-  -- UMrg (Single (SMul (UMrg (Single (SInt x))) (UMrg (Single (SInt x))))) 
-  -- The results means the program \x -> x * x
-  ioPair [(1, 2), (2, 4), (3, 6)]
-  -- UMrg (Single (SPlus (UMrg (Single (SInt x))) (UMrg (Single (SInt x)))))
-  -- The results means the program \x -> x + x
+executableSpace :: Integer -> SymInteger
+executableSpace = interpret . space . toSym
 ```
+
+```haskell
+example :: IO ()
+example = do
+  Right model <- solve (UnboundedReasoning z3) $ executableSpace 2 ==~ 5
+  print $ evaluateSym False model (space "x")
+  -- result: SPlus {SInput x} {SConst 3}
+  let synthesizedProgram :: Integer -> Integer =
+        evaluateSymToCon model . executableSpace
+  print $ synthesizedProgram 10
+  -- result: 13
+```
+
+For more examples, please refer to 
 
 ## Documentation
 
