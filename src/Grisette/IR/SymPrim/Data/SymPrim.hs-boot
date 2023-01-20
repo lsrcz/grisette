@@ -17,8 +17,6 @@ newtype Sym a = Sym {underlyingTerm :: Term a}
 
 type SymBool = Sym Bool
 
-instance LogicalOp SymBool
-
 instance NFData (Sym a)
 
 instance Lift (Sym a)

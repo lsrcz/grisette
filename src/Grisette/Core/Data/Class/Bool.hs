@@ -346,3 +346,11 @@ instance (SEq (m a)) => SEq (IdentityT m a) where
 
 instance (SupportedPrim a) => ITEOp (Sym a) where
   ites (Sym c) (Sym t) (Sym f) = Sym $ pevalITETerm c t f
+
+instance LogicalOp (Sym Bool) where
+  (Sym l) ||~ (Sym r) = Sym $ pevalOrTerm l r
+  (Sym l) &&~ (Sym r) = Sym $ pevalAndTerm l r
+  nots (Sym v) = Sym $ pevalNotTerm v
+  (Sym l) `xors` (Sym r) = Sym $ pevalXorTerm l r
+  (Sym l) `implies` (Sym r) = Sym $ pevalImplyTerm l r
+

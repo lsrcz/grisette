@@ -210,13 +210,6 @@ instance SOrd (Sym Bool) where
       (mrgReturn LT)
       (mrgIf (l ==~ r) (mrgReturn EQ) (mrgReturn GT))
 
-instance LogicalOp (Sym Bool) where
-  (Sym l) ||~ (Sym r) = Sym $ pevalOrTerm l r
-  (Sym l) &&~ (Sym r) = Sym $ pevalAndTerm l r
-  nots (Sym v) = Sym $ pevalNotTerm v
-  (Sym l) `xors` (Sym r) = Sym $ pevalXorTerm l r
-  (Sym l) `implies` (Sym r) = Sym $ pevalImplyTerm l r
-
 instance SymBoolOp (Sym Bool)
 
 -- | Symbolic integer type (unbounded, mathematical integer).
