@@ -2,7 +2,7 @@
 
 -- |
 -- Module      :   Grisette.Lib.Control.Monad.Except
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -21,12 +21,12 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'throwError' with 'GMergingStrategy' knowledge propagation.
+-- | 'throwError' with 'MergingStrategy' knowledge propagation.
 mrgThrowError :: (MonadError e m, MonadUnion m, Mergeable a) => e -> m a
 mrgThrowError = merge . throwError
 {-# INLINE mrgThrowError #-}
 
--- | 'catchError' with 'GMergingStrategy' knowledge propagation.
+-- | 'catchError' with 'MergingStrategy' knowledge propagation.
 mrgCatchError ::
   (MonadError e m, MonadUnion m, Mergeable a) =>
   m a ->

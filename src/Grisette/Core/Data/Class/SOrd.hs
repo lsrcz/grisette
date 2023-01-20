@@ -11,22 +11,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SOrd
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.SOrd
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Symbolic total order relation
+  ( -- * Symbolic total order relation
     SOrd (..),
     SOrd' (..),
   )
@@ -166,42 +158,33 @@ derivedSymCompare x y = symCompare' (from x) (from y)
 --
 -- >>> let a = 1 :: SymInteger
 -- >>> let b = 2 :: SymInteger
--- >>> a <~ b :: SymBool
+-- >>> a <~ b
 -- true
--- >>> a >~ b :: SymBool
+-- >>> a >~ b
 -- false
 --
 -- >>> let a = "a" :: SymInteger
 -- >>> let b = "b" :: SymInteger
--- >>> a <~ b :: SymBool
+-- >>> a <~ b
 -- (< a b)
--- >>> a <=~ b :: SymBool
+-- >>> a <=~ b
 -- (<= a b)
--- >>> a >~ b :: SymBool
+-- >>> a >~ b
 -- (< b a)
--- >>> a >=~ b :: SymBool
+-- >>> a >=~ b
 -- (<= b a)
 --
 -- For `symCompare`, `Ordering` is not a solvable type, and the result would
--- be wrapped in a union-like monad. See `Grisette.Core.Control.Monad.UnionMBase` and `GUnionLike` for more
+-- be wrapped in a union-like monad. See `Grisette.Core.Control.Monad.UnionMBase` and `UnionLike` for more
 -- information.
 --
 -- >>> a `symCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool
 -- {If (< a b) LT (If (= a b) EQ GT)}
 --
--- __Note 1:__ This type class can be derived for algebraic data types.
+-- __Note:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving (GMergeable SymBool) via (Default X)
---
--- __Note 2:__ The @bool@ type is the symbolic boolean type to return. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `SOrd` type synonym for
--- the constraints and use specialized operators like `(<~)` and `(<=~)` from
--- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) to write code with fewer type annotations.
--- However, you still need @'SOrd' SymBool@ for implementing or deriving the
--- type class due to GHC's limitation.
+-- > data X = ... deriving Generic deriving SOrd via (Default X)
 class (SEq a) => SOrd a where
   (<~) :: a -> a -> SymBool
   infix 4 <~

@@ -4,7 +4,7 @@
 
 -- |
 -- Module      :   Grisette.Lib.Control.Traversable
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -25,7 +25,7 @@ import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'Data.Traversable.traverse' with 'GMergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.traverse' with 'MergingStrategy' knowledge propagation.
 mrgTraverse ::
   forall a b t f.
   ( Mergeable b,
@@ -39,7 +39,7 @@ mrgTraverse ::
 mrgTraverse f = mergeWithStrategy rootStrategy1 . traverse (merge . f)
 {-# INLINE mrgTraverse #-}
 
--- | 'Data.Traversable.sequenceA' with 'GMergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.sequenceA' with 'MergingStrategy' knowledge propagation.
 mrgSequenceA ::
   forall a t f.
   ( Mergeable a,
@@ -52,7 +52,7 @@ mrgSequenceA ::
 mrgSequenceA = mrgTraverse id
 {-# INLINE mrgSequenceA #-}
 
--- | 'Data.Traversable.mapM' with 'GMergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.mapM' with 'MergingStrategy' knowledge propagation.
 mrgMapM ::
   forall a b t f.
   ( Mergeable b,
@@ -66,7 +66,7 @@ mrgMapM ::
 mrgMapM = mrgTraverse
 {-# INLINE mrgMapM #-}
 
--- | 'Data.Traversable.sequence' with 'GMergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.sequence' with 'MergingStrategy' knowledge propagation.
 mrgSequence ::
   forall a t f.
   ( Mergeable a,
@@ -79,7 +79,7 @@ mrgSequence ::
 mrgSequence = mrgSequenceA
 {-# INLINE mrgSequence #-}
 
--- | 'Data.Traversable.for' with 'GMergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.for' with 'MergingStrategy' knowledge propagation.
 mrgFor ::
   ( Mergeable b,
     Mergeable1 t,
@@ -92,7 +92,7 @@ mrgFor ::
 mrgFor = flip mrgTraverse
 {-# INLINE mrgFor #-}
 
--- | 'Data.Traversable.forM' with 'GMergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.forM' with 'MergingStrategy' knowledge propagation.
 mrgForM ::
   ( Mergeable b,
     Mergeable1 t,

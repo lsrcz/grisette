@@ -19,22 +19,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.GenSym
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.GenSym
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Indices and identifiers for fresh symbolic value generation
+  ( -- * Indices and identifiers for fresh symbolic value generation
     FreshIndex (..),
     FreshIdent (..),
     name,
@@ -313,9 +305,6 @@ instance Monad m => MonadFresh (FreshT m) where
 --
 -- The uniqueness of symbolic constants is managed with the a monadic context.
 -- 'Fresh' and 'FreshT' can be useful.
---
--- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
--- be an instance of `SymBoolOp`.
 class (Mergeable a) => GenSym spec a where
   -- | Generate a symbolic value given some specification. Within a single
   -- `MonadFresh` context, calls to `fresh` would generate unique symbolic

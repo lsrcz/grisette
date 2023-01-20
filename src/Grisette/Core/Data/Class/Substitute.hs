@@ -10,22 +10,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.Substitute
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.Substitute
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Substituting symbolic constants
+  ( -- * Substituting symbolic constants
     SubstituteSym (..),
     SubstituteSym' (..),
   )
@@ -61,16 +53,7 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 -- __Note 1:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving (SubstituteSym TypedSymbol Sym) via (Default X)
---
--- __Note 2:__ The @typedSymbol@ type is the typed symbol type for the symbolic
--- constants, and the @sym@ type is the solvable type. If you do not need to use
--- an alternative solvable type implementation, and will use the 'TypedSymbol'
--- and 'Sym' types provided by the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the
--- specialized 'SubstituteSym' type synonym for the constraints and use the
--- specialized 'substituteSym' function to write code with fewer type annotations.
--- However, You still need @'SubstituteSym' TypedSymbol Symbol@ for implementing
--- or deriving the type class due to GHC's limitation.
+-- > data X = ... deriving Generic deriving SubstituteSym via (Default X)
 class SubstituteSym a where
   -- Substitute a symbolic constant to some symbolic value
   --

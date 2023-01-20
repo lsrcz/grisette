@@ -10,22 +10,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.Bool
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.Bool
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Symbolic equality
+  ( -- * Symbolic equality
     SEq (..),
     SEq' (..),
 
@@ -97,36 +89,27 @@ instance (SEq' a, SEq' b) => SEq' (a :*: b) where
   (a1 :*: b1) ==~~ (a2 :*: b2) = (a1 ==~~ a2) &&~ (b1 ==~~ b2)
   {-# INLINE (==~~) #-}
 
--- | Symbolic Equality. Note that we can't use Haskell's 'Eq' class since
+-- | Symbolic equality. Note that we can't use Haskell's 'Eq' class since
 -- symbolic comparison won't necessarily return a concrete 'Bool' value.
 --
 -- >>> let a = 1 :: SymInteger
 -- >>> let b = 2 :: SymInteger
--- >>> a ==~ b :: SymBool
+-- >>> a ==~ b
 -- false
--- >>> a /=~ b :: SymBool
+-- >>> a /=~ b
 -- true
 --
 -- >>> let a = "a" :: SymInteger
 -- >>> let b = "b" :: SymInteger
--- >>> a /=~ b :: SymBool
+-- >>> a /=~ b
 -- (! (= a b))
--- >>> a /=~ b :: SymBool
+-- >>> a /=~ b
 -- (! (= a b))
 --
--- __Note 1:__ This type class can be derived for algebraic data types.
+-- __Note:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving (GMergeable SymBool) via (Default X)
---
--- __Note 2:__ The @bool@ type is the symbolic Boolean type to return. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `SEq` type synonym for
--- the constraints and use specialized `(==~)`, `(/=~)` operators from
--- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) to write code with fewer type annotations.
--- However, you still need @'SEq' SymBool@ for implementing or deriving the
--- type class due to GHC's limitation.
+-- > data X = ... deriving Generic deriving SEq via (Default X)
 class SEq a where
   (==~) :: a -> a -> SymBool
   a ==~ b = nots $ a /=~ b

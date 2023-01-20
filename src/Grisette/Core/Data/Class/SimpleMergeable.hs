@@ -12,22 +12,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SimpleMergeable
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.SimpleMergeable
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Simple mergeable types
+  ( -- * Simple mergeable types
     SimpleMergeable (..),
     SimpleMergeable1 (..),
     mrgIte1,
@@ -76,7 +68,7 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 -- >>> import Grisette.IR.SymPrim
 -- >>> import Control.Monad.Identity
 
--- | Auxiliary class for the generic derivation for the 'GSimpleMergeable' class.
+-- | Auxiliary class for the generic derivation for the 'SimpleMergeable' class.
 class SimpleMergeable' f where
   mrgIte' :: SymBool -> f a -> f a -> f a
 
@@ -102,25 +94,16 @@ instance (SimpleMergeable' a, SimpleMergeable' b) => (SimpleMergeable' (a :*: b)
 
 -- | This class indicates that a type has a simple root merge strategy.
 --
--- __Note 1:__ This type class can be derived for algebraic data types.
+-- __Note:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
 -- > data X = ...
 -- >   deriving Generic
--- >   deriving (GMergeable SymBool, GSimpleMergeable SymBool) via (Default X)
---
--- __Note 2:__ The @bool@ type is the symbolic boolean type to use. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `SimpleMergeable` type
--- synonym for constraints.
--- The specialized combinators like 'mrgIte' are also provided.
--- However, you still need @'GMergeable' SymBool@ for implementing or deriving the
--- type class due to GHC's limitation.
+-- >   deriving (Mergeable, SimpleMergeable) via (Default X)
 class Mergeable a => SimpleMergeable a where
   -- | Performs if-then-else with the simple root merge strategy.
   --
-  -- >>> mrgIte ("a" :: SymBool) "b" "c" :: SymInteger
+  -- >>> mrgIte "a" "b" "c" :: SymInteger
   -- (ite a b c)
   mrgIte :: SymBool -> a -> a -> a
 
@@ -128,40 +111,40 @@ instance (Generic a, Mergeable' (Rep a), SimpleMergeable' (Rep a)) => SimpleMerg
   mrgIte cond (Default a) (Default b) = Default $ to $ mrgIte' cond (from a) (from b)
   {-# INLINE mrgIte #-}
 
--- | Lifting of the 'GSimpleMergeable' class to unary type constructors.
+-- | Lifting of the 'SimpleMergeable' class to unary type constructors.
 class SimpleMergeable1 u where
   -- | Lift 'mrgIte' through the type constructor.
   --
-  -- >>> liftMrgIte mrgIte ("a" :: SymBool) (Identity "b") (Identity "c") :: Identity SymInteger
+  -- >>> liftMrgIte mrgIte "a" (Identity "b") (Identity "c") :: Identity SymInteger
   -- Identity (ite a b c)
   liftMrgIte :: (SymBool -> a -> a -> a) -> SymBool -> u a -> u a -> u a
 
 -- | Lift the standard 'mrgIte' function through the type constructor.
 --
--- >>> mrgIte1 ("a" :: SymBool) (Identity "b") (Identity "c") :: Identity SymInteger
+-- >>> mrgIte1 "a" (Identity "b") (Identity "c") :: Identity SymInteger
 -- Identity (ite a b c)
 mrgIte1 :: (SimpleMergeable1 u, SimpleMergeable a) => SymBool -> u a -> u a -> u a
 mrgIte1 = liftMrgIte mrgIte
 {-# INLINE mrgIte1 #-}
 
--- | Lifting of the 'GSimpleMergeable' class to binary type constructors.
+-- | Lifting of the 'SimpleMergeable' class to binary type constructors.
 class (Mergeable2 u) => SimpleMergeable2 u where
   -- | Lift 'mrgIte' through the type constructor.
   --
-  -- >>> liftMrgIte2 mrgIte mrgIte ("a" :: SymBool) ("b", "c") ("d", "e") :: (SymInteger, SymBool)
+  -- >>> liftMrgIte2 mrgIte mrgIte "a" ("b", "c") ("d", "e") :: (SymInteger, SymBool)
   -- ((ite a b d),(ite a c e))
   liftMrgIte2 :: (SymBool -> a -> a -> a) -> (SymBool -> b -> b -> b) -> SymBool -> u a b -> u a b -> u a b
 
 -- | Lift the standard 'mrgIte' function through the type constructor.
 --
--- >>> mrgIte2 ("a" :: SymBool) ("b", "c") ("d", "e") :: (SymInteger, SymBool)
+-- >>> mrgIte2 "a" ("b", "c") ("d", "e") :: (SymInteger, SymBool)
 -- ((ite a b d),(ite a c e))
 mrgIte2 :: (SimpleMergeable2 u, SimpleMergeable a, SimpleMergeable b) => SymBool -> u a b -> u a b -> u a b
 mrgIte2 = liftMrgIte2 mrgIte mrgIte
 {-# INLINE mrgIte2 #-}
 
--- | Special case of the 'GMergeable1' and 'GSimpleMergeable1' class for type
--- constructors that are 'GSimpleMergeable' when applied to any 'GMergeable'
+-- | Special case of the 'Mergeable1' and 'SimpleMergeable1' class for type
+-- constructors that are 'SimpleMergeable' when applied to any 'Mergeable'
 -- types.
 --
 -- This type class is used to generalize the 'mrgIf' function to other
@@ -169,7 +152,7 @@ mrgIte2 = liftMrgIte2 mrgIte mrgIte
 class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
   -- | Wrap a single value in the union.
   --
-  -- Note that this function cannot propagate the 'GMergeable' knowledge.
+  -- Note that this function cannot propagate the 'Mergeable' knowledge.
   --
   -- >>> single "a" :: UnionM SymInteger
   -- <a>
@@ -179,7 +162,7 @@ class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
 
   -- | If-then-else on two union values.
   --
-  -- Note that this function cannot capture the 'GMergeable' knowledge. However,
+  -- Note that this function cannot capture the 'Mergeable' knowledge. However,
   -- it may use the merging strategy from the branches to merge the results.
   --
   -- >>> unionIf "a" (single "b") (single "c") :: UnionM SymInteger
@@ -197,8 +180,8 @@ class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
   -- or some internal invariants would be broken and the program can crash.
   --
-  -- This function is to be called when the 'GMergeable' constraint can not be resolved,
-  -- e.g., the merge strategy for the contained type is given with 'GMergeable1'.
+  -- This function is to be called when the 'Mergeable' constraint can not be resolved,
+  -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'merge' is usually a better alternative.
   mergeWithStrategy :: MergingStrategy a -> u a -> u a
 
@@ -211,14 +194,14 @@ class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
   -- or some internal invariants would be broken and the program can crash.
   --
-  -- This function is to be called when the 'GMergeable' constraint can not be resolved,
-  -- e.g., the merge strategy for the contained type is given with 'GMergeable1'.
+  -- This function is to be called when the 'Mergeable' constraint can not be resolved,
+  -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
   mrgIfWithStrategy s cond l r = mergeWithStrategy s $ unionIf cond l r
   {-# INLINE mrgIfWithStrategy #-}
 
-  -- | Wrap a single value in the union and capture the 'GMergeable' knowledge.
+  -- | Wrap a single value in the union and capture the 'Mergeable' knowledge.
   --
   -- >>> mrgSingleWithStrategy rootStrategy "a" :: UnionM SymInteger
   -- {a}
@@ -227,8 +210,8 @@ class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
   -- The supplied merge strategy should be consistent with the type's root merge strategy,
   -- or some internal invariants would be broken and the program can crash.
   --
-  -- This function is to be called when the 'GMergeable' constraint can not be resolved,
-  -- e.g., the merge strategy for the contained type is given with 'GMergeable1'.
+  -- This function is to be called when the 'Mergeable' constraint can not be resolved,
+  -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'mrgSingle' is usually a better alternative.
   mrgSingleWithStrategy :: MergingStrategy a -> a -> u a
   mrgSingleWithStrategy s = mergeWithStrategy s . single
@@ -773,7 +756,7 @@ onUnion4 ::
   (u a -> u b -> u c -> u d -> r)
 onUnion4 f ua ub uc ud = simpleMerge $ f <$> ua <*> ub <*> uc <*> ud
 
--- | Helper for applying functions on 'GUnionPrjOp' and 'GSimpleMergeable'.
+-- | Helper for applying functions on 'UnionPrjOp' and 'SimpleMergeable'.
 --
 -- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
 -- >>> f #~ (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)

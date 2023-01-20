@@ -18,22 +18,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.Mergeable
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.Mergeable
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Merging strategy
+  ( -- * Merging strategy
     MergingStrategy (..),
 
     -- * Mergeable
@@ -163,7 +155,7 @@ resolveStrategy' x = go
 --      sub-strategies.
 --
 --    * all the @Maybe SymBool@ values can be merged with 'SortedStrategy' by
---      indexing with 'Data.Maybe.isJust', the 'None' and 'Just' values can then
+--      indexing with 'Data.Maybe.isJust', the 'Nothing' and 'Just' values can then
 --      then be merged with different simple strategies as sub-strategies.
 --
 -- The 'NoStrategy' does not perform any merging.
@@ -184,19 +176,12 @@ resolveStrategy' x = go
 --
 -- For more details, please see the documents of the constructors, or refer to
 -- [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf).
---
--- __Note:__ The @bool@ type is the symbolic boolean type to use. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- `grisette-symir` package, you can use the specialized `MergingStrategy` type
--- instead. The specialized versions for the combinators for building
--- `MergingStrategy` are also provided.
 data MergingStrategy a where
   -- | Simple mergeable strategy.
   --
   -- For symbolic booleans, we can implement its merge strategy as follows:
   --
-  -- > SimpleStrategy ites :: GMergingStrategy SymBool SymBool
+  -- > SimpleStrategy ites :: MergingStrategy SymBool
   SimpleStrategy ::
     -- | Merge function.
     (SymBool -> a -> a -> a) ->
@@ -235,7 +220,7 @@ data MergingStrategy a where
 -- For example, to build the merge strategy for the just branch of @Maybe a@,
 -- one could write
 --
--- > wrapStrategy Just fromMaybe rootStrategy :: GMergingStrategy (Maybe a)
+-- > wrapStrategy Just fromMaybe rootStrategy :: MergingStrategy (Maybe a)
 wrapStrategy ::
   -- | The merge strategy to be wrapped
   MergingStrategy a ->
@@ -264,15 +249,7 @@ wrapStrategy NoStrategy _ _ = NoStrategy
 -- __Note 1:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving (Mergeable SymBool) via (Default X)
---
--- __Note 2:__ The @bool@ type is the symbolic boolean type to use. It should
--- be an instance of `SymBoolOp`. If you do not need to use an alternative
--- symbolic Boolean type, and will use the 'SymBool' type provided by the
--- [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package, you can use the specialized `Mergeable` type
--- synonym for constraints.
--- You still need @'Mergeable' SymBool@ for implementing or deriving the
--- type class due to GHC's limitation.
+-- > data X = ... deriving Generic deriving Mergeable via (Default X)
 class Mergeable a where
   -- | The root merging strategy for the type.
   rootStrategy :: MergingStrategy a
@@ -286,7 +263,7 @@ instance (Generic a, Mergeable' (Rep a)) => Mergeable (Default a) where
 -- Usually you can derive the merging strategy with the @DerivingVia@ and
 -- @DerivingStrategies@ extension.
 --
--- > data X = ... deriving (Generic) deriving (Mergeable SymBool) via (Default X)
+-- > data X = ... deriving (Generic) deriving Mergeable via (Default X)
 derivedRootStrategy :: (Generic a, Mergeable' (Rep a)) => MergingStrategy a
 derivedRootStrategy = wrapStrategy rootStrategy' to from
 {-# INLINE derivedRootStrategy #-}
@@ -322,7 +299,7 @@ rootStrategy3 = liftRootStrategy3 rootStrategy rootStrategy rootStrategy
 {-# INLINE rootStrategy3 #-}
 
 instance (Generic1 u, Mergeable1' (Rep1 u)) => Mergeable1 (Default1 u) where
-  liftRootStrategy = unsafeCoerce (derivedLiftGMergingStrategy :: MergingStrategy a -> MergingStrategy (u a))
+  liftRootStrategy = unsafeCoerce (derivedLiftMergingStrategy :: MergingStrategy a -> MergingStrategy (u a))
   {-# NOINLINE liftRootStrategy #-}
 
 class Mergeable1' (u :: Type -> Type) where
@@ -371,15 +348,9 @@ instance (Mergeable1' a, Mergeable1' b) => Mergeable1' (a :*: b) where
   {-# INLINE liftRootStrategy' #-}
 
 -- | Generic derivation for the 'Mergeable' class.
-derivedLiftGMergingStrategy :: (Generic1 u, Mergeable1' (Rep1 u)) => MergingStrategy a -> MergingStrategy (u a)
-derivedLiftGMergingStrategy m = wrapStrategy (liftRootStrategy' m) to1 from1
-{-# INLINE derivedLiftGMergingStrategy #-}
-
-{-
--- | Resolves the 'Mergeable' constraint through a 'Mergeable1' type constructor.
-withMergeable :: forall bool u a b. (Mergeable1 u, Mergeable a) => (Mergeable (u a) => b) -> b
-withMergeable v = unCConst $ withMergeableT @bool @u @a @(CConst (Mergeable (u a)) b) $ CConst v
--}
+derivedLiftMergingStrategy :: (Generic1 u, Mergeable1' (Rep1 u)) => MergingStrategy a -> MergingStrategy (u a)
+derivedLiftMergingStrategy m = wrapStrategy (liftRootStrategy' m) to1 from1
+{-# INLINE derivedLiftMergingStrategy #-}
 
 -- | Auxiliary class for the generic derivation for the 'Mergeable' class.
 class Mergeable' f where
@@ -423,7 +394,7 @@ instance (Mergeable' a, Mergeable' b) => Mergeable' (a :+: b) where
 --
 -- > data X = X { x1 :: Int, x2 :: Bool }
 -- > product2Strategy X (\(X a b) -> (a, b)) rootStrategy rootStrategy
--- >   :: GMergingStrategy X
+-- >   :: MergingStrategy X
 product2Strategy ::
   -- | The wrap function
   (a -> b -> r) ->

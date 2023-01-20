@@ -4,7 +4,7 @@
 
 -- |
 -- Module      :   Grisette.Lib.Control.Monad.Trans
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -21,7 +21,7 @@ import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 
--- | 'lift' with 'GMergingStrategy' knowledge propagation.
+-- | 'lift' with 'MergingStrategy' knowledge propagation.
 mrgLift ::
   forall t m a.
   (MonadUnion (t m), MonadTrans t, Monad m, Mergeable a) =>

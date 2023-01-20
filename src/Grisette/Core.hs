@@ -3,7 +3,7 @@
 
 -- |
 -- Module      :   Grisette.Core
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -14,14 +14,7 @@ module Grisette.Core
 
     --
 
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir/)
-    -- and [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) packages,
-    -- which provides the solvable type and the solver backend implementations,
-    -- respectively.
-    --
-    -- The examples may also assume a [z3](https://github.com/Z3Prover/z3) solver available in @PATH@.
+    -- | The examples may assume a [z3](https://github.com/Z3Prover/z3) solver available in @PATH@.
 
     -- * Symbolic values
 
@@ -120,8 +113,8 @@ module Grisette.Core
     -- the number of paths to be explored in the future, but can make the path
     -- conditions larger and harder to solve. To have a good balance between
     -- this, Grisette has built a hierarchical merging algorithm, which is
-    -- configurable via 'GMergingStrategy'. For algebraic data types, we have
-    -- prebuilt merging strategies via the derivation of the 'GMergeable' type
+    -- configurable via 'MergingStrategy'. For algebraic data types, we have
+    -- prebuilt merging strategies via the derivation of the 'Mergeable' type
     -- class. You only need to know the details of the merging algorithm if you
     -- are going to work with non-algebraic data types.
 
@@ -129,7 +122,7 @@ module Grisette.Core
 
     -- | A solvable type is a type that can be represented as a formula and is
     -- directly supported by the underlying constraint solvers.
-    -- The [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package
+    -- Grisette
     -- currently provides an implementation for the following solvable types:
     --
     -- * @SymBool@ or @Sym Bool@ (symbolic Booleans)
@@ -145,9 +138,7 @@ module Grisette.Core
     --
     -- __Examples:__
     --
-    -- >>> import Grisette.Core
-    -- >>> import Grisette.Lib.Base
-    -- >>> import Grisette.IR.SymPrim -- provided by grisette-symir package
+    -- >>> import Grisette
     -- >>> con True :: SymBool -- a concrete value
     -- true
     -- >>> ssym "a" :: SymBool -- a symbolic constant
@@ -161,21 +152,14 @@ module Grisette.Core
     -- a
     --
     -- Symbolic operations are provided through a set of type classes,
-    -- such as 'GSEq', 'GSOrd', and 'Num'.
-    -- These type classes may be parametrized with the solvable type
-    -- implementation. In most cases, when you are using the solvable type
-    -- implementation in
-    -- [grisette-symir](https://hackage.haskell.org/package/grisette-symir)
-    -- package, you can use the specialized constraints and operators in
-    -- the package to reduce the need for manual type annotations.
+    -- such as 'SEq', 'SOrd', and 'Num'. Please check out the documentation for
+    -- more details.
     --
     -- __Examples:__
     --
     -- >>> let a = "a" :: SymInteger
     -- >>> let b = "b" :: SymInteger
-    -- >>> a ==~ b :: SymBool -- G means generic, the type annotation is required
-    -- (= a b)
-    -- >>> a ==~ b -- The type annotation is not required
+    -- >>> a ==~ b
     -- (= a b)
 
     -- *** Creation of solvable type values
@@ -214,12 +198,7 @@ module Grisette.Core
     -- The value of a union can be determined by an SMT solver based on the
     -- truth value of the path conditions.
     --
-    -- In Grisette, the symbolic union type is 'UnionMBase', which is
-    -- parametrized with the symbolic Boolean type. Usually, you can just use
-    -- the 'UnionM' type provided by the
-    -- [grisette-symir](https://hackage.haskell.org/package/grisette-symir)
-    -- package.
-    --
+    -- In Grisette, the symbolic union type is 'UnionM'.
     -- Two constructs are useful in constructing symbolic union values: 'mrgIf'
     -- and 'mrgSingle'.
     -- 'mrgSingle' unconditionally wraps a value in a symbolic union container,
@@ -260,7 +239,7 @@ module Grisette.Core
     -- problems.
     --
     -- The 'mrgReturn' function is crucial for ensuring that the results
-    -- are merged. It resolves the 'GMergeable' constraint, and retrieves a
+    -- are merged. It resolves the 'Mergeable' constraint, and retrieves a
     -- merging strategy for the contained type from the constraint.
     -- The merging strategy is then cached in the 'UnionMBase' container to
     -- help merge the result of the entire do-block.
@@ -303,12 +282,12 @@ module Grisette.Core
     -- {If (&& a f) 1 (If (|| a f) 2 3)}
     --
     -- For more details of this, see the documentation for 'UnionMBase' and
-    -- 'GMergingStrategy'.
+    -- 'MergingStrategy'.
     --
     -- To make a type compatible with the symbolic evaluation and merging in
-    -- Grisette, you need to implement the 'GMergeable' type class.
+    -- Grisette, you need to implement the 'Mergeable' type class.
     -- If you are only working with algebraic
-    -- data types, you can derive the 'GMergeable' instance automatically
+    -- data types, you can derive the 'Mergeable' instance automatically
     -- For example:
     --
     -- >>> :set -XDerivingStrategies
@@ -331,7 +310,7 @@ module Grisette.Core
     -- it with various mechanisms.
     -- For example, by applying 'Control.Monad.Except.ExceptT',
     -- you can symbolically evaluate a program with error handling.
-    -- To do this, you will need to define an error type and derive the 'GMergeable'
+    -- To do this, you will need to define an error type and derive the 'Mergeable'
     -- instance for it. Then, you can use the combinators provided by 'MonadError'
     -- (and the @mrg*@ variants of them) for error handling, and the 'mrgIf'
     -- combinator will also work with transformed @UnionM@ containers.
@@ -355,7 +334,7 @@ module Grisette.Core
     --
     -- __The following is the details of the merging algorithm.__
     -- __If you are not going to manually configure the system by writing a__
-    -- __`GMergingStrategy` and will only use the derived strategies,__
+    -- __`MergingStrategy` and will only use the derived strategies,__
     -- __you can safely ignore the following contents in this section.__
     --
     -- In Grisette, the symbolic union has the Ordered Guards (ORG)
@@ -476,7 +455,7 @@ module Grisette.Core
     -- by some criteria. Here, in the first level, the values are sorted by the
     -- constructor declaration order, and in the second level, the values are sorted
     -- by the concrete field in the constructor @A@.
-    -- This criteria is given by the 'GMergingStrategy' in the 'GMergeable' class,
+    -- This criteria is given by the 'MergingStrategy' in the 'Mergeable' class,
     -- called the root merging strategy of the type.
     --
     -- > data X = A Integer SymInteger | B | C
@@ -527,7 +506,7 @@ module Grisette.Core
     -- and the merging functions will be wrapped in 'SimpleStrategy'.
     -- The merging algorithm can then be configured by implementing the merging
     -- strategies for the types contained in a symbolic union. See the documentation
-    -- for 'GMergingStrategy' for details.
+    -- for 'MergingStrategy' for details.
     --
     -- \[
     --   \begin{aligned}
@@ -697,7 +676,7 @@ module Grisette.Core
     -- {If x@2 [] (If x@3 [x@1] [x@0,x@1])}
     --
     -- Symbolic choices from a list of symbolic values is very useful.
-    -- With the 'gchooseFresh' function (specialized as @chooseFresh@ in [grisette-symir](https://hackage.haskell.org/package/grisette-symir)),
+    -- With the 'chooseFresh' function,
     -- we can generate a symbolic value by choosing from a list of
     -- alternative values.
     -- Grisette would generate symbolic Boolean guards to perform the symbolic
@@ -855,11 +834,9 @@ module Grisette.Core
     --
     -- The first parameter of 'solve' is the solver configuration.
     -- Here it means that we should not perform any approximation, and should
-    -- use the Z3 solver. For more details, see the documentation of
-    -- the [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) package.
+    -- use the Z3 solver.
     --
-    -- The second parameter is the formula to be solved. With the
-    -- [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) backend, it have the type @SymBool@.
+    -- The second parameter is the formula to be solved. It have the type 'SymBool'.
     --
     -- The 'solve' function would return a model if the formula is satisfiable.
     -- The model is a mapping from symbolic variables to concrete values,

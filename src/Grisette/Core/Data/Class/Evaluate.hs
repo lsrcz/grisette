@@ -10,22 +10,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.Evaluate
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.Evaluate
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * Evaluating symbolic values with model
+  ( -- * Evaluating symbolic values with model
     EvaluateSym (..),
     evaluateSymToCon,
   )
@@ -68,16 +60,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model
 -- __Note 1:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving (GEvaluateSym Model) via (Default X)
---
--- __Note 2:__ The @model@ type is the model type for the solver backend. It
--- should be an instance of `ModelOp`. If you do not need to use an alternative
--- solver backend, and will use the 'Model' type provided by the
--- `grisette-symir` package, you can use the specialized `EvaluateSym` type
--- synonym for the constraints and use specialized `evaluateSym`,
--- `evaluateSymToCon` combinators to write code with fewer type annotations.
--- However, You still need @'GEvaluateSym' Model@ for implementing
--- or deriving the type class due to GHC's limitation.
+-- > data X = ... deriving Generic deriving EvaluateSym via (Default X)
 class EvaluateSym a where
   -- | Evaluate a symbolic variable with some model, possibly fill in values for the missing variables.
   evaluateSym :: Bool -> Model -> a -> a

@@ -19,22 +19,14 @@
 
 -- |
 -- Module      :   Grisette.Core.Control.Monad.UnionM
--- Copyright   :   (c) Sirui Lu 2021-2022
+-- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Control.Monad.UnionM
-  ( -- * Note for the examples
-
-    --
-
-    -- | This module does not contain the implementation for solvable (see "Grisette.Core#solvable")
-    -- types, and the examples in this module rely on the implementations in
-    -- the [grisette-symir](https://hackage.haskell.org/package/grisette-symir) package.
-
-    -- * UnionM and helpers
+  ( -- * UnionM and helpers
     UnionM (..),
     liftToMonadUnion,
     underlyingUnion,
@@ -77,7 +69,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> :set -XScopedTypeVariables
 
 -- | 'UnionM' is the 'Union' container (hidden) enhanced with
--- 'GMergingStrategy'
+-- 'MergingStrategy'
 -- [knowledge propagation](https://okmij.org/ftp/Haskell/set-monad.html#PE).
 --
 -- The 'Union' models the underlying semantics evaluation semantics for
@@ -105,12 +97,12 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- To reduce the size of the if-then-else tree to reduce the number of paths to
 -- execute, Grisette would merge the branches in a 'Union' container and
 -- maintain a representation invariant for them. To perform this merging
--- procedure, Grisette relies on a type class called 'GMergeable' and the
+-- procedure, Grisette relies on a type class called 'Mergeable' and the
 -- merging strategy defined by it.
 --
 -- 'Union' is a monad, so we can easily write code with the do-notation and
 -- monadic combinators. However, the standard monadic operators cannot
--- resolve any extra constraints, including the 'GMergeable' constraint (see
+-- resolve any extra constraints, including the 'Mergeable' constraint (see
 -- [The constrained-monad
 -- problem](https://dl.acm.org/doi/10.1145/2500365.2500602)
 -- by Sculthorpe et al.).
@@ -121,27 +113,27 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- would try to cache the merging strategy.
 -- The 'UnionM' has two data constructors (hidden intentionally), 'UAny' and 'UMrg'.
 -- The 'UAny' data constructor (printed as @<@@...@@>@) wraps an arbitrary (probably
--- unmerged) 'Union'. It is constructed when no 'GMergeable' knowledge is
+-- unmerged) 'Union'. It is constructed when no 'Mergeable' knowledge is
 -- available (for example, when constructed with Haskell\'s 'return').
 -- The 'UMrg' data constructor (printed as @{...}@) wraps a merged 'UnionM' along with the
--- 'GMergeable' constraint. This constraint can be propagated to the contexts
--- without 'GMergeable' knowledge, and helps the system to merge the resulting
+-- 'Mergeable' constraint. This constraint can be propagated to the contexts
+-- without 'Mergeable' knowledge, and helps the system to merge the resulting
 -- 'Union'.
 --
 -- __/Examples:/__
 --
--- 'return' cannot resolve the 'GMergeable' constraint.
+-- 'return' cannot resolve the 'Mergeable' constraint.
 --
 -- >>> return 1 :: UnionM Integer
 -- <1>
 --
--- 'Grisette.Lib.Control.Monad.mrgReturn' can resolve the 'GMergeable' constraint.
+-- 'Grisette.Lib.Control.Monad.mrgReturn' can resolve the 'Mergeable' constraint.
 --
 -- >>> import Grisette.Lib.Base
 -- >>> mrgReturn 1 :: UnionM Integer
 -- {1}
 --
--- 'unionIf' cannot resolve the 'GMergeable' constraint.
+-- 'unionIf' cannot resolve the 'Mergeable' constraint.
 --
 -- >>> unionIf "a" (return 1) (unionIf "b" (return 1) (return 2)) :: UnionM Integer
 -- <If a 1 (If b 1 2)>
@@ -332,7 +324,7 @@ instance (SEq a) => SEq (UnionM a) where
     y1 <- y
     mrgSingle $ x1 ==~ y1
 
--- | Lift the 'UnionM' to any 'GMonadUnion'.
+-- | Lift the 'UnionM' to any 'MonadUnion'.
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => UnionM a -> u a
 liftToMonadUnion u = go (underlyingUnion u)
   where
