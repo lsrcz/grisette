@@ -154,8 +154,20 @@ data SExpr
 -- UMrg (Single (SConst 1))
 $(makeUnionWrapper "mrg" ''SExpr)
 ```
+Then we can define the program space.
+The following code defines a program space `\x -> x + {x, c}`. Some example
+programs in this space are `\x -> x + x`, `\x -> x + 1`, and `\x -> x + 2`.
+The solver will be used to choose the right hand side of the addition. It may
+choose to use the input variable `x`, or synthesize a constant `c`.
 
-After defining the types, we can then write an interpreter to interpret all the
+```haskell
+space :: SymInteger -> SExpr
+space x = SPlus
+  (mrgSInput x)
+  (mrgIf "choice" (mrgSInput x) (mrgSConst "c"))
+```
+
+We then need to convert this program space to its logical encoding, and we do this by writing an interpreter to interpret all the
 expressions represented by an `SExpr` all at once. The interpreter looks very
 similar to a normal interpreter, except that the `onUnion` combinator is used
 to lift the interpreter to work on `UnionM` values.
@@ -171,23 +183,16 @@ interpretU :: UnionM SExpr -> SymInteger
 interpretU = onUnion interpret
 ```
 
-Another 
-The following code defines a program space `\x -> x + {x, c}`. Some example
-programs in this space are `\x -> x + x`, `\x -> x + 1`, and `\x -> x + 2`.
-The solver will be used to choose the right hand side of the addition. It may
-choose to use the input variable `x`, or synthesize a constant `c`.
-
-```haskell
-space :: SymInteger -> SExpr
-space x = SPlus
-  (mrgSInput x)
-  (mrgIf "choice" (mrgSInput x) (mrgSConst "c"))
-```
+And we can compose the interpreter with the program space to get it executable.
 
 ```haskell
 executableSpace :: Integer -> SymInteger
 executableSpace = interpret . space . toSym
 ```
+
+Then we can do synthesis. We call the program space on the input 2, and construct the constraint that the result is equal to 5. We then call the solver with the `solve` function. The solver is able to find a solution, and it will return the assignments to the symbolic constants as a model.
+
+We can then use the model to evaluate the program space, and get the synthesized program.
 
 ```haskell
 example :: IO ()
@@ -201,11 +206,11 @@ example = do
   -- result: 13
 ```
 
-For more examples, please refer to 
+For more details, please refer to [the Grisette examples](https://github.com/lsrcz/grisette-examples) (WIP).
 
 ## Documentation
 
-- Haddock documentation: [grisette-core](https://hackage.haskell.org/package/grisette-core) (core constructs), [grisette-symir](https://hackage.haskell.org/package/grisette-symir) (solvable type/symbolic IR), [grisette-backend-sbv](https://hackage.haskell.org/package/grisette-backend-sbv) (solver backend), [grisette](https://hackage.haskell.org/package/grisette) (aggregated package, exports constructs from the other three packages).
+- Haddock documentation at  [grisette](https://hackage.haskell.org/package/grisette).
 - Grisette essentials (WIP).
 - Grisette tutorials (WIP).
 
