@@ -63,11 +63,7 @@ jobs:
       id: cache_key
       run: |
         echo ::set-output name=stack::$(shasum ${{ matrix.plan.build.arg }} | awk '{print $1}')
-        echo ::set-output name=core::$(shasum grisette-core/package.yaml | awk '{print $1}')
-        echo ::set-output name=symir::$(shasum grisette-symir/package.yaml | awk '{print $1}')
-        echo ::set-output name=sbv::$(shasum grisette-backend-sbv/package.yaml | awk '{print $1}')
-        echo ::set-output name=doctest::$(shasum grisette-doctest/package.yaml | awk '{print $1}')
-        echo ::set-output name=grisette::$(shasum grisette/package.yaml | awk '{print $1}')
+        echo ::set-output name=package::$(shasum package.yaml | awk '{print $1}')
 
     # - run: echo ${{ matrix.cachix-token-name }}
     # - run: echo ${{ secrets[matrix.cachix-token-name] }}
@@ -86,7 +82,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.stack
-        key: stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}-${{ steps.cache_key.outputs.core }}-${{ steps.cache_key.outputs.symir }}-${{ steps.cache_key.outputs.sbv }}-${{ steps.cache_key.outputs.doctest }}-${{ steps.cache_key.outputs.grisette }}
+        key: stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}-${{ steps.cache_key.outputs.package }}
         restore-keys: |
           stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}
           stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}
