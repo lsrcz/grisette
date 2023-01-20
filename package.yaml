@@ -1,0 +1,79 @@
+name: grisette
+version: 0.1.0.0
+synopsis: Symbolic evaluation as a library
+description: |
+  Grisette is a reusable symbolic evaluation library for Haskell. By
+  translating programs into constraints, Grisette can help the development of
+  program reasoning tools, including verification, synthesis, and more.
+  .
+  This "Grisette" module exports all you need for building a symbolic evaluation
+  tool.
+  .
+  For more details, please checkout the README.
+category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
+author: "Sirui Lu"
+maintainer: Sirui Lu (siruilu@cs.washington.edu)
+license: BSD3
+license-file: LICENSE
+github: lsrcz/grisette-haskell
+copyright: "2021-2022 Sirui Lu"
+extra-source-files:
+- CHANGELOG.md
+- README.md
+
+dependencies:
+- base > 4.14 && < 5
+- intern >= 0.9.2 && < 0.10
+- hashable >= 1.2.3 && < 1.5
+- mtl >= 2.2.2 && < 2.3
+- transformers >= 0.5.6 && < 0.6
+- generic-deriving >= 1.14.1 && < 1.15
+- bytestring >= 0.10.12 && < 0.12
+- unordered-containers >= 0.2.11 && < 0.3
+- template-haskell >= 2.16 && < 2.20
+- deepseq >= 1.4.4 && < 1.5
+- hashtables >= 1.2.3.4 && < 1.4
+- loch-th >= 0.2.2 && < 0.3
+- th-compat >= 0.1.2 && < 0.2
+- call-stack >= 0.1 && < 0.5
+- array >= 0.5.4 && < 0.6
+- vector >= 0.12.1 && < 0.14
+- once >= 0.2 && < 0.5
+- sbv >= 8.11 && < 9.1
+
+flags: {
+  fast: {
+    description: "Compile with O2 optimization",
+    manual: False,
+    default: True,
+  }
+}
+
+when:
+  - condition: flag(fast)
+    then:
+      ghc-options: -O2
+    else:
+      ghc-options: -O0
+
+library:
+  source-dirs: src
+
+tests:
+  spec:
+    main: Main.hs
+    source-dirs: test
+    dependencies:
+      - grisette
+      - tasty >= 1.1.0.3 && < 1.5
+      - tasty-hunit >= 0.10 && < 0.11
+      - tasty-test-reporter >= 0.1.1.2 && < 0.2
+      - tasty-quickcheck >= 0.10.1 && < 0.11
+  doctest:
+    main: Main.hs
+    source-dirs: doctest
+    dependencies:
+      - grisette
+      - doctest >= 0.18.2 && < 0.21
+      - Glob
+
