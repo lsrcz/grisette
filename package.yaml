@@ -11,7 +11,7 @@ description: |
   .
   For more details, please checkout the README.
 category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
-author: "Sirui Lu"
+author: "Sirui Lu, Rastislav Bodík"
 maintainer: Sirui Lu (siruilu@cs.washington.edu)
 license: BSD3
 license-file: LICENSE

@@ -18,7 +18,7 @@ description:    Grisette is a reusable symbolic evaluation library for Haskell. 
 category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
 homepage:       https://github.com/lsrcz/grisette-haskell#readme
 bug-reports:    https://github.com/lsrcz/grisette-haskell/issues
-author:         Sirui Lu
+author:         Sirui Lu, Rastislav Bodík
 maintainer:     Sirui Lu (siruilu@cs.washington.edu)
 copyright:      2021-2023 Sirui Lu
 license:        BSD3
