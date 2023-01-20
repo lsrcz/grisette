@@ -177,6 +177,10 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Grisette.Backend.SBV.Data.SMT.CEGISTests
+      Grisette.Backend.SBV.Data.SMT.LoweringTests
+      Grisette.Backend.SBV.Data.SMT.TermRewritingGen
+      Grisette.Backend.SBV.Data.SMT.TermRewritingTests
       Grisette.IR.SymPrim.Data.BVTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
