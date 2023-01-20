@@ -353,4 +353,3 @@ instance LogicalOp (Sym Bool) where
   nots (Sym v) = Sym $ pevalNotTerm v
   (Sym l) `xors` (Sym r) = Sym $ pevalXorTerm l r
   (Sym l) `implies` (Sym r) = Sym $ pevalImplyTerm l r
-
