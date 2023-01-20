@@ -22,6 +22,9 @@ import Grisette.Lib.Data.FoldableTests
 import Grisette.Lib.Data.TraversableTests
 -}
 
+import Grisette.Backend.SBV.Data.SMT.CEGISTests
+import Grisette.Backend.SBV.Data.SMT.LoweringTests
+import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
 import qualified Grisette.IR.SymPrim.Data.BVTests
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests
@@ -36,9 +39,6 @@ import Test.Tasty
 import Test.Tasty.Ingredients
 import qualified Test.Tasty.Ingredients.ConsoleReporter as ConsoleReporter
 import qualified Test.Tasty.Runners.Reporter as Reporter
-import Grisette.Backend.SBV.Data.SMT.CEGISTests
-import Grisette.Backend.SBV.Data.SMT.LoweringTests
-import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
 
 main :: IO ()
 main = defaultMainWithIngredients [composeReporters Reporter.ingredient ConsoleReporter.consoleTestReporter] tests
