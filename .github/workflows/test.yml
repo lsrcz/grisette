@@ -129,7 +129,7 @@ jobs:
             ;;
           cabal)
             nix develop --allow-dirty --no-warn-dirty -c cabal update
-            nix develop --allow-dirty --no-warn-dirty -c cabal exec cabal test --enable-tests --test-options="--xml=test-report.xml"
+            nix develop --allow-dirty --no-warn-dirty -c cabal exec cabal test spec --enable-tests --test-show-details=always --test-options="--xml=test-report.xml"
             ;;
         esac
         set +ex
@@ -138,7 +138,7 @@ jobs:
         BUILD: ${{ matrix.plan.build }}
 
     - uses: phoenix-actions/test-reporting@v8
-      if: success() || failure ()
+      if: matrix.os == 'ubuntu-latest' && (success() || failure ())
       with:
         name: Tests-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}
         path: '**/test-report.xml'
