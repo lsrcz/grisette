@@ -98,6 +98,7 @@ jobs:
         path: |
           ~/.stack
           ~/.cabal
+          dist-newstyle
         key: stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}-${{ steps.cache_key.outputs.package }}
         restore-keys: |
           stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}
@@ -129,7 +130,7 @@ jobs:
             ;;
           cabal)
             nix develop --allow-dirty --no-warn-dirty -c cabal update
-            nix develop --allow-dirty --no-warn-dirty -c cabal exec cabal test spec --enable-tests --test-show-details=always --test-options="--xml=test-report.xml"
+            nix develop --allow-dirty --no-warn-dirty -c cabal run spec -- --xml=test-report.xml
             ;;
         esac
         set +ex
@@ -138,11 +139,11 @@ jobs:
         BUILD: ${{ matrix.plan.build }}
 
     - uses: phoenix-actions/test-reporting@v8
-      if: matrix.os == 'ubuntu-latest' && (success() || failure ())
       with:
-        name: Tests-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}
+        name: Tests-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.ghc }}
         path: '**/test-report.xml'
         reporter: java-junit
+      if: matrix.os == 'ubuntu-latest' && (success() || failure ())
 
     - name: Generate coverage report 
       uses: 8c6794b6/hpc-codecov-action@v2
