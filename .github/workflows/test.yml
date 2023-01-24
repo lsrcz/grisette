@@ -19,7 +19,12 @@ jobs:
         - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false, experimental: false, ghc: "8107" }
         - { build: stack, arg: "", ismain: true, experimental: false, ghc: "902" }
         - { build: stack, arg: "--stack-yaml stack-lts-20.3.yaml", ismain: false, experimental: false, ghc: "925" }
-        - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: false, ghc: "943" }
+        - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: true, ghc: "943" }
+        - { build: cabal, arg: "", ismain: true, experimental: false, ghc: "8107" }
+        - { build: cabal, arg: "", ismain: true, experimental: false, ghc: "902" }
+        - { build: cabal, arg: "", ismain: true, experimental: false, ghc: "925" }
+        - { build: cabal, arg: "", ismain: true, experimental: false, ghc: "943" }
+        - { build: cabal, arg: "", ismain: true, experimental: true, ghc: "HEAD" }
         # include:
         #   - os: macOS-latest
         #     cachix-name: grisette-macos
@@ -90,7 +95,9 @@ jobs:
       id: cache
       uses: actions/cache@v3
       with:
-        path: ~/.stack
+        path: |
+          ~/.stack
+          ~/.cabal
         key: stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}-${{ steps.cache_key.outputs.package }}
         restore-keys: |
           stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}
@@ -98,19 +105,19 @@ jobs:
           stack-${{ matrix.os }}-${{ steps.cache_key.outputs.stack }}
           stack-${{ matrix.os }}
 
-    - name: Set up GHC
-      run: |
-        set -ex
-        case "$BUILD" in
-          stack)
-            nix develop --allow-dirty --no-warn-dirty -c stack config set system-ghc --global true
-            nix develop --allow-dirty --no-warn-dirty -c stack setup --no-terminal $ARGS 
-            ;;
-        esac
-        set +ex
-      env:
-        ARGS: ${{ matrix.plan.arg }}
-        BUILD: ${{ matrix.plan.build }}
+    # - name: Set up GHC
+    #   run: |
+    #     set -ex
+    #     case "$BUILD" in
+    #       stack)
+    #         nix develop --allow-dirty --no-warn-dirty -c stack config set system-ghc --global true
+    #         nix develop --allow-dirty --no-warn-dirty -c stack setup --no-terminal $ARGS 
+    #         ;;
+    #     esac
+    #     set +ex
+    #   env:
+    #     ARGS: ${{ matrix.plan.arg }}
+    #     BUILD: ${{ matrix.plan.build }}
 
     - name: Build & Test
       id: test
@@ -119,6 +126,10 @@ jobs:
         case "$BUILD" in
           stack)
             nix develop --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--xml=test-report.xml"
+            ;;
+          cabal)
+            nix develop --allow-dirty --no-warn-dirty -c cabal update
+            nix develop --allow-dirty --no-warn-dirty -c cabal exec cabal test --enable-tests --test-options="--xml=test-report.xml"
             ;;
         esac
         set +ex
