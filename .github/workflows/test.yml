@@ -62,7 +62,7 @@ jobs:
     - name: Cache key
       id: cache_key
       run: |
-        echo ::set-output name=stack::$(shasum ${{ matrix.plan.build.arg }} | awk '{print $1}')
+        echo ::set-output name=stack::$(shasum ${{ matrix.plan.arg }} | awk '{print $1}')
         echo ::set-output name=package::$(shasum package.yaml | awk '{print $1}')
 
     # - run: echo ${{ matrix.cachix-token-name }}
