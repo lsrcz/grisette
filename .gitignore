@@ -24,3 +24,4 @@ cabal.project.local~
 .vscode/
 .envrc
 .direnv/
+*.o-boot
