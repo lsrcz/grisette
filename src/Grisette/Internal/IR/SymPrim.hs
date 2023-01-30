@@ -9,8 +9,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.IR.SymPrim
-  ( FunArg (..),
-    Sym (..),
+  ( -- Sym (..),
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),

@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -291,40 +292,44 @@ instance (KnownNat n, 1 <= n) => Ord (IntN n) where
       as = testBit a (n - 1)
       bs = testBit b (n - 1)
 
-instance
-  (KnownNat n, 1 <= n, KnownNat m, 1 <= m, KnownNat w, 1 <= w, w ~ (n + m)) =>
-  BVConcat (WordN n) (WordN m) (WordN w)
-  where
-  bvconcat (WordN a) (WordN b) = WordN ((a `shiftL` fromIntegral (natVal (Proxy :: Proxy m))) .|. b)
-
-instance
-  (KnownNat n, 1 <= n, KnownNat m, 1 <= m, KnownNat w, 1 <= w, w ~ (n + m)) =>
-  BVConcat (IntN n) (IntN m) (IntN w)
-  where
-  bvconcat (IntN a) (IntN b) = IntN $ unWordN $ bvconcat (WordN a :: WordN n) (WordN b :: WordN m)
-
-instance (KnownNat n, 1 <= n, KnownNat r, n <= r) => BVExtend (WordN n) r (WordN r) where
-  bvzeroExtend _ (WordN v) = WordN v
-  bvsignExtend pr (WordN v) = if s then WordN (maxi - noi + v) else WordN v
+instance SizedBV WordN where
+  concatSizedBV :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => WordN l -> WordN r -> WordN (l + r)
+  concatSizedBV (WordN a) (WordN b) = WordN ((a `shiftL` fromIntegral (natVal (Proxy :: Proxy r))) .|. b)
+  zextSizedBV _ (WordN v) = WordN v
+  sextSizedBV :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> WordN l -> WordN r
+  sextSizedBV pr (WordN v) = if s then WordN (maxi - noi + v) else WordN v
     where
       r = fromIntegral $ natVal pr
-      n = fromIntegral $ natVal (Proxy :: Proxy n)
-      s = testBit v (n - 1)
+      l = fromIntegral $ natVal (Proxy :: Proxy l)
+      s = testBit v (l - 1)
       maxi = (1 :: Integer) `shiftL` r
-      noi = (1 :: Integer) `shiftL` n
-  bvextend = bvzeroExtend
-
-instance (KnownNat n, 1 <= n, KnownNat r, n <= r) => BVExtend (IntN n) r (IntN r) where
-  bvzeroExtend _ (IntN v) = IntN v
-  bvsignExtend pr (IntN v) = IntN $ unWordN $ bvsignExtend pr (WordN v :: WordN n)
-  bvextend = bvsignExtend
-
-instance (KnownNat n, 1 <= n, KnownNat ix, KnownNat w, 1 <= w, ix + w <= n) => BVSelect (WordN n) ix w (WordN w) where
-  bvselect pix pw (WordN v) = WordN ((v `shiftR` ix) .&. mask)
+      noi = (1 :: Integer) `shiftL` l
+  extSizedBV = zextSizedBV
+  selectSizedBV ::
+    forall n ix w proxy.
+    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, 0 <= ix, ix + w <= n) =>
+    proxy ix ->
+    proxy w ->
+    WordN n ->
+    WordN w
+  selectSizedBV pix pw (WordN v) = WordN ((v `shiftR` ix) .&. mask)
     where
       ix = fromIntegral $ natVal pix
       w = fromIntegral $ natVal pw
       mask = (1 `shiftL` w) - 1
 
-instance (KnownNat n, 1 <= n, KnownNat ix, KnownNat w, 1 <= w, ix + w <= n) => BVSelect (IntN n) ix w (IntN w) where
-  bvselect pix pw (IntN v) = IntN $ unWordN $ bvselect pix pw (WordN v :: WordN n)
+instance SizedBV IntN where
+  concatSizedBV :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => IntN l -> IntN r -> IntN (l + r)
+  concatSizedBV (IntN a) (IntN b) = IntN $ unWordN $ concatSizedBV (WordN a :: WordN l) (WordN b :: WordN r)
+  zextSizedBV _ (IntN v) = IntN v
+  sextSizedBV :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> IntN l -> IntN r
+  sextSizedBV pr (IntN v) = IntN $ unWordN $ sextSizedBV pr (WordN v :: WordN l)
+  extSizedBV = sextSizedBV
+  selectSizedBV ::
+    forall n ix w proxy.
+    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, 0 <= ix, ix + w <= n) =>
+    proxy ix ->
+    proxy w ->
+    IntN n ->
+    IntN w
+  selectSizedBV pix pw (IntN v) = IntN $ unWordN $ selectSizedBV pix pw (WordN v :: WordN n)

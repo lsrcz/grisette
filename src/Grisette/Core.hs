@@ -176,10 +176,8 @@ module Grisette.Core
     SEq (..),
     SymBoolOp,
     SOrd (..),
-    BVConcat (..),
-    BVExtend (..),
-    BVSelect (..),
-    bvextract,
+    SizedBV (..),
+    extractSizedBV,
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),
@@ -973,8 +971,9 @@ module Grisette.Core
     evaluateSymToCon,
 
     -- ** Substitution of a symbol
-    SubstituteSym (..),
-    SubstituteSym' (..),
+
+    -- SubstituteSym (..),
+    -- SubstituteSym' (..),
 
     -- * Type Class Derivation
     Default (..),

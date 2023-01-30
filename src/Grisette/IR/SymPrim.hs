@@ -20,23 +20,24 @@ module Grisette.IR.SymPrim
 
     -- ** Symbolic types
     SupportedPrim,
-    Sym,
+    SymRep (..),
+    ConRep (..),
+    LinkedRep,
+    SymBool (..),
+    SymInteger (..),
+    SymWordN (..),
+    SymIntN (..),
+    type (=~>) (..),
+    type (-~>) (..),
     TypedSymbol (..),
     symSize,
     symsSize,
-
-    -- ** Symbolic type synonyms
-    SymBool,
-    SymInteger,
-    SymIntN,
-    SymWordN,
-    type (=~>),
-    type (-~>),
 
     -- ** Symbolic constant sets and models
     SymbolSet (..),
     Model (..),
     ModelValuePair (..),
+    ModelSymPair (..),
   )
 where
 

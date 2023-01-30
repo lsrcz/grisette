@@ -59,12 +59,12 @@ class SubstituteSym a where
   --
   -- >>> substituteSym "a" ("c" &&~ "d" :: Sym Bool) ["a" &&~ "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
-  substituteSym :: TypedSymbol b -> Sym b -> a -> a
+  substituteSym :: SymRep b => TypedSymbol b -> SymType b -> a -> a
 
 -- | Auxiliary class for 'SubstituteSym' instance derivation
 class SubstituteSym' a where
   -- | Auxiliary function for 'substituteSym' derivation
-  substituteSym' :: TypedSymbol b -> Sym b -> a c -> a c
+  substituteSym' :: SymRep b => TypedSymbol b -> SymType b -> a c -> a c
 
 instance
   ( Generic a,
@@ -253,9 +253,12 @@ instance SubstituteSym a => SubstituteSym (Identity a) where
 instance SubstituteSym (m a) => SubstituteSym (IdentityT m a) where
   substituteSym sym val (IdentityT a) = IdentityT $ substituteSym sym val a
 
+{-
+
 instance SubstituteSym (Sym a) where
   substituteSym sym (Sym val) (Sym x) =
     introSupportedPrimConstraint val $
       introSupportedPrimConstraint x $
         Sym $
           substTerm sym val x
+-}

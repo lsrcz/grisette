@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
@@ -35,8 +36,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     someTypedSymbol,
     Term (..),
     UTerm (..),
-    FunArg (..),
     type (-->) (..),
+    buildGeneralFun,
   )
 where
 
@@ -308,42 +309,48 @@ data Term t where
   BVConcatTerm ::
     ( SupportedPrim (bv a),
       SupportedPrim (bv b),
-      SupportedPrim (bv c),
+      SupportedPrim (bv (a + b)),
       KnownNat a,
       KnownNat b,
-      KnownNat c,
-      BVConcat (bv a) (bv b) (bv c)
+      1 <= a,
+      1 <= b,
+      SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
     !(Term (bv a)) ->
     !(Term (bv b)) ->
-    Term (bv c)
+    Term (bv (a + b))
   BVSelectTerm ::
-    ( SupportedPrim (bv a),
+    ( SupportedPrim (bv n),
       SupportedPrim (bv w),
-      KnownNat a,
-      KnownNat w,
+      KnownNat n,
       KnownNat ix,
-      BVSelect (bv a) ix w (bv w)
+      KnownNat w,
+      1 <= n,
+      1 <= w,
+      0 <= ix,
+      ix + w <= n,
+      SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
     !(TypeRep ix) ->
     !(TypeRep w) ->
-    !(Term (bv a)) ->
+    !(Term (bv n)) ->
     Term (bv w)
   BVExtendTerm ::
-    ( SupportedPrim (bv a),
-      SupportedPrim (bv b),
-      KnownNat a,
-      KnownNat b,
-      KnownNat n,
-      BVExtend (bv a) n (bv b)
+    ( SupportedPrim (bv l),
+      SupportedPrim (bv r),
+      KnownNat l,
+      KnownNat r,
+      1 <= l,
+      l <= r,
+      SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
     !Bool ->
-    !(TypeRep n) ->
-    !(Term (bv a)) ->
-    Term (bv b)
+    !(TypeRep r) ->
+    !(Term (bv l)) ->
+    Term (bv r)
   TabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
@@ -517,39 +524,45 @@ data UTerm t where
   UBVConcatTerm ::
     ( SupportedPrim (bv a),
       SupportedPrim (bv b),
-      SupportedPrim (bv c),
+      SupportedPrim (bv (a + b)),
       KnownNat a,
       KnownNat b,
-      KnownNat c,
-      BVConcat (bv a) (bv b) (bv c)
+      1 <= a,
+      1 <= b,
+      SizedBV bv
     ) =>
     !(Term (bv a)) ->
     !(Term (bv b)) ->
-    UTerm (bv c)
+    UTerm (bv (a + b))
   UBVSelectTerm ::
-    ( SupportedPrim (bv a),
+    ( SupportedPrim (bv n),
       SupportedPrim (bv w),
-      KnownNat a,
+      KnownNat n,
       KnownNat ix,
       KnownNat w,
-      BVSelect (bv a) ix w (bv w)
+      1 <= n,
+      1 <= w,
+      0 <= ix,
+      ix + w <= n,
+      SizedBV bv
     ) =>
     !(TypeRep ix) ->
     !(TypeRep w) ->
-    !(Term (bv a)) ->
+    !(Term (bv n)) ->
     UTerm (bv w)
   UBVExtendTerm ::
-    ( SupportedPrim (bv a),
-      SupportedPrim (bv b),
-      KnownNat a,
-      KnownNat b,
-      KnownNat n,
-      BVExtend (bv a) n (bv b)
+    ( SupportedPrim (bv l),
+      SupportedPrim (bv r),
+      KnownNat l,
+      KnownNat r,
+      1 <= l,
+      l <= r,
+      SizedBV bv
     ) =>
     !Bool ->
-    !(TypeRep n) ->
-    !(Term (bv a)) ->
-    UTerm (bv b)
+    !(TypeRep r) ->
+    !(Term (bv l)) ->
+    UTerm (bv r)
   UTabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
@@ -618,16 +631,16 @@ instance (SupportedPrim t) => Interned (Term t) where
     DRotateBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
     DBVConcatTerm :: TypeRep bv1 -> TypeRep bv2 -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DBVSelectTerm ::
-      forall bv (a :: Nat) (w :: Nat) (ix :: Nat).
+      forall bv (n :: Nat) (w :: Nat) (ix :: Nat).
       !(TypeRep ix) ->
-      !(TypeRep (bv a), Id) ->
+      !(TypeRep (bv n), Id) ->
       Description (Term (bv w))
     DBVExtendTerm ::
-      forall bv (a :: Nat) (b :: Nat) (n :: Nat).
+      forall bv (l :: Nat) (r :: Nat).
       !Bool ->
-      !(TypeRep n) ->
-      {-# UNPACK #-} !(TypeRep (bv a), Id) ->
-      Description (Term (bv b))
+      !(TypeRep r) ->
+      {-# UNPACK #-} !(TypeRep (bv l), Id) ->
+      Description (Term (bv r))
     DTabularFunApplyTerm ::
       {-# UNPACK #-} !(TypeRep (a =-> b), Id) ->
       {-# UNPACK #-} !(TypeRep a, Id) ->
@@ -844,8 +857,6 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   pformatCon = show
   defaultValue = 0
 
-data FunArg = FunArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
-
 -- | General symbolic function type. Use the '#' operator to apply the function.
 -- Note that this function should be applied to symbolic values only. It is by
 -- itself already a symbolic value, but can be considered partially concrete
@@ -864,7 +875,28 @@ data FunArg = FunArg deriving (Show, Eq, Generic, Ord, Lift, Hashable, NFData)
 data (-->) a b where
   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
+{-
+pattern GeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+pattern GeneralFun arg v <- GeneralFun arg v
+
+{-# COMPLETE GeneralFun #-}
+-}
+
 infixr 0 -->
+
+buildGeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+buildGeneralFun arg v = GeneralFun newarg (substTerm arg (symTerm newarg) v)
+  where
+    newarg = WithInfo arg ARG
+
+data ARG = ARG
+  deriving (Eq, Ord, Lift, Show, Generic)
+
+instance NFData ARG where
+  rnf ARG = ()
+
+instance Hashable ARG where
+  hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
 
 instance Eq (a --> b) where
   GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
@@ -883,4 +915,4 @@ instance NFData (a --> b) where
 
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = GeneralFun (WithInfo (SimpleSymbol "a") FunArg) (conTerm defaultValue)
+  defaultValue = buildGeneralFun (SimpleSymbol "a") (conTerm defaultValue)

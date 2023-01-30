@@ -935,5 +935,11 @@ deriving via
 
 deriving via (Default1 Monoid.Sum) instance Mergeable1 Monoid.Sum
 
-instance (SupportedPrim a) => Mergeable (Sym a) where
+#define MERGEABLE_SIMPLE(symtype) \
+instance Mergeable symtype where \
   rootStrategy = SimpleStrategy ites
+
+#if 1
+MERGEABLE_SIMPLE(SymBool)
+MERGEABLE_SIMPLE(SymInteger)
+#endif

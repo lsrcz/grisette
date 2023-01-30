@@ -21,8 +21,8 @@ import Test.Tasty.QuickCheck
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
-  r <- solve config (Sym $ counterExample a)
-  rs <- solve config (Sym $ same a)
+  r <- solve config (SymBool $ counterExample a)
+  rs <- solve config (SymBool $ same a)
   case (r, rs) of
     (Left _, Right _) -> do
       return ()

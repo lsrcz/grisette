@@ -366,45 +366,45 @@ bvTests =
         ],
       testGroup
         "WordN bvops"
-        [ testProperty "bvconcat" $ \(x :: Integer) (y :: Integer) ->
+        [ testProperty "concatSizedBV" $ \(x :: Integer) (y :: Integer) ->
             ioProperty $
-              bvconcat (fromInteger x :: WordN 5) (fromInteger y :: WordN 7) @=? fromInteger (x * 128 + y `mod` 128),
-          testProperty "bvzeroExtend" $ ioProperty . \(x :: Integer) -> bvzeroExtend (Proxy :: Proxy 12) (fromInteger x :: WordN 7) @=? fromInteger (x `mod` 128),
-          testCase "bvsignExtend" $ do
-            bvsignExtend (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
-            bvsignExtend (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
-            bvsignExtend (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
-            bvsignExtend (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
-            bvsignExtend (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
-          testProperty "bvextend is bvzeroExtend" $
+              concatSizedBV (fromInteger x :: WordN 5) (fromInteger y :: WordN 7) @=? fromInteger (x * 128 + y `mod` 128),
+          testProperty "zextSizedBV" $ ioProperty . \(x :: Integer) -> zextSizedBV (Proxy :: Proxy 12) (fromInteger x :: WordN 7) @=? fromInteger (x `mod` 128),
+          testCase "sextSizedBV" $ do
+            sextSizedBV (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
+            sextSizedBV (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
+            sextSizedBV (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
+            sextSizedBV (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
+            sextSizedBV (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
+          testProperty "extSizedBV is zextSizedBV" $
             ioProperty . \(x :: Integer) ->
-              bvextend (Proxy :: Proxy 12) (fromInteger x :: WordN 8) @=? bvzeroExtend (Proxy :: Proxy 12) (fromInteger x :: WordN 8),
-          testCase "bvselect" $ do
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: WordN 8) @=? 0b11
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: WordN 8) @=? 0b111
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: WordN 8) @=? 0b101
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: WordN 8) @=? 0b10
+              extSizedBV (Proxy :: Proxy 12) (fromInteger x :: WordN 8) @=? zextSizedBV (Proxy :: Proxy 12) (fromInteger x :: WordN 8),
+          testCase "selectSizedBV" $ do
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: WordN 8) @=? 0b11
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: WordN 8) @=? 0b111
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: WordN 8) @=? 0b101
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: WordN 8) @=? 0b10
         ],
       testGroup
         "IntN bvops"
-        [ testProperty "bvconcat" $ \(x :: Integer) (y :: Integer) ->
+        [ testProperty "concatSizedBV" $ \(x :: Integer) (y :: Integer) ->
             ioProperty $
-              bvconcat (fromInteger x :: IntN 5) (fromInteger y :: IntN 7) @=? fromInteger (x * 128 + y `mod` 128),
-          testProperty "bvzeroExtend" $ ioProperty . \(x :: Integer) -> bvzeroExtend (Proxy :: Proxy 12) (fromInteger x :: IntN 7) @=? fromInteger (x `mod` 128),
-          testCase "bvsignExtend" $ do
-            bvsignExtend (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
-            bvsignExtend (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
-            bvsignExtend (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
-            bvsignExtend (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
-            bvsignExtend (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
-          testProperty "bvextend is bvsignExtend" $
+              concatSizedBV (fromInteger x :: IntN 5) (fromInteger y :: IntN 7) @=? fromInteger (x * 128 + y `mod` 128),
+          testProperty "zextSizedBV" $ ioProperty . \(x :: Integer) -> zextSizedBV (Proxy :: Proxy 12) (fromInteger x :: IntN 7) @=? fromInteger (x `mod` 128),
+          testCase "sextSizedBV" $ do
+            sextSizedBV (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
+            sextSizedBV (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
+            sextSizedBV (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
+            sextSizedBV (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
+            sextSizedBV (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
+          testProperty "extSizedBV is sextSizedBV" $
             ioProperty . \(x :: Integer) ->
-              bvextend (Proxy :: Proxy 12) (fromInteger x :: IntN 8) @=? bvsignExtend (Proxy :: Proxy 12) (fromInteger x :: IntN 8),
-          testCase "bvselect" $ do
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: IntN 8) @=? 0b11
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: IntN 8) @=? 0b111
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: IntN 8) @=? 0b101
-            bvselect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: IntN 8) @=? 0b10
+              extSizedBV (Proxy :: Proxy 12) (fromInteger x :: IntN 8) @=? sextSizedBV (Proxy :: Proxy 12) (fromInteger x :: IntN 8),
+          testCase "selectSizedBV" $ do
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: IntN 8) @=? 0b11
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: IntN 8) @=? 0b111
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: IntN 8) @=? 0b101
+            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: IntN 8) @=? 0b10
         ],
       testGroup
         "Regression"

@@ -130,6 +130,9 @@ class
   -- | Check if the model is empty
   isEmptyModel :: model -> Bool
 
+  -- | Check if the model contains the given symbol
+  modelContains :: typedSymbol a -> model -> Bool
+
   -- | Extract the assigned value for a given symbolic constant
   valueOf :: typedSymbol t -> model -> Maybe t
 
@@ -139,6 +142,9 @@ class
   -- | Returns a model that removed all the assignments for the symbolic
   -- constants in the set
   exceptFor :: symbolSet -> model -> model
+
+  -- | Returns a model that removed the assignments for the symbolic constants
+  exceptFor' :: typedSymbol t -> model -> model
 
   -- | Returns a model that only keeps the assignments for the symbolic
   -- constants in the set
@@ -156,7 +162,7 @@ class
   exact s = restrictTo s . extendTo s
 
 -- | A type class for building a model manually from a model representation
-class ModelOps model symbolSet typedSymbol => ModelRep rep model symbolSet (typedSymbol :: * -> *) where
+class ModelRep rep model | rep -> model where
   -- | Build a model
   --
   -- >>> let aBool = "a" :: TypedSymbol Bool

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
@@ -771,5 +772,11 @@ onUnion4 f ua ub uc ud = simpleMerge $ f <$> ua <*> ub <*> uc <*> ud
 
 infixl 9 #~
 
-instance (SupportedPrim a) => SimpleMergeable (Sym a) where
+#define SIMPLE_MERGEABLE_SIMPLE(symtype) \
+instance SimpleMergeable symtype where \
   mrgIte = ites
+
+#if 1
+SIMPLE_MERGEABLE_SIMPLE(SymBool)
+SIMPLE_MERGEABLE_SIMPLE(SymInteger)
+#endif

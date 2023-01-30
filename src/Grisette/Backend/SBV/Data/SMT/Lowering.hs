@@ -49,6 +49,7 @@ import {-# SOURCE #-} Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.IR.SymPrim.Data.BV
+import Grisette.IR.SymPrim.Data.Parameterized
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -58,28 +59,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.TabularFun
 import qualified Type.Reflection as R
 import Unsafe.Coerce
-
-newtype NatRepr (n :: Nat) = NatRepr Natural
-
-withKnownNat :: forall n r. NatRepr n -> (KnownNat n => r) -> r
-withKnownNat (NatRepr nVal) v =
-  case someNatVal nVal of
-    SomeNat (Proxy :: Proxy n') ->
-      case unsafeAxiom :: n :~: n' of
-        Refl -> v
-
-data LeqProof (m :: Nat) (n :: Nat) where
-  LeqProof :: m <= n => LeqProof m n
-
--- | Assert a proof of equality between two types.
--- This is unsafe if used improperly, so use this with caution!
-unsafeAxiom :: forall a b. a :~: b
-unsafeAxiom = unsafeCoerce (Refl @a)
-{-# NOINLINE unsafeAxiom #-} -- Note [Mark unsafe axioms as NOINLINE]
-
-unsafeLeqProof :: forall m n. LeqProof m n
-unsafeLeqProof = unsafeCoerce (LeqProof @0 @0)
-{-# NOINLINE unsafeLeqProof #-} -- Note [Mark unsafe axioms as NOINLINE]
 
 cachedResult ::
   forall integerBitWidth a.
@@ -742,18 +721,6 @@ lowerSinglePrimImpl config t@(ModIntegerTerm _ arg1 arg2) m =
     _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
 lowerSinglePrimImpl _ _ _ = error "Should never happen"
 
-unsafeMkNatRepr :: Int -> NatRepr w
-unsafeMkNatRepr x = NatRepr (fromInteger $ toInteger x)
-
-unsafeWithNonZeroKnownNat :: forall w r. Int -> ((KnownNat w, 1 <= w) => r) -> r
-unsafeWithNonZeroKnownNat i r
-  | i <= 0 = error "Not an nonzero natural number"
-  | otherwise = withKnownNat @w (unsafeMkNatRepr i) $ unsafeBVIsNonZero r
-  where
-    unsafeBVIsNonZero :: ((1 <= w) => r) -> r
-    unsafeBVIsNonZero r1 = case unsafeAxiom :: w :~: 1 of
-      Refl -> r1
-
 bvIsNonZeroFromGEq1 :: forall w r. (1 <= w) => ((SBV.BVIsNonZero w) => r) -> r
 bvIsNonZeroFromGEq1 r1 = case unsafeAxiom :: w :~: 1 of
   Refl -> r1
@@ -826,35 +793,35 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     gougfuncResolve idx ta1 ta2 (l, s) =
       case ta2 of
         GFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2) ->
-          let sym = WithInfo (IndexedSymbol "arg" idx) FunArg
+          let sym = IndexedSymbol "arg" idx
               funs = second (\r -> gougfuncResolve (idx + 1) ta2' tr2' (r, s)) <$> partition ta1 l
               def = gougfuncResolve (idx + 1) ta2' tr2' ([], s)
               body =
                 foldl'
                   ( \acc (v, f) ->
                       pevalITETerm
-                        (pevalEqvTerm (iinfosymTerm "arg" idx FunArg) (conTerm v))
+                        (pevalEqvTerm (symTerm sym) (conTerm v))
                         (conTerm f)
                         acc
                   )
                   (conTerm def)
                   funs
-           in GeneralFun sym body
+           in buildGeneralFun sym body
         _ ->
-          let sym = WithInfo (IndexedSymbol "arg" idx) FunArg
+          let sym = IndexedSymbol "arg" idx
               vs = bimap (resolveSingle ta1 . head) (resolveSingle ta2) <$> l
               def = resolveSingle ta2 s
               body =
                 foldl'
                   ( \acc (v, a) ->
                       pevalITETerm
-                        (pevalEqvTerm (iinfosymTerm "arg" idx FunArg) (conTerm v))
+                        (pevalEqvTerm (symTerm sym) (conTerm v))
                         (conTerm a)
                         acc
                   )
                   (conTerm def)
                   vs
-           in GeneralFun sym body
+           in buildGeneralFun sym body
     partition :: R.TypeRep a -> [([SBVI.CV], SBVI.CV)] -> [(a, [([SBVI.CV], SBVI.CV)])]
     partition t = case (R.eqTypeRep t (R.typeRep @Bool), R.eqTypeRep t (R.typeRep @Integer)) of
       (Just R.HRefl, _) -> partitionWithOrd . resolveFirst t
