@@ -1,7 +1,41 @@
+{-
+Part of the code in this file comes from the parameterized-utils package:
+
+Copyright (c) 2013-2022 Galois Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+
+  * Neither the name of Galois, Inc. nor the names of its contributors
+    may be used to endorse or promote products derived from this
+    software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,11 +44,16 @@
 
 module Grisette.IR.SymPrim.Data.Parameterized
   ( NatRepr (..),
+    natRepr,
+    addNat,
+    subNat,
+    divNat,
     withKnownNat,
     LeqProof (..),
     unsafeAxiom,
     unsafeLeqProof,
     unsafeMkNatRepr,
+    unsafeWithKnownNat,
     unsafeWithNonZeroKnownNat,
     leqAddPos,
     knownAdd,
@@ -29,6 +68,18 @@ import GHC.TypeNats
 import Unsafe.Coerce
 
 newtype NatRepr (n :: Nat) = NatRepr Natural
+
+natRepr :: forall n. KnownNat n => NatRepr n
+natRepr = NatRepr (natVal (Proxy @n))
+
+addNat :: NatRepr m -> NatRepr n -> NatRepr (m + n)
+addNat (NatRepr m) (NatRepr n) = NatRepr (m + n)
+
+subNat :: n <= m => NatRepr m -> NatRepr n -> NatRepr (m - n)
+subNat (NatRepr m) (NatRepr n) = NatRepr (m - n)
+
+divNat :: 1 <= n => NatRepr m -> NatRepr n -> NatRepr (Div m n)
+divNat (NatRepr m) (NatRepr n) = NatRepr (m `div` n)
 
 data KnownProof (n :: Nat) where
   KnownProof :: KnownNat n => KnownProof n
@@ -60,10 +111,10 @@ unsafeLeqProof :: forall m n. LeqProof m n
 unsafeLeqProof = unsafeCoerce (LeqProof @0 @0)
 {-# NOINLINE unsafeLeqProof #-} -- Note [Mark unsafe axioms as NOINLINE]
 
-unsafeMkNatRepr :: Int -> NatRepr w
+unsafeMkNatRepr :: Natural -> NatRepr w
 unsafeMkNatRepr x = NatRepr (fromInteger $ toInteger x)
 
-unsafeWithNonZeroKnownNat :: forall w r. Int -> ((KnownNat w, 1 <= w) => r) -> r
+unsafeWithNonZeroKnownNat :: forall w r. Natural -> ((KnownNat w, 1 <= w) => r) -> r
 unsafeWithNonZeroKnownNat i r
   | i <= 0 = error "Not an nonzero natural number"
   | otherwise = withKnownNat @w (unsafeMkNatRepr i) $ unsafeBVIsNonZero r
@@ -71,6 +122,9 @@ unsafeWithNonZeroKnownNat i r
     unsafeBVIsNonZero :: ((1 <= w) => r) -> r
     unsafeBVIsNonZero r1 = case unsafeAxiom :: w :~: 1 of
       Refl -> r1
+
+unsafeWithKnownNat :: forall p w r. p w -> Natural -> (KnownNat w => r) -> r
+unsafeWithKnownNat _ i = withKnownNat @w (unsafeMkNatRepr i)
 
 leqAddPos :: (1 <= m, 1 <= n) => p m -> q n -> LeqProof 1 (m + n)
 leqAddPos _ _ = unsafeLeqProof

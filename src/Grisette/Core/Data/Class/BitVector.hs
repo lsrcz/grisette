@@ -19,6 +19,13 @@
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.BitVector
   ( -- * Bit vector operations
+    BV (..),
+    zextBV',
+    sextBV',
+    extBV',
+    selectBV',
+    extractBV,
+    extractBV',
     SizedBV (..),
     extractSizedBV,
   )
@@ -26,6 +33,7 @@ where
 
 import Data.Proxy
 import GHC.TypeNats
+import Grisette.IR.SymPrim.Data.Parameterized
 
 -- $setup
 -- >>> import Grisette.Core
@@ -35,6 +43,41 @@ import GHC.TypeNats
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
+
+class BV bv where
+  concatBV :: bv -> bv -> bv
+  zextBV :: forall p l. KnownNat l => p l -> bv -> bv
+  sextBV :: forall p l. KnownNat l => p l -> bv -> bv
+  extBV :: forall p l. KnownNat l => p l -> bv -> bv
+  selectBV :: forall p l q r. (KnownNat l, KnownNat r) => p l -> q r -> bv -> bv
+
+zextBV' :: forall l bv. BV bv => NatRepr l -> bv -> bv
+zextBV' p@(_ :: NatRepr l) = withKnownNat p $ zextBV (Proxy @l)
+{-# INLINE zextBV' #-}
+
+sextBV' :: forall l bv. BV bv => NatRepr l -> bv -> bv
+sextBV' p@(_ :: NatRepr l) = withKnownNat p $ sextBV (Proxy @l)
+{-# INLINE sextBV' #-}
+
+extBV' :: forall l bv. BV bv => NatRepr l -> bv -> bv
+extBV' p@(_ :: NatRepr l) = withKnownNat p $ sextBV (Proxy @l)
+{-# INLINE extBV' #-}
+
+selectBV' :: forall l r bv. BV bv => NatRepr l -> NatRepr r -> bv -> bv
+selectBV' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ selectBV p q
+{-# INLINE selectBV' #-}
+
+extractBV ::
+  forall p (i :: Nat) q (j :: Nat) bv. (BV bv, KnownNat i, KnownNat j) => p i -> q j -> bv -> bv 
+extractBV _ _ = 
+  withKnownNat (unsafeMkNatRepr @(i - j + 1) (fromIntegral (natVal (Proxy @i)) - fromIntegral (natVal (Proxy @j)) + 1)) $
+    selectBV (Proxy @j) (Proxy @(i - j + 1))
+{-# INLINE extractBV #-}
+
+extractBV' ::
+  forall (i :: Nat) (j :: Nat) bv. BV bv => NatRepr i -> NatRepr j -> bv -> bv 
+extractBV' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ extractBV p q
+{-# INLINE extractBV' #-}
 
 -- | Sized bit vector operations. Including bitwise concatenation ('concatSizedBV'),
 -- extension ('zextSizedBV', 'sextSizedBV', 'extSizedBV'), and selection

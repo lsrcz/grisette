@@ -27,6 +27,8 @@ module Grisette.IR.SymPrim
     SymInteger (..),
     SymWordN (..),
     SymIntN (..),
+    SomeSymWordN (..),
+    SomeSymIntN (..),
     type (=~>) (..),
     type (-~>) (..),
     TypedSymbol (..),

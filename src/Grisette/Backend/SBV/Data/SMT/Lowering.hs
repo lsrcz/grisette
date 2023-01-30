@@ -749,7 +749,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
           R.App a (n :: R.TypeRep w) ->
             case R.eqTypeRep (R.typeRepKind n) (R.typeRep @Nat) of
               Just R.HRefl ->
-                unsafeWithNonZeroKnownNat @w bitWidth $
+                unsafeWithNonZeroKnownNat @w (fromIntegral bitWidth) $
                   case (R.eqTypeRep a (R.typeRep @IntN), R.eqTypeRep a (R.typeRep @WordN)) of
                     (Just R.HRefl, _) ->
                       fromInteger i
