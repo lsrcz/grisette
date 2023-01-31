@@ -53,7 +53,8 @@ module Grisette.IR.SymPrim.Data.Parameterized
     unsafeLeqProof,
     unsafeMkNatRepr,
     unsafeWithKnownNat,
-    unsafeWithNonZeroKnownNat,
+    -- unsafeWithNonZeroKnownNat,
+    unsafeKnownNat,
     leqAddPos,
     knownAdd,
     KnownProof (..),
@@ -104,23 +105,15 @@ data LeqProof (m :: Nat) (n :: Nat) where
 -- This is unsafe if used improperly, so use this with caution!
 unsafeAxiom :: forall a b. a :~: b
 unsafeAxiom = unsafeCoerce (Refl @a)
-{-# NOINLINE unsafeAxiom #-} -- Note [Mark unsafe axioms as NOINLINE]
 
 unsafeLeqProof :: forall m n. LeqProof m n
 unsafeLeqProof = unsafeCoerce (LeqProof @0 @0)
-{-# NOINLINE unsafeLeqProof #-} -- Note [Mark unsafe axioms as NOINLINE]
 
 unsafeMkNatRepr :: Natural -> NatRepr w
 unsafeMkNatRepr x = NatRepr (fromInteger $ toInteger x)
 
-unsafeWithNonZeroKnownNat :: forall w r. Natural -> ((KnownNat w, 1 <= w) => r) -> r
-unsafeWithNonZeroKnownNat i r
-  | i <= 0 = error "Not an nonzero natural number"
-  | otherwise = withKnownNat @w (unsafeMkNatRepr i) $ unsafeBVIsNonZero r
-  where
-    unsafeBVIsNonZero :: ((1 <= w) => r) -> r
-    unsafeBVIsNonZero r1 = case unsafeAxiom :: w :~: 1 of
-      Refl -> r1
+unsafeKnownNat :: Natural -> KnownProof n
+unsafeKnownNat nVal = reprIsKnown (unsafeMkNatRepr nVal)
 
 unsafeWithKnownNat :: forall p w r. p w -> Natural -> (KnownNat w => r) -> r
 unsafeWithKnownNat _ i = withKnownNat @w (unsafeMkNatRepr i)

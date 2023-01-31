@@ -749,12 +749,13 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
           R.App a (n :: R.TypeRep w) ->
             case R.eqTypeRep (R.typeRepKind n) (R.typeRep @Nat) of
               Just R.HRefl ->
-                unsafeWithNonZeroKnownNat @w (fromIntegral bitWidth) $
-                  case (R.eqTypeRep a (R.typeRep @IntN), R.eqTypeRep a (R.typeRep @WordN)) of
-                    (Just R.HRefl, _) ->
-                      fromInteger i
-                    (_, Just R.HRefl) -> fromInteger i
-                    _ -> error "Bad type"
+                case (unsafeKnownNat @w (fromIntegral bitWidth), unsafeLeqProof @1 @w) of
+                  (KnownProof, LeqProof) ->
+                    case (R.eqTypeRep a (R.typeRep @IntN), R.eqTypeRep a (R.typeRep @WordN)) of
+                      (Just R.HRefl, _) ->
+                        fromInteger i
+                      (_, Just R.HRefl) -> fromInteger i
+                      _ -> error "Bad type"
               _ -> error "Bad type"
           _ -> error "Bad type"
     resolveSingle _ _ = error "Unknown cv"
