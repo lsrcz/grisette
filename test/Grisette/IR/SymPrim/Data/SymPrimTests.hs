@@ -79,7 +79,7 @@ symPrimTests =
                   @=? SymInteger (pevalITETerm (ssymTerm "a") (ssymTerm "b") (ssymTerm "c"))
             ],
           testCase "Mergeable" $ do
-            let SimpleStrategy s = rootStrategy :: MergingStrategy (SymInteger)
+            let SimpleStrategy s = rootStrategy :: MergingStrategy SymInteger
             s (ssym "a") (ssym "b") (ssym "c")
               @=? ites (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c"),
           testCase "SimpleMergeable" $ do
@@ -118,11 +118,11 @@ symPrimTests =
                     ]
                 ),
           testCase "GenSym" $ do
-            (genSym () "a" :: UnionM (SymBool)) @=? mrgSingle (isym "a" 0)
+            (genSym () "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple () "a" :: SymBool) @=? isym "a" 0
-            (genSym (ssym "a" :: SymBool) "a" :: UnionM (SymBool)) @=? mrgSingle (isym "a" 0)
+            (genSym (ssym "a" :: SymBool) "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple (ssym "a" :: SymBool) "a" :: SymBool) @=? isym "a" 0
-            (genSym () (nameWithInfo "a" True) :: UnionM (SymBool)) @=? mrgSingle (iinfosym "a" 0 True)
+            (genSym () (nameWithInfo "a" True) :: UnionM SymBool) @=? mrgSingle (iinfosym "a" 0 True)
             (genSymSimple () (nameWithInfo "a" True) :: SymBool) @=? iinfosym "a" 0 True,
           testCase "SEq" $ do
             (ssym "a" :: SymBool) ==~ ssym "b" @=? SymBool (pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
@@ -410,8 +410,8 @@ symPrimTests =
             evaluateSym
               False
               (buildModel ("a" := (1 :: Integer), "b" := (2 :: Integer), "c" := (3 :: Integer)))
-              (con ("a" --> (con $ "b" --> "a" + "b" + "c")) :: Integer -~> Integer --> Integer)
-              @=? (con ("a" --> (con $ "b" --> "a" + "b" + 3) :: Integer --> Integer --> Integer))
+              (con ("a" --> con ("b" --> "a" + "b" + "c")) :: Integer -~> Integer --> Integer)
+              @=? con ("a" --> con ("b" --> "a" + "b" + 3) :: Integer --> Integer --> Integer)
         ],
       testGroup
         "Symbolic size"

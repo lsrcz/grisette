@@ -10,7 +10,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -369,9 +368,9 @@ instance Bits somety where \
   {-# INLINE shift #-}; \
   rotate s i = ur1 (`rotate` i) "rotate" s; \
   {-# INLINE rotate #-}; \
-  zeroBits = error ("zeroBits is not defined for " ++ (show (typeRep (Proxy @somety))) ++ " as no bitwidth is known"); \
+  zeroBits = error ("zeroBits is not defined for " ++ show (typeRep (Proxy @somety)) ++ " as no bitwidth is known"); \
   {-# INLINE zeroBits #-}; \
-  bit = error ("bit is not defined for " ++ (show (typeRep (Proxy @somety))) ++ " as no bitwidth is known"); \
+  bit = error ("bit is not defined for " ++ show (typeRep (Proxy @somety)) ++ " as no bitwidth is known"); \
   {-# INLINE bit #-}; \
   setBit s i = ur1 (`setBit` i) "setBit" s; \
   {-# INLINE setBit #-}; \
@@ -544,8 +543,8 @@ instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
   conView (symtype (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 
-#define SOLVABLE_FUN(conop, symop, symcons) \
-instance (SupportedPrim a, SupportedPrim b) => Solvable (a conop b) (a symop b) where \
+#define SOLVABLE_FUN(symop, conop, symcons) \
+instance (SupportedPrim a, SupportedPrim b) => Solvable (conop a b) (symop a b) where \
   con = symcons . conTerm; \
   ssym = symcons . ssymTerm; \
   isym str i = symcons $ isymTerm str i; \
@@ -559,8 +558,8 @@ SOLVABLE_SIMPLE(Bool, SymBool)
 SOLVABLE_SIMPLE(Integer, SymInteger)
 SOLVABLE_BV(IntN, SymIntN)
 SOLVABLE_BV(WordN, SymWordN)
-SOLVABLE_FUN(=->, =~>, SymTabularFun)
-SOLVABLE_FUN(-->, -~>, SymGeneralFun)
+SOLVABLE_FUN((=~>), (=->), SymTabularFun)
+SOLVABLE_FUN((-~>), (-->), SymGeneralFun)
 #endif
 
 -- ToSym and ToCon
@@ -597,20 +596,20 @@ instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
   toSym = con
 
 #define TO_SYM_FROMCON_FUN(conop, symop) \
-instance (SupportedPrim a, SupportedPrim b) => ToSym (a conop b) (a symop b) where \
+instance (SupportedPrim a, SupportedPrim b) => ToSym (conop a b) (symop a b) where \
   toSym = con
 
 #define TO_SYM_FROMCON_BV_SOME(contype, symtype) \
 instance ToSym contype symtype where \
-  toSym (contype v) = symtype $ (con v)
+  toSym (contype v) = symtype (con v)
 
 #if 1
 TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
 TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
 TO_SYM_FROMCON_BV(IntN, SymIntN)
 TO_SYM_FROMCON_BV(WordN, SymWordN)
-TO_SYM_FROMCON_FUN(=->, =~>)
-TO_SYM_FROMCON_FUN(-->, -~>)
+TO_SYM_FROMCON_FUN((=->), (=~>))
+TO_SYM_FROMCON_FUN((-->), (-~>))
 TO_SYM_FROMCON_BV_SOME(SomeIntN, SomeSymIntN)
 TO_SYM_FROMCON_BV_SOME(SomeWordN, SomeSymWordN)
 #endif
@@ -647,7 +646,7 @@ instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
   toCon = conView
 
 #define TO_CON_FROMSYM_FUN(conop, symop) \
-instance (SupportedPrim a, SupportedPrim b) => ToCon (a symop b) (a conop b) where \
+instance (SupportedPrim a, SupportedPrim b) => ToCon (symop a b) (conop a b) where \
   toCon = conView
 
 #define TO_CON_FROMSYM_BV_SOME(contype, symtype) \
@@ -659,8 +658,8 @@ TO_CON_FROMSYM_SIMPLE(Bool, SymBool)
 TO_CON_FROMSYM_SIMPLE(Integer, SymInteger)
 TO_CON_FROMSYM_BV(IntN, SymIntN)
 TO_CON_FROMSYM_BV(WordN, SymWordN)
-TO_CON_FROMSYM_FUN(=->, =~>)
-TO_CON_FROMSYM_FUN(-->, -~>)
+TO_CON_FROMSYM_FUN((=->), (=~>))
+TO_CON_FROMSYM_FUN((-->), (-~>))
 TO_CON_FROMSYM_BV_SOME(SomeIntN, SomeSymIntN)
 TO_CON_FROMSYM_BV_SOME(SomeWordN, SomeSymWordN)
 #endif

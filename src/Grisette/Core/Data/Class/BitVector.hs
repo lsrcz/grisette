@@ -68,14 +68,14 @@ selectBV' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat 
 {-# INLINE selectBV' #-}
 
 extractBV ::
-  forall p (i :: Nat) q (j :: Nat) bv. (BV bv, KnownNat i, KnownNat j) => p i -> q j -> bv -> bv 
-extractBV _ _ = 
+  forall p (i :: Nat) q (j :: Nat) bv. (BV bv, KnownNat i, KnownNat j) => p i -> q j -> bv -> bv
+extractBV _ _ =
   withKnownNat (unsafeMkNatRepr @(i - j + 1) (fromIntegral (natVal (Proxy @i)) - fromIntegral (natVal (Proxy @j)) + 1)) $
     selectBV (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE extractBV #-}
 
 extractBV' ::
-  forall (i :: Nat) (j :: Nat) bv. BV bv => NatRepr i -> NatRepr j -> bv -> bv 
+  forall (i :: Nat) (j :: Nat) bv. BV bv => NatRepr i -> NatRepr j -> bv -> bv
 extractBV' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ extractBV p q
 {-# INLINE extractBV' #-}
 
