@@ -328,7 +328,6 @@ data Term t where
       KnownNat w,
       1 <= n,
       1 <= w,
-      0 <= ix,
       ix + w <= n,
       SizedBV bv
     ) =>
@@ -542,7 +541,6 @@ data UTerm t where
       KnownNat w,
       1 <= n,
       1 <= w,
-      0 <= ix,
       ix + w <= n,
       SizedBV bv
     ) =>

@@ -47,6 +47,7 @@ module Grisette.IR.SymPrim.Data.Parameterized
     addNat,
     subNat,
     divNat,
+    reprIsKnown,
     withKnownNat,
     LeqProof (..),
     unsafeAxiom,

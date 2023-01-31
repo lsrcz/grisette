@@ -536,7 +536,7 @@ instance SizedBV WordN where
   extSizedBV = zextSizedBV
   selectSizedBV ::
     forall n ix w proxy.
-    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, 0 <= ix, ix + w <= n) =>
+    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     proxy ix ->
     proxy w ->
     WordN n ->
@@ -556,7 +556,7 @@ instance SizedBV IntN where
   extSizedBV = sextSizedBV
   selectSizedBV ::
     forall n ix w proxy.
-    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, 0 <= ix, ix + w <= n) =>
+    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     proxy ix ->
     proxy w ->
     IntN n ->
@@ -589,8 +589,8 @@ instance BV SomeWordN where
     | ix + w > n = error "selectBV: trying to select a bitvector outside the bounds of the input"
     | w == 0 = error "selectBV: trying to select a bitvector of size 0"
     | otherwise =
-        case (unsafeLeqProof @1 @w, unsafeLeqProof @0 @ix, unsafeLeqProof @(ix + w) @n) of
-          (LeqProof, LeqProof, LeqProof) -> SomeWordN $ selectSizedBV (Proxy @ix) (Proxy @w) a
+        case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of
+          (LeqProof, LeqProof) -> SomeWordN $ selectSizedBV (Proxy @ix) (Proxy @w) a
     where
       ix = natVal p
       w = natVal q
@@ -622,8 +622,8 @@ instance BV SomeIntN where
     | ix + w > n = error "selectBV: trying to select a bitvector outside the bounds of the input"
     | w == 0 = error "selectBV: trying to select a bitvector of size 0"
     | otherwise =
-        case (unsafeLeqProof @1 @w, unsafeLeqProof @0 @ix, unsafeLeqProof @(ix + w) @n) of
-          (LeqProof, LeqProof, LeqProof) -> SomeIntN $ selectSizedBV (Proxy @ix) (Proxy @w) a
+        case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of
+          (LeqProof, LeqProof) -> SomeIntN $ selectSizedBV (Proxy @ix) (Proxy @w) a
     where
       ix = natVal p
       w = natVal q

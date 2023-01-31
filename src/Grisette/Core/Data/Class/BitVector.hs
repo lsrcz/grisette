@@ -140,7 +140,7 @@ class SizedBV bv where
   -- >>> selectSizedBV (Proxy @1) (Proxy @3) (con 0b001010 :: SymIntN 6)
   -- 0b101
   selectSizedBV ::
-    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, 0 <= ix, ix + w <= n) =>
+    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     -- | Index to start selecting from
     proxy ix ->
     -- | Desired output width, @0 <= ix@ and @ix + w <= n@ must hold where @n@ is
@@ -157,7 +157,7 @@ class SizedBV bv where
 -- 0b101
 extractSizedBV ::
   forall proxy i j n bv.
-  (SizedBV bv, KnownNat n, KnownNat ((i - j) + 1), KnownNat j, 1 <= n, 1 <= i - j + 1, j + (i - j + 1) <= n) =>
+  (SizedBV bv, KnownNat n, KnownNat i, KnownNat j, 1 <= n, i + 1 <= n, j <= i) =>
   -- | The start position to extract from, @0 <= i < n@ must hold where @n@ is
   -- the size of the output bit vector
   proxy i ->
@@ -166,5 +166,11 @@ extractSizedBV ::
   -- | Bit vector to extract from
   bv n ->
   bv (i - j + 1)
-extractSizedBV _ _ = selectSizedBV (Proxy @j) (Proxy @(i - j + 1))
+extractSizedBV _ _ =
+  case ( reprIsKnown (addNat (subNat (natRepr @i) (natRepr @j)) (natRepr @1)),
+         unsafeLeqProof @(j + (i - j + 1)) @n,
+         unsafeLeqProof @1 @(i - j + 1)
+       ) of
+    (KnownProof, LeqProof, LeqProof) ->
+      selectSizedBV (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE extractSizedBV #-}

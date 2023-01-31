@@ -915,7 +915,7 @@ sextSizedBV _ (symtype v) = \
     LeqProof -> symtype $ pevalBVExtendTerm True (Proxy @r) v
 
 #define BVSELECT_SIZED(symtype) \
-selectSizedBV :: forall n ix w proxy. (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, 0 <= ix, ix + w <= n) => \
+selectSizedBV :: forall n ix w proxy. (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) => \
   proxy ix -> proxy w -> symtype n -> symtype w; \
 selectSizedBV pix pw (symtype v) = symtype $ pevalBVSelectTerm pix pw v
 
@@ -962,8 +962,8 @@ selectBV (p :: p ix) (q :: q w) (somety (a :: origty n)) \
   | natVal p + natVal q > natVal (Proxy @n) = error "selectBV: trying to select a bitvector outside the bounds of the input" \
   | natVal q == 0 = error "selectBV: trying to select a bitvector of size 0" \
   | otherwise = \
-    case (unsafeLeqProof @1 @w, unsafeLeqProof @0 @ix, unsafeLeqProof @(ix + w) @n) of \
-      (LeqProof, LeqProof, LeqProof) -> somety $ selectSizedBV (Proxy @ix) (Proxy @w) a
+    case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of \
+      (LeqProof, LeqProof) -> somety $ selectSizedBV (Proxy @ix) (Proxy @w) a
 
 #if 1
 instance BV SomeSymIntN where

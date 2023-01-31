@@ -129,7 +129,6 @@ bvselectTerm ::
     KnownNat w,
     1 <= n,
     1 <= w,
-    0 <= ix,
     ix + w <= n,
     SizedBV bv
   ) =>
