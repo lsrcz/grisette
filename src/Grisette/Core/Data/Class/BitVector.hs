@@ -171,7 +171,6 @@ extBV' ::
 extBV' p@(_ :: NatRepr l) = withKnownNat p $ extBV (Proxy @l)
 {-# INLINE extBV' #-}
 
-
 -- | Slicing out a smaller bit vector from a larger one,
 -- selecting a slice with width @w@ starting from index @ix@.
 --
@@ -221,7 +220,7 @@ extractBV _ _ =
 --
 -- The least significant bit is indexed as 0.
 --
--- >>> extractBV' (natVal @4) (natVal @2) (SomeSymIntN (0b010100 :: SymIntN 6))
+-- >>> extractBV' (natRepr @4) (natRepr @2) (SomeSymIntN (0b010100 :: SymIntN 6))
 -- 0b101
 extractBV' ::
   forall (i :: Nat) (j :: Nat) bv.
