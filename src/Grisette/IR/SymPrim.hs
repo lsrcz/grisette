@@ -14,6 +14,8 @@ module Grisette.IR.SymPrim
     -- ** Extended types
     IntN,
     WordN,
+    SomeWordN (..),
+    SomeIntN (..),
     type (=->) (..),
     type (-->),
     (-->),
