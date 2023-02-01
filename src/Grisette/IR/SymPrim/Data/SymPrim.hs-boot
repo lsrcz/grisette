@@ -53,4 +53,3 @@ instance Hashable SymInteger
 instance EvaluateSym SymInteger
 
 instance ExtractSymbolics SymInteger
-

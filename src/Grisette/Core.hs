@@ -978,7 +978,6 @@ module Grisette.Core
     evaluateSymToCon,
 
     -- ** Substitution of a symbol
-
     SubstituteSym (..),
     SubstituteSym' (..),
 
