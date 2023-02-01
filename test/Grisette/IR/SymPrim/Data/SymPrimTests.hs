@@ -336,9 +336,9 @@ symPrimTests =
                     popCount (con 3 :: SymIntN 4) @=? 2
                 ],
               testGroup
-                "concatSizedBV"
-                [ testCase "concatSizedBV" $ do
-                    concatSizedBV
+                "sizedBVConcat"
+                [ testCase "sizedBVConcat" $ do
+                    sizedBVConcat
                       (ssym "a" :: SymWordN 4)
                       (ssym "b" :: SymWordN 3)
                       @=? SymWordN
@@ -348,23 +348,23 @@ symPrimTests =
                         )
                 ],
               testGroup
-                "extSizedBV for Sym BV"
-                [ testCase "zextSizedBV" $ do
-                    zextSizedBV (Proxy @6) au @=? SymWordN (pevalBVExtendTerm False (Proxy @6) aut)
-                    zextSizedBV (Proxy @6) as @=? SymIntN (pevalBVExtendTerm False (Proxy @6) ast),
-                  testCase "sextSizedBV" $ do
-                    sextSizedBV (Proxy @6) au @=? SymWordN (pevalBVExtendTerm True (Proxy @6) aut)
-                    sextSizedBV (Proxy @6) as @=? SymIntN (pevalBVExtendTerm True (Proxy @6) ast),
-                  testCase "extSizedBV" $ do
-                    extSizedBV (Proxy @6) au @=? SymWordN (pevalBVExtendTerm False (Proxy @6) aut)
-                    extSizedBV (Proxy @6) as @=? SymIntN (pevalBVExtendTerm True (Proxy @6) ast)
+                "sizedBVExt for Sym BV"
+                [ testCase "sizedBVZext" $ do
+                    sizedBVZext (Proxy @6) au @=? SymWordN (pevalBVExtendTerm False (Proxy @6) aut)
+                    sizedBVZext (Proxy @6) as @=? SymIntN (pevalBVExtendTerm False (Proxy @6) ast),
+                  testCase "sizedBVSext" $ do
+                    sizedBVSext (Proxy @6) au @=? SymWordN (pevalBVExtendTerm True (Proxy @6) aut)
+                    sizedBVSext (Proxy @6) as @=? SymIntN (pevalBVExtendTerm True (Proxy @6) ast),
+                  testCase "sizedBVExt" $ do
+                    sizedBVExt (Proxy @6) au @=? SymWordN (pevalBVExtendTerm False (Proxy @6) aut)
+                    sizedBVExt (Proxy @6) as @=? SymIntN (pevalBVExtendTerm True (Proxy @6) ast)
                 ],
               testGroup
-                "selectSizedBV for Sym BV"
-                [ testCase "selectSizedBV" $ do
-                    selectSizedBV (Proxy @2) (Proxy @1) au
+                "sizedBVSelect for Sym BV"
+                [ testCase "sizedBVSelect" $ do
+                    sizedBVSelect (Proxy @2) (Proxy @1) au
                       @=? SymWordN (pevalBVSelectTerm (Proxy @2) (Proxy @1) aut)
-                    selectSizedBV (Proxy @2) (Proxy @1) as
+                    sizedBVSelect (Proxy @2) (Proxy @1) as
                       @=? SymIntN (pevalBVSelectTerm (Proxy @2) (Proxy @1) ast)
                 ],
               testGroup

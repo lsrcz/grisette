@@ -19,15 +19,15 @@
 -- Portability :   GHC only
 module Grisette.Core.Data.Class.BitVector
   ( -- * Bit vector operations
-    BV (..),
-    zextBV',
-    sextBV',
-    extBV',
-    selectBV',
-    extractBV,
-    extractBV',
+    SomeBV (..),
+    someBVZext',
+    someBVSext',
+    someBVExt',
+    someBVSelect',
+    someBVExtract,
+    someBVExtract',
     SizedBV (..),
-    extractSizedBV,
+    sizedBVExtract,
   )
 where
 
@@ -45,20 +45,21 @@ import Grisette.IR.SymPrim.Data.Parameterized
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
 
--- | Bit vector operations. Including concatenation ('concatBV'),
--- extension ('zextBV', 'sextBV', 'extBV'), and selection ('selectBV').
-class BV bv where
+-- | Bit vector operations. Including concatenation ('concatSomeBV'),
+-- extension ('zextSomeBV', 'sextSomeBV', 'extSomeBV'), and selection
+-- ('selectSomeBV').
+class SomeBV bv where
   -- | Concatenation of two bit vectors.
   --
-  -- >>> concatBV (SomeSymWordN (0b101 :: SymWordN 3)) (SomeSymWordN (0b010 :: SymWordN 3))
+  -- >>> someBVConcat (SomeSymWordN (0b101 :: SymWordN 3)) (SomeSymWordN (0b010 :: SymWordN 3))
   -- 0b101010
-  concatBV :: bv -> bv -> bv
+  someBVConcat :: bv -> bv -> bv
 
   -- | Zero extension of a bit vector.
   --
-  -- >>> zextBV (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
+  -- >>> someBVZext (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
   -- 0b000101
-  zextBV ::
+  someBVZext ::
     forall p l.
     KnownNat l =>
     -- | Desired output length
@@ -69,9 +70,9 @@ class BV bv where
 
   -- | Sign extension of a bit vector.
   --
-  -- >>> sextBV (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
+  -- >>> someBVSext (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
   -- 0b111101
-  sextBV ::
+  someBVSext ::
     forall p l.
     KnownNat l =>
     -- | Desired output length
@@ -83,15 +84,15 @@ class BV bv where
   -- | Extension of a bit vector.
   -- Signedness is determined by the input bit vector type.
   --
-  -- >>> extBV (Proxy @6) (SomeSymIntN (0b101 :: SymIntN 3))
+  -- >>> someBVExt (Proxy @6) (SomeSymIntN (0b101 :: SymIntN 3))
   -- 0b111101
-  -- >>> extBV (Proxy @6) (SomeSymIntN (0b001 :: SymIntN 3))
+  -- >>> someBVExt (Proxy @6) (SomeSymIntN (0b001 :: SymIntN 3))
   -- 0b000001
-  -- >>> extBV (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
+  -- >>> someBVExt (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
   -- 0b000101
-  -- >>> extBV (Proxy @6) (SomeSymWordN (0b001 :: SymWordN 3))
+  -- >>> someBVExt (Proxy @6) (SomeSymWordN (0b001 :: SymWordN 3))
   -- 0b000001
-  extBV ::
+  someBVExt ::
     forall p l.
     KnownNat l =>
     -- | Desired output length
@@ -105,9 +106,9 @@ class BV bv where
   --
   -- The least significant bit is indexed as 0.
   --
-  -- >>> selectBV (Proxy @1) (Proxy @3) (SomeSymIntN (0b001010 :: SymIntN 6))
+  -- >>> someBVSelect (Proxy @1) (Proxy @3) (SomeSymIntN (0b001010 :: SymIntN 6))
   -- 0b101
-  selectBV ::
+  someBVSelect ::
     forall p ix q w.
     (KnownNat ix, KnownNat w) =>
     -- | Index of the least significant bit of the slice
@@ -121,66 +122,66 @@ class BV bv where
 
 -- | Zero extension of a bit vector.
 --
--- >>> zextBV' (natRepr @6) (SomeSymWordN (0b101 :: SymWordN 3))
+-- >>> someBVZext' (natRepr @6) (SomeSymWordN (0b101 :: SymWordN 3))
 -- 0b000101
-zextBV' ::
+someBVZext' ::
   forall l bv.
-  BV bv =>
+  SomeBV bv =>
   -- | Desired output length
   NatRepr l ->
   -- | Bit vector to extend
   bv ->
   bv
-zextBV' p@(_ :: NatRepr l) = withKnownNat p $ zextBV (Proxy @l)
-{-# INLINE zextBV' #-}
+someBVZext' p@(_ :: NatRepr l) = withKnownNat p $ someBVZext (Proxy @l)
+{-# INLINE someBVZext' #-}
 
 -- | Sign extension of a bit vector.
 --
--- >>> sextBV' (natRepr @6) (SomeSymWordN (0b101 :: SymWordN 3))
+-- >>> someBVSext' (natRepr @6) (SomeSymWordN (0b101 :: SymWordN 3))
 -- 0b111101
-sextBV' ::
+someBVSext' ::
   forall l bv.
-  BV bv =>
+  SomeBV bv =>
   NatRepr l ->
   -- | Desired output length
   bv ->
   -- | Bit vector to extend
   bv
-sextBV' p@(_ :: NatRepr l) = withKnownNat p $ sextBV (Proxy @l)
-{-# INLINE sextBV' #-}
+someBVSext' p@(_ :: NatRepr l) = withKnownNat p $ someBVSext (Proxy @l)
+{-# INLINE someBVSext' #-}
 
 -- | Extension of a bit vector.
 -- Signedness is determined by the input bit vector type.
 --
--- >>> extBV' (natRepr @6) (SomeSymIntN (0b101 :: SymIntN 3))
+-- >>> someBVExt' (natRepr @6) (SomeSymIntN (0b101 :: SymIntN 3))
 -- 0b111101
--- >>> extBV' (natRepr @6) (SomeSymIntN (0b001 :: SymIntN 3))
+-- >>> someBVExt' (natRepr @6) (SomeSymIntN (0b001 :: SymIntN 3))
 -- 0b000001
--- >>> extBV' (natRepr @6) (SomeSymWordN (0b101 :: SymWordN 3))
+-- >>> someBVExt' (natRepr @6) (SomeSymWordN (0b101 :: SymWordN 3))
 -- 0b000101
--- >>> extBV' (natRepr @6) (SomeSymWordN (0b001 :: SymWordN 3))
+-- >>> someBVExt' (natRepr @6) (SomeSymWordN (0b001 :: SymWordN 3))
 -- 0b000001
-extBV' ::
+someBVExt' ::
   forall l bv.
-  BV bv =>
+  SomeBV bv =>
   -- | Desired output length
   NatRepr l ->
   -- | Bit vector to extend
   bv ->
   bv
-extBV' p@(_ :: NatRepr l) = withKnownNat p $ extBV (Proxy @l)
-{-# INLINE extBV' #-}
+someBVExt' p@(_ :: NatRepr l) = withKnownNat p $ someBVExt (Proxy @l)
+{-# INLINE someBVExt' #-}
 
 -- | Slicing out a smaller bit vector from a larger one,
 -- selecting a slice with width @w@ starting from index @ix@.
 --
 -- The least significant bit is indexed as 0.
 --
--- >>> selectBV' (natRepr @1) (natRepr @3) (SomeSymIntN (0b001010 :: SymIntN 6))
+-- >>> someBVSelect' (natRepr @1) (natRepr @3) (SomeSymIntN (0b001010 :: SymIntN 6))
 -- 0b101
-selectBV' ::
+someBVSelect' ::
   forall ix w bv.
-  BV bv =>
+  SomeBV bv =>
   -- | Index of the least significant bit of the slice
   NatRepr ix ->
   -- | Desired output width, @ix + w <= n@ must hold where @n@ is
@@ -189,19 +190,19 @@ selectBV' ::
   -- | Bit vector to select from
   bv ->
   bv
-selectBV' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ selectBV p q
-{-# INLINE selectBV' #-}
+someBVSelect' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ someBVSelect p q
+{-# INLINE someBVSelect' #-}
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.
 --
 -- The least significant bit is indexed as 0.
 --
--- >>> extractBV (Proxy @4) (Proxy @2) (SomeSymIntN (0b010100 :: SymIntN 6))
+-- >>> someBVExtract (Proxy @4) (Proxy @2) (SomeSymIntN (0b010100 :: SymIntN 6))
 -- 0b101
-extractBV ::
+someBVExtract ::
   forall p (i :: Nat) q (j :: Nat) bv.
-  (BV bv, KnownNat i, KnownNat j) =>
+  (SomeBV bv, KnownNat i, KnownNat j) =>
   -- | The start position to extract from, @i < n@ must hold where @n@ is
   -- the size of the output bit vector
   p i ->
@@ -210,21 +211,21 @@ extractBV ::
   -- | Bit vector to extract from
   bv ->
   bv
-extractBV _ _ =
+someBVExtract _ _ =
   withKnownNat (unsafeMkNatRepr @(i - j + 1) (fromIntegral (natVal (Proxy @i)) - fromIntegral (natVal (Proxy @j)) + 1)) $
-    selectBV (Proxy @j) (Proxy @(i - j + 1))
-{-# INLINE extractBV #-}
+    someBVSelect (Proxy @j) (Proxy @(i - j + 1))
+{-# INLINE someBVExtract #-}
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.
 --
 -- The least significant bit is indexed as 0.
 --
--- >>> extractBV' (natRepr @4) (natRepr @2) (SomeSymIntN (0b010100 :: SymIntN 6))
+-- >>> someBVExtract' (natRepr @4) (natRepr @2) (SomeSymIntN (0b010100 :: SymIntN 6))
 -- 0b101
-extractBV' ::
+someBVExtract' ::
   forall (i :: Nat) (j :: Nat) bv.
-  BV bv =>
+  SomeBV bv =>
   -- | The start position to extract from, @i < n@ must hold where @n@ is
   -- the size of the output bit vector
   NatRepr i ->
@@ -233,24 +234,24 @@ extractBV' ::
   -- | Bit vector to extract from
   bv ->
   bv
-extractBV' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ extractBV p q
-{-# INLINE extractBV' #-}
+someBVExtract' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ someBVExtract p q
+{-# INLINE someBVExtract' #-}
 
--- | Sized bit vector operations. Including concatenation ('concatSizedBV'),
--- extension ('zextSizedBV', 'sextSizedBV', 'extSizedBV'), and selection
--- ('selectSizedBV').
+-- | Sized bit vector operations. Including concatenation ('sizedBVConcat'),
+-- extension ('sizedBVZext', 'sizedBVSext', 'sizedBVExt'), and selection
+-- ('sizedBVSelect').
 class SizedBV bv where
   -- | Concatenation of two bit vectors.
   --
-  -- >>> concatSizedBV (0b101 :: SymIntN 3) (0b010 :: SymIntN 3)
+  -- >>> sizedBVConcat (0b101 :: SymIntN 3) (0b010 :: SymIntN 3)
   -- 0b101010
-  concatSizedBV :: (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => bv l -> bv r -> bv (l + r)
+  sizedBVConcat :: (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => bv l -> bv r -> bv (l + r)
 
   -- | Zero extension of a bit vector.
   --
-  -- >>> zextSizedBV (Proxy @6) (0b101 :: SymIntN 3)
+  -- >>> sizedBVZext (Proxy @6) (0b101 :: SymIntN 3)
   -- 0b000101
-  zextSizedBV ::
+  sizedBVZext ::
     (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) =>
     -- | Desired output width
     proxy r ->
@@ -260,9 +261,9 @@ class SizedBV bv where
 
   -- | Signed extension of a bit vector.
   --
-  -- >>> sextSizedBV (Proxy @6) (0b101 :: SymIntN 3)
+  -- >>> sizedBVSext (Proxy @6) (0b101 :: SymIntN 3)
   -- 0b111101
-  sextSizedBV ::
+  sizedBVSext ::
     (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) =>
     -- | Desired output width
     proxy r ->
@@ -273,15 +274,15 @@ class SizedBV bv where
   -- | Extension of a bit vector.
   -- Signedness is determined by the input bit vector type.
   --
-  -- >>> extSizedBV (Proxy @6) (0b101 :: SymIntN 3)
+  -- >>> sizedBVExt (Proxy @6) (0b101 :: SymIntN 3)
   -- 0b111101
-  -- >>> extSizedBV (Proxy @6) (0b001 :: SymIntN 3)
+  -- >>> sizedBVExt (Proxy @6) (0b001 :: SymIntN 3)
   -- 0b000001
-  -- >>> extSizedBV (Proxy @6) (0b101 :: SymWordN 3)
+  -- >>> sizedBVExt (Proxy @6) (0b101 :: SymWordN 3)
   -- 0b000101
-  -- >>> extSizedBV (Proxy @6) (0b001 :: SymWordN 3)
+  -- >>> sizedBVExt (Proxy @6) (0b001 :: SymWordN 3)
   -- 0b000001
-  extSizedBV ::
+  sizedBVExt ::
     (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) =>
     -- | Desired output width
     proxy r ->
@@ -294,9 +295,9 @@ class SizedBV bv where
   --
   -- The least significant bit is indexed as 0.
   --
-  -- >>> selectSizedBV (Proxy @2) (Proxy @3) (con 0b010100 :: SymIntN 6)
+  -- >>> sizedBVSelect (Proxy @2) (Proxy @3) (con 0b010100 :: SymIntN 6)
   -- 0b101
-  selectSizedBV ::
+  sizedBVSelect ::
     (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     -- | Index of the least significant bit of the slice
     proxy ix ->
@@ -312,9 +313,9 @@ class SizedBV bv where
 --
 -- The least significant bit is indexed as 0.
 --
--- >>> extractSizedBV (Proxy @4) (Proxy @2) (con 0b010100 :: SymIntN 6)
+-- >>> sizedBVExtract (Proxy @4) (Proxy @2) (con 0b010100 :: SymIntN 6)
 -- 0b101
-extractSizedBV ::
+sizedBVExtract ::
   forall proxy i j n bv.
   (SizedBV bv, KnownNat n, KnownNat i, KnownNat j, 1 <= n, i + 1 <= n, j <= i) =>
   -- | The start position to extract from, @i < n@ must hold where @n@ is
@@ -325,11 +326,11 @@ extractSizedBV ::
   -- | Bit vector to extract from
   bv n ->
   bv (i - j + 1)
-extractSizedBV _ _ =
+sizedBVExtract _ _ =
   case ( reprIsKnown (addNat (subNat (natRepr @i) (natRepr @j)) (natRepr @1)),
          unsafeLeqProof @(j + (i - j + 1)) @n,
          unsafeLeqProof @1 @(i - j + 1)
        ) of
     (KnownProof, LeqProof, LeqProof) ->
-      selectSizedBV (Proxy @j) (Proxy @(i - j + 1))
-{-# INLINE extractSizedBV #-}
+      sizedBVSelect (Proxy @j) (Proxy @(i - j + 1))
+{-# INLINE sizedBVExtract #-}

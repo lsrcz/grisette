@@ -880,8 +880,8 @@ SUBSTITUTE_SYM_BV_SOME(SomeSymWordN, SymWordN)
 -- SizedBV
 
 #define BVCONCAT_SIZED(symtype) \
-concatSizedBV :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => symtype l -> symtype r -> symtype (l + r); \
-concatSizedBV (symtype l) (symtype r) = \
+sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => symtype l -> symtype r -> symtype (l + r); \
+sizedBVConcat (symtype l) (symtype r) = \
   case (leqAddPos pl pr, knownAdd pl pr) of \
     (LeqProof, KnownProof) -> \
       symtype (pevalBVConcatTerm l r); \
@@ -890,81 +890,81 @@ concatSizedBV (symtype l) (symtype r) = \
     pr = Proxy :: Proxy r
 
 #define BVZEXT_SIZED(symtype) \
-zextSizedBV :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> symtype l -> symtype r; \
-zextSizedBV _ (symtype v) = \
+sizedBVZext :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> symtype l -> symtype r; \
+sizedBVZext _ (symtype v) = \
   case leqTrans (LeqProof @1 @l) (LeqProof @l @r) of \
     LeqProof -> symtype $ pevalBVExtendTerm False (Proxy @r) v
 
 #define BVSEXT_SIZED(symtype) \
-sextSizedBV :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> symtype l -> symtype r; \
-sextSizedBV _ (symtype v) = \
+sizedBVSext :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> symtype l -> symtype r; \
+sizedBVSext _ (symtype v) = \
   case leqTrans (LeqProof @1 @l) (LeqProof @l @r) of \
     LeqProof -> symtype $ pevalBVExtendTerm True (Proxy @r) v
 
 #define BVSELECT_SIZED(symtype) \
-selectSizedBV :: forall n ix w proxy. (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) => \
+sizedBVSelect :: forall n ix w proxy. (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) => \
   proxy ix -> proxy w -> symtype n -> symtype w; \
-selectSizedBV pix pw (symtype v) = symtype $ pevalBVSelectTerm pix pw v
+sizedBVSelect pix pw (symtype v) = symtype $ pevalBVSelectTerm pix pw v
 
 #if 1
 instance SizedBV SymIntN where
   BVCONCAT_SIZED(SymIntN)
   BVZEXT_SIZED(SymIntN)
   BVSEXT_SIZED(SymIntN)
-  extSizedBV = sextSizedBV
+  sizedBVExt = sizedBVSext
   BVSELECT_SIZED(SymIntN)
 
 instance SizedBV SymWordN where
   BVCONCAT_SIZED(SymWordN)
   BVZEXT_SIZED(SymWordN)
   BVSEXT_SIZED(SymWordN)
-  extSizedBV = zextSizedBV
+  sizedBVExt = sizedBVZext
   BVSELECT_SIZED(SymWordN)
 #endif
 
 -- BV
 
 #define BVCONCAT(somety, origty) \
-concatBV (somety (a :: origty l)) (somety (b :: origty r)) = \
+someBVConcat (somety (a :: origty l)) (somety (b :: origty r)) = \
   case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (Proxy @l) (Proxy @r)) of \
     (LeqProof, KnownProof) -> \
-      somety $ concatSizedBV a b
+      somety $ sizedBVConcat a b
 
 #define BVZEXT(somety, origty) \
-zextBV (p :: p l) (somety (a :: origty n)) \
+someBVZext (p :: p l) (somety (a :: origty n)) \
   | natVal p < natVal (Proxy @n) = error "zextBV: trying to zero extend a value to a smaller size" \
   | otherwise = \
     case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of \
-      (LeqProof, LeqProof) -> somety $ zextSizedBV p a
+      (LeqProof, LeqProof) -> somety $ sizedBVZext p a
 
 #define BVSEXT(somety, origty) \
-sextBV (p :: p l) (somety (a :: origty n)) \
+someBVSext (p :: p l) (somety (a :: origty n)) \
   | natVal p < natVal (Proxy @n) = error "zextBV: trying to zero extend a value to a smaller size" \
   | otherwise = \
     case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of \
-      (LeqProof, LeqProof) -> somety $ sextSizedBV p a
+      (LeqProof, LeqProof) -> somety $ sizedBVSext p a
 
 #define BVSELECT(somety, origty) \
-selectBV (p :: p ix) (q :: q w) (somety (a :: origty n)) \
+someBVSelect (p :: p ix) (q :: q w) (somety (a :: origty n)) \
   | natVal p + natVal q > natVal (Proxy @n) = error "selectBV: trying to select a bitvector outside the bounds of the input" \
   | natVal q == 0 = error "selectBV: trying to select a bitvector of size 0" \
   | otherwise = \
     case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of \
-      (LeqProof, LeqProof) -> somety $ selectSizedBV (Proxy @ix) (Proxy @w) a
+      (LeqProof, LeqProof) -> somety $ sizedBVSelect (Proxy @ix) (Proxy @w) a
 
 #if 1
-instance BV SomeSymIntN where
+instance SomeBV SomeSymIntN where
   BVCONCAT(SomeSymIntN, SymIntN)
   BVZEXT(SomeSymIntN, SymIntN)
   BVSEXT(SomeSymIntN, SymIntN)
-  extBV = sextBV
+  someBVExt = someBVSext
   BVSELECT(SomeSymIntN, SymIntN)
 
-instance BV SomeSymWordN where
+instance SomeBV SomeSymWordN where
   BVCONCAT(SomeSymWordN, SymWordN)
   BVZEXT(SomeSymWordN, SymWordN)
   BVSEXT(SomeSymWordN, SymWordN)
-  extBV = zextBV
+  someBVExt = someBVZext
   BVSELECT(SomeSymWordN, SymWordN)
 #endif
 

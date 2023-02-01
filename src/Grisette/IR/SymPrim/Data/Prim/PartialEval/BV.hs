@@ -67,7 +67,7 @@ doPevalBVSelectTerm ::
   proxy w ->
   Term (bv n) ->
   Maybe (Term (bv w))
-doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ selectSizedBV ix w b
+doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
 doPevalBVSelectTerm _ _ _ = Nothing
 
 -- ext
@@ -131,7 +131,7 @@ doPevalBVExtendTerm ::
   proxy r ->
   Term (bv l) ->
   Maybe (Term (bv r))
-doPevalBVExtendTerm signed p (ConTerm _ b) = Just $ conTerm $ if signed then sextSizedBV p b else zextSizedBV p b
+doPevalBVExtendTerm signed p (ConTerm _ b) = Just $ conTerm $ if signed then sizedBVSext p b else sizedBVZext p b
 doPevalBVExtendTerm _ _ _ = Nothing
 
 pevalBVConcatTerm ::
@@ -162,5 +162,5 @@ doPevalBVConcatTerm ::
   Term (bv a) ->
   Term (bv b) ->
   Maybe (Term (bv (a + b)))
-doPevalBVConcatTerm (ConTerm _ v) (ConTerm _ v') = Just $ conTerm $ concatSizedBV v v'
+doPevalBVConcatTerm (ConTerm _ v) (ConTerm _ v') = Just $ conTerm $ sizedBVConcat v v'
 doPevalBVConcatTerm _ _ = Nothing

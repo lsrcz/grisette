@@ -522,108 +522,108 @@ instance (KnownNat n, 1 <= n) => Ord (IntN n) where
       bs = testBit b (n - 1)
 
 instance SizedBV WordN where
-  concatSizedBV :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => WordN l -> WordN r -> WordN (l + r)
-  concatSizedBV (WordN a) (WordN b) = WordN ((a `shiftL` fromIntegral (natVal (Proxy :: Proxy r))) .|. b)
-  zextSizedBV _ (WordN v) = WordN v
-  sextSizedBV :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> WordN l -> WordN r
-  sextSizedBV pr (WordN v) = if s then WordN (maxi - noi + v) else WordN v
+  sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => WordN l -> WordN r -> WordN (l + r)
+  sizedBVConcat (WordN a) (WordN b) = WordN ((a `shiftL` fromIntegral (natVal (Proxy :: Proxy r))) .|. b)
+  sizedBVZext _ (WordN v) = WordN v
+  sizedBVSext :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> WordN l -> WordN r
+  sizedBVSext pr (WordN v) = if s then WordN (maxi - noi + v) else WordN v
     where
       r = fromIntegral $ natVal pr
       l = fromIntegral $ natVal (Proxy :: Proxy l)
       s = testBit v (l - 1)
       maxi = (1 :: Integer) `shiftL` r
       noi = (1 :: Integer) `shiftL` l
-  extSizedBV = zextSizedBV
-  selectSizedBV ::
+  sizedBVExt = sizedBVZext
+  sizedBVSelect ::
     forall n ix w proxy.
     (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     proxy ix ->
     proxy w ->
     WordN n ->
     WordN w
-  selectSizedBV pix pw (WordN v) = WordN ((v `shiftR` ix) .&. mask)
+  sizedBVSelect pix pw (WordN v) = WordN ((v `shiftR` ix) .&. mask)
     where
       ix = fromIntegral $ natVal pix
       w = fromIntegral $ natVal pw
       mask = (1 `shiftL` w) - 1
 
 instance SizedBV IntN where
-  concatSizedBV :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => IntN l -> IntN r -> IntN (l + r)
-  concatSizedBV (IntN a) (IntN b) = IntN $ unWordN $ concatSizedBV (WordN a :: WordN l) (WordN b :: WordN r)
-  zextSizedBV _ (IntN v) = IntN v
-  sextSizedBV :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> IntN l -> IntN r
-  sextSizedBV pr (IntN v) = IntN $ unWordN $ sextSizedBV pr (WordN v :: WordN l)
-  extSizedBV = sextSizedBV
-  selectSizedBV ::
+  sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => IntN l -> IntN r -> IntN (l + r)
+  sizedBVConcat (IntN a) (IntN b) = IntN $ unWordN $ sizedBVConcat (WordN a :: WordN l) (WordN b :: WordN r)
+  sizedBVZext _ (IntN v) = IntN v
+  sizedBVSext :: forall l r proxy. (KnownNat l, KnownNat r, 1 <= l, KnownNat r, l <= r) => proxy r -> IntN l -> IntN r
+  sizedBVSext pr (IntN v) = IntN $ unWordN $ sizedBVSext pr (WordN v :: WordN l)
+  sizedBVExt = sizedBVSext
+  sizedBVSelect ::
     forall n ix w proxy.
     (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     proxy ix ->
     proxy w ->
     IntN n ->
     IntN w
-  selectSizedBV pix pw (IntN v) = IntN $ unWordN $ selectSizedBV pix pw (WordN v :: WordN n)
+  sizedBVSelect pix pw (IntN v) = IntN $ unWordN $ sizedBVSelect pix pw (WordN v :: WordN n)
 
-instance BV SomeWordN where
-  concatBV (SomeWordN (a :: WordN l)) (SomeWordN (b :: WordN r)) =
+instance SomeBV SomeWordN where
+  someBVConcat (SomeWordN (a :: WordN l)) (SomeWordN (b :: WordN r)) =
     case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (Proxy @l) (Proxy @r)) of
       (LeqProof, KnownProof) ->
-        SomeWordN $ concatSizedBV a b
-  zextBV (p :: p l) (SomeWordN (a :: WordN n))
-    | l < n = error "zextBV: trying to zero extend a value to a smaller size"
+        SomeWordN $ sizedBVConcat a b
+  someBVZext (p :: p l) (SomeWordN (a :: WordN n))
+    | l < n = error "someBVZext: trying to zero extend a value to a smaller size"
     | otherwise =
         case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of
-          (LeqProof, LeqProof) -> SomeWordN $ zextSizedBV p a
+          (LeqProof, LeqProof) -> SomeWordN $ sizedBVZext p a
     where
       l = natVal p
       n = natVal (Proxy @n)
-  sextBV (p :: p l) (SomeWordN (a :: WordN n))
-    | l < n = error "sextBV: trying to zero extend a value to a smaller size"
+  someBVSext (p :: p l) (SomeWordN (a :: WordN n))
+    | l < n = error "someBVSext: trying to zero extend a value to a smaller size"
     | otherwise =
         case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of
-          (LeqProof, LeqProof) -> SomeWordN $ sextSizedBV p a
+          (LeqProof, LeqProof) -> SomeWordN $ sizedBVSext p a
     where
       l = natVal p
       n = natVal (Proxy @n)
-  extBV = zextBV
-  selectBV (p :: p ix) (q :: q w) (SomeWordN (a :: WordN n))
-    | ix + w > n = error "selectBV: trying to select a bitvector outside the bounds of the input"
-    | w == 0 = error "selectBV: trying to select a bitvector of size 0"
+  someBVExt = someBVZext
+  someBVSelect (p :: p ix) (q :: q w) (SomeWordN (a :: WordN n))
+    | ix + w > n = error "someBVSelect: trying to select a bitvector outside the bounds of the input"
+    | w == 0 = error "someBVSelect: trying to select a bitvector of size 0"
     | otherwise =
         case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of
-          (LeqProof, LeqProof) -> SomeWordN $ selectSizedBV (Proxy @ix) (Proxy @w) a
+          (LeqProof, LeqProof) -> SomeWordN $ sizedBVSelect (Proxy @ix) (Proxy @w) a
     where
       ix = natVal p
       w = natVal q
       n = natVal (Proxy @n)
 
-instance BV SomeIntN where
-  concatBV (SomeIntN (a :: IntN l)) (SomeIntN (b :: IntN r)) =
+instance SomeBV SomeIntN where
+  someBVConcat (SomeIntN (a :: IntN l)) (SomeIntN (b :: IntN r)) =
     case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (Proxy @l) (Proxy @r)) of
       (LeqProof, KnownProof) ->
-        SomeIntN $ concatSizedBV a b
-  zextBV (p :: p l) (SomeIntN (a :: IntN n))
-    | l < n = error "zextBV: trying to zero extend a value to a smaller size"
+        SomeIntN $ sizedBVConcat a b
+  someBVZext (p :: p l) (SomeIntN (a :: IntN n))
+    | l < n = error "someBVZext: trying to zero extend a value to a smaller size"
     | otherwise =
         case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of
-          (LeqProof, LeqProof) -> SomeIntN $ zextSizedBV p a
+          (LeqProof, LeqProof) -> SomeIntN $ sizedBVZext p a
     where
       l = natVal p
       n = natVal (Proxy @n)
-  sextBV (p :: p l) (SomeIntN (a :: IntN n))
-    | l < n = error "sextBV: trying to zero extend a value to a smaller size"
+  someBVSext (p :: p l) (SomeIntN (a :: IntN n))
+    | l < n = error "someBVSext: trying to zero extend a value to a smaller size"
     | otherwise =
         case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of
-          (LeqProof, LeqProof) -> SomeIntN $ sextSizedBV p a
+          (LeqProof, LeqProof) -> SomeIntN $ sizedBVSext p a
     where
       l = natVal p
       n = natVal (Proxy @n)
-  extBV = zextBV
-  selectBV (p :: p ix) (q :: q w) (SomeIntN (a :: IntN n))
-    | ix + w > n = error "selectBV: trying to select a bitvector outside the bounds of the input"
-    | w == 0 = error "selectBV: trying to select a bitvector of size 0"
+  someBVExt = someBVZext
+  someBVSelect (p :: p ix) (q :: q w) (SomeIntN (a :: IntN n))
+    | ix + w > n = error "someBVSelect: trying to select a bitvector outside the bounds of the input"
+    | w == 0 = error "someBVSelect: trying to select a bitvector of size 0"
     | otherwise =
         case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of
-          (LeqProof, LeqProof) -> SomeIntN $ selectSizedBV (Proxy @ix) (Proxy @w) a
+          (LeqProof, LeqProof) -> SomeIntN $ sizedBVSelect (Proxy @ix) (Proxy @w) a
     where
       ix = natVal p
       w = natVal q

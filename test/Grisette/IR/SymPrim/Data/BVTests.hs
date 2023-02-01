@@ -366,45 +366,45 @@ bvTests =
         ],
       testGroup
         "WordN bvops"
-        [ testProperty "concatSizedBV" $ \(x :: Integer) (y :: Integer) ->
+        [ testProperty "sizedBVConcat" $ \(x :: Integer) (y :: Integer) ->
             ioProperty $
-              concatSizedBV (fromInteger x :: WordN 5) (fromInteger y :: WordN 7) @=? fromInteger (x * 128 + y `mod` 128),
-          testProperty "zextSizedBV" $ ioProperty . \(x :: Integer) -> zextSizedBV (Proxy :: Proxy 12) (fromInteger x :: WordN 7) @=? fromInteger (x `mod` 128),
-          testCase "sextSizedBV" $ do
-            sextSizedBV (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
-            sextSizedBV (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
-            sextSizedBV (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
-            sextSizedBV (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
-            sextSizedBV (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
-          testProperty "extSizedBV is zextSizedBV" $
+              sizedBVConcat (fromInteger x :: WordN 5) (fromInteger y :: WordN 7) @=? fromInteger (x * 128 + y `mod` 128),
+          testProperty "sizedBVZext" $ ioProperty . \(x :: Integer) -> sizedBVZext (Proxy :: Proxy 12) (fromInteger x :: WordN 7) @=? fromInteger (x `mod` 128),
+          testCase "sizedBVSext" $ do
+            sizedBVSext (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
+            sizedBVSext (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
+            sizedBVSext (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
+            sizedBVSext (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
+            sizedBVSext (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
+          testProperty "sizedBVExt is sizedBVZext" $
             ioProperty . \(x :: Integer) ->
-              extSizedBV (Proxy :: Proxy 12) (fromInteger x :: WordN 8) @=? zextSizedBV (Proxy :: Proxy 12) (fromInteger x :: WordN 8),
-          testCase "selectSizedBV" $ do
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: WordN 8) @=? 0b11
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: WordN 8) @=? 0b111
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: WordN 8) @=? 0b101
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: WordN 8) @=? 0b10
+              sizedBVExt (Proxy :: Proxy 12) (fromInteger x :: WordN 8) @=? sizedBVZext (Proxy :: Proxy 12) (fromInteger x :: WordN 8),
+          testCase "sizedBVSelect" $ do
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: WordN 8) @=? 0b11
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: WordN 8) @=? 0b111
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: WordN 8) @=? 0b101
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: WordN 8) @=? 0b10
         ],
       testGroup
         "IntN bvops"
-        [ testProperty "concatSizedBV" $ \(x :: Integer) (y :: Integer) ->
+        [ testProperty "sizedBVConcat" $ \(x :: Integer) (y :: Integer) ->
             ioProperty $
-              concatSizedBV (fromInteger x :: IntN 5) (fromInteger y :: IntN 7) @=? fromInteger (x * 128 + y `mod` 128),
-          testProperty "zextSizedBV" $ ioProperty . \(x :: Integer) -> zextSizedBV (Proxy :: Proxy 12) (fromInteger x :: IntN 7) @=? fromInteger (x `mod` 128),
-          testCase "sextSizedBV" $ do
-            sextSizedBV (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
-            sextSizedBV (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
-            sextSizedBV (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
-            sextSizedBV (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
-            sextSizedBV (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
-          testProperty "extSizedBV is sextSizedBV" $
+              sizedBVConcat (fromInteger x :: IntN 5) (fromInteger y :: IntN 7) @=? fromInteger (x * 128 + y `mod` 128),
+          testProperty "sizedBVZext" $ ioProperty . \(x :: Integer) -> sizedBVZext (Proxy :: Proxy 12) (fromInteger x :: IntN 7) @=? fromInteger (x `mod` 128),
+          testCase "sizedBVSext" $ do
+            sizedBVSext (Proxy :: Proxy 12) (0 :: WordN 8) @=? 0
+            sizedBVSext (Proxy :: Proxy 12) (1 :: WordN 8) @=? 1
+            sizedBVSext (Proxy :: Proxy 12) (127 :: WordN 8) @=? 127
+            sizedBVSext (Proxy :: Proxy 12) (128 :: WordN 8) @=? 3968
+            sizedBVSext (Proxy :: Proxy 12) (255 :: WordN 8) @=? 4095,
+          testProperty "sizedBVExt is sizedBVSext" $
             ioProperty . \(x :: Integer) ->
-              extSizedBV (Proxy :: Proxy 12) (fromInteger x :: IntN 8) @=? sextSizedBV (Proxy :: Proxy 12) (fromInteger x :: IntN 8),
-          testCase "selectSizedBV" $ do
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: IntN 8) @=? 0b11
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: IntN 8) @=? 0b111
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: IntN 8) @=? 0b101
-            selectSizedBV (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: IntN 8) @=? 0b10
+              sizedBVExt (Proxy :: Proxy 12) (fromInteger x :: IntN 8) @=? sizedBVSext (Proxy :: Proxy 12) (fromInteger x :: IntN 8),
+          testCase "sizedBVSelect" $ do
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b11100 :: IntN 8) @=? 0b11
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b111000 :: IntN 8) @=? 0b111
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b101000 :: IntN 8) @=? 0b101
+            sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: IntN 8) @=? 0b10
         ],
       testGroup
         "Regression"
