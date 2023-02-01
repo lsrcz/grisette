@@ -979,8 +979,8 @@ module Grisette.Core
 
     -- ** Substitution of a symbol
 
-    -- SubstituteSym (..),
-    -- SubstituteSym' (..),
+    SubstituteSym (..),
+    SubstituteSym' (..),
 
     -- * Type Class Derivation
     Default (..),

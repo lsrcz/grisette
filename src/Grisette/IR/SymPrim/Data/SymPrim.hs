@@ -35,9 +35,6 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SomeSymIntN (..),
     type (=~>) (..),
     ModelSymPair (..),
-    SymRep (..),
-    ConRep (..),
-    LinkedRep,
     (-->),
     type (-~>) (..),
     symSize,
@@ -193,16 +190,6 @@ binSomeSymWordNR2 op str (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: Sy
 
 -- |
 -- Symbolic tabular function type.
-class ConRep sym where
-  type ConType sym
-
-class SupportedPrim con => SymRep con where
-  type SymType con
-  underlyingTerm :: SymType con -> Term con
-  wrapTerm :: Term con -> SymType con
-
-type LinkedRep con sym = (ConRep sym, SymRep con, con ~ ConType sym, sym ~ SymType con)
-
 instance ConRep SymBool where
   type ConType SymBool = Bool
 

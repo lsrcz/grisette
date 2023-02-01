@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -26,6 +27,9 @@
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim (..),
+    SymRep (..),
+    ConRep (..),
+    LinkedRep,
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),
@@ -87,6 +91,16 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
+
+class ConRep sym where
+  type ConType sym
+
+class SupportedPrim con => SymRep con where
+  type SymType con
+  underlyingTerm :: SymType con -> Term con
+  wrapTerm :: Term con -> SymType con
+
+type LinkedRep con sym = (ConRep sym, SymRep con, con ~ ConType sym, sym ~ SymType con)
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -872,6 +886,11 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
 -- (+ 1 (+ a y))
 data (-->) a b where
   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+
+instance (SymRep a, SymRep b) => Function (a --> b) where
+  type Arg (a --> b) = SymType a
+  type Ret (a --> b) = SymType b
+  (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
 
 {-
 pattern GeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b

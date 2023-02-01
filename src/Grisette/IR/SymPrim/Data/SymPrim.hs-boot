@@ -5,7 +5,6 @@
 module Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (..),
     SymInteger (..),
-    SymRep (..),
   )
 where
 
@@ -16,7 +15,7 @@ import {-# SOURCE #-} Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Solvable
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Language.Haskell.TH.Syntax
 
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
@@ -55,33 +54,3 @@ instance EvaluateSym SymInteger
 
 instance ExtractSymbolics SymInteger
 
-class ConRep sym where
-  type ConType sym
-
-class SupportedPrim con => SymRep con where
-  type SymType con
-  underlyingTerm :: SymType con -> Term con
-  wrapTerm :: Term con -> SymType con
-
-{-
-newtype Sym a = Sym {underlyingTerm :: Term a}
-
-type SymBool = Sym Bool
-
-instance NFData (Sym a)
-
-instance Lift (Sym a)
-
-instance (SupportedPrim a) => Solvable a (Sym a)
-
-instance (SupportedPrim a) => Eq (Sym a)
-
-instance (SupportedPrim a) => Hashable (Sym a)
-
-instance (SupportedPrim a) => Show (Sym a)
-
-instance (SupportedPrim a) => EvaluateSym (Sym a)
-
-instance (SupportedPrim a) => ExtractSymbolics (Sym a)
-
--}
