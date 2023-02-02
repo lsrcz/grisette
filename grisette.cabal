@@ -79,7 +79,6 @@ library
       Grisette.IR.SymPrim
       Grisette.IR.SymPrim.Data.BV
       Grisette.IR.SymPrim.Data.IntBitwidth
-      Grisette.IR.SymPrim.Data.Parameterized
       Grisette.IR.SymPrim.Data.Prim.Helpers
       Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
       Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -110,6 +109,8 @@ library
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Mtl
+      Grisette.Utils
+      Grisette.Utils.Parameterized
   other-modules:
       Paths_grisette
   hs-source-dirs:

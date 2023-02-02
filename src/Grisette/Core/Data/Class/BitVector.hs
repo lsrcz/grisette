@@ -33,12 +33,12 @@ where
 
 import Data.Proxy
 import GHC.TypeNats
-import Grisette.IR.SymPrim.Data.Parameterized
+import Grisette.Utils.Parameterized
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
--- >>> import Grisette.IR.SymPrim.Data.Parameterized
+-- >>> import Grisette.Utils.Parameterized
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts
@@ -132,7 +132,7 @@ someBVZext' ::
   -- | Bit vector to extend
   bv ->
   bv
-someBVZext' p@(_ :: NatRepr l) = withKnownNat p $ someBVZext (Proxy @l)
+someBVZext' p@(_ :: NatRepr l) = withKnownProof (hasRepr p) $ someBVZext (Proxy @l)
 {-# INLINE someBVZext' #-}
 
 -- | Sign extension of a bit vector.
@@ -147,7 +147,7 @@ someBVSext' ::
   bv ->
   -- | Bit vector to extend
   bv
-someBVSext' p@(_ :: NatRepr l) = withKnownNat p $ someBVSext (Proxy @l)
+someBVSext' p@(_ :: NatRepr l) = withKnownProof (hasRepr p) $ someBVSext (Proxy @l)
 {-# INLINE someBVSext' #-}
 
 -- | Extension of a bit vector.
@@ -169,7 +169,7 @@ someBVExt' ::
   -- | Bit vector to extend
   bv ->
   bv
-someBVExt' p@(_ :: NatRepr l) = withKnownNat p $ someBVExt (Proxy @l)
+someBVExt' p@(_ :: NatRepr l) = withKnownProof (hasRepr p) $ someBVExt (Proxy @l)
 {-# INLINE someBVExt' #-}
 
 -- | Slicing out a smaller bit vector from a larger one,
@@ -190,7 +190,7 @@ someBVSelect' ::
   -- | Bit vector to select from
   bv ->
   bv
-someBVSelect' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ someBVSelect p q
+someBVSelect' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownProof (hasRepr p) $ withKnownProof (hasRepr q) $ someBVSelect p q
 {-# INLINE someBVSelect' #-}
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
@@ -212,7 +212,7 @@ someBVExtract ::
   bv ->
   bv
 someBVExtract _ _ =
-  withKnownNat (unsafeMkNatRepr @(i - j + 1) (fromIntegral (natVal (Proxy @i)) - fromIntegral (natVal (Proxy @j)) + 1)) $
+  withKnownProof (unsafeKnownProof @(i - j + 1) (fromIntegral (natVal (Proxy @i)) - fromIntegral (natVal (Proxy @j)) + 1)) $
     someBVSelect (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE someBVExtract #-}
 
@@ -234,7 +234,7 @@ someBVExtract' ::
   -- | Bit vector to extract from
   bv ->
   bv
-someBVExtract' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownNat p $ withKnownNat q $ someBVExtract p q
+someBVExtract' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownProof (hasRepr p) $ withKnownProof (hasRepr q) $ someBVExtract p q
 {-# INLINE someBVExtract' #-}
 
 -- | Sized bit vector operations. Including concatenation ('sizedBVConcat'),
@@ -327,7 +327,7 @@ sizedBVExtract ::
   bv n ->
   bv (i - j + 1)
 sizedBVExtract _ _ =
-  case ( reprIsKnown (addNat (subNat (natRepr @i) (natRepr @j)) (natRepr @1)),
+  case ( hasRepr (addNat (subNat (natRepr @i) (natRepr @j)) (natRepr @1)),
          unsafeLeqProof @(j + (i - j + 1)) @n,
          unsafeLeqProof @1 @(i - j + 1)
        ) of

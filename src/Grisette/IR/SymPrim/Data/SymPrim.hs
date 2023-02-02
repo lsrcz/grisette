@@ -71,7 +71,6 @@ import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.IntBitwidth
-import Grisette.IR.SymPrim.Data.Parameterized
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
@@ -86,6 +85,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Grisette.IR.SymPrim.Data.TabularFun
 import Grisette.Lib.Control.Monad
+import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 
 -- $setup
@@ -882,7 +882,7 @@ SUBSTITUTE_SYM_BV_SOME(SomeSymWordN, SymWordN)
 #define BVCONCAT_SIZED(symtype) \
 sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => symtype l -> symtype r -> symtype (l + r); \
 sizedBVConcat (symtype l) (symtype r) = \
-  case (leqAddPos pl pr, knownAdd pl pr) of \
+  case (leqAddPos pl pr, knownAdd (KnownProof @l) (KnownProof @r)) of \
     (LeqProof, KnownProof) -> \
       symtype (pevalBVConcatTerm l r); \
   where; \
@@ -926,7 +926,7 @@ instance SizedBV SymWordN where
 
 #define BVCONCAT(somety, origty) \
 someBVConcat (somety (a :: origty l)) (somety (b :: origty r)) = \
-  case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (Proxy @l) (Proxy @r)) of \
+  case (leqAddPos (Proxy @l) (Proxy @r), knownAdd @l @r KnownProof KnownProof) of \
     (LeqProof, KnownProof) -> \
       somety $ sizedBVConcat a b
 

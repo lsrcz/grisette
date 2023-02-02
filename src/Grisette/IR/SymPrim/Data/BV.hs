@@ -43,7 +43,7 @@ import GHC.Generics
 import GHC.Real
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
-import Grisette.IR.SymPrim.Data.Parameterized
+import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 import Numeric
 
@@ -565,7 +565,7 @@ instance SizedBV IntN where
 
 instance SomeBV SomeWordN where
   someBVConcat (SomeWordN (a :: WordN l)) (SomeWordN (b :: WordN r)) =
-    case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (Proxy @l) (Proxy @r)) of
+    case (leqAddPos (Proxy @l) (Proxy @r), knownAdd @l @r KnownProof KnownProof) of
       (LeqProof, KnownProof) ->
         SomeWordN $ sizedBVConcat a b
   someBVZext (p :: p l) (SomeWordN (a :: WordN n))
@@ -598,7 +598,7 @@ instance SomeBV SomeWordN where
 
 instance SomeBV SomeIntN where
   someBVConcat (SomeIntN (a :: IntN l)) (SomeIntN (b :: IntN r)) =
-    case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (Proxy @l) (Proxy @r)) of
+    case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (KnownProof @l) (KnownProof @r)) of
       (LeqProof, KnownProof) ->
         SomeIntN $ sizedBVConcat a b
   someBVZext (p :: p l) (SomeIntN (a :: IntN n))

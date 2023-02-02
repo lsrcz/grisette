@@ -49,7 +49,6 @@ import {-# SOURCE #-} Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.IR.SymPrim.Data.BV
-import Grisette.IR.SymPrim.Data.Parameterized
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -57,6 +56,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.TabularFun
+import Grisette.Utils.Parameterized
 import qualified Type.Reflection as R
 import Unsafe.Coerce
 
@@ -255,38 +255,32 @@ lowerSinglePrimImpl' config t@(BVConcatTerm _ (bv1 :: Term x) (bv2 :: Term y)) =
 lowerSinglePrimImpl' config t@(BVSelectTerm _ (ix :: R.TypeRep ix) w (bv :: Term x)) =
   case (R.typeRep @a, R.typeRep @x) of
     (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy xn)) ->
-      withKnownNat n1 $
+      withKnownProof (unsafeKnownProof @(na + ix - 1) (natVal (Proxy @na) + natVal (Proxy @ix) - 1)) $
         case ( unsafeAxiom @(na + ix - 1 - ix + 1) @na,
                unsafeLeqProof @(na + ix - 1 + 1) @xn,
                unsafeLeqProof @ix @(na + ix - 1)
              ) of
           (Refl, LeqProof, LeqProof) ->
             lowerUnaryTerm' config t bv (SBV.bvExtract (Proxy @(na + ix - 1)) (Proxy @ix))
-      where
-        n1 :: NatRepr (na + ix - 1)
-        n1 = NatRepr (natVal (Proxy @na) + natVal (Proxy @ix) - 1)
     (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy xn)) ->
-      withKnownNat n1 $
+      withKnownProof (unsafeKnownProof @(na + ix - 1) (natVal (Proxy @na) + natVal (Proxy @ix) - 1)) $
         case ( unsafeAxiom @(na + ix - 1 - ix + 1) @na,
                unsafeLeqProof @(na + ix - 1 + 1) @xn,
                unsafeLeqProof @ix @(na + ix - 1)
              ) of
           (Refl, LeqProof, LeqProof) ->
             lowerUnaryTerm' config t bv (SBV.bvExtract (Proxy @(na + ix - 1)) (Proxy @ix))
-      where
-        n1 :: NatRepr (na + ix - 1)
-        n1 = NatRepr (natVal (Proxy @na) + natVal (Proxy @ix) - 1)
     _ -> translateTernaryError "bvselect" ix w (R.typeRep @x) (R.typeRep @a)
 lowerSinglePrimImpl' config t@(BVExtendTerm _ signed (n :: R.TypeRep n) (bv :: Term x)) =
   case (R.typeRep @a, R.typeRep @x) of
     (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
-      withKnownNat (NatRepr (natVal (Proxy @na) - natVal (Proxy @nx)) :: NatRepr (na - nx)) $
+      withKnownProof (unsafeKnownProof @(na - nx) (natVal (Proxy @na) - natVal (Proxy @nx))) $
         case (unsafeLeqProof @(nx + 1) @na, unsafeLeqProof @1 @(na - nx)) of
           (LeqProof, LeqProof) ->
             bvIsNonZeroFromGEq1 @(na - nx) $
               lowerUnaryTerm' config t bv (if signed then SBV.signExtend else SBV.zeroExtend)
     (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy nx)) ->
-      withKnownNat (NatRepr (natVal (Proxy @na) - natVal (Proxy @nx)) :: NatRepr (na - nx)) $
+      withKnownProof (unsafeKnownProof @(na - nx) (natVal (Proxy @na) - natVal (Proxy @nx))) $
         case (unsafeLeqProof @(nx + 1) @na, unsafeLeqProof @1 @(na - nx)) of
           (LeqProof, LeqProof) ->
             bvIsNonZeroFromGEq1 @(na - nx) $
@@ -648,38 +642,32 @@ lowerSinglePrimImpl config t@(BVConcatTerm _ (bv1 :: Term x) (bv2 :: Term y)) m 
 lowerSinglePrimImpl config t@(BVSelectTerm _ (ix :: R.TypeRep ix) w (bv :: Term x)) m =
   case (R.typeRep @a, R.typeRep @x) of
     (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy xn)) ->
-      withKnownNat n1 $
+      withKnownProof (unsafeKnownProof @(na + ix - 1) (natVal (Proxy @na) + natVal (Proxy @ix) - 1)) $
         case ( unsafeAxiom @(na + ix - 1 - ix + 1) @na,
                unsafeLeqProof @(na + ix - 1 + 1) @xn,
                unsafeLeqProof @ix @(na + ix - 1)
              ) of
           (Refl, LeqProof, LeqProof) ->
             lowerUnaryTerm config t bv (SBV.bvExtract (Proxy @(na + ix - 1)) (Proxy @ix)) m
-      where
-        n1 :: NatRepr (na + ix - 1)
-        n1 = NatRepr (natVal (Proxy @na) + natVal (Proxy @ix) - 1)
     (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy xn)) ->
-      withKnownNat n1 $
+      withKnownProof (unsafeKnownProof @(na + ix - 1) (natVal (Proxy @na) + natVal (Proxy @ix) - 1)) $
         case ( unsafeAxiom @(na + ix - 1 - ix + 1) @na,
                unsafeLeqProof @(na + ix - 1 + 1) @xn,
                unsafeLeqProof @ix @(na + ix - 1)
              ) of
           (Refl, LeqProof, LeqProof) ->
             lowerUnaryTerm config t bv (SBV.bvExtract (Proxy @(na + ix - 1)) (Proxy @ix)) m
-      where
-        n1 :: NatRepr (na + ix - 1)
-        n1 = NatRepr (natVal (Proxy @na) + natVal (Proxy @ix) - 1)
     _ -> translateTernaryError "bvselect" ix w (R.typeRep @x) (R.typeRep @a)
 lowerSinglePrimImpl config t@(BVExtendTerm _ signed (n :: R.TypeRep n) (bv :: Term x)) m =
   case (R.typeRep @a, R.typeRep @x) of
     (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
-      withKnownNat (NatRepr (natVal (Proxy @na) - natVal (Proxy @nx)) :: NatRepr (na - nx)) $
+      withKnownProof (unsafeKnownProof @(na - nx) (natVal (Proxy @na) - natVal (Proxy @nx))) $
         case (unsafeLeqProof @(nx + 1) @na, unsafeLeqProof @1 @(na - nx)) of
           (LeqProof, LeqProof) ->
             bvIsNonZeroFromGEq1 @(na - nx) $
               lowerUnaryTerm config t bv (if signed then SBV.signExtend else SBV.zeroExtend) m
     (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy nx)) ->
-      withKnownNat (NatRepr (natVal (Proxy @na) - natVal (Proxy @nx)) :: NatRepr (na - nx)) $
+      withKnownProof (unsafeKnownProof @(na - nx) (natVal (Proxy @na) - natVal (Proxy @nx))) $
         case (unsafeLeqProof @(nx + 1) @na, unsafeLeqProof @1 @(na - nx)) of
           (LeqProof, LeqProof) ->
             bvIsNonZeroFromGEq1 @(na - nx) $
@@ -749,7 +737,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
           R.App a (n :: R.TypeRep w) ->
             case R.eqTypeRep (R.typeRepKind n) (R.typeRep @Nat) of
               Just R.HRefl ->
-                case (unsafeKnownNat @w (fromIntegral bitWidth), unsafeLeqProof @1 @w) of
+                case (unsafeKnownProof @w (fromIntegral bitWidth), unsafeLeqProof @1 @w) of
                   (KnownProof, LeqProof) ->
                     case (R.eqTypeRep a (R.typeRep @IntN), R.eqTypeRep a (R.typeRep @WordN)) of
                       (Just R.HRefl, _) ->
