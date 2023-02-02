@@ -16,7 +16,7 @@
 module Grisette.Core.Data.Union
   ( -- * The union data structure.
 
-    -- | Please consider using 'UnionM' instead.
+    -- | Please consider using 'Grisette.Core.Control.Monad.UnionM' instead.
     Union (..),
     ifWithLeftMost,
     ifWithStrategy,

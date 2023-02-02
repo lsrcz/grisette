@@ -25,5 +25,5 @@ import Grisette.Core.Data.Class.SimpleMergeable
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 
--- | Class for monads that support union-like operations and 'Mergeable' knowledge propagation.
+-- | Class for monads that support union-like operations and 'Grisette.Core.Data.Class.Mergeable' knowledge propagation.
 type MonadUnion u = (UnionLike u, Monad u)

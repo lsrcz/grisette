@@ -45,9 +45,9 @@ import Grisette.Utils.Parameterized
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
 
--- | Bit vector operations. Including concatenation ('concatSomeBV'),
--- extension ('zextSomeBV', 'sextSomeBV', 'extSomeBV'), and selection
--- ('selectSomeBV').
+-- | Bit vector operations. Including concatenation ('someBVConcat'),
+-- extension ('someBVZext', 'someBVSext', 'someBVExt'), and selection
+-- ('someBVSelect').
 class SomeBV bv where
   -- | Concatenation of two bit vectors.
   --

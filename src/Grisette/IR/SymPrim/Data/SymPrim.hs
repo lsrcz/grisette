@@ -34,9 +34,9 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SomeSymWordN (..),
     SomeSymIntN (..),
     type (=~>) (..),
-    ModelSymPair (..),
-    (-->),
     type (-~>) (..),
+    (-->),
+    ModelSymPair (..),
     symSize,
     symsSize,
   )
@@ -92,11 +92,28 @@ import Language.Haskell.TH.Syntax
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 -- >>> import Grisette.Backend.SBV
+-- >>> import Data.Proxy
 
--- SymBool
+-- | Symbolic Boolean type.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> "a" :: SymBool
+-- a
+-- >>> "a" &&~ "b" :: SymBool
+-- (&& a b)
+--
+-- More symbolic operations are available. Please refer to the documentation
+-- for the type class instances.
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
   deriving (Lift, NFData, Generic)
 
+-- | Symbolic (unbounded, mathematical) integer type.
+--
+-- >>> "a" + 1 :: SymInteger
+-- (+ 1 a)
+--
+-- More symbolic operations are available. Please refer to the documentation
+-- for the type class instances.
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)
 
@@ -114,9 +131,42 @@ instance SignedDivMod SymInteger where
 
 instance SymIntegerOp SymInteger
 
+-- | Symbolic signed bit vector type. Indexed with the bit width.
+-- Signedness affects the semantics of the operations, including
+-- comparison/extension, etc.
+--
+-- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
+-- >>> "a" + 5 :: SymIntN 5
+-- (+ 0b00101 a)
+-- >>> sizedBVConcat (con 0b101 :: SymIntN 3) (con 0b110 :: SymIntN 3)
+-- 0b101110
+-- >>> sizedBVExt (Proxy @6) (con 0b101 :: SymIntN 3)
+-- 0b111101
+-- >>> (8 :: SymIntN 4) <~ (7 :: SymIntN 4)
+-- true
+--
+-- More symbolic operations are available. Please refer to the documentation
+-- for the type class instances.
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
 
+-- | Symbolic signed bit vector type. Not indexed, but the bit width is
+-- fixed at the creation time.
+--
+-- A 'SomeSymIntN' must be created by wrapping a 'SymIntN' with the
+-- 'SomeSymIntN' constructor to fix the bit width:
+--
+-- >>> (SomeSymIntN ("a" :: SymIntN 5))
+-- a
+--
+-- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
+-- >>> (SomeSymIntN ("a" :: SymIntN 5)) + (SomeSymIntN (5 :: SymIntN 5))
+-- (+ 0b00101 a)
+-- >>> someBVConcat (SomeSymIntN (con 0b101 :: SymIntN 3)) (SomeSymIntN (con 0b110 :: SymIntN 3))
+-- 0b101110
+--
+-- More symbolic operations are available. Please refer to the documentation
+-- for the type class instances.
 data SomeSymIntN where
   SomeSymIntN :: (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
 
@@ -151,9 +201,42 @@ binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymInt
     Nothing -> error $ "Operation " ++ str ++ " on SymIntN with different bitwidth"
 {-# INLINE binSomeSymIntNR2 #-}
 
+-- | Symbolic unsigned bit vector type. Indexed with the bit width.
+-- Signedness affects the semantics of the operations, including
+-- comparison/extension, etc.
+--
+-- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
+-- >>> "a" + 5 :: SymWordN 5
+-- (+ 0b00101 a)
+-- >>> sizedBVConcat (con 0b101 :: SymWordN 3) (con 0b110 :: SymWordN 3)
+-- 0b101110
+-- >>> sizedBVExt (Proxy @6) (con 0b101 :: SymWordN 3)
+-- 0b000101
+-- >>> (8 :: SymWordN 4) <~ (7 :: SymWordN 4)
+-- false
+--
+-- More symbolic operations are available. Please refer to the documentation
+-- for the type class instances.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
 
+-- | Symbolic unsigned bit vector type. Not indexed, but the bit width is
+-- fixed at the creation time.
+--
+-- A 'SomeSymWordN' must be created by wrapping a 'SymWordN' with the
+-- 'SomeSymWordN' constructor to fix the bit width:
+--
+-- >>> (SomeSymWordN ("a" :: SymWordN 5))
+-- a
+--
+-- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
+-- >>> (SomeSymWordN ("a" :: SymWordN 5)) + (SomeSymWordN (5 :: SymWordN 5))
+-- (+ 0b00101 a)
+-- >>> someBVConcat (SomeSymWordN (con 0b101 :: SymWordN 3)) (SomeSymWordN (con 0b110 :: SymWordN 3))
+-- 0b101110
+--
+-- More symbolic operations are available. Please refer to the documentation
+-- for the type class instances.
 data SomeSymWordN where
   SomeSymWordN :: (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
 
@@ -188,8 +271,6 @@ binSomeSymWordNR2 op str (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: Sy
     Nothing -> error $ "Operation " ++ str ++ " on SymWordN with different bitwidth"
 {-# INLINE binSomeSymWordNR2 #-}
 
--- |
--- Symbolic tabular function type.
 instance ConRep SymBool where
   type ConType SymBool = Bool
 

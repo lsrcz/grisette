@@ -449,7 +449,7 @@ instance
 -- use this 'fresh' implementation to implement 'GenSym' for your own types.
 --
 -- This 'fresh' implementation is for the types that does not need any specification.
--- It will generate product types by generating each fields with '()' as specification,
+-- It will generate product types by generating each fields with @()@ as specification,
 -- and generate all possible values for a sum type.
 --
 -- __Note:__ __Never__ use on recursive types.

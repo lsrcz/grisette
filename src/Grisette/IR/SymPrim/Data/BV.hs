@@ -52,6 +52,8 @@ import Numeric
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
   deriving (Eq, Ord, Generic, Lift, Hashable, NFData)
 
+-- |
+-- A non-indexed version of 'WordN'.
 data SomeWordN where
   SomeWordN :: (KnownNat n, 1 <= n) => WordN n -> SomeWordN
 
@@ -134,6 +136,8 @@ instance Show SomeWordN where
 newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
   deriving (Eq, Generic, Lift, Hashable, NFData)
 
+-- |
+-- A non-indexed version of 'IntN'.
 data SomeIntN where
   SomeIntN :: (KnownNat n, 1 <= n) => IntN n -> SomeIntN
 
