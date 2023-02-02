@@ -276,6 +276,8 @@ instance ConRep SymBool where
 
 instance SymRep Bool where
   type SymType Bool = SymBool
+
+instance LinkedRep Bool SymBool where
   underlyingTerm (SymBool a) = a
   wrapTerm = SymBool
 
@@ -284,6 +286,8 @@ instance ConRep SymInteger where
 
 instance SymRep Integer where
   type SymType Integer = SymInteger
+
+instance LinkedRep Integer SymInteger where
   underlyingTerm (SymInteger a) = a
   wrapTerm = SymInteger
 
@@ -292,6 +296,8 @@ instance (KnownNat n, 1 <= n) => ConRep (SymIntN n) where
 
 instance (KnownNat n, 1 <= n) => SymRep (IntN n) where
   type SymType (IntN n) = SymIntN n
+
+instance (KnownNat n, 1 <= n) => LinkedRep (IntN n) (SymIntN n) where
   underlyingTerm (SymIntN a) = a
   wrapTerm = SymIntN
 
@@ -300,47 +306,55 @@ instance (KnownNat n, 1 <= n) => ConRep (SymWordN n) where
 
 instance (KnownNat n, 1 <= n) => SymRep (WordN n) where
   type SymType (WordN n) = SymWordN n
+
+instance (KnownNat n, 1 <= n) => LinkedRep (WordN n) (SymWordN n) where
   underlyingTerm (SymWordN a) = a
   wrapTerm = SymWordN
 
-newtype a =~> b = SymTabularFun (Term (a =-> b))
+data sa =~> sb where
+  SymTabularFun :: (LinkedRep ca sa, LinkedRep cb sb) => Term (ca =-> cb) -> sa =~> sb
 
 infixr 0 =~>
 
-instance (SymRep a, SymRep b) => ConRep (a =~> b) where
-  type ConType (a =~> b) = a =-> b
+instance (ConRep a, ConRep b) => ConRep (a =~> b) where
+  type ConType (a =~> b) = ConType a =-> ConType b
 
 instance (SymRep a, SymRep b) => SymRep (a =-> b) where
-  type SymType (a =-> b) = a =~> b
+  type SymType (a =-> b) = SymType a =~> SymType b
+
+instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca =-> cb) (sa =~> sb) where
   underlyingTerm (SymTabularFun a) = a
   wrapTerm = SymTabularFun
 
-instance (SupportedPrim a, SupportedPrim b, SymRep a, SymRep b) => Function (a =~> b) where
-  type Arg (a =~> b) = SymType a
-  type Ret (a =~> b) = SymType b
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) where
+  type Arg (sa =~> sb) = sa
+  type Ret (sa =~> sb) = sb
   (SymTabularFun f) # t = wrapTerm $ pevalTabularFunApplyTerm f (underlyingTerm t)
 
 -- |
 -- Symbolic general function type.
-newtype a -~> b = SymGeneralFun (Term (a --> b))
+data sa -~> sb where
+  SymGeneralFun :: (LinkedRep ca sa, LinkedRep cb sb) => Term (ca --> cb) -> sa -~> sb
 
 infixr 0 -~>
 
-instance (SymRep a, SymRep b) => ConRep (a -~> b) where
-  type ConType (a -~> b) = a --> b
+instance (ConRep a, ConRep b) => ConRep (a -~> b) where
+  type ConType (a -~> b) = ConType a --> ConType b
 
-instance (SymRep a, SymRep b) => SymRep (a --> b) where
-  type SymType (a --> b) = a -~> b
+instance (SymRep ca, SymRep cb) => SymRep (ca --> cb) where
+  type SymType (ca --> cb) = SymType ca -~> SymType cb
+
+instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca --> cb) (sa -~> sb) where
   underlyingTerm (SymGeneralFun a) = a
   wrapTerm = SymGeneralFun
 
-instance (SupportedPrim a, SupportedPrim b, SymRep a, SymRep b) => Function (a -~> b) where
-  type Arg (a -~> b) = SymType a
-  type Ret (a -~> b) = SymType b
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa -~> sb) where
+  type Arg (sa -~> sb) = sa
+  type Ret (sa -~> sb) = sb
   (SymGeneralFun f) # t = wrapTerm $ pevalGeneralFunApplyTerm f (underlyingTerm t)
 
 -- | Construction of general symbolic functions.
-(-->) :: (SupportedPrim a, SupportedPrim b, SymRep b) => TypedSymbol a -> SymType b -> a --> b
+(-->) :: (SupportedPrim ca, SupportedPrim cb, LinkedRep cb sb) => TypedSymbol ca -> sb -> ca --> cb
 (-->) arg v = GeneralFun newarg (substTerm arg (symTerm newarg) (underlyingTerm v))
   where
     newarg = WithInfo arg ARG
@@ -487,7 +501,7 @@ instance (KnownNat n, 1 <= n) => Show (symtype n) where \
   show (symtype t) = pformat t
 
 #define SHOW_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => Show (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Show (sa op sb) where \
   show (cons t) = pformat t
 
 #define SHOW_BV_SOME(somety) \
@@ -516,7 +530,7 @@ instance (KnownNat n, 1 <= n) => Hashable (symtype n) where \
   hashWithSalt s (symtype v) = s `hashWithSalt` v
 
 #define HASHABLE_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => Hashable (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Hashable (sa op sb) where \
   hashWithSalt s (cons v) = s `hashWithSalt` v
 
 #define HASHABLE_BV_SOME(somety, origty) \
@@ -552,7 +566,7 @@ instance Eq symtype where; \
   {-# INLINE (/=) #-}
 
 #define EQ_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => Eq (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Eq (sa op sb) where \
   (cons l) == (cons r) = l == r
 
 #if 1
@@ -577,7 +591,7 @@ instance (KnownNat n, 1 <= n) => IsString (symtype n) where \
   fromString = ssym
 
 #define IS_STRING_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => IsString (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => IsString (sa op sb) where \
   fromString = ssym
 
 #if 1
@@ -612,7 +626,7 @@ instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
   conView _ = Nothing
 
 #define SOLVABLE_FUN(symop, conop, symcons) \
-instance (SupportedPrim a, SupportedPrim b) => Solvable (conop a b) (symop a b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (conop ca cb) (symop sa sb) where \
   con = symcons . conTerm; \
   ssym = symcons . ssymTerm; \
   isym str i = symcons $ isymTerm str i; \
@@ -664,7 +678,7 @@ instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
   toSym = con
 
 #define TO_SYM_FROMCON_FUN(conop, symop) \
-instance (SupportedPrim a, SupportedPrim b) => ToSym (conop a b) (symop a b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToSym (conop ca cb) (symop sa sb) where \
   toSym = con
 
 #define TO_SYM_FROMCON_BV_SOME(contype, symtype) \
@@ -714,7 +728,7 @@ instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
   toCon = conView
 
 #define TO_CON_FROMSYM_FUN(conop, symop) \
-instance (SupportedPrim a, SupportedPrim b) => ToCon (symop a b) (conop a b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToCon (symop sa sb) (conop ca cb) where \
   toCon = conView
 
 #define TO_CON_FROMSYM_BV_SOME(contype, symtype) \
@@ -800,7 +814,7 @@ instance (KnownNat n, 1 <= n) => EvaluateSym (symtype n) where \
   evaluateSym fillDefault model (symtype t) = symtype $ evaluateTerm fillDefault model t
 
 #define EVALUATE_SYM_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => EvaluateSym (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => EvaluateSym (sa op sb) where \
   evaluateSym fillDefault model (cons t) = cons $ evaluateTerm fillDefault model t
 
 #define EVALUATE_SYM_BV_SOME(somety, origty) \
@@ -829,7 +843,7 @@ instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
   extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
 
 #define EXTRACT_SYMBOLICS_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => ExtractSymbolics (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ExtractSymbolics (sa op sb) where \
   extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
 
 #define EXTRACT_SYMBOLICS_BV_SOME(somety, origty) \
@@ -940,7 +954,7 @@ instance (KnownNat n, 1 <= n) => SubstituteSym (symtype n) where \
   substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
 
 #define SUBSTITUTE_SYM_FUN(op, cons) \
-instance (SupportedPrim a, SupportedPrim b) => SubstituteSym (a op b) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SubstituteSym (sa op sb) where \
   substituteSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
 
 #define SUBSTITUTE_SYM_BV_SOME(somety, origty) \
@@ -1051,10 +1065,10 @@ instance SomeBV SomeSymWordN where
 
 -- ModelRep
 
-data ModelSymPair t where
-  (:=) :: SymRep t => SymType t -> t -> ModelSymPair t
+data ModelSymPair ct st where
+  (:=) :: LinkedRep ct st => st -> ct -> ModelSymPair ct st
 
-instance ModelRep (ModelSymPair t) Model where
+instance ModelRep (ModelSymPair ct st) Model where
   buildModel (sym := val) =
     case underlyingTerm sym of
       SymTerm _ symbol -> insertValue symbol val emptyModel

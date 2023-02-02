@@ -59,12 +59,12 @@ class SubstituteSym a where
   --
   -- >>> substituteSym "a" ("c" &&~ "d" :: Sym Bool) ["a" &&~ "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
-  substituteSym :: SymRep b => TypedSymbol b -> SymType b -> a -> a
+  substituteSym :: LinkedRep cb sb => TypedSymbol cb -> sb -> a -> a
 
 -- | Auxiliary class for 'SubstituteSym' instance derivation
 class SubstituteSym' a where
   -- | Auxiliary function for 'substituteSym' derivation
-  substituteSym' :: SymRep b => TypedSymbol b -> SymType b -> a c -> a c
+  substituteSym' :: LinkedRep cb sb => TypedSymbol cb -> sb -> a c -> a c
 
 instance
   ( Generic a,

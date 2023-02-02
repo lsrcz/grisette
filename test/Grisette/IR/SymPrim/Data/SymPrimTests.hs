@@ -395,7 +395,7 @@ symPrimTests =
       testGroup
         "TabularFun"
         [ testCase "apply" $ do
-            (ssym "a" :: Integer =~> Integer)
+            (ssym "a" :: SymInteger =~> SymInteger)
               # ssym "b"
               @=? SymInteger (pevalTabularFunApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b"))
         ],
@@ -405,12 +405,12 @@ symPrimTests =
             evaluateSym
               False
               (buildModel ("a" := (1 :: Integer), "b" := (2 :: Integer)))
-              (con ("a" --> "a" + "b") :: Integer -~> Integer)
-              @=? (con ("a" --> "a" + 2) :: Integer -~> Integer)
+              (con ("a" --> "a" + "b") :: SymInteger -~> SymInteger)
+              @=? (con ("a" --> "a" + 2) :: SymInteger -~> SymInteger)
             evaluateSym
               False
               (buildModel ("a" := (1 :: Integer), "b" := (2 :: Integer), "c" := (3 :: Integer)))
-              (con ("a" --> con ("b" --> "a" + "b" + "c")) :: Integer -~> Integer --> Integer)
+              (con ("a" --> con ("b" --> "a" + "b" + "c")) :: SymInteger -~> SymInteger -~> SymInteger)
               @=? con ("a" --> con ("b" --> "a" + "b" + 3) :: Integer --> Integer --> Integer)
         ],
       testGroup
