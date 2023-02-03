@@ -2,6 +2,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -18,6 +19,7 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     Term (..),
     UTerm (..),
     type (-->) (..),
+    buildGeneralFun,
   )
 where
 
@@ -159,42 +161,47 @@ data Term t where
   BVConcatTerm ::
     ( SupportedPrim (bv a),
       SupportedPrim (bv b),
-      SupportedPrim (bv c),
+      SupportedPrim (bv (a + b)),
       KnownNat a,
       KnownNat b,
-      KnownNat c,
-      BVConcat (bv a) (bv b) (bv c)
+      1 <= a,
+      1 <= b,
+      SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
     !(Term (bv a)) ->
     !(Term (bv b)) ->
-    Term (bv c)
+    Term (bv (a + b))
   BVSelectTerm ::
-    ( SupportedPrim (bv a),
+    ( SupportedPrim (bv n),
       SupportedPrim (bv w),
-      KnownNat a,
-      KnownNat w,
+      KnownNat n,
       KnownNat ix,
-      BVSelect (bv a) ix w (bv w)
+      KnownNat w,
+      1 <= n,
+      1 <= w,
+      ix + w <= n,
+      SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
     !(TypeRep ix) ->
     !(TypeRep w) ->
-    !(Term (bv a)) ->
+    !(Term (bv n)) ->
     Term (bv w)
   BVExtendTerm ::
-    ( SupportedPrim (bv a),
-      SupportedPrim (bv b),
-      KnownNat a,
-      KnownNat b,
-      KnownNat n,
-      BVExtend (bv a) n (bv b)
+    ( SupportedPrim (bv l),
+      SupportedPrim (bv r),
+      KnownNat l,
+      KnownNat r,
+      1 <= l,
+      l <= r,
+      SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
     !Bool ->
-    !(TypeRep n) ->
-    !(Term (bv a)) ->
-    Term (bv b)
+    !(TypeRep r) ->
+    !(Term (bv l)) ->
+    Term (bv r)
   TabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
@@ -252,39 +259,44 @@ data UTerm t where
   UBVConcatTerm ::
     ( SupportedPrim (bv a),
       SupportedPrim (bv b),
-      SupportedPrim (bv c),
+      SupportedPrim (bv (a + b)),
       KnownNat a,
       KnownNat b,
-      KnownNat c,
-      BVConcat (bv a) (bv b) (bv c)
+      1 <= a,
+      1 <= b,
+      SizedBV bv
     ) =>
     !(Term (bv a)) ->
     !(Term (bv b)) ->
-    UTerm (bv c)
+    UTerm (bv (a + b))
   UBVSelectTerm ::
-    ( SupportedPrim (bv a),
+    ( SupportedPrim (bv n),
       SupportedPrim (bv w),
-      KnownNat a,
+      KnownNat n,
       KnownNat ix,
       KnownNat w,
-      BVSelect (bv a) ix w (bv w)
+      1 <= n,
+      1 <= w,
+      ix + w <= n,
+      SizedBV bv
     ) =>
     !(TypeRep ix) ->
     !(TypeRep w) ->
-    !(Term (bv a)) ->
+    !(Term (bv n)) ->
     UTerm (bv w)
   UBVExtendTerm ::
-    ( SupportedPrim (bv a),
-      SupportedPrim (bv b),
-      KnownNat a,
-      KnownNat b,
-      KnownNat n,
-      BVExtend (bv a) n (bv b)
+    ( SupportedPrim (bv l),
+      SupportedPrim (bv r),
+      KnownNat l,
+      KnownNat r,
+      1 <= l,
+      l <= r,
+      SizedBV bv
     ) =>
     !Bool ->
-    !(TypeRep n) ->
-    !(Term (bv a)) ->
-    UTerm (bv b)
+    !(TypeRep r) ->
+    !(Term (bv l)) ->
+    UTerm (bv r)
   UTabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
@@ -306,3 +318,5 @@ data (-->) a b where
   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 infixr 0 -->
+
+buildGeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b

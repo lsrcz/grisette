@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -70,7 +71,7 @@ instance Show SymbolSet where
       go0 (x : xs) = x ++ ", " ++ go0 xs
 
 -- | Model returned by the solver.
-newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable)
+newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable, Semigroup, Monoid)
 
 instance Show Model where
   showsPrec prec (Model m) = showParen (prec >= 10) $ \x ->
@@ -246,7 +247,9 @@ instance ModelOps Model SymbolSet TypedSymbol where
     withSymbolSupported sym $
       (unsafeFromModelValue @t)
         <$> M.lookup (someTypedSymbol sym) m
+  modelContains sym (Model m) = M.member (someTypedSymbol sym) m
   exceptFor (SymbolSet s) (Model m) = Model $ S.foldl' (flip M.delete) m s
+  exceptFor' s (Model m) = Model $ M.delete (someTypedSymbol s) m
   restrictTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
@@ -271,13 +274,24 @@ instance ModelOps Model SymbolSet TypedSymbol where
         M.insert (someTypedSymbol sym) (toModelValue v) m
 
 evaluateSomeTerm :: Bool -> Model -> SomeTerm -> SomeTerm
-evaluateSomeTerm fillDefault (Model ma) = gomemo
+evaluateSomeTerm fillDefault m@(Model ma) = gomemo
   where
     gomemo = htmemo go
     gotyped :: (SupportedPrim a) => Term a -> Term a
     gotyped a = case gomemo (SomeTerm a) of
       SomeTerm v -> unsafeCoerce v
-    go c@(SomeTerm ConTerm {}) = c
+    go c@(SomeTerm (ConTerm _ cv :: Term v)) =
+      case (typeRep :: TypeRep v) of
+        App (App gf _) _ ->
+          case eqTypeRep gf (typeRep @(-->)) of
+            Just HRefl -> case cv of
+              GeneralFun sym tm ->
+                if modelContains sym m -- someTypedSymbol sym1 == someTypedSymbol sym
+                  then case evaluateSomeTerm fillDefault (exceptFor' sym m) (SomeTerm tm) of
+                    SomeTerm tm' -> SomeTerm $ conTerm $ GeneralFun sym tm' -- stm
+                  else SomeTerm $ conTerm $ GeneralFun sym (gotyped tm)
+            Nothing -> c
+        _ -> c
     go c@(SomeTerm ((SymTerm _ sym) :: Term a)) =
       case M.lookup (someTypedSymbol sym) ma of
         Nothing -> if fillDefault then SomeTerm $ conTerm (defaultValue @a) else c
@@ -361,9 +375,105 @@ evaluateTerm fillDefault m t = case evaluateSomeTerm fillDefault m $ SomeTerm t 
 -- Model {x -> 1 :: Integer, y -> True :: Bool}
 data ModelValuePair t = (TypedSymbol t) ::= t deriving (Show)
 
-instance ModelRep (ModelValuePair t) Model SymbolSet TypedSymbol where
+instance ModelRep (ModelValuePair t) Model where
   buildModel (sym ::= val) = insertValue sym val emptyModel
 
+instance (ModelRep a Model, ModelRep b Model) => ModelRep (a, b) Model where
+  buildModel (a, b) = buildModel a <> buildModel b
+
+instance
+  ( ModelRep a Model,
+    ModelRep b Model,
+    ModelRep c Model
+  ) =>
+  ModelRep (a, b, c) Model
+  where
+  buildModel (a, b, c) = buildModel a <> buildModel b <> buildModel c
+
+instance
+  ( ModelRep a Model,
+    ModelRep b Model,
+    ModelRep c Model,
+    ModelRep d Model
+  ) =>
+  ModelRep (a, b, c, d) Model
+  where
+  buildModel (a, b, c, d) =
+    buildModel a <> buildModel b <> buildModel c <> buildModel d
+
+instance
+  ( ModelRep a Model,
+    ModelRep b Model,
+    ModelRep c Model,
+    ModelRep d Model,
+    ModelRep e Model
+  ) =>
+  ModelRep (a, b, c, d, e) Model
+  where
+  buildModel (a, b, c, d, e) =
+    buildModel a <> buildModel b <> buildModel c <> buildModel d <> buildModel e
+
+instance
+  ( ModelRep a Model,
+    ModelRep b Model,
+    ModelRep c Model,
+    ModelRep d Model,
+    ModelRep e Model,
+    ModelRep f Model
+  ) =>
+  ModelRep (a, b, c, d, e, f) Model
+  where
+  buildModel (a, b, c, d, e, f) =
+    buildModel a
+      <> buildModel b
+      <> buildModel c
+      <> buildModel d
+      <> buildModel e
+      <> buildModel f
+
+instance
+  ( ModelRep a Model,
+    ModelRep b Model,
+    ModelRep c Model,
+    ModelRep d Model,
+    ModelRep e Model,
+    ModelRep f Model,
+    ModelRep g Model
+  ) =>
+  ModelRep (a, b, c, d, e, f, g) Model
+  where
+  buildModel (a, b, c, d, e, f, g) =
+    buildModel a
+      <> buildModel b
+      <> buildModel c
+      <> buildModel d
+      <> buildModel e
+      <> buildModel f
+      <> buildModel g
+
+instance
+  ( ModelRep a Model,
+    ModelRep b Model,
+    ModelRep c Model,
+    ModelRep d Model,
+    ModelRep e Model,
+    ModelRep f Model,
+    ModelRep g Model,
+    ModelRep h Model
+  ) =>
+  ModelRep (a, b, c, d, e, f, g, h) Model
+  where
+  buildModel (a, b, c, d, e, f, g, h) =
+    buildModel a
+      <> buildModel b
+      <> buildModel c
+      <> buildModel d
+      <> buildModel e
+      <> buildModel f
+      <> buildModel g
+      <> buildModel h
+
+{-
 instance
   ModelRep
     ( ModelValuePair a,
@@ -545,3 +655,5 @@ instance
         . insertValue sym2 val2
         . insertValue sym1 val1
         $ emptyModel
+
+-}

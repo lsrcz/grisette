@@ -449,7 +449,7 @@ instance
 -- use this 'fresh' implementation to implement 'GenSym' for your own types.
 --
 -- This 'fresh' implementation is for the types that does not need any specification.
--- It will generate product types by generating each fields with '()' as specification,
+-- It will generate product types by generating each fields with @()@ as specification,
 -- and generate all possible values for a sum type.
 --
 -- __Note:__ __Never__ use on recursive types.
@@ -1457,18 +1457,30 @@ instance
   ) =>
   GenSym (ExceptT e m a) (ExceptT e m a)
 
-instance (SupportedPrim a) => GenSym (Sym a) (Sym a)
-
-instance (SupportedPrim a) => GenSymSimple (Sym a) (Sym a) where
+#define GENSYM_SIMPLE(symtype) \
+instance GenSym symtype symtype
+#define GENSYM_SIMPLE_SIMPLE(symtype) \
+instance GenSymSimple symtype symtype where \
   simpleFresh _ = simpleFresh ()
-
-instance (SupportedPrim a) => GenSym () (Sym a) where
+#define GENSYM_UNIT_SIMPLE(symtype) \
+instance GenSym () symtype where \
   fresh _ = mrgSingle <$> simpleFresh ()
-
-instance (SupportedPrim a) => GenSymSimple () (Sym a) where
-  simpleFresh _ = do
-    ident <- getFreshIdent
-    FreshIndex i <- nextFreshIndex
-    case ident of
-      FreshIdent s -> return $ isym s i
+#define GENSYM_UNIT_SIMPLE_SIMPLE(symtype) \
+instance GenSymSimple () symtype where \
+  simpleFresh _ = do; \
+    ident <- getFreshIdent; \
+    FreshIndex i <- nextFreshIndex; \
+    case ident of; \
+      FreshIdent s -> return $ isym s i; \
       FreshIdentWithInfo s info -> return $ iinfosym s i info
+
+#if 1
+GENSYM_SIMPLE(SymBool)
+GENSYM_SIMPLE_SIMPLE(SymBool)
+GENSYM_UNIT_SIMPLE(SymBool)
+GENSYM_UNIT_SIMPLE_SIMPLE(SymBool)
+GENSYM_SIMPLE(SymInteger)
+GENSYM_SIMPLE_SIMPLE(SymInteger)
+GENSYM_UNIT_SIMPLE(SymInteger)
+GENSYM_UNIT_SIMPLE_SIMPLE(SymInteger)
+#endif

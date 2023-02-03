@@ -8,6 +8,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Backend.SBV.Data.SMT.TermRewritingGen where
@@ -184,11 +185,12 @@ rotateBitsSpec a n = constructUnarySpec (`rotateBitsTerm` n) (`pevalRotateBitsTe
 bvconcatSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
-    TermRewritingSpec c (bv cn),
+    TermRewritingSpec c (bv (an + bn)),
     KnownNat an,
     KnownNat bn,
-    KnownNat cn,
-    BVConcat (bv an) (bv bn) (bv cn)
+    1 <= an,
+    1 <= bn,
+    SizedBV bv
   ) =>
   a ->
   b ->
@@ -199,9 +201,13 @@ bvselectSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
     KnownNat an,
-    KnownNat bn,
     KnownNat ix,
-    BVSelect (bv an) ix bn (bv bn)
+    KnownNat bn,
+    1 <= an,
+    1 <= bn,
+    0 <= ix,
+    ix + bn <= an,
+    SizedBV bv
   ) =>
   proxy ix ->
   proxy bn ->
@@ -214,7 +220,9 @@ bvextendSpec ::
     TermRewritingSpec b (bv bn),
     KnownNat an,
     KnownNat bn,
-    BVExtend (bv an) bn (bv bn)
+    1 <= an,
+    an <= bn,
+    SizedBV bv
   ) =>
   Bool ->
   proxy bn ->
@@ -449,38 +457,7 @@ dsbv1 ::
     SupportedBV bv 3,
     SupportedBV bv 4,
     Typeable bv,
-    BVSelect (bv 4) 0 2 (bv 2),
-    BVSelect (bv 4) 1 2 (bv 2),
-    BVSelect (bv 4) 2 2 (bv 2),
-    BVSelect (bv 3) 0 2 (bv 2),
-    BVSelect (bv 3) 1 2 (bv 2),
-    BVSelect (bv 2) 0 2 (bv 2),
-    BVConcat (bv 1) (bv 1) (bv 2),
-    BVExtend (bv 1) 2 (bv 2),
-    BVSelect (bv 4) 0 1 (bv 1),
-    BVSelect (bv 4) 1 1 (bv 1),
-    BVSelect (bv 4) 2 1 (bv 1),
-    BVSelect (bv 4) 3 1 (bv 1),
-    BVSelect (bv 3) 0 1 (bv 1),
-    BVSelect (bv 3) 1 1 (bv 1),
-    BVSelect (bv 3) 2 1 (bv 1),
-    BVSelect (bv 2) 0 1 (bv 1),
-    BVSelect (bv 2) 1 1 (bv 1),
-    BVSelect (bv 1) 0 1 (bv 1),
-    BVSelect (bv 4) 0 3 (bv 3),
-    BVSelect (bv 4) 1 3 (bv 3),
-    BVSelect (bv 3) 0 3 (bv 3),
-    BVConcat (bv 1) (bv 2) (bv 3),
-    BVConcat (bv 2) (bv 1) (bv 3),
-    BVExtend (bv 1) 3 (bv 3),
-    BVExtend (bv 2) 3 (bv 3),
-    BVSelect (bv 4) 0 4 (bv 4),
-    BVConcat (bv 1) (bv 3) (bv 4),
-    BVConcat (bv 2) (bv 2) (bv 4),
-    BVConcat (bv 3) (bv 1) (bv 4),
-    BVExtend (bv 1) 4 (bv 4),
-    BVExtend (bv 2) 4 (bv 4),
-    BVExtend (bv 3) 4 (bv 4)
+    SizedBV bv
   ) =>
   proxy bv ->
   Int ->
@@ -531,38 +508,7 @@ dsbv2 ::
     SupportedBV bv 3,
     SupportedBV bv 4,
     Typeable bv,
-    BVSelect (bv 4) 0 2 (bv 2),
-    BVSelect (bv 4) 1 2 (bv 2),
-    BVSelect (bv 4) 2 2 (bv 2),
-    BVSelect (bv 3) 0 2 (bv 2),
-    BVSelect (bv 3) 1 2 (bv 2),
-    BVSelect (bv 2) 0 2 (bv 2),
-    BVConcat (bv 1) (bv 1) (bv 2),
-    BVExtend (bv 1) 2 (bv 2),
-    BVSelect (bv 4) 0 1 (bv 1),
-    BVSelect (bv 4) 1 1 (bv 1),
-    BVSelect (bv 4) 2 1 (bv 1),
-    BVSelect (bv 4) 3 1 (bv 1),
-    BVSelect (bv 3) 0 1 (bv 1),
-    BVSelect (bv 3) 1 1 (bv 1),
-    BVSelect (bv 3) 2 1 (bv 1),
-    BVSelect (bv 2) 0 1 (bv 1),
-    BVSelect (bv 2) 1 1 (bv 1),
-    BVSelect (bv 1) 0 1 (bv 1),
-    BVSelect (bv 4) 0 3 (bv 3),
-    BVSelect (bv 4) 1 3 (bv 3),
-    BVSelect (bv 3) 0 3 (bv 3),
-    BVConcat (bv 1) (bv 2) (bv 3),
-    BVConcat (bv 2) (bv 1) (bv 3),
-    BVExtend (bv 1) 3 (bv 3),
-    BVExtend (bv 2) 3 (bv 3),
-    BVSelect (bv 4) 0 4 (bv 4),
-    BVConcat (bv 1) (bv 3) (bv 4),
-    BVConcat (bv 2) (bv 2) (bv 4),
-    BVConcat (bv 3) (bv 1) (bv 4),
-    BVExtend (bv 1) 4 (bv 4),
-    BVExtend (bv 2) 4 (bv 4),
-    BVExtend (bv 3) 4 (bv 4)
+    SizedBV bv
   ) =>
   proxy bv ->
   Int ->
@@ -613,38 +559,7 @@ dsbv3 ::
     SupportedBV bv 3,
     SupportedBV bv 4,
     Typeable bv,
-    BVSelect (bv 4) 0 2 (bv 2),
-    BVSelect (bv 4) 1 2 (bv 2),
-    BVSelect (bv 4) 2 2 (bv 2),
-    BVSelect (bv 3) 0 2 (bv 2),
-    BVSelect (bv 3) 1 2 (bv 2),
-    BVSelect (bv 2) 0 2 (bv 2),
-    BVConcat (bv 1) (bv 1) (bv 2),
-    BVExtend (bv 1) 2 (bv 2),
-    BVSelect (bv 4) 0 1 (bv 1),
-    BVSelect (bv 4) 1 1 (bv 1),
-    BVSelect (bv 4) 2 1 (bv 1),
-    BVSelect (bv 4) 3 1 (bv 1),
-    BVSelect (bv 3) 0 1 (bv 1),
-    BVSelect (bv 3) 1 1 (bv 1),
-    BVSelect (bv 3) 2 1 (bv 1),
-    BVSelect (bv 2) 0 1 (bv 1),
-    BVSelect (bv 2) 1 1 (bv 1),
-    BVSelect (bv 1) 0 1 (bv 1),
-    BVSelect (bv 4) 0 3 (bv 3),
-    BVSelect (bv 4) 1 3 (bv 3),
-    BVSelect (bv 3) 0 3 (bv 3),
-    BVConcat (bv 1) (bv 2) (bv 3),
-    BVConcat (bv 2) (bv 1) (bv 3),
-    BVExtend (bv 1) 3 (bv 3),
-    BVExtend (bv 2) 3 (bv 3),
-    BVSelect (bv 4) 0 4 (bv 4),
-    BVConcat (bv 1) (bv 3) (bv 4),
-    BVConcat (bv 2) (bv 2) (bv 4),
-    BVConcat (bv 3) (bv 1) (bv 4),
-    BVExtend (bv 1) 4 (bv 4),
-    BVExtend (bv 2) 4 (bv 4),
-    BVExtend (bv 3) 4 (bv 4)
+    SizedBV bv
   ) =>
   proxy bv ->
   Int ->
@@ -694,38 +609,7 @@ dsbv4 ::
     SupportedBV bv 3,
     SupportedBV bv 4,
     Typeable bv,
-    BVSelect (bv 4) 0 2 (bv 2),
-    BVSelect (bv 4) 1 2 (bv 2),
-    BVSelect (bv 4) 2 2 (bv 2),
-    BVSelect (bv 3) 0 2 (bv 2),
-    BVSelect (bv 3) 1 2 (bv 2),
-    BVSelect (bv 2) 0 2 (bv 2),
-    BVConcat (bv 1) (bv 1) (bv 2),
-    BVExtend (bv 1) 2 (bv 2),
-    BVSelect (bv 4) 0 1 (bv 1),
-    BVSelect (bv 4) 1 1 (bv 1),
-    BVSelect (bv 4) 2 1 (bv 1),
-    BVSelect (bv 4) 3 1 (bv 1),
-    BVSelect (bv 3) 0 1 (bv 1),
-    BVSelect (bv 3) 1 1 (bv 1),
-    BVSelect (bv 3) 2 1 (bv 1),
-    BVSelect (bv 2) 0 1 (bv 1),
-    BVSelect (bv 2) 1 1 (bv 1),
-    BVSelect (bv 1) 0 1 (bv 1),
-    BVSelect (bv 4) 0 3 (bv 3),
-    BVSelect (bv 4) 1 3 (bv 3),
-    BVSelect (bv 3) 0 3 (bv 3),
-    BVConcat (bv 1) (bv 2) (bv 3),
-    BVConcat (bv 2) (bv 1) (bv 3),
-    BVExtend (bv 1) 3 (bv 3),
-    BVExtend (bv 2) 3 (bv 3),
-    BVSelect (bv 4) 0 4 (bv 4),
-    BVConcat (bv 1) (bv 3) (bv 4),
-    BVConcat (bv 2) (bv 2) (bv 4),
-    BVConcat (bv 3) (bv 1) (bv 4),
-    BVExtend (bv 1) 4 (bv 4),
-    BVExtend (bv 2) 4 (bv 4),
-    BVExtend (bv 3) 4 (bv 4)
+    SizedBV bv
   ) =>
   proxy bv ->
   Int ->
@@ -776,38 +660,7 @@ instance
     SupportedBV bv 3,
     SupportedBV bv 4,
     Typeable bv,
-    BVSelect (bv 4) 0 2 (bv 2),
-    BVSelect (bv 4) 1 2 (bv 2),
-    BVSelect (bv 4) 2 2 (bv 2),
-    BVSelect (bv 3) 0 2 (bv 2),
-    BVSelect (bv 3) 1 2 (bv 2),
-    BVSelect (bv 2) 0 2 (bv 2),
-    BVConcat (bv 1) (bv 1) (bv 2),
-    BVExtend (bv 1) 2 (bv 2),
-    BVSelect (bv 4) 0 1 (bv 1),
-    BVSelect (bv 4) 1 1 (bv 1),
-    BVSelect (bv 4) 2 1 (bv 1),
-    BVSelect (bv 4) 3 1 (bv 1),
-    BVSelect (bv 3) 0 1 (bv 1),
-    BVSelect (bv 3) 1 1 (bv 1),
-    BVSelect (bv 3) 2 1 (bv 1),
-    BVSelect (bv 2) 0 1 (bv 1),
-    BVSelect (bv 2) 1 1 (bv 1),
-    BVSelect (bv 1) 0 1 (bv 1),
-    BVSelect (bv 4) 0 3 (bv 3),
-    BVSelect (bv 4) 1 3 (bv 3),
-    BVSelect (bv 3) 0 3 (bv 3),
-    BVConcat (bv 1) (bv 2) (bv 3),
-    BVConcat (bv 2) (bv 1) (bv 3),
-    BVExtend (bv 1) 3 (bv 3),
-    BVExtend (bv 2) 3 (bv 3),
-    BVSelect (bv 4) 0 4 (bv 4),
-    BVConcat (bv 1) (bv 3) (bv 4),
-    BVConcat (bv 2) (bv 2) (bv 4),
-    BVConcat (bv 3) (bv 1) (bv 4),
-    BVExtend (bv 1) 4 (bv 4),
-    BVExtend (bv 2) 4 (bv 4),
-    BVExtend (bv 3) 4 (bv 4)
+    SizedBV bv
   ) =>
   Arbitrary (DifferentSizeBVSpec bv 4)
   where

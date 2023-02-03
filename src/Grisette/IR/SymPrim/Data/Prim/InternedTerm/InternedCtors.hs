@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -219,78 +220,85 @@ rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 bvconcatTerm ::
   ( SupportedPrim (bv a),
     SupportedPrim (bv b),
-    SupportedPrim (bv c),
+    SupportedPrim (bv (a + b)),
     KnownNat a,
     KnownNat b,
-    KnownNat c,
-    BVConcat (bv a) (bv b) (bv c)
+    1 <= a,
+    1 <= b,
+    SizedBV bv
   ) =>
   Term (bv a) ->
   Term (bv b) ->
-  Term (bv c)
+  Term (bv (a + b))
 bvconcatTerm l r = internTerm $ UBVConcatTerm l r
 {-# INLINE bvconcatTerm #-}
 
 bvselectTerm ::
-  forall bv a ix w proxy.
-  ( SupportedPrim (bv a),
+  forall bv n ix w proxy.
+  ( SupportedPrim (bv n),
     SupportedPrim (bv w),
-    KnownNat a,
-    KnownNat w,
+    KnownNat n,
     KnownNat ix,
-    BVSelect (bv a) ix w (bv w)
+    KnownNat w,
+    1 <= n,
+    1 <= w,
+    ix + w <= n,
+    SizedBV bv
   ) =>
   proxy ix ->
   proxy w ->
-  Term (bv a) ->
+  Term (bv n) ->
   Term (bv w)
 bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
 {-# INLINE bvselectTerm #-}
 
 bvextendTerm ::
-  forall bv a n w proxy.
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv w),
-    KnownNat a,
-    KnownNat n,
-    KnownNat w,
-    BVExtend (bv a) n (bv w)
+  forall bv l r proxy.
+  ( SupportedPrim (bv l),
+    SupportedPrim (bv r),
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    l <= r,
+    SizedBV bv
   ) =>
   Bool ->
-  proxy n ->
-  Term (bv a) ->
-  Term (bv w)
-bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @n) v
+  proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
 {-# INLINE bvextendTerm #-}
 
 bvsignExtendTerm ::
-  forall bv a n w proxy.
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv w),
-    KnownNat a,
-    KnownNat n,
-    KnownNat w,
-    BVExtend (bv a) n (bv w)
+  forall bv l r proxy.
+  ( SupportedPrim (bv l),
+    SupportedPrim (bv r),
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    l <= r,
+    SizedBV bv
   ) =>
-  proxy n ->
-  Term (bv a) ->
-  Term (bv w)
-bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @n) v
+  proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
 {-# INLINE bvsignExtendTerm #-}
 
 bvzeroExtendTerm ::
-  forall bv a n w proxy.
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv w),
-    KnownNat a,
-    KnownNat n,
-    KnownNat w,
-    BVExtend (bv a) n (bv w)
+  forall bv l r proxy.
+  ( SupportedPrim (bv l),
+    SupportedPrim (bv r),
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    l <= r,
+    SizedBV bv
   ) =>
-  proxy n ->
-  Term (bv a) ->
-  Term (bv w)
-bvzeroExtendTerm _ v = internTerm $ UBVExtendTerm False (typeRep @n) v
+  proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+bvzeroExtendTerm _ v = internTerm $ UBVExtendTerm False (typeRep @r) v
 {-# INLINE bvzeroExtendTerm #-}
 
 tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b

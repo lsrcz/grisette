@@ -387,6 +387,7 @@ instance (Mergeable a, EvaluateSym a) => EvaluateSym (UnionM a) where
           (go t)
           (go f)
 
+{-
 instance (Mergeable a, SubstituteSym a) => SubstituteSym (UnionM a) where
   substituteSym sym val x = go $ underlyingUnion x
     where
@@ -397,6 +398,7 @@ instance (Mergeable a, SubstituteSym a) => SubstituteSym (UnionM a) where
           (substituteSym sym val cond)
           (go t)
           (go f)
+          -}
 
 instance
   (ExtractSymbolics a) =>

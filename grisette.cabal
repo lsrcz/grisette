@@ -109,6 +109,8 @@ library
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Mtl
+      Grisette.Utils
+      Grisette.Utils.Parameterized
   other-modules:
       Paths_grisette
   hs-source-dirs:

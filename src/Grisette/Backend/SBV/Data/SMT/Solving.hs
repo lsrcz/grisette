@@ -170,8 +170,8 @@ solveTermWith config term = SBV.runSMTWith (sbvConfig config) $ do
       _ -> return (m, Left r)
 
 instance Solver (GrisetteSMTConfig n) SBVC.CheckSatResult where
-  solve config (Sym t) = snd <$> solveTermWith config t
-  solveMulti config n s@(Sym t)
+  solve config (SymBool t) = snd <$> solveTermWith config t
+  solveMulti config n s@(SymBool t)
     | n > 0 = SBV.runSMTWith (sbvConfig config) $ do
         (newm, a) <- lowerSinglePrim config t
         SBVC.query $ do
@@ -258,7 +258,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SBVC.CheckSatResult where
         IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
       go cexFormula inputs allInputs pre post =
         SBV.runSMTWith (sbvConfig config) $ do
-          let Sym t = phi &&~ cexFormula
+          let SymBool t = phi &&~ cexFormula
           (newm, a) <- lowerSinglePrim config t
           SBVC.query $
             snd <$> do
@@ -285,7 +285,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SBVC.CheckSatResult where
               return (evaluateSym False newm inputs, newm)
           guess :: Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
           guess candidate origm = do
-            let Sym evaluated = evaluateSym False candidate phi
+            let SymBool evaluated = evaluateSym False candidate phi
             let (lowered, newm) = lowerSinglePrim' config evaluated origm
             SBV.constrain lowered
             r <- SBVC.checkSat

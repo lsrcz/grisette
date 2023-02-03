@@ -1,7 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Grisette.IR.SymPrim.Data.SymPrim (Sym (..), SymBool) where
+module Grisette.IR.SymPrim.Data.SymPrim
+  ( SymBool (..),
+    SymInteger (..),
+  )
+where
 
 import Control.DeepSeq
 import Data.Hashable
@@ -10,25 +15,41 @@ import {-# SOURCE #-} Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Solvable
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Language.Haskell.TH.Syntax
 
-newtype Sym a = Sym {underlyingTerm :: Term a}
+newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 
-type SymBool = Sym Bool
+instance Solvable Bool SymBool
 
-instance NFData (Sym a)
+instance Eq SymBool
 
-instance Lift (Sym a)
+instance Lift SymBool
 
-instance (SupportedPrim a) => Solvable a (Sym a)
+instance NFData SymBool
 
-instance (SupportedPrim a) => Eq (Sym a)
+instance Show SymBool
 
-instance (SupportedPrim a) => Hashable (Sym a)
+instance Hashable SymBool
 
-instance (SupportedPrim a) => Show (Sym a)
+instance EvaluateSym SymBool
 
-instance (SupportedPrim a) => EvaluateSym (Sym a)
+instance ExtractSymbolics SymBool
 
-instance (SupportedPrim a) => ExtractSymbolics (Sym a)
+newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
+
+instance Solvable Integer SymInteger
+
+instance Eq SymInteger
+
+instance Lift SymInteger
+
+instance NFData SymInteger
+
+instance Show SymInteger
+
+instance Hashable SymInteger
+
+instance EvaluateSym SymInteger
+
+instance ExtractSymbolics SymInteger

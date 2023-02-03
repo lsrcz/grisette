@@ -239,124 +239,124 @@ cegisTests =
            in testGroup
                 "Different sized BV"
                 [ testGroup
-                    "Extract"
-                    [ testCase "Extract" $ do
+                    "Select"
+                    [ testCase "sizedBVSelect" $ do
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvselect (Proxy @2) (Proxy @2) a ==~ (con 1 :: SymIntN 2), a ==~ con 0b10101]
+                          [sizedBVSelect (Proxy @2) (Proxy @2) a ==~ (con 1 :: SymIntN 2), a ==~ con 0b10101]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvselect (Proxy @2) (Proxy @2) a ==~ (con 1 :: SymIntN 2), a ==~ con 0b10001],
-                      testCase "Extract when lowered twice" $ do
+                          [sizedBVSelect (Proxy @2) (Proxy @2) a ==~ (con 1 :: SymIntN 2), a ==~ con 0b10001],
+                      testCase "sizedBVSelect when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           a
-                          [bvselect (Proxy @2) (Proxy @2) (bvconcat a b) ==~ (con 1 :: SymIntN 2)]
+                          [sizedBVSelect (Proxy @2) (Proxy @2) (sizedBVConcat a b) ==~ (con 1 :: SymIntN 2)]
                         testCegis
                           unboundedConfig
                           True
                           b
-                          [bvselect (Proxy @7) (Proxy @2) (bvconcat a b) ==~ (con 1 :: SymIntN 2)]
+                          [sizedBVSelect (Proxy @7) (Proxy @2) (sizedBVConcat a b) ==~ (con 1 :: SymIntN 2)]
                     ],
                   testGroup
                     "Concat"
-                    [ testCase "Concat" $ do
+                    [ testCase "sizedBVConcat" $ do
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvconcat a b ==~ d, a ==~ con 1, b ==~ con 1, d ==~ con 0b100001]
+                          [sizedBVConcat a b ==~ d, a ==~ con 1, b ==~ con 1, d ==~ con 0b100001]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvconcat a b ==~ d, a ==~ con 1, b ==~ con 1, d ==~ con 0b100010],
-                      testCase "Concat when lowered twice" $ do
+                          [sizedBVConcat a b ==~ d, a ==~ con 1, b ==~ con 1, d ==~ con 0b100010],
+                      testCase "sizedBVConcat when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           (a, c)
-                          [bvconcat c (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) ==~ bvconcat c (con 1 :: SymIntN 2)]
+                          [sizedBVConcat c (sizedBVSelect (Proxy @2) (Proxy @2) (sizedBVConcat a b) :: SymIntN 2) ==~ sizedBVConcat c (con 1 :: SymIntN 2)]
                         testCegis
                           unboundedConfig
                           True
                           (b, c)
-                          [bvconcat c (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) ==~ bvconcat c (con 1 :: SymIntN 2)]
+                          [sizedBVConcat c (sizedBVSelect (Proxy @7) (Proxy @2) (sizedBVConcat a b) :: SymIntN 2) ==~ sizedBVConcat c (con 1 :: SymIntN 2)]
                     ],
                   testGroup
                     "Zext"
-                    [ testCase "bvzeroExtend" $ do
+                    [ testCase "sizedBVZext" $ do
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvzeroExtend (Proxy @10) a ==~ d, a ==~ con 1, d ==~ (con 1 :: SymIntN 10)]
+                          [sizedBVZext (Proxy @10) a ==~ d, a ==~ con 1, d ==~ (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvzeroExtend (Proxy @10) a ==~ d, a ==~ con 0b11111, d ==~ (con 0b11111 :: SymIntN 10)]
+                          [sizedBVZext (Proxy @10) a ==~ d, a ==~ con 0b11111, d ==~ (con 0b11111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvzeroExtend (Proxy @10) a ==~ d, d ==~ (con 0b111111 :: SymIntN 10)]
+                          [sizedBVZext (Proxy @10) a ==~ d, d ==~ (con 0b111111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvzeroExtend (Proxy @10) a ==~ d, d ==~ (con 0b1111111111 :: SymIntN 10)],
-                      testCase "bvzeroExtend when lowered twice" $ do
+                          [sizedBVZext (Proxy @10) a ==~ d, d ==~ (con 0b1111111111 :: SymIntN 10)],
+                      testCase "sizedBVZext when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           a
-                          [bvzeroExtend (Proxy @10) (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
+                          [sizedBVZext (Proxy @10) (sizedBVSelect (Proxy @2) (Proxy @2) (sizedBVConcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           b
-                          [bvzeroExtend (Proxy @10) (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
+                          [sizedBVZext (Proxy @10) (sizedBVSelect (Proxy @7) (Proxy @2) (sizedBVConcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
                     ],
                   testGroup
                     "Sext"
-                    [ testCase "bvsignExtend" $ do
+                    [ testCase "sizedBVSext" $ do
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvsignExtend (Proxy @10) a ==~ d, a ==~ con 1, d ==~ (con 1 :: SymIntN 10)]
+                          [sizedBVSext (Proxy @10) a ==~ d, a ==~ con 1, d ==~ (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           ()
-                          [bvsignExtend (Proxy @10) a ==~ d, a ==~ con 0b11111, d ==~ (con 0b1111111111 :: SymIntN 10)]
+                          [sizedBVSext (Proxy @10) a ==~ d, a ==~ con 0b11111, d ==~ (con 0b1111111111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvsignExtend (Proxy @10) a ==~ d, d ==~ (con 0b111111 :: SymIntN 10)]
+                          [sizedBVSext (Proxy @10) a ==~ d, d ==~ (con 0b111111 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           False
                           ()
-                          [bvsignExtend (Proxy @10) a ==~ d, d ==~ (con 0b11111 :: SymIntN 10)],
-                      testCase "bvsignExtend when lowered twice" $ do
+                          [sizedBVSext (Proxy @10) a ==~ d, d ==~ (con 0b11111 :: SymIntN 10)],
+                      testCase "sizedBVSext when lowered twice" $ do
                         testCegis
                           unboundedConfig
                           True
                           a
-                          [bvsignExtend (Proxy @10) (bvselect (Proxy @2) (Proxy @2) (bvconcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
+                          [sizedBVSext (Proxy @10) (sizedBVSelect (Proxy @2) (Proxy @2) (sizedBVConcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
                         testCegis
                           unboundedConfig
                           True
                           b
-                          [bvsignExtend (Proxy @10) (bvselect (Proxy @7) (Proxy @2) (bvconcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
+                          [sizedBVSext (Proxy @10) (sizedBVSelect (Proxy @7) (Proxy @2) (sizedBVConcat a b) :: SymIntN 2) ==~ (con 1 :: SymIntN 10)]
                     ]
                 ]
         ]

@@ -74,7 +74,8 @@ module Grisette.Core
     -- The values of unsolvable types are __/partially/__ merged in a symbolic
     -- union, which is essentially an if-then-else tree.
     --
-    -- For example, assume that the lists have the type @[SymBool]@.
+    -- For example, assume that the lists have the type
+    -- @['Grisette.IR.SymPrim.SymBool']@.
     -- In the following example, the result shows that @[b]@ and @[c]@ can be
     -- merged together in the same symbolic union because they have the same
     -- length:
@@ -125,10 +126,14 @@ module Grisette.Core
     -- Grisette
     -- currently provides an implementation for the following solvable types:
     --
-    -- * @SymBool@ or @Sym Bool@ (symbolic Booleans)
-    -- * @SymInteger@ or @Sym Integer@ (symbolic unbounded integers)
-    -- * @SymIntN n@ or @Sym (IntN n)@ (symbolic signed bit vectors of length @n@)
-    -- * @SymWordN n@ or @Sym (WordN n)@ (symbolic unsigned bit vectors of length @n@)
+    -- * 'Grisette.IR.SymPrim.SymBool' (symbolic Booleans)
+    -- * 'Grisette.IR.SymPrim.SymInteger' (symbolic unbounded integers)
+    -- * @'Grisette.IR.SymPrim.SymIntN' n@ (symbolic signed bit vectors of length @n@)
+    -- * @'Grisette.IR.SymPrim.SymWordN' n@ (symbolic unsigned bit vectors of length @n@)
+    --
+    -- The two bit vector types has their lengths checked at compile time.
+    -- Grisette also provides runtime-checked versions of these types:
+    -- 'Grisette.IR.SymPrim.SomeSymIntN' and 'Grisette.IR.SymPrim.SomeSymWordN'.
     --
     -- Values of a solvable type can consist of concrete values, symbolic
     -- constants (placeholders for concrete values that can be assigned by a
@@ -176,10 +181,15 @@ module Grisette.Core
     SEq (..),
     SymBoolOp,
     SOrd (..),
-    BVConcat (..),
-    BVExtend (..),
-    BVSelect (..),
-    bvextract,
+    SomeBV (..),
+    someBVZext',
+    someBVSext',
+    someBVExt',
+    someBVSelect',
+    someBVExtract,
+    someBVExtract',
+    SizedBV (..),
+    sizedBVExtract,
     SignedDivMod (..),
     UnsignedDivMod (..),
     SignedQuotRem (..),

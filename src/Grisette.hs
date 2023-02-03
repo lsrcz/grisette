@@ -19,6 +19,9 @@ module Grisette
 
     -- * Solver backend
     module Grisette.Backend.SBV,
+
+    -- * Utils
+    module Grisette.Utils,
   )
 where
 
@@ -27,3 +30,4 @@ import Grisette.Core
 import Grisette.IR.SymPrim
 import Grisette.Lib.Base
 import Grisette.Lib.Mtl
+import Grisette.Utils
