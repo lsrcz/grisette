@@ -101,10 +101,14 @@ class SupportedPrim con => SymRep con where
   type SymType con
 
 -- | One-to-one mapping between symbolic types and concrete types.
-class (ConRep sym, SymRep con, sym ~ SymType con, con ~ ConType sym) =>
-  LinkedRep con sym | con -> sym, sym -> con where
+class
+  (ConRep sym, SymRep con, sym ~ SymType con, con ~ ConType sym) =>
+  LinkedRep con sym
+    | con -> sym,
+      sym -> con
+  where
   underlyingTerm :: sym -> Term con
-  wrapTerm :: Term con -> sym 
+  wrapTerm :: Term con -> sym
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -892,7 +896,7 @@ data (-->) a b where
   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
 instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) where
-  type Arg (a --> b) = SymType a 
+  type Arg (a --> b) = SymType a
   type Ret (a --> b) = SymType b
   (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
 
