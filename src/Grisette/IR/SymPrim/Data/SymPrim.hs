@@ -311,6 +311,24 @@ instance (KnownNat n, 1 <= n) => LinkedRep (WordN n) (SymWordN n) where
   underlyingTerm (SymWordN a) = a
   wrapTerm = SymWordN
 
+-- | Symbolic tabular function type.
+--
+-- >>> :set -XTypeOperators -XOverloadedStrings
+-- >>> f' = "f" :: SymInteger =~> SymInteger
+-- >>> f = (f' #)
+-- >>> f 1
+-- (apply f 1)
+--
+-- >>> f' = con (TabularFun [(1, 2), (2, 3)] 4) :: SymInteger =~> SymInteger
+-- >>> f = (f' #)
+-- >>> f 1
+-- 2
+-- >>> f 2
+-- 3
+-- >>> f 3
+-- 4
+-- >>> f "b"
+-- (ite (= b 1) 2 (ite (= b 2) 3 4))
 data sa =~> sb where
   SymTabularFun :: (LinkedRep ca sa, LinkedRep cb sb) => Term (ca =-> cb) -> sa =~> sb
 
@@ -333,6 +351,25 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
 
 -- |
 -- Symbolic general function type.
+--
+-- >>> :set -XTypeOperators -XOverloadedStrings
+-- >>> f' = "f" :: SymInteger -~> SymInteger
+-- >>> f = (f' #)
+-- >>> f 1
+-- (apply f 1)
+--
+-- >>> f' = con ("a" --> "a" + 1) :: SymInteger -~> SymInteger
+-- >>> f'
+-- \(a:ARG :: Integer) -> (+ 1 a:ARG)
+-- >>> f = (f' #)
+-- >>> f 1
+-- 2
+-- >>> f 2
+-- 3
+-- >>> f 3
+-- 4
+-- >>> f "b"
+-- (+ 1 b)
 data sa -~> sb where
   SymGeneralFun :: (LinkedRep ca sa, LinkedRep cb sb) => Term (ca --> cb) -> sa -~> sb
 
@@ -354,6 +391,14 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
   (SymGeneralFun f) # t = wrapTerm $ pevalGeneralFunApplyTerm f (underlyingTerm t)
 
 -- | Construction of general symbolic functions.
+--
+-- >>> f = "a" --> "a" + 1 :: Integer --> Integer
+-- >>> f
+-- \(a:ARG :: Integer) -> (+ 1 a:ARG)
+--
+-- This general symbolic function needs to be applied to symbolic values:
+-- >>> f # ("a" :: SymInteger)
+-- (+ 1 a)
 (-->) :: (SupportedPrim ca, SupportedPrim cb, LinkedRep cb sb) => TypedSymbol ca -> sb -> ca --> cb
 (-->) arg v = GeneralFun newarg (substTerm arg (symTerm newarg) (underlyingTerm v))
   where
@@ -1065,6 +1110,11 @@ instance SomeBV SomeSymWordN where
 
 -- ModelRep
 
+-- | A pair of a symbolic constant and its value.
+-- This is used to build a model from a list of symbolic constants and their values.
+--
+-- >>> buildModel ("a" := (1 :: Integer), "b" := True) :: Model
+-- Model {a -> 1 :: Integer, b -> True :: Bool}
 data ModelSymPair ct st where
   (:=) :: LinkedRep ct st => st -> ct -> ModelSymPair ct st
 
@@ -1076,512 +1126,22 @@ instance ModelRep (ModelSymPair ct st) Model where
 
 -- | Get the sum of the sizes of a list of symbolic terms.
 -- Duplicate sub-terms are counted for only once.
+--
+-- >>> symsSize [1, "a" :: SymInteger, "a" + 1 :: SymInteger]
+-- 3
 symsSize :: forall con sym. LinkedRep con sym => [sym] -> Int
 symsSize = termsSize . fmap (underlyingTerm @con)
 
 -- | Get the size of a symbolic term.
 -- Duplicate sub-terms are counted for only once.
+--
+-- >>> symSize (1 :: SymInteger)
+-- 1
+-- >>> symSize ("a" :: SymInteger)
+-- 1
+-- >>> symSize ("a" + 1 :: SymInteger)
+-- 3
+-- >>> symSize (("a" + 1) * ("a" + 1) :: SymInteger)
+-- 4
 symSize :: forall con sym. LinkedRep con sym => sym -> Int
 symSize = termSize . underlyingTerm @con
-
-#if 0
--- | Symbolic primitive type.
---
--- Symbolic Boolean, integer, and bit vector types are supported.
---
--- >>> :set -XOverloadedStrings
--- >>> "a" :: Sym Bool
--- a
--- >>> "a" &&~ "b" :: Sym Bool
--- (&& a b)
--- >>> "i" + 1 :: Sym Integer
--- (+ 1 i)
---
--- For more symbolic operations, please refer to the documentation of the
--- [grisette-core](https://hackage.haskell.org/package/grisette-core) package.
---
--- Grisette also supports uninterpreted functions. You can use the '-->'
--- (general function) or '=->' (tabular function) types to define uninterpreted
--- functions. The following code shows the examples
---
--- >>> :set -XTypeOperators
--- >>> let ftab = "ftab" :: Sym (Integer =-> Integer)
--- >>> ftab # "x"
--- (apply ftab x)
---
--- > >>> solve (UnboundedReasoning z3) (ftab # 1 ==~ 2 &&~ ftab # 2 ==~ 3 &&~ ftab # 3 ==~ 4)
--- > Right (Model {
--- >   ftab ->
--- >     TabularFun {funcTable = [(3,4),(2,3)], defaultFuncValue = 2}
--- >       :: (=->) Integer Integer
--- > }) -- possible result (reformatted)
---
--- >>> let fgen = "fgen" :: Sym (Integer --> Integer)
--- >>> fgen # "x"
--- (apply fgen x)
---
--- > >>> solve (UnboundedReasoning z3) (fgen # 1 ==~ 2 &&~ fgen # 2 ==~ 3 &&~ fgen # 3 ==~ 4)
--- > Right (Model {
--- >   fgen ->
--- >     \(arg@0:FuncArg :: Integer) ->
--- >       (ite (= arg@0:FuncArg 2) 3 (ite (= arg@0:FuncArg 3) 4 2))
--- >         :: (-->) Integer Integer
--- > }) -- possible result (reformatted)
-newtype Sym a = Sym {underlyingTerm :: Term a} deriving (Lift, Generic)
-
-instance NFData (Sym a) where
-  rnf (Sym t) = rnf t
-
-instance (SupportedPrim a) => Solvable a (Sym a) where
-  con = Sym . conTerm
-  ssym = Sym . ssymTerm
-  isym str i = Sym $ isymTerm str i
-  sinfosym str info = Sym $ sinfosymTerm str info
-  iinfosym str i info = Sym $ iinfosymTerm str i info
-  conView (Sym (ConTerm _ t)) = Just t
-  conView _ = Nothing
-
-instance (SupportedPrim t) => IsString (Sym t) where
-  fromString = ssym
-
-instance (SupportedPrim a) => ToSym (Sym a) (Sym a) where
-  toSym = id
-
-instance (SupportedPrim a) => ToSym a (Sym a) where
-  toSym = con
-
-instance (SupportedPrim a) => ToCon (Sym a) (Sym a) where
-  toCon = Just
-
-instance (SupportedPrim a) => ToCon (Sym a) a where
-  toCon = conView
-
-instance (SupportedPrim a) => EvaluateSym (Sym a) where
-  evaluateSym fillDefault model (Sym t) = Sym $ evaluateTerm fillDefault model t
-
-instance (SupportedPrim a) => ExtractSymbolics (Sym a) where
-  extractSymbolics (Sym t) = SymbolSet $ extractSymbolicsTerm t
-
-instance (SupportedPrim a) => Show (Sym a) where
-  show (Sym t) = pformat t
-
-instance (SupportedPrim a) => Hashable (Sym a) where
-  hashWithSalt s (Sym v) = s `hashWithSalt` v
-
-instance (SupportedPrim a) => Eq (Sym a) where
-  (Sym l) == (Sym r) = l == r
-
-#if 1
-SEQ_SYM(Bool)
-SEQ_SYM(Integer)
-SEQ_SYM((IntN n))
-SEQ_SYM((WordN n))
-SORD_SYM(Integer)
-SORD_SYM((IntN n))
-SORD_SYM((WordN n))
-#endif
-
--- | Symbolic Boolean type.
--- type SymBool = Sym Bool
-
-instance SOrd (Sym Bool) where
-  l <=~ r = nots l ||~ r
-  l <~ r = nots l &&~ r
-  l >=~ r = l ||~ nots r
-  l >~ r = l &&~ nots r
-  symCompare l r =
-    mrgIf
-      (nots l &&~ r)
-      (mrgReturn LT)
-      (mrgIf (l ==~ r) (mrgReturn EQ) (mrgReturn GT))
-
-instance SymBoolOp (Sym Bool)
-
--- | Symbolic integer type (unbounded, mathematical integer).
-type SymInteger = Sym Integer
-
-instance Num (Sym Integer) where
-  (Sym l) + (Sym r) = Sym $ pevalAddNumTerm l r
-  (Sym l) - (Sym r) = Sym $ pevalMinusNumTerm l r
-  (Sym l) * (Sym r) = Sym $ pevalTimesNumTerm l r
-  negate (Sym v) = Sym $ pevalUMinusNumTerm v
-  abs (Sym v) = Sym $ pevalAbsNumTerm v
-  signum (Sym v) = Sym $ pevalSignumNumTerm v
-  fromInteger = con
-
-instance SignedDivMod (Sym Integer) where
-  divs (Sym l) rs@(Sym r) =
-    mrgIf
-      (rs ==~ con 0)
-      (throwError $ transformError DivideByZero)
-      (mrgReturn $ Sym $ pevalDivIntegerTerm l r)
-  mods (Sym l) rs@(Sym r) =
-    mrgIf
-      (rs ==~ con 0)
-      (throwError $ transformError DivideByZero)
-      (mrgReturn $ Sym $ pevalModIntegerTerm l r)
-
-instance SymIntegerOp (Sym Integer)
-
--- | Symbolic signed bit vector type.
-type SymIntN n = Sym (IntN n)
-
-instance (SupportedPrim (IntN n)) => Num (Sym (IntN n)) where
-  (Sym l) + (Sym r) = Sym $ withPrim (Proxy @(IntN n)) $ pevalAddNumTerm l r
-  (Sym l) - (Sym r) = Sym $ withPrim (Proxy @(IntN n)) $ pevalMinusNumTerm l r
-  (Sym l) * (Sym r) = Sym $ withPrim (Proxy @(IntN n)) $ pevalTimesNumTerm l r
-  negate (Sym v) = Sym $ withPrim (Proxy @(IntN n)) $ pevalUMinusNumTerm v
-  abs (Sym v) = Sym $ withPrim (Proxy @(IntN n)) $ pevalAbsNumTerm v
-  signum (Sym v) = Sym $ withPrim (Proxy @(IntN n)) $ pevalSignumNumTerm v
-  fromInteger i = withPrim (Proxy @(IntN n)) $ con $ fromInteger i
-
-instance (SupportedPrim (IntN n)) => Bits (Sym (IntN n)) where
-  Sym l .&. Sym r = Sym $ withPrim (Proxy @(IntN n)) $ pevalAndBitsTerm l r
-  Sym l .|. Sym r = Sym $ withPrim (Proxy @(IntN n)) $ pevalOrBitsTerm l r
-  Sym l `xor` Sym r = Sym $ withPrim (Proxy @(IntN n)) $ pevalXorBitsTerm l r
-  complement (Sym n) = Sym $ withPrim (Proxy @(IntN n)) $ pevalComplementBitsTerm n
-  shift (Sym n) i = Sym $ withPrim (Proxy @(IntN n)) $ pevalShiftBitsTerm n i
-  rotate (Sym n) i = Sym $ withPrim (Proxy @(IntN n)) $ pevalRotateBitsTerm n i
-  bitSize _ = fromInteger $ withPrim (Proxy @(IntN n)) $ natVal (Proxy @n)
-  bitSizeMaybe _ = Just $ fromInteger $ withPrim (Proxy @(IntN n)) $ natVal (Proxy @n)
-  isSigned _ = True
-  testBit (Con n) = withPrim (Proxy @(IntN n)) $ testBit n
-  testBit _ = error "You cannot call testBit on symbolic variables"
-  bit = withPrim (Proxy @(IntN n)) $ con . bit
-  popCount (Con n) = withPrim (Proxy @(IntN n)) $ popCount n
-  popCount _ = error "You cannot call popCount on symbolic variables"
-
-instance
-  (KnownNat w', KnownNat n, KnownNat w, w' ~ (n + w), 1 <= n, 1 <= w, 1 <= w') =>
-  BVConcat (Sym (IntN n)) (Sym (IntN w)) (Sym (IntN w'))
-  where
-  bvconcat (Sym l) (Sym r) = Sym (pevalBVConcatTerm l r)
-
-instance
-  ( KnownNat w,
-    KnownNat w',
-    1 <= w,
-    1 <= w',
-    w <= w',
-    w + 1 <= w',
-    1 <= w' - w,
-    KnownNat (w' - w)
-  ) =>
-  BVExtend (Sym (IntN w)) w' (Sym (IntN w'))
-  where
-  bvzeroExtend _ (Sym v) = Sym $ pevalBVExtendTerm False (Proxy @w') v
-  bvsignExtend _ (Sym v) = Sym $ pevalBVExtendTerm True (Proxy @w') v
-  bvextend = bvsignExtend
-
-instance
-  ( KnownNat ix,
-    KnownNat w,
-    KnownNat ow,
-    ix + w <= ow,
-    1 <= ow,
-    1 <= w
-  ) =>
-  BVSelect (Sym (IntN ow)) ix w (Sym (IntN w))
-  where
-  bvselect pix pw (Sym v) = Sym $ pevalBVSelectTerm pix pw v
-
-
--- | Symbolic unsigned bit vector type.
-type SymWordN n = Sym (WordN n)
-
-instance (SupportedPrim (WordN n)) => Num (Sym (WordN n)) where
-  (Sym l) + (Sym r) = Sym $ withPrim (Proxy @(WordN n)) $ pevalAddNumTerm l r
-  (Sym l) - (Sym r) = Sym $ withPrim (Proxy @(WordN n)) $ pevalMinusNumTerm l r
-  (Sym l) * (Sym r) = Sym $ withPrim (Proxy @(WordN n)) $ pevalTimesNumTerm l r
-  negate (Sym v) = Sym $ withPrim (Proxy @(WordN n)) $ pevalUMinusNumTerm v
-  abs (Sym v) = Sym $ withPrim (Proxy @(WordN n)) $ pevalAbsNumTerm v
-  signum (Sym v) = Sym $ withPrim (Proxy @(WordN n)) $ pevalSignumNumTerm v
-  fromInteger i = withPrim (Proxy @(WordN n)) $ con $ fromInteger i
-
-instance
-  (KnownNat w', KnownNat n, KnownNat w, w' ~ (n + w), 1 <= n, 1 <= w, 1 <= w') =>
-  BVConcat (Sym (WordN n)) (Sym (WordN w)) (Sym (WordN w'))
-  where
-  bvconcat (Sym l) (Sym r) = Sym (pevalBVConcatTerm l r)
-
-instance
-  ( KnownNat w,
-    KnownNat w',
-    1 <= w,
-    1 <= w',
-    w + 1 <= w',
-    w <= w',
-    1 <= w' - w,
-    KnownNat (w' - w)
-  ) =>
-  BVExtend (Sym (WordN w)) w' (Sym (WordN w'))
-  where
-  bvzeroExtend _ (Sym v) = Sym $ pevalBVExtendTerm False (Proxy @w') v
-  bvsignExtend _ (Sym v) = Sym $ pevalBVExtendTerm True (Proxy @w') v
-  bvextend = bvzeroExtend
-
-instance
-  ( KnownNat ix,
-    KnownNat w,
-    KnownNat ow,
-    ix + w <= ow,
-    1 <= ow,
-    1 <= w
-  ) =>
-  BVSelect (Sym (WordN ow)) ix w (Sym (WordN w))
-  where
-  bvselect pix pw (Sym v) = Sym $ pevalBVSelectTerm pix pw v
-
-instance (SupportedPrim (WordN n)) => Bits (Sym (WordN n)) where
-  Sym l .&. Sym r = Sym $ withPrim (Proxy @(WordN n)) $ pevalAndBitsTerm l r
-  Sym l .|. Sym r = Sym $ withPrim (Proxy @(WordN n)) $ pevalOrBitsTerm l r
-  Sym l `xor` Sym r = Sym $ withPrim (Proxy @(WordN n)) $ pevalXorBitsTerm l r
-  complement (Sym n) = Sym $ withPrim (Proxy @(WordN n)) $ pevalComplementBitsTerm n
-  shift (Sym n) i = Sym $ withPrim (Proxy @(WordN n)) $ pevalShiftBitsTerm n i
-  rotate (Sym n) i = Sym $ withPrim (Proxy @(WordN n)) $ pevalRotateBitsTerm n i
-  bitSize _ = fromInteger $ withPrim (Proxy @(WordN n)) $ natVal (Proxy @n)
-  bitSizeMaybe _ = Just $ fromInteger $ withPrim (Proxy @(WordN n)) $ natVal (Proxy @n)
-  isSigned _ = False
-  testBit (Con n) = withPrim (Proxy @(WordN n)) $ testBit n
-  testBit _ = error "You cannot call testBit on symbolic variables"
-  bit = withPrim (Proxy @(WordN n)) $ con . bit
-  popCount (Con n) = withPrim (Proxy @(WordN n)) $ popCount n
-  popCount _ = error "You cannot call popCount on symbolic variables"
-
--- |
--- Symbolic tabular function type.
-type a =~> b = Sym (a =-> b)
-
-infixr 0 =~>
-
-instance (SupportedPrim a, SupportedPrim b) => Function (a =~> b) where
-  type Arg (a =~> b) = Sym a
-  type Ret (a =~> b) = Sym b
-  (Sym f) # (Sym t) = Sym $ pevalTabularFunApplyTerm f t
-
--- |
--- Symbolic general function type.
-type a -~> b = Sym (a --> b)
-
-infixr 0 -~>
-
-instance (SupportedPrim a, SupportedPrim b) => Function (a -~> b) where
-  type Arg (a -~> b) = Sym a
-  type Ret (a -~> b) = Sym b
-  (Sym f) # (Sym t) = Sym $ pevalGeneralFunApplyTerm f t
-
--- | Get the sum of the sizes of a list of symbolic terms.
--- Duplicate sub-terms are counted for only once.
-symsSize :: [Sym a] -> Int
-symsSize = termsSize . fmap underlyingTerm
-
--- | Get the size of a symbolic term.
--- Duplicate sub-terms are counted for only once.
-symSize :: Sym a -> Int
-symSize = termSize . underlyingTerm
-
-data ModelSymPair t = (Sym t) := t deriving (Show)
-
-instance ModelRep (ModelSymPair t) Model SymbolSet TypedSymbol where
-  buildModel (Sym (SymTerm _ sym) := val) = insertValue sym val emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b,
-      ModelSymPair c
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2,
-      Sym (SymTerm _ sym3) := val3
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        . insertValue sym3 val3
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b,
-      ModelSymPair c,
-      ModelSymPair d
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2,
-      Sym (SymTerm _ sym3) := val3,
-      Sym (SymTerm _ sym4) := val4
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        . insertValue sym3 val3
-        . insertValue sym4 val4
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b,
-      ModelSymPair c,
-      ModelSymPair d,
-      ModelSymPair e
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2,
-      Sym (SymTerm _ sym3) := val3,
-      Sym (SymTerm _ sym4) := val4,
-      Sym (SymTerm _ sym5) := val5
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        . insertValue sym3 val3
-        . insertValue sym4 val4
-        . insertValue sym5 val5
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b,
-      ModelSymPair c,
-      ModelSymPair d,
-      ModelSymPair e,
-      ModelSymPair f
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2,
-      Sym (SymTerm _ sym3) := val3,
-      Sym (SymTerm _ sym4) := val4,
-      Sym (SymTerm _ sym5) := val5,
-      Sym (SymTerm _ sym6) := val6
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        . insertValue sym3 val3
-        . insertValue sym4 val4
-        . insertValue sym5 val5
-        . insertValue sym6 val6
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b,
-      ModelSymPair c,
-      ModelSymPair d,
-      ModelSymPair e,
-      ModelSymPair f,
-      ModelSymPair g
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2,
-      Sym (SymTerm _ sym3) := val3,
-      Sym (SymTerm _ sym4) := val4,
-      Sym (SymTerm _ sym5) := val5,
-      Sym (SymTerm _ sym6) := val6,
-      Sym (SymTerm _ sym7) := val7
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        . insertValue sym3 val3
-        . insertValue sym4 val4
-        . insertValue sym5 val5
-        . insertValue sym6 val6
-        . insertValue sym7 val7
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance
-  ModelRep
-    ( ModelSymPair a,
-      ModelSymPair b,
-      ModelSymPair c,
-      ModelSymPair d,
-      ModelSymPair e,
-      ModelSymPair f,
-      ModelSymPair g,
-      ModelSymPair h
-    )
-    Model
-    SymbolSet
-    TypedSymbol
-  where
-  buildModel
-    ( Sym (SymTerm _ sym1) := val1,
-      Sym (SymTerm _ sym2) := val2,
-      Sym (SymTerm _ sym3) := val3,
-      Sym (SymTerm _ sym4) := val4,
-      Sym (SymTerm _ sym5) := val5,
-      Sym (SymTerm _ sym6) := val6,
-      Sym (SymTerm _ sym7) := val7,
-      Sym (SymTerm _ sym8) := val8
-      ) =
-      insertValue sym1 val1
-        . insertValue sym2 val2
-        . insertValue sym3 val3
-        . insertValue sym4 val4
-        . insertValue sym5 val5
-        . insertValue sym6 val6
-        . insertValue sym7 val7
-        . insertValue sym8 val8
-        $ emptyModel
-  buildModel _ = error "buildModel: should only use symbolic constants"
-
-instance (SupportedPrim a, SupportedPrim b) => Function (a --> b) where
-  type Arg (a --> b) = Sym a
-  type Ret (a --> b) = Sym b
-  (GeneralFun arg tm) # (Sym v) = Sym $ substTerm arg v tm
-
--- | Construction of general symbolic functions.
-(-->) :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Sym b -> a --> b
-(-->) arg (Sym v) = GeneralFun arg v
-
-#endif

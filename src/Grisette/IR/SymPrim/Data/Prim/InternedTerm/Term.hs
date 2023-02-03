@@ -92,12 +92,15 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
 
+-- | Type family to resolve the concrete type associated with a symbolic type.
 class ConRep sym where
   type ConType sym
 
+-- | Type family to resolve the symbolic type associated with a concrete type.
 class SupportedPrim con => SymRep con where
   type SymType con
 
+-- | One-to-one mapping between symbolic types and concrete types.
 class (ConRep sym, SymRep con, sym ~ SymType con, con ~ ConType sym) =>
   LinkedRep con sym | con -> sym, sym -> con where
   underlyingTerm :: sym -> Term con
