@@ -18,31 +18,17 @@ jobs:
         - { build: stack, arg: "--stack-yaml stack-lts-18.28.yaml", ismain: false, experimental: false, ghc: "8107"}
         - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false, experimental: false, ghc: "8107" }
         - { build: stack, arg: "", ismain: true, experimental: false, ghc: "902" }
-        - { build: stack, arg: "--stack-yaml stack-lts-20.3.yaml", ismain: false, experimental: false, ghc: "925" }
-        - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: false, ghc: "943" }
+        - { build: stack, arg: "--stack-yaml stack-lts-20.9.yaml", ismain: false, experimental: false, ghc: "925" }
+        - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: false, ghc: "944" }
         - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "8107" }
         - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "902" }
         - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "925" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "943" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "944" }
         - { build: cabal, arg: "", ismain: false, experimental: true, ghc: "HEAD" }
-        # include:
-        #   - os: macOS-latest
-        #     cachix-name: grisette-macos
-        #     cachix-token-name: MACOS_CACHIX_TOKEN
-        # #     brew: z3 md5sha1sum gcc@11 gnu-sed
-        #   - os: ubuntu-latest
-        #     cachix-name: grisette-linux
-        #     cachix-token-name: LINUX_CACHIX_TOKEN
-        # #     apt-get: z3
   
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.experimental }}
     steps:
-    # - name: Install OS Packages
-    #   uses: mstksg/get-package@v1
-    #   with:
-    #     apt-get: ${{ matrix.apt-get }}
-    #     brew: ${{ matrix.brew }}
     
     - uses: actions/checkout@v3
 
@@ -50,34 +36,16 @@ jobs:
       with:
         nix-path: nixpkgs=channel:nixos-unstable
 
-    # - name: Setup stack
-    #   run: |
-    #     set -ex
-    #     mkdir -p "${HOME}/.local/bin"
-    #     case ${{ matrix.os }} in
-    #       macOS-latest)
-    #         curl --insecure -L https://get.haskellstack.org/stable/osx-x86_64.tar.gz | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
-    #         ;;
-    #       ubuntu-latest)
-    #         curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack' 
-    #         ;;
-    #     esac
-    #     echo "${HOME}/.local/bin" >> $GITHUB_PATH
+    - uses: cachix/cachix-action@v12
+      with:
+        name: grisette-linux
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Cache key
       id: cache_key
       run: |
         echo ::set-output name=stack::$(shasum ${{ matrix.plan.arg }} | awk '{print $1}')
         echo ::set-output name=package::$(shasum package.yaml | awk '{print $1}')
-
-    # - run: echo ${{ matrix.cachix-token-name }}
-    # - run: echo ${{ secrets[matrix.cachix-token-name] }}
-
-    # - name: Install Cachix
-    #   uses: cachix/cachix-action@v12
-    #   with:
-    #     name: ${{ matrix.cachix-name }}
-    #     authToken: ${{ secrets[matrix.cachix-token-name] }}
 
     - name: Use minimal flake
       run: |
@@ -105,20 +73,6 @@ jobs:
           stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}
           stack-${{ matrix.os }}-${{ steps.cache_key.outputs.stack }}
           stack-${{ matrix.os }}
-
-    # - name: Set up GHC
-    #   run: |
-    #     set -ex
-    #     case "$BUILD" in
-    #       stack)
-    #         nix develop --allow-dirty --no-warn-dirty -c stack config set system-ghc --global true
-    #         nix develop --allow-dirty --no-warn-dirty -c stack setup --no-terminal $ARGS 
-    #         ;;
-    #     esac
-    #     set +ex
-    #   env:
-    #     ARGS: ${{ matrix.plan.arg }}
-    #     BUILD: ${{ matrix.plan.build }}
 
     - name: Build & Test
       id: test
