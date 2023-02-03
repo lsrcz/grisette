@@ -67,11 +67,8 @@ jobs:
           ~/.stack
           ~/.cabal
           dist-newstyle
-        key: stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}-${{ steps.cache_key.outputs.package }}
+        key: stack-${{ matrix.os }}-${{ steps.cache_key.outputs.stack }}-${{ steps.cache_key.outputs.package }}
         restore-keys: |
-          stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}-${{ steps.cache_key.outputs.stack }}
-          stack-${{ matrix.os }}-${{ matrix.plan.build }}-${{ matrix.plan.arg }}
-          stack-${{ matrix.os }}-${{ steps.cache_key.outputs.stack }}
           stack-${{ matrix.os }}
 
     - name: Build & Test
