@@ -13,8 +13,6 @@ import Grisette.Core.Data.Union
 data UnionM a where
   -- | 'UnionM' with no 'Mergeable' knowledge.
   UAny ::
-    -- | (Possibly) cached merging result.
-    IORef (Either (Union a) (UnionM a)) ->
     -- | Original 'Union'.
     Union a ->
     UnionM a
