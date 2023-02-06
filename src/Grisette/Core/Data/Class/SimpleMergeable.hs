@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
@@ -57,6 +59,7 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Kind
 import GHC.Generics
+import GHC.TypeNats
 import Generics.Deriving
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Function
@@ -774,9 +777,31 @@ infixl 9 #~
 
 #define SIMPLE_MERGEABLE_SIMPLE(symtype) \
 instance SimpleMergeable symtype where \
-  mrgIte = ites
+  mrgIte = ites; \
+  {-# INLINE mrgIte #-}
+
+#define SIMPLE_MERGEABLE_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SimpleMergeable (symtype n) where \
+  mrgIte = ites; \
+  {-# INLINE mrgIte #-}
+
+#define SIMPLE_MERGEABLE_SOME_BV(symtype, bf) \
+instance SimpleMergeable symtype where \
+  mrgIte c = bf (ites c) "mrgIte"; \
+  {-# INLINE mrgIte #-}
+
+#define SIMPLE_MERGEABLE_FUN(op) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SimpleMergeable (sa op sb) where \
+  mrgIte = ites; \
+  {-# INLINE mrgIte #-}
 
 #if 1
 SIMPLE_MERGEABLE_SIMPLE(SymBool)
 SIMPLE_MERGEABLE_SIMPLE(SymInteger)
+SIMPLE_MERGEABLE_BV(SymIntN)
+SIMPLE_MERGEABLE_BV(SymWordN)
+SIMPLE_MERGEABLE_SOME_BV(SomeSymIntN, binSomeSymIntNR1)
+SIMPLE_MERGEABLE_SOME_BV(SomeSymWordN, binSomeSymWordNR1)
+SIMPLE_MERGEABLE_FUN(=~>)
+SIMPLE_MERGEABLE_FUN(-~>)
 #endif

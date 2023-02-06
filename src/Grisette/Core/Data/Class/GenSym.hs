@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -76,6 +77,7 @@ import Data.Int
 import Data.String
 import Data.Typeable
 import Data.Word
+import GHC.TypeNats
 import Generics.Deriving hiding (index)
 import Grisette.Core.Control.Monad.Union
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM
@@ -1474,6 +1476,54 @@ instance GenSymSimple () symtype where \
       FreshIdent s -> return $ isym s i; \
       FreshIdentWithInfo s info -> return $ iinfosym s i info
 
+#define GENSYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => GenSym (symtype n) (symtype n)
+#define GENSYM_SIMPLE_BV(symtype) \
+instance (KnownNat n, 1 <= n) => GenSymSimple (symtype n) (symtype n) where \
+  simpleFresh _ = simpleFresh ()
+#define GENSYM_UNIT_BV(symtype) \
+instance (KnownNat n, 1 <= n) => GenSym () (symtype n) where \
+  fresh _ = mrgSingle <$> simpleFresh ()
+#define GENSYM_UNIT_SIMPLE_BV(symtype) \
+instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
+  simpleFresh _ = do; \
+    ident <- getFreshIdent; \
+    FreshIndex i <- nextFreshIndex; \
+    case ident of; \
+      FreshIdent s -> return $ isym s i; \
+      FreshIdentWithInfo s info -> return $ iinfosym s i info
+
+#define GENSYM_BV_SOME(symtype) \
+instance GenSym symtype symtype
+#define GENSYM_SIMPLE_BV_SOME(symtype) \
+instance GenSymSimple symtype symtype where \
+  simpleFresh (symtype v) = simpleFresh v
+#define GENSYM_N_BV_SOME(symtype) \
+instance (KnownNat n, 1 <= n) => GenSym (p n) symtype where \
+  fresh p = mrgSingle <$> simpleFresh p
+#define GENSYM_N_SIMPLE_BV_SOME(symtype, origtype) \
+instance (KnownNat n, 1 <= n) => GenSymSimple (p n) symtype where \
+  simpleFresh _ = do; \
+    i :: origtype n <- simpleFresh (); \
+    return $ symtype i
+
+#define GENSYM_FUN(op) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym (sa op sb) (sa op sb)
+#define GENSYM_SIMPLE_FUN(op) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple (sa op sb) (sa op sb) where \
+  simpleFresh _ = simpleFresh ()
+#define GENSYM_UNIT_FUN(op) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym () (sa op sb) where \
+  fresh _ = mrgSingle <$> simpleFresh ()
+#define GENSYM_UNIT_SIMPLE_FUN(op) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple () (sa op sb) where \
+  simpleFresh _ = do; \
+    ident <- getFreshIdent; \
+    FreshIndex i <- nextFreshIndex; \
+    case ident of; \
+      FreshIdent s -> return $ isym s i; \
+      FreshIdentWithInfo s info -> return $ iinfosym s i info
+
 #if 1
 GENSYM_SIMPLE(SymBool)
 GENSYM_SIMPLE_SIMPLE(SymBool)
@@ -1483,4 +1533,31 @@ GENSYM_SIMPLE(SymInteger)
 GENSYM_SIMPLE_SIMPLE(SymInteger)
 GENSYM_UNIT_SIMPLE(SymInteger)
 GENSYM_UNIT_SIMPLE_SIMPLE(SymInteger)
+
+GENSYM_BV(SymIntN)
+GENSYM_SIMPLE_BV(SymIntN)
+GENSYM_UNIT_BV(SymIntN)
+GENSYM_UNIT_SIMPLE_BV(SymIntN)
+GENSYM_BV(SymWordN)
+GENSYM_SIMPLE_BV(SymWordN)
+GENSYM_UNIT_BV(SymWordN)
+GENSYM_UNIT_SIMPLE_BV(SymWordN)
+
+GENSYM_BV_SOME(SomeSymIntN)
+GENSYM_SIMPLE_BV_SOME(SomeSymIntN)
+GENSYM_N_BV_SOME(SomeSymIntN)
+GENSYM_N_SIMPLE_BV_SOME(SomeSymIntN, SymIntN)
+GENSYM_BV_SOME(SomeSymWordN)
+GENSYM_SIMPLE_BV_SOME(SomeSymWordN)
+GENSYM_N_BV_SOME(SomeSymWordN)
+GENSYM_N_SIMPLE_BV_SOME(SomeSymWordN, SymWordN)
+
+GENSYM_FUN(=~>)
+GENSYM_SIMPLE_FUN(=~>)
+GENSYM_UNIT_FUN(=~>)
+GENSYM_UNIT_SIMPLE_FUN(=~>)
+GENSYM_FUN(-~>)
+GENSYM_SIMPLE_FUN(-~>)
+GENSYM_UNIT_FUN(-~>)
+GENSYM_UNIT_SIMPLE_FUN(-~>)
 #endif

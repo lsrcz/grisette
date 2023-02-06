@@ -39,6 +39,16 @@ module Grisette.IR.SymPrim.Data.SymPrim
     ModelSymPair (..),
     symSize,
     symsSize,
+    unarySomeSymIntN,
+    unarySomeSymIntNR1,
+    binSomeSymIntN,
+    binSomeSymIntNR1,
+    binSomeSymIntNR2,
+    unarySomeSymWordN,
+    unarySomeSymWordNR1,
+    binSomeSymWordN,
+    binSomeSymWordNR1,
+    binSomeSymWordNR2,
   )
 where
 
