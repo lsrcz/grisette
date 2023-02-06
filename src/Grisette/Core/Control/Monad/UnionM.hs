@@ -11,7 +11,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# OPTIONS_GHC -fno-cse #-}
 
 {-# HLINT ignore "Use <&>" #-}
 
@@ -172,8 +171,6 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 data UnionM a where
   -- | 'UnionM' with no 'Mergeable' knowledge.
   UAny ::
-    -- | (Possibly) cached merging result.
-    IORef (Either (Union a) (UnionM a)) ->
     -- | Original 'Union'.
     Union a ->
     UnionM a
@@ -189,17 +186,13 @@ instance (NFData a) => NFData (UnionM a) where
   rnf = rnf1
 
 instance NFData1 UnionM where
-  liftRnf _a (UAny i m) = rnf i `seq` liftRnf _a m
+  liftRnf _a (UAny m) = liftRnf _a m
   liftRnf _a (UMrg _ m) = liftRnf _a m
 
 instance (Lift a) => Lift (UnionM a) where
-  liftTyped (UAny _ v) = [||freshUAny v||]
-  liftTyped (UMrg _ v) = [||freshUAny v||]
+  liftTyped (UAny v) = [||UAny v||]
+  liftTyped (UMrg _ v) = [||UAny v||]
   lift = unTypeSplice . liftTyped
-
-freshUAny :: Union a -> UnionM a
-freshUAny v = UAny (unsafeDupablePerformIO $ newIORef $ Left v) v
-{-# NOINLINE freshUAny #-}
 
 instance (Show a) => (Show (UnionM a)) where
   showsPrec = showsPrec1
@@ -228,7 +221,7 @@ wrapBracket :: Char -> Char -> ShowS -> ShowS
 wrapBracket l r p = showChar l . p . showChar r
 
 instance Show1 UnionM where
-  liftShowsPrec sp sl i (UAny _ a) =
+  liftShowsPrec sp sl i (UAny a) =
     wrapBracket '<' '>'
       . liftShowsPrecUnion sp sl 0
       $ a
@@ -239,7 +232,7 @@ instance Show1 UnionM where
 
 -- | Extract the underlying Union. May be unmerged.
 underlyingUnion :: UnionM a -> Union a
-underlyingUnion (UAny _ a) = a
+underlyingUnion (UAny a) = a
 underlyingUnion (UMrg _ a) = a
 {-# INLINE underlyingUnion #-}
 
@@ -252,8 +245,8 @@ isMerged UMrg {} = True
 instance UnionPrjOp UnionM where
   singleView = singleView . underlyingUnion
   {-# INLINE singleView #-}
-  ifView (UAny _ u) = case ifView u of
-    Just (c, t, f) -> Just (c, freshUAny t, freshUAny f)
+  ifView (UAny u) = case ifView u of
+    Just (c, t, f) -> Just (c, UAny t, UAny f)
     Nothing -> Nothing
   ifView (UMrg m u) = case ifView u of
     Just (c, t, f) -> Just (c, UMrg m t, UMrg m f)
@@ -300,21 +293,16 @@ instance SimpleMergeable1 UnionM where
 
 instance UnionLike UnionM where
   mergeWithStrategy _ m@(UMrg _ _) = m
-  mergeWithStrategy s (UAny ref u) = unsafeDupablePerformIO $
-    atomicModifyIORef' ref $ \case
-      x@(Right r) -> (x, r)
-      Left _ -> (Right r, r)
-        where
-          !r = UMrg s $ fullReconstruct s u -- m >>= mrgSingle
-  {-# NOINLINE mergeWithStrategy #-}
+  mergeWithStrategy s (UAny u) = UMrg s $ fullReconstruct s u
+  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s (Con c) l r = if c then mergeWithStrategy s l else mergeWithStrategy s r
   mrgIfWithStrategy s cond l r =
     mergeWithStrategy s $ unionIf cond l r
   {-# INLINE mrgIfWithStrategy #-}
-  single = freshUAny . single
+  single = UAny . single
   {-# INLINE single #-}
-  unionIf cond (UAny _ a) (UAny _ b) = freshUAny $ unionIf cond a b
-  unionIf cond (UMrg m a) (UAny _ b) = UMrg m $ ifWithStrategy m cond a b
+  unionIf cond (UAny a) (UAny b) = UAny $ unionIf cond a b
+  unionIf cond (UMrg m a) (UAny b) = UMrg m $ ifWithStrategy m cond a b
   unionIf cond a (UMrg m b) = UMrg m $ ifWithStrategy m cond (underlyingUnion a) b
   {-# INLINE unionIf #-}
 
@@ -410,11 +398,11 @@ instance
       go (If _ _ cond t f) = extractSymbolics cond <> go t <> go f
 
 instance (Hashable a) => Hashable (UnionM a) where
-  s `hashWithSalt` (UAny _ u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
+  s `hashWithSalt` (UAny u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
   s `hashWithSalt` (UMrg _ u) = s `hashWithSalt` (1 :: Int) `hashWithSalt` u
 
 instance (Eq a) => Eq (UnionM a) where
-  UAny _ l == UAny _ r = l == r
+  UAny l == UAny r = l == r
   UMrg _ l == UMrg _ r = l == r
   _ == _ = False
 
@@ -482,22 +470,6 @@ instance
 
 instance (IsString a, Mergeable a) => IsString (UnionM a) where
   fromString = mrgSingle . fromString
-
-{-
-foldMapUnion :: (Monoid m) => (a -> m) -> Union a -> m
-foldMapUnion f (Single v) = f v
-foldMapUnion f (If _ _ _ l r) = foldMapUnion f l <> foldMapUnion f r
-
-instance Foldable UnionM where
-  foldMap f u = foldMapUnion f (underlyingUnion u)
-
-sequenceAUnion :: (Applicative m, SymBoolOp bool) => Union (m a) -> m (Union a)
-sequenceAUnion (Single v) = single <$> v
-sequenceAUnion (If _ _ cond l r) = unionIf cond <$> sequenceAUnion l <*> sequenceAUnion r
-
-instance  Traversable UnionM where
-  sequenceA u = freshUAny <$> sequenceAUnion (underlyingUnion u)
-  -}
 
 -- GenSym
 instance (GenSym spec a, Mergeable a) => GenSym spec (UnionM a)
