@@ -24,7 +24,6 @@ jobs:
         - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "902", cachekey: "cabal-902" }
         - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "925", cachekey: "cabal-925" }
         - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "944", cachekey: "cabal-944" }
-        - { build: cabal, arg: "", ismain: false, experimental: true, ghc: "HEAD", cachekey: "cabal-HEAD" }
   
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.experimental }}
