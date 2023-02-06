@@ -69,6 +69,7 @@ import Data.Kind
 import qualified Data.Monoid as Monoid
 import Data.Typeable
 import Data.Word
+import GHC.TypeNats
 import Generics.Deriving
 import Grisette.Core.Data.Class.Bool
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -939,7 +940,25 @@ deriving via (Default1 Monoid.Sum) instance Mergeable1 Monoid.Sum
 instance Mergeable symtype where \
   rootStrategy = SimpleStrategy ites
 
+#define MERGEABLE_BV(symtype) \
+instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
+  rootStrategy = SimpleStrategy ites
+
+#define MERGEABLE_BV_SOME(symtype) \
+instance Mergeable symtype where \
+  rootStrategy = SimpleStrategy ites
+
+#define MERGEABLE_FUN(op) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Mergeable (sa op sb) where \
+  rootStrategy = SimpleStrategy ites
+
 #if 1
 MERGEABLE_SIMPLE(SymBool)
 MERGEABLE_SIMPLE(SymInteger)
+MERGEABLE_BV(SymIntN)
+MERGEABLE_BV(SymWordN)
+MERGEABLE_BV_SOME(SomeSymIntN)
+MERGEABLE_BV_SOME(SomeSymWordN)
+MERGEABLE_FUN(=~>)
+MERGEABLE_FUN(-~>)
 #endif

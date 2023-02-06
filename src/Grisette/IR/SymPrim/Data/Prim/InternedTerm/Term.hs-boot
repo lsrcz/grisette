@@ -2,7 +2,6 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -11,6 +10,9 @@
 
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim (..),
+    SymRep (..),
+    ConRep (..),
+    LinkedRep (..),
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),
@@ -52,6 +54,21 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
+
+class ConRep sym where
+  type ConType sym
+
+class SupportedPrim con => SymRep con where
+  type SymType con
+
+class
+  (ConRep sym, SymRep con, sym ~ SymType con, con ~ ConType sym) =>
+  LinkedRep con sym
+    | con -> sym,
+      sym -> con
+  where
+  underlyingTerm :: sym -> Term con
+  wrapTerm :: Term con -> sym
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
