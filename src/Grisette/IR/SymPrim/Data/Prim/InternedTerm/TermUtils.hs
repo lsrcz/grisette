@@ -19,6 +19,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
     extractSymbolicsTerm,
     castTerm,
     pformat,
+    someTermsSize,
+    someTermSize,
     termSize,
     termsSize,
   )
@@ -260,11 +262,13 @@ pformat (DivIntegerTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat
 pformat (ModIntegerTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 {-# INLINE pformat #-}
 
-termsSize :: [Term a] -> Int
-termsSize terms = S.size $ execState (traverse go terms) S.empty
+someTermsSize :: [SomeTerm] -> Int
+someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
   where
     exists t = gets (S.member (SomeTerm t))
     add t = modify' (S.insert (SomeTerm t))
+    goSome :: SomeTerm -> State (S.HashSet SomeTerm) ()
+    goSome (SomeTerm b) = go b
     go :: forall b. Term b -> State (S.HashSet SomeTerm) ()
     go t@ConTerm {} = add t
     go t@SymTerm {} = add t
@@ -336,6 +340,14 @@ termsSize terms = S.size $ execState (traverse go terms) S.empty
           go arg1
           go arg2
           go arg3
+{-# INLINEABLE someTermsSize #-}
+
+someTermSize :: SomeTerm -> Int
+someTermSize term = someTermsSize [term]
+{-# INLINE someTermSize #-}
+
+termsSize :: [Term a] -> Int
+termsSize terms = someTermsSize $ (\x -> introSupportedPrimConstraint x $ SomeTerm x) <$> terms
 {-# INLINEABLE termsSize #-}
 
 termSize :: Term a -> Int
