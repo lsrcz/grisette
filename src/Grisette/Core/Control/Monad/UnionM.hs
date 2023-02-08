@@ -59,6 +59,7 @@ import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.Union
+import Grisette.IR.SymPrim.Data.SymPrim
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 
@@ -487,6 +488,10 @@ instance
     where
       go (Single x) = fresh x
       go (If _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
+
+-- AllSyms
+instance AllSyms a => AllSyms (UnionM a) where
+  allSymsS = allSymsS . underlyingUnion
 
 -- Concrete Key HashMaps
 

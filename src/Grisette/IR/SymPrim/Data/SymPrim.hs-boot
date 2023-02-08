@@ -16,6 +16,8 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SomeSymWordN (..),
     type (=~>) (..),
     type (-~>) (..),
+    SomeSym (..),
+    AllSyms (..),
     unarySomeSymIntN,
     unarySomeSymIntNR1,
     binSomeSymIntN,
@@ -72,6 +74,8 @@ binSomeSymWordNR2 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n
 
 instance Solvable Bool SymBool
 
+instance LinkedRep Bool SymBool
+
 instance Eq SymBool
 
 instance Lift SymBool
@@ -111,3 +115,13 @@ instance (KnownNat n, 1 <= n) => Solvable (IntN n) (SymIntN n)
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (ca --> cb) (sa -~> sb)
 
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (ca =-> cb) (sa =~> sb)
+
+data SomeSym where
+  SomeSym :: (LinkedRep con sym) => sym -> SomeSym
+
+class AllSyms a where
+  allSymsS :: a -> [SomeSym] -> [SomeSym]
+  allSymsS a l = allSyms a ++ l
+  allSyms :: a -> [SomeSym]
+  allSyms a = allSymsS a []
+  {-# MINIMAL allSymsS | allSyms #-}

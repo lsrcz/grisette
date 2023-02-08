@@ -36,6 +36,8 @@ module Grisette.IR.SymPrim
     TypedSymbol (..),
     symSize,
     symsSize,
+    AllSyms (..),
+    allSymsSize,
 
     -- ** Symbolic constant sets and models
     SymbolSet (..),
