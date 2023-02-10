@@ -32,8 +32,8 @@ testCegis :: (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a) => Griset
 testCegis config shouldSuccess a bs = do
   x <- cegisExceptVC config (a, ssym "internal" :: SymInteger) return (runExceptT $ buildFormula bs)
   case x of
-    Left _ -> shouldSuccess @=? False
-    Right (_, m) -> do
+    (_, Left _) -> shouldSuccess @=? False
+    (_, Right m) -> do
       shouldSuccess @=? True
       verify bs
       where
@@ -60,7 +60,7 @@ testCegis config shouldSuccess a bs = do
 
 cegisTests :: TestTree
 cegisTests =
-  let unboundedConfig = UnboundedReasoning SBV.z3 -- {SBV.verbose=True}
+  let unboundedConfig = precise SBV.z3 -- {SBV.verbose=True}
    in testGroup
         "CEGISTests"
         [ testGroup

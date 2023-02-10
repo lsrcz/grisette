@@ -68,9 +68,9 @@ class
   where
   -- | Solve a single formula. Find an assignment to it to make it true.
   --
-  -- >>> solve (UnboundedReasoning z3) ("a" &&~ ("b" :: SymInteger) ==~ 1)
+  -- >>> solve (precise z3) ("a" &&~ ("b" :: SymInteger) ==~ 1)
   -- Right (Model {a -> True :: Bool, b -> 1 :: Integer})
-  -- >>> solve (UnboundedReasoning z3) ("a" &&~ nots "a")
+  -- >>> solve (precise z3) ("a" &&~ nots "a")
   -- Left Unsat
   solve ::
     -- | solver configuration
@@ -82,7 +82,7 @@ class
   -- | Solve a single formula while returning multiple models to make it true.
   -- The maximum number of desired models are given.
   --
-  -- > >>> solveMulti (UnboundedReasoning z3) 4 ("a" ||~ "b")
+  -- > >>> solveMulti (precise z3) 4 ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveMulti ::
     -- | solver configuration
@@ -91,12 +91,12 @@ class
     Int ->
     -- | formula to solve, the solver will try to make it true
     SymBool ->
-    IO [Model]
+    IO ([Model], failure)
 
   -- | Solve a single formula while returning multiple models to make it true.
   -- All models are returned.
   --
-  -- > >>> solveAll (UnboundedReasoning z3) ("a" ||~ "b")
+  -- > >>> solveAll (precise z3) ("a" ||~ "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveAll ::
     -- | solver configuration
@@ -131,7 +131,7 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 --   translate _ = con True         -- non-errors are desirable
 -- :}
 --
--- >>> solveExcept (UnboundedReasoning z3) translate res
+-- >>> solveExcept (precise z3) translate res
 -- Right (Model {x -> 1 :: Integer})
 solveExcept ::
   ( UnionWithExcept t u e v,
@@ -165,5 +165,5 @@ solveMultiExcept ::
   (Either e v -> SymBool) ->
   -- | the program to be solved, should be a union of exception and values
   t ->
-  IO [Model]
+  IO ([Model], failure)
 solveMultiExcept config n f v = solveMulti config n (simpleMerge $ f <$> extractUnionExcept v)

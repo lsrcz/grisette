@@ -250,8 +250,8 @@ testTernaryOpLowering' config t = testTernaryOpLowering @a @b @c @d @as @bs @cs 
 
 loweringTests :: TestTree
 loweringTests =
-  let unboundedConfig = UnboundedReasoning SBV.z3
-      boundedConfig = BoundedReasoning @5 SBV.z3
+  let unboundedConfig = precise SBV.z3
+      boundedConfig = approx (Proxy @5) SBV.z3
    in testGroup
         "LoweringTests"
         [ testGroup

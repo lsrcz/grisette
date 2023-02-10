@@ -33,7 +33,7 @@ validateSpec config a = do
 
 termRewritingTests :: TestTree
 termRewritingTests =
-  let unboundedConfig = UnboundedReasoning SBV.z3 -- {SBV.verbose=True}
+  let unboundedConfig = precise SBV.z3 -- {SBV.verbose=True}
    in testGroup
         "TermRewritingTests"
         [ testGroup

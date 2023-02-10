@@ -1002,8 +1002,10 @@ resolveConfigView ::
   GrisetteSMTConfig integerBitWidth ->
   DictConfig integerBitWidth
 resolveConfigView config = case config of
-  UnboundedReasoning c -> DictConfig c
-  BoundedReasoning c -> DictConfig c
+  GrisetteSMTConfig c extra ->
+    case integerApprox extra of
+      NoApprox -> DictConfig c
+      Approx _ -> DictConfig c
 
 pattern ResolvedConfig ::
   forall integerBitWidth.

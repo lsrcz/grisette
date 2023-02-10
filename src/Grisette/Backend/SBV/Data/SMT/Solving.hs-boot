@@ -6,7 +6,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Backend.SBV.Data.SMT.Solving
-  ( GrisetteSMTConfig (..),
+  ( ApproximationConfig (..),
+    ExtraConfig (..),
+    GrisetteSMTConfig (..),
     TermTy,
   )
 where
@@ -38,9 +40,13 @@ type family TermTy bitWidth b where
   TermTy n (a --> b) = TermTy n a -> TermTy n b
   TermTy _ v = v
 
-data GrisetteSMTConfig (integerBitWidth :: Nat) where
-  UnboundedReasoning :: SBV.SMTConfig -> GrisetteSMTConfig 0
-  BoundedReasoning ::
-    (KnownNat integerBitWidth, IsZero integerBitWidth ~ 'False, SBV.BVIsNonZero integerBitWidth) =>
-    SBV.SMTConfig ->
-    GrisetteSMTConfig integerBitWidth
+data ApproximationConfig (n :: Nat) where
+  NoApprox :: ApproximationConfig 0
+  Approx :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) => p n -> ApproximationConfig n
+
+data ExtraConfig (i :: Nat) = ExtraConfig
+  { timeout :: Maybe Int,
+    integerApprox :: ApproximationConfig i
+  }
+
+data GrisetteSMTConfig (i :: Nat) = GrisetteSMTConfig {sbvConfig :: SBV.SMTConfig, extraConfig :: ExtraConfig i}
