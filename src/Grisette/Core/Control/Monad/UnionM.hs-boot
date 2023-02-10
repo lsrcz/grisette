@@ -13,11 +13,13 @@ import Grisette.Core.Data.Union
 data UnionM a where
   -- | 'UnionM' with no 'Mergeable' knowledge.
   UAny ::
+    Bool ->
     -- | Original 'Union'.
     Union a ->
     UnionM a
   -- | 'UnionM' with 'Mergeable' knowledge.
   UMrg ::
+    Bool ->
     -- | Cached merging strategy.
     MergingStrategy a ->
     -- | Merged Union

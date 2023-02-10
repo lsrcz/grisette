@@ -561,6 +561,9 @@ module Grisette.Core
 
     -- *** UnionM Monad
     UnionM,
+    parallel,
+    parBindUnion,
+    parBindUnionM,
     IsConcrete,
     makeUnionWrapper,
     makeUnionWrapper',

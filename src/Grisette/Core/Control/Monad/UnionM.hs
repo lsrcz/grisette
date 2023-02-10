@@ -27,6 +27,9 @@
 module Grisette.Core.Control.Monad.UnionM
   ( -- * UnionM and helpers
     UnionM (..),
+    parallel,
+    parBindUnion,
+    parBindUnionM,
     liftToMonadUnion,
     underlyingUnion,
     isMerged,
@@ -62,6 +65,8 @@ import Grisette.Core.Data.Union
 import Grisette.IR.SymPrim.Data.SymPrim
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
+import GHC.Conc
+import Control.Parallel.Strategies
 
 -- $setup
 -- >>> import Grisette.Core
@@ -172,27 +177,35 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 data UnionM a where
   -- | 'UnionM' with no 'Mergeable' knowledge.
   UAny ::
+    -- | Parallel flag
+    Bool ->
     -- | Original 'Union'.
     Union a ->
     UnionM a
   -- | 'UnionM' with 'Mergeable' knowledge.
   UMrg ::
+    -- | Parallel flag
+    Bool ->
     -- | Cached merging strategy.
     MergingStrategy a ->
     -- | Merged Union
     Union a ->
     UnionM a
 
+parallel :: UnionM a -> UnionM a
+parallel (UAny _ u) = UAny True u
+parallel (UMrg _ s u) = UMrg True s u
+
 instance (NFData a) => NFData (UnionM a) where
   rnf = rnf1
 
 instance NFData1 UnionM where
-  liftRnf _a (UAny m) = liftRnf _a m
-  liftRnf _a (UMrg _ m) = liftRnf _a m
+  liftRnf _a (UAny p m) = rnf p `seq` liftRnf _a m
+  liftRnf _a (UMrg p _ m) = rnf p `seq` liftRnf _a m
 
 instance (Lift a) => Lift (UnionM a) where
-  liftTyped (UAny v) = [||UAny v||]
-  liftTyped (UMrg _ v) = [||UAny v||]
+  liftTyped (UAny p v) = [||UAny p v||]
+  liftTyped (UMrg p _ v) = [||UAny p v||]
   lift = unTypeSplice . liftTyped
 
 instance (Show a) => (Show (UnionM a)) where
@@ -222,19 +235,19 @@ wrapBracket :: Char -> Char -> ShowS -> ShowS
 wrapBracket l r p = showChar l . p . showChar r
 
 instance Show1 UnionM where
-  liftShowsPrec sp sl i (UAny a) =
+  liftShowsPrec sp sl i (UAny _ a) =
     wrapBracket '<' '>'
       . liftShowsPrecUnion sp sl 0
       $ a
-  liftShowsPrec sp sl i (UMrg _ a) =
+  liftShowsPrec sp sl i (UMrg _ _ a) =
     wrapBracket '{' '}'
       . liftShowsPrecUnion sp sl 0
       $ a
 
 -- | Extract the underlying Union. May be unmerged.
 underlyingUnion :: UnionM a -> Union a
-underlyingUnion (UAny a) = a
-underlyingUnion (UMrg _ a) = a
+underlyingUnion (UAny _ a) = a
+underlyingUnion (UMrg _ _ a) = a
 {-# INLINE underlyingUnion #-}
 
 -- | Check if a UnionM is already merged.
@@ -243,14 +256,19 @@ isMerged UAny {} = False
 isMerged UMrg {} = True
 {-# INLINE isMerged #-}
 
+isParallel :: UnionM a -> Bool
+isParallel (UAny p _) = p
+isParallel (UMrg p _ _) = p
+{-# INLINE isParallel #-}
+
 instance UnionPrjOp UnionM where
   singleView = singleView . underlyingUnion
   {-# INLINE singleView #-}
-  ifView (UAny u) = case ifView u of
-    Just (c, t, f) -> Just (c, UAny t, UAny f)
+  ifView (UAny _ u) = case ifView u of
+    Just (c, t, f) -> Just (c, UAny False t, UAny False f)
     Nothing -> Nothing
-  ifView (UMrg m u) = case ifView u of
-    Just (c, t, f) -> Just (c, UMrg m t, UMrg m f)
+  ifView (UMrg _ m u) = case ifView u of
+    Just (c, t, f) -> Just (c, UMrg False m t, UMrg False m f)
     Nothing -> Nothing
   {-# INLINE ifView #-}
   leftMost = leftMost . underlyingUnion
@@ -266,14 +284,44 @@ instance Applicative UnionM where
   f <*> a = f >>= (\xf -> a >>= (return . xf))
   {-# INLINE (<*>) #-}
 
-bindUnion :: Union a -> (a -> UnionM b) -> UnionM b
-bindUnion (Single a') f' = f' a'
-bindUnion (If _ _ cond ifTrue ifFalse) f' =
-  unionIf cond (bindUnion ifTrue f') (bindUnion ifFalse f')
+bindUnion :: Bool -> Union a -> (a -> UnionM b) -> UnionM b
+bindUnion _ (Single a') f' = f' a'
+bindUnion False (If _ _ cond ifTrue ifFalse) f' =
+  unionIf cond (bindUnion False ifTrue f') (bindUnion False ifFalse f')
+bindUnion True (If _ _ cond ifTrue ifFalse) f' =
+  runEval $ do
+    l' <- rpar $ bindUnion True ifTrue f'
+    r' <- rpar $ bindUnion True ifFalse f'
+    l <- rseq l'
+    r <- rseq r'
+    rseq $ unionIf cond l r
+  {-l `par` r `pseq` unionIf cond l r-}
+  {-where
+    l = bindUnion True ifTrue f'
+    r = bindUnion True ifFalse f'-}
 {-# INLINE bindUnion #-}
 
+parBindUnion :: NFData b => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion (Single a') f' = f' a'
+parBindUnion (If _ _ cond ifTrue ifFalse) f' =
+  runEval $ do
+    l' <- rpar $ force $ parBindUnion ifTrue f'
+    r' <- rpar $ force $ parBindUnion ifFalse f'
+    l <- rseq l'
+    r <- rseq r'
+    rseq $ unionIf cond l r
+  {-l `par` r `pseq` unionIf cond l r-}
+  {-where
+    l = bindUnion True ifTrue f'
+    r = bindUnion True ifFalse f'-}
+{-# INLINE parBindUnion #-}
+
+parBindUnionM :: NFData b => UnionM a -> (a -> UnionM b) -> UnionM b
+parBindUnionM a f = parBindUnion (underlyingUnion a) f
+{-# INLINE parBindUnionM #-}
+
 instance Monad UnionM where
-  a >>= f = bindUnion (underlyingUnion a) f
+  a >>= f = bindUnion (isParallel a) (underlyingUnion a) f
   {-# INLINE (>>=) #-}
 
 instance (Mergeable a) => Mergeable (UnionM a) where
@@ -285,7 +333,7 @@ instance (Mergeable a) => SimpleMergeable (UnionM a) where
   {-# INLINE mrgIte #-}
 
 instance Mergeable1 UnionM where
-  liftRootStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
+  liftRootStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg False m . Single)
   {-# INLINE liftRootStrategy #-}
 
 instance SimpleMergeable1 UnionM where
@@ -293,18 +341,18 @@ instance SimpleMergeable1 UnionM where
   {-# INLINE liftMrgIte #-}
 
 instance UnionLike UnionM where
-  mergeWithStrategy _ m@(UMrg _ _) = m
-  mergeWithStrategy s (UAny u) = UMrg s $ fullReconstruct s u
+  mergeWithStrategy _ m@(UMrg {}) = m
+  mergeWithStrategy s (UAny _ u) = UMrg False s $ fullReconstruct s u
   {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s (Con c) l r = if c then mergeWithStrategy s l else mergeWithStrategy s r
   mrgIfWithStrategy s cond l r =
     mergeWithStrategy s $ unionIf cond l r
   {-# INLINE mrgIfWithStrategy #-}
-  single = UAny . single
+  single = UAny False . single
   {-# INLINE single #-}
-  unionIf cond (UAny a) (UAny b) = UAny $ unionIf cond a b
-  unionIf cond (UMrg m a) (UAny b) = UMrg m $ ifWithStrategy m cond a b
-  unionIf cond a (UMrg m b) = UMrg m $ ifWithStrategy m cond (underlyingUnion a) b
+  unionIf cond (UAny _ a) (UAny _ b) = UAny False $ unionIf cond a b
+  unionIf cond (UMrg _ m a) (UAny _ b) = UMrg False m $ ifWithStrategy m cond a b
+  unionIf cond a (UMrg _ m b) = UMrg False m $ ifWithStrategy m cond (underlyingUnion a) b
   {-# INLINE unionIf #-}
 
 instance (SEq a) => SEq (UnionM a) where
@@ -399,12 +447,12 @@ instance
       go (If _ _ cond t f) = extractSymbolics cond <> go t <> go f
 
 instance (Hashable a) => Hashable (UnionM a) where
-  s `hashWithSalt` (UAny u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
-  s `hashWithSalt` (UMrg _ u) = s `hashWithSalt` (1 :: Int) `hashWithSalt` u
+  s `hashWithSalt` (UAny _ u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
+  s `hashWithSalt` (UMrg _ _ u) = s `hashWithSalt` (1 :: Int) `hashWithSalt` u
 
 instance (Eq a) => Eq (UnionM a) where
-  UAny l == UAny r = l == r
-  UMrg _ l == UMrg _ r = l == r
+  UAny _ l == UAny _ r = l == r
+  UMrg _ _ l == UMrg _ _ r = l == r
   _ == _ = False
 
 instance Eq1 UnionM where
