@@ -116,7 +116,7 @@ data ApproximationConfig (n :: Nat) where
 data ExtraConfig (i :: Nat) = ExtraConfig
   { -- | Timeout in milliseconds for each solver call. CEGIS may call the
     -- solver multiple times and each call has its own timeout.
-    timeout :: Maybe Int, 
+    timeout :: Maybe Int,
     -- | Configures how to approximate unbounded integer values.
     integerApprox :: ApproximationConfig i
   }
