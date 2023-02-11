@@ -8,8 +8,16 @@
 -- Portability :   GHC only
 module Grisette.Backend.SBV
   ( -- * Grisette SBV backend configuration
+    ApproximationConfig (..),
+    ExtraConfig (..),
+    precise,
+    approx,
+    withTimeout,
+    clearTimeout,
+    withApprox,
+    clearApprox,
     GrisetteSMTConfig (..),
-    sbvConfig,
+    SolvingFailure (..),
 
     -- * SBV backend solver configuration
     SBV.SMTConfig (..),

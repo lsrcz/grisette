@@ -768,7 +768,7 @@ module Grisette.Core
     -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error UnionM SymBool
     -- >>> res
     -- ExceptT {If (|| a (! b)) (If a (Left Error1) (Left Error2)) (Right c)}
-    -- >>> solveExcept (UnboundedReasoning z3) (\case Left _ -> con False; Right x -> x) res
+    -- >>> solveExcept (precise z3) (\case Left _ -> con False; Right x -> x) res
     -- Right (Model {a -> False :: Bool, b -> True :: Bool, c -> True :: Bool})
     --
     -- The solver call in the above example means that we want the solver to
@@ -837,9 +837,9 @@ module Grisette.Core
     -- >>> import Grisette.Backend.SBV
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
-    -- >>> solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 20)
+    -- >>> solve (precise z3) (x + y ==~ 6 &&~ x - y ==~ 20)
     -- Right (Model {x -> 13 :: Integer, y -> -7 :: Integer})
-    -- >>> solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 19)
+    -- >>> solve (precise z3) (x + y ==~ 6 &&~ x - y ==~ 19)
     -- Left Unsat
     --
     -- The first parameter of 'solve' is the solver configuration.
@@ -858,7 +858,7 @@ module Grisette.Core
     -- evaluate symbolic values. The following code evaluates the product of
     -- x and y under the solution of the equation system.
     --
-    -- >>> Right m <- solve (UnboundedReasoning z3) (x + y ==~ 6 &&~ x - y ==~ 20)
+    -- >>> Right m <- solve (precise z3) (x + y ==~ 6 &&~ x - y ==~ 20)
     -- >>> evaluateSym False m (x * y)
     -- -91
     --

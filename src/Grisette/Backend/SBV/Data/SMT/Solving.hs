@@ -23,13 +23,22 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Backend.SBV.Data.SMT.Solving
-  ( GrisetteSMTConfig (..),
-    sbvConfig,
+  ( ApproximationConfig (..),
+    ExtraConfig (..),
+    precise,
+    approx,
+    withTimeout,
+    clearTimeout,
+    withApprox,
+    clearApprox,
+    GrisetteSMTConfig (..),
+    SolvingFailure (..),
     TermTy,
   )
 where
 
 import Control.DeepSeq
+import Control.Exception
 import Control.Monad.Except
 import qualified Data.HashSet as S
 import Data.Hashable
@@ -62,6 +71,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 -- >>> import Grisette.Backend.SBV
+-- >>> import Data.Proxy
 
 type Aux :: Bool -> Nat -> Type
 type family Aux o n where
@@ -83,6 +93,51 @@ type family TermTy bitWidth b where
   TermTy n (a --> b) = TermTy n a -> TermTy n b
   TermTy _ v = v
 
+-- | Configures how to approximate unbounded values.
+--
+-- For example, if we use @'Approx' ('Data.Proxy' :: 'Data.Proxy' 4)@ to approximate the
+-- following unbounded integer:
+--
+-- > (+ a 9)
+--
+-- We will get
+--
+-- > (bvadd a #x9)
+--
+-- Here the value 9 will be approximated to a 4-bit bit vector, and the
+-- operation `bvadd` will be used instead of `+`.
+--
+-- Note that this approximation may not be sound. See 'GrisetteSMTConfig' for
+-- more details.
+data ApproximationConfig (n :: Nat) where
+  NoApprox :: ApproximationConfig 0
+  Approx :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) => p n -> ApproximationConfig n
+
+data ExtraConfig (i :: Nat) = ExtraConfig
+  { -- | Timeout in milliseconds for each solver call. CEGIS may call the
+    -- solver multiple times and each call has its own timeout.
+    timeout :: Maybe Int,
+    -- | Configures how to approximate unbounded integer values.
+    integerApprox :: ApproximationConfig i
+  }
+
+preciseExtraConfig :: ExtraConfig 0
+preciseExtraConfig =
+  ExtraConfig
+    { timeout = Nothing,
+      integerApprox = NoApprox
+    }
+
+approximateExtraConfig ::
+  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+  p n ->
+  ExtraConfig n
+approximateExtraConfig p =
+  ExtraConfig
+    { timeout = Nothing,
+      integerApprox = Approx p
+    }
+
 -- | Solver configuration for the Grisette SBV backend.
 -- A Grisette solver configuration consists of a SBV solver configuration and
 -- the reasoning precision.
@@ -101,7 +156,7 @@ type family TermTy bitWidth b where
 -- infinite precision during the symbolic evaluation, but when solving the
 -- queries, they are translated to bit vectors for better performance.
 --
--- For example, the Grisette term @5 * "a" :: SymInteger@ should be translated
+-- For example, the Grisette term @5 * "a" :: 'SymInteger'@ should be translated
 -- to the following SMT with the unbounded reasoning configuration (the term
 -- is @t1@):
 --
@@ -134,56 +189,109 @@ type family TermTy bitWidth b where
 --
 -- >>> :set -XTypeApplications -XOverloadedStrings -XDataKinds
 -- >>> let a = "a" :: SymInteger
--- >>> solve (UnboundedReasoning z3) $ a >~ 7 &&~ a <~ 9
+-- >>> solve (precise z3) $ a >~ 7 &&~ a <~ 9
 -- Right (Model {a -> 8 :: Integer})
--- >>> solve (BoundedReasoning @4 z3) $ a >~ 7 &&~ a <~ 9
+-- >>> solve (approx (Proxy @4) z3) $ a >~ 7 &&~ a <~ 9
 -- Left Unsat
 --
--- This should be avoided by setting an large enough reasoning precision to prevent
+-- This may be avoided by setting an large enough reasoning precision to prevent
 -- overflows.
-data GrisetteSMTConfig (integerBitWidth :: Nat) where
-  UnboundedReasoning :: SBV.SMTConfig -> GrisetteSMTConfig 0
-  BoundedReasoning ::
-    (KnownNat integerBitWidth, IsZero integerBitWidth ~ 'False, SBV.BVIsNonZero integerBitWidth) =>
-    SBV.SMTConfig ->
-    GrisetteSMTConfig integerBitWidth
+data GrisetteSMTConfig (i :: Nat) = GrisetteSMTConfig {sbvConfig :: SBV.SMTConfig, extraConfig :: ExtraConfig i}
 
--- | Extract the SBV solver configuration from the Grisette solver configuration.
-sbvConfig :: forall integerBitWidth. GrisetteSMTConfig integerBitWidth -> SBV.SMTConfig
-sbvConfig (UnboundedReasoning config) = config
-sbvConfig (BoundedReasoning config) = config
+-- | A precise reasoning configuration with the given SBV solver configuration.
+precise :: SBV.SMTConfig -> GrisetteSMTConfig 0
+precise config = GrisetteSMTConfig config preciseExtraConfig
+
+-- | An approximate reasoning configuration with the given SBV solver configuration.
+approx ::
+  forall p n.
+  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+  p n ->
+  SBV.SMTConfig ->
+  GrisetteSMTConfig n
+approx p config = GrisetteSMTConfig config (approximateExtraConfig p)
+
+-- | Set the timeout for the solver configuration.
+withTimeout :: Int -> GrisetteSMTConfig i -> GrisetteSMTConfig i
+withTimeout t config = config {extraConfig = (extraConfig config) {timeout = Just t}}
+
+-- | Clear the timeout for the solver configuration.
+clearTimeout :: GrisetteSMTConfig i -> GrisetteSMTConfig i
+clearTimeout config = config {extraConfig = (extraConfig config) {timeout = Nothing}}
+
+-- | Set the reasoning precision for the solver configuration.
+withApprox :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) => p n -> GrisetteSMTConfig i -> GrisetteSMTConfig n
+withApprox p config = config {extraConfig = (extraConfig config) {integerApprox = Approx p}}
+
+-- | Clear the reasoning precision and perform precise reasoning with the
+-- solver configuration.
+clearApprox :: GrisetteSMTConfig i -> GrisetteSMTConfig 0
+clearApprox config = config {extraConfig = (extraConfig config) {integerApprox = NoApprox}}
+
+data SolvingFailure
+  = DSat (Maybe String)
+  | Unsat
+  | Unk
+  | ResultNumLimitReached
+  | SolvingError SBV.SBVException
+  deriving (Show)
+
+sbvCheckSatResult :: SBVC.CheckSatResult -> SolvingFailure
+sbvCheckSatResult SBVC.Sat = error "Should not happen"
+sbvCheckSatResult (SBVC.DSat msg) = DSat msg
+sbvCheckSatResult SBVC.Unsat = Unsat
+sbvCheckSatResult SBVC.Unk = Unk
+
+applyTimeout :: GrisetteSMTConfig i -> Query a -> Query a
+applyTimeout config q = case timeout (extraConfig config) of
+  Nothing -> q
+  Just t -> SBVC.timeout t q
 
 solveTermWith ::
   forall integerBitWidth.
   GrisetteSMTConfig integerBitWidth ->
   Term Bool ->
-  IO (SymBiMap, Either SBVC.CheckSatResult PM.Model)
-solveTermWith config term = SBV.runSMTWith (sbvConfig config) $ do
-  (m, a) <- lowerSinglePrim config term
-  SBVC.query $ do
-    SBV.constrain a
-    r <- SBVC.checkSat
-    case r of
-      SBVC.Sat -> do
-        md <- SBVC.getModel
-        return (m, Right $ parseModel config md m)
-      _ -> return (m, Left r)
+  IO (Either SolvingFailure PM.Model)
+solveTermWith config term =
+  handle (return . Left . SolvingError) $
+    SBV.runSMTWith (sbvConfig config) $ do
+      (m, a) <- lowerSinglePrim config term
+      SBVC.query $ applyTimeout config $ do
+        SBV.constrain a
+        r <- SBVC.checkSat
+        case r of
+          SBVC.Sat -> do
+            md <- SBVC.getModel
+            return (Right $ parseModel config md m)
+          _ -> return (Left $ sbvCheckSatResult r)
 
-instance Solver (GrisetteSMTConfig n) SBVC.CheckSatResult where
-  solve config (SymBool t) = snd <$> solveTermWith config t
+instance Solver (GrisetteSMTConfig n) SolvingFailure where
+  solve config (SymBool t) = solveTermWith config t
   solveMulti config n s@(SymBool t)
-    | n > 0 = SBV.runSMTWith (sbvConfig config) $ do
-        (newm, a) <- lowerSinglePrim config t
-        SBVC.query $ do
-          SBV.constrain a
-          r <- SBVC.checkSat
-          case r of
-            SBVC.Sat -> do
-              md <- SBVC.getModel
-              let model = parseModel config md newm
-              remainingModels n model newm
-            _ -> return []
-    | otherwise = return []
+    | n > 0 =
+        handle
+          ( \(x :: SBV.SBVException) -> do
+              print "An SBV Exception occurred:"
+              print x
+              print $
+                "Warning: Note that solveMulti do not fully support "
+                  ++ "timeouts, and will return an empty list if the solver"
+                  ++ "timeouts in any iteration."
+              return ([], SolvingError x)
+          )
+          $ SBV.runSMTWith (sbvConfig config)
+          $ do
+            (newm, a) <- lowerSinglePrim config t
+            SBVC.query $ applyTimeout config $ do
+              SBV.constrain a
+              r <- SBVC.checkSat
+              case r of
+                SBVC.Sat -> do
+                  md <- SBVC.getModel
+                  let model = parseModel config md newm
+                  remainingModels n model newm
+                _ -> return ([], sbvCheckSatResult r)
+    | otherwise = return ([], ResultNumLimitReached)
     where
       allSymbols = extractSymbolics s :: SymbolSet
       next :: PM.Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
@@ -202,41 +310,52 @@ instance Solver (GrisetteSMTConfig n) SBVC.CheckSatResult where
             let model = parseModel config md1 newm
             return (newm, Right model)
           _ -> return (newm, Left r)
-      remainingModels :: Int -> PM.Model -> SymBiMap -> Query [PM.Model]
+      remainingModels :: Int -> PM.Model -> SymBiMap -> Query ([PM.Model], SolvingFailure)
       remainingModels n1 md origm
         | n1 > 1 = do
             (newm, r) <- next md origm
             case r of
-              Left _ -> return [md]
+              Left r -> return ([md], sbvCheckSatResult r)
               Right mo -> do
-                rmmd <- remainingModels (n1 - 1) mo newm
-                return $ md : rmmd
-        | otherwise = return [md]
+                (rmmd, e) <- remainingModels (n1 - 1) mo newm
+                return (md : rmmd, e)
+        | otherwise = return ([md], ResultNumLimitReached)
   solveAll = undefined
 
-instance CEGISSolver (GrisetteSMTConfig n) SBVC.CheckSatResult where
+instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
   cegisMultiInputs ::
     forall inputs spec.
     (ExtractSymbolics inputs, EvaluateSym inputs) =>
     GrisetteSMTConfig n ->
     [inputs] ->
     (inputs -> CEGISCondition) ->
-    IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
+    IO ([inputs], Either SolvingFailure PM.Model)
   cegisMultiInputs config inputs func =
-    go1 (cexesAssertFun conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
+    handle
+      ( \(x :: SBV.SBVException) -> do
+          print "An SBV Exception occurred:"
+          print x
+          print $
+            "Warning: Note that CEGIS procedures do not fully support "
+              ++ "timeouts, and will return an empty counter example list if "
+              ++ "the solver timeouts during guessing phase."
+          return ([], Left $ SolvingError x)
+      )
+      $ go1 (cexesAssertFun conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
     where
       (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
+      go1 :: SymBool -> [inputs] -> PM.Model -> [inputs] -> SymBool -> SymBool -> [inputs] -> IO ([inputs], Either SolvingFailure PM.Model)
       go1 cexFormula cexes previousModel inputs pre post remainingSymInputs = do
         case remainingSymInputs of
-          [] -> return $ Right (cexes, previousModel)
+          [] -> return (cexes, Right previousModel)
           newInput : vs -> do
             let CEGISCondition nextPre nextPost = func newInput
             let finalPre = pre &&~ nextPre
             let finalPost = post &&~ nextPost
             r <- go cexFormula newInput (newInput : inputs) finalPre finalPost
             case r of
-              Left failure -> return $ Left failure
-              Right (newCexes, mo) -> do
+              (newCexes, Left failure) -> return (cexes ++ newCexes, Left failure)
+              (newCexes, Right mo) -> do
                 go1
                   (cexFormula &&~ cexesAssertFun newCexes)
                   (cexes ++ newCexes)
@@ -255,27 +374,28 @@ instance CEGISSolver (GrisetteSMTConfig n) SBVC.CheckSatResult where
         [inputs] ->
         SymBool ->
         SymBool ->
-        IO (Either SBVC.CheckSatResult ([inputs], PM.Model))
+        IO ([inputs], Either SolvingFailure PM.Model)
       go cexFormula inputs allInputs pre post =
         SBV.runSMTWith (sbvConfig config) $ do
           let SymBool t = phi &&~ cexFormula
           (newm, a) <- lowerSinglePrim config t
           SBVC.query $
-            snd <$> do
-              SBV.constrain a
-              r <- SBVC.checkSat
-              mr <- case r of
-                SBVC.Sat -> do
-                  md <- SBVC.getModel
-                  return $ Right $ parseModel config md newm
-                _ -> return $ Left r
-              loop ((forallSymbols `exceptFor`) <$> mr) [] newm
+            applyTimeout config $
+              snd <$> do
+                SBV.constrain a
+                r <- SBVC.checkSat
+                mr <- case r of
+                  SBVC.Sat -> do
+                    md <- SBVC.getModel
+                    return $ Right $ parseModel config md newm
+                  _ -> return $ Left $ sbvCheckSatResult r
+                loop ((forallSymbols `exceptFor`) <$> mr) [] newm
         where
           forallSymbols :: SymbolSet
           forallSymbols = extractSymbolics allInputs
           phi = pre &&~ post
           negphi = pre &&~ nots post
-          check :: Model -> IO (Either SBVC.CheckSatResult (inputs, PM.Model))
+          check :: Model -> IO (Either SolvingFailure (inputs, PM.Model))
           check candidate = do
             let evaluated = evaluateSym False candidate negphi
             r <- solve config evaluated
@@ -283,7 +403,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SBVC.CheckSatResult where
               m <- r
               let newm = exact forallSymbols m
               return (evaluateSym False newm inputs, newm)
-          guess :: Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
+          guess :: Model -> SymBiMap -> Query (SymBiMap, Either SolvingFailure PM.Model)
           guess candidate origm = do
             let SymBool evaluated = evaluateSym False candidate phi
             let (lowered, newm) = lowerSinglePrim' config evaluated origm
@@ -294,21 +414,21 @@ instance CEGISSolver (GrisetteSMTConfig n) SBVC.CheckSatResult where
                 md <- SBVC.getModel
                 let model = parseModel config md newm
                 return (newm, Right $ exceptFor forallSymbols model)
-              _ -> return (newm, Left r)
+              _ -> return (newm, Left $ sbvCheckSatResult r)
           loop ::
-            Either SBVC.CheckSatResult PM.Model ->
+            Either SolvingFailure PM.Model ->
             [inputs] ->
             SymBiMap ->
-            Query (SymBiMap, Either SBVC.CheckSatResult ([inputs], PM.Model))
-          loop (Right mo) cexs origm = do
+            Query (SymBiMap, ([inputs], Either SolvingFailure PM.Model))
+          loop (Right mo) cexes origm = do
             r <- liftIO $ check mo
             case r of
-              Left SBVC.Unsat -> return (origm, Right (cexs, mo))
-              Left v -> return (origm, Left v)
+              Left Unsat -> return (origm, (cexes, Right mo))
+              Left v -> return (origm, (cexes, Left v))
               Right (cex, cexm) -> do
                 (newm, res) <- guess cexm origm
-                loop res (cex : cexs) newm
-          loop (Left v) _ origm = return (origm, Left v)
+                loop res (cex : cexes) newm
+          loop (Left v) cexes origm = return (origm, (cexes, Left v))
 
 newtype CegisInternal = CegisInternal Int
   deriving (Eq, Show, Ord, Lift)

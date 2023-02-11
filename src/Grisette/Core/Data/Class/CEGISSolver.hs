@@ -124,7 +124,7 @@ class
     -- | The counter-examples generated
     -- during the CEGIS loop, and the
     -- model found by the solver.
-    IO (Either failure ([inputs], Model))
+    IO ([inputs], Either failure Model)
 
 -- |
 -- CEGIS with a single symbolic input to represent a set of inputs.
@@ -135,8 +135,8 @@ class
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
--- >>> cegis (UnboundedReasoning z3) x (cegisPrePost (x >~ 0) (x * c <~ 0 &&~ c >~ -2))
--- Right ([],Model {c -> -1 :: Integer})
+-- >>> cegis (precise z3) x (cegisPrePost (x >~ 0) (x * c <~ 0 &&~ c >~ -2))
+-- ([],Right (Model {c -> -1 :: Integer}))
 cegis ::
   ( CEGISSolver config failure,
     EvaluateSym inputs,
@@ -155,7 +155,7 @@ cegis ::
   -- | The counter-examples generated
   -- during the CEGIS loop, and the
   -- model found by the solver.
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegis config inputs cond = cegisMultiInputs config [inputs] (const cond)
 
 -- |
@@ -173,7 +173,7 @@ cegisExceptMultiInputs ::
   [inputs] ->
   (Either e v -> CEGISCondition) ->
   (inputs -> t) ->
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegisExceptMultiInputs config cexes interpretFun f =
   cegisMultiInputs config cexes (simpleMerge . (interpretFun <$>) . extractUnionExcept . f)
 
@@ -194,7 +194,7 @@ cegisExceptVCMultiInputs ::
   [inputs] ->
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegisExceptVCMultiInputs config cexes interpretFun f =
   cegisMultiInputs
     config
@@ -230,7 +230,7 @@ cegisExceptStdVCMultiInputs ::
   config ->
   [inputs] ->
   (inputs -> t) ->
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegisExceptStdVCMultiInputs config cexes =
   cegisExceptVCMultiInputs config cexes return
 
@@ -264,8 +264,8 @@ cegisExceptStdVCMultiInputs config cexes =
 --   translation _ = cegisPostCond (con True)
 -- :}
 --
--- >>> cegisExcept (UnboundedReasoning z3) x translation res
--- Right ([],Model {c -> -1 :: Integer})
+-- >>> cegisExcept (precise z3) x translation res
+-- ([],Right (Model {c -> -1 :: Integer}))
 cegisExcept ::
   ( UnionWithExcept t u e v,
     UnionPrjOp u,
@@ -278,7 +278,7 @@ cegisExcept ::
   inputs ->
   (Either e v -> CEGISCondition) ->
   t ->
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegisExcept config inputs f v = cegis config inputs $ simpleMerge $ f <$> extractUnionExcept v
 
 -- |
@@ -298,7 +298,7 @@ cegisExceptVC ::
   inputs ->
   (Either e v -> u (Either VerificationConditions ())) ->
   t ->
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegisExceptVC config inputs f v =
   cegis config inputs $
     simpleMerge $
@@ -334,8 +334,8 @@ cegisExceptVC config inputs f v =
 --     symAssert $ c >~ -2
 -- :}
 --
--- >>> cegisExceptStdVC (UnboundedReasoning z3) x res
--- Right ([],Model {c -> -1 :: Integer})
+-- >>> cegisExceptStdVC (precise z3) x res
+-- ([],Right (Model {c -> -1 :: Integer}))
 cegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
     UnionPrjOp u,
@@ -347,5 +347,5 @@ cegisExceptStdVC ::
   config ->
   inputs ->
   t ->
-  IO (Either failure ([inputs], Model))
+  IO ([inputs], Either failure Model)
 cegisExceptStdVC config inputs = cegisExceptVC config inputs return
