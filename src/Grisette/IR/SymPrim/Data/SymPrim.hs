@@ -74,6 +74,7 @@ import Data.Word
 import GHC.Generics
 import GHC.TypeNats
 import Generics.Deriving
+import Grisette.Core.Control.Exception
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
@@ -1186,7 +1187,7 @@ someSymsSize = someTermsSize . fmap someUnderlyingTerm
 {-# INLINE someSymsSize #-}
 
 -- | Extract all symbolic primitive values that are represented as SMT terms.
--- 
+--
 -- __Note:__ This type class can be derived for algebraic data types. You may
 -- need the @DerivingVia@ and @DerivingStrategies@ extenstions.
 --
@@ -1425,4 +1426,3 @@ deriving via (Default VerificationConditions) instance AllSyms VerificationCondi
 
 -- AssertionError
 deriving via (Default AssertionError) instance AllSyms AssertionError
-
