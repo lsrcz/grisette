@@ -37,6 +37,7 @@ where
 
 import Control.DeepSeq
 import Control.Monad.Identity (Identity (..))
+import Control.Parallel.Strategies
 import Data.Functor.Classes
 import qualified Data.HashMap.Lazy as HML
 import Data.Hashable
@@ -44,6 +45,7 @@ import Data.IORef
 import Data.String
 import GHC.IO hiding (evaluate)
 import Grisette.Core.Control.Monad.CBMCExcept
+import Grisette.Core.Control.Monad.Class.MonadParallelUnion
 import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
@@ -275,6 +277,24 @@ bindUnion (If _ _ cond ifTrue ifFalse) f' =
 instance Monad UnionM where
   a >>= f = bindUnion (underlyingUnion a) f
   {-# INLINE (>>=) #-}
+
+parBindUnion'' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion'' (Single a) f = merge $ f a
+parBindUnion'' u f = parBindUnion' u f
+
+parBindUnion' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion' (Single a') f' = f' a'
+parBindUnion' (If _ _ cond ifTrue ifFalse) f' = runEval $ do
+  l <- rpar $ force $ parBindUnion' ifTrue f'
+  r <- rpar $ force $ parBindUnion' ifFalse f'
+  l' <- rseq l
+  r' <- rseq r
+  rseq $ mrgIf cond l' r'
+{-# INLINE parBindUnion' #-}
+
+instance MonadParallelUnion UnionM where
+  parBindUnion = parBindUnion'' . underlyingUnion
+  {-# INLINE parBindUnion #-}
 
 instance (Mergeable a) => Mergeable (UnionM a) where
   rootStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle

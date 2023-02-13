@@ -40,6 +40,7 @@ dependencies:
 - vector >= 0.12.1 && < 0.14
 - once >= 0.2 && < 0.5
 - sbv >= 8.11 && < 9.1
+- parallel
 
 flags: {
   fast: {
