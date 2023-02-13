@@ -606,7 +606,7 @@ module Grisette.Core
     pattern SingleU,
     pattern IfU,
     MonadUnion,
-    MonadParallelUnion,
+    MonadParallelUnion (..),
     simpleMerge,
     onUnion,
     onUnion2,
