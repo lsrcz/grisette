@@ -1414,3 +1414,10 @@ instance AllSyms a => AllSyms (Identity a) where
 -- IdentityT
 instance AllSyms (m a) => AllSyms (IdentityT m a) where
   allSymsS (IdentityT a) = allSymsS a
+
+-- VerificationConditions
+deriving via (Default VerificationConditions) instance AllSyms VerificationConditions
+
+-- AssertionError
+deriving via (Default AssertionError) instance AllSyms AssertionError
+
