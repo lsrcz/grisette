@@ -34,15 +34,14 @@ import Grisette.Lib.Control.Monad
 -- With the @QualifiedDo@ extension and the "Grisette.Qualified.ParallelUnionDo"
 -- module, one can execute the paths in parallel and merge the results with:
 --
--- >>> :set -XQualifiedDo -XOverloadedStrings
--- >>> import Grisette
--- >>> import qualified Grisette.Qualified.ParallelUnionDo as P
--- >>> :{
---   P.do
---     x <- mrgIf "a" (return 1) (return 2) :: UnionM Int
---     return $ x + 1
--- :}
--- {If a 2 3}
+-- > :set -XQualifiedDo -XOverloadedStrings
+-- > import Grisette
+-- > import qualified Grisette.Qualified.ParallelUnionDo as P
+-- > P.do
+-- >   x <- mrgIf "a" (return 1) (return 2) :: UnionM Int
+-- >   return $ x + 1
+-- >
+-- > -- {If a 2 3}
 class (UnionLike m, Monad m) => MonadParallelUnion m where
   parBindUnion :: (Mergeable b, NFData b) => m a -> (a -> m b) -> m b
 

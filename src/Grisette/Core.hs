@@ -1021,6 +1021,7 @@ import Generics.Deriving (Default (..), Default1 (..))
 import Grisette.Core.BuiltinUnionWrappers
 import Grisette.Core.Control.Exception
 import Grisette.Core.Control.Monad.CBMCExcept
+import Grisette.Core.Control.Monad.Class.MonadParallelUnion
 import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Control.Monad.UnionM
 import Grisette.Core.Data.Class.BitVector
