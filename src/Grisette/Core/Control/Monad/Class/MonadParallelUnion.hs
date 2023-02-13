@@ -1,6 +1,17 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Grisette.Core.Control.Monad.Class.MonadParallelUnion (MonadParallelUnion (..)) where
+-- |
+-- Module      :   Grisette.Core.Control.Monad.Class.MonadParallelUnion
+-- Copyright   :   (c) Sirui Lu 2023
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
+module Grisette.Core.Control.Monad.Class.MonadParallelUnion
+  ( MonadParallelUnion (..),
+  )
+where
 
 import Control.DeepSeq
 import Control.Monad.Cont
@@ -18,6 +29,20 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Lib.Control.Monad
 
+-- | Parallel union monad.
+--
+-- With the @QualifiedDo@ extension and the "Grisette.Qualified.ParallelUnionDo"
+-- module, one can execute the paths in parallel and merge the results with:
+--
+-- >>> :set -XQualifiedDo -XOverloadedStrings
+-- >>> import Grisette
+-- >>> import qualified Grisette.Qualified.ParallelUnionDo as P
+-- >>> :{
+--   P.do
+--     x <- mrgIf "a" (return 1) (return 2) :: UnionM Int
+--     return $ x + 1
+-- :}
+-- {If a 2 3}
 class (UnionLike m, Monad m) => MonadParallelUnion m where
   parBindUnion :: (Mergeable b, NFData b) => m a -> (a -> m b) -> m b
 
