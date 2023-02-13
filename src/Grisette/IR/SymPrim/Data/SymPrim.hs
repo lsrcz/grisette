@@ -1186,6 +1186,11 @@ someSymsSize = someTermsSize . fmap someUnderlyingTerm
 {-# INLINE someSymsSize #-}
 
 -- | Extract all symbolic primitive values that are represented as SMT terms.
+-- 
+-- __Note:__ This type class can be derived for algebraic data types. You may
+-- need the @DerivingVia@ and @DerivingStrategies@ extenstions.
+--
+-- > data X = ... deriving Generic deriving AllSyms via (Default X)
 class AllSyms a where
   -- | Convert a value to a list of symbolic primitive values. It should
   -- prepend to an existing list of symbolic primitive values.
