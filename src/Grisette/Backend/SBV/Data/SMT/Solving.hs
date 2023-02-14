@@ -331,17 +331,22 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
     (inputs -> CEGISCondition) ->
     IO ([inputs], Either SolvingFailure PM.Model)
   cegisMultiInputs config inputs func =
-    handle
-      ( \(x :: SBV.SBVException) -> do
-          print "An SBV Exception occurred:"
-          print x
-          print $
-            "Warning: Note that CEGIS procedures do not fully support "
-              ++ "timeouts, and will return an empty counter example list if "
-              ++ "the solver timeouts during guessing phase."
-          return ([], Left $ SolvingError x)
-      )
-      $ go1 (cexesAssertFun conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
+    case symInputs of
+      [] -> do
+        m <- solve config (cexesAssertFun conInputs)
+        return (conInputs, m)
+      _ ->
+        handle
+          ( \(x :: SBV.SBVException) -> do
+              print "An SBV Exception occurred:"
+              print x
+              print $
+                "Warning: Note that CEGIS procedures do not fully support "
+                  ++ "timeouts, and will return an empty counter example list if "
+                  ++ "the solver timeouts during guessing phase."
+              return ([], Left $ SolvingError x)
+          )
+          $ go1 (cexesAssertFun conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
     where
       (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
       go1 :: SymBool -> [inputs] -> PM.Model -> [inputs] -> SymBool -> SymBool -> [inputs] -> IO ([inputs], Either SolvingFailure PM.Model)

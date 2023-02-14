@@ -9,6 +9,8 @@ import Control.Monad.Except
 import qualified Data.HashSet as S
 import Data.Proxy
 import qualified Data.SBV as SBV
+import Data.String
+import Grisette.Backend.SBV
 import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Core.Control.Exception
 import Grisette.Core.Control.Monad.UnionM
@@ -64,6 +66,13 @@ cegisTests =
    in testGroup
         "CEGISTests"
         [ testGroup
+            "Regression"
+            [ testCase "Empty symbolic inputs makes cegis work like solve" $ do
+                (_, Right m1) <- cegisMultiInputs (precise z3) [1 :: Integer, 2] (\x -> cegisPostCond $ fromString $ "a" ++ show x)
+                Right m2 <- solve (precise z3) (ssym "a1" &&~ ssym "a2")
+                m1 @=? m2
+            ],
+          testGroup
             "Boolean"
             [ testCase "Basic" $ do
                 testCegis
