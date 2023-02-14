@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -48,6 +48,7 @@ library
       Grisette.Core.BuiltinUnionWrappers
       Grisette.Core.Control.Exception
       Grisette.Core.Control.Monad.CBMCExcept
+      Grisette.Core.Control.Monad.Class.MonadParallelUnion
       Grisette.Core.Control.Monad.Union
       Grisette.Core.Control.Monad.UnionM
       Grisette.Core.Data.Class.BitVector
@@ -109,6 +110,7 @@ library
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Mtl
+      Grisette.Qualified.ParallelUnionDo
       Grisette.Utils
       Grisette.Utils.Parameterized
   other-modules:
@@ -128,6 +130,7 @@ library
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.3
     , once >=0.2 && <0.5
+    , parallel
     , sbv >=8.11 && <9.1
     , template-haskell >=2.16 && <2.20
     , th-compat >=0.1.2 && <0.2
@@ -163,6 +166,7 @@ test-suite doctest
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.3
     , once >=0.2 && <0.5
+    , parallel
     , sbv >=8.11 && <9.1
     , template-haskell >=2.16 && <2.20
     , th-compat >=0.1.2 && <0.2
@@ -210,6 +214,7 @@ test-suite spec
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.3
     , once >=0.2 && <0.5
+    , parallel
     , sbv >=8.11 && <9.1
     , tasty >=1.1.0.3 && <1.5
     , tasty-hunit ==0.10.*
