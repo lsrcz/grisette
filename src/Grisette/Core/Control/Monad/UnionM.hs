@@ -32,6 +32,7 @@ module Grisette.Core.Control.Monad.UnionM
     isMerged,
     (#~),
     IsConcrete,
+    unionSize,
   )
 where
 
@@ -553,3 +554,9 @@ instance UnionWithExcept (UnionM (Either e v)) UnionM e v where
 
 instance UnionWithExcept (UnionM (CBMCEither e v)) UnionM e v where
   extractUnionExcept = fmap runCBMCEither
+
+unionSize :: UnionM a -> Int
+unionSize = unionSize' . underlyingUnion
+  where
+    unionSize' (Single _) = 1
+    unionSize' (If _ _ _ l r) = unionSize' l + unionSize' r
