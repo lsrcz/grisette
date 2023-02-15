@@ -565,6 +565,7 @@ module Grisette.Core
     makeUnionWrapper,
     makeUnionWrapper',
     liftToMonadUnion,
+    unionSize,
 
     -- *** Merging
 
