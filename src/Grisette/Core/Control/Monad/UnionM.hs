@@ -363,19 +363,19 @@ instance (SOrd a) => SOrd (UnionM a) where
     y1 <- y
     x1 `symCompare` y1
 
-instance {-# OVERLAPPABLE #-} (ToSym a b, Mergeable b) => ToSym a (UnionM b) where
+instance {-# INCOHERENT #-} (ToSym a b, Mergeable b) => ToSym a (UnionM b) where
   toSym = mrgSingle . toSym
 
-instance {-# OVERLAPPING #-} (ToSym a b, Mergeable b) => ToSym (UnionM a) (UnionM b) where
+instance (ToSym a b, Mergeable b) => ToSym (UnionM a) (UnionM b) where
   toSym = merge . fmap toSym
 
-instance {-# OVERLAPPABLE #-} (ToCon a b) => ToCon (UnionM a) b where
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon (UnionM a) b where
   toCon v = go $ underlyingUnion v
     where
       go (Single x) = toCon x
       go _ = Nothing
 
-instance {-# OVERLAPPING #-} (ToCon a b, Mergeable b) => ToCon (UnionM a) (UnionM b) where
+instance (ToCon a b, Mergeable b) => ToCon (UnionM a) (UnionM b) where
   toCon v = go $ underlyingUnion v
     where
       go (Single x) = case toCon x of
