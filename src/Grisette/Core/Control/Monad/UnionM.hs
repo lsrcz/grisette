@@ -555,6 +555,15 @@ instance UnionWithExcept (UnionM (Either e v)) UnionM e v where
 instance UnionWithExcept (UnionM (CBMCEither e v)) UnionM e v where
   extractUnionExcept = fmap runCBMCEither
 
+-- | The size of a union is defined as the number of branches.
+-- For example,
+--
+-- >>> unionSize (single True)
+-- 1
+-- >>> unionSize (mrgIf "a" (single 1) (single 2) :: UnionM Integer)
+-- 2
+-- >>> unionSize (choose [1..7] "a" :: UnionM Integer)
+-- 7
 unionSize :: UnionM a -> Int
 unionSize = unionSize' . underlyingUnion
   where
