@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
@@ -33,8 +35,10 @@ import Data.Functor.Sum
 import Data.Int
 import Data.Maybe
 import Data.Word
+import GHC.TypeNats
 import Generics.Deriving
 import Generics.Deriving.Instances ()
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.ToCon
 import Grisette.IR.SymPrim.Data.Prim.Model
@@ -102,6 +106,10 @@ evaluateSymToCon model a = fromJust $ toCon $ evaluateSym True model a
 instance EvaluateSym type where \
   evaluateSym _ _ = id
 
+#define CONCRETE_EVALUATESYM_BV(type) \
+instance (KnownNat n, 1 <= n) => EvaluateSym (type n) where \
+  evaluateSym _ _ = id
+
 #if 1
 CONCRETE_EVALUATESYM(Bool)
 CONCRETE_EVALUATESYM(Integer)
@@ -116,7 +124,11 @@ CONCRETE_EVALUATESYM(Word8)
 CONCRETE_EVALUATESYM(Word16)
 CONCRETE_EVALUATESYM(Word32)
 CONCRETE_EVALUATESYM(Word64)
+CONCRETE_EVALUATESYM(SomeIntN)
+CONCRETE_EVALUATESYM(SomeWordN)
 CONCRETE_EVALUATESYM(B.ByteString)
+CONCRETE_EVALUATESYM_BV(IntN)
+CONCRETE_EVALUATESYM_BV(WordN)
 #endif
 
 -- ()

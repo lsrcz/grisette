@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
@@ -34,7 +36,9 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
 import Data.Word
+import GHC.TypeNats
 import Generics.Deriving
+import Grisette.Core.Data.BV
 
 -- $setup
 -- >>> import Grisette.IR.SymPrim
@@ -76,6 +80,10 @@ instance (ToSym' a1 a2, ToSym' b1 b2) => ToSym' (a1 :*: b1) (a2 :*: b2) where
 instance ToSym type type where \
   toSym = id
 
+#define CONCRETE_TOSYM_BV(type) \
+instance (KnownNat n, 1 <= n) => ToSym (type n) (type n) where \
+  toSym = id
+
 #if 1
 CONCRETE_TOSYM(Bool)
 CONCRETE_TOSYM(Integer)
@@ -90,7 +98,11 @@ CONCRETE_TOSYM(Word8)
 CONCRETE_TOSYM(Word16)
 CONCRETE_TOSYM(Word32)
 CONCRETE_TOSYM(Word64)
+CONCRETE_TOSYM(SomeIntN)
+CONCRETE_TOSYM(SomeWordN)
 CONCRETE_TOSYM(B.ByteString)
+CONCRETE_TOSYM_BV(IntN)
+CONCRETE_TOSYM_BV(WordN)
 #endif
 
 -- Unit

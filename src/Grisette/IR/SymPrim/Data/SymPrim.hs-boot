@@ -35,10 +35,10 @@ import Control.DeepSeq
 import Data.Hashable
 import GHC.Generics
 import GHC.TypeNats
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Solvable
-import Grisette.IR.SymPrim.Data.BV
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax

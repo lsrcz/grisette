@@ -44,6 +44,7 @@ import Data.Int
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving
+import Grisette.Core.Data.BV
 import {-# SOURCE #-} Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -223,6 +224,11 @@ instance SEq type where \
   l ==~ r = con $ l == r; \
   {-# INLINE (==~) #-}
 
+#define CONCRETE_SEQ_BV(type) \
+instance (KnownNat n, 1 <= n) => SEq (type n) where \
+  l ==~ r = con $ l == r; \
+  {-# INLINE (==~) #-}
+
 #if 1
 CONCRETE_SEQ(Bool)
 CONCRETE_SEQ(Integer)
@@ -238,6 +244,10 @@ CONCRETE_SEQ(Word16)
 CONCRETE_SEQ(Word32)
 CONCRETE_SEQ(Word64)
 CONCRETE_SEQ(B.ByteString)
+CONCRETE_SEQ_BV(WordN)
+CONCRETE_SEQ_BV(IntN)
+CONCRETE_SEQ(SomeWordN)
+CONCRETE_SEQ(SomeIntN)
 #endif
 
 -- List

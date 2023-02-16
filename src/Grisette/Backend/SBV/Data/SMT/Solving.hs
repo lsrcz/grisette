@@ -50,6 +50,7 @@ import Data.SBV.Control (Query)
 import qualified Data.SBV.Control as SBVC
 import GHC.TypeNats
 import Grisette.Backend.SBV.Data.SMT.Lowering
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Evaluate
@@ -58,7 +59,6 @@ import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model as PM

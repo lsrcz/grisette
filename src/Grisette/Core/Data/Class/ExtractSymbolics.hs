@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
@@ -31,7 +33,9 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
 import Data.Word
+import GHC.TypeNats
 import Generics.Deriving
+import Grisette.Core.Data.BV
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.Model
 
 -- $setup
@@ -87,7 +91,11 @@ instance
 -- instances
 
 #define CONCRETE_EXTRACT_SYMBOLICS(type) \
-instance  ExtractSymbolics type where \
+instance ExtractSymbolics type where \
+  extractSymbolics _ = mempty
+
+#define CONCRETE_EXTRACT_SYMBOLICS_BV(type) \
+instance (KnownNat n, 1 <= n) => ExtractSymbolics (type n) where \
   extractSymbolics _ = mempty
 
 #if 1
@@ -104,7 +112,11 @@ CONCRETE_EXTRACT_SYMBOLICS(Word8)
 CONCRETE_EXTRACT_SYMBOLICS(Word16)
 CONCRETE_EXTRACT_SYMBOLICS(Word32)
 CONCRETE_EXTRACT_SYMBOLICS(Word64)
+CONCRETE_EXTRACT_SYMBOLICS(SomeWordN)
+CONCRETE_EXTRACT_SYMBOLICS(SomeIntN)
 CONCRETE_EXTRACT_SYMBOLICS(B.ByteString)
+CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
+CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 #endif
 
 -- ()

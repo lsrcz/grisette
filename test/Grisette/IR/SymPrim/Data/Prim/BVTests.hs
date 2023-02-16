@@ -6,7 +6,7 @@
 module Grisette.IR.SymPrim.Data.Prim.BVTests where
 
 import Data.Proxy
-import Grisette.IR.SymPrim.Data.BV
+import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV

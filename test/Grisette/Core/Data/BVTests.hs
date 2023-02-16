@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.IR.SymPrim.Data.BVTests where
+module Grisette.Core.Data.BVTests where
 
 import Control.DeepSeq
 import Control.Exception
@@ -15,8 +15,8 @@ import Data.Int
 import Data.Proxy
 import Data.Typeable
 import Data.Word
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
-import Grisette.IR.SymPrim.Data.BV
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding ((.&.))

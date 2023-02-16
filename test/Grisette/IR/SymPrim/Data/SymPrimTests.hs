@@ -16,6 +16,7 @@ import Data.Int
 import Data.Proxy
 import Data.Word
 import Grisette.Core.Control.Monad.UnionM
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
@@ -30,7 +31,6 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model

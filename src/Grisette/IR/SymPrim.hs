@@ -47,7 +47,7 @@ module Grisette.IR.SymPrim
   )
 where
 
-import Grisette.IR.SymPrim.Data.BV
+import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.SymPrim
