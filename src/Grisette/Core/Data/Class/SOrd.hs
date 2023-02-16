@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -33,8 +35,10 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
 import Data.Word
+import GHC.TypeLits
 import Generics.Deriving
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
@@ -220,6 +224,14 @@ instance SOrd type where \
   l >~ r = con $ l > r; \
   symCompare l r = mrgSingle $ compare l r
 
+#define CONCRETE_SORD_BV(type) \
+instance (KnownNat n, 1 <= n) => SOrd (type n) where \
+  l <=~ r = con $ l <= r; \
+  l <~ r = con $ l < r; \
+  l >=~ r = con $ l >= r; \
+  l >~ r = con $ l > r; \
+  symCompare l r = mrgSingle $ compare l r
+
 #if 1
 CONCRETE_SORD(Bool)
 CONCRETE_SORD(Integer)
@@ -234,7 +246,11 @@ CONCRETE_SORD(Word8)
 CONCRETE_SORD(Word16)
 CONCRETE_SORD(Word32)
 CONCRETE_SORD(Word64)
+CONCRETE_SORD(SomeWordN)
+CONCRETE_SORD(SomeIntN)
 CONCRETE_SORD(B.ByteString)
+CONCRETE_SORD_BV(WordN)
+CONCRETE_SORD_BV(IntN)
 #endif
 
 symCompareSingleList :: (SOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool

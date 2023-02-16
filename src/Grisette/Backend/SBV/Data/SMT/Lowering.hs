@@ -47,8 +47,8 @@ import GHC.Stack
 import GHC.TypeNats
 import {-# SOURCE #-} Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term

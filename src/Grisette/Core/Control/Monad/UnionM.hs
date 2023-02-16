@@ -1,4 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
+{-# HLINT ignore "Use <&>" #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -11,8 +14,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use <&>" #-}
 
 -- {-# OPTIONS_GHC -fno-full-laziness #-}
 
@@ -45,9 +46,11 @@ import Data.Hashable
 import Data.IORef
 import Data.String
 import GHC.IO hiding (evaluate)
+import GHC.TypeNats
 import Grisette.Core.Control.Monad.CBMCExcept
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
 import Grisette.Core.Control.Monad.Union
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
@@ -62,7 +65,9 @@ import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.Union
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 
@@ -368,6 +373,33 @@ instance {-# INCOHERENT #-} (ToSym a b, Mergeable b) => ToSym a (UnionM b) where
 
 instance (ToSym a b, Mergeable b) => ToSym (UnionM a) (UnionM b) where
   toSym = merge . fmap toSym
+
+#define TO_SYM_FROM_UNION_CON_SIMPLE(contype, symtype) \
+instance ToSym (UnionM contype) symtype where \
+  toSym = simpleMerge . fmap con
+
+#define TO_SYM_FROM_UNION_CON_BV(contype, symtype) \
+instance (KnownNat n, 1 <= n) => ToSym (UnionM (contype n)) (symtype n) where \
+  toSym = simpleMerge . fmap con
+
+#define TO_SYM_FROM_UNION_CON_FUN(conop, symop) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToSym (UnionM (conop ca cb)) (symop sa sb) where \
+  toSym = simpleMerge . fmap con
+
+#define TO_SYM_FROM_UNION_CON_BV_SOME(contype, symtype) \
+instance ToSym (UnionM contype) symtype where \
+  toSym = simpleMerge . fmap (toSym :: contype -> symtype)
+
+#if 1
+TO_SYM_FROM_UNION_CON_SIMPLE(Bool, SymBool)
+TO_SYM_FROM_UNION_CON_SIMPLE(Integer, SymInteger)
+TO_SYM_FROM_UNION_CON_BV(IntN, SymIntN)
+TO_SYM_FROM_UNION_CON_BV(WordN, SymWordN)
+TO_SYM_FROM_UNION_CON_FUN((=->), (=~>))
+TO_SYM_FROM_UNION_CON_FUN((-->), (-~>))
+TO_SYM_FROM_UNION_CON_BV_SOME(SomeIntN, SomeSymIntN)
+TO_SYM_FROM_UNION_CON_BV_SOME(SomeWordN, SomeSymWordN)
+#endif
 
 instance {-# INCOHERENT #-} (ToCon a b) => ToCon (UnionM a) b where
   toCon v = go $ underlyingUnion v

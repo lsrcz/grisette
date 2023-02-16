@@ -81,6 +81,7 @@ import GHC.TypeNats
 import Generics.Deriving hiding (index)
 import Grisette.Core.Control.Monad.Union
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -676,6 +677,12 @@ instance GenSym type type where fresh = return . mrgSingle
 #define CONCRETE_GENSYMSIMPLE_SAME_SHAPE(type) \
 instance GenSymSimple type type where simpleFresh = return
 
+#define CONCRETE_GENSYM_SAME_SHAPE_BV(type) \
+instance (KnownNat n, 1 <= n) => GenSym (type n) (type n) where fresh = return . mrgSingle
+
+#define CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(type) \
+instance (KnownNat n, 1 <= n) => GenSymSimple (type n) (type n) where simpleFresh = return
+
 #if 1
 CONCRETE_GENSYM_SAME_SHAPE(Bool)
 CONCRETE_GENSYM_SAME_SHAPE(Integer)
@@ -690,7 +697,11 @@ CONCRETE_GENSYM_SAME_SHAPE(Word8)
 CONCRETE_GENSYM_SAME_SHAPE(Word16)
 CONCRETE_GENSYM_SAME_SHAPE(Word32)
 CONCRETE_GENSYM_SAME_SHAPE(Word64)
+CONCRETE_GENSYM_SAME_SHAPE(SomeWordN)
+CONCRETE_GENSYM_SAME_SHAPE(SomeIntN)
 CONCRETE_GENSYM_SAME_SHAPE(B.ByteString)
+CONCRETE_GENSYM_SAME_SHAPE_BV(WordN)
+CONCRETE_GENSYM_SAME_SHAPE_BV(IntN)
 
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Bool)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Integer)
@@ -705,7 +716,11 @@ CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word8)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word16)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word32)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word64)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(SomeWordN)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(SomeIntN)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(B.ByteString)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(WordN)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(IntN)
 #endif
 
 -- Bool

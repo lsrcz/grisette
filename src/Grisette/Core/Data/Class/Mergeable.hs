@@ -69,8 +69,11 @@ import Data.Kind
 import qualified Data.Monoid as Monoid
 import Data.Typeable
 import Data.Word
+import GHC.Natural
+import qualified GHC.TypeLits
 import GHC.TypeNats
 import Generics.Deriving
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
@@ -430,8 +433,13 @@ instance (Mergeable' a, Mergeable' b) => Mergeable' (a :*: b) where
 instance Mergeable type where \
   rootStrategy = \
     let sub = SimpleStrategy $ \_ t _ -> t \
-     in SortedStrategy id $ const sub; \
-  {-# INLINE rootStrategy #-}
+     in SortedStrategy id $ const sub
+
+#define CONCRETE_ORD_MERGEABLE_BV(type) \
+instance (KnownNat n, 1 <= n) => Mergeable (type n) where \
+  rootStrategy = \
+    let sub = SimpleStrategy $ \_ t _ -> t \
+     in SortedStrategy id $ const sub
 
 #if 1
 CONCRETE_ORD_MERGEABLE(Bool)
@@ -448,7 +456,29 @@ CONCRETE_ORD_MERGEABLE(Word16)
 CONCRETE_ORD_MERGEABLE(Word32)
 CONCRETE_ORD_MERGEABLE(Word64)
 CONCRETE_ORD_MERGEABLE(B.ByteString)
+CONCRETE_ORD_MERGEABLE_BV(WordN)
+CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif
+
+instance Mergeable SomeIntN where
+  rootStrategy =
+    SortedStrategy @Natural
+      (\(SomeIntN (v :: IntN n)) -> natVal (Proxy @n))
+      ( \n ->
+          SortedStrategy @Integer
+            (\(SomeIntN (IntN i)) -> toInteger i)
+            (const $ SimpleStrategy $ \_ l _ -> l)
+      )
+
+instance Mergeable SomeWordN where
+  rootStrategy =
+    SortedStrategy @Natural
+      (\(SomeWordN (v :: WordN n)) -> natVal (Proxy @n))
+      ( \n ->
+          SortedStrategy @Integer
+            (\(SomeWordN (WordN i)) -> toInteger i)
+            (const $ SimpleStrategy $ \_ l _ -> l)
+      )
 
 -- ()
 deriving via (Default ()) instance Mergeable ()

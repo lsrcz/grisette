@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
@@ -32,8 +34,10 @@ import Data.Functor.Sum
 import Data.Int
 import Data.Word
 import GHC.Generics
+import GHC.TypeNats
 import Generics.Deriving
 import Generics.Deriving.Instances ()
+import Grisette.Core.Data.BV
 
 -- $setup
 -- >>> import Grisette.Core
@@ -88,6 +92,10 @@ instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :*: b1) (a2 :*: b2) where
 instance ToCon type type where \
   toCon = Just
 
+#define CONCRETE_TOCON_BV(type) \
+instance (KnownNat n, 1 <= n) => ToCon (type n) (type n) where \
+  toCon = Just
+
 #if 1
 CONCRETE_TOCON(Bool)
 CONCRETE_TOCON(Integer)
@@ -102,7 +110,11 @@ CONCRETE_TOCON(Word8)
 CONCRETE_TOCON(Word16)
 CONCRETE_TOCON(Word32)
 CONCRETE_TOCON(Word64)
+CONCRETE_TOCON(SomeWordN)
+CONCRETE_TOCON(SomeIntN)
 CONCRETE_TOCON(B.ByteString)
+CONCRETE_TOCON_BV(WordN)
+CONCRETE_TOCON_BV(IntN)
 #endif
 
 -- Unit

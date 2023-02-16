@@ -55,9 +55,9 @@ import Data.String
 import Data.Typeable (Proxy (..), cast)
 import GHC.Generics
 import GHC.TypeNats
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Function
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution

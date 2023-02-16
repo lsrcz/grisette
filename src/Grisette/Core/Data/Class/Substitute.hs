@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
@@ -32,8 +34,10 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
 import Data.Word
+import GHC.TypeNats
 import Generics.Deriving
 import Generics.Deriving.Instances ()
+import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
@@ -91,7 +95,11 @@ instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :*: b) where
   substituteSym' sym val (a :*: b) = substituteSym' sym val a :*: substituteSym' sym val b
 
 #define CONCRETE_SUBSTITUTESYM(type) \
-instance  SubstituteSym type where \
+instance SubstituteSym type where \
+  substituteSym _ _ = id
+
+#define CONCRETE_SUBSTITUTESYM_BV(type) \
+instance (KnownNat n, 1 <= n) => SubstituteSym (type n) where \
   substituteSym _ _ = id
 
 #if 1
@@ -108,7 +116,11 @@ CONCRETE_SUBSTITUTESYM(Word8)
 CONCRETE_SUBSTITUTESYM(Word16)
 CONCRETE_SUBSTITUTESYM(Word32)
 CONCRETE_SUBSTITUTESYM(Word64)
+CONCRETE_SUBSTITUTESYM(SomeWordN)
+CONCRETE_SUBSTITUTESYM(SomeIntN)
 CONCRETE_SUBSTITUTESYM(B.ByteString)
+CONCRETE_SUBSTITUTESYM_BV(WordN)
+CONCRETE_SUBSTITUTESYM_BV(IntN)
 #endif
 
 instance SubstituteSym () where

@@ -16,7 +16,7 @@ where
 import Data.Kind
 import qualified Data.SBV as SBV
 import GHC.TypeNats
-import Grisette.IR.SymPrim.Data.BV
+import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFun
 

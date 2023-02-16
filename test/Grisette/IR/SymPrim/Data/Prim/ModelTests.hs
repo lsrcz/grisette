@@ -5,8 +5,8 @@ module Grisette.IR.SymPrim.Data.Prim.ModelTests where
 
 import Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.Model as Model

@@ -51,6 +51,7 @@ library
       Grisette.Core.Control.Monad.Class.MonadParallelUnion
       Grisette.Core.Control.Monad.Union
       Grisette.Core.Control.Monad.UnionM
+      Grisette.Core.Data.BV
       Grisette.Core.Data.Class.BitVector
       Grisette.Core.Data.Class.Bool
       Grisette.Core.Data.Class.CEGISSolver
@@ -78,7 +79,6 @@ library
       Grisette.Internal.Core
       Grisette.Internal.IR.SymPrim
       Grisette.IR.SymPrim
-      Grisette.IR.SymPrim.Data.BV
       Grisette.IR.SymPrim.Data.IntBitwidth
       Grisette.IR.SymPrim.Data.Prim.Helpers
       Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
@@ -188,7 +188,7 @@ test-suite spec
       Grisette.Backend.SBV.Data.SMT.TermRewritingGen
       Grisette.Backend.SBV.Data.SMT.TermRewritingTests
       Grisette.Core.Control.Monad.UnionMTests
-      Grisette.IR.SymPrim.Data.BVTests
+      Grisette.Core.Data.BVTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
       Grisette.IR.SymPrim.Data.Prim.BVTests

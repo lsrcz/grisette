@@ -10,8 +10,8 @@ import Data.Foldable
 import qualified Data.SBV as SBV
 import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Solver
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.SymPrim

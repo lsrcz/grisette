@@ -75,6 +75,7 @@ import GHC.Generics
 import GHC.TypeNats
 import Generics.Deriving
 import Grisette.Core.Control.Exception
+import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
@@ -91,7 +92,6 @@ import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
-import Grisette.IR.SymPrim.Data.BV
 import Grisette.IR.SymPrim.Data.IntBitwidth
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
@@ -734,7 +734,7 @@ TO_SYM_SYMID_BV(SymWordN)
 TO_SYM_SYMID_FUN(=~>)
 TO_SYM_SYMID_FUN(-~>)
 TO_SYM_SYMID_SIMPLE(SomeSymIntN)
-TO_SYM_SYMID_SIMPLE(SomeWordN)
+TO_SYM_SYMID_SIMPLE(SomeSymWordN)
 #endif
 
 #define TO_SYM_FROMCON_SIMPLE(contype, symtype) \
