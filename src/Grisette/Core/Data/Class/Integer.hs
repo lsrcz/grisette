@@ -13,9 +13,8 @@
 module Grisette.Core.Data.Class.Integer
   ( -- * Symbolic integer operations
     ArithException (..),
-    SignedDivMod (..),
-    UnsignedDivMod (..),
-    SignedQuotRem (..),
+    SafeDivision (..),
+    SafeLinearArith (..),
     SymIntegerOp,
   )
 where
@@ -25,48 +24,111 @@ import Control.Monad.Except
 import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
+import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
+import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 
--- | Safe signed 'div' and 'mod' with monadic error handling in multi-path
--- execution. These procedures show throw 'DivideByZero' exception when the
+-- | Safe division with monadic error handling in multi-path
+-- execution. These procedures throw an exception when the
 -- divisor is zero. The result should be able to handle errors with
--- `MonadError`, and the error type should be compatible with 'ArithException'
--- (see 'TransformError' for more details).
-class SignedDivMod a where
+-- `MonadError`.
+class (SOrd a, Num a, Mergeable a) => SafeDivision a where
   -- | Safe signed 'div' with monadic error handling in multi-path execution.
   --
-  -- >>> divs (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
+  -- >>> safeDiv AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
   -- ExceptT {If (= b 0) (Left AssertionError) (Right (div a b))}
-  divs :: (MonadError e uf, MonadUnion uf, TransformError ArithException e) => a -> a -> uf a
+  safeDiv :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
+  safeDiv e l r = do
+    (d, _) <- safeDivMod e l r
+    mrgSingle d
 
   -- | Safe signed 'mod' with monadic error handling in multi-path execution.
   --
-  -- >>> mods (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
+  -- >>> safeMod AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
   -- ExceptT {If (= b 0) (Left AssertionError) (Right (mod a b))}
-  mods :: (MonadError e uf, MonadUnion uf, TransformError ArithException e) => a -> a -> uf a
+  safeMod :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
+  safeMod e l r = do
+    (_, m) <- safeDivMod e l r
+    mrgSingle m
 
--- | Safe unsigned 'div' and 'mod' with monadic error handling in multi-path
--- execution. These procedures show throw 'DivideByZero' exception when the
--- divisor is zero. The result should be able to handle errors with
--- `MonadError`, and the error type should be compatible with 'ArithException'
--- (see 'TransformError' for more details).
-class UnsignedDivMod a where
-  udivs :: (MonadError e uf, MonadUnion uf, TransformError ArithException e) => a -> a -> uf a
-  umods :: (MonadError e uf, MonadUnion uf, TransformError ArithException e) => a -> a -> uf a
+  -- | Safe signed 'div' with monadic error handling in multi-path execution.
+  --
+  -- >>> safeDivMod AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM (SymInteger, SymInteger)
+  -- ExceptT {If (= b 0) (Left AssertionError) (Right ((div a b),(mod a b)))}
+  safeDivMod :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf (a, a)
+  safeDivMod e l r = do
+    d <- safeDiv e l r
+    m <- safeMod e l r
+    mrgSingle (d, m)
+
+  -- | Safe signed 'quot' with monadic error handling in multi-path execution.
+  safeQuot :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
+  safeQuot e l r = do
+    (d, m) <- safeDivMod e l r
+    mrgIf
+      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      (mrgSingle d)
+      (mrgSingle $ d + 1)
+
+  -- | Safe signed 'rem' with monadic error handling in multi-path execution.
+  safeRem :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
+  safeRem e l r = do
+    (d, m) <- safeDivMod e l r
+    mrgIf
+      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      (mrgSingle m)
+      (mrgSingle $ m - r)
+
+  -- | Safe signed 'quotRem' with monadic error handling in multi-path execution.
+  safeQuotRem :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf (a, a)
+  safeQuotRem e l r = do
+    (d, m) <- safeDivMod e l r
+    mrgIf
+      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      (mrgSingle (d, m))
+      (mrgSingle $ (d + 1, m - r))
+
+  {-# MINIMAL (safeDivMod | (safeDiv, safeMod)) #-}
+
+class SafeLinearArith a where
+  -- | Safe signed '+' with monadic error handling in multi-path execution.
+  -- Overflows are treated as errors.
+  --
+  -- >>> safeAdd AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
+  -- ExceptT {Right (+ a b)}
+  -- >>> safeAdd AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM (SymIntN 4)
+  -- ExceptT {If (|| (&& (< 0x0 a) (&& (< 0x0 b) (< (+ a b) 0x0))) (&& (< a 0x0) (&& (< b 0x0) (<= 0x0 (+ a b))))) (Left AssertionError) (Right (+ a b))}
+  safeAdd :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
+
+  -- | Safe signed 'negate' with monadic error handling in multi-path execution.
+  -- Overflows are treated as errors.
+  --
+  -- >>> safeNeg AssertionError (ssym "a") :: ExceptT AssertionError UnionM SymInteger
+  -- ExceptT {Right (- a)}
+  -- >>> safeNeg AssertionError (ssym "a") :: ExceptT AssertionError UnionM (SymIntN 4)
+  -- ExceptT {If (= a 0x8) (Left AssertionError) (Right (- a))}
+  safeNeg :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> uf a
+
+  -- | Safe signed '-' with monadic error handling in multi-path execution.
+  -- Overflows are treated as errors.
+  --
+  -- >>> safeMinus AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM SymInteger
+  -- ExceptT {Right (+ a (- b))}
+  -- >>> safeMinus AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM (SymIntN 4)
+  -- ExceptT {If (|| (&& (<= 0x0 a) (&& (< b 0x0) (< (+ a (- b)) 0x0))) (&& (< a 0x0) (&& (< 0x0 b) (< 0x0 (+ a (- b)))))) (Left AssertionError) (Right (+ a (- b)))}
+  safeMinus :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
 
 -- | Safe signed 'quot' and 'rem' with monadic error handling in multi-path
 -- execution. These procedures show throw 'DivideByZero' exception when the
 -- divisor is zero. The result should be able to handle errors with
 -- `MonadError`, and the error type should be compatible with 'ArithException'
 -- (see 'TransformError' for more details).
-class SignedQuotRem a where
-  quots :: (MonadError e uf, MonadUnion uf, TransformError ArithException e) => a -> a -> uf a
-  rems :: (MonadError e uf, MonadUnion uf, TransformError ArithException e) => a -> a -> uf a
+class SafeQuotRem a
 
 -- | Aggregation for the operations on symbolic integer types
-class (Num a, SEq a, SOrd a, Solvable Integer a) => SymIntegerOp a
+class (Num a, SEq a, SOrd a, Solvable Integer a, SafeDivision a, SafeLinearArith a) => SymIntegerOp a

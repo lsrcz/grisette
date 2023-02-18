@@ -190,9 +190,8 @@ module Grisette.Core
     someBVExtract',
     SizedBV (..),
     sizedBVExtract,
-    SignedDivMod (..),
-    UnsignedDivMod (..),
-    SignedQuotRem (..),
+    SafeDivision (..),
+    SafeLinearArith (..),
     SymIntegerOp,
     Function (..),
 
@@ -794,6 +793,7 @@ module Grisette.Core
     TransformError (..),
     symAssert,
     symAssume,
+    symAssertWith,
     symAssertTransformableError,
     symThrowTransformableError,
 
@@ -902,15 +902,6 @@ module Grisette.Core
     --   deriving (Mergeable, SEq) via (Default Error)
     -- :}
     --
-    -- Then we define how to transform the generic errors to the error type.
-    --
-    -- >>> :{
-    --   instance TransformError ArithException Error where
-    --     transformError _ = Arith
-    --   instance TransformError AssertionError Error where
-    --     transformError _ = Assert
-    -- :}
-    --
     -- Then we can perform the symbolic evaluation. The `divs` function throws
     -- 'ArithException' when the divisor is 0, which would be transformed to
     -- @Arith@, and the `symAssert` function would throw 'AssertionError' when
@@ -918,14 +909,16 @@ module Grisette.Core
     --
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
+    -- >>> assert = symAssertWith Assert
+    -- >>> sdiv = safeDiv Arith
     -- >>> :{
     --   -- equivalent concrete program:
     --   -- let x = x `div` y
     --   -- if z > 0 then assert (x >= y) else return ()
     --   res :: ExceptT Error UnionM ()
     --   res = do
-    --     z <- x `divs` y
-    --     mrgIf (z >~ 0) (symAssert (x >=~ y)) (return ())
+    --     z <- x `sdiv` y
+    --     mrgIf (z >~ 0) (assert (x >=~ y)) (return ())
     -- :}
     --
     -- Then we can ask the solver to find a counter-example that would lead to

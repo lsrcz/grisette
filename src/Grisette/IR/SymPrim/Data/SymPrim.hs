@@ -140,17 +140,22 @@ newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)
 
-instance SignedDivMod SymInteger where
-  divs (SymInteger l) rs@(SymInteger r) =
+instance SafeDivision SymInteger where
+  safeDiv e (SymInteger l) rs@(SymInteger r) =
     mrgIf
       (rs ==~ con 0)
-      (throwError $ transformError DivideByZero)
+      (throwError e)
       (mrgReturn $ SymInteger $ pevalDivIntegerTerm l r)
-  mods (SymInteger l) rs@(SymInteger r) =
+  safeMod e (SymInteger l) rs@(SymInteger r) =
     mrgIf
       (rs ==~ con 0)
-      (throwError $ transformError DivideByZero)
+      (throwError e)
       (mrgReturn $ SymInteger $ pevalModIntegerTerm l r)
+
+instance SafeLinearArith SymInteger where
+  safeAdd e ls rs = mrgReturn $ ls + rs
+  safeNeg e v = mrgReturn $ -v
+  safeMinus e ls rs = mrgReturn $ ls - rs
 
 instance SymIntegerOp SymInteger
 
@@ -172,6 +177,23 @@ instance SymIntegerOp SymInteger
 -- for the type class instances.
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
+
+instance (KnownNat n, 1 <= n) => SafeLinearArith (SymIntN n) where
+  safeAdd e ls rs =
+    mrgIf
+      ((ls >~ 0 &&~ rs >~ 0 &&~ res <~ 0) ||~ (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0))
+      (throwError e)
+      (mrgReturn res)
+    where
+      res = ls + rs
+  safeNeg e v = mrgIf (v ==~ con minBound) (throwError e) (mrgReturn $ -v)
+  safeMinus e ls rs =
+    mrgIf
+      ((ls >=~ 0 &&~ rs <~ 0 &&~ res <~ 0) ||~ (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0))
+      (throwError e)
+      (mrgReturn res)
+    where
+      res = ls - rs
 
 -- | Symbolic signed bit vector type. Not indexed, but the bit width is
 -- fixed at the creation time.
@@ -242,6 +264,23 @@ binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymInt
 -- for the type class instances.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
+
+instance (KnownNat n, 1 <= n) => SafeLinearArith (SymWordN n) where
+  safeAdd e ls rs =
+    mrgIf
+      (ls >~ res ||~ rs >~ res)
+      (throwError e)
+      (mrgReturn res)
+    where
+      res = ls + rs
+  safeNeg e v = mrgIf (v /=~ 0) (throwError e) (mrgReturn v)
+  safeMinus e ls rs =
+    mrgIf
+      (rs >~ ls)
+      (throwError e)
+      (mrgReturn res)
+    where
+      res = ls - rs
 
 -- | Symbolic unsigned bit vector type. Not indexed, but the bit width is
 -- fixed at the creation time.

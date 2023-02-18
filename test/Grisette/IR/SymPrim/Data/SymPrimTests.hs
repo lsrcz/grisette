@@ -164,41 +164,113 @@ symPrimTests =
                 signum (ssym "a" :: SymInteger) @=? SymInteger (pevalSignumNumTerm (ssymTerm "a"))
             ],
           testGroup
-            "SignedDivMod"
-            [ testProperty "divs on concrete" $ \(i :: Integer, j :: Integer) ->
+            "SafeDivision"
+            [ testProperty "safeDiv on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $
-                  divs (con i :: SymInteger) (con j)
+                  safeDiv () (con i :: SymInteger) (con j)
                     @=? if j == 0
                       then merge $ throwError () :: ExceptT () UnionM SymInteger
                       else mrgSingle $ con $ i `div` j,
-              testCase "divs when divided by zero" $ do
-                divs (ssym "a" :: SymInteger) (con 0)
+              testCase "safeDiv when divided by zero" $ do
+                safeDiv () (ssym "a" :: SymInteger) (con 0)
                   @=? (merge $ throwError () :: ExceptT () UnionM SymInteger),
-              testCase "divs on symbolic" $ do
-                divs (ssym "a" :: SymInteger) (ssym "b")
+              testCase "safeDiv on symbolic" $ do
+                safeDiv () (ssym "a" :: SymInteger) (ssym "b")
                   @=? ( mrgIf
                           ((ssym "b" :: SymInteger) ==~ con (0 :: Integer) :: SymBool)
                           (throwError ())
                           (mrgSingle $ SymInteger $ pevalDivIntegerTerm (ssymTerm "a") (ssymTerm "b")) ::
                           ExceptT () UnionM SymInteger
                       ),
-              testProperty "mods on concrete" $ \(i :: Integer, j :: Integer) ->
+              testProperty "safeMod on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $
-                  mods (con i :: SymInteger) (con j)
+                  safeMod () (con i :: SymInteger) (con j)
                     @=? if j == 0
                       then merge $ throwError () :: ExceptT () UnionM SymInteger
                       else mrgSingle $ con $ i `mod` j,
-              testCase "mods when divided by zero" $ do
-                mods (ssym "a" :: SymInteger) (con 0)
+              testCase "safeMod when divided by zero" $ do
+                safeMod () (ssym "a" :: SymInteger) (con 0)
                   @=? (merge $ throwError () :: ExceptT () UnionM SymInteger),
-              testCase "mods on symbolic" $ do
-                mods (ssym "a" :: SymInteger) (ssym "b")
+              testCase "safeMod on symbolic" $ do
+                safeMod () (ssym "a" :: SymInteger) (ssym "b")
                   @=? ( mrgIf
                           ((ssym "b" :: SymInteger) ==~ con (0 :: Integer) :: SymBool)
                           (throwError ())
                           (mrgSingle $ SymInteger $ pevalModIntegerTerm (ssymTerm "a") (ssymTerm "b")) ::
                           ExceptT () UnionM SymInteger
-                      )
+                      ),
+              testProperty "safeDivMod on concrete" $ \(i :: Integer, j :: Integer) ->
+                ioProperty $
+                  safeDivMod () (con i :: SymInteger) (con j)
+                    @=? if j == 0
+                      then merge $ throwError () :: ExceptT () UnionM (SymInteger, SymInteger)
+                      else mrgSingle $ (con $ i `div` j, con $ i `mod` j),
+              testCase "safeDivMod when divided by zero" $ do
+                safeDivMod () (ssym "a" :: SymInteger) (con 0)
+                  @=? (merge $ throwError () :: ExceptT () UnionM (SymInteger, SymInteger)),
+              testCase "safeDivMod on symbolic" $ do
+                safeDivMod () (ssym "a" :: SymInteger) (ssym "b")
+                  @=? ( mrgIf
+                          ((ssym "b" :: SymInteger) ==~ con (0 :: Integer) :: SymBool)
+                          (throwError ())
+                          ( mrgSingle
+                              ( SymInteger $ pevalDivIntegerTerm (ssymTerm "a") (ssymTerm "b"),
+                                SymInteger $ pevalModIntegerTerm (ssymTerm "a") (ssymTerm "b")
+                              )
+                          ) ::
+                          ExceptT () UnionM (SymInteger, SymInteger)
+                      ),
+              testProperty "safeQuot on concrete" $ \(i :: Integer, j :: Integer) ->
+                ioProperty $
+                  safeQuot () (con i :: SymInteger) (con j)
+                    @=? if j == 0
+                      then merge $ throwError () :: ExceptT () UnionM SymInteger
+                      else mrgSingle $ con $ i `quot` j,
+              testCase "safeQuot when divided by zero" $ do
+                safeQuot () (ssym "a" :: SymInteger) (con 0)
+                  @=? (merge $ throwError () :: ExceptT () UnionM SymInteger),
+              testProperty "safeRem on concrete" $ \(i :: Integer, j :: Integer) ->
+                ioProperty $
+                  safeRem () (con i :: SymInteger) (con j)
+                    @=? if j == 0
+                      then merge $ throwError () :: ExceptT () UnionM SymInteger
+                      else mrgSingle $ con $ i `rem` j,
+              testCase "safeRem when divided by zero" $ do
+                safeRem () (ssym "a" :: SymInteger) (con 0)
+                  @=? (merge $ throwError () :: ExceptT () UnionM SymInteger),
+              testProperty "safeQuotRem on concrete" $ \(i :: Integer, j :: Integer) ->
+                ioProperty $
+                  safeQuotRem () (con i :: SymInteger) (con j)
+                    @=? if j == 0
+                      then merge $ throwError () :: ExceptT () UnionM (SymInteger, SymInteger)
+                      else mrgSingle $ (con $ i `quot` j, con $ i `rem` j),
+              testCase "safeQuotRem when divided by zero" $ do
+                safeQuotRem () (ssym "a" :: SymInteger) (con 0)
+                  @=? (merge $ throwError () :: ExceptT () UnionM (SymInteger, SymInteger))
+            ],
+          testGroup
+            "SafeLinearArith"
+            [ testProperty "safeAdd on concrete" $ \(i :: Integer, j :: Integer) ->
+                ioProperty $
+                  safeAdd () (con i :: SymInteger) (con j)
+                    @=? (mrgSingle $ con $ i + j :: ExceptT () UnionM SymInteger),
+              testCase "safeAdd on symbolic" $ do
+                safeAdd () (ssym "a" :: SymInteger) (ssym "b")
+                  @=? (mrgSingle $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT () UnionM SymInteger),
+              testProperty "safeNeg on concrete" $ \(i :: Integer) ->
+                ioProperty $
+                  safeNeg () (con i :: SymInteger)
+                    @=? (mrgSingle $ con $ -i :: ExceptT () UnionM SymInteger),
+              testCase "safeNeg on symbolic" $ do
+                safeNeg () (ssym "a" :: SymInteger)
+                  @=? (mrgSingle $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT () UnionM SymInteger),
+              testProperty "safeMinus on concrete" $ \(i :: Integer, j :: Integer) ->
+                ioProperty $
+                  safeMinus () (con i :: SymInteger) (con j)
+                    @=? (mrgSingle $ con $ i - j :: ExceptT () UnionM SymInteger),
+              testCase "safeMinus on symbolic" $ do
+                safeMinus () (ssym "a" :: SymInteger) (ssym "b")
+                  @=? (mrgSingle $ SymInteger $ pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT () UnionM SymInteger)
             ],
           testGroup
             "SOrd"
@@ -256,6 +328,73 @@ symPrimTests =
                   testCase "signum" $ do
                     signum au @=? SymWordN (pevalSignumNumTerm aut)
                     signum as @=? SymIntN (pevalSignumNumTerm ast)
+                ],
+              testGroup
+                "SafeLinearArith"
+                [ testGroup
+                    "IntN"
+                    [ testProperty "safeAdd on concrete" $ \(i :: Int8, j :: Int8) ->
+                        ioProperty $
+                          let iint = fromIntegral i :: Integer
+                              jint = fromIntegral j
+                           in safeAdd () (toSym i :: SymIntN 8) (toSym j)
+                                @=? ( mrgIf
+                                        (iint + jint ==~ fromIntegral (i + j))
+                                        (mrgSingle $ toSym $ i + j :: ExceptT () UnionM (SymIntN 8))
+                                        (throwError ())
+                                    ),
+                      testProperty "safeMinus on concrete" $ \(i :: Int8, j :: Int8) ->
+                        ioProperty $
+                          let iint = fromIntegral i :: Integer
+                              jint = fromIntegral j
+                           in safeMinus () (toSym i :: SymIntN 8) (toSym j)
+                                @=? ( mrgIf
+                                        (iint - jint ==~ fromIntegral (i - j))
+                                        (mrgSingle $ toSym $ i - j :: ExceptT () UnionM (SymIntN 8))
+                                        (throwError ())
+                                    ),
+                      testProperty "safeNeg on concrete" $ \(i :: Int8) ->
+                        ioProperty $
+                          let iint = fromIntegral i :: Integer
+                           in safeNeg () (toSym i :: SymIntN 8)
+                                @=? ( mrgIf
+                                        (-iint ==~ fromIntegral (-i))
+                                        (mrgSingle $ toSym $ -i :: ExceptT () UnionM (SymIntN 8))
+                                        (throwError ())
+                                    )
+                    ],
+                  testGroup
+                    "WordN"
+                    [ testProperty "safeAdd on concrete" $ \(i :: Word8, j :: Word8) ->
+                        ioProperty $
+                          let iint = fromIntegral i :: Integer
+                              jint = fromIntegral j
+                           in safeAdd () (toSym i :: SymWordN 8) (toSym j)
+                                @=? ( mrgIf
+                                        (iint + jint ==~ fromIntegral (i + j))
+                                        (mrgSingle $ toSym $ i + j :: ExceptT () UnionM (SymWordN 8))
+                                        (throwError ())
+                                    ),
+                      testProperty "safeMinus on concrete" $ \(i :: Word8, j :: Word8) ->
+                        ioProperty $
+                          let iint = fromIntegral i :: Integer
+                              jint = fromIntegral j
+                           in safeMinus () (toSym i :: SymWordN 8) (toSym j)
+                                @=? ( mrgIf
+                                        (iint - jint ==~ fromIntegral (i - j))
+                                        (mrgSingle $ toSym $ i - j :: ExceptT () UnionM (SymWordN 8))
+                                        (throwError ())
+                                    ),
+                      testProperty "safeNeg on concrete" $ \(i :: Word8) ->
+                        ioProperty $
+                          let iint = fromIntegral i :: Integer
+                           in safeNeg () (toSym i :: SymWordN 8)
+                                @=? ( mrgIf
+                                        (-iint ==~ fromIntegral (-i))
+                                        (mrgSingle $ toSym $ -i :: ExceptT () UnionM (SymWordN 8))
+                                        (throwError ())
+                                    )
+                    ]
                 ],
               testGroup
                 "SOrd"
