@@ -1,6 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.Integer
@@ -28,6 +32,10 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
+import Data.Int
+import Data.Word
+import GHC.TypeNats
+import Grisette.Core.Data.BV
 
 -- $setup
 -- >>> import Grisette.Core
@@ -91,9 +99,60 @@ class (SOrd a, Num a, Mergeable a) => SafeDivision a where
     mrgIf
       ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
       (mrgSingle (d, m))
-      (mrgSingle $ (d + 1, m - r))
+      (mrgSingle (d + 1, m - r))
 
   {-# MINIMAL (safeDivMod | (safeDiv, safeMod)) #-}
+
+#define SAFE_DIVISION_CONCRETE(type) \
+instance SafeDivision type where \
+  safeDiv e _ r | r == 0 = merge $ throwError e; \
+  safeDiv _ l r = mrgSingle $ l `div` r; \
+  safeMod e _ r | r == 0 = merge $ throwError e; \
+  safeMod _ l r = mrgSingle $ l `mod` r; \
+  safeDivMod e _ r | r == 0 = merge $ throwError e; \
+  safeDivMod _ l r = mrgSingle $ l `divMod` r; \
+  safeQuot e _ r | r == 0 = merge $ throwError e; \
+  safeQuot _ l r = mrgSingle $ l `quot` r; \
+  safeRem e _ r | r == 0 = merge $ throwError e; \
+  safeRem _ l r = mrgSingle $ l `rem` r; \
+  safeQuotRem e _ r | r == 0 = merge $ throwError e; \
+  safeQuotRem _ l r = mrgSingle $ l `quotRem` r
+
+#define SAFE_DIVISION_CONCRETE_BV(type) \
+instance (KnownNat n, 1 <= n) => SafeDivision (type n) where \
+  safeDiv e _ r | r == 0 = merge $ throwError e; \
+  safeDiv _ l r = mrgSingle $ l `div` r; \
+  safeMod e _ r | r == 0 = merge $ throwError e; \
+  safeMod _ l r = mrgSingle $ l `mod` r; \
+  safeDivMod e _ r | r == 0 = merge $ throwError e; \
+  safeDivMod _ l r = mrgSingle $ l `divMod` r; \
+  safeQuot e _ r | r == 0 = merge $ throwError e; \
+  safeQuot _ l r = mrgSingle $ l `quot` r; \
+  safeRem e _ r | r == 0 = merge $ throwError e; \
+  safeRem _ l r = mrgSingle $ l `rem` r; \
+  safeQuotRem e _ r | r == 0 = merge $ throwError e; \
+  safeQuotRem _ l r = mrgSingle $ l `quotRem` r
+
+#if 1
+SAFE_DIVISION_CONCRETE(Integer)
+SAFE_DIVISION_CONCRETE(Int8)
+SAFE_DIVISION_CONCRETE(Int16)
+SAFE_DIVISION_CONCRETE(Int32)
+SAFE_DIVISION_CONCRETE(Int64)
+SAFE_DIVISION_CONCRETE(Int)
+SAFE_DIVISION_CONCRETE(SomeIntN)
+SAFE_DIVISION_CONCRETE(Word8)
+SAFE_DIVISION_CONCRETE(Word16)
+SAFE_DIVISION_CONCRETE(Word32)
+SAFE_DIVISION_CONCRETE(Word64)
+SAFE_DIVISION_CONCRETE(Word)
+SAFE_DIVISION_CONCRETE(SomeWordN)
+#endif
+
+#if 1
+SAFE_DIVISION_CONCRETE_BV(IntN)
+SAFE_DIVISION_CONCRETE_BV(WordN)
+#endif
 
 class SafeLinearArith a where
   -- | Safe signed '+' with monadic error handling in multi-path execution.
@@ -122,13 +181,6 @@ class SafeLinearArith a where
   -- >>> safeMinus AssertionError (ssym "a") (ssym "b") :: ExceptT AssertionError UnionM (SymIntN 4)
   -- ExceptT {If (|| (&& (<= 0x0 a) (&& (< b 0x0) (< (+ a (- b)) 0x0))) (&& (< a 0x0) (&& (< 0x0 b) (< 0x0 (+ a (- b)))))) (Left AssertionError) (Right (+ a (- b)))}
   safeMinus :: (MonadError e uf, MonadUnion uf, Mergeable e) => e -> a -> a -> uf a
-
--- | Safe signed 'quot' and 'rem' with monadic error handling in multi-path
--- execution. These procedures show throw 'DivideByZero' exception when the
--- divisor is zero. The result should be able to handle errors with
--- `MonadError`, and the error type should be compatible with 'ArithException'
--- (see 'TransformError' for more details).
-class SafeQuotRem a
 
 -- | Aggregation for the operations on symbolic integer types
 class (Num a, SEq a, SOrd a, Solvable Integer a, SafeDivision a, SafeLinearArith a) => SymIntegerOp a

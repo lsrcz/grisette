@@ -314,6 +314,10 @@ instance (KnownNat n, 1 <= n) => Enum (WordN n) where
   enumFromThen = boundedEnumFromThen
   {-# INLINE enumFromThen #-}
 
+instance Enum SomeWordN where
+  toEnum = error "SomeWordN is not really a Enum type as the bit width is unknown, please consider using WordN instead"
+  fromEnum = error "SomeWordN is not really a Enum type as the bit width is unknown, please consider using WordN instead"
+
 instance (KnownNat n, 1 <= n) => Real (WordN n) where
   toRational (WordN n) = n % 1
 
@@ -329,6 +333,15 @@ instance (KnownNat n, 1 <= n) => Integral (WordN n) where
   mod = rem
   divMod = quotRem
   toInteger (WordN n) = n
+
+instance Integral SomeWordN where
+  quot = binSomeWordN' quot "quot"
+  rem = binSomeWordN' rem "rem"
+  quotRem = binSomeWordN'' quotRem "quotRem"
+  div = binSomeWordN' div "div"
+  mod = binSomeWordN' mod "mod"
+  divMod = binSomeWordN'' divMod "divMod"
+  toInteger = unarySomeWordN toInteger "toInteger"
 
 instance (KnownNat n, 1 <= n) => Num (WordN n) where
   WordN x + WordN y = WordN (x + y) .&. maxBound
@@ -448,6 +461,10 @@ instance (KnownNat n, 1 <= n) => Enum (IntN n) where
   enumFromThen = boundedEnumFromThen
   {-# INLINE enumFromThen #-}
 
+instance Enum SomeIntN where
+  toEnum = error "SomeIntN is not really a Enum type as the bit width is unknown, please consider using IntN instead"
+  fromEnum = error "SomeIntN is not really a Enum type as the bit width is unknown, please consider using IntN instead"
+
 instance (KnownNat n, 1 <= n) => Real (IntN n) where
   toRational i = toInteger i % 1
 
@@ -488,6 +505,15 @@ instance (KnownNat n, 1 <= n) => Integral (IntN n) where
       let x = negate i
        in if signum x == -1 then -n else negate (toInteger x)
     _ -> undefined
+
+instance Integral SomeIntN where
+  quot = binSomeIntN' quot "quot"
+  rem = binSomeIntN' rem "rem"
+  quotRem = binSomeIntN'' quotRem "quotRem"
+  div = binSomeIntN' div "div"
+  mod = binSomeIntN' mod "mod"
+  divMod = binSomeIntN'' divMod "divMod"
+  toInteger = unarySomeIntN toInteger "toInteger"
 
 instance (KnownNat n, 1 <= n) => Num (IntN n) where
   IntN x + IntN y = IntN (x + y) .&. minusOneIntN (Proxy :: Proxy n)
