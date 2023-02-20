@@ -83,10 +83,10 @@ import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.GenSym
-import Grisette.Core.Data.Class.Integer
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.SOrd
+import Grisette.Core.Data.Class.SafeArith
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Substitute
@@ -103,7 +103,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Grisette.IR.SymPrim.Data.TabularFun
@@ -140,17 +140,39 @@ newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)
 
-instance SafeDivision SymInteger where
-  safeDiv e (SymInteger l) rs@(SymInteger r) =
-    mrgIf
-      (rs ==~ con 0)
-      (throwError e)
-      (mrgReturn $ SymInteger $ pevalDivIntegerTerm l r)
-  safeMod e (SymInteger l) rs@(SymInteger r) =
-    mrgIf
-      (rs ==~ con 0)
-      (throwError e)
-      (mrgReturn $ SymInteger $ pevalModIntegerTerm l r)
+#define SAFE_DIVISION_FUNC(name, type, op) \
+name (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgReturn $ type $ op l r); \
+name' t (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgReturn $ type $ op l r)
+
+#define SAFE_DIVISION_FUNC2(name, type, op1, op2) \
+name (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgReturn (type $ op1 l r, type $ op2 l r)); \
+name' t (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgReturn (type $ op1 l r, type $ op2 l r))
+
+#if 1
+instance SafeDivision ArithException SymInteger where
+  SAFE_DIVISION_FUNC(safeDiv, SymInteger, pevalDivIntegralTerm)
+  SAFE_DIVISION_FUNC(safeMod, SymInteger, pevalModIntegralTerm)
+  SAFE_DIVISION_FUNC(safeQuot, SymInteger, pevalQuotIntegralTerm)
+  SAFE_DIVISION_FUNC(safeRem, SymInteger, pevalRemIntegralTerm)
+  SAFE_DIVISION_FUNC2(safeDivMod, SymInteger, pevalDivIntegralTerm, pevalModIntegralTerm)
+  SAFE_DIVISION_FUNC2(safeQuotRem, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+#endif
 
 instance SafeLinearArith SymInteger where
   safeAdd e ls rs = mrgReturn $ ls + rs
@@ -177,6 +199,48 @@ instance SymIntegerOp SymInteger
 -- for the type class instances.
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
+
+#define SAFE_DIVISION_FUNC_BOUNDED_SIGNED(name, type, op) \
+name ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError Overflow) \
+      (mrgReturn $ type $ op l r)); \
+name' t ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError (t Overflow)) \
+      (mrgReturn $ type $ op l r))
+
+#define SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
+name ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError Overflow) \
+      (mrgReturn (type $ op1 l r, type $ op2 l r))); \
+name' t ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError (t Overflow)) \
+      (mrgReturn (type $ op1 l r, type $ op2 l r)))
+
+#if 1
+instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where
+  SAFE_DIVISION_FUNC_BOUNDED_SIGNED(safeDiv, SymIntN, pevalDivBoundedIntegralTerm)
+  SAFE_DIVISION_FUNC(safeMod, SymIntN, pevalModBoundedIntegralTerm)
+  SAFE_DIVISION_FUNC_BOUNDED_SIGNED(safeQuot, SymIntN, pevalQuotBoundedIntegralTerm)
+  SAFE_DIVISION_FUNC(safeRem, SymIntN, pevalRemBoundedIntegralTerm)
+  SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(safeDivMod, SymIntN, pevalDivBoundedIntegralTerm, pevalModBoundedIntegralTerm)
+  SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(safeQuotRem, SymIntN, pevalQuotBoundedIntegralTerm, pevalRemBoundedIntegralTerm)
+#endif
 
 instance (KnownNat n, 1 <= n) => SafeLinearArith (SymIntN n) where
   safeAdd e ls rs =
@@ -264,6 +328,16 @@ binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymInt
 -- for the type class instances.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
+
+#if 1
+instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymWordN n) where
+  SAFE_DIVISION_FUNC(safeDiv, SymWordN, pevalDivIntegralTerm)
+  SAFE_DIVISION_FUNC(safeMod, SymWordN, pevalModIntegralTerm)
+  SAFE_DIVISION_FUNC(safeQuot, SymWordN, pevalQuotIntegralTerm)
+  SAFE_DIVISION_FUNC(safeRem, SymWordN, pevalRemIntegralTerm)
+  SAFE_DIVISION_FUNC2(safeDivMod, SymWordN, pevalDivIntegralTerm, pevalModIntegralTerm)
+  SAFE_DIVISION_FUNC2(safeQuotRem, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+#endif
 
 instance (KnownNat n, 1 <= n) => SafeLinearArith (SymWordN n) where
   safeAdd e ls rs =

@@ -176,57 +176,69 @@ enumConformTest pref ptyp =
             else (fromIntegral <$> enumFromThenTo x y z) @=? enumFromThenTo (fromIntegral x :: typ) (fromIntegral y) (fromIntegral z)
     ]
 
+newtype AEWrapper = AEWrapper ArithException deriving (Eq)
+
+instance Show AEWrapper where
+  show (AEWrapper x) = show x
+
+instance NFData AEWrapper where
+  rnf (AEWrapper x) = x `seq` ()
+
+sameDiv :: (NFData a, NFData b, Eq b, Show b) => a -> a -> (a -> b) -> (a -> a -> a) -> (b -> b -> b) -> IO ()
+sameDiv x y a2b fa fb = do
+  xa <- evaluate (force $ Right $ fa x y) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+  xb <- evaluate (force $ Right $ fb (a2b x) (a2b y)) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+  xb @=? a2b <$> xa
+
+sameDivMod :: (NFData a, NFData b, Eq b, Show b) => a -> a -> (a -> b) -> (a -> a -> (a, a)) -> (b -> b -> (b, b)) -> IO ()
+sameDivMod x y a2b fa fb = do
+  xa <- evaluate (force $ Right $ fa x y) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+  xb <- evaluate (force $ Right $ fb (a2b x) (a2b y)) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+  xb @=? bimap a2b a2b <$> xa
+
 divLikeTest ::
   forall a b.
-  (Arbitrary a, Eq a, Eq b, Num a, Show a, Bounded a, Bits a, Eq b, Show b, Num b, NFData b, Bounded b, Bits b) =>
+  (Arbitrary a, Eq a, Eq b, Num a, Show a, Bounded a, Bits a, Eq b, Show b, Num b, NFData b, Bounded b, Bits b, NFData a) =>
   TestName ->
   (a -> b) ->
   (a -> a -> a) ->
   (b -> b -> b) ->
   TestTree
 divLikeTest name a2b fa fb =
-  if isSigned (0 :: a)
-    then
-      testGroup
-        name
-        [ testProperty (name ++ " non zero / minBound vs -1") $ \(x :: a) y -> ioProperty $ do
-            if y == 0 || (x == minBound && y == -1) then return () else a2b (fa x y) @=? fb (a2b x) (a2b y),
-          testCase (name ++ " zero") $ shouldThrow (name ++ " zero") $ fb 1 0,
-          testCase (name ++ " minBound vs -1") $ shouldThrow (name ++ " minBound vs -1") $ fb minBound (-1)
-        ]
-    else
-      testGroup
-        name
-        [ testProperty (name ++ " non zero") $ \(x :: a) y -> ioProperty $ do
-            if y == 0 then return () else a2b (fa x y) @=? fb (a2b x) (a2b y),
-          testCase (name ++ " zero") $ shouldThrow (name ++ " zero") $ fb 1 0
-        ]
+  testGroup
+    "name"
+    [ testCase "divided by zero" $ do
+        sameDiv 1 0 a2b fa fb
+        sameDiv 0 0 a2b fa fb
+        sameDiv (-1) 0 a2b fa fb
+        sameDiv minBound 0 a2b fa fb
+        sameDiv maxBound 0 a2b fa fb,
+      testCase "min divided by -1" $ do
+        sameDiv minBound (-1) a2b fa fb,
+      testProperty "prop" $ \(x :: a) y -> ioProperty $ sameDiv x y a2b fa fb
+    ]
 
 divModLikeTest ::
   forall a b.
-  (Arbitrary a, Eq a, Eq b, Num a, Show a, Bounded a, Bits a, Eq b, Show b, Num b, NFData b, Bounded b, Bits b) =>
+  (Arbitrary a, Eq a, Eq b, Num a, NFData a, Show a, Bounded a, Bits a, Eq b, Show b, Num b, NFData b, Bounded b, Bits b) =>
   TestName ->
   (a -> b) ->
   (a -> a -> (a, a)) ->
   (b -> b -> (b, b)) ->
   TestTree
 divModLikeTest name a2b fa fb =
-  if isSigned (0 :: a)
-    then
-      testGroup
-        name
-        [ testProperty (name ++ " non zero / minBound vs -1") $ \(x :: a) y -> ioProperty $ do
-            if y == 0 || (x == minBound && y == -1) then return () else bimap a2b a2b (fa x y) @=? fb (a2b x) (a2b y),
-          testCase (name ++ " zero") $ shouldThrow (name ++ " zero") $ fb 1 0,
-          testCase (name ++ " minBound vs -1") $ shouldThrow (name ++ " minBound vs -1") $ fb minBound (-1)
-        ]
-    else
-      testGroup
-        name
-        [ testProperty (name ++ " non zero") $ \(x :: a) y -> ioProperty $ do
-            if y == 0 then return () else bimap a2b a2b (fa x y) @=? fb (a2b x) (a2b y),
-          testCase (name ++ " zero") $ shouldThrow (name ++ " zero") $ fb 1 0
-        ]
+  testGroup
+    "name"
+    [ testCase "divided by zero" $ do
+        sameDivMod 1 0 a2b fa fb
+        sameDivMod 0 0 a2b fa fb
+        sameDivMod (-1) 0 a2b fa fb
+        sameDivMod minBound 0 a2b fa fb
+        sameDivMod maxBound 0 a2b fa fb,
+      testCase "min divided by -1" $ do
+        sameDivMod minBound (-1) a2b fa fb,
+      testProperty "prop" $ \(x :: a) y -> ioProperty $ sameDivMod x y a2b fa fb
+    ]
 
 realConformTest ::
   forall proxy ref typ.
@@ -257,7 +269,8 @@ integralConformTest ::
     Bits typ,
     Bounded ref,
     Bounded typ,
-    NFData typ
+    NFData typ,
+    NFData ref
   ) =>
   Proxy ref ->
   Proxy typ ->
@@ -411,9 +424,7 @@ bvTests =
         [ testCase "division of min bound and minus one for signed bit vector should throw" $ do
             shouldThrow "divMod" $ divMod (minBound :: IntN 8) (-1 :: IntN 8)
             shouldThrow "div" $ div (minBound :: IntN 8) (-1 :: IntN 8)
-            shouldThrow "mod" $ mod (minBound :: IntN 8) (-1 :: IntN 8)
             shouldThrow "quotRem" $ quotRem (minBound :: IntN 8) (-1 :: IntN 8)
             shouldThrow "quot" $ quot (minBound :: IntN 8) (-1 :: IntN 8)
-            shouldThrow "rem" $ rem (minBound :: IntN 8) (-1 :: IntN 8)
         ]
     ]

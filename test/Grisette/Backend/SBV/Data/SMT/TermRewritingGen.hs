@@ -24,7 +24,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Test.Tasty.QuickCheck
 
@@ -230,11 +230,29 @@ bvextendSpec ::
   b
 bvextendSpec signed p = constructUnarySpec (bvextendTerm signed p) (pevalBVExtendTerm signed p)
 
-divIntegerSpec :: (TermRewritingSpec a Integer) => a -> a -> a
-divIntegerSpec = constructBinarySpec divIntegerTerm pevalDivIntegerTerm
+divIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+divIntegralSpec = constructBinarySpec divIntegralTerm pevalDivIntegralTerm
 
-modIntegerSpec :: (TermRewritingSpec a Integer) => a -> a -> a
-modIntegerSpec = constructBinarySpec modIntegerTerm pevalModIntegerTerm
+modIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+modIntegralSpec = constructBinarySpec modIntegralTerm pevalModIntegralTerm
+
+quotIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+quotIntegralSpec = constructBinarySpec quotIntegralTerm pevalQuotIntegralTerm
+
+remIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+remIntegralSpec = constructBinarySpec remIntegralTerm pevalRemIntegralTerm
+
+divBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
+divBoundedIntegralSpec = constructBinarySpec divBoundedIntegralTerm pevalDivBoundedIntegralTerm
+
+modBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
+modBoundedIntegralSpec = constructBinarySpec modBoundedIntegralTerm pevalModBoundedIntegralTerm
+
+quotBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
+quotBoundedIntegralSpec = constructBinarySpec quotBoundedIntegralTerm pevalQuotBoundedIntegralTerm
+
+remBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
+remBoundedIntegralSpec = constructBinarySpec remBoundedIntegralTerm pevalRemBoundedIntegralTerm
 
 data BoolOnlySpec = BoolOnlySpec (Term Bool) (Term Bool)
 

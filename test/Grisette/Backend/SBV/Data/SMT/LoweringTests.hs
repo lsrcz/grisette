@@ -360,12 +360,18 @@ loweringTests =
                   leNumTerm
                   "(<=)"
                   (\x y -> x * 2 - x SBV..<= y * 2 - y),
-              testCase "DivI" $ do
-                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig divIntegerTerm "div" SBV.sDiv
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig divIntegerTerm "div" SBV.sDiv,
-              testCase "ModI" $ do
-                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig modIntegerTerm "mod" SBV.sMod
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig modIntegerTerm "mod" SBV.sMod
+              testCase "Div" $ do
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig divIntegralTerm "div" SBV.sDiv
+                testBinaryOpLowering @Integer @Integer @Integer boundedConfig divIntegralTerm "div" SBV.sDiv,
+              testCase "Mod" $ do
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig modIntegralTerm "mod" SBV.sMod
+                testBinaryOpLowering @Integer @Integer @Integer boundedConfig modIntegralTerm "mod" SBV.sMod,
+              testCase "Quot" $ do
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig quotIntegralTerm "quot" SBV.sQuot
+                testBinaryOpLowering @Integer @Integer @Integer boundedConfig quotIntegralTerm "quot" SBV.sQuot,
+              testCase "Rem" $ do
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig remIntegralTerm "rem" SBV.sRem
+                testBinaryOpLowering @Integer @Integer @Integer boundedConfig remIntegralTerm "rem" SBV.sRem
             ],
           testGroup
             "IntN Lowering"
@@ -554,7 +560,19 @@ loweringTests =
                 testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` (-4))
                 testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` 1)
                 testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" (`rotate` (-5))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" id
+                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" id,
+              testCase "Div - bounded" $ do
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig divBoundedIntegralTerm "div" SBV.sDiv
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig divBoundedIntegralTerm "div" SBV.sDiv,
+              testCase "Mod - bounded" $ do
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig modBoundedIntegralTerm "mod" SBV.sMod
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig modBoundedIntegralTerm "mod" SBV.sMod,
+              testCase "Quot - bounded" $ do
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig quotBoundedIntegralTerm "quot" SBV.sQuot
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig quotBoundedIntegralTerm "quot" SBV.sQuot,
+              testCase "Rem - bounded" $ do
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remBoundedIntegralTerm "rem" SBV.sRem
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remBoundedIntegralTerm "rem" SBV.sRem
             ],
           testGroup
             "WordN"
@@ -743,6 +761,18 @@ loweringTests =
                 testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` (-4))
                 testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` 1)
                 testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" (`rotate` (-5))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" id
+                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" id,
+              testCase "Div" $ do
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig divIntegralTerm "div" SBV.sDiv,
+              testCase "Mod" $ do
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig modIntegralTerm "mod" SBV.sMod
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig modIntegralTerm "mod" SBV.sMod,
+              testCase "Quot" $ do
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig quotIntegralTerm "quot" SBV.sQuot
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig quotIntegralTerm "quot" SBV.sQuot,
+              testCase "Rem" $ do
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig remIntegralTerm "rem" SBV.sRem
             ]
         ]

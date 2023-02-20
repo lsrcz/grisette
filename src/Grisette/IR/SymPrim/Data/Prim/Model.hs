@@ -44,7 +44,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Type.Reflection
@@ -342,10 +342,22 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goBinary pevalTabularFunApplyTerm f arg
     go (SomeTerm (GeneralFunApplyTerm _ f arg)) =
       goBinary pevalGeneralFunApplyTerm f arg
-    go (SomeTerm (DivIntegerTerm _ arg1 arg2)) =
-      goBinary pevalDivIntegerTerm arg1 arg2
-    go (SomeTerm (ModIntegerTerm _ arg1 arg2)) =
-      goBinary pevalModIntegerTerm arg1 arg2
+    go (SomeTerm (DivIntegralTerm _ arg1 arg2)) =
+      goBinary pevalDivIntegralTerm arg1 arg2
+    go (SomeTerm (ModIntegralTerm _ arg1 arg2)) =
+      goBinary pevalModIntegralTerm arg1 arg2
+    go (SomeTerm (QuotIntegralTerm _ arg1 arg2)) =
+      goBinary pevalQuotIntegralTerm arg1 arg2
+    go (SomeTerm (RemIntegralTerm _ arg1 arg2)) =
+      goBinary pevalRemIntegralTerm arg1 arg2
+    go (SomeTerm (DivBoundedIntegralTerm _ arg1 arg2)) =
+      goBinary pevalDivBoundedIntegralTerm arg1 arg2
+    go (SomeTerm (ModBoundedIntegralTerm _ arg1 arg2)) =
+      goBinary pevalModBoundedIntegralTerm arg1 arg2
+    go (SomeTerm (QuotBoundedIntegralTerm _ arg1 arg2)) =
+      goBinary pevalQuotBoundedIntegralTerm arg1 arg2
+    go (SomeTerm (RemBoundedIntegralTerm _ arg1 arg2)) =
+      goBinary pevalRemBoundedIntegralTerm arg1 arg2
     goUnary :: (SupportedPrim a, SupportedPrim b) => (Term a -> Term b) -> Term a -> SomeTerm
     goUnary f a = SomeTerm $ f (gotyped a)
     goBinary ::

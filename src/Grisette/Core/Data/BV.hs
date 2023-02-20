@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -25,16 +26,28 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core.Data.BV
-  ( IntN (..),
+  ( BitwidthMismatch (..),
+    IntN (..),
     WordN (..),
     SomeIntN (..),
     SomeWordN (..),
+    unarySomeIntN,
+    unarySomeIntNR1,
+    binSomeIntN,
+    binSomeIntNR1,
+    binSomeIntNR2,
+    unarySomeWordN,
+    unarySomeWordNR1,
+    binSomeWordN,
+    binSomeWordNR1,
+    binSomeWordNR2,
   )
 where
 
 import Control.DeepSeq
 import Control.Exception
 import Data.Bits
+import Data.CallStack
 import Data.Hashable
 import Data.Proxy
 import Data.Typeable
@@ -47,6 +60,12 @@ import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 import Numeric
 
+data BitwidthMismatch = BitwidthMismatch
+  deriving (Show, Eq, Ord, Generic)
+
+instance Exception BitwidthMismatch where
+  displayException BitwidthMismatch = "Bit width does not match"
+
 -- |
 -- Symbolic unsigned bit vectors.
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
@@ -57,57 +76,57 @@ newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
 data SomeWordN where
   SomeWordN :: (KnownNat n, 1 <= n) => WordN n -> SomeWordN
 
-unarySomeWordN :: (forall n. (KnownNat n, 1 <= n) => WordN n -> r) -> String -> SomeWordN -> r
-unarySomeWordN op str (SomeWordN (w :: WordN w)) = op w
+unarySomeWordN :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> r) -> SomeWordN -> r
+unarySomeWordN op (SomeWordN (w :: WordN w)) = op w
 {-# INLINE unarySomeWordN #-}
 
-unarySomeWordN' :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n) -> String -> SomeWordN -> SomeWordN
-unarySomeWordN' op str (SomeWordN (w :: WordN w)) = SomeWordN $ op w
-{-# INLINE unarySomeWordN' #-}
+unarySomeWordNR1 :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n) -> SomeWordN -> SomeWordN
+unarySomeWordNR1 op (SomeWordN (w :: WordN w)) = SomeWordN $ op w
+{-# INLINE unarySomeWordNR1 #-}
 
-binSomeWordN :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> r) -> String -> SomeWordN -> SomeWordN -> r
-binSomeWordN op str (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
+binSomeWordN :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> r) -> SomeWordN -> SomeWordN -> r
+binSomeWordN op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> op l r
-    Nothing -> error $ "Operation " ++ str ++ " on WordN with different bitwidth"
+    Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeWordN #-}
 
-binSomeWordN' :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> WordN n) -> String -> SomeWordN -> SomeWordN -> SomeWordN
-binSomeWordN' op str (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
+binSomeWordNR1 :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> WordN n) -> SomeWordN -> SomeWordN -> SomeWordN
+binSomeWordNR1 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> SomeWordN $ op l r
-    Nothing -> error $ "Operation " ++ str ++ " on WordN with different bitwidth"
-{-# INLINE binSomeWordN' #-}
+    Nothing -> throw BitwidthMismatch
+{-# INLINE binSomeWordNR1 #-}
 
-binSomeWordN'' :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> (WordN n, WordN n)) -> String -> SomeWordN -> SomeWordN -> (SomeWordN, SomeWordN)
-binSomeWordN'' op str (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
+binSomeWordNR2 :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> (WordN n, WordN n)) -> SomeWordN -> SomeWordN -> (SomeWordN, SomeWordN)
+binSomeWordNR2 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl ->
       case op l r of
         (a, b) -> (SomeWordN a, SomeWordN b)
-    Nothing -> error $ "Operation " ++ str ++ " on WordN with different bitwidth"
-{-# INLINE binSomeWordN'' #-}
+    Nothing -> throw BitwidthMismatch
+{-# INLINE binSomeWordNR2 #-}
 
 instance Eq SomeWordN where
-  (==) = binSomeWordN (==) "=="
+  (==) = binSomeWordN (==)
   {-# INLINE (==) #-}
-  (/=) = binSomeWordN (/=) "/="
+  (/=) = binSomeWordN (/=)
   {-# INLINE (/=) #-}
 
 instance Ord SomeWordN where
-  (<=) = binSomeWordN (<=) "<="
+  (<=) = binSomeWordN (<=)
   {-# INLINE (<=) #-}
-  (<) = binSomeWordN (<) "<"
+  (<) = binSomeWordN (<)
   {-# INLINE (<) #-}
-  (>=) = binSomeWordN (>=) ">="
+  (>=) = binSomeWordN (>=)
   {-# INLINE (>=) #-}
-  (>) = binSomeWordN (>) ">"
+  (>) = binSomeWordN (>)
   {-# INLINE (>) #-}
-  max = binSomeWordN' max "max"
+  max = binSomeWordNR1 max
   {-# INLINE max #-}
-  min = binSomeWordN' min "min"
+  min = binSomeWordNR1 min
   {-# INLINE min #-}
-  compare = binSomeWordN compare "compare"
+  compare = binSomeWordN compare
   {-# INLINE compare #-}
 
 instance Lift SomeWordN where
@@ -141,57 +160,57 @@ newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
 data SomeIntN where
   SomeIntN :: (KnownNat n, 1 <= n) => IntN n -> SomeIntN
 
-unarySomeIntN :: (forall n. (KnownNat n, 1 <= n) => IntN n -> r) -> String -> SomeIntN -> r
-unarySomeIntN op str (SomeIntN (w :: IntN w)) = op w
+unarySomeIntN :: (forall n. (KnownNat n, 1 <= n) => IntN n -> r) -> SomeIntN -> r
+unarySomeIntN op (SomeIntN (w :: IntN w)) = op w
 {-# INLINE unarySomeIntN #-}
 
-unarySomeIntN' :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n) -> String -> SomeIntN -> SomeIntN
-unarySomeIntN' op str (SomeIntN (w :: IntN w)) = SomeIntN $ op w
-{-# INLINE unarySomeIntN' #-}
+unarySomeIntNR1 :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n) -> SomeIntN -> SomeIntN
+unarySomeIntNR1 op (SomeIntN (w :: IntN w)) = SomeIntN $ op w
+{-# INLINE unarySomeIntNR1 #-}
 
-binSomeIntN :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n -> r) -> String -> SomeIntN -> SomeIntN -> r
-binSomeIntN op str (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
+binSomeIntN :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n -> r) -> SomeIntN -> SomeIntN -> r
+binSomeIntN op (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> op l r
-    Nothing -> error $ "Operation " ++ str ++ " on IntN with different bitwidth"
+    Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeIntN #-}
 
-binSomeIntN' :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n -> IntN n) -> String -> SomeIntN -> SomeIntN -> SomeIntN
-binSomeIntN' op str (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
+binSomeIntNR1 :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n -> IntN n) -> SomeIntN -> SomeIntN -> SomeIntN
+binSomeIntNR1 op (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> SomeIntN $ op l r
-    Nothing -> error $ "Operation " ++ str ++ " on IntN with different bitwidth"
-{-# INLINE binSomeIntN' #-}
+    Nothing -> throw BitwidthMismatch
+{-# INLINE binSomeIntNR1 #-}
 
-binSomeIntN'' :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n -> (IntN n, IntN n)) -> String -> SomeIntN -> SomeIntN -> (SomeIntN, SomeIntN)
-binSomeIntN'' op str (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
+binSomeIntNR2 :: (forall n. (KnownNat n, 1 <= n) => IntN n -> IntN n -> (IntN n, IntN n)) -> SomeIntN -> SomeIntN -> (SomeIntN, SomeIntN)
+binSomeIntNR2 op (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl ->
       case op l r of
         (a, b) -> (SomeIntN a, SomeIntN b)
-    Nothing -> error $ "Operation " ++ str ++ " on IntN with different bitwidth"
-{-# INLINE binSomeIntN'' #-}
+    Nothing -> throw BitwidthMismatch
+{-# INLINE binSomeIntNR2 #-}
 
 instance Eq SomeIntN where
-  (==) = binSomeIntN (==) "=="
+  (==) = binSomeIntN (==)
   {-# INLINE (==) #-}
-  (/=) = binSomeIntN (/=) "/="
+  (/=) = binSomeIntN (/=)
   {-# INLINE (/=) #-}
 
 instance Ord SomeIntN where
-  (<=) = binSomeIntN (<=) "<="
+  (<=) = binSomeIntN (<=)
   {-# INLINE (<=) #-}
-  (<) = binSomeIntN (<) "<"
+  (<) = binSomeIntN (<)
   {-# INLINE (<) #-}
-  (>=) = binSomeIntN (>=) ">="
+  (>=) = binSomeIntN (>=)
   {-# INLINE (>=) #-}
-  (>) = binSomeIntN (>) ">"
+  (>) = binSomeIntN (>)
   {-# INLINE (>) #-}
-  max = binSomeIntN' max "max"
+  max = binSomeIntNR1 max
   {-# INLINE max #-}
-  min = binSomeIntN' min "min"
+  min = binSomeIntNR1 min
   {-# INLINE min #-}
-  compare = binSomeIntN compare "compare"
+  compare = binSomeIntN compare
   {-# INLINE compare #-}
 
 instance Lift SomeIntN where
@@ -263,36 +282,36 @@ instance (KnownNat n, 1 <= n) => Bits (WordN n) where
   popCount (WordN n) = popCount n
 
 instance Bits SomeWordN where
-  (.&.) = binSomeWordN' (.&.) ".&."
-  (.|.) = binSomeWordN' (.|.) ".|."
-  xor = binSomeWordN' xor "xor"
-  complement = unarySomeWordN' complement "complement"
-  shift s i = unarySomeWordN' (`shift` i) "shift" s
-  rotate s i = unarySomeWordN' (`rotate` i) "rotate" s
+  (.&.) = binSomeWordNR1 (.&.)
+  (.|.) = binSomeWordNR1 (.|.)
+  xor = binSomeWordNR1 xor
+  complement = unarySomeWordNR1 complement
+  shift s i = unarySomeWordNR1 (`shift` i) s
+  rotate s i = unarySomeWordNR1 (`rotate` i) s
   zeroBits = error "zeroBits is not defined for SomeWordN as no bitwidth is known"
   bit = error "bit is not defined for SomeWordN as no bitwidth is known"
-  setBit s i = unarySomeWordN' (`setBit` i) "setBit" s
-  clearBit s i = unarySomeWordN' (`clearBit` i) "clearBit" s
-  complementBit s i = unarySomeWordN' (`complementBit` i) "complementBit" s
-  testBit s i = unarySomeWordN (`testBit` i) "testBit" s
+  setBit s i = unarySomeWordNR1 (`setBit` i) s
+  clearBit s i = unarySomeWordNR1 (`clearBit` i) s
+  complementBit s i = unarySomeWordNR1 (`complementBit` i) s
+  testBit s i = unarySomeWordN (`testBit` i) s
   bitSizeMaybe (SomeWordN (n :: WordN n)) = Just $ fromIntegral $ natVal n
   bitSize (SomeWordN (n :: WordN n)) = fromIntegral $ natVal n
   isSigned _ = False
-  shiftL s i = unarySomeWordN' (`shiftL` i) "shiftL" s
-  unsafeShiftL s i = unarySomeWordN' (`unsafeShiftL` i) "unsafeShiftL" s
-  shiftR s i = unarySomeWordN' (`shiftR` i) "shiftR" s
-  unsafeShiftR s i = unarySomeWordN' (`unsafeShiftR` i) "unsafeShiftR" s
-  rotateL s i = unarySomeWordN' (`rotateL` i) "rotateL" s
-  rotateR s i = unarySomeWordN' (`rotateR` i) "rotateR" s
-  popCount = unarySomeWordN popCount "popCount"
+  shiftL s i = unarySomeWordNR1 (`shiftL` i) s
+  unsafeShiftL s i = unarySomeWordNR1 (`unsafeShiftL` i) s
+  shiftR s i = unarySomeWordNR1 (`shiftR` i) s
+  unsafeShiftR s i = unarySomeWordNR1 (`unsafeShiftR` i) s
+  rotateL s i = unarySomeWordNR1 (`rotateL` i) s
+  rotateR s i = unarySomeWordNR1 (`rotateR` i) s
+  popCount = unarySomeWordN popCount
 
 instance (KnownNat n, 1 <= n) => FiniteBits (WordN n) where
   finiteBitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
 
 instance FiniteBits SomeWordN where
   finiteBitSize (SomeWordN (n :: WordN n)) = fromIntegral $ natVal n
-  countLeadingZeros = unarySomeWordN countLeadingZeros "countLeadingZeros"
-  countTrailingZeros = unarySomeWordN countTrailingZeros "countTrailingZeros"
+  countLeadingZeros = unarySomeWordN countLeadingZeros
+  countTrailingZeros = unarySomeWordN countTrailingZeros
 
 instance (KnownNat n, 1 <= n) => Bounded (WordN n) where
   maxBound = WordN ((1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n))) - 1)
@@ -322,7 +341,7 @@ instance (KnownNat n, 1 <= n) => Real (WordN n) where
   toRational (WordN n) = n % 1
 
 instance Real SomeWordN where
-  toRational = unarySomeWordN toRational "toRational"
+  toRational = unarySomeWordN toRational
 
 instance (KnownNat n, 1 <= n) => Integral (WordN n) where
   quot (WordN x) (WordN y) = WordN (x `quot` y)
@@ -335,13 +354,13 @@ instance (KnownNat n, 1 <= n) => Integral (WordN n) where
   toInteger (WordN n) = n
 
 instance Integral SomeWordN where
-  quot = binSomeWordN' quot "quot"
-  rem = binSomeWordN' rem "rem"
-  quotRem = binSomeWordN'' quotRem "quotRem"
-  div = binSomeWordN' div "div"
-  mod = binSomeWordN' mod "mod"
-  divMod = binSomeWordN'' divMod "divMod"
-  toInteger = unarySomeWordN toInteger "toInteger"
+  quot = binSomeWordNR1 quot
+  rem = binSomeWordNR1 rem
+  quotRem = binSomeWordNR2 quotRem
+  div = binSomeWordNR1 div
+  mod = binSomeWordNR1 mod
+  divMod = binSomeWordNR2 divMod
+  toInteger = unarySomeWordN toInteger
 
 instance (KnownNat n, 1 <= n) => Num (WordN n) where
   WordN x + WordN y = WordN (x + y) .&. maxBound
@@ -360,12 +379,12 @@ instance (KnownNat n, 1 <= n) => Num (WordN n) where
     | otherwise = -fromInteger (-x)
 
 instance Num SomeWordN where
-  (+) = binSomeWordN' (+) "+"
-  (-) = binSomeWordN' (-) "-"
-  (*) = binSomeWordN' (*) "*"
-  negate = unarySomeWordN' negate "negate"
-  abs = unarySomeWordN' abs "abs"
-  signum = unarySomeWordN' signum "signum"
+  (+) = binSomeWordNR1 (+)
+  (-) = binSomeWordNR1 (-)
+  (*) = binSomeWordNR1 (*)
+  negate = unarySomeWordNR1 negate
+  abs = unarySomeWordNR1 abs
+  signum = unarySomeWordNR1 signum
   fromInteger = error "fromInteger is not defined for SomeWordN as no bitwidth is known"
 
 minusOneIntN :: forall proxy n. KnownNat n => proxy n -> IntN n
@@ -410,36 +429,36 @@ instance (KnownNat n, 1 <= n) => Bits (IntN n) where
   popCount (IntN i) = popCount i
 
 instance Bits SomeIntN where
-  (.&.) = binSomeIntN' (.&.) ".&."
-  (.|.) = binSomeIntN' (.|.) ".|."
-  xor = binSomeIntN' xor "xor"
-  complement = unarySomeIntN' complement "complement"
-  shift s i = unarySomeIntN' (`shift` i) "shift" s
-  rotate s i = unarySomeIntN' (`rotate` i) "rotate" s
+  (.&.) = binSomeIntNR1 (.&.)
+  (.|.) = binSomeIntNR1 (.|.)
+  xor = binSomeIntNR1 xor
+  complement = unarySomeIntNR1 complement
+  shift s i = unarySomeIntNR1 (`shift` i) s
+  rotate s i = unarySomeIntNR1 (`rotate` i) s
   zeroBits = error "zeroBits is not defined for SomeIntN as no bitwidth is known"
   bit = error "bit is not defined for SomeIntN as no bitwidth is known"
-  setBit s i = unarySomeIntN' (`setBit` i) "setBit" s
-  clearBit s i = unarySomeIntN' (`clearBit` i) "clearBit" s
-  complementBit s i = unarySomeIntN' (`complementBit` i) "complementBit" s
-  testBit s i = unarySomeIntN (`testBit` i) "testBit" s
+  setBit s i = unarySomeIntNR1 (`setBit` i) s
+  clearBit s i = unarySomeIntNR1 (`clearBit` i) s
+  complementBit s i = unarySomeIntNR1 (`complementBit` i) s
+  testBit s i = unarySomeIntN (`testBit` i) s
   bitSizeMaybe (SomeIntN (n :: IntN n)) = Just $ fromIntegral $ natVal n
   bitSize (SomeIntN (n :: IntN n)) = fromIntegral $ natVal n
   isSigned _ = False
-  shiftL s i = unarySomeIntN' (`shiftL` i) "shiftL" s
-  unsafeShiftL s i = unarySomeIntN' (`unsafeShiftL` i) "unsafeShiftL" s
-  shiftR s i = unarySomeIntN' (`shiftR` i) "shiftR" s
-  unsafeShiftR s i = unarySomeIntN' (`unsafeShiftR` i) "unsafeShiftR" s
-  rotateL s i = unarySomeIntN' (`rotateL` i) "rotateL" s
-  rotateR s i = unarySomeIntN' (`rotateR` i) "rotateR" s
-  popCount = unarySomeIntN popCount "popCount"
+  shiftL s i = unarySomeIntNR1 (`shiftL` i) s
+  unsafeShiftL s i = unarySomeIntNR1 (`unsafeShiftL` i) s
+  shiftR s i = unarySomeIntNR1 (`shiftR` i) s
+  unsafeShiftR s i = unarySomeIntNR1 (`unsafeShiftR` i) s
+  rotateL s i = unarySomeIntNR1 (`rotateL` i) s
+  rotateR s i = unarySomeIntNR1 (`rotateR` i) s
+  popCount = unarySomeIntN popCount
 
 instance (KnownNat n, 1 <= n) => FiniteBits (IntN n) where
   finiteBitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
 
 instance FiniteBits SomeIntN where
   finiteBitSize (SomeIntN (n :: IntN n)) = fromIntegral $ natVal n
-  countLeadingZeros = unarySomeIntN countLeadingZeros "countLeadingZeros"
-  countTrailingZeros = unarySomeIntN countTrailingZeros "countTrailingZeros"
+  countLeadingZeros = unarySomeIntN countLeadingZeros
+  countTrailingZeros = unarySomeIntN countTrailingZeros
 
 instance (KnownNat n, 1 <= n) => Bounded (IntN n) where
   maxBound = IntN (1 `shiftL` (fromIntegral (natVal (Proxy :: Proxy n)) - 1) - 1)
@@ -469,17 +488,14 @@ instance (KnownNat n, 1 <= n) => Real (IntN n) where
   toRational i = toInteger i % 1
 
 instance Real SomeIntN where
-  toRational = unarySomeIntN toRational "toRational"
+  toRational = unarySomeIntN toRational
 
 instance (KnownNat n, 1 <= n) => Integral (IntN n) where
   quot x y =
     if x == minBound && y == -1
       then throw Overflow
       else fromInteger (toInteger x `quot` toInteger y)
-  rem x y =
-    if x == minBound && y == -1
-      then throw Overflow
-      else fromInteger (toInteger x `rem` toInteger y)
+  rem x y = fromInteger (toInteger x `rem` toInteger y)
   quotRem x y =
     if x == minBound && y == -1
       then throw Overflow
@@ -489,10 +505,7 @@ instance (KnownNat n, 1 <= n) => Integral (IntN n) where
     if x == minBound && y == -1
       then throw Overflow
       else fromInteger (toInteger x `div` toInteger y)
-  mod x y =
-    if x == minBound && y == -1
-      then throw Overflow
-      else fromInteger (toInteger x `mod` toInteger y)
+  mod x y = fromInteger (toInteger x `mod` toInteger y)
   divMod x y =
     if x == minBound && y == -1
       then throw Overflow
@@ -507,13 +520,13 @@ instance (KnownNat n, 1 <= n) => Integral (IntN n) where
     _ -> undefined
 
 instance Integral SomeIntN where
-  quot = binSomeIntN' quot "quot"
-  rem = binSomeIntN' rem "rem"
-  quotRem = binSomeIntN'' quotRem "quotRem"
-  div = binSomeIntN' div "div"
-  mod = binSomeIntN' mod "mod"
-  divMod = binSomeIntN'' divMod "divMod"
-  toInteger = unarySomeIntN toInteger "toInteger"
+  quot = binSomeIntNR1 quot
+  rem = binSomeIntNR1 rem
+  quotRem = binSomeIntNR2 quotRem
+  div = binSomeIntNR1 div
+  mod = binSomeIntNR1 mod
+  divMod = binSomeIntNR2 divMod
+  toInteger = unarySomeIntN toInteger
 
 instance (KnownNat n, 1 <= n) => Num (IntN n) where
   IntN x + IntN y = IntN (x + y) .&. minusOneIntN (Proxy :: Proxy n)
@@ -533,12 +546,12 @@ instance (KnownNat n, 1 <= n) => Num (IntN n) where
       maxn = 1 `shiftL` (n - 1) - 1
 
 instance Num SomeIntN where
-  (+) = binSomeIntN' (+) "+"
-  (-) = binSomeIntN' (-) "-"
-  (*) = binSomeIntN' (*) "*"
-  negate = unarySomeIntN' negate "negate"
-  abs = unarySomeIntN' abs "abs"
-  signum = unarySomeIntN' signum "signum"
+  (+) = binSomeIntNR1 (+)
+  (-) = binSomeIntNR1 (-)
+  (*) = binSomeIntNR1 (*)
+  negate = unarySomeIntNR1 negate
+  abs = unarySomeIntNR1 abs
+  signum = unarySomeIntNR1 signum
   fromInteger = error "fromInteger is not defined for SomeIntN as no bitwidth is known"
 
 instance (KnownNat n, 1 <= n) => Ord (IntN n) where

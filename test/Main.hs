@@ -30,7 +30,7 @@ import qualified Grisette.Core.Data.BVTests
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests
 import Grisette.IR.SymPrim.Data.Prim.BoolTests
-import Grisette.IR.SymPrim.Data.Prim.IntegerTests
+import Grisette.IR.SymPrim.Data.Prim.IntegralTests
 import Grisette.IR.SymPrim.Data.Prim.ModelTests
 import Grisette.IR.SymPrim.Data.Prim.NumTests
 import qualified Grisette.IR.SymPrim.Data.Prim.TabularFunTests
@@ -129,7 +129,7 @@ irTests =
             [ bitsTests,
               boolTests,
               Grisette.IR.SymPrim.Data.Prim.BVTests.bvTests,
-              integerTests,
+              integralTests,
               modelTests,
               numTests,
               Grisette.IR.SymPrim.Data.Prim.TabularFunTests.tabularFunTests

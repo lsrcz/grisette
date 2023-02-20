@@ -22,7 +22,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Type.Reflection
@@ -74,5 +74,11 @@ substTerm sym term = gov
         BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)
         TabularFunApplyTerm _ f op -> SomeTerm $ pevalTabularFunApplyTerm (gov f) (gov op)
         GeneralFunApplyTerm _ f op -> SomeTerm $ pevalGeneralFunApplyTerm (gov f) (gov op)
-        DivIntegerTerm _ op1 op2 -> SomeTerm $ pevalDivIntegerTerm (gov op1) (gov op2)
-        ModIntegerTerm _ op1 op2 -> SomeTerm $ pevalModIntegerTerm (gov op1) (gov op2)
+        DivIntegralTerm _ op1 op2 -> SomeTerm $ pevalDivIntegralTerm (gov op1) (gov op2)
+        ModIntegralTerm _ op1 op2 -> SomeTerm $ pevalModIntegralTerm (gov op1) (gov op2)
+        QuotIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotIntegralTerm (gov op1) (gov op2)
+        RemIntegralTerm _ op1 op2 -> SomeTerm $ pevalRemIntegralTerm (gov op1) (gov op2)
+        DivBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalDivBoundedIntegralTerm (gov op1) (gov op2)
+        ModBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalModBoundedIntegralTerm (gov op1) (gov op2)
+        QuotBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotBoundedIntegralTerm (gov op1) (gov op2)
+        RemBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalRemBoundedIntegralTerm (gov op1) (gov op2)
