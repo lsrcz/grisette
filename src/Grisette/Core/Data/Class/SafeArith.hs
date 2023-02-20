@@ -172,11 +172,17 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
 
   {-# MINIMAL (safeDivMod | (safeDiv, safeMod)), (safeDivMod' | (safeDiv', safeMod')) #-}
 
+#define QUOTE() '
+#define QID(a) a
+#define QRIGHT(a) QID(a)'
+
+#define QRIGHTT(a) QID(a)' t'
+
 #define SAFE_DIVISION_FUNC(name, op) \
 name _ r | r == 0 = merge $ throwError DivideByZero; \
 name l r = mrgSingle $ l `op` r; \
-name' t _ r | r == 0 = merge $ throwError (t DivideByZero); \
-name' _ l r = mrgSingle $ l `op` r
+QRIGHTT(name) _ r | r == 0 = let t1 = t' in merge $ throwError (t' DivideByZero); \
+QRIGHTT(name) l r = mrgSingle $ l `op` r
 
 #define SAFE_DIVISION_CONCRETE(type) \
 instance SafeDivision ArithException type where \
@@ -218,7 +224,7 @@ SAFE_DIVISION_CONCRETE(Word)
           then merge $ throwError $ Right DivideByZero \
           else mrgSingle $ stype $ l `op` r; \
       Nothing -> merge $ throwError $ Left BitwidthMismatch); \
-  name' t (stype (l :: type l)) (stype (r :: type r)) = \
+  QRIGHT(name) t (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
@@ -234,7 +240,7 @@ SAFE_DIVISION_CONCRETE(Word)
           then merge $ throwError $ Right DivideByZero \
           else (case l `op` r of (d, m) -> mrgSingle (stype d, stype m)); \
       Nothing -> merge $ throwError $ Left BitwidthMismatch); \
-  name' t (stype (l :: type l)) (stype (r :: type r)) = \
+  QRIGHT(name) t (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \

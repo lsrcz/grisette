@@ -140,13 +140,17 @@ newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)
 
+#define QUOTE() '
+#define QID(a) a
+#define QRIGHT(a) QID(a)'
+
 #define SAFE_DIVISION_FUNC(name, type, op) \
 name (type l) rs@(type r) = \
   mrgIf \
     (rs ==~ con 0) \
     (throwError DivideByZero) \
     (mrgReturn $ type $ op l r); \
-name' t (type l) rs@(type r) = \
+QRIGHT(name) t (type l) rs@(type r) = \
   mrgIf \
     (rs ==~ con 0) \
     (throwError (t DivideByZero)) \
@@ -158,7 +162,7 @@ name (type l) rs@(type r) = \
     (rs ==~ con 0) \
     (throwError DivideByZero) \
     (mrgReturn (type $ op1 l r, type $ op2 l r)); \
-name' t (type l) rs@(type r) = \
+QRIGHT(name) t (type l) rs@(type r) = \
   mrgIf \
     (rs ==~ con 0) \
     (throwError (t DivideByZero)) \
@@ -208,7 +212,7 @@ name ls@(type l) rs@(type r) = \
     (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
       (throwError Overflow) \
       (mrgReturn $ type $ op l r)); \
-name' t ls@(type l) rs@(type r) = \
+QRIGHT(name) t ls@(type l) rs@(type r) = \
   mrgIf \
     (rs ==~ con 0) \
     (throwError (t DivideByZero)) \
@@ -224,7 +228,7 @@ name ls@(type l) rs@(type r) = \
     (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
       (throwError Overflow) \
       (mrgReturn (type $ op1 l r, type $ op2 l r))); \
-name' t ls@(type l) rs@(type r) = \
+QRIGHT(name) t ls@(type l) rs@(type r) = \
   mrgIf \
     (rs ==~ con 0) \
     (throwError (t DivideByZero)) \
