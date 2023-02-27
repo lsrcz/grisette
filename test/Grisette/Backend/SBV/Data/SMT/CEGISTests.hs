@@ -1,7 +1,9 @@
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Grisette.Backend.SBV.Data.SMT.CEGISTests where
 
@@ -20,6 +22,7 @@ import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
+import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
@@ -70,7 +73,33 @@ cegisTests =
             [ testCase "Empty symbolic inputs makes cegis work like solve" $ do
                 (_, Right m1) <- cegisMultiInputs (precise z3) [1 :: Integer, 2] (\x -> cegisPostCond $ fromString $ "a" ++ show x)
                 Right m2 <- solve (precise z3) (ssym "a1" &&~ ssym "a2")
-                m1 @=? m2
+                m1 @=? m2,
+              testCase "Lowering of TabularFun" $ do
+                let s1 = "s1" :: SymInteger =~> SymInteger
+                let s2 = "s2" :: SymInteger =~> SymInteger
+                (_, Right m1) <-
+                  cegis unboundedConfig (ssym "cond" :: SymBool) $
+                    cegisPostCond $
+                      ites "cond" s1 s2 # ites "cond" 1 2 ==~ 10 &&~ ites "cond" s1 s2 # ites "cond" 3 4 ==~ 100
+                let s1e = evaluateSym False m1 s1
+                let s2e = evaluateSym False m1 s2
+                s1e # 1 @=? 10
+                s1e # 3 @=? 100
+                s2e # 2 @=? 10
+                s2e # 4 @=? 100,
+              testCase "Lowering of GeneralFun" $ do
+                let s1 = "s1" :: SymInteger -~> SymInteger
+                let s2 = "s2" :: SymInteger -~> SymInteger
+                (_, Right m1) <-
+                  cegis unboundedConfig (ssym "cond" :: SymBool) $
+                    cegisPostCond $
+                      ites "cond" s1 s2 # ites "cond" 1 2 ==~ 10 &&~ ites "cond" s1 s2 # ites "cond" 3 4 ==~ 100
+                let s1e = evaluateSym False m1 s1
+                let s2e = evaluateSym False m1 s2
+                s1e # 1 @=? 10
+                s1e # 3 @=? 100
+                s2e # 2 @=? 10
+                s2e # 4 @=? 100
             ],
           testGroup
             "Boolean"
