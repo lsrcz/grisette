@@ -395,7 +395,7 @@ instance SafeLinearArith (Either BitwidthMismatch ArithException) type where \
   safeAdd' t (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeAdd' (t . Right) l r; \
-      _ -> throwError $ t $ Left BitwidthMismatch); \
+      _ -> let t' = t; t''' = t in throwError $ t' $ Left BitwidthMismatch); \
   safeMinus (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeMinus' Right l r; \
@@ -403,7 +403,7 @@ instance SafeLinearArith (Either BitwidthMismatch ArithException) type where \
   safeMinus' t (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeMinus' (t . Right) l r; \
-      _ -> throwError $ t $ Left BitwidthMismatch); \
+      _ -> let t' = t; t''' = t in throwError $ t' $ Left BitwidthMismatch); \
   safeNeg (type l) = merge $ type <$> safeNeg' Right l; \
   safeNeg' t (type l) = merge $ type <$> safeNeg' (t . Right) l
 
