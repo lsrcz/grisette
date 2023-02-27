@@ -548,25 +548,37 @@ symPrimTests =
           testGroup
             "SafeLinearArith"
             [ testProperty "safeAdd on concrete" $ \(i :: Integer, j :: Integer) ->
-                ioProperty $
-                  safeAdd () (con i :: SymInteger) (con j)
+                ioProperty $ do
+                  safeAdd (con i :: SymInteger) (con j)
+                    @=? (mrgSingle $ con $ i + j :: ExceptT ArithException UnionM SymInteger)
+                  safeAdd' (const ()) (con i :: SymInteger) (con j)
                     @=? (mrgSingle $ con $ i + j :: ExceptT () UnionM SymInteger),
-              testCase "safeAdd on symbolic" $
-                safeAdd () (ssym "a" :: SymInteger) (ssym "b")
+              testCase "safeAdd on symbolic" $ do
+                safeAdd (ssym "a" :: SymInteger) (ssym "b")
+                  @=? (mrgSingle $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
+                safeAdd' (const ()) (ssym "a" :: SymInteger) (ssym "b")
                   @=? (mrgSingle $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT () UnionM SymInteger),
               testProperty "safeNeg on concrete" $ \(i :: Integer) ->
-                ioProperty $
-                  safeNeg () (con i :: SymInteger)
+                ioProperty $ do
+                  safeNeg (con i :: SymInteger)
+                    @=? (mrgSingle $ con $ -i :: ExceptT ArithException UnionM SymInteger)
+                  safeNeg' (const ()) (con i :: SymInteger)
                     @=? (mrgSingle $ con $ -i :: ExceptT () UnionM SymInteger),
-              testCase "safeNeg on symbolic" $
-                safeNeg () (ssym "a" :: SymInteger)
+              testCase "safeNeg on symbolic" $ do
+                safeNeg (ssym "a" :: SymInteger)
+                  @=? (mrgSingle $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT ArithException UnionM SymInteger)
+                safeNeg' (const ()) (ssym "a" :: SymInteger)
                   @=? (mrgSingle $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT () UnionM SymInteger),
               testProperty "safeMinus on concrete" $ \(i :: Integer, j :: Integer) ->
-                ioProperty $
-                  safeMinus () (con i :: SymInteger) (con j)
+                ioProperty $ do
+                  safeMinus (con i :: SymInteger) (con j)
+                    @=? (mrgSingle $ con $ i - j :: ExceptT ArithException UnionM SymInteger)
+                  safeMinus' (const ()) (con i :: SymInteger) (con j)
                     @=? (mrgSingle $ con $ i - j :: ExceptT () UnionM SymInteger),
-              testCase "safeMinus on symbolic" $
-                safeMinus () (ssym "a" :: SymInteger) (ssym "b")
+              testCase "safeMinus on symbolic" $ do
+                safeMinus (ssym "a" :: SymInteger) (ssym "b")
+                  @=? (mrgSingle $ SymInteger $ pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
+                safeMinus' (const ()) (ssym "a" :: SymInteger) (ssym "b")
                   @=? (mrgSingle $ SymInteger $ pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT () UnionM SymInteger)
             ],
           testGroup
@@ -655,28 +667,40 @@ symPrimTests =
                         ioProperty $
                           let iint = fromIntegral i :: Integer
                               jint = fromIntegral j
-                           in safeAdd () (toSym i :: SymIntN 8) (toSym j)
+                           in safeAdd (toSym i :: SymIntN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint + jint ==~ fromIntegral (i + j))
-                                  (mrgSingle $ toSym $ i + j :: ExceptT () UnionM (SymIntN 8))
-                                  (throwError ()),
+                                  (iint + jint <~ fromIntegral (i + j))
+                                  (throwError Underflow)
+                                  ( mrgIf
+                                      (iint + jint >~ fromIntegral (i + j))
+                                      (throwError Overflow)
+                                      (mrgSingle $ toSym $ i + j :: ExceptT ArithException UnionM (SymIntN 8))
+                                  ),
                       testProperty "safeMinus on concrete" $ \(i :: Int8, j :: Int8) ->
                         ioProperty $
                           let iint = fromIntegral i :: Integer
                               jint = fromIntegral j
-                           in safeMinus () (toSym i :: SymIntN 8) (toSym j)
+                           in safeMinus (toSym i :: SymIntN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint - jint ==~ fromIntegral (i - j))
-                                  (mrgSingle $ toSym $ i - j :: ExceptT () UnionM (SymIntN 8))
-                                  (throwError ()),
+                                  (iint - jint <~ fromIntegral (i - j))
+                                  (throwError Underflow)
+                                  ( mrgIf
+                                      (iint - jint >~ fromIntegral (i - j))
+                                      (throwError Overflow)
+                                      (mrgSingle $ toSym $ i - j :: ExceptT ArithException UnionM (SymIntN 8))
+                                  ),
                       testProperty "safeNeg on concrete" $ \(i :: Int8) ->
                         ioProperty $
                           let iint = fromIntegral i :: Integer
-                           in safeNeg () (toSym i :: SymIntN 8)
+                           in safeNeg (toSym i :: SymIntN 8)
                                 @=? mrgIf
-                                  (-iint ==~ fromIntegral (-i))
-                                  (mrgSingle $ toSym $ -i :: ExceptT () UnionM (SymIntN 8))
-                                  (throwError ())
+                                  (-iint <~ fromIntegral (-i))
+                                  (throwError Underflow)
+                                  ( mrgIf
+                                      (-iint >~ fromIntegral (-i))
+                                      (throwError Overflow)
+                                      (mrgSingle $ toSym $ -i :: ExceptT ArithException UnionM (SymIntN 8))
+                                  )
                     ],
                   testGroup
                     "WordN"
@@ -684,28 +708,40 @@ symPrimTests =
                         ioProperty $
                           let iint = fromIntegral i :: Integer
                               jint = fromIntegral j
-                           in safeAdd () (toSym i :: SymWordN 8) (toSym j)
+                           in safeAdd (toSym i :: SymWordN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint + jint ==~ fromIntegral (i + j))
-                                  (mrgSingle $ toSym $ i + j :: ExceptT () UnionM (SymWordN 8))
-                                  (throwError ()),
+                                  (iint + jint <~ fromIntegral (i + j))
+                                  (throwError Underflow)
+                                  ( mrgIf
+                                      (iint + jint >~ fromIntegral (i + j))
+                                      (throwError Overflow)
+                                      (mrgSingle $ toSym $ i + j :: ExceptT ArithException UnionM (SymWordN 8))
+                                  ),
                       testProperty "safeMinus on concrete" $ \(i :: Word8, j :: Word8) ->
                         ioProperty $
                           let iint = fromIntegral i :: Integer
                               jint = fromIntegral j
-                           in safeMinus () (toSym i :: SymWordN 8) (toSym j)
+                           in safeMinus (toSym i :: SymWordN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint - jint ==~ fromIntegral (i - j))
-                                  (mrgSingle $ toSym $ i - j :: ExceptT () UnionM (SymWordN 8))
-                                  (throwError ()),
+                                  (iint - jint <~ fromIntegral (i - j))
+                                  (throwError Underflow)
+                                  ( mrgIf
+                                      (iint - jint >~ fromIntegral (i - j))
+                                      (throwError Overflow)
+                                      (mrgSingle $ toSym $ i - j :: ExceptT ArithException UnionM (SymWordN 8))
+                                  ),
                       testProperty "safeNeg on concrete" $ \(i :: Word8) ->
                         ioProperty $
                           let iint = fromIntegral i :: Integer
-                           in safeNeg () (toSym i :: SymWordN 8)
+                           in safeNeg (toSym i :: SymWordN 8)
                                 @=? mrgIf
-                                  (-iint ==~ fromIntegral (-i))
-                                  (mrgSingle $ toSym $ -i :: ExceptT () UnionM (SymWordN 8))
-                                  (throwError ())
+                                  (-iint <~ fromIntegral (-i))
+                                  (throwError Underflow)
+                                  ( mrgIf
+                                      (-iint >~ fromIntegral (-i))
+                                      (throwError Overflow)
+                                      (mrgSingle $ toSym $ -i :: ExceptT ArithException UnionM (SymWordN 8))
+                                  )
                     ]
                 ],
               testGroup

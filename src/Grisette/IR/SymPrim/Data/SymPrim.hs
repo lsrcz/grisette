@@ -178,10 +178,13 @@ instance SafeDivision ArithException SymInteger where
   SAFE_DIVISION_FUNC2(safeQuotRem, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 #endif
 
-instance SafeLinearArith SymInteger where
-  safeAdd e ls rs = mrgReturn $ ls + rs
-  safeNeg e v = mrgReturn $ -v
-  safeMinus e ls rs = mrgReturn $ ls - rs
+instance SafeLinearArith ArithException SymInteger where
+  safeAdd ls rs = mrgReturn $ ls + rs
+  safeAdd' _ ls rs = mrgReturn $ ls + rs
+  safeNeg v = mrgReturn $ -v
+  safeNeg' _ v = mrgReturn $ -v
+  safeMinus ls rs = mrgReturn $ ls - rs
+  safeMinus' e ls rs = mrgReturn $ ls - rs
 
 instance SymIntegerOp SymInteger
 
@@ -246,20 +249,51 @@ instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where
   SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(safeQuotRem, SymIntN, pevalQuotBoundedIntegralTerm, pevalRemBoundedIntegralTerm)
 #endif
 
-instance (KnownNat n, 1 <= n) => SafeLinearArith (SymIntN n) where
-  safeAdd e ls rs =
+instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) where
+  safeAdd ls rs =
     mrgIf
-      ((ls >~ 0 &&~ rs >~ 0 &&~ res <~ 0) ||~ (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0))
-      (throwError e)
-      (mrgReturn res)
+      (ls >~ 0)
+      (mrgIf (rs >~ 0 &&~ res <~ 0) (throwError Overflow) (return res))
+      ( mrgIf
+          (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0)
+          (throwError Underflow)
+          (mrgReturn res)
+      )
     where
       res = ls + rs
-  safeNeg e v = mrgIf (v ==~ con minBound) (throwError e) (mrgReturn $ -v)
-  safeMinus e ls rs =
+  safeAdd' f ls rs =
     mrgIf
-      ((ls >=~ 0 &&~ rs <~ 0 &&~ res <~ 0) ||~ (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0))
-      (throwError e)
-      (mrgReturn res)
+      (ls >~ 0)
+      (mrgIf (rs >~ 0 &&~ res <~ 0) (throwError $ f Overflow) (return res))
+      ( mrgIf
+          (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0)
+          (throwError $ f Underflow)
+          (mrgReturn res)
+      )
+    where
+      res = ls + rs
+  safeNeg v = mrgIf (v ==~ con minBound) (throwError Overflow) (mrgReturn $ -v)
+  safeNeg' f v = mrgIf (v ==~ con minBound) (throwError $ f Overflow) (mrgReturn $ -v)
+  safeMinus ls rs =
+    mrgIf
+      (ls >=~ 0)
+      (mrgIf (rs <~ 0 &&~ res <~ 0) (throwError Overflow) (return res))
+      ( mrgIf
+          (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0)
+          (throwError Underflow)
+          (mrgReturn res)
+      )
+    where
+      res = ls - rs
+  safeMinus' f ls rs =
+    mrgIf
+      (ls >=~ 0)
+      (mrgIf (rs <~ 0 &&~ res <~ 0) (throwError $ f Overflow) (return res))
+      ( mrgIf
+          (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0)
+          (throwError $ f Underflow)
+          (mrgReturn res)
+      )
     where
       res = ls - rs
 
@@ -343,19 +377,34 @@ instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymWordN n) where
   SAFE_DIVISION_FUNC2(safeQuotRem, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 #endif
 
-instance (KnownNat n, 1 <= n) => SafeLinearArith (SymWordN n) where
-  safeAdd e ls rs =
+instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) where
+  safeAdd ls rs =
     mrgIf
       (ls >~ res ||~ rs >~ res)
-      (throwError e)
+      (throwError Overflow)
       (mrgReturn res)
     where
       res = ls + rs
-  safeNeg e v = mrgIf (v /=~ 0) (throwError e) (mrgReturn v)
-  safeMinus e ls rs =
+  safeAdd' f ls rs =
+    mrgIf
+      (ls >~ res ||~ rs >~ res)
+      (throwError $ f Overflow)
+      (mrgReturn res)
+    where
+      res = ls + rs
+  safeNeg v = mrgIf (v /=~ 0) (throwError Underflow) (mrgReturn v)
+  safeNeg' f v = mrgIf (v /=~ 0) (throwError $ f Underflow) (mrgReturn v)
+  safeMinus ls rs =
     mrgIf
       (rs >~ ls)
-      (throwError e)
+      (throwError Underflow)
+      (mrgReturn res)
+    where
+      res = ls - rs
+  safeMinus' f ls rs =
+    mrgIf
+      (rs >~ ls)
+      (throwError $ f Underflow)
       (mrgReturn res)
     where
       res = ls - rs
