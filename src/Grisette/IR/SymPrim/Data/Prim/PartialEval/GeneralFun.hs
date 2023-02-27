@@ -17,6 +17,7 @@ import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalITETerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
 
 pevalGeneralFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
@@ -24,4 +25,6 @@ pevalGeneralFunApplyTerm = totalize2 doPevalGeneralFunApplyTerm generalFunApplyT
 
 doPevalGeneralFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Maybe (Term b)
 doPevalGeneralFunApplyTerm (ConTerm _ (GeneralFun arg tm)) v = Just $ substTerm arg v tm
+doPevalGeneralFunApplyTerm (ITETerm _ c l r) v =
+  return $ pevalITETerm c (pevalGeneralFunApplyTerm l v) (pevalGeneralFunApplyTerm r v)
 doPevalGeneralFunApplyTerm _ _ = Nothing

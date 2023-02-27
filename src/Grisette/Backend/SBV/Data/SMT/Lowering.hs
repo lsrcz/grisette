@@ -133,20 +133,46 @@ lowerBinaryTerm' config orig t1 t2 f = do
   addResult @integerBitWidth orig g
   return g
 
+lowerValue ::
+  forall integerBitWidth a.
+  (SupportedPrim a, Typeable a) =>
+  GrisetteSMTConfig integerBitWidth ->
+  a ->
+  TermTy integerBitWidth a
+lowerValue config@ResolvedConfig {} v =
+  case R.typeRep @a of
+    BoolType -> if v then SBV.sTrue else SBV.sFalse
+    IntegerType -> fromInteger v
+    SignedBVType _ -> case v of
+      IntN x -> fromInteger x
+    UnsignedBVType _ -> case v of
+      WordN x -> fromInteger x
+    TFunType (l :: a1) (r :: a2) ->
+      case ((config, l), (config, r)) of
+        (ResolvedSimpleType, ResolvedMergeableType) ->
+          lowerTFunCon config v
+        _ -> translateTypeError (R.typeRep @a)
+    _ -> translateTypeError (R.typeRep @a)
+lowerValue config v = translateTypeError (R.typeRep @a)
+
+lowerTFunCon ::
+  forall integerBitWidth a b.
+  (SupportedPrim a, SupportedPrim b, SBV.EqSymbolic (TermTy integerBitWidth a), SBV.Mergeable (TermTy integerBitWidth b)) =>
+  GrisetteSMTConfig integerBitWidth ->
+  (a =-> b) ->
+  (TermTy integerBitWidth a -> TermTy integerBitWidth b)
+lowerTFunCon config@ResolvedConfig {} (TabularFun l d) = go l d
+  where
+    go [] d v = lowerValue config d
+    go ((x, r) : xs) d v = SBV.ite (lowerValue config x SBV..== v) (lowerValue config r) (go xs d v)
+lowerTFunCon _ (TabularFun l d) = translateTypeError (R.typeRep @a)
+
 lowerSinglePrimImpl' ::
   forall integerBitWidth a.
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
   State SymBiMap (TermTy integerBitWidth a)
-lowerSinglePrimImpl' ResolvedConfig {} (ConTerm _ v) =
-  case R.typeRep @a of
-    BoolType -> return $ if v then SBV.sTrue else SBV.sFalse
-    IntegerType -> return $ fromInteger v
-    SignedBVType _ -> case v of
-      IntN x -> return $ fromInteger x
-    UnsignedBVType _ -> case v of
-      WordN x -> return $ fromInteger x
-    _ -> translateTypeError (R.typeRep @a)
+lowerSinglePrimImpl' config@ResolvedConfig {} (ConTerm _ v) = return $ lowerValue config v
 lowerSinglePrimImpl' _ t@SymTerm {} =
   error $
     "The symbolic term should have already been lowered "
@@ -174,7 +200,7 @@ lowerSinglePrimImpl' config t@(EqvTerm _ (arg1 :: Term x) arg2) =
     _ -> translateBinaryError "(==)" (R.typeRep @x) (R.typeRep @x) (R.typeRep @a)
 lowerSinglePrimImpl' config t@(ITETerm _ cond arg1 arg2) =
   case (config, R.typeRep @a) of
-    ResolvedSimpleType -> do
+    ResolvedMergeableType -> do
       l1 <- lowerSinglePrimCached' config cond
       l2 <- lowerSinglePrimCached' config arg1
       l3 <- lowerSinglePrimCached' config arg2
@@ -541,15 +567,7 @@ lowerSinglePrimImpl ::
   Term a ->
   SymBiMap ->
   SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)
-lowerSinglePrimImpl ResolvedConfig {} (ConTerm _ v) m =
-  case R.typeRep @a of
-    BoolType -> return (m, if v then SBV.sTrue else SBV.sFalse)
-    IntegerType -> return (m, fromInteger v)
-    SignedBVType _ -> case v of
-      IntN x -> return (m, fromInteger x)
-    UnsignedBVType _ -> case v of
-      WordN x -> return (m, fromInteger x)
-    _ -> translateTypeError (R.typeRep @a)
+lowerSinglePrimImpl config@ResolvedConfig {} (ConTerm _ v) m = return (m, lowerValue config v)
 lowerSinglePrimImpl config t@(SymTerm _ ts) m =
   fromMaybe errorMsg $ asum [simple, ufunc]
   where
@@ -585,7 +603,7 @@ lowerSinglePrimImpl config t@(EqvTerm _ (arg1 :: Term x) arg2) m =
     _ -> translateBinaryError "(==)" (R.typeRep @x) (R.typeRep @x) (R.typeRep @a)
 lowerSinglePrimImpl config t@(ITETerm _ cond arg1 arg2) m =
   case (config, R.typeRep @a) of
-    ResolvedSimpleType -> do
+    ResolvedMergeableType -> do
       (m1, l1) <- lowerSinglePrimCached config cond m
       (m2, l2) <- lowerSinglePrimCached config arg1 m1
       (m3, l3) <- lowerSinglePrimCached config arg2 m2
@@ -1063,6 +1081,42 @@ pattern ResolvedConfig ::
   SBV.SMTConfig ->
   GrisetteSMTConfig integerBitWidth
 pattern ResolvedConfig c <- (resolveConfigView -> DictConfig c)
+
+type MergeableTypeConstraint integerBitWidth s =
+  ( Typeable (TermTy integerBitWidth s),
+    SBV.Mergeable (TermTy integerBitWidth s)
+  )
+
+-- has to declare this because GHC does not support impredicative polymorphism
+data DictMergeableType integerBitWidth s where
+  DictMergeableType ::
+    forall integerBitWidth s.
+    (MergeableTypeConstraint integerBitWidth s) =>
+    DictMergeableType integerBitWidth s
+
+resolveMergeableTypeView :: TypeResolver DictMergeableType
+resolveMergeableTypeView (config@ResolvedConfig {}, s) = case s of
+  BoolType -> Just DictMergeableType
+  IntegerType -> Just DictMergeableType
+  SignedBVType _ -> Just DictMergeableType
+  UnsignedBVType _ -> Just DictMergeableType
+  TFunType l r ->
+    case (resolveSimpleTypeView (config, l), resolveMergeableTypeView (config, r)) of
+      (Just DictSimpleType, Just DictMergeableType) -> Just DictMergeableType
+      _ -> Nothing
+  GFunType l r ->
+    case (resolveSimpleTypeView (config, l), resolveMergeableTypeView (config, r)) of
+      (Just DictSimpleType, Just DictMergeableType) -> Just DictMergeableType
+      _ -> Nothing
+  _ -> Nothing
+resolveMergeableTypeView _ = error "Should never happen, make compiler happy"
+
+pattern ResolvedMergeableType ::
+  forall integerBitWidth s.
+  (SupportedPrim s) =>
+  MergeableTypeConstraint integerBitWidth s =>
+  (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
+pattern ResolvedMergeableType <- (resolveMergeableTypeView -> Just DictMergeableType)
 
 type SimpleTypeConstraint integerBitWidth s s' =
   ( SBV.SBV s' ~ TermTy integerBitWidth s,
