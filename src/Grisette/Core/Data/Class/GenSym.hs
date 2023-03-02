@@ -66,10 +66,21 @@ module Grisette.Core.Data.Class.GenSym
 where
 
 import Control.DeepSeq
+import Control.Monad.Cont
 import Control.Monad.Except
 import Control.Monad.Identity
+import Control.Monad.RWS.Class
+import qualified Control.Monad.RWS.Lazy as RWSLazy
+import qualified Control.Monad.RWS.Strict as RWSStrict
+import Control.Monad.Reader
 import Control.Monad.Signatures
+import Control.Monad.State
+import qualified Control.Monad.State.Lazy as StateLazy
+import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe
+import Control.Monad.Writer
+import qualified Control.Monad.Writer.Lazy as WriterLazy
+import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor
 import qualified Data.ByteString as B
 import Data.Hashable
@@ -289,6 +300,53 @@ liftFreshTCache catchE (FreshT m) h =
 instance (MonadError e m) => MonadError e (FreshT m) where
   throwError = lift . throwError
   catchError = liftFreshTCache catchError
+
+instance (MonadWriter w m) => MonadWriter w (FreshT m) where
+  writer p = FreshT $ \ident index -> (,index) <$> writer p
+  listen (FreshT r) = FreshT $ \ident index -> (\((a, b), c) -> ((a, c), b)) <$> listen (r ident index)
+  pass (FreshT r) = FreshT $ \ident index -> pass $ (\((a, b), c) -> ((a, c), b)) <$> r ident index
+
+instance (MonadState s m) => MonadState s (FreshT m) where
+  get = FreshT $ \ident index -> gets (,index)
+  put s = FreshT $ \ident index -> (,index) <$> put s
+
+instance (MonadReader r m) => MonadReader r (FreshT m) where
+  local t (FreshT r) = FreshT $ \ident index -> local t (r ident index)
+  ask = FreshT $ \ident index -> asks (,index)
+
+instance (MonadRWS r w s m) => MonadRWS r w s (FreshT m)
+
+instance (MonadFresh m) => MonadFresh (ExceptT e m) where
+  nextFreshIndex = ExceptT $ Right <$> nextFreshIndex
+  getFreshIdent = ExceptT $ Right <$> getFreshIdent
+
+instance (MonadFresh m, Monoid w) => MonadFresh (WriterLazy.WriterT w m) where
+  nextFreshIndex = WriterLazy.WriterT $ (,mempty) <$> nextFreshIndex
+  getFreshIdent = WriterLazy.WriterT $ (,mempty) <$> getFreshIdent
+
+instance (MonadFresh m, Monoid w) => MonadFresh (WriterStrict.WriterT w m) where
+  nextFreshIndex = WriterStrict.WriterT $ (,mempty) <$> nextFreshIndex
+  getFreshIdent = WriterStrict.WriterT $ (,mempty) <$> getFreshIdent
+
+instance (MonadFresh m) => MonadFresh (StateLazy.StateT s m) where
+  nextFreshIndex = StateLazy.StateT $ \s -> (,s) <$> nextFreshIndex
+  getFreshIdent = StateLazy.StateT $ \s -> (,s) <$> getFreshIdent
+
+instance (MonadFresh m) => MonadFresh (StateStrict.StateT s m) where
+  nextFreshIndex = StateStrict.StateT $ \s -> (,s) <$> nextFreshIndex
+  getFreshIdent = StateStrict.StateT $ \s -> (,s) <$> getFreshIdent
+
+instance (MonadFresh m) => MonadFresh (ReaderT r m) where
+  nextFreshIndex = ReaderT $ const nextFreshIndex
+  getFreshIdent = ReaderT $ const getFreshIdent
+
+instance (MonadFresh m, Monoid w) => MonadFresh (RWSLazy.RWST r w s m) where
+  nextFreshIndex = RWSLazy.RWST $ \r s -> (,s,mempty) <$> nextFreshIndex
+  getFreshIdent = RWSLazy.RWST $ \r s -> (,s,mempty) <$> getFreshIdent
+
+instance (MonadFresh m, Monoid w) => MonadFresh (RWSStrict.RWST r w s m) where
+  nextFreshIndex = RWSStrict.RWST $ \r s -> (,s,mempty) <$> nextFreshIndex
+  getFreshIdent = RWSStrict.RWST $ \r s -> (,s,mempty) <$> getFreshIdent
 
 -- | 'FreshT' specialized with Identity.
 type Fresh = FreshT Identity
