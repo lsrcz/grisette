@@ -15,6 +15,7 @@ module Grisette.Core.Data.Class.Error
     TransformError (..),
 
     -- * Throwing error
+    symAssertWith,
     symAssertTransformableError,
     symThrowTransformableError,
   )
@@ -104,3 +105,14 @@ symAssertTransformableError ::
   erm ()
 symAssertTransformableError err cond = mrgIf cond (return ()) (symThrowTransformableError err)
 {-# INLINE symAssertTransformableError #-}
+
+symAssertWith ::
+  ( Mergeable e,
+    MonadError e erm,
+    MonadUnion erm
+  ) =>
+  e ->
+  SymBool ->
+  erm ()
+symAssertWith err cond = mrgIf cond (return ()) (throwError err)
+{-# INLINE symAssertWith #-}

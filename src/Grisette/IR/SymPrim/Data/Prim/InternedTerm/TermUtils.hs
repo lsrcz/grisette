@@ -37,36 +37,7 @@ import Grisette.IR.SymPrim.Data.TabularFun ()
 import qualified Type.Reflection as R
 
 identity :: Term t -> Id
-identity (ConTerm i _) = i
-identity (SymTerm i _) = i
-identity (UnaryTerm i _ _) = i
-identity (BinaryTerm i _ _ _) = i
-identity (TernaryTerm i _ _ _ _) = i
-identity (NotTerm i _) = i
-identity (OrTerm i _ _) = i
-identity (AndTerm i _ _) = i
-identity (EqvTerm i _ _) = i
-identity (ITETerm i _ _ _) = i
-identity (AddNumTerm i _ _) = i
-identity (UMinusNumTerm i _) = i
-identity (TimesNumTerm i _ _) = i
-identity (AbsNumTerm i _) = i
-identity (SignumNumTerm i _) = i
-identity (LTNumTerm i _ _) = i
-identity (LENumTerm i _ _) = i
-identity (AndBitsTerm i _ _) = i
-identity (OrBitsTerm i _ _) = i
-identity (XorBitsTerm i _ _) = i
-identity (ComplementBitsTerm i _) = i
-identity (ShiftBitsTerm i _ _) = i
-identity (RotateBitsTerm i _ _) = i
-identity (BVConcatTerm i _ _) = i
-identity (BVSelectTerm i _ _ _) = i
-identity (BVExtendTerm i _ _ _) = i
-identity (TabularFunApplyTerm i _ _) = i
-identity (GeneralFunApplyTerm i _ _) = i
-identity (DivIntegerTerm i _ _) = i
-identity (ModIntegerTerm i _ _) = i
+identity = snd . identityWithTypeRep
 {-# INLINE identity #-}
 
 identityWithTypeRep :: forall t. Term t -> (TypeRep, Id)
@@ -98,8 +69,14 @@ identityWithTypeRep (BVSelectTerm i _ _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (BVExtendTerm i _ _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (TabularFunApplyTerm i _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (GeneralFunApplyTerm i _ _) = (typeRep (Proxy @t), i)
-identityWithTypeRep (DivIntegerTerm i _ _) = (typeRep (Proxy @t), i)
-identityWithTypeRep (ModIntegerTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (DivIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (ModIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (QuotIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (RemIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (DivBoundedIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (ModBoundedIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (QuotBoundedIntegralTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (RemBoundedIntegralTerm i _ _) = (typeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -131,8 +108,14 @@ introSupportedPrimConstraint BVSelectTerm {} x = x
 introSupportedPrimConstraint BVExtendTerm {} x = x
 introSupportedPrimConstraint TabularFunApplyTerm {} x = x
 introSupportedPrimConstraint GeneralFunApplyTerm {} x = x
-introSupportedPrimConstraint DivIntegerTerm {} x = x
-introSupportedPrimConstraint ModIntegerTerm {} x = x
+introSupportedPrimConstraint DivIntegralTerm {} x = x
+introSupportedPrimConstraint ModIntegralTerm {} x = x
+introSupportedPrimConstraint QuotIntegralTerm {} x = x
+introSupportedPrimConstraint RemIntegralTerm {} x = x
+introSupportedPrimConstraint DivBoundedIntegralTerm {} x = x
+introSupportedPrimConstraint ModBoundedIntegralTerm {} x = x
+introSupportedPrimConstraint QuotBoundedIntegralTerm {} x = x
+introSupportedPrimConstraint RemBoundedIntegralTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 extractSymbolicsSomeTerm :: SomeTerm -> S.HashSet SomeTypedSymbol
@@ -177,8 +160,14 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (BVExtendTerm _ _ _ arg)) = goUnary arg
     go (SomeTerm (TabularFunApplyTerm _ func arg)) = goBinary func arg
     go (SomeTerm (GeneralFunApplyTerm _ func arg)) = goBinary func arg
-    go (SomeTerm (DivIntegerTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (ModIntegerTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (DivIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (ModIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (QuotIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (RemIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (DivBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (ModBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (QuotBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (RemBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     goUnary arg = gocached (SomeTerm arg)
     goBinary arg1 arg2 = do
       r1 <- gocached (SomeTerm arg1)
@@ -224,8 +213,14 @@ castTerm t@BVSelectTerm {} = cast t
 castTerm t@BVExtendTerm {} = cast t
 castTerm t@TabularFunApplyTerm {} = cast t
 castTerm t@GeneralFunApplyTerm {} = cast t
-castTerm t@DivIntegerTerm {} = cast t
-castTerm t@ModIntegerTerm {} = cast t
+castTerm t@DivIntegralTerm {} = cast t
+castTerm t@ModIntegralTerm {} = cast t
+castTerm t@QuotIntegralTerm {} = cast t
+castTerm t@RemIntegralTerm {} = cast t
+castTerm t@DivBoundedIntegralTerm {} = cast t
+castTerm t@ModBoundedIntegralTerm {} = cast t
+castTerm t@QuotBoundedIntegralTerm {} = cast t
+castTerm t@RemBoundedIntegralTerm {} = cast t
 {-# INLINE castTerm #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
@@ -258,8 +253,14 @@ pformat (BVExtendTerm _ signed n arg) =
   (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformat arg ++ ")"
 pformat (TabularFunApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
 pformat (GeneralFunApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
-pformat (DivIntegerTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (ModIntegerTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (DivBoundedIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (ModBoundedIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (QuotBoundedIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (RemBoundedIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 {-# INLINE pformat #-}
 
 someTermsSize :: [SomeTerm] -> Int
@@ -298,8 +299,14 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(BVExtendTerm _ _ _ arg) = goUnary t arg
     go t@(TabularFunApplyTerm _ func arg) = goBinary t func arg
     go t@(GeneralFunApplyTerm _ func arg) = goBinary t func arg
-    go t@(DivIntegerTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(ModIntegerTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(DivIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(ModIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(QuotIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(RemIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(DivBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(ModBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(QuotBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(RemBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (S.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t

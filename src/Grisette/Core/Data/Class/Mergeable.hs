@@ -50,6 +50,7 @@ module Grisette.Core.Data.Class.Mergeable
   )
 where
 
+import Control.Exception
 import Control.Monad.Cont
 import Control.Monad.Except
 import Control.Monad.Identity
@@ -992,3 +993,19 @@ MERGEABLE_BV_SOME(SomeSymWordN)
 MERGEABLE_FUN(=~>)
 MERGEABLE_FUN(-~>)
 #endif
+
+-- Exceptions
+instance Mergeable ArithException where
+  rootStrategy =
+    SortedStrategy
+      ( \case
+          Overflow -> 0 :: Int
+          Underflow -> 1 :: Int
+          LossOfPrecision -> 2 :: Int
+          DivideByZero -> 3 :: Int
+          Denormal -> 4 :: Int
+          RatioZeroDenominator -> 5 :: Int
+      )
+      (const $ SimpleStrategy $ \_ l r -> l)
+
+deriving via (Default BitwidthMismatch) instance (Mergeable BitwidthMismatch)

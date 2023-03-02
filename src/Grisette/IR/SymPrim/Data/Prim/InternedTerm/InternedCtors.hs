@@ -49,8 +49,14 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     bvzeroExtendTerm,
     tabularFunApplyTerm,
     generalFunApplyTerm,
-    divIntegerTerm,
-    modIntegerTerm,
+    divIntegralTerm,
+    modIntegralTerm,
+    quotIntegralTerm,
+    remIntegralTerm,
+    divBoundedIntegralTerm,
+    modBoundedIntegralTerm,
+    quotBoundedIntegralTerm,
+    remBoundedIntegralTerm,
   )
 where
 
@@ -309,10 +315,34 @@ generalFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> T
 generalFunApplyTerm f a = internTerm $ UGeneralFunApplyTerm f a
 {-# INLINE generalFunApplyTerm #-}
 
-divIntegerTerm :: Term Integer -> Term Integer -> Term Integer
-divIntegerTerm l r = internTerm $ UDivIntegerTerm l r
-{-# INLINE divIntegerTerm #-}
+divIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+divIntegralTerm l r = internTerm $ UDivIntegralTerm l r
+{-# INLINE divIntegralTerm #-}
 
-modIntegerTerm :: Term Integer -> Term Integer -> Term Integer
-modIntegerTerm l r = internTerm $ UModIntegerTerm l r
-{-# INLINE modIntegerTerm #-}
+modIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+modIntegralTerm l r = internTerm $ UModIntegralTerm l r
+{-# INLINE modIntegralTerm #-}
+
+quotIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+quotIntegralTerm l r = internTerm $ UQuotIntegralTerm l r
+{-# INLINE quotIntegralTerm #-}
+
+remIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+remIntegralTerm l r = internTerm $ URemIntegralTerm l r
+{-# INLINE remIntegralTerm #-}
+
+divBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+divBoundedIntegralTerm l r = internTerm $ UDivBoundedIntegralTerm l r
+{-# INLINE divBoundedIntegralTerm #-}
+
+modBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+modBoundedIntegralTerm l r = internTerm $ UModBoundedIntegralTerm l r
+{-# INLINE modBoundedIntegralTerm #-}
+
+quotBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+quotBoundedIntegralTerm l r = internTerm $ UQuotBoundedIntegralTerm l r
+{-# INLINE quotBoundedIntegralTerm #-}
+
+remBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+remBoundedIntegralTerm l r = internTerm $ URemBoundedIntegralTerm l r
+{-# INLINE remBoundedIntegralTerm #-}

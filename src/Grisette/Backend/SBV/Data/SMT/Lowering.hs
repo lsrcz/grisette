@@ -339,14 +339,38 @@ lowerSinglePrimImpl' config t@(GeneralFunApplyTerm _ (f :: Term (b --> a)) (arg 
       addResult @integerBitWidth t g
       return g
     _ -> translateBinaryError "generalApply" (R.typeRep @(b --> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(DivIntegerTerm _ arg1 arg2) =
+lowerSinglePrimImpl' config t@(DivIntegralTerm _ arg1 arg2) =
   case (config, R.typeRep @a) of
-    (ResolvedConfig {}, IntegerType) -> lowerBinaryTerm' config t arg1 arg2 SBV.sDiv
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sDiv
     _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(ModIntegerTerm _ arg1 arg2) =
+lowerSinglePrimImpl' config t@(ModIntegralTerm _ arg1 arg2) =
   case (config, R.typeRep @a) of
-    (ResolvedConfig {}, IntegerType) -> lowerBinaryTerm' config t arg1 arg2 SBV.sMod
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sMod
     _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl' config t@(QuotIntegralTerm _ arg1 arg2) =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sQuot
+    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl' config t@(RemIntegralTerm _ arg1 arg2) =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sRem
+    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl' config t@(DivBoundedIntegralTerm _ arg1 arg2) =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sDiv
+    _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl' config t@(ModBoundedIntegralTerm _ arg1 arg2) =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sMod
+    _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl' config t@(QuotBoundedIntegralTerm _ arg1 arg2) =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sQuot
+    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl' config t@(RemBoundedIntegralTerm _ arg1 arg2) =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sRem
+    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
 lowerSinglePrimImpl' _ _ = undefined
 
 buildUTFun11 ::
@@ -1016,14 +1040,38 @@ lowerSinglePrimImpl config t@(GeneralFunApplyTerm _ (f :: Term (b --> a)) (arg :
       let g = l1 l2
       return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
     _ -> translateBinaryError "generalApply" (R.typeRep @(b --> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl config t@(DivIntegerTerm _ arg1 arg2) m =
+lowerSinglePrimImpl config t@(DivIntegralTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
-    (ResolvedConfig {}, IntegerType) -> lowerBinaryTerm config t arg1 arg2 SBV.sDiv m
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sDiv m
     _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(ModIntegerTerm _ arg1 arg2) m =
+lowerSinglePrimImpl config t@(ModIntegralTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
-    (ResolvedConfig {}, IntegerType) -> lowerBinaryTerm config t arg1 arg2 SBV.sMod m
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sMod m
     _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl config t@(QuotIntegralTerm _ arg1 arg2) m =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sQuot m
+    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl config t@(RemIntegralTerm _ arg1 arg2) m =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sRem m
+    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl config t@(DivBoundedIntegralTerm _ arg1 arg2) m =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sDiv m
+    _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl config t@(ModBoundedIntegralTerm _ arg1 arg2) m =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sMod m
+    _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl config t@(QuotBoundedIntegralTerm _ arg1 arg2) m =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sQuot m
+    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
+lowerSinglePrimImpl config t@(RemBoundedIntegralTerm _ arg1 arg2) m =
+  case (config, R.typeRep @a) of
+    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sRem m
+    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
 lowerSinglePrimImpl _ _ _ = error "Should never happen"
 
 bvIsNonZeroFromGEq1 :: forall w r. (1 <= w) => ((SBV.BVIsNonZero w) => r) -> r
@@ -1829,6 +1877,34 @@ pattern ResolvedNumType ::
   NumTypeConstraint integerBitWidth s s' =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedNumType <- (resolveNumTypeView -> Just DictNumType)
+
+type SDivisibleTypeConstraint integerBitWidth s s' =
+  ( SimpleTypeConstraint integerBitWidth s s',
+    SBV.SDivisible (SBV.SBV s'),
+    Integral s
+  )
+
+data DictSDivisibleType integerBitWidth s where
+  DictSDivisibleType ::
+    forall integerBitWidth s s'.
+    (SDivisibleTypeConstraint integerBitWidth s s') =>
+    DictSDivisibleType integerBitWidth s
+
+resolveSDivisibleTypeView :: TypeResolver DictSDivisibleType
+resolveSDivisibleTypeView (ResolvedConfig {}, s) = case s of
+  IntegerType -> Just DictSDivisibleType
+  SignedBVType _ -> Just DictSDivisibleType
+  UnsignedBVType _ -> Just DictSDivisibleType
+  _ -> Nothing
+resolveSDivisibleTypeView _ = error "Should never happen, make compiler happy"
+
+pattern ResolvedSDivisibleType ::
+  forall integerBitWidth s.
+  (SupportedPrim s) =>
+  forall s'.
+  SDivisibleTypeConstraint integerBitWidth s s' =>
+  (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
+pattern ResolvedSDivisibleType <- (resolveSDivisibleTypeView -> Just DictSDivisibleType)
 
 type NumOrdTypeConstraint integerBitWidth s s' =
   ( NumTypeConstraint integerBitWidth s s',

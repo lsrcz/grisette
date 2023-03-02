@@ -38,8 +38,14 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     bvzeroExtendTerm,
     tabularFunApplyTerm,
     generalFunApplyTerm,
-    divIntegerTerm,
-    modIntegerTerm,
+    divIntegralTerm,
+    modIntegralTerm,
+    quotIntegralTerm,
+    remIntegralTerm,
+    divBoundedIntegralTerm,
+    modBoundedIntegralTerm,
+    quotBoundedIntegralTerm,
+    remBoundedIntegralTerm,
   )
 where
 
@@ -178,5 +184,11 @@ bvzeroExtendTerm ::
   Term (bv r)
 tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
 generalFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
-divIntegerTerm :: Term Integer -> Term Integer -> Term Integer
-modIntegerTerm :: Term Integer -> Term Integer -> Term Integer
+divIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+modIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+quotIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+remIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+divBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+modBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+quotBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+remBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a

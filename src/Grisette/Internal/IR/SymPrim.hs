@@ -83,8 +83,10 @@ module Grisette.Internal.IR.SymPrim
     pevalGeNumTerm,
     pevalTabularFunApplyTerm,
     pevalGeneralFunApplyTerm,
-    pevalDivIntegerTerm,
-    pevalModIntegerTerm,
+    pevalDivIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
   )
 where
 
@@ -96,7 +98,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integer
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
