@@ -301,7 +301,7 @@ instance Solver (GrisetteSMTConfig n) SolvingFailure where
                 (\acc (SomeTypedSymbol _ v) -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md)))
                 (conTerm False)
                 (unSymbolSet allSymbols)
-        let (lowered, newm) = lowerSinglePrim' config newtm origm
+        (newm, lowered) <- lowerSinglePrimCached config newtm origm
         SBV.constrain lowered
         r <- SBVC.checkSat
         case r of
@@ -411,7 +411,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
           guess :: Model -> SymBiMap -> Query (SymBiMap, Either SolvingFailure PM.Model)
           guess candidate origm = do
             let SymBool evaluated = evaluateSym False candidate phi
-            let (lowered, newm) = lowerSinglePrim' config evaluated origm
+            (newm, lowered) <- lowerSinglePrimCached config evaluated origm
             SBV.constrain lowered
             r <- SBVC.checkSat
             case r of

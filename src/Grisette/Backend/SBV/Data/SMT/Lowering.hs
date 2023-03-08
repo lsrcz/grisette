@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -24,7 +25,7 @@
 -- Portability :   GHC only
 module Grisette.Backend.SBV.Data.SMT.Lowering
   ( lowerSinglePrim,
-    lowerSinglePrim',
+    lowerSinglePrimCached,
     parseModel,
     SymBiMap,
   )
@@ -38,6 +39,7 @@ import Data.Foldable
 import Data.Kind
 import Data.Maybe
 import qualified Data.SBV as SBV
+import qualified Data.SBV.Control as SBVC
 import qualified Data.SBV.Internals as SBVI
 import Data.Type.Equality (type (~~))
 import Data.Typeable
@@ -76,744 +78,6 @@ addResult ::
   TermTy integerBitWidth a ->
   State SymBiMap ()
 addResult tm sbvtm = modify $ addBiMapIntermediate (SomeTerm tm) (toDyn sbvtm)
-
-lowerSinglePrim' ::
-  forall integerBitWidth a.
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  SymBiMap ->
-  (TermTy integerBitWidth a, SymBiMap)
-lowerSinglePrim' config t = runState (lowerSinglePrimCached' config t)
-
-lowerSinglePrimCached' ::
-  forall integerBitWidth a.
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  State SymBiMap (TermTy integerBitWidth a)
-lowerSinglePrimCached' config t = introSupportedPrimConstraint t $
-  case (config, R.typeRep @a) of
-    ResolvedDeepType -> do
-      r <- cachedResult @integerBitWidth t
-      case r of
-        Just v -> return v
-        _ -> lowerSinglePrimImpl' config t
-    _ -> translateTypeError (R.typeRep @a)
-
-lowerUnaryTerm' ::
-  forall integerBitWidth a a1 x x1.
-  (Typeable x1, a1 ~ TermTy integerBitWidth a, SupportedPrim x, x1 ~ TermTy integerBitWidth x) =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term x ->
-  Term a ->
-  (a1 -> x1) ->
-  State SymBiMap (TermTy integerBitWidth x)
-lowerUnaryTerm' config orig t1 f = do
-  l1 <- lowerSinglePrimCached' config t1
-  let g = f l1
-  addResult @integerBitWidth orig g
-  return g
-
-lowerBinaryTerm' ::
-  forall integerBitWidth a b a1 b1 x.
-  ( Typeable (TermTy integerBitWidth x),
-    a1 ~ TermTy integerBitWidth a,
-    b1 ~ TermTy integerBitWidth b,
-    SupportedPrim x
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term x ->
-  Term a ->
-  Term b ->
-  (a1 -> b1 -> TermTy integerBitWidth x) ->
-  State SymBiMap (TermTy integerBitWidth x)
-lowerBinaryTerm' config orig t1 t2 f = do
-  l1 <- lowerSinglePrimCached' config t1
-  l2 <- lowerSinglePrimCached' config t2
-  let g = f l1 l2
-  addResult @integerBitWidth orig g
-  return g
-
-lowerValue ::
-  forall integerBitWidth a.
-  (SupportedPrim a, Typeable a) =>
-  GrisetteSMTConfig integerBitWidth ->
-  a ->
-  TermTy integerBitWidth a
-lowerValue config@ResolvedConfig {} v =
-  case R.typeRep @a of
-    BoolType -> if v then SBV.sTrue else SBV.sFalse
-    IntegerType -> fromInteger v
-    SignedBVType _ -> case v of
-      IntN x -> fromInteger x
-    UnsignedBVType _ -> case v of
-      WordN x -> fromInteger x
-    TFunType (l :: a1) (r :: a2) ->
-      case ((config, l), (config, r)) of
-        (ResolvedSimpleType, ResolvedMergeableType) ->
-          lowerTFunCon config v
-        _ -> translateTypeError (R.typeRep @a)
-    _ -> translateTypeError (R.typeRep @a)
-lowerValue config v = translateTypeError (R.typeRep @a)
-
-lowerTFunCon ::
-  forall integerBitWidth a b.
-  (SupportedPrim a, SupportedPrim b, SBV.EqSymbolic (TermTy integerBitWidth a), SBV.Mergeable (TermTy integerBitWidth b)) =>
-  GrisetteSMTConfig integerBitWidth ->
-  (a =-> b) ->
-  (TermTy integerBitWidth a -> TermTy integerBitWidth b)
-lowerTFunCon config@ResolvedConfig {} (TabularFun l d) = go l d
-  where
-    go [] d v = lowerValue config d
-    go ((x, r) : xs) d v = SBV.ite (lowerValue config x SBV..== v) (lowerValue config r) (go xs d v)
-lowerTFunCon _ (TabularFun l d) = translateTypeError (R.typeRep @a)
-
-lowerSinglePrimImpl' ::
-  forall integerBitWidth a.
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  State SymBiMap (TermTy integerBitWidth a)
-lowerSinglePrimImpl' config@ResolvedConfig {} (ConTerm _ v) = return $ lowerValue config v
-lowerSinglePrimImpl' _ t@SymTerm {} =
-  error $
-    "The symbolic term should have already been lowered "
-      ++ show t
-      ++ " to SMT with collectedPrims.\n"
-      ++ "We don't support adding new symbolics after collectedPrims with SBV backend"
-lowerSinglePrimImpl' _ (UnaryTerm _ op (_ :: Term x)) = errorMsg
-  where
-    errorMsg :: forall t1. t1
-    errorMsg = translateUnaryError (show op) (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl' _ (BinaryTerm _ op (_ :: Term x) (_ :: Term y)) = errorMsg
-  where
-    errorMsg :: forall t1. t1
-    errorMsg = translateBinaryError (show op) (R.typeRep @x) (R.typeRep @y) (R.typeRep @a)
-lowerSinglePrimImpl' ResolvedConfig {} (TernaryTerm _ op (_ :: Term x) (_ :: Term y) (_ :: Term z)) = errorMsg
-  where
-    errorMsg :: forall t1. t1
-    errorMsg = translateTernaryError (show op) (R.typeRep @x) (R.typeRep @y) (R.typeRep @z) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(NotTerm _ arg) = lowerUnaryTerm' config t arg SBV.sNot
-lowerSinglePrimImpl' config t@(OrTerm _ arg1 arg2) = lowerBinaryTerm' config t arg1 arg2 (SBV..||)
-lowerSinglePrimImpl' config t@(AndTerm _ arg1 arg2) = lowerBinaryTerm' config t arg1 arg2 (SBV..&&)
-lowerSinglePrimImpl' config t@(EqvTerm _ (arg1 :: Term x) arg2) =
-  case (config, R.typeRep @x) of
-    ResolvedSimpleType -> lowerBinaryTerm' config t arg1 arg2 (SBV..==)
-    _ -> translateBinaryError "(==)" (R.typeRep @x) (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(ITETerm _ cond arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedMergeableType -> do
-      l1 <- lowerSinglePrimCached' config cond
-      l2 <- lowerSinglePrimCached' config arg1
-      l3 <- lowerSinglePrimCached' config arg2
-      let g = SBV.ite l1 l2 l3
-      addResult @integerBitWidth t g
-      return g
-    _ -> translateTernaryError "ite" (R.typeRep @Bool) (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(AddNumTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedNumType -> lowerBinaryTerm' config t arg1 arg2 (+)
-    _ -> translateBinaryError "(+)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(UMinusNumTerm _ arg) =
-  case (config, R.typeRep @a) of
-    ResolvedNumType -> lowerUnaryTerm' config t arg negate
-    _ -> translateUnaryError "negate" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(TimesNumTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedNumType -> lowerBinaryTerm' config t arg1 arg2 (*)
-    _ -> translateBinaryError "(*)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(AbsNumTerm _ arg) =
-  case (config, R.typeRep @a) of
-    ResolvedNumType -> lowerUnaryTerm' config t arg abs
-    _ -> translateUnaryError "abs" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(SignumNumTerm _ arg) =
-  case (config, R.typeRep @a) of
-    ResolvedNumType -> lowerUnaryTerm' config t arg signum
-    _ -> translateUnaryError "signum" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(LTNumTerm _ (arg1 :: Term arg) arg2) =
-  case (config, R.typeRep @arg) of
-    ResolvedNumOrdType -> lowerBinaryTerm' config t arg1 arg2 (SBV..<)
-    _ -> translateBinaryError "(<)" (R.typeRep @arg) (R.typeRep @arg) (R.typeRep @Bool)
-lowerSinglePrimImpl' config t@(LENumTerm _ (arg1 :: Term arg) arg2) =
-  case (config, R.typeRep @arg) of
-    ResolvedNumOrdType -> lowerBinaryTerm' config t arg1 arg2 (SBV..<=)
-    _ -> translateBinaryError "(<=)" (R.typeRep @arg) (R.typeRep @arg) (R.typeRep @Bool)
-lowerSinglePrimImpl' config t@(AndBitsTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerBinaryTerm' config t arg1 arg2 (.&.)
-    _ -> translateBinaryError "(.&.)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(OrBitsTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerBinaryTerm' config t arg1 arg2 (.|.)
-    _ -> translateBinaryError "(.|.)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(XorBitsTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerBinaryTerm' config t arg1 arg2 xor
-    _ -> translateBinaryError "xor" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(ComplementBitsTerm _ arg) =
-  case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerUnaryTerm' config t arg complement
-    _ -> translateUnaryError "complement" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(ShiftBitsTerm _ arg n) =
-  case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerUnaryTerm' config t arg (`shift` n)
-    _ -> translateBinaryError "shift" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(RotateBitsTerm _ arg n) =
-  case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerUnaryTerm' config t arg (`rotate` n)
-    _ -> translateBinaryError "rotate" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(BVConcatTerm _ (bv1 :: Term x) (bv2 :: Term y)) =
-  case (R.typeRep @a, R.typeRep @x, R.typeRep @y) of
-    (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx), UnsignedBVType (_ :: Proxy ny)) ->
-      case (unsafeAxiom @(nx + ny) @na) of
-        Refl -> lowerBinaryTerm' config t bv1 bv2 (SBV.#)
-    (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy nx), SignedBVType (_ :: Proxy ny)) ->
-      case (unsafeAxiom @(nx + ny) @na) of
-        Refl ->
-          lowerBinaryTerm'
-            config
-            t
-            bv1
-            bv2
-            ( \(x :: SBV.SInt xn) (y :: SBV.SInt yn) ->
-                SBV.sFromIntegral $
-                  (SBV.sFromIntegral x :: SBV.SWord xn) SBV.# (SBV.sFromIntegral y :: SBV.SWord yn)
-            )
-    _ -> translateBinaryError "bvconcat" (R.typeRep @x) (R.typeRep @y) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(BVSelectTerm _ (ix :: R.TypeRep ix) w (bv :: Term x)) =
-  case (R.typeRep @a, R.typeRep @x) of
-    (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy xn)) ->
-      withKnownProof (unsafeKnownProof @(na + ix - 1) (natVal (Proxy @na) + natVal (Proxy @ix) - 1)) $
-        case ( unsafeAxiom @(na + ix - 1 - ix + 1) @na,
-               unsafeLeqProof @(na + ix - 1 + 1) @xn,
-               unsafeLeqProof @ix @(na + ix - 1)
-             ) of
-          (Refl, LeqProof, LeqProof) ->
-            lowerUnaryTerm' config t bv (SBV.bvExtract (Proxy @(na + ix - 1)) (Proxy @ix))
-    (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy xn)) ->
-      withKnownProof (unsafeKnownProof @(na + ix - 1) (natVal (Proxy @na) + natVal (Proxy @ix) - 1)) $
-        case ( unsafeAxiom @(na + ix - 1 - ix + 1) @na,
-               unsafeLeqProof @(na + ix - 1 + 1) @xn,
-               unsafeLeqProof @ix @(na + ix - 1)
-             ) of
-          (Refl, LeqProof, LeqProof) ->
-            lowerUnaryTerm' config t bv (SBV.bvExtract (Proxy @(na + ix - 1)) (Proxy @ix))
-    _ -> translateTernaryError "bvselect" ix w (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(BVExtendTerm _ signed (n :: R.TypeRep n) (bv :: Term x)) =
-  case (R.typeRep @a, R.typeRep @x) of
-    (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
-      withKnownProof (unsafeKnownProof @(na - nx) (natVal (Proxy @na) - natVal (Proxy @nx))) $
-        case (unsafeLeqProof @(nx + 1) @na, unsafeLeqProof @1 @(na - nx)) of
-          (LeqProof, LeqProof) ->
-            bvIsNonZeroFromGEq1 @(na - nx) $
-              lowerUnaryTerm' config t bv (if signed then SBV.signExtend else SBV.zeroExtend)
-    (SignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy nx)) ->
-      withKnownProof (unsafeKnownProof @(na - nx) (natVal (Proxy @na) - natVal (Proxy @nx))) $
-        case (unsafeLeqProof @(nx + 1) @na, unsafeLeqProof @1 @(na - nx)) of
-          (LeqProof, LeqProof) ->
-            bvIsNonZeroFromGEq1 @(na - nx) $
-              lowerUnaryTerm'
-                config
-                t
-                bv
-                ( if signed
-                    then SBV.signExtend
-                    else \x ->
-                      SBV.sFromIntegral
-                        (SBV.zeroExtend (SBV.sFromIntegral x :: SBV.SBV (SBV.WordN nx)) :: SBV.SBV (SBV.WordN na))
-                )
-    _ -> translateTernaryError "bvextend" (R.typeRep @Bool) n (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(TabularFunApplyTerm _ (f :: Term (b =-> a)) (arg :: Term b)) =
-  case (config, R.typeRep @a) of
-    ResolvedDeepType -> do
-      l1 <- lowerSinglePrimCached' config f
-      l2 <- lowerSinglePrimCached' config arg
-      let g = l1 l2
-      addResult @integerBitWidth t g
-      return g
-    _ -> translateBinaryError "tabularApply" (R.typeRep @(b =-> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(GeneralFunApplyTerm _ (f :: Term (b --> a)) (arg :: Term b)) =
-  case (config, R.typeRep @a) of
-    ResolvedDeepType -> do
-      l1 <- lowerSinglePrimCached' config f
-      l2 <- lowerSinglePrimCached' config arg
-      let g = l1 l2
-      addResult @integerBitWidth t g
-      return g
-    _ -> translateBinaryError "generalApply" (R.typeRep @(b --> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(DivIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sDiv
-    _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(ModIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sMod
-    _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(QuotIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sQuot
-    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(RemIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sRem
-    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(DivBoundedIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sDiv
-    _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(ModBoundedIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sMod
-    _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(QuotBoundedIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sQuot
-    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' config t@(RemBoundedIntegralTerm _ arg1 arg2) =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm' config t arg1 arg2 SBV.sRem
-    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl' _ _ = undefined
-
-buildUTFun11 ::
-  forall integerBitWidth s1 s2 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2)))
-buildUTFun11 config ta tb term@(SymTerm _ ts) m = case ((config, ta), (config, tb)) of
-  (ResolvedSimpleType, ResolvedSimpleType) ->
-    let name = "ufunc_" ++ show (sizeBiMap m)
-        f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-  _ -> Nothing
-buildUTFun11 _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUTFun111 ::
-  forall integerBitWidth s1 s2 s3 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3)))
-buildUTFun111 config ta tb tc term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3)
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUTFun111 _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUTFun1111 ::
-  forall integerBitWidth s1 s2 s3 s4 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4)))
-buildUTFun1111 config ta tb tc td term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3 -> TermTy integerBitWidth s4)
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUTFun1111 _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUTFun11111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4, SupportedPrim s5) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5)))
-buildUTFun11111 config ta tb tc td te term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUTFun11111 _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUTFun111111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 s6 a.
-  ( SupportedPrim a,
-    SupportedPrim s1,
-    SupportedPrim s2,
-    SupportedPrim s3,
-    SupportedPrim s4,
-    SupportedPrim s5,
-    SupportedPrim s6
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  R.TypeRep s6 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6)))
-buildUTFun111111 config ta tb tc td te tf term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUTFun111111 _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUTFun1111111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 a.
-  ( SupportedPrim a,
-    SupportedPrim s1,
-    SupportedPrim s2,
-    SupportedPrim s3,
-    SupportedPrim s4,
-    SupportedPrim s5,
-    SupportedPrim s6,
-    SupportedPrim s7
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  R.TypeRep s6 ->
-  R.TypeRep s7 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7)))
-buildUTFun1111111 config ta tb tc td te tf tg term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUTFun1111111 _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUTFun11111111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 s8 a.
-  ( SupportedPrim a,
-    SupportedPrim s1,
-    SupportedPrim s2,
-    SupportedPrim s3,
-    SupportedPrim s4,
-    SupportedPrim s5,
-    SupportedPrim s6,
-    SupportedPrim s7,
-    SupportedPrim s8
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  R.TypeRep s6 ->
-  R.TypeRep s7 ->
-  R.TypeRep s8 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7 =-> s8)))
-buildUTFun11111111 config ta tb tc td te tf tg th term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg), (config, th)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7 =-> s8))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUTFun11111111 _ _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun11 ::
-  forall integerBitWidth s1 s2 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2)))
-buildUGFun11 config ta tb term@(SymTerm _ ts) m = case ((config, ta), (config, tb)) of
-  (ResolvedSimpleType, ResolvedSimpleType) ->
-    let name = "ufunc_" ++ show (sizeBiMap m)
-        f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-  _ -> Nothing
-buildUGFun11 _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun111 ::
-  forall integerBitWidth s1 s2 s3 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3)))
-buildUGFun111 config ta tb tc term@(SymTerm _ ts) m = case ((config, ta), (config, tb), (config, tc)) of
-  (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-    let name = "ufunc_" ++ show (sizeBiMap m)
-        f =
-          SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3)
-            name
-     in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-  _ -> Nothing
-buildUGFun111 _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun1111 ::
-  forall integerBitWidth s1 s2 s3 s4 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4)))
-buildUGFun1111 config ta tb tc td term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3 -> TermTy integerBitWidth s4)
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUGFun1111 _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun11111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 a.
-  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4, SupportedPrim s5) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5)))
-buildUGFun11111 config ta tb tc td te term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUGFun11111 _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun111111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 s6 a.
-  ( SupportedPrim a,
-    SupportedPrim s1,
-    SupportedPrim s2,
-    SupportedPrim s3,
-    SupportedPrim s4,
-    SupportedPrim s5,
-    SupportedPrim s6
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  R.TypeRep s6 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6)))
-buildUGFun111111 config ta tb tc td te tf term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUGFun111111 _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun1111111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 a.
-  ( SupportedPrim a,
-    SupportedPrim s1,
-    SupportedPrim s2,
-    SupportedPrim s3,
-    SupportedPrim s4,
-    SupportedPrim s5,
-    SupportedPrim s6,
-    SupportedPrim s7
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  R.TypeRep s6 ->
-  R.TypeRep s7 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7)))
-buildUGFun1111111 config ta tb tc td te tf tg term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUGFun1111111 _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-buildUGFun11111111 ::
-  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 s8 a.
-  ( SupportedPrim a,
-    SupportedPrim s1,
-    SupportedPrim s2,
-    SupportedPrim s3,
-    SupportedPrim s4,
-    SupportedPrim s5,
-    SupportedPrim s6,
-    SupportedPrim s7,
-    SupportedPrim s8
-  ) =>
-  GrisetteSMTConfig integerBitWidth ->
-  R.TypeRep s1 ->
-  R.TypeRep s2 ->
-  R.TypeRep s3 ->
-  R.TypeRep s4 ->
-  R.TypeRep s5 ->
-  R.TypeRep s6 ->
-  R.TypeRep s7 ->
-  R.TypeRep s8 ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8)))
-buildUGFun11111111 config ta tb tc td te tf tg th term@(SymTerm _ ts) m =
-  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg), (config, th)) of
-    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
-      let name = "ufunc_" ++ show (sizeBiMap m)
-          f =
-            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8))
-              name
-       in Just $ return (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
-    _ -> Nothing
-buildUGFun11111111 _ _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
-
-lowerSinglePrimUFun ::
-  forall integerBitWidth a.
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  SymBiMap ->
-  Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth a))
-lowerSinglePrimUFun config t@(SymTerm _ _) m =
-  case R.typeRep @a of
-    TFun8Type t1 t2 t3 t4 t5 t6 t7 t8 -> buildUTFun11111111 config t1 t2 t3 t4 t5 t6 t7 t8 t m
-    TFun7Type t1 t2 t3 t4 t5 t6 t7 -> buildUTFun1111111 config t1 t2 t3 t4 t5 t6 t7 t m
-    TFun6Type t1 t2 t3 t4 t5 t6 -> buildUTFun111111 config t1 t2 t3 t4 t5 t6 t m
-    TFun5Type t1 t2 t3 t4 t5 -> buildUTFun11111 config t1 t2 t3 t4 t5 t m
-    TFun4Type t1 t2 t3 t4 -> buildUTFun1111 config t1 t2 t3 t4 t m
-    TFun3Type t1 t2 t3 -> buildUTFun111 config t1 t2 t3 t m
-    TFunType t1 t2 -> buildUTFun11 config t1 t2 t m
-    GFun8Type t1 t2 t3 t4 t5 t6 t7 t8 -> buildUGFun11111111 config t1 t2 t3 t4 t5 t6 t7 t8 t m
-    GFun7Type t1 t2 t3 t4 t5 t6 t7 -> buildUGFun1111111 config t1 t2 t3 t4 t5 t6 t7 t m
-    GFun6Type t1 t2 t3 t4 t5 t6 -> buildUGFun111111 config t1 t2 t3 t4 t5 t6 t m
-    GFun5Type t1 t2 t3 t4 t5 -> buildUGFun11111 config t1 t2 t3 t4 t5 t m
-    GFun4Type t1 t2 t3 t4 -> buildUGFun1111 config t1 t2 t3 t4 t m
-    GFun3Type t1 t2 t3 -> buildUGFun111 config t1 t2 t3 t m
-    GFunType t1 t2 -> buildUGFun11 config t1 t2 t m
-    _ -> Nothing
-lowerSinglePrimUFun _ _ _ = error "Should not call this function"
-
-lowerUnaryTerm ::
-  forall integerBitWidth a a1 x x1.
-  (Typeable x1, a1 ~ TermTy integerBitWidth a, SupportedPrim x, HasCallStack) =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term x ->
-  Term a ->
-  (a1 -> x1) ->
-  SymBiMap ->
-  SBV.Symbolic (SymBiMap, x1)
-lowerUnaryTerm config orig t1 f m = do
-  (m1, l1) <- lowerSinglePrimCached config t1 m
-  let g = f l1
-  return (addBiMapIntermediate (SomeTerm orig) (toDyn g) m1, g)
-
-lowerBinaryTerm ::
-  forall integerBitWidth a b a1 b1 x x1.
-  (Typeable x1, a1 ~ TermTy integerBitWidth a, b1 ~ TermTy integerBitWidth b, SupportedPrim x, HasCallStack) =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term x ->
-  Term a ->
-  Term b ->
-  (a1 -> b1 -> x1) ->
-  SymBiMap ->
-  SBV.Symbolic (SymBiMap, x1)
-lowerBinaryTerm config orig t1 t2 f m = do
-  (m1, l1) <- lowerSinglePrimCached config t1 m
-  (m2, l2) <- lowerSinglePrimCached config t2 m1
-  let g = f l1 l2
-  return (addBiMapIntermediate (SomeTerm orig) (toDyn g) m2, g)
-
-lowerSinglePrimCached ::
-  forall integerBitWidth a.
-  HasCallStack =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  SymBiMap ->
-  SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)
-lowerSinglePrimCached config t m =
-  introSupportedPrimConstraint t $
-    case (config, R.typeRep @a) of
-      ResolvedDeepType ->
-        case lookupTerm (SomeTerm t) m of
-          Just x -> return (m, fromDyn x undefined)
-          Nothing -> lowerSinglePrimImpl config t m
-      _ -> translateTypeError (R.typeRep @a)
-
-lowerSinglePrim ::
-  forall integerBitWidth a.
-  HasCallStack =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)
-lowerSinglePrim config t = lowerSinglePrimCached config t emptySymBiMap
 
 translateTypeError :: HasCallStack => R.TypeRep a -> b
 translateTypeError ta =
@@ -859,28 +123,513 @@ translateTernaryError op ta tb tc td =
       ++ show td
       ++ " to SMT"
 
-lowerSinglePrimImpl ::
+lowerValue ::
   forall integerBitWidth a.
-  HasCallStack =>
+  (SupportedPrim a, Typeable a) =>
+  GrisetteSMTConfig integerBitWidth ->
+  a ->
+  TermTy integerBitWidth a
+lowerValue config@ResolvedConfig {} v =
+  case R.typeRep @a of
+    BoolType -> if v then SBV.sTrue else SBV.sFalse
+    IntegerType -> fromInteger v
+    SignedBVType _ -> case v of
+      IntN x -> fromInteger x
+    UnsignedBVType _ -> case v of
+      WordN x -> fromInteger x
+    TFunType (l :: a1) (r :: a2) ->
+      case ((config, l), (config, r)) of
+        (ResolvedSimpleType, ResolvedMergeableType) ->
+          lowerTFunCon config v
+        _ -> translateTypeError (R.typeRep @a)
+    _ -> translateTypeError (R.typeRep @a)
+lowerValue config v = translateTypeError (R.typeRep @a)
+
+lowerTFunCon ::
+  forall integerBitWidth a b.
+  (SupportedPrim a, SupportedPrim b, SBV.EqSymbolic (TermTy integerBitWidth a), SBV.Mergeable (TermTy integerBitWidth b)) =>
+  GrisetteSMTConfig integerBitWidth ->
+  (a =-> b) ->
+  (TermTy integerBitWidth a -> TermTy integerBitWidth b)
+lowerTFunCon config@ResolvedConfig {} (TabularFun l d) = go l d
+  where
+    go [] d v = lowerValue config d
+    go ((x, r) : xs) d v = SBV.ite (lowerValue config x SBV..== v) (lowerValue config r) (go xs d v)
+lowerTFunCon _ (TabularFun l d) = translateTypeError (R.typeRep @a)
+
+buildUTFun11 ::
+  forall integerBitWidth s1 s2 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2))
+buildUTFun11 config ta tb term@(SymTerm _ ts) m = case ((config, ta), (config, tb)) of
+  (ResolvedSimpleType, ResolvedSimpleType) ->
+    let name = "ufunc_" ++ show (sizeBiMap m)
+        f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
+     in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+  _ -> Nothing
+buildUTFun11 _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUTFun111 ::
+  forall integerBitWidth s1 s2 s3 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3))
+buildUTFun111 config ta tb tc term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3)
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUTFun111 _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUTFun1111 ::
+  forall integerBitWidth s1 s2 s3 s4 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4))
+buildUTFun1111 config ta tb tc td term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3 -> TermTy integerBitWidth s4)
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUTFun1111 _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUTFun11111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4, SupportedPrim s5) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5))
+buildUTFun11111 config ta tb tc td te term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUTFun11111 _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUTFun111111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 s6 a.
+  ( SupportedPrim a,
+    SupportedPrim s1,
+    SupportedPrim s2,
+    SupportedPrim s3,
+    SupportedPrim s4,
+    SupportedPrim s5,
+    SupportedPrim s6
+  ) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  R.TypeRep s6 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6))
+buildUTFun111111 config ta tb tc td te tf term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUTFun111111 _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUTFun1111111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 a.
+  ( SupportedPrim a,
+    SupportedPrim s1,
+    SupportedPrim s2,
+    SupportedPrim s3,
+    SupportedPrim s4,
+    SupportedPrim s5,
+    SupportedPrim s6,
+    SupportedPrim s7
+  ) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  R.TypeRep s6 ->
+  R.TypeRep s7 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7))
+buildUTFun1111111 config ta tb tc td te tf tg term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUTFun1111111 _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUTFun11111111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 s8 a.
+  ( SupportedPrim a,
+    SupportedPrim s1,
+    SupportedPrim s2,
+    SupportedPrim s3,
+    SupportedPrim s4,
+    SupportedPrim s5,
+    SupportedPrim s6,
+    SupportedPrim s7,
+    SupportedPrim s8
+  ) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  R.TypeRep s6 ->
+  R.TypeRep s7 ->
+  R.TypeRep s8 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7 =-> s8))
+buildUTFun11111111 config ta tb tc td te tf tg th term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg), (config, th)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 =-> s2 =-> s3 =-> s4 =-> s5 =-> s6 =-> s7 =-> s8))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUTFun11111111 _ _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun11 ::
+  forall integerBitWidth s1 s2 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2))
+buildUGFun11 config ta tb term@(SymTerm _ ts) m = case ((config, ta), (config, tb)) of
+  (ResolvedSimpleType, ResolvedSimpleType) ->
+    let name = "ufunc_" ++ show (sizeBiMap m)
+        f = SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2) name
+     in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+  _ -> Nothing
+buildUGFun11 _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun111 ::
+  forall integerBitWidth s1 s2 s3 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3))
+buildUGFun111 config ta tb tc term@(SymTerm _ ts) m = case ((config, ta), (config, tb), (config, tc)) of
+  (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+    let name = "ufunc_" ++ show (sizeBiMap m)
+        f =
+          SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3)
+            name
+     in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+  _ -> Nothing
+buildUGFun111 _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun1111 ::
+  forall integerBitWidth s1 s2 s3 s4 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4))
+buildUGFun1111 config ta tb tc td term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth s1 -> TermTy integerBitWidth s2 -> TermTy integerBitWidth s3 -> TermTy integerBitWidth s4)
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUGFun1111 _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun11111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 a.
+  (SupportedPrim a, SupportedPrim s1, SupportedPrim s2, SupportedPrim s3, SupportedPrim s4, SupportedPrim s5) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5))
+buildUGFun11111 config ta tb tc td te term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUGFun11111 _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun111111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 s6 a.
+  ( SupportedPrim a,
+    SupportedPrim s1,
+    SupportedPrim s2,
+    SupportedPrim s3,
+    SupportedPrim s4,
+    SupportedPrim s5,
+    SupportedPrim s6
+  ) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  R.TypeRep s6 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6))
+buildUGFun111111 config ta tb tc td te tf term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUGFun111111 _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun1111111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 a.
+  ( SupportedPrim a,
+    SupportedPrim s1,
+    SupportedPrim s2,
+    SupportedPrim s3,
+    SupportedPrim s4,
+    SupportedPrim s5,
+    SupportedPrim s6,
+    SupportedPrim s7
+  ) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  R.TypeRep s6 ->
+  R.TypeRep s7 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7))
+buildUGFun1111111 config ta tb tc td te tf tg term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUGFun1111111 _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+buildUGFun11111111 ::
+  forall integerBitWidth s1 s2 s3 s4 s5 s6 s7 s8 a.
+  ( SupportedPrim a,
+    SupportedPrim s1,
+    SupportedPrim s2,
+    SupportedPrim s3,
+    SupportedPrim s4,
+    SupportedPrim s5,
+    SupportedPrim s6,
+    SupportedPrim s7,
+    SupportedPrim s8
+  ) =>
+  GrisetteSMTConfig integerBitWidth ->
+  R.TypeRep s1 ->
+  R.TypeRep s2 ->
+  R.TypeRep s3 ->
+  R.TypeRep s4 ->
+  R.TypeRep s5 ->
+  R.TypeRep s6 ->
+  R.TypeRep s7 ->
+  R.TypeRep s8 ->
+  Term a ->
+  SymBiMap ->
+  Maybe (SymBiMap, TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8))
+buildUGFun11111111 config ta tb tc td te tf tg th term@(SymTerm _ ts) m =
+  case ((config, ta), (config, tb), (config, tc), (config, td), (config, te), (config, tf), (config, tg), (config, th)) of
+    (ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType, ResolvedSimpleType) ->
+      let name = "ufunc_" ++ show (sizeBiMap m)
+          f =
+            SBV.uninterpret @(TermTy integerBitWidth (s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8))
+              name
+       in Just (addBiMap (SomeTerm term) (toDyn f) name (someTypedSymbol ts) m, f)
+    _ -> Nothing
+buildUGFun11111111 _ _ _ _ _ _ _ _ _ _ _ = error "Should only be called on SymTerm"
+
+lowerSinglePrimUFun ::
+  forall integerBitWidth a.
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
   SymBiMap ->
-  SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)
+  Maybe (SymBiMap, TermTy integerBitWidth a)
+lowerSinglePrimUFun config t@(SymTerm _ _) m =
+  case R.typeRep @a of
+    TFun8Type t1 t2 t3 t4 t5 t6 t7 t8 -> buildUTFun11111111 config t1 t2 t3 t4 t5 t6 t7 t8 t m
+    TFun7Type t1 t2 t3 t4 t5 t6 t7 -> buildUTFun1111111 config t1 t2 t3 t4 t5 t6 t7 t m
+    TFun6Type t1 t2 t3 t4 t5 t6 -> buildUTFun111111 config t1 t2 t3 t4 t5 t6 t m
+    TFun5Type t1 t2 t3 t4 t5 -> buildUTFun11111 config t1 t2 t3 t4 t5 t m
+    TFun4Type t1 t2 t3 t4 -> buildUTFun1111 config t1 t2 t3 t4 t m
+    TFun3Type t1 t2 t3 -> buildUTFun111 config t1 t2 t3 t m
+    TFunType t1 t2 -> buildUTFun11 config t1 t2 t m
+    GFun8Type t1 t2 t3 t4 t5 t6 t7 t8 -> buildUGFun11111111 config t1 t2 t3 t4 t5 t6 t7 t8 t m
+    GFun7Type t1 t2 t3 t4 t5 t6 t7 -> buildUGFun1111111 config t1 t2 t3 t4 t5 t6 t7 t m
+    GFun6Type t1 t2 t3 t4 t5 t6 -> buildUGFun111111 config t1 t2 t3 t4 t5 t6 t m
+    GFun5Type t1 t2 t3 t4 t5 -> buildUGFun11111 config t1 t2 t3 t4 t5 t m
+    GFun4Type t1 t2 t3 t4 -> buildUGFun1111 config t1 t2 t3 t4 t m
+    GFun3Type t1 t2 t3 -> buildUGFun111 config t1 t2 t3 t m
+    GFunType t1 t2 -> buildUGFun11 config t1 t2 t m
+    _ -> Nothing
+lowerSinglePrimUFun _ _ _ = error "Should not call this function"
+
+class Monad m => SBVFreshMonad m where
+  sbvFresh :: SBV.SymVal a => String -> m (SBV.SBV a)
+
+instance SBVFreshMonad SBV.Symbolic where
+  sbvFresh = SBV.free
+
+instance SBVFreshMonad SBVC.Query where
+  sbvFresh = SBVC.freshVar
+
+lowerUnaryTerm ::
+  forall integerBitWidth a a1 x x1 m.
+  (Typeable x1, a1 ~ TermTy integerBitWidth a, SupportedPrim x, HasCallStack, SBVFreshMonad m) =>
+  GrisetteSMTConfig integerBitWidth ->
+  Term x ->
+  Term a ->
+  (a1 -> x1) ->
+  SymBiMap ->
+  m (SymBiMap, x1)
+lowerUnaryTerm config orig t1 f m = do
+  (m1, l1) <- lowerSinglePrimCached config t1 m
+  let g = f l1
+  return (addBiMapIntermediate (SomeTerm orig) (toDyn g) m1, g)
+
+lowerBinaryTerm ::
+  forall integerBitWidth a b a1 b1 x x1 m.
+  (Typeable x1, a1 ~ TermTy integerBitWidth a, b1 ~ TermTy integerBitWidth b, SupportedPrim x, HasCallStack, SBVFreshMonad m) =>
+  GrisetteSMTConfig integerBitWidth ->
+  Term x ->
+  Term a ->
+  Term b ->
+  (a1 -> b1 -> x1) ->
+  SymBiMap ->
+  m (SymBiMap, x1)
+lowerBinaryTerm config orig t1 t2 f m = do
+  (m1, l1) <- lowerSinglePrimCached config t1 m
+  (m2, l2) <- lowerSinglePrimCached config t2 m1
+  let g = f l1 l2
+  return (addBiMapIntermediate (SomeTerm orig) (toDyn g) m2, g)
+
+lowerSinglePrimCached ::
+  forall integerBitWidth a m.
+  (HasCallStack, SBVFreshMonad m) =>
+  GrisetteSMTConfig integerBitWidth ->
+  Term a ->
+  SymBiMap ->
+  m (SymBiMap, TermTy integerBitWidth a)
+lowerSinglePrimCached config t m =
+  introSupportedPrimConstraint t $
+    case (config, R.typeRep @a) of
+      ResolvedDeepType ->
+        case lookupTerm (SomeTerm t) m of
+          Just x -> return (m, fromDyn x undefined)
+          Nothing -> lowerSinglePrimImpl config t m
+      _ -> translateTypeError (R.typeRep @a)
+
+lowerSinglePrim ::
+  forall integerBitWidth a m.
+  (HasCallStack, SBVFreshMonad m) =>
+  GrisetteSMTConfig integerBitWidth ->
+  Term a ->
+  m (SymBiMap, TermTy integerBitWidth a)
+lowerSinglePrim config t = lowerSinglePrimCached config t emptySymBiMap
+
+lowerSinglePrimImpl ::
+  forall integerBitWidth a m.
+  (HasCallStack, SBVFreshMonad m) =>
+  GrisetteSMTConfig integerBitWidth ->
+  Term a ->
+  SymBiMap ->
+  m (SymBiMap, TermTy integerBitWidth a)
 lowerSinglePrimImpl config@ResolvedConfig {} (ConTerm _ v) m = return (m, lowerValue config v)
 lowerSinglePrimImpl config t@(SymTerm _ ts) m =
   fromMaybe errorMsg $ asum [simple, ufunc]
   where
     errorMsg :: forall x. x
     errorMsg = translateTypeError (R.typeRep @a)
-    simple :: Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth a))
+    simple :: Maybe (m (SymBiMap, TermTy integerBitWidth a))
     simple = case (config, R.typeRep @a) of
       ResolvedSimpleType -> Just $ do
         let name = show ts
-        (g :: TermTy integerBitWidth a) <- SBV.free name
+        (g :: TermTy integerBitWidth a) <- sbvFresh name
         return (addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m, g)
       _ -> Nothing
-    ufunc :: (Maybe (SBV.Symbolic (SymBiMap, TermTy integerBitWidth a)))
-    ufunc = lowerSinglePrimUFun config t m
+    ufunc :: (Maybe (m (SymBiMap, TermTy integerBitWidth a)))
+    ufunc = return <$> lowerSinglePrimUFun config t m
 lowerSinglePrimImpl _ (UnaryTerm _ op (_ :: Term x)) _ = errorMsg
   where
     errorMsg :: forall t1. t1
