@@ -53,12 +53,15 @@ import Data.Proxy
 import Data.Typeable
 import GHC.Enum
 import GHC.Generics
+import GHC.Read
 import GHC.Real
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 import Numeric
+import Text.Read
+import qualified Text.Read.Lex as L
 
 data BitwidthMismatch = BitwidthMismatch
   deriving (Show, Eq, Ord, Generic)
@@ -147,6 +150,16 @@ instance (KnownNat n, 1 <= n) => Show (WordN n) where
       binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
+convertInt :: Num a => L.Lexeme -> ReadPrec a
+convertInt (L.Number n)
+  | Just i <- L.numberToInteger n = return (fromInteger i)
+convertInt _ = pfail
+
+instance (KnownNat n, 1 <= n) => Read (WordN n) where
+  readPrec = readNumber convertInt
+  readListPrec = readListPrecDefault
+  readList = readListDefault
+
 instance Show SomeWordN where
   show (SomeWordN w) = show w
 
@@ -230,6 +243,11 @@ instance (KnownNat n, 1 <= n) => Show (IntN n) where
       hexRep = showHex w ""
       binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
+
+instance (KnownNat n, 1 <= n) => Read (IntN n) where
+  readPrec = readNumber convertInt
+  readListPrec = readListPrecDefault
+  readList = readListDefault
 
 instance Show SomeIntN where
   show (SomeIntN w) = show w
