@@ -6,6 +6,9 @@ Grisette is a symbolic evaluation library for Haskell. By translating
 programs into constraints, Grisette can help the development of program
 reasoning tools, including verification and synthesis.
 
+For a detailed description of the system, please refer to our POPL'23 paper
+[Grisette: Symbolic Compilation as a Functional Programming Library](https://lsrcz.github.io/files/POPL23.pdf).
+
 ## Features
 
 - **Multi-path** symbolic evaluation with efficient (customizable) state merging.
