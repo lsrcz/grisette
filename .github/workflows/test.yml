@@ -20,10 +20,11 @@ jobs:
         - { build: stack, arg: "", ismain: true, experimental: false, ghc: "902", cachekey: "stack" }
         - { build: stack, arg: "--stack-yaml stack-lts-20.9.yaml", ismain: false, experimental: false, ghc: "925", cachekey: "stack-20.9" }
         - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: false, ghc: "944", cachekey: "stack-nightly" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "8107", cachekey: "cabal-8107" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "902", cachekey: "cabal-902" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "925", cachekey: "cabal-925" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "944", cachekey: "cabal-944" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "810", cachekey: "cabal-810" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "90", cachekey: "cabal-90" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "92", cachekey: "cabal-92" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "94", cachekey: "cabal-94" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "96", cachekey: "cabal-96" }
   
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.experimental }}
