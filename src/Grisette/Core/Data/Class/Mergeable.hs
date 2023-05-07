@@ -322,15 +322,15 @@ instance Mergeable1' Par1 where
   liftRootStrategy' m = wrapStrategy m Par1 unPar1
   {-# INLINE liftRootStrategy' #-}
 
-instance Mergeable1 f => Mergeable1' (Rec1 f) where
+instance (Mergeable1 f) => Mergeable1' (Rec1 f) where
   liftRootStrategy' m = wrapStrategy (liftRootStrategy m) Rec1 unRec1
   {-# INLINE liftRootStrategy' #-}
 
-instance Mergeable c => Mergeable1' (K1 i c) where
+instance (Mergeable c) => Mergeable1' (K1 i c) where
   liftRootStrategy' _ = wrapStrategy rootStrategy K1 unK1
   {-# INLINE liftRootStrategy' #-}
 
-instance Mergeable1' a => Mergeable1' (M1 i c a) where
+instance (Mergeable1' a) => Mergeable1' (M1 i c a) where
   liftRootStrategy' m = wrapStrategy (liftRootStrategy' m) M1 unM1
   {-# INLINE liftRootStrategy' #-}
 
@@ -529,15 +529,15 @@ buildStrategyList s l = StrategyList idxs strategies
     strategies = snd <$> r
 {-# INLINE buildStrategyList #-}
 
-instance Eq1 container => Eq (StrategyList container) where
+instance (Eq1 container) => Eq (StrategyList container) where
   (StrategyList idxs1 _) == (StrategyList idxs2 _) = eq1 idxs1 idxs2
   {-# INLINE (==) #-}
 
-instance Ord1 container => Ord (StrategyList container) where
+instance (Ord1 container) => Ord (StrategyList container) where
   compare (StrategyList idxs1 _) (StrategyList idxs2 _) = compare1 idxs1 idxs2
   {-# INLINE compare #-}
 
-instance Show1 container => Show (StrategyList container) where
+instance (Show1 container) => Show (StrategyList container) where
   showsPrec i (StrategyList idxs1 _) = showsPrec1 i idxs1
 
 -- List

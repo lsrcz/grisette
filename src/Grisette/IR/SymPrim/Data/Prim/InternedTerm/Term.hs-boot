@@ -175,6 +175,26 @@ data Term t where
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   ShiftBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
   RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
+  BVToUnsignedTerm ::
+    ( SupportedPrim (ubv n),
+      SupportedPrim (sbv n),
+      KnownNat n,
+      1 <= n,
+      SizedBVSignPair sbv ubv
+    ) =>
+    {-# UNPACK #-} !Id ->
+    !(Term (sbv n)) ->
+    Term (ubv n)
+  BVToSignedTerm ::
+    ( SupportedPrim (ubv n),
+      SupportedPrim (sbv n),
+      KnownNat n,
+      1 <= n,
+      SizedBVSignPair sbv ubv
+    ) =>
+    {-# UNPACK #-} !Id ->
+    !(Term (ubv n)) ->
+    Term (sbv n)
   BVConcatTerm ::
     ( SupportedPrim (bv a),
       SupportedPrim (bv b),
@@ -279,6 +299,24 @@ data UTerm t where
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
   UShiftBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
   URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
+  UBVToUnsignedTerm ::
+    ( SupportedPrim (ubv n),
+      SupportedPrim (sbv n),
+      KnownNat n,
+      1 <= n,
+      SizedBVSignPair sbv ubv
+    ) =>
+    !(Term (sbv n)) ->
+    UTerm (ubv n)
+  UBVToSignedTerm ::
+    ( SupportedPrim (ubv n),
+      SupportedPrim (sbv n),
+      KnownNat n,
+      1 <= n,
+      SizedBVSignPair sbv ubv
+    ) =>
+    !(Term (ubv n)) ->
+    UTerm (sbv n)
   UBVConcatTerm ::
     ( SupportedPrim (bv a),
       SupportedPrim (bv b),

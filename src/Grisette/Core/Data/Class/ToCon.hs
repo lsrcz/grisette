@@ -72,10 +72,10 @@ class ToCon' a b where
 instance ToCon' U1 U1 where
   toCon' = Just
 
-instance ToCon a b => ToCon' (K1 i a) (K1 i b) where
+instance (ToCon a b) => ToCon' (K1 i a) (K1 i b) where
   toCon' (K1 a) = K1 <$> toCon a
 
-instance ToCon' a b => ToCon' (M1 i c1 a) (M1 i c2 b) where
+instance (ToCon' a b) => ToCon' (M1 i c1 a) (M1 i c2 b) where
   toCon' (M1 a) = M1 <$> toCon' a
 
 instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :+: b1) (a2 :+: b2) where
@@ -172,20 +172,20 @@ deriving via
 
 -- MaybeT
 instance
-  ToCon (m1 (Maybe a)) (m2 (Maybe b)) =>
+  (ToCon (m1 (Maybe a)) (m2 (Maybe b))) =>
   ToCon (MaybeT m1 a) (MaybeT m2 b)
   where
   toCon (MaybeT v) = MaybeT <$> toCon v
 
 -- ExceptT
 instance
-  ToCon (m1 (Either e1 a)) (m2 (Either e2 b)) =>
+  (ToCon (m1 (Either e1 a)) (m2 (Either e2 b))) =>
   ToCon (ExceptT e1 m1 a) (ExceptT e2 m2 b)
   where
   toCon (ExceptT v) = ExceptT <$> toCon v
 
 instance
-  ToCon (m1 (Either e1 a)) (Either e2 b) =>
+  (ToCon (m1 (Either e1 a)) (Either e2 b)) =>
   ToCon (ExceptT e1 m1 a) (Either e2 b)
   where
   toCon (ExceptT v) = toCon v
@@ -198,19 +198,19 @@ deriving via
 
 -- WriterT
 instance
-  ToCon (m1 (a, s1)) (m2 (b, s2)) =>
+  (ToCon (m1 (a, s1)) (m2 (b, s2))) =>
   ToCon (WriterLazy.WriterT s1 m1 a) (WriterLazy.WriterT s2 m2 b)
   where
   toCon (WriterLazy.WriterT v) = WriterLazy.WriterT <$> toCon v
 
 instance
-  ToCon (m1 (a, s1)) (m2 (b, s2)) =>
+  (ToCon (m1 (a, s1)) (m2 (b, s2))) =>
   ToCon (WriterStrict.WriterT s1 m1 a) (WriterStrict.WriterT s2 m2 b)
   where
   toCon (WriterStrict.WriterT v) = WriterStrict.WriterT <$> toCon v
 
 -- Identity
-instance ToCon a b => ToCon (Identity a) (Identity b) where
+instance (ToCon a b) => ToCon (Identity a) (Identity b) where
   toCon (Identity a) = Identity <$> toCon a
 
 instance ToCon (Identity v) v where
@@ -220,5 +220,5 @@ instance ToCon v (Identity v) where
   toCon = Just . Identity
 
 -- IdentityT
-instance ToCon (m a) (m1 b) => ToCon (IdentityT m a) (IdentityT m1 b) where
+instance (ToCon (m a) (m1 b)) => ToCon (IdentityT m a) (IdentityT m1 b) where
   toCon (IdentityT a) = IdentityT <$> toCon a

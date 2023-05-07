@@ -80,29 +80,29 @@ newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
 data SomeWordN where
   SomeWordN :: (KnownNat n, 1 <= n) => WordN n -> SomeWordN
 
-unarySomeWordN :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> r) -> SomeWordN -> r
+unarySomeWordN :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> r) -> SomeWordN -> r
 unarySomeWordN op (SomeWordN (w :: WordN w)) = op w
 {-# INLINE unarySomeWordN #-}
 
-unarySomeWordNR1 :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n) -> SomeWordN -> SomeWordN
+unarySomeWordNR1 :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n) -> SomeWordN -> SomeWordN
 unarySomeWordNR1 op (SomeWordN (w :: WordN w)) = SomeWordN $ op w
 {-# INLINE unarySomeWordNR1 #-}
 
-binSomeWordN :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> r) -> SomeWordN -> SomeWordN -> r
+binSomeWordN :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> r) -> SomeWordN -> SomeWordN -> r
 binSomeWordN op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> op l r
     Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeWordN #-}
 
-binSomeWordNR1 :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> WordN n) -> SomeWordN -> SomeWordN -> SomeWordN
+binSomeWordNR1 :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> WordN n) -> SomeWordN -> SomeWordN -> SomeWordN
 binSomeWordNR1 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> SomeWordN $ op l r
     Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeWordNR1 #-}
 
-binSomeWordNR2 :: HasCallStack => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> (WordN n, WordN n)) -> SomeWordN -> SomeWordN -> (SomeWordN, SomeWordN)
+binSomeWordNR2 :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> (WordN n, WordN n)) -> SomeWordN -> SomeWordN -> (SomeWordN, SomeWordN)
 binSomeWordNR2 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl ->
@@ -155,7 +155,7 @@ instance (KnownNat n, 1 <= n) => Show (WordN n) where
     where
       bitwidth = natVal (Proxy :: Proxy n)
 
-convertInt :: Num a => L.Lexeme -> ReadPrec a
+convertInt :: (Num a) => L.Lexeme -> ReadPrec a
 convertInt (L.Number n)
   | Just i <- L.numberToInteger n = return (fromInteger i)
 convertInt _ = pfail
@@ -406,7 +406,7 @@ instance Num SomeWordN where
   signum = unarySomeWordNR1 signum
   fromInteger = error "fromInteger is not defined for SomeWordN as no bitwidth is known"
 
-minusOneIntN :: forall proxy n. KnownNat n => proxy n -> IntN n
+minusOneIntN :: forall proxy n. (KnownNat n) => proxy n -> IntN n
 minusOneIntN _ = IntN (1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n)) - 1)
 
 instance (KnownNat n, 1 <= n) => Bits (IntN n) where
@@ -690,3 +690,7 @@ instance SomeBV SomeIntN where
       ix = natVal p
       w = natVal q
       n = natVal (Proxy @n)
+
+instance SizedBVSignPair IntN WordN where
+  toSigned = IntN . unWordN
+  toUnsigned = WordN . unIntN

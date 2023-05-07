@@ -572,7 +572,13 @@ loweringTests =
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig quotBoundedIntegralTerm "quot" SBV.sQuot,
               testCase "Rem - bounded" $ do
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remBoundedIntegralTerm "rem" SBV.sRem
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remBoundedIntegralTerm "rem" SBV.sRem
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remBoundedIntegralTerm "rem" SBV.sRem,
+              testCase "ToUnsigned" $ do
+                testUnaryOpLowering @(IntN 5) @(WordN 5)
+                  unboundedConfig
+                  bvToUnsignedTerm
+                  "s2u"
+                  (\x -> SBV.sFromIntegral (x + 1) - 1)
             ],
           testGroup
             "WordN"
@@ -773,6 +779,12 @@ loweringTests =
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig quotIntegralTerm "quot" SBV.sQuot,
               testCase "Rem" $ do
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig remIntegralTerm "rem" SBV.sRem
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
+              testCase "ToSigned" $ do
+                testUnaryOpLowering @(WordN 5) @(IntN 5)
+                  unboundedConfig
+                  bvToSignedTerm
+                  "u2s"
+                  (\x -> SBV.sFromIntegral (x + 1) - 1)
             ]
         ]

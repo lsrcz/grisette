@@ -41,16 +41,16 @@ data Union a
     Single a
   | -- | A if value
     If
+      -- | Cached leftmost value
       a
-      -- ^ Cached leftmost value
+      -- | Is merged invariant already maintained?
       !Bool
-      -- ^ Is merged invariant already maintained?
+      -- | If condition
       !SymBool
-      -- ^ If condition
+      -- | True branch
       (Union a)
-      -- ^ True branch
+      -- | False branch
       (Union a)
-      -- ^ False branch
   deriving (Generic, Eq, Lift, Generic1)
 
 instance Eq1 Union where
@@ -128,7 +128,7 @@ instance (Hashable a) => Hashable (Union a) where
   s `hashWithSalt` (Single a) = s `hashWithSalt` (0 :: Int) `hashWithSalt` a
   s `hashWithSalt` (If _ _ c l r) = s `hashWithSalt` (1 :: Int) `hashWithSalt` c `hashWithSalt` l `hashWithSalt` r
 
-instance AllSyms a => AllSyms (Union a) where
+instance (AllSyms a) => AllSyms (Union a) where
   allSymsS (Single v) = allSymsS v
   allSymsS (If _ _ c t f) = \l -> SomeSym c : (allSymsS t . allSymsS f $ l)
 

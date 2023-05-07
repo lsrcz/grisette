@@ -42,6 +42,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     complementBitsTerm,
     shiftBitsTerm,
     rotateBitsTerm,
+    bvToSignedTerm,
+    bvToUnsignedTerm,
     bvconcatTerm,
     bvselectTerm,
     bvextendTerm,
@@ -163,11 +165,11 @@ andTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm l r = internTerm $ UAndTerm l r
 {-# INLINE andTerm #-}
 
-eqvTerm :: SupportedPrim a => Term a -> Term a -> Term Bool
+eqvTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
 eqvTerm l r = internTerm $ UEqvTerm l r
 {-# INLINE eqvTerm #-}
 
-iteTerm :: SupportedPrim a => Term Bool -> Term a -> Term a -> Term a
+iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 iteTerm c l r = internTerm $ UITETerm c l r
 {-# INLINE iteTerm #-}
 
@@ -222,6 +224,30 @@ shiftBitsTerm t n = internTerm $ UShiftBitsTerm t n
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 {-# INLINE rotateBitsTerm #-}
+
+bvToUnsignedTerm ::
+  ( SupportedPrim (ubv n),
+    SupportedPrim (sbv n),
+    KnownNat n,
+    1 <= n,
+    SizedBVSignPair sbv ubv
+  ) =>
+  Term (sbv n) ->
+  Term (ubv n)
+bvToUnsignedTerm t = internTerm $ UBVToUnsignedTerm t
+{-# INLINE bvToUnsignedTerm #-}
+
+bvToSignedTerm ::
+  ( SupportedPrim (ubv n),
+    SupportedPrim (sbv n),
+    KnownNat n,
+    1 <= n,
+    SizedBVSignPair sbv ubv
+  ) =>
+  Term (ubv n) ->
+  Term (sbv n)
+bvToSignedTerm t = internTerm $ UBVToSignedTerm t
+{-# INLINE bvToSignedTerm #-}
 
 bvconcatTerm ::
   ( SupportedPrim (bv a),

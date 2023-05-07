@@ -33,6 +33,6 @@ mrgEvalContT c = runContT c mrgReturn
 {-# INLINE mrgEvalContT #-}
 
 -- | 'Control.Monad.Cont.resetT' with 'MergingStrategy' knowledge propagation
-mrgResetT :: (UnionLike m, Mergeable r, Monad m) => Monad m => ContT r m r -> ContT r' m r
+mrgResetT :: (UnionLike m, Mergeable r, Monad m) => (Monad m) => ContT r m r -> ContT r' m r
 mrgResetT = lift . mrgEvalContT
 {-# INLINE mrgResetT #-}

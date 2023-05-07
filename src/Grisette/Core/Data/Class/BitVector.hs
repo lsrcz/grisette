@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
@@ -28,6 +29,7 @@ module Grisette.Core.Data.Class.BitVector
     someBVExtract',
     SizedBV (..),
     sizedBVExtract,
+    SizedBVSignPair (..),
   )
 where
 
@@ -61,7 +63,7 @@ class SomeBV bv where
   -- 0b000101
   someBVZext ::
     forall p l.
-    KnownNat l =>
+    (KnownNat l) =>
     -- | Desired output length
     p l ->
     -- | Bit vector to extend
@@ -74,7 +76,7 @@ class SomeBV bv where
   -- 0b111101
   someBVSext ::
     forall p l.
-    KnownNat l =>
+    (KnownNat l) =>
     -- | Desired output length
     p l ->
     -- | Bit vector to extend
@@ -94,7 +96,7 @@ class SomeBV bv where
   -- 0b000001
   someBVExt ::
     forall p l.
-    KnownNat l =>
+    (KnownNat l) =>
     -- | Desired output length
     p l ->
     -- | Bit vector to extend
@@ -126,7 +128,7 @@ class SomeBV bv where
 -- 0b000101
 someBVZext' ::
   forall l bv.
-  SomeBV bv =>
+  (SomeBV bv) =>
   -- | Desired output length
   NatRepr l ->
   -- | Bit vector to extend
@@ -141,7 +143,7 @@ someBVZext' p@(_ :: NatRepr l) = withKnownProof (hasRepr p) $ someBVZext (Proxy 
 -- 0b111101
 someBVSext' ::
   forall l bv.
-  SomeBV bv =>
+  (SomeBV bv) =>
   NatRepr l ->
   -- | Desired output length
   bv ->
@@ -163,7 +165,7 @@ someBVSext' p@(_ :: NatRepr l) = withKnownProof (hasRepr p) $ someBVSext (Proxy 
 -- 0b000001
 someBVExt' ::
   forall l bv.
-  SomeBV bv =>
+  (SomeBV bv) =>
   -- | Desired output length
   NatRepr l ->
   -- | Bit vector to extend
@@ -181,7 +183,7 @@ someBVExt' p@(_ :: NatRepr l) = withKnownProof (hasRepr p) $ someBVExt (Proxy @l
 -- 0b101
 someBVSelect' ::
   forall ix w bv.
-  SomeBV bv =>
+  (SomeBV bv) =>
   -- | Index of the least significant bit of the slice
   NatRepr ix ->
   -- | Desired output width, @ix + w <= n@ must hold where @n@ is
@@ -225,7 +227,7 @@ someBVExtract _ _ =
 -- 0b101
 someBVExtract' ::
   forall (i :: Nat) (j :: Nat) bv.
-  SomeBV bv =>
+  (SomeBV bv) =>
   -- | The start position to extract from, @i < n@ must hold where @n@ is
   -- the size of the output bit vector
   NatRepr i ->
@@ -334,3 +336,7 @@ sizedBVExtract _ _ =
     (KnownProof, LeqProof, LeqProof) ->
       sizedBVSelect (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE sizedBVExtract #-}
+
+class SizedBVSignPair sbv ubv | sbv -> ubv, ubv -> sbv where
+  toSigned :: (KnownNat n, 1 <= n) => ubv n -> sbv n
+  toUnsigned :: (KnownNat n, 1 <= n) => sbv n -> ubv n

@@ -79,12 +79,12 @@ addResult ::
   State SymBiMap ()
 addResult tm sbvtm = modify $ addBiMapIntermediate (SomeTerm tm) (toDyn sbvtm)
 
-translateTypeError :: HasCallStack => R.TypeRep a -> b
+translateTypeError :: (HasCallStack) => R.TypeRep a -> b
 translateTypeError ta =
   error $
     "Don't know how to translate the type " ++ show ta ++ " to SMT"
 
-translateUnaryError :: HasCallStack => String -> R.TypeRep a -> R.TypeRep b -> c
+translateUnaryError :: (HasCallStack) => String -> R.TypeRep a -> R.TypeRep b -> c
 translateUnaryError op ta tb =
   error $
     "Don't know how to translate the op "
@@ -95,7 +95,7 @@ translateUnaryError op ta tb =
       ++ show tb
       ++ " to SMT"
 
-translateBinaryError :: HasCallStack => String -> R.TypeRep a -> R.TypeRep b -> R.TypeRep c -> d
+translateBinaryError :: (HasCallStack) => String -> R.TypeRep a -> R.TypeRep b -> R.TypeRep c -> d
 translateBinaryError op ta tb tc =
   error $
     "Don't know how to translate the op "
@@ -108,7 +108,7 @@ translateBinaryError op ta tb tc =
       ++ show tc
       ++ " to SMT"
 
-translateTernaryError :: HasCallStack => String -> R.TypeRep a -> R.TypeRep b -> R.TypeRep c -> R.TypeRep d -> e
+translateTernaryError :: (HasCallStack) => String -> R.TypeRep a -> R.TypeRep b -> R.TypeRep c -> R.TypeRep d -> e
 translateTernaryError op ta tb tc td =
   error $
     "Don't know how to translate the op "
@@ -545,8 +545,8 @@ lowerSinglePrimUFun config t@(SymTerm _ _) m =
     _ -> Nothing
 lowerSinglePrimUFun _ _ _ = error "Should not call this function"
 
-class Monad m => SBVFreshMonad m where
-  sbvFresh :: SBV.SymVal a => String -> m (SBV.SBV a)
+class (Monad m) => SBVFreshMonad m where
+  sbvFresh :: (SBV.SymVal a) => String -> m (SBV.SBV a)
 
 instance SBVFreshMonad SBV.Symbolic where
   sbvFresh = SBV.free
@@ -710,6 +710,22 @@ lowerSinglePrimImpl config t@(RotateBitsTerm _ arg n) m =
   case (config, R.typeRep @a) of
     ResolvedBitsType -> lowerUnaryTerm config t arg (`rotate` n) m
     _ -> translateBinaryError "rotate" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
+lowerSinglePrimImpl config t@(BVToSignedTerm _ (bv :: Term x)) m =
+  case (R.typeRep @a, R.typeRep @x) of
+    (SignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
+      case R.eqTypeRep (R.typeRep @na) (R.typeRep @nx) of
+        Just R.HRefl ->
+          lowerUnaryTerm config t bv SBV.sFromIntegral m
+        _ -> translateUnaryError "bvu2s" (R.typeRep @x) (R.typeRep @a)
+    _ -> translateUnaryError "bvu2s" (R.typeRep @x) (R.typeRep @a)
+lowerSinglePrimImpl config t@(BVToUnsignedTerm _ (bv :: Term x)) m =
+  case (R.typeRep @a, R.typeRep @x) of
+    (UnsignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy nx)) ->
+      case R.eqTypeRep (R.typeRep @na) (R.typeRep @nx) of
+        Just R.HRefl ->
+          lowerUnaryTerm config t bv SBV.sFromIntegral m
+        _ -> translateUnaryError "bvs2u" (R.typeRep @x) (R.typeRep @a)
+    _ -> translateUnaryError "bvs2u" (R.typeRep @x) (R.typeRep @a)
 lowerSinglePrimImpl config t@(BVConcatTerm _ (bv1 :: Term x) (bv2 :: Term y)) m =
   case (R.typeRep @a, R.typeRep @x, R.typeRep @y) of
     (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx), UnsignedBVType (_ :: Proxy ny)) ->
@@ -939,7 +955,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goass
     resolveFirst :: R.TypeRep a -> [([SBVI.CV], SBVI.CV)] -> [(a, [([SBVI.CV], SBVI.CV)])]
     resolveFirst tf = fmap (\case (x : xs, v) -> (resolveSingle tf x, [(xs, v)]); _ -> error "impossible")
 
-    partitionWithOrd :: forall a. Ord a => [(a, [([SBVI.CV], SBVI.CV)])] -> [(a, [([SBVI.CV], SBVI.CV)])]
+    partitionWithOrd :: forall a. (Ord a) => [(a, [([SBVI.CV], SBVI.CV)])] -> [(a, [([SBVI.CV], SBVI.CV)])]
     partitionWithOrd v = go sorted
       where
         sorted = sortWith fst v
@@ -1485,7 +1501,7 @@ pattern ResolvedConfig ::
   forall integerBitWidth.
   () =>
   forall s.
-  ConfigConstraint integerBitWidth s =>
+  (ConfigConstraint integerBitWidth s) =>
   SBV.SMTConfig ->
   GrisetteSMTConfig integerBitWidth
 pattern ResolvedConfig c <- (resolveConfigView -> DictConfig c)
@@ -1522,7 +1538,7 @@ resolveMergeableTypeView _ = error "Should never happen, make compiler happy"
 pattern ResolvedMergeableType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
-  MergeableTypeConstraint integerBitWidth s =>
+  (MergeableTypeConstraint integerBitWidth s) =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedMergeableType <- (resolveMergeableTypeView -> Just DictMergeableType)
 
@@ -1561,7 +1577,7 @@ pattern ResolvedSimpleType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
   forall s'.
-  SimpleTypeConstraint integerBitWidth s s' =>
+  (SimpleTypeConstraint integerBitWidth s s') =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedSimpleType <- (resolveSimpleTypeView -> Just DictSimpleType)
 
@@ -1594,7 +1610,7 @@ pattern ResolvedDeepType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
   forall s'.
-  DeepTypeConstraint integerBitWidth s s' =>
+  (DeepTypeConstraint integerBitWidth s s') =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedDeepType <- (resolveDeepTypeView -> Just DictDeepType)
 
@@ -1623,7 +1639,7 @@ pattern ResolvedNumType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
   forall s'.
-  NumTypeConstraint integerBitWidth s s' =>
+  (NumTypeConstraint integerBitWidth s s') =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedNumType <- (resolveNumTypeView -> Just DictNumType)
 
@@ -1651,7 +1667,7 @@ pattern ResolvedSDivisibleType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
   forall s'.
-  SDivisibleTypeConstraint integerBitWidth s s' =>
+  (SDivisibleTypeConstraint integerBitWidth s s') =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedSDivisibleType <- (resolveSDivisibleTypeView -> Just DictSDivisibleType)
 
@@ -1680,7 +1696,7 @@ pattern ResolvedNumOrdType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
   forall s'.
-  NumOrdTypeConstraint integerBitWidth s s' =>
+  (NumOrdTypeConstraint integerBitWidth s s') =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedNumOrdType <- (resolveNumOrdTypeView -> Just DictNumOrdType)
 
@@ -1708,6 +1724,6 @@ pattern ResolvedBitsType ::
   forall integerBitWidth s.
   (SupportedPrim s) =>
   forall s'.
-  BitsTypeConstraint integerBitWidth s s' =>
+  (BitsTypeConstraint integerBitWidth s s') =>
   (GrisetteSMTConfig integerBitWidth, R.TypeRep s)
 pattern ResolvedBitsType <- (resolveBitsTypeView -> Just DictBitsType)
