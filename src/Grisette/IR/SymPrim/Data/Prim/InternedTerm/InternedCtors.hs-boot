@@ -100,8 +100,8 @@ iinfosymTerm ::
 notTerm :: Term Bool -> Term Bool
 orTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm :: Term Bool -> Term Bool -> Term Bool
-eqvTerm :: SupportedPrim a => Term a -> Term a -> Term Bool
-iteTerm :: SupportedPrim a => Term Bool -> Term a -> Term a -> Term a
+eqvTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
+iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 addNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a -> Term a
 uminusNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
 timesNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a -> Term a
@@ -116,23 +116,23 @@ complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
 shiftBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 bvToUnsignedTerm ::
-    ( SupportedPrim (ubv n),
-      SupportedPrim (sbv n),
-      KnownNat n,
-      1 <= n,
-      SizedBVSignPair sbv ubv
-    ) =>
-    Term (sbv n) ->
-    Term (ubv n)
+  ( SupportedPrim (ubv n),
+    SupportedPrim (sbv n),
+    KnownNat n,
+    1 <= n,
+    SizedBVSignPair sbv ubv
+  ) =>
+  Term (sbv n) ->
+  Term (ubv n)
 bvToSignedTerm ::
-    ( SupportedPrim (ubv n),
-      SupportedPrim (sbv n),
-      KnownNat n,
-      1 <= n,
-      SizedBVSignPair sbv ubv
-    ) =>
-    Term (ubv n) ->
-    Term (sbv n)
+  ( SupportedPrim (ubv n),
+    SupportedPrim (sbv n),
+    KnownNat n,
+    1 <= n,
+    SizedBVSignPair sbv ubv
+  ) =>
+  Term (ubv n) ->
+  Term (sbv n)
 bvconcatTerm ::
   ( SupportedPrim (bv a),
     SupportedPrim (bv b),

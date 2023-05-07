@@ -41,8 +41,8 @@ import Type.Reflection
 class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim t where
   type PrimConstraint t :: Constraint
   type PrimConstraint t = ()
-  default withPrim :: PrimConstraint t => proxy t -> (PrimConstraint t => a) -> a
-  withPrim :: proxy t -> (PrimConstraint t => a) -> a
+  default withPrim :: (PrimConstraint t) => proxy t -> ((PrimConstraint t) => a) -> a
+  withPrim :: proxy t -> ((PrimConstraint t) => a) -> a
   withPrim _ i = i
   termCache :: Cache (Term t)
   termCache = typeMemoizedCache
@@ -58,7 +58,7 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
 class ConRep sym where
   type ConType sym
 
-class SupportedPrim con => SymRep con where
+class (SupportedPrim con) => SymRep con where
   type SymType con
 
 class
@@ -114,8 +114,8 @@ class
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
 data TypedSymbol t where
-  SimpleSymbol :: SupportedPrim t => String -> TypedSymbol t
-  IndexedSymbol :: SupportedPrim t => String -> Int -> TypedSymbol t
+  SimpleSymbol :: (SupportedPrim t) => String -> TypedSymbol t
+  IndexedSymbol :: (SupportedPrim t) => String -> Int -> TypedSymbol t
   WithInfo ::
     forall t a.
     ( SupportedPrim t,
@@ -160,8 +160,8 @@ data Term t where
   NotTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> Term Bool
   OrTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
   AndTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
-  EqvTerm :: SupportedPrim t => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
-  ITETerm :: SupportedPrim t => {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term t) -> !(Term t) -> Term t
+  EqvTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
+  ITETerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term t) -> !(Term t) -> Term t
   AddNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   UMinusNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   TimesNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
@@ -284,8 +284,8 @@ data UTerm t where
   UNotTerm :: !(Term Bool) -> UTerm Bool
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
-  UEqvTerm :: SupportedPrim t => !(Term t) -> !(Term t) -> UTerm Bool
-  UITETerm :: SupportedPrim t => !(Term Bool) -> !(Term t) -> !(Term t) -> UTerm t
+  UEqvTerm :: (SupportedPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
+  UITETerm :: (SupportedPrim t) => !(Term Bool) -> !(Term t) -> !(Term t) -> UTerm t
   UAddNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> !(Term t) -> UTerm t
   UUMinusNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> UTerm t
   UTimesNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> !(Term t) -> UTerm t
