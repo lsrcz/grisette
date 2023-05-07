@@ -27,6 +27,7 @@
 -- Portability :   GHC only
 module Grisette.Core.Data.BV
   ( BitwidthMismatch (..),
+    showBV,
     IntN (..),
     WordN (..),
     SomeIntN (..),
@@ -141,14 +142,18 @@ instance Hashable SomeWordN where
 instance NFData SomeWordN where
   rnf (SomeWordN w) = rnf w
 
+showBV :: Int -> Integer -> String
+showBV bitwidth w = if (bitwidth `mod` 4) == 0 then hexRepPre ++ hexRep else binRepPre ++ binRep
+  where
+    hexRepPre = "0x" ++ replicate (fromIntegral (bitwidth `div` 4) - length hexRep) '0'
+    hexRep = showHex w ""
+    binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
+    binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
+
 instance (KnownNat n, 1 <= n) => Show (WordN n) where
-  show (WordN w) = if (bitwidth `mod` 4) == 0 then hexRepPre ++ hexRep else binRepPre ++ binRep
+  show (WordN w) = showBV (fromIntegral bitwidth) w
     where
       bitwidth = natVal (Proxy :: Proxy n)
-      hexRepPre = "0x" ++ replicate (fromIntegral (bitwidth `div` 4) - length hexRep) '0'
-      hexRep = showHex w ""
-      binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
-      binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
 convertInt :: Num a => L.Lexeme -> ReadPrec a
 convertInt (L.Number n)
@@ -236,13 +241,9 @@ instance NFData SomeIntN where
   rnf (SomeIntN w) = rnf w
 
 instance (KnownNat n, 1 <= n) => Show (IntN n) where
-  show (IntN w) = if (bitwidth `mod` 4) == 0 then hexRepPre ++ hexRep else binRepPre ++ binRep
+  show (IntN w) = showBV (fromIntegral bitwidth) w
     where
       bitwidth = natVal (Proxy :: Proxy n)
-      hexRepPre = "0x" ++ replicate (fromIntegral (bitwidth `div` 4) - length hexRep) '0'
-      hexRep = showHex w ""
-      binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
-      binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
 instance (KnownNat n, 1 <= n) => Read (IntN n) where
   readPrec = readNumber convertInt
