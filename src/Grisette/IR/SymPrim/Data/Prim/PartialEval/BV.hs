@@ -32,11 +32,13 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+import Data.Typeable
 
 -- select
 pevalBVSelectTerm ::
   forall bv n ix w p q.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -54,6 +56,7 @@ pevalBVSelectTerm ix w = unaryUnfoldOnce (doPevalBVSelectTerm ix w) (bvselectTer
 doPevalBVSelectTerm ::
   forall bv n ix w p q.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -73,6 +76,7 @@ doPevalBVSelectTerm _ _ _ = Nothing
 pevalBVZeroExtendTerm ::
   forall proxy l r bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -88,6 +92,7 @@ pevalBVZeroExtendTerm = pevalBVExtendTerm False
 pevalBVSignExtendTerm ::
   forall proxy l r bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -103,6 +108,7 @@ pevalBVSignExtendTerm = pevalBVExtendTerm True
 pevalBVExtendTerm ::
   forall proxy l r bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -119,6 +125,7 @@ pevalBVExtendTerm signed p = unaryUnfoldOnce (doPevalBVExtendTerm signed p) (bve
 doPevalBVExtendTerm ::
   forall proxy l r bv.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -135,6 +142,7 @@ doPevalBVExtendTerm _ _ _ = Nothing
 
 pevalBVConcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
     KnownNat (a + b),
@@ -149,13 +157,14 @@ pevalBVConcatTerm ::
 pevalBVConcatTerm = binaryUnfoldOnce doPevalBVConcatTerm bvconcatTerm
 
 doPevalBVConcatTerm ::
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv b),
-    SupportedPrim (bv (a + b)),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
+    KnownNat (a + b),
     1 <= a,
     1 <= b,
+    1 <= (a + b),
     SizedBV bv
   ) =>
   Term (bv a) ->

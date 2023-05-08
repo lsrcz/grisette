@@ -227,6 +227,7 @@ rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 
 bvconcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
     KnownNat (a + b),
@@ -244,6 +245,7 @@ bvconcatTerm l r = internTerm $ UBVConcatTerm l r
 bvselectTerm ::
   forall bv n ix w p q.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -262,6 +264,7 @@ bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
 bvextendTerm ::
   forall bv l r proxy.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -279,6 +282,7 @@ bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
 bvsignExtendTerm ::
   forall bv l r proxy.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -295,6 +299,7 @@ bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
 bvzeroExtendTerm ::
   forall bv l r proxy.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
