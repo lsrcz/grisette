@@ -39,7 +39,7 @@ dependencies:
 - array >= 0.5.4 && < 0.6
 - vector >= 0.12.1 && < 0.14
 - once >= 0.2 && < 0.5
-- sbv >= 8.11 && < 9.1
+- sbv >= 8.11 && < 10.2
 - parallel
 
 flags: {
