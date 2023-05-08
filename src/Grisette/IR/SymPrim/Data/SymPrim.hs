@@ -1231,8 +1231,8 @@ sizedBVSext _ (symtype v) = \
     LeqProof -> symtype $ pevalBVExtendTerm True (Proxy @r) v
 
 #define BVSELECT_SIZED(symtype) \
-sizedBVSelect :: forall n ix w proxy. (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) => \
-  proxy ix -> proxy w -> symtype n -> symtype w; \
+sizedBVSelect :: forall n ix w p q. (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) => \
+  p ix -> q w -> symtype n -> symtype w; \
 sizedBVSelect pix pw (symtype v) = symtype $ pevalBVSelectTerm pix pw v
 
 #if 1
