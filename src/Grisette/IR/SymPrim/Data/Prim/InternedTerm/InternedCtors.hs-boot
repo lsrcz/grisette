@@ -117,6 +117,7 @@ shiftBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 bvconcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
     KnownNat (a + b),
@@ -131,6 +132,7 @@ bvconcatTerm ::
 bvselectTerm ::
   forall bv n ix w p q.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -146,6 +148,7 @@ bvselectTerm ::
 bvextendTerm ::
   forall bv l r proxy.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -160,6 +163,7 @@ bvextendTerm ::
 bvsignExtendTerm ::
   forall bv l r proxy.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
@@ -173,6 +177,7 @@ bvsignExtendTerm ::
 bvzeroExtendTerm ::
   forall bv l r proxy.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,

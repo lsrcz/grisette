@@ -332,6 +332,7 @@ data Term t where
   RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
   BVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat a,
       KnownNat b,
       KnownNat (a + b),
@@ -346,6 +347,7 @@ data Term t where
     Term (bv (a + b))
   BVSelectTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat n,
       KnownNat ix,
       KnownNat w,
@@ -361,6 +363,7 @@ data Term t where
     Term (bv w)
   BVExtendTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat l,
       KnownNat r,
       1 <= l,
@@ -569,6 +572,7 @@ data UTerm t where
   URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
   UBVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat a,
       KnownNat b,
       KnownNat (a + b),
@@ -582,6 +586,7 @@ data UTerm t where
     UTerm (bv (a + b))
   UBVSelectTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat n,
       KnownNat ix,
       KnownNat w,
@@ -596,6 +601,7 @@ data UTerm t where
     UTerm (bv w)
   UBVExtendTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat l,
       KnownNat r,
       1 <= l,
