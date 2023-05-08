@@ -10,7 +10,8 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Grisette.Core.Data.DynBV
-  ( DynIntN (..),
+  ( someBVDynamicSelectHelper,
+    DynIntN (..),
     DynWordN (..),
   )
 where
@@ -100,7 +101,8 @@ bvconstHelper 62 v = SomeWordN (WordN v :: WordN 62)
 bvconstHelper 63 v = SomeWordN (WordN v :: WordN 63)
 bvconstHelper 64 v = SomeWordN (WordN v :: WordN 64)
 
-someBVDynamicSelectHelper :: (HasCallStack) => Int -> Int -> SomeWordN -> SomeWordN
+someBVDynamicSelectHelper :: forall bv. (HasCallStack, SomeBV bv, FiniteBits bv)
+  => Int -> Int -> bv -> bv
 someBVDynamicSelectHelper ix w bv | 1 <= w && ix + w <= n && ix <= 64 && w <= 64 =
   case w of
     0 -> f1 (Proxy @0)
@@ -170,7 +172,7 @@ someBVDynamicSelectHelper ix w bv | 1 <= w && ix + w <= n && ix <= 64 && w <= 64
     64 -> f1 (Proxy @64)
   where
     n = finiteBitSize bv
-    f1 :: (KnownNat w) => p w -> SomeWordN
+    f1 :: (KnownNat w) => p w -> bv
     f1 x = case ix of
       0 -> someBVSelect (Proxy @0) x bv
       1 -> someBVSelect (Proxy @1) x bv
@@ -334,8 +336,8 @@ instance Bits DynWordN where
   xor = binDynWordN xor
   complement = unaryDynWordN complement
 
-  zeroBits = error "zeroBits is not defined for DynIntN as no bitwidth is known"
-  bit = error "zeroBits is not defined for DynIntN as no bitwidth is known"
+  zeroBits = error "zeroBits is not defined for DynWordN as no bitwidth is known"
+  bit = error "bit is not defined for DynWordN as no bitwidth is known"
 
   setBit = singleBitFlippingOp setBit
   clearBit = singleBitFlippingOp clearBit
@@ -477,7 +479,7 @@ instance Bits DynIntN where
   complement = toSigned . complement . toUnsigned
 
   zeroBits = error "zeroBits is not defined for DynIntN as no bitwidth is known"
-  bit = error "zeroBits is not defined for DynIntN as no bitwidth is known"
+  bit = error "bit is not defined for DynIntN as no bitwidth is known"
 
   setBit l = toSigned . setBit (toUnsigned l)
   clearBit l = toSigned . clearBit (toUnsigned l)
