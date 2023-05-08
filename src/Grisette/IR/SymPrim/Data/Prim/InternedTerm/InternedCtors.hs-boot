@@ -127,7 +127,7 @@ bvconcatTerm ::
   Term (bv b) ->
   Term (bv (a + b))
 bvselectTerm ::
-  forall bv n ix w proxy.
+  forall bv n ix w p q.
   ( SupportedPrim (bv n),
     SupportedPrim (bv w),
     KnownNat n,
@@ -138,8 +138,8 @@ bvselectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Term (bv w)
 bvextendTerm ::

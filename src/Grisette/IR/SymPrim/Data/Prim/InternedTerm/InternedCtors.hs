@@ -240,7 +240,7 @@ bvconcatTerm l r = internTerm $ UBVConcatTerm l r
 {-# INLINE bvconcatTerm #-}
 
 bvselectTerm ::
-  forall bv n ix w proxy.
+  forall bv n ix w p q.
   ( SupportedPrim (bv n),
     SupportedPrim (bv w),
     KnownNat n,
@@ -251,8 +251,8 @@ bvselectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Term (bv w)
 bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v

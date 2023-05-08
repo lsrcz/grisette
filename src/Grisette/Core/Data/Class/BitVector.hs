@@ -300,10 +300,10 @@ class SizedBV bv where
   sizedBVSelect ::
     (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
     -- | Index of the least significant bit of the slice
-    proxy ix ->
+    p ix ->
     -- | Desired output width, @ix + w <= n@ must hold where @n@ is
     -- the size of the input bit vector
-    proxy w ->
+    q w ->
     -- | Bit vector to select from
     bv n ->
     bv w
@@ -316,13 +316,13 @@ class SizedBV bv where
 -- >>> sizedBVExtract (Proxy @4) (Proxy @2) (con 0b010100 :: SymIntN 6)
 -- 0b101
 sizedBVExtract ::
-  forall proxy i j n bv.
+  forall p i q j n bv.
   (SizedBV bv, KnownNat n, KnownNat i, KnownNat j, 1 <= n, i + 1 <= n, j <= i) =>
   -- | The start position to extract from, @i < n@ must hold where @n@ is
   -- the size of the output bit vector
-  proxy i ->
+  p i ->
   -- | The end position to extract from, @j <= i@ must hold
-  proxy j ->
+  q j ->
   -- | Bit vector to extract from
   bv n ->
   bv (i - j + 1)

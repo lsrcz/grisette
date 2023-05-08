@@ -34,7 +34,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
 
 -- select
 pevalBVSelectTerm ::
-  forall bv n ix w proxy.
+  forall bv n ix w p q.
   ( SupportedPrim (bv n),
     SupportedPrim (bv w),
     KnownNat n,
@@ -45,14 +45,14 @@ pevalBVSelectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Term (bv w)
 pevalBVSelectTerm ix w = unaryUnfoldOnce (doPevalBVSelectTerm ix w) (bvselectTerm ix w)
 
 doPevalBVSelectTerm ::
-  forall bv n ix w proxy.
+  forall bv n ix w p q.
   ( SupportedPrim (bv n),
     SupportedPrim (bv w),
     KnownNat n,
@@ -63,8 +63,8 @@ doPevalBVSelectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Maybe (Term (bv w))
 doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
