@@ -1,12 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors

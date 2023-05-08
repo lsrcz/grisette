@@ -1,9 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,

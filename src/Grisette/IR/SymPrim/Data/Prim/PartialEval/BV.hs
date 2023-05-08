@@ -4,11 +4,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
@@ -29,13 +29,13 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   )
 where
 
+import Data.Typeable
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-import Data.Typeable
 
 -- toSigned
 pevalBVToSignedTerm ::
