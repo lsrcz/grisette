@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 
 module Grisette.Backend.SBV.Data.SMT.TermRewritingGen where
 
@@ -186,10 +187,13 @@ bvconcatSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
     TermRewritingSpec c (bv (an + bn)),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat an,
     KnownNat bn,
+    KnownNat (an + bn),
     1 <= an,
     1 <= bn,
+    1 <= an + bn,
     SizedBV bv
   ) =>
   a ->
@@ -200,6 +204,7 @@ bvconcatSpec = constructBinarySpec bvconcatTerm pevalBVConcatTerm
 bvselectSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat an,
     KnownNat ix,
     KnownNat bn,
@@ -218,9 +223,11 @@ bvselectSpec p1 p2 = constructUnarySpec (bvselectTerm p1 p2) (pevalBVSelectTerm 
 bvextendSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat an,
     KnownNat bn,
     1 <= an,
+    1 <= bn,
     an <= bn,
     SizedBV bv
   ) =>
@@ -470,7 +477,8 @@ type SupportedBV bv (n :: Nat) =
 
 dsbv1 ::
   forall proxy bv.
-  ( SupportedBV bv 1,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -521,7 +529,8 @@ dsbv1 _ _ = error "Should never be called"
 
 dsbv2 ::
   forall proxy bv.
-  ( SupportedBV bv 1,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -572,7 +581,8 @@ dsbv2 _ _ = error "Should never be called"
 
 dsbv3 ::
   forall proxy bv.
-  ( SupportedBV bv 1,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -622,7 +632,8 @@ dsbv3 _ _ = error "Should never be called"
 
 dsbv4 ::
   forall proxy bv.
-  ( SupportedBV bv 1,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -673,7 +684,8 @@ dsbv4 p depth | depth > 0 = do
 dsbv4 _ _ = error "Should never be called"
 
 instance
-  ( SupportedBV bv 1,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,

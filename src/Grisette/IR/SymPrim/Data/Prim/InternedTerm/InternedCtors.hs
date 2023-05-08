@@ -5,6 +5,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -224,13 +226,13 @@ rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 {-# INLINE rotateBitsTerm #-}
 
 bvconcatTerm ::
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv b),
-    SupportedPrim (bv (a + b)),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat a,
     KnownNat b,
+    KnownNat (a + b),
     1 <= a,
     1 <= b,
+    1 <= a + b,
     SizedBV bv
   ) =>
   Term (bv a) ->
@@ -241,8 +243,7 @@ bvconcatTerm l r = internTerm $ UBVConcatTerm l r
 
 bvselectTerm ::
   forall bv n ix w p q.
-  ( SupportedPrim (bv n),
-    SupportedPrim (bv w),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -260,11 +261,11 @@ bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
 
 bvextendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
@@ -277,11 +278,11 @@ bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
 
 bvsignExtendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
@@ -293,11 +294,11 @@ bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
 
 bvzeroExtendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>

@@ -2,6 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,
@@ -114,13 +116,13 @@ complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
 shiftBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 bvconcatTerm ::
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv b),
-    SupportedPrim (bv (a + b)),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat a,
     KnownNat b,
+    KnownNat (a + b),
     1 <= a,
     1 <= b,
+    1 <= a + b,
     SizedBV bv
   ) =>
   Term (bv a) ->
@@ -128,8 +130,7 @@ bvconcatTerm ::
   Term (bv (a + b))
 bvselectTerm ::
   forall bv n ix w p q.
-  ( SupportedPrim (bv n),
-    SupportedPrim (bv w),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -144,11 +145,11 @@ bvselectTerm ::
   Term (bv w)
 bvextendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
@@ -158,11 +159,11 @@ bvextendTerm ::
   Term (bv r)
 bvsignExtendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
@@ -171,11 +172,11 @@ bvsignExtendTerm ::
   Term (bv r)
 bvzeroExtendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
