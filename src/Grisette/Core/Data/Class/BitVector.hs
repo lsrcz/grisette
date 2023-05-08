@@ -29,7 +29,9 @@ module Grisette.Core.Data.Class.BitVector
     someBVExtract',
     SizedBV (..),
     sizedBVExtract,
+    DynBV (..),
     BVSignPair (..),
+    DynBVLink (..),
   )
 where
 
@@ -337,6 +339,81 @@ sizedBVExtract _ _ =
       sizedBVSelect (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE sizedBVExtract #-}
 
+class DynBV bv where
+  -- | Concatenation of two bit vectors.
+  --
+  -- >>> someBVConcat (SomeSymWordN (0b101 :: SymWordN 3)) (SomeSymWordN (0b010 :: SymWordN 3))
+  -- 0b101010
+  dynBVConcat :: bv -> bv -> bv
+
+  -- | Zero extension of a bit vector.
+  --
+  -- >>> someBVZext (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
+  -- 0b000101
+  dynBVZext ::
+    -- | Desired output length
+    Int ->
+    -- | Bit vector to extend
+    bv ->
+    bv
+
+  -- | Sign extension of a bit vector.
+  --
+  -- >>> someBVSext (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
+  -- 0b111101
+  dynBVSext ::
+    -- | Desired output length
+    Int ->
+    -- | Bit vector to extend
+    bv ->
+    bv
+
+  -- | Extension of a bit vector.
+  -- Signedness is determined by the input bit vector type.
+  --
+  -- >>> someBVExt (Proxy @6) (SomeSymIntN (0b101 :: SymIntN 3))
+  -- 0b111101
+  -- >>> someBVExt (Proxy @6) (SomeSymIntN (0b001 :: SymIntN 3))
+  -- 0b000001
+  -- >>> someBVExt (Proxy @6) (SomeSymWordN (0b101 :: SymWordN 3))
+  -- 0b000101
+  -- >>> someBVExt (Proxy @6) (SomeSymWordN (0b001 :: SymWordN 3))
+  -- 0b000001
+  dynBVExt ::
+    -- | Desired output length
+    Int ->
+    -- | Bit vector to extend
+    bv ->
+    bv
+
+  -- | Slicing out a smaller bit vector from a larger one,
+  -- selecting a slice with width @w@ starting from index @ix@.
+  --
+  -- The least significant bit is indexed as 0.
+  --
+  -- >>> someBVSelect (Proxy @1) (Proxy @3) (SomeSymIntN (0b001010 :: SymIntN 6))
+  -- 0b101
+  dynBVSelect ::
+    -- | Index of the least significant bit of the slice
+    Int ->
+    -- | Desired output width, @ix + w <= n@ must hold where @n@ is
+    -- the size of the input bit vector
+    Int ->
+    -- | Bit vector to select from
+    bv ->
+    bv
+
 class BVSignPair sbv ubv | sbv -> ubv, ubv -> sbv where
   toSigned :: ubv -> sbv
   toUnsigned :: sbv -> ubv
+
+class
+  DynBVLink dbv bv somebv
+    | dbv -> bv somebv,
+      bv -> dbv somebv,
+      somebv -> dbv bv
+  where
+  dynBVIntegerRep :: dbv -> Integer
+  integerToDynBV :: Int -> Integer -> dbv
+  someBVToDynBV :: somebv -> dbv
+  sizedBVToDynBV :: (KnownNat n, 1 <= n) => bv n -> dbv

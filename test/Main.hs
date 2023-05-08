@@ -1,32 +1,11 @@
 module Main where
 
-{-
-import Grisette.Core.Control.ExceptionTests
-import Grisette.Core.Control.Monad.UnionMBaseTests
-import Grisette.Core.Data.Class.BoolTests
-import Grisette.Core.Data.Class.EvaluateSymTests
-import Grisette.Core.Data.Class.ExtractSymbolicsTests
-import Grisette.Core.Data.Class.GenSymTests
-import Grisette.Core.Data.Class.MergeableTests
-import Grisette.Core.Data.Class.SEqTests
-import Grisette.Core.Data.Class.SOrdTests
-import Grisette.Core.Data.Class.SimpleMergeableTests
-import Grisette.Core.Data.Class.ToConTests
-import Grisette.Core.Data.Class.ToSymTests
-import Grisette.Core.Data.Class.UnionLikeTests
-import Grisette.Core.Data.UnionBaseTests
-import Grisette.Lib.Control.Monad.ExceptTests
-import Grisette.Lib.Control.Monad.TransTests
-import Grisette.Lib.Control.MonadTests
-import Grisette.Lib.Data.FoldableTests
-import Grisette.Lib.Data.TraversableTests
--}
-
 import Grisette.Backend.SBV.Data.SMT.CEGISTests
 import Grisette.Backend.SBV.Data.SMT.LoweringTests
 import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
 import Grisette.Core.Control.Monad.UnionMTests
 import qualified Grisette.Core.Data.BVTests
+import Grisette.Core.Data.DynBVTests
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests
 import Grisette.IR.SymPrim.Data.Prim.BoolTests
@@ -61,63 +40,6 @@ coreTests =
       Grisette.Core.Data.BVTests.bvTests
     ]
 
-{-
-coreTests :: TestTree
-coreTests =
-  testGroup
-    "grisette-core"
-    [ testGroup
-        "Grisette"
-        [ testGroup
-            "Core"
-            [ testGroup
-                "Control"
-                [ testGroup
-                    "Monad"
-                    [ unionMBaseTests
-                    ],
-                  exceptionTests
-                ],
-              testGroup
-                "Data"
-                [ testGroup
-                    "Class"
-                    [ boolTests,
-                      gevaluateSymTests,
-                      gextractSymbolicsTests,
-                      genSymTests,
-                      mergeableTests,
-                      seqTests,
-                      simpleMergeableTests,
-                      sordTests,
-                      toConTests,
-                      toSymTests,
-                      unionLikeTests
-                    ],
-                  unionBaseTests
-                ]
-            ],
-          testGroup
-            "Lib"
-            [ testGroup
-                "Control"
-                [ testGroup
-                    "Monad"
-                    [ monadExceptFunctionTests,
-                      monadTransFunctionTests
-                    ],
-                  monadFunctionTests
-                ],
-              testGroup
-                "Data"
-                [ foldableFunctionTests,
-                  traversableFunctionTests
-                ]
-            ]
-        ]
-    ]
--}
-
 irTests :: TestTree
 irTests =
   testGroup
@@ -129,6 +51,7 @@ irTests =
             [ bitsTests,
               boolTests,
               Grisette.IR.SymPrim.Data.Prim.BVTests.bvTests,
+              dynBVTests,
               integralTests,
               modelTests,
               numTests,

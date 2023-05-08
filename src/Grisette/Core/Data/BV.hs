@@ -32,6 +32,8 @@ module Grisette.Core.Data.BV
     WordN (..),
     SomeIntN (..),
     SomeWordN (..),
+    rotateLInteger,
+    rotateRInteger,
     unarySomeIntN,
     unarySomeIntNR1,
     binSomeIntN,
@@ -253,6 +255,26 @@ instance (KnownNat n, 1 <= n) => Read (IntN n) where
 instance Show SomeIntN where
   show (SomeIntN w) = show w
 
+rotateLInteger :: (Bits a, Num a) => Int -> a -> Int -> a
+rotateLInteger _ a 0 = a
+rotateLInteger n a k
+  | k >= n = rotateLInteger n a (k `mod` n)
+  | otherwise = l + h
+  where
+    s = n - k
+    l = a `shiftR` s
+    h = (a - (l `shiftL` s)) `shiftL` k
+
+rotateRInteger :: (Bits a, Num a) => Int -> a -> Int -> a
+rotateRInteger _ a 0 = a
+rotateRInteger n a k
+  | k >= n = rotateRInteger n a (k `mod` n)
+  | otherwise = l + h
+  where
+    s = n - k
+    l = a `shiftR` k
+    h = (a - (l `shiftL` k)) `shiftL` s
+
 instance (KnownNat n, 1 <= n) => Bits (WordN n) where
   WordN a .&. WordN b = WordN (a .&. b)
   WordN a .|. WordN b = WordN (a .|. b)
@@ -280,24 +302,8 @@ instance (KnownNat n, 1 <= n) => Bits (WordN n) where
   shiftR (WordN a) i = WordN (a `shiftR` i)
 
   -- unsafeShiftR use default implementation
-  rotateL a 0 = a
-  rotateL (WordN a) k
-    | k >= n = rotateL (WordN a) (k `mod` n)
-    | otherwise = WordN $ l + h
-    where
-      n = fromIntegral $ natVal (Proxy :: Proxy n)
-      s = n - k
-      l = a `shiftR` s
-      h = (a - (l `shiftL` s)) `shiftL` k
-  rotateR a 0 = a
-  rotateR (WordN a) k
-    | k >= n = rotateR (WordN a) (k `mod` n)
-    | otherwise = WordN $ l + h
-    where
-      n = fromIntegral $ natVal (Proxy :: Proxy n)
-      s = n - k
-      l = a `shiftR` k
-      h = (a - (l `shiftL` k)) `shiftL` s
+  rotateL l@(WordN a) = WordN . rotateLInteger (finiteBitSize l) a
+  rotateR l@(WordN a) = WordN . rotateRInteger (finiteBitSize l) a
   popCount (WordN n) = popCount n
 
 instance Bits SomeWordN where
