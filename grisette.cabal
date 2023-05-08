@@ -131,7 +131,7 @@ library
     , mtl >=2.2.2 && <2.3
     , once >=0.2 && <0.5
     , parallel
-    , sbv >=8.11 && <9.1
+    , sbv >=8.11 && <10.2
     , template-haskell >=2.16 && <2.20
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.6
@@ -167,7 +167,7 @@ test-suite doctest
     , mtl >=2.2.2 && <2.3
     , once >=0.2 && <0.5
     , parallel
-    , sbv >=8.11 && <9.1
+    , sbv >=8.11 && <10.2
     , template-haskell >=2.16 && <2.20
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.6
@@ -216,7 +216,7 @@ test-suite spec
     , mtl >=2.2.2 && <2.3
     , once >=0.2 && <0.5
     , parallel
-    , sbv >=8.11 && <9.1
+    , sbv >=8.11 && <10.2
     , tasty >=1.1.0.3 && <1.5
     , tasty-hunit ==0.10.*
     , tasty-quickcheck >=0.10.1 && <0.11

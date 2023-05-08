@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -843,8 +844,27 @@ bvIsNonZeroFromGEq1 :: forall w r. (1 <= w) => ((SBV.BVIsNonZero w) => r) -> r
 bvIsNonZeroFromGEq1 r1 = case unsafeAxiom :: w :~: 1 of
   Refl -> r1
 
+#if MIN_VERSION_sbv(10,0,0)
+preprocessUIFuncs ::
+  [(String, (SBVI.SBVType, Either String ([([SBVI.CV], SBVI.CV)], SBVI.CV)))] ->
+  Maybe [(String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV)))]
+preprocessUIFuncs =
+  traverse
+    (\case
+      (a, (b, Right c)) -> Just (a, (b, c))
+      _ -> Nothing)
+#else
+preprocessUIFuncs ::
+  [(String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV)))] ->
+  Maybe [(String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV)))]
+preprocessUIFuncs = Just
+#endif
+
 parseModel :: forall integerBitWidth. GrisetteSMTConfig integerBitWidth -> SBVI.SMTModel -> SymBiMap -> PM.Model
-parseModel _ (SBVI.SMTModel _ _ assoc uifuncs) mp = foldr gouifuncs (foldr goassoc emptyModel assoc) uifuncs
+parseModel _ (SBVI.SMTModel _ _ assoc orguifuncs) mp =
+  case preprocessUIFuncs orguifuncs of
+    Just uifuncs -> foldr gouifuncs (foldr goassoc emptyModel assoc) uifuncs
+    _ -> error "SBV Failed to parse model"
   where
     goassoc :: (String, SBVI.CV) -> PM.Model -> PM.Model
     goassoc (name, cv) m = case findStringToSymbol name mp of
