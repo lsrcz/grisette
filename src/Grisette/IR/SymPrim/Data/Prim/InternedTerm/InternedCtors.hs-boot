@@ -2,6 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,
@@ -134,22 +136,23 @@ bvToSignedTerm ::
   Term (ubv n) ->
   Term (sbv n)
 bvconcatTerm ::
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv b),
-    SupportedPrim (bv (a + b)),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
+    KnownNat (a + b),
     1 <= a,
     1 <= b,
+    1 <= a + b,
     SizedBV bv
   ) =>
   Term (bv a) ->
   Term (bv b) ->
   Term (bv (a + b))
 bvselectTerm ::
-  forall bv n ix w proxy.
-  ( SupportedPrim (bv n),
-    SupportedPrim (bv w),
+  forall bv n ix w p q.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -158,17 +161,18 @@ bvselectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Term (bv w)
 bvextendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
@@ -178,11 +182,12 @@ bvextendTerm ::
   Term (bv r)
 bvsignExtendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>
@@ -191,11 +196,12 @@ bvsignExtendTerm ::
   Term (bv r)
 bvzeroExtendTerm ::
   forall bv l r proxy.
-  ( SupportedPrim (bv l),
-    SupportedPrim (bv r),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
     SizedBV bv
   ) =>

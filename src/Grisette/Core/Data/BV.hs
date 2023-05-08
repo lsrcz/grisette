@@ -603,10 +603,10 @@ instance SizedBV WordN where
       noi = (1 :: Integer) `shiftL` l
   sizedBVExt = sizedBVZext
   sizedBVSelect ::
-    forall n ix w proxy.
+    forall n ix w p q.
     (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
-    proxy ix ->
-    proxy w ->
+    p ix ->
+    q w ->
     WordN n ->
     WordN w
   sizedBVSelect pix pw (WordN v) = WordN ((v `shiftR` ix) .&. mask)
@@ -623,10 +623,10 @@ instance SizedBV IntN where
   sizedBVSext pr (IntN v) = IntN $ unWordN $ sizedBVSext pr (WordN v :: WordN l)
   sizedBVExt = sizedBVSext
   sizedBVSelect ::
-    forall n ix w proxy.
+    forall n ix w p q.
     (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
-    proxy ix ->
-    proxy w ->
+    p ix ->
+    q w ->
     IntN n ->
     IntN w
   sizedBVSelect pix pw (IntN v) = IntN $ unWordN $ sizedBVSelect pix pw (WordN v :: WordN n)

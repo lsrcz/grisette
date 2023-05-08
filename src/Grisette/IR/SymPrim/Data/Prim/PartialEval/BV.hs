@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
@@ -34,6 +35,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+import Data.Typeable
 
 -- toSigned
 pevalBVToSignedTerm ::
@@ -87,9 +89,9 @@ doPevalBVToUnsignedTerm _ = Nothing
 
 -- select
 pevalBVSelectTerm ::
-  forall bv n ix w proxy.
-  ( SupportedPrim (bv n),
-    SupportedPrim (bv w),
+  forall bv n ix w p q.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -98,16 +100,16 @@ pevalBVSelectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Term (bv w)
 pevalBVSelectTerm ix w = unaryUnfoldOnce (doPevalBVSelectTerm ix w) (bvselectTerm ix w)
 
 doPevalBVSelectTerm ::
-  forall bv n ix w proxy.
-  ( SupportedPrim (bv n),
-    SupportedPrim (bv w),
+  forall bv n ix w p q.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
@@ -116,8 +118,8 @@ doPevalBVSelectTerm ::
     ix + w <= n,
     SizedBV bv
   ) =>
-  proxy ix ->
-  proxy w ->
+  p ix ->
+  q w ->
   Term (bv n) ->
   Maybe (Term (bv w))
 doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
@@ -126,12 +128,13 @@ doPevalBVSelectTerm _ _ _ = Nothing
 -- ext
 pevalBVZeroExtendTerm ::
   forall proxy l r bv.
-  ( KnownNat l,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
-    SupportedPrim (bv l),
-    SupportedPrim (bv r),
     SizedBV bv
   ) =>
   proxy r ->
@@ -141,12 +144,13 @@ pevalBVZeroExtendTerm = pevalBVExtendTerm False
 
 pevalBVSignExtendTerm ::
   forall proxy l r bv.
-  ( KnownNat l,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
-    SupportedPrim (bv l),
-    SupportedPrim (bv r),
     SizedBV bv
   ) =>
   proxy r ->
@@ -156,12 +160,13 @@ pevalBVSignExtendTerm = pevalBVExtendTerm True
 
 pevalBVExtendTerm ::
   forall proxy l r bv.
-  ( KnownNat l,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
-    SupportedPrim (bv l),
-    SupportedPrim (bv r),
     SizedBV bv
   ) =>
   Bool ->
@@ -172,12 +177,13 @@ pevalBVExtendTerm signed p = unaryUnfoldOnce (doPevalBVExtendTerm signed p) (bve
 
 doPevalBVExtendTerm ::
   forall proxy l r bv.
-  ( KnownNat l,
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
     KnownNat r,
     1 <= l,
+    1 <= r,
     l <= r,
-    SupportedPrim (bv l),
-    SupportedPrim (bv r),
     SizedBV bv
   ) =>
   Bool ->
@@ -188,13 +194,14 @@ doPevalBVExtendTerm signed p (ConTerm _ b) = Just $ conTerm $ if signed then siz
 doPevalBVExtendTerm _ _ _ = Nothing
 
 pevalBVConcatTerm ::
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv b),
-    SupportedPrim (bv (a + b)),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
+    KnownNat (a + b),
     1 <= a,
     1 <= b,
+    1 <= a + b,
     SizedBV bv
   ) =>
   Term (bv a) ->
@@ -203,13 +210,14 @@ pevalBVConcatTerm ::
 pevalBVConcatTerm = binaryUnfoldOnce doPevalBVConcatTerm bvconcatTerm
 
 doPevalBVConcatTerm ::
-  ( SupportedPrim (bv a),
-    SupportedPrim (bv b),
-    SupportedPrim (bv (a + b)),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
     KnownNat a,
     KnownNat b,
+    KnownNat (a + b),
     1 <= a,
     1 <= b,
+    1 <= (a + b),
     SizedBV bv
   ) =>
   Term (bv a) ->

@@ -16,6 +16,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -349,13 +351,14 @@ data Term t where
     !(Term (ubv n)) ->
     Term (sbv n)
   BVConcatTerm ::
-    ( SupportedPrim (bv a),
-      SupportedPrim (bv b),
-      SupportedPrim (bv (a + b)),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat a,
       KnownNat b,
+      KnownNat (a + b),
       1 <= a,
       1 <= b,
+      1 <= a + b,
       SizedBV bv
     ) =>
     {-# UNPACK #-} !Id ->
@@ -363,8 +366,8 @@ data Term t where
     !(Term (bv b)) ->
     Term (bv (a + b))
   BVSelectTerm ::
-    ( SupportedPrim (bv n),
-      SupportedPrim (bv w),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat n,
       KnownNat ix,
       KnownNat w,
@@ -379,11 +382,12 @@ data Term t where
     !(Term (bv n)) ->
     Term (bv w)
   BVExtendTerm ::
-    ( SupportedPrim (bv l),
-      SupportedPrim (bv r),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat l,
       KnownNat r,
       1 <= l,
+      1 <= r,
       l <= r,
       SizedBV bv
     ) =>
@@ -609,21 +613,22 @@ data UTerm t where
     !(Term (ubv n)) ->
     UTerm (sbv n)
   UBVConcatTerm ::
-    ( SupportedPrim (bv a),
-      SupportedPrim (bv b),
-      SupportedPrim (bv (a + b)),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat a,
       KnownNat b,
+      KnownNat (a + b),
       1 <= a,
       1 <= b,
+      1 <= a + b,
       SizedBV bv
     ) =>
     !(Term (bv a)) ->
     !(Term (bv b)) ->
     UTerm (bv (a + b))
   UBVSelectTerm ::
-    ( SupportedPrim (bv n),
-      SupportedPrim (bv w),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat n,
       KnownNat ix,
       KnownNat w,
@@ -637,11 +642,12 @@ data UTerm t where
     !(Term (bv n)) ->
     UTerm (bv w)
   UBVExtendTerm ::
-    ( SupportedPrim (bv l),
-      SupportedPrim (bv r),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
       KnownNat l,
       KnownNat r,
       1 <= l,
+      1 <= r,
       l <= r,
       SizedBV bv
     ) =>
