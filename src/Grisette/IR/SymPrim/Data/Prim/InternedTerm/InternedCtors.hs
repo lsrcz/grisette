@@ -45,6 +45,7 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     complementBitsTerm,
     shiftBitsTerm,
     rotateBitsTerm,
+    testBitTerm,
     bvToSignedTerm,
     bvToUnsignedTerm,
     bvconcatTerm,
@@ -227,6 +228,10 @@ shiftBitsTerm t n = internTerm $ UShiftBitsTerm t n
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 {-# INLINE rotateBitsTerm #-}
+
+testBitTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term Bool
+testBitTerm t n = internTerm $ UTestBitTerm t n
+{-# INLINE testBitTerm #-}
 
 bvToUnsignedTerm ::
   ( SupportedPrim (ubv n),

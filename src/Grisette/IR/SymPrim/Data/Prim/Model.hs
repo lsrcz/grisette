@@ -332,6 +332,8 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goUnary (`pevalShiftBitsTerm` n) arg
     go (SomeTerm (RotateBitsTerm _ arg n)) =
       goUnary (`pevalRotateBitsTerm` n) arg
+    go (SomeTerm (TestBitTerm _ arg n)) =
+      goUnary (`pevalTestBitTerm` n) arg
     go (SomeTerm (BVToSignedTerm _ arg)) =
       goUnary pevalBVToSignedTerm arg
     go (SomeTerm (BVToUnsignedTerm _ arg)) =

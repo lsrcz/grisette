@@ -711,6 +711,10 @@ lowerSinglePrimImpl config t@(RotateBitsTerm _ arg n) m =
   case (config, R.typeRep @a) of
     ResolvedBitsType -> lowerUnaryTerm config t arg (`rotate` n) m
     _ -> translateBinaryError "rotate" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
+lowerSinglePrimImpl config t@(TestBitTerm _ (arg :: Term x) n) m =
+  case (config, R.typeRep @x) of
+    ResolvedBitsType -> lowerUnaryTerm config t arg (`SBV.sTestBit` n) m
+    _ -> translateBinaryError "rotate" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
 lowerSinglePrimImpl config t@(BVToSignedTerm _ (bv :: Term x)) m =
   case (R.typeRep @a, R.typeRep @x) of
     (SignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
@@ -1722,6 +1726,7 @@ pattern ResolvedNumOrdType <- (resolveNumOrdTypeView -> Just DictNumOrdType)
 
 type BitsTypeConstraint integerBitWidth s s' =
   ( SimpleTypeConstraint integerBitWidth s s',
+    SBV.SFiniteBits s',
     Bits (SBV.SBV s'),
     Bits s',
     Bits s

@@ -63,6 +63,7 @@ library
       Grisette.Core.Data.Class.Mergeable
       Grisette.Core.Data.Class.ModelOps
       Grisette.Core.Data.Class.SafeArith
+      Grisette.Core.Data.Class.SBits
       Grisette.Core.Data.Class.SimpleMergeable
       Grisette.Core.Data.Class.Solvable
       Grisette.Core.Data.Class.Solver

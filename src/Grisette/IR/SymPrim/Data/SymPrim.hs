@@ -110,6 +110,7 @@ import Grisette.IR.SymPrim.Data.TabularFun
 import Grisette.Lib.Control.Monad
 import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
+import Grisette.Core.Data.Class.SBits
 
 -- $setup
 -- >>> import Grisette.Core
@@ -723,6 +724,17 @@ BITS_BV(SymWordN, False)
 BITS_BV_SOME(SomeSymIntN, SymIntN, binSomeSymIntNR1, unarySomeSymIntN, unarySomeSymIntNR1)
 BITS_BV_SOME(SomeSymWordN, SymWordN, binSomeSymWordNR1, unarySomeSymWordN, unarySomeSymWordNR1)
 #endif
+
+-- SBits
+#define SBITS_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SBits (symtype n) where \
+  symTestBit (symtype l) i = SymBool $ pevalTestBitTerm l i
+
+#if 1
+SBITS_BV(SymIntN)
+SBITS_BV(SymWordN)
+#endif
+
 
 -- Show
 

@@ -330,6 +330,7 @@ data Term t where
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   ShiftBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
   RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
+  TestBitTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term Bool
   BVToUnsignedTerm ::
     ( SupportedPrim (ubv n),
       SupportedPrim (sbv n),
@@ -449,6 +450,7 @@ instance Lift (Term t) where
   liftTyped (ComplementBitsTerm _ arg) = [||complementBitsTerm arg||]
   liftTyped (ShiftBitsTerm _ arg n) = [||shiftBitsTerm arg n||]
   liftTyped (RotateBitsTerm _ arg n) = [||rotateBitsTerm arg n||]
+  liftTyped (TestBitTerm _ arg n) = [||testBitTerm arg n||]
   liftTyped (BVToSignedTerm _ arg) = [||bvToSignedTerm arg||]
   liftTyped (BVToUnsignedTerm _ arg) = [||bvToUnsignedTerm arg||]
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
@@ -525,6 +527,7 @@ instance Show (Term ty) where
   show (ComplementBitsTerm i arg) = "ComplementBits{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (ShiftBitsTerm i arg n) = "ShiftBits{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (RotateBitsTerm i arg n) = "RotateBits{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
+  show (TestBitTerm i arg n) = "TestBit{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (BVToSignedTerm i arg) = "BVToSigned{id=" ++ show i ++ ", arg1=" ++ show arg ++ "}"
   show (BVToUnsignedTerm i arg) = "BVToUnsigned{id=" ++ show i ++ ", arg1=" ++ show arg ++ "}"
   show (BVConcatTerm i arg1 arg2) = "BVConcat{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
@@ -594,6 +597,7 @@ data UTerm t where
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
   UShiftBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
   URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
+  UTestBitTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm Bool
   UBVToUnsignedTerm ::
     ( SupportedPrim (ubv n),
       SupportedPrim (sbv n),
@@ -727,6 +731,7 @@ instance (SupportedPrim t) => Interned (Term t) where
     DComplementBitsTerm :: {-# UNPACK #-} !Id -> Description (Term t)
     DShiftBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
     DRotateBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
+    DTestBitTerm :: TypeRep arg -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term Bool)
     DBVToUnsignedTerm ::
       TypeRep bv ->
       {-# UNPACK #-} !Id ->
@@ -794,6 +799,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UComplementBitsTerm arg) = DComplementBitsTerm (identity arg)
   describe (UShiftBitsTerm arg n) = DShiftBitsTerm (identity arg) n
   describe (URotateBitsTerm arg n) = DRotateBitsTerm (identity arg) n
+  describe (UTestBitTerm (arg :: Term arg) n) = DTestBitTerm (typeRep :: TypeRep arg) (identity arg) n
   describe (UBVToSignedTerm (arg :: bv)) =
     DBVToSignedTerm (typeRep :: TypeRep bv) (identity arg)
   describe (UBVToUnsignedTerm (arg :: bv)) =
@@ -842,6 +848,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UComplementBitsTerm arg) = ComplementBitsTerm i arg
       go (UShiftBitsTerm arg n) = ShiftBitsTerm i arg n
       go (URotateBitsTerm arg n) = RotateBitsTerm i arg n
+      go (UTestBitTerm arg n) = TestBitTerm i arg n
       go (UBVToSignedTerm arg) = BVToSignedTerm i arg
       go (UBVToUnsignedTerm arg) = BVToUnsignedTerm i arg
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
@@ -885,6 +892,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DComplementBitsTerm li == DComplementBitsTerm ri = li == ri
   DShiftBitsTerm li ln == DShiftBitsTerm ri rn = li == ri && ln == rn
   DRotateBitsTerm li ln == DRotateBitsTerm ri rn = li == ri && ln == rn
+  DTestBitTerm lt li ln == DTestBitTerm rt ri rn = eqTypeRepBool lt rt && li == ri && ln == rn
   DBVToSignedTerm lrep li == DBVToSignedTerm rrep ri =
     eqTypeRepBool lrep rrep && li == ri
   DBVToUnsignedTerm lrep li == DBVToUnsignedTerm rrep ri =
@@ -947,27 +955,28 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DComplementBitsTerm id1) = s `hashWithSalt` (20 :: Int) `hashWithSalt` id1
   hashWithSalt s (DShiftBitsTerm id1 n) = s `hashWithSalt` (21 :: Int) `hashWithSalt` id1 `hashWithSalt` n
   hashWithSalt s (DRotateBitsTerm id1 n) = s `hashWithSalt` (22 :: Int) `hashWithSalt` id1 `hashWithSalt` n
-  hashWithSalt s (DBVToSignedTerm rep n) = s `hashWithSalt` (23 :: Int) `hashWithSalt` rep `hashWithSalt` n
-  hashWithSalt s (DBVToUnsignedTerm rep n) = s `hashWithSalt` (24 :: Int) `hashWithSalt` rep `hashWithSalt` n
+  hashWithSalt s (DTestBitTerm rep id1 n) = s `hashWithSalt` rep `hashWithSalt` (23 :: Int) `hashWithSalt` id1 `hashWithSalt` n
+  hashWithSalt s (DBVToSignedTerm rep n) = s `hashWithSalt` (24 :: Int) `hashWithSalt` rep `hashWithSalt` n
+  hashWithSalt s (DBVToUnsignedTerm rep n) = s `hashWithSalt` (25 :: Int) `hashWithSalt` rep `hashWithSalt` n
   hashWithSalt s (DBVConcatTerm rep1 rep2 id1 id2) =
-    s `hashWithSalt` (25 :: Int) `hashWithSalt` rep1 `hashWithSalt` rep2 `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DBVSelectTerm ix id1) = s `hashWithSalt` (26 :: Int) `hashWithSalt` ix `hashWithSalt` id1
+    s `hashWithSalt` (26 :: Int) `hashWithSalt` rep1 `hashWithSalt` rep2 `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DBVSelectTerm ix id1) = s `hashWithSalt` (27 :: Int) `hashWithSalt` ix `hashWithSalt` id1
   hashWithSalt s (DBVExtendTerm signed n id1) =
     s
-      `hashWithSalt` (27 :: Int)
+      `hashWithSalt` (28 :: Int)
       `hashWithSalt` signed
       `hashWithSalt` n
       `hashWithSalt` id1
-  hashWithSalt s (DTabularFunApplyTerm id1 id2) = s `hashWithSalt` (28 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DGeneralFunApplyTerm id1 id2) = s `hashWithSalt` (29 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DDivIntegralTerm id1 id2) = s `hashWithSalt` (30 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DModIntegralTerm id1 id2) = s `hashWithSalt` (31 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DRemIntegralTerm id1 id2) = s `hashWithSalt` (33 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DDivBoundedIntegralTerm id1 id2) = s `hashWithSalt` (34 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DModBoundedIntegralTerm id1 id2) = s `hashWithSalt` (35 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DQuotBoundedIntegralTerm id1 id2) = s `hashWithSalt` (36 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DRemBoundedIntegralTerm id1 id2) = s `hashWithSalt` (37 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DTabularFunApplyTerm id1 id2) = s `hashWithSalt` (29 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DGeneralFunApplyTerm id1 id2) = s `hashWithSalt` (30 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DDivIntegralTerm id1 id2) = s `hashWithSalt` (31 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DModIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (33 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DRemIntegralTerm id1 id2) = s `hashWithSalt` (34 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DDivBoundedIntegralTerm id1 id2) = s `hashWithSalt` (35 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DModBoundedIntegralTerm id1 id2) = s `hashWithSalt` (36 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DQuotBoundedIntegralTerm id1 id2) = s `hashWithSalt` (37 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DRemBoundedIntegralTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
 
 -- Basic Bool
 defaultValueForBool :: Bool

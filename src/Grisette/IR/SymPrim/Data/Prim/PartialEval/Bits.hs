@@ -22,6 +22,7 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
     pevalComplementBitsTerm,
     pevalShiftBitsTerm,
     pevalRotateBitsTerm,
+    pevalTestBitTerm,
   )
 where
 
@@ -130,3 +131,11 @@ doPevalRotateBitsTerm x a
     bsize = bitSizeMaybe (zeroBits :: a)
 doPevalRotateBitsTerm (RotateBitsTerm _ x n) n1 = Just $ rotateBitsTerm x (n + n1)
 doPevalRotateBitsTerm _ _ = Nothing
+
+-- testBit
+pevalTestBitTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Int -> Term Bool
+pevalTestBitTerm t n = unaryUnfoldOnce (`doPevalTestBitTerm` n) (`testBitTerm` n) t
+
+doPevalTestBitTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Int -> Maybe (Term Bool)
+doPevalTestBitTerm (ConTerm _ a) n = Just $ conTerm $ testBit a n
+doPevalTestBitTerm _ _ = Nothing
