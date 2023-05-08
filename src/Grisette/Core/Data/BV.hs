@@ -691,6 +691,6 @@ instance SomeBV SomeIntN where
       w = natVal q
       n = natVal (Proxy @n)
 
-instance SizedBVSignPair IntN WordN where
+instance (KnownNat n, 1 <= n) => BVSignPair (IntN n) (WordN n) where
   toSigned = IntN . unWordN
   toUnsigned = WordN . unIntN

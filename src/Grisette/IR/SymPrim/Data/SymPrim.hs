@@ -1297,7 +1297,7 @@ instance SomeBV SomeSymWordN where
   BVSELECT(SomeSymWordN, SymWordN)
 #endif
 
-instance SizedBVSignPair SymIntN SymWordN where
+instance (KnownNat n, 1 <= n) => BVSignPair (SymIntN n) (SymWordN n) where
   toSigned (SymWordN v) = SymIntN $ pevalBVToSignedTerm v
   toUnsigned (SymIntN v) = SymWordN $ pevalBVToUnsignedTerm v
 

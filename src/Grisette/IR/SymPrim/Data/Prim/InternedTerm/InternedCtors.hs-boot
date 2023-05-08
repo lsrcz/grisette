@@ -120,7 +120,7 @@ bvToUnsignedTerm ::
     SupportedPrim (sbv n),
     KnownNat n,
     1 <= n,
-    SizedBVSignPair sbv ubv
+    BVSignPair (sbv n) (ubv n)
   ) =>
   Term (sbv n) ->
   Term (ubv n)
@@ -129,7 +129,7 @@ bvToSignedTerm ::
     SupportedPrim (sbv n),
     KnownNat n,
     1 <= n,
-    SizedBVSignPair sbv ubv
+    BVSignPair (sbv n) (ubv n)
   ) =>
   Term (ubv n) ->
   Term (sbv n)

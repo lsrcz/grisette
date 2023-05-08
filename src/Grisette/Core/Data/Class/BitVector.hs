@@ -29,7 +29,7 @@ module Grisette.Core.Data.Class.BitVector
     someBVExtract',
     SizedBV (..),
     sizedBVExtract,
-    SizedBVSignPair (..),
+    BVSignPair (..),
   )
 where
 
@@ -337,6 +337,6 @@ sizedBVExtract _ _ =
       sizedBVSelect (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE sizedBVExtract #-}
 
-class SizedBVSignPair sbv ubv | sbv -> ubv, ubv -> sbv where
-  toSigned :: (KnownNat n, 1 <= n) => ubv n -> sbv n
-  toUnsigned :: (KnownNat n, 1 <= n) => sbv n -> ubv n
+class BVSignPair sbv ubv | sbv -> ubv, ubv -> sbv where
+  toSigned :: ubv -> sbv
+  toUnsigned :: sbv -> ubv

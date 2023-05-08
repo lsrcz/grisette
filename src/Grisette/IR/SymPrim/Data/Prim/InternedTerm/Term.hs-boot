@@ -180,7 +180,7 @@ data Term t where
       SupportedPrim (sbv n),
       KnownNat n,
       1 <= n,
-      SizedBVSignPair sbv ubv
+      BVSignPair (sbv n) (ubv n)
     ) =>
     {-# UNPACK #-} !Id ->
     !(Term (sbv n)) ->
@@ -190,7 +190,7 @@ data Term t where
       SupportedPrim (sbv n),
       KnownNat n,
       1 <= n,
-      SizedBVSignPair sbv ubv
+      BVSignPair (sbv n) (ubv n)
     ) =>
     {-# UNPACK #-} !Id ->
     !(Term (ubv n)) ->
@@ -304,7 +304,7 @@ data UTerm t where
       SupportedPrim (sbv n),
       KnownNat n,
       1 <= n,
-      SizedBVSignPair sbv ubv
+      BVSignPair (sbv n) (ubv n)
     ) =>
     !(Term (sbv n)) ->
     UTerm (ubv n)
@@ -313,7 +313,7 @@ data UTerm t where
       SupportedPrim (sbv n),
       KnownNat n,
       1 <= n,
-      SizedBVSignPair sbv ubv
+      BVSignPair (sbv n) (ubv n)
     ) =>
     !(Term (ubv n)) ->
     UTerm (sbv n)
