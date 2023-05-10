@@ -615,6 +615,8 @@ instance SizedBV WordN where
       w = fromIntegral $ natVal pw
       mask = (1 `shiftL` w) - 1
 
+  integerToSizedBV _ = fromInteger
+
 instance SizedBV IntN where
   sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => IntN l -> IntN r -> IntN (l + r)
   sizedBVConcat (IntN a) (IntN b) = IntN $ unWordN $ sizedBVConcat (WordN a :: WordN l) (WordN b :: WordN r)
@@ -630,6 +632,8 @@ instance SizedBV IntN where
     IntN n ->
     IntN w
   sizedBVSelect pix pw (IntN v) = IntN $ unWordN $ sizedBVSelect pix pw (WordN v :: WordN n)
+
+  integerToSizedBV _ = fromInteger
 
 instance SomeBV SomeWordN where
   someBVConcat (SomeWordN (a :: WordN l)) (SomeWordN (b :: WordN r)) =
@@ -664,6 +668,8 @@ instance SomeBV SomeWordN where
       w = natVal q
       n = natVal (Proxy @n)
 
+  integerToSomeBV p = SomeWordN . integerToSizedBV p
+
 instance SomeBV SomeIntN where
   someBVConcat (SomeIntN (a :: IntN l)) (SomeIntN (b :: IntN r)) =
     case (leqAddPos (Proxy @l) (Proxy @r), knownAdd (KnownProof @l) (KnownProof @r)) of
@@ -696,6 +702,8 @@ instance SomeBV SomeIntN where
       ix = natVal p
       w = natVal q
       n = natVal (Proxy @n)
+
+  integerToSomeBV p = SomeIntN . integerToSizedBV p
 
 instance (KnownNat n, 1 <= n) => BVSignPair (IntN n) (WordN n) where
   toSigned = IntN . unWordN

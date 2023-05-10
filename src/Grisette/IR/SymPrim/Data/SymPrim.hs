@@ -1254,6 +1254,7 @@ instance SizedBV SymIntN where
   BVSEXT_SIZED(SymIntN)
   sizedBVExt = sizedBVSext
   BVSELECT_SIZED(SymIntN)
+  integerToSizedBV p i = con $ integerToSizedBV p i
 
 instance SizedBV SymWordN where
   BVCONCAT_SIZED(SymWordN)
@@ -1261,6 +1262,7 @@ instance SizedBV SymWordN where
   BVSEXT_SIZED(SymWordN)
   sizedBVExt = sizedBVZext
   BVSELECT_SIZED(SymWordN)
+  integerToSizedBV p i = con $ integerToSizedBV p i
 #endif
 
 -- BV
@@ -1300,6 +1302,7 @@ instance SomeBV SomeSymIntN where
   BVSEXT(SomeSymIntN, SymIntN)
   someBVExt = someBVSext
   BVSELECT(SomeSymIntN, SymIntN)
+  integerToSomeBV p i = toSym (integerToSomeBV p i :: SomeIntN)
 
 instance SomeBV SomeSymWordN where
   BVCONCAT(SomeSymWordN, SymWordN)
@@ -1307,6 +1310,7 @@ instance SomeBV SomeSymWordN where
   BVSEXT(SomeSymWordN, SymWordN)
   someBVExt = someBVZext
   BVSELECT(SomeSymWordN, SymWordN)
+  integerToSomeBV p i = toSym (integerToSomeBV p i :: SomeWordN)
 #endif
 
 instance (KnownNat n, 1 <= n) => BVSignPair (SymIntN n) (SymWordN n) where

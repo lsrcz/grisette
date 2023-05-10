@@ -23,6 +23,8 @@ import Grisette.Core.Data.DynBV
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding ((.&.))
+import Control.DeepSeq
+import Control.Exception
 
 class
   ( SizedBV bv,
@@ -36,6 +38,9 @@ class
     Show dbv,
     Bits dbv,
     Ord dbv,
+    Real dbv,
+    Integral dbv,
+    NFData dbv,
     Show bv8,
     Show bv32,
     Show bv64,
@@ -173,10 +178,11 @@ cmpOpTest _ name reflexive op =
 
 binOpTest ::
   forall p dbv bv sbv bv8 bv32 bv64.
-  (DynBVAssociate dbv bv sbv bv8 bv32 bv64, Bits (bv 136), Bits (bv 192), Num (bv 136), Num (bv 192)) =>
+  (DynBVAssociate dbv bv sbv bv8 bv32 bv64, Bits (bv 136), Bits (bv 192), Num (bv 136), Num (bv 192),
+  Integral (bv 136), Integral (bv 192)) =>
   p dbv ->
   String ->
-  (forall x. (Bits x, Num x) => x -> x -> x) ->
+  (forall x. (Bits x, Num x, Integral x) => x -> x -> x) ->
   TestTree
 binOpTest _ name op =
   testGroup
@@ -193,6 +199,80 @@ binOpTest _ name op =
             bv192BinProp @dbv $
               \x1 x2 x1n x2n -> ioProperty $ do
                 op x1 x2 @=? sizedBVToDynBV (op x1n x2n)
+        ]
+    ]
+
+newtype AEWrapper = AEWrapper ArithException deriving (Eq)
+
+instance Show AEWrapper where
+  show (AEWrapper x) = show x
+
+instance NFData AEWrapper where
+  rnf (AEWrapper x) = x `seq` ()
+
+throwableBinOpTest ::
+  forall p e dbv bv sbv bv8 bv32 bv64.
+  (DynBVAssociate dbv bv sbv bv8 bv32 bv64, Bits (bv 136), Bits (bv 192), Num (bv 136), Num (bv 192),
+  Integral (bv 136), Integral (bv 192)) =>
+  p dbv ->
+  String ->
+  (forall x. (Bits x, Num x, Integral x) => x -> x -> x) ->
+  TestTree
+throwableBinOpTest _ name op =
+  testGroup
+    name
+    [ testGroup
+        "136"
+        [ testProperty "arbitrary" $
+            bv136BinProp @dbv $
+              \x1 x2 x1n x2n -> ioProperty $ do
+                xa <- evaluate (force $ Right $ op x1 x2) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+                xb <- evaluate (force $ Right $ sizedBVToDynBV (op x1n x2n)) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+                xa @=? xb
+        ],
+      testGroup
+        "192"
+        [ testProperty "arbitrary" $
+            bv192BinProp @dbv $
+              \x1 x2 x1n x2n -> ioProperty $ do
+                xa <- evaluate (force $ Right $ op x1 x2) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+                xb <- evaluate (force $ Right $ sizedBVToDynBV (op x1n x2n)) `catch` \(e :: ArithException) -> return $ Left $ AEWrapper e
+                xa @=? xb
+        ]
+    ]
+
+unaryOpToDirectlyComparableTest ::
+  forall p dbv bv sbv bv8 bv32 bv64 r.
+  ( DynBVAssociate dbv bv sbv bv8 bv32 bv64,
+    Bits (bv 136),
+    Bits (bv 192),
+    Num (bv 136),
+    Num (bv 192),
+    Real (bv 136),
+    Real (bv 192),
+    Integral (bv 136),
+    Integral (bv 192),
+    Eq r,
+    Show r
+  ) =>
+  p dbv ->
+  String ->
+  (forall x. (Bits x, Num x, Real x, Integral x) => x -> r) ->
+  TestTree
+unaryOpToDirectlyComparableTest _ name op =
+  testGroup
+    name
+    [ testGroup
+        "136"
+        [ testProperty "arbitrary" $
+            bv136UnaryProp @dbv $
+              \x1 x1n -> ioProperty $ op x1 @=? op x1n
+        ],
+      testGroup
+        "192"
+        [ testProperty "arbitrary" $
+            bv192UnaryProp @dbv $
+              \x1 x1n -> ioProperty $ op x1 @=? op x1n
         ]
     ]
 
@@ -312,6 +392,8 @@ bitsTests ::
   ( DynBVAssociate dbv bv sbv bv8 bv32 bv64,
     Bits (bv 136),
     Bits (bv 192),
+    Integral (bv 136),
+    Integral (bv 192),
     Num (bv 136),
     Num (bv 192)
   ) =>
@@ -349,6 +431,8 @@ numInstanceTests ::
   ( DynBVAssociate dbv bv sbv bv8 bv32 bv64,
     Bits (bv 136),
     Bits (bv 192),
+    Integral (bv 136),
+    Integral (bv 192),
     Num (bv 136),
     Num (bv 192)
   ) =>
@@ -473,6 +557,50 @@ dynBVInstanceTests p =
             dynBVSelect 136 24 ad @=? sizedBVToDynBV (sizedBVSelect (Proxy @136) (Proxy @24) a)
     ]
 
+realTests ::
+  forall p dbv bv sbv bv8 bv32 bv64.
+  ( DynBVAssociate dbv bv sbv bv8 bv32 bv64,
+    Bits (bv 136),
+    Bits (bv 192),
+    Num (bv 136),
+    Num (bv 192),
+    Real (bv 136),
+    Real (bv 192),
+    Integral (bv 136),
+    Integral (bv 192)
+  ) =>
+  p dbv ->
+  TestTree
+realTests p =
+  testGroup
+    "Real"
+    [ unaryOpToDirectlyComparableTest p "toRational" toRational
+    ]
+
+integralTests ::
+  forall p dbv bv sbv bv8 bv32 bv64.
+  ( DynBVAssociate dbv bv sbv bv8 bv32 bv64,
+    Bits (bv 136),
+    Bits (bv 192),
+    Num (bv 136),
+    Num (bv 192),
+    Real (bv 136),
+    Real (bv 192),
+    Integral (bv 136),
+    Integral (bv 192)
+  ) =>
+  p dbv ->
+  TestTree
+integralTests p =
+  testGroup
+    "Integral"
+    [ throwableBinOpTest p "quot" quot,
+      throwableBinOpTest p "rem" rem,
+      throwableBinOpTest p "div" div,
+      throwableBinOpTest p "mod" mod,
+      unaryOpToDirectlyComparableTest p "toInteger" toInteger
+    ]
+
 dynBVTests :: TestTree
 dynBVTests =
   testGroup
@@ -488,7 +616,9 @@ dynBVTests =
           ordTests dynIntNProxy,
           bitsTests dynIntNProxy True,
           numInstanceTests dynIntNProxy,
-          dynBVInstanceTests dynIntNProxy
+          dynBVInstanceTests dynIntNProxy,
+          realTests dynIntNProxy,
+          integralTests dynIntNProxy
         ],
       testGroup
         "DynWordN"
@@ -501,6 +631,8 @@ dynBVTests =
           ordTests dynWordNProxy,
           bitsTests dynWordNProxy False,
           numInstanceTests dynWordNProxy,
-          dynBVInstanceTests dynWordNProxy
+          dynBVInstanceTests dynWordNProxy,
+          realTests dynWordNProxy,
+          integralTests dynWordNProxy
         ]
     ]

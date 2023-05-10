@@ -31,6 +31,7 @@ import GHC.TypeNats
 import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
 import Language.Haskell.TH.Syntax
+import Data.Bifunctor
 
 -- Helpers
 bvconstHelper :: (HasCallStack) => Int -> Integer -> SomeWordN
@@ -285,22 +286,6 @@ instance BVSignPair DynIntN DynWordN where
 -- WordN
 
 instance DynBVLink DynWordN WordN SomeWordN where
-  dynBVIntegerRep (DynWordN l) = go l 0
-    where
-      go [] r = r
-      go (x : xs) r = go xs (shiftL r 64 + toInteger x)
-
-  integerToDynBV bitwidth r
-    | r < 0 =
-        negate $ integerToDynBV bitwidth (negate r)
-  integerToDynBV bitwidth r = DynWordN $ reverse $ go bitwidth r
-    where
-      go b i | b <= 0 = error "Bad"
-      go b i
-        | b > 64 =
-            SomeWordN (WordN $ i `mod` bit 64 :: WordN 64)
-              : go (b - 64) (i `div` bit 64)
-      go b i = [bvconstHelper b (i `mod` (1 `shiftL` b))]
   someBVToDynBV (SomeWordN i) = sizedBVToDynBV i
   sizedBVToDynBV x@(WordN i) = integerToDynBV (finiteBitSize x) i
 
@@ -311,13 +296,13 @@ instance Eq DynWordN where
   {-# INLINE (/=) #-}
 
 instance Ord DynWordN where
-  (<=) = on (<=) dynBVIntegerRep
+  (<=) = on (<=) toInteger
   {-# INLINE (<=) #-}
-  (<) = on (<) dynBVIntegerRep
+  (<) = on (<) toInteger
   {-# INLINE (<) #-}
-  (>=) = on (>=) dynBVIntegerRep
+  (>=) = on (>=) toInteger
   {-# INLINE (>=) #-}
-  (>) = on (>) dynBVIntegerRep
+  (>) = on (>) toInteger
   {-# INLINE (>) #-}
 
 instance Show DynWordN where
@@ -358,18 +343,18 @@ instance Bits DynWordN where
       (finiteBitSize l)
       (shiftL underlying i .&. (shiftL 1 (finiteBitSize l) - 1))
     where
-      underlying = dynBVIntegerRep l
+      underlying = toInteger l
 
-  shiftR l i = integerToDynBV (finiteBitSize l) (shiftR (dynBVIntegerRep l) i)
+  shiftR l i = integerToDynBV (finiteBitSize l) (shiftR (toInteger l) i)
 
   rotateL bv =
     integerToDynBV (finiteBitSize bv)
-      . rotateLInteger (finiteBitSize bv) (dynBVIntegerRep bv)
+      . rotateLInteger (finiteBitSize bv) (toInteger bv)
   rotateR bv =
     integerToDynBV (finiteBitSize bv)
-      . rotateRInteger (finiteBitSize bv) (dynBVIntegerRep bv)
+      . rotateRInteger (finiteBitSize bv) (toInteger bv)
 
-  popCount = popCount . dynBVIntegerRep
+  popCount = popCount . toInteger
 
 instance FiniteBits DynWordN where
   finiteBitSize (DynWordN s) = finiteBitSize (head s) + 64 * (length s - 1)
@@ -377,9 +362,9 @@ instance FiniteBits DynWordN where
 instance Num DynWordN where
   negate i = complement i + integerToDynBV (finiteBitSize i) 1
   a + b | finiteBitSize a /= finiteBitSize b = throw BitwidthMismatch
-  a + b = integerToDynBV (finiteBitSize a) $ dynBVIntegerRep a + dynBVIntegerRep b
+  a + b = integerToDynBV (finiteBitSize a) $ toInteger a + toInteger b
   a * b | finiteBitSize a /= finiteBitSize b = throw BitwidthMismatch
-  a * b = integerToDynBV (finiteBitSize a) $ dynBVIntegerRep a * dynBVIntegerRep b
+  a * b = integerToDynBV (finiteBitSize a) $ toInteger a * toInteger b
   abs x = x
   signum x | popCount x == 0 = integerToDynBV (finiteBitSize x) 0
   signum x = integerToDynBV (finiteBitSize x) 1
@@ -388,38 +373,30 @@ instance Num DynWordN where
 instance DynBV DynWordN where
   dynBVConcat l r =
     integerToDynBV (finiteBitSize l + finiteBitSize r) $
-      dynBVIntegerRep l `shiftL` finiteBitSize r + dynBVIntegerRep r
+      toInteger l `shiftL` finiteBitSize r + toInteger r
   dynBVZext n l
     | bitsize > n = error "dynBVZext: trying to zero extend a value to a smaller size"
-    | otherwise = integerToDynBV n (dynBVIntegerRep l)
+    | otherwise = integerToDynBV n (toInteger l)
     where
       bitsize = finiteBitSize l
   dynBVSext n l
     | bitsize > n = error "dynBVSext: trying to zero extend a value to a smaller size"
     | testBit l (bitsize - 1) =
-        integerToDynBV n (dynBVIntegerRep l + 1 `shiftL` n - 1 `shiftL` bitsize)
-    | otherwise = integerToDynBV n (dynBVIntegerRep l)
+        integerToDynBV n (toInteger l + 1 `shiftL` n - 1 `shiftL` bitsize)
+    | otherwise = integerToDynBV n (toInteger l)
     where
       bitsize = finiteBitSize l
   dynBVExt = dynBVZext
   dynBVSelect ix w l
     | ix + w > bitsize || ix < 0 = error "dynBVSelect: trying to select a bitvector outside the bounds of the input"
     | w <= 0 = error "dynBVSelect: trying to select a bitvector of negative or zero size"
-    | otherwise = integerToDynBV w (dynBVIntegerRep l `shiftR` ix)
+    | otherwise = integerToDynBV w (toInteger l `shiftR` ix)
     where
       bitsize = finiteBitSize l
-
--- IntN
-
-instance DynBVLink DynIntN IntN SomeIntN where
-  dynBVIntegerRep (DynIntN l) = go l 0
-    where
-      go [] r = r
-      go (x : xs) r = go xs (shiftL r 64 + toInteger x)
   integerToDynBV bitwidth r
     | r < 0 =
         negate $ integerToDynBV bitwidth (negate r)
-  integerToDynBV bitwidth r = DynIntN $ reverse $ go bitwidth r
+  integerToDynBV bitwidth r = DynWordN $ reverse $ go bitwidth r
     where
       go b i | b <= 0 = error "Bad"
       go b i
@@ -428,6 +405,34 @@ instance DynBVLink DynIntN IntN SomeIntN where
               : go (b - 64) (i `div` bit 64)
       go b i = [bvconstHelper b (i `mod` (1 `shiftL` b))]
 
+instance Real DynWordN where
+  toRational = toRational . toInteger
+instance Enum DynWordN where
+  toEnum = error "DynWordN is not really a Enum type as the bit width is unknown, please consider using WordN instead"
+  fromEnum = error "DynWordN is not really a Enum type as the bit width is unknown, please consider using WordN instead"
+instance Integral DynWordN where
+  toInteger (DynWordN l) = go l 0
+    where
+      go [] r = r
+      go (x : xs) r = go xs (shiftL r 64 + toInteger x)
+  quot l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  quot l r = integerToDynBV (finiteBitSize l) $ quot (toInteger l) (toInteger r)
+  rem l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  rem l r = integerToDynBV (finiteBitSize l) $ rem (toInteger l) (toInteger r)
+  quotRem l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  quotRem l r = case quotRem (toInteger l) (toInteger r) of
+    (q, r) -> (integerToDynBV (finiteBitSize l) q, integerToDynBV (finiteBitSize l) r)
+  div l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  div l r = integerToDynBV (finiteBitSize l) $ div (toInteger l) (toInteger r)
+  mod l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  mod l r = integerToDynBV (finiteBitSize l) $ mod (toInteger l) (toInteger r)
+  divMod l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  divMod l r = case divMod (toInteger l) (toInteger r) of
+    (d, m) -> (integerToDynBV (finiteBitSize l) d, integerToDynBV (finiteBitSize l) m)
+
+-- IntN
+
+instance DynBVLink DynIntN IntN SomeIntN where
   someBVToDynBV (SomeIntN i) = sizedBVToDynBV i
 
   sizedBVToDynBV x@(IntN i) = integerToDynBV (finiteBitSize x) i
@@ -497,7 +502,7 @@ instance Bits DynIntN where
       (finiteBitSize l)
       (shiftL underlying i .&. (shiftL 1 (finiteBitSize l) - 1))
     where
-      underlying = dynBVIntegerRep l
+      underlying = toInteger $ toUnsigned l
 
   shiftR l 0 = l
   shiftR i@(DynIntN l) k
@@ -506,7 +511,7 @@ instance Bits DynIntN where
         integerToDynBV n $
           if b then maxi - noi + (intRep `shiftR` k) else intRep `shiftR` k
     where
-      intRep = dynBVIntegerRep i
+      intRep = toInteger $ toUnsigned i
       b = testBit (head l) (finiteBitSize (head l) - 1)
       n = finiteBitSize i
       maxi = (1 :: Integer) `shiftL` n
@@ -590,3 +595,33 @@ instance DynBV DynIntN where
   dynBVZext n = toSigned . dynBVZext n . toUnsigned
   dynBVExt = dynBVSext
   dynBVSelect ix w = toSigned . dynBVSelect ix w . toUnsigned
+  integerToDynBV bitwidth r = case integerToDynBV bitwidth r of
+    DynWordN l -> DynIntN l
+
+instance Real DynIntN where
+  toRational = toRational . toInteger
+
+instance Enum DynIntN where
+  toEnum = error "DynIntN is not really a Enum type as the bit width is unknown, please consider using IntN instead"
+  fromEnum = error "DynIntN is not really a Enum type as the bit width is unknown, please consider using IntN instead"
+
+instance Integral DynIntN where
+  toInteger i@(DynIntN l) =
+    if s then u - (1 `shiftL` finiteBitSize i) else u
+    where
+      s = testBit i (finiteBitSize i - 1)
+      u = toInteger (DynWordN l)
+  quot l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  quot l r = integerToDynBV (finiteBitSize l) $ quot (toInteger l) (toInteger r)
+  rem l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  rem l r = integerToDynBV (finiteBitSize l) $ rem (toInteger l) (toInteger r)
+  quotRem l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  quotRem l r = case quotRem (toInteger l) (toInteger r) of
+    (q, r) -> (integerToDynBV (finiteBitSize l) q, integerToDynBV (finiteBitSize l) r)
+  div l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  div l r = integerToDynBV (finiteBitSize l) $ div (toInteger l) (toInteger r)
+  mod l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  mod l r = integerToDynBV (finiteBitSize l) $ mod (toInteger l) (toInteger r)
+  divMod l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+  divMod l r = case divMod (toInteger l) (toInteger r) of
+    (d, m) -> (integerToDynBV (finiteBitSize l) d, integerToDynBV (finiteBitSize l) m)

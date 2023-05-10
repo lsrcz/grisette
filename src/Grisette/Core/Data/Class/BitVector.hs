@@ -105,6 +105,8 @@ class SomeBV bv where
     bv ->
     bv
 
+  integerToSomeBV :: (KnownNat n, 1 <= n) => Proxy n -> Integer -> bv
+
   -- | Slicing out a smaller bit vector from a larger one,
   -- selecting a slice with width @w@ starting from index @ix@.
   --
@@ -312,6 +314,8 @@ class SizedBV bv where
     bv n ->
     bv w
 
+  integerToSizedBV :: (KnownNat n, 1 <= n) => Proxy n -> Integer -> bv n
+
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.
 --
@@ -403,6 +407,8 @@ class DynBV bv where
     bv ->
     bv
 
+  integerToDynBV :: Int -> Integer -> bv
+
 class BVSignPair sbv ubv | sbv -> ubv, ubv -> sbv where
   toSigned :: ubv -> sbv
   toUnsigned :: sbv -> ubv
@@ -413,7 +419,5 @@ class
       bv -> dbv somebv,
       somebv -> dbv bv
   where
-  dynBVIntegerRep :: dbv -> Integer
-  integerToDynBV :: Int -> Integer -> dbv
   someBVToDynBV :: somebv -> dbv
   sizedBVToDynBV :: (KnownNat n, 1 <= n) => bv n -> dbv
