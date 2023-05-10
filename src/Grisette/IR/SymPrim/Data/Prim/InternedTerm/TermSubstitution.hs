@@ -70,8 +70,8 @@ substTerm sym term = gov
         ShiftBitsTerm _ op n -> SomeTerm $ pevalShiftBitsTerm (gov op) n
         RotateBitsTerm _ op n -> SomeTerm $ pevalRotateBitsTerm (gov op) n
         TestBitTerm _ op n -> SomeTerm $ pevalTestBitTerm (gov op) n
-        BVToSignedTerm _ arg -> SomeTerm $ pevalBVToSignedTerm (gov arg)
-        BVToUnsignedTerm _ arg -> SomeTerm $ pevalBVToUnsignedTerm (gov arg)
+        BVToSignedTerm _ arg -> SomeTerm (pevalBVToSignedTerm (gov arg) :: Term v)
+        BVToUnsignedTerm _ arg -> SomeTerm (pevalBVToUnsignedTerm (gov arg) :: Term v)
         BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)
         BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)
         BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)

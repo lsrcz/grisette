@@ -7,6 +7,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -35,26 +36,38 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+import Grisette.Utils
+import qualified Type.Reflection as R
 
 -- toSigned
 pevalBVToSignedTerm ::
-  ( SupportedPrim (ubv n),
-    SupportedPrim (sbv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    SizedBV sbv,
+    SizedBV ubv,
     KnownNat n,
-    1 <= n,
-    BVSignPair (sbv n) (ubv n)
+    1 <= n
   ) =>
   Term (ubv n) ->
   Term (sbv n)
 pevalBVToSignedTerm = unaryUnfoldOnce doPevalBVToSignedTerm bvToSignedTerm
 
 doPevalBVToSignedTerm ::
-  ( SupportedPrim (ubv n),
-    SupportedPrim (sbv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    SizedBV sbv,
+    SizedBV ubv,
     KnownNat n,
-    1 <= n,
-    BVSignPair (sbv n) (ubv n)
+    1 <= n
   ) =>
   Term (ubv n) ->
   Maybe (Term (sbv n))
@@ -64,22 +77,30 @@ doPevalBVToSignedTerm _ = Nothing
 
 -- toUnsigned
 pevalBVToUnsignedTerm ::
-  ( SupportedPrim (ubv n),
-    SupportedPrim (sbv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    SizedBV sbv,
+    SizedBV ubv,
     KnownNat n,
-    1 <= n,
-    BVSignPair (sbv n) (ubv n)
+    1 <= n
   ) =>
   Term (sbv n) ->
   Term (ubv n)
 pevalBVToUnsignedTerm = unaryUnfoldOnce doPevalBVToUnsignedTerm bvToUnsignedTerm
 
 doPevalBVToUnsignedTerm ::
-  ( SupportedPrim (ubv n),
-    SupportedPrim (sbv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    SizedBV sbv,
+    SizedBV ubv,
     KnownNat n,
-    1 <= n,
-    BVSignPair (sbv n) (ubv n)
+    1 <= n
   ) =>
   Term (sbv n) ->
   Maybe (Term (ubv n))
@@ -123,6 +144,37 @@ doPevalBVSelectTerm ::
   Term (bv n) ->
   Maybe (Term (bv w))
 doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
+doPevalBVSelectTerm ix w (BVExtendTerm _ signed r (b :: Term (bv b)))
+  | ixv + wv <= bv = case unsafeLeqProof @(ix + w) @b of
+      LeqProof -> Just $ pevalBVSelectTerm ix w b
+  | ixv >= bv && not signed = Just $ conTerm $ integerToSizedBV (Proxy @w) 0
+  | ixv >= bv && signed =
+      let t = pevalTestBitTerm b (fromIntegral $ bv - 1)
+       in Just $ pevalITETerm t (conTerm $ integerToSizedBV (Proxy @w) $ -1) (conTerm $ integerToSizedBV (Proxy @w) 0)
+  where
+    ixv = natVal ix
+    wv = natVal w
+    rv = natVal r
+    bv = natVal (Proxy @b)
+doPevalBVSelectTerm ix w (BVSelectTerm _ (ix' :: R.TypeRep ix') (w' :: R.TypeRep w') (b :: Term (bv b))) =
+  case (unsafeKnownProof @(ix + ix') (ixv + ixv'), unsafeLeqProof @((ix + ix') + w) @b) of
+    (KnownProof, LeqProof) -> Just $ pevalBVSelectTerm (Proxy @(ix + ix')) w b
+  where
+    ixv = natVal ix
+    ixv' = natVal ix'
+doPevalBVSelectTerm ix w (BVConcatTerm _ (l :: Term (bv l)) (r :: Term (bv r)))
+  | ixv + wv <= rv = case unsafeLeqProof @(ix + w) @r of
+      LeqProof -> Just $ pevalBVSelectTerm ix w r
+  | ixv >= rv = case (unsafeKnownProof @(ix - r) (ixv - rv), unsafeLeqProof @((ix - r) + w) @l) of
+      (KnownProof, LeqProof) -> Just $ pevalBVSelectTerm (Proxy @(ix - r)) w l
+  where
+    ixv = natVal ix
+    wv = natVal w
+    rv = natVal (Proxy @r)
+doPevalBVSelectTerm ix w (BVToSignedTerm _ l) =
+  Just $ pevalBVToSignedTerm $ pevalBVSelectTerm ix w l
+doPevalBVSelectTerm ix w (BVToUnsignedTerm _ l) =
+  Just $ pevalBVToUnsignedTerm $ pevalBVSelectTerm ix w l
 doPevalBVSelectTerm _ _ _ = Nothing
 
 -- ext

@@ -332,21 +332,29 @@ data Term t where
   RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
   TestBitTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term Bool
   BVToUnsignedTerm ::
-    ( SupportedPrim (ubv n),
-      SupportedPrim (sbv n),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+      forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+      forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+      Typeable sbv,
+      Typeable ubv,
+      SizedBV sbv,
+      SizedBV ubv,
       KnownNat n,
-      1 <= n,
-      BVSignPair (sbv n) (ubv n)
+      1 <= n
     ) =>
     {-# UNPACK #-} !Id ->
     !(Term (sbv n)) ->
     Term (ubv n)
   BVToSignedTerm ::
-    ( SupportedPrim (ubv n),
-      SupportedPrim (sbv n),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+      forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+      forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+      Typeable sbv,
+      Typeable ubv,
+      SizedBV sbv,
+      SizedBV ubv,
       KnownNat n,
-      1 <= n,
-      BVSignPair (sbv n) (ubv n)
+      1 <= n
     ) =>
     {-# UNPACK #-} !Id ->
     !(Term (ubv n)) ->
@@ -599,20 +607,28 @@ data UTerm t where
   URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
   UTestBitTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm Bool
   UBVToUnsignedTerm ::
-    ( SupportedPrim (ubv n),
-      SupportedPrim (sbv n),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+      forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+      forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+      Typeable sbv,
+      Typeable ubv,
+      SizedBV sbv,
+      SizedBV ubv,
       KnownNat n,
-      1 <= n,
-      BVSignPair (sbv n) (ubv n)
+      1 <= n
     ) =>
     !(Term (sbv n)) ->
     UTerm (ubv n)
   UBVToSignedTerm ::
-    ( SupportedPrim (ubv n),
-      SupportedPrim (sbv n),
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+      forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+      forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+      Typeable sbv,
+      Typeable ubv,
+      SizedBV sbv,
+      SizedBV ubv,
       KnownNat n,
-      1 <= n,
-      BVSignPair (sbv n) (ubv n)
+      1 <= n
     ) =>
     !(Term (ubv n)) ->
     UTerm (sbv n)

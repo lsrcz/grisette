@@ -4,6 +4,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
@@ -35,6 +36,7 @@ module Grisette.Core.Data.Class.BitVector
   )
 where
 
+import Data.Bits
 import Data.Proxy
 import GHC.TypeNats
 import Grisette.Utils.Parameterized
@@ -246,7 +248,7 @@ someBVExtract' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownProof (hasRepr p
 -- | Sized bit vector operations. Including concatenation ('sizedBVConcat'),
 -- extension ('sizedBVZext', 'sizedBVSext', 'sizedBVExt'), and selection
 -- ('sizedBVSelect').
-class SizedBV bv where
+class (forall n. (KnownNat n, 1 <= n) => Bits (bv n)) => SizedBV bv where
   -- | Concatenation of two bit vectors.
   --
   -- >>> sizedBVConcat (0b101 :: SymIntN 3) (0b010 :: SymIntN 3)

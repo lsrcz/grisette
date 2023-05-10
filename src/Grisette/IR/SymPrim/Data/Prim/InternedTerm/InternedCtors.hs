@@ -234,11 +234,15 @@ testBitTerm t n = internTerm $ UTestBitTerm t n
 {-# INLINE testBitTerm #-}
 
 bvToUnsignedTerm ::
-  ( SupportedPrim (ubv n),
-    SupportedPrim (sbv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    SizedBV sbv,
+    SizedBV ubv,
     KnownNat n,
-    1 <= n,
-    BVSignPair (sbv n) (ubv n)
+    1 <= n
   ) =>
   Term (sbv n) ->
   Term (ubv n)
@@ -246,11 +250,15 @@ bvToUnsignedTerm t = internTerm $ UBVToUnsignedTerm t
 {-# INLINE bvToUnsignedTerm #-}
 
 bvToSignedTerm ::
-  ( SupportedPrim (ubv n),
-    SupportedPrim (sbv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => BVSignPair (sbv n) (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    SizedBV sbv,
+    SizedBV ubv,
     KnownNat n,
-    1 <= n,
-    BVSignPair (sbv n) (ubv n)
+    1 <= n
   ) =>
   Term (ubv n) ->
   Term (sbv n)

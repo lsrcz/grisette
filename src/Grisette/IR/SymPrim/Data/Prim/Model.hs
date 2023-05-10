@@ -334,10 +334,10 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goUnary (`pevalRotateBitsTerm` n) arg
     go (SomeTerm (TestBitTerm _ arg n)) =
       goUnary (`pevalTestBitTerm` n) arg
-    go (SomeTerm (BVToSignedTerm _ arg)) =
-      goUnary pevalBVToSignedTerm arg
-    go (SomeTerm (BVToUnsignedTerm _ arg)) =
-      goUnary pevalBVToUnsignedTerm arg
+    go (SomeTerm (BVToSignedTerm _ (arg :: Term a) :: Term b)) =
+      goUnary @a @b pevalBVToSignedTerm arg
+    go (SomeTerm (BVToUnsignedTerm _ (arg :: Term a) :: Term b)) =
+      goUnary @a @b pevalBVToUnsignedTerm arg
     go (SomeTerm (BVConcatTerm _ arg1 arg2)) =
       goBinary pevalBVConcatTerm arg1 arg2
     go (SomeTerm (BVSelectTerm _ ix w arg)) =

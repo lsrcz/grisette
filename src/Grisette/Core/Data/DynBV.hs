@@ -19,6 +19,7 @@ where
 import Control.DeepSeq
 import Control.Exception
 import Control.Monad
+import Data.Bifunctor
 import Data.Bits
 import Data.CallStack
 import Data.Function
@@ -31,7 +32,6 @@ import GHC.TypeNats
 import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
 import Language.Haskell.TH.Syntax
-import Data.Bifunctor
 
 -- Helpers
 bvconstHelper :: (HasCallStack) => Int -> Integer -> SomeWordN
@@ -102,8 +102,13 @@ bvconstHelper 62 v = SomeWordN (WordN v :: WordN 62)
 bvconstHelper 63 v = SomeWordN (WordN v :: WordN 63)
 bvconstHelper 64 v = SomeWordN (WordN v :: WordN 64)
 
-someBVDynamicSelectHelper :: forall bv. (HasCallStack, SomeBV bv, FiniteBits bv)
-  => Int -> Int -> bv -> bv
+someBVDynamicSelectHelper ::
+  forall bv.
+  (HasCallStack, SomeBV bv, FiniteBits bv) =>
+  Int ->
+  Int ->
+  bv ->
+  bv
 someBVDynamicSelectHelper ix w bv | 1 <= w && ix + w <= n && ix <= 64 && w <= 64 =
   case w of
     0 -> f1 (Proxy @0)
@@ -407,9 +412,11 @@ instance DynBV DynWordN where
 
 instance Real DynWordN where
   toRational = toRational . toInteger
+
 instance Enum DynWordN where
   toEnum = error "DynWordN is not really a Enum type as the bit width is unknown, please consider using WordN instead"
   fromEnum = error "DynWordN is not really a Enum type as the bit width is unknown, please consider using WordN instead"
+
 instance Integral DynWordN where
   toInteger (DynWordN l) = go l 0
     where

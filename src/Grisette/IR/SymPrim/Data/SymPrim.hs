@@ -85,6 +85,7 @@ import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
+import Grisette.Core.Data.Class.SBits
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SafeArith
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -110,7 +111,6 @@ import Grisette.IR.SymPrim.Data.TabularFun
 import Grisette.Lib.Control.Monad
 import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
-import Grisette.Core.Data.Class.SBits
 
 -- $setup
 -- >>> import Grisette.Core
@@ -734,7 +734,6 @@ instance (KnownNat n, 1 <= n) => SBits (symtype n) where \
 SBITS_BV(SymIntN)
 SBITS_BV(SymWordN)
 #endif
-
 
 -- Show
 
