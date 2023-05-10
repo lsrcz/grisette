@@ -4,6 +4,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( constructUnary,
