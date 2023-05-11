@@ -31,6 +31,7 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
 where
 
 import Data.Typeable
+import Debug.Trace
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -38,6 +39,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
 import Grisette.Utils
 import qualified Type.Reflection as R
@@ -144,6 +146,14 @@ doPevalBVSelectTerm ::
   Term (bv n) ->
   Maybe (Term (bv w))
 doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
+doPevalBVSelectTerm ix w b
+  | ixv == 0 && wv == bv =
+      case unsafeAxiom @w @n of
+        Refl -> Just b
+  where
+    ixv = natVal ix
+    wv = natVal w
+    bv = natVal (Proxy @n)
 doPevalBVSelectTerm ix w (BVExtendTerm _ signed r (b :: Term (bv b)))
   | ixv + wv <= bv = case unsafeLeqProof @(ix + w) @b of
       LeqProof -> Just $ pevalBVSelectTerm ix w b
@@ -151,10 +161,18 @@ doPevalBVSelectTerm ix w (BVExtendTerm _ signed r (b :: Term (bv b)))
   | ixv >= bv && signed =
       let t = pevalTestBitTerm b (fromIntegral $ bv - 1)
        in Just $ pevalITETerm t (conTerm $ integerToSizedBV (Proxy @w) $ -1) (conTerm $ integerToSizedBV (Proxy @w) 0)
+  | ixv + wv < nv =
+      case ( unsafeKnownProof @(ix + w) (ixv + wv),
+             unsafeLeqProof @(ix + w) @(ix + w),
+             unsafeLeqProof @b @(ix + w),
+             unsafeLeqProof @1 @(ix + w)
+           ) of
+        (KnownProof, LeqProof, LeqProof, LeqProof) ->
+          Just $ pevalBVSelectTerm ix w $ pevalBVExtendTerm signed (Proxy @(ix + w)) b
   where
     ixv = natVal ix
     wv = natVal w
-    rv = natVal r
+    nv = natVal (Proxy @n)
     bv = natVal (Proxy @b)
 doPevalBVSelectTerm ix w (BVSelectTerm _ (ix' :: R.TypeRep ix') (w' :: R.TypeRep w') (b :: Term (bv b))) =
   case (unsafeKnownProof @(ix + ix') (ixv + ixv'), unsafeLeqProof @((ix + ix') + w) @b) of

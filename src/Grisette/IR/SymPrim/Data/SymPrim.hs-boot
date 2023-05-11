@@ -14,6 +14,8 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SymWordN (..),
     SomeSymIntN (..),
     SomeSymWordN (..),
+    DynSymWordN (..),
+    DynSymIntN (..),
     type (=~>) (..),
     type (-~>) (..),
     SomeSym (..),
@@ -42,12 +44,17 @@ import Grisette.Core.Data.Class.Solvable
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
+import Data.Bits
 
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
 
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
+
+newtype DynSymWordN = DynSymWordN [SomeSymWordN]
+
+newtype DynSymIntN = DynSymIntN [SomeSymWordN]
 
 data SomeSymIntN where
   SomeSymIntN :: (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
@@ -115,6 +122,10 @@ instance (KnownNat n, 1 <= n) => Solvable (IntN n) (SymIntN n)
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (ca --> cb) (sa -~> sb)
 
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (ca =-> cb) (sa =~> sb)
+
+instance FiniteBits DynSymIntN
+
+instance FiniteBits DynSymWordN
 
 data SomeSym where
   SomeSym :: (LinkedRep con sym) => sym -> SomeSym

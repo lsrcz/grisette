@@ -79,6 +79,8 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 import Unsafe.Coerce
+import Grisette.Core.Data.DynBV
+import Data.Bits
 
 -- | Helper type for combining arbitrary number of indices into one.
 -- Useful when trying to write efficient merge strategy for lists/vectors.
@@ -478,6 +480,26 @@ instance Mergeable SomeWordN where
       ( \n ->
           SortedStrategy @Integer
             (\(SomeWordN (WordN i)) -> toInteger i)
+            (const $ SimpleStrategy $ \_ l _ -> l)
+      )
+
+instance Mergeable DynIntN where
+  rootStrategy =
+    SortedStrategy
+      finiteBitSize
+      ( \n ->
+          SortedStrategy @Integer
+            toInteger
+            (const $ SimpleStrategy $ \_ l _ -> l)
+      )
+
+instance Mergeable DynWordN where
+  rootStrategy =
+    SortedStrategy
+      finiteBitSize
+      ( \n ->
+          SortedStrategy @Integer
+            toInteger
             (const $ SimpleStrategy $ \_ l _ -> l)
       )
 
@@ -983,6 +1005,13 @@ instance Mergeable symtype where \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Mergeable (sa op sb) where \
   rootStrategy = SimpleStrategy ites
 
+#define MERGEABLE_BV_DYN(dynbv) \
+instance Mergeable dynbv where \
+  rootStrategy = SimpleStrategy $ \
+    \ c l@(dynbv l1) r@(dynbv r1) -> \
+      if finiteBitSize l == finiteBitSize r then \
+        dynbv $ zipWith (ites c) l1 r1 else throw BitwidthMismatch
+
 #if 1
 MERGEABLE_SIMPLE(SymBool)
 MERGEABLE_SIMPLE(SymInteger)
@@ -992,6 +1021,8 @@ MERGEABLE_BV_SOME(SomeSymIntN)
 MERGEABLE_BV_SOME(SomeSymWordN)
 MERGEABLE_FUN(=~>)
 MERGEABLE_FUN(-~>)
+MERGEABLE_BV_DYN(DynSymIntN)
+MERGEABLE_BV_DYN(DynSymWordN)
 #endif
 
 -- Exceptions

@@ -192,6 +192,7 @@ test-suite spec
       Grisette.Core.Control.Monad.UnionMTests
       Grisette.Core.Data.BVTests
       Grisette.Core.Data.DynBVTests
+      Grisette.IR.SymPrim.Data.DynSymBVTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
       Grisette.IR.SymPrim.Data.Prim.BVTests

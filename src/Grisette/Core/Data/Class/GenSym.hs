@@ -17,6 +17,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.GenSym
@@ -1597,6 +1599,94 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
       FreshIdent s -> return $ isym s i; \
       FreshIdentWithInfo s info -> return $ iinfosym s i info
 
+#define GENSYM_BV_DYN(symtype) \
+instance GenSym symtype symtype
+#define GENSYM_SIMPLE_BV_DYN(symtype) \
+instance GenSymSimple symtype symtype where \
+  simpleFresh (symtype v) = symtype <$> traverse simpleFresh v
+#define GENSYM_N_BV_DYN(symtype) \
+instance GenSym Int symtype where
+#define GENSYM_N_SIMPLE_BV_DYN(symtype) \
+instance GenSymSimple Int symtype where \
+  simpleFresh :: forall m. ( MonadFresh m ) => Int -> m symtype; \
+  simpleFresh i | i <= 0 = error "Can only generate bitvectors with positive bit width"; \
+  simpleFresh i = do \
+    l <- go i; \
+    return $ symtype $ reverse l \
+    where \
+      go i | i <= 64 = (do; \
+        i <- gen1 i; \
+        return [i]); \
+      go i = (do; \
+        h <- gen1 64; \
+        r <- go (i - 64); \
+        return $ h : r); \
+      gen1 1 = simpleFresh (Proxy @1); \
+      gen1 2 = simpleFresh (Proxy @2); \
+      gen1 3 = simpleFresh (Proxy @3); \
+      gen1 4 = simpleFresh (Proxy @4); \
+      gen1 5 = simpleFresh (Proxy @5); \
+      gen1 6 = simpleFresh (Proxy @6); \
+      gen1 7 = simpleFresh (Proxy @7); \
+      gen1 8 = simpleFresh (Proxy @8); \
+      gen1 9 = simpleFresh (Proxy @9); \
+      gen1 10 = simpleFresh (Proxy @10); \
+      gen1 11 = simpleFresh (Proxy @11); \
+      gen1 12 = simpleFresh (Proxy @12); \
+      gen1 13 = simpleFresh (Proxy @13); \
+      gen1 14 = simpleFresh (Proxy @14); \
+      gen1 15 = simpleFresh (Proxy @15); \
+      gen1 16 = simpleFresh (Proxy @16); \
+      gen1 17 = simpleFresh (Proxy @17); \
+      gen1 18 = simpleFresh (Proxy @18); \
+      gen1 19 = simpleFresh (Proxy @19); \
+      gen1 20 = simpleFresh (Proxy @20); \
+      gen1 21 = simpleFresh (Proxy @21); \
+      gen1 22 = simpleFresh (Proxy @22); \
+      gen1 23 = simpleFresh (Proxy @23); \
+      gen1 24 = simpleFresh (Proxy @24); \
+      gen1 25 = simpleFresh (Proxy @25); \
+      gen1 26 = simpleFresh (Proxy @26); \
+      gen1 27 = simpleFresh (Proxy @27); \
+      gen1 28 = simpleFresh (Proxy @28); \
+      gen1 29 = simpleFresh (Proxy @29); \
+      gen1 30 = simpleFresh (Proxy @30); \
+      gen1 31 = simpleFresh (Proxy @31); \
+      gen1 32 = simpleFresh (Proxy @32); \
+      gen1 33 = simpleFresh (Proxy @33); \
+      gen1 34 = simpleFresh (Proxy @34); \
+      gen1 35 = simpleFresh (Proxy @35); \
+      gen1 36 = simpleFresh (Proxy @36); \
+      gen1 37 = simpleFresh (Proxy @37); \
+      gen1 38 = simpleFresh (Proxy @38); \
+      gen1 39 = simpleFresh (Proxy @39); \
+      gen1 40 = simpleFresh (Proxy @40); \
+      gen1 41 = simpleFresh (Proxy @41); \
+      gen1 42 = simpleFresh (Proxy @42); \
+      gen1 43 = simpleFresh (Proxy @43); \
+      gen1 44 = simpleFresh (Proxy @44); \
+      gen1 45 = simpleFresh (Proxy @45); \
+      gen1 46 = simpleFresh (Proxy @46); \
+      gen1 47 = simpleFresh (Proxy @47); \
+      gen1 48 = simpleFresh (Proxy @48); \
+      gen1 49 = simpleFresh (Proxy @49); \
+      gen1 50 = simpleFresh (Proxy @50); \
+      gen1 51 = simpleFresh (Proxy @51); \
+      gen1 52 = simpleFresh (Proxy @52); \
+      gen1 53 = simpleFresh (Proxy @53); \
+      gen1 54 = simpleFresh (Proxy @54); \
+      gen1 55 = simpleFresh (Proxy @55); \
+      gen1 56 = simpleFresh (Proxy @56); \
+      gen1 57 = simpleFresh (Proxy @57); \
+      gen1 58 = simpleFresh (Proxy @58); \
+      gen1 59 = simpleFresh (Proxy @59); \
+      gen1 60 = simpleFresh (Proxy @60); \
+      gen1 61 = simpleFresh (Proxy @61); \
+      gen1 62 = simpleFresh (Proxy @62); \
+      gen1 63 = simpleFresh (Proxy @63); \
+      gen1 64 = simpleFresh (Proxy @64); \
+      gen1 _ = error "Bug"
+
 #if 1
 GENSYM_SIMPLE(SymBool)
 GENSYM_SIMPLE_SIMPLE(SymBool)
@@ -1624,6 +1714,15 @@ GENSYM_BV_SOME(SomeSymWordN)
 GENSYM_SIMPLE_BV_SOME(SomeSymWordN)
 GENSYM_N_BV_SOME(SomeSymWordN)
 GENSYM_N_SIMPLE_BV_SOME(SomeSymWordN, SymWordN)
+
+GENSYM_BV_DYN(DynSymIntN)
+GENSYM_BV_DYN(DynSymWordN)
+GENSYM_SIMPLE_BV_DYN(DynSymIntN)
+GENSYM_SIMPLE_BV_DYN(DynSymWordN)
+GENSYM_N_BV_DYN(DynSymIntN)
+GENSYM_N_BV_DYN(DynSymWordN)
+GENSYM_N_SIMPLE_BV_DYN(DynSymIntN)
+GENSYM_N_SIMPLE_BV_DYN(DynSymWordN)
 
 GENSYM_FUN(=~>)
 GENSYM_SIMPLE_FUN(=~>)

@@ -10,7 +10,8 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Grisette.Core.Data.DynBV
-  ( someBVDynamicSelectHelper,
+  ( bvconstHelper,
+    someBVDynamicSelectHelper,
     DynIntN (..),
     DynWordN (..),
   )

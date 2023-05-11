@@ -66,6 +66,9 @@ import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Data.Bits
+import Control.Exception
+import Grisette.Core.Data.BV
 
 -- $setup
 -- >>> import Grisette.Core
@@ -795,6 +798,12 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
   mrgIte = ites; \
   {-# INLINE mrgIte #-}
 
+#define SIMPLE_MERGEABLE_DYN_BV(symtype) \
+instance SimpleMergeable symtype where \
+  mrgIte c l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch; \
+  mrgIte c (symtype l) (symtype r) = symtype $ zipWith (mrgIte c) l r; \
+  {-# INLINE mrgIte #-}
+
 #if 1
 SIMPLE_MERGEABLE_SIMPLE(SymBool)
 SIMPLE_MERGEABLE_SIMPLE(SymInteger)
@@ -804,4 +813,6 @@ SIMPLE_MERGEABLE_SOME_BV(SomeSymIntN, binSomeSymIntNR1)
 SIMPLE_MERGEABLE_SOME_BV(SomeSymWordN, binSomeSymWordNR1)
 SIMPLE_MERGEABLE_FUN(=~>)
 SIMPLE_MERGEABLE_FUN(-~>)
+SIMPLE_MERGEABLE_DYN_BV(DynSymIntN)
+SIMPLE_MERGEABLE_DYN_BV(DynSymWordN)
 #endif

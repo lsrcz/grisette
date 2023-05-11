@@ -18,6 +18,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use sum" #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.SymPrim
@@ -34,6 +36,9 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SymIntN (..),
     SomeSymWordN (..),
     SomeSymIntN (..),
+    DynSymWordN (..),
+    DynSymIntN (..),
+    someBVSext1,
     type (=~>) (..),
     type (-~>) (..),
     (-->),
@@ -67,6 +72,7 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Hashable
 import Data.Int
+import Data.List (intercalate)
 import Data.Proxy
 import Data.String
 import Data.Typeable
@@ -111,6 +117,11 @@ import Grisette.IR.SymPrim.Data.TabularFun
 import Grisette.Lib.Control.Monad
 import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
+import Grisette.Core.Data.Class.SBits
+import Grisette.Core.Data.DynBV
+import Debug.Trace
+import Data.CallStack
+import Control.Exception
 
 -- $setup
 -- >>> import Grisette.Core
@@ -461,6 +472,10 @@ binSomeSymWordNR2 op str (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: Sy
     Nothing -> error $ "Operation " ++ str ++ " on SymWordN with different bitwidth"
 {-# INLINE binSomeSymWordNR2 #-}
 
+newtype DynSymWordN = DynSymWordN [SomeSymWordN]
+
+newtype DynSymIntN = DynSymIntN [SomeSymWordN]
+
 instance ConRep SymBool where
   type ConType SymBool = Bool
 
@@ -652,6 +667,71 @@ instance Num SymInteger where
   signum (SymInteger v) = SymInteger $ pevalSignumNumTerm v
   fromInteger = con
 
+instance Num DynSymWordN where
+  negate l = complement l + integerToDynBV (finiteBitSize l) 1
+  l + r | finiteBitSize l /= finiteBitSize r =
+    error "Operation (+) on DynSymIntN with different bitwidth"
+  (DynSymWordN l) + (DynSymWordN r) =
+        DynSymWordN $ reverse $
+          go (reverse el) (reverse er) (integerToSomeBV (Proxy @65) 0) 
+    where
+      el = someBVZext (Proxy @65) <$> l
+      er = someBVZext (Proxy @65) <$> r
+      go [lv] [rv] carry = 
+        case head l of
+          SomeSymWordN v ->
+            [someBVSelect (Proxy @0) v lv +
+             (someBVSelect (Proxy @0) v rv + someBVSelect (Proxy @0) v carry)]
+      go (lv:ls) (rv:rs) carry =
+        let
+          newcarry = someBVZext (Proxy @65) $ someBVSelect (Proxy @64) (Proxy @1) (lv + (rv + carry))
+         in
+          (someBVSelect (Proxy @0) (Proxy @64) lv +
+           (
+           someBVSelect (Proxy @0) (Proxy @64) rv +
+           someBVSelect (Proxy @0) (Proxy @64) carry))
+           : go ls rs newcarry
+      go _ _ _ = error "Bad"
+  l * r | finiteBitSize l /= finiteBitSize r =
+    error "Operation (+) on DynSymIntN with different bitwidth"
+  (DynSymWordN l) * (DynSymWordN r) = 
+      case head l of
+        SomeSymWordN v -> trace (show computed) $ foldl1 (+) computed
+    where
+      el = someBVZext (Proxy @129) <$> l
+      er = someBVZext (Proxy @129) <$> r
+      constructCorr 0 l [] = []
+      constructCorr i l (r:rs) | i /= 0 =
+        (drop (i - 1) l ++ [SomeSymWordN (0 :: SymWordN 129) | i <- [1..i-1]], r) :
+          constructCorr (i - 1) l rs
+      constructCorr _ _ _ = error "Bug"
+      corr = constructCorr (length r) el er
+      computeSingle :: [SomeSymWordN] -> SomeSymWordN -> DynSymWordN
+      computeSingle lst r = DynSymWordN $ reverse $ go (reverse lst) (integerToSomeBV (Proxy @129) 0)
+        where
+          -- muled = reverse $ (*someBVZext (Proxy @129) r) . someBVZext (Proxy @129) <$> lst
+          go [lv] carry = 
+            case head l of
+              SomeSymWordN v ->
+                [someBVSelect (Proxy @0) v lv * someBVSelect (Proxy @0) v r + someBVSelect (Proxy @0) v carry]
+          go (lv:ls) carry =
+                  let
+                    newcarry = someBVZext (Proxy @129) $ someBVSelect (Proxy @64) (Proxy @65) (lv * r + carry)
+                   in
+                    someBVSelect (Proxy @0) (Proxy @64) lv * someBVSelect (Proxy @0) (Proxy @64) r
+                      + someBVSelect (Proxy @0) (Proxy @64) carry
+                       : go ls newcarry
+          go _ _ = error "Bad"
+      computed = uncurry computeSingle <$> corr
+  fromInteger = error "fromInteger is not defined for DynSymWordN as no bitwidth is known"
+  {-# INLINE fromInteger #-}
+  signum x = mrgIte (x ==~ zero) zero one
+    where
+      zero = integerToDynBV (finiteBitSize x) 0
+      one = integerToDynBV (finiteBitSize x) 1
+  abs = id
+
+
 -- Bits
 
 #define BITS_BV(symtype, signed) \
@@ -725,15 +805,251 @@ BITS_BV_SOME(SomeSymIntN, SymIntN, binSomeSymIntNR1, unarySomeSymIntN, unarySome
 BITS_BV_SOME(SomeSymWordN, SymWordN, binSomeSymWordNR1, unarySomeSymWordN, unarySomeSymWordNR1)
 #endif
 
+binDynSymWordNR :: (HasCallStack) => (SomeSymWordN -> SomeSymWordN -> r) -> DynSymWordN -> DynSymWordN -> [r]
+binDynSymWordNR f l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+binDynSymWordNR f (DynSymWordN l) (DynSymWordN r) = uncurry f <$> zip l r
+
+binDynSymWordN :: (HasCallStack) => (SomeSymWordN -> SomeSymWordN -> SomeSymWordN) -> DynSymWordN -> DynSymWordN -> DynSymWordN
+binDynSymWordN f l r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch
+binDynSymWordN f (DynSymWordN l) (DynSymWordN r) = DynSymWordN $ uncurry f <$> zip l r
+
+unaryDynSymWordNR :: (HasCallStack) => (SomeSymWordN -> r) -> DynSymWordN -> [r]
+unaryDynSymWordNR f (DynSymWordN l) = f <$> l
+
+unaryDynSymWordN :: (HasCallStack) => (SomeSymWordN -> SomeSymWordN) -> DynSymWordN -> DynSymWordN
+unaryDynSymWordN f (DynSymWordN l) = DynSymWordN $ f <$> l
+
+dynSymSingleBitFlippingOp :: (SomeSymWordN -> Int -> SomeSymWordN) -> DynSymWordN -> Int -> DynSymWordN
+dynSymSingleBitFlippingOp _ s i | i < 0 = s
+dynSymSingleBitFlippingOp f (DynSymWordN s) i = DynSymWordN $ go s p1
+  where
+    p1 = length s - 1 - i `div` 64
+    p2 = i `mod` 64
+    go [] _ = error "Bad"
+    go (x : xs) 0 = f x p2 : xs
+    go (x : xs) i = x : go xs (i - 1)
+
+instance Bits DynSymIntN where
+  l .&. r = toSigned $ toUnsigned l .&. toUnsigned r
+  l .|. r = toSigned $ toUnsigned l .|. toUnsigned r
+  l `xor` r = toSigned $ toUnsigned l `xor` toUnsigned r
+  complement = toSigned . complement . toUnsigned
+
+
+  zeroBits = error "zeroBits is not defined for DynSymIntN as no bitwidth is known"
+  bit = error "bit is not defined for DynSymIntN as no bitwidth is known"
+
+  setBit l = toSigned . setBit (toUnsigned l)
+  clearBit l = toSigned . clearBit (toUnsigned l)
+  complementBit l = toSigned . complementBit (toUnsigned l)
+
+  testBit _ = error "You cannot call testBit on symbolic variables"
+
+  bitSizeMaybe = return . finiteBitSize
+  bitSize = finiteBitSize
+
+  isSigned _ = True
+
+  shiftL l i = toSigned $ shiftL (toUnsigned l) i
+  shiftR _ i | i < 0 = throw Overflow
+  shiftR bv 0 = bv
+  shiftR bv@(DynSymIntN l) i | i >= finiteBitSize bv =
+    mrgIte (symTestBit (head l) (finiteBitSize (head l) - 1)) (bv `xor` complement bv) (bv `xor` bv)
+  shiftR (DynSymIntN l) i | i `mod` 64 == 0 =
+    DynSymIntN $
+      padValue (finiteBitSize $ head l) :
+       [padValue 64 | i <- [1..pad]] ++
+       [someBVSext (Proxy @64) (head l)] ++
+       reverse (drop (pad + 1) (reverse (drop 1 l)))
+    where
+      minusOne x = toSym (bvconstHelper x (-1) :: SomeWordN)
+      zero x = toSym (bvconstHelper x 0 :: SomeWordN)
+      padValue x = mrgIte (symTestBit (head l) (finiteBitSize (head l) - 1)) (minusOne x) (zero x)
+      pad = i `div` 64 - 1
+  shiftR (DynSymIntN l@(h : t)) i =
+    DynSymIntN $
+      ( case compare i $ finiteBitSize h of
+         LT -> someBVConcat
+          (padValue i)
+          (someBVDynamicSelectHelper i (finiteBitSize h - i) h)
+         _ -> padValue (finiteBitSize h)
+      ) : [padValue 64 | _ <- [1..pad]] ++
+        (case (compare i 64, compare smallStep (finiteBitSize h)) of
+          (GT, LT) -> go (length t - max pad 0) (padValue 64 : r)
+          _ -> go (length t - max pad 0) r)
+    where
+      minusOne x = toSym (bvconstHelper x (-1) :: SomeWordN)
+      zero x = toSym (bvconstHelper x 0 :: SomeWordN)
+      padValue x = mrgIte (symTestBit (head l) (finiteBitSize (head l) - 1)) (minusOne x) (zero x)
+      
+      pad = (i - finiteBitSize h) `div` 64
+      -- skip = (i + 64 - finiteBitSize h) `div` 64
+      smallStep = i `mod` 64
+      -- (skippedPaddedH : skippedPaddedT) = drop skip l ++ repeat (SomeSymWordN (0 :: SymWordN 64))
+      r = someBVSext (Proxy @64) h : t
+      go 0 _ = []
+      go x (r1 : r2 : rs) =
+        someBVConcat
+          (someBVDynamicSelectHelper 0 smallStep r1)
+          (someBVDynamicSelectHelper smallStep (64 - smallStep) r2)
+          : go (x - 1) (r2 : rs)
+      go _ _ = error "Should not happen"
+  shiftR (DynSymIntN []) _ = error "Should not happen"
+
+
+instance Bits DynSymWordN where
+  (.&.) = binDynSymWordN (.&.)
+  (.|.) = binDynSymWordN (.|.)
+  xor = binDynSymWordN xor
+  complement = unaryDynSymWordN complement
+
+  zeroBits = error "zeroBits is not defined for DynSymWordN as no bitwidth is known"
+  bit = error "bit is not defined for DynSymWordN as no bitwidth is known"
+
+  setBit = dynSymSingleBitFlippingOp setBit
+  clearBit = dynSymSingleBitFlippingOp clearBit
+  complementBit = dynSymSingleBitFlippingOp complementBit
+
+  testBit _ = error "You cannot call testBit on symbolic variables"
+
+  bitSizeMaybe = return . finiteBitSize
+  bitSize = finiteBitSize
+
+  isSigned _ = False
+
+  shiftL _ i | i < 0 = throw Overflow
+  shiftL bv i | i == 0 = bv
+  shiftL bv i | i >= finiteBitSize bv = bv `xor` bv
+  shiftL (DynSymWordN l) i
+    | i `mod` 64 == 0 =
+        case head l of
+          SomeSymWordN (h :: SymWordN h) ->
+            DynSymWordN $
+              someBVSelect (Proxy @0) (Proxy @h) (head skipped)
+                : tail skipped
+                ++ [SomeSymWordN (0 :: SymWordN 64) | i <- [1 .. skip]]
+    where
+      skip = i `div` 64
+      skipped = drop skip l
+  shiftL (DynSymWordN l@(h : t)) i =
+    DynSymWordN $
+      ( case compare smallStep $ finiteBitSize h of
+         LT -> someBVConcat
+          (someBVDynamicSelectHelper 0 (finiteBitSize h - smallStep) skippedPaddedH)
+          (someBVDynamicSelectHelper (64 - smallStep) smallStep (head skippedPaddedT))
+         _ -> someBVDynamicSelectHelper (64 - smallStep) (finiteBitSize h) skippedPaddedH
+      )
+        : (case compare smallStep $ finiteBitSize h of
+            LT -> go (length t) skippedPaddedT
+            EQ -> go (length t) (skippedPaddedH:skippedPaddedT)
+            GT -> go (length t) (skippedPaddedH:skippedPaddedT))
+    where
+      skip = (i + 64 - finiteBitSize h) `div` 64
+      smallStep = i `mod` 64
+      (skippedPaddedH : skippedPaddedT) = drop skip l ++ repeat (SomeSymWordN (0 :: SymWordN 64))
+      go 0 _ = []
+      go x (r1 : r2 : rs) =
+        someBVConcat
+          (someBVDynamicSelectHelper 0 (64 - smallStep) r1)
+          (someBVDynamicSelectHelper (64 - smallStep) smallStep r2)
+          : go (x - 1) (r2 : rs)
+      go _ _ = error "Should not happen"
+  shiftL (DynSymWordN []) _ = error "Should not happen"
+  shiftR _ i | i < 0 = throw Overflow
+  shiftR bv 0 = bv
+  shiftR bv i | i >= finiteBitSize bv = bv `xor` bv
+    {-
+    DynSymWordN $ (\x -> mrgIte isNeg (x `xor` complement x) (x `xor` x) ) <$> l
+    where
+      isNeg :: SymBool
+      isNeg = symMsb (head l)
+      -}
+  shiftR (DynSymWordN l) i | i `mod` 64 == 0 =
+    DynSymWordN $
+      zero (head l) :
+       [SomeSymWordN (0 :: SymWordN 64) | i <- [1..pad]] ++
+       [someBVZext (Proxy @64) (head l)] ++
+       reverse (drop (pad + 1) (reverse (drop 1 l)))
+    where
+      minusOne x = x `xor` complement x
+      zero x = x `xor` x
+      pad = i `div` 64 - 1
+    {-DynSymWordN $
+      mrgIte sign (minusOne $ head l) (zero $ head l) :
+       [mrgIte sign (SomeSymWordN (-1 :: SymWordN 64)) (SomeSymWordN (0 :: SymWordN 64)) | i <- [1..pad]] ++
+       [someBVSext (Proxy @64) (head l)] ++
+       reverse (drop (pad + 1) (reverse (drop 1 l)))
+    where
+      minusOne x = x `xor` complement x
+      zero x = x `xor` x
+      sign = symMsb (head l)
+      pad = i `div` 64 - 1-}
+  shiftR (DynSymWordN l@(h : t)) i =
+    DynSymWordN $
+      ( case compare i $ finiteBitSize h of
+         LT -> someBVConcat
+          (toSym (bvconstHelper i 0 :: SomeWordN))
+          (someBVDynamicSelectHelper i (finiteBitSize h - i) h)
+         _ -> h `xor` h
+      ) : [toSym (bvconstHelper 64 0) | _ <- [1..pad]] ++
+        (case (compare i 64, compare smallStep (finiteBitSize h)) of
+          (GT, LT) -> go (length t - max pad 0) (SomeSymWordN (0 :: SymWordN 64) : r)
+          _ -> go (length t - max pad 0) r)
+    where
+      pad = (i - finiteBitSize h) `div` 64
+      -- skip = (i + 64 - finiteBitSize h) `div` 64
+      smallStep = i `mod` 64
+      -- (skippedPaddedH : skippedPaddedT) = drop skip l ++ repeat (SomeSymWordN (0 :: SymWordN 64))
+      r = someBVZext (Proxy @64) h : t
+      go 0 _ = []
+      go x (r1 : r2 : rs) =
+        someBVConcat
+          (someBVDynamicSelectHelper 0 smallStep r1)
+          (someBVDynamicSelectHelper smallStep (64 - smallStep) r2)
+          : go (x - 1) (r2 : rs)
+      go _ _ = error "Should not happen"
+  shiftR (DynSymWordN []) _ = error "Should not happen"
+
+
+
 -- SBits
 #define SBITS_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SBits (symtype n) where \
   symTestBit (symtype l) i = SymBool $ pevalTestBitTerm l i
 
+#define SBITS_BV_SOME(symtype, origty, br1, uf, ur1) \
+instance SBits symtype where \
+  symTestBit s i = uf (`symTestBit` i) "symTestBit" s; \
+
+#define SBITS_BV_DYN(dyntype) \
+instance SBits dyntype where \
+  symTestBit (dyntype s) i = symTestBit (s !! p1) p2 \
+    where \
+      p1 = length s - 1 - i `div` 64; \
+      p2 = i `mod` 64 \
+
 #if 1
 SBITS_BV(SymIntN)
 SBITS_BV(SymWordN)
+SBITS_BV_SOME(SomeSymIntN, SymIntN, binSomeSymIntNR1, unarySomeSymIntN, unarySomeSymIntNR1)
+SBITS_BV_SOME(SomeSymWordN, SymWordN, binSomeSymWordNR1, unarySomeSymWordN, unarySomeSymWordNR1)
+SBITS_BV_DYN(DynSymIntN)
+SBITS_BV_DYN(DynSymWordN)
 #endif
+
+-- FiniteBits
+instance (KnownNat n, 1 <= n) => FiniteBits (SymIntN n) where
+  finiteBitSize _ = fromIntegral $ natVal (Proxy @n)
+instance (KnownNat n, 1 <= n) => FiniteBits (SymWordN n) where
+  finiteBitSize _ = fromIntegral $ natVal (Proxy @n)
+instance FiniteBits SomeSymWordN where
+  finiteBitSize (SomeSymWordN (_ :: SymWordN n)) = fromIntegral $ natVal (Proxy @n)
+instance FiniteBits SomeSymIntN where
+  finiteBitSize (SomeSymIntN (_ :: SymIntN n)) = fromIntegral $ natVal (Proxy @n)
+instance FiniteBits DynSymWordN where
+  finiteBitSize (DynSymWordN s) = finiteBitSize (head s) + 64 * (length s - 1)
+instance FiniteBits DynSymIntN where
+  finiteBitSize (DynSymIntN s) = finiteBitSize (head s) + 64 * (length s - 1)
 
 -- Show
 
@@ -753,6 +1069,11 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
 instance Show somety where \
   show (somety t) = show t
 
+#define SHOW_BV_DYN(dynty) \
+instance Show dynty where \
+  show (dynty l) = \
+    "<" ++ intercalate "," (show <$> l) ++ ">"
+
 #if 1
 SHOW_SIMPLE(SymBool)
 SHOW_SIMPLE(SymInteger)
@@ -762,6 +1083,8 @@ SHOW_FUN(=~>, SymTabularFun)
 SHOW_FUN(-~>, SymGeneralFun)
 SHOW_BV_SOME(SomeSymIntN)
 SHOW_BV_SOME(SomeSymWordN)
+SHOW_BV_DYN(DynSymIntN)
+SHOW_BV_DYN(DynSymWordN)
 #endif
 
 -- Hashable
@@ -791,6 +1114,8 @@ HASHABLE_FUN(=~>, SymTabularFun)
 HASHABLE_FUN(-~>, SymGeneralFun)
 HASHABLE_BV_SOME(SomeSymIntN, SymIntN)
 HASHABLE_BV_SOME(SomeSymWordN, SymWordN)
+HASHABLE_SIMPLE(DynSymIntN)
+HASHABLE_SIMPLE(DynSymWordN)
 #endif
 
 -- Eq
@@ -823,6 +1148,8 @@ EQ_FUN(=~>, SymTabularFun)
 EQ_FUN(-~>, SymGeneralFun)
 EQ_BV_SOME(SomeSymIntN, binSomeSymIntN)
 EQ_BV_SOME(SomeSymWordN, binSomeSymWordN)
+EQ_SIMPLE(DynSymIntN)
+EQ_SIMPLE(DynSymWordN)
 #endif
 
 -- IsString
@@ -930,6 +1257,10 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
 instance ToSym contype symtype where \
   toSym (contype v) = symtype (con v)
 
+#define TO_SYM_FROMCON_BV_DYN(contype, symtype) \
+instance ToSym contype symtype where \
+  toSym (contype v) = symtype (toSym <$> v)
+
 #if 1
 TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
 TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
@@ -939,6 +1270,8 @@ TO_SYM_FROMCON_FUN((=->), (=~>))
 TO_SYM_FROMCON_FUN((-->), (-~>))
 TO_SYM_FROMCON_BV_SOME(SomeIntN, SomeSymIntN)
 TO_SYM_FROMCON_BV_SOME(SomeWordN, SomeSymWordN)
+TO_SYM_FROMCON_BV_DYN(DynIntN, DynSymIntN)
+TO_SYM_FROMCON_BV_DYN(DynWordN, DynSymWordN)
 #endif
 
 #define TO_CON_SYMID_SIMPLE(symtype) \
@@ -1123,6 +1456,14 @@ instance SEq somety where \
   (/=~) = bf (/=~) "/=~"; \
   {-# INLINE (/=~) #-}
 
+#define SEQ_BV_DYN(somety) \
+instance SEq somety where \
+  l ==~ r | finiteBitSize l /= finiteBitSize r = throw BitwidthMismatch; \
+  somety l ==~ somety r = foldl1 (&&~) $ zipWith (==~) l r; \
+  {-# INLINE (==~) #-}; \
+  l /=~ r = nots $ l ==~ r; \
+  {-# INLINE (/=~) #-}
+
 #if 1
 SEQ_SIMPLE(SymBool)
 SEQ_SIMPLE(SymInteger)
@@ -1130,6 +1471,8 @@ SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
 SEQ_BV_SOME(SomeSymIntN, binSomeSymIntN)
 SEQ_BV_SOME(SomeSymWordN, binSomeSymWordN)
+SEQ_BV_DYN(DynSymIntN)
+SEQ_BV_DYN(DynSymWordN)
 #endif
 
 -- SOrd
@@ -1312,9 +1655,41 @@ instance SomeBV SomeSymWordN where
   integerToSomeBV p i = toSym (integerToSomeBV p i :: SomeWordN)
 #endif
 
+instance DynBV DynSymWordN where
+  integerToDynBV b i = toSym (integerToDynBV b i :: DynWordN)
+
+instance DynBV DynSymIntN where
+  integerToDynBV b i = toSym (integerToDynBV b i :: DynIntN)
+
 instance (KnownNat n, 1 <= n) => BVSignPair (SymIntN n) (SymWordN n) where
   toSigned (SymWordN v) = SymIntN $ pevalBVToSignedTerm v
   toUnsigned (SymIntN v) = SymWordN $ pevalBVToUnsignedTerm v
+
+instance BVSignPair SomeSymIntN SomeSymWordN where
+  toSigned (SomeSymWordN v) = SomeSymIntN $ toSigned v
+  toUnsigned (SomeSymIntN v) = SomeSymWordN $ toUnsigned v
+
+instance BVSignPair DynSymIntN DynSymWordN where
+  toSigned (DynSymWordN v) = DynSymIntN v
+  toUnsigned (DynSymIntN v) = DynSymWordN v
+
+{-
+instance DynBVLink DynSymIntN SymIntN SomeSymIntN where
+  sizedBVToDynBV x = DynSymIntN $ go x
+    where
+      go :: forall n. (KnownNat n, 1 <= n) => SymIntN n -> [SomeSymWordN]
+      go i
+        | iv <= 64 = [SomeSymWordN $ toUnsigned i]
+        where
+          iv = natVal i
+          -}
+
+someBVSext1 :: Int -> SomeSymIntN -> SomeSymIntN
+someBVSext1 i (s1@(SomeSymIntN (s :: SymIntN s))) =
+  case unsafeKnownProof @(s + 1) (fromIntegral i) of
+    KnownProof -> someBVSext (Proxy @(s + 1)) s1
+  where
+
 
 -- ModelRep
 

@@ -248,7 +248,9 @@ someBVExtract' p@(_ :: NatRepr l) q@(_ :: NatRepr r) = withKnownProof (hasRepr p
 -- | Sized bit vector operations. Including concatenation ('sizedBVConcat'),
 -- extension ('sizedBVZext', 'sizedBVSext', 'sizedBVExt'), and selection
 -- ('sizedBVSelect').
-class (forall n. (KnownNat n, 1 <= n) => Bits (bv n)) => SizedBV bv where
+class (forall n. (KnownNat n, 1 <= n) => Bits (bv n),
+       forall n. (KnownNat n, 1 <= n) => Num (bv n)
+      ) => SizedBV bv where
   -- | Concatenation of two bit vectors.
   --
   -- >>> sizedBVConcat (0b101 :: SymIntN 3) (0b010 :: SymIntN 3)
