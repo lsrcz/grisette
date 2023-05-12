@@ -543,7 +543,7 @@ instance
       go (If _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
 
 -- AllSyms
-instance AllSyms a => AllSyms (UnionM a) where
+instance (AllSyms a) => AllSyms (UnionM a) where
   allSymsS = allSymsS . underlyingUnion
 
 -- Concrete Key HashMaps

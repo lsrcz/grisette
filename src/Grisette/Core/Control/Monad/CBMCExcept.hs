@@ -161,7 +161,7 @@ mapCBMCExceptT :: (m (Either e a) -> n (Either e' b)) -> CBMCExceptT e m a -> CB
 mapCBMCExceptT f m = CBMCExceptT $ (unsafeCoerce . f . unsafeCoerce) (runCBMCExceptT m)
 
 -- | Map the error in a 'CBMCExceptT'
-withCBMCExceptT :: Functor m => (e -> e') -> CBMCExceptT e m a -> CBMCExceptT e' m a
+withCBMCExceptT :: (Functor m) => (e -> e') -> CBMCExceptT e m a -> CBMCExceptT e' m a
 withCBMCExceptT f = mapCBMCExceptT $ fmap $ either (Left . f) Right
 
 -- | Similar to 'ExceptT', but with different error handling mechanism.
@@ -282,7 +282,7 @@ instance (MonadZip m) => MonadZip (CBMCExceptT e m) where
   mzipWith f (CBMCExceptT a) (CBMCExceptT b) = CBMCExceptT $ mzipWith (liftA2 f) a b
   {-# INLINE mzipWith #-}
 
-instance Contravariant m => Contravariant (CBMCExceptT e m) where
+instance (Contravariant m) => Contravariant (CBMCExceptT e m) where
   contramap f = CBMCExceptT . contramap (fmap f) . runCBMCExceptT
   {-# INLINE contramap #-}
 
@@ -302,7 +302,7 @@ m `catchE` h = CBMCExceptT $ do
     CBMCEither (Right r) -> return (CBMCEither . Right $ r)
 {-# INLINE catchE #-}
 
-instance Monad m => OrigExcept.MonadError e (CBMCExceptT e m) where
+instance (Monad m) => OrigExcept.MonadError e (CBMCExceptT e m) where
   throwError = throwE
   {-# INLINE throwError #-}
   catchError = catchE
@@ -406,13 +406,13 @@ instance (SOrd (m (CBMCEither e a))) => SOrd (CBMCExceptT e m a) where
   symCompare (CBMCExceptT l) (CBMCExceptT r) = symCompare l r
 
 instance
-  ToCon (m1 (CBMCEither e1 a)) (m2 (CBMCEither e2 b)) =>
+  (ToCon (m1 (CBMCEither e1 a)) (m2 (CBMCEither e2 b))) =>
   ToCon (CBMCExceptT e1 m1 a) (CBMCExceptT e2 m2 b)
   where
   toCon (CBMCExceptT v) = CBMCExceptT <$> toCon v
 
 instance
-  ToCon (m1 (CBMCEither e1 a)) (Either e2 b) =>
+  (ToCon (m1 (CBMCEither e1 a)) (Either e2 b)) =>
   ToCon (CBMCExceptT e1 m1 a) (Either e2 b)
   where
   toCon (CBMCExceptT v) = toCon v

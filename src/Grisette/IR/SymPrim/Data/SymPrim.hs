@@ -1297,6 +1297,16 @@ instance SomeBV SomeSymWordN where
   BVSELECT(SomeSymWordN, SymWordN)
 #endif
 
+-- BVSignConversion
+
+instance (KnownNat n, 1 <= n) => BVSignConversion (SymWordN n) (SymIntN n) where
+  toSigned (SymWordN n) = SymIntN $ pevalBVToSignedTerm n
+  toUnsigned (SymIntN n) = SymWordN $ pevalBVToUnsignedTerm n
+
+instance BVSignConversion SomeSymWordN SomeSymIntN where
+  toSigned (SomeSymWordN n) = SomeSymIntN $ toSigned n
+  toUnsigned (SomeSymIntN n) = SomeSymWordN $ toUnsigned n
+
 -- ModelRep
 
 -- | A pair of a symbolic constant and its value.
@@ -1305,7 +1315,7 @@ instance SomeBV SomeSymWordN where
 -- >>> buildModel ("a" := (1 :: Integer), "b" := True) :: Model
 -- Model {a -> 1 :: Integer, b -> True :: Bool}
 data ModelSymPair ct st where
-  (:=) :: LinkedRep ct st => st -> ct -> ModelSymPair ct st
+  (:=) :: (LinkedRep ct st) => st -> ct -> ModelSymPair ct st
 
 instance ModelRep (ModelSymPair ct st) Model where
   buildModel (sym := val) =
@@ -1318,7 +1328,7 @@ instance ModelRep (ModelSymPair ct st) Model where
 --
 -- >>> symsSize [1, "a" :: SymInteger, "a" + 1 :: SymInteger]
 -- 3
-symsSize :: forall con sym. LinkedRep con sym => [sym] -> Int
+symsSize :: forall con sym. (LinkedRep con sym) => [sym] -> Int
 symsSize = termsSize . fmap (underlyingTerm @con)
 {-# INLINE symsSize #-}
 
@@ -1333,7 +1343,7 @@ symsSize = termsSize . fmap (underlyingTerm @con)
 -- 3
 -- >>> symSize (("a" + 1) * ("a" + 1) :: SymInteger)
 -- 4
-symSize :: forall con sym. LinkedRep con sym => sym -> Int
+symSize :: forall con sym. (LinkedRep con sym) => sym -> Int
 symSize = termSize . underlyingTerm @con
 {-# INLINE symSize #-}
 
@@ -1375,7 +1385,7 @@ class AllSyms a where
 --
 -- >>> allSymsSize ("a" :: SymInteger, "a" + "b" :: SymInteger, ("a" + "b") * "c" :: SymInteger)
 -- 5
-allSymsSize :: AllSyms a => a -> Int
+allSymsSize :: (AllSyms a) => a -> Int
 allSymsSize = someSymsSize . allSyms
 
 class AllSyms' a where
@@ -1387,10 +1397,10 @@ instance (Generic a, AllSyms' (Rep a)) => AllSyms (Default a) where
 instance AllSyms' U1 where
   allSymsS' _ = id
 
-instance AllSyms c => AllSyms' (K1 i c) where
+instance (AllSyms c) => AllSyms' (K1 i c) where
   allSymsS' (K1 v) = allSymsS v
 
-instance AllSyms' a => AllSyms' (M1 i c a) where
+instance (AllSyms' a) => AllSyms' (M1 i c a) where
   allSymsS' (M1 v) = allSymsS' v
 
 instance (AllSyms' a, AllSyms' b) => AllSyms' (a :+: b) where
@@ -1580,11 +1590,11 @@ instance
   allSymsS (WriterStrict.WriterT v) = allSymsS v
 
 -- Identity
-instance AllSyms a => AllSyms (Identity a) where
+instance (AllSyms a) => AllSyms (Identity a) where
   allSymsS (Identity a) = allSymsS a
 
 -- IdentityT
-instance AllSyms (m a) => AllSyms (IdentityT m a) where
+instance (AllSyms (m a)) => AllSyms (IdentityT m a) where
   allSymsS (IdentityT a) = allSymsS a
 
 -- VerificationConditions

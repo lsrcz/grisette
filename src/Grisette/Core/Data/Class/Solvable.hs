@@ -30,7 +30,7 @@ import Language.Haskell.TH.Syntax
 
 -- | The class defines the creation and pattern matching of solvable type
 -- values.
-class IsString t => Solvable c t | t -> c where
+class (IsString t) => Solvable c t | t -> c where
   -- | Wrap a concrete value in a symbolic value.
   --
   -- >>> con True :: SymBool
@@ -95,7 +95,7 @@ class IsString t => Solvable c t | t -> c where
 --
 -- >>> case con True :: SymBool of Con v -> v
 -- True
-pattern Con :: Solvable c t => c -> t
+pattern Con :: (Solvable c t) => c -> t
 pattern Con c <-
   (conView -> Just c)
   where

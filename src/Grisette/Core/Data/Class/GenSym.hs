@@ -219,7 +219,7 @@ nameWithInfo = FreshIdentWithInfo
 --
 -- The monad should be a reader monad for the 'FreshIdent' and a state monad for
 -- the 'FreshIndex'.
-class Monad m => MonadFresh m where
+class (Monad m) => MonadFresh m where
   -- | Increase the index by one and return the new index.
   nextFreshIndex :: m FreshIndex
 
@@ -355,7 +355,7 @@ type Fresh = FreshT Identity
 runFresh :: Fresh a -> FreshIdent -> a
 runFresh m ident = runIdentity $ runFreshT m ident
 
-instance Monad m => MonadFresh (FreshT m) where
+instance (Monad m) => MonadFresh (FreshT m) where
   nextFreshIndex = FreshT $ \_ idx -> return (idx, idx + 1)
   getFreshIdent = FreshT $ curry return
 

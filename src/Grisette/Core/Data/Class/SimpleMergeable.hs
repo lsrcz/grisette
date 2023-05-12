@@ -104,7 +104,7 @@ instance (SimpleMergeable' a, SimpleMergeable' b) => (SimpleMergeable' (a :*: b)
 -- > data X = ...
 -- >   deriving Generic
 -- >   deriving (Mergeable, SimpleMergeable) via (Default X)
-class Mergeable a => SimpleMergeable a where
+class (Mergeable a) => SimpleMergeable a where
   -- | Performs if-then-else with the simple root merge strategy.
   --
   -- >>> mrgIte "a" "b" "c" :: SymInteger
@@ -359,7 +359,7 @@ instance
     )
   {-# INLINE mrgIte #-}
 
-instance SimpleMergeable b => SimpleMergeable (a -> b) where
+instance (SimpleMergeable b) => SimpleMergeable (a -> b) where
   mrgIte = mrgIte1
   {-# INLINE mrgIte #-}
 
@@ -694,7 +694,7 @@ class (UnionLike u) => UnionPrjOp (u :: Type -> Type) where
 --
 -- >>> case (single 1 :: UnionM Integer) of SingleU v -> v
 -- 1
-pattern SingleU :: UnionPrjOp u => a -> u a
+pattern SingleU :: (UnionPrjOp u) => a -> u a
 pattern SingleU x <-
   (singleView -> Just x)
   where
@@ -703,7 +703,7 @@ pattern SingleU x <-
 -- | Pattern match to extract guard values with 'ifView'
 -- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of IfU c t f -> (c,t,f)
 -- (a,<1>,<2>)
-pattern IfU :: UnionPrjOp u => SymBool -> u a -> u a -> u a
+pattern IfU :: (UnionPrjOp u) => SymBool -> u a -> u a -> u a
 pattern IfU c t f <-
   (ifView -> Just (c, t, f))
   where

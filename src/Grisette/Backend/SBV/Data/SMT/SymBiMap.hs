@@ -37,14 +37,14 @@ emptySymBiMap = SymBiMap M.empty M.empty
 sizeBiMap :: SymBiMap -> Int
 sizeBiMap = M.size . biMapToSBV
 
-addBiMap :: HasCallStack => SomeTerm -> Dynamic -> String -> SomeTypedSymbol -> SymBiMap -> SymBiMap
+addBiMap :: (HasCallStack) => SomeTerm -> Dynamic -> String -> SomeTypedSymbol -> SymBiMap -> SymBiMap
 addBiMap s d n sb (SymBiMap t f) = SymBiMap (M.insert s d t) (M.insert n sb f)
 
-addBiMapIntermediate :: HasCallStack => SomeTerm -> Dynamic -> SymBiMap -> SymBiMap
+addBiMapIntermediate :: (HasCallStack) => SomeTerm -> Dynamic -> SymBiMap -> SymBiMap
 addBiMapIntermediate s d (SymBiMap t f) = SymBiMap (M.insert s d t) f
 
 findStringToSymbol :: String -> SymBiMap -> Maybe SomeTypedSymbol
 findStringToSymbol s (SymBiMap _ f) = M.lookup s f
 
-lookupTerm :: HasCallStack => SomeTerm -> SymBiMap -> Maybe Dynamic
+lookupTerm :: (HasCallStack) => SomeTerm -> SymBiMap -> Maybe Dynamic
 lookupTerm t m = M.lookup t (biMapToSBV m)

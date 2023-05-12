@@ -56,7 +56,7 @@ import Data.Typeable
 -- >>> differenceSet abSet acSet
 -- SymbolSet {b :: Bool}
 class
-  Monoid symbolSet =>
+  (Monoid symbolSet) =>
   SymbolSetOps symbolSet (typedSymbol :: Type -> Type)
     | symbolSet -> typedSymbol
   where
@@ -87,7 +87,7 @@ class
 -- >>> buildSymbolSet ("a" :: TypedSymbol Bool, "b" :: TypedSymbol Bool) :: SymbolSet
 -- SymbolSet {a :: Bool, b :: Bool}
 class
-  SymbolSetOps symbolSet typedSymbol =>
+  (SymbolSetOps symbolSet typedSymbol) =>
   SymbolSetRep rep symbolSet (typedSymbol :: * -> *)
   where
   -- | Build a symbolic constant set
@@ -120,7 +120,7 @@ class
 -- >>> exact acSet abModel
 -- Model {a -> True :: Bool, c -> False :: Bool}
 class
-  SymbolSetOps symbolSet typedSymbol =>
+  (SymbolSetOps symbolSet typedSymbol) =>
   ModelOps model symbolSet typedSymbol
     | model -> symbolSet typedSymbol
   where

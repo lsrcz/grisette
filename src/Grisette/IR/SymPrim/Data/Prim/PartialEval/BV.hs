@@ -4,11 +4,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
@@ -19,7 +19,9 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
+  ( pevalBVToSignedTerm,
+    pevalBVToUnsignedTerm,
+    pevalBVConcatTerm,
     pevalBVSelectTerm,
     pevalBVExtendTerm,
     pevalBVZeroExtendTerm,
@@ -27,12 +29,85 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   )
 where
 
+import Data.Typeable
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-import Data.Typeable
+
+-- ToSigned
+pevalBVToSignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    Typeable ubv,
+    Typeable sbv,
+    KnownNat n,
+    1 <= n,
+    BVSignConversion (ubv n) (sbv n)
+  ) =>
+  Term (ubv n) ->
+  Term (sbv n)
+pevalBVToSignedTerm = unaryUnfoldOnce doPevalBVToSignedTerm bvToSignedTerm
+
+doPevalBVToSignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    Typeable ubv,
+    Typeable sbv,
+    KnownNat n,
+    1 <= n,
+    BVSignConversion (ubv n) (sbv n)
+  ) =>
+  Term (ubv n) ->
+  Maybe (Term (sbv n))
+doPevalBVToSignedTerm (ConTerm _ b) = Just $ conTerm $ toSigned b
+doPevalBVToSignedTerm (BVToUnsignedTerm _ b) = Just b >>= castTerm
+doPevalBVToSignedTerm _ = Nothing
+
+-- ToUnsigned
+{-
+bvToUnsignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    Typeable sbv,
+    Typeable ubv,
+    KnownNat n,
+    1 <= n,
+    BVToUnsigned (sbv n) (ubv n)
+  ) =>
+  Term (sbv n) ->
+  Term (ubv n)
+bvToUnsignedTerm = internTerm . UBVToUnsignedTerm
+-}
+pevalBVToUnsignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    Typeable ubv,
+    Typeable sbv,
+    KnownNat n,
+    1 <= n,
+    BVSignConversion (ubv n) (sbv n)
+  ) =>
+  Term (sbv n) ->
+  Term (ubv n)
+pevalBVToUnsignedTerm = unaryUnfoldOnce doPevalBVToUnsignedTerm bvToUnsignedTerm
+
+doPevalBVToUnsignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    Typeable ubv,
+    Typeable sbv,
+    KnownNat n,
+    1 <= n,
+    BVSignConversion (ubv n) (sbv n)
+  ) =>
+  Term (sbv n) ->
+  Maybe (Term (ubv n))
+doPevalBVToUnsignedTerm (ConTerm _ b) = Just $ conTerm $ toUnsigned b
+doPevalBVToUnsignedTerm (BVToSignedTerm _ b) = Just b >>= castTerm
+doPevalBVToUnsignedTerm _ = Nothing
 
 -- select
 pevalBVSelectTerm ::

@@ -279,7 +279,7 @@ instance (SOrd a) => SOrd [a] where
   (>~) = symCompareSingleList False True
   symCompare = symCompareList
 
-deriving via (Default (Maybe a)) instance SOrd a => SOrd (Maybe a)
+deriving via (Default (Maybe a)) instance (SOrd a) => SOrd (Maybe a)
 
 deriving via (Default (Either a b)) instance (SOrd a, SOrd b) => SOrd (Either a b)
 

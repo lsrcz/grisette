@@ -75,11 +75,11 @@ instance SEq' V1 where
   _ ==~~ _ = con True
   {-# INLINE (==~~) #-}
 
-instance SEq c => SEq' (K1 i c) where
+instance (SEq c) => SEq' (K1 i c) where
   (K1 a) ==~~ (K1 b) = a ==~ b
   {-# INLINE (==~~) #-}
 
-instance SEq' a => SEq' (M1 i c a) where
+instance (SEq' a) => SEq' (M1 i c a) where
   (M1 a) ==~~ (M1 b) = a ==~~ b
   {-# INLINE (==~~) #-}
 
