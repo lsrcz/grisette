@@ -78,10 +78,10 @@ class EvaluateSym' a where
 instance EvaluateSym' U1 where
   evaluateSym' _ _ = id
 
-instance EvaluateSym c => EvaluateSym' (K1 i c) where
+instance (EvaluateSym c) => EvaluateSym' (K1 i c) where
   evaluateSym' fillDefault model (K1 v) = K1 $ evaluateSym fillDefault model v
 
-instance EvaluateSym' a => EvaluateSym' (M1 i c a) where
+instance (EvaluateSym' a) => EvaluateSym' (M1 i c a) where
   evaluateSym' fillDefault model (M1 v) = M1 $ evaluateSym' fillDefault model v
 
 instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :+: b) where
@@ -214,16 +214,16 @@ deriving via
     (EvaluateSym (f a), EvaluateSym (g a)) => EvaluateSym (Sum f g a)
 
 -- WriterT
-instance EvaluateSym (m (a, s)) => EvaluateSym (WriterLazy.WriterT s m a) where
+instance (EvaluateSym (m (a, s))) => EvaluateSym (WriterLazy.WriterT s m a) where
   evaluateSym fillDefault model (WriterLazy.WriterT v) = WriterLazy.WriterT $ evaluateSym fillDefault model v
 
-instance EvaluateSym (m (a, s)) => EvaluateSym (WriterStrict.WriterT s m a) where
+instance (EvaluateSym (m (a, s))) => EvaluateSym (WriterStrict.WriterT s m a) where
   evaluateSym fillDefault model (WriterStrict.WriterT v) = WriterStrict.WriterT $ evaluateSym fillDefault model v
 
 -- Identity
-instance EvaluateSym a => EvaluateSym (Identity a) where
+instance (EvaluateSym a) => EvaluateSym (Identity a) where
   evaluateSym fillDefault model (Identity a) = Identity $ evaluateSym fillDefault model a
 
 -- IdentityT
-instance EvaluateSym (m a) => EvaluateSym (IdentityT m a) where
+instance (EvaluateSym (m a)) => EvaluateSym (IdentityT m a) where
   evaluateSym fillDefault model (IdentityT a) = IdentityT $ evaluateSym fillDefault model a

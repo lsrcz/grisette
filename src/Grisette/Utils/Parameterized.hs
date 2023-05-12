@@ -117,11 +117,11 @@ unsafeMkNatRepr = NatRepr
 
 -- | Construct a runtime representation of a type-level natural number when its
 -- runtime value is known.
-natRepr :: forall n. KnownNat n => NatRepr n
+natRepr :: forall n. (KnownNat n) => NatRepr n
 natRepr = NatRepr (natVal (Proxy @n))
 
 -- | Decrement a 'NatRepr' by 1.
-decNat :: 1 <= n => NatRepr n -> NatRepr (n - 1)
+decNat :: (1 <= n) => NatRepr n -> NatRepr (n - 1)
 decNat (NatRepr n) = NatRepr (n - 1)
 
 -- | Predecessor of a 'NatRepr'
@@ -137,11 +137,11 @@ addNat :: NatRepr m -> NatRepr n -> NatRepr (m + n)
 addNat (NatRepr m) (NatRepr n) = NatRepr (m + n)
 
 -- | Subtraction of two 'NatRepr's.
-subNat :: n <= m => NatRepr m -> NatRepr n -> NatRepr (m - n)
+subNat :: (n <= m) => NatRepr m -> NatRepr n -> NatRepr (m - n)
 subNat (NatRepr m) (NatRepr n) = NatRepr (m - n)
 
 -- | Division of two 'NatRepr's.
-divNat :: 1 <= n => NatRepr m -> NatRepr n -> NatRepr (Div m n)
+divNat :: (1 <= n) => NatRepr m -> NatRepr n -> NatRepr (Div m n)
 divNat (NatRepr m) (NatRepr n) = NatRepr (m `div` n)
 
 -- | Half of a 'NatRepr'.
@@ -151,10 +151,10 @@ halfNat (NatRepr n) = NatRepr (n `div` 2)
 -- | @'KnownProof n'@ is a type whose values are only inhabited when @n@ has
 -- a known runtime value.
 data KnownProof (n :: Nat) where
-  KnownProof :: KnownNat n => KnownProof n
+  KnownProof :: (KnownNat n) => KnownProof n
 
 -- | Introduces the 'KnownNat' constraint when it's proven.
-withKnownProof :: KnownProof n -> (KnownNat n => r) -> r
+withKnownProof :: KnownProof n -> ((KnownNat n) => r) -> r
 withKnownProof p r = case p of KnownProof -> r
 
 -- | Construct a 'KnownProof' given the runtime value.
@@ -181,10 +181,10 @@ knownAdd KnownProof KnownProof = hasRepr @(m + n) (NatRepr (natVal (Proxy @m) + 
 
 -- | @'LeqProof m n'@ is a type whose values are only inhabited when @m <= n@.
 data LeqProof (m :: Nat) (n :: Nat) where
-  LeqProof :: m <= n => LeqProof m n
+  LeqProof :: (m <= n) => LeqProof m n
 
 -- | Introduces the @m <= n@ constraint when it's proven.
-withLeqProof :: LeqProof m n -> (m <= n => r) -> r
+withLeqProof :: LeqProof m n -> ((m <= n) => r) -> r
 withLeqProof p r = case p of LeqProof -> r
 
 -- | Construct a 'LeqProof'.

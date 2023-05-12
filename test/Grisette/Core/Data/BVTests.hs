@@ -37,19 +37,19 @@ binaryConform ::
   Property
 binaryConform a2b c2d f2e f g x y = ioProperty $ f x y @=? f2e (g (a2b x) (c2d y))
 
-wordUnaryConform :: HasCallStack => (WordN 8 -> WordN 8) -> (Word8 -> Word8) -> Word8 -> Assertion
+wordUnaryConform :: (HasCallStack) => (WordN 8 -> WordN 8) -> (Word8 -> Word8) -> Word8 -> Assertion
 wordUnaryConform f g x = unWordN (f (fromIntegral x)) @=? toInteger (g x)
 
-wordUnaryNonNegIntConform :: HasCallStack => (Int -> WordN 8) -> (Int -> Word8) -> Int -> Assertion
+wordUnaryNonNegIntConform :: (HasCallStack) => (Int -> WordN 8) -> (Int -> Word8) -> Int -> Assertion
 wordUnaryNonNegIntConform f g y = when (y >= 0) $ unWordN (f y) @=? toInteger (g y)
 
-wordBinIntConform :: HasCallStack => (WordN 8 -> Int -> WordN 8) -> (Word8 -> Int -> Word8) -> Word8 -> Int -> Assertion
+wordBinIntConform :: (HasCallStack) => (WordN 8 -> Int -> WordN 8) -> (Word8 -> Int -> Word8) -> Word8 -> Int -> Assertion
 wordBinIntConform f g x y = unWordN (f (fromIntegral x) y) @=? toInteger (g x y)
 
-wordBinNonNegIntConform :: HasCallStack => (WordN 8 -> Int -> WordN 8) -> (Word8 -> Int -> Word8) -> Word8 -> Int -> Assertion
+wordBinNonNegIntConform :: (HasCallStack) => (WordN 8 -> Int -> WordN 8) -> (Word8 -> Int -> Word8) -> Word8 -> Int -> Assertion
 wordBinNonNegIntConform f g x y = when (y >= 0) $ unWordN (f (fromIntegral x) y) @=? toInteger (g x y)
 
-wordBinConform :: HasCallStack => (WordN 8 -> WordN 8 -> WordN 8) -> (Word8 -> Word8 -> Word8) -> Word8 -> Word8 -> Assertion
+wordBinConform :: (HasCallStack) => (WordN 8 -> WordN 8 -> WordN 8) -> (Word8 -> Word8 -> Word8) -> Word8 -> Word8 -> Assertion
 wordBinConform f g x y = unWordN (f (fromIntegral x) (fromIntegral y)) @=? toInteger (g x y)
 
 intN8eqint8 :: IntN 8 -> Int8 -> Assertion
@@ -102,7 +102,7 @@ boundedConformTest pref ptyp =
       testCase "maxBound" $ (maxBound :: typ) @=? fromIntegral (maxBound :: ref)
     ]
 
-shouldThrow :: NFData a => String -> a -> IO ()
+shouldThrow :: (NFData a) => String -> a -> IO ()
 shouldThrow name x = do
   errored <- catch (evaluate $ x `deepseq` True) (\(_ :: SomeException) -> return False)
   when errored $ assertFailure $ name ++ " should throw an exception"

@@ -1,12 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -44,6 +44,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     complementBitsTerm,
     shiftBitsTerm,
     rotateBitsTerm,
+    bvToSignedTerm,
+    bvToUnsignedTerm,
     bvconcatTerm,
     bvselectTerm,
     bvextendTerm,
@@ -165,11 +167,11 @@ andTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm l r = internTerm $ UAndTerm l r
 {-# INLINE andTerm #-}
 
-eqvTerm :: SupportedPrim a => Term a -> Term a -> Term Bool
+eqvTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
 eqvTerm l r = internTerm $ UEqvTerm l r
 {-# INLINE eqvTerm #-}
 
-iteTerm :: SupportedPrim a => Term Bool -> Term a -> Term a -> Term a
+iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 iteTerm c l r = internTerm $ UITETerm c l r
 {-# INLINE iteTerm #-}
 
@@ -224,6 +226,32 @@ shiftBitsTerm t n = internTerm $ UShiftBitsTerm t n
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 {-# INLINE rotateBitsTerm #-}
+
+bvToSignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    Typeable ubv,
+    Typeable sbv,
+    KnownNat n,
+    1 <= n,
+    BVSignConversion (ubv n) (sbv n)
+  ) =>
+  Term (ubv n) ->
+  Term (sbv n)
+bvToSignedTerm = internTerm . UBVToSignedTerm
+
+bvToUnsignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
+    Typeable ubv,
+    Typeable sbv,
+    KnownNat n,
+    1 <= n,
+    BVSignConversion (ubv n) (sbv n)
+  ) =>
+  Term (sbv n) ->
+  Term (ubv n)
+bvToUnsignedTerm = internTerm . UBVToUnsignedTerm
 
 bvconcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),

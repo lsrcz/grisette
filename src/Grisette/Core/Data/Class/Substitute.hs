@@ -63,12 +63,12 @@ class SubstituteSym a where
   --
   -- >>> substituteSym "a" ("c" &&~ "d" :: Sym Bool) ["a" &&~ "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
-  substituteSym :: LinkedRep cb sb => TypedSymbol cb -> sb -> a -> a
+  substituteSym :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a -> a
 
 -- | Auxiliary class for 'SubstituteSym' instance derivation
 class SubstituteSym' a where
   -- | Auxiliary function for 'substituteSym' derivation
-  substituteSym' :: LinkedRep cb sb => TypedSymbol cb -> sb -> a c -> a c
+  substituteSym' :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a c -> a c
 
 instance
   ( Generic a,
@@ -81,10 +81,10 @@ instance
 instance SubstituteSym' U1 where
   substituteSym' _ _ = id
 
-instance SubstituteSym c => SubstituteSym' (K1 i c) where
+instance (SubstituteSym c) => SubstituteSym' (K1 i c) where
   substituteSym' sym val (K1 v) = K1 $ substituteSym sym val v
 
-instance SubstituteSym' a => SubstituteSym' (M1 i c a) where
+instance (SubstituteSym' a) => SubstituteSym' (M1 i c a) where
   substituteSym' sym val (M1 v) = M1 $ substituteSym' sym val v
 
 instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :+: b) where
@@ -258,11 +258,11 @@ instance
   substituteSym sym val (WriterStrict.WriterT v) = WriterStrict.WriterT $ substituteSym sym val v
 
 -- Identity
-instance SubstituteSym a => SubstituteSym (Identity a) where
+instance (SubstituteSym a) => SubstituteSym (Identity a) where
   substituteSym sym val (Identity a) = Identity $ substituteSym sym val a
 
 -- IdentityT
-instance SubstituteSym (m a) => SubstituteSym (IdentityT m a) where
+instance (SubstituteSym (m a)) => SubstituteSym (IdentityT m a) where
   substituteSym sym val (IdentityT a) = IdentityT $ substituteSym sym val a
 
 {-

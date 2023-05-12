@@ -113,7 +113,7 @@ instance ToSym () () where
 deriving via (Default (Either e2 a2)) instance (ToSym e1 e2, ToSym a1 a2) => ToSym (Either e1 a1) (Either e2 a2)
 
 -- Maybe
-deriving via (Default (Maybe b)) instance ToSym a b => ToSym (Maybe a) (Maybe b)
+deriving via (Default (Maybe b)) instance (ToSym a b) => ToSym (Maybe a) (Maybe b)
 
 -- List
 deriving via (Default [b]) instance (ToSym a b) => ToSym [a] [b]
@@ -201,9 +201,9 @@ deriving via
     (ToSym (f a) (f1 a1), ToSym (g a) (g1 a1)) => ToSym (Sum f g a) (Sum f1 g1 a1)
 
 -- Identity
-instance ToSym a b => ToSym (Identity a) (Identity b) where
+instance (ToSym a b) => ToSym (Identity a) (Identity b) where
   toSym (Identity a) = Identity $ toSym a
 
 -- IdentityT
-instance ToSym (m a) (m1 b) => ToSym (IdentityT m a) (IdentityT m1 b) where
+instance (ToSym (m a) (m1 b)) => ToSym (IdentityT m a) (IdentityT m1 b) where
   toSym (IdentityT v) = IdentityT $ toSym v

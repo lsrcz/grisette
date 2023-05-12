@@ -44,7 +44,7 @@ eqHetero :: forall a b. (Typeable a, Typeable b, Eq a) => a -> b -> Bool
 eqHetero = cmpHetero (==)
 {-# INLINE eqHetero #-}
 
-eqHeteroRep :: forall a b. Eq a => TypeRep a -> TypeRep b -> a -> b -> Bool
+eqHeteroRep :: forall a b. (Eq a) => TypeRep a -> TypeRep b -> a -> b -> Bool
 eqHeteroRep ta tb = cmpHeteroRep ta tb (==)
 {-# INLINE eqHeteroRep #-}
 
