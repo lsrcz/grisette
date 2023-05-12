@@ -309,7 +309,7 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
 -- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
 -- >>> (SomeSymIntN ("a" :: SymIntN 5)) + (SomeSymIntN (5 :: SymIntN 5))
 -- (+ 0b00101 a)
--- >>> someBVConcat (SomeSymIntN (con 0b101 :: SymIntN 3)) (SomeSymIntN (con 0b110 :: SymIntN 3))
+-- >>> bvConcat (SomeSymIntN (con 0b101 :: SymIntN 3)) (SomeSymIntN (con 0b110 :: SymIntN 3))
 -- 0b101110
 --
 -- More symbolic operations are available. Please refer to the documentation
@@ -421,7 +421,7 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) whe
 -- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
 -- >>> (SomeSymWordN ("a" :: SymWordN 5)) + (SomeSymWordN (5 :: SymWordN 5))
 -- (+ 0b00101 a)
--- >>> someBVConcat (SomeSymWordN (con 0b101 :: SymWordN 3)) (SomeSymWordN (con 0b110 :: SymWordN 3))
+-- >>> bvConcat (SomeSymWordN (con 0b101 :: SymWordN 3)) (SomeSymWordN (con 0b110 :: SymWordN 3))
 -- 0b101110
 --
 -- More symbolic operations are available. Please refer to the documentation
@@ -1254,47 +1254,74 @@ instance SizedBV SymWordN where
 -- BV
 
 #define BVCONCAT(somety, origty) \
-someBVConcat (somety (a :: origty l)) (somety (b :: origty r)) = \
+bvConcat (somety (a :: origty l)) (somety (b :: origty r)) = \
   case (leqAddPos (Proxy @l) (Proxy @r), knownAdd @l @r KnownProof KnownProof) of \
     (LeqProof, KnownProof) -> \
       somety $ sizedBVConcat a b
 
 #define BVZEXT(somety, origty) \
-someBVZext (p :: p l) (somety (a :: origty n)) \
-  | natVal p < natVal (Proxy @n) = error "zextBV: trying to zero extend a value to a smaller size" \
-  | otherwise = \
-    case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of \
-      (LeqProof, LeqProof) -> somety $ sizedBVZext p a
+bvZext l (somety (a :: origty n)) \
+  | l < n = error "bvZext: trying to zero extend a value to a smaller size" \
+  | otherwise = res (Proxy @n) \
+  where \
+    n = fromIntegral $ natVal (Proxy @n); \
+    res :: forall (l :: Nat). Proxy l -> somety; \
+    res p = \
+      case (unsafeKnownProof @l (fromIntegral l), unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of \
+        (KnownProof, LeqProof, LeqProof) -> somety $ sizedBVZext p a
 
 #define BVSEXT(somety, origty) \
-someBVSext (p :: p l) (somety (a :: origty n)) \
-  | natVal p < natVal (Proxy @n) = error "zextBV: trying to zero extend a value to a smaller size" \
-  | otherwise = \
-    case (unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of \
-      (LeqProof, LeqProof) -> somety $ sizedBVSext p a
+bvSext l (somety (a :: origty n)) \
+  | l < n = error "bvZext: trying to zero extend a value to a smaller size" \
+  | otherwise = res (Proxy @n) \
+  where \
+    n = fromIntegral $ natVal (Proxy @n); \
+    res :: forall (l :: Nat). Proxy l -> somety; \
+    res p = \
+      case (unsafeKnownProof @l (fromIntegral l), unsafeLeqProof @1 @l, unsafeLeqProof @n @l) of \
+        (KnownProof, LeqProof, LeqProof) -> somety $ sizedBVSext p a
 
 #define BVSELECT(somety, origty) \
-someBVSelect (p :: p ix) (q :: q w) (somety (a :: origty n)) \
-  | natVal p + natVal q > natVal (Proxy @n) = error "selectBV: trying to select a bitvector outside the bounds of the input" \
-  | natVal q == 0 = error "selectBV: trying to select a bitvector of size 0" \
-  | otherwise = \
-    case (unsafeLeqProof @1 @w, unsafeLeqProof @(ix + w) @n) of \
-      (LeqProof, LeqProof) -> somety $ sizedBVSelect (Proxy @ix) (Proxy @w) a
+bvSelect ix w (somety (a :: origty n)) \
+    | ix + w > n = error "bvSelect: trying to select a bitvector outside the bounds of the input" \
+    | w == 0 = error "bvSelect: trying to select a bitvector of size 0" \
+    | otherwise = res (Proxy @n) (Proxy @n) \
+    where \
+      n = fromIntegral $ natVal (Proxy @n); \
+      res :: forall (w :: Nat) (ix :: Nat). Proxy w -> Proxy ix -> somety; \
+      res p1 p2 = \
+        case ( unsafeKnownProof @ix (fromIntegral ix), \
+               unsafeKnownProof @w (fromIntegral w), \
+               unsafeLeqProof @1 @w, \
+               unsafeLeqProof @(ix + w) @n \
+             ) of \
+          (KnownProof, KnownProof, LeqProof, LeqProof) -> \
+            somety $ sizedBVSelect (Proxy @ix) (Proxy @w) a
 
 #if 1
-instance SomeBV SomeSymIntN where
+instance BV SomeSymIntN where
   BVCONCAT(SomeSymIntN, SymIntN)
+  {-# INLINE bvConcat #-}
   BVZEXT(SomeSymIntN, SymIntN)
+  {-# INLINE bvZext #-}
   BVSEXT(SomeSymIntN, SymIntN)
-  someBVExt = someBVSext
+  {-# INLINE bvSext #-}
+  bvExt = bvSext
+  {-# INLINE bvExt #-}
   BVSELECT(SomeSymIntN, SymIntN)
+  {-# INLINE bvSelect #-}
 
-instance SomeBV SomeSymWordN where
+instance BV SomeSymWordN where
   BVCONCAT(SomeSymWordN, SymWordN)
+  {-# INLINE bvConcat #-}
   BVZEXT(SomeSymWordN, SymWordN)
+  {-# INLINE bvZext #-}
   BVSEXT(SomeSymWordN, SymWordN)
-  someBVExt = someBVZext
+  {-# INLINE bvSext #-}
+  bvExt = bvZext
+  {-# INLINE bvExt #-}
   BVSELECT(SomeSymWordN, SymWordN)
+  {-# INLINE bvSelect #-}
 #endif
 
 -- BVSignConversion
