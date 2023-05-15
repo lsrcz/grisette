@@ -785,11 +785,6 @@ instance (KnownNat n, 1 <= n) => SimpleMergeable (symtype n) where \
   mrgIte = ites; \
   {-# INLINE mrgIte #-}
 
-#define SIMPLE_MERGEABLE_SOME_BV(symtype, bf) \
-instance SimpleMergeable symtype where \
-  mrgIte c = bf (ites c) "mrgIte"; \
-  {-# INLINE mrgIte #-}
-
 #define SIMPLE_MERGEABLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SimpleMergeable (sa op sb) where \
   mrgIte = ites; \
@@ -800,8 +795,6 @@ SIMPLE_MERGEABLE_SIMPLE(SymBool)
 SIMPLE_MERGEABLE_SIMPLE(SymInteger)
 SIMPLE_MERGEABLE_BV(SymIntN)
 SIMPLE_MERGEABLE_BV(SymWordN)
-SIMPLE_MERGEABLE_SOME_BV(SomeSymIntN, binSomeSymIntNR1)
-SIMPLE_MERGEABLE_SOME_BV(SomeSymWordN, binSomeSymWordNR1)
 SIMPLE_MERGEABLE_FUN(=~>)
 SIMPLE_MERGEABLE_FUN(-~>)
 #endif
