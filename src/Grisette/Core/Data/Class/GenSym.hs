@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
@@ -99,6 +100,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.Utils
 import Language.Haskell.TH.Syntax hiding (lift)
 
 -- $setup
@@ -1579,6 +1581,19 @@ instance (KnownNat n, 1 <= n) => GenSymSimple (p n) symtype where \
   simpleFresh _ = do; \
     i :: origtype n <- simpleFresh (); \
     return $ symtype i
+#define GENSYM_N_INT_BV_SOME(symtype) \
+instance GenSym Int symtype where \
+  fresh p = mrgSingle <$> simpleFresh p
+#define GENSYM_N_INT_SIMPLE_BV_SOME(symtype, origtype) \
+instance GenSymSimple Int symtype where \
+  simpleFresh i = if i > 0 then f (Proxy @0) else \
+    error "Can only generate bit vectors with positive bit size" \
+    where \
+      f :: forall p (n :: Nat) m. (MonadFresh m) => p n -> m symtype; \
+      f p = case (unsafeKnownProof @n (fromIntegral i), unsafeLeqProof @1 @n) of \
+        (KnownProof, LeqProof) -> do \
+        v :: origtype n <- simpleFresh (); \
+        return $ symtype v; \
 
 #define GENSYM_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym (sa op sb) (sa op sb)
@@ -1620,10 +1635,14 @@ GENSYM_BV_SOME(SomeSymIntN)
 GENSYM_SIMPLE_BV_SOME(SomeSymIntN)
 GENSYM_N_BV_SOME(SomeSymIntN)
 GENSYM_N_SIMPLE_BV_SOME(SomeSymIntN, SymIntN)
+GENSYM_N_INT_BV_SOME(SomeSymIntN)
+GENSYM_N_INT_SIMPLE_BV_SOME(SomeSymIntN, SymIntN)
 GENSYM_BV_SOME(SomeSymWordN)
 GENSYM_SIMPLE_BV_SOME(SomeSymWordN)
 GENSYM_N_BV_SOME(SomeSymWordN)
 GENSYM_N_SIMPLE_BV_SOME(SomeSymWordN, SymWordN)
+GENSYM_N_INT_BV_SOME(SomeSymWordN)
+GENSYM_N_INT_SIMPLE_BV_SOME(SomeSymWordN, SymWordN)
 
 GENSYM_FUN(=~>)
 GENSYM_SIMPLE_FUN(=~>)
