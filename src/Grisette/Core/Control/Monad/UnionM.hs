@@ -397,8 +397,6 @@ TO_SYM_FROM_UNION_CON_BV(IntN, SymIntN)
 TO_SYM_FROM_UNION_CON_BV(WordN, SymWordN)
 TO_SYM_FROM_UNION_CON_FUN((=->), (=~>))
 TO_SYM_FROM_UNION_CON_FUN((-->), (-~>))
-TO_SYM_FROM_UNION_CON_BV_SOME(SomeIntN, SomeSymIntN)
-TO_SYM_FROM_UNION_CON_BV_SOME(SomeWordN, SomeSymWordN)
 #endif
 
 instance {-# INCOHERENT #-} (ToCon a b) => ToCon (UnionM a) b where

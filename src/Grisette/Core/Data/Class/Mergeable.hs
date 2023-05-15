@@ -78,6 +78,7 @@ import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.Utils
 import Unsafe.Coerce
 
 -- | Helper type for combining arbitrary number of indices into one.
@@ -975,10 +976,6 @@ instance Mergeable symtype where \
 instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
   rootStrategy = SimpleStrategy ites
 
-#define MERGEABLE_BV_SOME(symtype) \
-instance Mergeable symtype where \
-  rootStrategy = SimpleStrategy ites
-
 #define MERGEABLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Mergeable (sa op sb) where \
   rootStrategy = SimpleStrategy ites
@@ -988,11 +985,33 @@ MERGEABLE_SIMPLE(SymBool)
 MERGEABLE_SIMPLE(SymInteger)
 MERGEABLE_BV(SymIntN)
 MERGEABLE_BV(SymWordN)
-MERGEABLE_BV_SOME(SomeSymIntN)
-MERGEABLE_BV_SOME(SomeSymWordN)
 MERGEABLE_FUN(=~>)
 MERGEABLE_FUN(-~>)
 #endif
+
+instance Mergeable SomeSymIntN where
+  rootStrategy =
+    SortedStrategy @Natural
+      (\(SomeSymIntN (v :: SymIntN n)) -> natVal (Proxy @n))
+      ( \n ->
+          SimpleStrategy
+            ( \c (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) ->
+                case unsafeAxiom @l @r of
+                  Refl -> SomeSymIntN $ ites c l r
+            )
+      )
+
+instance Mergeable SomeSymWordN where
+  rootStrategy =
+    SortedStrategy @Natural
+      (\(SomeSymWordN (v :: SymWordN n)) -> natVal (Proxy @n))
+      ( \n ->
+          SimpleStrategy
+            ( \c (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) ->
+                case unsafeAxiom @l @r of
+                  Refl -> SomeSymWordN $ ites c l r
+            )
+      )
 
 -- Exceptions
 instance Mergeable ArithException where
