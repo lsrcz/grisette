@@ -1105,11 +1105,17 @@ instance SEq symtype where \
 instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
   (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
 
-#define SEQ_BV_SOME(somety, bf) \
+#define SEQ_BV_SOME(somety, origty) \
 instance SEq somety where \
-  (==~) = bf (==~) "==~"; \
+  somety (l :: origty l) ==~ somety (r :: origty r) = \
+    (case sameNat (Proxy @l) (Proxy @r) of \
+      Just Refl -> l ==~ r; \
+      Nothing -> con False); \
   {-# INLINE (==~) #-}; \
-  (/=~) = bf (/=~) "/=~"; \
+  somety (l :: origty l) /=~ somety (r :: origty r) = \
+    (case sameNat (Proxy @l) (Proxy @r) of \
+      Just Refl -> l /=~ r; \
+      Nothing -> con True); \
   {-# INLINE (/=~) #-}
 
 #if 1
@@ -1117,8 +1123,8 @@ SEQ_SIMPLE(SymBool)
 SEQ_SIMPLE(SymInteger)
 SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
-SEQ_BV_SOME(SomeSymIntN, binSomeSymIntN)
-SEQ_BV_SOME(SomeSymWordN, binSomeSymWordN)
+SEQ_BV_SOME(SomeSymIntN, SymIntN)
+SEQ_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- SOrd

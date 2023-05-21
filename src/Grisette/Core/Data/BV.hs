@@ -111,9 +111,15 @@ binSomeWordNR2 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
 {-# INLINE binSomeWordNR2 #-}
 
 instance Eq SomeWordN where
-  (==) = binSomeWordN (==)
+  SomeWordN (l :: WordN l) == SomeWordN (r :: WordN r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l == r
+      Nothing -> False
   {-# INLINE (==) #-}
-  (/=) = binSomeWordN (/=)
+  SomeWordN (l :: WordN l) /= SomeWordN (r :: WordN r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l /= r
+      Nothing -> True
   {-# INLINE (/=) #-}
 
 instance Ord SomeWordN where
@@ -205,9 +211,15 @@ binSomeIntNR2 op (SomeIntN (l :: IntN l)) (SomeIntN (r :: IntN r)) =
 {-# INLINE binSomeIntNR2 #-}
 
 instance Eq SomeIntN where
-  (==) = binSomeIntN (==)
+  SomeIntN (l :: IntN l) == SomeIntN (r :: IntN r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l == r
+      Nothing -> False
   {-# INLINE (==) #-}
-  (/=) = binSomeIntN (/=)
+  SomeIntN (l :: IntN l) /= SomeIntN (r :: IntN r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l /= r
+      Nothing -> True
   {-# INLINE (/=) #-}
 
 instance Ord SomeIntN where
