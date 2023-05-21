@@ -1,2 +1,3 @@
 packages: grisette.cabal
-allow-newer: all
+tests: True
+allow-newer: text
