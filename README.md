@@ -35,21 +35,47 @@ For a detailed description of the system, please refer to our POPL'23 paper
 ### Install Grisette
 
 Grisette is available via
-[Hackage](https://hackage.haskell.org/package/grisette). You can install it with
-`cabal`:
+[Hackage](https://hackage.haskell.org/package/grisette). You can add it to your
+project with `cabal`, and we also provided a stack template for quickly starting a
+new project with Grisette.
 
-```bash
-$ cabal install grisette
-```
+#### Manually writing cabal file
 
-However, Grisette is a library and is usually used as a dependency of other
+Grisette is a library and is usually used as a dependency of other
 packages. You can add it to your project's `.cabal` file:
 
 ```cabal
 library
   ...
-  build-depends: grisette >= 0.1 < 0.2
+  build-depends: grisette >= 0.2 < 0.3
 ```
+
+#### Quick start template with `stack new`
+
+You can quickly start an stack-based Grisette project with `stack new`:
+
+```bash
+$ stack new <projectname> github:lsrcz/grisette
+```
+
+You can specify the resolver version with the parameters:
+
+```bash
+$ stack new a-new-project github:lsrcz/grisette -p "resolver:lts-19.33"
+```
+
+For more details, please see the
+[template file](https://github.com/lsrcz/stack-templates/blob/main/grisette.hsfiles) and the
+[documentation for stack templates](https://docs.haskellstack.org/en/stable/templates_command/).
+
+You can test your installation by running the following command:
+
+```bash
+$ stack run app
+```
+
+The command assumes a working [Z3](https://github.com/Z3Prover/z3) available
+through `PATH`. You can install it with the instructions below.
 
 ### Install SMT Solvers
 
