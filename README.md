@@ -100,6 +100,13 @@ The example has three parts:
 - We define the candidate program space of the synthesizer by creating a particular symbolic syntax tree. The synthesizer will search the space of concrete trees for a solution. 
 - We interpret the symbolic syntax tree and pass the resulting constraints to the solver. If a solution exists, the solver returns a concrete tree that agrees with the input-out example. 
 
+### Running the example 
+
+The code of this example is the repository [Grisette examples](https://github.com/lsrcz/grisette-examples). To run the example, check out the repository and run:
+```bash
+stack run arith-synth
+```
+
 ### Defining the Arithmetic Language
 
 We will synthesize single-input programs in this example.
