@@ -106,3 +106,4 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+      if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
