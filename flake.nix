@@ -8,7 +8,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         
-        hPkgs = pkgs.haskell.packages."ghc902";
+        hPkgs = pkgs.haskell.packages."ghc925";
         
         myDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
