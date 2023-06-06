@@ -40,6 +40,7 @@ where
 import Control.DeepSeq
 import Control.Exception
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import qualified Data.HashSet as S
 import Data.Hashable
 import Data.Kind
