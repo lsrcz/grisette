@@ -17,13 +17,14 @@ jobs:
         plan:
         - { build: stack, arg: "--stack-yaml stack-lts-18.28.yaml", ismain: false, experimental: false, ghc: "8107", cachekey: "stack-18.28" }
         - { build: stack, arg: "--stack-yaml stack-lts-18.28-lowerbound.yaml", ismain: false, experimental: false, ghc: "8107", cachekey: "stack-18.28-l" }
-        - { build: stack, arg: "", ismain: true, experimental: false, ghc: "902", cachekey: "stack" }
-        - { build: stack, arg: "--stack-yaml stack-lts-20.9.yaml", ismain: false, experimental: false, ghc: "925", cachekey: "stack-20.9" }
-        - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: false, ghc: "944", cachekey: "stack-nightly" }
+        - { build: stack, arg: "--stack-yaml stack-lts-19.33.yaml", ismain: false, experimental: false, ghc: "902", cachekey: "stack-19.33" }
+        - { build: stack, arg: "", ismain: true, experimental: false, ghc: "927", cachekey: "stack-20.24" }
+        - { build: stack, arg: "--stack-yaml stack-nightly.yaml", ismain: false, experimental: false, ghc: "945", cachekey: "stack-nightly" }
         - { build: cabal, arg: "--constraint=sbv<10", ismain: false, experimental: false, ghc: "8107", cachekey: "cabal-8107" }
         - { build: cabal, arg: "--constraint=sbv<10", ismain: false, experimental: false, ghc: "902", cachekey: "cabal-902" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "925", cachekey: "cabal-925" }
-        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "944", cachekey: "cabal-944" }
+        - { build: cabal, arg: "", ismain: false, experimental: false, ghc: "928", cachekey: "cabal-928" }
+        - { build: cabal, arg: "--allow-newer=text", ismain: false, experimental: false, ghc: "945", cachekey: "cabal-945" }
+        - { build: cabal, arg: "--allow-newer=text,mtl", ismain: false, experimental: false, ghc: "962", cachekey: "cabal-962" }
   
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.plan.experimental }}

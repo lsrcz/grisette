@@ -1,3 +1,0 @@
-packages: grisette.cabal
-tests: True
-allow-newer: text
