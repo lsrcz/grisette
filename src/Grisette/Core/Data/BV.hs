@@ -282,8 +282,8 @@ instance (KnownNat n, 1 <= n) => Bits (WordN n) where
 
   -- complementBit use default implementation
   testBit (WordN a) = testBit a
-  bitSizeMaybe _ = Just $ fromIntegral (natVal (Proxy :: Proxy n))
-  bitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
+  bitSizeMaybe = Just . finiteBitSize
+  bitSize = finiteBitSize
   isSigned _ = False
   shiftL (WordN a) i = WordN (a `shiftL` i) .&. maxBound
 
@@ -324,8 +324,8 @@ instance Bits SomeWordN where
   clearBit s i = unarySomeWordNR1 (`clearBit` i) s
   complementBit s i = unarySomeWordNR1 (`complementBit` i) s
   testBit s i = unarySomeWordN (`testBit` i) s
-  bitSizeMaybe (SomeWordN (n :: WordN n)) = Just $ fromIntegral $ natVal n
-  bitSize (SomeWordN (n :: WordN n)) = fromIntegral $ natVal n
+  bitSizeMaybe = Just . finiteBitSize
+  bitSize = finiteBitSize
   isSigned _ = False
   shiftL s i = unarySomeWordNR1 (`shiftL` i) s
   unsafeShiftL s i = unarySomeWordNR1 (`unsafeShiftL` i) s
@@ -436,8 +436,8 @@ instance (KnownNat n, 1 <= n) => Bits (IntN n) where
 
   -- complementBit use default implementation
   testBit (IntN a) = testBit a
-  bitSizeMaybe _ = Just $ fromIntegral (natVal (Proxy :: Proxy n))
-  bitSize _ = fromIntegral (natVal (Proxy :: Proxy n))
+  bitSizeMaybe = Just . finiteBitSize
+  bitSize = finiteBitSize
   isSigned _ = True
 
   shiftL (IntN a) i = IntN (unWordN $ (WordN a :: WordN n) `shiftL` i)
@@ -471,8 +471,8 @@ instance Bits SomeIntN where
   clearBit s i = unarySomeIntNR1 (`clearBit` i) s
   complementBit s i = unarySomeIntNR1 (`complementBit` i) s
   testBit s i = unarySomeIntN (`testBit` i) s
-  bitSizeMaybe (SomeIntN (n :: IntN n)) = Just $ fromIntegral $ natVal n
-  bitSize (SomeIntN (n :: IntN n)) = fromIntegral $ natVal n
+  bitSizeMaybe = Just . finiteBitSize
+  bitSize = finiteBitSize
   isSigned _ = False
   shiftL s i = unarySomeIntNR1 (`shiftL` i) s
   unsafeShiftL s i = unarySomeIntNR1 (`unsafeShiftL` i) s

@@ -656,19 +656,31 @@ instance Num SymInteger where
 #define BITS_BV(symtype, signed) \
 instance (KnownNat n, 1 <= n) => Bits (symtype n) where \
   symtype l .&. symtype r = symtype $ pevalAndBitsTerm l r; \
+  {-# INLINE (.&.) #-}; \
   symtype l .|. symtype r = symtype $ pevalOrBitsTerm l r; \
+  {-# INLINE (.|.) #-}; \
   symtype l `xor` symtype r = symtype $ pevalXorBitsTerm l r; \
+  {-# INLINE xor #-}; \
   complement (symtype n) = symtype $ pevalComplementBitsTerm n; \
+  {-# INLINE complement #-}; \
   shift (symtype n) i = symtype $ pevalShiftBitsTerm n i; \
+  {-# INLINE shift #-}; \
   rotate (symtype n) i = symtype $ pevalRotateBitsTerm n i; \
-  bitSize _ = fromIntegral $ natVal (Proxy @n); \
-  bitSizeMaybe _ = Just $ fromIntegral $ natVal (Proxy @n); \
+  {-# INLINE rotate #-}; \
+  bitSize = finiteBitSize; \
+  {-# INLINE bitSize #-}; \
+  bitSizeMaybe = Just . finiteBitSize; \
+  {-# INLINE bitSizeMaybe #-}; \
   isSigned _ = signed; \
+  {-# INLINE isSigned #-}; \
   testBit (Con n) =  testBit n; \
   testBit _ = error "You cannot call testBit on symbolic variables"; \
+  {-# INLINE testBit #-}; \
   bit = con . bit; \
+  {-# INLINE bit #-}; \
   popCount (Con n) = popCount n; \
-  popCount _ = error "You cannot call popCount on symbolic variables"
+  popCount _ = error "You cannot call popCount on symbolic variables"; \
+  {-# INLINE popCount #-}
 
 #define BITS_BV_SOME(somety, origty, br1, uf, ur1) \
 instance Bits somety where \
@@ -696,9 +708,9 @@ instance Bits somety where \
   {-# INLINE complementBit #-}; \
   testBit s i = uf (`testBit` i) "testBit" s; \
   {-# INLINE testBit #-}; \
-  bitSizeMaybe (somety (n :: origty n)) = Just $ fromIntegral $ natVal n; \
+  bitSizeMaybe = Just . finiteBitSize; \
   {-# INLINE bitSizeMaybe #-}; \
-  bitSize (somety (n :: origty n)) = fromIntegral $ natVal n; \
+  bitSize = finiteBitSize; \
   {-# INLINE bitSize #-}; \
   isSigned _ = False; \
   {-# INLINE isSigned #-}; \
@@ -722,6 +734,25 @@ BITS_BV(SymIntN, True)
 BITS_BV(SymWordN, False)
 BITS_BV_SOME(SomeSymIntN, SymIntN, binSomeSymIntNR1, unarySomeSymIntN, unarySomeSymIntNR1)
 BITS_BV_SOME(SomeSymWordN, SymWordN, binSomeSymWordNR1, unarySomeSymWordN, unarySomeSymWordNR1)
+#endif
+
+-- FiniteBits
+
+#define FINITE_BITS_BV(symtype) \
+instance (KnownNat n, 1 <= n) => FiniteBits (symtype n) where \
+  finiteBitSize _ = fromIntegral $ natVal (Proxy @n); \
+  {-# INLINE finiteBitSize #-}; \
+
+#define FINITE_BITS_BV_SOME(somety, origty) \
+instance FiniteBits somety where \
+  finiteBitSize (somety (n :: origty n)) = fromIntegral $ natVal n; \
+  {-# INLINE finiteBitSize #-}
+
+#if 1
+FINITE_BITS_BV(SymIntN)
+FINITE_BITS_BV(SymWordN)
+FINITE_BITS_BV_SOME(SomeSymIntN, SymIntN)
+FINITE_BITS_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- Show
