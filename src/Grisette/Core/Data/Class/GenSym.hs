@@ -390,7 +390,7 @@ class (Mergeable a) => GenSym spec a where
   -- is ensured. No specification is needed.
   --
   -- >>> runFresh (fresh ()) "a" :: UnionM (Maybe Bool)
-  -- {If a@0 Nothing (If a@1 (Just False) (Just True))}
+  -- {If a@1 Nothing (If a@0 (Just False) (Just True))}
   --
   -- The following example generates lists of symbolic booleans with length 1 to 2.
   --
@@ -809,20 +809,23 @@ instance (Enum v, Mergeable v) => GenSym (EnumGenBound v) v where
 
 -- Either
 instance
-  ( GenSymSimple a a,
+  ( GenSym aspec a,
     Mergeable a,
-    GenSymSimple b b,
+    GenSym bspec b,
     Mergeable b
   ) =>
-  GenSym (Either a b) (Either a b)
+  GenSym (Either aspec bspec) (Either a b)
+  where
+  fresh (Left aspec) = (merge . fmap Left) <$> fresh aspec
+  fresh (Right bspec) = (merge . fmap Right) <$> fresh bspec
 
 instance
-  ( GenSymSimple a a,
-    GenSymSimple b b
+  ( GenSymSimple aspec a,
+    GenSymSimple bspec b
   ) =>
-  GenSymSimple (Either a b) (Either a b)
+  GenSymSimple (Either aspec bspec) (Either a b)
   where
-  simpleFresh = derivedSameShapeSimpleFresh
+  simpleFresh (Left a) = Left <$> simpleFresh a
 
 instance
   (GenSym () a, Mergeable a, GenSym () b, Mergeable b) =>
@@ -830,35 +833,54 @@ instance
   where
   fresh = derivedNoSpecFresh
 
+instance
+  ( GenSym aspec a,
+    Mergeable a,
+    GenSym bspec b,
+    Mergeable b
+  ) =>
+  GenSym (aspec, bspec) (Either a b)
+  where
+  fresh (aspec, bspec) = do
+    l :: UnionM a <- fresh aspec
+    r :: UnionM b <- fresh bspec
+    chooseUnionFresh [Left <$> l, Right <$> r]
+
 -- Maybe
 instance
-  (GenSymSimple a a, Mergeable a) =>
-  GenSym (Maybe a) (Maybe a)
+  (GenSym aspec a, Mergeable a) =>
+  GenSym (Maybe aspec) (Maybe a)
+  where
+  fresh Nothing = return $ mrgSingle Nothing
+  fresh (Just aspec) = (merge . fmap Just) <$> fresh aspec
 
 instance
-  (GenSymSimple a a) =>
-  GenSymSimple (Maybe a) (Maybe a)
+  (GenSymSimple aspec a) =>
+  GenSymSimple (Maybe aspec) (Maybe a)
   where
-  simpleFresh = derivedSameShapeSimpleFresh
+  simpleFresh Nothing = return Nothing
+  simpleFresh (Just aspec) = Just <$> simpleFresh aspec
 
-instance (GenSym () a, Mergeable a) => GenSym () (Maybe a) where
-  fresh = derivedNoSpecFresh
+instance (GenSym aspec a, Mergeable a) => GenSym aspec (Maybe a) where
+  fresh aspec = do
+    a :: UnionM a <- fresh aspec
+    chooseUnionFresh [return Nothing, Just <$> a]
 
 -- List
 instance
-  (GenSymSimple () a, Mergeable a) =>
+  (GenSym () a, Mergeable a) =>
   GenSym Integer [a]
   where
   fresh v = do
     l <- gl v
     let xs = reverse $ scanr (:) [] l
-    chooseFresh xs
+    chooseUnionFresh $ merge . sequence <$> xs
     where
-      gl :: (MonadFresh m) => Integer -> m [a]
+      gl :: (MonadFresh m) => Integer -> m [UnionM a]
       gl v1
         | v1 <= 0 = return []
         | otherwise = do
-            l <- simpleFresh ()
+            l <- fresh ()
             r <- gl (v1 - 1)
             return $ l : r
 
@@ -880,7 +902,7 @@ data ListSpec spec = ListSpec
   deriving (Show)
 
 instance
-  (GenSymSimple spec a, Mergeable a) =>
+  (GenSym spec a, Mergeable a) =>
   GenSym (ListSpec spec) [a]
   where
   fresh (ListSpec minLen maxLen subSpec) =
@@ -889,19 +911,23 @@ instance
       else do
         l <- gl maxLen
         let xs = drop minLen $ reverse $ scanr (:) [] l
-        chooseFresh xs
+        chooseUnionFresh $ merge . sequence <$> xs
     where
-      gl :: (MonadFresh m) => Int -> m [a]
+      gl :: (MonadFresh m) => Int -> m [UnionM a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
-            l <- simpleFresh subSpec
+            l <- fresh subSpec
             r <- gl (currLen - 1)
             return $ l : r
 
 instance
-  (GenSymSimple a a, Mergeable a) =>
+  (GenSym a a, Mergeable a) =>
   GenSym [a] [a]
+  where
+  fresh l = do
+    r :: [UnionM a] <- traverse fresh l
+    return $ merge $ sequence r
 
 instance
   (GenSymSimple a a) =>
@@ -922,10 +948,22 @@ data SimpleListSpec spec = SimpleListSpec
   deriving (Show)
 
 instance
-  (GenSymSimple spec a, Mergeable a) =>
+  (GenSym spec a, Mergeable a) =>
   GenSym (SimpleListSpec spec) [a]
   where
-  fresh = fmap mrgSingle . simpleFresh
+  fresh (SimpleListSpec len subSpec) =
+    if len < 0
+      then error $ "Bad lengths: " ++ show len
+      else do
+        merge . sequence <$> gl len
+    where
+      gl :: (MonadFresh m) => Int -> m [UnionM a]
+      gl currLen
+        | currLen <= 0 = return []
+        | otherwise = do
+            l <- fresh subSpec
+            r <- gl (currLen - 1)
+            return $ l : r
 
 instance
   (GenSymSimple spec a) =>
