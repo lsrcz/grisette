@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added the conversion between signed and unsigned bit vectors. ([#69](https://github.com/lsrcz/grisette/pull/69))
 - Added the generation of `SomeSymIntN` and `SomeSymWordN` from a single `Int` for bit width. ([#73](https://github.com/lsrcz/grisette/pull/73))
+- Added the `FiniteBits` instance for `SomeSymIntN` and `SomeSymWordN`. ([#83](https://github.com/lsrcz/grisette/pull/83))
 
 ### Changed
 - Changed the operations for `SomeIntN` and `SomeWordN` to accepting dynamic runtime integers rather than compile-time integers. ([#71](https://github.com/lsrcz/grisette/pull/71))
