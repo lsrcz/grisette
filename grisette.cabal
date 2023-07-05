@@ -130,8 +130,8 @@ library
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
     , once >=0.2 && <0.5
-    , parallel
-    , sbv >=8.11 && <10.2
+    , parallel >=3.2.2.0 && <3.3
+    , sbv >=8.11 && <10.3
     , template-haskell >=2.16 && <2.21
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.7
@@ -166,8 +166,8 @@ test-suite doctest
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
     , once >=0.2 && <0.5
-    , parallel
-    , sbv >=8.11 && <10.2
+    , parallel >=3.2.2.0 && <3.3
+    , sbv >=8.11 && <10.3
     , template-haskell >=2.16 && <2.21
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.7
@@ -215,8 +215,8 @@ test-suite spec
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
     , once >=0.2 && <0.5
-    , parallel
-    , sbv >=8.11 && <10.2
+    , parallel >=3.2.2.0 && <3.3
+    , sbv >=8.11 && <10.3
     , tasty >=1.1.0.3 && <1.5
     , tasty-hunit ==0.10.*
     , tasty-quickcheck >=0.10.1 && <0.11
