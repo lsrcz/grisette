@@ -81,6 +81,8 @@ library
       Grisette.Core.Data.Union
       Grisette.Core.TH
       Grisette.Core.THCompat
+      Grisette.Experimental
+      Grisette.Experimental.GenSymConstrained
       Grisette.Internal.Backend.SBV
       Grisette.Internal.Core
       Grisette.Internal.IR.SymPrim
