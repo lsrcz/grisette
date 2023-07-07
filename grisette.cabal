@@ -24,6 +24,12 @@ copyright:      2021-2023 Sirui Lu
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
+tested-with:
+    GHC == 8.10.7
+  , GHC == 9.0.2
+  , GHC == 9.2.8
+  , GHC == 9.4.5
+  , GHC == 9.6.2
 extra-source-files:
     CHANGELOG.md
     README.md
