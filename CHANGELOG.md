@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0.0] -- 2023-07-07
 
 ### Added
 - Added the conversion between signed and unsigned bit vectors. ([#69](https://github.com/lsrcz/grisette/pull/69))
 - Added the generation of `SomeSymIntN` and `SomeSymWordN` from a single `Int` for bit width. ([#73](https://github.com/lsrcz/grisette/pull/73))
 - Added the `FiniteBits` instance for `SomeSymIntN` and `SomeSymWordN`. ([#83](https://github.com/lsrcz/grisette/pull/83))
 - Added more flexible instances for symbolic generation for `Either`, `Maybe` and list types. ([#84](https://github.com/lsrcz/grisette/pull/84))
+- Added an experimental `GenSymConstrained` type class. ([#89](https://github.com/lsrcz/grisette/pull/89))
 
 ### Changed
 - Changed the operations for `SomeIntN` and `SomeWordN` to accepting dynamic runtime integers rather than compile-time integers. ([#71](https://github.com/lsrcz/grisette/pull/71))
@@ -51,6 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release for Grisette.
 
-[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.2.0.0...HEAD
+[0.3.0.0]: https://github.com/lsrcz/grisette/compare/v0.2.0.0...v0.3.0.0
 [0.2.0.0]: https://github.com/lsrcz/grisette/compare/v0.1.0.0...v0.2.0.0
 [0.1.0.0]: https://github.com/lsrcz/grisette/tree/v0.1.0.0
