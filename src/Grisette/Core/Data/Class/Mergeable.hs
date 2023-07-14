@@ -68,6 +68,7 @@ import Data.Functor.Sum
 import Data.Int
 import Data.Kind
 import qualified Data.Monoid as Monoid
+import qualified Data.Text as T
 import Data.Typeable
 import Data.Word
 import GHC.Natural
@@ -458,6 +459,7 @@ CONCRETE_ORD_MERGEABLE(Word16)
 CONCRETE_ORD_MERGEABLE(Word32)
 CONCRETE_ORD_MERGEABLE(Word64)
 CONCRETE_ORD_MERGEABLE(B.ByteString)
+CONCRETE_ORD_MERGEABLE(T.Text)
 CONCRETE_ORD_MERGEABLE_BV(WordN)
 CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif

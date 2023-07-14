@@ -33,6 +33,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
+import qualified Data.Text as T
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving
@@ -119,6 +120,7 @@ CONCRETE_SUBSTITUTESYM(Word64)
 CONCRETE_SUBSTITUTESYM(SomeWordN)
 CONCRETE_SUBSTITUTESYM(SomeIntN)
 CONCRETE_SUBSTITUTESYM(B.ByteString)
+CONCRETE_SUBSTITUTESYM(T.Text)
 CONCRETE_SUBSTITUTESYM_BV(WordN)
 CONCRETE_SUBSTITUTESYM_BV(IntN)
 #endif

@@ -32,6 +32,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
+import qualified Data.Text as T
 import Data.Word
 import GHC.Generics
 import GHC.TypeNats
@@ -113,6 +114,7 @@ CONCRETE_TOCON(Word64)
 CONCRETE_TOCON(SomeWordN)
 CONCRETE_TOCON(SomeIntN)
 CONCRETE_TOCON(B.ByteString)
+CONCRETE_TOCON(T.Text)
 CONCRETE_TOCON_BV(WordN)
 CONCRETE_TOCON_BV(IntN)
 #endif

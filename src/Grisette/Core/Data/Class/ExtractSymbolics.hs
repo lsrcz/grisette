@@ -32,6 +32,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
+import qualified Data.Text as T
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving
@@ -115,6 +116,7 @@ CONCRETE_EXTRACT_SYMBOLICS(Word64)
 CONCRETE_EXTRACT_SYMBOLICS(SomeWordN)
 CONCRETE_EXTRACT_SYMBOLICS(SomeIntN)
 CONCRETE_EXTRACT_SYMBOLICS(B.ByteString)
+CONCRETE_EXTRACT_SYMBOLICS(T.Text)
 CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
 CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 #endif
