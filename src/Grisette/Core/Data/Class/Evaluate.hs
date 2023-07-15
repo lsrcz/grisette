@@ -34,6 +34,7 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
 import Data.Maybe
+import qualified Data.Text as T
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving
@@ -127,6 +128,7 @@ CONCRETE_EVALUATESYM(Word64)
 CONCRETE_EVALUATESYM(SomeIntN)
 CONCRETE_EVALUATESYM(SomeWordN)
 CONCRETE_EVALUATESYM(B.ByteString)
+CONCRETE_EVALUATESYM(T.Text)
 CONCRETE_EVALUATESYM_BV(IntN)
 CONCRETE_EVALUATESYM_BV(WordN)
 #endif

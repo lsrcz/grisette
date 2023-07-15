@@ -35,6 +35,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
+import qualified Data.Text as T
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving
@@ -101,6 +102,7 @@ CONCRETE_TOSYM(Word64)
 CONCRETE_TOSYM(SomeIntN)
 CONCRETE_TOSYM(SomeWordN)
 CONCRETE_TOSYM(B.ByteString)
+CONCRETE_TOSYM(T.Text)
 CONCRETE_TOSYM_BV(IntN)
 CONCRETE_TOSYM_BV(WordN)
 #endif

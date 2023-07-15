@@ -41,6 +41,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
+import qualified Data.Text as T
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving
@@ -244,6 +245,7 @@ CONCRETE_SEQ(Word16)
 CONCRETE_SEQ(Word32)
 CONCRETE_SEQ(Word64)
 CONCRETE_SEQ(B.ByteString)
+CONCRETE_SEQ(T.Text)
 CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
 CONCRETE_SEQ(SomeWordN)

@@ -46,6 +46,7 @@ dependencies:
 - vector >= 0.12.1 && < 0.14
 - sbv >= 8.11 && < 10.3
 - parallel >= 3.2.2.0 && < 3.3
+- text >= 1.2.4.1 && < 2.1
 
 flags: {
   fast: {

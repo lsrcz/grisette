@@ -34,6 +34,7 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
+import qualified Data.Text as T
 import Data.Word
 import GHC.TypeLits
 import Generics.Deriving
@@ -249,6 +250,7 @@ CONCRETE_SORD(Word64)
 CONCRETE_SORD(SomeWordN)
 CONCRETE_SORD(SomeIntN)
 CONCRETE_SORD(B.ByteString)
+CONCRETE_SORD(T.Text)
 CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
 #endif

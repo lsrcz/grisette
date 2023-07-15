@@ -69,6 +69,7 @@ import Data.Hashable
 import Data.Int
 import Data.Proxy
 import Data.String
+import qualified Data.Text as T
 import Data.Typeable
 import Data.Word
 import GHC.Generics
@@ -1509,6 +1510,7 @@ CONCRETE_ALLSYMS(Word16)
 CONCRETE_ALLSYMS(Word32)
 CONCRETE_ALLSYMS(Word64)
 CONCRETE_ALLSYMS(B.ByteString)
+CONCRETE_ALLSYMS(T.Text)
 ALLSYMS_SIMPLE(SymBool)
 ALLSYMS_SIMPLE(SymInteger)
 ALLSYMS_BV(SymIntN)

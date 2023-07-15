@@ -30,7 +30,6 @@ where
 
 import Control.Monad.Except
 import Control.Monad.Trans.Maybe
-import qualified Data.ByteString as B
 import Data.Int
 import Data.Word
 import Debug.Trace
