@@ -15,7 +15,7 @@ author: "Sirui Lu, Rastislav Bodík"
 maintainer: Sirui Lu (siruilu@cs.washington.edu)
 license: BSD3
 license-file: LICENSE
-github: lsrcz/grisette-haskell
+github: lsrcz/grisette
 copyright: "2021-2023 Sirui Lu"
 extra-source-files:
 - CHANGELOG.md
