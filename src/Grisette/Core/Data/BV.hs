@@ -44,6 +44,7 @@ module Grisette.Core.Data.BV
   )
 where
 
+import Control.Applicative
 import Control.DeepSeq
 import Control.Exception
 import Data.Bits
@@ -61,6 +62,8 @@ import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 import Numeric
 import qualified Test.QuickCheck as QC
+import Text.ParserCombinators.ReadP (skipSpaces, string)
+import Text.ParserCombinators.ReadPrec
 import Text.Read
 import qualified Text.Read.Lex as L
 
@@ -162,8 +165,22 @@ convertInt (L.Number n)
   | Just i <- L.numberToInteger n = return (fromInteger i)
 convertInt _ = pfail
 
+readBinary :: (Num a) => ReadPrec a
+readBinary = parens $ do
+  r0 <- look
+  case r0 of
+    ('-' : _) -> do
+      _ <- get
+      negate <$> parens parse0b
+    _ -> parse0b
+  where
+    parse0b = do
+      _ <- Text.Read.lift $ string "0b"
+      w <- readS_to_Prec (const readBin)
+      return $ fromInteger w
+
 instance (KnownNat n, 1 <= n) => Read (WordN n) where
-  readPrec = readNumber convertInt
+  readPrec = readNumber convertInt <|> readBinary
   readListPrec = readListPrecDefault
   readList = readListDefault
 
@@ -258,7 +275,7 @@ instance (KnownNat n, 1 <= n) => Show (IntN n) where
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
 instance (KnownNat n, 1 <= n) => Read (IntN n) where
-  readPrec = readNumber convertInt
+  readPrec = readNumber convertInt <|> readBinary
   readListPrec = readListPrecDefault
   readList = readListDefault
 
