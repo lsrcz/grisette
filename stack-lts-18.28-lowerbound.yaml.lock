@@ -82,12 +82,12 @@ packages:
   original:
     hackage: th-compat-0.1.2
 - completed:
-    hackage: QuickCheck-2.14.1@sha256:843e6428c2d80656a0cbff61929d3924e8b450841b6dfba463d0b3f41a48265c,8006
+    hackage: QuickCheck-2.13.2@sha256:636e7265bf75122e7e2f97627c47aad3b772ee3b35b134cafb6095116ce8d07a,6974
     pantry-tree:
-      sha256: 543c1e661669b7235d3846b08ad3d1f6f6cba0d81c285dbfc15a28e148a347ed
-      size: 2315
+      sha256: b917f922fc59d98d47b789f50c5a569d1b80ae08d52f4fbebbaad7fc62479e0d
+      size: 2202
   original:
-    hackage: QuickCheck-2.14.1
+    hackage: QuickCheck-2.13.2
 - completed:
     hackage: intern-0.9.2@sha256:85eae3bd0a6cbfc622c0c70aa476641971bcd5e59dbc4c7a4b17888e432a5bd5,1619
     pantry-tree:
@@ -102,6 +102,20 @@ packages:
       size: 1135
   original:
     hackage: array-0.5.4.0
+- completed:
+    hackage: random-1.1@sha256:7b67624fd76ddf97c206de0801dc7e888097e9d572974be9b9ea6551d76965df,1777
+    pantry-tree:
+      sha256: 14a1b01728c5584e87c9fa00746a66e28ffd89dd2c0eabd334c8463953496e1b
+      size: 637
+  original:
+    hackage: random-1.1
+- completed:
+    hackage: splitmix-0.0.5@sha256:4a49661be63f5aea0e132e9ab51be918789bb4dceb4ab9b15b85ba9cbbef5999,5412
+    pantry-tree:
+      sha256: b41d4f60cfabab8b02840906191013ee06fe2357371103a471c7cc55eda9e462
+      size: 1148
+  original:
+    hackage: splitmix-0.0.5
 - completed:
     hackage: vector-0.12.1.2@sha256:9291bc581f36e51d5bda9fce57cb980fbec3dd292996896f285fef39eb80a9a0,7364
     pantry-tree:

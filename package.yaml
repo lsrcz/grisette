@@ -47,6 +47,7 @@ dependencies:
 - sbv >= 8.11 && < 10.3
 - parallel >= 3.2.2.0 && < 3.3
 - text >= 1.2.4.1 && < 2.1
+- QuickCheck >= 2.13.2 && < 2.15
 
 flags: {
   fast: {

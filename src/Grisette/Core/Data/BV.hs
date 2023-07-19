@@ -60,6 +60,7 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 import Numeric
+import qualified Test.QuickCheck as QC
 import Text.Read
 import qualified Text.Read.Lex as L
 
@@ -417,6 +418,10 @@ instance Num SomeWordN where
   signum = unarySomeWordNR1 signum
   fromInteger = error "fromInteger is not defined for SomeWordN as no bitwidth is known"
 
+instance (KnownNat n, 1 <= n) => QC.Arbitrary (WordN n) where
+  arbitrary = QC.arbitrarySizedBoundedIntegral
+  shrink = QC.shrinkIntegral
+
 minusOneIntN :: forall proxy n. (KnownNat n) => proxy n -> IntN n
 minusOneIntN _ = IntN (1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n)) - 1)
 
@@ -593,6 +598,10 @@ instance (KnownNat n, 1 <= n) => Ord (IntN n) where
       n = fromIntegral (natVal (Proxy :: Proxy n))
       as = testBit a (n - 1)
       bs = testBit b (n - 1)
+
+instance (KnownNat n, 1 <= n) => QC.Arbitrary (IntN n) where
+  arbitrary = QC.arbitrarySizedBoundedIntegral
+  shrink = QC.shrinkIntegral
 
 instance SizedBV WordN where
   sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => WordN l -> WordN r -> WordN (l + r)
