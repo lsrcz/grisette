@@ -420,6 +420,13 @@ bvTests =
             sizedBVSelect (Proxy :: Proxy 3) (Proxy :: Proxy 3) (0b1010000 :: IntN 8) @=? 0b10
         ],
       testGroup
+        "read"
+        [ testProperty "read . show" $ \(x :: IntN 8) -> read (show x) == x,
+          testProperty "read . show" $ \(x :: WordN 8) -> read (show x) == x,
+          testProperty "read . show" $ \(x :: IntN 9) -> read (show x) == x,
+          testProperty "read . show" $ \(x :: WordN 9) -> read (show x) == x
+        ],
+      testGroup
         "Regression"
         [ testCase "division of min bound and minus one for signed bit vector should throw" $ do
             shouldThrow "divMod" $ divMod (minBound :: IntN 8) (-1 :: IntN 8)
