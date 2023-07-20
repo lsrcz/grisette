@@ -27,6 +27,7 @@ import Grisette.Backend.SBV.Data.SMT.LoweringTests
 import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
 import Grisette.Core.Control.Monad.UnionMTests
 import qualified Grisette.Core.Data.BVTests
+import Grisette.Core.Data.Class.GPrettyTests
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests
 import Grisette.IR.SymPrim.Data.Prim.BoolTests
@@ -56,9 +57,17 @@ tests =
 coreTests :: TestTree
 coreTests =
   testGroup
-    "Grisette.Core.Control.Monad.UnionM"
-    [ unionMTests,
-      Grisette.Core.Data.BVTests.bvTests
+    "core"
+    [ testGroup
+        "Grisette.Core.Control.Monad.UnionM"
+        [unionMTests],
+      testGroup
+        "Grisette.Core.Data"
+        [ testGroup
+            "Class"
+            [gprettyTests],
+          Grisette.Core.Data.BVTests.bvTests
+        ]
     ]
 
 {-

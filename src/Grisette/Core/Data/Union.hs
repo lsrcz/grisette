@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -29,11 +31,18 @@ import Data.Functor.Classes
 import Data.Hashable
 import GHC.Generics
 import Grisette.Core.Data.Class.Bool
+import Grisette.Core.Data.Class.GPretty
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 import Language.Haskell.TH.Syntax
+
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+#else
+import Data.Text.Prettyprint.Doc
+#endif
 
 -- | The default union implementation.
 data Union a
@@ -123,6 +132,20 @@ instance Show1 Union where
 
 instance (Show a) => Show (Union a) where
   showsPrec = showsPrec1
+
+instance (GPretty a) => GPretty (Union a) where
+  gprettyPrec n (Single a) = gprettyPrec n a
+  gprettyPrec n (If _ _ cond t f) =
+    group $
+      condEnclose (n > 10) "(" ")" $
+        align $
+          nest 2 $
+            vsep
+              [ "If",
+                gprettyPrec 11 cond,
+                gprettyPrec 11 t,
+                gprettyPrec 11 f
+              ]
 
 instance (Hashable a) => Hashable (Union a) where
   s `hashWithSalt` (Single a) = s `hashWithSalt` (0 :: Int) `hashWithSalt` a

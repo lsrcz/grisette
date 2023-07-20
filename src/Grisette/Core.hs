@@ -613,6 +613,9 @@ module Grisette.Core
     ToCon (..),
     ToSym (..),
 
+    -- * Pretty printing
+    GPretty (..),
+
     -- * Symbolic Generation
 
     -- | It is usually useful to generate complex symbolic values. For example,
@@ -1020,6 +1023,7 @@ import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
+import Grisette.Core.Data.Class.GPretty
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps

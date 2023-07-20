@@ -186,6 +186,13 @@ packages:
       size: 7720
   original:
     hackage: text-1.2.4.1
+- completed:
+    hackage: prettyprinter-1.5.0@sha256:e92ed781622cd40e575639732e04dc2f6ba8e160d9055fd2a8aa86499d123006,5375
+    pantry-tree:
+      sha256: db4eb78e2845144563962a3e5d06da06453dcc96848c7b92928f3d1f7cbde0d8
+      size: 2105
+  original:
+    hackage: prettyprinter-1.5.0
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

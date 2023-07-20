@@ -66,6 +66,7 @@ library
       Grisette.Core.Data.Class.ExtractSymbolics
       Grisette.Core.Data.Class.Function
       Grisette.Core.Data.Class.GenSym
+      Grisette.Core.Data.Class.GPretty
       Grisette.Core.Data.Class.Mergeable
       Grisette.Core.Data.Class.ModelOps
       Grisette.Core.Data.Class.SafeArith
@@ -139,6 +140,7 @@ library
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
+    , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
     , template-haskell >=2.16 && <2.21
     , text >=1.2.4.1 && <2.1
@@ -176,6 +178,7 @@ test-suite doctest
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
+    , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
     , template-haskell >=2.16 && <2.21
     , text >=1.2.4.1 && <2.1
@@ -199,6 +202,7 @@ test-suite spec
       Grisette.Backend.SBV.Data.SMT.TermRewritingTests
       Grisette.Core.Control.Monad.UnionMTests
       Grisette.Core.Data.BVTests
+      Grisette.Core.Data.Class.GPrettyTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
       Grisette.IR.SymPrim.Data.Prim.BVTests
@@ -226,6 +230,7 @@ test-suite spec
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
+    , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
     , tasty >=1.1.0.3 && <1.5
     , tasty-hunit ==0.10.*
