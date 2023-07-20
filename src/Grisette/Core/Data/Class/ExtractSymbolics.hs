@@ -158,6 +158,71 @@ deriving via
     (ExtractSymbolics a, ExtractSymbolics b, ExtractSymbolics c) =>
     ExtractSymbolics (a, b, c)
 
+-- (,,,)
+deriving via
+  (Default (a, b, c, d))
+  instance
+    ( ExtractSymbolics a,
+      ExtractSymbolics b,
+      ExtractSymbolics c,
+      ExtractSymbolics d
+    ) =>
+    ExtractSymbolics (a, b, c, d)
+
+-- (,,,,)
+deriving via
+  (Default (a, b, c, d, e))
+  instance
+    ( ExtractSymbolics a,
+      ExtractSymbolics b,
+      ExtractSymbolics c,
+      ExtractSymbolics d,
+      ExtractSymbolics e
+    ) =>
+    ExtractSymbolics (a, b, c, d, e)
+
+-- (,,,,,)
+deriving via
+  (Default (a, b, c, d, e, f))
+  instance
+    ( ExtractSymbolics a,
+      ExtractSymbolics b,
+      ExtractSymbolics c,
+      ExtractSymbolics d,
+      ExtractSymbolics e,
+      ExtractSymbolics f
+    ) =>
+    ExtractSymbolics (a, b, c, d, e, f)
+
+-- (,,,,,,)
+deriving via
+  (Default (a, b, c, d, e, f, g))
+  instance
+    ( ExtractSymbolics a,
+      ExtractSymbolics b,
+      ExtractSymbolics c,
+      ExtractSymbolics d,
+      ExtractSymbolics e,
+      ExtractSymbolics f,
+      ExtractSymbolics g
+    ) =>
+    ExtractSymbolics (a, b, c, d, e, f, g)
+
+-- (,,,,,,,)
+deriving via
+  (Default (a, b, c, d, e, f, g, h))
+  instance
+    ( ExtractSymbolics a,
+      ExtractSymbolics b,
+      ExtractSymbolics c,
+      ExtractSymbolics d,
+      ExtractSymbolics e,
+      ExtractSymbolics f,
+      ExtractSymbolics g,
+      ExtractSymbolics h
+    ) =>
+    ExtractSymbolics (a, b, c, d, e, f, g, h)
+
 -- MaybeT
 instance (ExtractSymbolics (m (Maybe a))) => ExtractSymbolics (MaybeT m a) where
   extractSymbolics (MaybeT v) = extractSymbolics v
