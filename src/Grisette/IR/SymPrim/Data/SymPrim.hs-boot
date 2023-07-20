@@ -38,6 +38,7 @@ import GHC.TypeNats
 import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
+import Grisette.Core.Data.Class.GPretty
 import Grisette.Core.Data.Class.Solvable
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFun
@@ -89,6 +90,8 @@ instance Hashable SymBool
 instance EvaluateSym SymBool
 
 instance ExtractSymbolics SymBool
+
+instance GPretty SymBool
 
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
 

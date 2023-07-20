@@ -69,6 +69,7 @@ extra-deps:
   - call-stack-0.1.0
   - parallel-3.2.2.0
   - text-1.2.4.1
+  - prettyprinter-1.5.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

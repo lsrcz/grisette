@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE Trustworthy #-}
@@ -55,6 +56,7 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
+import Grisette.Core.Data.Class.GPretty
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
@@ -70,6 +72,12 @@ import Grisette.IR.SymPrim.Data.SymPrim
 import Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
+
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+#else
+import Data.Text.Prettyprint.Doc
+#endif
 
 -- $setup
 -- >>> import Grisette.Core
@@ -238,6 +246,11 @@ instance Show1 UnionM where
     wrapBracket '{' '}'
       . liftShowsPrecUnion sp sl 0
       $ a
+
+instance (GPretty a) => GPretty (UnionM a) where
+  gpretty = \case
+    (UAny a) -> groupedEnclose "<" ">" $ gpretty a
+    (UMrg _ a) -> groupedEnclose "{" "}" $ gpretty a
 
 -- | Extract the underlying Union. May be unmerged.
 underlyingUnion :: UnionM a -> Union a

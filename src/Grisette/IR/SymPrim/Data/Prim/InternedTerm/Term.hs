@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
@@ -9,6 +10,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
@@ -44,6 +47,7 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     UTerm (..),
     type (-->) (..),
     buildGeneralFun,
+    prettyPrintTerm,
   )
 where
 
@@ -70,6 +74,12 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat
 import Type.Reflection
+
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+#else
+import Data.Text.Prettyprint.Doc
+#endif
 
 -- $setup
 -- >>> import Grisette.Core
@@ -556,6 +566,21 @@ instance Show (Term ty) where
     "QuotBoundedIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (RemBoundedIntegralTerm i arg1 arg2) =
     "RemBoundedIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+
+prettyPrintTerm :: Term t -> Doc ann
+prettyPrintTerm v =
+  column
+    ( \c ->
+        pageWidth $ \case
+          AvailablePerLine i r ->
+            if fromIntegral (c + len) > fromIntegral i * r
+              then "..."
+              else pretty formatted
+          Unbounded -> pretty formatted
+    )
+  where
+    formatted = introSupportedPrimConstraint v $ pformat v
+    len = length formatted
 
 instance (SupportedPrim t) => Eq (Term t) where
   (==) = (==) `on` identity

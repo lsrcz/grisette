@@ -83,6 +83,7 @@ import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
+import Grisette.Core.Data.Class.GPretty
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
@@ -607,6 +608,34 @@ instance Hashable ARG where
 
 -- Aggregate instances
 
+-- Prettyprint
+#define GPRETTY_SYM_SIMPLE(symtype) \
+instance GPretty symtype where \
+  gpretty (symtype t) = prettyPrintTerm t
+
+#define GPRETTY_SYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => GPretty (symtype n) where \
+  gpretty (symtype t) = prettyPrintTerm t
+
+#define GPRETTY_SYM_FUN(op, cons) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
+  => GPretty (sa op sb) where \
+  gpretty (cons t) = prettyPrintTerm t
+
+#define GPRETTY_SYM_SOME_BV(symtype) \
+instance GPretty symtype where \
+  gpretty (symtype t) = gpretty t
+
+#if 1
+GPRETTY_SYM_SIMPLE(SymBool)
+GPRETTY_SYM_SIMPLE(SymInteger)
+GPRETTY_SYM_BV(SymIntN)
+GPRETTY_SYM_BV(SymWordN)
+GPRETTY_SYM_FUN(=~>, SymTabularFun)
+GPRETTY_SYM_FUN(-~>, SymGeneralFun)
+GPRETTY_SYM_SOME_BV(SomeSymIntN)
+GPRETTY_SYM_SOME_BV(SomeSymWordN)
+#endif
 -- Num
 
 #define NUM_BV(symtype) \

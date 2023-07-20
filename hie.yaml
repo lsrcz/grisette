@@ -1,9 +1,10 @@
 cradle:
   stack:
-    components:
-    - path: "src"
+    - path: "./src"
       component: "grisette:lib"
-    - path: "test"
-      component: "grisette:test:spec"
-    - path: "doctest"
+
+    - path: "./doctest"
       component: "grisette:test:doctest"
+
+    - path: "./test"
+      component: "grisette:test:spec"
