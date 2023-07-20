@@ -50,6 +50,7 @@ import Control.Exception
 import Data.Bits
 import Data.CallStack
 import Data.Hashable
+import Data.Maybe
 import Data.Proxy
 import Data.Typeable
 import GHC.Enum
@@ -174,10 +175,14 @@ readBinary = parens $ do
       negate <$> parens parse0b
     _ -> parse0b
   where
+    isDigit c = isJust (valDig c)
+    valDigit c = fromMaybe 0 (valDig c)
+    valDig '0' = Just 0
+    valDig '1' = Just 1
+    valDig _ = Nothing
     parse0b = do
       _ <- Text.Read.lift $ string "0b"
-      w <- readS_to_Prec (const readBin)
-      return $ fromInteger w
+      fromInteger <$> Text.Read.lift (L.readIntP 2 isDigit valDigit)
 
 instance (KnownNat n, 1 <= n) => Read (WordN n) where
   readPrec = readNumber convertInt <|> readBinary
