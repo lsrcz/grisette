@@ -13,7 +13,7 @@ packages:
     hackage: tasty-test-reporter-0.1.1.4
 snapshots:
 - completed:
-    sha256: e134cdce2ef4c28a0791a8c33aa6e35d4a3eeebc30b842a3062b318b84ae2b68
-    size: 544564
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/7/7.yaml
-  original: nightly-2023-07-07
+    sha256: 2759c0a43a745a0aee7d085a37c43422373848a5913e21225113b0039577ed53
+    size: 669536
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/9/26.yaml
+  original: nightly-2023-09-26
