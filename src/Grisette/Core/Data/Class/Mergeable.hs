@@ -469,7 +469,7 @@ instance Mergeable SomeIntN where
       (\(SomeIntN (_ :: IntN n)) -> natVal (Proxy @n))
       ( \_ ->
           SortedStrategy @Integer
-            (\(SomeIntN (IntN i)) -> toInteger i)
+            (\(SomeIntN (IntN i)) -> i)
             (const $ SimpleStrategy $ \_ l _ -> l)
       )
 
@@ -479,7 +479,7 @@ instance Mergeable SomeWordN where
       (\(SomeWordN (_ :: WordN n)) -> natVal (Proxy @n))
       ( \_ ->
           SortedStrategy @Integer
-            (\(SomeWordN (WordN i)) -> toInteger i)
+            (\(SomeWordN (WordN i)) -> i)
             (const $ SimpleStrategy $ \_ l _ -> l)
       )
 
