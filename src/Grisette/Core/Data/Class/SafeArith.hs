@@ -39,7 +39,6 @@ import GHC.TypeNats
 import Grisette.Core.Control.Monad.Union
 import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -94,7 +93,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   -- | Safe signed 'rem' with monadic error handling in multi-path execution.
   safeRem :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
   safeRem l r = do
-    (d, m) <- safeDivMod l r
+    (_, m) <- safeDivMod l r
     mrgIf
       ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
       (mrgSingle m)
@@ -154,7 +153,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   -- The error is transformed.
   safeRem' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
   safeRem' t l r = do
-    (d, m) <- safeDivMod' t l r
+    (_, m) <- safeDivMod' t l r
     mrgIf
       ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
       (mrgSingle m)
@@ -177,12 +176,13 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
 #define QRIGHT(a) QID(a)'
 
 #define QRIGHTT(a) QID(a)' t'
+#define QRIGHTU(a) QID(a)' _'
 
 #define SAFE_DIVISION_FUNC(name, op) \
 name _ r | r == 0 = merge $ throwError DivideByZero; \
 name l r = mrgSingle $ l `op` r; \
-QRIGHTT(name) _ r | r == 0 = let t1 = t' in merge $ throwError (t' DivideByZero); \
-QRIGHTT(name) l r = mrgSingle $ l `op` r
+QRIGHTT(name) _ r | r == 0 = let _ = t' in merge $ throwError (t' DivideByZero); \
+QRIGHTU(name) l r = mrgSingle $ l `op` r
 
 #define SAFE_DIVISION_CONCRETE(type) \
 instance SafeDivision ArithException type where \
@@ -395,7 +395,7 @@ instance SafeLinearArith (Either BitwidthMismatch ArithException) type where \
   safeAdd' t (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeAdd' (t . Right) l r; \
-      _ -> let t' = t; t''' = t in throwError $ t' $ Left BitwidthMismatch); \
+      _ -> let t' = t; _ = t' in throwError $ t' $ Left BitwidthMismatch); \
   safeMinus (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeMinus' Right l r; \
@@ -403,7 +403,7 @@ instance SafeLinearArith (Either BitwidthMismatch ArithException) type where \
   safeMinus' t (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeMinus' (t . Right) l r; \
-      _ -> let t' = t; t''' = t in throwError $ t' $ Left BitwidthMismatch); \
+      _ -> let t' = t; _ = t' in throwError $ t' $ Left BitwidthMismatch); \
   safeNeg (type l) = merge $ type <$> safeNeg' Right l; \
   safeNeg' t (type l) = merge $ type <$> safeNeg' (t . Right) l
 

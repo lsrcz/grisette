@@ -20,12 +20,9 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   )
 where
 
-import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-import Grisette.IR.SymPrim.Data.Prim.Utils
 
 -- div
 pevalDivIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a

@@ -16,11 +16,8 @@ module Grisette.Core.THCompat (augmentFinalType) where
 
 import Data.Bifunctor
 import Language.Haskell.TH.Syntax
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Control.Monad.UnionM
-import Grisette.IR.SymPrim.Data.SymPrim
 
 #if MIN_VERSION_template_haskell(2,17,0)
 augmentFinalType :: Type -> Q (([TyVarBndr Specificity], [Pred]), Type)

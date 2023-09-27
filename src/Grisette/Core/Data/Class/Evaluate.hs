@@ -40,7 +40,6 @@ import GHC.TypeNats
 import Generics.Deriving
 import Generics.Deriving.Instances ()
 import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.ToCon
 import Grisette.IR.SymPrim.Data.Prim.Model
 

@@ -40,7 +40,7 @@ testGPretty n i a s =
       @=? s
 
 propertyGPrettyShow ::
-  forall proxy a.
+  forall a.
   (HasCallStack, GPretty a, Show a) =>
   String ->
   Gen a ->
@@ -50,7 +50,7 @@ propertyGPrettyShow n g =
     renderStrict (layoutPretty (LayoutOptions Unbounded) (gpretty a)) == T.pack (show a)
 
 propertyGPrettyRead ::
-  forall proxy a.
+  forall a.
   (HasCallStack, GPretty a, Read a, Show a, Eq a) =>
   String ->
   Gen a ->
@@ -69,7 +69,7 @@ propertyGPrettyRead n g =
       == a
 
 propertyGPretty ::
-  forall proxy a.
+  forall a.
   (HasCallStack, GPretty a, Read a, Show a, Eq a) =>
   String ->
   Gen a ->

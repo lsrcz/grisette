@@ -176,7 +176,7 @@ hasRepr (NatRepr nVal) =
 
 -- | Adding two type-level natural numbers with known runtime values gives a
 -- type-level natural number with a known runtime value.
-knownAdd :: forall m n r. KnownProof m -> KnownProof n -> KnownProof (m + n)
+knownAdd :: forall m n. KnownProof m -> KnownProof n -> KnownProof (m + n)
 knownAdd KnownProof KnownProof = hasRepr @(m + n) (NatRepr (natVal (Proxy @m) + natVal (Proxy @n)))
 
 -- | @'LeqProof m n'@ is a type whose values are only inhabited when @m <= n@.

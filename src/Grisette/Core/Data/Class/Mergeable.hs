@@ -72,7 +72,6 @@ import qualified Data.Text as T
 import Data.Typeable
 import Data.Word
 import GHC.Natural
-import qualified GHC.TypeLits
 import GHC.TypeNats
 import Generics.Deriving
 import Grisette.Core.Data.BV
@@ -467,8 +466,8 @@ CONCRETE_ORD_MERGEABLE_BV(IntN)
 instance Mergeable SomeIntN where
   rootStrategy =
     SortedStrategy @Natural
-      (\(SomeIntN (v :: IntN n)) -> natVal (Proxy @n))
-      ( \n ->
+      (\(SomeIntN (_ :: IntN n)) -> natVal (Proxy @n))
+      ( \_ ->
           SortedStrategy @Integer
             (\(SomeIntN (IntN i)) -> toInteger i)
             (const $ SimpleStrategy $ \_ l _ -> l)
@@ -477,8 +476,8 @@ instance Mergeable SomeIntN where
 instance Mergeable SomeWordN where
   rootStrategy =
     SortedStrategy @Natural
-      (\(SomeWordN (v :: WordN n)) -> natVal (Proxy @n))
-      ( \n ->
+      (\(SomeWordN (_ :: WordN n)) -> natVal (Proxy @n))
+      ( \_ ->
           SortedStrategy @Integer
             (\(SomeWordN (WordN i)) -> toInteger i)
             (const $ SimpleStrategy $ \_ l _ -> l)
@@ -513,14 +512,14 @@ deriving via (Default1 Maybe) instance Mergeable1 Maybe
 -- | Helper type for building efficient merge strategy for list-like containers.
 data StrategyList container where
   StrategyList ::
-    forall bool a container.
+    forall a container.
     container [DynamicSortedIdx] ->
     container (MergingStrategy a) ->
     StrategyList container
 
 -- | Helper function for building efficient merge strategy for list-like containers.
 buildStrategyList ::
-  forall bool a container.
+  forall a container.
   (Functor container) =>
   MergingStrategy a ->
   container a ->
@@ -994,8 +993,8 @@ MERGEABLE_FUN(-~>)
 instance Mergeable SomeSymIntN where
   rootStrategy =
     SortedStrategy @Natural
-      (\(SomeSymIntN (v :: SymIntN n)) -> natVal (Proxy @n))
-      ( \n ->
+      (\(SomeSymIntN (_ :: SymIntN n)) -> natVal (Proxy @n))
+      ( \_ ->
           SimpleStrategy
             ( \c (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) ->
                 case unsafeAxiom @l @r of
@@ -1006,8 +1005,8 @@ instance Mergeable SomeSymIntN where
 instance Mergeable SomeSymWordN where
   rootStrategy =
     SortedStrategy @Natural
-      (\(SomeSymWordN (v :: SymWordN n)) -> natVal (Proxy @n))
-      ( \n ->
+      (\(SomeSymWordN (_ :: SymWordN n)) -> natVal (Proxy @n))
+      ( \_ ->
           SimpleStrategy
             ( \c (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) ->
                 case unsafeAxiom @l @r of
@@ -1027,6 +1026,6 @@ instance Mergeable ArithException where
           Denormal -> 4 :: Int
           RatioZeroDenominator -> 5 :: Int
       )
-      (const $ SimpleStrategy $ \_ l r -> l)
+      (const $ SimpleStrategy $ \_ l _ -> l)
 
 deriving via (Default BitwidthMismatch) instance (Mergeable BitwidthMismatch)

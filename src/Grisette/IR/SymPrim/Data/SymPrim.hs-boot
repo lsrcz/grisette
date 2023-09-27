@@ -33,7 +33,6 @@ where
 
 import Control.DeepSeq
 import Data.Hashable
-import GHC.Generics
 import GHC.TypeNats
 import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Evaluate

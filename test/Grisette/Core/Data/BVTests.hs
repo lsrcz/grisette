@@ -206,7 +206,7 @@ divLikeTest ::
   TestTree
 divLikeTest name a2b fa fb =
   testGroup
-    "name"
+    name
     [ testCase "divided by zero" $ do
         sameDiv 1 0 a2b fa fb
         sameDiv 0 0 a2b fa fb
@@ -228,7 +228,7 @@ divModLikeTest ::
   TestTree
 divModLikeTest name a2b fa fb =
   testGroup
-    "name"
+    name
     [ testCase "divided by zero" $ do
         sameDivMod 1 0 a2b fa fb
         sameDivMod 0 0 a2b fa fb

@@ -34,22 +34,21 @@ sameDivPeval ::
   (Term t -> Term t -> Term t) ->
   IO ()
 sameDivPeval i j pf cf consf = do
-  cx <- evaluate (force $ Right $ cf i j) `catch` \(e :: ArithException) -> return $ Left AEWrapper
+  cx <- evaluate (force $ Right $ cf i j) `catch` \(_ :: ArithException) -> return $ Left AEWrapper
   case cx of
-    Left f -> pf (conTerm i) (conTerm j) @=? consf (conTerm i) (conTerm j)
+    Left _ -> pf (conTerm i) (conTerm j) @=? consf (conTerm i) (conTerm j)
     Right t -> pf (conTerm i) (conTerm j) @=? conTerm t
 
 divisionPevalBoundedTests ::
-  forall p t0 t.
-  (Num t, Eq t, Arbitrary t0, Show t0, Bounded t, SupportedPrim t, Integral t) =>
+  forall p t.
+  (Num t, Eq t, Bounded t, SupportedPrim t, Integral t) =>
   p t ->
   TestName ->
-  (t0 -> t) ->
   (Term t -> Term t -> Term t) ->
   (t -> t -> t) ->
   (Term t -> Term t -> Term t) ->
   TestTree
-divisionPevalBoundedTests _ name transform pf cf consf =
+divisionPevalBoundedTests _ name pf cf consf =
   testGroup
     name
     [ testCase "On concrete min divide by -1" $
@@ -66,7 +65,7 @@ divisionPevalTests ::
   (t -> t -> t) ->
   (Term t -> Term t -> Term t) ->
   TestTree
-divisionPevalTests p name transform pf cf consf =
+divisionPevalTests _ name transform pf cf consf =
   testGroup
     name
     [ testProperty "On concrete prop" $
@@ -95,7 +94,7 @@ divisionPevalBoundedTestGroup name pf cf consf =
   testGroup
     name
     [ divisionPevalTests (Proxy @(IntN 4)) "IntN" IntN pf cf consf,
-      divisionPevalBoundedTests (Proxy @(IntN 4)) "IntN Bounded" IntN pf cf consf
+      divisionPevalBoundedTests (Proxy @(IntN 4)) "IntN Bounded" pf cf consf
     ]
 
 divisionPevalUnboundedTestGroup ::
@@ -109,7 +108,7 @@ divisionPevalUnboundedTestGroup name pf cf consf =
     name
     [ divisionPevalTests (Proxy @Integer) "Integer" id pf cf consf,
       divisionPevalTests (Proxy @(WordN 4)) "WordN" WordN pf cf consf,
-      divisionPevalBoundedTests (Proxy @(WordN 4)) "WordN Bounded" WordN pf cf consf
+      divisionPevalBoundedTests (Proxy @(WordN 4)) "WordN Bounded" pf cf consf
     ]
 
 moduloPevalTests ::
@@ -122,7 +121,7 @@ moduloPevalTests ::
   (t -> t -> t) ->
   (Term t -> Term t -> Term t) ->
   TestTree
-moduloPevalTests p name transform pf cf consf =
+moduloPevalTests _ name transform pf cf consf =
   testGroup
     name
     [ testProperty "On concrete" $

@@ -8,18 +8,15 @@
 module Grisette.Backend.SBV.Data.SMT.CEGISTests where
 
 import Control.Monad.Except
-import qualified Data.HashSet as S
 import Data.Proxy
 import qualified Data.SBV as SBV
 import Data.String
 import Grisette.Backend.SBV
-import Grisette.Backend.SBV.Data.SMT.Solving
 import Grisette.Core.Control.Exception
 import Grisette.Core.Control.Monad.UnionM
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.CEGISSolver
-import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
@@ -27,8 +24,6 @@ import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.SymPrim
 import Test.Tasty
 import Test.Tasty.HUnit

@@ -35,7 +35,6 @@ import Data.Interned
 import Data.Kind
 import GHC.TypeNats
 import Grisette.Core.Data.Class.BitVector
-import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax

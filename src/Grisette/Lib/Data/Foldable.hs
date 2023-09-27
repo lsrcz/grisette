@@ -24,7 +24,6 @@ where
 
 import Control.Monad
 import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import {-# SOURCE #-} Grisette.Lib.Control.Monad

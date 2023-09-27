@@ -21,9 +21,7 @@ module Grisette.Core.Data.Class.ModelOps
   )
 where
 
-import Data.Hashable
 import Data.Kind
-import Data.Typeable
 
 -- $setup
 -- >>> import Grisette.Core
@@ -88,7 +86,7 @@ class
 -- SymbolSet {a :: Bool, b :: Bool}
 class
   (SymbolSetOps symbolSet typedSymbol) =>
-  SymbolSetRep rep symbolSet (typedSymbol :: * -> *)
+  SymbolSetRep rep symbolSet (typedSymbol :: Type -> Type)
   where
   -- | Build a symbolic constant set
   buildSymbolSet :: rep -> symbolSet

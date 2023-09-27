@@ -5,7 +5,6 @@ module Grisette.Lib.Control.Monad where
 
 import Control.Monad
 import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 
 mrgReturnWithStrategy :: (MonadUnion u) => MergingStrategy a -> a -> u a
