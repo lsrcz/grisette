@@ -68,6 +68,7 @@ ghc-options:
   - -Wextra
   - -Werror
   - -Wcompat
+  - -Widentities
 
 library:
   source-dirs: src
