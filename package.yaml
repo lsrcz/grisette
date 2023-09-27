@@ -70,6 +70,7 @@ ghc-options:
   - -Wcompat
   - -Widentities
   - -Wmissing-export-lists
+  - -Wmissing-home-modules
 
 library:
   source-dirs: src
