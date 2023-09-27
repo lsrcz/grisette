@@ -14,7 +14,6 @@ module Grisette.Core.Control.Monad.Class.MonadParallelUnion
 where
 
 import Control.DeepSeq
-import Control.Monad.Cont
 import Control.Monad.Except
 import Control.Monad.Identity
 import qualified Control.Monad.RWS.Lazy as RWSLazy
@@ -27,7 +26,6 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Lib.Control.Monad
 
 -- | Parallel union monad.
 --

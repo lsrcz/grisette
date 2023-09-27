@@ -24,7 +24,6 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SOrd
-import Grisette.Core.Data.Class.SafeArith
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.IR.SymPrim.Data.SymPrim
 import Grisette.Lib.Control.Monad

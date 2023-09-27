@@ -39,14 +39,11 @@ module Grisette.Core.Control.Monad.UnionM
 where
 
 import Control.DeepSeq
-import Control.Monad.Identity (Identity (..))
 import Control.Parallel.Strategies
 import Data.Functor.Classes
 import qualified Data.HashMap.Lazy as HML
 import Data.Hashable
-import Data.IORef
 import Data.String
-import GHC.IO hiding (evaluate)
 import GHC.TypeNats
 import Grisette.Core.Control.Monad.CBMCExcept
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
@@ -63,7 +60,6 @@ import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
-import Grisette.Core.Data.Class.Substitute
 import Grisette.Core.Data.Class.ToCon
 import Grisette.Core.Data.Class.ToSym
 import Grisette.Core.Data.Union
@@ -72,12 +68,6 @@ import Grisette.IR.SymPrim.Data.SymPrim
 import Grisette.IR.SymPrim.Data.TabularFun
 import Language.Haskell.TH.Syntax
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
-
-#if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter
-#else
-import Data.Text.Prettyprint.Doc
-#endif
 
 -- $setup
 -- >>> import Grisette.Core
@@ -238,11 +228,11 @@ wrapBracket :: Char -> Char -> ShowS -> ShowS
 wrapBracket l r p = showChar l . p . showChar r
 
 instance Show1 UnionM where
-  liftShowsPrec sp sl i (UAny a) =
+  liftShowsPrec sp sl _ (UAny a) =
     wrapBracket '<' '>'
       . liftShowsPrecUnion sp sl 0
       $ a
-  liftShowsPrec sp sl i (UMrg _ a) =
+  liftShowsPrec sp sl _ (UMrg _ a) =
     wrapBracket '{' '}'
       . liftShowsPrecUnion sp sl 0
       $ a

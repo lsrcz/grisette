@@ -49,7 +49,6 @@ import Grisette.IR.SymPrim.Data.TabularFun
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding ((.&.))
-import Type.Reflection hiding (Con)
 
 newtype AEWrapper = AEWrapper ArithException deriving (Eq)
 
@@ -96,7 +95,7 @@ sameSafeDiv' ::
   (c -> c -> c) ->
   Assertion
 sameSafeDiv' i j f cf = do
-  xc <- evaluate (force $ Right $ cf i j) `catch` \(e :: ArithException) -> return $ Left ()
+  xc <- evaluate (force $ Right $ cf i j) `catch` \(_ :: ArithException) -> return $ Left ()
   case xc of
     Left () -> f (const ()) (con i :: s) (con j) @=? merge (throwError ())
     Right c -> f (const ()) (con i :: s) (con j) @=? mrgSingle (con c)
@@ -138,7 +137,7 @@ sameSafeDivMod' ::
   (c -> c -> (c, c)) ->
   Assertion
 sameSafeDivMod' i j f cf = do
-  xc <- evaluate (force $ Right $ cf i j) `catch` \(e :: ArithException) -> return $ Left ()
+  xc <- evaluate (force $ Right $ cf i j) `catch` \(_ :: ArithException) -> return $ Left ()
   case xc of
     Left () -> f (const ()) (con i :: s) (con j) @=? merge (throwError ())
     Right (c1, c2) -> f (const ()) (con i :: s) (con j) @=? mrgSingle (con c1, con c2)
@@ -185,10 +184,9 @@ safeDivisionUnboundedOnlyTests ::
   (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   (s -> s -> ExceptT ArithException UnionM s) ->
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
-  (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   [TestTree]
-safeDivisionUnboundedOnlyTests f f' cf pf =
+safeDivisionUnboundedOnlyTests f f' pf =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
@@ -213,9 +211,8 @@ safeDivisionGeneralTests ::
   (s -> s -> ExceptT ArithException UnionM s) ->
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
-  (Term c -> Term c -> Term c) ->
   [TestTree]
-safeDivisionGeneralTests transform f f' cf pf =
+safeDivisionGeneralTests transform f f' cf =
   [ testProperty "on concrete prop" $ \(i0 :: c0, j0 :: c0) ->
       ioProperty $ do
         let i = transform i0
@@ -246,7 +243,7 @@ safeDivisionBoundedTests ::
   TestTree
 safeDivisionBoundedTests name transform f f' cf pf =
   testGroup name $
-    safeDivisionGeneralTests transform f f' cf pf
+    safeDivisionGeneralTests transform f f' cf
       ++ safeDivisionBoundedOnlyTests f f' cf pf
 
 safeDivisionUnboundedTests ::
@@ -261,8 +258,8 @@ safeDivisionUnboundedTests ::
   TestTree
 safeDivisionUnboundedTests name transform f f' cf pf =
   testGroup name $
-    safeDivisionGeneralTests transform f f' cf pf
-      ++ safeDivisionUnboundedOnlyTests f f' cf pf
+    safeDivisionGeneralTests transform f f' cf
+      ++ safeDivisionUnboundedOnlyTests f f' pf
 
 safeDivModBoundedOnlyTests ::
   forall c s.
@@ -329,11 +326,10 @@ safeDivModUnboundedOnlyTests ::
     s ->
     ExceptT () UnionM (s, s)
   ) ->
-  (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
   [TestTree]
-safeDivModUnboundedOnlyTests f f' cf pf1 pf2 =
+safeDivModUnboundedOnlyTests f f' pf1 pf2 =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
@@ -373,10 +369,8 @@ safeDivModGeneralTests ::
     ExceptT () UnionM (s, s)
   ) ->
   (c -> c -> (c, c)) ->
-  (Term c -> Term c -> Term c) ->
-  (Term c -> Term c -> Term c) ->
   [TestTree]
-safeDivModGeneralTests transform f f' cf pf1 pf2 =
+safeDivModGeneralTests transform f f' cf =
   [ testProperty "on concrete" $ \(i0 :: c0, j0 :: c0) ->
       ioProperty $ do
         let i = transform i0
@@ -415,7 +409,7 @@ safeDivModBoundedTests ::
   TestTree
 safeDivModBoundedTests name transform f f' cf pf1 pf2 =
   testGroup name $
-    safeDivModGeneralTests transform f f' cf pf1 pf2
+    safeDivModGeneralTests transform f f' cf
       ++ safeDivModBoundedOnlyTests f f' cf pf1 pf2
 
 safeDivModUnboundedTests ::
@@ -438,8 +432,8 @@ safeDivModUnboundedTests ::
   TestTree
 safeDivModUnboundedTests name transform f f' cf pf1 pf2 =
   testGroup name $
-    safeDivModGeneralTests transform f f' cf pf1 pf2
-      ++ safeDivModUnboundedOnlyTests f f' cf pf1 pf2
+    safeDivModGeneralTests transform f f' cf
+      ++ safeDivModUnboundedOnlyTests f f' pf1 pf2
 
 symPrimTests :: TestTree
 symPrimTests =
@@ -919,14 +913,6 @@ symPrimTests =
           fsymbol :: TypedSymbol (IntN 4) = "f"
           gsymbol :: TypedSymbol (WordN 16) = "g"
           hsymbol :: TypedSymbol (IntN 16) = "h"
-          a :: SymInteger = ssym "a"
-          b :: SymBool = "b"
-          c :: SymInteger = "c"
-          d :: SymBool = "d"
-          e :: SymWordN 4 = "e"
-          f :: SymIntN 4 = "f"
-          g :: SymWordN 16 = "g"
-          h :: SymIntN 16 = "h"
           va :: Integer = 1
           vc :: Integer = 2
           ve :: WordN 4 = 3

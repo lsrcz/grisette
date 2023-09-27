@@ -43,7 +43,6 @@ dependencies:
 - th-compat >= 0.1.2 && < 0.2
 - call-stack >= 0.1 && < 0.5
 - array >= 0.5.4 && < 0.6
-- vector >= 0.12.1 && < 0.14
 - sbv >= 8.11 && < 10.3
 - parallel >= 3.2.2.0 && < 3.3
 - text >= 1.2.4.1 && < 2.1
@@ -64,6 +63,10 @@ when:
       ghc-options: -O2
     else:
       ghc-options: -O0
+
+ghc-options:
+  - -Wextra
+  - -Werror
 
 library:
   source-dirs: src

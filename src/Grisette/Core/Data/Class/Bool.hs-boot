@@ -1,4 +1,4 @@
-module Grisette.Core.Data.Class.Bool (LogicalOp (..)) where
+module Grisette.Core.Data.Class.Bool (LogicalOp (..), ITEOp (..)) where
 
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 

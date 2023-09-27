@@ -43,12 +43,7 @@ import Control.DeepSeq
 import Control.Monad.Except
 import Data.Hashable
 import Generics.Deriving
-import Grisette.Core.Control.Exception
-import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Evaluate
-import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
 import Grisette.IR.SymPrim.Data.Prim.Model
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 import Language.Haskell.TH.Syntax

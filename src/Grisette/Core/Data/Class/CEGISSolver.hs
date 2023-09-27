@@ -42,7 +42,6 @@ where
 import GHC.Generics
 import Generics.Deriving
 import Grisette.Core.Control.Exception
-import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Mergeable

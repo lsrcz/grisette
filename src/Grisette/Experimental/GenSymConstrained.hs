@@ -30,13 +30,9 @@ where
 
 import Control.Monad.Except
 import Control.Monad.Trans.Maybe
-import Data.Int
-import Data.Word
 import Debug.Trace
 import GHC.Generics
-import GHC.TypeLits
 import Grisette.Core.Control.Monad.UnionM
-import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.Mergeable
@@ -160,7 +156,7 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenS
     mrgSingle s
 
 instance GenSymConstrained (SOrdBound Integer ()) Integer where
-  freshConstrained e (SOrdBound l r _) = chooseFresh [l .. r - 1]
+  freshConstrained _ (SOrdBound l r _) = chooseFresh [l .. r - 1]
 
 -- Either
 instance
@@ -740,7 +736,7 @@ instance
   GenSymConstrainedNoSpec (a :+: b)
   where
   freshConstrainedNoSpec ::
-    forall m u c e.
+    forall m c e.
     ( MonadFresh m,
       MonadError e m,
       UnionLike m
@@ -758,7 +754,7 @@ instance
   GenSymConstrainedNoSpec (a :*: b)
   where
   freshConstrainedNoSpec ::
-    forall m u c e.
+    forall m c e.
     ( MonadFresh m,
       MonadError e m,
       UnionLike m
@@ -782,7 +778,7 @@ instance
 --
 -- __Note:__ __Never__ use on recursive types.
 derivedFreshConstrainedNoSpec ::
-  forall bool a m u e.
+  forall a m e.
   ( Generic a,
     GenSymConstrainedNoSpec (Rep a),
     Mergeable a,

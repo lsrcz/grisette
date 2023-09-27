@@ -15,7 +15,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Test.Tasty
 import Test.Tasty.HUnit
-import Type.Reflection
 
 modelTests :: TestTree
 modelTests =

@@ -63,7 +63,7 @@ import Grisette.Utils.Parameterized
 import Language.Haskell.TH.Syntax
 import Numeric
 import qualified Test.QuickCheck as QC
-import Text.ParserCombinators.ReadP (skipSpaces, string)
+import Text.ParserCombinators.ReadP (string)
 import Text.ParserCombinators.ReadPrec
 import Text.Read
 import qualified Text.Read.Lex as L
@@ -699,7 +699,7 @@ instance BV SomeWordN where
     where
       n = fromIntegral $ natVal (Proxy @n)
       res :: forall (w :: Nat) (ix :: Nat). Proxy w -> Proxy ix -> SomeWordN
-      res p1 p2 =
+      res _ _ =
         case ( unsafeKnownProof @ix (fromIntegral ix),
                unsafeKnownProof @w (fromIntegral w),
                unsafeLeqProof @1 @w,
@@ -709,7 +709,7 @@ instance BV SomeWordN where
             SomeWordN $ sizedBVSelect (Proxy @ix) (Proxy @w) a
 
 instance BV SomeIntN where
-  bvConcat l r = toSigned $ bvConcat (toUnsigned l) (toUnsigned l)
+  bvConcat l r = toSigned $ bvConcat (toUnsigned l) (toUnsigned r)
   {-# INLINE bvConcat #-}
   bvZext l = toSigned . bvZext l . toUnsigned
   {-# INLINE bvZext #-}

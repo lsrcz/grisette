@@ -16,9 +16,8 @@ module Grisette.Lib.Control.Monad.Trans.Cont
   )
 where
 
-import Control.Monad.Cont
-import Control.Monad.Trans.Class
-import Grisette.Core.Data.Class.Bool
+import Control.Monad.Cont (ContT (..))
+import Control.Monad.Trans.Class (lift)
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Lib.Control.Monad

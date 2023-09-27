@@ -32,7 +32,6 @@ module Grisette.Backend.SBV.Data.SMT.Lowering
   )
 where
 
-import Control.Monad.State.Strict
 import Data.Bifunctor
 import Data.Bits
 import Data.Dynamic
@@ -45,7 +44,6 @@ import qualified Data.SBV.Internals as SBVI
 import Data.Type.Equality (type (~~))
 import Data.Typeable
 import GHC.Exts (sortWith)
-import GHC.Natural
 import GHC.Stack
 import GHC.TypeNats
 import {-# SOURCE #-} Grisette.Backend.SBV.Data.SMT.Solving
@@ -61,24 +59,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.TabularFun
 import Grisette.Utils.Parameterized
 import qualified Type.Reflection as R
-import Unsafe.Coerce
-
-cachedResult ::
-  forall integerBitWidth a.
-  (SupportedPrim a, Typeable (TermTy integerBitWidth a)) =>
-  Term a ->
-  State SymBiMap (Maybe (TermTy integerBitWidth a))
-cachedResult t = gets $ \m -> do
-  d <- lookupTerm (SomeTerm t) m
-  Just $ fromDyn d undefined
-
-addResult ::
-  forall integerBitWidth a.
-  (SupportedPrim a, Typeable (TermTy integerBitWidth a)) =>
-  Term a ->
-  TermTy integerBitWidth a ->
-  State SymBiMap ()
-addResult tm sbvtm = modify $ addBiMapIntermediate (SomeTerm tm) (toDyn sbvtm)
 
 translateTypeError :: (HasCallStack) => R.TypeRep a -> b
 translateTypeError ta =
@@ -144,7 +124,7 @@ lowerValue config@ResolvedConfig {} v =
           lowerTFunCon config v
         _ -> translateTypeError (R.typeRep @a)
     _ -> translateTypeError (R.typeRep @a)
-lowerValue config v = translateTypeError (R.typeRep @a)
+lowerValue _ _ = translateTypeError (R.typeRep @a)
 
 lowerTFunCon ::
   forall integerBitWidth a b.
@@ -154,9 +134,9 @@ lowerTFunCon ::
   (TermTy integerBitWidth a -> TermTy integerBitWidth b)
 lowerTFunCon config@ResolvedConfig {} (TabularFun l d) = go l d
   where
-    go [] d v = lowerValue config d
+    go [] d _ = lowerValue config d
     go ((x, r) : xs) d v = SBV.ite (lowerValue config x SBV..== v) (lowerValue config r) (go xs d v)
-lowerTFunCon _ (TabularFun l d) = translateTypeError (R.typeRep @a)
+lowerTFunCon _ TabularFun {} = translateTypeError (R.typeRep @a)
 
 buildUTFun11 ::
   forall integerBitWidth s1 s2 a.

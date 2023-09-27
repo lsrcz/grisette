@@ -26,7 +26,6 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum
 import Data.Int
-import Data.Proxy
 import Data.String
 import qualified Data.Text as T
 import Data.Word
@@ -153,7 +152,7 @@ instance (GPretty' a, GPretty' b) => GPretty' (a :*: b) where
           [ gprettyPrec' t n a,
             pretty s <+> gprettyPrec' t n b
           ]
-  gprettyPrec' t@Tup n (a :*: b) =
+  gprettyPrec' t@Tup _ (a :*: b) =
     vcat
       [ gprettyPrec' t 0 a,
         "," <> flatAlt " " "" <> gprettyPrec' t 0 b
@@ -309,7 +308,7 @@ instance
   (GPretty (m (Maybe a))) =>
   GPretty (MaybeT m a)
   where
-  gprettyPrec i (MaybeT a) =
+  gprettyPrec _ (MaybeT a) =
     group $
       nest 2 $
         vsep
@@ -322,7 +321,7 @@ instance
   (GPretty (m (Either e a))) =>
   GPretty (ExceptT e m a)
   where
-  gprettyPrec i (ExceptT a) =
+  gprettyPrec _ (ExceptT a) =
     group $
       nest 2 $
         vsep
@@ -335,7 +334,7 @@ instance
   (GPretty (m (a, w))) =>
   GPretty (WriterLazy.WriterT w m a)
   where
-  gprettyPrec i (WriterLazy.WriterT a) =
+  gprettyPrec _ (WriterLazy.WriterT a) =
     group $
       nest 2 $
         vsep
@@ -347,7 +346,7 @@ instance
   (GPretty (m (a, w))) =>
   GPretty (WriterStrict.WriterT w m a)
   where
-  gprettyPrec i (WriterStrict.WriterT a) =
+  gprettyPrec _ (WriterStrict.WriterT a) =
     group $
       nest 2 $
         vsep
@@ -357,7 +356,7 @@ instance
 
 -- Identity
 instance (GPretty a) => GPretty (Identity a) where
-  gprettyPrec i (Identity a) =
+  gprettyPrec _ (Identity a) =
     group $
       nest 2 $
         vsep
@@ -367,7 +366,7 @@ instance (GPretty a) => GPretty (Identity a) where
 
 -- IdentityT
 instance (GPretty (m a)) => GPretty (IdentityT m a) where
-  gprettyPrec i (IdentityT a) =
+  gprettyPrec _ (IdentityT a) =
     group $
       nest 2 $
         vsep

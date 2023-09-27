@@ -79,13 +79,10 @@ import Grisette.Core.Control.Exception
 import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Error
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
 import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.GPretty
-import Grisette.Core.Data.Class.GenSym
-import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SafeArith
@@ -186,7 +183,7 @@ instance SafeLinearArith ArithException SymInteger where
   safeNeg v = mrgReturn $ -v
   safeNeg' _ v = mrgReturn $ -v
   safeMinus ls rs = mrgReturn $ ls - rs
-  safeMinus' e ls rs = mrgReturn $ ls - rs
+  safeMinus' _ ls rs = mrgReturn $ ls - rs
 
 instance SymIntegerOp SymInteger
 
@@ -320,11 +317,11 @@ data SomeSymIntN where
   SomeSymIntN :: (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
 
 unarySomeSymIntN :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> r) -> String -> SomeSymIntN -> r
-unarySomeSymIntN op str (SomeSymIntN (w :: SymIntN w)) = op w
+unarySomeSymIntN op _ (SomeSymIntN (w :: SymIntN w)) = op w
 {-# INLINE unarySomeSymIntN #-}
 
 unarySomeSymIntNR1 :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n) -> String -> SomeSymIntN -> SomeSymIntN
-unarySomeSymIntNR1 op str (SomeSymIntN (w :: SymIntN w)) = SomeSymIntN $ op w
+unarySomeSymIntNR1 op _ (SomeSymIntN (w :: SymIntN w)) = SomeSymIntN $ op w
 {-# INLINE unarySomeSymIntNR1 #-}
 
 binSomeSymIntN :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n -> r) -> String -> SomeSymIntN -> SomeSymIntN -> r
@@ -432,11 +429,11 @@ data SomeSymWordN where
   SomeSymWordN :: (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
 
 unarySomeSymWordN :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> r) -> String -> SomeSymWordN -> r
-unarySomeSymWordN op str (SomeSymWordN (w :: SymWordN w)) = op w
+unarySomeSymWordN op _ (SomeSymWordN (w :: SymWordN w)) = op w
 {-# INLINE unarySomeSymWordN #-}
 
 unarySomeSymWordNR1 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n) -> String -> SomeSymWordN -> SomeSymWordN
-unarySomeSymWordNR1 op str (SomeSymWordN (w :: SymWordN w)) = SomeSymWordN $ op w
+unarySomeSymWordNR1 op _ (SomeSymWordN (w :: SymWordN w)) = SomeSymWordN $ op w
 {-# INLINE unarySomeSymWordNR1 #-}
 
 binSomeSymWordN :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> r) -> String -> SomeSymWordN -> SomeSymWordN -> r
@@ -1356,7 +1353,7 @@ bvSelect ix w (somety (a :: origty n)) \
     where \
       n = fromIntegral $ natVal (Proxy @n); \
       res :: forall (w :: Nat) (ix :: Nat). Proxy w -> Proxy ix -> somety; \
-      res p1 p2 = \
+      res _ _ = \
         case ( unsafeKnownProof @ix (fromIntegral ix), \
                unsafeKnownProof @w (fromIntegral w), \
                unsafeLeqProof @1 @w, \
@@ -1447,10 +1444,6 @@ data SomeSym where
 
 someUnderlyingTerm :: SomeSym -> SomeTerm
 someUnderlyingTerm (SomeSym s) = SomeTerm $ underlyingTerm s
-
-someSymSize :: [SomeSym] -> Int
-someSymSize = someTermsSize . fmap someUnderlyingTerm
-{-# INLINE someSymSize #-}
 
 someSymsSize :: [SomeSym] -> Int
 someSymsSize = someTermsSize . fmap someUnderlyingTerm

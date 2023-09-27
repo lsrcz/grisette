@@ -67,7 +67,6 @@ module Grisette.Core.Data.Class.GenSym
 where
 
 import Control.DeepSeq
-import Control.Monad.Cont
 import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Monad.RWS.Class
@@ -75,11 +74,9 @@ import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
 import Control.Monad.Reader
 import Control.Monad.Signatures
-import Control.Monad.State
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe
-import Control.Monad.Writer
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor
@@ -92,10 +89,8 @@ import Data.Typeable
 import Data.Word
 import GHC.TypeNats
 import Generics.Deriving hiding (index)
-import Grisette.Core.Control.Monad.Union
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM
 import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
@@ -305,17 +300,17 @@ instance (MonadError e m) => MonadError e (FreshT m) where
   catchError = liftFreshTCache catchError
 
 instance (MonadWriter w m) => MonadWriter w (FreshT m) where
-  writer p = FreshT $ \ident index -> (,index) <$> writer p
+  writer p = FreshT $ \_ index -> (,index) <$> writer p
   listen (FreshT r) = FreshT $ \ident index -> (\((a, b), c) -> ((a, c), b)) <$> listen (r ident index)
   pass (FreshT r) = FreshT $ \ident index -> pass $ (\((a, b), c) -> ((a, c), b)) <$> r ident index
 
 instance (MonadState s m) => MonadState s (FreshT m) where
-  get = FreshT $ \ident index -> gets (,index)
-  put s = FreshT $ \ident index -> (,index) <$> put s
+  get = FreshT $ \_ index -> gets (,index)
+  put s = FreshT $ \_ index -> (,index) <$> put s
 
 instance (MonadReader r m) => MonadReader r (FreshT m) where
   local t (FreshT r) = FreshT $ \ident index -> local t (r ident index)
-  ask = FreshT $ \ident index -> asks (,index)
+  ask = FreshT $ \_ index -> asks (,index)
 
 instance (MonadRWS r w s m) => MonadRWS r w s (FreshT m)
 
@@ -344,12 +339,12 @@ instance (MonadFresh m) => MonadFresh (ReaderT r m) where
   getFreshIdent = ReaderT $ const getFreshIdent
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSLazy.RWST r w s m) where
-  nextFreshIndex = RWSLazy.RWST $ \r s -> (,s,mempty) <$> nextFreshIndex
-  getFreshIdent = RWSLazy.RWST $ \r s -> (,s,mempty) <$> getFreshIdent
+  nextFreshIndex = RWSLazy.RWST $ \_ s -> (,s,mempty) <$> nextFreshIndex
+  getFreshIdent = RWSLazy.RWST $ \_ s -> (,s,mempty) <$> getFreshIdent
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSStrict.RWST r w s m) where
-  nextFreshIndex = RWSStrict.RWST $ \r s -> (,s,mempty) <$> nextFreshIndex
-  getFreshIdent = RWSStrict.RWST $ \r s -> (,s,mempty) <$> getFreshIdent
+  nextFreshIndex = RWSStrict.RWST $ \_ s -> (,s,mempty) <$> nextFreshIndex
+  getFreshIdent = RWSStrict.RWST $ \_ s -> (,s,mempty) <$> getFreshIdent
 
 -- | 'FreshT' specialized with Identity.
 type Fresh = FreshT Identity
@@ -482,7 +477,7 @@ instance
   GenSymNoSpec (a :+: b)
   where
   freshNoSpec ::
-    forall m u c.
+    forall m c.
     ( MonadFresh m
     ) =>
     m (UnionM ((a :+: b) c))
@@ -497,7 +492,7 @@ instance
   GenSymNoSpec (a :*: b)
   where
   freshNoSpec ::
-    forall m u c.
+    forall m c.
     ( MonadFresh m
     ) =>
     m (UnionM ((a :*: b) c))
@@ -518,7 +513,7 @@ instance
 --
 -- __Note:__ __Never__ use on recursive types.
 derivedNoSpecFresh ::
-  forall bool a m u.
+  forall a m.
   ( Generic a,
     GenSymNoSpec (Rep a),
     Mergeable a,
@@ -633,7 +628,7 @@ derivedSameShapeSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 -- >>> runFresh (chooseFresh [1,2,3]) "a" :: UnionM Integer
 -- {If a@0 1 (If a@1 2 3)}
 chooseFresh ::
-  forall bool a m u.
+  forall a m.
   ( Mergeable a,
     MonadFresh m
   ) =>
@@ -650,7 +645,7 @@ chooseFresh [] = error "chooseFresh expects at least one value"
 -- A globally unique identifier should be supplied to ensure the uniqueness of
 -- symbolic constants in the generated symbolic values.
 choose ::
-  forall bool a u.
+  forall a.
   ( Mergeable a
   ) =>
   [a] ->
@@ -707,7 +702,7 @@ chooseSimple = runFresh . chooseSimpleFresh
 -- >>> runFresh (chooseUnionFresh [a, b]) "c" :: UnionM Integer
 -- {If (&& c@0 a@0) 1 (If (|| c@0 b@0) 2 3)}
 chooseUnionFresh ::
-  forall bool a m u.
+  forall a m.
   ( Mergeable a,
     MonadFresh m
   ) =>
@@ -724,7 +719,7 @@ chooseUnionFresh [] = error "chooseUnionFresh expects at least one value"
 -- A globally unique identifier should be supplied to ensure the uniqueness of
 -- symbolic constants in the generated symbolic values.
 chooseUnion ::
-  forall a u.
+  forall a.
   ( Mergeable a
   ) =>
   [UnionM a] ->
@@ -829,6 +824,7 @@ instance
   GenSymSimple (Either aspec bspec) (Either a b)
   where
   simpleFresh (Left a) = Left <$> simpleFresh a
+  simpleFresh (Right b) = Right <$> simpleFresh b
 
 instance
   (GenSym () a, Mergeable a, GenSym () b, Mergeable b) =>
@@ -1631,7 +1627,7 @@ instance GenSymSimple Int symtype where \
     error "Can only generate bit vectors with positive bit size" \
     where \
       f :: forall p (n :: Nat) m. (MonadFresh m) => p n -> m symtype; \
-      f p = case (unsafeKnownProof @n (fromIntegral i), unsafeLeqProof @1 @n) of \
+      f _ = case (unsafeKnownProof @n (fromIntegral i), unsafeLeqProof @1 @n) of \
         (KnownProof, LeqProof) -> do \
         v :: origtype n <- simpleFresh (); \
         return $ symtype v; \

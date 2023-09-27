@@ -718,7 +718,7 @@ pattern IfU c t f <-
 -- <If a b c>
 -- >>> simpleMerge $ (unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
 -- (ite a b c)
-simpleMerge :: forall bool u a. (SimpleMergeable a, UnionLike u, UnionPrjOp u) => u a -> a
+simpleMerge :: forall u a. (SimpleMergeable a, UnionLike u, UnionPrjOp u) => u a -> a
 simpleMerge u = case merge u of
   SingleU x -> x
   _ -> error "Should not happen"
@@ -730,7 +730,7 @@ simpleMerge u = case merge u of
 -- >>> sumU (unionIf "cond" (return ["a"]) (return ["b","c"]) :: UnionM [SymInteger])
 -- (ite cond a (+ b c))
 onUnion ::
-  forall bool u a r.
+  forall u a r.
   (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
   (a -> r) ->
   (u a -> r)
@@ -738,7 +738,7 @@ onUnion f = simpleMerge . fmap f
 
 -- | Lift a function to work on union values.
 onUnion2 ::
-  forall bool u a b r.
+  forall u a b r.
   (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
   (a -> b -> r) ->
   (u a -> u b -> r)
@@ -746,7 +746,7 @@ onUnion2 f ua ub = simpleMerge $ f <$> ua <*> ub
 
 -- | Lift a function to work on union values.
 onUnion3 ::
-  forall bool u a b c r.
+  forall u a b c r.
   (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
   (a -> b -> c -> r) ->
   (u a -> u b -> u c -> r)
@@ -754,7 +754,7 @@ onUnion3 f ua ub uc = simpleMerge $ f <$> ua <*> ub <*> uc
 
 -- | Lift a function to work on union values.
 onUnion4 ::
-  forall bool u a b c d r.
+  forall u a b c d r.
   (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
   (a -> b -> c -> d -> r) ->
   (u a -> u b -> u c -> u d -> r)

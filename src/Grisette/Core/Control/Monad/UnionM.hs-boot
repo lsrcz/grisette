@@ -4,8 +4,6 @@
 
 module Grisette.Core.Control.Monad.UnionM (UnionM (..)) where
 
-import Data.IORef
-import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Union

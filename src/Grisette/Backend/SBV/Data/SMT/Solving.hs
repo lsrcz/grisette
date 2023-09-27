@@ -39,8 +39,7 @@ where
 
 import Control.DeepSeq
 import Control.Exception
-import Control.Monad.Except
-import Control.Monad.IO.Class
+import Control.Monad.IO.Class (liftIO)
 import qualified Data.HashSet as S
 import Data.Hashable
 import Data.Kind
@@ -56,7 +55,6 @@ import Grisette.Core.Data.Class.Bool
 import Grisette.Core.Data.Class.CEGISSolver
 import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.GenSym
 import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.Solver
@@ -325,7 +323,7 @@ instance Solver (GrisetteSMTConfig n) SolvingFailure where
 
 instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
   cegisMultiInputs ::
-    forall inputs spec.
+    forall inputs.
     (ExtractSymbolics inputs, EvaluateSym inputs) =>
     GrisetteSMTConfig n ->
     [inputs] ->

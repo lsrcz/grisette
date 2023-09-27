@@ -40,9 +40,6 @@ import Generics.Deriving
 import Generics.Deriving.Instances ()
 import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 
 -- $setup
 -- >>> import Grisette.Core

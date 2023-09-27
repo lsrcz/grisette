@@ -13,7 +13,6 @@
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun (pevalGeneralFunApplyTerm) where
 
-import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
