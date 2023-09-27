@@ -4,7 +4,10 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Backend.SBV.Data.SMT.TermRewritingTests where
+module Grisette.Backend.SBV.Data.SMT.TermRewritingTests
+  ( termRewritingTests,
+  )
+where
 
 import Data.Foldable
 import qualified Data.SBV as SBV

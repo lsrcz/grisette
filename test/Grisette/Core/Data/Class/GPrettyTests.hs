@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Grisette.Core.Data.Class.GPrettyTests where
+module Grisette.Core.Data.Class.GPrettyTests (gprettyTests) where
 
 import Data.Int
 import Data.Text as T

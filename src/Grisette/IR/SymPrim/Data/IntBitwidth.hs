@@ -6,7 +6,7 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.IntBitwidth where
+module Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ) where
 
 import Data.Bits (FiniteBits (finiteBitSize))
 import Language.Haskell.TH

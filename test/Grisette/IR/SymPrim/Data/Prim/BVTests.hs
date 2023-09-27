@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.IR.SymPrim.Data.Prim.BVTests where
+module Grisette.IR.SymPrim.Data.Prim.BVTests (bvTests) where
 
 import Data.Proxy
 import Grisette.Core.Data.BV

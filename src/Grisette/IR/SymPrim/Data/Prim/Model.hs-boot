@@ -1,4 +1,7 @@
-module Grisette.IR.SymPrim.Data.Prim.Model where
+module Grisette.IR.SymPrim.Data.Prim.Model
+  ( SymbolSet (..),
+  )
+where
 
 import qualified Data.HashSet as S
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term

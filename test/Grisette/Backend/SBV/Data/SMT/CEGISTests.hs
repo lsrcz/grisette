@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grisette.Backend.SBV.Data.SMT.CEGISTests where
+module Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests) where
 
 import Control.Monad.Except
 import Data.Proxy

@@ -12,7 +12,35 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Backend.SBV.Data.SMT.TermRewritingGen where
+module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
+  ( TermRewritingSpec (..),
+    GeneralSpec (..),
+    DifferentSizeBVSpec (..),
+    FixedSizedBVWithBoolSpec (..),
+    BoolWithLIASpec (..),
+    LIAWithBoolSpec (..),
+    BoolOnlySpec (..),
+    constructUnarySpec',
+    constructBinarySpec',
+    constructTernarySpec',
+    divIntegralSpec,
+    modIntegralSpec,
+    quotIntegralSpec,
+    remIntegralSpec,
+    divBoundedIntegralSpec,
+    modBoundedIntegralSpec,
+    quotBoundedIntegralSpec,
+    remBoundedIntegralSpec,
+    uminusNumSpec,
+    timesNumSpec,
+    addNumSpec,
+    iteSpec,
+    eqvSpec,
+    notSpec,
+    andSpec,
+    orSpec,
+  )
+where
 
 import Data.Bits
 import Data.Data
