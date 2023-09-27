@@ -30,7 +30,7 @@ where
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 import Data.Hashable
-import Data.List
+import Data.List (sort, sortOn)
 import Data.Proxy
 import GHC.Generics
 import Grisette.Core.Data.Class.ExtractSymbolics

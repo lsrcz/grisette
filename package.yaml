@@ -67,6 +67,7 @@ when:
 ghc-options:
   - -Wextra
   - -Werror
+  - -Wcompat
 
 library:
   source-dirs: src
