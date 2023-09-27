@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grisette.Backend.SBV.Data.SMT.LoweringTests where
+module Grisette.Backend.SBV.Data.SMT.LoweringTests (loweringTests) where
 
 import Control.Monad.Trans
 import Data.Bits
@@ -70,21 +70,21 @@ testUnaryOpLowering config f name sbvfun = do
           SBV.Unsat -> return ()
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
 
-testUnaryOpLowering' ::
-  forall a b as n tag.
-  ( HasCallStack,
-    UnaryOp tag a b,
-    SBV.EqSymbolic (TermTy n b),
-    Typeable (TermTy n a),
-    SBV.SymVal as,
-    TermTy n a ~ SBV.SBV as,
-    Show as
-  ) =>
-  GrisetteSMTConfig n ->
-  tag ->
-  (TermTy n a -> TermTy n b) ->
-  Assertion
-testUnaryOpLowering' config t = testUnaryOpLowering @a @b @as config (constructUnary t) (show t)
+-- testUnaryOpLowering' ::
+--   forall a b as n tag.
+--   ( HasCallStack,
+--     UnaryOp tag a b,
+--     SBV.EqSymbolic (TermTy n b),
+--     Typeable (TermTy n a),
+--     SBV.SymVal as,
+--     TermTy n a ~ SBV.SBV as,
+--     Show as
+--   ) =>
+--   GrisetteSMTConfig n ->
+--   tag ->
+--   (TermTy n a -> TermTy n b) ->
+--   Assertion
+-- testUnaryOpLowering' config t = testUnaryOpLowering @a @b @as config (constructUnary t) (show t)
 
 testBinaryOpLowering ::
   forall a b c as bs n.
@@ -139,25 +139,25 @@ testBinaryOpLowering config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
       _ -> lift $ assertFailure "Failed to extract the term"
 
-testBinaryOpLowering' ::
-  forall a b c as bs n tag.
-  ( HasCallStack,
-    BinaryOp tag a b c,
-    SBV.EqSymbolic (TermTy n c),
-    Typeable (TermTy n a),
-    Typeable (TermTy n b),
-    SBV.SymVal as,
-    SBV.SymVal bs,
-    Show as,
-    Show bs,
-    TermTy n a ~ SBV.SBV as,
-    TermTy n b ~ SBV.SBV bs
-  ) =>
-  GrisetteSMTConfig n ->
-  tag ->
-  (TermTy n a -> TermTy n b -> TermTy n c) ->
-  Assertion
-testBinaryOpLowering' config t = testBinaryOpLowering @a @b @c @as @bs config (constructBinary t) (show t)
+-- testBinaryOpLowering' ::
+--   forall a b c as bs n tag.
+--   ( HasCallStack,
+--     BinaryOp tag a b c,
+--     SBV.EqSymbolic (TermTy n c),
+--     Typeable (TermTy n a),
+--     Typeable (TermTy n b),
+--     SBV.SymVal as,
+--     SBV.SymVal bs,
+--     Show as,
+--     Show bs,
+--     TermTy n a ~ SBV.SBV as,
+--     TermTy n b ~ SBV.SBV bs
+--   ) =>
+--   GrisetteSMTConfig n ->
+--   tag ->
+--   (TermTy n a -> TermTy n b -> TermTy n c) ->
+--   Assertion
+-- testBinaryOpLowering' config t = testBinaryOpLowering @a @b @c @as @bs config (constructBinary t) (show t)
 
 testTernaryOpLowering ::
   forall a b c d as bs cs n.
@@ -224,29 +224,29 @@ testTernaryOpLowering config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
       _ -> lift $ assertFailure "Failed to extract the term"
 
-testTernaryOpLowering' ::
-  forall a b c d as bs cs n tag.
-  ( HasCallStack,
-    TernaryOp tag a b c d,
-    SBV.EqSymbolic (TermTy n d),
-    Typeable (TermTy n a),
-    Typeable (TermTy n b),
-    Typeable (TermTy n c),
-    SBV.SymVal as,
-    SBV.SymVal bs,
-    SBV.SymVal cs,
-    Show as,
-    Show bs,
-    Show cs,
-    TermTy n a ~ SBV.SBV as,
-    TermTy n b ~ SBV.SBV bs,
-    TermTy n c ~ SBV.SBV cs
-  ) =>
-  GrisetteSMTConfig n ->
-  tag ->
-  (TermTy n a -> TermTy n b -> TermTy n c -> TermTy n d) ->
-  Assertion
-testTernaryOpLowering' config t = testTernaryOpLowering @a @b @c @d @as @bs @cs config (constructTernary t) (show t)
+-- testTernaryOpLowering' ::
+--   forall a b c d as bs cs n tag.
+--   ( HasCallStack,
+--     TernaryOp tag a b c d,
+--     SBV.EqSymbolic (TermTy n d),
+--     Typeable (TermTy n a),
+--     Typeable (TermTy n b),
+--     Typeable (TermTy n c),
+--     SBV.SymVal as,
+--     SBV.SymVal bs,
+--     SBV.SymVal cs,
+--     Show as,
+--     Show bs,
+--     Show cs,
+--     TermTy n a ~ SBV.SBV as,
+--     TermTy n b ~ SBV.SBV bs,
+--     TermTy n c ~ SBV.SBV cs
+--   ) =>
+--   GrisetteSMTConfig n ->
+--   tag ->
+--   (TermTy n a -> TermTy n b -> TermTy n c -> TermTy n d) ->
+--   Assertion
+-- testTernaryOpLowering' config t = testTernaryOpLowering @a @b @c @d @as @bs @cs config (constructTernary t) (show t)
 
 loweringTests :: TestTree
 loweringTests =

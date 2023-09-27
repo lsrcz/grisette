@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Grisette.Core.Control.Monad.UnionMTests where
+module Grisette.Core.Control.Monad.UnionMTests (unionMTests) where
 
 import Grisette.Core.Control.Monad.UnionM
 import Grisette.Core.Data.Class.GenSym

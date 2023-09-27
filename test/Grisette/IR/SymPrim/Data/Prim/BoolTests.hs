@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Grisette.IR.SymPrim.Data.Prim.BoolTests where
+module Grisette.IR.SymPrim.Data.Prim.BoolTests (boolTests) where
 
 import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors

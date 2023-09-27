@@ -6,11 +6,12 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Qualified.ParallelUnionDo where
+module Grisette.Qualified.ParallelUnionDo ((>>=), (>>)) where
 
 import Control.Parallel.Strategies
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
 import Grisette.Core.Data.Class.Mergeable
+import Prelude (const, ($))
 
 (>>=) :: (MonadParallelUnion m, Mergeable b, NFData b) => m a -> (a -> m b) -> m b
 (>>=) = parBindUnion

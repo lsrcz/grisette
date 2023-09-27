@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.IR.SymPrim.Data.Prim.IntegralTests where
+module Grisette.IR.SymPrim.Data.Prim.IntegralTests (integralTests) where
 
 import Control.DeepSeq
 import Control.Exception

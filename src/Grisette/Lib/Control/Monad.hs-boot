@@ -1,7 +1,18 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Trustworthy #-}
 
-module Grisette.Lib.Control.Monad where
+module Grisette.Lib.Control.Monad
+  ( mrgReturnWithStrategy,
+    mrgBindWithStrategy,
+    mrgReturn,
+    (>>=~),
+    mrgFoldM,
+    (>>~),
+    mrgMzero,
+    mrgMplus,
+    mrgFmap,
+  )
+where
 
 import Control.Monad
 import Grisette.Core.Control.Monad.Union

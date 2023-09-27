@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Grisette.IR.SymPrim.Data.Prim.ModelTests where
+module Grisette.IR.SymPrim.Data.Prim.ModelTests (modelTests) where
 
 import Data.HashMap.Strict as M
 import qualified Data.HashSet as S

@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Grisette.IR.SymPrim.Data.Prim.NumTests where
+module Grisette.IR.SymPrim.Data.Prim.NumTests (numTests) where
 
 import Grisette.Core.Data.BV
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors

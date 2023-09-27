@@ -2,7 +2,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Trustworthy #-}
 
-module Grisette.Core.Data.Class.Mergeable where
+module Grisette.Core.Data.Class.Mergeable
+  ( MergingStrategy (..),
+    Mergeable' (..),
+    Mergeable (..),
+  )
+where
 
 import Data.Typeable
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim

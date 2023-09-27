@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.BVTests where
+module Grisette.Core.Data.BVTests (bvTests) where
 
 import Control.DeepSeq
 import Control.Exception

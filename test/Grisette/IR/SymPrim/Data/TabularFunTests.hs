@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grisette.IR.SymPrim.Data.TabularFunTests where
+module Grisette.IR.SymPrim.Data.TabularFunTests (tabularFunTests) where
 
 import Grisette.Core.Data.Class.Function
 import Grisette.IR.SymPrim.Data.TabularFun

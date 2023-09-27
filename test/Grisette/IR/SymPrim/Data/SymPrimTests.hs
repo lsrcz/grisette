@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
-module Grisette.IR.SymPrim.Data.SymPrimTests where
+module Grisette.IR.SymPrim.Data.SymPrimTests (symPrimTests) where
 
 import Control.DeepSeq
 import Control.Exception
