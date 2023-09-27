@@ -71,6 +71,7 @@ ghc-options:
   - -Widentities
   - -Wmissing-export-lists
   - -Wmissing-home-modules
+  - -Wpartial-fields
 
 library:
   source-dirs: src
