@@ -7,9 +7,9 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        
+
         hPkgs = pkgs.haskell.packages."ghc946";
-        
+
         myDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
           # hPkgs.ghcid # Continuous terminal Haskell compile checker
@@ -21,6 +21,7 @@
           pkgs.zlib # External C library needed by some Haskell packages
           pkgs.boolector
           pkgs.z3
+          pkgs.nixpkgs-fmt
         ];
         # Wrap Stack to work with our Nix integration. We don't want to modify
         # stack.yaml so non-Nix users don't notice anything.
@@ -40,7 +41,10 @@
               "
           '';
         };
-      in {
+      in
+      {
+        formatter.x86_64-linux = pkgs.nixpkgs-fmt;
+
         devShells.default = pkgs.mkShell {
           buildInputs = myDevTools;
 
