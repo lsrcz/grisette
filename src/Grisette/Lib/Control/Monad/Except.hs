@@ -15,10 +15,10 @@ module Grisette.Lib.Control.Monad.Except
   )
 where
 
-import Control.Monad.Except
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SimpleMergeable
+import Control.Monad.Except (MonadError (catchError, throwError))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SimpleMergeable (merge)
 
 -- | 'throwError' with 'MergingStrategy' knowledge propagation.
 mrgThrowError :: (MonadError e m, MonadUnion m, Mergeable a) => e -> m a

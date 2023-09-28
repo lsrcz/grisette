@@ -4,13 +4,31 @@
 
 module Grisette.IR.SymPrim.Data.Prim.BoolTests (boolTests) where
 
-import Grisette.Core.Data.BV
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( andTerm,
+    conTerm,
+    eqvTerm,
+    notTerm,
+    orTerm,
+    ssymTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalAndTerm,
+    pevalEqvTerm,
+    pevalITETerm,
+    pevalImplyTerm,
+    pevalNotEqvTerm,
+    pevalNotTerm,
+    pevalOrTerm,
+    pevalXorTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( pevalAddNumTerm,
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 boolTests :: TestTree
 boolTests =

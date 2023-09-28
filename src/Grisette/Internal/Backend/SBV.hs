@@ -14,4 +14,7 @@ module Grisette.Internal.Backend.SBV
 where
 
 import Grisette.Backend.SBV.Data.SMT.Lowering
-import Grisette.Backend.SBV.Data.SMT.Solving
+  ( lowerSinglePrim,
+    parseModel,
+  )
+import Grisette.Backend.SBV.Data.SMT.Solving (TermTy)

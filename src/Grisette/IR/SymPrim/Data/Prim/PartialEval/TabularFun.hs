@@ -16,12 +16,25 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   )
 where
 
-import Grisette.Core.Data.Class.Function
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    tabularFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (ConTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+    pevalITETerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+  ( totalize2,
+  )
 import Grisette.IR.SymPrim.Data.TabularFun
+  ( type (=->) (TabularFun),
+  )
 
 pevalTabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
 pevalTabularFunApplyTerm = totalize2 doPevalTabularFunApplyTerm tabularFunApplyTerm

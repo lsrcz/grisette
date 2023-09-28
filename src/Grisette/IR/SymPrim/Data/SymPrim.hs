@@ -10,6 +10,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -56,59 +57,227 @@ module Grisette.IR.SymPrim.Data.SymPrim
   )
 where
 
-import Control.DeepSeq
-import Control.Monad.Except
+import Control.DeepSeq (NFData (rnf))
+import Control.Monad.Except (ExceptT (ExceptT), MonadError (throwError))
 import Control.Monad.Identity
-import Control.Monad.Trans.Maybe
+  ( Identity (Identity),
+    IdentityT (IdentityT),
+  )
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bits
+  ( Bits
+      ( bit,
+        bitSize,
+        bitSizeMaybe,
+        clearBit,
+        complement,
+        complementBit,
+        isSigned,
+        popCount,
+        rotate,
+        rotateL,
+        rotateR,
+        setBit,
+        shift,
+        shiftL,
+        shiftR,
+        testBit,
+        unsafeShiftL,
+        unsafeShiftR,
+        xor,
+        zeroBits,
+        (.&.),
+        (.|.)
+      ),
+    FiniteBits (finiteBitSize),
+  )
 import qualified Data.ByteString as B
-import Data.Functor.Sum
-import Data.Hashable
-import Data.Int
-import Data.Proxy
-import Data.String
+import Data.Functor.Sum (Sum)
+import Data.Hashable (Hashable (hashWithSalt))
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Proxy (Proxy (Proxy))
+import Data.String (IsString (fromString))
 import qualified Data.Text as T
-import Data.Typeable
-import Data.Word
+import Data.Typeable (typeRep, type (:~:) (Refl))
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
+  ( Generic (Rep, from),
+    K1 (K1),
+    M1 (M1),
+    U1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
 import GHC.TypeNats
-import Generics.Deriving
+  ( KnownNat,
+    Nat,
+    natVal,
+    sameNat,
+    type (+),
+    type (<=),
+  )
+import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Core.Data.BV
+  ( IntN (IntN),
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN (WordN),
+  )
 import Grisette.Core.Data.Class.BitVector
+  ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
+    BVSignConversion (toSigned, toUnsigned),
+    SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
+  )
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Evaluate
+  ( LogicalOp (nots, (&&~), (||~)),
+    SEq ((/=~), (==~)),
+  )
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Function
-import Grisette.Core.Data.Class.GPretty
+  ( ExtractSymbolics (extractSymbolics),
+  )
+import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.SOrd
+  ( ModelOps (emptyModel, insertValue),
+    ModelRep (buildModel),
+  )
+import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (<=~), (<~), (>=~), (>~)))
 import Grisette.Core.Data.Class.SafeArith
-import Grisette.Core.Data.Class.SimpleMergeable
+  ( ArithException (DivideByZero, Overflow, Underflow),
+    SafeDivision
+      ( safeDiv,
+        safeDiv',
+        safeDivMod,
+        safeDivMod',
+        safeMod,
+        safeMod',
+        safeQuot,
+        safeQuot',
+        safeQuotRem,
+        safeQuotRem',
+        safeRem,
+        safeRem'
+      ),
+    SafeLinearArith
+      ( safeAdd,
+        safeAdd',
+        safeMinus,
+        safeMinus',
+        safeNeg,
+        safeNeg'
+      ),
+    SymIntegerOp,
+  )
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
-import Grisette.Core.Data.Class.Substitute
-import Grisette.Core.Data.Class.ToCon
-import Grisette.Core.Data.Class.ToSym
-import Grisette.IR.SymPrim.Data.IntBitwidth
+  ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
+    pattern Con,
+  )
+import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
+import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
+import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
+import Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    iinfosymTerm,
+    isymTerm,
+    sinfosymTerm,
+    ssymTerm,
+    symTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( ConRep (ConType),
+    LinkedRep (underlyingTerm, wrapTerm),
+    SupportedPrim,
+    SymRep (SymType),
+    Term (ConTerm, SymTerm),
+    TypedSymbol (WithInfo),
+    prettyPrintTerm,
+    type (-->) (GeneralFun),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
+  ( substTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+  ( extractSymbolicsTerm,
+    pformat,
+    someTermsSize,
+    termSize,
+    termsSize,
+  )
 import Grisette.IR.SymPrim.Data.Prim.Model
+  ( Model,
+    SymbolSet (SymbolSet),
+    evaluateTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+    pevalBVToSignedTerm,
+    pevalBVToUnsignedTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateBitsTerm,
+    pevalShiftBitsTerm,
+    pevalXorBitsTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
+  ( pevalGeneralFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModBoundedIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemBoundedIntegralTerm,
+    pevalRemIntegralTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalGeNumTerm,
+    pevalGtNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalMinusNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-import Grisette.IR.SymPrim.Data.TabularFun
-import Grisette.Lib.Control.Monad
+  ( pevalTabularFunApplyTerm,
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Utils.Parameterized
-import Language.Haskell.TH.Syntax
+  ( KnownProof (KnownProof),
+    LeqProof (LeqProof),
+    knownAdd,
+    leqAddPos,
+    leqTrans,
+    unsafeKnownProof,
+    unsafeLeqProof,
+  )
+import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core

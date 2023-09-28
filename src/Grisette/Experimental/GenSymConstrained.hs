@@ -28,16 +28,40 @@ module Grisette.Experimental.GenSymConstrained
   )
 where
 
-import Control.Monad.Except
-import Control.Monad.Trans.Maybe
-import Debug.Trace
+import Control.Monad.Except (ExceptT (ExceptT), MonadError (throwError))
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import GHC.Generics
+  ( Generic (Rep, from, to),
+    K1 (K1),
+    M1 (M1),
+    U1 (U1),
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
 import Grisette.Core.Control.Monad.UnionM
-import Grisette.Core.Data.Class.Bool
+  ( UnionM,
+    liftToMonadUnion,
+  )
+import Grisette.Core.Data.Class.Bool (LogicalOp ((||~)))
 import Grisette.Core.Data.Class.GenSym
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SOrd
+  ( FreshIdent,
+    GenSym (fresh),
+    GenSymSimple (simpleFresh),
+    ListSpec (ListSpec),
+    MonadFresh,
+    SimpleListSpec (SimpleListSpec),
+    chooseFresh,
+    chooseUnionFresh,
+    runFreshT,
+  )
+import Grisette.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
+import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~)))
 import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionLike,
+    merge,
+    mrgIf,
+    mrgSingle,
+  )
 
 -- $setup
 -- >>> import Grisette.Core
@@ -672,7 +696,7 @@ instance
   ) =>
   GenSymConstrained spec (ExceptT a m b)
   where
-  freshConstrained e v = trace "x" $ do
+  freshConstrained e v = do
     x <- freshConstrained e v
     mrgSingle $ merge . fmap ExceptT $ x
 

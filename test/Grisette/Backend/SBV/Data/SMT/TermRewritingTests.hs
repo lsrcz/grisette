@@ -9,18 +9,56 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingTests
   )
 where
 
-import Data.Foldable
+import Data.Foldable (traverse_)
 import qualified Data.SBV as SBV
 import Grisette.Backend.SBV.Data.SMT.Solving
+  ( GrisetteSMTConfig,
+    precise,
+  )
 import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
-import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.Solver
+  ( BoolOnlySpec,
+    BoolWithLIASpec,
+    DifferentSizeBVSpec,
+    FixedSizedBVWithBoolSpec,
+    GeneralSpec,
+    LIAWithBoolSpec,
+    TermRewritingSpec
+      ( conSpec,
+        counterExample,
+        norewriteVer,
+        rewriteVer,
+        same,
+        symSpec
+      ),
+    addNumSpec,
+    andSpec,
+    divBoundedIntegralSpec,
+    divIntegralSpec,
+    eqvSpec,
+    iteSpec,
+    modBoundedIntegralSpec,
+    modIntegralSpec,
+    notSpec,
+    orSpec,
+    quotBoundedIntegralSpec,
+    quotIntegralSpec,
+    remBoundedIntegralSpec,
+    remIntegralSpec,
+    timesNumSpec,
+    uminusNumSpec,
+  )
+import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.Core.Data.Class.Solver (Solver (solve))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-import Grisette.IR.SymPrim.Data.SymPrim
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck
+  ( pformat,
+  )
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
+import Test.Tasty (TestName, TestTree, testGroup)
+import Test.Tasty.HUnit (Assertion, assertFailure, testCase)
+import Test.Tasty.QuickCheck (ioProperty, mapSize, testProperty)
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do

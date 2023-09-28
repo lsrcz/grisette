@@ -27,13 +27,74 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 where
 
 import Control.Monad.State
-import Data.HashMap.Strict as M
-import Data.HashSet as S
-import Data.Interned
+  ( MonadState (get, put),
+    State,
+    evalState,
+    execState,
+    gets,
+    modify',
+  )
+import qualified Data.HashMap.Strict as M
+import qualified Data.HashSet as S
+import Data.Interned (Id)
 import Data.Typeable
+  ( Proxy (Proxy),
+    TypeRep,
+    Typeable,
+    cast,
+    typeRep,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.TabularFun ()
+  ( BinaryOp (pformatBinary),
+    SomeTypedSymbol (SomeTypedSymbol),
+    SupportedPrim (pformatCon, pformatSym),
+    Term
+      ( AbsNumTerm,
+        AddNumTerm,
+        AndBitsTerm,
+        AndTerm,
+        BVConcatTerm,
+        BVExtendTerm,
+        BVSelectTerm,
+        BVToSignedTerm,
+        BVToUnsignedTerm,
+        BinaryTerm,
+        ComplementBitsTerm,
+        ConTerm,
+        DivBoundedIntegralTerm,
+        DivIntegralTerm,
+        EqvTerm,
+        GeneralFunApplyTerm,
+        ITETerm,
+        LENumTerm,
+        LTNumTerm,
+        ModBoundedIntegralTerm,
+        ModIntegralTerm,
+        NotTerm,
+        OrBitsTerm,
+        OrTerm,
+        QuotBoundedIntegralTerm,
+        QuotIntegralTerm,
+        RemBoundedIntegralTerm,
+        RemIntegralTerm,
+        RotateBitsTerm,
+        ShiftBitsTerm,
+        SignumNumTerm,
+        SymTerm,
+        TabularFunApplyTerm,
+        TernaryTerm,
+        TimesNumTerm,
+        UMinusNumTerm,
+        UnaryTerm,
+        XorBitsTerm
+      ),
+    TernaryOp (pformatTernary),
+    TypedSymbol,
+    UnaryOp (pformatUnary),
+  )
 import qualified Type.Reflection as R
 
 identity :: Term t -> Id

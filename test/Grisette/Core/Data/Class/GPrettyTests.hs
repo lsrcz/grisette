@@ -7,26 +7,45 @@
 
 module Grisette.Core.Data.Class.GPrettyTests (gprettyTests) where
 
-import Data.Int
-import Data.Text as T
-import Data.Word
-import GHC.Generics
-import GHC.Stack
-import Generics.Deriving
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Text as T (Text, pack, unpack)
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.Generics (Generic)
+import GHC.Stack (HasCallStack)
+import Generics.Deriving (Default (Default))
 import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.GPretty
-import Grisette.IR.SymPrim.Data.SymPrim
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck hiding ((.&.))
+  ( IntN,
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN,
+  )
+import Grisette.Core.Data.Class.Bool (LogicalOp ((&&~)))
+import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Tasty.QuickCheck
+  ( Arbitrary (arbitrary),
+    Gen,
+    forAll,
+    oneof,
+    testProperty,
+  )
 
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter
-import Prettyprinter.Render.Text
+  ( PageWidth(AvailablePerLine, Unbounded),
+    layoutPretty,
+    LayoutOptions(LayoutOptions),
+  )
+import Prettyprinter.Render.Text (renderStrict)
 #else
 import Data.Text.Prettyprint.Doc
-import Data.Text.Prettyprint.Doc.Render.Text
+  ( PageWidth(AvailablePerLine, Unbounded),
+    layoutPretty,
+    LayoutOptions(LayoutOptions),
+  )
+import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 #endif
 
 testGPretty :: (HasCallStack, GPretty a) => String -> Int -> a -> T.Text -> TestTree

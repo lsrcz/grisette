@@ -8,6 +8,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE Trustworthy #-}
@@ -38,35 +39,90 @@ module Grisette.Core.Control.Monad.UnionM
   )
 where
 
-import Control.DeepSeq
-import Control.Parallel.Strategies
+import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), force, rnf1)
+import Control.Parallel.Strategies (rpar, rseq, runEval)
 import Data.Functor.Classes
+  ( Eq1 (liftEq),
+    Show1 (liftShowsPrec),
+    showsPrec1,
+  )
 import qualified Data.HashMap.Lazy as HML
-import Data.Hashable
-import Data.String
-import GHC.TypeNats
+import Data.Hashable (Hashable (hashWithSalt))
+import Data.String (IsString (fromString))
+import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Core.Control.Monad.CBMCExcept
+  ( CBMCEither (runCBMCEither),
+  )
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.BV
+  ( MonadParallelUnion (parBindUnion),
+  )
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Evaluate
+  ( ITEOp (ites),
+    LogicalOp (implies, nots, xors, (&&~), (||~)),
+    SEq ((==~)),
+  )
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Function
+  ( ExtractSymbolics (extractSymbolics),
+  )
+import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.GPretty
+  ( GPretty (gpretty),
+    groupedEnclose,
+  )
 import Grisette.Core.Data.Class.GenSym
+  ( GenSym (fresh),
+    GenSymSimple (simpleFresh),
+  )
 import Grisette.Core.Data.Class.Mergeable
+  ( Mergeable (rootStrategy),
+    Mergeable1 (liftRootStrategy),
+    MergingStrategy (SimpleStrategy),
+  )
 import Grisette.Core.Data.Class.SOrd
+  ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
+  ( SimpleMergeable (mrgIte),
+    SimpleMergeable1 (liftMrgIte),
+    UnionLike (mergeWithStrategy, mrgIfWithStrategy, single, unionIf),
+    UnionPrjOp (ifView, leftMost, singleView),
+    merge,
+    mrgIf,
+    mrgSingle,
+    simpleMerge,
+    (#~),
+  )
 import Grisette.Core.Data.Class.Solvable
-import Grisette.Core.Data.Class.Solver
-import Grisette.Core.Data.Class.ToCon
-import Grisette.Core.Data.Class.ToSym
+  ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
+    pattern Con,
+  )
+import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
+import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
+import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Union
+  ( Union (If, Single),
+    fullReconstruct,
+    ifWithStrategy,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+    type (-->),
+  )
 import Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.IR.SymPrim.Data.TabularFun
-import Language.Haskell.TH.Syntax
+  ( AllSyms (allSymsS),
+    SymBool,
+    SymIntN,
+    SymInteger,
+    SymWordN,
+    type (-~>),
+    type (=~>),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 
 -- $setup

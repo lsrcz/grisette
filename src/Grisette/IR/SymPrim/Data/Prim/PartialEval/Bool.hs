@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -35,14 +36,34 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   )
 where
 
-import Control.Monad
-import Data.Maybe
-import Data.Typeable
+import Control.Monad (msum)
+import Data.Maybe (fromMaybe)
+import Data.Typeable (cast, eqT, type (:~:) (Refl))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( andTerm,
+    conTerm,
+    eqvTerm,
+    iteTerm,
+    notTerm,
+    orTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term
+      ( AddNumTerm,
+        AndTerm,
+        ConTerm,
+        EqvTerm,
+        ITETerm,
+        NotTerm,
+        OrTerm
+      ),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-import Grisette.IR.SymPrim.Data.Prim.Utils
-import Unsafe.Coerce
+  ( castTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Utils (pattern Dyn)
+import Unsafe.Coerce (unsafeCoerce)
 
 trueTerm :: Term Bool
 trueTerm = conTerm True

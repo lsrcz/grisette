@@ -16,11 +16,14 @@ module Grisette.Lib.Control.Monad.Trans.Cont
   )
 where
 
-import Control.Monad.Cont (ContT (..))
+import Control.Monad.Cont (ContT (runContT))
 import Control.Monad.Trans.Class (lift)
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Lib.Control.Monad
+  ( UnionLike,
+    merge,
+  )
+import Grisette.Lib.Control.Monad (mrgReturn)
 
 -- | 'Control.Monad.Cont.runContT' with 'MergingStrategy' knowledge propagation
 mrgRunContT :: (UnionLike m, Mergeable r) => ContT r m a -> (a -> m r) -> m r

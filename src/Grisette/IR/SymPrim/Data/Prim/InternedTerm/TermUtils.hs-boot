@@ -12,10 +12,14 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   )
 where
 
-import Data.HashSet as S
-import Data.Interned
-import Data.Typeable
+import qualified Data.HashSet as S
+import Data.Interned (Id)
+import Data.Typeable (TypeRep, Typeable)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SomeTypedSymbol,
+    SupportedPrim,
+    Term,
+  )
 
 identity :: Term t -> Id
 identityWithTypeRep :: forall t. Term t -> (TypeRep, Id)

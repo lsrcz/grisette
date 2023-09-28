@@ -26,24 +26,43 @@ module Grisette.Core.Data.Class.SOrd
   )
 where
 
-import Control.Monad.Except
+import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
-import Control.Monad.Trans.Maybe
+  ( Identity (Identity),
+    IdentityT (IdentityT),
+  )
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Sum
-import Data.Int
+import Data.Functor.Sum (Sum)
+import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
-import Data.Word
-import GHC.TypeLits
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving
-import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM
-import Grisette.Core.Data.BV
+  ( Default (Default),
+    Generic (Rep, from),
+    K1 (K1),
+    M1 (M1),
+    U1,
+    V1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
+import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.Bool
+  ( LogicalOp ((&&~), (||~)),
+    SEq ((/=~), (==~)),
+    SEq' ((==~~)),
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( mrgIf,
+    mrgSingle,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core

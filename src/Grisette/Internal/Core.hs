@@ -1,4 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.Internal.Core
@@ -23,4 +25,13 @@ module Grisette.Internal.Core
 where
 
 import Grisette.Core.Control.Monad.UnionM
+  ( UnionM (..),
+    isMerged,
+    underlyingUnion,
+  )
 import Grisette.Core.Data.Union
+  ( Union (..),
+    fullReconstruct,
+    ifWithLeftMost,
+    ifWithStrategy,
+  )

@@ -37,33 +37,59 @@ module Grisette.Backend.SBV.Data.SMT.Solving
   )
 where
 
-import Control.DeepSeq
-import Control.Exception
+import Control.DeepSeq (NFData)
+import Control.Exception (handle)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.HashSet as S
-import Data.Hashable
-import Data.Kind
+import Data.Hashable (Hashable)
+import Data.Kind (Type)
 import Data.List (partition)
-import Data.Maybe
+import Data.Maybe (fromJust)
 import qualified Data.SBV as SBV
 import Data.SBV.Control (Query)
 import qualified Data.SBV.Control as SBVC
-import GHC.TypeNats
+import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Backend.SBV.Data.SMT.Lowering
-import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.Bool
+  ( SymBiMap,
+    lowerSinglePrim,
+    lowerSinglePrimCached,
+    parseModel,
+  )
+import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.Core.Data.Class.Bool (LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.CEGISSolver
-import Grisette.Core.Data.Class.Evaluate
+  ( CEGISCondition (CEGISCondition),
+    CEGISSolver (cegisMultiInputs),
+  )
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
+  ( ExtractSymbolics (extractSymbolics),
+  )
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.Solvable
-import Grisette.Core.Data.Class.Solver
+  ( ModelOps (exact, exceptFor),
+    SymbolSetOps (isEmptySet),
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.Solver (Solver (solve, solveAll, solveMulti))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SomeTypedSymbol (SomeTypedSymbol),
+    Term,
+    type (-->),
+  )
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
+  ( Model,
+    SymbolSet (unSymbolSet),
+    equation,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-import Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.IR.SymPrim.Data.TabularFun
+  ( pevalNotTerm,
+    pevalOrTerm,
+  )
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup

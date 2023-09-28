@@ -88,10 +88,20 @@ module Grisette.Utils.Parameterized
   )
 where
 
-import Data.Typeable
-import GHC.Natural
+import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
+import GHC.Natural (Natural)
 import GHC.TypeNats
-import Unsafe.Coerce
+  ( Div,
+    KnownNat,
+    Nat,
+    SomeNat (SomeNat),
+    natVal,
+    someNatVal,
+    type (+),
+    type (-),
+    type (<=),
+  )
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Assert a proof of equality between two types.
 -- This is unsafe if used improperly, so use this with caution!

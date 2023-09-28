@@ -32,32 +32,123 @@ module Grisette.Backend.SBV.Data.SMT.Lowering
   )
 where
 
-import Data.Bifunctor
+import Data.Bifunctor (Bifunctor (bimap, first, second))
 import Data.Bits
-import Data.Dynamic
-import Data.Foldable
-import Data.Kind
-import Data.Maybe
+  ( Bits (complement, rotate, shift, xor, (.&.), (.|.)),
+  )
+import Data.Dynamic (Typeable, fromDyn, toDyn)
+import Data.Foldable (Foldable (foldl'), asum)
+import Data.Kind (Type)
+import Data.Maybe (fromMaybe)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
 import qualified Data.SBV.Internals as SBVI
 import Data.Type.Equality (type (~~))
-import Data.Typeable
+import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import GHC.Exts (sortWith)
-import GHC.Stack
+import GHC.Stack (HasCallStack)
 import GHC.TypeNats
+  ( KnownNat,
+    Nat,
+    natVal,
+    type (+),
+    type (-),
+    type (<=),
+  )
 import {-# SOURCE #-} Grisette.Backend.SBV.Data.SMT.Solving
+  ( ApproximationConfig (Approx, NoApprox),
+    ExtraConfig (integerApprox),
+    GrisetteSMTConfig (GrisetteSMTConfig),
+    TermTy,
+  )
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
-import Grisette.Core.Data.BV
+  ( SymBiMap,
+    addBiMap,
+    addBiMapIntermediate,
+    emptySymBiMap,
+    findStringToSymbol,
+    lookupTerm,
+    sizeBiMap,
+  )
+import Grisette.Core.Data.BV (IntN (IntN, unIntN), WordN (WordN))
 import Grisette.Core.Data.Class.ModelOps
+  ( ModelOps (emptyModel, insertValue),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    symTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SomeTypedSymbol (SomeTypedSymbol),
+    SupportedPrim (withPrim),
+    Term
+      ( AbsNumTerm,
+        AddNumTerm,
+        AndBitsTerm,
+        AndTerm,
+        BVConcatTerm,
+        BVExtendTerm,
+        BVSelectTerm,
+        BVToSignedTerm,
+        BVToUnsignedTerm,
+        BinaryTerm,
+        ComplementBitsTerm,
+        ConTerm,
+        DivBoundedIntegralTerm,
+        DivIntegralTerm,
+        EqvTerm,
+        GeneralFunApplyTerm,
+        ITETerm,
+        LENumTerm,
+        LTNumTerm,
+        ModBoundedIntegralTerm,
+        ModIntegralTerm,
+        NotTerm,
+        OrBitsTerm,
+        OrTerm,
+        QuotBoundedIntegralTerm,
+        QuotIntegralTerm,
+        RemBoundedIntegralTerm,
+        RemIntegralTerm,
+        RotateBitsTerm,
+        ShiftBitsTerm,
+        SignumNumTerm,
+        SymTerm,
+        TabularFunApplyTerm,
+        TernaryTerm,
+        TimesNumTerm,
+        UMinusNumTerm,
+        UnaryTerm,
+        XorBitsTerm
+      ),
+    TypedSymbol (IndexedSymbol),
+    buildGeneralFun,
+    someTypedSymbol,
+    withSymbolSupported,
+    type (-->),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-import Grisette.IR.SymPrim.Data.Prim.Model as PM
+  ( introSupportedPrimConstraint,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Model as PM (Model)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+    pevalITETerm,
+  )
 import Grisette.IR.SymPrim.Data.TabularFun
+  ( type (=->) (TabularFun),
+  )
 import Grisette.Utils.Parameterized
+  ( KnownProof (KnownProof),
+    LeqProof (LeqProof),
+    unsafeAxiom,
+    unsafeKnownProof,
+    unsafeLeqProof,
+    withKnownProof,
+  )
 import qualified Type.Reflection as R
 
 translateTypeError :: (HasCallStack) => R.TypeRep a -> b

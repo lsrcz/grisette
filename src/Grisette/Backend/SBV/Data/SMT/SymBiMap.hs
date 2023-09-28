@@ -19,11 +19,15 @@ module Grisette.Backend.SBV.Data.SMT.SymBiMap
   )
 where
 
-import Data.Dynamic
+import Data.Dynamic (Dynamic)
 import qualified Data.HashMap.Strict as M
-import GHC.Stack
+import GHC.Stack (HasCallStack)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SomeTypedSymbol,
+  )
 
 data SymBiMap = SymBiMap
   { biMapToSBV :: M.HashMap SomeTerm Dynamic,

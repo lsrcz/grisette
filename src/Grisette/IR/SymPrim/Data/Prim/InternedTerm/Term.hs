@@ -51,34 +51,115 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   )
 where
 
-import Control.DeepSeq
-import Data.Bits
+import Control.DeepSeq (NFData (rnf))
+import Data.Bits (Bits)
 import Data.Function (on)
-import Data.Hashable
+import Data.Hashable (Hashable (hashWithSalt))
 import Data.Interned
-import Data.Kind
-import Data.String
-import Data.Typeable (Proxy (..), cast)
-import GHC.Generics
-import GHC.TypeNats
-import Grisette.Core.Data.BV
+  ( Cache,
+    Id,
+    Interned (Description, Uninterned, cache, describe, identify),
+  )
+import Data.Kind (Constraint)
+import Data.String (IsString (fromString))
+import Data.Typeable (Proxy (Proxy), cast)
+import GHC.Generics (Generic)
+import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
-import Grisette.Core.Data.Class.Function
+  ( BVSignConversion,
+    SizedBV,
+  )
+import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
+  ( typeMemoizedCache,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( absNumTerm,
+    addNumTerm,
+    andBitsTerm,
+    andTerm,
+    bvToSignedTerm,
+    bvToUnsignedTerm,
+    bvconcatTerm,
+    bvextendTerm,
+    bvselectTerm,
+    complementBitsTerm,
+    conTerm,
+    constructBinary,
+    constructTernary,
+    constructUnary,
+    divBoundedIntegralTerm,
+    divIntegralTerm,
+    eqvTerm,
+    generalFunApplyTerm,
+    iteTerm,
+    leNumTerm,
+    ltNumTerm,
+    modBoundedIntegralTerm,
+    modIntegralTerm,
+    notTerm,
+    orBitsTerm,
+    orTerm,
+    quotBoundedIntegralTerm,
+    quotIntegralTerm,
+    remBoundedIntegralTerm,
+    remIntegralTerm,
+    rotateBitsTerm,
+    shiftBitsTerm,
+    signumNumTerm,
+    symTerm,
+    tabularFunApplyTerm,
+    timesNumTerm,
+    uminusNumTerm,
+    xorBitsTerm,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
+  ( substTerm,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+  ( identity,
+    introSupportedPrimConstraint,
+    pformat,
+  )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
+  ( ModelValue,
+    toModelValue,
+  )
 import Grisette.IR.SymPrim.Data.Prim.Utils
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
-import Language.Haskell.TH.Syntax
-import Language.Haskell.TH.Syntax.Compat
+  ( eqHeteroRep,
+    eqTypeRepBool,
+  )
+import Grisette.IR.SymPrim.Data.TabularFun
+  ( type (=->) (TabularFun),
+  )
+import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
+import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 import Type.Reflection
+  ( SomeTypeRep (SomeTypeRep),
+    TypeRep,
+    Typeable,
+    eqTypeRep,
+    typeRep,
+    type (:~~:) (HRefl),
+  )
 
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter
+  ( column,
+    pageWidth,
+    Doc,
+    PageWidth(Unbounded, AvailablePerLine),
+    Pretty(pretty),
+  )
 #else
 import Data.Text.Prettyprint.Doc
+  ( column,
+    pageWidth,
+    Doc,
+    PageWidth(Unbounded, AvailablePerLine),
+    Pretty(pretty),
+  )
 #endif
 
 -- $setup
@@ -1099,3 +1180,10 @@ instance NFData (a --> b) where
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = buildGeneralFun (SimpleSymbol "a") (conTerm defaultValue)
+
+instance
+  (SupportedPrim a, SupportedPrim b) =>
+  SupportedPrim (a =-> b)
+  where
+  type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
+  defaultValue = TabularFun [] (defaultValue @b)

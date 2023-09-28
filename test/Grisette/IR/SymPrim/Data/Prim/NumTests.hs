@@ -3,13 +3,36 @@
 
 module Grisette.IR.SymPrim.Data.Prim.NumTests (numTests) where
 
-import Grisette.Core.Data.BV
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( absNumTerm,
+    addNumTerm,
+    conTerm,
+    leNumTerm,
+    ltNumTerm,
+    signumNumTerm,
+    ssymTerm,
+    timesNumTerm,
+    uminusNumTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalITETerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalGeNumTerm,
+    pevalGtNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalMinusNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 numTests :: TestTree
 numTests =

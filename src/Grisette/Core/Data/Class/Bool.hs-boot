@@ -1,6 +1,6 @@
 module Grisette.Core.Data.Class.Bool (LogicalOp (..), ITEOp (..)) where
 
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 class LogicalOp b where
   -- | Symbolic disjunction

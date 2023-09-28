@@ -24,23 +24,33 @@ module Grisette.Core.Control.Exception
   )
 where
 
-import Control.DeepSeq
-import Control.Exception
-import Control.Monad.Except
-import GHC.Generics
-import Generics.Deriving
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Bool
+import Control.DeepSeq (NFData)
+import Control.Exception (ArithException, ArrayException)
+import Control.Monad.Except (MonadError)
+import GHC.Generics (Generic)
+import Generics.Deriving (Default (Default))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.Class.Bool (SEq)
 import Grisette.Core.Data.Class.Error
-import Grisette.Core.Data.Class.Evaluate
+  ( TransformError (transformError),
+    symAssertTransformableError,
+  )
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Mergeable
+  ( ExtractSymbolics,
+  )
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SOrd
+  ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
-import Grisette.Core.Data.Class.ToCon
-import Grisette.Core.Data.Class.ToSym
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SimpleMergeable,
+    mrgSingle,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.ToCon (ToCon)
+import Grisette.Core.Data.Class.ToSym (ToSym)
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core

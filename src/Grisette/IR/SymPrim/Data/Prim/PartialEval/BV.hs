@@ -29,13 +29,31 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   )
 where
 
-import Data.Typeable
-import GHC.TypeNats
+import Data.Typeable (Typeable)
+import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
+  ( BVSignConversion (toSigned, toUnsigned),
+    SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( bvToSignedTerm,
+    bvToUnsignedTerm,
+    bvconcatTerm,
+    bvextendTerm,
+    bvselectTerm,
+    conTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (BVToSignedTerm, BVToUnsignedTerm, ConTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+  ( castTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
 
 -- ToSigned
 pevalBVToSignedTerm ::

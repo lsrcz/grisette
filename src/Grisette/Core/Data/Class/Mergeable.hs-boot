@@ -9,8 +9,8 @@ module Grisette.Core.Data.Class.Mergeable
   )
 where
 
-import Data.Typeable
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Data.Typeable (Typeable)
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 data MergingStrategy a where
   SimpleStrategy :: (SymBool -> a -> a -> a) -> MergingStrategy a

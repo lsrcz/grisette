@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE Trustworthy #-}
-{- ORMOLU_DISABLE -}
 
 -- |
 -- Module      :   Grisette.Core.THCompat
@@ -11,17 +10,38 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-
 module Grisette.Core.THCompat (augmentFinalType) where
 
-import Data.Bifunctor
+import Data.Bifunctor (Bifunctor (second))
+import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+#if MIN_VERSION_template_haskell(2,17,0)
 import Language.Haskell.TH.Syntax
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Control.Monad.UnionM
+  ( Pred,
+    Q,
+    Specificity,
+    TyVarBndr,
+    Type
+      ( AppT,
+        ArrowT,
+        MulArrowT
+      ),
+  )
+#else
+import Language.Haskell.TH.Syntax
+  ( Pred,
+    Q,
+    TyVarBndr,
+    Type
+      ( AppT,
+        ArrowT
+      ),
+  )
+#endif
 
 #if MIN_VERSION_template_haskell(2,17,0)
 augmentFinalType :: Type -> Q (([TyVarBndr Specificity], [Pred]), Type)
-#elif MIN_VERSION_template_haskell(2,16,0)
+#else
 augmentFinalType :: Type -> Q (([TyVarBndr], [Pred]), Type)
 #endif
 augmentFinalType (AppT a@(AppT ArrowT _) t) = do

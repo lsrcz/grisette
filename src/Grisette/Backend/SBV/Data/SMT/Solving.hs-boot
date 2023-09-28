@@ -13,12 +13,14 @@ module Grisette.Backend.SBV.Data.SMT.Solving
   )
 where
 
-import Data.Kind
+import Data.Kind (Type)
 import qualified Data.SBV as SBV
-import GHC.TypeNats
-import Grisette.Core.Data.BV
+import GHC.TypeNats (KnownNat, Nat)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.TabularFun
+  ( type (-->),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 type Aux :: Bool -> Nat -> Type
 type family Aux o n where

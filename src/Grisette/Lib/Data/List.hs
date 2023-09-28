@@ -17,16 +17,16 @@ module Grisette.Lib.Data.List
   )
 where
 
-import Control.Exception
-import Control.Monad.Except
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Error
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SOrd
-import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.Lib.Control.Monad
+import Control.Exception (ArrayException (IndexOutOfBounds))
+import Control.Monad.Except (MonadError (throwError))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.Class.Bool (SEq ((==~)))
+import Grisette.Core.Data.Class.Error (TransformError (transformError))
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SOrd (SOrd ((<=~)))
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
+import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
 
 -- | Symbolic version of 'Data.List.!!', the result would be merged and
 -- propagate the mergeable knowledge.

@@ -21,7 +21,7 @@ module Grisette.Core.Data.Class.ModelOps
   )
 where
 
-import Data.Kind
+import Data.Kind (Type)
 
 -- $setup
 -- >>> import Grisette.Core

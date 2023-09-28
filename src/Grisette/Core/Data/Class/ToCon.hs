@@ -24,21 +24,31 @@ module Grisette.Core.Data.Class.ToCon
   )
 where
 
-import Control.Monad.Except
+import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
-import Control.Monad.Trans.Maybe
+  ( Identity (Identity, runIdentity),
+    IdentityT (IdentityT),
+  )
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Sum
-import Data.Int
+import Data.Functor.Sum (Sum)
+import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
-import Data.Word
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
-import GHC.TypeNats
-import Generics.Deriving
+  ( Generic (Rep, from, to),
+    K1 (K1),
+    M1 (M1),
+    U1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
+import GHC.TypeNats (KnownNat, type (<=))
+import Generics.Deriving (Default (Default))
 import Generics.Deriving.Instances ()
-import Grisette.Core.Data.BV
+import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 
 -- $setup
 -- >>> import Grisette.Core

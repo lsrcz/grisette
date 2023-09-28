@@ -5,6 +5,8 @@ where
 
 import qualified Data.HashSet as S
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SomeTypedSymbol,
+  )
 
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
 

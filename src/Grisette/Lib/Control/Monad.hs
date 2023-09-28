@@ -25,11 +25,17 @@ module Grisette.Lib.Control.Monad
   )
 where
 
-import Control.Monad
-import Grisette.Core.Control.Monad.Union
+import Control.Monad (MonadPlus (mplus, mzero))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable
+  ( Mergeable,
+    MergingStrategy,
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Lib.Data.Foldable
+  ( UnionLike (mergeWithStrategy),
+    merge,
+  )
+import Grisette.Lib.Data.Foldable (mrgFoldlM)
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.
 mrgReturnWithStrategy :: (MonadUnion u) => MergingStrategy a -> a -> u a

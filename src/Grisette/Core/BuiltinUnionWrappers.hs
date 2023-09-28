@@ -30,10 +30,10 @@ module Grisette.Core.BuiltinUnionWrappers
   )
 where
 
-import Data.Functor.Sum
-import Grisette.Core.Control.Exception
-import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.TH
+import Data.Functor.Sum (Sum)
+import Grisette.Core.Control.Exception (VerificationConditions)
+import Grisette.Core.Data.Class.SimpleMergeable (mrgSingle)
+import Grisette.Core.TH (makeUnionWrapper, makeUnionWrapper')
 
 $(makeUnionWrapper "mrg" ''Bool)
 $(makeUnionWrapper' ["mrgUnit"] ''())

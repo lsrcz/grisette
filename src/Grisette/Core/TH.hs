@@ -17,10 +17,25 @@ module Grisette.Core.TH
   )
 where
 
-import Control.Monad
-import Grisette.Core.THCompat
+import Control.Monad (join, replicateM, when, zipWithM)
+import Grisette.Core.THCompat (augmentFinalType)
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
+  ( Body (NormalB),
+    Clause (Clause),
+    Con (ForallC, GadtC, InfixC, NormalC, RecC, RecGadtC),
+    Dec (DataD, FunD, NewtypeD, SigD),
+    Exp (AppE, ConE, LamE, VarE),
+    Info (DataConI, TyConI),
+    Name,
+    Pat (VarP),
+    Q,
+    Type (ForallT),
+    mkName,
+    newName,
+    pprint,
+    reify,
+  )
+import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
 
 -- | Generate constructor wrappers that wraps the result in a union-like monad with provided names.
 --

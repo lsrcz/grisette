@@ -1,3 +1,6 @@
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
+
 module Grisette.Experimental
   ( -- * Experimental features
 
@@ -23,3 +26,14 @@ module Grisette.Experimental
 where
 
 import Grisette.Experimental.GenSymConstrained
+  ( GenSymConstrained (..),
+    GenSymSimpleConstrained (..),
+    SOrdBound (..),
+    SOrdLowerBound (..),
+    SOrdUpperBound (..),
+    derivedFreshConstrainedNoSpec,
+    derivedSimpleFreshConstrainedNoSpec,
+    derivedSimpleFreshConstrainedSameShape,
+    genSymConstrained,
+    genSymSimpleConstrained,
+  )

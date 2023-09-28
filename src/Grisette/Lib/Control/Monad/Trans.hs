@@ -16,10 +16,10 @@ module Grisette.Lib.Control.Monad.Trans
   )
 where
 
-import Control.Monad.Trans
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SimpleMergeable
+import Control.Monad.Trans (MonadTrans (lift))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SimpleMergeable (merge)
 
 -- | 'lift' with 'MergingStrategy' knowledge propagation.
 mrgLift ::

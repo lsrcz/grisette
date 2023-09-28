@@ -19,7 +19,7 @@ module Grisette.Core.Control.Monad.Union
   )
 where
 
-import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Core.Data.Class.SimpleMergeable (UnionLike)
 
 -- $setup
 -- >>> import Grisette.Core

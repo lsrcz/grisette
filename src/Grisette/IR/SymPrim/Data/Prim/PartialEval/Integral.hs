@@ -21,8 +21,21 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 where
 
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    divBoundedIntegralTerm,
+    divIntegralTerm,
+    modIntegralTerm,
+    quotBoundedIntegralTerm,
+    quotIntegralTerm,
+    remIntegralTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (ConTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+  )
 
 -- div
 pevalDivIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a

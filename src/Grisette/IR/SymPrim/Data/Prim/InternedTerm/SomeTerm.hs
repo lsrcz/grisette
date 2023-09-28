@@ -13,10 +13,15 @@
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm (SomeTerm (..)) where
 
-import Data.Hashable
-import Data.Typeable
+import Data.Hashable (Hashable (hashWithSalt))
+import Data.Typeable (Proxy (Proxy), typeRep)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+  ( identityWithTypeRep,
+  )
 
 data SomeTerm where
   SomeTerm :: forall a. (SupportedPrim a) => Term a -> SomeTerm

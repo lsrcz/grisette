@@ -1,3 +1,6 @@
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
+
 -- |
 -- Module      :   Grisette.Backend.SBV
 -- Copyright   :   (c) Sirui Lu 2021-2023
@@ -34,3 +37,14 @@ where
 
 import qualified Data.SBV as SBV
 import Grisette.Backend.SBV.Data.SMT.Solving
+  ( ApproximationConfig (..),
+    ExtraConfig (..),
+    GrisetteSMTConfig (..),
+    SolvingFailure (..),
+    approx,
+    clearApprox,
+    clearTimeout,
+    precise,
+    withApprox,
+    withTimeout,
+  )

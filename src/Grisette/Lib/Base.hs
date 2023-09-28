@@ -49,6 +49,37 @@ module Grisette.Lib.Base
 where
 
 import Grisette.Lib.Control.Monad
+  ( mrgBindWithStrategy,
+    mrgFmap,
+    mrgFoldM,
+    mrgMplus,
+    mrgMzero,
+    mrgReturn,
+    mrgReturnWithStrategy,
+    (>>=~),
+    (>>~),
+  )
 import Grisette.Lib.Data.Foldable
+  ( mrgFoldlM,
+    mrgFoldrM,
+    mrgForM_,
+    mrgFor_,
+    mrgMapM_,
+    mrgMsum,
+    mrgSequence_,
+    mrgTraverse_,
+  )
 import Grisette.Lib.Data.List
+  ( symDrop,
+    symFilter,
+    symTake,
+    (!!~),
+  )
 import Grisette.Lib.Data.Traversable
+  ( mrgFor,
+    mrgForM,
+    mrgMapM,
+    mrgSequence,
+    mrgSequenceA,
+    mrgTraverse,
+  )

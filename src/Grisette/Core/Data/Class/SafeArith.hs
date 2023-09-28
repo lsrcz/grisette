@@ -30,23 +30,39 @@ module Grisette.Core.Data.Class.SafeArith
   )
 where
 
-import Control.Exception
-import Control.Monad.Except
-import Data.Int
-import Data.Typeable
-import Data.Word
-import GHC.TypeNats
-import Grisette.Core.Control.Monad.Union
+import Control.Exception (ArithException (DivideByZero, Overflow, Underflow))
+import Control.Monad.Except (MonadError (throwError))
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.TypeNats (KnownNat, sameNat, type (<=))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV
+  ( BitwidthMismatch (BitwidthMismatch),
+    IntN,
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN,
+  )
 import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Mergeable
+  ( LogicalOp ((&&~), (||~)),
+    SEq ((==~)),
+  )
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SOrd
+  ( SOrd ((<=~), (<~), (>=~), (>~)),
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
+  ( merge,
+    mrgIf,
+    mrgSingle,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
+-- >>> import Control.Monad.Except
 
 -- | Safe division with monadic error handling in multi-path
 -- execution. These procedures throw an exception when the

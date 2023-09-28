@@ -6,20 +6,67 @@
 
 module Grisette.Core.Data.BVTests (bvTests) where
 
-import Control.DeepSeq
+import Control.DeepSeq (NFData (rnf), deepseq, force)
 import Control.Exception
-import Control.Monad
-import Data.Bifunctor
+  ( ArithException,
+    SomeException,
+    catch,
+    evaluate,
+  )
+import Control.Monad (when)
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Bits
-import Data.Int
-import Data.Proxy
-import Data.Typeable
-import Data.Word
-import Grisette.Core.Data.BV
+  ( Bits
+      ( bit,
+        bitSizeMaybe,
+        clearBit,
+        complement,
+        complementBit,
+        isSigned,
+        popCount,
+        rotate,
+        rotateL,
+        rotateR,
+        setBit,
+        shift,
+        shiftL,
+        shiftR,
+        testBit,
+        xor,
+        zeroBits,
+        (.&.),
+        (.|.)
+      ),
+    FiniteBits (countLeadingZeros, countTrailingZeros, finiteBitSize),
+  )
+import Data.Int (Int8)
+import Data.Proxy (Proxy (Proxy))
+import Data.Typeable (Typeable, typeRep)
+import Data.Word (Word8)
+import Grisette.Core.Data.BV (IntN (IntN), WordN (unWordN))
 import Grisette.Core.Data.Class.BitVector
-import Test.Tasty
+  ( SizedBV
+      ( sizedBVConcat,
+        sizedBVExt,
+        sizedBVSelect,
+        sizedBVSext,
+        sizedBVZext
+      ),
+  )
+import Test.Tasty (TestName, TestTree, testGroup)
 import Test.Tasty.HUnit
-import Test.Tasty.QuickCheck hiding ((.&.))
+  ( Assertion,
+    HasCallStack,
+    assertFailure,
+    testCase,
+    (@=?),
+  )
+import Test.Tasty.QuickCheck
+  ( Arbitrary,
+    Property,
+    ioProperty,
+    testProperty,
+  )
 
 unaryConform :: forall a b c d. (Show c, Eq c, HasCallStack) => (a -> b) -> (d -> c) -> (a -> c) -> (b -> d) -> a -> Property
 unaryConform a2b d2c f g x = ioProperty $ f x @=? d2c (g (a2b x))
