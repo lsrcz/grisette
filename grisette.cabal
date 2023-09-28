@@ -132,7 +132,6 @@ library
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.12
-    , call-stack >=0.1 && <0.5
     , deepseq >=1.4.4 && <1.5
     , generic-deriving >=1.14.1 && <1.15
     , hashable >=1.2.3 && <1.5
@@ -168,7 +167,6 @@ test-suite doctest
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.12
-    , call-stack >=0.1 && <0.5
     , deepseq >=1.4.4 && <1.5
     , doctest >=0.18.2 && <0.22
     , generic-deriving >=1.14.1 && <1.15
@@ -221,7 +219,6 @@ test-suite spec
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.12
-    , call-stack >=0.1 && <0.5
     , deepseq >=1.4.4 && <1.5
     , generic-deriving >=1.14.1 && <1.15
     , grisette
