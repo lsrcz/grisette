@@ -24,7 +24,7 @@ import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 type Aux :: Bool -> Nat -> Type
 type family Aux o n where
-  Aux 'True n = SBV.SInteger
+  Aux 'True _ = SBV.SInteger
   Aux 'False n = SBV.SInt n
 
 type IsZero :: Nat -> Bool
@@ -36,8 +36,8 @@ type TermTy :: Nat -> Type -> Type
 type family TermTy bitWidth b where
   TermTy _ Bool = SBV.SBool
   TermTy n Integer = Aux (IsZero n) n
-  TermTy n (IntN x) = SBV.SBV (SBV.IntN x)
-  TermTy n (WordN x) = SBV.SBV (SBV.WordN x)
+  TermTy _ (IntN x) = SBV.SBV (SBV.IntN x)
+  TermTy _ (WordN x) = SBV.SBV (SBV.WordN x)
   TermTy n (a =-> b) = TermTy n a -> TermTy n b
   TermTy n (a --> b) = TermTy n a -> TermTy n b
   TermTy _ v = v
