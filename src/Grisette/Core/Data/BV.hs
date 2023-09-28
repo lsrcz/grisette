@@ -78,7 +78,6 @@ import Data.Bits
       ),
     FiniteBits (countLeadingZeros, countTrailingZeros, finiteBitSize),
   )
-import Data.CallStack (HasCallStack)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Maybe (fromMaybe, isJust)
 import Data.Proxy (Proxy (Proxy))
@@ -149,29 +148,29 @@ newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
 data SomeWordN where
   SomeWordN :: (KnownNat n, 1 <= n) => WordN n -> SomeWordN
 
-unarySomeWordN :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> r) -> SomeWordN -> r
+unarySomeWordN :: (forall n. (KnownNat n, 1 <= n) => WordN n -> r) -> SomeWordN -> r
 unarySomeWordN op (SomeWordN (w :: WordN w)) = op w
 {-# INLINE unarySomeWordN #-}
 
-unarySomeWordNR1 :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n) -> SomeWordN -> SomeWordN
+unarySomeWordNR1 :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n) -> SomeWordN -> SomeWordN
 unarySomeWordNR1 op (SomeWordN (w :: WordN w)) = SomeWordN $ op w
 {-# INLINE unarySomeWordNR1 #-}
 
-binSomeWordN :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> r) -> SomeWordN -> SomeWordN -> r
+binSomeWordN :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> r) -> SomeWordN -> SomeWordN -> r
 binSomeWordN op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> op l r
     Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeWordN #-}
 
-binSomeWordNR1 :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> WordN n) -> SomeWordN -> SomeWordN -> SomeWordN
+binSomeWordNR1 :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> WordN n) -> SomeWordN -> SomeWordN -> SomeWordN
 binSomeWordNR1 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> SomeWordN $ op l r
     Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeWordNR1 #-}
 
-binSomeWordNR2 :: (HasCallStack) => (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> (WordN n, WordN n)) -> SomeWordN -> SomeWordN -> (SomeWordN, SomeWordN)
+binSomeWordNR2 :: (forall n. (KnownNat n, 1 <= n) => WordN n -> WordN n -> (WordN n, WordN n)) -> SomeWordN -> SomeWordN -> (SomeWordN, SomeWordN)
 binSomeWordNR2 op (SomeWordN (l :: WordN l)) (SomeWordN (r :: WordN r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl ->

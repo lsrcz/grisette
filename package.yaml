@@ -41,7 +41,6 @@ dependencies:
   - hashtables >= 1.2.3.4 && < 1.4
   - loch-th >= 0.2.2 && < 0.3
   - th-compat >= 0.1.2 && < 0.2
-  - call-stack >= 0.1 && < 0.5
   - array >= 0.5.4 && < 0.6
   - sbv >= 8.11 && < 10.3
   - parallel >= 3.2.2.0 && < 3.3
