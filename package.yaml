@@ -90,6 +90,10 @@ tests:
       - test-framework-hunit >= 0.3.0.2 && < 0.4
       - test-framework-quickcheck2 >= 0.3.0.5 && < 0.4
       - HUnit >= 1.6 && < 1.7
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
   doctest:
     main: Main.hs
     source-dirs: doctest
@@ -97,3 +101,7 @@ tests:
       - grisette
       - doctest >= 0.18.2 && < 0.22
       - Glob
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
