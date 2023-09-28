@@ -215,7 +215,8 @@ test-suite spec
       test
   ghc-options: -Wextra -Werror -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns
   build-depends:
-      QuickCheck >=2.13.2 && <2.15
+      HUnit ==1.6.*
+    , QuickCheck >=2.13.2 && <2.15
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.12
@@ -230,11 +231,10 @@ test-suite spec
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
-    , tasty >=1.1.0.3 && <1.5
-    , tasty-hunit ==0.10.*
-    , tasty-quickcheck >=0.10.1 && <0.11
-    , tasty-test-reporter >=0.1.1.2 && <0.2
     , template-haskell >=2.16 && <2.21
+    , test-framework >=0.8.2 && <0.9
+    , test-framework-hunit >=0.3.0.2 && <0.4
+    , test-framework-quickcheck2 >=0.3.0.5 && <0.4
     , text >=1.2.4.1 && <2.1
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.7

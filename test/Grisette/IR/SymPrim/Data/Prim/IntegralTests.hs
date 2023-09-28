@@ -31,13 +31,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalQuotIntegralTerm,
     pevalRemIntegralTerm,
   )
-import Test.Tasty (TestName, TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
-import Test.Tasty.QuickCheck
-  ( Arbitrary,
-    ioProperty,
-    testProperty,
-  )
+import Test.Framework (Test, TestName, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit ((@=?))
+import Test.QuickCheck (Arbitrary, ioProperty)
 
 newtype AEWrapper = AEWrapper ArithException deriving (Eq)
 
@@ -70,7 +68,7 @@ divisionPevalBoundedTests ::
   (Term t -> Term t -> Term t) ->
   (t -> t -> t) ->
   (Term t -> Term t -> Term t) ->
-  TestTree
+  Test
 divisionPevalBoundedTests _ name pf cf consf =
   testGroup
     name
@@ -87,7 +85,7 @@ divisionPevalTests ::
   (Term t -> Term t -> Term t) ->
   (t -> t -> t) ->
   (Term t -> Term t -> Term t) ->
-  TestTree
+  Test
 divisionPevalTests _ name transform pf cf consf =
   testGroup
     name
@@ -112,7 +110,7 @@ divisionPevalBoundedTestGroup ::
   (forall t. (SupportedPrim t, Bounded t, Integral t) => Term t -> Term t -> Term t) ->
   (forall t. (Bounded t, Integral t) => t -> t -> t) ->
   (forall t. (SupportedPrim t, Bounded t, Integral t) => Term t -> Term t -> Term t) ->
-  TestTree
+  Test
 divisionPevalBoundedTestGroup name pf cf consf =
   testGroup
     name
@@ -125,7 +123,7 @@ divisionPevalUnboundedTestGroup ::
   (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
   (forall t. (Integral t) => t -> t -> t) ->
   (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
-  TestTree
+  Test
 divisionPevalUnboundedTestGroup name pf cf consf =
   testGroup
     name
@@ -143,7 +141,7 @@ moduloPevalTests ::
   (Term t -> Term t -> Term t) ->
   (t -> t -> t) ->
   (Term t -> Term t -> Term t) ->
-  TestTree
+  Test
 moduloPevalTests _ name transform pf cf consf =
   testGroup
     name
@@ -170,7 +168,7 @@ moduloPevalTestGroup ::
   (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
   (forall t. (Integral t) => t -> t -> t) ->
   (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
-  TestTree
+  Test
 moduloPevalTestGroup name pf cf consf =
   testGroup
     name
@@ -179,7 +177,7 @@ moduloPevalTestGroup name pf cf consf =
       moduloPevalTests (Proxy @(WordN 4)) "WordN" WordN pf cf consf
     ]
 
-integralTests :: TestTree
+integralTests :: Test
 integralTests =
   testGroup
     "IntegralTests"

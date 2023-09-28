@@ -86,10 +86,10 @@ tests:
     source-dirs: test
     dependencies:
       - grisette
-      - tasty >= 1.1.0.3 && < 1.5
-      - tasty-hunit >= 0.10 && < 0.11
-      - tasty-test-reporter >= 0.1.1.2 && < 0.2
-      - tasty-quickcheck >= 0.10.1 && < 0.11
+      - test-framework >= 0.8.2 && < 0.9
+      - test-framework-hunit >= 0.3.0.2 && < 0.4
+      - test-framework-quickcheck2 >= 0.3.0.5 && < 0.4
+      - HUnit >= 1.6 && < 1.7
   doctest:
     main: Main.hs
     source-dirs: doctest

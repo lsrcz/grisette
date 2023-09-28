@@ -43,32 +43,17 @@ import Grisette.IR.SymPrim.Data.Prim.NumTests (numTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.TabularFunTests
 import Grisette.IR.SymPrim.Data.SymPrimTests (symPrimTests)
 import qualified Grisette.IR.SymPrim.Data.TabularFunTests
-import Test.Tasty
-  ( TestTree,
-    defaultMainWithIngredients,
-    testGroup,
-  )
-import Test.Tasty.Ingredients (composeReporters)
-import qualified Test.Tasty.Ingredients.ConsoleReporter as ConsoleReporter
-import qualified Test.Tasty.Runners.Reporter as Reporter
+import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()
 main =
-  defaultMainWithIngredients
-    [ composeReporters Reporter.ingredient ConsoleReporter.consoleTestReporter
-    ]
-    tests
-
-tests :: TestTree
-tests =
-  testGroup
-    "grisette"
+  defaultMain
     [ coreTests,
       irTests,
       sbvTests
     ]
 
-coreTests :: TestTree
+coreTests :: Test
 coreTests =
   testGroup
     "core"
@@ -85,7 +70,7 @@ coreTests =
     ]
 
 {-
-coreTests :: TestTree
+coreTests :: Test
 coreTests =
   testGroup
     "grisette-core"
@@ -141,7 +126,7 @@ coreTests =
     ]
 -}
 
-irTests :: TestTree
+irTests :: Test
 irTests =
   testGroup
     "grisette-symir"
@@ -162,7 +147,7 @@ irTests =
         ]
     ]
 
-sbvTests :: TestTree
+sbvTests :: Test
 sbvTests =
   testGroup
     "Grisette.Backend.SBV.Data.SMT"

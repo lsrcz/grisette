@@ -56,9 +56,11 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( pformat,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
-import Test.Tasty (TestName, TestTree, testGroup)
-import Test.Tasty.HUnit (Assertion, assertFailure, testCase)
-import Test.Tasty.QuickCheck (ioProperty, mapSize, testProperty)
+import Test.Framework (Test, TestName, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit (Assertion, assertFailure)
+import Test.QuickCheck (ioProperty, mapSize)
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
@@ -79,7 +81,7 @@ divisionTest ::
   (TermRewritingSpec a b, Show a, Enum b, Num b, SupportedPrim b) =>
   TestName ->
   (a -> a -> a) ->
-  TestTree
+  Test
 divisionTest name f =
   testGroup
     name
@@ -98,7 +100,7 @@ divisionTest name f =
           [-3 .. 3]
     ]
 
-termRewritingTests :: TestTree
+termRewritingTests :: Test
 termRewritingTests =
   testGroup
     "TermRewritingTests"

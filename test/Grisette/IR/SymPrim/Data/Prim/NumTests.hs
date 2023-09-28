@@ -31,10 +31,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit ((@=?))
 
-numTests :: TestTree
+numTests :: Test
 numTests =
   testGroup
     "NumTests"

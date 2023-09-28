@@ -22,15 +22,11 @@ import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.Bool (LogicalOp ((&&~)))
 import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
-import Test.Tasty.QuickCheck
-  ( Arbitrary (arbitrary),
-    Gen,
-    forAll,
-    oneof,
-    testProperty,
-  )
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit ((@=?))
+import Test.QuickCheck (Arbitrary (arbitrary), Gen, forAll, oneof)
 
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter
@@ -48,7 +44,7 @@ import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 #endif
 
-testGPretty :: (HasCallStack, GPretty a) => String -> Int -> a -> T.Text -> TestTree
+testGPretty :: (HasCallStack, GPretty a) => String -> Int -> a -> T.Text -> Test
 testGPretty n i a s =
   testCase n $
     renderStrict
@@ -63,7 +59,7 @@ propertyGPrettyShow ::
   (HasCallStack, GPretty a, Show a) =>
   String ->
   Gen a ->
-  TestTree
+  Test
 propertyGPrettyShow n g =
   testProperty n $ forAll g $ \(a :: a) -> do
     renderStrict (layoutPretty (LayoutOptions Unbounded) (gpretty a)) == T.pack (show a)
@@ -73,7 +69,7 @@ propertyGPrettyRead ::
   (HasCallStack, GPretty a, Read a, Show a, Eq a) =>
   String ->
   Gen a ->
-  TestTree
+  Test
 propertyGPrettyRead n g =
   testProperty n $ \i -> forAll g $ \(a :: a) -> do
     read
@@ -92,7 +88,7 @@ propertyGPretty ::
   (HasCallStack, GPretty a, Read a, Show a, Eq a) =>
   String ->
   Gen a ->
-  TestTree
+  Test
 propertyGPretty n g =
   testGroup
     n
@@ -142,7 +138,7 @@ instance
     a <- arbitrary
     Record a <$> arbitrary
 
-gprettyTests :: TestTree
+gprettyTests :: Test
 gprettyTests =
   testGroup
     "GPrettyTests"

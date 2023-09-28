@@ -43,6 +43,7 @@ import Data.Int (Int8)
 import Data.Proxy (Proxy (Proxy))
 import Data.Typeable (Typeable, typeRep)
 import Data.Word (Word8)
+import GHC.Stack (HasCallStack)
 import Grisette.Core.Data.BV (IntN (IntN), WordN (unWordN))
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV
@@ -53,20 +54,11 @@ import Grisette.Core.Data.Class.BitVector
         sizedBVZext
       ),
   )
-import Test.Tasty (TestName, TestTree, testGroup)
-import Test.Tasty.HUnit
-  ( Assertion,
-    HasCallStack,
-    assertFailure,
-    testCase,
-    (@=?),
-  )
-import Test.Tasty.QuickCheck
-  ( Arbitrary,
-    Property,
-    ioProperty,
-    testProperty,
-  )
+import Test.Framework (Test, TestName, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit (Assertion, assertFailure, (@=?))
+import Test.QuickCheck (Arbitrary, Property, ioProperty)
 
 unaryConform :: forall a b c d. (Show c, Eq c, HasCallStack) => (a -> b) -> (d -> c) -> (a -> c) -> (b -> d) -> a -> Property
 unaryConform a2b d2c f g x = ioProperty $ f x @=? d2c (g (a2b x))
@@ -127,7 +119,7 @@ finiteBitsConformTest ::
   Proxy ref ->
   Proxy typ ->
   Int ->
-  TestTree
+  Test
 finiteBitsConformTest pref ptyp numBits =
   testGroup
     (show (typeRep ptyp) ++ " conform to " ++ show (typeRep pref) ++ " for FiniteBits instances")
@@ -141,7 +133,7 @@ boundedConformTest ::
   (Typeable ref, Typeable typ, Bounded typ, Bounded ref, Integral ref, Num typ, Eq typ, Show typ) =>
   Proxy ref ->
   Proxy typ ->
-  TestTree
+  Test
 boundedConformTest pref ptyp =
   testGroup
     (show (typeRep ptyp) ++ " conform to " ++ show (typeRep pref) ++ " for Bounded instances")
@@ -164,7 +156,7 @@ succPredLikeTest ::
   (b -> b) ->
   a ->
   b ->
-  TestTree
+  Test
 succPredLikeTest name boundName a2b fa fb bounda boundb =
   testGroup
     name
@@ -191,7 +183,7 @@ enumConformTest ::
   ) =>
   Proxy ref ->
   Proxy typ ->
-  TestTree
+  Test
 enumConformTest pref ptyp =
   testGroup
     (show (typeRep ptyp) ++ " conform to " ++ show (typeRep pref) ++ " for Enum instances")
@@ -250,7 +242,7 @@ divLikeTest ::
   (a -> b) ->
   (a -> a -> a) ->
   (b -> b -> b) ->
-  TestTree
+  Test
 divLikeTest name a2b fa fb =
   testGroup
     name
@@ -272,7 +264,7 @@ divModLikeTest ::
   (a -> b) ->
   (a -> a -> (a, a)) ->
   (b -> b -> (b, b)) ->
-  TestTree
+  Test
 divModLikeTest name a2b fa fb =
   testGroup
     name
@@ -292,7 +284,7 @@ realConformTest ::
   (Typeable ref, Typeable typ, Integral ref, Num typ, Arbitrary ref, Real typ, Show ref) =>
   proxy ref ->
   proxy typ ->
-  TestTree
+  Test
 realConformTest pref ptyp =
   testGroup
     (show (typeRep ptyp) ++ " conform to " ++ show (typeRep pref) ++ " for Real instances")
@@ -321,7 +313,7 @@ integralConformTest ::
   ) =>
   Proxy ref ->
   Proxy typ ->
-  TestTree
+  Test
 integralConformTest pref ptyp =
   testGroup
     (show (typeRep ptyp) ++ " conform to " ++ show (typeRep pref) ++ " for Integral instances")
@@ -334,7 +326,7 @@ integralConformTest pref ptyp =
       testProperty "toInteger" $ unaryConform @ref @typ fromIntegral id toInteger toInteger
     ]
 
-bvTests :: TestTree
+bvTests :: Test
 bvTests =
   testGroup
     "BVTests"
