@@ -3,10 +3,12 @@
 
 module Grisette.IR.SymPrim.Data.TabularFunTests (tabularFunTests) where
 
-import Grisette.Core.Data.Class.Function
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.IR.SymPrim.Data.TabularFun
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( type (=->) (TabularFun),
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 tabularFunTests :: TestTree
 tabularFunTests =

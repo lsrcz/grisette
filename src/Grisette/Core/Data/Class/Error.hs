@@ -21,16 +21,17 @@ module Grisette.Core.Data.Class.Error
   )
 where
 
-import Control.Monad.Except
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SimpleMergeable
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Control.Monad.Except (MonadError (throwError))
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SimpleMergeable (merge, mrgIf)
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 -- $setup
 -- >>> import Control.Exception
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
+-- >>> import Control.Monad.Except
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XFlexibleContexts
 

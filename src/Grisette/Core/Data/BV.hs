@@ -44,28 +44,93 @@ module Grisette.Core.Data.BV
   )
 where
 
-import Control.Applicative
-import Control.DeepSeq
+import Control.Applicative (Alternative ((<|>)))
+import Control.DeepSeq (NFData (rnf))
 import Control.Exception
+  ( ArithException (Overflow),
+    Exception (displayException),
+    throw,
+  )
 import Data.Bits
-import Data.CallStack
-import Data.Hashable
-import Data.Maybe
-import Data.Proxy
-import Data.Typeable
+  ( Bits
+      ( bit,
+        bitSize,
+        bitSizeMaybe,
+        clearBit,
+        complement,
+        complementBit,
+        isSigned,
+        popCount,
+        rotate,
+        rotateL,
+        rotateR,
+        setBit,
+        shift,
+        shiftL,
+        shiftR,
+        testBit,
+        unsafeShiftL,
+        unsafeShiftR,
+        xor,
+        zeroBits,
+        (.&.),
+        (.|.)
+      ),
+    FiniteBits (countLeadingZeros, countTrailingZeros, finiteBitSize),
+  )
+import Data.CallStack (HasCallStack)
+import Data.Hashable (Hashable (hashWithSalt))
+import Data.Maybe (fromMaybe, isJust)
+import Data.Proxy (Proxy (Proxy))
+import Data.Typeable (type (:~:) (Refl))
 import GHC.Enum
-import GHC.Generics
+  ( boundedEnumFrom,
+    boundedEnumFromThen,
+    predError,
+    succError,
+    toEnumError,
+  )
+import GHC.Generics (Generic)
 import GHC.Read
-import GHC.Real
+  ( Read (readListPrec, readPrec),
+    parens,
+    readListDefault,
+    readListPrecDefault,
+    readNumber,
+  )
+import GHC.Real ((%))
 import GHC.TypeNats
+  ( KnownNat,
+    Nat,
+    natVal,
+    sameNat,
+    type (+),
+    type (<=),
+  )
 import Grisette.Core.Data.Class.BitVector
+  ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
+    BVSignConversion (toSigned, toUnsigned),
+    SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
+  )
 import Grisette.Utils.Parameterized
-import Language.Haskell.TH.Syntax
-import Numeric
+  ( KnownProof (KnownProof),
+    LeqProof (LeqProof),
+    knownAdd,
+    leqAddPos,
+    unsafeKnownProof,
+    unsafeLeqProof,
+  )
+import Language.Haskell.TH.Syntax (Lift (liftTyped))
+import Numeric (showHex, showIntAtBase)
 import qualified Test.QuickCheck as QC
 import Text.ParserCombinators.ReadP (string)
 import Text.ParserCombinators.ReadPrec
-import Text.Read
+  ( ReadPrec,
+    get,
+    look,
+    pfail,
+  )
+import Text.Read (lift)
 import qualified Text.Read.Lex as L
 
 data BitwidthMismatch = BitwidthMismatch

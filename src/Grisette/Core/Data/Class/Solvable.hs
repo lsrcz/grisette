@@ -18,11 +18,11 @@ module Grisette.Core.Data.Class.Solvable
   )
 where
 
-import Control.DeepSeq
-import Data.Hashable
-import Data.String
-import Data.Typeable
-import Language.Haskell.TH.Syntax
+import Control.DeepSeq (NFData)
+import Data.Hashable (Hashable)
+import Data.String (IsString)
+import Data.Typeable (Typeable)
+import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core

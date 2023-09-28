@@ -16,11 +16,23 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   )
 where
 
-import Control.Monad.Except
-import Data.Typeable
+import Control.Monad.Except (MonadError (catchError))
+import Data.Typeable (Typeable)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (ITETerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalITETerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+  ( PartialRuleBinary,
+    PartialRuleUnary,
+    TotalRuleBinary,
+    TotalRuleUnary,
+    totalize,
+    totalize2,
+  )
 
 unaryPartialUnfoldOnce ::
   forall a b.

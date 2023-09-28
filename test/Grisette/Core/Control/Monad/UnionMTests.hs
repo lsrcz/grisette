@@ -2,12 +2,15 @@
 
 module Grisette.Core.Control.Monad.UnionMTests (unionMTests) where
 
-import Grisette.Core.Control.Monad.UnionM
-import Grisette.Core.Data.Class.GenSym
+import Grisette.Core.Control.Monad.UnionM (UnionM, unionSize)
+import Grisette.Core.Data.Class.GenSym (choose)
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( UnionLike (single),
+    mrgIf,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (ssym))
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 unionMTests :: TestTree
 unionMTests =

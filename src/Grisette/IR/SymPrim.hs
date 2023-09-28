@@ -1,4 +1,6 @@
 {-# LANGUAGE ExplicitNamespaces #-}
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim
@@ -22,8 +24,8 @@ module Grisette.IR.SymPrim
 
     -- ** Symbolic types
     SupportedPrim,
-    SymRep (..),
-    ConRep (..),
+    SymRep (SymType),
+    ConRep (ConType),
     LinkedRep,
     SymBool (..),
     SymInteger (..),
@@ -48,7 +50,38 @@ module Grisette.IR.SymPrim
 where
 
 import Grisette.Core.Data.BV
+  ( IntN,
+    SomeIntN (..),
+    SomeWordN (..),
+    WordN,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( ConRep (..),
+    LinkedRep,
+    SupportedPrim,
+    SymRep (..),
+    TypedSymbol (..),
+    type (-->),
+  )
 import Grisette.IR.SymPrim.Data.Prim.Model
+  ( Model (..),
+    ModelValuePair (..),
+    SymbolSet (..),
+  )
 import Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.IR.SymPrim.Data.TabularFun
+  ( AllSyms (..),
+    ModelSymPair (..),
+    SomeSymIntN (..),
+    SomeSymWordN (..),
+    SymBool (..),
+    SymIntN (..),
+    SymInteger (..),
+    SymWordN (..),
+    allSymsSize,
+    symSize,
+    symsSize,
+    (-->),
+    type (-~>) (..),
+    type (=~>) (..),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->) (..))

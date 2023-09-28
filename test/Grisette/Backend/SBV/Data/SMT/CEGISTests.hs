@@ -7,26 +7,55 @@
 
 module Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests) where
 
-import Control.Monad.Except
-import Data.Proxy
+import Control.Monad.Except (ExceptT, runExceptT)
+import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
-import Data.String
-import Grisette.Backend.SBV
+import Data.String (IsString (fromString))
+import Grisette.Backend.SBV (GrisetteSMTConfig, precise, z3)
 import Grisette.Core.Control.Exception
-import Grisette.Core.Control.Monad.UnionM
+  ( VerificationConditions,
+    symAssert,
+    symAssume,
+  )
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.BitVector
+  ( SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
+  )
 import Grisette.Core.Data.Class.Bool
+  ( ITEOp (ites),
+    LogicalOp (nots, xors, (&&~), (||~)),
+    SEq ((==~)),
+  )
 import Grisette.Core.Data.Class.CEGISSolver
-import Grisette.Core.Data.Class.Evaluate
+  ( CEGISSolver (cegisMultiInputs),
+    cegis,
+    cegisExceptVC,
+    cegisPostCond,
+  )
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Function
-import Grisette.Core.Data.Class.SOrd
-import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
-import Grisette.Core.Data.Class.Solver
+  ( ExtractSymbolics,
+  )
+import Grisette.Core.Data.Class.Function (Function ((#)))
+import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~)))
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Core.Data.Class.Solvable (Solvable (con, ssym))
+import Grisette.Core.Data.Class.Solver (Solver (solve))
 import Grisette.IR.SymPrim.Data.SymPrim
-import Test.Tasty
+  ( SymBool,
+    SymIntN,
+    SymInteger,
+    type (-~>),
+    type (=~>),
+  )
+import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
+  ( Assertion,
+    HasCallStack,
+    assertFailure,
+    testCase,
+    (@=?),
+  )
 
 testCegis :: (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a) => GrisetteSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
 testCegis config shouldSuccess a bs = do

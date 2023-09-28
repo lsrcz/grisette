@@ -1,4 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.Internal.IR.SymPrim
@@ -91,15 +93,103 @@ module Grisette.Internal.IR.SymPrim
 where
 
 import Grisette.IR.SymPrim.Data.Prim.Helpers
+  ( pattern BinaryTermPatt,
+    pattern TernaryTermPatt,
+    pattern UnaryTermPatt,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    constructBinary,
+    constructTernary,
+    constructUnary,
+    iinfosymTerm,
+    isymTerm,
+    sinfosymTerm,
+    ssymTerm,
+    symTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (..),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( BinaryOp (..),
+    SomeTypedSymbol (..),
+    SupportedPrim (..),
+    Term (..),
+    TernaryOp (..),
+    UnaryOp (..),
+    showUntyped,
+    someTypedSymbol,
+    withSymbolSupported,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-import Grisette.IR.SymPrim.Data.Prim.Model
+  ( castTerm,
+    extractSymbolicsTerm,
+    identity,
+    identityWithTypeRep,
+    introSupportedPrimConstraint,
+    pformat,
+    termSize,
+    termsSize,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Model (evaluateTerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( falseTerm,
+    pevalAndTerm,
+    pevalEqvTerm,
+    pevalITETerm,
+    pevalImplyTerm,
+    pevalNotEqvTerm,
+    pevalNotTerm,
+    pevalOrTerm,
+    pevalXorTerm,
+    trueTerm,
+    pattern BoolConTerm,
+    pattern BoolTerm,
+    pattern FalseTerm,
+    pattern TrueTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
+  ( pevalGeneralFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalGeNumTerm,
+    pevalGtNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalMinusNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+    pattern NumConTerm,
+    pattern NumOrdConTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+  ( BinaryCommPartialStrategy (..),
+    BinaryPartialStrategy (..),
+    PartialFun,
+    PartialRuleBinary,
+    PartialRuleUnary,
+    TotalRuleBinary,
+    TotalRuleUnary,
+    UnaryPartialStrategy (..),
+    binaryPartial,
+    totalize,
+    totalize2,
+    unaryPartial,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
+  ( pevalTabularFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )

@@ -22,9 +22,9 @@ module Grisette.Core.Data.MemoUtils
 where
 
 import Data.Function (fix)
-import Data.HashTable.IO as H
-import Data.Hashable
-import System.IO.Unsafe
+import qualified Data.HashTable.IO as H
+import Data.Hashable (Hashable)
+import System.IO.Unsafe (unsafePerformIO)
 
 type HashTable k v = H.BasicHashTable k v
 

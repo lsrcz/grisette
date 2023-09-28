@@ -25,21 +25,32 @@ module Grisette.Core.Data.Class.ToSym
 where
 
 import Control.Monad.Identity
-import Control.Monad.Reader
+  ( Identity (Identity),
+    IdentityT (IdentityT),
+  )
+import Control.Monad.Reader (ReaderT (ReaderT))
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Except (ExceptT (ExceptT))
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Sum
-import Data.Int
+import Data.Functor.Sum (Sum)
+import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
-import Data.Word
-import GHC.TypeNats
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
-import Grisette.Core.Data.BV
+  ( Default (Default),
+    Generic (Rep, from, to),
+    K1 (K1),
+    M1 (M1),
+    U1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
+import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 
 -- $setup
 -- >>> import Grisette.IR.SymPrim

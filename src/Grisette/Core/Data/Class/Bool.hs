@@ -30,27 +30,59 @@ module Grisette.Core.Data.Class.Bool
   )
 where
 
-import Control.Monad.Except
+import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
   ( Identity (Identity),
     IdentityT (IdentityT),
   )
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Sum
-import Data.Int
+import Data.Functor.Sum (Sum)
+import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
-import Data.Word
-import GHC.TypeNats
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
-import Grisette.Core.Data.BV
+  ( Default (Default),
+    Generic (Rep, from),
+    K1 (K1),
+    M1 (M1),
+    U1,
+    V1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
+import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import {-# SOURCE #-} Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
+  ( SimpleMergeable,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalAndTerm,
+    pevalITETerm,
+    pevalImplyTerm,
+    pevalNotTerm,
+    pevalOrTerm,
+    pevalXorTerm,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN,
+    SomeSymWordN,
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    binSomeSymIntNR1,
+    binSomeSymWordNR1,
+    type (-~>) (SymGeneralFun),
+    type (=~>) (SymTabularFun),
+  )
 
 -- $setup
 -- >>> import Grisette.Core

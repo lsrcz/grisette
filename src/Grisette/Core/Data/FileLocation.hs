@@ -4,6 +4,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 
+{- HLINT ignore "Unused LANGUAGE pragma" -}
+
 -- |
 -- Module      :   Grisette.Core.Data.FileLocation
 -- Copyright   :   (c) Sirui Lu 2021-2023
@@ -21,14 +23,16 @@ module Grisette.Core.Data.FileLocation
   )
 where
 
-import Control.DeepSeq
-import Data.Hashable
+import Control.DeepSeq (NFData)
+import Data.Hashable (Hashable)
 import Debug.Trace.LocationTH (__LOCATION__)
-import GHC.Generics
-import Grisette.Core.Data.Class.GenSym
+import GHC.Generics (Generic)
+import Grisette.Core.Data.Class.GenSym (FreshIdent, nameWithInfo)
 import Grisette.Core.Data.Class.Solvable
-import Language.Haskell.TH.Syntax
-import Language.Haskell.TH.Syntax.Compat
+  ( Solvable (iinfosym, sinfosym),
+  )
+import Language.Haskell.TH.Syntax (Lift, unsafeTExpCoerce)
+import Language.Haskell.TH.Syntax.Compat (SpliceQ, liftSplice)
 
 -- $setup
 -- >>> import Grisette.Core

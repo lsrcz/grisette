@@ -31,17 +31,24 @@ module Grisette.IR.SymPrim.Data.SymPrim
   )
 where
 
-import Control.DeepSeq
-import Data.Hashable
-import GHC.TypeNats
-import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.Evaluate
+import Control.DeepSeq (NFData)
+import Data.Hashable (Hashable)
+import GHC.TypeNats (KnownNat, Nat, type (<=))
+import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.GPretty
-import Grisette.Core.Data.Class.Solvable
+  ( ExtractSymbolics,
+  )
+import Grisette.Core.Data.Class.GPretty (GPretty)
+import Grisette.Core.Data.Class.Solvable (Solvable)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.TabularFun
-import Language.Haskell.TH.Syntax
+  ( LinkedRep,
+    SupportedPrim,
+    Term,
+    type (-->),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Language.Haskell.TH.Syntax (Lift)
 
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 

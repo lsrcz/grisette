@@ -13,19 +13,22 @@ module Grisette.Core.Control.Monad.Class.MonadParallelUnion
   )
 where
 
-import Control.DeepSeq
-import Control.Monad.Except
-import Control.Monad.Identity
+import Control.DeepSeq (NFData)
+import Control.Monad.Except (ExceptT (ExceptT), runExceptT)
+import Control.Monad.Identity (IdentityT (IdentityT, runIdentityT))
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
-import Control.Monad.Reader
+import Control.Monad.Reader (ReaderT (ReaderT, runReaderT))
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionLike,
+    merge,
+  )
 
 -- | Parallel union monad.
 --

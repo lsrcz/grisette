@@ -21,9 +21,16 @@ module Grisette.Lib.Data.Traversable
   )
 where
 
-import Grisette.Core.Control.Monad.Union
+import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable
+  ( Mergeable,
+    Mergeable1,
+    rootStrategy1,
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionLike (mergeWithStrategy),
+    merge,
+  )
 
 -- | 'Data.Traversable.traverse' with 'MergingStrategy' knowledge propagation.
 mrgTraverse ::

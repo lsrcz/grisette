@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -30,30 +31,70 @@ module Grisette.Core.Control.Monad.CBMCExcept
   )
 where
 
+#if MIN_VERSION_base(4,18,0)
 import Control.Applicative
-import Control.DeepSeq
-import Control.Monad
+  ( Alternative (empty, (<|>)),
+  )
+#else
+import Control.Applicative
+  ( Alternative (empty, (<|>)),
+    Applicative (liftA2),
+  )
+#endif
+import Control.DeepSeq (NFData)
+import Control.Monad (MonadPlus (mplus, mzero))
 import qualified Control.Monad.Except as OrigExcept
 import qualified Control.Monad.Fail as Fail
-import Control.Monad.Fix
-import Control.Monad.Trans
-import Control.Monad.Zip
+import Control.Monad.Fix (MonadFix (mfix))
+import Control.Monad.Trans (MonadIO (liftIO), MonadTrans (lift))
+import Control.Monad.Zip (MonadZip (mzipWith))
 import Data.Functor.Classes
-import Data.Functor.Contravariant
-import Data.Hashable
-import GHC.Generics
-import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Evaluate
+  ( Eq1 (liftEq),
+    Ord1 (liftCompare),
+    Read1 (liftReadList, liftReadsPrec),
+    Show1 (liftShowList, liftShowsPrec),
+    compare1,
+    eq1,
+    readsData,
+    readsPrec1,
+    readsUnaryWith,
+    showsPrec1,
+    showsUnaryWith,
+  )
+import Data.Functor.Contravariant (Contravariant (contramap))
+import Data.Hashable (Hashable)
+import GHC.Generics (Generic, Generic1)
+import Grisette.Core.Data.Class.Bool (SEq ((==~)))
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
+  ( ExtractSymbolics (extractSymbolics),
+  )
 import Grisette.Core.Data.Class.GenSym
+  ( GenSym (fresh),
+    GenSymSimple (simpleFresh),
+    derivedNoSpecFresh,
+    derivedSameShapeSimpleFresh,
+  )
 import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SOrd
+  ( Mergeable (rootStrategy),
+    Mergeable1 (liftRootStrategy),
+    MergingStrategy (NoStrategy, SimpleStrategy, SortedStrategy),
+    rootStrategy1,
+    wrapStrategy,
+  )
+import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (<=~), (<~), (>=~), (>~)))
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solver
-import Grisette.Core.Data.Class.ToCon
-import Grisette.Core.Data.Class.ToSym
+  ( SimpleMergeable (mrgIte),
+    SimpleMergeable1 (liftMrgIte),
+    UnionLike (mergeWithStrategy, mrgIfWithStrategy, single, unionIf),
+    merge,
+    mrgIf,
+  )
+import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
+import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
+import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Language.Haskell.TH.Syntax (Lift)
-import Unsafe.Coerce
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | A wrapper type for 'Either'. Uses different merging strategies.
 newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}

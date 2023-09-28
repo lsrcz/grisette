@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -18,8 +19,14 @@ module Grisette.IR.SymPrim.Data.Prim.ModelValue
   )
 where
 
-import Data.Hashable
+import Data.Hashable (Hashable (hashWithSalt))
 import Type.Reflection
+  ( TypeRep,
+    Typeable,
+    eqTypeRep,
+    typeRep,
+    type (:~~:) (HRefl),
+  )
 
 data ModelValue where
   ModelValue :: forall v. (Show v, Eq v, Hashable v) => TypeRep v -> v -> ModelValue

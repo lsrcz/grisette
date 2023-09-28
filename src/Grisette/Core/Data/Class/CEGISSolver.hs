@@ -39,17 +39,25 @@ module Grisette.Core.Data.Class.CEGISSolver
   )
 where
 
-import GHC.Generics
-import Generics.Deriving
+import GHC.Generics (Generic)
+import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Exception
-import Grisette.Core.Data.Class.Evaluate
+  ( VerificationConditions (AssertionViolation, AssumptionViolation),
+  )
+import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Mergeable
+  ( ExtractSymbolics,
+  )
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
-import Grisette.Core.Data.Class.Solver
-import Grisette.IR.SymPrim.Data.Prim.Model
-import Grisette.IR.SymPrim.Data.SymPrim
+  ( SimpleMergeable,
+    UnionPrjOp,
+    simpleMerge,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
+import Grisette.IR.SymPrim.Data.Prim.Model (Model)
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core

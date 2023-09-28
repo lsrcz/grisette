@@ -26,10 +26,35 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 where
 
 import Data.Bits
-import Data.Typeable
+  ( Bits
+      ( bitSizeMaybe,
+        complement,
+        rotate,
+        shift,
+        xor,
+        zeroBits,
+        (.&.),
+        (.|.)
+      ),
+  )
+import Data.Typeable (Typeable, cast)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( andBitsTerm,
+    complementBitsTerm,
+    conTerm,
+    orBitsTerm,
+    rotateBitsTerm,
+    shiftBitsTerm,
+    xorBitsTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (ComplementBitsTerm, ConTerm, RotateBitsTerm, ShiftBitsTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
 
 bitsConTermView :: (Bits b, Typeable b) => Term a -> Maybe b
 bitsConTermView (ConTerm _ b) = cast b

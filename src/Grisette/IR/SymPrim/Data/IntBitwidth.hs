@@ -9,7 +9,7 @@
 module Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ) where
 
 import Data.Bits (FiniteBits (finiteBitSize))
-import Language.Haskell.TH
+import Language.Haskell.TH (TyLit (NumTyLit), Type (LitT), TypeQ)
 
 intBitwidthQ :: TypeQ
 intBitwidthQ = return $ LitT (NumTyLit $ toInteger $ finiteBitSize (undefined :: Int))

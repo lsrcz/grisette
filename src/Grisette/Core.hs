@@ -1,5 +1,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE Trustworthy #-}
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.Core
@@ -1011,33 +1013,188 @@ where
 
 import Generics.Deriving (Default (..), Default1 (..))
 import Grisette.Core.BuiltinUnionWrappers
+  ( mrgAssertionViolation,
+    mrgAssumptionViolation,
+    mrgFalse,
+    mrgInL,
+    mrgInR,
+    mrgJust,
+    mrgLeft,
+    mrgNothing,
+    mrgRight,
+    mrgTrue,
+    mrgTuple2,
+    mrgTuple3,
+    mrgUnit,
+  )
 import Grisette.Core.Control.Exception
+  ( AssertionError (..),
+    VerificationConditions (..),
+    symAssert,
+    symAssume,
+  )
 import Grisette.Core.Control.Monad.CBMCExcept
+  ( CBMCEither (..),
+    CBMCExceptT (..),
+    cbmcExcept,
+    mapCBMCExceptT,
+    withCBMCExceptT,
+  )
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
-import Grisette.Core.Control.Monad.Union
+  ( MonadParallelUnion (..),
+  )
+import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Control.Monad.UnionM
+  ( IsConcrete,
+    UnionM,
+    liftToMonadUnion,
+    unionSize,
+    (#~),
+  )
 import Grisette.Core.Data.Class.BitVector
+  ( BV (..),
+    SizedBV (..),
+    bvExtract,
+    sizedBVExtract,
+  )
 import Grisette.Core.Data.Class.Bool
+  ( ITEOp (..),
+    LogicalOp (..),
+    SEq (..),
+    SymBoolOp,
+  )
 import Grisette.Core.Data.Class.CEGISSolver
+  ( CEGISCondition (..),
+    CEGISSolver (..),
+    cegis,
+    cegisExcept,
+    cegisExceptMultiInputs,
+    cegisExceptStdVC,
+    cegisExceptStdVCMultiInputs,
+    cegisExceptVC,
+    cegisExceptVCMultiInputs,
+    cegisPostCond,
+    cegisPrePost,
+  )
 import Grisette.Core.Data.Class.Error
+  ( TransformError (..),
+    symAssertTransformableError,
+    symAssertWith,
+    symThrowTransformableError,
+  )
 import Grisette.Core.Data.Class.Evaluate
+  ( EvaluateSym (..),
+    evaluateSymToCon,
+  )
 import Grisette.Core.Data.Class.ExtractSymbolics
-import Grisette.Core.Data.Class.Function
-import Grisette.Core.Data.Class.GPretty
+  ( ExtractSymbolics (..),
+  )
+import Grisette.Core.Data.Class.Function (Function (..))
+import Grisette.Core.Data.Class.GPretty (GPretty (..))
 import Grisette.Core.Data.Class.GenSym
+  ( EnumGenBound (..),
+    EnumGenUpperBound (..),
+    Fresh,
+    FreshIdent (..),
+    FreshIndex (..),
+    FreshT,
+    GenSym (..),
+    GenSymSimple (..),
+    ListSpec (..),
+    MonadFresh (..),
+    SimpleListSpec (..),
+    choose,
+    chooseFresh,
+    chooseSimple,
+    chooseSimpleFresh,
+    chooseUnion,
+    chooseUnionFresh,
+    derivedNoSpecFresh,
+    derivedNoSpecSimpleFresh,
+    derivedSameShapeSimpleFresh,
+    genSym,
+    genSymSimple,
+    name,
+    nameWithInfo,
+    runFresh,
+    runFreshT,
+  )
 import Grisette.Core.Data.Class.Mergeable
+  ( DynamicSortedIdx (..),
+    Mergeable (..),
+    Mergeable1 (..),
+    Mergeable2 (..),
+    Mergeable3 (..),
+    MergingStrategy (..),
+    StrategyList (..),
+    buildStrategyList,
+    derivedRootStrategy,
+    product2Strategy,
+    resolveStrategy,
+    resolveStrategy',
+    rootStrategy1,
+    rootStrategy2,
+    rootStrategy3,
+    wrapStrategy,
+  )
 import Grisette.Core.Data.Class.ModelOps
-import Grisette.Core.Data.Class.SOrd
+  ( ModelOps (..),
+    ModelRep (..),
+    SymbolSetOps (..),
+    SymbolSetRep (..),
+  )
+import Grisette.Core.Data.Class.SOrd (SOrd (..))
 import Grisette.Core.Data.Class.SafeArith
+  ( SafeDivision (..),
+    SafeLinearArith (..),
+    SymIntegerOp,
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
+  ( SimpleMergeable (..),
+    SimpleMergeable1 (..),
+    SimpleMergeable2 (..),
+    UnionLike (..),
+    UnionPrjOp (..),
+    merge,
+    mrgIf,
+    mrgIte1,
+    mrgIte2,
+    mrgSingle,
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
+    simpleMerge,
+    pattern IfU,
+    pattern SingleU,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (..), pattern Con)
 import Grisette.Core.Data.Class.Solver
+  ( Solver (..),
+    UnionWithExcept (..),
+    solveExcept,
+    solveMultiExcept,
+  )
 import Grisette.Core.Data.Class.Substitute
-import Grisette.Core.Data.Class.ToCon
-import Grisette.Core.Data.Class.ToSym
+  ( SubstituteSym (..),
+    SubstituteSym' (..),
+  )
+import Grisette.Core.Data.Class.ToCon (ToCon (..))
+import Grisette.Core.Data.Class.ToSym (ToSym (..))
 import Grisette.Core.Data.FileLocation
+  ( FileLocation (..),
+    ilocsym,
+    nameWithLoc,
+    slocsym,
+  )
 import Grisette.Core.Data.MemoUtils
-import Grisette.Core.TH
+  ( htmemo,
+    htmemo2,
+    htmemo3,
+    htmemoFix,
+    htmup,
+  )
+import Grisette.Core.TH (makeUnionWrapper, makeUnionWrapper')
 
 -- $setup
 -- >>> import Grisette.Core

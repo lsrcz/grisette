@@ -3,12 +3,28 @@
 
 module Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests) where
 
-import Grisette.Core.Data.BV
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( andBitsTerm,
+    complementBitsTerm,
+    conTerm,
+    orBitsTerm,
+    rotateBitsTerm,
+    shiftBitsTerm,
+    ssymTerm,
+    xorBitsTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateBitsTerm,
+    pevalShiftBitsTerm,
+    pevalXorBitsTerm,
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 bitsTests :: TestTree
 bitsTests =

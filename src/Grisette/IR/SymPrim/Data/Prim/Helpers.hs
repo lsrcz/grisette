@@ -24,10 +24,14 @@ module Grisette.IR.SymPrim.Data.Prim.Helpers
   )
 where
 
-import Data.Typeable
+import Data.Typeable (Typeable, cast)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( Term (BinaryTerm, TernaryTerm, UnaryTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-import Unsafe.Coerce
+  ( castTerm,
+  )
+import Unsafe.Coerce (unsafeCoerce)
 
 unsafeUnaryTermView :: forall a b tag. (Typeable tag) => Term a -> Maybe (tag, Term b)
 unsafeUnaryTermView (UnaryTerm _ (tag :: tagt) t1) =

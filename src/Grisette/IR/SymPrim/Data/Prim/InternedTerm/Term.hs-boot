@@ -28,17 +28,25 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   )
 where
 
-import Control.DeepSeq
-import Data.Bits
-import Data.Hashable
-import Data.Interned
-import Data.Kind
-import GHC.TypeNats
+import Control.DeepSeq (NFData)
+import Data.Bits (Bits)
+import Data.Hashable (Hashable)
+import Data.Interned (Cache, Id)
+import Data.Kind (Constraint)
+import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
+  ( BVSignConversion,
+    SizedBV,
+  )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
+  ( ModelValue,
+    toModelValue,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
-import Language.Haskell.TH.Syntax
-import Type.Reflection
+  ( type (=->),
+  )
+import Language.Haskell.TH.Syntax (Lift)
+import Type.Reflection (TypeRep, Typeable)
 
 class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim t where
   type PrimConstraint t :: Constraint

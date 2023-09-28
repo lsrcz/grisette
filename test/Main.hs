@@ -22,28 +22,42 @@ import Grisette.Lib.Data.FoldableTests
 import Grisette.Lib.Data.TraversableTests
 -}
 
-import Grisette.Backend.SBV.Data.SMT.CEGISTests
+import Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests)
 import Grisette.Backend.SBV.Data.SMT.LoweringTests
+  ( loweringTests,
+  )
 import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
-import Grisette.Core.Control.Monad.UnionMTests
+  ( termRewritingTests,
+  )
+import Grisette.Core.Control.Monad.UnionMTests (unionMTests)
 import qualified Grisette.Core.Data.BVTests
-import Grisette.Core.Data.Class.GPrettyTests
+import Grisette.Core.Data.Class.GPrettyTests (gprettyTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
-import Grisette.IR.SymPrim.Data.Prim.BitsTests
-import Grisette.IR.SymPrim.Data.Prim.BoolTests
+import Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests)
+import Grisette.IR.SymPrim.Data.Prim.BoolTests (boolTests)
 import Grisette.IR.SymPrim.Data.Prim.IntegralTests
-import Grisette.IR.SymPrim.Data.Prim.ModelTests
-import Grisette.IR.SymPrim.Data.Prim.NumTests
+  ( integralTests,
+  )
+import Grisette.IR.SymPrim.Data.Prim.ModelTests (modelTests)
+import Grisette.IR.SymPrim.Data.Prim.NumTests (numTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.TabularFunTests
-import Grisette.IR.SymPrim.Data.SymPrimTests
+import Grisette.IR.SymPrim.Data.SymPrimTests (symPrimTests)
 import qualified Grisette.IR.SymPrim.Data.TabularFunTests
 import Test.Tasty
-import Test.Tasty.Ingredients
+  ( TestTree,
+    defaultMainWithIngredients,
+    testGroup,
+  )
+import Test.Tasty.Ingredients (composeReporters)
 import qualified Test.Tasty.Ingredients.ConsoleReporter as ConsoleReporter
 import qualified Test.Tasty.Runners.Reporter as Reporter
 
 main :: IO ()
-main = defaultMainWithIngredients [composeReporters Reporter.ingredient ConsoleReporter.consoleTestReporter] tests
+main =
+  defaultMainWithIngredients
+    [ composeReporters Reporter.ingredient ConsoleReporter.consoleTestReporter
+    ]
+    tests
 
 tests :: TestTree
 tests =

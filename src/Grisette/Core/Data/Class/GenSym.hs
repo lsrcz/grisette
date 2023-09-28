@@ -66,38 +66,97 @@ module Grisette.Core.Data.Class.GenSym
   )
 where
 
-import Control.DeepSeq
+import Control.DeepSeq (NFData (rnf))
 import Control.Monad.Except
-import Control.Monad.Identity
+  ( ExceptT (ExceptT),
+    MonadError (catchError, throwError),
+  )
+import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.RWS.Class
+  ( MonadRWS,
+    MonadReader (ask, local),
+    MonadState (get, put),
+    MonadWriter (listen, pass, writer),
+    asks,
+    gets,
+  )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
-import Control.Monad.Reader
-import Control.Monad.Signatures
+import Control.Monad.Reader (ReaderT (ReaderT))
+import Control.Monad.Signatures (Catch)
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Class
+  ( MonadTrans (lift),
+  )
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
-import Data.Bifunctor
+import Data.Bifunctor (Bifunctor (first))
 import qualified Data.ByteString as B
-import Data.Hashable
-import Data.Int
-import Data.String
+import Data.Hashable (Hashable (hashWithSalt))
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.String (IsString (fromString))
 import qualified Data.Text as T
 import Data.Typeable
-import Data.Word
-import GHC.TypeNats
-import Generics.Deriving hiding (index)
-import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM
-import Grisette.Core.Data.BV
+  ( Proxy (Proxy),
+    Typeable,
+    eqT,
+    typeRep,
+    type (:~:) (Refl),
+  )
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.TypeNats (KnownNat, Nat, type (<=))
+import Generics.Deriving
+  ( Generic (Rep, from, to),
+    K1 (K1),
+    M1 (M1),
+    U1 (U1),
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
+import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.Mergeable
+  ( Mergeable (rootStrategy),
+    Mergeable1 (liftRootStrategy),
+    Mergeable2 (liftRootStrategy2),
+    MergingStrategy (SimpleStrategy),
+    rootStrategy1,
+    wrapStrategy,
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
+  ( SimpleMergeable (mrgIte),
+    SimpleMergeable1 (liftMrgIte),
+    UnionLike (mergeWithStrategy, mrgIfWithStrategy, single, unionIf),
+    merge,
+    mrgIf,
+    mrgSingle,
+  )
 import Grisette.Core.Data.Class.Solvable
+  ( Solvable (iinfosym, isym),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.Utils
-import Language.Haskell.TH.Syntax hiding (lift)
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool,
+    SymIntN,
+    SymInteger,
+    SymWordN,
+    type (-~>),
+    type (=~>),
+  )
+import Grisette.Utils.Parameterized
+  ( KnownProof (KnownProof),
+    LeqProof (LeqProof),
+    unsafeKnownProof,
+    unsafeLeqProof,
+  )
+import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
 -- $setup
 -- >>> import Grisette.Core

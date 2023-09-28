@@ -65,21 +65,79 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 where
 
-import Control.DeepSeq
-import Data.Array
-import Data.Bits
+import Control.DeepSeq (NFData)
+import Data.Array ((!))
+import Data.Bits (Bits)
 import qualified Data.HashMap.Strict as M
-import Data.Hashable
+import Data.Hashable (Hashable (hash))
 import Data.IORef (atomicModifyIORef')
 import Data.Interned
+  ( Interned (Uninterned, cache, cacheWidth, describe, identify),
+  )
 import Data.Interned.Internal
+  ( Cache (getCache),
+    CacheState (CacheState),
+  )
 import GHC.IO (unsafeDupablePerformIO)
-import GHC.TypeNats
+import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
+  ( BVSignConversion,
+    SizedBV,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
-import Language.Haskell.TH.Syntax
-import Type.Reflection
+  ( BinaryOp,
+    SupportedPrim,
+    Term,
+    TernaryOp,
+    TypedSymbol (IndexedSymbol, SimpleSymbol, WithInfo),
+    UTerm
+      ( UAbsNumTerm,
+        UAddNumTerm,
+        UAndBitsTerm,
+        UAndTerm,
+        UBVConcatTerm,
+        UBVExtendTerm,
+        UBVSelectTerm,
+        UBVToSignedTerm,
+        UBVToUnsignedTerm,
+        UBinaryTerm,
+        UComplementBitsTerm,
+        UConTerm,
+        UDivBoundedIntegralTerm,
+        UDivIntegralTerm,
+        UEqvTerm,
+        UGeneralFunApplyTerm,
+        UITETerm,
+        ULENumTerm,
+        ULTNumTerm,
+        UModBoundedIntegralTerm,
+        UModIntegralTerm,
+        UNotTerm,
+        UOrBitsTerm,
+        UOrTerm,
+        UQuotBoundedIntegralTerm,
+        UQuotIntegralTerm,
+        URemBoundedIntegralTerm,
+        URemIntegralTerm,
+        URotateBitsTerm,
+        UShiftBitsTerm,
+        USignumNumTerm,
+        USymTerm,
+        UTabularFunApplyTerm,
+        UTernaryTerm,
+        UTimesNumTerm,
+        UUMinusNumTerm,
+        UUnaryTerm,
+        UXorBitsTerm
+      ),
+    UnaryOp,
+    type (-->),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun
+  ( type (=->),
+  )
+import Language.Haskell.TH.Syntax (Lift)
+import Type.Reflection (Typeable, typeRep)
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go

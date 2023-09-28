@@ -8,9 +8,11 @@
 -- Portability :   GHC only
 module Grisette.Qualified.ParallelUnionDo ((>>=), (>>)) where
 
-import Control.Parallel.Strategies
+import Control.Parallel.Strategies (NFData)
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
-import Grisette.Core.Data.Class.Mergeable
+  ( MonadParallelUnion (parBindUnion),
+  )
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Prelude (const, ($))
 
 (>>=) :: (MonadParallelUnion m, Mergeable b, NFData b) => m a -> (a -> m b) -> m b

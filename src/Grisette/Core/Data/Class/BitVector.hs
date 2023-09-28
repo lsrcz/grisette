@@ -28,9 +28,17 @@ module Grisette.Core.Data.Class.BitVector
   )
 where
 
-import Data.Proxy
-import GHC.TypeNats
+import Data.Proxy (Proxy (Proxy))
+import GHC.TypeNats (KnownNat, type (+), type (-), type (<=))
 import Grisette.Utils.Parameterized
+  ( KnownProof (KnownProof),
+    LeqProof (LeqProof),
+    addNat,
+    hasRepr,
+    natRepr,
+    subNat,
+    unsafeLeqProof,
+  )
 
 -- $setup
 -- >>> import Grisette.Core

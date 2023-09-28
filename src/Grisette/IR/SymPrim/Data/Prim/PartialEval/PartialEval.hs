@@ -31,8 +31,8 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
   )
 where
 
-import Control.Monad.Except
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Control.Monad.Except (MonadError (catchError))
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 
 type PartialFun a b = a -> Maybe b
 

@@ -5,16 +5,39 @@
 
 module Grisette.IR.SymPrim.Data.Prim.IntegralTests (integralTests) where
 
-import Control.DeepSeq
-import Control.Exception
-import Data.Proxy
-import Grisette.Core.Data.BV
+import Control.DeepSeq (NFData (rnf), force)
+import Control.Exception (ArithException, catch, evaluate)
+import Data.Proxy (Proxy (Proxy))
+import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    divBoundedIntegralTerm,
+    divIntegralTerm,
+    modIntegralTerm,
+    quotBoundedIntegralTerm,
+    quotIntegralTerm,
+    remIntegralTerm,
+    ssymTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
+  )
+import Test.Tasty (TestName, TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 import Test.Tasty.QuickCheck
+  ( Arbitrary,
+    ioProperty,
+    testProperty,
+  )
 
 newtype AEWrapper = AEWrapper ArithException deriving (Eq)
 

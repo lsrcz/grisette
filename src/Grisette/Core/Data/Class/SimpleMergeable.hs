@@ -46,26 +46,53 @@ module Grisette.Core.Data.Class.SimpleMergeable
   )
 where
 
-import Control.Monad.Except
+import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
+  ( Identity (Identity),
+    IdentityT (IdentityT),
+  )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
-import Control.Monad.Reader
+import Control.Monad.Reader (ReaderT (ReaderT))
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Cont (ContT (ContT))
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
-import Data.Kind
+import Data.Kind (Type)
 import GHC.Generics
-import GHC.TypeNats
-import Generics.Deriving
-import Grisette.Core.Data.Class.Bool
-import Grisette.Core.Data.Class.Function
+  ( Generic (Rep, from, to),
+    K1 (K1),
+    M1 (M1),
+    U1,
+    V1,
+    type (:*:) ((:*:)),
+  )
+import GHC.TypeNats (KnownNat, type (<=))
+import Generics.Deriving (Default (Default))
+import Grisette.Core.Data.Class.Bool (ITEOp (ites))
+import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.Mergeable
+  ( Mergeable (rootStrategy),
+    Mergeable',
+    Mergeable1 (liftRootStrategy),
+    Mergeable2 (liftRootStrategy2),
+    Mergeable3 (liftRootStrategy3),
+    MergingStrategy (SimpleStrategy),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SymBool,
+    SymIntN,
+    SymInteger,
+    SymWordN,
+    type (-~>),
+    type (=~>),
+  )
 
 -- $setup
 -- >>> import Grisette.Core

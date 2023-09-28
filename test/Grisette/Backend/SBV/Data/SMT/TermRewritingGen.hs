@@ -42,20 +42,103 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
   )
 where
 
-import Data.Bits
-import Data.Data
-import Data.Kind
-import GHC.TypeLits
-import Grisette.Core.Data.Class.BitVector
+import Data.Bits (Bits)
+import Data.Data (Proxy (Proxy), Typeable)
+import Data.Kind (Type)
+import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
+import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( absNumTerm,
+    addNumTerm,
+    andBitsTerm,
+    andTerm,
+    bvconcatTerm,
+    bvextendTerm,
+    bvselectTerm,
+    complementBitsTerm,
+    conTerm,
+    constructBinary,
+    constructTernary,
+    constructUnary,
+    divBoundedIntegralTerm,
+    divIntegralTerm,
+    eqvTerm,
+    iteTerm,
+    leNumTerm,
+    ltNumTerm,
+    modBoundedIntegralTerm,
+    modIntegralTerm,
+    notTerm,
+    orBitsTerm,
+    orTerm,
+    quotBoundedIntegralTerm,
+    quotIntegralTerm,
+    remBoundedIntegralTerm,
+    remIntegralTerm,
+    rotateBitsTerm,
+    shiftBitsTerm,
+    signumNumTerm,
+    ssymTerm,
+    timesNumTerm,
+    uminusNumTerm,
+    xorBitsTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( BinaryOp (partialEvalBinary),
+    SupportedPrim,
+    Term,
+    TernaryOp (partialEvalTernary),
+    UnaryOp (partialEvalUnary),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+  ( pformat,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateBitsTerm,
+    pevalShiftBitsTerm,
+    pevalXorBitsTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalAndTerm,
+    pevalEqvTerm,
+    pevalITETerm,
+    pevalNotTerm,
+    pevalOrTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModBoundedIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemBoundedIntegralTerm,
+    pevalRemIntegralTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+  )
 import Test.Tasty.QuickCheck
+  ( Arbitrary (arbitrary),
+    Gen,
+    frequency,
+    oneof,
+    sized,
+  )
 
 class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   norewriteVer :: a -> Term b

@@ -4,9 +4,9 @@
 
 module Grisette.Core.Control.Monad.UnionM (UnionM (..)) where
 
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Union
+import Grisette.Core.Data.Class.Mergeable (MergingStrategy)
+import Grisette.Core.Data.Class.SimpleMergeable (UnionLike)
+import Grisette.Core.Data.Union (Union)
 
 data UnionM a where
   -- | 'UnionM' with no 'Mergeable' knowledge.

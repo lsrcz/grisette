@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -12,21 +13,122 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution (substTerm) where
+module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
+  ( substTerm,
+  )
+where
 
-import Grisette.Core.Data.MemoUtils
+import Grisette.Core.Data.MemoUtils (htmemo)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( BinaryOp (partialEvalBinary),
+    SupportedPrim,
+    Term
+      ( AbsNumTerm,
+        AddNumTerm,
+        AndBitsTerm,
+        AndTerm,
+        BVConcatTerm,
+        BVExtendTerm,
+        BVSelectTerm,
+        BVToSignedTerm,
+        BVToUnsignedTerm,
+        BinaryTerm,
+        ComplementBitsTerm,
+        ConTerm,
+        DivBoundedIntegralTerm,
+        DivIntegralTerm,
+        EqvTerm,
+        GeneralFunApplyTerm,
+        ITETerm,
+        LENumTerm,
+        LTNumTerm,
+        ModBoundedIntegralTerm,
+        ModIntegralTerm,
+        NotTerm,
+        OrBitsTerm,
+        OrTerm,
+        QuotBoundedIntegralTerm,
+        QuotIntegralTerm,
+        RemBoundedIntegralTerm,
+        RemIntegralTerm,
+        RotateBitsTerm,
+        ShiftBitsTerm,
+        SignumNumTerm,
+        SymTerm,
+        TabularFunApplyTerm,
+        TernaryTerm,
+        TimesNumTerm,
+        UMinusNumTerm,
+        UnaryTerm,
+        XorBitsTerm
+      ),
+    TernaryOp (partialEvalTernary),
+    TypedSymbol,
+    UnaryOp (partialEvalUnary),
+    someTypedSymbol,
+    type (-->) (GeneralFun),
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+    pevalBVToSignedTerm,
+    pevalBVToUnsignedTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateBitsTerm,
+    pevalShiftBitsTerm,
+    pevalXorBitsTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalAndTerm,
+    pevalEqvTerm,
+    pevalITETerm,
+    pevalNotTerm,
+    pevalOrTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
+  ( pevalGeneralFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModBoundedIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemBoundedIntegralTerm,
+    pevalRemIntegralTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
+  ( pevalTabularFunApplyTerm,
+  )
 import Type.Reflection
-import Unsafe.Coerce
+  ( TypeRep,
+    eqTypeRep,
+    typeRep,
+    pattern App,
+    type (:~~:) (HRefl),
+  )
+import Unsafe.Coerce (unsafeCoerce)
 
 substTerm :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
 substTerm sym term = gov

@@ -1,5 +1,8 @@
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
+
 -- |
--- Module      :   Grisette.Core
+-- Module      :   Grisette
 -- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --

@@ -5,13 +5,23 @@
 
 module Grisette.IR.SymPrim.Data.Prim.BVTests (bvTests) where
 
-import Data.Proxy
-import Grisette.Core.Data.BV
+import Data.Proxy (Proxy (Proxy))
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( bvconcatTerm,
+    bvextendTerm,
+    bvselectTerm,
+    conTerm,
+    ssymTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 bvTests :: TestTree
 bvTests =

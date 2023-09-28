@@ -39,16 +39,20 @@ module Grisette.Core.Data.Class.Solver
   )
 where
 
-import Control.DeepSeq
-import Control.Monad.Except
-import Data.Hashable
-import Generics.Deriving
+import Control.DeepSeq (NFData)
+import Control.Monad.Except (ExceptT, runExceptT)
+import Data.Hashable (Hashable)
+import GHC.Generics (Generic)
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.IR.SymPrim.Data.Prim.Model
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
-import Language.Haskell.TH.Syntax
+  ( UnionPrjOp,
+    simpleMerge,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Model (Model)
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Language.Haskell.TH.Syntax (Lift)
 
-data SolveInternal = SolveInternal deriving (Eq, Show, Ord, Generic, Hashable, Lift, NFData)
+data SolveInternal = SolveInternal
+  deriving (Eq, Show, Ord, Generic, Hashable, Lift, NFData)
 
 -- $setup
 -- >>> import Grisette.Core

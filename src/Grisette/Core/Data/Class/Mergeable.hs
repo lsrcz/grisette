@@ -51,35 +51,90 @@ module Grisette.Core.Data.Class.Mergeable
 where
 
 import Control.Exception
-import Control.Monad.Cont
-import Control.Monad.Except
+  ( ArithException
+      ( Denormal,
+        DivideByZero,
+        LossOfPrecision,
+        Overflow,
+        RatioZeroDenominator,
+        Underflow
+      ),
+  )
+import Control.Monad.Cont (ContT (ContT))
+import Control.Monad.Except (ExceptT (ExceptT), runExceptT)
 import Control.Monad.Identity
+  ( Identity (Identity, runIdentity),
+    IdentityT (IdentityT, runIdentityT),
+  )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
-import Control.Monad.Reader
+import Control.Monad.Reader (ReaderT (ReaderT, runReaderT))
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Classes
-import Data.Functor.Sum
-import Data.Int
-import Data.Kind
+  ( Eq1,
+    Ord1,
+    Show1,
+    compare1,
+    eq1,
+    showsPrec1,
+  )
+import Data.Functor.Sum (Sum (InL, InR))
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Monoid as Monoid
 import qualified Data.Text as T
 import Data.Typeable
-import Data.Word
-import GHC.Natural
-import GHC.TypeNats
+  ( Proxy (Proxy),
+    Typeable,
+    eqT,
+    type (:~:) (Refl),
+  )
+import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.Natural (Natural)
+import GHC.TypeNats (KnownNat, natVal, type (<=))
 import Generics.Deriving
+  ( Default (Default),
+    Default1 (Default1),
+    Generic (Rep, from, to),
+    Generic1 (Rep1, from1, to1),
+    K1 (K1, unK1),
+    M1 (M1, unM1),
+    Par1 (Par1, unPar1),
+    Rec1 (Rec1, unRec1),
+    U1,
+    V1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
 import Grisette.Core.Data.BV
-import Grisette.Core.Data.Class.Bool
+  ( BitwidthMismatch,
+    IntN (IntN),
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN (WordN),
+  )
+import Grisette.Core.Data.Class.Bool (ITEOp (ites))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
-import Grisette.Utils
-import Unsafe.Coerce
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool,
+    SymIntN,
+    SymInteger,
+    SymWordN,
+    type (-~>),
+    type (=~>),
+  )
+import Grisette.Utils.Parameterized (unsafeAxiom)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Helper type for combining arbitrary number of indices into one.
 -- Useful when trying to write efficient merge strategy for lists/vectors.

@@ -16,13 +16,20 @@
 module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches (typeMemoizedCache) where
 
 import Control.Concurrent
-import Data.Data
+  ( forkIO,
+    newEmptyMVar,
+    putMVar,
+    readMVar,
+    takeMVar,
+    tryPutMVar,
+  )
+import Data.Data (Proxy (Proxy), TypeRep, Typeable, typeRep)
 import qualified Data.HashMap.Strict as M
-import Data.IORef
-import Data.Interned
+import Data.IORef (IORef, atomicModifyIORef', newIORef)
+import Data.Interned (Cache, Interned, mkCache)
 import GHC.Base (Any)
-import GHC.IO
-import Unsafe.Coerce
+import GHC.IO (unsafeDupablePerformIO, unsafePerformIO)
+import Unsafe.Coerce (unsafeCoerce)
 
 mkOnceIO :: IO a -> IO (IO a)
 mkOnceIO io = do

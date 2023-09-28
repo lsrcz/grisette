@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
@@ -26,6 +27,12 @@ where
 
 import Data.Typeable (cast)
 import Type.Reflection
+  ( TypeRep,
+    Typeable,
+    eqTypeRep,
+    typeRep,
+    type (:~~:) (HRefl),
+  )
 
 pattern Dyn :: (Typeable a, Typeable b) => a -> b
 pattern Dyn x <- (cast -> Just x)

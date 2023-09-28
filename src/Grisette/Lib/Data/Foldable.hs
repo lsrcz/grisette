@@ -22,11 +22,15 @@ module Grisette.Lib.Data.Foldable
   )
 where
 
-import Control.Monad
-import Grisette.Core.Control.Monad.Union
-import Grisette.Core.Data.Class.Mergeable
-import Grisette.Core.Data.Class.SimpleMergeable
+import Control.Monad (MonadPlus)
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SimpleMergeable (merge)
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
+  ( mrgMplus,
+    mrgMzero,
+    mrgReturn,
+  )
 
 -- | 'Data.Foldable.foldlM' with 'MergingStrategy' knowledge propagation.
 mrgFoldlM :: (MonadUnion m, Mergeable b, Foldable t) => (b -> a -> m b) -> b -> t a -> m b

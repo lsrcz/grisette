@@ -54,15 +54,28 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 where
 
-import Control.DeepSeq
-import Data.Bits
-import Data.Hashable
-import Data.Typeable
-import GHC.TypeNats
+import Control.DeepSeq (NFData)
+import Data.Bits (Bits)
+import Data.Hashable (Hashable)
+import Data.Typeable (Typeable)
+import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
+  ( BVSignConversion,
+    SizedBV,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( BinaryOp,
+    SupportedPrim,
+    Term,
+    TernaryOp,
+    TypedSymbol,
+    UnaryOp,
+    type (-->),
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
-import Language.Haskell.TH.Syntax
+  ( type (=->),
+  )
+import Language.Haskell.TH.Syntax (Lift)
 
 constructUnary ::
   forall tag arg t.

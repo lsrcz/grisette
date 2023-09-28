@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -19,12 +18,11 @@ module Grisette.IR.SymPrim.Data.TabularFun
   )
 where
 
-import Control.DeepSeq
-import Data.Hashable
-import GHC.Generics
-import Grisette.Core.Data.Class.Function
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Language.Haskell.TH.Syntax
+import Control.DeepSeq (NFData, NFData1)
+import Data.Hashable (Hashable)
+import GHC.Generics (Generic, Generic1)
+import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -45,13 +43,6 @@ data (=->) a b = TabularFun {funcTable :: [(a, b)], defaultFuncValue :: b}
   deriving (Show, Eq, Generic, Generic1, Lift, NFData, NFData1)
 
 infixr 0 =->
-
-instance
-  (SupportedPrim a, SupportedPrim b) =>
-  SupportedPrim (a =-> b)
-  where
-  type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = TabularFun [] (defaultValue @b)
 
 instance (Eq a) => Function (a =-> b) where
   type Arg (a =-> b) = a

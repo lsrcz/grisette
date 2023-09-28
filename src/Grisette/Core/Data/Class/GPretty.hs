@@ -18,26 +18,68 @@ module Grisette.Core.Data.Class.GPretty
   )
 where
 
-import Control.Monad.Except
+import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
-import Control.Monad.Trans.Maybe
+  ( Identity (Identity),
+    IdentityT (IdentityT),
+  )
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Sum
-import Data.Int
-import Data.String
+import Data.Functor.Sum (Sum)
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.String (IsString (fromString))
 import qualified Data.Text as T
-import Data.Word
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
-import GHC.TypeLits
-import Generics.Deriving hiding (isNullary)
-import Grisette.Core.Data.BV
+  ( C,
+    C1,
+    Constructor (conFixity, conIsRecord, conName),
+    D,
+    Fixity (Infix, Prefix),
+    Generic (Rep, from),
+    K1 (K1),
+    M1 (M1),
+    S,
+    Selector (selName),
+    U1 (U1),
+    V1,
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
+import GHC.TypeLits (KnownNat, type (<=))
+import Generics.Deriving (Default (Default, unDefault))
+import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter
+  ( (<+>),
+    align,
+    encloseSep,
+    flatAlt,
+    group,
+    nest,
+    vcat,
+    viaShow,
+    vsep,
+    Doc,
+    Pretty(pretty),
+  )
 #else
 import Data.Text.Prettyprint.Doc
+  ( (<+>),
+    align,
+    encloseSep,
+    flatAlt,
+    group,
+    nest,
+    vcat,
+    viaShow,
+    vsep,
+    Doc,
+    Pretty(pretty),
+  )
 #endif
 
 glist :: [Doc ann] -> Doc ann

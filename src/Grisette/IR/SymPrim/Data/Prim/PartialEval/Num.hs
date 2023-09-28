@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -31,12 +32,33 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   )
 where
 
-import Data.Typeable
+import Data.Typeable (Typeable, cast, eqT, type (:~:) (Refl))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( absNumTerm,
+    addNumTerm,
+    conTerm,
+    leNumTerm,
+    ltNumTerm,
+    signumNumTerm,
+    timesNumTerm,
+    uminusNumTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term
+      ( AbsNumTerm,
+        AddNumTerm,
+        ConTerm,
+        TimesNumTerm,
+        UMinusNumTerm
+      ),
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-import Grisette.IR.SymPrim.Data.Prim.Utils
-import Unsafe.Coerce
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Utils (pattern Dyn)
+import Unsafe.Coerce (unsafeCoerce)
 
 numConTermView :: (Num b, Typeable b) => Term a -> Maybe b
 numConTermView (ConTerm _ b) = cast b

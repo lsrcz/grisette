@@ -11,13 +11,26 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun (pevalGeneralFunApplyTerm) where
+module Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
+  ( pevalGeneralFunApplyTerm,
+  )
+where
 
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( generalFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (ConTerm, ITETerm),
+    type (-->) (GeneralFun),
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
+  ( substTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalITETerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+  ( totalize2,
+  )
 
 pevalGeneralFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a --> b) -> Term a -> Term b
 pevalGeneralFunApplyTerm = totalize2 doPevalGeneralFunApplyTerm generalFunApplyTerm

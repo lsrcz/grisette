@@ -9,22 +9,75 @@
 
 module Grisette.Backend.SBV.Data.SMT.LoweringTests (loweringTests) where
 
-import Control.Monad.Trans
+import Control.Monad.Trans (MonadTrans (lift))
 import Data.Bits
-import Data.Dynamic
+  ( Bits (complement, rotate, shift, xor, (.&.), (.|.)),
+  )
+import Data.Dynamic (Typeable, fromDynamic)
 import qualified Data.HashMap.Strict as M
-import Data.Proxy
+import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBV
-import Grisette.Backend.SBV.Data.SMT.Lowering
+import Grisette.Backend.SBV.Data.SMT.Lowering (lowerSinglePrim)
 import Grisette.Backend.SBV.Data.SMT.Solving
+  ( GrisetteSMTConfig (sbvConfig),
+    TermTy,
+    approx,
+    precise,
+  )
 import Grisette.Backend.SBV.Data.SMT.SymBiMap
-import Grisette.Core.Data.BV
+  ( SymBiMap (biMapToSBV),
+  )
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( absNumTerm,
+    addNumTerm,
+    andBitsTerm,
+    andTerm,
+    bvToSignedTerm,
+    bvToUnsignedTerm,
+    bvconcatTerm,
+    bvselectTerm,
+    bvsignExtendTerm,
+    bvzeroExtendTerm,
+    complementBitsTerm,
+    divBoundedIntegralTerm,
+    divIntegralTerm,
+    eqvTerm,
+    iteTerm,
+    leNumTerm,
+    ltNumTerm,
+    modBoundedIntegralTerm,
+    modIntegralTerm,
+    notTerm,
+    orBitsTerm,
+    orTerm,
+    quotBoundedIntegralTerm,
+    quotIntegralTerm,
+    remBoundedIntegralTerm,
+    remIntegralTerm,
+    rotateBitsTerm,
+    shiftBitsTerm,
+    signumNumTerm,
+    ssymTerm,
+    timesNumTerm,
+    uminusNumTerm,
+    xorBitsTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Test.Tasty
+  ( SupportedPrim,
+    Term,
+  )
+import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit
+  ( Assertion,
+    HasCallStack,
+    assertFailure,
+    testCase,
+  )
 
 testUnaryOpLowering ::
   forall a b as n.

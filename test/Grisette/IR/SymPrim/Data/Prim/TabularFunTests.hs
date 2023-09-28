@@ -4,12 +4,23 @@
 module Grisette.IR.SymPrim.Data.Prim.TabularFunTests (tabularFunTests) where
 
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( conTerm,
+    ssymTerm,
+    tabularFunApplyTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+    pevalITETerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
+  ( pevalTabularFunApplyTerm,
+  )
 import Grisette.IR.SymPrim.Data.TabularFun
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( type (=->) (TabularFun),
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 tabularFunTests :: TestTree
 tabularFunTests =

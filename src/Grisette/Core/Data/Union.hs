@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -26,22 +27,47 @@ module Grisette.Core.Data.Union
   )
 where
 
-import Control.DeepSeq
+import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
 import Data.Functor.Classes
-import Data.Hashable
-import GHC.Generics
+  ( Eq1 (liftEq),
+    Show1 (liftShowsPrec),
+    showsPrec1,
+    showsUnaryWith,
+  )
+import Data.Hashable (Hashable (hashWithSalt))
+import GHC.Generics (Generic, Generic1)
 import Grisette.Core.Data.Class.Bool
+  ( ITEOp (ites),
+    LogicalOp (nots, (&&~), (||~)),
+  )
 import Grisette.Core.Data.Class.GPretty
+  ( GPretty (gprettyPrec),
+    condEnclose,
+  )
 import Grisette.Core.Data.Class.Mergeable
+  ( Mergeable (rootStrategy),
+    Mergeable1 (liftRootStrategy),
+    MergingStrategy (NoStrategy, SimpleStrategy, SortedStrategy),
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
-import Grisette.Core.Data.Class.Solvable
+  ( SimpleMergeable (mrgIte),
+    SimpleMergeable1 (liftMrgIte),
+    UnionLike (mergeWithStrategy, mrgIfWithStrategy, mrgSingleWithStrategy, single, unionIf),
+    UnionPrjOp (ifView, leftMost, singleView),
+    mrgIf,
+  )
+import Grisette.Core.Data.Class.Solvable (pattern Con)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
-import Language.Haskell.TH.Syntax
+  ( AllSyms (allSymsS),
+    SomeSym (SomeSym),
+    SymBool,
+  )
+import Language.Haskell.TH.Syntax (Lift)
 
 #if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter
+import Prettyprinter (align, group, nest, vsep)
 #else
-import Data.Text.Prettyprint.Doc
+import Data.Text.Prettyprint.Doc (align, group, nest, vsep)
 #endif
 
 -- | The default union implementation.

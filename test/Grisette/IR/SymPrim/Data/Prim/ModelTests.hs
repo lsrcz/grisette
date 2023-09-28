@@ -3,18 +3,48 @@
 
 module Grisette.IR.SymPrim.Data.Prim.ModelTests (modelTests) where
 
-import Data.HashMap.Strict as M
+import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
-import Grisette.Core.Data.BV
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.ModelOps
+  ( ModelOps
+      ( emptyModel,
+        exact,
+        exceptFor,
+        extendTo,
+        insertValue,
+        restrictTo,
+        valueOf
+      ),
+    ModelRep (buildModel),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    ssymTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-import Grisette.IR.SymPrim.Data.Prim.Model as Model
-import Grisette.IR.SymPrim.Data.Prim.ModelValue
+  ( Term,
+    TypedSymbol (SimpleSymbol),
+    someTypedSymbol,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Model
+  ( Model (Model),
+    ModelValuePair ((::=)),
+    SymbolSet (SymbolSet),
+    equation,
+    evaluateTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.ModelValue (toModelValue)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+    pevalITETerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-import Test.Tasty
-import Test.Tasty.HUnit
+  ( pevalAddNumTerm,
+    pevalUMinusNumTerm,
+  )
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@=?))
 
 modelTests :: TestTree
 modelTests =
