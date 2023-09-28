@@ -170,7 +170,7 @@ import Data.Text.Prettyprint.Doc
 -- term.
 class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim t where
   type PrimConstraint t :: Constraint
-  type PrimConstraint t = ()
+  type PrimConstraint _ = ()
   default withPrim :: (PrimConstraint t) => proxy t -> ((PrimConstraint t) => a) -> a
   withPrim :: proxy t -> ((PrimConstraint t) => a) -> a
   withPrim _ i = i

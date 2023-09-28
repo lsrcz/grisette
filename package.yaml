@@ -76,6 +76,7 @@ ghc-options:
   - -Wmissing-home-modules
   - -Wmissing-import-lists
   - -Wpartial-fields
+  - -Wunused-type-patterns
 
 library:
   source-dirs: src
