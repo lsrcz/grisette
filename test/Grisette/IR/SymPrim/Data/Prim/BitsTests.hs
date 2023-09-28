@@ -23,10 +23,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
     pevalShiftBitsTerm,
     pevalXorBitsTerm,
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit ((@=?))
 
-bitsTests :: TestTree
+bitsTests :: Test
 bitsTests =
   testGroup
     "BitsTests"

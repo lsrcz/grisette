@@ -18,6 +18,7 @@ import qualified Data.HashMap.Strict as M
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBV
+import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV.Data.SMT.Lowering (lowerSinglePrim)
 import Grisette.Backend.SBV.Data.SMT.Solving
   ( GrisetteSMTConfig (sbvConfig),
@@ -71,13 +72,9 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
     Term,
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit
-  ( Assertion,
-    HasCallStack,
-    assertFailure,
-    testCase,
-  )
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit (Assertion, assertFailure)
 
 testUnaryOpLowering ::
   forall a b as n.
@@ -301,7 +298,7 @@ testTernaryOpLowering config f name sbvfun = do
 --   Assertion
 -- testTernaryOpLowering' config t = testTernaryOpLowering @a @b @c @d @as @bs @cs config (constructTernary t) (show t)
 
-loweringTests :: TestTree
+loweringTests :: Test
 loweringTests =
   let unboundedConfig = precise SBV.z3
       boundedConfig = approx (Proxy @5) SBV.z3

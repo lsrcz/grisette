@@ -27,10 +27,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAddNumTerm,
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit ((@=?))
 
-boolTests :: TestTree
+boolTests :: Test
 boolTests =
   testGroup
     "BoolTests"

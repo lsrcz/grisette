@@ -11,6 +11,7 @@ import Control.Monad.Except (ExceptT, runExceptT)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import Data.String (IsString (fromString))
+import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV (GrisetteSMTConfig, precise, z3)
 import Grisette.Core.Control.Exception
   ( VerificationConditions,
@@ -48,14 +49,9 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>),
     type (=~>),
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit
-  ( Assertion,
-    HasCallStack,
-    assertFailure,
-    testCase,
-    (@=?),
-  )
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit (Assertion, assertFailure, (@=?))
 
 testCegis :: (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a) => GrisetteSMTConfig i -> Bool -> a -> [SymBool] -> Assertion
 testCegis config shouldSuccess a bs = do
@@ -87,7 +83,7 @@ testCegis config shouldSuccess a bs = do
             (symAssert x)
             (go xs (i + 1))
 
-cegisTests :: TestTree
+cegisTests :: Test
 cegisTests =
   let unboundedConfig = precise SBV.z3 -- {SBV.verbose=True}
    in testGroup

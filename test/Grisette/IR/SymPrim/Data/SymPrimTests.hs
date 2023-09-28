@@ -189,18 +189,11 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (=~>),
   )
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
-import Test.Tasty (TestName, TestTree, testGroup)
-import Test.Tasty.HUnit
-  ( Assertion,
-    assertFailure,
-    testCase,
-    (@=?),
-  )
-import Test.Tasty.QuickCheck
-  ( Arbitrary,
-    ioProperty,
-    testProperty,
-  )
+import Test.Framework (Test, TestName, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit (Assertion, assertFailure, (@=?))
+import Test.QuickCheck (Arbitrary, ioProperty)
 
 newtype AEWrapper = AEWrapper ArithException deriving (Eq)
 
@@ -301,7 +294,7 @@ safeDivisionBoundedOnlyTests ::
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
-  [TestTree]
+  [Test]
 safeDivisionBoundedOnlyTests f f' cf pf =
   [ testCase "on concrete min divided by minus one" $ do
       sameSafeDiv minBound (-1) f cf
@@ -337,7 +330,7 @@ safeDivisionUnboundedOnlyTests ::
   (s -> s -> ExceptT ArithException UnionM s) ->
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (Term c -> Term c -> Term c) ->
-  [TestTree]
+  [Test]
 safeDivisionUnboundedOnlyTests f f' pf =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
@@ -363,7 +356,7 @@ safeDivisionGeneralTests ::
   (s -> s -> ExceptT ArithException UnionM s) ->
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
-  [TestTree]
+  [Test]
 safeDivisionGeneralTests transform f f' cf =
   [ testProperty "on concrete prop" $ \(i0 :: c0, j0 :: c0) ->
       ioProperty $ do
@@ -392,7 +385,7 @@ safeDivisionBoundedTests ::
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
-  TestTree
+  Test
 safeDivisionBoundedTests name transform f f' cf pf =
   testGroup name $
     safeDivisionGeneralTests transform f f' cf
@@ -407,7 +400,7 @@ safeDivisionUnboundedTests ::
   ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
-  TestTree
+  Test
 safeDivisionUnboundedTests name transform f f' cf pf =
   testGroup name $
     safeDivisionGeneralTests transform f f' cf
@@ -428,7 +421,7 @@ safeDivModBoundedOnlyTests ::
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
-  [TestTree]
+  [Test]
 safeDivModBoundedOnlyTests f f' cf pf1 pf2 =
   [ testCase "on concrete min divided by minus one" $ do
       sameSafeDivMod minBound (-1) f cf
@@ -480,7 +473,7 @@ safeDivModUnboundedOnlyTests ::
   ) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
-  [TestTree]
+  [Test]
 safeDivModUnboundedOnlyTests f f' pf1 pf2 =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
@@ -521,7 +514,7 @@ safeDivModGeneralTests ::
     ExceptT () UnionM (s, s)
   ) ->
   (c -> c -> (c, c)) ->
-  [TestTree]
+  [Test]
 safeDivModGeneralTests transform f f' cf =
   [ testProperty "on concrete" $ \(i0 :: c0, j0 :: c0) ->
       ioProperty $ do
@@ -558,7 +551,7 @@ safeDivModBoundedTests ::
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
-  TestTree
+  Test
 safeDivModBoundedTests name transform f f' cf pf1 pf2 =
   testGroup name $
     safeDivModGeneralTests transform f f' cf
@@ -581,13 +574,13 @@ safeDivModUnboundedTests ::
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
-  TestTree
+  Test
 safeDivModUnboundedTests name transform f f' cf pf1 pf2 =
   testGroup name $
     safeDivModGeneralTests transform f f' cf
       ++ safeDivModUnboundedOnlyTests f f' pf1 pf2
 
-symPrimTests :: TestTree
+symPrimTests :: Test
 symPrimTests =
   testGroup
     "SymPrimTests"

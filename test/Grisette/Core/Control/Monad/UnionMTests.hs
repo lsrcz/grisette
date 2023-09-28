@@ -9,10 +9,11 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (ssym))
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit ((@=?))
 
-unionMTests :: TestTree
+unionMTests :: Test
 unionMTests =
   testGroup
     "UnionMTests"

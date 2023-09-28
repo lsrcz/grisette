@@ -19,10 +19,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Grisette.IR.SymPrim.Data.TabularFun
   ( type (=->) (TabularFun),
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit ((@=?))
 
-tabularFunTests :: TestTree
+tabularFunTests :: Test
 tabularFunTests =
   testGroup
     "TabularFunTests"

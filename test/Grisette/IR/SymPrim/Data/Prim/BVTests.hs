@@ -20,10 +20,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalBVExtendTerm,
     pevalBVSelectTerm,
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase, (@=?))
+import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
+import Test.HUnit ((@=?))
 
-bvTests :: TestTree
+bvTests :: Test
 bvTests =
   testGroup
     "BVTests"

@@ -132,13 +132,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
   )
-import Test.Tasty.QuickCheck
-  ( Arbitrary (arbitrary),
-    Gen,
-    frequency,
-    oneof,
-    sized,
-  )
+import Test.QuickCheck (Arbitrary (arbitrary), Gen, frequency, oneof, sized)
 
 class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   norewriteVer :: a -> Term b
