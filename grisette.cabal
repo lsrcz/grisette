@@ -126,7 +126,7 @@ library
       Paths_grisette
   hs-source-dirs:
       src
-  ghc-options: -Wextra -Werror -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns
+  ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns
   build-depends:
       QuickCheck >=2.13.2 && <2.15
     , array >=0.5.4 && <0.6
@@ -160,7 +160,7 @@ test-suite doctest
       Paths_grisette
   hs-source-dirs:
       doctest
-  ghc-options: -Wextra -Werror -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       Glob
     , QuickCheck >=2.13.2 && <2.15
@@ -213,7 +213,7 @@ test-suite spec
       Paths_grisette
   hs-source-dirs:
       test
-  ghc-options: -Wextra -Werror -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit ==1.6.*
     , QuickCheck >=2.13.2 && <2.15
