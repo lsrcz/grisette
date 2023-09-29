@@ -1,5 +1,5 @@
 name: grisette
-version: 0.3.1.0
+version: 0.3.1.1
 synopsis: Symbolic evaluation as a library
 description: |
   Grisette is a reusable symbolic evaluation library for Haskell. By
@@ -24,7 +24,7 @@ tested-with:
   - GHC == 8.10.7
   - GHC == 9.0.2
   - GHC == 9.2.8
-  - GHC == 9.4.5
+  - GHC == 9.4.6
   - GHC == 9.6.2
 
 dependencies:
