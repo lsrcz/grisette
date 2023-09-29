@@ -34,17 +34,17 @@ dependencies:
   - mtl >= 2.2.2 && < 2.4
   - transformers >= 0.5.6 && < 0.7
   - generic-deriving >= 1.14.1 && < 1.15
-  - bytestring >= 0.10.12 && < 0.12
+  - bytestring >= 0.10.12 && < 0.13
   - unordered-containers >= 0.2.11 && < 0.3
   - template-haskell >= 2.16 && < 2.21
-  - deepseq >= 1.4.4 && < 1.5
+  - deepseq >= 1.4.4 && < 1.6
   - hashtables >= 1.2.3.4 && < 1.4
   - loch-th >= 0.2.2 && < 0.3
   - th-compat >= 0.1.2 && < 0.2
   - array >= 0.5.4 && < 0.6
   - sbv >= 8.11 && < 10.3
   - parallel >= 3.2.2.0 && < 3.3
-  - text >= 1.2.4.1 && < 2.1
+  - text >= 1.2.4.1 && < 2.2
   - QuickCheck >= 2.13.2 && < 2.15
   - prettyprinter >= 1.5.0 && < 1.8
 
@@ -99,7 +99,7 @@ tests:
     source-dirs: doctest
     dependencies:
       - grisette
-      - doctest >= 0.18.2 && < 0.22
+      - doctest >= 0.18.2 && < 0.23
       - Glob
     ghc-options:
       - -threaded

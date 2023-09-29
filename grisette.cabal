@@ -131,8 +131,8 @@ library
       QuickCheck >=2.13.2 && <2.15
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
-    , bytestring >=0.10.12 && <0.12
-    , deepseq >=1.4.4 && <1.5
+    , bytestring >=0.10.12 && <0.13
+    , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
     , hashable >=1.2.3 && <1.5
     , hashtables >=1.2.3.4 && <1.4
@@ -143,7 +143,7 @@ library
     , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
     , template-haskell >=2.16 && <2.21
-    , text >=1.2.4.1 && <2.1
+    , text >=1.2.4.1 && <2.2
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.7
     , unordered-containers >=0.2.11 && <0.3
@@ -166,9 +166,9 @@ test-suite doctest
     , QuickCheck >=2.13.2 && <2.15
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
-    , bytestring >=0.10.12 && <0.12
-    , deepseq >=1.4.4 && <1.5
-    , doctest >=0.18.2 && <0.22
+    , bytestring >=0.10.12 && <0.13
+    , deepseq >=1.4.4 && <1.6
+    , doctest >=0.18.2 && <0.23
     , generic-deriving >=1.14.1 && <1.15
     , grisette
     , hashable >=1.2.3 && <1.5
@@ -180,7 +180,7 @@ test-suite doctest
     , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
     , template-haskell >=2.16 && <2.21
-    , text >=1.2.4.1 && <2.1
+    , text >=1.2.4.1 && <2.2
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.7
     , unordered-containers >=0.2.11 && <0.3
@@ -219,8 +219,8 @@ test-suite spec
     , QuickCheck >=2.13.2 && <2.15
     , array >=0.5.4 && <0.6
     , base >=4.14 && <5
-    , bytestring >=0.10.12 && <0.12
-    , deepseq >=1.4.4 && <1.5
+    , bytestring >=0.10.12 && <0.13
+    , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
     , grisette
     , hashable >=1.2.3 && <1.5
@@ -235,7 +235,7 @@ test-suite spec
     , test-framework >=0.8.2 && <0.9
     , test-framework-hunit >=0.3.0.2 && <0.4
     , test-framework-quickcheck2 >=0.3.0.5 && <0.4
-    , text >=1.2.4.1 && <2.1
+    , text >=1.2.4.1 && <2.2
     , th-compat >=0.1.2 && <0.2
     , transformers >=0.5.6 && <0.7
     , unordered-containers >=0.2.11 && <0.3
