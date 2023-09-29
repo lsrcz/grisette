@@ -67,7 +67,6 @@ when:
 
 ghc-options:
   - -Wextra
-  - -Werror
   - -Wcompat
   - -Widentities
   - -Wincomplete-record-updates
