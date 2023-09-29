@@ -27,6 +27,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
@@ -231,9 +232,13 @@ GPRETTY_SIMPLE(Word32)
 GPRETTY_SIMPLE(Word64)
 GPRETTY_SIMPLE(SomeIntN)
 GPRETTY_SIMPLE(SomeWordN)
-GPRETTY_SIMPLE(B.ByteString)
-GPRETTY_SIMPLE(T.Text)
 #endif
+
+instance GPretty B.ByteString where
+  gpretty = pretty . C.unpack
+
+instance GPretty T.Text where
+  gpretty = pretty
 
 instance (KnownNat n, 1 <= n) => GPretty (IntN n) where
   gpretty = viaShow
