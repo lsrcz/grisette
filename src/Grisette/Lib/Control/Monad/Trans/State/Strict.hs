@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      :   Grisette.Lib.Control.Monad.Trans.State.Strict

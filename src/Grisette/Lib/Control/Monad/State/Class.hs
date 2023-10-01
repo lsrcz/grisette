@@ -1,3 +1,5 @@
+{-# LANGUAGE Trustworthy #-}
+
 -- |
 -- Module      :   Grisette.Lib.Control.Monad.State.Class
 -- Copyright   :   (c) Sirui Lu 2023
