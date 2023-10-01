@@ -57,7 +57,7 @@ jobs:
             }
           - {
               build: stack,
-              arg: "--stack-yaml stack-nightly.yaml --resolver nightly",
+              arg: "--stack-yaml stack-nightly.yaml",
               ismain: false,
               experimental: false,
               ghc: "962",
