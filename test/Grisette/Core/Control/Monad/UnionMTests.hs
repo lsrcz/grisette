@@ -42,7 +42,7 @@ import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     UnionLike (single, unionIf),
-    UnionPrjOp (ifView, leftMost, singleView),
+    UnionPrjOp (ifView, leftMost, singleView, toGuardedList),
     merge,
     mrgIf,
     mrgIte1,
@@ -61,6 +61,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.TestUtil.SymbolicAssertion ((@?=~))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit (assertFailure, (@?=))
@@ -241,7 +242,19 @@ unionMTests =
             let r2 :: UnionM (Either SymBool SymBool) =
                   mrgIf "a" (mrgSingle $ Left "b") (mrgSingle $ Right "c")
             leftMost r1 @?= Left "b"
-            leftMost r2 @?= Left "b"
+            leftMost r2 @?= Left "b",
+          testCase "toGuardedList should work" $ do
+            let actual =
+                  toGuardedList
+                    ( mrgIf "a" (single 1) (mrgIf "b" (single 2) (single 3)) ::
+                        UnionM Integer
+                    )
+            let expected =
+                  [ ("a", 1),
+                    (nots "a" &&~ "b", 2),
+                    (nots "a" &&~ nots "b", 3)
+                  ]
+            actual @?=~ expected
         ],
       testGroup
         "MonadUnion"
