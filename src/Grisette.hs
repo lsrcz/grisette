@@ -15,7 +15,6 @@ module Grisette
 
     -- * Core libraries
     module Grisette.Lib.Base,
-    module Grisette.Lib.Mtl,
 
     -- * Symbolic primitives
     module Grisette.IR.SymPrim,
@@ -32,5 +31,4 @@ import Grisette.Backend.SBV
 import Grisette.Core
 import Grisette.IR.SymPrim
 import Grisette.Lib.Base
-import Grisette.Lib.Mtl
 import Grisette.Utils
