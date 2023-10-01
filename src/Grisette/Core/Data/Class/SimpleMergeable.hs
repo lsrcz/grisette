@@ -35,8 +35,8 @@ module Grisette.Core.Data.Class.SimpleMergeable
     merge,
     mrgSingle,
     UnionPrjOp (..),
-    pattern SingleU,
-    pattern IfU,
+    pattern Single,
+    pattern If,
     simpleMerge,
     onUnion,
     onUnion2,
@@ -719,22 +719,22 @@ class (UnionLike u) => UnionPrjOp (u :: Type -> Type) where
 
 -- | Pattern match to extract single values with 'singleView'.
 --
--- >>> case (single 1 :: UnionM Integer) of SingleU v -> v
+-- >>> case (single 1 :: UnionM Integer) of Single v -> v
 -- 1
-pattern SingleU :: (UnionPrjOp u) => a -> u a
-pattern SingleU x <-
+pattern Single :: (UnionPrjOp u, Mergeable a) => a -> u a
+pattern Single x <-
   (singleView -> Just x)
   where
-    SingleU x = single x
+    Single x = mrgSingle x
 
 -- | Pattern match to extract guard values with 'ifView'
--- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of IfU c t f -> (c,t,f)
+-- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of If c t f -> (c,t,f)
 -- (a,<1>,<2>)
-pattern IfU :: (UnionPrjOp u) => SymBool -> u a -> u a -> u a
-pattern IfU c t f <-
+pattern If :: (UnionPrjOp u, Mergeable a) => SymBool -> u a -> u a -> u a
+pattern If c t f <-
   (ifView -> Just (c, t, f))
   where
-    IfU c t f = unionIf c t f
+    If c t f = unionIf c t f
 
 -- | Merge the simply mergeable values in a union, and extract the merged value.
 --
@@ -747,7 +747,7 @@ pattern IfU c t f <-
 -- (ite a b c)
 simpleMerge :: forall u a. (SimpleMergeable a, UnionLike u, UnionPrjOp u) => u a -> a
 simpleMerge u = case merge u of
-  SingleU x -> x
+  Single x -> x
   _ -> error "Should not happen"
 {-# INLINE simpleMerge #-}
 

@@ -48,14 +48,14 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIte1,
     mrgSingle,
     (#~),
-    pattern IfU,
-    pattern SingleU,
+    pattern If,
+    pattern Single,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, isym, ssym))
 import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.Core.Data.Union (Union (If, Single))
+import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (TypedSymbol)
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
@@ -92,13 +92,13 @@ unionMTests =
                 )
           isMerged r @?= True
           underlyingUnion (underlyingUnion <$> r)
-            @?= Single
-              ( If
+            @?= UnionSingle
+              ( UnionIf
                   (Left $ ites "a" "c" "f")
                   True
                   (ites "a" "b" "e")
-                  (Single $ Left $ ites "a" "c" "f")
-                  (Single $ Right $ ites "a" "d" "g")
+                  (UnionSingle $ Left $ ites "a" "c" "f")
+                  (UnionSingle $ Right $ ites "a" "d" "g")
               ),
       testCase "SimpleMergeable" $ do
         let l :: UnionM (Either SymBool SymBool) =
@@ -106,12 +106,12 @@ unionMTests =
         let r = mrgIf "e" (mrgSingle $ Left "f") (mrgSingle $ Right "g")
         let res = mrgIte "a" l r
         let ref =
-              If
+              UnionIf
                 (Left $ ites "a" "c" "f")
                 True
                 (ites "a" "b" "e")
-                (Single $ Left $ ites "a" "c" "f")
-                (Single $ Right $ ites "a" "d" "g")
+                (UnionSingle $ Left $ ites "a" "c" "f")
+                (UnionSingle $ Right $ ites "a" "d" "g")
         isMerged res @?= True
         underlyingUnion res @?= ref,
       testCase "SimpleMergeable1" $ do
@@ -120,7 +120,7 @@ unionMTests =
         let res = mrgIte1 "a" l r
         isMerged res @?= True
         underlyingUnion res
-          @?= Single
+          @?= UnionSingle
             ( ites
                 "a"
                 (ites "b" "c" "d")
@@ -166,29 +166,29 @@ unionMTests =
         [ testCase "single" $ do
             let r1 :: UnionM SymBool = single "a"
             isMerged r1 @?= False
-            underlyingUnion r1 @?= Single "a",
+            underlyingUnion r1 @?= UnionSingle "a",
           testGroup
             "unionIf"
             [ testCase "unionIf should work when no merged" $ do
                 let r1 :: UnionM SymBool = unionIf "a" (single "b") (single "c")
                 isMerged r1 @?= False
                 underlyingUnion r1
-                  @?= If "b" False "a" (Single "b") (Single "c"),
+                  @?= UnionIf "b" False "a" (UnionSingle "b") (UnionSingle "c"),
               testCase
                 "unionIf should propagate and merge the results when some branch merged"
                 $ do
                   let r1 :: UnionM SymBool =
                         unionIf "a" (mrgSingle "b") (single "c")
                   isMerged r1 @?= True
-                  underlyingUnion r1 @?= Single (ites "a" "b" "c")
+                  underlyingUnion r1 @?= UnionSingle (ites "a" "b" "c")
                   let r2 :: UnionM SymBool =
                         unionIf "a" (single "b") (mrgSingle "c")
                   isMerged r2 @?= True
-                  underlyingUnion r2 @?= Single (ites "a" "b" "c")
+                  underlyingUnion r2 @?= UnionSingle (ites "a" "b" "c")
                   let r3 :: UnionM SymBool =
                         unionIf "a" (mrgSingle "b") (mrgSingle "c")
                   isMerged r3 @?= True
-                  underlyingUnion r3 @?= Single (ites "a" "b" "c")
+                  underlyingUnion r3 @?= UnionSingle (ites "a" "b" "c")
             ],
           testCase "singleView should work" $ do
             singleView (single "a" :: UnionM SymBool) @?= Just "a"
@@ -199,15 +199,15 @@ unionMTests =
               )
               @?= Nothing
             case (single "a" :: UnionM SymBool) of
-              SingleU r -> r @?= "a"
-              _ -> assertFailure "SingleU match failed"
+              Single r -> r @?= "a"
+              _ -> assertFailure "Single match failed"
             case (mrgSingle "a" :: UnionM SymBool) of
-              SingleU r -> r @?= "a"
-              _ -> assertFailure "SingleU match failed"
+              Single r -> r @?= "a"
+              _ -> assertFailure "Single match failed"
             case ( unionIf "a" (single $ Left "b") (single $ Right "c") ::
                      UnionM (Either SymBool SymBool)
                  ) of
-              SingleU _ -> assertFailure "SingleU match failed"
+              Single _ -> assertFailure "Single match failed"
               _ -> return (),
           testCase "ifView should work" $ do
             let r1 :: UnionM (Either SymBool SymBool) =
@@ -219,19 +219,19 @@ unionMTests =
               @?= Just ("a", mrgSingle $ Left "b", mrgSingle $ Right "c")
             ifView (single "a" :: UnionM SymBool) @?= Nothing
             case r1 of
-              IfU c l r -> do
+              If c l r -> do
                 c @?= "a"
                 l @?= single (Left "b")
                 r @?= single (Right "c")
-              _ -> assertFailure "SingleU match failed"
+              _ -> assertFailure "Single match failed"
             case r2 of
-              IfU c l r -> do
+              If c l r -> do
                 c @?= "a"
                 l @?= mrgSingle (Left "b")
                 r @?= mrgSingle (Right "c")
-              _ -> assertFailure "SingleU match failed"
+              _ -> assertFailure "Single match failed"
             case single "a" :: UnionM SymBool of
-              IfU {} -> assertFailure "SingleU match failed"
+              If {} -> assertFailure "Single match failed"
               _ -> return (),
           testCase "leftMost should work" $ do
             leftMost (single "a" :: UnionM SymBool) @?= "a"
@@ -249,11 +249,11 @@ unionMTests =
             let r1 :: UnionM SymBool =
                   merge (unionIf "a" (single "b") (single "c"))
             isMerged r1 @?= True
-            underlyingUnion r1 @?= Single (ites "a" "b" "c"),
+            underlyingUnion r1 @?= UnionSingle (ites "a" "b" "c"),
           testCase "mrgSingle should work" $ do
             let r1 :: UnionM SymBool = mrgSingle "a"
             isMerged r1 @?= True
-            underlyingUnion r1 @?= Single "a",
+            underlyingUnion r1 @?= UnionSingle "a",
           testGroup
             "mrgIf should work"
             [ testCase "mrgIf should perform lazy evaluation" $ do
