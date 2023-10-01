@@ -50,7 +50,7 @@ dependencies:
 
 flags:
   {
-    fast:
+    optimize:
       {
         description: "Compile with O2 optimization",
         manual: False,
@@ -59,7 +59,7 @@ flags:
   }
 
 when:
-  - condition: flag(fast)
+  - condition: flag(optimize)
     then:
       ghc-options: -O2
     else:

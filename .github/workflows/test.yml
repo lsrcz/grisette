@@ -155,11 +155,11 @@ jobs:
           set -ex
           case "$BUILD" in
             stack)
-              nix develop --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-fast --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
+              nix develop --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-optimize --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
               ;;
             cabal)
               nix develop --allow-dirty --no-warn-dirty -c cabal update
-              nix develop --allow-dirty --no-warn-dirty -c cabal run --disable-optimization --flags=-fast spec $ARGS -- --jxml=test-report.xml
+              nix develop --allow-dirty --no-warn-dirty -c cabal run --disable-optimization --flags=-optimize spec $ARGS -- --jxml=test-report.xml
               ;;
           esac
           set +ex
