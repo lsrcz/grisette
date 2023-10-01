@@ -38,7 +38,7 @@ import Test.HUnit ((@=?))
 numTests :: Test
 numTests =
   testGroup
-    "NumTests"
+    "Num"
     [ testGroup
         "Add"
         [ testCase "On concrete" $ do

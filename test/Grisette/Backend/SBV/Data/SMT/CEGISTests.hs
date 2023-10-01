@@ -87,7 +87,7 @@ cegisTests :: Test
 cegisTests =
   let unboundedConfig = precise SBV.z3 -- {SBV.verbose=True}
    in testGroup
-        "CEGISTests"
+        "CEGIS"
         [ testGroup
             "Regression"
             [ testCase "Empty symbolic inputs makes cegis work like solve" $ do

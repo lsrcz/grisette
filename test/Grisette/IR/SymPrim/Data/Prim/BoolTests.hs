@@ -34,7 +34,7 @@ import Test.HUnit ((@=?))
 boolTests :: Test
 boolTests =
   testGroup
-    "BoolTests"
+    "Bool"
     [ testGroup
         "Not"
         [ testCase "On concrete" $ do

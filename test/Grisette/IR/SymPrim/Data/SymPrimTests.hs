@@ -583,7 +583,7 @@ safeDivModUnboundedTests name transform f f' cf pf1 pf2 =
 symPrimTests :: Test
 symPrimTests =
   testGroup
-    "SymPrimTests"
+    "SymPrim"
     [ testGroup
         "General SymPrim"
         [ testGroup

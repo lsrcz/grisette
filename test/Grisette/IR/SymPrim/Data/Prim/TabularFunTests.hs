@@ -26,7 +26,7 @@ import Test.HUnit ((@=?))
 tabularFunTests :: Test
 tabularFunTests =
   testGroup
-    "TabularFunTests"
+    "TabularFun"
     [ testGroup
         "ApplyF"
         [ testCase "On concrete" $ do

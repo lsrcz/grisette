@@ -93,10 +93,10 @@ deriving via (Default VerificationConditions) instance Mergeable VerificationCon
 deriving via (Default VerificationConditions) instance SEq VerificationConditions
 
 instance SOrd VerificationConditions where
-  l >=~ r = con $ l <= r
-  l >~ r = con $ l < r
-  l <=~ r = con $ l >= r
-  l <~ r = con $ l > r
+  l >=~ r = con $ l >= r
+  l >~ r = con $ l > r
+  l <=~ r = con $ l <= r
+  l <~ r = con $ l < r
   l `symCompare` r = mrgSingle $ l `compare` r
 
 deriving via (Default VerificationConditions) instance EvaluateSym VerificationConditions
