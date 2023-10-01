@@ -61,7 +61,7 @@ modelTests =
       m2 = insertValue asymbol 1 m1
       m3 = insertValue bsymbol True m2
    in testGroup
-        "ModelTests"
+        "Model"
         [ testCase "empty model is really empty" $ do
             emptyModel @=? Model M.empty,
           testCase "inserting to model" $ do

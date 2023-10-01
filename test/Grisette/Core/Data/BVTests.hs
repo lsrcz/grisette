@@ -329,7 +329,7 @@ integralConformTest pref ptyp =
 bvTests :: Test
 bvTests =
   testGroup
-    "BVTests"
+    "BV"
     [ testGroup
         "WordN 8 conform to Word8 for Bits instances"
         [ testProperty "(.&.)" $ \x y -> ioProperty $ wordBinConform (.&.) (.&.) x y,

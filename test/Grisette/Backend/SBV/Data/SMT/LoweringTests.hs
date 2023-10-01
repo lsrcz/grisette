@@ -303,7 +303,7 @@ loweringTests =
   let unboundedConfig = precise SBV.z3
       boundedConfig = approx (Proxy @5) SBV.z3
    in testGroup
-        "LoweringTests"
+        "Lowering"
         [ testGroup
             "Bool Lowering"
             [ testCase "Not" $ do

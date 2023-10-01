@@ -445,7 +445,7 @@ class (Mergeable a) => GenSym spec a where
   -- is ensured. No specification is needed.
   --
   -- >>> runFresh (fresh ()) "a" :: UnionM (Maybe Bool)
-  -- {If a@1 Nothing (If a@0 (Just False) (Just True))}
+  -- {If a@0 Nothing (If a@1 (Just False) (Just True))}
   --
   -- The following example generates lists of symbolic booleans with length 1 to 2.
   --
@@ -906,6 +906,7 @@ instance
 
 -- Maybe
 instance
+  {-# OVERLAPPING #-}
   (GenSym aspec a, Mergeable a) =>
   GenSym (Maybe aspec) (Maybe a)
   where
@@ -919,10 +920,15 @@ instance
   simpleFresh Nothing = return Nothing
   simpleFresh (Just aspec) = Just <$> simpleFresh aspec
 
-instance (GenSym aspec a, Mergeable a) => GenSym aspec (Maybe a) where
+instance
+  {-# OVERLAPPABLE #-}
+  (GenSym aspec a, Mergeable a) =>
+  GenSym aspec (Maybe a)
+  where
   fresh aspec = do
+    cond <- simpleFresh ()
     a :: UnionM a <- fresh aspec
-    chooseUnionFresh [return Nothing, Just <$> a]
+    return $ mrgIf cond (mrgSingle Nothing) (Just <$> a)
 
 -- List
 instance

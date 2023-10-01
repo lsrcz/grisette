@@ -30,7 +30,7 @@ import Test.HUnit ((@=?))
 bitsTests :: Test
 bitsTests =
   testGroup
-    "BitsTests"
+    "Bits"
     [ testGroup
         "AndBits"
         [ testCase "On both concrete" $ do

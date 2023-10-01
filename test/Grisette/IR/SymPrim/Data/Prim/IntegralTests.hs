@@ -180,7 +180,7 @@ moduloPevalTestGroup name pf cf consf =
 integralTests :: Test
 integralTests =
   testGroup
-    "IntegralTests"
+    "Integral"
     [ divisionPevalUnboundedTestGroup "Div unbounded" pevalDivIntegralTerm div divIntegralTerm,
       divisionPevalUnboundedTestGroup "Quot unbounded" pevalQuotIntegralTerm quot quotIntegralTerm,
       divisionPevalBoundedTestGroup "Div bounded" pevalDivBoundedIntegralTerm div divBoundedIntegralTerm,

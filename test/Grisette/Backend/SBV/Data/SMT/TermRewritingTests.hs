@@ -103,7 +103,7 @@ divisionTest name f =
 termRewritingTests :: Test
 termRewritingTests =
   testGroup
-    "TermRewritingTests"
+    "TermRewriting"
     [ testGroup
         "Bool only"
         [ testProperty "Bool only random test" $

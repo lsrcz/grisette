@@ -29,12 +29,26 @@ import Grisette.Backend.SBV.Data.SMT.LoweringTests
 import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
   ( termRewritingTests,
   )
+import Grisette.Core.Control.ExceptionTests (exceptionTests)
 import Grisette.Core.Control.Monad.UnionMTests (unionMTests)
+import Grisette.Core.Control.Monad.UnionTests (unionTests)
 import qualified Grisette.Core.Data.BVTests
+import qualified Grisette.Core.Data.Class.BoolTests
+import Grisette.Core.Data.Class.EvaluateSymTests (evaluateSymTests)
+import Grisette.Core.Data.Class.ExtractSymbolicsTests (extractSymbolicsTests)
 import Grisette.Core.Data.Class.GPrettyTests (gprettyTests)
+import Grisette.Core.Data.Class.GenSymTests (genSymTests)
+import Grisette.Core.Data.Class.MergeableTests (mergeableTests)
+import Grisette.Core.Data.Class.SEqTests (seqTests)
+import Grisette.Core.Data.Class.SOrdTests (sordTests)
+import Grisette.Core.Data.Class.SimpleMergeableTests (simpleMergeableTests)
+import Grisette.Core.Data.Class.SubstituteSymTests (substituteSymTests)
+import Grisette.Core.Data.Class.ToConTests (toConTests)
+import Grisette.Core.Data.Class.ToSymTests (toSymTests)
+import Grisette.Core.Data.Class.UnionLikeTests (unionLikeTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests)
-import Grisette.IR.SymPrim.Data.Prim.BoolTests (boolTests)
+import qualified Grisette.IR.SymPrim.Data.Prim.BoolTests
 import Grisette.IR.SymPrim.Data.Prim.IntegralTests
   ( integralTests,
   )
@@ -43,6 +57,15 @@ import Grisette.IR.SymPrim.Data.Prim.NumTests (numTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.TabularFunTests
 import Grisette.IR.SymPrim.Data.SymPrimTests (symPrimTests)
 import qualified Grisette.IR.SymPrim.Data.TabularFunTests
+import Grisette.Lib.Control.Monad.ExceptTests
+  ( monadExceptFunctionTests,
+  )
+import Grisette.Lib.Control.Monad.TransTests
+  ( monadTransFunctionTests,
+  )
+import Grisette.Lib.Control.MonadTests (monadFunctionTests)
+import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
+import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
 import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()
@@ -50,101 +73,81 @@ main =
   defaultMain
     [ coreTests,
       irTests,
-      sbvTests
+      sbvTests,
+      libTests
     ]
 
 coreTests :: Test
 coreTests =
   testGroup
-    "core"
+    "Grisette.Core"
     [ testGroup
-        "Grisette.Core.Control.Monad.UnionM"
-        [unionMTests],
+        "Control"
+        [ testGroup
+            "Monad"
+            [ unionMTests,
+              unionTests
+            ],
+          exceptionTests
+        ],
       testGroup
-        "Grisette.Core.Data"
+        "Data"
         [ testGroup
             "Class"
-            [gprettyTests],
+            [ Grisette.Core.Data.Class.BoolTests.boolTests,
+              evaluateSymTests,
+              extractSymbolicsTests,
+              genSymTests,
+              gprettyTests,
+              mergeableTests,
+              seqTests,
+              sordTests,
+              simpleMergeableTests,
+              substituteSymTests,
+              toConTests,
+              toSymTests,
+              unionLikeTests
+            ],
           Grisette.Core.Data.BVTests.bvTests
         ]
     ]
 
-{-
-coreTests :: Test
-coreTests =
+libTests :: Test
+libTests =
   testGroup
-    "grisette-core"
+    "Grisette.Lib"
     [ testGroup
-        "Grisette"
+        "Control"
         [ testGroup
-            "Core"
-            [ testGroup
-                "Control"
-                [ testGroup
-                    "Monad"
-                    [ unionMBaseTests
-                    ],
-                  exceptionTests
-                ],
-              testGroup
-                "Data"
-                [ testGroup
-                    "Class"
-                    [ boolTests,
-                      gevaluateSymTests,
-                      gextractSymbolicsTests,
-                      genSymTests,
-                      mergeableTests,
-                      seqTests,
-                      simpleMergeableTests,
-                      sordTests,
-                      toConTests,
-                      toSymTests,
-                      unionLikeTests
-                    ],
-                  unionBaseTests
-                ]
+            "Monad"
+            [ monadExceptFunctionTests,
+              monadTransFunctionTests
             ],
-          testGroup
-            "Lib"
-            [ testGroup
-                "Control"
-                [ testGroup
-                    "Monad"
-                    [ monadExceptFunctionTests,
-                      monadTransFunctionTests
-                    ],
-                  monadFunctionTests
-                ],
-              testGroup
-                "Data"
-                [ foldableFunctionTests,
-                  traversableFunctionTests
-                ]
-            ]
+          monadFunctionTests
+        ],
+      testGroup
+        "Data"
+        [ foldableFunctionTests,
+          traversableFunctionTests
         ]
     ]
--}
 
 irTests :: Test
 irTests =
   testGroup
-    "grisette-symir"
+    "Grisette.IR.SymPrim.Data"
     [ testGroup
-        "Grisette.IR.SymPrim.Data"
-        [ testGroup
-            "Prim"
-            [ bitsTests,
-              boolTests,
-              Grisette.IR.SymPrim.Data.Prim.BVTests.bvTests,
-              integralTests,
-              modelTests,
-              numTests,
-              Grisette.IR.SymPrim.Data.Prim.TabularFunTests.tabularFunTests
-            ],
-          symPrimTests,
-          Grisette.IR.SymPrim.Data.TabularFunTests.tabularFunTests
-        ]
+        "Prim"
+        [ bitsTests,
+          Grisette.IR.SymPrim.Data.Prim.BoolTests.boolTests,
+          Grisette.IR.SymPrim.Data.Prim.BVTests.bvTests,
+          integralTests,
+          modelTests,
+          numTests,
+          Grisette.IR.SymPrim.Data.Prim.TabularFunTests.tabularFunTests
+        ],
+      symPrimTests,
+      Grisette.IR.SymPrim.Data.TabularFunTests.tabularFunTests
     ]
 
 sbvTests :: Test

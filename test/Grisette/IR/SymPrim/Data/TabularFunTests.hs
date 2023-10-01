@@ -14,7 +14,7 @@ import Test.HUnit ((@=?))
 tabularFunTests :: Test
 tabularFunTests =
   testGroup
-    "TabularFunTests"
+    "TabularFun"
     [ testCase "Tabular application" $ do
         let f :: Integer =-> Integer = TabularFun [(1, 2), (3, 4)] 5
         (f # 0) @=? 5

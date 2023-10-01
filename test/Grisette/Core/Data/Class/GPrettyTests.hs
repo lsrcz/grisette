@@ -141,7 +141,7 @@ instance
 gprettyTests :: Test
 gprettyTests =
   testGroup
-    "GPrettyTests"
+    "GPretty"
     [ testGroup
         "simple tests"
         [ propertyGPretty "Bool" (arbitrary :: Gen Bool),

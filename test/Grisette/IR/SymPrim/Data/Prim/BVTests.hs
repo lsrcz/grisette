@@ -27,7 +27,7 @@ import Test.HUnit ((@=?))
 bvTests :: Test
 bvTests =
   testGroup
-    "BVTests"
+    "BV"
     [ testGroup
         "pevalBVSelectTerm"
         [ testCase "On concrete" $ do

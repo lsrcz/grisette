@@ -198,9 +198,24 @@ test-suite spec
       Grisette.Backend.SBV.Data.SMT.LoweringTests
       Grisette.Backend.SBV.Data.SMT.TermRewritingGen
       Grisette.Backend.SBV.Data.SMT.TermRewritingTests
+      Grisette.Core.Control.ExceptionTests
       Grisette.Core.Control.Monad.UnionMTests
+      Grisette.Core.Control.Monad.UnionTests
       Grisette.Core.Data.BVTests
+      Grisette.Core.Data.Class.BoolTests
+      Grisette.Core.Data.Class.EvaluateSymTests
+      Grisette.Core.Data.Class.ExtractSymbolicsTests
+      Grisette.Core.Data.Class.GenSymTests
       Grisette.Core.Data.Class.GPrettyTests
+      Grisette.Core.Data.Class.MergeableTests
+      Grisette.Core.Data.Class.SEqTests
+      Grisette.Core.Data.Class.SimpleMergeableTests
+      Grisette.Core.Data.Class.SOrdTests
+      Grisette.Core.Data.Class.SubstituteSymTests
+      Grisette.Core.Data.Class.TestValues
+      Grisette.Core.Data.Class.ToConTests
+      Grisette.Core.Data.Class.ToSymTests
+      Grisette.Core.Data.Class.UnionLikeTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
       Grisette.IR.SymPrim.Data.Prim.BVTests
@@ -210,6 +225,11 @@ test-suite spec
       Grisette.IR.SymPrim.Data.Prim.TabularFunTests
       Grisette.IR.SymPrim.Data.SymPrimTests
       Grisette.IR.SymPrim.Data.TabularFunTests
+      Grisette.Lib.Control.Monad.ExceptTests
+      Grisette.Lib.Control.Monad.TransTests
+      Grisette.Lib.Control.MonadTests
+      Grisette.Lib.Data.FoldableTests
+      Grisette.Lib.Data.TraversableTests
       Paths_grisette
   hs-source-dirs:
       test
