@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Grisette.Lib.Control.Monad.TransTests (monadTransFunctionTests) where
+module Grisette.Lib.Control.Monad.Trans.ClassTests
+  ( monadTransClassTests,
+  )
+where
 
 import Control.Monad.Except (ExceptT)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
@@ -15,10 +18,10 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
-monadTransFunctionTests :: Test
-monadTransFunctionTests =
+monadTransClassTests :: Test
+monadTransClassTests =
   testGroup
-    "Trans"
+    "Class"
     [ testCase "mrgLift" $ do
         ( mrgLift
             ( unionIf "a" (single "b") (single "c") ::

@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.Lib.Control.Monad.Trans
@@ -11,21 +12,8 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Control.Monad.Trans
-  ( -- * mrg* variants for operations in "Control.Monad.Trans"
-    mrgLift,
+  ( module Grisette.Lib.Control.Monad.Trans.Class,
   )
 where
 
-import Control.Monad.Trans (MonadTrans (lift))
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (merge)
-
--- | 'lift' with 'MergingStrategy' knowledge propagation.
-mrgLift ::
-  forall t m a.
-  (MonadUnion (t m), MonadTrans t, Monad m, Mergeable a) =>
-  m a ->
-  t m a
-mrgLift v = merge $ lift v
-{-# INLINE mrgLift #-}
+import Grisette.Lib.Control.Monad.Trans.Class

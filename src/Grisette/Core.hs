@@ -749,7 +749,7 @@ module Grisette.Core
     -- for example, 'Grisette.Lib.Control.Monad.Except.mrgThrowError'.
     --
     -- >>> import Control.Monad.Except
-    -- >>> import Grisette.Lib.Mtl
+    -- >>> import Grisette.Lib.Control.Monad.Except
     -- >>> mrgThrowError AssertionError :: ExceptT AssertionError UnionM ()
     -- ExceptT {Left AssertionError}
     --

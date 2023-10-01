@@ -114,11 +114,11 @@ library
       Grisette.Lib.Control.Monad
       Grisette.Lib.Control.Monad.Except
       Grisette.Lib.Control.Monad.Trans
+      Grisette.Lib.Control.Monad.Trans.Class
       Grisette.Lib.Control.Monad.Trans.Cont
       Grisette.Lib.Data.Foldable
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
-      Grisette.Lib.Mtl
       Grisette.Qualified.ParallelUnionDo
       Grisette.Utils
       Grisette.Utils.Parameterized
@@ -226,7 +226,7 @@ test-suite spec
       Grisette.IR.SymPrim.Data.SymPrimTests
       Grisette.IR.SymPrim.Data.TabularFunTests
       Grisette.Lib.Control.Monad.ExceptTests
-      Grisette.Lib.Control.Monad.TransTests
+      Grisette.Lib.Control.Monad.Trans.ClassTests
       Grisette.Lib.Control.MonadTests
       Grisette.Lib.Data.FoldableTests
       Grisette.Lib.Data.TraversableTests

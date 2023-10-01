@@ -1,27 +1,5 @@
 module Main (main) where
 
-{-
-import Grisette.Core.Control.ExceptionTests
-import Grisette.Core.Control.Monad.UnionMBaseTests
-import Grisette.Core.Data.Class.BoolTests
-import Grisette.Core.Data.Class.EvaluateSymTests
-import Grisette.Core.Data.Class.ExtractSymbolicsTests
-import Grisette.Core.Data.Class.GenSymTests
-import Grisette.Core.Data.Class.MergeableTests
-import Grisette.Core.Data.Class.SEqTests
-import Grisette.Core.Data.Class.SOrdTests
-import Grisette.Core.Data.Class.SimpleMergeableTests
-import Grisette.Core.Data.Class.ToConTests
-import Grisette.Core.Data.Class.ToSymTests
-import Grisette.Core.Data.Class.UnionLikeTests
-import Grisette.Core.Data.UnionBaseTests
-import Grisette.Lib.Control.Monad.ExceptTests
-import Grisette.Lib.Control.Monad.TransTests
-import Grisette.Lib.Control.MonadTests
-import Grisette.Lib.Data.FoldableTests
-import Grisette.Lib.Data.TraversableTests
--}
-
 import Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests)
 import Grisette.Backend.SBV.Data.SMT.LoweringTests
   ( loweringTests,
@@ -60,8 +38,8 @@ import qualified Grisette.IR.SymPrim.Data.TabularFunTests
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
   )
-import Grisette.Lib.Control.Monad.TransTests
-  ( monadTransFunctionTests,
+import Grisette.Lib.Control.Monad.Trans.ClassTests
+  ( monadTransClassTests,
   )
 import Grisette.Lib.Control.MonadTests (monadFunctionTests)
 import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
@@ -121,7 +99,10 @@ libTests =
         [ testGroup
             "Monad"
             [ monadExceptFunctionTests,
-              monadTransFunctionTests
+              testGroup
+                "Trans"
+                [ monadTransClassTests
+                ]
             ],
           monadFunctionTests
         ],
