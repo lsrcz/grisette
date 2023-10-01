@@ -600,8 +600,8 @@ module Grisette.Core
     merge,
     mrgSingle,
     UnionPrjOp (..),
-    pattern SingleU,
-    pattern IfU,
+    pattern Single,
+    pattern If,
     MonadUnion,
     MonadParallelUnion (..),
     simpleMerge,
@@ -1165,8 +1165,8 @@ import Grisette.Core.Data.Class.SimpleMergeable
     onUnion3,
     onUnion4,
     simpleMerge,
-    pattern IfU,
-    pattern SingleU,
+    pattern If,
+    pattern Single,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (..), pattern Con)
 import Grisette.Core.Data.Class.Solver

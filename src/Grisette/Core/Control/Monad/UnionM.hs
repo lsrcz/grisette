@@ -104,7 +104,7 @@ import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Union
-  ( Union (If, Single),
+  ( Union (UnionIf, UnionSingle),
     fullReconstruct,
     ifWithStrategy,
   )
@@ -268,8 +268,8 @@ liftShowsPrecUnion ::
   Int ->
   Union a ->
   ShowS
-liftShowsPrecUnion sp _ i (Single a) = sp i a
-liftShowsPrecUnion sp sl i (If _ _ cond t f) =
+liftShowsPrecUnion sp _ i (UnionSingle a) = sp i a
+liftShowsPrecUnion sp sl i (UnionIf _ _ cond t f) =
   showParen (i > 10) $
     showString "If"
       . showChar ' '
@@ -335,8 +335,8 @@ instance Applicative UnionM where
   {-# INLINE (<*>) #-}
 
 bindUnion :: Union a -> (a -> UnionM b) -> UnionM b
-bindUnion (Single a') f' = f' a'
-bindUnion (If _ _ cond ifTrue ifFalse) f' =
+bindUnion (UnionSingle a') f' = f' a'
+bindUnion (UnionIf _ _ cond ifTrue ifFalse) f' =
   unionIf cond (bindUnion ifTrue f') (bindUnion ifFalse f')
 {-# INLINE bindUnion #-}
 
@@ -345,12 +345,12 @@ instance Monad UnionM where
   {-# INLINE (>>=) #-}
 
 parBindUnion'' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
-parBindUnion'' (Single a) f = merge $ f a
+parBindUnion'' (UnionSingle a) f = merge $ f a
 parBindUnion'' u f = parBindUnion' u f
 
 parBindUnion' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
-parBindUnion' (Single a') f' = f' a'
-parBindUnion' (If _ _ cond ifTrue ifFalse) f' = runEval $ do
+parBindUnion' (UnionSingle a') f' = f' a'
+parBindUnion' (UnionIf _ _ cond ifTrue ifFalse) f' = runEval $ do
   l <- rpar $ force $ parBindUnion' ifTrue f'
   r <- rpar $ force $ parBindUnion' ifFalse f'
   l' <- rseq l
@@ -371,7 +371,8 @@ instance (Mergeable a) => SimpleMergeable (UnionM a) where
   {-# INLINE mrgIte #-}
 
 instance Mergeable1 UnionM where
-  liftRootStrategy m = SimpleStrategy $ \cond t f -> unionIf cond t f >>= (UMrg m . Single)
+  liftRootStrategy m = SimpleStrategy $
+    \cond t f -> unionIf cond t f >>= (UMrg m . UnionSingle)
   {-# INLINE liftRootStrategy #-}
 
 instance SimpleMergeable1 UnionM where
@@ -403,8 +404,8 @@ instance (SEq a) => SEq (UnionM a) where
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => UnionM a -> u a
 liftToMonadUnion u = go (underlyingUnion u)
   where
-    go (Single v) = mrgSingle v
-    go (If _ _ c t f) = mrgIf c (go t) (go f)
+    go (UnionSingle v) = mrgSingle v
+    go (UnionIf _ _ c t f) = mrgIf c (go t) (go f)
 
 instance (SOrd a) => SOrd (UnionM a) where
   x <=~ y = simpleMerge $ do
@@ -462,16 +463,16 @@ TO_SYM_FROM_UNION_CON_FUN((-->), (-~>))
 instance {-# INCOHERENT #-} (ToCon a b) => ToCon (UnionM a) b where
   toCon v = go $ underlyingUnion v
     where
-      go (Single x) = toCon x
+      go (UnionSingle x) = toCon x
       go _ = Nothing
 
 instance (ToCon a b, Mergeable b) => ToCon (UnionM a) (UnionM b) where
   toCon v = go $ underlyingUnion v
     where
-      go (Single x) = case toCon x of
+      go (UnionSingle x) = case toCon x of
         Nothing -> Nothing
         Just v -> Just $ mrgSingle v
-      go (If _ _ c t f) = do
+      go (UnionIf _ _ c t f) = do
         t' <- go t
         f' <- go f
         return $ mrgIf c t' f'
@@ -480,8 +481,8 @@ instance (Mergeable a, EvaluateSym a) => EvaluateSym (UnionM a) where
   evaluateSym fillDefault model x = go $ underlyingUnion x
     where
       go :: Union a -> UnionM a
-      go (Single v) = mrgSingle $ evaluateSym fillDefault model v
-      go (If _ _ cond t f) =
+      go (UnionSingle v) = mrgSingle $ evaluateSym fillDefault model v
+      go (UnionIf _ _ cond t f) =
         mrgIf
           (evaluateSym fillDefault model cond)
           (go t)
@@ -491,8 +492,8 @@ instance (Mergeable a, SubstituteSym a) => SubstituteSym (UnionM a) where
   substituteSym sym val x = go $ underlyingUnion x
     where
       go :: Union a -> UnionM a
-      go (Single v) = mrgSingle $ substituteSym sym val v
-      go (If _ _ cond t f) =
+      go (UnionSingle v) = mrgSingle $ substituteSym sym val v
+      go (UnionIf _ _ cond t f) =
         mrgIf
           (substituteSym sym val cond)
           (go t)
@@ -504,8 +505,8 @@ instance
   where
   extractSymbolics v = go $ underlyingUnion v
     where
-      go (Single x) = extractSymbolics x
-      go (If _ _ cond t f) = extractSymbolics cond <> go t <> go f
+      go (UnionSingle x) = extractSymbolics x
+      go (UnionIf _ _ cond t f) = extractSymbolics cond <> go t <> go f
 
 instance (Hashable a) => Hashable (UnionM a) where
   s `hashWithSalt` (UAny u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
@@ -595,8 +596,8 @@ instance
   where
   fresh spec = go (underlyingUnion $ merge spec)
     where
-      go (Single x) = fresh x
-      go (If _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
+      go (UnionSingle x) = fresh x
+      go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
 
 -- AllSyms
 instance (AllSyms a) => AllSyms (UnionM a) where
@@ -655,5 +656,5 @@ instance UnionWithExcept (UnionM (CBMCEither e v)) UnionM e v where
 unionSize :: UnionM a -> Int
 unionSize = unionSize' . underlyingUnion
   where
-    unionSize' (Single _) = 1
-    unionSize' (If _ _ _ l r) = unionSize' l + unionSize' r
+    unionSize' (UnionSingle _) = 1
+    unionSize' (UnionIf _ _ _ l r) = unionSize' l + unionSize' r

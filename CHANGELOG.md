@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Reorganized the files for `MonadTrans`. ([#132](https://github.com/lsrcz/grisette/pull/132))
+- [Breaking] Changed the name of `Union` constructors and patterns. ([#133](https://github.com/lsrcz/grisette/pull/133))
+- The `Union` patterns, when used as constructors, now merges the result. ([#133](https://github.com/lsrcz/grisette/pull/133))
 
 ## [0.3.1.1] -- 2023-09-29
 
