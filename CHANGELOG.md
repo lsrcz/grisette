@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added wrappers for state transformers. ([#132](https://github.com/lsrcz/grisette/pull/132))
+- Added `toGuardList` function. ([#137](https://github.com/lsrcz/grisette/pull/137))
 
 ### Removed
 

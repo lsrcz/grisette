@@ -60,6 +60,7 @@ import Control.Monad.Trans.Cont (ContT (ContT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Data.Bifunctor (Bifunctor (first))
 import Data.Kind (Type)
 import GHC.Generics
   ( Generic (Rep, from, to),
@@ -71,7 +72,7 @@ import GHC.Generics
   )
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
-import Grisette.Core.Data.Class.Bool (ITEOp (ites))
+import Grisette.Core.Data.Class.Bool (ITEOp (ites), LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -81,6 +82,7 @@ import Grisette.Core.Data.Class.Mergeable
     Mergeable3 (liftRootStrategy3),
     MergingStrategy (SimpleStrategy),
   )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -716,6 +718,19 @@ class (UnionLike u) => UnionPrjOp (u :: Type -> Type) where
   -- >>> leftMost (unionIf "a" (single 1) (single 2) :: UnionM Integer)
   -- 1
   leftMost :: u a -> a
+
+  -- | Convert the union to a guarded list.
+  --
+  -- >>> toGuardedList (mrgIf "a" (single 1) (mrgIf "b" (single 2) (single 3)) :: UnionM Integer)
+  -- [(a,1),((&& b (! a)),2),((! (|| b a)),3)]
+  toGuardedList :: u a -> [(SymBool, a)]
+  toGuardedList u =
+    case (singleView u, ifView u) of
+      (Just x, _) -> [(con True, x)]
+      (_, Just (c, l, r)) ->
+        fmap (first (&&~ c)) (toGuardedList l)
+          ++ fmap (first (&&~ nots c)) (toGuardedList r)
+      _ -> error "Should not happen"
 
 -- | Pattern match to extract single values with 'singleView'.
 --
