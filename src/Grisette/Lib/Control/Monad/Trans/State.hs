@@ -1,4 +1,4 @@
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
