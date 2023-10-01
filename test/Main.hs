@@ -38,8 +38,17 @@ import qualified Grisette.IR.SymPrim.Data.TabularFunTests
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
   )
+import Grisette.Lib.Control.Monad.State.ClassTests
+  ( monadStateClassTests,
+  )
 import Grisette.Lib.Control.Monad.Trans.ClassTests
   ( monadTransClassTests,
+  )
+import Grisette.Lib.Control.Monad.Trans.State.LazyTests
+  ( monadTransStateLazyTests,
+  )
+import Grisette.Lib.Control.Monad.Trans.State.StrictTests
+  ( monadTransStateStrictTests,
   )
 import Grisette.Lib.Control.MonadTests (monadFunctionTests)
 import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
@@ -100,8 +109,17 @@ libTests =
             "Monad"
             [ monadExceptFunctionTests,
               testGroup
+                "State"
+                [ monadStateClassTests
+                ],
+              testGroup
                 "Trans"
-                [ monadTransClassTests
+                [ monadTransClassTests,
+                  testGroup
+                    "State"
+                    [ monadTransStateLazyTests,
+                      monadTransStateStrictTests
+                    ]
                 ]
             ],
           monadFunctionTests

@@ -113,9 +113,13 @@ library
       Grisette.Lib.Base
       Grisette.Lib.Control.Monad
       Grisette.Lib.Control.Monad.Except
+      Grisette.Lib.Control.Monad.State.Class
       Grisette.Lib.Control.Monad.Trans
       Grisette.Lib.Control.Monad.Trans.Class
       Grisette.Lib.Control.Monad.Trans.Cont
+      Grisette.Lib.Control.Monad.Trans.State
+      Grisette.Lib.Control.Monad.Trans.State.Lazy
+      Grisette.Lib.Control.Monad.Trans.State.Strict
       Grisette.Lib.Data.Foldable
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
@@ -226,10 +230,15 @@ test-suite spec
       Grisette.IR.SymPrim.Data.SymPrimTests
       Grisette.IR.SymPrim.Data.TabularFunTests
       Grisette.Lib.Control.Monad.ExceptTests
+      Grisette.Lib.Control.Monad.State.ClassTests
       Grisette.Lib.Control.Monad.Trans.ClassTests
+      Grisette.Lib.Control.Monad.Trans.State.Common
+      Grisette.Lib.Control.Monad.Trans.State.LazyTests
+      Grisette.Lib.Control.Monad.Trans.State.StrictTests
       Grisette.Lib.Control.MonadTests
       Grisette.Lib.Data.FoldableTests
       Grisette.Lib.Data.TraversableTests
+      Grisette.TestUtil.SymbolicAssertion
       Paths_grisette
   hs-source-dirs:
       test
