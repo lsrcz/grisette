@@ -7,12 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added wrappers for state transformers. ([#132](https://github.com/lsrcz/grisette/pull/132))
+
+### Removed
+
+- Removed the `Grisette.Lib.Mtl` module. ([#132](https://github.com/lsrcz/grisette/pull/132))
+
 ### Fixed
 
 - Removed the quotation marks around the pretty printed results for string-like data types. ([#127](https://github.com/lsrcz/grisette/pull/127))
 - Fixed the `SOrd` instance for `VerificationConditions`. ([#131](https://github.com/lsrcz/grisette/pull/131))
 - Fixed the missing `SubstituteSym` instance for `UnionM`. ([#131](https://github.com/lsrcz/grisette/pull/131))
 - Fixed the symbolic generation order for `Maybe`. ([#131](https://github.com/lsrcz/grisette/pull/131))
+
+### Changed
+
+- Reorganized the files for `MonadTrans`. ([#132](https://github.com/lsrcz/grisette/pull/132))
 
 ## [0.3.1.1] -- 2023-09-29
 
