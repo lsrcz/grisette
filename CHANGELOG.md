@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added wrappers for state transformers. ([#132](https://github.com/lsrcz/grisette/pull/132))
 - Added `toGuardList` function. ([#137](https://github.com/lsrcz/grisette/pull/137))
+- Exported some previously hidden API (`BVSignConversion`, `runFreshTFromIndex`) that we found useful or forgot to export. ([#138](https://github.com/lsrcz/grisette/pull/138), [#139](https://github.com/lsrcz/grisette/pull/139))
 
 ### Removed
 
