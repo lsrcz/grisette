@@ -36,7 +36,7 @@ module Grisette.Core.Data.Class.GenSym
 
     -- * Monad for fresh symbolic value generation
     MonadFresh (..),
-    FreshT,
+    FreshT (runFreshTFromIndex),
     Fresh,
     runFreshT,
     runFresh,
@@ -288,21 +288,23 @@ class (Monad m) => MonadFresh m where
 -- a state monad transformer for indices.
 --
 -- Each time a fresh symbolic variable is generated, the index should be increased.
-newtype FreshT m a = FreshT {runFreshT' :: FreshIdent -> FreshIndex -> m (a, FreshIndex)}
+newtype FreshT m a = FreshT
+  { runFreshTFromIndex :: FreshIdent -> FreshIndex -> m (a, FreshIndex)
+  }
 
 instance
   (Mergeable a, Mergeable1 m) =>
   Mergeable (FreshT m a)
   where
   rootStrategy =
-    wrapStrategy (liftRootStrategy (liftRootStrategy rootStrategy1)) FreshT runFreshT'
+    wrapStrategy (liftRootStrategy (liftRootStrategy rootStrategy1)) FreshT runFreshTFromIndex
 
 instance (Mergeable1 m) => Mergeable1 (FreshT m) where
   liftRootStrategy m =
     wrapStrategy
       (liftRootStrategy (liftRootStrategy (liftRootStrategy (liftRootStrategy2 m rootStrategy))))
       FreshT
-      runFreshT'
+      runFreshTFromIndex
 
 instance
   (UnionLike m, Mergeable a) =>
@@ -330,7 +332,7 @@ instance
 
 -- | Run the symbolic generation with the given identifier and 0 as the initial index.
 runFreshT :: (Monad m) => FreshT m a -> FreshIdent -> m a
-runFreshT m ident = fst <$> runFreshT' m ident (FreshIndex 0)
+runFreshT m ident = fst <$> runFreshTFromIndex m ident (FreshIndex 0)
 
 instance (Functor f) => Functor (FreshT f) where
   fmap f (FreshT s) = FreshT $ \ident idx -> first f <$> s ident idx
@@ -345,14 +347,14 @@ instance (Applicative m, Monad m) => Applicative (FreshT m) where
 instance (Monad m) => Monad (FreshT m) where
   (FreshT s) >>= f = FreshT $ \ident idx -> do
     (a, idx') <- s ident idx
-    runFreshT' (f a) ident idx'
+    runFreshTFromIndex (f a) ident idx'
 
 instance MonadTrans FreshT where
   lift x = FreshT $ \_ index -> (,index) <$> x
 
 liftFreshTCache :: (Functor m) => Catch e m (a, FreshIndex) -> Catch e (FreshT m) a
 liftFreshTCache catchE (FreshT m) h =
-  FreshT $ \ident index -> m ident index `catchE` \e -> runFreshT' (h e) ident index
+  FreshT $ \ident index -> m ident index `catchE` \e -> runFreshTFromIndex (h e) ident index
 
 instance (MonadError e m) => MonadError e (FreshT m) where
   throwError = lift . throwError
