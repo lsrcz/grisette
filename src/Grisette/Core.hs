@@ -713,7 +713,7 @@ module Grisette.Core
     -- ** Symbolic Generation Monad
     MonadFresh (..),
     Fresh,
-    FreshT,
+    FreshT (..),
     runFresh,
     runFreshT,
 
@@ -1099,7 +1099,7 @@ import Grisette.Core.Data.Class.GenSym
     Fresh,
     FreshIdent (..),
     FreshIndex (..),
-    FreshT,
+    FreshT (..),
     GenSym (..),
     GenSymSimple (..),
     ListSpec (..),
