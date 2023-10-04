@@ -187,6 +187,7 @@ module Grisette.Core
     bvExtract,
     SizedBV (..),
     sizedBVExtract,
+    BVSignConversion (..),
     SafeDivision (..),
     SafeLinearArith (..),
     SymIntegerOp,
@@ -1053,6 +1054,7 @@ import Grisette.Core.Control.Monad.UnionM
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (..),
+    BVSignConversion (..),
     SizedBV (..),
     bvExtract,
     sizedBVExtract,
