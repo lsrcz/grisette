@@ -716,6 +716,7 @@ module Grisette.Core
     FreshT (..),
     runFresh,
     runFreshT,
+    mrgRunFreshT,
 
     -- ** Symbolic Generation Class
     GenSym (..),
@@ -1116,6 +1117,7 @@ import Grisette.Core.Data.Class.GenSym
     derivedSameShapeSimpleFresh,
     genSym,
     genSymSimple,
+    mrgRunFreshT,
     name,
     nameWithInfo,
     runFresh,

@@ -40,6 +40,7 @@ module Grisette.Core.Data.Class.GenSym
     Fresh,
     runFreshT,
     runFresh,
+    mrgRunFreshT,
 
     -- * Symbolic value generation
     GenSym (..),
@@ -333,6 +334,13 @@ instance
 -- | Run the symbolic generation with the given identifier and 0 as the initial index.
 runFreshT :: (Monad m) => FreshT m a -> FreshIdent -> m a
 runFreshT m ident = fst <$> runFreshTFromIndex m ident (FreshIndex 0)
+
+mrgRunFreshT ::
+  (Monad m, UnionLike m, Mergeable a) =>
+  FreshT m a ->
+  FreshIdent ->
+  m a
+mrgRunFreshT m ident = merge $ runFreshT m ident
 
 instance (Functor f) => Functor (FreshT f) where
   fmap f (FreshT s) = FreshT $ \ident idx -> first f <$> s ident idx
