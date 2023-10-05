@@ -214,15 +214,15 @@ instance SimpleMergeable FreshIndex where
 --     >>> nameWithInfo "a" (1 :: Int)
 --     a:1
 data FreshIdent where
-  FreshIdent :: String -> FreshIdent
-  FreshIdentWithInfo :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> FreshIdent
+  FreshIdent :: T.Text -> FreshIdent
+  FreshIdentWithInfo :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> a -> FreshIdent
 
 instance Show FreshIdent where
-  show (FreshIdent i) = i
-  show (FreshIdentWithInfo s i) = s ++ ":" ++ show i
+  show (FreshIdent i) = T.unpack i
+  show (FreshIdentWithInfo s i) = T.unpack s ++ ":" ++ show i
 
 instance IsString FreshIdent where
-  fromString = name
+  fromString = name . T.pack
 
 instance Eq FreshIdent where
   FreshIdent l == FreshIdent r = l == r
@@ -261,7 +261,7 @@ instance NFData FreshIdent where
 --
 -- The user may need to use unique names to avoid unintentional identifier
 -- collision.
-name :: String -> FreshIdent
+name :: T.Text -> FreshIdent
 name = FreshIdent
 
 -- | Identifier with extra information.
@@ -270,7 +270,7 @@ name = FreshIdent
 --
 -- The user may need to use unique names or additional information to avoid
 -- unintentional identifier collision.
-nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> FreshIdent
+nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> a -> FreshIdent
 nameWithInfo = FreshIdentWithInfo
 
 -- | Monad class for fresh symbolic value generation.

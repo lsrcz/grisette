@@ -5,6 +5,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -45,6 +46,7 @@ where
 import Data.Bits (Bits)
 import Data.Data (Proxy (Proxy), Typeable)
 import Data.Kind (Type)
+import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
@@ -141,7 +143,7 @@ class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   same :: a -> Term Bool
   counterExample :: a -> Term Bool
   counterExample = notTerm . same
-  symSpec :: String -> a
+  symSpec :: T.Text -> a
   symSpec s = wrap (ssymTerm s) (ssymTerm s)
   conSpec :: b -> a
   conSpec v = wrap (conTerm v) (conTerm v)
@@ -384,7 +386,7 @@ boolonly :: Int -> Gen BoolOnlySpec
 boolonly 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bool")
+          return . symSpec . (<> "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -431,7 +433,7 @@ boolWithLIA :: Int -> Gen BoolWithLIASpec
 boolWithLIA 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bool")
+          return . symSpec . (<> "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -457,7 +459,7 @@ liaWithBool :: Int -> Gen LIAWithBoolSpec
 liaWithBool 0 =
   let s =
         oneof $
-          return . symSpec . (++ "int")
+          return . symSpec . (<> "int")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec <$> arbitrary
    in oneof [r, s]
@@ -507,7 +509,7 @@ boolWithFSBV :: forall proxy bv. (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), 
 boolWithFSBV _ 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bool")
+          return . symSpec . (<> "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -538,7 +540,7 @@ fsbvWithBool ::
 fsbvWithBool _ 0 =
   let s =
         oneof $
-          return . symSpec . (++ "int")
+          return . symSpec . (<> "int")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -599,7 +601,7 @@ dsbv1 ::
 dsbv1 _ 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bv1")
+          return . symSpec . (<> "bv1")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -651,7 +653,7 @@ dsbv2 ::
 dsbv2 _ 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bv2")
+          return . symSpec . (<> "bv2")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -703,7 +705,7 @@ dsbv3 ::
 dsbv3 _ 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bv3")
+          return . symSpec . (<> "bv3")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -754,7 +756,7 @@ dsbv4 ::
 dsbv4 _ 0 =
   let s =
         oneof $
-          return . symSpec . (++ "bv4")
+          return . symSpec . (<> "bv4")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]

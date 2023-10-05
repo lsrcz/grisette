@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Grisette.Core.Data.Class.UnionLikeTests (unionLikeTests) where

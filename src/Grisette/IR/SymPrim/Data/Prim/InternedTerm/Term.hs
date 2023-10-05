@@ -62,6 +62,7 @@ import Data.Interned
   )
 import Data.Kind (Constraint)
 import Data.String (IsString (fromString))
+import qualified Data.Text as T
 import Data.Typeable (Proxy (Proxy), cast)
 import GHC.Generics (Generic)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
@@ -256,8 +257,8 @@ class
 -- >>> "a" :: TypedSymbol Bool
 -- a :: Bool
 data TypedSymbol t where
-  SimpleSymbol :: (SupportedPrim t) => String -> TypedSymbol t
-  IndexedSymbol :: (SupportedPrim t) => String -> Int -> TypedSymbol t
+  SimpleSymbol :: (SupportedPrim t) => T.Text -> TypedSymbol t
+  IndexedSymbol :: (SupportedPrim t) => T.Text -> Int -> TypedSymbol t
   WithInfo ::
     forall t a.
     ( SupportedPrim t,
@@ -296,13 +297,13 @@ instance Lift (TypedSymbol t) where
   liftTyped (WithInfo s1 i1) = [||WithInfo s1 i1||]
 
 instance Show (TypedSymbol t) where
-  show (SimpleSymbol str) = str ++ " :: " ++ show (typeRep @t)
-  show (IndexedSymbol str i) = str ++ "@" ++ show i ++ " :: " ++ show (typeRep @t)
+  show (SimpleSymbol str) = T.unpack str ++ " :: " ++ show (typeRep @t)
+  show (IndexedSymbol str i) = T.unpack str ++ "@" ++ show i ++ " :: " ++ show (typeRep @t)
   show (WithInfo s info) = showUntyped s ++ ":" ++ show info ++ " :: " ++ show (typeRep @t)
 
 showUntyped :: TypedSymbol t -> String
-showUntyped (SimpleSymbol str) = str
-showUntyped (IndexedSymbol str i) = str ++ "@" ++ show i
+showUntyped (SimpleSymbol str) = T.unpack str
+showUntyped (IndexedSymbol str i) = T.unpack str ++ "@" ++ show i
 showUntyped (WithInfo s info) = showUntyped s ++ ":" ++ show info
 
 instance Hashable (TypedSymbol t) where
@@ -316,7 +317,7 @@ instance NFData (TypedSymbol t) where
   rnf (WithInfo s info) = rnf s `seq` rnf info
 
 instance (SupportedPrim t) => IsString (TypedSymbol t) where
-  fromString = SimpleSymbol
+  fromString = SimpleSymbol . T.pack
 
 withSymbolSupported :: TypedSymbol t -> ((SupportedPrim t) => a) -> a
 withSymbolSupported (SimpleSymbol _) a = a

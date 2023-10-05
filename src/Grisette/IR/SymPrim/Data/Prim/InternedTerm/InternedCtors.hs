@@ -78,6 +78,7 @@ import Data.Interned.Internal
   ( Cache (getCache),
     CacheState (CacheState),
   )
+import qualified Data.Text as T
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
@@ -189,17 +190,17 @@ symTerm :: forall t. (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
 symTerm t = internTerm $ USymTerm t
 {-# INLINE symTerm #-}
 
-ssymTerm :: (SupportedPrim t, Typeable t) => String -> Term t
+ssymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Term t
 ssymTerm = symTerm . SimpleSymbol
 {-# INLINE ssymTerm #-}
 
-isymTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
+isymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Int -> Term t
 isymTerm str idx = symTerm $ IndexedSymbol str idx
 {-# INLINE isymTerm #-}
 
 sinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  String ->
+  T.Text ->
   a ->
   Term t
 sinfosymTerm s info = symTerm $ WithInfo (SimpleSymbol s) info
@@ -207,7 +208,7 @@ sinfosymTerm s info = symTerm $ WithInfo (SimpleSymbol s) info
 
 iinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  String ->
+  T.Text ->
   Int ->
   a ->
   Term t

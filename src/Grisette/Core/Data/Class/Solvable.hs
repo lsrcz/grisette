@@ -21,12 +21,14 @@ where
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
 import Data.String (IsString)
+import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
+-- >>> :set -XOverloadedStrings
 
 -- | The class defines the creation and pattern matching of solvable type
 -- values.
@@ -59,7 +61,7 @@ class (IsString t) => Solvable c t | t -> c where
   -- False
   -- >>> (ssym "a" :: SymBool) &&~ ssym "a"
   -- a
-  ssym :: String -> t
+  ssym :: T.Text -> t
 
   -- | Generate indexed symbolic constants.
   --
@@ -68,7 +70,7 @@ class (IsString t) => Solvable c t | t -> c where
   --
   -- >>> isym "a" 1 :: SymBool
   -- a@1
-  isym :: String -> Int -> t
+  isym :: T.Text -> Int -> t
 
   -- | Generate simply-named symbolic constants with some extra information for
   -- disambiguation.
@@ -78,7 +80,7 @@ class (IsString t) => Solvable c t | t -> c where
   --
   -- >>> sinfosym "a" "someInfo" :: SymInteger
   -- a:"someInfo"
-  sinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> a -> t
+  sinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> a -> t
 
   -- | Generate indexed symbolic constants with some extra information for
   -- disambiguation.
@@ -89,7 +91,7 @@ class (IsString t) => Solvable c t | t -> c where
   --
   -- >>> iinfosym "a" 1 "someInfo" :: SymInteger
   -- a@1:"someInfo"
-  iinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => String -> Int -> a -> t
+  iinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> Int -> a -> t
 
 -- | Extract the concrete value from a solvable value with 'conView'.
 --

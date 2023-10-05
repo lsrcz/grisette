@@ -57,6 +57,7 @@ where
 import Control.DeepSeq (NFData)
 import Data.Bits (Bits)
 import Data.Hashable (Hashable)
+import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
@@ -100,16 +101,16 @@ constructTernary ::
   Term t
 conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
 symTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
-ssymTerm :: (SupportedPrim t, Typeable t) => String -> Term t
-isymTerm :: (SupportedPrim t, Typeable t) => String -> Int -> Term t
+ssymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Term t
+isymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Int -> Term t
 sinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  String ->
+  T.Text ->
   a ->
   Term t
 iinfosymTerm ::
   (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  String ->
+  T.Text ->
   Int ->
   a ->
   Term t

@@ -9,6 +9,7 @@ module Grisette.Core.Data.Class.TestValues
   )
 where
 
+import qualified Data.Text as T
 import Grisette
   ( Solvable (isym),
     TypedSymbol (IndexedSymbol, SimpleSymbol),
@@ -25,14 +26,14 @@ symTrue = conBool True
 symFalse :: SymBool
 symFalse = conBool False
 
-ssymBool :: String -> SymBool
+ssymBool :: T.Text -> SymBool
 ssymBool = ssym
 
-isymBool :: String -> Int -> SymBool
+isymBool :: T.Text -> Int -> SymBool
 isymBool = isym
 
-ssymbolBool :: String -> TypedSymbol Bool
+ssymbolBool :: T.Text -> TypedSymbol Bool
 ssymbolBool = SimpleSymbol
 
-isymbolBool :: String -> Int -> TypedSymbol Bool
+isymbolBool :: T.Text -> Int -> TypedSymbol Bool
 isymbolBool = IndexedSymbol
