@@ -25,6 +25,7 @@ where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
+import qualified Data.Text as T
 import Debug.Trace.LocationTH (__LOCATION__)
 import GHC.Generics (Generic)
 import Grisette.Core.Data.Class.GenSym (FreshIdent, nameWithInfo)
@@ -60,7 +61,7 @@ parseFileLocation str =
 -- a:<interactive>:...
 --
 -- The uniqueness is ensured for the call to 'nameWithLoc' at different location.
-nameWithLoc :: String -> SpliceQ FreshIdent
+nameWithLoc :: T.Text -> SpliceQ FreshIdent
 nameWithLoc s = [||nameWithInfo s (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
 
 -- | Generate simply-named symbolic variables. The file location will be
@@ -78,7 +79,7 @@ nameWithLoc s = [||nameWithInfo s (parseFileLocation $$(liftSplice $ unsafeTExpC
 -- >>> let f _ = $$(slocsym "a") :: SymBool
 -- >>> f () == f ()
 -- True
-slocsym :: (Solvable c s) => String -> SpliceQ s
+slocsym :: (Solvable c s) => T.Text -> SpliceQ s
 slocsym nm = [||sinfosym nm (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]
 
 -- | Generate indexed symbolic variables. The file location will be attached to identifier.
@@ -89,5 +90,5 @@ slocsym nm = [||sinfosym nm (parseFileLocation $$(liftSplice $ unsafeTExpCoerce 
 -- Calling 'ilocsymb' with the same name and index at different location will
 -- always generate different symbolic constants. Calling 'slocsymb' at the same
 -- location for multiple times will generate the same symbolic constants.
-ilocsym :: (Solvable c s) => String -> Int -> SpliceQ s
+ilocsym :: (Solvable c s) => T.Text -> Int -> SpliceQ s
 ilocsym nm idx = [||iinfosym nm idx (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))||]

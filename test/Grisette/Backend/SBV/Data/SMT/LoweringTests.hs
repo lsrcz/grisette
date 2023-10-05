@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -18,6 +19,7 @@ import qualified Data.HashMap.Strict as M
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBV
+import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV.Data.SMT.Lowering (lowerSinglePrim)
 import Grisette.Backend.SBV.Data.SMT.Solving
@@ -231,7 +233,7 @@ testTernaryOpLowering ::
   ) =>
   GrisetteSMTConfig n ->
   (Term a -> Term b -> Term c -> Term d) ->
-  String ->
+  T.Text ->
   (TermTy n a -> TermTy n b -> TermTy n c -> TermTy n d) ->
   Assertion
 testTernaryOpLowering config f name sbvfun = do
@@ -250,7 +252,7 @@ testTernaryOpLowering config f name sbvfun = do
         satres <- SBV.checkSat
         case satres of
           SBV.Sat -> return ()
-          _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unsolvable formula"
+          _ -> lift $ assertFailure $ T.unpack $ "Lowering for " <> name <> " generated unsolvable formula"
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc
@@ -271,7 +273,7 @@ testTernaryOpLowering config f name sbvfun = do
                 "Translation counter example found: "
                   ++ show (counterExampleA, counterExampleB, counterExampleC)
           SBV.Unsat -> return ()
-          _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
+          _ -> lift $ assertFailure $ T.unpack $ "Lowering for " <> name <> " generated unknown formula"
       _ -> lift $ assertFailure "Failed to extract the term"
 
 -- testTernaryOpLowering' ::

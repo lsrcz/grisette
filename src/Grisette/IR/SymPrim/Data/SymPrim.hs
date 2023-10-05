@@ -1045,15 +1045,15 @@ EQ_BV_SOME(SomeSymWordN, binSomeSymWordN)
 
 #define IS_STRING_SIMPLE(symtype) \
 instance IsString symtype where \
-  fromString = ssym
+  fromString = ssym . fromString
 
 #define IS_STRING_BV(symtype) \
 instance (KnownNat n, 1 <= n) => IsString (symtype n) where \
-  fromString = ssym
+  fromString = ssym . fromString
 
 #define IS_STRING_FUN(op, cons) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => IsString (sa op sb) where \
-  fromString = ssym
+  fromString = ssym . fromString
 
 #if 1
 IS_STRING_SIMPLE(SymBool)

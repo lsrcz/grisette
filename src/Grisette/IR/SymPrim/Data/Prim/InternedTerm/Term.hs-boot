@@ -33,6 +33,7 @@ import Data.Bits (Bits)
 import Data.Hashable (Hashable)
 import Data.Interned (Cache, Id)
 import Data.Kind (Constraint)
+import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
   ( BVSignConversion,
@@ -124,8 +125,8 @@ class
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
 data TypedSymbol t where
-  SimpleSymbol :: (SupportedPrim t) => String -> TypedSymbol t
-  IndexedSymbol :: (SupportedPrim t) => String -> Int -> TypedSymbol t
+  SimpleSymbol :: (SupportedPrim t) => T.Text -> TypedSymbol t
+  IndexedSymbol :: (SupportedPrim t) => T.Text -> Int -> TypedSymbol t
   WithInfo ::
     forall t a.
     ( SupportedPrim t,

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Grisette.Lib.Control.Monad.Trans.State.Common
   ( mrgStateTest,
     mrgRunStateTTest,
