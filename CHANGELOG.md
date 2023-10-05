@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `toGuardList` function. ([#137](https://github.com/lsrcz/grisette/pull/137))
 - Exported some previously hidden API (`BVSignConversion`, `runFreshTFromIndex`) that we found useful or forgot to export. ([#138](https://github.com/lsrcz/grisette/pull/138), [#139](https://github.com/lsrcz/grisette/pull/139))
 - Provided `mrgRunFreshT` to run `FreshT` with merging. ([#140](https://github.com/lsrcz/grisette/pull/140))
+- Added `Grisette.Data.Class.SignConversion.SignConversion` for types from `Data.Int` and `Data.Word`. ([#142](https://github.com/lsrcz/grisette/pull/142))
 
 ### Removed
 
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Changed the name of `Union` constructors and patterns. ([#133](https://github.com/lsrcz/grisette/pull/133))
 - The `Union` patterns, when used as constructors, now merges the result. ([#133](https://github.com/lsrcz/grisette/pull/133))
 - Changed the symbolic identifier type from `String` to `Data.Text.Text`. ([#141](https://github.com/lsrcz/grisette/pull/141))
+- `Grisette.Data.Class.BitVector.BVSignConversion` is now `Grisette.Data.Class.SignConversion.SignConversion`. ([#142](https://github.com/lsrcz/grisette/pull/142))
 
 ## [0.3.1.1] -- 2023-09-29
 

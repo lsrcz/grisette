@@ -37,8 +37,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     addNumTerm,
     andBitsTerm,
     andTerm,
-    bvToSignedTerm,
-    bvToUnsignedTerm,
     bvconcatTerm,
     bvselectTerm,
     bvsignExtendTerm,
@@ -64,6 +62,8 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     signumNumTerm,
     ssymTerm,
     timesNumTerm,
+    toSignedTerm,
+    toUnsignedTerm,
     uminusNumTerm,
     xorBitsTerm,
   )
@@ -626,8 +626,8 @@ loweringTests =
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remBoundedIntegralTerm "rem" SBV.sRem
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remBoundedIntegralTerm "rem" SBV.sRem,
               testCase "ToUnsigned" $ do
-                testUnaryOpLowering @(IntN 5) @(WordN 5) unboundedConfig bvToUnsignedTerm "toUnsigned" SBV.sFromIntegral
-                testUnaryOpLowering @(IntN 5) @(WordN 5) boundedConfig bvToUnsignedTerm "toUnsigned" SBV.sFromIntegral
+                testUnaryOpLowering @(IntN 5) @(WordN 5) unboundedConfig toUnsignedTerm "toUnsigned" SBV.sFromIntegral
+                testUnaryOpLowering @(IntN 5) @(WordN 5) boundedConfig toUnsignedTerm "toUnsigned" SBV.sFromIntegral
             ],
           testGroup
             "WordN"
@@ -830,7 +830,7 @@ loweringTests =
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
               testCase "ToSigned" $ do
-                testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig bvToSignedTerm "toSigned" SBV.sFromIntegral
-                testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig bvToSignedTerm "toSigned" SBV.sFromIntegral
+                testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
+                testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
             ]
         ]

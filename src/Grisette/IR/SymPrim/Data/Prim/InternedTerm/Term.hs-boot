@@ -36,9 +36,9 @@ import Data.Kind (Constraint)
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
-  ( BVSignConversion,
-    SizedBV,
+  ( SizedBV,
   )
+import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
   ( ModelValue,
     toModelValue,
@@ -186,30 +186,22 @@ data Term t where
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   ShiftBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
   RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
-  BVToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+  ToSignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (ubv n)) ->
-    Term (sbv n)
-  BVToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+    !(Term u) ->
+    Term s
+  ToUnsignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (sbv n)) ->
-    Term (ubv n)
+    !(Term s) ->
+    Term u
   BVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
       Typeable bv,
@@ -316,28 +308,20 @@ data UTerm t where
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
   UShiftBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
   URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
-  UBVToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+  UToSignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
-    !(Term (ubv n)) ->
-    UTerm (sbv n)
-  UBVToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+    !(Term u) ->
+    UTerm s
+  UToUnsignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
-    !(Term (sbv n)) ->
-    UTerm (ubv n)
+    !(Term s) ->
+    UTerm u
   UBVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
       Typeable bv,

@@ -36,8 +36,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        BVToSignedTerm,
-        BVToUnsignedTerm,
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
@@ -64,6 +62,8 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
+        ToSignedTerm,
+        ToUnsignedTerm,
         UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
@@ -78,8 +78,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
     pevalBVExtendTerm,
     pevalBVSelectTerm,
-    pevalBVToSignedTerm,
-    pevalBVToUnsignedTerm,
+    pevalToSignedTerm,
+    pevalToUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
@@ -171,8 +171,8 @@ substTerm sym term = gov
         ComplementBitsTerm _ op -> SomeTerm $ pevalComplementBitsTerm (gov op)
         ShiftBitsTerm _ op n -> SomeTerm $ pevalShiftBitsTerm (gov op) n
         RotateBitsTerm _ op n -> SomeTerm $ pevalRotateBitsTerm (gov op) n
-        BVToSignedTerm _ op -> SomeTerm $ pevalBVToSignedTerm op
-        BVToUnsignedTerm _ op -> SomeTerm $ pevalBVToUnsignedTerm op
+        ToSignedTerm _ op -> SomeTerm $ pevalToSignedTerm op
+        ToUnsignedTerm _ op -> SomeTerm $ pevalToUnsignedTerm op
         BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)
         BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)
         BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)

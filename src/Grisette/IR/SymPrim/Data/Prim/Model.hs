@@ -81,8 +81,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        BVToSignedTerm,
-        BVToUnsignedTerm,
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
@@ -109,6 +107,8 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
+        ToSignedTerm,
+        ToUnsignedTerm,
         UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
@@ -130,8 +130,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
     pevalBVExtendTerm,
     pevalBVSelectTerm,
-    pevalBVToSignedTerm,
-    pevalBVToUnsignedTerm,
+    pevalToSignedTerm,
+    pevalToUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
@@ -464,10 +464,10 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goUnary (`pevalShiftBitsTerm` n) arg
     go (SomeTerm (RotateBitsTerm _ arg n)) =
       goUnary (`pevalRotateBitsTerm` n) arg
-    go (SomeTerm (BVToSignedTerm _ arg)) =
-      goUnary pevalBVToSignedTerm arg
-    go (SomeTerm (BVToUnsignedTerm _ arg)) =
-      goUnary pevalBVToUnsignedTerm arg
+    go (SomeTerm (ToSignedTerm _ arg)) =
+      goUnary pevalToSignedTerm arg
+    go (SomeTerm (ToUnsignedTerm _ arg)) =
+      goUnary pevalToUnsignedTerm arg
     go (SomeTerm (BVConcatTerm _ arg1 arg2)) =
       goBinary pevalBVConcatTerm arg1 arg2
     go (SomeTerm (BVSelectTerm _ ix w arg)) =
