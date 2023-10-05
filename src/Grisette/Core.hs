@@ -187,7 +187,7 @@ module Grisette.Core
     bvExtract,
     SizedBV (..),
     sizedBVExtract,
-    BVSignConversion (..),
+    SignConversion (..),
     SafeDivision (..),
     SafeLinearArith (..),
     SymIntegerOp,
@@ -1055,7 +1055,6 @@ import Grisette.Core.Control.Monad.UnionM
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (..),
-    BVSignConversion (..),
     SizedBV (..),
     bvExtract,
     sizedBVExtract,
@@ -1153,6 +1152,7 @@ import Grisette.Core.Data.Class.SafeArith
     SafeLinearArith (..),
     SymIntegerOp,
   )
+import Grisette.Core.Data.Class.SignConversion (SignConversion (..))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (..),
     SimpleMergeable1 (..),

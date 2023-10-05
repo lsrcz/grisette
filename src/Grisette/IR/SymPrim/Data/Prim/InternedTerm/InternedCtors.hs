@@ -45,8 +45,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     complementBitsTerm,
     shiftBitsTerm,
     rotateBitsTerm,
-    bvToSignedTerm,
-    bvToUnsignedTerm,
+    toSignedTerm,
+    toUnsignedTerm,
     bvconcatTerm,
     bvselectTerm,
     bvextendTerm,
@@ -82,9 +82,9 @@ import qualified Data.Text as T
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
-  ( BVSignConversion,
-    SizedBV,
+  ( SizedBV,
   )
+import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
     SupportedPrim,
@@ -99,8 +99,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         UBVConcatTerm,
         UBVExtendTerm,
         UBVSelectTerm,
-        UBVToSignedTerm,
-        UBVToUnsignedTerm,
         UBinaryTerm,
         UComplementBitsTerm,
         UConTerm,
@@ -127,6 +125,8 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         UTabularFunApplyTerm,
         UTernaryTerm,
         UTimesNumTerm,
+        UToSignedTerm,
+        UToUnsignedTerm,
         UUMinusNumTerm,
         UUnaryTerm,
         UXorBitsTerm
@@ -287,31 +287,23 @@ rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
 {-# INLINE rotateBitsTerm #-}
 
-bvToSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-    Typeable ubv,
-    Typeable sbv,
-    KnownNat n,
-    1 <= n,
-    BVSignConversion (ubv n) (sbv n)
+toSignedTerm ::
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (ubv n) ->
-  Term (sbv n)
-bvToSignedTerm = internTerm . UBVToSignedTerm
+  Term u ->
+  Term s
+toSignedTerm = internTerm . UToSignedTerm
 
-bvToUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-    Typeable ubv,
-    Typeable sbv,
-    KnownNat n,
-    1 <= n,
-    BVSignConversion (ubv n) (sbv n)
+toUnsignedTerm ::
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (sbv n) ->
-  Term (ubv n)
-bvToUnsignedTerm = internTerm . UBVToUnsignedTerm
+  Term s ->
+  Term u
+toUnsignedTerm = internTerm . UToUnsignedTerm
 
 bvconcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),

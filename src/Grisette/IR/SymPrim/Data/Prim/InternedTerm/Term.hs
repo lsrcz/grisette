@@ -68,10 +68,10 @@ import GHC.Generics (Generic)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
-  ( BVSignConversion,
-    SizedBV,
+  ( SizedBV,
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
   ( typeMemoizedCache,
   )
@@ -80,8 +80,6 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     addNumTerm,
     andBitsTerm,
     andTerm,
-    bvToSignedTerm,
-    bvToUnsignedTerm,
     bvconcatTerm,
     bvextendTerm,
     bvselectTerm,
@@ -112,6 +110,8 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     symTerm,
     tabularFunApplyTerm,
     timesNumTerm,
+    toSignedTerm,
+    toUnsignedTerm,
     uminusNumTerm,
     xorBitsTerm,
   )
@@ -422,30 +422,22 @@ data Term t where
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   ShiftBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
   RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
-  BVToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+  ToSignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (ubv n)) ->
-    Term (sbv n)
-  BVToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+    !(Term u) ->
+    Term s
+  ToUnsignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (sbv n)) ->
-    Term (ubv n)
+    !(Term s) ->
+    Term u
   BVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
       Typeable bv,
@@ -545,8 +537,8 @@ instance Lift (Term t) where
   liftTyped (ComplementBitsTerm _ arg) = [||complementBitsTerm arg||]
   liftTyped (ShiftBitsTerm _ arg n) = [||shiftBitsTerm arg n||]
   liftTyped (RotateBitsTerm _ arg n) = [||rotateBitsTerm arg n||]
-  liftTyped (BVToSignedTerm _ v) = [||bvToSignedTerm v||]
-  liftTyped (BVToUnsignedTerm _ v) = [||bvToUnsignedTerm v||]
+  liftTyped (ToSignedTerm _ v) = [||toSignedTerm v||]
+  liftTyped (ToUnsignedTerm _ v) = [||toUnsignedTerm v||]
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
   liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) = [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
   liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) = [||bvextendTerm signed (Proxy @n) arg||]
@@ -621,8 +613,8 @@ instance Show (Term ty) where
   show (ComplementBitsTerm i arg) = "ComplementBits{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (ShiftBitsTerm i arg n) = "ShiftBits{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (RotateBitsTerm i arg n) = "RotateBits{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (BVToSignedTerm i arg) = "BVToSigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (BVToUnsignedTerm i arg) = "BVToUnsigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (ToSignedTerm i arg) = "ToSigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (ToUnsignedTerm i arg) = "ToUnsigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (BVConcatTerm i arg1 arg2) = "BVConcat{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (BVSelectTerm i ix w arg) =
     "BVSelect{id=" ++ show i ++ ", ix=" ++ show ix ++ ", w=" ++ show w ++ ", arg=" ++ show arg ++ "}"
@@ -705,28 +697,20 @@ data UTerm t where
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
   UShiftBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
   URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
-  UBVToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+  UToSignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
-    !(Term (ubv n)) ->
-    UTerm (sbv n)
-  UBVToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-      Typeable ubv,
-      Typeable sbv,
-      KnownNat n,
-      1 <= n,
-      BVSignConversion (ubv n) (sbv n)
+    !(Term u) ->
+    UTerm s
+  UToUnsignedTerm ::
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
-    !(Term (sbv n)) ->
-    UTerm (ubv n)
+    !(Term s) ->
+    UTerm u
   UBVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
       Typeable bv,
@@ -843,14 +827,12 @@ instance (SupportedPrim t) => Interned (Term t) where
     DShiftBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
     DRotateBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
     DBVConcatTerm :: TypeRep bv1 -> TypeRep bv2 -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
-    DBVToSignedTerm ::
-      forall ubv sbv (n :: Nat).
-      !(TypeRep (ubv n), Id) ->
-      Description (Term (sbv n))
-    DBVToUnsignedTerm ::
-      forall sbv ubv (n :: Nat).
-      !(TypeRep (sbv n), Id) ->
-      Description (Term (ubv n))
+    DToSignedTerm ::
+      !(TypeRep u, Id) ->
+      Description (Term s)
+    DToUnsignedTerm ::
+      !(TypeRep s, Id) ->
+      Description (Term u)
     DBVSelectTerm ::
       forall bv (n :: Nat) (w :: Nat) (ix :: Nat).
       !(TypeRep ix) ->
@@ -909,8 +891,8 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UComplementBitsTerm arg) = DComplementBitsTerm (identity arg)
   describe (UShiftBitsTerm arg n) = DShiftBitsTerm (identity arg) n
   describe (URotateBitsTerm arg n) = DRotateBitsTerm (identity arg) n
-  describe (UBVToSignedTerm (arg :: Term bv)) = DBVToSignedTerm (typeRep :: TypeRep bv, identity arg)
-  describe (UBVToUnsignedTerm (arg :: Term bv)) = DBVToSignedTerm (typeRep :: TypeRep bv, identity arg)
+  describe (UToSignedTerm (arg :: Term bv)) = DToSignedTerm (typeRep :: TypeRep bv, identity arg)
+  describe (UToUnsignedTerm (arg :: Term bv)) = DToSignedTerm (typeRep :: TypeRep bv, identity arg)
   describe (UBVConcatTerm (arg1 :: bv1) (arg2 :: bv2)) =
     DBVConcatTerm (typeRep :: TypeRep bv1) (typeRep :: TypeRep bv2) (identity arg1) (identity arg2)
   describe (UBVSelectTerm (ix :: TypeRep ix) _ (arg :: Term arg)) =
@@ -955,8 +937,8 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UComplementBitsTerm arg) = ComplementBitsTerm i arg
       go (UShiftBitsTerm arg n) = ShiftBitsTerm i arg n
       go (URotateBitsTerm arg n) = RotateBitsTerm i arg n
-      go (UBVToSignedTerm arg) = BVToSignedTerm i arg
-      go (UBVToUnsignedTerm arg) = BVToUnsignedTerm i arg
+      go (UToSignedTerm arg) = ToSignedTerm i arg
+      go (UToUnsignedTerm arg) = ToUnsignedTerm i arg
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
       go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
       go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
@@ -998,8 +980,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DComplementBitsTerm li == DComplementBitsTerm ri = li == ri
   DShiftBitsTerm li ln == DShiftBitsTerm ri rn = li == ri && ln == rn
   DRotateBitsTerm li ln == DRotateBitsTerm ri rn = li == ri && ln == rn
-  DBVToSignedTerm li == DBVToSignedTerm ri = eqTypedId li ri
-  DBVToUnsignedTerm li == DBVToUnsignedTerm ri = eqTypedId li ri
+  DToSignedTerm li == DToSignedTerm ri = eqTypedId li ri
+  DToUnsignedTerm li == DToUnsignedTerm ri = eqTypedId li ri
   DBVConcatTerm lrep1 lrep2 li1 li2 == DBVConcatTerm rrep1 rrep2 ri1 ri2 =
     eqTypeRepBool lrep1 rrep1 && eqTypeRepBool lrep2 rrep2 && li1 == ri1 && li2 == ri2
   DBVSelectTerm lix li == DBVSelectTerm rix ri =
@@ -1058,8 +1040,8 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DComplementBitsTerm id1) = s `hashWithSalt` (20 :: Int) `hashWithSalt` id1
   hashWithSalt s (DShiftBitsTerm id1 n) = s `hashWithSalt` (21 :: Int) `hashWithSalt` id1 `hashWithSalt` n
   hashWithSalt s (DRotateBitsTerm id1 n) = s `hashWithSalt` (22 :: Int) `hashWithSalt` id1 `hashWithSalt` n
-  hashWithSalt s (DBVToSignedTerm id) = s `hashWithSalt` (23 :: Int) `hashWithSalt` id
-  hashWithSalt s (DBVToUnsignedTerm id) = s `hashWithSalt` (24 :: Int) `hashWithSalt` id
+  hashWithSalt s (DToSignedTerm id) = s `hashWithSalt` (23 :: Int) `hashWithSalt` id
+  hashWithSalt s (DToUnsignedTerm id) = s `hashWithSalt` (24 :: Int) `hashWithSalt` id
   hashWithSalt s (DBVConcatTerm rep1 rep2 id1 id2) =
     s `hashWithSalt` (25 :: Int) `hashWithSalt` rep1 `hashWithSalt` rep2 `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DBVSelectTerm ix id1) = s `hashWithSalt` (26 :: Int) `hashWithSalt` ix `hashWithSalt` id1

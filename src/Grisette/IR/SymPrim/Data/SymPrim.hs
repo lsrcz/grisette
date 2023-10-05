@@ -131,7 +131,6 @@ import Grisette.Core.Data.BV
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
-    BVSignConversion (toSigned, toUnsigned),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
 import Grisette.Core.Data.Class.Bool
@@ -175,6 +174,7 @@ import Grisette.Core.Data.Class.SafeArith
       ),
     SymIntegerOp,
   )
+import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
@@ -224,8 +224,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
     pevalBVExtendTerm,
     pevalBVSelectTerm,
-    pevalBVToSignedTerm,
-    pevalBVToUnsignedTerm,
+    pevalToSignedTerm,
+    pevalToUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
@@ -1559,11 +1559,11 @@ instance BV SomeSymWordN where
 
 -- BVSignConversion
 
-instance (KnownNat n, 1 <= n) => BVSignConversion (SymWordN n) (SymIntN n) where
-  toSigned (SymWordN n) = SymIntN $ pevalBVToSignedTerm n
-  toUnsigned (SymIntN n) = SymWordN $ pevalBVToUnsignedTerm n
+instance (KnownNat n, 1 <= n) => SignConversion (SymWordN n) (SymIntN n) where
+  toSigned (SymWordN n) = SymIntN $ pevalToSignedTerm n
+  toUnsigned (SymIntN n) = SymWordN $ pevalToUnsignedTerm n
 
-instance BVSignConversion SomeSymWordN SomeSymIntN where
+instance SignConversion SomeSymWordN SomeSymIntN where
   toSigned (SomeSymWordN n) = SomeSymIntN $ toSigned n
   toUnsigned (SomeSymIntN n) = SomeSymWordN $ toUnsigned n
 

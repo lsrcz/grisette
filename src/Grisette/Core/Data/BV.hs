@@ -108,8 +108,10 @@ import GHC.TypeNats
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
-    BVSignConversion (toSigned, toUnsigned),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
+  )
+import Grisette.Core.Data.Class.SignConversion
+  ( SignConversion (toSigned, toUnsigned),
   )
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
@@ -784,10 +786,10 @@ instance BV SomeIntN where
   bvSelect ix w = toSigned . bvSelect ix w . toUnsigned
   {-# INLINE bvSelect #-}
 
-instance (KnownNat n, 1 <= n) => BVSignConversion (WordN n) (IntN n) where
+instance (KnownNat n, 1 <= n) => SignConversion (WordN n) (IntN n) where
   toSigned (WordN i) = IntN i
   toUnsigned (IntN i) = WordN i
 
-instance BVSignConversion SomeWordN SomeIntN where
+instance SignConversion SomeWordN SomeIntN where
   toSigned (SomeWordN i) = SomeIntN $ toSigned i
   toUnsigned (SomeIntN i) = SomeWordN $ toUnsigned i

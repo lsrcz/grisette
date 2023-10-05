@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
@@ -24,7 +23,6 @@ module Grisette.Core.Data.Class.BitVector
     bvExtract,
     SizedBV (..),
     sizedBVExtract,
-    BVSignConversion (..),
   )
 where
 
@@ -234,11 +232,3 @@ sizedBVExtract _ _ =
     (KnownProof, LeqProof, LeqProof) ->
       sizedBVSelect (Proxy @j) (Proxy @(i - j + 1))
 {-# INLINE sizedBVExtract #-}
-
--- | Convert bitvectors from and to signed
-class BVSignConversion ubv sbv | ubv -> sbv, sbv -> ubv where
-  -- | Convert unsigned bitvector to signed
-  toSigned :: ubv -> sbv
-
-  -- | Convert signed bitvector to unsigned
-  toUnsigned :: sbv -> ubv

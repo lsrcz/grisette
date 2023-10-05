@@ -93,8 +93,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        BVToSignedTerm,
-        BVToUnsignedTerm,
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
@@ -121,6 +119,8 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
+        ToSignedTerm,
+        ToUnsignedTerm,
         UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
@@ -783,22 +783,22 @@ lowerSinglePrimImpl config t@(RotateBitsTerm _ arg n) m =
   case (config, R.typeRep @a) of
     ResolvedBitsType -> lowerUnaryTerm config t arg (`rotate` n) m
     _ -> translateBinaryError "rotate" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
-lowerSinglePrimImpl config t@(BVToSignedTerm _ (bv :: Term x)) m =
+lowerSinglePrimImpl config t@(ToSignedTerm _ (bv :: Term x)) m =
   case (R.typeRep @a, R.typeRep @x) of
     (SignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
       case R.eqTypeRep (R.typeRep @na) (R.typeRep @nx) of
         Just R.HRefl ->
           lowerUnaryTerm config t bv SBV.sFromIntegral m
-        _ -> translateUnaryError "bvu2s" (R.typeRep @x) (R.typeRep @a)
-    _ -> translateUnaryError "bvu2s" (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl config t@(BVToUnsignedTerm _ (bv :: Term x)) m =
+        _ -> translateUnaryError "u2s" (R.typeRep @x) (R.typeRep @a)
+    _ -> translateUnaryError "u2s" (R.typeRep @x) (R.typeRep @a)
+lowerSinglePrimImpl config t@(ToUnsignedTerm _ (bv :: Term x)) m =
   case (R.typeRep @a, R.typeRep @x) of
     (UnsignedBVType (_ :: Proxy na), SignedBVType (_ :: Proxy nx)) ->
       case R.eqTypeRep (R.typeRep @na) (R.typeRep @nx) of
         Just R.HRefl ->
           lowerUnaryTerm config t bv SBV.sFromIntegral m
-        _ -> translateUnaryError "bvs2u" (R.typeRep @x) (R.typeRep @a)
-    _ -> translateUnaryError "bvs2u" (R.typeRep @x) (R.typeRep @a)
+        _ -> translateUnaryError "s2u" (R.typeRep @x) (R.typeRep @a)
+    _ -> translateUnaryError "s2u" (R.typeRep @x) (R.typeRep @a)
 lowerSinglePrimImpl config t@(BVConcatTerm _ (bv1 :: Term x) (bv2 :: Term y)) m =
   case (R.typeRep @a, R.typeRep @x, R.typeRep @y) of
     (UnsignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx), UnsignedBVType (_ :: Proxy ny)) ->

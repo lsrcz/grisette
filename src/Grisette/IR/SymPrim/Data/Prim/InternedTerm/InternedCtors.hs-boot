@@ -34,8 +34,8 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     complementBitsTerm,
     shiftBitsTerm,
     rotateBitsTerm,
-    bvToSignedTerm,
-    bvToUnsignedTerm,
+    toSignedTerm,
+    toUnsignedTerm,
     bvconcatTerm,
     bvselectTerm,
     bvextendTerm,
@@ -61,9 +61,9 @@ import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
-  ( BVSignConversion,
-    SizedBV,
+  ( SizedBV,
   )
+import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
     SupportedPrim,
@@ -132,28 +132,20 @@ xorBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
 complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
 shiftBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
 rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
-bvToSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-    Typeable ubv,
-    Typeable sbv,
-    KnownNat n,
-    1 <= n,
-    BVSignConversion (ubv n) (sbv n)
+toSignedTerm ::
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (ubv n) ->
-  Term (sbv n)
-bvToUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (ubv n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (sbv n),
-    Typeable ubv,
-    Typeable sbv,
-    KnownNat n,
-    1 <= n,
-    BVSignConversion (ubv n) (sbv n)
+  Term u ->
+  Term s
+toUnsignedTerm ::
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (sbv n) ->
-  Term (ubv n)
+  Term s ->
+  Term u
 bvconcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
