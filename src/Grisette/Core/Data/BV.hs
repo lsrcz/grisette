@@ -636,10 +636,10 @@ instance (KnownNat n, 1 <= n) => Integral (IntN n) where
         (q, r) -> (fromInteger q, fromInteger r)
   toInteger i@(IntN n) = case signum i of
     0 -> 0
-    1 -> n
     -1 ->
       let x = negate i
        in if signum x == -1 then -n else negate (toInteger x)
+    1 -> n
     _ -> undefined
 
 instance Integral SomeIntN where

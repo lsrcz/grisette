@@ -471,6 +471,9 @@ bvTests =
             shouldThrow "divMod" $ divMod (minBound :: IntN 8) (-1 :: IntN 8)
             shouldThrow "div" $ div (minBound :: IntN 8) (-1 :: IntN 8)
             shouldThrow "quotRem" $ quotRem (minBound :: IntN 8) (-1 :: IntN 8)
-            shouldThrow "quot" $ quot (minBound :: IntN 8) (-1 :: IntN 8)
+            shouldThrow "quot" $ quot (minBound :: IntN 8) (-1 :: IntN 8),
+          testCase "toInteger for IntN 1" $ do
+            toInteger (0 :: IntN 1) @=? 0
+            toInteger (1 :: IntN 1) @=? (-1)
         ]
     ]

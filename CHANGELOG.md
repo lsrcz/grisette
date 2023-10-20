@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the `SOrd` instance for `VerificationConditions`. ([#131](https://github.com/lsrcz/grisette/pull/131))
 - Fixed the missing `SubstituteSym` instance for `UnionM`. ([#131](https://github.com/lsrcz/grisette/pull/131))
 - Fixed the symbolic generation order for `Maybe`. ([#131](https://github.com/lsrcz/grisette/pull/131))
+- Fixed the `toInteger` function for `IntN 1`. ([#143](https://github.com/lsrcz/grisette/pull/143))
 
 ### Changed
 
