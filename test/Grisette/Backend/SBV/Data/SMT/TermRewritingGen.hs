@@ -35,6 +35,7 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     uminusNumSpec,
     timesNumSpec,
     addNumSpec,
+    absNumSpec,
     iteSpec,
     eqvSpec,
     notSpec,
