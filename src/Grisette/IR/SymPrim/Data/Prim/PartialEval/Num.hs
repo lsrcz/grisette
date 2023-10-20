@@ -33,6 +33,7 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 where
 
 import Data.Typeable (Typeable, cast, eqT, type (:~:) (Refl))
+import Grisette.Core.Data.BV (WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( absNumTerm,
     addNumTerm,
@@ -58,6 +59,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
     unaryUnfoldOnce,
   )
 import Grisette.IR.SymPrim.Data.Prim.Utils (pattern Dyn)
+import qualified Type.Reflection as R
 import Unsafe.Coerce (unsafeCoerce)
 
 numConTermView :: (Num b, Typeable b) => Term a -> Maybe b
@@ -157,7 +159,15 @@ doPevalTimesNumTermNoConc _ _ = Nothing
 pevalAbsNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
 pevalAbsNumTerm = unaryUnfoldOnce doPevalAbsNumTerm absNumTerm
 
+isUnsignedBV :: R.TypeRep a -> Bool
+isUnsignedBV (R.App s _) =
+  case R.eqTypeRep s $ R.typeRep @WordN of
+    Just R.HRefl -> True
+    _ -> False
+isUnsignedBV _ = False
+
 doPevalAbsNumTerm :: forall a. (Num a, SupportedPrim a) => Term a -> Maybe (Term a)
+doPevalAbsNumTerm x | isUnsignedBV (R.typeRep @a) = Just x
 doPevalAbsNumTerm (ConTerm _ a) = Just $ conTerm $ abs a
 doPevalAbsNumTerm (UMinusNumTerm _ v) = Just $ pevalAbsNumTerm v
 doPevalAbsNumTerm t@(AbsNumTerm _ (_ :: Term a)) = Just t

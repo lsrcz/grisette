@@ -31,6 +31,7 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
         same,
         symSpec
       ),
+    absNumSpec,
     addNumSpec,
     andSpec,
     divBoundedIntegralSpec,
@@ -157,18 +158,43 @@ termRewritingTests =
               )
         ],
       testGroup
-        "Different sized SignedBV"
-        [ testProperty "Fixed Sized SignedBV random test" $
+        "Different sized signed BV"
+        [ testProperty "random test" $
             mapSize (`min` 10) $
               ioProperty . \(x :: (DifferentSizeBVSpec IntN 4)) -> do
                 validateSpec unboundedConfig x
         ],
       testGroup
-        "Fixed sized SignedBV"
-        [ testProperty "Fixed Sized SignedBV random test" $
+        "Fixed sized signed BV"
+        [ testProperty "random test" $
             mapSize (`min` 10) $
               ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN)) -> do
                 validateSpec unboundedConfig x
+        ],
+      testGroup
+        "Different sized unsigned BV"
+        [ testProperty "random test" $
+            mapSize (`min` 10) $
+              ioProperty . \(x :: (DifferentSizeBVSpec WordN 4)) -> do
+                validateSpec unboundedConfig x
+        ],
+      testGroup
+        "Fixed sized unsigned BV"
+        [ testProperty "random test" $
+            mapSize (`min` 10) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN)) -> do
+                validateSpec unboundedConfig x
+        ],
+      testGroup
+        "Regression for abs on unsigned BV"
+        [ testCase "abs on negate" $
+            validateSpec @(FixedSizedBVWithBoolSpec WordN)
+              unboundedConfig
+              (absNumSpec (uminusNumSpec (symSpec "a"))),
+          testCase "abs on times negate" $
+            validateSpec @(FixedSizedBVWithBoolSpec WordN)
+              unboundedConfig
+              (absNumSpec (timesNumSpec (symSpec "a") (uminusNumSpec (symSpec "b"))))
         ],
       testGroup
         "timesNumSpec on integer"

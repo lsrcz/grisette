@@ -207,10 +207,16 @@ numTests =
         [ testCase "On concrete" $ do
             pevalAbsNumTerm (conTerm 10 :: Term Integer) @=? conTerm 10
             pevalAbsNumTerm (conTerm $ -10 :: Term Integer) @=? conTerm 10,
-          testCase "On UMinus" $ do
+          testCase "On UMinus Integer" $ do
             pevalAbsNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term Integer) @=? pevalAbsNumTerm (ssymTerm "a"),
-          testCase "On Abs" $ do
+          testCase "On UMinus BV" $ do
+            pevalAbsNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (IntN 5)) @=? pevalAbsNumTerm (ssymTerm "a")
+            pevalAbsNumTerm (pevalUMinusNumTerm $ ssymTerm "a" :: Term (WordN 5)) @=? uminusNumTerm (ssymTerm "a"),
+          testCase "On Abs Integer" $ do
             pevalAbsNumTerm (pevalAbsNumTerm $ ssymTerm "a" :: Term Integer) @=? pevalAbsNumTerm (ssymTerm "a"),
+          testCase "On Abs BV" $ do
+            pevalAbsNumTerm (pevalAbsNumTerm $ ssymTerm "a" :: Term (IntN 5)) @=? pevalAbsNumTerm (ssymTerm "a")
+            pevalAbsNumTerm (pevalAbsNumTerm $ ssymTerm "a" :: Term (WordN 5)) @=? ssymTerm "a",
           testCase "On Times Integer" $ do
             pevalAbsNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term Integer)
               @=? pevalTimesNumTerm (pevalAbsNumTerm (ssymTerm "a")) (pevalAbsNumTerm (ssymTerm "b")),
@@ -218,10 +224,13 @@ numTests =
             pevalAbsNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (IntN 5))
               @=? absNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (IntN 5))
             pevalAbsNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (WordN 5))
-              @=? absNumTerm (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b") :: Term (WordN 5)),
-          testCase "On symbolic" $ do
+              @=? pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b"),
+          testCase "On symbolic Integer" $ do
             pevalAbsNumTerm (ssymTerm "a" :: Term Integer)
-              @=? absNumTerm (ssymTerm "a")
+              @=? absNumTerm (ssymTerm "a"),
+          testCase "On symbolic BV" $ do
+            pevalAbsNumTerm (ssymTerm "a" :: Term (IntN 5)) @=? absNumTerm (ssymTerm "a")
+            pevalAbsNumTerm (ssymTerm "a" :: Term (WordN 5)) @=? ssymTerm "a"
         ],
       testGroup
         "Signum"
