@@ -140,8 +140,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,
     pevalOrBitsTerm,
-    pevalRotateBitsTerm,
-    pevalShiftBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
     pevalXorBitsTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -938,11 +940,15 @@ symPrimTests =
                     complement au @=? SymWordN (pevalComplementBitsTerm aut)
                     complement as @=? SymIntN (pevalComplementBitsTerm ast),
                   testCase "shift" $ do
-                    shift au 1 @=? SymWordN (pevalShiftBitsTerm aut 1)
-                    shift as 1 @=? SymIntN (pevalShiftBitsTerm ast 1),
+                    shift au 1 @=? SymWordN (pevalShiftLeftTerm aut $ conTerm 1)
+                    shift as 1 @=? SymIntN (pevalShiftLeftTerm ast $ conTerm 1)
+                    shift au (-1) @=? SymWordN (pevalShiftRightTerm aut $ conTerm 1)
+                    shift as (-1) @=? SymIntN (pevalShiftRightTerm ast $ conTerm 1),
                   testCase "rotate" $ do
-                    rotate au 1 @=? SymWordN (pevalRotateBitsTerm aut 1)
-                    rotate as 1 @=? SymIntN (pevalRotateBitsTerm ast 1),
+                    rotate au 1 @=? SymWordN (pevalRotateLeftTerm aut $ conTerm 1)
+                    rotate as 1 @=? SymIntN (pevalRotateLeftTerm ast $ conTerm 1)
+                    rotate au (-1) @=? SymWordN (pevalRotateRightTerm aut $ conTerm 1)
+                    rotate as (-1) @=? SymIntN (pevalRotateRightTerm ast $ conTerm 1),
                   testCase "bitSize" $ do
                     bitSizeMaybe au @=? Just 4
                     bitSizeMaybe as @=? Just 4,

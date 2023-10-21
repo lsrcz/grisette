@@ -55,8 +55,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         QuotIntegralTerm,
         RemBoundedIntegralTerm,
         RemIntegralTerm,
-        RotateBitsTerm,
-        ShiftBitsTerm,
+        RotateLeftTerm,
+        RotateRightTerm,
+        ShiftLeftTerm,
+        ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
         TabularFunApplyTerm,
@@ -85,8 +87,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,
     pevalOrBitsTerm,
-    pevalRotateBitsTerm,
-    pevalShiftBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
     pevalXorBitsTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -169,8 +173,10 @@ substTerm sym term = gov
         OrBitsTerm _ op1 op2 -> SomeTerm $ pevalOrBitsTerm (gov op1) (gov op2)
         XorBitsTerm _ op1 op2 -> SomeTerm $ pevalXorBitsTerm (gov op1) (gov op2)
         ComplementBitsTerm _ op -> SomeTerm $ pevalComplementBitsTerm (gov op)
-        ShiftBitsTerm _ op n -> SomeTerm $ pevalShiftBitsTerm (gov op) n
-        RotateBitsTerm _ op n -> SomeTerm $ pevalRotateBitsTerm (gov op) n
+        ShiftLeftTerm _ op n -> SomeTerm $ pevalShiftLeftTerm (gov op) (gov n)
+        RotateLeftTerm _ op n -> SomeTerm $ pevalRotateLeftTerm (gov op) (gov n)
+        ShiftRightTerm _ op n -> SomeTerm $ pevalShiftRightTerm (gov op) (gov n)
+        RotateRightTerm _ op n -> SomeTerm $ pevalRotateRightTerm (gov op) (gov n)
         ToSignedTerm _ op -> SomeTerm $ pevalToSignedTerm op
         ToUnsignedTerm _ op -> SomeTerm $ pevalToUnsignedTerm op
         BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)

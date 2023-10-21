@@ -12,7 +12,7 @@ module Grisette.Backend.SBV.Data.SMT.LoweringTests (loweringTests) where
 
 import Control.Monad.Trans (MonadTrans (lift))
 import Data.Bits
-  ( Bits (complement, rotate, shift, xor, (.&.), (.|.)),
+  ( Bits (complement, xor, (.&.), (.|.)),
   )
 import Data.Dynamic (Typeable, fromDynamic)
 import qualified Data.HashMap.Strict as M
@@ -57,8 +57,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     quotIntegralTerm,
     remBoundedIntegralTerm,
     remIntegralTerm,
-    rotateBitsTerm,
-    shiftBitsTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
     signumNumTerm,
     ssymTerm,
     timesNumTerm,
@@ -577,42 +579,32 @@ loweringTests =
                 testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig xorBitsTerm "xor" xor,
               testCase "ComplementBits" $ do
                 testUnaryOpLowering @(IntN 5) unboundedConfig complementBitsTerm "complement" complement,
-              testCase "ShiftBits" $ do
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 0) "shift" id
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 1) "shift" (`shift` 1)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 2) "shift" (`shift` 2)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 3) "shift" (`shift` 3)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 4) "shift" (`shift` 4)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 5) "shift" (`shift` 5)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` 5) "shift" (const 0)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` (-1)) "shift" (`shift` (-1))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` (-2)) "shift" (`shift` (-2))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` (-3)) "shift" (`shift` (-3))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` (-4)) "shift" (`shift` (-4))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`shiftBitsTerm` (-5)) "shift" (`shift` (-5))
-                testUnaryOpLowering @(IntN 5)
+              testCase "ShiftLeft" $ do
+                testBinaryOpLowering @(IntN 5) unboundedConfig shiftLeftTerm "shiftLeft" SBV.sShiftLeft,
+              testCase "ShiftRight" $ do
+                testBinaryOpLowering @(IntN 5) unboundedConfig shiftRightTerm "shiftRight" SBV.sShiftRight,
+              testCase "RotateLeft" $ do
+                testBinaryOpLowering @(IntN 5)
                   unboundedConfig
-                  (`shiftBitsTerm` (-5))
-                  "shift"
-                  (\x -> SBV.ite (x SBV..>= 0) 0 (-1)),
-              testCase "RotateBits" $ do
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 0) "rotate" id
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 1) "rotate" (`rotate` 1)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 2) "rotate" (`rotate` 2)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 3) "rotate" (`rotate` 3)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 4) "rotate" (`rotate` 4)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 5) "rotate" (`rotate` 5)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` 5) "rotate" id
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-1)) "rotate" (`rotate` (-1))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-1)) "rotate" (`rotate` 4)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-2)) "rotate" (`rotate` (-2))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-2)) "rotate" (`rotate` 3)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-3)) "rotate" (`rotate` (-3))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-3)) "rotate" (`rotate` 2)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` (-4))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` 1)
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" (`rotate` (-5))
-                testUnaryOpLowering @(IntN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" id,
+                  rotateLeftTerm
+                  "rotateLeft"
+                  ( \a b ->
+                      SBV.sFromIntegral $
+                        SBV.sRotateLeft
+                          (SBV.sFromIntegral a :: SBV.SWord 5)
+                          (SBV.sFromIntegral b :: SBV.SWord 5)
+                  ),
+              testCase "RotateRight" $ do
+                testBinaryOpLowering @(IntN 5)
+                  unboundedConfig
+                  rotateRightTerm
+                  "rotateRight"
+                  ( \a b ->
+                      SBV.sFromIntegral $
+                        SBV.sRotateRight
+                          (SBV.sFromIntegral a :: SBV.SWord 5)
+                          (SBV.sFromIntegral b :: SBV.SWord 5)
+                  ),
               testCase "Div - bounded" $ do
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig divBoundedIntegralTerm "div" SBV.sDiv
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig divBoundedIntegralTerm "div" SBV.sDiv,
@@ -781,42 +773,14 @@ loweringTests =
                 testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig xorBitsTerm "xor" xor,
               testCase "ComplementBits" $ do
                 testUnaryOpLowering @(WordN 5) unboundedConfig complementBitsTerm "complement" complement,
-              testCase "ShiftBits" $ do
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 0) "shift" id
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 1) "shift" (`shift` 1)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 2) "shift" (`shift` 2)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 3) "shift" (`shift` 3)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 4) "shift" (`shift` 4)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 5) "shift" (`shift` 5)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` 5) "shift" (const 0)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` (-1)) "shift" (`shift` (-1))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` (-2)) "shift" (`shift` (-2))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` (-3)) "shift" (`shift` (-3))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` (-4)) "shift" (`shift` (-4))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`shiftBitsTerm` (-5)) "shift" (`shift` (-5))
-                testUnaryOpLowering @(WordN 5)
-                  unboundedConfig
-                  (`shiftBitsTerm` (-5))
-                  "shift"
-                  (\x -> SBV.ite (x SBV..>= 0) 0 (-1)),
-              testCase "RotateBits" $ do
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 0) "rotate" id
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 1) "rotate" (`rotate` 1)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 2) "rotate" (`rotate` 2)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 3) "rotate" (`rotate` 3)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 4) "rotate" (`rotate` 4)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 5) "rotate" (`rotate` 5)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` 5) "rotate" id
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-1)) "rotate" (`rotate` (-1))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-1)) "rotate" (`rotate` 4)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-2)) "rotate" (`rotate` (-2))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-2)) "rotate" (`rotate` 3)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-3)) "rotate" (`rotate` (-3))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-3)) "rotate" (`rotate` 2)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` (-4))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-4)) "rotate" (`rotate` 1)
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" (`rotate` (-5))
-                testUnaryOpLowering @(WordN 5) unboundedConfig (`rotateBitsTerm` (-5)) "rotate" id,
+              testCase "ShiftLeft" $ do
+                testBinaryOpLowering @(WordN 5) unboundedConfig shiftLeftTerm "shiftLeft" SBV.sShiftLeft,
+              testCase "ShiftRight" $ do
+                testBinaryOpLowering @(WordN 5) unboundedConfig shiftRightTerm "shiftRight" SBV.sShiftRight,
+              testCase "RotateLeft" $ do
+                testBinaryOpLowering @(WordN 5) unboundedConfig rotateLeftTerm "rotateLeft" SBV.sRotateLeft,
+              testCase "RotateRight" $ do
+                testBinaryOpLowering @(WordN 5) unboundedConfig rotateRightTerm "rotateRight" SBV.sRotateRight,
               testCase "Div" $ do
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig divIntegralTerm "div" SBV.sDiv,

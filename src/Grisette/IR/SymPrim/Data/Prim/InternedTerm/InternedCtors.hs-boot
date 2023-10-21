@@ -32,8 +32,10 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     orBitsTerm,
     xorBitsTerm,
     complementBitsTerm,
-    shiftBitsTerm,
-    rotateBitsTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
     toSignedTerm,
     toUnsignedTerm,
     bvconcatTerm,
@@ -130,8 +132,10 @@ andBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
 orBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
 xorBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
 complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
-shiftBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
-rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
+shiftLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+shiftRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
 toSignedTerm ::
   ( SupportedPrim u,
     SupportedPrim s,

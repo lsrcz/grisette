@@ -184,8 +184,10 @@ data Term t where
   OrBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   XorBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  ShiftBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
-  RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
+  ShiftLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  ShiftRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  RotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  RotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ToSignedTerm ::
     ( SupportedPrim u,
       SupportedPrim s,
@@ -306,8 +308,10 @@ data UTerm t where
   UOrBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UXorBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
-  UShiftBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
-  URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
+  UShiftLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  UShiftRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  URotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  URotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UToSignedTerm ::
     ( SupportedPrim u,
       SupportedPrim s,

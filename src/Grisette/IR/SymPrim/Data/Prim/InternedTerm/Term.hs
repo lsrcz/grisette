@@ -104,8 +104,10 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     quotIntegralTerm,
     remBoundedIntegralTerm,
     remIntegralTerm,
-    rotateBitsTerm,
-    shiftBitsTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
     signumNumTerm,
     symTerm,
     tabularFunApplyTerm,
@@ -420,8 +422,10 @@ data Term t where
   OrBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   XorBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  ShiftBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
-  RotateBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> {-# UNPACK #-} !Int -> Term t
+  ShiftLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  ShiftRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  RotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  RotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ToSignedTerm ::
     ( SupportedPrim u,
       SupportedPrim s,
@@ -535,8 +539,10 @@ instance Lift (Term t) where
   liftTyped (OrBitsTerm _ arg1 arg2) = [||orBitsTerm arg1 arg2||]
   liftTyped (XorBitsTerm _ arg1 arg2) = [||xorBitsTerm arg1 arg2||]
   liftTyped (ComplementBitsTerm _ arg) = [||complementBitsTerm arg||]
-  liftTyped (ShiftBitsTerm _ arg n) = [||shiftBitsTerm arg n||]
-  liftTyped (RotateBitsTerm _ arg n) = [||rotateBitsTerm arg n||]
+  liftTyped (ShiftLeftTerm _ arg n) = [||shiftLeftTerm arg n||]
+  liftTyped (ShiftRightTerm _ arg n) = [||shiftRightTerm arg n||]
+  liftTyped (RotateLeftTerm _ arg n) = [||rotateLeftTerm arg n||]
+  liftTyped (RotateRightTerm _ arg n) = [||rotateRightTerm arg n||]
   liftTyped (ToSignedTerm _ v) = [||toSignedTerm v||]
   liftTyped (ToUnsignedTerm _ v) = [||toUnsignedTerm v||]
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
@@ -611,8 +617,10 @@ instance Show (Term ty) where
   show (OrBitsTerm i arg1 arg2) = "OrBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (XorBitsTerm i arg1 arg2) = "XorBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (ComplementBitsTerm i arg) = "ComplementBits{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (ShiftBitsTerm i arg n) = "ShiftBits{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (RotateBitsTerm i arg n) = "RotateBits{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
+  show (ShiftLeftTerm i arg n) = "ShiftLeft{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
+  show (ShiftRightTerm i arg n) = "ShiftRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
+  show (RotateLeftTerm i arg n) = "RotateLeft{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
+  show (RotateRightTerm i arg n) = "RotateRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (ToSignedTerm i arg) = "ToSigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (ToUnsignedTerm i arg) = "ToUnsigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (BVConcatTerm i arg1 arg2) = "BVConcat{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
@@ -695,8 +703,10 @@ data UTerm t where
   UOrBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UXorBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
-  UShiftBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
-  URotateBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> {-# UNPACK #-} !Int -> UTerm t
+  UShiftLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  UShiftRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  URotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  URotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UToSignedTerm ::
     ( SupportedPrim u,
       SupportedPrim s,
@@ -824,8 +834,10 @@ instance (SupportedPrim t) => Interned (Term t) where
     DOrBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DXorBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DComplementBitsTerm :: {-# UNPACK #-} !Id -> Description (Term t)
-    DShiftBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
-    DRotateBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Int -> Description (Term t)
+    DShiftLeftTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
+    DShiftRightTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
+    DRotateLeftTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
+    DRotateRightTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DBVConcatTerm :: TypeRep bv1 -> TypeRep bv2 -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DToSignedTerm ::
       !(TypeRep u, Id) ->
@@ -889,8 +901,10 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UOrBitsTerm arg1 arg2) = DOrBitsTerm (identity arg1) (identity arg2)
   describe (UXorBitsTerm arg1 arg2) = DXorBitsTerm (identity arg1) (identity arg2)
   describe (UComplementBitsTerm arg) = DComplementBitsTerm (identity arg)
-  describe (UShiftBitsTerm arg n) = DShiftBitsTerm (identity arg) n
-  describe (URotateBitsTerm arg n) = DRotateBitsTerm (identity arg) n
+  describe (UShiftLeftTerm arg n) = DShiftLeftTerm (identity arg) (identity n)
+  describe (UShiftRightTerm arg n) = DShiftRightTerm (identity arg) (identity n)
+  describe (URotateLeftTerm arg n) = DRotateLeftTerm (identity arg) (identity n)
+  describe (URotateRightTerm arg n) = DRotateRightTerm (identity arg) (identity n)
   describe (UToSignedTerm (arg :: Term bv)) = DToSignedTerm (typeRep :: TypeRep bv, identity arg)
   describe (UToUnsignedTerm (arg :: Term bv)) = DToSignedTerm (typeRep :: TypeRep bv, identity arg)
   describe (UBVConcatTerm (arg1 :: bv1) (arg2 :: bv2)) =
@@ -935,8 +949,10 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UOrBitsTerm arg1 arg2) = OrBitsTerm i arg1 arg2
       go (UXorBitsTerm arg1 arg2) = XorBitsTerm i arg1 arg2
       go (UComplementBitsTerm arg) = ComplementBitsTerm i arg
-      go (UShiftBitsTerm arg n) = ShiftBitsTerm i arg n
-      go (URotateBitsTerm arg n) = RotateBitsTerm i arg n
+      go (UShiftLeftTerm arg n) = ShiftLeftTerm i arg n
+      go (UShiftRightTerm arg n) = ShiftRightTerm i arg n
+      go (URotateLeftTerm arg n) = RotateLeftTerm i arg n
+      go (URotateRightTerm arg n) = RotateRightTerm i arg n
       go (UToSignedTerm arg) = ToSignedTerm i arg
       go (UToUnsignedTerm arg) = ToUnsignedTerm i arg
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
@@ -978,8 +994,10 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DOrBitsTerm li1 li2 == DOrBitsTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DXorBitsTerm li1 li2 == DXorBitsTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DComplementBitsTerm li == DComplementBitsTerm ri = li == ri
-  DShiftBitsTerm li ln == DShiftBitsTerm ri rn = li == ri && ln == rn
-  DRotateBitsTerm li ln == DRotateBitsTerm ri rn = li == ri && ln == rn
+  DShiftLeftTerm li ln == DShiftLeftTerm ri rn = li == ri && ln == rn
+  DShiftRightTerm li ln == DShiftRightTerm ri rn = li == ri && ln == rn
+  DRotateLeftTerm li ln == DRotateLeftTerm ri rn = li == ri && ln == rn
+  DRotateRightTerm li ln == DRotateRightTerm ri rn = li == ri && ln == rn
   DToSignedTerm li == DToSignedTerm ri = eqTypedId li ri
   DToUnsignedTerm li == DToUnsignedTerm ri = eqTypedId li ri
   DBVConcatTerm lrep1 lrep2 li1 li2 == DBVConcatTerm rrep1 rrep2 ri1 ri2 =
@@ -1038,8 +1056,10 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DOrBitsTerm id1 id2) = s `hashWithSalt` (18 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DXorBitsTerm id1 id2) = s `hashWithSalt` (19 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DComplementBitsTerm id1) = s `hashWithSalt` (20 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DShiftBitsTerm id1 n) = s `hashWithSalt` (21 :: Int) `hashWithSalt` id1 `hashWithSalt` n
-  hashWithSalt s (DRotateBitsTerm id1 n) = s `hashWithSalt` (22 :: Int) `hashWithSalt` id1 `hashWithSalt` n
+  hashWithSalt s (DShiftLeftTerm id1 idn) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
+  hashWithSalt s (DShiftRightTerm id1 idn) = s `hashWithSalt` (39 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
+  hashWithSalt s (DRotateLeftTerm id1 idn) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
+  hashWithSalt s (DRotateRightTerm id1 idn) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
   hashWithSalt s (DToSignedTerm id) = s `hashWithSalt` (23 :: Int) `hashWithSalt` id
   hashWithSalt s (DToUnsignedTerm id) = s `hashWithSalt` (24 :: Int) `hashWithSalt` id
   hashWithSalt s (DBVConcatTerm rep1 rep2 id1 id2) =

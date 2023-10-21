@@ -78,8 +78,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         QuotIntegralTerm,
         RemBoundedIntegralTerm,
         RemIntegralTerm,
-        RotateBitsTerm,
-        ShiftBitsTerm,
+        RotateLeftTerm,
+        RotateRightTerm,
+        ShiftLeftTerm,
+        ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
         TabularFunApplyTerm,
@@ -123,8 +125,10 @@ identityWithTypeRep (AndBitsTerm i _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (OrBitsTerm i _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (XorBitsTerm i _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (ComplementBitsTerm i _) = (typeRep (Proxy @t), i)
-identityWithTypeRep (ShiftBitsTerm i _ _) = (typeRep (Proxy @t), i)
-identityWithTypeRep (RotateBitsTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (ShiftLeftTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (ShiftRightTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (RotateLeftTerm i _ _) = (typeRep (Proxy @t), i)
+identityWithTypeRep (RotateRightTerm i _ _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (ToSignedTerm i _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (ToUnsignedTerm i _) = (typeRep (Proxy @t), i)
 identityWithTypeRep (BVConcatTerm i _ _) = (typeRep (Proxy @t), i)
@@ -164,8 +168,10 @@ introSupportedPrimConstraint AndBitsTerm {} x = x
 introSupportedPrimConstraint OrBitsTerm {} x = x
 introSupportedPrimConstraint XorBitsTerm {} x = x
 introSupportedPrimConstraint ComplementBitsTerm {} x = x
-introSupportedPrimConstraint ShiftBitsTerm {} x = x
-introSupportedPrimConstraint RotateBitsTerm {} x = x
+introSupportedPrimConstraint ShiftLeftTerm {} x = x
+introSupportedPrimConstraint RotateLeftTerm {} x = x
+introSupportedPrimConstraint ShiftRightTerm {} x = x
+introSupportedPrimConstraint RotateRightTerm {} x = x
 introSupportedPrimConstraint ToSignedTerm {} x = x
 introSupportedPrimConstraint ToUnsignedTerm {} x = x
 introSupportedPrimConstraint BVConcatTerm {} x = x
@@ -218,8 +224,10 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (OrBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (XorBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (ComplementBitsTerm _ arg)) = goUnary arg
-    go (SomeTerm (ShiftBitsTerm _ arg _)) = goUnary arg
-    go (SomeTerm (RotateBitsTerm _ arg _)) = goUnary arg
+    go (SomeTerm (ShiftLeftTerm _ arg n1)) = goBinary arg n1
+    go (SomeTerm (ShiftRightTerm _ arg n1)) = goBinary arg n1
+    go (SomeTerm (RotateLeftTerm _ arg n1)) = goBinary arg n1
+    go (SomeTerm (RotateRightTerm _ arg n1)) = goBinary arg n1
     go (SomeTerm (ToSignedTerm _ arg)) = goUnary arg
     go (SomeTerm (ToUnsignedTerm _ arg)) = goUnary arg
     go (SomeTerm (BVConcatTerm _ arg1 arg2)) = goBinary arg1 arg2
@@ -273,8 +281,10 @@ castTerm t@AndBitsTerm {} = cast t
 castTerm t@OrBitsTerm {} = cast t
 castTerm t@XorBitsTerm {} = cast t
 castTerm t@ComplementBitsTerm {} = cast t
-castTerm t@ShiftBitsTerm {} = cast t
-castTerm t@RotateBitsTerm {} = cast t
+castTerm t@ShiftLeftTerm {} = cast t
+castTerm t@ShiftRightTerm {} = cast t
+castTerm t@RotateLeftTerm {} = cast t
+castTerm t@RotateRightTerm {} = cast t
 castTerm t@ToSignedTerm {} = cast t
 castTerm t@ToUnsignedTerm {} = cast t
 castTerm t@BVConcatTerm {} = cast t
@@ -314,8 +324,10 @@ pformat (AndBitsTerm _ arg1 arg2) = "(& " ++ pformat arg1 ++ " " ++ pformat arg2
 pformat (OrBitsTerm _ arg1 arg2) = "(| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (XorBitsTerm _ arg1 arg2) = "(^ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (ComplementBitsTerm _ arg) = "(~ " ++ pformat arg ++ ")"
-pformat (ShiftBitsTerm _ arg n) = "(shift " ++ pformat arg ++ " " ++ show n ++ ")"
-pformat (RotateBitsTerm _ arg n) = "(rotate " ++ pformat arg ++ " " ++ show n ++ ")"
+pformat (ShiftLeftTerm _ arg n) = "(shl " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (ShiftRightTerm _ arg n) = "(shr " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (RotateLeftTerm _ arg n) = "(rotl " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (RotateRightTerm _ arg n) = "(rotr " ++ pformat arg ++ " " ++ pformat n ++ ")"
 pformat (ToSignedTerm _ arg) = "(u2s " ++ pformat arg ++ " " ++ ")"
 pformat (ToUnsignedTerm _ arg) = "(s2u " ++ pformat arg ++ " " ++ ")"
 pformat (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
@@ -363,8 +375,10 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(OrBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(XorBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(ComplementBitsTerm _ arg) = goUnary t arg
-    go t@(ShiftBitsTerm _ arg _) = goUnary t arg
-    go t@(RotateBitsTerm _ arg _) = goUnary t arg
+    go t@(ShiftLeftTerm _ arg n) = goBinary t arg n
+    go t@(ShiftRightTerm _ arg n) = goBinary t arg n
+    go t@(RotateLeftTerm _ arg n) = goBinary t arg n
+    go t@(RotateRightTerm _ arg n) = goBinary t arg n
     go t@(ToSignedTerm _ arg) = goUnary t arg
     go t@(ToUnsignedTerm _ arg) = goUnary t arg
     go t@(BVConcatTerm _ arg1 arg2) = goBinary t arg1 arg2
