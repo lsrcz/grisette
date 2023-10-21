@@ -43,8 +43,10 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     orBitsTerm,
     xorBitsTerm,
     complementBitsTerm,
-    shiftBitsTerm,
-    rotateBitsTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
     toSignedTerm,
     toUnsignedTerm,
     bvconcatTerm,
@@ -118,8 +120,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         UQuotIntegralTerm,
         URemBoundedIntegralTerm,
         URemIntegralTerm,
-        URotateBitsTerm,
-        UShiftBitsTerm,
+        URotateLeftTerm,
+        URotateRightTerm,
+        UShiftLeftTerm,
+        UShiftRightTerm,
         USignumNumTerm,
         USymTerm,
         UTabularFunApplyTerm,
@@ -279,13 +283,21 @@ complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
 complementBitsTerm = internTerm . UComplementBitsTerm
 {-# INLINE complementBitsTerm #-}
 
-shiftBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
-shiftBitsTerm t n = internTerm $ UShiftBitsTerm t n
-{-# INLINE shiftBitsTerm #-}
+shiftLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+shiftLeftTerm t n = internTerm $ UShiftLeftTerm t n
+{-# INLINE shiftLeftTerm #-}
 
-rotateBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Int -> Term a
-rotateBitsTerm t n = internTerm $ URotateBitsTerm t n
-{-# INLINE rotateBitsTerm #-}
+shiftRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+shiftRightTerm t n = internTerm $ UShiftRightTerm t n
+{-# INLINE shiftRightTerm #-}
+
+rotateLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateLeftTerm t n = internTerm $ URotateLeftTerm t n
+{-# INLINE rotateLeftTerm #-}
+
+rotateRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateRightTerm t n = internTerm $ URotateRightTerm t n
+{-# INLINE rotateRightTerm #-}
 
 toSignedTerm ::
   ( SupportedPrim u,

@@ -176,8 +176,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,
     pevalOrBitsTerm,
-    pevalRotateBitsTerm,
-    pevalShiftBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
     pevalXorBitsTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
@@ -623,9 +625,13 @@ instance (KnownNat n, 1 <= n) => Bits (symtype n) where \
   {-# INLINE xor #-}; \
   complement (symtype n) = symtype $ pevalComplementBitsTerm n; \
   {-# INLINE complement #-}; \
-  shift (symtype n) i = symtype $ pevalShiftBitsTerm n i; \
+  shift (symtype n) i | i > 0 = symtype $ pevalShiftLeftTerm n (conTerm $ fromIntegral i); \
+  shift (symtype n) i | i < 0 = symtype $ pevalShiftRightTerm n (conTerm $ fromIntegral (-i)); \
+  shift (symtype n) _ = symtype n; \
   {-# INLINE shift #-}; \
-  rotate (symtype n) i = symtype $ pevalRotateBitsTerm n i; \
+  rotate (symtype n) i | i > 0 = symtype $ pevalRotateLeftTerm n (conTerm $ fromIntegral i); \
+  rotate (symtype n) i | i < 0 = symtype $ pevalRotateRightTerm n (conTerm $ fromIntegral (-i)); \
+  rotate (symtype n) _ = symtype n; \
   {-# INLINE rotate #-}; \
   bitSize = finiteBitSize; \
   {-# INLINE bitSize #-}; \

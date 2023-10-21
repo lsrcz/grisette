@@ -7,6 +7,7 @@
 
 module Grisette.Backend.SBV.Data.SMT.TermRewritingTests
   ( termRewritingTests,
+    validateSpec,
   )
 where
 
@@ -46,6 +47,7 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     quotIntegralSpec,
     remBoundedIntegralSpec,
     remIntegralSpec,
+    shiftRightSpec,
     timesNumSpec,
     uminusNumSpec,
   )
@@ -62,7 +64,7 @@ import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure)
-import Test.QuickCheck (ioProperty, mapSize)
+import Test.QuickCheck (ioProperty, mapSize, withMaxSuccess)
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
@@ -159,32 +161,39 @@ termRewritingTests =
         ],
       testGroup
         "Different sized signed BV"
-        [ testProperty "random test" $
-            mapSize (`min` 10) $
+        [ testProperty "Random test" $
+            withMaxSuccess 1000 . mapSize (`min` 5) $
               ioProperty . \(x :: (DifferentSizeBVSpec IntN 4)) -> do
                 validateSpec unboundedConfig x
         ],
       testGroup
         "Fixed sized signed BV"
-        [ testProperty "random test" $
-            mapSize (`min` 10) $
+        [ testProperty "Random test" $
+            withMaxSuccess 1000 . mapSize (`min` 5) $
               ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN)) -> do
                 validateSpec unboundedConfig x
         ],
       testGroup
         "Different sized unsigned BV"
         [ testProperty "random test" $
-            mapSize (`min` 10) $
+            withMaxSuccess 1000 . mapSize (`min` 5) $
               ioProperty . \(x :: (DifferentSizeBVSpec WordN 4)) -> do
                 validateSpec unboundedConfig x
         ],
       testGroup
         "Fixed sized unsigned BV"
         [ testProperty "random test" $
-            mapSize (`min` 10) $
+            withMaxSuccess 1000 . mapSize (`min` 5) $
               ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN)) -> do
                 validateSpec unboundedConfig x
         ],
+      testCase "Regression: shift twice and the sum of shift amount overflows" $ do
+        validateSpec @(FixedSizedBVWithBoolSpec IntN)
+          unboundedConfig
+          ( shiftRightSpec
+              (shiftRightSpec (symSpec "fint") (conSpec 0x5))
+              (conSpec 0x5)
+          ),
       testGroup
         "Regression for abs on unsigned BV"
         [ testCase "abs on negate" $

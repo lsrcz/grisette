@@ -1,3 +1,4 @@
+{-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -41,6 +42,11 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     notSpec,
     andSpec,
     orSpec,
+    shiftLeftSpec,
+    shiftRightSpec,
+    rotateLeftSpec,
+    rotateRightSpec,
+    xorBitsSpec,
   )
 where
 
@@ -78,8 +84,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     quotIntegralTerm,
     remBoundedIntegralTerm,
     remIntegralTerm,
-    rotateBitsTerm,
-    shiftBitsTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
     signumNumTerm,
     ssymTerm,
     timesNumTerm,
@@ -105,8 +113,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,
     pevalOrBitsTerm,
-    pevalRotateBitsTerm,
-    pevalShiftBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
     pevalXorBitsTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -285,11 +295,17 @@ xorBitsSpec = constructBinarySpec xorBitsTerm pevalXorBitsTerm
 complementBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a
 complementBitsSpec = constructUnarySpec complementBitsTerm pevalComplementBitsTerm
 
-shiftBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> Int -> a
-shiftBitsSpec a n = constructUnarySpec (`shiftBitsTerm` n) (`pevalShiftBitsTerm` n) a
+shiftLeftSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+shiftLeftSpec = constructBinarySpec shiftLeftTerm pevalShiftLeftTerm
 
-rotateBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> Int -> a
-rotateBitsSpec a n = constructUnarySpec (`rotateBitsTerm` n) (`pevalRotateBitsTerm` n) a
+shiftRightSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+shiftRightSpec = constructBinarySpec shiftRightTerm pevalShiftRightTerm
+
+rotateLeftSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+rotateLeftSpec = constructBinarySpec rotateLeftTerm pevalRotateLeftTerm
+
+rotateRightSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+rotateRightSpec = constructBinarySpec rotateRightTerm pevalRotateRightTerm
 
 bvconcatSpec ::
   ( TermRewritingSpec a (bv an),
@@ -506,7 +522,12 @@ instance TermRewritingSpec (BoolWithFixedSizedBVSpec bv) Bool where
   wrap = BoolWithFixedSizedBVSpec
   same s = eqvTerm (norewriteVer s) (rewriteVer s)
 
-boolWithFSBV :: forall proxy bv. (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4)) => proxy bv -> Int -> Gen (BoolWithFixedSizedBVSpec bv)
+boolWithFSBV ::
+  forall proxy bv.
+  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
+  proxy bv ->
+  Int ->
+  Gen (BoolWithFixedSizedBVSpec bv)
 boolWithFSBV _ 0 =
   let s =
         oneof $
@@ -534,7 +555,7 @@ boolWithFSBV _ _ = error "Should never be called"
 
 fsbvWithBool ::
   forall proxy bv.
-  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4)) =>
+  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
   proxy bv ->
   Int ->
   Gen (FixedSizedBVWithBoolSpec bv)
@@ -549,7 +570,6 @@ fsbvWithBool p n | n > 0 = do
   v1b <- boolWithFSBV p (n - 1)
   v1i <- fsbvWithBool p (n - 1)
   v2i <- fsbvWithBool p (n - 1)
-  i <- arbitrary
   oneof
     [ return $ uminusNumSpec v1i,
       return $ absNumSpec v1i,
@@ -560,16 +580,24 @@ fsbvWithBool p n | n > 0 = do
       return $ orBitsSpec v1i v2i,
       return $ xorBitsSpec v1i v2i,
       return $ complementBitsSpec v1i,
-      return $ shiftBitsSpec v1i i,
-      return $ rotateBitsSpec v1i i,
+      return $ shiftLeftSpec v1i v2i,
+      return $ rotateLeftSpec v1i v2i,
+      return $ shiftRightSpec v1i v2i,
+      return $ rotateRightSpec v1i v2i,
       return $ iteSpec v1b v1i v2i
     ]
 fsbvWithBool _ _ = error "Should never be called"
 
-instance (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4)) => Arbitrary (BoolWithFixedSizedBVSpec bv) where
+instance
+  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
+  Arbitrary (BoolWithFixedSizedBVSpec bv)
+  where
   arbitrary = sized (boolWithFSBV (Proxy @bv))
 
-instance (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4)) => Arbitrary (FixedSizedBVWithBoolSpec bv) where
+instance
+  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
+  Arbitrary (FixedSizedBVWithBoolSpec bv)
+  where
   arbitrary = sized (fsbvWithBool Proxy)
 
 data DifferentSizeBVSpec bv (n :: Nat) = DifferentSizeBVSpec (Term (bv n)) (Term (bv n))
@@ -584,7 +612,7 @@ instance (SupportedPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec bv n) 
   same s = eqvTerm (norewriteVer s) (rewriteVer s)
 
 type SupportedBV bv (n :: Nat) =
-  (SupportedPrim (bv n), Ord (bv n), Num (bv n), Bits (bv n))
+  (SupportedPrim (bv n), Ord (bv n), Num (bv n), Bits (bv n), Integral (bv n))
 
 dsbv1 ::
   forall proxy bv.
@@ -612,7 +640,6 @@ dsbv1 p depth | depth > 0 = do
   v2 <- dsbv2 p (depth - 1)
   v3 <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
-  i <- arbitrary
   oneof
     [ return $ uminusNumSpec v1,
       return $ absNumSpec v1,
@@ -623,8 +650,10 @@ dsbv1 p depth | depth > 0 = do
       return $ orBitsSpec v1 v1',
       return $ xorBitsSpec v1 v1',
       return $ complementBitsSpec v1,
-      return $ shiftBitsSpec v1 i,
-      return $ rotateBitsSpec v1 i,
+      return $ shiftLeftSpec v1 v1',
+      return $ rotateLeftSpec v1 v1',
+      return $ shiftRightSpec v1 v1',
+      return $ rotateRightSpec v1 v1',
       return $ bvselectSpec (Proxy @0) (Proxy @1) v4,
       return $ bvselectSpec (Proxy @1) (Proxy @1) v4,
       return $ bvselectSpec (Proxy @2) (Proxy @1) v4,
@@ -665,7 +694,6 @@ dsbv2 p depth | depth > 0 = do
   v2' <- dsbv2 p (depth - 1)
   v3 <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
-  i <- arbitrary
   oneof
     [ return $ uminusNumSpec v2,
       return $ absNumSpec v2,
@@ -676,8 +704,10 @@ dsbv2 p depth | depth > 0 = do
       return $ orBitsSpec v2 v2',
       return $ xorBitsSpec v2 v2',
       return $ complementBitsSpec v2,
-      return $ shiftBitsSpec v2 i,
-      return $ rotateBitsSpec v2 i,
+      return $ shiftLeftSpec v2 v2',
+      return $ rotateLeftSpec v2 v2',
+      return $ shiftRightSpec v2 v2',
+      return $ rotateRightSpec v2 v2',
       return $ bvselectSpec (Proxy @0) (Proxy @2) v4,
       return $ bvselectSpec (Proxy @1) (Proxy @2) v4,
       return $ bvselectSpec (Proxy @2) (Proxy @2) v4,
@@ -716,7 +746,6 @@ dsbv3 p depth | depth > 0 = do
   v3 <- dsbv3 p (depth - 1)
   v3' <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
-  i <- arbitrary
   oneof
     [ return $ uminusNumSpec v3,
       return $ absNumSpec v3,
@@ -727,8 +756,10 @@ dsbv3 p depth | depth > 0 = do
       return $ orBitsSpec v3 v3',
       return $ xorBitsSpec v3 v3',
       return $ complementBitsSpec v3,
-      return $ shiftBitsSpec v3 i,
-      return $ rotateBitsSpec v3 i,
+      return $ shiftLeftSpec v3 v3',
+      return $ rotateLeftSpec v3 v3',
+      return $ shiftRightSpec v3 v3',
+      return $ rotateRightSpec v3 v3',
       return $ bvselectSpec (Proxy @0) (Proxy @3) v4,
       return $ bvselectSpec (Proxy @1) (Proxy @3) v4,
       return $ bvselectSpec (Proxy @0) (Proxy @3) v3,
@@ -768,7 +799,6 @@ dsbv4 p depth | depth > 0 = do
   v3 <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
   v4' <- dsbv4 p (depth - 1)
-  i <- arbitrary
   oneof
     [ return $ uminusNumSpec v4,
       return $ absNumSpec v4,
@@ -779,8 +809,10 @@ dsbv4 p depth | depth > 0 = do
       return $ orBitsSpec v4 v4',
       return $ xorBitsSpec v4 v4',
       return $ complementBitsSpec v4,
-      return $ shiftBitsSpec v4 i,
-      return $ rotateBitsSpec v4 i,
+      return $ shiftLeftSpec v4 v4',
+      return $ rotateLeftSpec v4 v4',
+      return $ shiftRightSpec v4 v4',
+      return $ rotateRightSpec v4 v4',
       return $ bvselectSpec (Proxy @0) (Proxy @4) v4,
       return $ bvconcatSpec v1 v3,
       return $ bvconcatSpec v2 v2',

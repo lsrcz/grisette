@@ -35,12 +35,13 @@ where
 
 import Data.Bifunctor (Bifunctor (bimap, first, second))
 import Data.Bits
-  ( Bits (complement, rotate, shift, xor, (.&.), (.|.)),
+  ( Bits (complement, xor, (.&.), (.|.)),
   )
 import Data.Dynamic (Typeable, fromDyn, toDyn)
 import Data.Foldable (Foldable (foldl'), asum)
 import Data.Kind (Type)
 import Data.Maybe (fromMaybe)
+import Data.SBV (SIntegral, sRotateLeft, sRotateRight, sShiftLeft, sShiftRight)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
 import qualified Data.SBV.Internals as SBVI
@@ -112,8 +113,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         QuotIntegralTerm,
         RemBoundedIntegralTerm,
         RemIntegralTerm,
-        RotateBitsTerm,
-        ShiftBitsTerm,
+        RotateLeftTerm,
+        RotateRightTerm,
+        ShiftLeftTerm,
+        ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
         TabularFunApplyTerm,
@@ -775,14 +778,51 @@ lowerSinglePrimImpl config t@(ComplementBitsTerm _ arg) m =
   case (config, R.typeRep @a) of
     ResolvedBitsType -> lowerUnaryTerm config t arg complement m
     _ -> translateUnaryError "complement" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(ShiftBitsTerm _ arg n) m =
+lowerSinglePrimImpl config t@(ShiftLeftTerm _ arg n) m =
   case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerUnaryTerm config t arg (`shift` n) m
-    _ -> translateBinaryError "shift" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
-lowerSinglePrimImpl config t@(RotateBitsTerm _ arg n) m =
+    ResolvedBitsType -> lowerBinaryTerm config t arg n sShiftLeft m
+    _ -> translateBinaryError "shiftLeft" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
+lowerSinglePrimImpl config t@(ShiftRightTerm _ arg n) m =
   case (config, R.typeRep @a) of
-    ResolvedBitsType -> lowerUnaryTerm config t arg (`rotate` n) m
-    _ -> translateBinaryError "rotate" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
+    ResolvedBitsType -> lowerBinaryTerm config t arg n sShiftRight m
+    _ -> translateBinaryError "shiftRight" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
+-- SBV's rotateLeft and rotateRight are broken for signed values, so we have to
+-- do this
+-- https://github.com/LeventErkok/sbv/issues/673
+lowerSinglePrimImpl config t@(RotateLeftTerm _ arg n) m =
+  case (config, R.typeRep @a) of
+    (_, SignedBVType (Proxy :: Proxy n)) ->
+      lowerBinaryTerm
+        config
+        t
+        arg
+        n
+        ( \x y ->
+            SBV.sFromIntegral $
+              sRotateLeft
+                (SBV.sFromIntegral x :: SBV.SWord n)
+                (SBV.sFromIntegral y :: SBV.SWord n)
+        )
+        m
+    ResolvedBitsType -> lowerBinaryTerm config t arg n sRotateLeft m
+    _ -> translateBinaryError "rotateLeft" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
+lowerSinglePrimImpl config t@(RotateRightTerm _ arg n) m =
+  case (config, R.typeRep @a) of
+    (_, SignedBVType (Proxy :: Proxy n)) ->
+      lowerBinaryTerm
+        config
+        t
+        arg
+        n
+        ( \x y ->
+            SBV.sFromIntegral $
+              sRotateRight
+                (SBV.sFromIntegral x :: SBV.SWord n)
+                (SBV.sFromIntegral y :: SBV.SWord n)
+        )
+        m
+    ResolvedBitsType -> lowerBinaryTerm config t arg n sRotateRight m
+    _ -> translateBinaryError "rotateRight" (R.typeRep @a) (R.typeRep @Int) (R.typeRep @a)
 lowerSinglePrimImpl config t@(ToSignedTerm _ (bv :: Term x)) m =
   case (R.typeRep @a, R.typeRep @x) of
     (SignedBVType (_ :: Proxy na), UnsignedBVType (_ :: Proxy nx)) ->
@@ -1796,7 +1836,9 @@ type BitsTypeConstraint integerBitWidth s s' =
   ( SimpleTypeConstraint integerBitWidth s s',
     Bits (SBV.SBV s'),
     Bits s',
-    Bits s
+    Bits s,
+    SIntegral s',
+    Integral s
   )
 
 data DictBitsType integerBitWidth s where

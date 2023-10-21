@@ -1,3 +1,4 @@
+{-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,8 +11,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     complementBitsTerm,
     conTerm,
     orBitsTerm,
-    rotateBitsTerm,
-    shiftBitsTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
     ssymTerm,
     xorBitsTerm,
   )
@@ -20,8 +23,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,
     pevalOrBitsTerm,
-    pevalRotateBitsTerm,
-    pevalShiftBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
     pevalXorBitsTerm,
   )
 import Test.Framework (Test, testGroup)
@@ -156,73 +161,107 @@ bitsTests =
               @=? complementBitsTerm (ssymTerm "a" :: Term (WordN 4))
         ],
       testGroup
-        "ShiftBits"
+        "ShiftLeft"
         [ testCase "On concrete" $ do
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-5) @=? conTerm 0
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-4) @=? conTerm 0
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-3) @=? conTerm 1
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-2) @=? conTerm 3
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) (-1) @=? conTerm 7
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 0 @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 1 @=? conTerm 14
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 2 @=? conTerm 12
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 3 @=? conTerm 8
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 4 @=? conTerm 0
-            pevalShiftBitsTerm (conTerm 15 :: Term (WordN 4)) 5 @=? conTerm 0
-
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-5) @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-4) @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-3) @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-2) @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) (-1) @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 0 @=? conTerm 15
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 1 @=? conTerm 14
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 2 @=? conTerm 12
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 3 @=? conTerm 8
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 4 @=? conTerm 0
-            pevalShiftBitsTerm (conTerm 15 :: Term (IntN 4)) 5 @=? conTerm 0,
+            pevalShiftLeftTerm (conTerm 15 :: Term (WordN 4)) (conTerm 2) @=? conTerm 12
+            pevalShiftLeftTerm (conTerm 15 :: Term (IntN 4)) (conTerm 2) @=? conTerm 12,
           testCase "shift 0" $ do
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 0 @=? ssymTerm "a"
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (IntN 4)) 0 @=? ssymTerm "a",
-          testCase "shift left bitsize" $ do
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 4 @=? conTerm 0
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (IntN 4)) 4 @=? conTerm 0
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 5 @=? conTerm 0
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (IntN 4)) 5 @=? conTerm 0,
-          testCase "shift same direction twice" $ do
-            pevalShiftBitsTerm (pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 1) 2
-              @=? pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 3
-            pevalShiftBitsTerm (pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) (-1)) (-2)
-              @=? pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) (-3),
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 0) @=? ssymTerm "a"
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 0) @=? ssymTerm "a",
+          testCase "shift greater or equal to left bitsize" $ do
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 4) @=? conTerm 0
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 4) @=? conTerm 0
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 5) @=? conTerm 0
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 5) @=? conTerm 0,
+          testCase "shift negative amount is undefined on for IntN" $ do
+            pevalShiftLeftTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -1)
+              @=? shiftLeftTerm (conTerm 15) (conTerm $ -1)
+            pevalShiftLeftTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -8)
+              @=? shiftLeftTerm (conTerm 15) (conTerm $ -8),
           testCase "shift symbolic" $ do
-            pevalShiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
-              @=? shiftBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
+            pevalShiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? shiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
         ],
       testGroup
-        "Rotate"
+        "ShiftRight"
+        [ testCase "On concrete, should perform arithmetic shifting on IntN" $ do
+            pevalShiftRightTerm (conTerm 7 :: Term (IntN 4)) (conTerm 2) @=? conTerm 1
+            pevalShiftRightTerm (conTerm 15 :: Term (IntN 4)) (conTerm 2) @=? conTerm 15,
+          testCase "On concrete, should perform arithmetic shifting on WordN" $ do
+            pevalShiftRightTerm (conTerm 7 :: Term (WordN 4)) (conTerm 2) @=? conTerm 1
+            pevalShiftRightTerm (conTerm 15 :: Term (WordN 4)) (conTerm 2) @=? conTerm 3,
+          testCase "shift 0" $ do
+            pevalShiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 0) @=? ssymTerm "a"
+            pevalShiftRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 0) @=? ssymTerm "a",
+          testCase "shift greater or equal to left bitsize on WordN" $ do
+            pevalShiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 4) @=? conTerm 0
+            pevalShiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 5) @=? conTerm 0,
+          testCase "shift greater or equal to left bitsize on IntN will not be reduced" $ do
+            pevalShiftRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 5)
+              @=? shiftRightTerm (ssymTerm "a") (conTerm 5)
+            pevalShiftRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 4)
+              @=? shiftRightTerm (ssymTerm "a") (conTerm 4),
+          testCase "shift negative amount is undefined on for IntN" $ do
+            pevalShiftRightTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -1)
+              @=? shiftRightTerm (conTerm 15) (conTerm $ -1)
+            pevalShiftRightTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -8)
+              @=? shiftRightTerm (conTerm 15) (conTerm $ -8),
+          testCase "shift symbolic" $ do
+            pevalShiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? shiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+        ],
+      testGroup
+        "RotateLeft"
         [ testCase "On concrete" $ do
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-4) @=? conTerm 3
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-3) @=? conTerm 6
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-2) @=? conTerm 12
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) (-1) @=? conTerm 9
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 0 @=? conTerm 3
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 1 @=? conTerm 6
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 2 @=? conTerm 12
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 3 @=? conTerm 9
-            pevalRotateBitsTerm (conTerm 3 :: Term (WordN 4)) 4 @=? conTerm 3,
+            pevalRotateLeftTerm (conTerm 0b10100101 :: Term (WordN 8)) (conTerm 2) @=? conTerm 0b10010110
+            pevalRotateLeftTerm (conTerm 0b10100101 :: Term (IntN 8)) (conTerm 2) @=? conTerm 0b10010110,
           testCase "rotate 0" $ do
-            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 0 @=? ssymTerm "a",
-          testCase "rotate extra bits" $ do
-            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 4 @=? ssymTerm "a"
-            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 5
-              @=? pevalRotateBitsTerm (ssymTerm "a") 1
-            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) (-1)
-              @=? pevalRotateBitsTerm (ssymTerm "a") 3,
-          testCase "rotate twice" $ do
-            pevalRotateBitsTerm (pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 1) 2
-              @=? pevalRotateBitsTerm (ssymTerm "a") 3,
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 0) @=? ssymTerm "a"
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 0) @=? ssymTerm "a",
+          testCase "rotate bitsize" $ do
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 4)
+              @=? ssymTerm "a"
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 4)
+              @=? ssymTerm "a",
+          testCase "rotate greater than left bitsize" $ do
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 5)
+              @=? rotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 1)
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 5)
+              @=? rotateLeftTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 1),
+          testCase "rotate negative amount is undefined on for IntN" $ do
+            pevalRotateLeftTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -1)
+              @=? rotateLeftTerm (conTerm 15) (conTerm $ -1)
+            pevalRotateLeftTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -8)
+              @=? rotateLeftTerm (conTerm 15) (conTerm $ -8),
           testCase "rotate symbolic" $ do
-            pevalRotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
-              @=? rotateBitsTerm (ssymTerm "a" :: Term (WordN 4)) 2
+            pevalRotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? rotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+        ],
+      testGroup
+        "RotateRight"
+        [ testCase "On concrete" $ do
+            pevalRotateRightTerm (conTerm 0b10100101 :: Term (WordN 8)) (conTerm 2) @=? conTerm 0b1101001
+            pevalRotateRightTerm (conTerm 0b10100101 :: Term (IntN 8)) (conTerm 2) @=? conTerm 0b1101001,
+          testCase "rotate 0" $ do
+            pevalRotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 0) @=? ssymTerm "a"
+            pevalRotateRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 0) @=? ssymTerm "a",
+          testCase "rotate bitsize" $ do
+            pevalRotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 4)
+              @=? ssymTerm "a"
+            pevalRotateRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 4)
+              @=? ssymTerm "a",
+          testCase "rotate greater than left bitsize" $ do
+            pevalRotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 5)
+              @=? rotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 1)
+            pevalRotateRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 5)
+              @=? rotateRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 1),
+          testCase "rotate negative amount is undefined on for IntN" $ do
+            pevalRotateRightTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -1)
+              @=? rotateRightTerm (conTerm 15) (conTerm $ -1)
+            pevalRotateRightTerm (conTerm 15 :: Term (IntN 4)) (conTerm $ -8)
+              @=? rotateRightTerm (conTerm 15) (conTerm $ -8),
+          testCase "rotate symbolic" $ do
+            pevalRotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? rotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
         ]
     ]

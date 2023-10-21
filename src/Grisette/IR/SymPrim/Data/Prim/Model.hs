@@ -97,8 +97,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         QuotIntegralTerm,
         RemBoundedIntegralTerm,
         RemIntegralTerm,
-        RotateBitsTerm,
-        ShiftBitsTerm,
+        RotateLeftTerm,
+        RotateRightTerm,
+        ShiftLeftTerm,
+        ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
         TabularFunApplyTerm,
@@ -134,8 +136,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,
     pevalOrBitsTerm,
-    pevalRotateBitsTerm,
-    pevalShiftBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
     pevalXorBitsTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -454,10 +458,10 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
     go (SomeTerm (XorBitsTerm _ arg1 arg2)) =
       goBinary pevalXorBitsTerm arg1 arg2
     go (SomeTerm (ComplementBitsTerm _ arg)) = goUnary pevalComplementBitsTerm arg
-    go (SomeTerm (ShiftBitsTerm _ arg n)) =
-      goUnary (`pevalShiftBitsTerm` n) arg
-    go (SomeTerm (RotateBitsTerm _ arg n)) =
-      goUnary (`pevalRotateBitsTerm` n) arg
+    go (SomeTerm (ShiftLeftTerm _ arg n)) = goBinary pevalShiftLeftTerm arg n
+    go (SomeTerm (RotateLeftTerm _ arg n)) = goBinary pevalRotateLeftTerm arg n
+    go (SomeTerm (ShiftRightTerm _ arg n)) = goBinary pevalShiftRightTerm arg n
+    go (SomeTerm (RotateRightTerm _ arg n)) = goBinary pevalRotateRightTerm arg n
     go (SomeTerm (ToSignedTerm _ arg)) =
       goUnary pevalToSignedTerm arg
     go (SomeTerm (ToUnsignedTerm _ arg)) =
