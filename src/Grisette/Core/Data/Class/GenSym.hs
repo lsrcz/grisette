@@ -36,7 +36,7 @@ module Grisette.Core.Data.Class.GenSym
 
     -- * Monad for fresh symbolic value generation
     MonadFresh (..),
-    FreshT (runFreshTFromIndex),
+    FreshT (FreshT, runFreshTFromIndex),
     Fresh,
     runFreshT,
     runFresh,
