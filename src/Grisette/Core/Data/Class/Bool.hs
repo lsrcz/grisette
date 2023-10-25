@@ -5,8 +5,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -41,7 +43,9 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
+import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import Data.Word (Word16, Word32, Word64, Word8)
+import GHC.TypeLits (sameNat)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default),
@@ -61,6 +65,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalAndTerm,
+    pevalEqvTerm,
     pevalITETerm,
     pevalImplyTerm,
     pevalNotTerm,
@@ -68,8 +73,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
     pevalXorTerm,
   )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN,
-    SomeSymWordN,
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
     SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
@@ -88,39 +93,6 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
-
--- | Auxiliary class for 'SEq' instance derivation
-class SEq' f where
-  -- | Auxiliary function for '(==~~) derivation
-  (==~~) :: f a -> f a -> SymBool
-
-  infix 4 ==~~
-
-instance SEq' U1 where
-  _ ==~~ _ = con True
-  {-# INLINE (==~~) #-}
-
-instance SEq' V1 where
-  _ ==~~ _ = con True
-  {-# INLINE (==~~) #-}
-
-instance (SEq c) => SEq' (K1 i c) where
-  (K1 a) ==~~ (K1 b) = a ==~ b
-  {-# INLINE (==~~) #-}
-
-instance (SEq' a) => SEq' (M1 i c a) where
-  (M1 a) ==~~ (M1 b) = a ==~~ b
-  {-# INLINE (==~~) #-}
-
-instance (SEq' a, SEq' b) => SEq' (a :+: b) where
-  (L1 a) ==~~ (L1 b) = a ==~~ b
-  (R1 a) ==~~ (R1 b) = a ==~~ b
-  _ ==~~ _ = con False
-  {-# INLINE (==~~) #-}
-
-instance (SEq' a, SEq' b) => SEq' (a :*: b) where
-  (a1 :*: b1) ==~~ (a2 :*: b2) = (a1 ==~~ a2) &&~ (b1 ==~~ b2)
-  {-# INLINE (==~~) #-}
 
 -- | Symbolic equality. Note that we can't use Haskell's 'Eq' class since
 -- symbolic comparison won't necessarily return a concrete 'Bool' value.
@@ -154,10 +126,6 @@ class SEq a where
   {-# INLINE (/=~) #-}
   infix 4 /=~
   {-# MINIMAL (==~) | (/=~) #-}
-
-instance (Generic a, SEq' (Rep a)) => SEq (Default a) where
-  Default l ==~ Default r = from l ==~~ from r
-  {-# INLINE (==~) #-}
 
 -- | Symbolic logical operators for symbolic booleans.
 --
@@ -227,14 +195,6 @@ class LogicalOp b where
 
   {-# MINIMAL (||~), nots | (&&~), nots #-}
 
-instance LogicalOp Bool where
-  (||~) = (||)
-  {-# INLINE (||~) #-}
-  (&&~) = (&&)
-  {-# INLINE (&&~) #-}
-  nots = not
-  {-# INLINE nots #-}
-
 -- | ITE operator for solvable (see "Grisette.Core#solvable")s, including symbolic boolean, integer, etc.
 --
 -- >>> let a = "a" :: SymBool
@@ -245,6 +205,7 @@ instance LogicalOp Bool where
 class ITEOp v where
   ites :: SymBool -> v -> v -> v
 
+-- SEq instances
 #define CONCRETE_SEQ(type) \
 instance SEq type where \
   l ==~ r = con $ l == r; \
@@ -367,6 +328,47 @@ instance (SEq (m a)) => SEq (IdentityT m a) where
   (IdentityT l) ==~ (IdentityT r) = l ==~ r
   {-# INLINE (==~) #-}
 
+-- Symbolic types
+#define SEQ_SIMPLE(symtype) \
+instance SEq symtype where \
+  (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
+
+#define SEQ_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
+  (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
+
+#define SEQ_BV_SOME(somety, origty) \
+instance SEq somety where \
+  somety (l :: origty l) ==~ somety (r :: origty r) = \
+    (case sameNat (Proxy @l) (Proxy @r) of \
+      Just Refl -> l ==~ r; \
+      Nothing -> con False); \
+  {-# INLINE (==~) #-}; \
+  somety (l :: origty l) /=~ somety (r :: origty r) = \
+    (case sameNat (Proxy @l) (Proxy @r) of \
+      Just Refl -> l /=~ r; \
+      Nothing -> con True); \
+  {-# INLINE (/=~) #-}
+
+#if 1
+SEQ_SIMPLE(SymBool)
+SEQ_SIMPLE(SymInteger)
+SEQ_BV(SymIntN)
+SEQ_BV(SymWordN)
+SEQ_BV_SOME(SomeSymIntN, SymIntN)
+SEQ_BV_SOME(SomeSymWordN, SymWordN)
+#endif
+
+-- LogicalOp instances
+instance LogicalOp Bool where
+  (||~) = (||)
+  {-# INLINE (||~) #-}
+  (&&~) = (&&)
+  {-# INLINE (&&~) #-}
+  nots = not
+  {-# INLINE nots #-}
+
+-- ITEOp instances
 #define ITEOP_SIMPLE(type) \
 instance ITEOp type where \
   ites (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
@@ -404,3 +406,40 @@ instance LogicalOp SymBool where
   nots (SymBool v) = SymBool $ pevalNotTerm v
   (SymBool l) `xors` (SymBool r) = SymBool $ pevalXorTerm l r
   (SymBool l) `implies` (SymBool r) = SymBool $ pevalImplyTerm l r
+
+-- | Auxiliary class for 'SEq' instance derivation
+class SEq' f where
+  -- | Auxiliary function for '(==~~) derivation
+  (==~~) :: f a -> f a -> SymBool
+
+  infix 4 ==~~
+
+instance SEq' U1 where
+  _ ==~~ _ = con True
+  {-# INLINE (==~~) #-}
+
+instance SEq' V1 where
+  _ ==~~ _ = con True
+  {-# INLINE (==~~) #-}
+
+instance (SEq c) => SEq' (K1 i c) where
+  (K1 a) ==~~ (K1 b) = a ==~ b
+  {-# INLINE (==~~) #-}
+
+instance (SEq' a) => SEq' (M1 i c a) where
+  (M1 a) ==~~ (M1 b) = a ==~~ b
+  {-# INLINE (==~~) #-}
+
+instance (SEq' a, SEq' b) => SEq' (a :+: b) where
+  (L1 a) ==~~ (L1 b) = a ==~~ b
+  (R1 a) ==~~ (R1 b) = a ==~~ b
+  _ ==~~ _ = con False
+  {-# INLINE (==~~) #-}
+
+instance (SEq' a, SEq' b) => SEq' (a :*: b) where
+  (a1 :*: b1) ==~~ (a2 :*: b2) = (a1 ==~~ a2) &&~ (b1 ==~~ b2)
+  {-# INLINE (==~~) #-}
+
+instance (Generic a, SEq' (Rep a)) => SEq (Default a) where
+  Default l ==~ Default r = from l ==~~ from r
+  {-# INLINE (==~) #-}
