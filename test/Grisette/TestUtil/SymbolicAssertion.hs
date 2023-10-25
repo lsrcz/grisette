@@ -3,7 +3,7 @@ module Grisette.TestUtil.SymbolicAssertion ((@?=~)) where
 import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV (z3)
 import Grisette.Backend.SBV.Data.SMT.Solving (SolvingFailure (Unsat), precise)
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots))
 import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.Solver (Solver (solve))

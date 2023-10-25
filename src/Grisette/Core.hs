@@ -1057,7 +1057,6 @@ import Grisette.Core.Data.Class.BitVector
     bvExtract,
     sizedBVExtract,
   )
-import Grisette.Core.Data.Class.SEq (SEq (..))
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISCondition (..),
     CEGISSolver (..),
@@ -1077,7 +1076,7 @@ import Grisette.Core.Data.Class.Error
     symAssertWith,
     symThrowTransformableError,
   )
-import Grisette.Core.Data.Class.Evaluate
+import Grisette.Core.Data.Class.EvaluateSym
   ( EvaluateSym (..),
     evaluateSymToCon,
   )
@@ -1141,6 +1140,7 @@ import Grisette.Core.Data.Class.ModelOps
     SymbolSetOps (..),
     SymbolSetRep (..),
   )
+import Grisette.Core.Data.Class.SEq (SEq (..))
 import Grisette.Core.Data.Class.SOrd (SOrd (..))
 import Grisette.Core.Data.Class.SafeArith
   ( SafeDivision (..),

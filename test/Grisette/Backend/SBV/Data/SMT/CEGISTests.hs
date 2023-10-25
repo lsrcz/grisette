@@ -28,7 +28,7 @@ import Grisette.Core.Data.Class.CEGISSolver
     cegisExceptVC,
     cegisPostCond,
   )
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )

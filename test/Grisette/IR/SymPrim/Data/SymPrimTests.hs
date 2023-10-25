@@ -48,7 +48,7 @@ import Grisette.Core.Data.Class.BitVector
         sizedBVZext
       ),
   )
-import Grisette.Core.Data.Class.Evaluate
+import Grisette.Core.Data.Class.EvaluateSym
   ( EvaluateSym (evaluateSym),
   )
 import Grisette.Core.Data.Class.ExtractSymbolics
