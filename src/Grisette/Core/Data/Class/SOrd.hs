@@ -51,6 +51,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
@@ -66,7 +67,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalLeNumTerm,
     pevalLtNumTerm,
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN,
     SomeSymWordN,
     SymBool (SymBool),
@@ -359,6 +360,21 @@ SORD_BV(SymWordN)
 SORD_BV_SOME(SomeSymIntN, binSomeSymIntN)
 SORD_BV_SOME(SomeSymWordN, binSomeSymWordN)
 #endif
+
+-- Exception
+instance SOrd AssertionError where
+  _ <=~ _ = con True
+  _ <~ _ = con False
+  _ >=~ _ = con True
+  _ >~ _ = con False
+  _ `symCompare` _ = mrgSingle EQ
+
+instance SOrd VerificationConditions where
+  l >=~ r = con $ l >= r
+  l >~ r = con $ l > r
+  l <=~ r = con $ l <= r
+  l <~ r = con $ l < r
+  l `symCompare` r = mrgSingle $ l `compare` r
 
 -- | Auxiliary class for 'SOrd' instance derivation
 class (SEq' f) => SOrd' f where

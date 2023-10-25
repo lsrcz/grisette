@@ -1030,8 +1030,6 @@ import Grisette.Core.BuiltinUnionWrappers
 import Grisette.Core.Control.Exception
   ( AssertionError (..),
     VerificationConditions (..),
-    symAssert,
-    symAssume,
   )
 import Grisette.Core.Control.Monad.CBMCExcept
   ( CBMCEither (..),
@@ -1072,8 +1070,10 @@ import Grisette.Core.Data.Class.CEGISSolver
   )
 import Grisette.Core.Data.Class.Error
   ( TransformError (..),
+    symAssert,
     symAssertTransformableError,
     symAssertWith,
+    symAssume,
     symThrowTransformableError,
   )
 import Grisette.Core.Data.Class.EvaluateSym

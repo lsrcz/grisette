@@ -48,7 +48,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     simpleMerge,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model (Model)
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Language.Haskell.TH.Syntax (Lift)
 
 data SolveInternal = SolveInternal

@@ -62,7 +62,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (pattern Con)
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( AllSyms (allSymsS),
     SomeSym (SomeSym),
     SymBool,

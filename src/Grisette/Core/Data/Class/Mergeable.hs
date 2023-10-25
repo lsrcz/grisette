@@ -111,6 +111,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV
   ( BitwidthMismatch,
     IntN (IntN),
@@ -123,7 +124,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool,
@@ -315,20 +316,6 @@ class Mergeable a where
   -- | The root merging strategy for the type.
   rootStrategy :: MergingStrategy a
 
-instance (Generic a, Mergeable' (Rep a)) => Mergeable (Default a) where
-  rootStrategy = unsafeCoerce (derivedRootStrategy :: MergingStrategy a)
-  {-# NOINLINE rootStrategy #-}
-
--- | Generic derivation for the 'Mergeable' class.
---
--- Usually you can derive the merging strategy with the @DerivingVia@ and
--- @DerivingStrategies@ extension.
---
--- > data X = ... deriving (Generic) deriving Mergeable via (Default X)
-derivedRootStrategy :: (Generic a, Mergeable' (Rep a)) => MergingStrategy a
-derivedRootStrategy = wrapStrategy rootStrategy' to from
-{-# INLINE derivedRootStrategy #-}
-
 -- | Lifting of the 'Mergeable' class to unary type constructors.
 class Mergeable1 (u :: Type -> Type) where
   -- | Lift merge strategy through the type constructor.
@@ -358,94 +345,6 @@ class Mergeable3 (u :: Type -> Type -> Type -> Type) where
 rootStrategy3 :: (Mergeable a, Mergeable b, Mergeable c, Mergeable3 u) => MergingStrategy (u a b c)
 rootStrategy3 = liftRootStrategy3 rootStrategy rootStrategy rootStrategy
 {-# INLINE rootStrategy3 #-}
-
-instance (Generic1 u, Mergeable1' (Rep1 u)) => Mergeable1 (Default1 u) where
-  liftRootStrategy = unsafeCoerce (derivedLiftMergingStrategy :: MergingStrategy a -> MergingStrategy (u a))
-  {-# NOINLINE liftRootStrategy #-}
-
-class Mergeable1' (u :: Type -> Type) where
-  liftRootStrategy' :: MergingStrategy a -> MergingStrategy (u a)
-
-instance Mergeable1' U1 where
-  liftRootStrategy' _ = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE liftRootStrategy' #-}
-
-instance Mergeable1' V1 where
-  liftRootStrategy' _ = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE liftRootStrategy' #-}
-
-instance Mergeable1' Par1 where
-  liftRootStrategy' m = wrapStrategy m Par1 unPar1
-  {-# INLINE liftRootStrategy' #-}
-
-instance (Mergeable1 f) => Mergeable1' (Rec1 f) where
-  liftRootStrategy' m = wrapStrategy (liftRootStrategy m) Rec1 unRec1
-  {-# INLINE liftRootStrategy' #-}
-
-instance (Mergeable c) => Mergeable1' (K1 i c) where
-  liftRootStrategy' _ = wrapStrategy rootStrategy K1 unK1
-  {-# INLINE liftRootStrategy' #-}
-
-instance (Mergeable1' a) => Mergeable1' (M1 i c a) where
-  liftRootStrategy' m = wrapStrategy (liftRootStrategy' m) M1 unM1
-  {-# INLINE liftRootStrategy' #-}
-
-instance (Mergeable1' a, Mergeable1' b) => Mergeable1' (a :+: b) where
-  liftRootStrategy' m =
-    SortedStrategy
-      ( \case
-          L1 _ -> False
-          R1 _ -> True
-      )
-      ( \idx ->
-          if not idx
-            then wrapStrategy (liftRootStrategy' m) L1 (\case (L1 v) -> v; _ -> error "impossible")
-            else wrapStrategy (liftRootStrategy' m) R1 (\case (R1 v) -> v; _ -> error "impossible")
-      )
-  {-# INLINE liftRootStrategy' #-}
-
-instance (Mergeable1' a, Mergeable1' b) => Mergeable1' (a :*: b) where
-  liftRootStrategy' m = product2Strategy (:*:) (\(a :*: b) -> (a, b)) (liftRootStrategy' m) (liftRootStrategy' m)
-  {-# INLINE liftRootStrategy' #-}
-
--- | Generic derivation for the 'Mergeable' class.
-derivedLiftMergingStrategy :: (Generic1 u, Mergeable1' (Rep1 u)) => MergingStrategy a -> MergingStrategy (u a)
-derivedLiftMergingStrategy m = wrapStrategy (liftRootStrategy' m) to1 from1
-{-# INLINE derivedLiftMergingStrategy #-}
-
--- | Auxiliary class for the generic derivation for the 'Mergeable' class.
-class Mergeable' f where
-  rootStrategy' :: MergingStrategy (f a)
-
-instance Mergeable' U1 where
-  rootStrategy' = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE rootStrategy' #-}
-
-instance Mergeable' V1 where
-  rootStrategy' = SimpleStrategy (\_ t _ -> t)
-  {-# INLINE rootStrategy' #-}
-
-instance (Mergeable c) => Mergeable' (K1 i c) where
-  rootStrategy' = wrapStrategy rootStrategy K1 unK1
-  {-# INLINE rootStrategy' #-}
-
-instance (Mergeable' a) => Mergeable' (M1 i c a) where
-  rootStrategy' = wrapStrategy rootStrategy' M1 unM1
-  {-# INLINE rootStrategy' #-}
-
-instance (Mergeable' a, Mergeable' b) => Mergeable' (a :+: b) where
-  rootStrategy' =
-    SortedStrategy
-      ( \case
-          L1 _ -> False
-          R1 _ -> True
-      )
-      ( \idx ->
-          if not idx
-            then wrapStrategy rootStrategy' L1 (\case (L1 v) -> v; _ -> undefined)
-            else wrapStrategy rootStrategy' R1 (\case (R1 v) -> v; _ -> undefined)
-      )
-  {-# INLINE rootStrategy' #-}
 
 -- | Useful utility function for building merge strategies for product types
 -- manually.
@@ -1084,3 +983,109 @@ instance Mergeable ArithException where
       (const $ SimpleStrategy $ \_ l _ -> l)
 
 deriving via (Default BitwidthMismatch) instance (Mergeable BitwidthMismatch)
+
+deriving via (Default AssertionError) instance Mergeable AssertionError
+
+deriving via (Default VerificationConditions) instance Mergeable VerificationConditions
+
+instance (Generic a, Mergeable' (Rep a)) => Mergeable (Default a) where
+  rootStrategy = unsafeCoerce (derivedRootStrategy :: MergingStrategy a)
+  {-# NOINLINE rootStrategy #-}
+
+-- | Generic derivation for the 'Mergeable' class.
+--
+-- Usually you can derive the merging strategy with the @DerivingVia@ and
+-- @DerivingStrategies@ extension.
+--
+-- > data X = ... deriving (Generic) deriving Mergeable via (Default X)
+derivedRootStrategy :: (Generic a, Mergeable' (Rep a)) => MergingStrategy a
+derivedRootStrategy = wrapStrategy rootStrategy' to from
+{-# INLINE derivedRootStrategy #-}
+
+instance (Generic1 u, Mergeable1' (Rep1 u)) => Mergeable1 (Default1 u) where
+  liftRootStrategy = unsafeCoerce (derivedLiftMergingStrategy :: MergingStrategy a -> MergingStrategy (u a))
+  {-# NOINLINE liftRootStrategy #-}
+
+class Mergeable1' (u :: Type -> Type) where
+  liftRootStrategy' :: MergingStrategy a -> MergingStrategy (u a)
+
+instance Mergeable1' U1 where
+  liftRootStrategy' _ = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE liftRootStrategy' #-}
+
+instance Mergeable1' V1 where
+  liftRootStrategy' _ = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE liftRootStrategy' #-}
+
+instance Mergeable1' Par1 where
+  liftRootStrategy' m = wrapStrategy m Par1 unPar1
+  {-# INLINE liftRootStrategy' #-}
+
+instance (Mergeable1 f) => Mergeable1' (Rec1 f) where
+  liftRootStrategy' m = wrapStrategy (liftRootStrategy m) Rec1 unRec1
+  {-# INLINE liftRootStrategy' #-}
+
+instance (Mergeable c) => Mergeable1' (K1 i c) where
+  liftRootStrategy' _ = wrapStrategy rootStrategy K1 unK1
+  {-# INLINE liftRootStrategy' #-}
+
+instance (Mergeable1' a) => Mergeable1' (M1 i c a) where
+  liftRootStrategy' m = wrapStrategy (liftRootStrategy' m) M1 unM1
+  {-# INLINE liftRootStrategy' #-}
+
+instance (Mergeable1' a, Mergeable1' b) => Mergeable1' (a :+: b) where
+  liftRootStrategy' m =
+    SortedStrategy
+      ( \case
+          L1 _ -> False
+          R1 _ -> True
+      )
+      ( \idx ->
+          if not idx
+            then wrapStrategy (liftRootStrategy' m) L1 (\case (L1 v) -> v; _ -> error "impossible")
+            else wrapStrategy (liftRootStrategy' m) R1 (\case (R1 v) -> v; _ -> error "impossible")
+      )
+  {-# INLINE liftRootStrategy' #-}
+
+instance (Mergeable1' a, Mergeable1' b) => Mergeable1' (a :*: b) where
+  liftRootStrategy' m = product2Strategy (:*:) (\(a :*: b) -> (a, b)) (liftRootStrategy' m) (liftRootStrategy' m)
+  {-# INLINE liftRootStrategy' #-}
+
+-- | Generic derivation for the 'Mergeable' class.
+derivedLiftMergingStrategy :: (Generic1 u, Mergeable1' (Rep1 u)) => MergingStrategy a -> MergingStrategy (u a)
+derivedLiftMergingStrategy m = wrapStrategy (liftRootStrategy' m) to1 from1
+{-# INLINE derivedLiftMergingStrategy #-}
+
+-- | Auxiliary class for the generic derivation for the 'Mergeable' class.
+class Mergeable' f where
+  rootStrategy' :: MergingStrategy (f a)
+
+instance Mergeable' U1 where
+  rootStrategy' = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE rootStrategy' #-}
+
+instance Mergeable' V1 where
+  rootStrategy' = SimpleStrategy (\_ t _ -> t)
+  {-# INLINE rootStrategy' #-}
+
+instance (Mergeable c) => Mergeable' (K1 i c) where
+  rootStrategy' = wrapStrategy rootStrategy K1 unK1
+  {-# INLINE rootStrategy' #-}
+
+instance (Mergeable' a) => Mergeable' (M1 i c a) where
+  rootStrategy' = wrapStrategy rootStrategy' M1 unM1
+  {-# INLINE rootStrategy' #-}
+
+instance (Mergeable' a, Mergeable' b) => Mergeable' (a :+: b) where
+  rootStrategy' =
+    SortedStrategy
+      ( \case
+          L1 _ -> False
+          R1 _ -> True
+      )
+      ( \idx ->
+          if not idx
+            then wrapStrategy rootStrategy' L1 (\case (L1 v) -> v; _ -> undefined)
+            else wrapStrategy rootStrategy' R1 (\case (R1 v) -> v; _ -> undefined)
+      )
+  {-# INLINE rootStrategy' #-}

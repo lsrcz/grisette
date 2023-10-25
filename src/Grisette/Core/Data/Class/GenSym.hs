@@ -141,7 +141,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool,

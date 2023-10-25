@@ -51,6 +51,7 @@ import GHC.Generics
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
 import Generics.Deriving.Instances ()
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV
   ( IntN (IntN),
     SomeIntN (SomeIntN),
@@ -64,7 +65,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
     type (-->),
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool,
@@ -304,6 +305,16 @@ TOCON_MACHINE_INTEGER(SymWordN, WordN, 64, Word64)
 TOCON_MACHINE_INTEGER(SymIntN, IntN, $intBitwidthQ, Int)
 TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
 #endif
+
+deriving via
+  (Default AssertionError)
+  instance
+    ToCon AssertionError AssertionError
+
+deriving via
+  (Default VerificationConditions)
+  instance
+    ToCon VerificationConditions VerificationConditions
 
 -- Derivation of ToCon for generic types
 instance (Generic a, Generic b, ToCon' (Rep a) (Rep b)) => ToCon a (Default b) where

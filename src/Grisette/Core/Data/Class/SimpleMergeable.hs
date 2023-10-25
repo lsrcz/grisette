@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -8,6 +9,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -72,6 +74,7 @@ import GHC.Generics
   )
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
+import Grisette.Core.Control.Exception (AssertionError)
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
@@ -88,7 +91,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool,
     SymIntN,
     SymInteger,
@@ -841,3 +844,6 @@ SIMPLE_MERGEABLE_BV(SymWordN)
 SIMPLE_MERGEABLE_FUN(=~>)
 SIMPLE_MERGEABLE_FUN(-~>)
 #endif
+
+-- Exception
+deriving via (Default AssertionError) instance SimpleMergeable AssertionError

@@ -15,8 +15,6 @@ import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV (GrisetteSMTConfig, precise, z3)
 import Grisette.Core.Control.Exception
   ( VerificationConditions,
-    symAssert,
-    symAssume,
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.BitVector
@@ -27,6 +25,10 @@ import Grisette.Core.Data.Class.CEGISSolver
     cegis,
     cegisExceptVC,
     cegisPostCond,
+  )
+import Grisette.Core.Data.Class.Error
+  ( symAssert,
+    symAssume,
   )
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
