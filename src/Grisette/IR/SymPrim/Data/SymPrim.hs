@@ -172,7 +172,6 @@ import Grisette.Core.Data.Class.SafeArith
         safeNeg,
         safeNeg'
       ),
-    SymIntegerOp,
   )
 import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
@@ -353,8 +352,6 @@ instance SafeLinearArith ArithException SymInteger where
   safeNeg' _ v = mrgReturn $ -v
   safeMinus ls rs = mrgReturn $ ls - rs
   safeMinus' _ ls rs = mrgReturn $ ls - rs
-
-instance SymIntegerOp SymInteger
 
 -- | Symbolic signed bit vector type. Indexed with the bit width.
 -- Signedness affects the semantics of the operations, including

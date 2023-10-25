@@ -25,7 +25,6 @@ module Grisette.Core.Data.Class.Bool
 
     -- * Symbolic Boolean operations
     LogicalOp (..),
-    SymBoolOp,
     ITEOp (..),
   )
 where
@@ -55,9 +54,6 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
-import {-# SOURCE #-} Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable,
-  )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
@@ -248,9 +244,6 @@ instance LogicalOp Bool where
 -- (ite a b c)
 class ITEOp v where
   ites :: SymBool -> v -> v -> v
-
--- | Aggregation for the operations on symbolic boolean types
-class (SimpleMergeable b, SEq b, Eq b, LogicalOp b, Solvable Bool b, ITEOp b) => SymBoolOp b
 
 #define CONCRETE_SEQ(type) \
 instance SEq type where \

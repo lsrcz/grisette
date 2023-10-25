@@ -181,7 +181,6 @@ module Grisette.Core
     LogicalOp (..),
     ITEOp (..),
     SEq (..),
-    SymBoolOp,
     SOrd (..),
     BV (..),
     bvExtract,
@@ -190,7 +189,6 @@ module Grisette.Core
     SignConversion (..),
     SafeDivision (..),
     SafeLinearArith (..),
-    SymIntegerOp,
     Function (..),
 
     -- ** Unsolvable types
@@ -1063,7 +1061,6 @@ import Grisette.Core.Data.Class.Bool
   ( ITEOp (..),
     LogicalOp (..),
     SEq (..),
-    SymBoolOp,
   )
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISCondition (..),
@@ -1150,7 +1147,6 @@ import Grisette.Core.Data.Class.SOrd (SOrd (..))
 import Grisette.Core.Data.Class.SafeArith
   ( SafeDivision (..),
     SafeLinearArith (..),
-    SymIntegerOp,
   )
 import Grisette.Core.Data.Class.SignConversion (SignConversion (..))
 import Grisette.Core.Data.Class.SimpleMergeable
