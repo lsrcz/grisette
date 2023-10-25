@@ -56,6 +56,10 @@ instance (KnownNat n, 1 <= n) => IsString (SymIntN n)
 
 instance (KnownNat n, 1 <= n) => IsString (SymWordN n)
 
+instance (KnownNat n, 1 <= n) => Num (SymIntN n)
+
+instance (KnownNat n, 1 <= n) => Num (SymWordN n)
+
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
 
 data SomeSymIntN where
@@ -120,6 +124,8 @@ instance Hashable SymInteger
 instance ExtractSymbolics SymInteger
 
 instance IsString SymInteger
+
+instance Num SymInteger
 
 data SomeSym where
   SomeSym :: (LinkedRep con sym) => sym -> SomeSym

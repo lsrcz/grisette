@@ -6,6 +6,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -50,7 +51,30 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV
+  ( IntN,
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN,
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ)
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+    type (-->),
+  )
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool,
+    SymIntN,
+    SymInteger,
+    SymWordN,
+    type (-~>),
+    type (=~>),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.IR.SymPrim
@@ -65,28 +89,6 @@ class ToSym a b where
   -- >>> toSym [False, True] :: [SymBool]
   -- [false,true]
   toSym :: a -> b
-
-instance (Generic a, Generic b, ToSym' (Rep a) (Rep b)) => ToSym a (Default b) where
-  toSym = Default . to . toSym' . from
-
-class ToSym' a b where
-  toSym' :: a c -> b c
-
-instance ToSym' U1 U1 where
-  toSym' = id
-
-instance (ToSym a b) => ToSym' (K1 i a) (K1 i b) where
-  toSym' (K1 a) = K1 $ toSym a
-
-instance (ToSym' a b) => ToSym' (M1 i c1 a) (M1 i c2 b) where
-  toSym' (M1 a) = M1 $ toSym' a
-
-instance (ToSym' a1 a2, ToSym' b1 b2) => ToSym' (a1 :+: b1) (a2 :+: b2) where
-  toSym' (L1 a) = L1 $ toSym' a
-  toSym' (R1 b) = R1 $ toSym' b
-
-instance (ToSym' a1 a2, ToSym' b1 b2) => ToSym' (a1 :*: b1) (a2 :*: b2) where
-  toSym' (a :*: b) = toSym' a :*: toSym' b
 
 #define CONCRETE_TOSYM(type) \
 instance ToSym type type where \
@@ -220,3 +222,116 @@ instance (ToSym a b) => ToSym (Identity a) (Identity b) where
 -- IdentityT
 instance (ToSym (m a) (m1 b)) => ToSym (IdentityT m a) (IdentityT m1 b) where
   toSym (IdentityT v) = IdentityT $ toSym v
+
+#define TO_SYM_SYMID_SIMPLE(symtype) \
+instance ToSym symtype symtype where \
+  toSym = id
+
+#define TO_SYM_SYMID_BV(symtype) \
+instance (KnownNat n, 1 <= n) => ToSym (symtype n) (symtype n) where \
+  toSym = id
+
+#define TO_SYM_SYMID_FUN(op) \
+instance (SupportedPrim a, SupportedPrim b) => ToSym (a op b) (a op b) where \
+  toSym = id
+
+#if 1
+TO_SYM_SYMID_SIMPLE(SymBool)
+TO_SYM_SYMID_SIMPLE(SymInteger)
+TO_SYM_SYMID_BV(SymIntN)
+TO_SYM_SYMID_BV(SymWordN)
+TO_SYM_SYMID_FUN(=~>)
+TO_SYM_SYMID_FUN(-~>)
+TO_SYM_SYMID_SIMPLE(SomeSymIntN)
+TO_SYM_SYMID_SIMPLE(SomeSymWordN)
+#endif
+
+#define TO_SYM_FROMCON_SIMPLE(contype, symtype) \
+instance ToSym contype symtype where \
+  toSym = con
+
+#define TO_SYM_FROMCON_BV(contype, symtype) \
+instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
+  toSym = con
+
+#define TO_SYM_FROMCON_FUN(conop, symop) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToSym (conop ca cb) (symop sa sb) where \
+  toSym = con
+
+#define TO_SYM_FROMCON_BV_SOME(contype, symtype) \
+instance ToSym contype symtype where \
+  toSym (contype v) = symtype (con v)
+
+#if 1
+TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
+TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
+TO_SYM_FROMCON_BV(IntN, SymIntN)
+TO_SYM_FROMCON_BV(WordN, SymWordN)
+TO_SYM_FROMCON_FUN((=->), (=~>))
+TO_SYM_FROMCON_FUN((-->), (-~>))
+TO_SYM_FROMCON_BV_SOME(SomeIntN, SomeSymIntN)
+TO_SYM_FROMCON_BV_SOME(SomeWordN, SomeSymWordN)
+#endif
+
+#define TO_SYM_FROMBV_SOME(somesymbv, bv) \
+instance (KnownNat n, 1 <= n) => ToSym (bv n) somesymbv where \
+  toSym = somesymbv . con
+
+#if 1
+TO_SYM_FROMBV_SOME(SomeSymIntN, IntN)
+TO_SYM_FROMBV_SOME(SomeSymWordN, WordN)
+#endif
+
+#define TOSYM_MACHINE_INTEGER(int, bv) \
+instance ToSym int (bv) where \
+  toSym = fromIntegral
+
+#define TOSYM_MACHINE_INTEGER_SOME(int, somesymbv, bv, bitwidth) \
+instance ToSym int somesymbv where \
+  toSym v = somesymbv (con (fromIntegral v :: bv bitwidth))
+
+#if 1
+TOSYM_MACHINE_INTEGER(Int8, SymIntN 8)
+TOSYM_MACHINE_INTEGER(Int16, SymIntN 16)
+TOSYM_MACHINE_INTEGER(Int32, SymIntN 32)
+TOSYM_MACHINE_INTEGER(Int64, SymIntN 64)
+TOSYM_MACHINE_INTEGER(Word8, SymWordN 8)
+TOSYM_MACHINE_INTEGER(Word16, SymWordN 16)
+TOSYM_MACHINE_INTEGER(Word32, SymWordN 32)
+TOSYM_MACHINE_INTEGER(Word64, SymWordN 64)
+TOSYM_MACHINE_INTEGER(Int, SymIntN $intBitwidthQ)
+TOSYM_MACHINE_INTEGER(Word, SymWordN $intBitwidthQ)
+
+TOSYM_MACHINE_INTEGER_SOME(Int8, SomeSymIntN, IntN, 8)
+TOSYM_MACHINE_INTEGER_SOME(Int16, SomeSymIntN, IntN, 16)
+TOSYM_MACHINE_INTEGER_SOME(Int32, SomeSymIntN, IntN, 32)
+TOSYM_MACHINE_INTEGER_SOME(Int64, SomeSymIntN, IntN, 64)
+TOSYM_MACHINE_INTEGER_SOME(Word8, SomeSymWordN, WordN, 8)
+TOSYM_MACHINE_INTEGER_SOME(Word16, SomeSymWordN, WordN, 16)
+TOSYM_MACHINE_INTEGER_SOME(Word32, SomeSymWordN, WordN, 32)
+TOSYM_MACHINE_INTEGER_SOME(Word64, SomeSymWordN, WordN, 64)
+TOSYM_MACHINE_INTEGER_SOME(Int, SomeSymIntN, IntN, $intBitwidthQ)
+TOSYM_MACHINE_INTEGER_SOME(Word, SomeSymWordN, WordN, $intBitwidthQ)
+#endif
+
+instance (Generic a, Generic b, ToSym' (Rep a) (Rep b)) => ToSym a (Default b) where
+  toSym = Default . to . toSym' . from
+
+class ToSym' a b where
+  toSym' :: a c -> b c
+
+instance ToSym' U1 U1 where
+  toSym' = id
+
+instance (ToSym a b) => ToSym' (K1 i a) (K1 i b) where
+  toSym' (K1 a) = K1 $ toSym a
+
+instance (ToSym' a b) => ToSym' (M1 i c1 a) (M1 i c2 b) where
+  toSym' (M1 a) = M1 $ toSym' a
+
+instance (ToSym' a1 a2, ToSym' b1 b2) => ToSym' (a1 :+: b1) (a2 :+: b2) where
+  toSym' (L1 a) = L1 $ toSym' a
+  toSym' (R1 b) = R1 $ toSym' b
+
+instance (ToSym' a1 a2, ToSym' b1 b2) => ToSym' (a1 :*: b1) (a2 :*: b2) where
+  toSym' (a :*: b) = toSym' a :*: toSym' b
