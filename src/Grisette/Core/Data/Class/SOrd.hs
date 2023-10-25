@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -52,14 +53,29 @@ import Generics.Deriving
   )
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)), SEq' ((==~~)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
     mrgSingle,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalGeNumTerm,
+    pevalGtNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+  )
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN,
+    SomeSymWordN,
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    binSomeSymIntN,
+    binSomeSymWordN,
+  )
 
 -- $setup
 -- >>> import Grisette.Core
@@ -69,109 +85,6 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
-
--- | Auxiliary class for 'SOrd' instance derivation
-class (SEq' f) => SOrd' f where
-  -- | Auxiliary function for '(<~~) derivation
-  (<~~) :: f a -> f a -> SymBool
-
-  infix 4 <~~
-
-  -- | Auxiliary function for '(<=~~) derivation
-  (<=~~) :: f a -> f a -> SymBool
-
-  infix 4 <=~~
-
-  -- | Auxiliary function for '(>~~) derivation
-  (>~~) :: f a -> f a -> SymBool
-
-  infix 4 >~~
-
-  -- | Auxiliary function for '(>=~~) derivation
-  (>=~~) :: f a -> f a -> SymBool
-
-  infix 4 >=~~
-
-  -- | Auxiliary function for 'symCompare' derivation
-  symCompare' :: f a -> f a -> UnionM Ordering
-
-instance SOrd' U1 where
-  _ <~~ _ = con False
-  _ <=~~ _ = con True
-  _ >~~ _ = con False
-  _ >=~~ _ = con True
-  symCompare' _ _ = mrgSingle EQ
-
-instance SOrd' V1 where
-  _ <~~ _ = con False
-  _ <=~~ _ = con True
-  _ >~~ _ = con False
-  _ >=~~ _ = con True
-  symCompare' _ _ = mrgSingle EQ
-
-instance (SOrd c) => SOrd' (K1 i c) where
-  (K1 a) <~~ (K1 b) = a <~ b
-  (K1 a) <=~~ (K1 b) = a <=~ b
-  (K1 a) >~~ (K1 b) = a >~ b
-  (K1 a) >=~~ (K1 b) = a >=~ b
-  symCompare' (K1 a) (K1 b) = symCompare a b
-
-instance (SOrd' a) => SOrd' (M1 i c a) where
-  (M1 a) <~~ (M1 b) = a <~~ b
-  (M1 a) <=~~ (M1 b) = a <=~~ b
-  (M1 a) >~~ (M1 b) = a >~~ b
-  (M1 a) >=~~ (M1 b) = a >=~~ b
-  symCompare' (M1 a) (M1 b) = symCompare' a b
-
-instance (SOrd' a, SOrd' b) => SOrd' (a :+: b) where
-  (L1 _) <~~ (R1 _) = con True
-  (L1 a) <~~ (L1 b) = a <~~ b
-  (R1 _) <~~ (L1 _) = con False
-  (R1 a) <~~ (R1 b) = a <~~ b
-  (L1 _) <=~~ (R1 _) = con True
-  (L1 a) <=~~ (L1 b) = a <=~~ b
-  (R1 _) <=~~ (L1 _) = con False
-  (R1 a) <=~~ (R1 b) = a <=~~ b
-
-  (L1 _) >~~ (R1 _) = con False
-  (L1 a) >~~ (L1 b) = a >~~ b
-  (R1 _) >~~ (L1 _) = con True
-  (R1 a) >~~ (R1 b) = a >~~ b
-  (L1 _) >=~~ (R1 _) = con False
-  (L1 a) >=~~ (L1 b) = a >=~~ b
-  (R1 _) >=~~ (L1 _) = con True
-  (R1 a) >=~~ (R1 b) = a >=~~ b
-
-  symCompare' (L1 a) (L1 b) = symCompare' a b
-  symCompare' (L1 _) (R1 _) = mrgSingle LT
-  symCompare' (R1 a) (R1 b) = symCompare' a b
-  symCompare' (R1 _) (L1 _) = mrgSingle GT
-
-instance (SOrd' a, SOrd' b) => SOrd' (a :*: b) where
-  (a1 :*: b1) <~~ (a2 :*: b2) = (a1 <~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 <~~ b2))
-  (a1 :*: b1) <=~~ (a2 :*: b2) = (a1 <~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 <=~~ b2))
-  (a1 :*: b1) >~~ (a2 :*: b2) = (a1 >~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 >~~ b2))
-  (a1 :*: b1) >=~~ (a2 :*: b2) = (a1 >~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 >=~~ b2))
-  symCompare' (a1 :*: b1) (a2 :*: b2) = do
-    l <- symCompare' a1 a2
-    case l of
-      EQ -> symCompare' b1 b2
-      _ -> mrgSingle l
-
-derivedSymLt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymLt x y = from x <~~ from y
-
-derivedSymLe :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymLe x y = from x <=~~ from y
-
-derivedSymGt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymGt x y = from x >~~ from y
-
-derivedSymGe :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymGe x y = from x >=~~ from y
-
-derivedSymCompare :: (Generic a, SOrd' (Rep a)) => a -> a -> UnionM Ordering
-derivedSymCompare x y = symCompare' (from x) (from y)
 
 -- | Symbolic total order. Note that we can't use Haskell's 'Ord' class since
 -- symbolic comparison won't necessarily return a concrete 'Bool' or 'Ordering'
@@ -391,3 +304,161 @@ instance (SOrd (m a)) => SOrd (IdentityT m a) where
   (IdentityT l) >=~ (IdentityT r) = l >=~ r
   (IdentityT l) >~ (IdentityT r) = l >~ r
   (IdentityT l) `symCompare` (IdentityT r) = l `symCompare` r
+
+-- SOrd
+#define SORD_SIMPLE(symtype) \
+instance SOrd symtype where \
+  (symtype a) <=~ (symtype b) = SymBool $ pevalLeNumTerm a b; \
+  (symtype a) <~ (symtype b) = SymBool $ pevalLtNumTerm a b; \
+  (symtype a) >=~ (symtype b) = SymBool $ pevalGeNumTerm a b; \
+  (symtype a) >~ (symtype b) = SymBool $ pevalGtNumTerm a b; \
+  a `symCompare` b = mrgIf \
+    (a <~ b) \
+    (mrgSingle LT) \
+    (mrgIf (a ==~ b) (mrgSingle EQ) (mrgSingle GT))
+
+#define SORD_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
+  (symtype a) <=~ (symtype b) = SymBool $ pevalLeNumTerm a b; \
+  (symtype a) <~ (symtype b) = SymBool $ pevalLtNumTerm a b; \
+  (symtype a) >=~ (symtype b) = SymBool $ pevalGeNumTerm a b; \
+  (symtype a) >~ (symtype b) = SymBool $ pevalGtNumTerm a b; \
+  a `symCompare` b = mrgIf \
+    (a <~ b) \
+    (mrgSingle LT) \
+    (mrgIf (a ==~ b) (mrgSingle EQ) (mrgSingle GT))
+
+#define SORD_BV_SOME(somety, bf) \
+instance SOrd somety where \
+  (<=~) = bf (<=~) "<=~"; \
+  {-# INLINE (<=~) #-}; \
+  (<~) = bf (<~) "<~"; \
+  {-# INLINE (<~) #-}; \
+  (>=~) = bf (>=~) ">=~"; \
+  {-# INLINE (>=~) #-}; \
+  (>~) = bf (>~) ">~"; \
+  {-# INLINE (>~) #-}; \
+  symCompare = bf symCompare "symCompare"; \
+  {-# INLINE symCompare #-}
+
+instance SOrd SymBool where
+  l <=~ r = nots l ||~ r
+  l <~ r = nots l &&~ r
+  l >=~ r = l ||~ nots r
+  l >~ r = l &&~ nots r
+  symCompare l r =
+    mrgIf
+      (nots l &&~ r)
+      (mrgSingle LT)
+      (mrgIf (l ==~ r) (mrgSingle EQ) (mrgSingle GT))
+
+#if 1
+SORD_SIMPLE(SymInteger)
+SORD_BV(SymIntN)
+SORD_BV(SymWordN)
+SORD_BV_SOME(SomeSymIntN, binSomeSymIntN)
+SORD_BV_SOME(SomeSymWordN, binSomeSymWordN)
+#endif
+
+-- | Auxiliary class for 'SOrd' instance derivation
+class (SEq' f) => SOrd' f where
+  -- | Auxiliary function for '(<~~) derivation
+  (<~~) :: f a -> f a -> SymBool
+
+  infix 4 <~~
+
+  -- | Auxiliary function for '(<=~~) derivation
+  (<=~~) :: f a -> f a -> SymBool
+
+  infix 4 <=~~
+
+  -- | Auxiliary function for '(>~~) derivation
+  (>~~) :: f a -> f a -> SymBool
+
+  infix 4 >~~
+
+  -- | Auxiliary function for '(>=~~) derivation
+  (>=~~) :: f a -> f a -> SymBool
+
+  infix 4 >=~~
+
+  -- | Auxiliary function for 'symCompare' derivation
+  symCompare' :: f a -> f a -> UnionM Ordering
+
+instance SOrd' U1 where
+  _ <~~ _ = con False
+  _ <=~~ _ = con True
+  _ >~~ _ = con False
+  _ >=~~ _ = con True
+  symCompare' _ _ = mrgSingle EQ
+
+instance SOrd' V1 where
+  _ <~~ _ = con False
+  _ <=~~ _ = con True
+  _ >~~ _ = con False
+  _ >=~~ _ = con True
+  symCompare' _ _ = mrgSingle EQ
+
+instance (SOrd c) => SOrd' (K1 i c) where
+  (K1 a) <~~ (K1 b) = a <~ b
+  (K1 a) <=~~ (K1 b) = a <=~ b
+  (K1 a) >~~ (K1 b) = a >~ b
+  (K1 a) >=~~ (K1 b) = a >=~ b
+  symCompare' (K1 a) (K1 b) = symCompare a b
+
+instance (SOrd' a) => SOrd' (M1 i c a) where
+  (M1 a) <~~ (M1 b) = a <~~ b
+  (M1 a) <=~~ (M1 b) = a <=~~ b
+  (M1 a) >~~ (M1 b) = a >~~ b
+  (M1 a) >=~~ (M1 b) = a >=~~ b
+  symCompare' (M1 a) (M1 b) = symCompare' a b
+
+instance (SOrd' a, SOrd' b) => SOrd' (a :+: b) where
+  (L1 _) <~~ (R1 _) = con True
+  (L1 a) <~~ (L1 b) = a <~~ b
+  (R1 _) <~~ (L1 _) = con False
+  (R1 a) <~~ (R1 b) = a <~~ b
+  (L1 _) <=~~ (R1 _) = con True
+  (L1 a) <=~~ (L1 b) = a <=~~ b
+  (R1 _) <=~~ (L1 _) = con False
+  (R1 a) <=~~ (R1 b) = a <=~~ b
+
+  (L1 _) >~~ (R1 _) = con False
+  (L1 a) >~~ (L1 b) = a >~~ b
+  (R1 _) >~~ (L1 _) = con True
+  (R1 a) >~~ (R1 b) = a >~~ b
+  (L1 _) >=~~ (R1 _) = con False
+  (L1 a) >=~~ (L1 b) = a >=~~ b
+  (R1 _) >=~~ (L1 _) = con True
+  (R1 a) >=~~ (R1 b) = a >=~~ b
+
+  symCompare' (L1 a) (L1 b) = symCompare' a b
+  symCompare' (L1 _) (R1 _) = mrgSingle LT
+  symCompare' (R1 a) (R1 b) = symCompare' a b
+  symCompare' (R1 _) (L1 _) = mrgSingle GT
+
+instance (SOrd' a, SOrd' b) => SOrd' (a :*: b) where
+  (a1 :*: b1) <~~ (a2 :*: b2) = (a1 <~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 <~~ b2))
+  (a1 :*: b1) <=~~ (a2 :*: b2) = (a1 <~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 <=~~ b2))
+  (a1 :*: b1) >~~ (a2 :*: b2) = (a1 >~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 >~~ b2))
+  (a1 :*: b1) >=~~ (a2 :*: b2) = (a1 >~~ a2) ||~ ((a1 ==~~ a2) &&~ (b1 >=~~ b2))
+  symCompare' (a1 :*: b1) (a2 :*: b2) = do
+    l <- symCompare' a1 a2
+    case l of
+      EQ -> symCompare' b1 b2
+      _ -> mrgSingle l
+
+derivedSymLt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
+derivedSymLt x y = from x <~~ from y
+
+derivedSymLe :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
+derivedSymLe x y = from x <=~~ from y
+
+derivedSymGt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
+derivedSymGt x y = from x >~~ from y
+
+derivedSymGe :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
+derivedSymGe x y = from x >=~~ from y
+
+derivedSymCompare :: (Generic a, SOrd' (Rep a)) => a -> a -> UnionM Ordering
+derivedSymCompare x y = symCompare' (from x) (from y)
