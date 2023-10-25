@@ -169,7 +169,6 @@ import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, ssym),
     pattern Con,
   )
-import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors (symTerm)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -1000,35 +999,6 @@ IS_STRING_BV(SymIntN)
 IS_STRING_BV(SymWordN)
 IS_STRING_FUN(=~>, SymTabularFunc)
 IS_STRING_FUN(-~>, SymGeneralFun)
-#endif
-
--- SubstituteSym
-
-#define SUBSTITUTE_SYM_SIMPLE(symtype) \
-instance SubstituteSym symtype where \
-  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
-
-#define SUBSTITUTE_SYM_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SubstituteSym (symtype n) where \
-  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
-
-#define SUBSTITUTE_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SubstituteSym (sa op sb) where \
-  substituteSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
-
-#define SUBSTITUTE_SYM_BV_SOME(somety, origty) \
-instance SubstituteSym somety where \
-  substituteSym sym v (somety (origty t)) = somety $ origty $ substTerm sym (underlyingTerm v) t
-
-#if 1
-SUBSTITUTE_SYM_SIMPLE(SymBool)
-SUBSTITUTE_SYM_SIMPLE(SymInteger)
-SUBSTITUTE_SYM_BV(SymIntN)
-SUBSTITUTE_SYM_BV(SymWordN)
-SUBSTITUTE_SYM_FUN(=~>, SymTabularFun)
-SUBSTITUTE_SYM_FUN(-~>, SymGeneralFun)
-SUBSTITUTE_SYM_BV_SOME(SomeSymIntN, SymIntN)
-SUBSTITUTE_SYM_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- SizedBV

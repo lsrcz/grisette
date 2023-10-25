@@ -51,8 +51,20 @@ import Generics.Deriving
 import Generics.Deriving.Instances ()
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( LinkedRep,
+  ( LinkedRep (underlyingTerm),
+    SupportedPrim,
     TypedSymbol,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution (substTerm)
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    type (-~>) (SymGeneralFun),
+    type (=~>) (SymTabularFun),
   )
 
 -- $setup
@@ -76,35 +88,6 @@ class SubstituteSym a where
   -- >>> substituteSym "a" ("c" &&~ "d" :: Sym Bool) ["a" &&~ "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
   substituteSym :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a -> a
-
--- | Auxiliary class for 'SubstituteSym' instance derivation
-class SubstituteSym' a where
-  -- | Auxiliary function for 'substituteSym' derivation
-  substituteSym' :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a c -> a c
-
-instance
-  ( Generic a,
-    SubstituteSym' (Rep a)
-  ) =>
-  SubstituteSym (Default a)
-  where
-  substituteSym sym val = Default . to . substituteSym' sym val . from . unDefault
-
-instance SubstituteSym' U1 where
-  substituteSym' _ _ = id
-
-instance (SubstituteSym c) => SubstituteSym' (K1 i c) where
-  substituteSym' sym val (K1 v) = K1 $ substituteSym sym val v
-
-instance (SubstituteSym' a) => SubstituteSym' (M1 i c a) where
-  substituteSym' sym val (M1 v) = M1 $ substituteSym' sym val v
-
-instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :+: b) where
-  substituteSym' sym val (L1 l) = L1 $ substituteSym' sym val l
-  substituteSym' sym val (R1 r) = R1 $ substituteSym' sym val r
-
-instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :*: b) where
-  substituteSym' sym val (a :*: b) = substituteSym' sym val a :*: substituteSym' sym val b
 
 #define CONCRETE_SUBSTITUTESYM(type) \
 instance SubstituteSym type where \
@@ -278,12 +261,58 @@ instance (SubstituteSym a) => SubstituteSym (Identity a) where
 instance (SubstituteSym (m a)) => SubstituteSym (IdentityT m a) where
   substituteSym sym val (IdentityT a) = IdentityT $ substituteSym sym val a
 
-{-
+#define SUBSTITUTE_SYM_SIMPLE(symtype) \
+instance SubstituteSym symtype where \
+  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
 
-instance SubstituteSym (Sym a) where
-  substituteSym sym (Sym val) (Sym x) =
-    introSupportedPrimConstraint val $
-      introSupportedPrimConstraint x $
-        Sym $
-          substTerm sym val x
--}
+#define SUBSTITUTE_SYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SubstituteSym (symtype n) where \
+  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
+
+#define SUBSTITUTE_SYM_FUN(op, cons) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SubstituteSym (sa op sb) where \
+  substituteSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
+
+#define SUBSTITUTE_SYM_BV_SOME(somety, origty) \
+instance SubstituteSym somety where \
+  substituteSym sym v (somety (origty t)) = somety $ origty $ substTerm sym (underlyingTerm v) t
+
+#if 1
+SUBSTITUTE_SYM_SIMPLE(SymBool)
+SUBSTITUTE_SYM_SIMPLE(SymInteger)
+SUBSTITUTE_SYM_BV(SymIntN)
+SUBSTITUTE_SYM_BV(SymWordN)
+SUBSTITUTE_SYM_FUN(=~>, SymTabularFun)
+SUBSTITUTE_SYM_FUN(-~>, SymGeneralFun)
+SUBSTITUTE_SYM_BV_SOME(SomeSymIntN, SymIntN)
+SUBSTITUTE_SYM_BV_SOME(SomeSymWordN, SymWordN)
+#endif
+
+-- | Auxiliary class for 'SubstituteSym' instance derivation
+class SubstituteSym' a where
+  -- | Auxiliary function for 'substituteSym' derivation
+  substituteSym' :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a c -> a c
+
+instance
+  ( Generic a,
+    SubstituteSym' (Rep a)
+  ) =>
+  SubstituteSym (Default a)
+  where
+  substituteSym sym val = Default . to . substituteSym' sym val . from . unDefault
+
+instance SubstituteSym' U1 where
+  substituteSym' _ _ = id
+
+instance (SubstituteSym c) => SubstituteSym' (K1 i c) where
+  substituteSym' sym val (K1 v) = K1 $ substituteSym sym val v
+
+instance (SubstituteSym' a) => SubstituteSym' (M1 i c a) where
+  substituteSym' sym val (M1 v) = M1 $ substituteSym' sym val v
+
+instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :+: b) where
+  substituteSym' sym val (L1 l) = L1 $ substituteSym' sym val l
+  substituteSym' sym val (R1 r) = R1 $ substituteSym' sym val r
+
+instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :*: b) where
+  substituteSym' sym val (a :*: b) = substituteSym' sym val a :*: substituteSym' sym val b
