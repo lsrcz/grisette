@@ -57,10 +57,7 @@ module Grisette.IR.SymPrim.Data.SymPrim
 where
 
 import Control.DeepSeq (NFData (rnf))
-import Control.Exception
-  ( ArithException (DivideByZero, Overflow, Underflow),
-  )
-import Control.Monad.Except (ExceptT (ExceptT), MonadError (throwError))
+import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
   ( Identity (Identity),
     IdentityT (IdentityT),
@@ -134,41 +131,11 @@ import Grisette.Core.Data.Class.BitVector
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~), (>~)))
-import Grisette.Core.Data.Class.SafeDivision
-  ( SafeDivision
-      ( safeDiv,
-        safeDiv',
-        safeDivMod,
-        safeDivMod',
-        safeMod,
-        safeMod',
-        safeQuot,
-        safeQuot',
-        safeQuotRem,
-        safeQuotRem',
-        safeRem,
-        safeRem'
-      ),
-  )
-import Grisette.Core.Data.Class.SafeLinearArith
-  ( SafeLinearArith
-      ( safeAdd,
-        safeAdd',
-        safeMinus,
-        safeMinus',
-        safeNeg,
-        safeNeg'
-      ),
-  )
 import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, ssym),
     pattern Con,
@@ -216,16 +183,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
   ( pevalGeneralFunApplyTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAbsNumTerm,
     pevalAddNumTerm,
@@ -238,7 +195,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   ( pevalTabularFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
-import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
@@ -283,48 +239,6 @@ newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
 #define QID(a) a
 #define QRIGHT(a) QID(a)'
 
-#define SAFE_DIVISION_FUNC(name, type, op) \
-name (type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError DivideByZero) \
-    (mrgReturn $ type $ op l r); \
-QRIGHT(name) t (type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgReturn $ type $ op l r)
-
-#define SAFE_DIVISION_FUNC2(name, type, op1, op2) \
-name (type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError DivideByZero) \
-    (mrgReturn (type $ op1 l r, type $ op2 l r)); \
-QRIGHT(name) t (type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgReturn (type $ op1 l r, type $ op2 l r))
-
-#if 1
-instance SafeDivision ArithException SymInteger where
-  SAFE_DIVISION_FUNC(safeDiv, SymInteger, pevalDivIntegralTerm)
-  SAFE_DIVISION_FUNC(safeMod, SymInteger, pevalModIntegralTerm)
-  SAFE_DIVISION_FUNC(safeQuot, SymInteger, pevalQuotIntegralTerm)
-  SAFE_DIVISION_FUNC(safeRem, SymInteger, pevalRemIntegralTerm)
-  SAFE_DIVISION_FUNC2(safeDivMod, SymInteger, pevalDivIntegralTerm, pevalModIntegralTerm)
-  SAFE_DIVISION_FUNC2(safeQuotRem, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
-#endif
-
-instance SafeLinearArith ArithException SymInteger where
-  safeAdd ls rs = mrgReturn $ ls + rs
-  safeAdd' _ ls rs = mrgReturn $ ls + rs
-  safeNeg v = mrgReturn $ -v
-  safeNeg' _ v = mrgReturn $ -v
-  safeMinus ls rs = mrgReturn $ ls - rs
-  safeMinus' _ ls rs = mrgReturn $ ls - rs
-
 -- | Symbolic signed bit vector type. Indexed with the bit width.
 -- Signedness affects the semantics of the operations, including
 -- comparison/extension, etc.
@@ -343,96 +257,6 @@ instance SafeLinearArith ArithException SymInteger where
 -- for the type class instances.
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
-
-#define SAFE_DIVISION_FUNC_BOUNDED_SIGNED(name, type, op) \
-name ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError DivideByZero) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
-      (throwError Overflow) \
-      (mrgReturn $ type $ op l r)); \
-QRIGHT(name) t ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
-      (throwError (t Overflow)) \
-      (mrgReturn $ type $ op l r))
-
-#define SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
-name ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError DivideByZero) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
-      (throwError Overflow) \
-      (mrgReturn (type $ op1 l r, type $ op2 l r))); \
-QRIGHT(name) t ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs ==~ con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
-      (throwError (t Overflow)) \
-      (mrgReturn (type $ op1 l r, type $ op2 l r)))
-
-#if 1
-instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where
-  SAFE_DIVISION_FUNC_BOUNDED_SIGNED(safeDiv, SymIntN, pevalDivBoundedIntegralTerm)
-  SAFE_DIVISION_FUNC(safeMod, SymIntN, pevalModBoundedIntegralTerm)
-  SAFE_DIVISION_FUNC_BOUNDED_SIGNED(safeQuot, SymIntN, pevalQuotBoundedIntegralTerm)
-  SAFE_DIVISION_FUNC(safeRem, SymIntN, pevalRemBoundedIntegralTerm)
-  SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(safeDivMod, SymIntN, pevalDivBoundedIntegralTerm, pevalModBoundedIntegralTerm)
-  SAFE_DIVISION_FUNC2_BOUNDED_SIGNED(safeQuotRem, SymIntN, pevalQuotBoundedIntegralTerm, pevalRemBoundedIntegralTerm)
-#endif
-
-instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) where
-  safeAdd ls rs =
-    mrgIf
-      (ls >~ 0)
-      (mrgIf (rs >~ 0 &&~ res <~ 0) (throwError Overflow) (return res))
-      ( mrgIf
-          (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0)
-          (throwError Underflow)
-          (mrgReturn res)
-      )
-    where
-      res = ls + rs
-  safeAdd' f ls rs =
-    mrgIf
-      (ls >~ 0)
-      (mrgIf (rs >~ 0 &&~ res <~ 0) (throwError $ f Overflow) (return res))
-      ( mrgIf
-          (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0)
-          (throwError $ f Underflow)
-          (mrgReturn res)
-      )
-    where
-      res = ls + rs
-  safeNeg v = mrgIf (v ==~ con minBound) (throwError Overflow) (mrgReturn $ -v)
-  safeNeg' f v = mrgIf (v ==~ con minBound) (throwError $ f Overflow) (mrgReturn $ -v)
-  safeMinus ls rs =
-    mrgIf
-      (ls >=~ 0)
-      (mrgIf (rs <~ 0 &&~ res <~ 0) (throwError Overflow) (return res))
-      ( mrgIf
-          (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0)
-          (throwError Underflow)
-          (mrgReturn res)
-      )
-    where
-      res = ls - rs
-  safeMinus' f ls rs =
-    mrgIf
-      (ls >=~ 0)
-      (mrgIf (rs <~ 0 &&~ res <~ 0) (throwError $ f Overflow) (return res))
-      ( mrgIf
-          (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0)
-          (throwError $ f Underflow)
-          (mrgReturn res)
-      )
-    where
-      res = ls - rs
 
 -- | Symbolic signed bit vector type. Not indexed, but the bit width is
 -- fixed at the creation time.
@@ -503,48 +327,6 @@ binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymInt
 -- for the type class instances.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
-
-#if 1
-instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymWordN n) where
-  SAFE_DIVISION_FUNC(safeDiv, SymWordN, pevalDivIntegralTerm)
-  SAFE_DIVISION_FUNC(safeMod, SymWordN, pevalModIntegralTerm)
-  SAFE_DIVISION_FUNC(safeQuot, SymWordN, pevalQuotIntegralTerm)
-  SAFE_DIVISION_FUNC(safeRem, SymWordN, pevalRemIntegralTerm)
-  SAFE_DIVISION_FUNC2(safeDivMod, SymWordN, pevalDivIntegralTerm, pevalModIntegralTerm)
-  SAFE_DIVISION_FUNC2(safeQuotRem, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
-#endif
-
-instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) where
-  safeAdd ls rs =
-    mrgIf
-      (ls >~ res ||~ rs >~ res)
-      (throwError Overflow)
-      (mrgReturn res)
-    where
-      res = ls + rs
-  safeAdd' f ls rs =
-    mrgIf
-      (ls >~ res ||~ rs >~ res)
-      (throwError $ f Overflow)
-      (mrgReturn res)
-    where
-      res = ls + rs
-  safeNeg v = mrgIf (v /=~ 0) (throwError Underflow) (mrgReturn v)
-  safeNeg' f v = mrgIf (v /=~ 0) (throwError $ f Underflow) (mrgReturn v)
-  safeMinus ls rs =
-    mrgIf
-      (rs >~ ls)
-      (throwError Underflow)
-      (mrgReturn res)
-    where
-      res = ls - rs
-  safeMinus' f ls rs =
-    mrgIf
-      (rs >~ ls)
-      (throwError $ f Underflow)
-      (mrgReturn res)
-    where
-      res = ls - rs
 
 -- | Symbolic unsigned bit vector type. Not indexed, but the bit width is
 -- fixed at the creation time.
