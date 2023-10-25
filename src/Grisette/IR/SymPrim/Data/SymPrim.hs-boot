@@ -36,9 +36,6 @@ import Data.Hashable (Hashable)
 import Data.String (IsString)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics,
-  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -105,8 +102,6 @@ instance Show SymBool
 
 instance Hashable SymBool
 
-instance ExtractSymbolics SymBool
-
 instance IsString SymBool
 
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
@@ -120,8 +115,6 @@ instance NFData SymInteger
 instance Show SymInteger
 
 instance Hashable SymInteger
-
-instance ExtractSymbolics SymInteger
 
 instance IsString SymInteger
 
