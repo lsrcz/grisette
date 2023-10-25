@@ -39,7 +39,6 @@ import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )
-import Grisette.Core.Data.Class.GPretty (GPretty)
 import Grisette.Core.Data.Class.Solvable (Solvable)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
@@ -96,8 +95,6 @@ instance Hashable SymBool
 instance EvaluateSym SymBool
 
 instance ExtractSymbolics SymBool
-
-instance GPretty SymBool
 
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
 
