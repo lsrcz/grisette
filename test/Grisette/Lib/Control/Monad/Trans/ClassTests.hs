@@ -7,7 +7,7 @@ where
 
 import Control.Monad.Except (ExceptT)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.Bool (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionLike (single, unionIf),
     mrgSingle,

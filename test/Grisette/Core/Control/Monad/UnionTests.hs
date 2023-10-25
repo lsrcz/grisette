@@ -8,10 +8,8 @@
 module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 
 import GHC.Generics (Generic)
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (nots, (&&~), (||~)),
-  )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy (SortedStrategy),

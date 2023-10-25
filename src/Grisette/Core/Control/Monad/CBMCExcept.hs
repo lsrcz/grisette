@@ -64,7 +64,7 @@ import Data.Functor.Classes
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic, Generic1)
-import Grisette.Core.Data.Class.Bool (SEq ((==~)))
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),

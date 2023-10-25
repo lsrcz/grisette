@@ -13,11 +13,6 @@ import Grisette.Core.Control.Monad.UnionM
     underlyingUnion,
     unionSize,
   )
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (implies, nots, xors, (&&~), (||~)),
-    SEq ((==~)),
-  )
 import Grisette.Core.Data.Class.Evaluate
   ( EvaluateSym (evaluateSym),
   )
@@ -31,11 +26,16 @@ import Grisette.Core.Data.Class.GenSym
     genSym,
     genSymSimple,
   )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp
+  ( LogicalOp (implies, nots, xors, (&&~), (||~)),
+  )
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel),
     ModelRep (buildModel),
     SymbolSetRep (buildSymbolSet),
   )
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
   )

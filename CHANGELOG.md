@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `Union` patterns, when used as constructors, now merges the result. ([#133](https://github.com/lsrcz/grisette/pull/133))
 - Changed the symbolic identifier type from `String` to `Data.Text.Text`. ([#141](https://github.com/lsrcz/grisette/pull/141))
 - `Grisette.Data.Class.BitVector.BVSignConversion` is now `Grisette.Data.Class.SignConversion.SignConversion`. ([#142](https://github.com/lsrcz/grisette/pull/142))
+- Moved the `ITEOp`, `LogicalOp`, and `SEq` type classes to dedicated modules. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ## [0.3.1.1] -- 2023-09-29
 

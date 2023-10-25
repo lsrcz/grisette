@@ -6,7 +6,6 @@ module Grisette.Core.Data.Class.GenSymTests (genSymTests) where
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.Bool (ITEOp (ites))
 import Grisette.Core.Data.Class.GenSym
   ( EnumGenBound (EnumGenBound),
     EnumGenUpperBound (EnumGenUpperBound),
@@ -22,6 +21,7 @@ import Grisette.Core.Data.Class.GenSym
     genSymSimple,
     runFresh,
   )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
     mrgSingle,

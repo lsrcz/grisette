@@ -1057,11 +1057,7 @@ import Grisette.Core.Data.Class.BitVector
     bvExtract,
     sizedBVExtract,
   )
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (..),
-    LogicalOp (..),
-    SEq (..),
-  )
+import Grisette.Core.Data.Class.SEq (SEq (..))
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISCondition (..),
     CEGISSolver (..),
@@ -1119,6 +1115,8 @@ import Grisette.Core.Data.Class.GenSym
     runFresh,
     runFreshT,
   )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (..))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (..))
 import Grisette.Core.Data.Class.Mergeable
   ( DynamicSortedIdx (..),
     Mergeable (..),

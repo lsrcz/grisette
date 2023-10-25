@@ -19,7 +19,7 @@ import Grisette.Core.Data.BV
     SomeWordN (SomeWordN),
     WordN,
   )
-import Grisette.Core.Data.Class.Bool (LogicalOp ((&&~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~)))
 import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)

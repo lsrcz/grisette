@@ -43,11 +43,9 @@ import Grisette.Core.Data.BV
     SomeWordN (SomeWordN),
     WordN,
   )
-import Grisette.Core.Data.Class.Bool
-  ( LogicalOp ((&&~), (||~)),
-    SEq ((==~)),
-  )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd ((<=~), (<~), (>=~), (>~)),
   )

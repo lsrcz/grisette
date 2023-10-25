@@ -27,10 +27,8 @@ import qualified Data.Monoid as Monoid
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Monad.UnionM (UnionM, (#~))
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (nots, (&&~), (||~)),
-  )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),

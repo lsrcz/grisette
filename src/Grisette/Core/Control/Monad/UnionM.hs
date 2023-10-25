@@ -58,11 +58,7 @@ import Grisette.Core.Control.Monad.Class.MonadParallelUnion
   )
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (implies, nots, xors, (&&~), (||~)),
-    SEq ((==~)),
-  )
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
@@ -75,6 +71,10 @@ import Grisette.Core.Data.Class.GPretty
 import Grisette.Core.Data.Class.GenSym
   ( GenSym (fresh),
     GenSymSimple (simpleFresh),
+  )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp
+  ( LogicalOp (implies, nots, xors, (&&~), (||~)),
   )
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),

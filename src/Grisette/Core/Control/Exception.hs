@@ -30,7 +30,7 @@ import Control.Monad.Except (MonadError)
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Data.Class.Bool (SEq)
+import Grisette.Core.Data.Class.SEq (SEq)
 import Grisette.Core.Data.Class.Error
   ( TransformError (transformError),
     symAssertTransformableError,

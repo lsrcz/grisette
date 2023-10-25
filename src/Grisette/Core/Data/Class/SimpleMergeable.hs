@@ -72,8 +72,9 @@ import GHC.Generics
   )
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
-import Grisette.Core.Data.Class.Bool (ITEOp (ites), LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable',
