@@ -52,7 +52,18 @@ import Generics.Deriving
 import Generics.Deriving.Instances ()
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.IR.SymPrim.Data.Prim.Model (Model)
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (LinkedRep, SupportedPrim)
+import Grisette.IR.SymPrim.Data.Prim.Model (Model, evaluateTerm)
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    type (-~>) (SymGeneralFun),
+    type (=~>) (SymTabularFun),
+  )
 
 -- $setup
 -- >>> import Grisette.Core
@@ -79,28 +90,6 @@ import Grisette.IR.SymPrim.Data.Prim.Model (Model)
 class EvaluateSym a where
   -- | Evaluate a symbolic variable with some model, possibly fill in values for the missing variables.
   evaluateSym :: Bool -> Model -> a -> a
-
-instance (Generic a, EvaluateSym' (Rep a)) => EvaluateSym (Default a) where
-  evaluateSym fillDefault model = Default . to . evaluateSym' fillDefault model . from . unDefault
-
-class EvaluateSym' a where
-  evaluateSym' :: Bool -> Model -> a c -> a c
-
-instance EvaluateSym' U1 where
-  evaluateSym' _ _ = id
-
-instance (EvaluateSym c) => EvaluateSym' (K1 i c) where
-  evaluateSym' fillDefault model (K1 v) = K1 $ evaluateSym fillDefault model v
-
-instance (EvaluateSym' a) => EvaluateSym' (M1 i c a) where
-  evaluateSym' fillDefault model (M1 v) = M1 $ evaluateSym' fillDefault model v
-
-instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :+: b) where
-  evaluateSym' fillDefault model (L1 l) = L1 $ evaluateSym' fillDefault model l
-  evaluateSym' fillDefault model (R1 r) = R1 $ evaluateSym' fillDefault model r
-
-instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :*: b) where
-  evaluateSym' fillDefault model (a :*: b) = evaluateSym' fillDefault model a :*: evaluateSym' fillDefault model b
 
 -- | Evaluate a symbolic variable with some model, fill in values for the missing variables,
 -- and transform to concrete ones
@@ -239,3 +228,53 @@ instance (EvaluateSym a) => EvaluateSym (Identity a) where
 -- IdentityT
 instance (EvaluateSym (m a)) => EvaluateSym (IdentityT m a) where
   evaluateSym fillDefault model (IdentityT a) = IdentityT $ evaluateSym fillDefault model a
+
+-- Symbolic primitives
+#define EVALUATE_SYM_SIMPLE(symtype) \
+instance EvaluateSym symtype where \
+  evaluateSym fillDefault model (symtype t) = symtype $ evaluateTerm fillDefault model t
+
+#define EVALUATE_SYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => EvaluateSym (symtype n) where \
+  evaluateSym fillDefault model (symtype t) = symtype $ evaluateTerm fillDefault model t
+
+#define EVALUATE_SYM_FUN(op, cons) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => EvaluateSym (sa op sb) where \
+  evaluateSym fillDefault model (cons t) = cons $ evaluateTerm fillDefault model t
+
+#define EVALUATE_SYM_BV_SOME(somety, origty) \
+instance EvaluateSym somety where \
+  evaluateSym fillDefault model (somety (origty t)) = somety $ origty $ evaluateTerm fillDefault model t
+
+#if 1
+EVALUATE_SYM_SIMPLE(SymBool)
+EVALUATE_SYM_SIMPLE(SymInteger)
+EVALUATE_SYM_BV(SymIntN)
+EVALUATE_SYM_BV(SymWordN)
+EVALUATE_SYM_FUN(=~>, SymTabularFun)
+EVALUATE_SYM_FUN(-~>, SymGeneralFun)
+EVALUATE_SYM_BV_SOME(SomeSymIntN, SymIntN)
+EVALUATE_SYM_BV_SOME(SomeSymWordN, SymWordN)
+#endif
+
+instance (Generic a, EvaluateSym' (Rep a)) => EvaluateSym (Default a) where
+  evaluateSym fillDefault model = Default . to . evaluateSym' fillDefault model . from . unDefault
+
+class EvaluateSym' a where
+  evaluateSym' :: Bool -> Model -> a c -> a c
+
+instance EvaluateSym' U1 where
+  evaluateSym' _ _ = id
+
+instance (EvaluateSym c) => EvaluateSym' (K1 i c) where
+  evaluateSym' fillDefault model (K1 v) = K1 $ evaluateSym fillDefault model v
+
+instance (EvaluateSym' a) => EvaluateSym' (M1 i c a) where
+  evaluateSym' fillDefault model (M1 v) = M1 $ evaluateSym' fillDefault model v
+
+instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :+: b) where
+  evaluateSym' fillDefault model (L1 l) = L1 $ evaluateSym' fillDefault model l
+  evaluateSym' fillDefault model (R1 r) = R1 $ evaluateSym' fillDefault model r
+
+instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :*: b) where
+  evaluateSym' fillDefault model (a :*: b) = evaluateSym' fillDefault model a :*: evaluateSym' fillDefault model b
