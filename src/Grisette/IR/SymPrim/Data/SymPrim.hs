@@ -130,9 +130,6 @@ import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
-  )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
 import Grisette.Core.Data.Class.ModelOps
@@ -190,15 +187,13 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
   ( substTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( extractSymbolicsTerm,
-    pformat,
+  ( pformat,
     someTermsSize,
     termSize,
     termsSize,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model,
-    SymbolSet (SymbolSet),
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
@@ -1005,35 +1000,6 @@ IS_STRING_BV(SymIntN)
 IS_STRING_BV(SymWordN)
 IS_STRING_FUN(=~>, SymTabularFunc)
 IS_STRING_FUN(-~>, SymGeneralFun)
-#endif
-
--- ExtractSymbolics
-
-#define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
-instance ExtractSymbolics symtype where \
-  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
-
-#define EXTRACT_SYMBOLICS_BV(symtype) \
-instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
-  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
-
-#define EXTRACT_SYMBOLICS_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ExtractSymbolics (sa op sb) where \
-  extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
-
-#define EXTRACT_SYMBOLICS_BV_SOME(somety, origty) \
-instance ExtractSymbolics somety where \
-  extractSymbolics (somety (origty t)) = SymbolSet $ extractSymbolicsTerm t
-
-#if 1
-EXTRACT_SYMBOLICS_SIMPLE(SymBool)
-EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
-EXTRACT_SYMBOLICS_BV(SymIntN)
-EXTRACT_SYMBOLICS_BV(SymWordN)
-EXTRACT_SYMBOLICS_FUN(=~>, SymTabularFun)
-EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
-EXTRACT_SYMBOLICS_BV_SOME(SomeSymIntN, SymIntN)
-EXTRACT_SYMBOLICS_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- SubstituteSym

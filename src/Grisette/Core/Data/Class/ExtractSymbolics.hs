@@ -48,8 +48,23 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils (extractSymbolicsTerm)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.Model
-  ( SymbolSet,
+  ( SymbolSet (SymbolSet),
+  )
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    type (-~>) (SymGeneralFun),
+    type (=~>) (SymTabularFun),
   )
 
 -- $setup
@@ -74,36 +89,7 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.Model
 class ExtractSymbolics a where
   extractSymbolics :: a -> SymbolSet
 
-instance (Generic a, ExtractSymbolics' (Rep a)) => ExtractSymbolics (Default a) where
-  extractSymbolics = extractSymbolics' . from . unDefault
-
-class ExtractSymbolics' a where
-  extractSymbolics' :: a c -> SymbolSet
-
-instance ExtractSymbolics' U1 where
-  extractSymbolics' _ = mempty
-
-instance (ExtractSymbolics c) => ExtractSymbolics' (K1 i c) where
-  extractSymbolics' = extractSymbolics . unK1
-
-instance (ExtractSymbolics' a) => ExtractSymbolics' (M1 i c a) where
-  extractSymbolics' = extractSymbolics' . unM1
-
-instance
-  (ExtractSymbolics' a, ExtractSymbolics' b) =>
-  ExtractSymbolics' (a :+: b)
-  where
-  extractSymbolics' (L1 l) = extractSymbolics' l
-  extractSymbolics' (R1 r) = extractSymbolics' r
-
-instance
-  (ExtractSymbolics' a, ExtractSymbolics' b) =>
-  ExtractSymbolics' (a :*: b)
-  where
-  extractSymbolics' (l :*: r) = extractSymbolics' l <> extractSymbolics' r
-
 -- instances
-
 #define CONCRETE_EXTRACT_SYMBOLICS(type) \
 instance ExtractSymbolics type where \
   extractSymbolics _ = mempty
@@ -274,3 +260,58 @@ instance (ExtractSymbolics a) => ExtractSymbolics (Identity a) where
 -- IdentityT
 instance (ExtractSymbolics (m a)) => ExtractSymbolics (IdentityT m a) where
   extractSymbolics (IdentityT a) = extractSymbolics a
+
+#define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
+instance ExtractSymbolics symtype where \
+  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
+
+#define EXTRACT_SYMBOLICS_BV(symtype) \
+instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
+  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
+
+#define EXTRACT_SYMBOLICS_FUN(op, cons) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ExtractSymbolics (sa op sb) where \
+  extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
+
+#define EXTRACT_SYMBOLICS_BV_SOME(somety, origty) \
+instance ExtractSymbolics somety where \
+  extractSymbolics (somety (origty t)) = SymbolSet $ extractSymbolicsTerm t
+
+#if 1
+EXTRACT_SYMBOLICS_SIMPLE(SymBool)
+EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
+EXTRACT_SYMBOLICS_BV(SymIntN)
+EXTRACT_SYMBOLICS_BV(SymWordN)
+EXTRACT_SYMBOLICS_FUN(=~>, SymTabularFun)
+EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
+EXTRACT_SYMBOLICS_BV_SOME(SomeSymIntN, SymIntN)
+EXTRACT_SYMBOLICS_BV_SOME(SomeSymWordN, SymWordN)
+#endif
+
+instance (Generic a, ExtractSymbolics' (Rep a)) => ExtractSymbolics (Default a) where
+  extractSymbolics = extractSymbolics' . from . unDefault
+
+class ExtractSymbolics' a where
+  extractSymbolics' :: a c -> SymbolSet
+
+instance ExtractSymbolics' U1 where
+  extractSymbolics' _ = mempty
+
+instance (ExtractSymbolics c) => ExtractSymbolics' (K1 i c) where
+  extractSymbolics' = extractSymbolics . unK1
+
+instance (ExtractSymbolics' a) => ExtractSymbolics' (M1 i c a) where
+  extractSymbolics' = extractSymbolics' . unM1
+
+instance
+  (ExtractSymbolics' a, ExtractSymbolics' b) =>
+  ExtractSymbolics' (a :+: b)
+  where
+  extractSymbolics' (L1 l) = extractSymbolics' l
+  extractSymbolics' (R1 r) = extractSymbolics' r
+
+instance
+  (ExtractSymbolics' a, ExtractSymbolics' b) =>
+  ExtractSymbolics' (a :*: b)
+  where
+  extractSymbolics' (l :*: r) = extractSymbolics' l <> extractSymbolics' r
