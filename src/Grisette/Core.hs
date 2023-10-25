@@ -1173,7 +1173,7 @@ import Grisette.Core.Data.Class.Solver
     solveExcept,
     solveMultiExcept,
   )
-import Grisette.Core.Data.Class.Substitute
+import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (..),
     SubstituteSym' (..),
   )

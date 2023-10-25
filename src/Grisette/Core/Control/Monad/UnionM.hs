@@ -100,7 +100,7 @@ import Grisette.Core.Data.Class.Solvable
     pattern Con,
   )
 import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
-import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
+import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Union

@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Removed the `Grisette.Lib.Mtl` module. ([#132](https://github.com/lsrcz/grisette/pull/132))
-- Removed `SymBoolOp` and `SymIntegerOp`. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Removed the `Grisette.Lib.Mtl` module. ([#132](https://github.com/lsrcz/grisette/pull/132))
+- [Breaking] Removed `SymBoolOp` and `SymIntegerOp`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ### Fixed
 
@@ -35,8 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Changed the name of `Union` constructors and patterns. ([#133](https://github.com/lsrcz/grisette/pull/133))
 - The `Union` patterns, when used as constructors, now merges the result. ([#133](https://github.com/lsrcz/grisette/pull/133))
 - Changed the symbolic identifier type from `String` to `Data.Text.Text`. ([#141](https://github.com/lsrcz/grisette/pull/141))
-- `Grisette.Data.Class.BitVector.BVSignConversion` is now `Grisette.Data.Class.SignConversion.SignConversion`. ([#142](https://github.com/lsrcz/grisette/pull/142))
-- Moved the `ITEOp`, `LogicalOp`, and `SEq` type classes to dedicated modules. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] `Grisette.Data.Class.BitVector.BVSignConversion` is now `Grisette.Data.Class.SignConversion.SignConversion`. ([#142](https://github.com/lsrcz/grisette/pull/142))
+- [Breaking] Moved the `ITEOp`, `LogicalOp`, and `SEq` type classes to dedicated modules. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Moved `Grisette.Data.Class.Evaluate` to `Grisette.Data.Class.EvaluateSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Moved `Grisette.Data.Class.Substitute` to `Grisette.Data.Class.SubstituteSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ## [0.3.1.1] -- 2023-09-29
 
