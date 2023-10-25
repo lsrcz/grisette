@@ -52,6 +52,11 @@ import GHC.Generics
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+    prettyPrintTerm,
+  )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
@@ -77,7 +82,6 @@ import Prettyprinter
     Doc,
     Pretty(pretty),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (SupportedPrim, LinkedRep, prettyPrintTerm)
 #else
 import Data.Text.Prettyprint.Doc
   ( (<+>),
