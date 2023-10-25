@@ -5,7 +5,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -48,7 +51,30 @@ import GHC.Generics
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
 import Generics.Deriving.Instances ()
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV
+  ( IntN (IntN),
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN (WordN),
+  )
+import Grisette.Core.Data.Class.Solvable (Solvable (conView), pattern Con)
+import Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ)
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( LinkedRep,
+    SupportedPrim,
+    type (-->),
+  )
+import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+  ( SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
+    SymBool,
+    SymIntN,
+    SymInteger,
+    SymWordN,
+    type (-~>),
+    type (=~>),
+  )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -73,31 +99,6 @@ class ToCon a b where
   -- >>> toCon ([con 1, ssym "a"] :: [SymInteger]) :: Maybe [Integer]
   -- Nothing
   toCon :: a -> Maybe b
-
-instance (Generic a, Generic b, ToCon' (Rep a) (Rep b)) => ToCon a (Default b) where
-  toCon v = fmap (Default . to) $ toCon' $ from v
-
-class ToCon' a b where
-  toCon' :: a c -> Maybe (b c)
-
-instance ToCon' U1 U1 where
-  toCon' = Just
-
-instance (ToCon a b) => ToCon' (K1 i a) (K1 i b) where
-  toCon' (K1 a) = K1 <$> toCon a
-
-instance (ToCon' a b) => ToCon' (M1 i c1 a) (M1 i c2 b) where
-  toCon' (M1 a) = M1 <$> toCon' a
-
-instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :+: b1) (a2 :+: b2) where
-  toCon' (L1 a) = L1 <$> toCon' a
-  toCon' (R1 a) = R1 <$> toCon' a
-
-instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :*: b1) (a2 :*: b2) where
-  toCon' (a :*: b) = do
-    ac <- toCon' a
-    bc <- toCon' b
-    return $ ac :*: bc
 
 #define CONCRETE_TOCON(type) \
 instance ToCon type type where \
@@ -234,3 +235,98 @@ instance ToCon v (Identity v) where
 -- IdentityT
 instance (ToCon (m a) (m1 b)) => ToCon (IdentityT m a) (IdentityT m1 b) where
   toCon (IdentityT a) = IdentityT <$> toCon a
+
+#define TO_CON_SYMID_SIMPLE(symtype) \
+instance ToCon symtype symtype where \
+  toCon = Just
+
+#define TO_CON_SYMID_BV(symtype) \
+instance (KnownNat n, 1 <= n) => ToCon (symtype n) (symtype n) where \
+  toCon = Just
+
+#define TO_CON_SYMID_FUN(op) \
+instance (SupportedPrim a, SupportedPrim b) => ToCon (a op b) (a op b) where \
+  toCon = Just
+
+#if 1
+TO_CON_SYMID_SIMPLE(SymBool)
+TO_CON_SYMID_SIMPLE(SymInteger)
+TO_CON_SYMID_BV(SymIntN)
+TO_CON_SYMID_BV(SymWordN)
+TO_CON_SYMID_FUN(=~>)
+TO_CON_SYMID_FUN(-~>)
+TO_CON_SYMID_SIMPLE(SomeSymIntN)
+TO_CON_SYMID_SIMPLE(SomeSymWordN)
+
+#endif
+
+#define TO_CON_FROMSYM_SIMPLE(contype, symtype) \
+instance ToCon symtype contype where \
+  toCon = conView
+
+#define TO_CON_FROMSYM_BV(contype, symtype) \
+instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
+  toCon = conView
+
+#define TO_CON_FROMSYM_FUN(conop, symop) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToCon (symop sa sb) (conop ca cb) where \
+  toCon = conView
+
+#define TO_CON_FROMSYM_BV_SOME(contype, symtype) \
+instance ToCon symtype contype where \
+  toCon (symtype v) = contype <$> conView v
+
+#if 1
+TO_CON_FROMSYM_SIMPLE(Bool, SymBool)
+TO_CON_FROMSYM_SIMPLE(Integer, SymInteger)
+TO_CON_FROMSYM_BV(IntN, SymIntN)
+TO_CON_FROMSYM_BV(WordN, SymWordN)
+TO_CON_FROMSYM_FUN((=->), (=~>))
+TO_CON_FROMSYM_FUN((-->), (-~>))
+TO_CON_FROMSYM_BV_SOME(SomeIntN, SomeSymIntN)
+TO_CON_FROMSYM_BV_SOME(SomeWordN, SomeSymWordN)
+#endif
+
+#define TOCON_MACHINE_INTEGER(sbvw, bvw, n, int) \
+instance ToCon (sbvw n) int where \
+  toCon (Con (bvw v :: bvw n)) = Just $ fromIntegral v; \
+  toCon _ = Nothing
+
+#if 1
+TOCON_MACHINE_INTEGER(SymIntN, IntN, 8, Int8)
+TOCON_MACHINE_INTEGER(SymIntN, IntN, 16, Int16)
+TOCON_MACHINE_INTEGER(SymIntN, IntN, 32, Int32)
+TOCON_MACHINE_INTEGER(SymIntN, IntN, 64, Int64)
+TOCON_MACHINE_INTEGER(SymWordN, WordN, 8, Word8)
+TOCON_MACHINE_INTEGER(SymWordN, WordN, 16, Word16)
+TOCON_MACHINE_INTEGER(SymWordN, WordN, 32, Word32)
+TOCON_MACHINE_INTEGER(SymWordN, WordN, 64, Word64)
+TOCON_MACHINE_INTEGER(SymIntN, IntN, $intBitwidthQ, Int)
+TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
+#endif
+
+-- Derivation of ToCon for generic types
+instance (Generic a, Generic b, ToCon' (Rep a) (Rep b)) => ToCon a (Default b) where
+  toCon v = fmap (Default . to) $ toCon' $ from v
+
+class ToCon' a b where
+  toCon' :: a c -> Maybe (b c)
+
+instance ToCon' U1 U1 where
+  toCon' = Just
+
+instance (ToCon a b) => ToCon' (K1 i a) (K1 i b) where
+  toCon' (K1 a) = K1 <$> toCon a
+
+instance (ToCon' a b) => ToCon' (M1 i c1 a) (M1 i c2 b) where
+  toCon' (M1 a) = M1 <$> toCon' a
+
+instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :+: b1) (a2 :+: b2) where
+  toCon' (L1 a) = L1 <$> toCon' a
+  toCon' (R1 a) = R1 <$> toCon' a
+
+instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :*: b1) (a2 :*: b2) where
+  toCon' (a :*: b) = do
+    ac <- toCon' a
+    bc <- toCon' b
+    return $ ac :*: bc

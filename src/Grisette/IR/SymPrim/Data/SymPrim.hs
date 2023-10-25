@@ -124,10 +124,10 @@ import Grisette.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Core.Data.BV
-  ( IntN (IntN),
+  ( IntN,
     SomeIntN (SomeIntN),
     SomeWordN (SomeWordN),
-    WordN (WordN),
+    WordN,
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
@@ -172,11 +172,10 @@ import Grisette.Core.Data.Class.SafeArith
 import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, ssym),
+  ( Solvable (con, ssym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
-import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors (symTerm)
@@ -1067,56 +1066,6 @@ TO_SYM_FROMCON_BV_SOME(SomeIntN, SomeSymIntN)
 TO_SYM_FROMCON_BV_SOME(SomeWordN, SomeSymWordN)
 #endif
 
-#define TO_CON_SYMID_SIMPLE(symtype) \
-instance ToCon symtype symtype where \
-  toCon = Just
-
-#define TO_CON_SYMID_BV(symtype) \
-instance (KnownNat n, 1 <= n) => ToCon (symtype n) (symtype n) where \
-  toCon = Just
-
-#define TO_CON_SYMID_FUN(op) \
-instance (SupportedPrim a, SupportedPrim b) => ToCon (a op b) (a op b) where \
-  toCon = Just
-
-#if 1
-TO_CON_SYMID_SIMPLE(SymBool)
-TO_CON_SYMID_SIMPLE(SymInteger)
-TO_CON_SYMID_BV(SymIntN)
-TO_CON_SYMID_BV(SymWordN)
-TO_CON_SYMID_FUN(=~>)
-TO_CON_SYMID_FUN(-~>)
-TO_CON_SYMID_SIMPLE(SomeSymIntN)
-TO_CON_SYMID_SIMPLE(SomeSymWordN)
-#endif
-
-#define TO_CON_FROMSYM_SIMPLE(contype, symtype) \
-instance ToCon symtype contype where \
-  toCon = conView
-
-#define TO_CON_FROMSYM_BV(contype, symtype) \
-instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
-  toCon = conView
-
-#define TO_CON_FROMSYM_FUN(conop, symop) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToCon (symop sa sb) (conop ca cb) where \
-  toCon = conView
-
-#define TO_CON_FROMSYM_BV_SOME(contype, symtype) \
-instance ToCon symtype contype where \
-  toCon (symtype v) = contype <$> conView v
-
-#if 1
-TO_CON_FROMSYM_SIMPLE(Bool, SymBool)
-TO_CON_FROMSYM_SIMPLE(Integer, SymInteger)
-TO_CON_FROMSYM_BV(IntN, SymIntN)
-TO_CON_FROMSYM_BV(WordN, SymWordN)
-TO_CON_FROMSYM_FUN((=->), (=~>))
-TO_CON_FROMSYM_FUN((-->), (-~>))
-TO_CON_FROMSYM_BV_SOME(SomeIntN, SomeSymIntN)
-TO_CON_FROMSYM_BV_SOME(SomeWordN, SomeSymWordN)
-#endif
-
 #define TO_SYM_FROMBV_SOME(somesymbv, bv) \
 instance (KnownNat n, 1 <= n) => ToSym (bv n) somesymbv where \
   toSym = somesymbv . con
@@ -1133,11 +1082,6 @@ instance ToSym int (bv) where \
 #define TOSYM_MACHINE_INTEGER_SOME(int, somesymbv, bv, bitwidth) \
 instance ToSym int somesymbv where \
   toSym v = somesymbv (con (fromIntegral v :: bv bitwidth))
-
-#define TOCON_MACHINE_INTEGER(sbvw, bvw, n, int) \
-instance ToCon (sbvw n) int where \
-  toCon (Con (bvw v :: bvw n)) = Just $ fromIntegral v; \
-  toCon _ = Nothing
 
 #if 1
 TOSYM_MACHINE_INTEGER(Int8, SymIntN 8)
@@ -1161,17 +1105,6 @@ TOSYM_MACHINE_INTEGER_SOME(Word32, SomeSymWordN, WordN, 32)
 TOSYM_MACHINE_INTEGER_SOME(Word64, SomeSymWordN, WordN, 64)
 TOSYM_MACHINE_INTEGER_SOME(Int, SomeSymIntN, IntN, $intBitwidthQ)
 TOSYM_MACHINE_INTEGER_SOME(Word, SomeSymWordN, WordN, $intBitwidthQ)
-
-TOCON_MACHINE_INTEGER(SymIntN, IntN, 8, Int8)
-TOCON_MACHINE_INTEGER(SymIntN, IntN, 16, Int16)
-TOCON_MACHINE_INTEGER(SymIntN, IntN, 32, Int32)
-TOCON_MACHINE_INTEGER(SymIntN, IntN, 64, Int64)
-TOCON_MACHINE_INTEGER(SymWordN, WordN, 8, Word8)
-TOCON_MACHINE_INTEGER(SymWordN, WordN, 16, Word16)
-TOCON_MACHINE_INTEGER(SymWordN, WordN, 32, Word32)
-TOCON_MACHINE_INTEGER(SymWordN, WordN, 64, Word64)
-TOCON_MACHINE_INTEGER(SymIntN, IntN, $intBitwidthQ, Int)
-TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
 #endif
 
 -- ExtractSymbolics
