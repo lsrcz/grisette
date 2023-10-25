@@ -50,6 +50,22 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
     mrgSingle,
   )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModBoundedIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemBoundedIntegralTerm,
+    pevalRemIntegralTerm,
+  )
+import Grisette.IR.SymPrim.Data.SymPrim
+  ( SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+  )
 
 -- $setup
 -- >>> import Grisette.Core
@@ -186,7 +202,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
 #define QRIGHTT(a) QID(a)' t'
 #define QRIGHTU(a) QID(a)' _'
 
-#define SAFE_DIVISION_FUNC(name, op) \
+#define SAFE_DIVISION_CONCRETE_FUNC(name, op) \
 name _ r | r == 0 = merge $ throwError DivideByZero; \
 name l r = mrgSingle $ l `op` r; \
 QRIGHTT(name) _ r | r == 0 = let _ = t' in merge $ throwError (t' DivideByZero); \
@@ -194,21 +210,21 @@ QRIGHTU(name) l r = mrgSingle $ l `op` r
 
 #define SAFE_DIVISION_CONCRETE(type) \
 instance SafeDivision ArithException type where \
-  SAFE_DIVISION_FUNC(safeDiv, div); \
-  SAFE_DIVISION_FUNC(safeMod, mod); \
-  SAFE_DIVISION_FUNC(safeDivMod, divMod); \
-  SAFE_DIVISION_FUNC(safeQuot, quot); \
-  SAFE_DIVISION_FUNC(safeRem, rem); \
-  SAFE_DIVISION_FUNC(safeQuotRem, quotRem)
+  SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
 
 #define SAFE_DIVISION_CONCRETE_BV(type) \
 instance (KnownNat n, 1 <= n) => SafeDivision ArithException (type n) where \
-  SAFE_DIVISION_FUNC(safeDiv, div); \
-  SAFE_DIVISION_FUNC(safeMod, mod); \
-  SAFE_DIVISION_FUNC(safeDivMod, divMod); \
-  SAFE_DIVISION_FUNC(safeQuot, quot); \
-  SAFE_DIVISION_FUNC(safeRem, rem); \
-  SAFE_DIVISION_FUNC(safeQuotRem, quotRem)
+  SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem); \
+  SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
 
 #if 1
 SAFE_DIVISION_CONCRETE(Integer)
@@ -224,7 +240,7 @@ SAFE_DIVISION_CONCRETE(Word64)
 SAFE_DIVISION_CONCRETE(Word)
 #endif
 
-#define SAFE_DIVISION_FUNC_SOME(stype, type, name, op) \
+#define SAFE_DIVISION_CONCRETE_FUNC_SOME(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
@@ -240,7 +256,7 @@ SAFE_DIVISION_CONCRETE(Word)
           else mrgSingle $ stype $ l `op` r; \
       Nothing -> merge $ throwError $ t (Left BitwidthMismatch))
 
-#define SAFE_DIVISION_FUNC_SOME_DIVMOD(stype, type, name, op) \
+#define SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
@@ -260,18 +276,104 @@ SAFE_DIVISION_CONCRETE(Word)
 SAFE_DIVISION_CONCRETE_BV(IntN)
 SAFE_DIVISION_CONCRETE_BV(WordN)
 instance SafeDivision (Either BitwidthMismatch ArithException) SomeIntN where
-  SAFE_DIVISION_FUNC_SOME(SomeIntN, IntN, safeDiv, div)
-  SAFE_DIVISION_FUNC_SOME(SomeIntN, IntN, safeMod, mod)
-  SAFE_DIVISION_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeDivMod, divMod)
-  SAFE_DIVISION_FUNC_SOME(SomeIntN, IntN, safeQuot, quot)
-  SAFE_DIVISION_FUNC_SOME(SomeIntN, IntN, safeRem, rem)
-  SAFE_DIVISION_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeQuotRem, quotRem)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeDiv, div)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeMod, mod)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeDivMod, divMod)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeQuot, quot)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeRem, rem)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeQuotRem, quotRem)
 
 instance SafeDivision (Either BitwidthMismatch ArithException) SomeWordN where
-  SAFE_DIVISION_FUNC_SOME(SomeWordN, WordN, safeDiv, div)
-  SAFE_DIVISION_FUNC_SOME(SomeWordN, WordN, safeMod, mod)
-  SAFE_DIVISION_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeDivMod, divMod)
-  SAFE_DIVISION_FUNC_SOME(SomeWordN, WordN, safeQuot, quot)
-  SAFE_DIVISION_FUNC_SOME(SomeWordN, WordN, safeRem, rem)
-  SAFE_DIVISION_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeQuotRem, quotRem)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeDiv, div)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeMod, mod)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeDivMod, divMod)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeQuot, quot)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeRem, rem)
+  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeQuotRem, quotRem)
+#endif
+
+#define SAFE_DIVISION_SYMBOLIC_FUNC(name, type, op) \
+name (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgSingle $ type $ op l r); \
+QRIGHT(name) t (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgSingle $ type $ op l r)
+
+#define SAFE_DIVISION_SYMBOLIC_FUNC2(name, type, op1, op2) \
+name (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgSingle (type $ op1 l r, type $ op2 l r)); \
+QRIGHT(name) t (type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgSingle (type $ op1 l r, type $ op2 l r))
+
+#if 1
+instance SafeDivision ArithException SymInteger where
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymInteger, pevalDivIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymInteger, pevalModIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymInteger, pevalQuotIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, SymInteger, pevalRemIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, SymInteger, pevalDivIntegralTerm, pevalModIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
+#endif
+
+#define SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(name, type, op) \
+name ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError Overflow) \
+      (mrgSingle $ type $ op l r)); \
+QRIGHT(name) t ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError (t Overflow)) \
+      (mrgSingle $ type $ op l r))
+
+#define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
+name ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError DivideByZero) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError Overflow) \
+      (mrgSingle (type $ op1 l r, type $ op2 l r))); \
+QRIGHT(name) t ls@(type l) rs@(type r) = \
+  mrgIf \
+    (rs ==~ con 0) \
+    (throwError (t DivideByZero)) \
+    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+      (throwError (t Overflow)) \
+      (mrgSingle (type $ op1 l r, type $ op2 l r)))
+
+#if 1
+instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where
+  SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeDiv, SymIntN, pevalDivBoundedIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymIntN, pevalModBoundedIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeQuot, SymIntN, pevalQuotBoundedIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, SymIntN, pevalRemBoundedIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(safeDivMod, SymIntN, pevalDivBoundedIntegralTerm, pevalModBoundedIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(safeQuotRem, SymIntN, pevalQuotBoundedIntegralTerm, pevalRemBoundedIntegralTerm)
+#endif
+
+#if 1
+instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymWordN n) where
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymWordN, pevalDivIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymWordN, pevalModIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymWordN, pevalQuotIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC(safeRem, SymWordN, pevalRemIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, SymWordN, pevalDivIntegralTerm, pevalModIntegralTerm)
+  SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 #endif
