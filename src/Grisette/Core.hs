@@ -1142,10 +1142,8 @@ import Grisette.Core.Data.Class.ModelOps
   )
 import Grisette.Core.Data.Class.SEq (SEq (..))
 import Grisette.Core.Data.Class.SOrd (SOrd (..))
-import Grisette.Core.Data.Class.SafeArith
-  ( SafeDivision (..),
-    SafeLinearArith (..),
-  )
+import Grisette.Core.Data.Class.SafeDivision (SafeDivision (..))
+import Grisette.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
 import Grisette.Core.Data.Class.SignConversion (SignConversion (..))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (..),

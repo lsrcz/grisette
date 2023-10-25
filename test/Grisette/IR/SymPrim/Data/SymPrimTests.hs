@@ -76,7 +76,7 @@ import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
   )
-import Grisette.Core.Data.Class.SafeArith
+import Grisette.Core.Data.Class.SafeDivision
   ( SafeDivision
       ( safeDiv,
         safeDiv',
@@ -91,7 +91,9 @@ import Grisette.Core.Data.Class.SafeArith
         safeRem,
         safeRem'
       ),
-    SafeLinearArith
+  )
+import Grisette.Core.Data.Class.SafeLinearArith
+  ( SafeLinearArith
       ( safeAdd,
         safeAdd',
         safeMinus,
