@@ -57,6 +57,9 @@ module Grisette.IR.SymPrim.Data.SymPrim
 where
 
 import Control.DeepSeq (NFData (rnf))
+import Control.Exception
+  ( ArithException (DivideByZero, Overflow, Underflow),
+  )
 import Control.Monad.Except (ExceptT (ExceptT), MonadError (throwError))
 import Control.Monad.Identity
   ( Identity (Identity),
@@ -138,9 +141,8 @@ import Grisette.Core.Data.Class.ModelOps
   )
 import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~), (>~)))
-import Grisette.Core.Data.Class.SafeArith
-  ( ArithException (DivideByZero, Overflow, Underflow),
-    SafeDivision
+import Grisette.Core.Data.Class.SafeDivision
+  ( SafeDivision
       ( safeDiv,
         safeDiv',
         safeDivMod,
@@ -154,7 +156,9 @@ import Grisette.Core.Data.Class.SafeArith
         safeRem,
         safeRem'
       ),
-    SafeLinearArith
+  )
+import Grisette.Core.Data.Class.SafeLinearArith
+  ( SafeLinearArith
       ( safeAdd,
         safeAdd',
         safeMinus,
