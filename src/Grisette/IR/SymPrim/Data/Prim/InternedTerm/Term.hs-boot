@@ -43,7 +43,7 @@ import Grisette.IR.SymPrim.Data.Prim.ModelValue
   ( ModelValue,
     toModelValue,
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.TabularFun
+import Grisette.IR.SymPrim.Data.TabularFun
   ( type (=->),
   )
 import Language.Haskell.TH.Syntax (Lift)
