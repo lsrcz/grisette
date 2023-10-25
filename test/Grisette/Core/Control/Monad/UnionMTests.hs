@@ -144,10 +144,10 @@ unionMTests =
             let v :: UnionM Integer = mrgIf "b" (mrgSingle 1) (mrgSingle 3)
             f
               <*> v
-                @?= unionIf
-                  "a"
-                  (unionIf "b" (single 1) (single 3))
-                  (unionIf "b" (single 2) (single 4))
+              @?= unionIf
+                "a"
+                (unionIf "b" (single 1) (single 3))
+                (unionIf "b" (single 2) (single 4))
         ],
       testGroup
         "Monad"
@@ -295,28 +295,28 @@ unionMTests =
             [ testCase "Single/Single" $
                 (mrgSingle a :: UnionM SymBool)
                   ==~ mrgSingle b
-                    @?= (a ==~ b),
+                  @?= (a ==~ b),
               testCase "If/Single" $ do
                 g1
                   ==~ mrgSingle (Left d)
-                    @?= ites a (b ==~ d) (con False)
+                  @?= ites a (b ==~ d) (con False)
                 g1
                   ==~ mrgSingle (Right d)
-                    @?= ites a (con False) (c ==~ d),
+                  @?= ites a (con False) (c ==~ d),
               testCase "Single/If" $ do
                 mrgSingle (Left d)
                   ==~ g1
-                    @?= ites a (d ==~ b) (con False)
+                  @?= ites a (d ==~ b) (con False)
                 mrgSingle (Right d)
                   ==~ g1
-                    @?= ites a (con False) (d ==~ c),
+                  @?= ites a (con False) (d ==~ c),
               testCase "If/If" $
                 g1
                   ==~ g2
-                    @?= ites
-                      a
-                      (ites d (b ==~ e) (con False))
-                      (ites d (con False) (c ==~ f))
+                  @?= ites
+                    a
+                    (ites d (b ==~ e) (con False))
+                    (ites d (con False) (c ==~ f))
             ],
       let a :: SymBool = "a"
           b :: SymBool = "b"
@@ -334,32 +334,32 @@ unionMTests =
             [ testCase "Single/Single" $ do
                 (mrgSingle a :: UnionM SymBool)
                   <=~ mrgSingle b
-                    @?= (a <=~ b :: SymBool)
+                  @?= (a <=~ b :: SymBool)
                 (mrgSingle a :: UnionM SymBool)
                   <~ mrgSingle b
-                    @?= (a <~ b :: SymBool)
+                  @?= (a <~ b :: SymBool)
                 (mrgSingle a :: UnionM SymBool)
                   >=~ mrgSingle b
-                    @?= (a >=~ b :: SymBool)
+                  @?= (a >=~ b :: SymBool)
                 (mrgSingle a :: UnionM SymBool)
                   >~ mrgSingle b
-                    @?= (a >~ b :: SymBool)
+                  @?= (a >~ b :: SymBool)
                 (mrgSingle a :: UnionM SymBool)
                   `symCompare` mrgSingle b
                   @?= (a `symCompare` b :: UnionM Ordering),
               testCase "If/Single" $ do
                 g1
                   <=~ mrgSingle (Left d)
-                    @?= ites a (b <=~ d) (con False)
+                  @?= ites a (b <=~ d) (con False)
                 g1
                   <~ mrgSingle (Left d)
-                    @?= ites a (b <~ d) (con False)
+                  @?= ites a (b <~ d) (con False)
                 g1
                   >=~ mrgSingle (Left d)
-                    @?= ites a (b >=~ d) (con True)
+                  @?= ites a (b >=~ d) (con True)
                 g1
                   >~ mrgSingle (Left d)
-                    @?= ites a (b >~ d) (con True)
+                  @?= ites a (b >~ d) (con True)
 
                 g1
                   `symCompare` mrgSingle (Left d)
@@ -369,16 +369,16 @@ unionMTests =
 
                 g1
                   <=~ mrgSingle (Right d)
-                    @?= ites a (con True) (c <=~ d)
+                  @?= ites a (con True) (c <=~ d)
                 g1
                   <~ mrgSingle (Right d)
-                    @?= ites a (con True) (c <~ d)
+                  @?= ites a (con True) (c <~ d)
                 g1
                   >=~ mrgSingle (Right d)
-                    @?= ites a (con False) (c >=~ d)
+                  @?= ites a (con False) (c >=~ d)
                 g1
                   >~ mrgSingle (Right d)
-                    @?= ites a (con False) (c >~ d)
+                  @?= ites a (con False) (c >~ d)
 
                 g1
                   `symCompare` mrgSingle (Right d)
@@ -388,16 +388,16 @@ unionMTests =
               testCase "Single/If" $ do
                 mrgSingle (Left d)
                   <=~ g1
-                    @?= ites a (d <=~ b) (con True)
+                  @?= ites a (d <=~ b) (con True)
                 mrgSingle (Left d)
                   <~ g1
-                    @?= ites a (d <~ b) (con True)
+                  @?= ites a (d <~ b) (con True)
                 mrgSingle (Left d)
                   >=~ g1
-                    @?= ites a (d >=~ b) (con False)
+                  @?= ites a (d >=~ b) (con False)
                 mrgSingle (Left d)
                   >~ g1
-                    @?= ites a (d >~ b) (con False)
+                  @?= ites a (d >~ b) (con False)
 
                 mrgSingle (Left d)
                   `symCompare` g1
@@ -407,16 +407,16 @@ unionMTests =
 
                 mrgSingle (Right d)
                   <=~ g1
-                    @?= ites a (con False) (d <=~ c)
+                  @?= ites a (con False) (d <=~ c)
                 mrgSingle (Right d)
                   <~ g1
-                    @?= ites a (con False) (d <~ c)
+                  @?= ites a (con False) (d <~ c)
                 mrgSingle (Right d)
                   >=~ g1
-                    @?= ites a (con True) (d >=~ c)
+                  @?= ites a (con True) (d >=~ c)
                 mrgSingle (Right d)
                   >~ g1
-                    @?= ites a (con True) (d >~ c)
+                  @?= ites a (con True) (d >~ c)
 
                 mrgSingle (Right d)
                   `symCompare` g1
@@ -426,28 +426,28 @@ unionMTests =
               testCase "If/If" $ do
                 g1
                   <=~ g2
-                    @?= ites
-                      a
-                      (ites d (b <=~ e) (con True))
-                      (ites d (con False) (c <=~ f))
+                  @?= ites
+                    a
+                    (ites d (b <=~ e) (con True))
+                    (ites d (con False) (c <=~ f))
                 g1
                   <~ g2
-                    @?= ites
-                      a
-                      (ites d (b <~ e) (con True))
-                      (ites d (con False) (c <~ f))
+                  @?= ites
+                    a
+                    (ites d (b <~ e) (con True))
+                    (ites d (con False) (c <~ f))
                 g1
                   >=~ g2
-                    @?= ites
-                      a
-                      (ites d (b >=~ e) (con False))
-                      (ites d (con True) (c >=~ f))
+                  @?= ites
+                    a
+                    (ites d (b >=~ e) (con False))
+                    (ites d (con True) (c >=~ f))
                 g1
                   >~ g2
-                    @?= ites
-                      a
-                      (ites d (b >~ e) (con False))
-                      (ites d (con True) (c >~ f))
+                  @?= ites
+                    a
+                    (ites d (b >~ e) (con False))
+                    (ites d (con True) (c >~ f))
                 g1
                   `symCompare` g2
                   @?= ( mrgIf
@@ -624,24 +624,24 @@ unionMTests =
           testCase "plus" $
             (mrgIf "a" (mrgSingle 0) (mrgSingle 1) :: UnionM Integer)
               + mrgIf "b" (mrgSingle 1) (mrgSingle 3)
-                @?= mrgIf
-                  "a"
-                  (mrgIf "b" (mrgSingle 1) (mrgSingle 3))
-                  (mrgIf "b" (mrgSingle 2) (mrgSingle 4)),
+              @?= mrgIf
+                "a"
+                (mrgIf "b" (mrgSingle 1) (mrgSingle 3))
+                (mrgIf "b" (mrgSingle 2) (mrgSingle 4)),
           testCase "minus" $
             (mrgIf "a" (mrgSingle 0) (mrgSingle 1) :: UnionM Integer)
               - mrgIf "b" (mrgSingle $ -3) (mrgSingle $ -1)
-                @?= mrgIf
-                  "a"
-                  (mrgIf (nots "b") (mrgSingle 1) (mrgSingle 3))
-                  (mrgIf (nots "b") (mrgSingle 2) (mrgSingle 4)),
+              @?= mrgIf
+                "a"
+                (mrgIf (nots "b") (mrgSingle 1) (mrgSingle 3))
+                (mrgIf (nots "b") (mrgSingle 2) (mrgSingle 4)),
           testCase "times" $
             (mrgIf "a" (mrgSingle 1) (mrgSingle 2) :: UnionM Integer)
               * mrgIf "b" (mrgSingle 3) (mrgSingle 4)
-                @?= mrgIf
-                  "a"
-                  (mrgIf "b" (mrgSingle 3) (mrgSingle 4))
-                  (mrgIf "b" (mrgSingle 6) (mrgSingle 8)),
+              @?= mrgIf
+                "a"
+                (mrgIf "b" (mrgSingle 3) (mrgSingle 4))
+                (mrgIf "b" (mrgSingle 6) (mrgSingle 8)),
           testCase "abs" $
             abs (mrgIf "a" (mrgSingle $ -1) (mrgSingle 2) :: UnionM Integer)
               @?= mrgIf "a" (mrgSingle 1) (mrgSingle 2),
@@ -662,21 +662,21 @@ unionMTests =
             [ testCase "||~" $
                 l
                   ||~ r
-                    @?= ( mrgIf
-                            ("a" &&~ "b")
-                            (mrgSingle False)
-                            (mrgSingle True) ::
-                            UnionM Bool
-                        ),
+                  @?= ( mrgIf
+                          ("a" &&~ "b")
+                          (mrgSingle False)
+                          (mrgSingle True) ::
+                          UnionM Bool
+                      ),
               testCase "&&~" $
                 l
                   &&~ r
-                    @?= ( mrgIf
-                            ("a" ||~ "b")
-                            (mrgSingle False)
-                            (mrgSingle True) ::
-                            UnionM Bool
-                        ),
+                  @?= ( mrgIf
+                          ("a" ||~ "b")
+                          (mrgSingle False)
+                          (mrgSingle True) ::
+                          UnionM Bool
+                      ),
               testCase "nots" $
                 nots l
                   @?= mrgIf (nots "a") (mrgSingle False) (mrgSingle True),
