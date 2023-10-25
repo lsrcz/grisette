@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -77,7 +77,7 @@ library
       Grisette.Core.Data.Class.Solvable
       Grisette.Core.Data.Class.Solver
       Grisette.Core.Data.Class.SOrd
-      Grisette.Core.Data.Class.Substitute
+      Grisette.Core.Data.Class.SubstituteSym
       Grisette.Core.Data.Class.ToCon
       Grisette.Core.Data.Class.ToSym
       Grisette.Core.Data.FileLocation

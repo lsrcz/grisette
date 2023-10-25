@@ -52,7 +52,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     pattern Single,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, isym, ssym))
-import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
+import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
