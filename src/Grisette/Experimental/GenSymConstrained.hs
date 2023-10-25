@@ -42,7 +42,7 @@ import Grisette.Core.Control.Monad.UnionM
   ( UnionM,
     liftToMonadUnion,
   )
-import Grisette.Core.Data.Class.Bool (LogicalOp ((||~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((||~)))
 import Grisette.Core.Data.Class.GenSym
   ( FreshIdent,
     GenSym (fresh),

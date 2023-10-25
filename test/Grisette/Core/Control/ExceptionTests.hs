@@ -13,10 +13,6 @@ import Grisette.Core.Control.Exception
     symAssert,
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.Bool
-  ( LogicalOp (nots),
-    SEq ((==~)),
-  )
 import Grisette.Core.Data.Class.Error
   ( TransformError (transformError),
   )
@@ -26,6 +22,7 @@ import Grisette.Core.Data.Class.Evaluate
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy (SimpleStrategy),
@@ -34,6 +31,7 @@ import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel),
     SymbolSetOps (emptySet),
   )
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
   )

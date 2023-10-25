@@ -12,7 +12,8 @@ import qualified Control.Monad.Trans.State.Strict as StateStrict
 import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Trans.Writer.Strict as WriterStrict
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.Bool (ITEOp (ites), LogicalOp (nots))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionLike (single, unionIf),
     merge,

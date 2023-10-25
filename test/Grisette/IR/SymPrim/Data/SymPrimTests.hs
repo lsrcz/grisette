@@ -48,11 +48,6 @@ import Grisette.Core.Data.Class.BitVector
         sizedBVZext
       ),
   )
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (implies, nots, xors, (&&~), (||~)),
-    SEq ((/=~), (==~)),
-  )
 import Grisette.Core.Data.Class.Evaluate
   ( EvaluateSym (evaluateSym),
   )
@@ -65,6 +60,10 @@ import Grisette.Core.Data.Class.GenSym
     genSymSimple,
     nameWithInfo,
   )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp
+  ( LogicalOp (implies, nots, xors, (&&~), (||~)),
+  )
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy (SimpleStrategy),
@@ -73,6 +72,7 @@ import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
   )
+import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
   )

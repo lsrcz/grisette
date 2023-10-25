@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -59,7 +59,6 @@ library
       Grisette.Core.Control.Monad.UnionM
       Grisette.Core.Data.BV
       Grisette.Core.Data.Class.BitVector
-      Grisette.Core.Data.Class.Bool
       Grisette.Core.Data.Class.CEGISSolver
       Grisette.Core.Data.Class.Error
       Grisette.Core.Data.Class.Evaluate
@@ -67,9 +66,12 @@ library
       Grisette.Core.Data.Class.Function
       Grisette.Core.Data.Class.GenSym
       Grisette.Core.Data.Class.GPretty
+      Grisette.Core.Data.Class.ITEOp
+      Grisette.Core.Data.Class.LogicalOp
       Grisette.Core.Data.Class.Mergeable
       Grisette.Core.Data.Class.ModelOps
       Grisette.Core.Data.Class.SafeArith
+      Grisette.Core.Data.Class.SEq
       Grisette.Core.Data.Class.SignConversion
       Grisette.Core.Data.Class.SimpleMergeable
       Grisette.Core.Data.Class.Solvable

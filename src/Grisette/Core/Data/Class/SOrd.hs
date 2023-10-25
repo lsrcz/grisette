@@ -52,11 +52,8 @@ import Generics.Deriving
   )
 import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
-import Grisette.Core.Data.Class.Bool
-  ( LogicalOp ((&&~), (||~)),
-    SEq ((/=~), (==~)),
-    SEq' ((==~~)),
-  )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
+import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)), SEq' ((==~~)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
     mrgSingle,

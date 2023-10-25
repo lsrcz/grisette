@@ -56,7 +56,6 @@ import Grisette.Backend.SBV.Data.SMT.Lowering
     parseModel,
   )
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.Bool (LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISCondition (CEGISCondition),
     CEGISSolver (cegisMultiInputs),
@@ -65,6 +64,7 @@ import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (exact, exceptFor),
     SymbolSetOps (isEmptySet),

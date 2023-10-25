@@ -15,7 +15,7 @@ module Grisette.Lib.Control.Monad.Trans.State.Common
 where
 
 import Grisette.Core.Control.Monad.UnionM (UnionM, unionSize)
-import Grisette.Core.Data.Class.Bool (LogicalOp ((&&~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     UnionLike (unionIf),

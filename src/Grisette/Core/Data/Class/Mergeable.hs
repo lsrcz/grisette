@@ -118,7 +118,7 @@ import Grisette.Core.Data.BV
     SomeWordN (SomeWordN),
     WordN (WordN),
   )
-import Grisette.Core.Data.Class.Bool (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,

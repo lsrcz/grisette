@@ -22,11 +22,6 @@ import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (nots, xors, (&&~), (||~)),
-    SEq ((==~)),
-  )
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISSolver (cegisMultiInputs),
     cegis,
@@ -38,6 +33,11 @@ import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )
 import Grisette.Core.Data.Class.Function (Function ((#)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp
+  ( LogicalOp (nots, xors, (&&~), (||~)),
+  )
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable (Solvable (con, ssym))

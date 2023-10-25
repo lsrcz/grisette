@@ -133,20 +133,18 @@ import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.Bool
-  ( LogicalOp (nots, (&&~), (||~)),
-    SEq ((/=~), (==~)),
-  )
 import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
   )
+import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
 import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (<=~), (<~), (>=~), (>~)))
 import Grisette.Core.Data.Class.SafeArith
   ( ArithException (DivideByZero, Overflow, Underflow),

@@ -23,10 +23,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default), Generic)
-import Grisette.Core.Data.Class.Bool
-  ( LogicalOp (nots, (&&~)),
-    SEq ((/=~), (==~)),
-  )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
+import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalEqvTerm)

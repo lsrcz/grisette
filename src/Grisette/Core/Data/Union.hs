@@ -37,14 +37,12 @@ import Data.Functor.Classes
   )
 import Data.Hashable (Hashable (hashWithSalt))
 import GHC.Generics (Generic, Generic1)
-import Grisette.Core.Data.Class.Bool
-  ( ITEOp (ites),
-    LogicalOp (nots, (&&~), (||~)),
-  )
 import Grisette.Core.Data.Class.GPretty
   ( GPretty (gprettyPrec),
     condEnclose,
   )
+import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -83,16 +81,16 @@ data Union a
     UnionSingle a
   | -- | A if value
     UnionIf
+      -- | Cached leftmost value
       a
-      -- ^ Cached leftmost value
+      -- | Is merged invariant already maintained?
       !Bool
-      -- ^ Is merged invariant already maintained?
+      -- | If condition
       !SymBool
-      -- ^ If condition
+      -- | True branch
       (Union a)
-      -- ^ True branch
+      -- | False branch
       (Union a)
-      -- ^ False branch
   deriving (Generic, Eq, Lift, Generic1)
 
 instance Eq1 Union where
