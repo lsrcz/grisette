@@ -138,7 +138,6 @@ import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
-import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
@@ -199,7 +198,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SymRep (SymType),
     Term (ConTerm, SymTerm),
     TypedSymbol (WithInfo),
-    prettyPrintTerm,
     type (-->) (GeneralFun),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
@@ -762,34 +760,6 @@ instance Hashable ARG where
 
 -- Aggregate instances
 
--- Prettyprint
-#define GPRETTY_SYM_SIMPLE(symtype) \
-instance GPretty symtype where \
-  gpretty (symtype t) = prettyPrintTerm t
-
-#define GPRETTY_SYM_BV(symtype) \
-instance (KnownNat n, 1 <= n) => GPretty (symtype n) where \
-  gpretty (symtype t) = prettyPrintTerm t
-
-#define GPRETTY_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
-  => GPretty (sa op sb) where \
-  gpretty (cons t) = prettyPrintTerm t
-
-#define GPRETTY_SYM_SOME_BV(symtype) \
-instance GPretty symtype where \
-  gpretty (symtype t) = gpretty t
-
-#if 1
-GPRETTY_SYM_SIMPLE(SymBool)
-GPRETTY_SYM_SIMPLE(SymInteger)
-GPRETTY_SYM_BV(SymIntN)
-GPRETTY_SYM_BV(SymWordN)
-GPRETTY_SYM_FUN(=~>, SymTabularFun)
-GPRETTY_SYM_FUN(-~>, SymGeneralFun)
-GPRETTY_SYM_SOME_BV(SomeSymIntN)
-GPRETTY_SYM_SOME_BV(SomeSymWordN)
-#endif
 -- Num
 
 #define NUM_BV(symtype) \
