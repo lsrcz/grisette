@@ -53,7 +53,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils (extractSymbolicsTerm)
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.Model
+import Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (SymbolSet),
   )
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim

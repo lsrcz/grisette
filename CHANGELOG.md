@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [Breaking] Removed the `Grisette.Lib.Mtl` module. ([#132](https://github.com/lsrcz/grisette/pull/132))
 - [Breaking] Removed `SymBoolOp` and `SymIntegerOp`. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Removed `ExtractSymbolics` instance for `SymbolSet` and removed `Model.hs-boot` file. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ### Fixed
 

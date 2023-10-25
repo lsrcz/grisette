@@ -34,9 +34,6 @@ import Data.Hashable (Hashable)
 import Data.List (sort, sortOn)
 import Data.Proxy (Proxy (Proxy))
 import GHC.Generics (Generic)
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
-  )
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps
       ( emptyModel,
@@ -367,9 +364,6 @@ instance
       . insertSymbol sym2
       . insertSymbol sym1
       $ emptySet
-
-instance ExtractSymbolics SymbolSet where
-  extractSymbolics = id
 
 instance ModelOps Model SymbolSet TypedSymbol where
   emptyModel = Model M.empty
