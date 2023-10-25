@@ -35,7 +35,6 @@ import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )
@@ -92,8 +91,6 @@ instance Show SymBool
 
 instance Hashable SymBool
 
-instance EvaluateSym SymBool
-
 instance ExtractSymbolics SymBool
 
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
@@ -109,8 +106,6 @@ instance NFData SymInteger
 instance Show SymInteger
 
 instance Hashable SymInteger
-
-instance EvaluateSym SymInteger
 
 instance ExtractSymbolics SymInteger
 

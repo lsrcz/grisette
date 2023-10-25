@@ -133,7 +133,6 @@ import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
@@ -213,7 +212,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model,
     SymbolSet (SymbolSet),
-    evaluateTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
@@ -1220,35 +1218,6 @@ TOCON_MACHINE_INTEGER(SymWordN, WordN, 32, Word32)
 TOCON_MACHINE_INTEGER(SymWordN, WordN, 64, Word64)
 TOCON_MACHINE_INTEGER(SymIntN, IntN, $intBitwidthQ, Int)
 TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
-#endif
-
--- Evaluate
-
-#define EVALUATE_SYM_SIMPLE(symtype) \
-instance EvaluateSym symtype where \
-  evaluateSym fillDefault model (symtype t) = symtype $ evaluateTerm fillDefault model t
-
-#define EVALUATE_SYM_BV(symtype) \
-instance (KnownNat n, 1 <= n) => EvaluateSym (symtype n) where \
-  evaluateSym fillDefault model (symtype t) = symtype $ evaluateTerm fillDefault model t
-
-#define EVALUATE_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => EvaluateSym (sa op sb) where \
-  evaluateSym fillDefault model (cons t) = cons $ evaluateTerm fillDefault model t
-
-#define EVALUATE_SYM_BV_SOME(somety, origty) \
-instance EvaluateSym somety where \
-  evaluateSym fillDefault model (somety (origty t)) = somety $ origty $ evaluateTerm fillDefault model t
-
-#if 1
-EVALUATE_SYM_SIMPLE(SymBool)
-EVALUATE_SYM_SIMPLE(SymInteger)
-EVALUATE_SYM_BV(SymIntN)
-EVALUATE_SYM_BV(SymWordN)
-EVALUATE_SYM_FUN(=~>, SymTabularFun)
-EVALUATE_SYM_FUN(-~>, SymGeneralFun)
-EVALUATE_SYM_BV_SOME(SomeSymIntN, SymIntN)
-EVALUATE_SYM_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- ExtractSymbolics
