@@ -58,8 +58,7 @@ import Grisette.Core.Control.Monad.Class.MonadParallelUnion
   )
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
@@ -81,6 +80,7 @@ import Grisette.Core.Data.Class.Mergeable
     Mergeable1 (liftRootStrategy),
     MergingStrategy (SimpleStrategy),
   )
+import Grisette.Core.Data.Class.SEq (SEq ((==~)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
   )

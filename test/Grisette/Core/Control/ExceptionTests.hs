@@ -16,7 +16,7 @@ import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.Error
   ( TransformError (transformError),
   )
-import Grisette.Core.Data.Class.Evaluate
+import Grisette.Core.Data.Class.EvaluateSym
   ( EvaluateSym (evaluateSym),
   )
 import Grisette.Core.Data.Class.ExtractSymbolics

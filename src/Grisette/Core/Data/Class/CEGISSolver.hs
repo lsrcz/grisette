@@ -44,7 +44,7 @@ import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Exception
   ( VerificationConditions (AssertionViolation, AssumptionViolation),
   )
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )

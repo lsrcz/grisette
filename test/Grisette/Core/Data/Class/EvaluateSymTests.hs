@@ -19,7 +19,7 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette (TypedSymbol (IndexedSymbol))
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym (evaluateSym))
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.ModelOps

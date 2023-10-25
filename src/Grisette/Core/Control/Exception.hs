@@ -30,16 +30,16 @@ import Control.Monad.Except (MonadError)
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Data.Class.SEq (SEq)
 import Grisette.Core.Data.Class.Error
   ( TransformError (transformError),
     symAssertTransformableError,
   )
-import Grisette.Core.Data.Class.Evaluate (EvaluateSym)
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SEq (SEq)
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
   )

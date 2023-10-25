@@ -42,7 +42,6 @@ import Grisette.Core.Control.Monad.UnionM
   ( UnionM,
     liftToMonadUnion,
   )
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((||~)))
 import Grisette.Core.Data.Class.GenSym
   ( FreshIdent,
     GenSym (fresh),
@@ -54,6 +53,7 @@ import Grisette.Core.Data.Class.GenSym
     chooseUnionFresh,
     runFreshT,
   )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((||~)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
 import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~)))
 import Grisette.Core.Data.Class.SimpleMergeable
