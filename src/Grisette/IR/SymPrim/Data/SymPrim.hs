@@ -172,21 +172,14 @@ import Grisette.Core.Data.Class.SafeArith
 import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
+  ( Solvable (con, conView, ssym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.Substitute (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    iinfosymTerm,
-    isymTerm,
-    sinfosymTerm,
-    ssymTerm,
-    symTerm,
-  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors (symTerm)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -195,7 +188,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     LinkedRep (underlyingTerm, wrapTerm),
     SupportedPrim,
     SymRep (SymType),
-    Term (ConTerm, SymTerm),
+    Term (SymTerm),
     TypedSymbol (WithInfo),
     type (-->) (GeneralFun),
   )
@@ -1021,45 +1014,6 @@ IS_STRING_FUN(-~>, SymGeneralFun)
 #endif
 
 -- Solvable
-
-#define SOLVABLE_SIMPLE(contype, symtype) \
-instance Solvable contype symtype where \
-  con = symtype . conTerm; \
-  ssym = symtype . ssymTerm; \
-  isym str i = symtype $ isymTerm str i; \
-  sinfosym str info = symtype $ sinfosymTerm str info; \
-  iinfosym str i info = symtype $ iinfosymTerm str i info; \
-  conView (symtype (ConTerm _ t)) = Just t; \
-  conView _ = Nothing
-
-#define SOLVABLE_BV(contype, symtype) \
-instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
-  con = symtype . conTerm; \
-  ssym = symtype . ssymTerm; \
-  isym str i = symtype $ isymTerm str i; \
-  sinfosym str info = symtype $ sinfosymTerm str info; \
-  iinfosym str i info = symtype $ iinfosymTerm str i info; \
-  conView (symtype (ConTerm _ t)) = Just t; \
-  conView _ = Nothing
-
-#define SOLVABLE_FUN(symop, conop, symcons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (conop ca cb) (symop sa sb) where \
-  con = symcons . conTerm; \
-  ssym = symcons . ssymTerm; \
-  isym str i = symcons $ isymTerm str i; \
-  sinfosym str info = symcons $ sinfosymTerm str info; \
-  iinfosym str i info = symcons $ iinfosymTerm str i info; \
-  conView (symcons (ConTerm _ t)) = Just t; \
-  conView _ = Nothing
-
-#if 1
-SOLVABLE_SIMPLE(Bool, SymBool)
-SOLVABLE_SIMPLE(Integer, SymInteger)
-SOLVABLE_BV(IntN, SymIntN)
-SOLVABLE_BV(WordN, SymWordN)
-SOLVABLE_FUN((=~>), (=->), SymTabularFun)
-SOLVABLE_FUN((-~>), (-->), SymGeneralFun)
-#endif
 
 -- ToSym and ToCon
 

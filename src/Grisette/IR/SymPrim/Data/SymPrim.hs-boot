@@ -33,12 +33,12 @@ where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
+import Data.String (IsString)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
   )
-import Grisette.Core.Data.Class.Solvable (Solvable)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -51,6 +51,10 @@ import Language.Haskell.TH.Syntax (Lift)
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
 
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
+
+instance (KnownNat n, 1 <= n) => IsString (SymIntN n)
+
+instance (KnownNat n, 1 <= n) => IsString (SymWordN n)
 
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
 
@@ -66,6 +70,14 @@ data sa =~> sb where
 data sa -~> sb where
   SymGeneralFun :: (LinkedRep ca sa, LinkedRep cb sb) => Term (ca --> cb) -> sa -~> sb
 
+instance
+  (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) =>
+  IsString (sa =~> sb)
+
+instance
+  (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) =>
+  IsString (sa -~> sb)
+
 unarySomeSymIntN :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> r) -> String -> SomeSymIntN -> r
 unarySomeSymIntNR1 :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n) -> String -> SomeSymIntN -> SomeSymIntN
 binSomeSymIntN :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n -> r) -> String -> SomeSymIntN -> SomeSymIntN -> r
@@ -76,8 +88,6 @@ unarySomeSymWordNR1 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN
 binSomeSymWordN :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> r) -> String -> SomeSymWordN -> SomeSymWordN -> r
 binSomeSymWordNR1 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> SymWordN n) -> String -> SomeSymWordN -> SomeSymWordN -> SomeSymWordN
 binSomeSymWordNR2 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> (SymWordN n, SymWordN n)) -> String -> SomeSymWordN -> SomeSymWordN -> (SomeSymWordN, SomeSymWordN)
-
-instance Solvable Bool SymBool
 
 instance LinkedRep Bool SymBool
 
@@ -93,9 +103,9 @@ instance Hashable SymBool
 
 instance ExtractSymbolics SymBool
 
-newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
+instance IsString SymBool
 
-instance Solvable Integer SymInteger
+newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
 
 instance Eq SymInteger
 
@@ -109,13 +119,7 @@ instance Hashable SymInteger
 
 instance ExtractSymbolics SymInteger
 
-instance (KnownNat n, 1 <= n) => Solvable (WordN n) (SymWordN n)
-
-instance (KnownNat n, 1 <= n) => Solvable (IntN n) (SymIntN n)
-
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (ca --> cb) (sa -~> sb)
-
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Solvable (ca =-> cb) (sa =~> sb)
+instance IsString SymInteger
 
 data SomeSym where
   SomeSym :: (LinkedRep con sym) => sym -> SomeSym
