@@ -23,7 +23,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalITETerm)
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN,
     SomeSymWordN,
     SymBool (SymBool),

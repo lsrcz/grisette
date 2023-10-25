@@ -51,6 +51,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV
   ( IntN,
     SomeIntN (SomeIntN),
@@ -64,7 +65,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
     type (-->),
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool,
@@ -313,6 +314,17 @@ TOSYM_MACHINE_INTEGER_SOME(Word64, SomeSymWordN, WordN, 64)
 TOSYM_MACHINE_INTEGER_SOME(Int, SomeSymIntN, IntN, $intBitwidthQ)
 TOSYM_MACHINE_INTEGER_SOME(Word, SomeSymWordN, WordN, $intBitwidthQ)
 #endif
+
+-- Exception
+deriving via
+  (Default AssertionError)
+  instance
+    ToSym AssertionError AssertionError
+
+deriving via
+  (Default VerificationConditions)
+  instance
+    ToSym VerificationConditions VerificationConditions
 
 instance (Generic a, Generic b, ToSym' (Rep a) (Rep b)) => ToSym a (Default b) where
   toSym = Default . to . toSym' . from

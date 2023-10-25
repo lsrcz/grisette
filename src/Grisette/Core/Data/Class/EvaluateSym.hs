@@ -50,11 +50,12 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Generics.Deriving.Instances ()
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (LinkedRep, SupportedPrim)
 import Grisette.IR.SymPrim.Data.Prim.Model (Model, evaluateTerm)
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool (SymBool),
@@ -256,6 +257,11 @@ EVALUATE_SYM_FUN(-~>, SymGeneralFun)
 EVALUATE_SYM_BV_SOME(SomeSymIntN, SymIntN)
 EVALUATE_SYM_BV_SOME(SomeSymWordN, SymWordN)
 #endif
+
+-- Exception
+deriving via (Default AssertionError) instance EvaluateSym AssertionError
+
+deriving via (Default VerificationConditions) instance EvaluateSym VerificationConditions
 
 instance (Generic a, EvaluateSym' (Rep a)) => EvaluateSym (Default a) where
   evaluateSym fillDefault model = Default . to . evaluateSym' fillDefault model . from . unDefault

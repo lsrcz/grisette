@@ -10,11 +10,11 @@ import Control.Monad.Except (ExceptT (ExceptT))
 import Grisette.Core.Control.Exception
   ( AssertionError (AssertionError),
     VerificationConditions (AssertionViolation, AssumptionViolation),
-    symAssert,
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.Error
   ( TransformError (transformError),
+    symAssert,
   )
 import Grisette.Core.Data.Class.EvaluateSym
   ( EvaluateSym (evaluateSym),

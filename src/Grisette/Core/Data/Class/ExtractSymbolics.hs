@@ -47,6 +47,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
@@ -56,7 +57,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils (extractSymbolicsTer
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (SymbolSet),
   )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool (SymBool),
@@ -287,6 +288,11 @@ EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
 EXTRACT_SYMBOLICS_BV_SOME(SomeSymIntN, SymIntN)
 EXTRACT_SYMBOLICS_BV_SOME(SomeSymWordN, SymWordN)
 #endif
+
+-- Exception
+deriving via (Default AssertionError) instance ExtractSymbolics AssertionError
+
+deriving via (Default VerificationConditions) instance ExtractSymbolics VerificationConditions
 
 instance (Generic a, ExtractSymbolics' (Rep a)) => ExtractSymbolics (Default a) where
   extractSymbolics = extractSymbolics' . from . unDefault

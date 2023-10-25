@@ -53,11 +53,12 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalEqvTerm)
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymPrim
   ( SomeSymIntN (SomeSymIntN),
     SomeSymWordN (SomeSymWordN),
     SymBool (SymBool),
@@ -261,6 +262,11 @@ SEQ_BV(SymWordN)
 SEQ_BV_SOME(SomeSymIntN, SymIntN)
 SEQ_BV_SOME(SomeSymWordN, SymWordN)
 #endif
+
+-- Exceptions
+deriving via (Default AssertionError) instance SEq AssertionError
+
+deriving via (Default VerificationConditions) instance SEq VerificationConditions
 
 -- | Auxiliary class for 'SEq' instance derivation
 class SEq' f where
