@@ -26,7 +26,6 @@ module Grisette.Core.Data.Class.SafeArith
     ArithException (..),
     SafeDivision (..),
     SafeLinearArith (..),
-    SymIntegerOp,
   )
 where
 
@@ -439,6 +438,3 @@ SAFE_LINARITH_UNSIGNED_CONCRETE(Word)
 SAFE_LINARITH_UNSIGNED_BV_CONCRETE(WordN)
 SAFE_LINARITH_SOME_CONCRETE(SomeWordN, WordN)
 #endif
-
--- | Aggregation for the operations on symbolic integer types
-class (Num a, SEq a, SOrd a, Solvable Integer a) => SymIntegerOp a

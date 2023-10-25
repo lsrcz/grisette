@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removed the `Grisette.Lib.Mtl` module. ([#132](https://github.com/lsrcz/grisette/pull/132))
+- Removed `SymBoolOp` and `SymIntegerOp`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ### Fixed
 
