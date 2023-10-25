@@ -234,9 +234,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
     pevalShiftBitsTerm,
     pevalXorBitsTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalEqvTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
   ( pevalGeneralFunApplyTerm,
   )
@@ -1317,38 +1314,6 @@ EXTRACT_SYMBOLICS_FUN(=~>, SymTabularFun)
 EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
 EXTRACT_SYMBOLICS_BV_SOME(SomeSymIntN, SymIntN)
 EXTRACT_SYMBOLICS_BV_SOME(SomeSymWordN, SymWordN)
-#endif
-
--- SEq
-
-#define SEQ_SIMPLE(symtype) \
-instance SEq symtype where \
-  (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
-
-#define SEQ_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
-  (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
-
-#define SEQ_BV_SOME(somety, origty) \
-instance SEq somety where \
-  somety (l :: origty l) ==~ somety (r :: origty r) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> l ==~ r; \
-      Nothing -> con False); \
-  {-# INLINE (==~) #-}; \
-  somety (l :: origty l) /=~ somety (r :: origty r) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> l /=~ r; \
-      Nothing -> con True); \
-  {-# INLINE (/=~) #-}
-
-#if 1
-SEQ_SIMPLE(SymBool)
-SEQ_SIMPLE(SymInteger)
-SEQ_BV(SymIntN)
-SEQ_BV(SymWordN)
-SEQ_BV_SOME(SomeSymIntN, SymIntN)
-SEQ_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- SOrd
