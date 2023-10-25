@@ -65,13 +65,16 @@ evaluateSymTests =
                         eval (isym "a" 1) @?= isym "a" 1,
                       testCase "||~" $
                         eval (ssym "a" ||~ ssym "b")
-                          @?= ssym "a" ||~ ssym "b",
+                          @?= ssym "a"
+                          ||~ ssym "b",
                       testCase "&&~" $
                         eval (ssym "a" &&~ ssym "b")
-                          @?= ssym "a" &&~ ssym "b",
+                          @?= ssym "a"
+                          &&~ ssym "b",
                       testCase "==~" $
                         eval ((ssym "a" :: SymBool) ==~ ssym "b")
-                          @?= (ssym "a" :: SymBool) ==~ ssym "b",
+                          @?= (ssym "a" :: SymBool)
+                          ==~ ssym "b",
                       testCase "nots" $
                         eval (nots (ssym "a"))
                           @?= nots (ssym "a"),
