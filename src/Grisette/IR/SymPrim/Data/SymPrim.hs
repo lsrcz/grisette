@@ -139,13 +139,13 @@ import Grisette.Core.Data.Class.ExtractSymbolics
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
   )
 import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
-import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (<=~), (<~), (>=~), (>~)))
+import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~), (>~)))
 import Grisette.Core.Data.Class.SafeArith
   ( ArithException (DivideByZero, Overflow, Underflow),
     SafeDivision
@@ -248,10 +248,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAbsNumTerm,
     pevalAddNumTerm,
-    pevalGeNumTerm,
-    pevalGtNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
     pevalMinusNumTerm,
     pevalSignumNumTerm,
     pevalTimesNumTerm,
@@ -1312,62 +1308,6 @@ EXTRACT_SYMBOLICS_FUN(=~>, SymTabularFun)
 EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
 EXTRACT_SYMBOLICS_BV_SOME(SomeSymIntN, SymIntN)
 EXTRACT_SYMBOLICS_BV_SOME(SomeSymWordN, SymWordN)
-#endif
-
--- SOrd
-
-#define SORD_SIMPLE(symtype) \
-instance SOrd symtype where \
-  (symtype a) <=~ (symtype b) = SymBool $ pevalLeNumTerm a b; \
-  (symtype a) <~ (symtype b) = SymBool $ pevalLtNumTerm a b; \
-  (symtype a) >=~ (symtype b) = SymBool $ pevalGeNumTerm a b; \
-  (symtype a) >~ (symtype b) = SymBool $ pevalGtNumTerm a b; \
-  a `symCompare` b = mrgIf \
-    (a <~ b) \
-    (mrgReturn LT) \
-    (mrgIf (a ==~ b) (mrgReturn EQ) (mrgReturn GT))
-
-#define SORD_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
-  (symtype a) <=~ (symtype b) = SymBool $ pevalLeNumTerm a b; \
-  (symtype a) <~ (symtype b) = SymBool $ pevalLtNumTerm a b; \
-  (symtype a) >=~ (symtype b) = SymBool $ pevalGeNumTerm a b; \
-  (symtype a) >~ (symtype b) = SymBool $ pevalGtNumTerm a b; \
-  a `symCompare` b = mrgIf \
-    (a <~ b) \
-    (mrgReturn LT) \
-    (mrgIf (a ==~ b) (mrgReturn EQ) (mrgReturn GT))
-
-#define SORD_BV_SOME(somety, bf) \
-instance SOrd somety where \
-  (<=~) = bf (<=~) "<=~"; \
-  {-# INLINE (<=~) #-}; \
-  (<~) = bf (<~) "<~"; \
-  {-# INLINE (<~) #-}; \
-  (>=~) = bf (>=~) ">=~"; \
-  {-# INLINE (>=~) #-}; \
-  (>~) = bf (>~) ">~"; \
-  {-# INLINE (>~) #-}; \
-  symCompare = bf symCompare "symCompare"; \
-  {-# INLINE symCompare #-}
-
-instance SOrd SymBool where
-  l <=~ r = nots l ||~ r
-  l <~ r = nots l &&~ r
-  l >=~ r = l ||~ nots r
-  l >~ r = l &&~ nots r
-  symCompare l r =
-    mrgIf
-      (nots l &&~ r)
-      (mrgReturn LT)
-      (mrgIf (l ==~ r) (mrgReturn EQ) (mrgReturn GT))
-
-#if 1
-SORD_SIMPLE(SymInteger)
-SORD_BV(SymIntN)
-SORD_BV(SymWordN)
-SORD_BV_SOME(SomeSymIntN, binSomeSymIntN)
-SORD_BV_SOME(SomeSymWordN, binSomeSymWordN)
 #endif
 
 -- SubstituteSym
