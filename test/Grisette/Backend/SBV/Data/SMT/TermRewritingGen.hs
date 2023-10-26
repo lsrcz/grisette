@@ -50,12 +50,13 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
   )
 where
 
-import Data.Bits (Bits)
+import Data.Bits (Bits, FiniteBits)
 import Data.Data (Proxy (Proxy), Typeable)
 import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector (SizedBV)
+import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( absNumTerm,
     addNumTerm,
@@ -295,10 +296,10 @@ xorBitsSpec = constructBinarySpec xorBitsTerm pevalXorBitsTerm
 complementBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a
 complementBitsSpec = constructUnarySpec complementBitsTerm pevalComplementBitsTerm
 
-shiftLeftSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+shiftLeftSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymShift av) => a -> a -> a
 shiftLeftSpec = constructBinarySpec shiftLeftTerm pevalShiftLeftTerm
 
-shiftRightSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+shiftRightSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymShift av) => a -> a -> a
 shiftRightSpec = constructBinarySpec shiftRightTerm pevalShiftRightTerm
 
 rotateLeftSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
@@ -617,9 +618,10 @@ type SupportedBV bv (n :: Nat) =
   ( SupportedPrim (bv n),
     Ord (bv n),
     Num (bv n),
-    Bits (bv n),
+    FiniteBits (bv n),
     Integral (bv n),
-    Bounded (bv n)
+    Bounded (bv n),
+    SymShift (bv n)
   )
 
 dsbv1 ::

@@ -34,15 +34,16 @@ import Data.Bits
         isSigned,
         rotateL,
         rotateR,
-        shiftL,
+        shiftR,
         xor,
         zeroBits,
         (.&.),
         (.|.)
       ),
+    FiniteBits (finiteBitSize),
   )
-import Data.SBV (Bits (shiftR))
 import Data.Typeable (Typeable, cast)
+import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( andBitsTerm,
     complementBitsTerm,
@@ -131,36 +132,41 @@ doPevalComplementBitsTerm (ComplementBitsTerm _ a) = Just a
 doPevalComplementBitsTerm _ = Nothing
 
 -- shift
-pevalShiftLeftTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalShiftLeftTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalShiftLeftTerm t n = unaryUnfoldOnce (`doPevalShiftLeftTerm` n) (`shiftLeftTerm` n) t
 
-doPevalShiftLeftTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
+doPevalShiftLeftTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalShiftLeftTerm (ConTerm _ a) (ConTerm _ n)
-  | n >= 0 = Just $ conTerm $ shiftL a (fromIntegral n)
+  | n >= 0 =
+      if (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n)
+        then Just $ conTerm zeroBits
+        else Just $ conTerm $ symShift a n
 doPevalShiftLeftTerm x (ConTerm _ 0) = Just x
 -- TODO: Need to handle the overflow case.
 -- doPevalShiftLeftTerm (ShiftLeftTerm _ x (ConTerm _ n)) (ConTerm _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalShiftLeftTerm x (conTerm $ n + n1)
-doPevalShiftLeftTerm _ (ConTerm _ a)
-  | case bitSizeMaybe (zeroBits :: a) of
-      Just b -> fromIntegral a >= b
-      Nothing -> False =
+doPevalShiftLeftTerm _ (ConTerm _ n)
+  | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n) =
       Just $ conTerm zeroBits
 doPevalShiftLeftTerm _ _ = Nothing
 
-pevalShiftRightTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalShiftRightTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalShiftRightTerm t n = unaryUnfoldOnce (`doPevalShiftRightTerm` n) (`shiftRightTerm` n) t
 
-doPevalShiftRightTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
+doPevalShiftRightTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalShiftRightTerm (ConTerm _ a) (ConTerm _ n)
-  | n >= 0 = Just $ conTerm $ shiftR a (fromIntegral n)
+  | n >= 0 && not (isSigned a) =
+      if (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n)
+        then Just $ conTerm zeroBits
+        else Just $ conTerm $ shiftR a (fromIntegral n)
+doPevalShiftRightTerm (ConTerm _ a) (ConTerm _ n)
+  | n >= 0 = Just $ conTerm $ symShift a (-n) -- if n >= 0 then -n must be in the range
 doPevalShiftRightTerm x (ConTerm _ 0) = Just x
 -- doPevalShiftRightTerm (ShiftRightTerm _ x (ConTerm _ n)) (ConTerm _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalShiftRightTerm x (conTerm $ n + n1)
-doPevalShiftRightTerm _ (ConTerm _ a)
-  | case bitSizeMaybe (zeroBits :: a) of
-      Just b -> not (isSigned a) && fromIntegral a >= b
-      Nothing -> False =
+doPevalShiftRightTerm _ (ConTerm _ n)
+  | not (isSigned n)
+      && (fromIntegral n :: Integer) >= fromIntegral (finiteBitSize n) =
       Just $ conTerm zeroBits
 doPevalShiftRightTerm _ _ = Nothing
 

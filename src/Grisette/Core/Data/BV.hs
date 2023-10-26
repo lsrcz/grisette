@@ -11,6 +11,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -112,6 +113,10 @@ import Grisette.Core.Data.Class.BitVector
   )
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
+  )
+import Grisette.Core.Data.Class.SymShift
+  ( DefaultFiniteBitsSymShift (DefaultFiniteBitsSymShift),
+    SymShift,
   )
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
@@ -807,3 +812,13 @@ instance (KnownNat n, 1 <= n) => SignConversion (WordN n) (IntN n) where
 instance SignConversion SomeWordN SomeIntN where
   toSigned (SomeWordN i) = SomeIntN $ toSigned i
   toUnsigned (SomeIntN i) = SomeWordN $ toUnsigned i
+
+deriving via
+  (DefaultFiniteBitsSymShift (IntN n))
+  instance
+    (KnownNat n, 1 <= n) => SymShift (IntN n)
+
+deriving via
+  (DefaultFiniteBitsSymShift (WordN n))
+  instance
+    (KnownNat n, 1 <= n) => SymShift (WordN n)

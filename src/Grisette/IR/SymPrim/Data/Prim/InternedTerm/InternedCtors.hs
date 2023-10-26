@@ -69,7 +69,7 @@ where
 
 import Control.DeepSeq (NFData)
 import Data.Array ((!))
-import Data.Bits (Bits)
+import Data.Bits (Bits, FiniteBits)
 import qualified Data.HashMap.Strict as M
 import Data.Hashable (Hashable (hash))
 import Data.IORef (atomicModifyIORef')
@@ -87,6 +87,7 @@ import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
+import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
     SupportedPrim,
@@ -283,11 +284,11 @@ complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
 complementBitsTerm = internTerm . UComplementBitsTerm
 {-# INLINE complementBitsTerm #-}
 
-shiftLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+shiftLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Term a -> Term a -> Term a
 shiftLeftTerm t n = internTerm $ UShiftLeftTerm t n
 {-# INLINE shiftLeftTerm #-}
 
-shiftRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+shiftRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Term a -> Term a -> Term a
 shiftRightTerm t n = internTerm $ UShiftRightTerm t n
 {-# INLINE shiftRightTerm #-}
 

@@ -52,7 +52,7 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 where
 
 import Control.DeepSeq (NFData (rnf))
-import Data.Bits (Bits)
+import Data.Bits (Bits, FiniteBits)
 import Data.Function (on)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Interned
@@ -72,6 +72,7 @@ import Grisette.Core.Data.Class.BitVector
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
+import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
   ( typeMemoizedCache,
   )
@@ -422,8 +423,8 @@ data Term t where
   OrBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   XorBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  ShiftLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  ShiftRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  ShiftLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  ShiftRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   RotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   RotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ToSignedTerm ::
@@ -703,8 +704,8 @@ data UTerm t where
   UOrBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UXorBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
-  UShiftLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
-  UShiftRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  UShiftLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => !(Term t) -> !(Term t) -> UTerm t
+  UShiftRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => !(Term t) -> !(Term t) -> UTerm t
   URotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   URotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
   UToSignedTerm ::
