@@ -52,13 +52,14 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
-import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, liftToMonadUnion)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
 import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)), SEq' ((==~~)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
     mrgSingle,
+    simpleMerge,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
@@ -375,6 +376,29 @@ instance SOrd VerificationConditions where
   l <=~ r = con $ l <= r
   l <~ r = con $ l < r
   l `symCompare` r = mrgSingle $ l `compare` r
+
+-- UnionM
+instance (SOrd a) => SOrd (UnionM a) where
+  x <=~ y = simpleMerge $ do
+    x1 <- x
+    y1 <- y
+    mrgSingle $ x1 <=~ y1
+  x <~ y = simpleMerge $ do
+    x1 <- x
+    y1 <- y
+    mrgSingle $ x1 <~ y1
+  x >=~ y = simpleMerge $ do
+    x1 <- x
+    y1 <- y
+    mrgSingle $ x1 >=~ y1
+  x >~ y = simpleMerge $ do
+    x1 <- x
+    y1 <- y
+    mrgSingle $ x1 >~ y1
+  x `symCompare` y = liftToMonadUnion $ do
+    x1 <- x
+    y1 <- y
+    x1 `symCompare` y1
 
 -- | Auxiliary class for 'SOrd' instance derivation
 class (SEq' f) => SOrd' f where
