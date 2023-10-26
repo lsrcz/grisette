@@ -508,7 +508,13 @@ instance Num SomeWordN where
 
 instance (KnownNat n, 1 <= n) => QC.Arbitrary (WordN n) where
   arbitrary = QC.arbitrarySizedBoundedIntegral
-  shrink = QC.shrinkIntegral
+
+  -- QC.shrinkIntegral assumes that 2 is representable by the number, which is
+  -- not the case for 1-bit bit vector.
+  shrink i
+    | i == 0 = []
+    | i == 1 = [0]
+    | otherwise = QC.shrinkIntegral i
 
 minusOneIntN :: forall proxy n. (KnownNat n) => proxy n -> IntN n
 minusOneIntN _ = IntN (1 `shiftL` fromIntegral (natVal (Proxy :: Proxy n)) - 1)
@@ -689,7 +695,13 @@ instance (KnownNat n, 1 <= n) => Ord (IntN n) where
 
 instance (KnownNat n, 1 <= n) => QC.Arbitrary (IntN n) where
   arbitrary = QC.arbitrarySizedBoundedIntegral
-  shrink = QC.shrinkIntegral
+
+  -- QC.shrinkIntegral assumes that 2 is representable by the number, which is
+  -- not the case for 1-bit bit vector.
+  shrink i
+    | i == 0 = []
+    | i == 1 = [0]
+    | otherwise = QC.shrinkIntegral i
 
 instance SizedBV WordN where
   sizedBVConcat :: forall l r. (KnownNat l, KnownNat r, 1 <= l, 1 <= r) => WordN l -> WordN r -> WordN (l + r)
