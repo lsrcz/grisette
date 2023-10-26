@@ -191,7 +191,7 @@ bitsTests =
         [ testCase "On concrete, should perform arithmetic shifting on IntN" $ do
             pevalShiftRightTerm (conTerm 7 :: Term (IntN 4)) (conTerm 2) @=? conTerm 1
             pevalShiftRightTerm (conTerm 15 :: Term (IntN 4)) (conTerm 2) @=? conTerm 15,
-          testCase "On concrete, should perform arithmetic shifting on WordN" $ do
+          testCase "On concrete, should perform logical shifting on WordN" $ do
             pevalShiftRightTerm (conTerm 7 :: Term (WordN 4)) (conTerm 2) @=? conTerm 1
             pevalShiftRightTerm (conTerm 15 :: Term (WordN 4)) (conTerm 2) @=? conTerm 3,
           testCase "shift 0" $ do

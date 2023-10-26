@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.SymShift
@@ -14,10 +14,8 @@ where
 import Data.Bits (Bits (isSigned, shift), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeLits (KnownNat, type (<=))
-import Grisette.Core.Data.BV (IntN, WordN)
 
-class SymShift a where
+class (Bits a) => SymShift a where
   symShift :: a -> a -> a
 
 instance SymShift Int where
@@ -29,6 +27,7 @@ instance SymShift Int where
 newtype DefaultFiniteBitsSymShift a = DefaultFiniteBitsSymShift
   { unDefaultFiniteBitsSymShift :: a
   }
+  deriving newtype (Eq, Bits)
 
 instance
   (Integral a, FiniteBits a) =>
@@ -72,13 +71,3 @@ deriving via (DefaultFiniteBitsSymShift Word32) instance SymShift Word32
 deriving via (DefaultFiniteBitsSymShift Word64) instance SymShift Word64
 
 deriving via (DefaultFiniteBitsSymShift Word) instance SymShift Word
-
-deriving via
-  (DefaultFiniteBitsSymShift (IntN n))
-  instance
-    (KnownNat n, 1 <= n) => SymShift (IntN n)
-
-deriving via
-  (DefaultFiniteBitsSymShift (WordN n))
-  instance
-    (KnownNat n, 1 <= n) => SymShift (WordN n)
