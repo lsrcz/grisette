@@ -168,9 +168,33 @@ termRewritingTests =
         ],
       testGroup
         "Fixed sized signed BV"
-        [ testProperty "Random test" $
-            withMaxSuccess 1000 . mapSize (`min` 5) $
-              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN)) -> do
+        [ testProperty "Random test on IntN 1" $
+            withMaxSuccess 200 . mapSize (`min` 5) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 1)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on IntN 2" $
+            withMaxSuccess 200 . mapSize (`min` 5) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 2)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on IntN 4" $
+            withMaxSuccess 200 . mapSize (`min` 5) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 4)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on IntN 63" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 63)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on IntN 64" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 64)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on IntN 65" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 65)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on IntN 128" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec IntN 128)) -> do
                 validateSpec unboundedConfig x
         ],
       testGroup
@@ -182,13 +206,37 @@ termRewritingTests =
         ],
       testGroup
         "Fixed sized unsigned BV"
-        [ testProperty "random test" $
-            withMaxSuccess 1000 . mapSize (`min` 5) $
-              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN)) -> do
+        [ testProperty "Random test on WordN 1" $
+            withMaxSuccess 200 . mapSize (`min` 5) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 1)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on WordN 2" $
+            withMaxSuccess 200 . mapSize (`min` 5) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 2)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on WordN 4" $
+            withMaxSuccess 200 . mapSize (`min` 5) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 4)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on WordN 63" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 63)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on WordN 64" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 64)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on WordN 65" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 65)) -> do
+                validateSpec unboundedConfig x,
+          testProperty "Random test on WordN 128" $
+            withMaxSuccess 200 . mapSize (`min` 1) $
+              ioProperty . \(x :: (FixedSizedBVWithBoolSpec WordN 128)) -> do
                 validateSpec unboundedConfig x
         ],
       testCase "Regression: shift twice and the sum of shift amount overflows" $ do
-        validateSpec @(FixedSizedBVWithBoolSpec IntN)
+        validateSpec @(FixedSizedBVWithBoolSpec IntN 4)
           unboundedConfig
           ( shiftRightSpec
               (shiftRightSpec (symSpec "fint") (conSpec 0x5))
@@ -197,11 +245,11 @@ termRewritingTests =
       testGroup
         "Regression for abs on unsigned BV"
         [ testCase "abs on negate" $
-            validateSpec @(FixedSizedBVWithBoolSpec WordN)
+            validateSpec @(FixedSizedBVWithBoolSpec WordN 4)
               unboundedConfig
               (absNumSpec (uminusNumSpec (symSpec "a"))),
           testCase "abs on times negate" $
-            validateSpec @(FixedSizedBVWithBoolSpec WordN)
+            validateSpec @(FixedSizedBVWithBoolSpec WordN 4)
               unboundedConfig
               (absNumSpec (timesNumSpec (symSpec "a") (uminusNumSpec (symSpec "b"))))
         ],

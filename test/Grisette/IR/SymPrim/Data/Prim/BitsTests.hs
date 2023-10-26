@@ -5,6 +5,7 @@
 
 module Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests) where
 
+import Data.Bits (Bits (rotateL, rotateR))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( andBitsTerm,
@@ -180,7 +181,10 @@ bitsTests =
               @=? shiftLeftTerm (conTerm 15) (conTerm $ -8),
           testCase "shift symbolic" $ do
             pevalShiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
-              @=? shiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? shiftLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2),
+          testCase "Regression: shift by very large number" $ do
+            pevalShiftLeftTerm (conTerm 15 :: Term (IntN 128)) (conTerm maxBound) @=? conTerm 0
+            pevalShiftLeftTerm (conTerm 15 :: Term (WordN 128)) (conTerm maxBound) @=? conTerm 0
         ],
       testGroup
         "ShiftRight"
@@ -208,7 +212,10 @@ bitsTests =
               @=? shiftRightTerm (conTerm 15) (conTerm $ -8),
           testCase "shift symbolic" $ do
             pevalShiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
-              @=? shiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? shiftRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2),
+          testCase "Regression: shift by very large number" $ do
+            pevalShiftRightTerm (conTerm 15 :: Term (IntN 128)) (conTerm maxBound) @=? conTerm 0
+            pevalShiftRightTerm (conTerm 15 :: Term (WordN 128)) (conTerm maxBound) @=? conTerm 0
         ],
       testGroup
         "RotateLeft"
@@ -235,7 +242,10 @@ bitsTests =
               @=? rotateLeftTerm (conTerm 15) (conTerm $ -8),
           testCase "rotate symbolic" $ do
             pevalRotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
-              @=? rotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? rotateLeftTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2),
+          testCase "Regression: rotate by very large number" $ do
+            pevalRotateLeftTerm (conTerm 15 :: Term (IntN 128)) (conTerm maxBound) @=? conTerm (rotateR 15 1)
+            pevalRotateLeftTerm (conTerm 15 :: Term (WordN 128)) (conTerm maxBound) @=? conTerm (rotateR 15 1)
         ],
       testGroup
         "RotateRight"
@@ -262,6 +272,9 @@ bitsTests =
               @=? rotateRightTerm (conTerm 15) (conTerm $ -8),
           testCase "rotate symbolic" $ do
             pevalRotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
-              @=? rotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2)
+              @=? rotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 2),
+          testCase "Regression: rotate by very large number" $ do
+            pevalRotateRightTerm (conTerm 15 :: Term (IntN 128)) (conTerm maxBound) @=? conTerm (rotateL 15 1)
+            pevalRotateRightTerm (conTerm 15 :: Term (WordN 128)) (conTerm maxBound) @=? conTerm (rotateL 15 1)
         ]
     ]
