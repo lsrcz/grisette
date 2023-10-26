@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [Breaking] Removed the `Grisette.Lib.Mtl` module. ([#132](https://github.com/lsrcz/grisette/pull/132))
 - [Breaking] Removed `SymBoolOp` and `SymIntegerOp`. ([#146](https://github.com/lsrcz/grisette/pull/146))
-- [Breaking] Removed `ExtractSymbolics` instance for `SymbolSet` and removed `Model.hs-boot` file. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Removed `ExtractSymbolics` instance for `SymbolSet`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ### Fixed
 
@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Moved the `ITEOp`, `LogicalOp`, and `SEq` type classes to dedicated modules. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Moved `Grisette.Data.Class.Evaluate` to `Grisette.Data.Class.EvaluateSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Moved `Grisette.Data.Class.Substitute` to `Grisette.Data.Class.SubstituteSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Split the `Grisette.Data.Class.SafeArith` module to `Grisette.Data.Class.SafeDivision` and `Grisette.Data.Class.SafeLinearArith`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 
 ## [0.3.1.1] -- 2023-09-29
 
