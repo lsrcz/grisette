@@ -116,7 +116,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import {-# SOURCE #-} Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, isMerged, underlyingUnion)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -137,6 +137,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (iinfosym, isym),
   )
+import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -1765,3 +1766,19 @@ GENSYM_SIMPLE_FUN(-~>)
 GENSYM_UNIT_FUN(-~>)
 GENSYM_UNIT_SIMPLE_FUN(-~>)
 #endif
+
+instance (GenSym spec a, Mergeable a) => GenSym spec (UnionM a)
+
+instance (GenSym spec a) => GenSymSimple spec (UnionM a) where
+  simpleFresh spec = do
+    res <- fresh spec
+    if not (isMerged res) then error "Not merged" else return res
+
+instance
+  (GenSym a a, Mergeable a) =>
+  GenSym (UnionM a) a
+  where
+  fresh spec = go (underlyingUnion $ merge spec)
+    where
+      go (UnionSingle x) = fresh x
+      go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f

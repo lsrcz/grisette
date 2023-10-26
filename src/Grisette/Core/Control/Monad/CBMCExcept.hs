@@ -64,6 +64,7 @@ import Data.Functor.Classes
 import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic, Generic1)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
@@ -469,3 +470,6 @@ instance
   UnionWithExcept (CBMCExceptT e u v) u e v
   where
   extractUnionExcept = merge . fmap runCBMCEither . runCBMCExceptT
+
+instance UnionWithExcept (UnionM (CBMCEither e v)) UnionM e v where
+  extractUnionExcept = fmap runCBMCEither

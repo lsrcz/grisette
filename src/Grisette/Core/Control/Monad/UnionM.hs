@@ -50,9 +50,6 @@ import qualified Data.HashMap.Lazy as HML
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.String (IsString (fromString))
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.Core.Control.Monad.CBMCExcept
-  ( CBMCEither (runCBMCEither),
-  )
 import Grisette.Core.Control.Monad.Class.MonadParallelUnion
   ( MonadParallelUnion (parBindUnion),
   )
@@ -67,10 +64,6 @@ import Grisette.Core.Data.Class.GPretty
   ( GPretty (gpretty),
     groupedEnclose,
   )
-import Grisette.Core.Data.Class.GenSym
-  ( GenSym (fresh),
-    GenSymSimple (simpleFresh),
-  )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.Core.Data.Class.LogicalOp
   ( LogicalOp (implies, nots, xors, (&&~), (||~)),
@@ -81,9 +74,6 @@ import Grisette.Core.Data.Class.Mergeable
     MergingStrategy (SimpleStrategy),
   )
 import Grisette.Core.Data.Class.SEq (SEq ((==~)))
-import Grisette.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
-  )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
@@ -407,28 +397,6 @@ liftToMonadUnion u = go (underlyingUnion u)
     go (UnionSingle v) = mrgSingle v
     go (UnionIf _ _ c t f) = mrgIf c (go t) (go f)
 
-instance (SOrd a) => SOrd (UnionM a) where
-  x <=~ y = simpleMerge $ do
-    x1 <- x
-    y1 <- y
-    mrgSingle $ x1 <=~ y1
-  x <~ y = simpleMerge $ do
-    x1 <- x
-    y1 <- y
-    mrgSingle $ x1 <~ y1
-  x >=~ y = simpleMerge $ do
-    x1 <- x
-    y1 <- y
-    mrgSingle $ x1 >=~ y1
-  x >~ y = simpleMerge $ do
-    x1 <- x
-    y1 <- y
-    mrgSingle $ x1 >~ y1
-  x `symCompare` y = liftToMonadUnion $ do
-    x1 <- x
-    y1 <- y
-    x1 `symCompare` y1
-
 instance {-# INCOHERENT #-} (ToSym a b, Mergeable b) => ToSym a (UnionM b) where
   toSym = mrgSingle . toSym
 
@@ -582,23 +550,6 @@ instance
 instance (IsString a, Mergeable a) => IsString (UnionM a) where
   fromString = mrgSingle . fromString
 
--- GenSym
-instance (GenSym spec a, Mergeable a) => GenSym spec (UnionM a)
-
-instance (GenSym spec a) => GenSymSimple spec (UnionM a) where
-  simpleFresh spec = do
-    res <- fresh spec
-    if not (isMerged res) then error "Not merged" else return res
-
-instance
-  (GenSym a a, Mergeable a) =>
-  GenSym (UnionM a) a
-  where
-  fresh spec = go (underlyingUnion $ merge spec)
-    where
-      go (UnionSingle x) = fresh x
-      go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
-
 -- AllSyms
 instance (AllSyms a) => AllSyms (UnionM a) where
   allSymsS = allSymsS . underlyingUnion
@@ -640,9 +591,6 @@ instance (IsConcrete k, Mergeable t) => SimpleMergeable (HML.HashMap k (UnionM (
 
 instance UnionWithExcept (UnionM (Either e v)) UnionM e v where
   extractUnionExcept = id
-
-instance UnionWithExcept (UnionM (CBMCEither e v)) UnionM e v where
-  extractUnionExcept = fmap runCBMCEither
 
 -- | The size of a union is defined as the number of branches.
 -- For example,
