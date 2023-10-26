@@ -474,6 +474,10 @@ bvTests =
             shouldThrow "quot" $ quot (minBound :: IntN 8) (-1 :: IntN 8),
           testCase "toInteger for IntN 1" $ do
             toInteger (0 :: IntN 1) @=? 0
-            toInteger (1 :: IntN 1) @=? (-1)
+            toInteger (1 :: IntN 1) @=? (-1),
+          testProperty "WordN shiftL by large amount" $ \(x :: WordN 128) ->
+            ioProperty $ shiftL x maxBound @=? 0,
+          testProperty "IntN shiftL by large amount" $ \(x :: IntN 128) ->
+            ioProperty $ shiftL x maxBound @=? 0
         ]
     ]
