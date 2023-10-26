@@ -374,9 +374,11 @@ instance (KnownNat n, 1 <= n) => Bits (WordN n) where
   bitSizeMaybe = Just . finiteBitSize
   bitSize = finiteBitSize
   isSigned _ = False
+  shiftL w i | i >= finiteBitSize w = 0
   shiftL (WordN a) i = WordN (a `shiftL` i) .&. maxBound
 
   -- unsafeShiftL use default implementation
+  shiftR w i | i >= finiteBitSize w = 0
   shiftR (WordN a) i = WordN (a `shiftR` i)
 
   -- unsafeShiftR use default implementation

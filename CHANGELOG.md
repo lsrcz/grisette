@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the symbolic generation order for `Maybe`. ([#131](https://github.com/lsrcz/grisette/pull/131))
 - Fixed the `toInteger` function for `IntN 1`. ([#143](https://github.com/lsrcz/grisette/pull/143))
 - Fixed the `abs` function for `WordN`. ([#144](https://github.com/lsrcz/grisette/pull/143))
+- Fixed the QuickCheck shrink function for `WordN 1` and `IntN 1`. ([#149](https://github.com/lsrcz/grisette/pull/149))
+- Fixed the heap overflow bug for `shiftL` for `WordN` and `IntN` by large numbers. ([#150](https://github.com/lsrcz/grisette/pull/150))
 
 ### Changed
 
