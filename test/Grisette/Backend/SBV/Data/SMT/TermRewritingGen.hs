@@ -499,48 +499,49 @@ instance Arbitrary BoolWithLIASpec where
 instance Arbitrary LIAWithBoolSpec where
   arbitrary = sized liaWithBool
 
-data FixedSizedBVWithBoolSpec bv = FixedSizedBVWithBoolSpec (Term (bv 4)) (Term (bv 4))
+data FixedSizedBVWithBoolSpec (bv :: Nat -> Type) (n :: Nat) = FixedSizedBVWithBoolSpec (Term (bv n)) (Term (bv n))
 
-instance (SupportedPrim (bv 4)) => Show (FixedSizedBVWithBoolSpec bv) where
+instance (SupportedPrim (bv n)) => Show (FixedSizedBVWithBoolSpec bv n) where
   show (FixedSizedBVWithBoolSpec n r) = "FixedSizedBVWithBoolSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance (SupportedPrim (bv 4)) => TermRewritingSpec (FixedSizedBVWithBoolSpec bv) (bv 4) where
+instance (SupportedPrim (bv n)) => TermRewritingSpec (FixedSizedBVWithBoolSpec bv n) (bv n) where
   norewriteVer (FixedSizedBVWithBoolSpec n _) = n
   rewriteVer (FixedSizedBVWithBoolSpec _ r) = r
   wrap = FixedSizedBVWithBoolSpec
   same s = eqvTerm (norewriteVer s) (rewriteVer s)
 
-data BoolWithFixedSizedBVSpec (bv :: Nat -> Type) = BoolWithFixedSizedBVSpec (Term Bool) (Term Bool)
+data BoolWithFixedSizedBVSpec (bv :: Nat -> Type) (n :: Nat) = BoolWithFixedSizedBVSpec (Term Bool) (Term Bool)
 
-instance Show (BoolWithFixedSizedBVSpec bv) where
+instance Show (BoolWithFixedSizedBVSpec bv n) where
   show (BoolWithFixedSizedBVSpec n r) =
     "BoolWithFixedSizedBVSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance TermRewritingSpec (BoolWithFixedSizedBVSpec bv) Bool where
+instance TermRewritingSpec (BoolWithFixedSizedBVSpec bv n) Bool where
   norewriteVer (BoolWithFixedSizedBVSpec n _) = n
   rewriteVer (BoolWithFixedSizedBVSpec _ r) = r
   wrap = BoolWithFixedSizedBVSpec
   same s = eqvTerm (norewriteVer s) (rewriteVer s)
 
 boolWithFSBV ::
-  forall proxy bv.
-  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
-  proxy bv ->
+  forall p1 p2 bv n.
+  (SupportedBV bv n) =>
+  p1 bv ->
+  p2 n ->
   Int ->
-  Gen (BoolWithFixedSizedBVSpec bv)
-boolWithFSBV _ 0 =
+  Gen (BoolWithFixedSizedBVSpec bv n)
+boolWithFSBV _ _ 0 =
   let s =
         oneof $
           return . symSpec . (<> "bool")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
-boolWithFSBV p n | n > 0 = do
-  v1 <- boolWithFSBV p (n - 1)
-  v2 <- boolWithFSBV p (n - 1)
-  v3 <- boolWithFSBV p (n - 1)
-  v1i <- fsbvWithBool p (n - 1)
-  v2i <- fsbvWithBool p (n - 1)
+boolWithFSBV pbv pn n | n > 0 = do
+  v1 <- boolWithFSBV pbv pn (n - 1)
+  v2 <- boolWithFSBV pbv pn (n - 1)
+  v3 <- boolWithFSBV pbv pn (n - 1)
+  v1i <- fsbvWithBool pbv pn (n - 1)
+  v2i <- fsbvWithBool pbv pn (n - 1)
   frequency
     [ (1, return $ notSpec v1),
       (1, return $ andSpec v1 v2),
@@ -551,25 +552,32 @@ boolWithFSBV p n | n > 0 = do
       (5, return $ leNumSpec v1i v2i),
       (1, return $ iteSpec v1 v2 v3)
     ]
-boolWithFSBV _ _ = error "Should never be called"
+boolWithFSBV _ _ _ = error "Should never be called"
 
 fsbvWithBool ::
-  forall proxy bv.
-  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
-  proxy bv ->
+  forall p1 p2 bv n.
+  (SupportedBV bv n) =>
+  p1 bv ->
+  p2 n ->
   Int ->
-  Gen (FixedSizedBVWithBoolSpec bv)
-fsbvWithBool _ 0 =
+  Gen (FixedSizedBVWithBoolSpec bv n)
+fsbvWithBool _ _ 0 =
   let s =
         oneof $
           return . symSpec . (<> "int")
             <$> ["a", "b", "c", "d", "e", "f", "g"]
-      r = conSpec . fromInteger <$> arbitrary
+      r =
+        conSpec
+          <$> oneof
+            [ return minBound,
+              return maxBound,
+              fromInteger <$> arbitrary
+            ]
    in oneof [r, s]
-fsbvWithBool p n | n > 0 = do
-  v1b <- boolWithFSBV p (n - 1)
-  v1i <- fsbvWithBool p (n - 1)
-  v2i <- fsbvWithBool p (n - 1)
+fsbvWithBool pbv pn n | n > 0 = do
+  v1b <- boolWithFSBV pbv pn (n - 1)
+  v1i <- fsbvWithBool pbv pn (n - 1)
+  v2i <- fsbvWithBool pbv pn (n - 1)
   oneof
     [ return $ uminusNumSpec v1i,
       return $ absNumSpec v1i,
@@ -586,19 +594,13 @@ fsbvWithBool p n | n > 0 = do
       return $ rotateRightSpec v1i v2i,
       return $ iteSpec v1b v1i v2i
     ]
-fsbvWithBool _ _ = error "Should never be called"
+fsbvWithBool _ _ _ = error "Should never be called"
 
-instance
-  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
-  Arbitrary (BoolWithFixedSizedBVSpec bv)
-  where
-  arbitrary = sized (boolWithFSBV (Proxy @bv))
+instance (SupportedBV bv n) => Arbitrary (BoolWithFixedSizedBVSpec bv n) where
+  arbitrary = sized (boolWithFSBV (Proxy @bv) (Proxy @n))
 
-instance
-  (SupportedPrim (bv 4), Ord (bv 4), Num (bv 4), Bits (bv 4), Integral (bv 4)) =>
-  Arbitrary (FixedSizedBVWithBoolSpec bv)
-  where
-  arbitrary = sized (fsbvWithBool Proxy)
+instance (SupportedBV bv n) => Arbitrary (FixedSizedBVWithBoolSpec bv n) where
+  arbitrary = sized (fsbvWithBool Proxy Proxy)
 
 data DifferentSizeBVSpec bv (n :: Nat) = DifferentSizeBVSpec (Term (bv n)) (Term (bv n))
 
@@ -612,7 +614,13 @@ instance (SupportedPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec bv n) 
   same s = eqvTerm (norewriteVer s) (rewriteVer s)
 
 type SupportedBV bv (n :: Nat) =
-  (SupportedPrim (bv n), Ord (bv n), Num (bv n), Bits (bv n), Integral (bv n))
+  ( SupportedPrim (bv n),
+    Ord (bv n),
+    Num (bv n),
+    Bits (bv n),
+    Integral (bv n),
+    Bounded (bv n)
+  )
 
 dsbv1 ::
   forall proxy bv.
