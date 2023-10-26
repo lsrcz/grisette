@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
 
 -- |

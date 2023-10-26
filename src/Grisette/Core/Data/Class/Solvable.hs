@@ -3,7 +3,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
