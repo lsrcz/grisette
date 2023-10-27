@@ -109,10 +109,20 @@ import GHC.TypeNats
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
-    SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
+    SizedBV
+      ( sizedBVConcat,
+        sizedBVExt,
+        sizedBVSelect,
+        sizedBVSext,
+        sizedBVZext
+      ),
   )
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
+  )
+import Grisette.Core.Data.Class.SymRotate
+  ( DefaultFiniteBitsSymRotate (DefaultFiniteBitsSymRotate),
+    SymRotate,
   )
 import Grisette.Core.Data.Class.SymShift
   ( DefaultFiniteBitsSymShift (DefaultFiniteBitsSymShift),
@@ -822,3 +832,13 @@ deriving via
   (DefaultFiniteBitsSymShift (WordN n))
   instance
     (KnownNat n, 1 <= n) => SymShift (WordN n)
+
+deriving via
+  (DefaultFiniteBitsSymRotate (IntN n))
+  instance
+    (KnownNat n, 1 <= n) => SymRotate (IntN n)
+
+deriving via
+  (DefaultFiniteBitsSymRotate (WordN n))
+  instance
+    (KnownNat n, 1 <= n) => SymRotate (WordN n)
