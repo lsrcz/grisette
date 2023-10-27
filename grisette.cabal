@@ -79,6 +79,7 @@ library
       Grisette.Core.Data.Class.Solver
       Grisette.Core.Data.Class.SOrd
       Grisette.Core.Data.Class.SubstituteSym
+      Grisette.Core.Data.Class.SymRotate
       Grisette.Core.Data.Class.SymShift
       Grisette.Core.Data.Class.ToCon
       Grisette.Core.Data.Class.ToSym
@@ -221,6 +222,7 @@ test-suite spec
       Grisette.Core.Data.Class.SimpleMergeableTests
       Grisette.Core.Data.Class.SOrdTests
       Grisette.Core.Data.Class.SubstituteSymTests
+      Grisette.Core.Data.Class.SymRotateTests
       Grisette.Core.Data.Class.SymShiftTests
       Grisette.Core.Data.Class.TestValues
       Grisette.Core.Data.Class.ToConTests

@@ -140,6 +140,7 @@ import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
     pattern Con,
   )
+import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors (conTerm, iinfosymTerm, isymTerm, sinfosymTerm, ssymTerm, symTerm)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
@@ -186,10 +187,12 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalEqvTerm,
     pevalITETerm,
+    pevalOrTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
   ( pevalGeneralFunApplyTerm,
   )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral (pevalModBoundedIntegralTerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAbsNumTerm,
     pevalAddNumTerm,
@@ -1002,6 +1005,31 @@ instance (KnownNat n, 1 <= n) => SymShift (SymIntN n) where
         )
     where
       bs = fromIntegral (finiteBitSize (0 :: IntN n)) :: IntN n
+
+-- SymRotate
+instance (KnownNat n, 1 <= n) => SymRotate (SymWordN n) where
+  symRotate (SymWordN a) (SymWordN s) = SymWordN (pevalRotateLeftTerm a s)
+
+instance (KnownNat n, 1 <= n) => SymRotate (SymIntN n) where
+  symRotate a _ | finiteBitSize a == 1 = a
+  symRotate as@(SymIntN a) (SymIntN s)
+    | finiteBitSize as == 2 =
+        SymIntN $
+          pevalITETerm
+            ( pevalOrTerm
+                (pevalEqvTerm s (conTerm 0))
+                (pevalEqvTerm s (conTerm (-2)))
+            )
+            a
+            (pevalRotateLeftTerm a (conTerm 1))
+  symRotate as@(SymIntN a) (SymIntN s) =
+    SymIntN $
+      pevalRotateLeftTerm
+        a
+        ( pevalModBoundedIntegralTerm
+            s
+            (conTerm (fromIntegral $ finiteBitSize as))
+        )
 
 -- ModelRep
 
