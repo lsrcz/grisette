@@ -156,6 +156,7 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -425,8 +426,8 @@ data Term t where
   ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   ShiftLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ShiftRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  RotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  RotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  RotateLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  RotateRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ToSignedTerm ::
     ( SupportedPrim u,
       SupportedPrim s,
@@ -706,8 +707,8 @@ data UTerm t where
   UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
   UShiftLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => !(Term t) -> !(Term t) -> UTerm t
   UShiftRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => !(Term t) -> !(Term t) -> UTerm t
-  URotateLeftTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
-  URotateRightTerm :: (SupportedPrim t, Integral t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
+  URotateLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => !(Term t) -> !(Term t) -> UTerm t
+  URotateRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => !(Term t) -> !(Term t) -> UTerm t
   UToSignedTerm ::
     ( SupportedPrim u,
       SupportedPrim s,

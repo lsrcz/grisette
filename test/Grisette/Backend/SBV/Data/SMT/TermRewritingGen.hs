@@ -56,6 +56,7 @@ import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector (SizedBV)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( absNumTerm,
@@ -302,10 +303,10 @@ shiftLeftSpec = constructBinarySpec shiftLeftTerm pevalShiftLeftTerm
 shiftRightSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymShift av) => a -> a -> a
 shiftRightSpec = constructBinarySpec shiftRightTerm pevalShiftRightTerm
 
-rotateLeftSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+rotateLeftSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymRotate av) => a -> a -> a
 rotateLeftSpec = constructBinarySpec rotateLeftTerm pevalRotateLeftTerm
 
-rotateRightSpec :: (TermRewritingSpec a av, Integral av, Bits av) => a -> a -> a
+rotateRightSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymRotate av) => a -> a -> a
 rotateRightSpec = constructBinarySpec rotateRightTerm pevalRotateRightTerm
 
 bvconcatSpec ::
@@ -621,7 +622,8 @@ type SupportedBV bv (n :: Nat) =
     FiniteBits (bv n),
     Integral (bv n),
     Bounded (bv n),
-    SymShift (bv n)
+    SymShift (bv n),
+    SymRotate (bv n)
   )
 
 dsbv1 ::

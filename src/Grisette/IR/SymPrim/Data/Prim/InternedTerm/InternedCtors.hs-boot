@@ -66,6 +66,7 @@ import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
@@ -135,8 +136,8 @@ xorBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
 complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
 shiftLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Term a -> Term a -> Term a
 shiftRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Term a -> Term a -> Term a
-rotateLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
-rotateRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
+rotateRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
 toSignedTerm ::
   ( SupportedPrim u,
     SupportedPrim s,

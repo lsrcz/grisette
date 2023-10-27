@@ -144,6 +144,7 @@ import Grisette.IR.SymPrim.Data.TabularFun
   )
 import Language.Haskell.TH.Syntax (Lift)
 import Type.Reflection (Typeable, typeRep)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
@@ -292,11 +293,11 @@ shiftRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Ter
 shiftRightTerm t n = internTerm $ UShiftRightTerm t n
 {-# INLINE shiftRightTerm #-}
 
-rotateLeftTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
 rotateLeftTerm t n = internTerm $ URotateLeftTerm t n
 {-# INLINE rotateLeftTerm #-}
 
-rotateRightTerm :: (SupportedPrim a, Integral a, Bits a) => Term a -> Term a -> Term a
+rotateRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
 rotateRightTerm t n = internTerm $ URotateRightTerm t n
 {-# INLINE rotateRightTerm #-}
 

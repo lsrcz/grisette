@@ -29,11 +29,8 @@ where
 
 import Data.Bits
   ( Bits
-      ( bitSizeMaybe,
-        complement,
+      ( complement,
         isSigned,
-        rotateL,
-        rotateR,
         shiftR,
         xor,
         zeroBits,
@@ -43,6 +40,7 @@ import Data.Bits
     FiniteBits (finiteBitSize),
   )
 import Data.Typeable (Typeable, cast)
+import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( andBitsTerm,
@@ -170,40 +168,34 @@ doPevalShiftRightTerm _ (ConTerm _ n)
       Just $ conTerm zeroBits
 doPevalShiftRightTerm _ _ = Nothing
 
-pevalRotateLeftTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalRotateLeftTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalRotateLeftTerm t n = unaryUnfoldOnce (`doPevalRotateLeftTerm` n) (`rotateLeftTerm` n) t
 
-doPevalRotateLeftTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
+doPevalRotateLeftTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalRotateLeftTerm (ConTerm _ a) (ConTerm _ n)
-  | n >= 0 = Just $ conTerm $ rotateL a (fromIntegral n)
+  | n >= 0 = Just $ conTerm $ symRotate a n -- Just $ conTerm $ rotateL a (fromIntegral n)
 doPevalRotateLeftTerm x (ConTerm _ 0) = Just x
 -- doPevalRotateLeftTerm (RotateLeftTerm _ x (ConTerm _ n)) (ConTerm _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalRotateLeftTerm x (conTerm $ n + n1)
-doPevalRotateLeftTerm x (ConTerm _ a)
-  | case bsize of
-      Just s -> s /= 0 && fromIntegral a >= s
-      Nothing -> False = do
-      cbsize <- bsize
-      Just $ pevalRotateLeftTerm x (conTerm $ a `mod` fromIntegral cbsize)
+doPevalRotateLeftTerm x (ConTerm _ n)
+  | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral bs =
+      Just $ pevalRotateLeftTerm x (conTerm $ n `mod` fromIntegral bs)
   where
-    bsize = bitSizeMaybe (zeroBits :: a)
+    bs = finiteBitSize n
 doPevalRotateLeftTerm _ _ = Nothing
 
-pevalRotateRightTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalRotateRightTerm t n = unaryUnfoldOnce (`doPevalRotateRightTerm` n) (`rotateRightTerm` n) t
 
-doPevalRotateRightTerm :: forall a. (Integral a, Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
+doPevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalRotateRightTerm (ConTerm _ a) (ConTerm _ n)
-  | n >= 0 = Just $ conTerm $ rotateR a (fromIntegral n)
+  | n >= 0 = Just $ conTerm $ symRotate a (-n)
 doPevalRotateRightTerm x (ConTerm _ 0) = Just x
 -- doPevalRotateRightTerm (RotateRightTerm _ x (ConTerm _ n)) (ConTerm _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalRotateRightTerm x (conTerm $ n + n1)
-doPevalRotateRightTerm x (ConTerm _ a)
-  | case bsize of
-      Just s -> s /= 0 && fromIntegral a >= s
-      Nothing -> False = do
-      cbsize <- bsize
-      Just $ pevalRotateRightTerm x (conTerm $ a `mod` fromIntegral cbsize)
+doPevalRotateRightTerm x (ConTerm _ n)
+  | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral bs =
+      Just $ pevalRotateRightTerm x (conTerm $ n `mod` fromIntegral bs)
   where
-    bsize = bitSizeMaybe (zeroBits :: a)
+    bs = finiteBitSize n
 doPevalRotateRightTerm _ _ = Nothing
