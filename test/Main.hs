@@ -21,6 +21,7 @@ import Grisette.Core.Data.Class.SEqTests (seqTests)
 import Grisette.Core.Data.Class.SOrdTests (sordTests)
 import Grisette.Core.Data.Class.SimpleMergeableTests (simpleMergeableTests)
 import Grisette.Core.Data.Class.SubstituteSymTests (substituteSymTests)
+import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.UnionLikeTests (unionLikeTests)
@@ -91,6 +92,7 @@ coreTests =
               sordTests,
               simpleMergeableTests,
               substituteSymTests,
+              symShiftTests,
               toConTests,
               toSymTests,
               unionLikeTests
