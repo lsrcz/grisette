@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,8 +28,8 @@ tested-with:
     GHC == 8.10.7
   , GHC == 9.0.2
   , GHC == 9.2.8
-  , GHC == 9.4.6
-  , GHC == 9.6.2
+  , GHC == 9.4.8
+  , GHC == 9.6.3
 extra-source-files:
     CHANGELOG.md
     README.md

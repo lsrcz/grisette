@@ -49,18 +49,26 @@ jobs:
             }
           - {
               build: stack,
+              arg: "--stack-yaml stack-lts-21.25.yaml",
+              ismain: false,
+              experimental: false,
+              ghc: "948",
+              cachekey: "stack-21.25",
+            }
+          - {
+              build: stack,
               arg: "",
               ismain: true,
               experimental: false,
-              ghc: "946",
-              cachekey: "stack-21.11",
+              ghc: "963",
+              cachekey: "stack-22.4",
             }
           - {
               build: stack,
               arg: "--stack-yaml stack-nightly.yaml",
               ismain: false,
               experimental: false,
-              ghc: "962",
+              ghc: "963",
               cachekey: "stack-nightly",
             }
           - {
@@ -89,19 +97,19 @@ jobs:
             }
           - {
               build: cabal,
-              arg: "--allow-newer=text",
+              arg: "",
               ismain: false,
               experimental: false,
-              ghc: "946",
-              cachekey: "cabal-946",
+              ghc: "948",
+              cachekey: "cabal-948",
             }
           - {
               build: cabal,
-              arg: "--allow-newer=text,mtl",
+              arg: "",
               ismain: false,
               experimental: false,
-              ghc: "962",
-              cachekey: "cabal-962",
+              ghc: "963",
+              cachekey: "cabal-963",
             }
 
     runs-on: ${{ matrix.os }}
