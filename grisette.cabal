@@ -72,6 +72,7 @@ library
       Grisette.Core.Data.Class.ModelOps
       Grisette.Core.Data.Class.SafeDivision
       Grisette.Core.Data.Class.SafeLinearArith
+      Grisette.Core.Data.Class.SafeSymShift
       Grisette.Core.Data.Class.SEq
       Grisette.Core.Data.Class.SignConversion
       Grisette.Core.Data.Class.SimpleMergeable
@@ -218,6 +219,7 @@ test-suite spec
       Grisette.Core.Data.Class.GenSymTests
       Grisette.Core.Data.Class.GPrettyTests
       Grisette.Core.Data.Class.MergeableTests
+      Grisette.Core.Data.Class.SafeSymShiftTests
       Grisette.Core.Data.Class.SEqTests
       Grisette.Core.Data.Class.SimpleMergeableTests
       Grisette.Core.Data.Class.SOrdTests
