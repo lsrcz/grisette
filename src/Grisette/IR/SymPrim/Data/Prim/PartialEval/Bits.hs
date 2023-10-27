@@ -31,6 +31,7 @@ import Data.Bits
   ( Bits
       ( complement,
         isSigned,
+        rotateR,
         shiftR,
         xor,
         zeroBits,
@@ -189,7 +190,14 @@ pevalRotateRightTerm t n = unaryUnfoldOnce (`doPevalRotateRightTerm` n) (`rotate
 
 doPevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalRotateRightTerm (ConTerm _ a) (ConTerm _ n)
-  | n >= 0 = Just $ conTerm $ symRotate a (-n)
+  | n >= 0 =
+      Just . conTerm $
+        rotateR
+          a
+          ( fromIntegral $
+              (fromIntegral n :: Integer)
+                `mod` fromIntegral (finiteBitSize n)
+          )
 doPevalRotateRightTerm x (ConTerm _ 0) = Just x
 -- doPevalRotateRightTerm (RotateRightTerm _ x (ConTerm _ n)) (ConTerm _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalRotateRightTerm x (conTerm $ n + n1)

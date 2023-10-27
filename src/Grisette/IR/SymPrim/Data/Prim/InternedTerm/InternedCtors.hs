@@ -87,6 +87,7 @@ import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
@@ -144,7 +145,6 @@ import Grisette.IR.SymPrim.Data.TabularFun
   )
 import Language.Haskell.TH.Syntax (Lift)
 import Type.Reflection (Typeable, typeRep)
-import Grisette.Core.Data.Class.SymRotate (SymRotate)
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
