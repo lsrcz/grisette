@@ -2,11 +2,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests) where
 
-import Data.Bits (Bits (rotateL, rotateR))
+import Data.Bits (Bits (rotateL, rotateR), FiniteBits)
 import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
+import Grisette.IR.SymPrim (SupportedPrim)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( andBitsTerm,
     complementBitsTerm,
@@ -32,7 +35,9 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@=?))
+import Test.QuickCheck (Property, discard, ioProperty)
 
 bitsTests :: Test
 bitsTests =
@@ -249,9 +254,26 @@ bitsTests =
         ],
       testGroup
         "RotateRight"
-        [ testCase "On concrete" $ do
-            pevalRotateRightTerm (conTerm 0b10100101 :: Term (WordN 8)) (conTerm 2) @=? conTerm 0b1101001
-            pevalRotateRightTerm (conTerm 0b10100101 :: Term (IntN 8)) (conTerm 2) @=? conTerm 0b1101001,
+        [ testProperty "On concrete WordN 1" $
+            concreteSmallRotateRightCorrect @(WordN 1),
+          testProperty "On concrete WordN 2" $
+            concreteSmallRotateRightCorrect @(WordN 2),
+          testProperty "On concrete WordN 3" $
+            concreteSmallRotateRightCorrect @(WordN 3),
+          testProperty "On concrete WordN 4" $
+            concreteSmallRotateRightCorrect @(WordN 4),
+          testProperty "On concrete WordN 8" $
+            concreteSmallRotateRightCorrect @(WordN 8),
+          testProperty "On concrete IntN 1" $
+            concreteSmallRotateRightCorrect @(IntN 1),
+          testProperty "On concrete IntN 2" $
+            concreteSmallRotateRightCorrect @(IntN 2),
+          testProperty "On concrete IntN 3" $
+            concreteSmallRotateRightCorrect @(IntN 3),
+          testProperty "On concrete IntN 4" $
+            concreteSmallRotateRightCorrect @(IntN 4),
+          testProperty "On concrete IntN 8" $
+            concreteSmallRotateRightCorrect @(IntN 8),
           testCase "rotate 0" $ do
             pevalRotateRightTerm (ssymTerm "a" :: Term (WordN 4)) (conTerm 0) @=? ssymTerm "a"
             pevalRotateRightTerm (ssymTerm "a" :: Term (IntN 4)) (conTerm 0) @=? ssymTerm "a",
@@ -278,3 +300,13 @@ bitsTests =
             pevalRotateRightTerm (conTerm 15 :: Term (WordN 128)) (conTerm maxBound) @=? conTerm (rotateL 15 1)
         ]
     ]
+
+concreteSmallRotateRightCorrect ::
+  (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) =>
+  a ->
+  a ->
+  Property
+concreteSmallRotateRightCorrect _ b | b < 0 = discard
+concreteSmallRotateRightCorrect a b = ioProperty $ do
+  pevalRotateRightTerm (conTerm a) (conTerm b)
+    @=? conTerm (rotateR a (fromIntegral b))

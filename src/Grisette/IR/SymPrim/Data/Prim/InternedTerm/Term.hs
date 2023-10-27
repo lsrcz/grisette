@@ -72,6 +72,7 @@ import Grisette.Core.Data.Class.BitVector
   )
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
   ( typeMemoizedCache,
@@ -156,7 +157,6 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
-import Grisette.Core.Data.Class.SymRotate (SymRotate)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
