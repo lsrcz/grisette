@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exported some previously hidden API (`BVSignConversion`, `runFreshTFromIndex`) that we found useful or forgot to export. ([#138](https://github.com/lsrcz/grisette/pull/138), [#139](https://github.com/lsrcz/grisette/pull/139))
 - Provided `mrgRunFreshT` to run `FreshT` with merging. ([#140](https://github.com/lsrcz/grisette/pull/140))
 - Added `Grisette.Data.Class.SignConversion.SignConversion` for types from `Data.Int` and `Data.Word`. ([#142](https://github.com/lsrcz/grisette/pull/142))
+- Added shift functions by symbolic shift amounts. ([#151](https://github.com/lsrcz/grisette/pull/151))
+- Added `apply` for uninterpreted functions. ([#155](https://github.com/lsrcz/grisette/pull/155))
 
 ### Removed
 

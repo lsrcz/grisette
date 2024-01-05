@@ -190,6 +190,7 @@ module Grisette.Core
     SafeDivision (..),
     SafeLinearArith (..),
     Function (..),
+    Apply (..),
 
     -- ** Unsolvable types
 
@@ -1083,7 +1084,7 @@ import Grisette.Core.Data.Class.EvaluateSym
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (..),
   )
-import Grisette.Core.Data.Class.Function (Function (..))
+import Grisette.Core.Data.Class.Function (Apply (..), Function (..))
 import Grisette.Core.Data.Class.GPretty (GPretty (..))
 import Grisette.Core.Data.Class.GenSym
   ( EnumGenBound (..),

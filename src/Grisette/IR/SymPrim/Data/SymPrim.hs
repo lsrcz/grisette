@@ -130,7 +130,7 @@ import Grisette.Core.Data.Class.BitVector
   ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.Function (Apply (FunType, apply), Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
@@ -469,6 +469,10 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
   type Ret (sa =~> sb) = sb
   (SymTabularFun f) # t = wrapTerm $ pevalTabularFunApplyTerm f (underlyingTerm t)
 
+instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa =~> st) where
+  type FunType (sa =~> st) = sa -> FunType st
+  apply uf a = apply (uf # a)
+
 -- |
 -- Symbolic general function type.
 --
@@ -510,6 +514,10 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
   type Ret (sa -~> sb) = sb
   (SymGeneralFun f) # t = wrapTerm $ pevalGeneralFunApplyTerm f (underlyingTerm t)
 
+instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa -~> st) where
+  type FunType (sa -~> st) = sa -> FunType st
+  apply uf a = apply (uf # a)
+
 -- | Construction of general symbolic functions.
 --
 -- >>> f = "a" --> "a" + 1 :: Integer --> Integer
@@ -536,6 +544,22 @@ instance Hashable ARG where
   hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
 
 -- Aggregate instances
+
+instance Apply SymBool where
+  type FunType SymBool = SymBool
+  apply = id
+
+instance Apply SymInteger where
+  type FunType SymInteger = SymInteger
+  apply = id
+
+instance (KnownNat n, 1 <= n) => Apply (SymIntN n) where
+  type FunType (SymIntN n) = SymIntN n
+  apply = id
+
+instance (KnownNat n, 1 <= n) => Apply (SymWordN n) where
+  type FunType (SymWordN n) = SymWordN n
+  apply = id
 
 #define SOLVABLE_SIMPLE(contype, symtype) \
 instance Solvable contype symtype where \
