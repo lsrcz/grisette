@@ -54,7 +54,7 @@ import Grisette.Core.Data.Class.EvaluateSym
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
-import Grisette.Core.Data.Class.Function (Function ((#)))
+import Grisette.Core.Data.Class.Function (Apply (apply), Function ((#)))
 import Grisette.Core.Data.Class.GenSym
   ( genSym,
     genSymSimple,
@@ -1028,10 +1028,23 @@ symPrimTests =
             ],
       testGroup
         "TabularFun"
-        [ testCase "apply" $
+        [ testCase "#" $
             (ssym "a" :: SymInteger =~> SymInteger)
               # ssym "b"
-              @=? SymInteger (pevalTabularFunApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b"))
+              @=? SymInteger (pevalTabularFunApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b")),
+          testCase "apply" $
+            apply
+              (ssym "f" :: SymInteger =~> SymInteger =~> SymInteger)
+              (ssym "a")
+              (ssym "b")
+              @=? SymInteger
+                ( pevalTabularFunApplyTerm
+                    ( pevalTabularFunApplyTerm
+                        (ssymTerm "f" :: Term (Integer =-> Integer =-> Integer))
+                        (ssymTerm "a")
+                    )
+                    (ssymTerm "b")
+                )
         ],
       testGroup
         "GeneralFun"
@@ -1045,7 +1058,15 @@ symPrimTests =
               False
               (buildModel ("a" := (1 :: Integer), "b" := (2 :: Integer), "c" := (3 :: Integer)))
               (con ("a" --> con ("b" --> "a" + "b" + "c")) :: SymInteger -~> SymInteger -~> SymInteger)
-              @=? con ("a" --> con ("b" --> "a" + "b" + 3) :: Integer --> Integer --> Integer)
+              @=? con ("a" --> con ("b" --> "a" + "b" + 3) :: Integer --> Integer --> Integer),
+          testCase "#" $ do
+            let f :: SymInteger -~> SymInteger -~> SymInteger =
+                  con ("a" --> con ("b" --> "a" + "b"))
+            f # ssym "x" @=? con ("b" --> "x" + "b"),
+          testCase "apply" $ do
+            let f :: SymInteger -~> SymInteger -~> SymInteger =
+                  con ("a" --> con ("b" --> "a" + "b"))
+            apply f "x" "y" @=? "x" + "y"
         ],
       testGroup
         "Symbolic size"
