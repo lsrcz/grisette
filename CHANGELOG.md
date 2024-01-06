@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `Grisette.Data.Class.SignConversion.SignConversion` for types from `Data.Int` and `Data.Word`. ([#142](https://github.com/lsrcz/grisette/pull/142))
 - Added shift functions by symbolic shift amounts. ([#151](https://github.com/lsrcz/grisette/pull/151))
 - Added `apply` for uninterpreted functions. ([#155](https://github.com/lsrcz/grisette/pull/155))
+- Added `liftFresh` to lift a `Fresh` into `MonadFresh`. ([#156](https://github.com/lsrcz/grisette/pull/156))
 
 ### Removed
 
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Moved `Grisette.Data.Class.Evaluate` to `Grisette.Data.Class.EvaluateSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Moved `Grisette.Data.Class.Substitute` to `Grisette.Data.Class.SubstituteSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Split the `Grisette.Data.Class.SafeArith` module to `Grisette.Data.Class.SafeDivision` and `Grisette.Data.Class.SafeLinearArith`. ([#146](https://github.com/lsrcz/grisette/pull/146))
+- [Breaking] Changed the API to `MonadFresh`. ([#156](https://github.com/lsrcz/grisette/pull/156))
 
 ## [0.3.1.1] -- 2023-09-29
 

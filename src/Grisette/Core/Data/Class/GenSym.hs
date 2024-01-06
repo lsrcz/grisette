@@ -36,6 +36,8 @@ module Grisette.Core.Data.Class.GenSym
 
     -- * Monad for fresh symbolic value generation
     MonadFresh (..),
+    nextFreshIndex,
+    liftFresh,
     FreshT (FreshT, runFreshTFromIndex),
     Fresh,
     runFreshT,
@@ -83,7 +85,7 @@ import Control.Monad.RWS.Class
   )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
-import Control.Monad.Reader (ReaderT (ReaderT))
+import Control.Monad.Reader (ReaderT)
 import Control.Monad.Signatures (Catch)
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
@@ -279,11 +281,31 @@ nameWithInfo = FreshIdentWithInfo
 -- The monad should be a reader monad for the 'FreshIdent' and a state monad for
 -- the 'FreshIndex'.
 class (Monad m) => MonadFresh m where
-  -- | Increase the index by one and return the new index.
-  nextFreshIndex :: m FreshIndex
+  -- | Get the current index for fresh variable generation.
+  getFreshIndex :: m FreshIndex
+
+  -- | Set the current index for fresh variable generation.
+  setFreshIndex :: FreshIndex -> m ()
 
   -- | Get the identifier.
   getFreshIdent :: m FreshIdent
+
+-- | Get the next fresh index and increase the current index.
+nextFreshIndex :: (MonadFresh m) => m FreshIndex
+nextFreshIndex = do
+  curr <- getFreshIndex
+  let new = curr + 1
+  setFreshIndex new
+  return curr
+
+-- | Lifts an @`Fresh` a@ into any `MonadFresh`.
+liftFresh :: (MonadFresh m) => Fresh a -> m a
+liftFresh (FreshT f) = do
+  index <- nextFreshIndex
+  ident <- getFreshIdent
+  let (a, newIdx) = runIdentity $ f ident index
+  setFreshIndex newIdx
+  return a
 
 -- | A symbolic generation monad transformer.
 -- It is a reader monad transformer for identifiers and
@@ -385,36 +407,44 @@ instance (MonadReader r m) => MonadReader r (FreshT m) where
 instance (MonadRWS r w s m) => MonadRWS r w s (FreshT m)
 
 instance (MonadFresh m) => MonadFresh (ExceptT e m) where
-  nextFreshIndex = ExceptT $ Right <$> nextFreshIndex
-  getFreshIdent = ExceptT $ Right <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m, Monoid w) => MonadFresh (WriterLazy.WriterT w m) where
-  nextFreshIndex = WriterLazy.WriterT $ (,mempty) <$> nextFreshIndex
-  getFreshIdent = WriterLazy.WriterT $ (,mempty) <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m, Monoid w) => MonadFresh (WriterStrict.WriterT w m) where
-  nextFreshIndex = WriterStrict.WriterT $ (,mempty) <$> nextFreshIndex
-  getFreshIdent = WriterStrict.WriterT $ (,mempty) <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m) => MonadFresh (StateLazy.StateT s m) where
-  nextFreshIndex = StateLazy.StateT $ \s -> (,s) <$> nextFreshIndex
-  getFreshIdent = StateLazy.StateT $ \s -> (,s) <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m) => MonadFresh (StateStrict.StateT s m) where
-  nextFreshIndex = StateStrict.StateT $ \s -> (,s) <$> nextFreshIndex
-  getFreshIdent = StateStrict.StateT $ \s -> (,s) <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m) => MonadFresh (ReaderT r m) where
-  nextFreshIndex = ReaderT $ const nextFreshIndex
-  getFreshIdent = ReaderT $ const getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSLazy.RWST r w s m) where
-  nextFreshIndex = RWSLazy.RWST $ \_ s -> (,s,mempty) <$> nextFreshIndex
-  getFreshIdent = RWSLazy.RWST $ \_ s -> (,s,mempty) <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSStrict.RWST r w s m) where
-  nextFreshIndex = RWSStrict.RWST $ \_ s -> (,s,mempty) <$> nextFreshIndex
-  getFreshIdent = RWSStrict.RWST $ \_ s -> (,s,mempty) <$> getFreshIdent
+  getFreshIndex = lift getFreshIndex
+  setFreshIndex newIdx = lift $ setFreshIndex newIdx
+  getFreshIdent = lift getFreshIdent
 
 -- | 'FreshT' specialized with Identity.
 type Fresh = FreshT Identity
@@ -424,7 +454,8 @@ runFresh :: Fresh a -> FreshIdent -> a
 runFresh m ident = runIdentity $ runFreshT m ident
 
 instance (Monad m) => MonadFresh (FreshT m) where
-  nextFreshIndex = FreshT $ \_ idx -> return (idx, idx + 1)
+  getFreshIndex = FreshT $ \_ idx -> return (idx, idx)
+  setFreshIndex newIdx = FreshT $ \_ _ -> return ((), newIdx)
   getFreshIdent = FreshT $ curry return
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
