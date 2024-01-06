@@ -33,6 +33,7 @@ module Grisette.Backend.SBV.Data.SMT.Lowering
   )
 where
 
+import Control.Monad.IO.Class (MonadIO)
 import Data.Bifunctor (Bifunctor (bimap, first, second))
 import Data.Bits
   ( Bits (complement, xor, (.&.), (.|.)),
@@ -43,8 +44,9 @@ import Data.Kind (Type)
 import Data.Maybe (fromMaybe)
 import Data.SBV (SIntegral, sRotateLeft, sRotateRight, sShiftLeft, sShiftRight)
 import qualified Data.SBV as SBV
-import qualified Data.SBV.Control as SBVC
 import qualified Data.SBV.Internals as SBVI
+import qualified Data.SBV.Trans as SBVT
+import qualified Data.SBV.Trans.Control as SBVTC
 import Data.Type.Equality (type (~~))
 import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import GHC.Exts (sortWith)
@@ -624,11 +626,11 @@ lowerSinglePrimUFun _ _ _ = error "Should not call this function"
 class (Monad m) => SBVFreshMonad m where
   sbvFresh :: (SBV.SymVal a) => String -> m (SBV.SBV a)
 
-instance SBVFreshMonad SBV.Symbolic where
-  sbvFresh = SBV.free
+instance (MonadIO m) => SBVFreshMonad (SBVT.SymbolicT m) where
+  sbvFresh = SBVT.free
 
-instance SBVFreshMonad SBVC.Query where
-  sbvFresh = SBVC.freshVar
+instance (MonadIO m) => SBVFreshMonad (SBVTC.QueryT m) where
+  sbvFresh = SBVTC.freshVar
 
 lowerUnaryTerm ::
   forall integerBitWidth a a1 x x1 m.
