@@ -55,7 +55,7 @@ import Generics.Deriving
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalEqvTerm)
 import Grisette.IR.SymPrim.Data.SymPrim
@@ -81,16 +81,16 @@ import Grisette.IR.SymPrim.Data.SymPrim
 --
 -- >>> let a = 1 :: SymInteger
 -- >>> let b = 2 :: SymInteger
--- >>> a ==~ b
+-- >>> a .== b
 -- false
--- >>> a /=~ b
+-- >>> a ./= b
 -- true
 --
 -- >>> let a = "a" :: SymInteger
 -- >>> let b = "b" :: SymInteger
--- >>> a /=~ b
+-- >>> a ./= b
 -- (! (= a b))
--- >>> a /=~ b
+-- >>> a ./= b
 -- (! (= a b))
 --
 -- __Note:__ This type class can be derived for algebraic data types.
@@ -98,27 +98,27 @@ import Grisette.IR.SymPrim.Data.SymPrim
 --
 -- > data X = ... deriving Generic deriving SEq via (Default X)
 class SEq a where
-  (==~) :: a -> a -> SymBool
-  a ==~ b = nots $ a /=~ b
-  {-# INLINE (==~) #-}
-  infix 4 ==~
+  (.==) :: a -> a -> SymBool
+  a .== b = symNot $ a ./= b
+  {-# INLINE (.==) #-}
+  infix 4 .==
 
-  (/=~) :: a -> a -> SymBool
-  a /=~ b = nots $ a ==~ b
-  {-# INLINE (/=~) #-}
-  infix 4 /=~
-  {-# MINIMAL (==~) | (/=~) #-}
+  (./=) :: a -> a -> SymBool
+  a ./= b = symNot $ a .== b
+  {-# INLINE (./=) #-}
+  infix 4 ./=
+  {-# MINIMAL (.==) | (./=) #-}
 
 -- SEq instances
 #define CONCRETE_SEQ(type) \
 instance SEq type where \
-  l ==~ r = con $ l == r; \
-  {-# INLINE (==~) #-}
+  l .== r = con $ l == r; \
+  {-# INLINE (.==) #-}
 
 #define CONCRETE_SEQ_BV(type) \
 instance (KnownNat n, 1 <= n) => SEq (type n) where \
-  l ==~ r = con $ l == r; \
-  {-# INLINE (==~) #-}
+  l .== r = con $ l == r; \
+  {-# INLINE (.==) #-}
 
 #if 1
 CONCRETE_SEQ(Bool)
@@ -153,18 +153,18 @@ deriving via (Default (Either e a)) instance (SEq e, SEq a) => SEq (Either e a)
 
 -- ExceptT
 instance (SEq (m (Either e a))) => SEq (ExceptT e m a) where
-  (ExceptT a) ==~ (ExceptT b) = a ==~ b
-  {-# INLINE (==~) #-}
+  (ExceptT a) .== (ExceptT b) = a .== b
+  {-# INLINE (.==) #-}
 
 -- MaybeT
 instance (SEq (m (Maybe a))) => SEq (MaybeT m a) where
-  (MaybeT a) ==~ (MaybeT b) = a ==~ b
-  {-# INLINE (==~) #-}
+  (MaybeT a) .== (MaybeT b) = a .== b
+  {-# INLINE (.==) #-}
 
 -- ()
 instance SEq () where
-  _ ==~ _ = con True
-  {-# INLINE (==~) #-}
+  _ .== _ = con True
+  {-# INLINE (.==) #-}
 
 -- (,)
 deriving via (Default (a, b)) instance (SEq a, SEq b) => SEq (a, b)
@@ -215,44 +215,44 @@ deriving via
 
 -- Writer
 instance (SEq (m (a, s))) => SEq (WriterLazy.WriterT s m a) where
-  (WriterLazy.WriterT l) ==~ (WriterLazy.WriterT r) = l ==~ r
-  {-# INLINE (==~) #-}
+  (WriterLazy.WriterT l) .== (WriterLazy.WriterT r) = l .== r
+  {-# INLINE (.==) #-}
 
 instance (SEq (m (a, s))) => SEq (WriterStrict.WriterT s m a) where
-  (WriterStrict.WriterT l) ==~ (WriterStrict.WriterT r) = l ==~ r
-  {-# INLINE (==~) #-}
+  (WriterStrict.WriterT l) .== (WriterStrict.WriterT r) = l .== r
+  {-# INLINE (.==) #-}
 
 -- Identity
 instance (SEq a) => SEq (Identity a) where
-  (Identity l) ==~ (Identity r) = l ==~ r
-  {-# INLINE (==~) #-}
+  (Identity l) .== (Identity r) = l .== r
+  {-# INLINE (.==) #-}
 
 -- IdentityT
 instance (SEq (m a)) => SEq (IdentityT m a) where
-  (IdentityT l) ==~ (IdentityT r) = l ==~ r
-  {-# INLINE (==~) #-}
+  (IdentityT l) .== (IdentityT r) = l .== r
+  {-# INLINE (.==) #-}
 
 -- Symbolic types
 #define SEQ_SIMPLE(symtype) \
 instance SEq symtype where \
-  (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
+  (symtype l) .== (symtype r) = SymBool $ pevalEqvTerm l r
 
 #define SEQ_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
-  (symtype l) ==~ (symtype r) = SymBool $ pevalEqvTerm l r
+  (symtype l) .== (symtype r) = SymBool $ pevalEqvTerm l r
 
 #define SEQ_BV_SOME(somety, origty) \
 instance SEq somety where \
-  somety (l :: origty l) ==~ somety (r :: origty r) = \
+  somety (l :: origty l) .== somety (r :: origty r) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> l ==~ r; \
+      Just Refl -> l .== r; \
       Nothing -> con False); \
-  {-# INLINE (==~) #-}; \
-  somety (l :: origty l) /=~ somety (r :: origty r) = \
+  {-# INLINE (.==) #-}; \
+  somety (l :: origty l) ./= somety (r :: origty r) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> l /=~ r; \
+      Just Refl -> l ./= r; \
       Nothing -> con True); \
-  {-# INLINE (/=~) #-}
+  {-# INLINE (./=) #-}
 
 #if 1
 SEQ_SIMPLE(SymBool)
@@ -270,37 +270,37 @@ deriving via (Default VerificationConditions) instance SEq VerificationCondition
 
 -- | Auxiliary class for 'SEq' instance derivation
 class SEq' f where
-  -- | Auxiliary function for '(==~~) derivation
-  (==~~) :: f a -> f a -> SymBool
+  -- | Auxiliary function for '(..==) derivation
+  (..==) :: f a -> f a -> SymBool
 
-  infix 4 ==~~
+  infix 4 ..==
 
 instance SEq' U1 where
-  _ ==~~ _ = con True
-  {-# INLINE (==~~) #-}
+  _ ..== _ = con True
+  {-# INLINE (..==) #-}
 
 instance SEq' V1 where
-  _ ==~~ _ = con True
-  {-# INLINE (==~~) #-}
+  _ ..== _ = con True
+  {-# INLINE (..==) #-}
 
 instance (SEq c) => SEq' (K1 i c) where
-  (K1 a) ==~~ (K1 b) = a ==~ b
-  {-# INLINE (==~~) #-}
+  (K1 a) ..== (K1 b) = a .== b
+  {-# INLINE (..==) #-}
 
 instance (SEq' a) => SEq' (M1 i c a) where
-  (M1 a) ==~~ (M1 b) = a ==~~ b
-  {-# INLINE (==~~) #-}
+  (M1 a) ..== (M1 b) = a ..== b
+  {-# INLINE (..==) #-}
 
 instance (SEq' a, SEq' b) => SEq' (a :+: b) where
-  (L1 a) ==~~ (L1 b) = a ==~~ b
-  (R1 a) ==~~ (R1 b) = a ==~~ b
-  _ ==~~ _ = con False
-  {-# INLINE (==~~) #-}
+  (L1 a) ..== (L1 b) = a ..== b
+  (R1 a) ..== (R1 b) = a ..== b
+  _ ..== _ = con False
+  {-# INLINE (..==) #-}
 
 instance (SEq' a, SEq' b) => SEq' (a :*: b) where
-  (a1 :*: b1) ==~~ (a2 :*: b2) = (a1 ==~~ a2) &&~ (b1 ==~~ b2)
-  {-# INLINE (==~~) #-}
+  (a1 :*: b1) ..== (a2 :*: b2) = (a1 ..== a2) .&& (b1 ..== b2)
+  {-# INLINE (..==) #-}
 
 instance (Generic a, SEq' (Rep a)) => SEq (Default a) where
-  Default l ==~ Default r = from l ==~~ from r
-  {-# INLINE (==~) #-}
+  Default l .== Default r = from l ..== from r
+  {-# INLINE (.==) #-}

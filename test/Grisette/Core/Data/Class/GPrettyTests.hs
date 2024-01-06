@@ -20,7 +20,7 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -346,12 +346,12 @@ gprettyTests =
         [ testGPretty
             "enough space"
             80
-            ("a" &&~ "b" :: SymBool)
+            ("a" .&& "b" :: SymBool)
             "(&& a b)",
           testGPretty
             "not enough space"
             6
-            ("a" &&~ "b" :: SymBool)
+            ("a" .&& "b" :: SymBool)
             "..."
         ]
     ]

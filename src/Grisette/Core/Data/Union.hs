@@ -41,8 +41,8 @@ import Grisette.Core.Data.Class.GPretty
   ( GPretty (gprettyPrec),
     condEnclose,
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -81,16 +81,16 @@ data Union a
     UnionSingle a
   | -- | A if value
     UnionIf
+      -- | Cached leftmost value
       a
-      -- ^ Cached leftmost value
+      -- | Is merged invariant already maintained?
       !Bool
-      -- ^ Is merged invariant already maintained?
+      -- | If condition
       !SymBool
-      -- ^ If condition
+      -- | True branch
       (Union a)
-      -- ^ True branch
+      -- | False branch
       (Union a)
-      -- ^ False branch
   deriving (Generic, Eq, Lift, Generic1)
 
 instance Eq1 Union where
@@ -242,10 +242,10 @@ ifWithStrategyInv _ (Con v) t f
   | otherwise = f
 ifWithStrategyInv strategy cond (UnionIf _ True condTrue tt _) f
   | cond == condTrue = ifWithStrategyInv strategy cond tt f
--- {| nots cond == condTrue || cond == nots condTrue = ifWithStrategyInv strategy cond ft f
+-- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond ft f
 ifWithStrategyInv strategy cond t (UnionIf _ True condFalse _ ff)
   | cond == condFalse = ifWithStrategyInv strategy cond t ff
--- {| nots cond == condTrue || cond == nots condTrue = ifWithStrategyInv strategy cond t tf -- buggy here condTrue
+-- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond t tf -- buggy here condTrue
 ifWithStrategyInv (SimpleStrategy m) cond (UnionSingle l) (UnionSingle r) = UnionSingle $ m cond l r
 ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFalse = case (ifTrue, ifFalse) of
   (UnionSingle _, UnionSingle _) -> ssUnionIf cond ifTrue ifFalse
@@ -256,7 +256,7 @@ ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFal
     ssUnionIf cond' ifTrue' ifFalse'
       | idxt < idxf = ifWithLeftMost True cond' ifTrue' ifFalse'
       | idxt == idxf = ifWithStrategyInv (substrategy idxt) cond' ifTrue' ifFalse'
-      | otherwise = ifWithLeftMost True (nots cond') ifFalse' ifTrue'
+      | otherwise = ifWithLeftMost True (symNot cond') ifFalse' ifTrue'
       where
         idxt = idxFun $ leftMost ifTrue'
         idxf = idxFun $ leftMost ifFalse'
@@ -264,8 +264,8 @@ ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFal
     sgUnionIf cond' ifTrue' ifFalse'@(UnionIf _ True condf ft ff)
       | idxft == idxff = ssUnionIf cond' ifTrue' ifFalse'
       | idxt < idxft = ifWithLeftMost True cond' ifTrue' ifFalse'
-      | idxt == idxft = ifWithLeftMost True (cond' ||~ condf) (ifWithStrategyInv (substrategy idxt) cond' ifTrue' ft) ff
-      | otherwise = ifWithLeftMost True (nots cond' &&~ condf) ft (ifWithStrategyInv strategy cond' ifTrue' ff)
+      | idxt == idxft = ifWithLeftMost True (cond' .|| condf) (ifWithStrategyInv (substrategy idxt) cond' ifTrue' ft) ff
+      | otherwise = ifWithLeftMost True (symNot cond' .&& condf) ft (ifWithStrategyInv strategy cond' ifTrue' ff)
       where
         idxft = idxFun $ leftMost ft
         idxff = idxFun $ leftMost ff
@@ -274,9 +274,9 @@ ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFal
     {-# INLINE sgUnionIf #-}
     gsUnionIf cond' ifTrue'@(UnionIf _ True condt tt tf) ifFalse'
       | idxtt == idxtf = ssUnionIf cond' ifTrue' ifFalse'
-      | idxtt < idxf = ifWithLeftMost True (cond' &&~ condt) tt $ ifWithStrategyInv strategy cond' tf ifFalse'
-      | idxtt == idxf = ifWithLeftMost True (nots cond' ||~ condt) (ifWithStrategyInv (substrategy idxf) cond' tt ifFalse') tf
-      | otherwise = ifWithLeftMost True (nots cond') ifFalse' ifTrue'
+      | idxtt < idxf = ifWithLeftMost True (cond' .&& condt) tt $ ifWithStrategyInv strategy cond' tf ifFalse'
+      | idxtt == idxf = ifWithLeftMost True (symNot cond' .|| condt) (ifWithStrategyInv (substrategy idxf) cond' tt ifFalse') tf
+      | otherwise = ifWithLeftMost True (symNot cond') ifFalse' ifTrue'
       where
         idxtt = idxFun $ leftMost tt
         idxtf = idxFun $ leftMost tf
@@ -286,13 +286,13 @@ ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFal
     ggUnionIf cond' ifTrue'@(UnionIf _ True condt tt tf) ifFalse'@(UnionIf _ True condf ft ff)
       | idxtt == idxtf = sgUnionIf cond' ifTrue' ifFalse'
       | idxft == idxff = gsUnionIf cond' ifTrue' ifFalse'
-      | idxtt < idxft = ifWithLeftMost True (cond' &&~ condt) tt $ ifWithStrategyInv strategy cond' tf ifFalse'
+      | idxtt < idxft = ifWithLeftMost True (cond' .&& condt) tt $ ifWithStrategyInv strategy cond' tf ifFalse'
       | idxtt == idxft =
-          let newCond = ites cond' condt condf
+          let newCond = symIte cond' condt condf
               newUnionIfTrue = ifWithStrategyInv (substrategy idxtt) cond' tt ft
               newUnionIfFalse = ifWithStrategyInv strategy cond' tf ff
            in ifWithLeftMost True newCond newUnionIfTrue newUnionIfFalse
-      | otherwise = ifWithLeftMost True (nots cond' &&~ condf) ft $ ifWithStrategyInv strategy cond' ifTrue' ff
+      | otherwise = ifWithLeftMost True (symNot cond' .&& condf) ft $ ifWithStrategyInv strategy cond' ifTrue' ff
       where
         idxtt = idxFun $ leftMost tt
         idxtf = idxFun $ leftMost tf

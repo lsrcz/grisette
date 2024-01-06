@@ -44,7 +44,7 @@ module Grisette.Core.Data.Class.SimpleMergeable
     onUnion2,
     onUnion3,
     onUnion4,
-    (#~),
+    (.#),
   )
 where
 
@@ -76,8 +76,8 @@ import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Exception (AssertionError)
 import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable',
@@ -732,8 +732,8 @@ class (UnionLike u) => UnionPrjOp (u :: Type -> Type) where
     case (singleView u, ifView u) of
       (Just x, _) -> [(con True, x)]
       (_, Just (c, l, r)) ->
-        fmap (first (&&~ c)) (toGuardedList l)
-          ++ fmap (first (&&~ nots c)) (toGuardedList r)
+        fmap (first (.&& c)) (toGuardedList l)
+          ++ fmap (first (.&& symNot c)) (toGuardedList r)
       _ -> error "Should not happen"
 
 -- | Pattern match to extract single values with 'singleView'.
@@ -809,31 +809,31 @@ onUnion4 f ua ub uc ud = simpleMerge $ f <$> ua <*> ub <*> uc <*> ud
 -- | Helper for applying functions on 'UnionPrjOp' and 'SimpleMergeable'.
 --
 -- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
--- >>> f #~ (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
+-- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
 -- {If (&& b a) 1 (If b 2 (If a 3 4))}
-(#~) ::
+(.#) ::
   (Function f, SimpleMergeable (Ret f), UnionPrjOp u, Functor u) =>
   f ->
   u (Arg f) ->
   Ret f
-(#~) f u = simpleMerge $ fmap (f #) u
-{-# INLINE (#~) #-}
+(.#) f u = simpleMerge $ fmap (f #) u
+{-# INLINE (.#) #-}
 
-infixl 9 #~
+infixl 9 .#
 
 #define SIMPLE_MERGEABLE_SIMPLE(symtype) \
 instance SimpleMergeable symtype where \
-  mrgIte = ites; \
+  mrgIte = symIte; \
   {-# INLINE mrgIte #-}
 
 #define SIMPLE_MERGEABLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SimpleMergeable (symtype n) where \
-  mrgIte = ites; \
+  mrgIte = symIte; \
   {-# INLINE mrgIte #-}
 
 #define SIMPLE_MERGEABLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SimpleMergeable (sa op sb) where \
-  mrgIte = ites; \
+  mrgIte = symIte; \
   {-# INLINE mrgIte #-}
 
 #if 1

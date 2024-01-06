@@ -40,11 +40,11 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.LogicalOp
-  ( LogicalOp ((&&~), (||~)),
+  ( LogicalOp ((.&&), (.||)),
   )
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((<~), (>=~), (>~)))
+import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
+import Grisette.Core.Data.Class.SOrd (SOrd ((.<), (.>), (.>=)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( merge,
     mrgIf,
@@ -229,10 +229,10 @@ instance SafeLinearArith ArithException SymInteger where
 instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) where
   safeAdd ls rs =
     mrgIf
-      (ls >~ 0)
-      (mrgIf (rs >~ 0 &&~ res <~ 0) (throwError Overflow) (return res))
+      (ls .> 0)
+      (mrgIf (rs .> 0 .&& res .< 0) (throwError Overflow) (return res))
       ( mrgIf
-          (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0)
+          (ls .< 0 .&& rs .< 0 .&& res .>= 0)
           (throwError Underflow)
           (mrgSingle res)
       )
@@ -240,23 +240,23 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       res = ls + rs
   safeAdd' f ls rs =
     mrgIf
-      (ls >~ 0)
-      (mrgIf (rs >~ 0 &&~ res <~ 0) (throwError $ f Overflow) (return res))
+      (ls .> 0)
+      (mrgIf (rs .> 0 .&& res .< 0) (throwError $ f Overflow) (return res))
       ( mrgIf
-          (ls <~ 0 &&~ rs <~ 0 &&~ res >=~ 0)
+          (ls .< 0 .&& rs .< 0 .&& res .>= 0)
           (throwError $ f Underflow)
           (mrgSingle res)
       )
     where
       res = ls + rs
-  safeNeg v = mrgIf (v ==~ con minBound) (throwError Overflow) (mrgSingle $ -v)
-  safeNeg' f v = mrgIf (v ==~ con minBound) (throwError $ f Overflow) (mrgSingle $ -v)
+  safeNeg v = mrgIf (v .== con minBound) (throwError Overflow) (mrgSingle $ -v)
+  safeNeg' f v = mrgIf (v .== con minBound) (throwError $ f Overflow) (mrgSingle $ -v)
   safeMinus ls rs =
     mrgIf
-      (ls >=~ 0)
-      (mrgIf (rs <~ 0 &&~ res <~ 0) (throwError Overflow) (return res))
+      (ls .>= 0)
+      (mrgIf (rs .< 0 .&& res .< 0) (throwError Overflow) (return res))
       ( mrgIf
-          (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0)
+          (ls .< 0 .&& rs .> 0 .&& res .> 0)
           (throwError Underflow)
           (mrgSingle res)
       )
@@ -264,10 +264,10 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       res = ls - rs
   safeMinus' f ls rs =
     mrgIf
-      (ls >=~ 0)
-      (mrgIf (rs <~ 0 &&~ res <~ 0) (throwError $ f Overflow) (return res))
+      (ls .>= 0)
+      (mrgIf (rs .< 0 .&& res .< 0) (throwError $ f Overflow) (return res))
       ( mrgIf
-          (ls <~ 0 &&~ rs >~ 0 &&~ res >~ 0)
+          (ls .< 0 .&& rs .> 0 .&& res .> 0)
           (throwError $ f Underflow)
           (mrgSingle res)
       )
@@ -277,30 +277,30 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
 instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) where
   safeAdd ls rs =
     mrgIf
-      (ls >~ res ||~ rs >~ res)
+      (ls .> res .|| rs .> res)
       (throwError Overflow)
       (mrgSingle res)
     where
       res = ls + rs
   safeAdd' f ls rs =
     mrgIf
-      (ls >~ res ||~ rs >~ res)
+      (ls .> res .|| rs .> res)
       (throwError $ f Overflow)
       (mrgSingle res)
     where
       res = ls + rs
-  safeNeg v = mrgIf (v /=~ 0) (throwError Underflow) (mrgSingle v)
-  safeNeg' f v = mrgIf (v /=~ 0) (throwError $ f Underflow) (mrgSingle v)
+  safeNeg v = mrgIf (v ./= 0) (throwError Underflow) (mrgSingle v)
+  safeNeg' f v = mrgIf (v ./= 0) (throwError $ f Underflow) (mrgSingle v)
   safeMinus ls rs =
     mrgIf
-      (rs >~ ls)
+      (rs .> ls)
       (throwError Underflow)
       (mrgSingle res)
     where
       res = ls - rs
   safeMinus' f ls rs =
     mrgIf
-      (rs >~ ls)
+      (rs .> ls)
       (throwError $ f Underflow)
       (mrgSingle res)
     where

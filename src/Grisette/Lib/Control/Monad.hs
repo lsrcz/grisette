@@ -16,8 +16,8 @@ module Grisette.Lib.Control.Monad
     mrgReturnWithStrategy,
     mrgBindWithStrategy,
     mrgReturn,
-    (>>=~),
-    (>>~),
+    (.>>=),
+    (.>>),
     mrgFoldM,
     mrgMzero,
     mrgMplus,
@@ -53,9 +53,9 @@ mrgReturn = merge . return
 {-# INLINE mrgReturn #-}
 
 -- | '>>=' with 'MergingStrategy' knowledge propagation.
-(>>=~) :: (MonadUnion u, Mergeable b) => u a -> (a -> u b) -> u b
-a >>=~ f = merge $ a >>= f
-{-# INLINE (>>=~) #-}
+(.>>=) :: (MonadUnion u, Mergeable b) => u a -> (a -> u b) -> u b
+a .>>= f = merge $ a >>= f
+{-# INLINE (.>>=) #-}
 
 -- | 'foldM' with 'MergingStrategy' knowledge propagation.
 mrgFoldM :: (MonadUnion m, Mergeable b, Foldable t) => (b -> a -> m b) -> b -> t a -> m b
@@ -65,9 +65,9 @@ mrgFoldM = mrgFoldlM
 -- | '>>' with 'MergingStrategy' knowledge propagation.
 --
 -- This is usually more efficient than calling the original '>>' and merge the results.
-(>>~) :: forall m a b. (MonadUnion m, Mergeable b) => m a -> m b -> m b
-a >>~ f = merge $ mrgFmap (const ()) a >> f
-{-# INLINE (>>~) #-}
+(.>>) :: forall m a b. (MonadUnion m, Mergeable b) => m a -> m b -> m b
+a .>> f = merge $ mrgFmap (const ()) a >> f
+{-# INLINE (.>>) #-}
 
 -- | 'mzero' with 'MergingStrategy' knowledge propagation.
 mrgMzero :: forall m a. (MonadUnion m, Mergeable a, MonadPlus m) => m a

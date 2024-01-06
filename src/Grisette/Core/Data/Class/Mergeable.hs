@@ -119,7 +119,7 @@ import Grisette.Core.Data.BV
     SomeWordN (SomeWordN),
     WordN (WordN),
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -194,13 +194,13 @@ resolveStrategy' x = go
 -- The 'SimpleStrategy' merges values with a simple merge function.
 -- For example,
 --
---    * the symbolic boolean values can be directly merged with 'ites'.
+--    * the symbolic boolean values can be directly merged with 'symIte'.
 --
 --    * the set @{1}@, which is a subset of the values of the type @Integer@,
 --        can be simply merged as the set contains only a single value.
 --
 --    * all the 'Just' values of the type @Maybe SymBool@ can be simply merged
---        by merging the wrapped symbolic boolean with 'ites'.
+--        by merging the wrapped symbolic boolean with 'symIte'.
 --
 -- The 'SortedStrategy' merges values by first grouping the values with an
 -- indexing function, and the values with the same index will be organized as
@@ -243,7 +243,7 @@ data MergingStrategy a where
   --
   -- For symbolic booleans, we can implement its merge strategy as follows:
   --
-  -- > SimpleStrategy ites :: MergingStrategy SymBool
+  -- > SimpleStrategy symIte :: MergingStrategy SymBool
   SimpleStrategy ::
     -- | Merge function.
     (SymBool -> a -> a -> a) ->
@@ -261,7 +261,7 @@ data MergingStrategy a where
   -- >   (\idx ->
   -- >      if idx
   -- >        then SimpleStrategy $ \_ t _ -> t
-  -- >        else SimpleStrategy $ \cond (Just l) (Just r) -> Just $ ites cond l r)
+  -- >        else SimpleStrategy $ \cond (Just l) (Just r) -> Just $ symIte cond l r)
   SortedStrategy ::
     (Ord idx, Typeable idx, Show idx) =>
     -- | Indexing function
@@ -925,15 +925,15 @@ deriving via (Default1 Monoid.Sum) instance Mergeable1 Monoid.Sum
 
 #define MERGEABLE_SIMPLE(symtype) \
 instance Mergeable symtype where \
-  rootStrategy = SimpleStrategy ites
+  rootStrategy = SimpleStrategy symIte
 
 #define MERGEABLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
-  rootStrategy = SimpleStrategy ites
+  rootStrategy = SimpleStrategy symIte
 
 #define MERGEABLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Mergeable (sa op sb) where \
-  rootStrategy = SimpleStrategy ites
+  rootStrategy = SimpleStrategy symIte
 
 #if 1
 MERGEABLE_SIMPLE(SymBool)
@@ -952,7 +952,7 @@ instance Mergeable SomeSymIntN where
           SimpleStrategy
             ( \c (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) ->
                 case unsafeAxiom @l @r of
-                  Refl -> SomeSymIntN $ ites c l r
+                  Refl -> SomeSymIntN $ symIte c l r
             )
       )
 
@@ -964,7 +964,7 @@ instance Mergeable SomeSymWordN where
           SimpleStrategy
             ( \c (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) ->
                 case unsafeAxiom @l @r of
-                  Refl -> SomeSymWordN $ ites c l r
+                  Refl -> SomeSymWordN $ symIte c l r
             )
       )
 

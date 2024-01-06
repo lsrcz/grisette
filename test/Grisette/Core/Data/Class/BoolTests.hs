@@ -1,7 +1,7 @@
 module Grisette.Core.Data.Class.BoolTests (boolTests) where
 
 import Grisette.Core.Data.Class.LogicalOp
-  ( LogicalOp (implies, nots, xors, (&&~), (||~)),
+  ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -14,9 +14,9 @@ data CustomAndBool
   deriving (Show, Eq)
 
 instance LogicalOp CustomAndBool where
-  nots (CANot x) = x
-  nots x = CANot x
-  (&&~) = CAAnd
+  symNot (CANot x) = x
+  symNot x = CANot x
+  (.&&) = CAAnd
 
 data CustomOrBool
   = COSBool String
@@ -25,9 +25,9 @@ data CustomOrBool
   deriving (Show, Eq)
 
 instance LogicalOp CustomOrBool where
-  nots (CONot x) = x
-  nots x = CONot x
-  (||~) = COOr
+  symNot (CONot x) = x
+  symNot x = CONot x
+  (.||) = COOr
 
 boolTests :: Test
 boolTests =
@@ -37,38 +37,38 @@ boolTests =
         "LogicalOp"
         [ testGroup
             "Use and"
-            [ testCase "nots" $
-                nots (CASBool "a") @?= CANot (CASBool "a"),
-              testCase "&&~" $
+            [ testCase "symNot" $
+                symNot (CASBool "a") @?= CANot (CASBool "a"),
+              testCase ".&&" $
                 CASBool "a"
-                  &&~ CASBool "b"
+                  .&& CASBool "b"
                   @?= CAAnd (CASBool "a") (CASBool "b"),
-              testCase "||~" $
+              testCase ".||" $
                 CASBool "a"
-                  ||~ CASBool "b"
+                  .|| CASBool "b"
                   @?= CANot (CAAnd (CANot $ CASBool "a") (CANot $ CASBool "b"))
             ],
           testGroup
             "Use or"
-            [ testCase "nots" $
-                nots (COSBool "a") @?= CONot (COSBool "a"),
-              testCase "&&~" $
+            [ testCase "symNot" $
+                symNot (COSBool "a") @?= CONot (COSBool "a"),
+              testCase ".&&" $
                 COSBool "a"
-                  &&~ COSBool "b"
+                  .&& COSBool "b"
                   @?= CONot (COOr (CONot $ COSBool "a") (CONot $ COSBool "b")),
-              testCase "||~" $
+              testCase ".||" $
                 COSBool "a"
-                  ||~ COSBool "b"
+                  .|| COSBool "b"
                   @?= COOr (COSBool "a") (COSBool "b"),
-              testCase "xors" $
+              testCase "symXor" $
                 COSBool "a"
-                  `xors` COSBool "b"
+                  `symXor` COSBool "b"
                   @?= COOr
                     (CONot (COOr (CONot (COSBool "a")) (COSBool "b")))
                     (CONot (COOr (COSBool "a") (CONot (COSBool "b")))),
-              testCase "implies" $
+              testCase "symImplies" $
                 COSBool "a"
-                  `implies` COSBool "b"
+                  `symImplies` COSBool "b"
                   @?= COOr
                     (CONot (COSBool "a"))
                     (COSBool "b")

@@ -23,8 +23,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default), Generic)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
-import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
+import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalEqvTerm)
@@ -41,8 +41,8 @@ data A = A1 | A2 SymBool | A3 SymBool SymBool
 
 concreteSEqOkProp :: (HasCallStack, SEq a, Eq a) => (a, a) -> Assertion
 concreteSEqOkProp (i, j) = do
-  i ==~ j @=? con (i == j)
-  i /=~ j @=? con (i /= j)
+  i .== j @=? con (i == j)
+  i ./= j @=? con (i /= j)
 
 seqTests :: Test
 seqTests =
@@ -57,25 +57,25 @@ seqTests =
                 traverse_
                   ( \(i, j) ->
                       conBool i
-                        ==~ conBool j
+                        .== conBool j
                         @=? conBool (i == j)
                   )
                   [(x, y) | x <- bools, y <- bools],
               testCase "conBool True vs SymBool" $ do
-                conBool True ==~ ssymBool "a" @=? ssymBool "a",
+                conBool True .== ssymBool "a" @=? ssymBool "a",
               testCase "conBool False vs SymBool" $ do
-                conBool False ==~ ssymBool "a" @=? nots (ssymBool "a"),
+                conBool False .== ssymBool "a" @=? symNot (ssymBool "a"),
               testCase "SymBool vs conBool True" $ do
-                ssymBool "a" ==~ conBool True @=? ssymBool "a",
+                ssymBool "a" .== conBool True @=? ssymBool "a",
               testCase "SymBool vs conBool False" $ do
-                ssymBool "a" ==~ conBool False @=? nots (ssymBool "a"),
+                ssymBool "a" .== conBool False @=? symNot (ssymBool "a"),
               testCase "SymBool vs same SymBool" $ do
-                ssymBool "a" ==~ ssymBool "a" @=? conBool True,
+                ssymBool "a" .== ssymBool "a" @=? conBool True,
               testCase "SymBool vs different SymBool" $ do
                 let SymBool terma = ssymBool "a"
                     SymBool termb = ssymBool "b"
                 ssymBool "a"
-                  ==~ ssymBool "b"
+                  .== ssymBool "b"
                   @=? SymBool (pevalEqvTerm terma termb)
             ],
           testProperty "Bool" (ioProperty . concreteSEqOkProp @Bool),
@@ -99,19 +99,19 @@ seqTests =
                 "[SymBool]"
                 [ testCase "Same length 1" $
                     [ssymBool "a"]
-                      ==~ [ssymBool "b"]
+                      .== [ssymBool "b"]
                       @=? ssymBool "a"
-                        ==~ ssymBool "b",
+                      .== ssymBool "b",
                   testCase "Same length 2" $
                     [ssymBool "a", ssymBool "b"]
-                      ==~ [ssymBool "c", ssymBool "d"]
-                      @=? (ssymBool "a" ==~ ssymBool "c")
-                        &&~ (ssymBool "b" ==~ ssymBool "d"),
+                      .== [ssymBool "c", ssymBool "d"]
+                      @=? (ssymBool "a" .== ssymBool "c")
+                      .&& (ssymBool "b" .== ssymBool "d"),
                   testCase "length 1 vs length 0" $
-                    [ssymBool "a"] ==~ [] @=? conBool False,
+                    [ssymBool "a"] .== [] @=? conBool False,
                   testCase "length 1 vs length 2" $
                     [ssymBool "a"]
-                      ==~ [ssymBool "c", ssymBool "d"]
+                      .== [ssymBool "c", ssymBool "d"]
                       @=? conBool False
                 ]
             ],
@@ -122,16 +122,16 @@ seqTests =
               testGroup
                 "Maybe SymBool"
                 [ testCase "Nothing vs Nothing" $
-                    (Nothing :: Maybe SymBool) ==~ Nothing @=? conBool True,
+                    (Nothing :: Maybe SymBool) .== Nothing @=? conBool True,
                   testCase "Just vs Nothing" $
-                    Just (ssymBool "a") ==~ Nothing @=? conBool False,
+                    Just (ssymBool "a") .== Nothing @=? conBool False,
                   testCase "Nothing vs Just" $
-                    Nothing ==~ Just (ssymBool "a") @=? conBool False,
+                    Nothing .== Just (ssymBool "a") @=? conBool False,
                   testCase "Just vs Just" $
                     Just (ssymBool "a")
-                      ==~ Just (ssymBool "b")
+                      .== Just (ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b"
+                      .== ssymBool "b"
                 ]
             ],
           testGroup
@@ -142,22 +142,22 @@ seqTests =
                 "Either SymBool SymBool"
                 [ testCase "Left vs Left" $
                     (Left (ssymBool "a") :: Either SymBool SymBool)
-                      ==~ Left (ssymBool "b")
+                      .== Left (ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b",
+                      .== ssymBool "b",
                   testCase "Right vs Left" $
                     (Right (ssymBool "a") :: Either SymBool SymBool)
-                      ==~ Left (ssymBool "b")
+                      .== Left (ssymBool "b")
                       @=? conBool False,
                   testCase "Left vs Right" $
                     (Left (ssymBool "a") :: Either SymBool SymBool)
-                      ==~ Right (ssymBool "b")
+                      .== Right (ssymBool "b")
                       @=? conBool False,
                   testCase "Right vs Right" $
                     (Right (ssymBool "a") :: Either SymBool SymBool)
-                      ==~ Right (ssymBool "b")
+                      .== Right (ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b"
+                      .== ssymBool "b"
                 ]
             ],
           testGroup
@@ -170,45 +170,45 @@ seqTests =
                 "MaybeT Maybe SymBool"
                 [ testCase "MaybeT Nothing vs MaybeT Nothing" $
                     (MaybeT Nothing :: MaybeT Maybe SymBool)
-                      ==~ MaybeT Nothing
+                      .== MaybeT Nothing
                       @=? conBool True,
                   testCase "MaybeT Nothing vs MaybeT (Just Nothing)" $
                     (MaybeT Nothing :: MaybeT Maybe SymBool)
-                      ==~ MaybeT (Just Nothing)
+                      .== MaybeT (Just Nothing)
                       @=? conBool False,
                   testCase "MaybeT Nothing vs MaybeT (Just (Just v))" $
                     (MaybeT Nothing :: MaybeT Maybe SymBool)
-                      ==~ MaybeT (Just (Just (ssymBool "a")))
+                      .== MaybeT (Just (Just (ssymBool "a")))
                       @=? conBool False,
                   testCase "MaybeT (Just Nothing) vs MaybeT Nothing" $
                     MaybeT (Just Nothing)
-                      ==~ (MaybeT Nothing :: MaybeT Maybe SymBool)
+                      .== (MaybeT Nothing :: MaybeT Maybe SymBool)
                       @=? conBool False,
                   testCase "MaybeT (Just (Just v)) vs MaybeT Nothing" $
                     MaybeT (Just (Just (ssymBool "a")))
-                      ==~ (MaybeT Nothing :: MaybeT Maybe SymBool)
+                      .== (MaybeT Nothing :: MaybeT Maybe SymBool)
                       @=? conBool False,
                   testCase "MaybeT (Just Nothing) vs MaybeT (Just Nothing)" $
                     MaybeT (Just Nothing)
-                      ==~ (MaybeT (Just Nothing) :: MaybeT Maybe SymBool)
+                      .== (MaybeT (Just Nothing) :: MaybeT Maybe SymBool)
                       @=? conBool True,
                   testCase "MaybeT (Just (Just v)) vs MaybeT (Just Nothing)" $
                     MaybeT (Just (Just (ssymBool "a")))
-                      ==~ (MaybeT (Just Nothing) :: MaybeT Maybe SymBool)
+                      .== (MaybeT (Just Nothing) :: MaybeT Maybe SymBool)
                       @=? conBool False,
                   testCase "MaybeT (Just Nothing) vs MaybeT (Just (Just v))" $
                     MaybeT (Just Nothing)
-                      ==~ ( MaybeT (Just (Just (ssymBool "b"))) ::
+                      .== ( MaybeT (Just (Just (ssymBool "b"))) ::
                               MaybeT Maybe SymBool
                           )
                       @=? conBool False,
                   testCase "MaybeT (Just (Just v)) vs MaybeT (Just (Just v))" $
                     MaybeT (Just (Just (ssymBool "a")))
-                      ==~ ( MaybeT (Just (Just (ssymBool "b"))) ::
+                      .== ( MaybeT (Just (Just (ssymBool "b"))) ::
                               MaybeT Maybe SymBool
                           )
                       @=? ssymBool "a"
-                        ==~ ssymBool "b"
+                      .== ssymBool "b"
                 ]
             ],
           testGroup
@@ -221,54 +221,54 @@ seqTests =
                 "ExceptT SymBool Maybe SymBool"
                 [ testCase "ExceptT Nothing vs ExceptT Nothing" $
                     (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                      ==~ ExceptT Nothing
+                      .== ExceptT Nothing
                       @=? conBool True,
                   testCase "ExceptT Nothing vs ExceptT (Just (Left v))" $
                     (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                      ==~ ExceptT (Just (Left (ssymBool "a")))
+                      .== ExceptT (Just (Left (ssymBool "a")))
                       @=? conBool False,
                   testCase "ExceptT Nothing vs ExceptT (Just (Right v))" $
                     (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                      ==~ ExceptT (Just (Right (ssymBool "a")))
+                      .== ExceptT (Just (Right (ssymBool "a")))
                       @=? conBool False,
                   testCase "ExceptT (Just (Left v)) vs ExceptT Nothing" $
                     ExceptT (Just (Left (ssymBool "a")))
-                      ==~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                      .== (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                       @=? conBool False,
                   testCase "ExceptT (Just (Right v)) vs ExceptT Nothing" $
                     ExceptT (Just (Right (ssymBool "a")))
-                      ==~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                      .== (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                       @=? conBool False,
                   testCase
                     "ExceptT (Just (Left v)) vs ExceptT (Just (Left v))"
                     $ ExceptT (Just (Left (ssymBool "a")))
-                      ==~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                      .== ( ExceptT (Just (Left (ssymBool "b"))) ::
                               ExceptT SymBool Maybe SymBool
                           )
                       @=? ssymBool "a"
-                        ==~ ssymBool "b",
+                      .== ssymBool "b",
                   testCase
                     "ExceptT (Just (Right v)) vs ExceptT (Just (Left v))"
                     $ ExceptT (Just (Right (ssymBool "a")))
-                      ==~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                      .== ( ExceptT (Just (Left (ssymBool "b"))) ::
                               ExceptT SymBool Maybe SymBool
                           )
                       @=? conBool False,
                   testCase
                     "ExceptT (Just (Left v)) vs ExceptT (Just (Right v))"
                     $ ExceptT (Just (Left (ssymBool "a")))
-                      ==~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                      .== ( ExceptT (Just (Right (ssymBool "b"))) ::
                               ExceptT SymBool Maybe SymBool
                           )
                       @=? conBool False,
                   testCase
                     "ExceptT (Just (Right v)) vs ExceptT (Just (Right v))"
                     $ ExceptT (Just (Right (ssymBool "a")))
-                      ==~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                      .== ( ExceptT (Just (Right (ssymBool "b"))) ::
                               ExceptT SymBool Maybe SymBool
                           )
                       @=? ssymBool "a"
-                        ==~ ssymBool "b"
+                      .== ssymBool "b"
                 ]
             ],
           testProperty "()" (ioProperty . concreteSEqOkProp @()),
@@ -278,11 +278,11 @@ seqTests =
                 ioProperty . concreteSEqOkProp @(Integer, Integer),
               testCase "(SymBool, SymBool)" $ do
                 (ssymBool "a", ssymBool "c")
-                  ==~ (ssymBool "b", ssymBool "d")
+                  .== (ssymBool "b", ssymBool "d")
                   @=? ssymBool "a"
-                    ==~ ssymBool "b"
-                    &&~ ssymBool "c"
-                    ==~ ssymBool "d"
+                  .== ssymBool "b"
+                  .&& ssymBool "c"
+                  .== ssymBool "d"
             ],
           testGroup
             "(,,)"
@@ -290,11 +290,11 @@ seqTests =
                 ioProperty . concreteSEqOkProp @(Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool)" $
                 (ssymBool "a", ssymBool "c", ssymBool "e")
-                  ==~ (ssymBool "b", ssymBool "d", ssymBool "f")
-                  @=? (ssymBool "a" ==~ ssymBool "b")
-                    &&~ ( (ssymBool "c" ==~ ssymBool "d")
-                            &&~ (ssymBool "e" ==~ ssymBool "f")
-                        )
+                  .== (ssymBool "b", ssymBool "d", ssymBool "f")
+                  @=? (ssymBool "a" .== ssymBool "b")
+                  .&& ( (ssymBool "c" .== ssymBool "d")
+                          .&& (ssymBool "e" .== ssymBool "f")
+                      )
             ],
           testGroup
             "(,,,)"
@@ -304,13 +304,13 @@ seqTests =
                   . concreteSEqOkProp @(Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool)" $ do
                 (ssymBool "a", ssymBool "c", ssymBool "e", ssymBool "g")
-                  ==~ (ssymBool "b", ssymBool "d", ssymBool "f", ssymBool "h")
-                  @=? ( (ssymBool "a" ==~ ssymBool "b")
-                          &&~ (ssymBool "c" ==~ ssymBool "d")
+                  .== (ssymBool "b", ssymBool "d", ssymBool "f", ssymBool "h")
+                  @=? ( (ssymBool "a" .== ssymBool "b")
+                          .&& (ssymBool "c" .== ssymBool "d")
                       )
-                    &&~ ( (ssymBool "e" ==~ ssymBool "f")
-                            &&~ (ssymBool "g" ==~ ssymBool "h")
-                        )
+                  .&& ( (ssymBool "e" .== ssymBool "f")
+                          .&& (ssymBool "g" .== ssymBool "h")
+                      )
             ],
           testGroup
             "(,,,,)"
@@ -326,20 +326,20 @@ seqTests =
                   ssymBool "g",
                   ssymBool "i"
                   )
-                  ==~ ( ssymBool "b",
+                  .== ( ssymBool "b",
                         ssymBool "d",
                         ssymBool "f",
                         ssymBool "h",
                         ssymBool "j"
                       )
-                  @=? ( (ssymBool "a" ==~ ssymBool "b")
-                          &&~ (ssymBool "c" ==~ ssymBool "d")
+                  @=? ( (ssymBool "a" .== ssymBool "b")
+                          .&& (ssymBool "c" .== ssymBool "d")
                       )
-                    &&~ ( (ssymBool "e" ==~ ssymBool "f")
-                            &&~ ( (ssymBool "g" ==~ ssymBool "h")
-                                    &&~ (ssymBool "i" ==~ ssymBool "j")
-                                )
-                        )
+                  .&& ( (ssymBool "e" .== ssymBool "f")
+                          .&& ( (ssymBool "g" .== ssymBool "h")
+                                  .&& (ssymBool "i" .== ssymBool "j")
+                              )
+                      )
             ],
           testGroup
             "(,,,,,)"
@@ -363,23 +363,23 @@ seqTests =
                     ssymBool "i",
                     ssymBool "k"
                   )
-                  ==~ ( ssymBool "b",
+                  .== ( ssymBool "b",
                         ssymBool "d",
                         ssymBool "f",
                         ssymBool "h",
                         ssymBool "j",
                         ssymBool "l"
                       )
-                  @=? ( (ssymBool "a" ==~ ssymBool "b")
-                          &&~ ( (ssymBool "c" ==~ ssymBool "d")
-                                  &&~ (ssymBool "e" ==~ ssymBool "f")
+                  @=? ( (ssymBool "a" .== ssymBool "b")
+                          .&& ( (ssymBool "c" .== ssymBool "d")
+                                  .&& (ssymBool "e" .== ssymBool "f")
                               )
                       )
-                    &&~ ( (ssymBool "g" ==~ ssymBool "h")
-                            &&~ ( (ssymBool "i" ==~ ssymBool "j")
-                                    &&~ (ssymBool "k" ==~ ssymBool "l")
-                                )
-                        )
+                  .&& ( (ssymBool "g" .== ssymBool "h")
+                          .&& ( (ssymBool "i" .== ssymBool "j")
+                                  .&& (ssymBool "k" .== ssymBool "l")
+                              )
+                      )
             ],
           testGroup
             "(,,,,,,)"
@@ -406,7 +406,7 @@ seqTests =
                     ssymBool "k",
                     ssymBool "m"
                     )
-                    ==~ ( ssymBool "b",
+                    .== ( ssymBool "b",
                           ssymBool "d",
                           ssymBool "f",
                           ssymBool "h",
@@ -414,18 +414,18 @@ seqTests =
                           ssymBool "l",
                           ssymBool "n"
                         )
-                    @=? ( (ssymBool "a" ==~ ssymBool "b")
-                            &&~ ( (ssymBool "c" ==~ ssymBool "d")
-                                    &&~ (ssymBool "e" ==~ ssymBool "f")
+                    @=? ( (ssymBool "a" .== ssymBool "b")
+                            .&& ( (ssymBool "c" .== ssymBool "d")
+                                    .&& (ssymBool "e" .== ssymBool "f")
                                 )
                         )
-                      &&~ ( ( (ssymBool "g" ==~ ssymBool "h")
-                                &&~ (ssymBool "i" ==~ ssymBool "j")
-                            )
-                              &&~ ( (ssymBool "k" ==~ ssymBool "l")
-                                      &&~ (ssymBool "m" ==~ ssymBool "n")
-                                  )
+                    .&& ( ( (ssymBool "g" .== ssymBool "h")
+                              .&& (ssymBool "i" .== ssymBool "j")
                           )
+                            .&& ( (ssymBool "k" .== ssymBool "l")
+                                    .&& (ssymBool "m" .== ssymBool "n")
+                                )
+                        )
             ],
           testGroup
             "(,,,,,,,)"
@@ -453,7 +453,7 @@ seqTests =
                     ssymBool "m",
                     ssymBool "o"
                   )
-                  ==~ ( ssymBool "b",
+                  .== ( ssymBool "b",
                         ssymBool "d",
                         ssymBool "f",
                         ssymBool "h",
@@ -462,25 +462,25 @@ seqTests =
                         ssymBool "n",
                         ssymBool "p"
                       )
-                  @=? ( ( (ssymBool "a" ==~ ssymBool "b")
-                            &&~ (ssymBool "c" ==~ ssymBool "d")
+                  @=? ( ( (ssymBool "a" .== ssymBool "b")
+                            .&& (ssymBool "c" .== ssymBool "d")
                         )
-                          &&~ ( (ssymBool "e" ==~ ssymBool "f")
-                                  &&~ (ssymBool "g" ==~ ssymBool "h")
+                          .&& ( (ssymBool "e" .== ssymBool "f")
+                                  .&& (ssymBool "g" .== ssymBool "h")
                               )
                       )
-                    &&~ ( ( (ssymBool "i" ==~ ssymBool "j")
-                              &&~ (ssymBool "k" ==~ ssymBool "l")
-                          )
-                            &&~ ( (ssymBool "m" ==~ ssymBool "n")
-                                    &&~ (ssymBool "o" ==~ ssymBool "p")
-                                )
+                  .&& ( ( (ssymBool "i" .== ssymBool "j")
+                            .&& (ssymBool "k" .== ssymBool "l")
                         )
+                          .&& ( (ssymBool "m" .== ssymBool "n")
+                                  .&& (ssymBool "o" .== ssymBool "p")
+                              )
+                      )
             ],
           testCase "ByteString" $ do
             let bytestrings :: [B.ByteString] = ["", "a", "ab"]
             traverse_
-              (\(i, j) -> i ==~ j @=? conBool (i == j))
+              (\(i, j) -> i .== j @=? conBool (i == j))
               [(x, y) | x <- bytestrings, y <- bytestrings],
           testGroup
             "Sum"
@@ -498,21 +498,21 @@ seqTests =
                 "Sum Maybe Maybe SymBool"
                 [ testCase "InL (Just v) vs InL (Just v)" $
                     (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                      ==~ InL (Just $ ssymBool "b")
+                      .== InL (Just $ ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b",
+                      .== ssymBool "b",
                   testCase "InL (Just v) vs InR (Just v)" $
                     (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                      ==~ InR (Just $ ssymBool "b")
+                      .== InR (Just $ ssymBool "b")
                       @=? conBool False,
                   testCase "InR (Just v) vs InR (Just v)" $
                     (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                      ==~ InR (Just $ ssymBool "b")
+                      .== InR (Just $ ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b",
+                      .== ssymBool "b",
                   testCase "InR (Just v) vs InL (Just v)" $
                     (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                      ==~ InL (Just $ ssymBool "b")
+                      .== InL (Just $ ssymBool "b")
                       @=? conBool False
                 ]
             ],
@@ -537,14 +537,14 @@ seqTests =
                         ( WriterLazy.WriterT (Left $ ssymBool "a") ::
                             WriterLazy.WriterT SymBool (Either SymBool) SymBool
                         )
-                          ==~ WriterLazy.WriterT (Left $ ssymBool "b")
+                          .== WriterLazy.WriterT (Left $ ssymBool "b")
                           @=? ssymBool "a"
-                            ==~ ssymBool "b",
+                          .== ssymBool "b",
                       testCase "WriterT (Left v) vs WriterT (Right v)" $
                         ( WriterLazy.WriterT (Left $ ssymBool "a") ::
                             WriterLazy.WriterT SymBool (Either SymBool) SymBool
                         )
-                          ==~ WriterLazy.WriterT
+                          .== WriterLazy.WriterT
                             (Right (ssymBool "b", ssymBool "c"))
                           @=? conBool False,
                       testCase "WriterT (Right v) vs WriterT (Left v)" $
@@ -552,17 +552,17 @@ seqTests =
                             (Right (ssymBool "b", ssymBool "c")) ::
                             WriterLazy.WriterT SymBool (Either SymBool) SymBool
                         )
-                          ==~ WriterLazy.WriterT (Left $ ssymBool "a")
+                          .== WriterLazy.WriterT (Left $ ssymBool "a")
                           @=? conBool False,
                       testCase "WriterT (Right v) vs WriterT (Right v)" $
                         ( WriterLazy.WriterT
                             (Right (ssymBool "a", ssymBool "b")) ::
                             WriterLazy.WriterT SymBool (Either SymBool) SymBool
                         )
-                          ==~ WriterLazy.WriterT
+                          .== WriterLazy.WriterT
                             (Right (ssymBool "c", ssymBool "d"))
-                          @=? (ssymBool "a" ==~ ssymBool "c")
-                            &&~ (ssymBool "b" ==~ ssymBool "d")
+                          @=? (ssymBool "a" .== ssymBool "c")
+                          .&& (ssymBool "b" .== ssymBool "d")
                     ]
                 ],
               testGroup
@@ -587,9 +587,9 @@ seqTests =
                               (Either SymBool)
                               SymBool
                         )
-                          ==~ WriterStrict.WriterT (Left $ ssymBool "b")
+                          .== WriterStrict.WriterT (Left $ ssymBool "b")
                           @=? ssymBool "a"
-                            ==~ ssymBool "b",
+                          .== ssymBool "b",
                       testCase "WriterT (Left v) vs WriterT (Right v)" $
                         ( WriterStrict.WriterT (Left $ ssymBool "a") ::
                             WriterStrict.WriterT
@@ -597,7 +597,7 @@ seqTests =
                               (Either SymBool)
                               SymBool
                         )
-                          ==~ WriterStrict.WriterT
+                          .== WriterStrict.WriterT
                             (Right (ssymBool "b", ssymBool "c"))
                           @=? conBool False,
                       testCase "WriterT (Right v) vs WriterT (Left v)" $
@@ -608,7 +608,7 @@ seqTests =
                               (Either SymBool)
                               SymBool
                         )
-                          ==~ WriterStrict.WriterT (Left $ ssymBool "a")
+                          .== WriterStrict.WriterT (Left $ ssymBool "a")
                           @=? conBool False,
                       testCase "WriterT (Right v) vs WriterT (Right v)" $
                         ( WriterStrict.WriterT
@@ -618,12 +618,12 @@ seqTests =
                               (Either SymBool)
                               SymBool
                         )
-                          ==~ WriterStrict.WriterT
+                          .== WriterStrict.WriterT
                             (Right (ssymBool "c", ssymBool "d"))
                           @=? ssymBool "a"
-                            ==~ ssymBool "c"
-                            &&~ ssymBool "b"
-                            ==~ ssymBool "d"
+                          .== ssymBool "c"
+                          .&& ssymBool "b"
+                          .== ssymBool "d"
                     ]
                 ]
             ],
@@ -636,9 +636,9 @@ seqTests =
                 ),
               testCase "Identity SymBool" $ do
                 (Identity $ ssymBool "a" :: Identity SymBool)
-                  ==~ Identity (ssymBool "b")
+                  .== Identity (ssymBool "b")
                   @=? ssymBool "a"
-                    ==~ ssymBool "b"
+                  .== ssymBool "b"
             ],
           testGroup
             "IdentityT"
@@ -653,28 +653,28 @@ seqTests =
                     ( IdentityT $ Left $ ssymBool "a" ::
                         IdentityT (Either SymBool) SymBool
                     )
-                      ==~ IdentityT (Left $ ssymBool "b")
+                      .== IdentityT (Left $ ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b",
+                      .== ssymBool "b",
                   testCase "IdentityT (Left v) vs IdentityT (Right v)" $
                     ( IdentityT $ Left $ ssymBool "a" ::
                         IdentityT (Either SymBool) SymBool
                     )
-                      ==~ IdentityT (Right $ ssymBool "b")
+                      .== IdentityT (Right $ ssymBool "b")
                       @=? conBool False,
                   testCase "IdentityT (Right v) vs IdentityT (Left v)" $
                     ( IdentityT $ Right $ ssymBool "a" ::
                         IdentityT (Either SymBool) SymBool
                     )
-                      ==~ IdentityT (Left $ ssymBool "b")
+                      .== IdentityT (Left $ ssymBool "b")
                       @=? conBool False,
                   testCase "IdentityT (Right v) vs IdentityT (Right v)" $
                     ( IdentityT $ Right $ ssymBool "a" ::
                         IdentityT (Either SymBool) SymBool
                     )
-                      ==~ IdentityT (Right $ ssymBool "b")
+                      .== IdentityT (Right $ ssymBool "b")
                       @=? ssymBool "a"
-                        ==~ ssymBool "b"
+                      .== ssymBool "b"
                 ]
             ]
         ],
@@ -683,33 +683,33 @@ seqTests =
         [ testGroup
             "Simple ADT"
             [ testCase "A1 vs A1" $
-                A1 ==~ A1 @=? conBool True,
+                A1 .== A1 @=? conBool True,
               testCase "A1 vs A2" $
-                A1 ==~ A2 (ssymBool "a") @=? conBool False,
+                A1 .== A2 (ssymBool "a") @=? conBool False,
               testCase "A1 vs A3" $
-                A1 ==~ A3 (ssymBool "a") (ssymBool "b") @=? conBool False,
+                A1 .== A3 (ssymBool "a") (ssymBool "b") @=? conBool False,
               testCase "A2 vs A1" $
-                A2 (ssymBool "a") ==~ A1 @=? conBool False,
+                A2 (ssymBool "a") .== A1 @=? conBool False,
               testCase "A2 vs A2" $
                 A2 (ssymBool "a")
-                  ==~ A2 (ssymBool "b")
+                  .== A2 (ssymBool "b")
                   @=? ssymBool "a"
-                    ==~ ssymBool "b",
+                  .== ssymBool "b",
               testCase "A2 vs A3" $
                 A2 (ssymBool "a")
-                  ==~ A3 (ssymBool "b") (ssymBool "c")
+                  .== A3 (ssymBool "b") (ssymBool "c")
                   @=? conBool False,
               testCase "A3 vs A1" $
-                A3 (ssymBool "a") (ssymBool "b") ==~ A1 @=? conBool False,
+                A3 (ssymBool "a") (ssymBool "b") .== A1 @=? conBool False,
               testCase "A3 vs A2" $
                 A3 (ssymBool "a") (ssymBool "b")
-                  ==~ A2 (ssymBool "c")
+                  .== A2 (ssymBool "c")
                   @=? conBool False,
               testCase "A3 vs A3" $
                 A3 (ssymBool "a") (ssymBool "b")
-                  ==~ A3 (ssymBool "c") (ssymBool "d")
-                  @=? (ssymBool "a" ==~ ssymBool "c")
-                    &&~ (ssymBool "b" ==~ ssymBool "d")
+                  .== A3 (ssymBool "c") (ssymBool "d")
+                  @=? (ssymBool "a" .== ssymBool "c")
+                  .&& (ssymBool "b" .== ssymBool "d")
             ]
         ]
     ]

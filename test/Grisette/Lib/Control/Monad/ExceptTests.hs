@@ -4,7 +4,7 @@ module Grisette.Lib.Control.Monad.ExceptTests (monadExceptFunctionTests) where
 
 import Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionLike (unionIf),
     mrgSingle,
@@ -30,5 +30,5 @@ monadExceptFunctionTests =
             ExceptT SymBool UnionM SymBool
         )
           `mrgCatchError` return
-          @?= mrgSingle (ites "a" "b" "c")
+          @?= mrgSingle (symIte "a" "b" "c")
     ]

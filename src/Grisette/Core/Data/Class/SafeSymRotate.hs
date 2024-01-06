@@ -16,7 +16,7 @@ import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SOrd (SOrd ((<~)))
+import Grisette.Core.Data.Class.SOrd (SOrd ((.<)))
 import Grisette.Core.Data.Class.SimpleMergeable (UnionLike, mrgIf)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
@@ -100,11 +100,11 @@ instance (KnownNat n, 1 <= n) => SafeSymRotate ArithException (SymWordN n) where
 instance (KnownNat n, 1 <= n) => SafeSymRotate ArithException (SymIntN n) where
   safeSymRotateL' f (SymIntN ta) r@(SymIntN tr) =
     mrgIf
-      (r <~ 0)
+      (r .< 0)
       (mrgThrowError $ f Overflow)
       (mrgReturn $ SymIntN $ pevalRotateLeftTerm ta tr)
   safeSymRotateR' f (SymIntN ta) r@(SymIntN tr) =
     mrgIf
-      (r <~ 0)
+      (r .< 0)
       (mrgThrowError $ f Overflow)
       (mrgReturn $ SymIntN $ pevalRotateRightTerm ta tr)

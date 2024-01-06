@@ -67,9 +67,9 @@ class
   where
   -- | Solve a single formula. Find an assignment to it to make it true.
   --
-  -- >>> solve (precise z3) ("a" &&~ ("b" :: SymInteger) ==~ 1)
+  -- >>> solve (precise z3) ("a" .&& ("b" :: SymInteger) .== 1)
   -- Right (Model {a -> True :: Bool, b -> 1 :: Integer})
-  -- >>> solve (precise z3) ("a" &&~ nots "a")
+  -- >>> solve (precise z3) ("a" .&& symNot "a")
   -- Left Unsat
   solve ::
     -- | solver configuration
@@ -81,7 +81,7 @@ class
   -- | Solve a single formula while returning multiple models to make it true.
   -- The maximum number of desired models are given.
   --
-  -- > >>> solveMulti (precise z3) 4 ("a" ||~ "b")
+  -- > >>> solveMulti (precise z3) 4 ("a" .|| "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveMulti ::
     -- | solver configuration
@@ -95,7 +95,7 @@ class
   -- | Solve a single formula while returning multiple models to make it true.
   -- All models are returned.
   --
-  -- > >>> solveAll (precise z3) ("a" ||~ "b")
+  -- > >>> solveAll (precise z3) ("a" .|| "b")
   -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
   solveAll ::
     -- | solver configuration
@@ -121,8 +121,8 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- >>> :{
 --   res :: ExceptT AssertionError UnionM ()
 --   res = do
---     symAssert $ x >~ 0       -- constrain that x is positive
---     symAssert $ x <~ 2       -- constrain that x is less than 2
+--     symAssert $ x .> 0       -- constrain that x is positive
+--     symAssert $ x .< 2       -- constrain that x is less than 2
 -- :}
 --
 -- >>> :{

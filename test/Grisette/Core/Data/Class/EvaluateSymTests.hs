@@ -20,13 +20,13 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette (TypedSymbol (IndexedSymbol))
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel),
     ModelRep (buildModel),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
@@ -61,24 +61,24 @@ evaluateSymTests =
                         eval (ssym "a") @?= ssym "a",
                       testCase "isym" $
                         eval (isym "a" 1) @?= isym "a" 1,
-                      testCase "||~" $
-                        eval (ssym "a" ||~ ssym "b")
+                      testCase ".||" $
+                        eval (ssym "a" .|| ssym "b")
                           @?= ssym "a"
-                            ||~ ssym "b",
-                      testCase "&&~" $
-                        eval (ssym "a" &&~ ssym "b")
+                          .|| ssym "b",
+                      testCase ".&&" $
+                        eval (ssym "a" .&& ssym "b")
                           @?= ssym "a"
-                            &&~ ssym "b",
-                      testCase "==~" $
-                        eval ((ssym "a" :: SymBool) ==~ ssym "b")
+                          .&& ssym "b",
+                      testCase ".==" $
+                        eval ((ssym "a" :: SymBool) .== ssym "b")
                           @?= (ssym "a" :: SymBool)
-                            ==~ ssym "b",
-                      testCase "nots" $
-                        eval (nots (ssym "a"))
-                          @?= nots (ssym "a"),
-                      testCase "ites" $
-                        eval (ites (ssym "a") (ssym "b") (ssym "c"))
-                          @?= ites (ssym "a") (ssym "b") (ssym "c")
+                          .== ssym "b",
+                      testCase "symNot" $
+                        eval (symNot (ssym "a"))
+                          @?= symNot (ssym "a"),
+                      testCase "symIte" $
+                        eval (symIte (ssym "a") (ssym "b") (ssym "c"))
+                          @?= symIte (ssym "a") (ssym "b") (ssym "c")
                     ],
               let model = emptyModel
                   eval :: SymBool -> SymBool
@@ -91,16 +91,16 @@ evaluateSymTests =
                         eval (ssym "a") @?= con False,
                       testCase "isym" $
                         eval (isym "a" 1) @?= con False,
-                      testCase "||~" $
-                        eval (ssym "a" ||~ ssym "b") @?= con False,
-                      testCase "&&~" $
-                        eval (ssym "a" &&~ ssym "b") @?= con False,
-                      testCase "==~" $
-                        eval ((ssym "a" :: SymBool) ==~ ssym "b") @?= con True,
-                      testCase "nots" $
-                        eval (nots (ssym "a")) @?= con True,
-                      testCase "ites" $
-                        eval (ites (ssym "a") (ssym "b") (ssym "c"))
+                      testCase ".||" $
+                        eval (ssym "a" .|| ssym "b") @?= con False,
+                      testCase ".&&" $
+                        eval (ssym "a" .&& ssym "b") @?= con False,
+                      testCase ".==" $
+                        eval ((ssym "a" :: SymBool) .== ssym "b") @?= con True,
+                      testCase "symNot" $
+                        eval (symNot (ssym "a")) @?= con True,
+                      testCase "symIte" $
+                        eval (symIte (ssym "a") (ssym "b") (ssym "c"))
                           @?= con False
                     ],
               let model =
@@ -120,16 +120,16 @@ evaluateSymTests =
                         eval (ssym "a") @?= con True,
                       testCase "isym" $
                         eval (isym "a" 1) @?= con False,
-                      testCase "||~" $
-                        eval (ssym "a" ||~ ssym "b") @?= con True,
-                      testCase "&&~" $
-                        eval (ssym "a" &&~ ssym "b") @?= con False,
-                      testCase "==~" $
-                        eval ((ssym "a" :: SymBool) ==~ ssym "b") @?= con False,
-                      testCase "nots" $
-                        eval (nots (ssym "a")) @?= con False,
-                      testCase "ites" $
-                        eval (ites (ssym "a") (ssym "b") (ssym "c"))
+                      testCase ".||" $
+                        eval (ssym "a" .|| ssym "b") @?= con True,
+                      testCase ".&&" $
+                        eval (ssym "a" .&& ssym "b") @?= con False,
+                      testCase ".==" $
+                        eval ((ssym "a" :: SymBool) .== ssym "b") @?= con False,
+                      testCase "symNot" $
+                        eval (symNot (ssym "a")) @?= con False,
+                      testCase "symIte" $
+                        eval (symIte (ssym "a") (ssym "b") (ssym "c"))
                           @?= con False
                     ]
             ],

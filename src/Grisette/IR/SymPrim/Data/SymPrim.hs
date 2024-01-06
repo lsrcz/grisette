@@ -229,7 +229,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> :set -XOverloadedStrings
 -- >>> "a" :: SymBool
 -- a
--- >>> "a" &&~ "b" :: SymBool
+-- >>> "a" .&& "b" :: SymBool
 -- (&& a b)
 --
 -- More symbolic operations are available. Please refer to the documentation
@@ -262,7 +262,7 @@ newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
 -- 0b101110
 -- >>> sizedBVExt (Proxy @6) (con 0b101 :: SymIntN 3)
 -- 0b111101
--- >>> (8 :: SymIntN 4) <~ (7 :: SymIntN 4)
+-- >>> (8 :: SymIntN 4) .< (7 :: SymIntN 4)
 -- true
 --
 -- More symbolic operations are available. Please refer to the documentation
@@ -332,7 +332,7 @@ binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymInt
 -- 0b101110
 -- >>> sizedBVExt (Proxy @6) (con 0b101 :: SymWordN 3)
 -- 0b000101
--- >>> (8 :: SymWordN 4) <~ (7 :: SymWordN 4)
+-- >>> (8 :: SymWordN 4) .< (7 :: SymWordN 4)
 -- false
 --
 -- More symbolic operations are available. Please refer to the documentation

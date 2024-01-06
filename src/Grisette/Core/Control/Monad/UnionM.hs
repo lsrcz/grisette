@@ -33,7 +33,7 @@ module Grisette.Core.Control.Monad.UnionM
     liftToMonadUnion,
     underlyingUnion,
     isMerged,
-    (#~),
+    (.#),
     IsConcrete,
     unionSize,
   )
@@ -64,16 +64,16 @@ import Grisette.Core.Data.Class.GPretty
   ( GPretty (gpretty),
     groupedEnclose,
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp
-  ( LogicalOp (implies, nots, xors, (&&~), (||~)),
+  ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
   )
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
     MergingStrategy (SimpleStrategy),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
@@ -83,7 +83,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
     mrgSingle,
     simpleMerge,
-    (#~),
+    (.#),
   )
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
@@ -385,10 +385,10 @@ instance UnionLike UnionM where
   {-# INLINE unionIf #-}
 
 instance (SEq a) => SEq (UnionM a) where
-  x ==~ y = simpleMerge $ do
+  x .== y = simpleMerge $ do
     x1 <- x
     y1 <- y
-    mrgSingle $ x1 ==~ y1
+    mrgSingle $ x1 .== y1
 
 -- | Lift the 'UnionM' to any 'MonadUnion'.
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => UnionM a -> u a
@@ -498,28 +498,28 @@ instance (Num a, Mergeable a) => Num (UnionM a) where
   signum x = x >>= mrgSingle . signum
 
 instance (ITEOp a, Mergeable a) => ITEOp (UnionM a) where
-  ites = mrgIf
+  symIte = mrgIf
 
 instance (LogicalOp a, Mergeable a) => LogicalOp (UnionM a) where
-  a ||~ b = do
+  a .|| b = do
     a1 <- a
     b1 <- b
-    mrgSingle $ a1 ||~ b1
-  a &&~ b = do
+    mrgSingle $ a1 .|| b1
+  a .&& b = do
     a1 <- a
     b1 <- b
-    mrgSingle $ a1 &&~ b1
-  nots x = do
+    mrgSingle $ a1 .&& b1
+  symNot x = do
     x1 <- x
-    mrgSingle $ nots x1
-  xors a b = do
+    mrgSingle $ symNot x1
+  symXor a b = do
     a1 <- a
     b1 <- b
-    mrgSingle $ a1 `xors` b1
-  implies a b = do
+    mrgSingle $ a1 `symXor` b1
+  symImplies a b = do
     a1 <- a
     b1 <- b
-    mrgSingle $ a1 `implies` b1
+    mrgSingle $ a1 `symImplies` b1
 
 instance (Solvable c t, Mergeable t) => Solvable c (UnionM t) where
   con = mrgSingle . con

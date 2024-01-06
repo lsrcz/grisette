@@ -62,7 +62,7 @@ class (IsString t) => Solvable c t | t -> c where
   -- True
   -- >>> (ssym "a" :: SymBool) == ssym "b"
   -- False
-  -- >>> (ssym "a" :: SymBool) &&~ ssym "a"
+  -- >>> (ssym "a" :: SymBool) .&& ssym "a"
   -- a
   ssym :: T.Text -> t
 

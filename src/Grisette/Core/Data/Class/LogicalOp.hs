@@ -27,80 +27,80 @@ import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
 -- >>> let f = con False :: SymBool
 -- >>> let a = "a" :: SymBool
 -- >>> let b = "b" :: SymBool
--- >>> t ||~ f
+-- >>> t .|| f
 -- true
--- >>> a ||~ t
+-- >>> a .|| t
 -- true
--- >>> a ||~ f
+-- >>> a .|| f
 -- a
--- >>> a ||~ b
+-- >>> a .|| b
 -- (|| a b)
--- >>> t &&~ f
+-- >>> t .&& f
 -- false
--- >>> a &&~ t
+-- >>> a .&& t
 -- a
--- >>> a &&~ f
+-- >>> a .&& f
 -- false
--- >>> a &&~ b
+-- >>> a .&& b
 -- (&& a b)
--- >>> nots t
+-- >>> symNot t
 -- false
--- >>> nots f
+-- >>> symNot f
 -- true
--- >>> nots a
+-- >>> symNot a
 -- (! a)
--- >>> t `xors` f
+-- >>> t `symXor` f
 -- true
--- >>> t `xors` t
+-- >>> t `symXor` t
 -- false
--- >>> a `xors` t
+-- >>> a `symXor` t
 -- (! a)
--- >>> a `xors` f
+-- >>> a `symXor` f
 -- a
--- >>> a `xors` b
+-- >>> a `symXor` b
 -- (|| (&& (! a) b) (&& a (! b)))
 class LogicalOp b where
   -- | Symbolic disjunction
-  (||~) :: b -> b -> b
-  a ||~ b = nots $ nots a &&~ nots b
-  {-# INLINE (||~) #-}
+  (.||) :: b -> b -> b
+  a .|| b = symNot $ symNot a .&& symNot b
+  {-# INLINE (.||) #-}
 
-  infixr 2 ||~
+  infixr 2 .||
 
   -- | Symbolic conjunction
-  (&&~) :: b -> b -> b
-  a &&~ b = nots $ nots a ||~ nots b
-  {-# INLINE (&&~) #-}
+  (.&&) :: b -> b -> b
+  a .&& b = symNot $ symNot a .|| symNot b
+  {-# INLINE (.&&) #-}
 
-  infixr 3 &&~
+  infixr 3 .&&
 
   -- | Symbolic negation
-  nots :: b -> b
+  symNot :: b -> b
 
   -- | Symbolic exclusive disjunction
-  xors :: b -> b -> b
-  a `xors` b = (a &&~ nots b) ||~ (nots a &&~ b)
-  {-# INLINE xors #-}
+  symXor :: b -> b -> b
+  a `symXor` b = (a .&& symNot b) .|| (symNot a .&& b)
+  {-# INLINE symXor #-}
 
   -- | Symbolic implication
-  implies :: b -> b -> b
-  a `implies` b = nots a ||~ b
-  {-# INLINE implies #-}
+  symImplies :: b -> b -> b
+  a `symImplies` b = symNot a .|| b
+  {-# INLINE symImplies #-}
 
-  {-# MINIMAL (||~), nots | (&&~), nots #-}
+  {-# MINIMAL (.||), symNot | (.&&), symNot #-}
 
 -- LogicalOp instances
 instance LogicalOp Bool where
-  (||~) = (||)
-  {-# INLINE (||~) #-}
-  (&&~) = (&&)
-  {-# INLINE (&&~) #-}
-  nots = not
-  {-# INLINE nots #-}
+  (.||) = (||)
+  {-# INLINE (.||) #-}
+  (.&&) = (&&)
+  {-# INLINE (.&&) #-}
+  symNot = not
+  {-# INLINE symNot #-}
 
 instance LogicalOp SymBool where
-  (SymBool l) ||~ (SymBool r) = SymBool $ pevalOrTerm l r
-  (SymBool l) &&~ (SymBool r) = SymBool $ pevalAndTerm l r
-  nots (SymBool v) = SymBool $ pevalNotTerm v
-  (SymBool l) `xors` (SymBool r) = SymBool $ pevalXorTerm l r
-  (SymBool l) `implies` (SymBool r) = SymBool $ pevalImplyTerm l r
+  (SymBool l) .|| (SymBool r) = SymBool $ pevalOrTerm l r
+  (SymBool l) .&& (SymBool r) = SymBool $ pevalAndTerm l r
+  symNot (SymBool v) = SymBool $ pevalNotTerm v
+  (SymBool l) `symXor` (SymBool r) = SymBool $ pevalXorTerm l r
+  (SymBool l) `symImplies` (SymBool r) = SymBool $ pevalImplyTerm l r

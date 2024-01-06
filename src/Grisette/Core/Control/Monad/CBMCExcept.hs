@@ -82,8 +82,8 @@ import Grisette.Core.Data.Class.Mergeable
     rootStrategy1,
     wrapStrategy,
   )
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
-import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (<=~), (<~), (>=~), (>~)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
+import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (.<), (.<=), (.>), (.>=)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
@@ -351,8 +351,8 @@ instance (Monad m) => OrigExcept.MonadError e (CBMCExceptT e m) where
   {-# INLINE catchError #-}
 
 instance (SEq (m (CBMCEither e a))) => SEq (CBMCExceptT e m a) where
-  (CBMCExceptT a) ==~ (CBMCExceptT b) = a ==~ b
-  {-# INLINE (==~) #-}
+  (CBMCExceptT a) .== (CBMCExceptT b) = a .== b
+  {-# INLINE (.==) #-}
 
 instance (EvaluateSym (m (CBMCEither e a))) => EvaluateSym (CBMCExceptT e m a) where
   evaluateSym fillDefault model (CBMCExceptT v) = CBMCExceptT $ evaluateSym fillDefault model v
@@ -441,10 +441,10 @@ instance
   {-# INLINE unionIf #-}
 
 instance (SOrd (m (CBMCEither e a))) => SOrd (CBMCExceptT e m a) where
-  (CBMCExceptT l) <=~ (CBMCExceptT r) = l <=~ r
-  (CBMCExceptT l) <~ (CBMCExceptT r) = l <~ r
-  (CBMCExceptT l) >=~ (CBMCExceptT r) = l >=~ r
-  (CBMCExceptT l) >~ (CBMCExceptT r) = l >~ r
+  (CBMCExceptT l) .<= (CBMCExceptT r) = l .<= r
+  (CBMCExceptT l) .< (CBMCExceptT r) = l .< r
+  (CBMCExceptT l) .>= (CBMCExceptT r) = l .>= r
+  (CBMCExceptT l) .> (CBMCExceptT r) = l .> r
   symCompare (CBMCExceptT l) (CBMCExceptT r) = symCompare l r
 
 instance
