@@ -711,6 +711,8 @@ module Grisette.Core
 
     -- ** Symbolic Generation Monad
     MonadFresh (..),
+    nextFreshIndex,
+    liftFresh,
     Fresh,
     FreshT (..),
     runFresh,
@@ -1109,9 +1111,11 @@ import Grisette.Core.Data.Class.GenSym
     derivedSameShapeSimpleFresh,
     genSym,
     genSymSimple,
+    liftFresh,
     mrgRunFreshT,
     name,
     nameWithInfo,
+    nextFreshIndex,
     runFresh,
     runFreshT,
   )

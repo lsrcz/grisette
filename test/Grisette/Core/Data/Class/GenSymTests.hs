@@ -9,6 +9,9 @@ import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.GenSym
   ( EnumGenBound (EnumGenBound),
     EnumGenUpperBound (EnumGenUpperBound),
+    Fresh,
+    FreshT,
+    GenSymSimple (simpleFresh),
     ListSpec (ListSpec),
     SimpleListSpec (SimpleListSpec),
     choose,
@@ -19,7 +22,9 @@ import Grisette.Core.Data.Class.GenSym
     chooseUnionFresh,
     genSym,
     genSymSimple,
+    liftFresh,
     runFresh,
+    runFreshT,
   )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -1242,6 +1247,19 @@ genSymTests =
                     (isymBool "a" 1)
                     (mrgIf (ssymBool "x") 2 3)
                     (mrgIf (ssymBool "x") 3 4)
-                )
+                ),
+          testCase "liftFresh" $ do
+            let orig = simpleFresh () :: Fresh (SymBool, SymBool)
+            let actual = flip runFreshT "a" $ do
+                  r1 <- liftFresh orig
+                  r2 <- liftFresh orig
+                  return (r1, r2) ::
+                    FreshT UnionM ((SymBool, SymBool), (SymBool, SymBool))
+            let expected =
+                  return
+                    ( (isymBool "a" 0, isymBool "a" 1),
+                      (isymBool "a" 2, isymBool "a" 3)
+                    )
+            actual @?= expected
         ]
     ]
