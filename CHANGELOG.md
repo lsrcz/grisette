@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Moved `Grisette.Data.Class.Substitute` to `Grisette.Data.Class.SubstituteSym`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Split the `Grisette.Data.Class.SafeArith` module to `Grisette.Data.Class.SafeDivision` and `Grisette.Data.Class.SafeLinearArith`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Changed the API to `MonadFresh`. ([#156](https://github.com/lsrcz/grisette/pull/156))
+- [Breaking] Renamed multiple symbolic operators. ([#158](https://github.com/lsrcz/grisette/pull/158))
 
 ## [0.3.1.1] -- 2023-09-29
 
