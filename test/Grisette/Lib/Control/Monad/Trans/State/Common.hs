@@ -15,7 +15,7 @@ module Grisette.Lib.Control.Monad.Trans.State.Common
 where
 
 import Grisette.Core.Control.Monad.UnionM (UnionM, unionSize)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     UnionLike (unionIf),
@@ -54,11 +54,11 @@ type GetsFunc stateT s a = (s -> a) -> stateT s UnionM a
 
 stateA ::
   StateFunc stateT SymBool SymBool -> stateT SymBool UnionM SymBool
-stateA state = state (\s -> (s &&~ ssymBool "av", s &&~ ssymBool "as"))
+stateA state = state (\s -> (s .&& ssymBool "av", s .&& ssymBool "as"))
 
 stateB ::
   StateFunc stateT SymBool SymBool -> stateT SymBool UnionM SymBool
-stateB state = state (\s -> (s &&~ ssymBool "bv", s &&~ ssymBool "bs"))
+stateB state = state (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
 
 stateAB ::
   (UnionLike (stateT SymBool UnionM)) =>
@@ -77,19 +77,19 @@ mrgStateTest ::
   Assertion
 mrgStateTest mrgState runStateT = do
   let a =
-        mrgState (\s -> (s &&~ ssymBool "av", s &&~ ssymBool "as"))
+        mrgState (\s -> (s .&& ssymBool "av", s .&& ssymBool "as"))
   let b =
-        mrgState (\s -> (s &&~ ssymBool "bv", s &&~ ssymBool "bs"))
+        mrgState (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
   let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              ( ssymBool "d" &&~ ssymBool "av",
-                ssymBool "d" &&~ ssymBool "as"
+              ( ssymBool "d" .&& ssymBool "av",
+                ssymBool "d" .&& ssymBool "as"
               )
-              ( ssymBool "d" &&~ ssymBool "bv",
-                ssymBool "d" &&~ ssymBool "bs"
+              ( ssymBool "d" .&& ssymBool "bv",
+                ssymBool "d" .&& ssymBool "bs"
               )
           )
   unionSize actual @?= 1
@@ -106,11 +106,11 @@ mrgRunStateTTest state mrgRunStateT = do
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              ( ssymBool "d" &&~ ssymBool "av",
-                ssymBool "d" &&~ ssymBool "as"
+              ( ssymBool "d" .&& ssymBool "av",
+                ssymBool "d" .&& ssymBool "as"
               )
-              ( ssymBool "d" &&~ ssymBool "bv",
-                ssymBool "d" &&~ ssymBool "bs"
+              ( ssymBool "d" .&& ssymBool "bv",
+                ssymBool "d" .&& ssymBool "bs"
               )
           )
   unionSize actual @?= 1
@@ -127,8 +127,8 @@ mrgEvalStateTTest state mrgEvalStateT = do
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              (ssymBool "d" &&~ ssymBool "av")
-              (ssymBool "d" &&~ ssymBool "bv")
+              (ssymBool "d" .&& ssymBool "av")
+              (ssymBool "d" .&& ssymBool "bv")
           )
   unionSize actual @?= 1
   actual @?=~ expected
@@ -144,8 +144,8 @@ mrgExecStateTTest state mrgExecStateT = do
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              (ssymBool "d" &&~ ssymBool "as")
-              (ssymBool "d" &&~ ssymBool "bs")
+              (ssymBool "d" .&& ssymBool "as")
+              (ssymBool "d" .&& ssymBool "bs")
           )
   unionSize actual @?= 1
   actual @?=~ expected
@@ -164,11 +164,11 @@ mrgMapStateTTest state runStateT mrgMapStateT = do
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              ( ssymBool "d" &&~ ssymBool "av",
-                ssymBool "d" &&~ ssymBool "as"
+              ( ssymBool "d" .&& ssymBool "av",
+                ssymBool "d" .&& ssymBool "as"
               )
-              ( ssymBool "d" &&~ ssymBool "bv",
-                ssymBool "d" &&~ ssymBool "bs"
+              ( ssymBool "d" .&& ssymBool "bv",
+                ssymBool "d" .&& ssymBool "bs"
               )
           )
   unionSize actual @?= 1
@@ -181,18 +181,18 @@ mrgWithStateTTest ::
   WithStateFunc stateT SymBool SymBool ->
   Assertion
 mrgWithStateTTest state runStateT mrgWithStateT = do
-  let a = mrgWithStateT (&&~ ssymBool "x") (stateA state)
-  let b = mrgWithStateT (&&~ ssymBool "y") (stateB state)
+  let a = mrgWithStateT (.&& ssymBool "x") (stateA state)
+  let b = mrgWithStateT (.&& ssymBool "y") (stateB state)
   let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              ( ssymBool "d" &&~ ssymBool "av" &&~ ssymBool "x",
-                ssymBool "d" &&~ ssymBool "as" &&~ ssymBool "x"
+              ( ssymBool "d" .&& ssymBool "av" .&& ssymBool "x",
+                ssymBool "d" .&& ssymBool "as" .&& ssymBool "x"
               )
-              ( ssymBool "d" &&~ ssymBool "bv" &&~ ssymBool "y",
-                ssymBool "d" &&~ ssymBool "bs" &&~ ssymBool "y"
+              ( ssymBool "d" .&& ssymBool "bv" .&& ssymBool "y",
+                ssymBool "d" .&& ssymBool "bs" .&& ssymBool "y"
               )
           )
   unionSize actual @?= 1
@@ -212,11 +212,11 @@ mrgGetTest state runStateT mrgGet = do
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              ( ssymBool "d" &&~ ssymBool "as",
-                ssymBool "d" &&~ ssymBool "as"
+              ( ssymBool "d" .&& ssymBool "as",
+                ssymBool "d" .&& ssymBool "as"
               )
-              ( ssymBool "d" &&~ ssymBool "bs",
-                ssymBool "d" &&~ ssymBool "bs"
+              ( ssymBool "d" .&& ssymBool "bs",
+                ssymBool "d" .&& ssymBool "bs"
               )
           )
   unionSize actual @?= 1
@@ -246,18 +246,18 @@ mrgModifyTest ::
   ModifyFunc stateT SymBool SymBool ->
   Assertion
 mrgModifyTest state runStateT mrgModify = do
-  let a = do stateA state; mrgModify (&&~ ssymBool "x")
-  let b = do stateB state; mrgModify (&&~ ssymBool "y")
+  let a = do stateA state; mrgModify (.&& ssymBool "x")
+  let b = do stateB state; mrgModify (.&& ssymBool "y")
   let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( (),
-                ssymBool "d" &&~ ssymBool "as" &&~ ssymBool "x"
+                ssymBool "d" .&& ssymBool "as" .&& ssymBool "x"
               )
               ( (),
-                ssymBool "d" &&~ ssymBool "bs" &&~ ssymBool "y"
+                ssymBool "d" .&& ssymBool "bs" .&& ssymBool "y"
               )
           )
   unionSize actual @?= 1
@@ -270,18 +270,18 @@ mrgGetsTest ::
   GetsFunc stateT SymBool SymBool ->
   Assertion
 mrgGetsTest state runStateT mrgGets = do
-  let a = do stateA state; mrgGets (&&~ ssymBool "x")
-  let b = do stateB state; mrgGets (&&~ ssymBool "y")
+  let a = do stateA state; mrgGets (.&& ssymBool "x")
+  let b = do stateB state; mrgGets (.&& ssymBool "y")
   let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
               (ssymBool "c")
-              ( ssymBool "d" &&~ ssymBool "as" &&~ ssymBool "x",
-                ssymBool "d" &&~ ssymBool "as"
+              ( ssymBool "d" .&& ssymBool "as" .&& ssymBool "x",
+                ssymBool "d" .&& ssymBool "as"
               )
-              ( ssymBool "d" &&~ ssymBool "bs" &&~ ssymBool "y",
-                ssymBool "d" &&~ ssymBool "bs"
+              ( ssymBool "d" .&& ssymBool "bs" .&& ssymBool "y",
+                ssymBool "d" .&& ssymBool "bs"
               )
           )
   unionSize actual @?= 1

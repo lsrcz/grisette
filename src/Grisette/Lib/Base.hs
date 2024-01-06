@@ -15,8 +15,8 @@ module Grisette.Lib.Base
     mrgReturnWithStrategy,
     mrgBindWithStrategy,
     mrgReturn,
-    (>>=~),
-    (>>~),
+    (.>>=),
+    (.>>),
     mrgFoldM,
     mrgMzero,
     mrgMplus,
@@ -41,7 +41,7 @@ module Grisette.Lib.Base
     mrgSequence,
 
     -- ** Symbolic versions for operations in "Data.List"
-    (!!~),
+    (.!!),
     symFilter,
     symTake,
     symDrop,
@@ -56,8 +56,8 @@ import Grisette.Lib.Control.Monad
     mrgMzero,
     mrgReturn,
     mrgReturnWithStrategy,
-    (>>=~),
-    (>>~),
+    (.>>),
+    (.>>=),
   )
 import Grisette.Lib.Data.Foldable
   ( mrgFoldlM,
@@ -73,7 +73,7 @@ import Grisette.Lib.Data.List
   ( symDrop,
     symFilter,
     symTake,
-    (!!~),
+    (.!!),
   )
 import Grisette.Lib.Data.Traversable
   ( mrgFor,

@@ -12,8 +12,8 @@ import qualified Control.Monad.Trans.State.Strict as StateStrict
 import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Trans.Writer.Strict as WriterStrict
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionLike (single, unionIf),
     merge,
@@ -39,7 +39,7 @@ unionLikeTests =
               (single $ ssym "c") ::
               UnionM SymBool
           )
-          @?= ites (ssym "a") (ssym "b") (ssym "c"),
+          @?= symIte (ssym "a") (ssym "b") (ssym "c"),
       testGroup
         "UnionLike"
         [ testGroup
@@ -55,7 +55,7 @@ unionLikeTests =
                       )
                   )
                   @?= MaybeT
-                    (mrgSingle $ Just $ ites (ssym "a") (ssym "b") (ssym "c")),
+                    (mrgSingle $ Just $ symIte (ssym "a") (ssym "b") (ssym "c")),
               testCase "mrgSingle" $ do
                 (mrgSingle 1 :: MaybeT UnionM Integer)
                   @?= MaybeT (mrgSingle $ Just 1),
@@ -65,7 +65,7 @@ unionLikeTests =
                   @?= MaybeT
                     ( mrgSingle $
                         Just $
-                          ites (ssym "a") (ssym "b") (ssym "c") ::
+                          symIte (ssym "a") (ssym "b") (ssym "c") ::
                         UnionM (Maybe SymBool)
                     )
             ],
@@ -82,7 +82,7 @@ unionLikeTests =
                       )
                   )
                   @?= ExceptT
-                    (mrgSingle $ Left $ ites (ssym "a") (ssym "b") (ssym "c")),
+                    (mrgSingle $ Left $ symIte (ssym "a") (ssym "b") (ssym "c")),
               testCase "mrgSingle" $ do
                 (mrgSingle 1 :: ExceptT SymBool UnionM Integer)
                   @?= ExceptT (mrgSingle $ Right 1),
@@ -92,7 +92,7 @@ unionLikeTests =
                   @?= ExceptT
                     ( mrgSingle $
                         Right $
-                          ites (ssym "a") (ssym "b") (ssym "c") ::
+                          symIte (ssym "a") (ssym "b") (ssym "c") ::
                         UnionM (Either SymBool SymBool)
                     )
             ],
@@ -105,12 +105,12 @@ unionLikeTests =
                           merge $ StateLazy.StateT $ \(x :: SymBool) ->
                             unionIf
                               (ssym "a")
-                              (single (x, nots x))
-                              (single (nots x, x))
+                              (single (x, symNot x))
+                              (single (symNot x, x))
                     StateLazy.runStateT s (ssym "b")
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (nots $ ssym "b"),
-                          ites (ssym "a") (nots $ ssym "b") (ssym "b")
+                        ( symIte (ssym "a") (ssym "b") (symNot $ ssym "b"),
+                          symIte (ssym "a") (symNot $ ssym "b") (ssym "b")
                         ),
                   testCase "mrgSingle" $ do
                     let s :: StateLazy.StateT SymBool UnionM SymBool =
@@ -122,15 +122,15 @@ unionLikeTests =
                           mrgIf
                             (ssym "a")
                             ( StateLazy.StateT $ \(x :: SymBool) ->
-                                single (x, nots x)
+                                single (x, symNot x)
                             )
                             ( StateLazy.StateT $ \(x :: SymBool) ->
-                                single (nots x, x)
+                                single (symNot x, x)
                             )
                     StateLazy.runStateT s (ssym "b")
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (nots $ ssym "b"),
-                          ites (ssym "a") (nots $ ssym "b") (ssym "b")
+                        ( symIte (ssym "a") (ssym "b") (symNot $ ssym "b"),
+                          symIte (ssym "a") (symNot $ ssym "b") (ssym "b")
                         )
                 ],
               testGroup
@@ -140,12 +140,12 @@ unionLikeTests =
                           merge $ StateStrict.StateT $ \(x :: SymBool) ->
                             unionIf
                               (ssym "a")
-                              (single (x, nots x))
-                              (single (nots x, x))
+                              (single (x, symNot x))
+                              (single (symNot x, x))
                     StateStrict.runStateT s (ssym "b")
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (nots $ ssym "b"),
-                          ites (ssym "a") (nots $ ssym "b") (ssym "b")
+                        ( symIte (ssym "a") (ssym "b") (symNot $ ssym "b"),
+                          symIte (ssym "a") (symNot $ ssym "b") (ssym "b")
                         ),
                   testCase "mrgSingle" $ do
                     let s :: StateStrict.StateT SymBool UnionM SymBool =
@@ -157,15 +157,15 @@ unionLikeTests =
                           mrgIf
                             (ssym "a")
                             ( StateStrict.StateT $ \(x :: SymBool) ->
-                                single (x, nots x)
+                                single (x, symNot x)
                             )
                             ( StateStrict.StateT $ \(x :: SymBool) ->
-                                single (nots x, x)
+                                single (symNot x, x)
                             )
                     StateStrict.runStateT s (ssym "b")
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (nots $ ssym "b"),
-                          ites (ssym "a") (nots $ ssym "b") (ssym "b")
+                        ( symIte (ssym "a") (ssym "b") (symNot $ ssym "b"),
+                          symIte (ssym "a") (symNot $ ssym "b") (ssym "b")
                         )
                 ]
             ],
@@ -183,8 +183,8 @@ unionLikeTests =
                                 (single (ssym "d", [ssym "e"]))
                     WriterLazy.runWriterT s
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (ssym "d"),
-                          [ites (ssym "a") (ssym "c") (ssym "e")]
+                        ( symIte (ssym "a") (ssym "b") (ssym "d"),
+                          [symIte (ssym "a") (ssym "c") (ssym "e")]
                         ),
                   testCase "mrgSingle" $ do
                     let s :: WriterLazy.WriterT [SymBool] UnionM SymBool =
@@ -198,8 +198,8 @@ unionLikeTests =
                             (WriterLazy.WriterT $ single (ssym "d", [ssym "e"]))
                     WriterLazy.runWriterT s
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (ssym "d"),
-                          [ites (ssym "a") (ssym "c") (ssym "e")]
+                        ( symIte (ssym "a") (ssym "b") (ssym "d"),
+                          [symIte (ssym "a") (ssym "c") (ssym "e")]
                         )
                 ],
               testGroup
@@ -214,8 +214,8 @@ unionLikeTests =
                                 (single (ssym "d", [ssym "e"]))
                     WriterStrict.runWriterT s
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (ssym "d"),
-                          [ites (ssym "a") (ssym "c") (ssym "e")]
+                        ( symIte (ssym "a") (ssym "b") (ssym "d"),
+                          [symIte (ssym "a") (ssym "c") (ssym "e")]
                         ),
                   testCase "mrgSingle" $ do
                     let s :: WriterStrict.WriterT [SymBool] UnionM SymBool =
@@ -233,8 +233,8 @@ unionLikeTests =
                             )
                     WriterStrict.runWriterT s
                       @?= mrgSingle
-                        ( ites (ssym "a") (ssym "b") (ssym "d"),
-                          [ites (ssym "a") (ssym "c") (ssym "e")]
+                        ( symIte (ssym "a") (ssym "b") (ssym "d"),
+                          [symIte (ssym "a") (ssym "c") (ssym "e")]
                         )
                 ]
             ],
@@ -244,10 +244,10 @@ unionLikeTests =
                 do
                   let s :: ReaderT SymBool UnionM SymBool =
                         merge $ ReaderT $ \(x :: SymBool) ->
-                          unionIf (ssym "a") (single x) (single $ nots x)
+                          unionIf (ssym "a") (single x) (single $ symNot x)
                   runReaderT s (ssym "b")
                     @?= mrgSingle
-                      (ites (ssym "a") (ssym "b") (nots $ ssym "b")),
+                      (symIte (ssym "a") (ssym "b") (symNot $ ssym "b")),
               testCase
                 "mrgSingle"
                 $ do
@@ -260,10 +260,10 @@ unionLikeTests =
                         mrgIf
                           (ssym "a")
                           (ReaderT $ \(x :: SymBool) -> single x)
-                          (ReaderT $ \(x :: SymBool) -> single $ nots x)
+                          (ReaderT $ \(x :: SymBool) -> single $ symNot x)
                   runReaderT s (ssym "b")
                     @?= mrgSingle
-                      (ites (ssym "a") (ssym "b") (nots $ ssym "b"))
+                      (symIte (ssym "a") (ssym "b") (symNot $ ssym "b"))
             ],
           testGroup
             "IdentityT"
@@ -277,7 +277,7 @@ unionLikeTests =
                               (single $ ssym "b")
                               (single $ ssym "c")
                   runIdentityT s
-                    @?= mrgSingle (ites (ssym "a") (ssym "b") (ssym "c")),
+                    @?= mrgSingle (symIte (ssym "a") (ssym "b") (ssym "c")),
               testCase
                 "mrgSingle"
                 $ do
@@ -292,7 +292,7 @@ unionLikeTests =
                           (IdentityT $ single (ssym "b"))
                           (IdentityT $ single (ssym "c"))
                   runIdentityT s
-                    @?= mrgSingle (ites (ssym "a") (ssym "b") (ssym "c"))
+                    @?= mrgSingle (symIte (ssym "a") (ssym "b") (ssym "c"))
             ]
         ]
     ]

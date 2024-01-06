@@ -60,9 +60,9 @@ import Grisette.Core.Data.Class.GenSym
     genSymSimple,
     nameWithInfo,
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp
-  ( LogicalOp (implies, nots, xors, (&&~), (||~)),
+  ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
   )
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -72,9 +72,9 @@ import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((/=~), (==~)))
+import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
+  ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
   )
 import Grisette.Core.Data.Class.SafeDivision
   ( SafeDivision
@@ -306,10 +306,10 @@ safeDivisionBoundedOnlyTests f f' cf pf =
     testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError DivideByZero)
                 ( mrgIf
-                    ((ssym "b" :: s) ==~ con (-1) &&~ (ssym "a" :: s) ==~ con (minBound :: c) :: SymBool)
+                    ((ssym "b" :: s) .== con (-1) .&& (ssym "a" :: s) .== con (minBound :: c) :: SymBool)
                     (throwError Overflow)
                     (mrgSingle $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b"))
                 ) ::
@@ -317,10 +317,10 @@ safeDivisionBoundedOnlyTests f f' cf pf =
             )
       f' (const ()) (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError ())
                 ( mrgIf
-                    ((ssym "b" :: s) ==~ con (-1) &&~ (ssym "a" :: s) ==~ con (minBound :: c) :: SymBool)
+                    ((ssym "b" :: s) .== con (-1) .&& (ssym "a" :: s) .== con (minBound :: c) :: SymBool)
                     (throwError ())
                     (mrgSingle $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b"))
                 ) ::
@@ -339,14 +339,14 @@ safeDivisionUnboundedOnlyTests f f' pf =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError DivideByZero)
                 (mrgSingle $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b")) ::
                 ExceptT ArithException UnionM s
             )
       f' (const ()) (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError ())
                 (mrgSingle $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b")) ::
                 ExceptT () UnionM s
@@ -433,10 +433,10 @@ safeDivModBoundedOnlyTests f f' cf pf1 pf2 =
     testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError DivideByZero)
                 ( mrgIf
-                    ((ssym "b" :: s) ==~ con (-1) &&~ (ssym "a" :: s) ==~ con (minBound :: c) :: SymBool)
+                    ((ssym "b" :: s) .== con (-1) .&& (ssym "a" :: s) .== con (minBound :: c) :: SymBool)
                     (throwError Overflow)
                     ( mrgSingle
                         ( wrapTerm $ pf1 (ssymTerm "a") (ssymTerm "b"),
@@ -448,10 +448,10 @@ safeDivModBoundedOnlyTests f f' cf pf1 pf2 =
             )
       f' (const ()) (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError ())
                 ( mrgIf
-                    ((ssym "b" :: s) ==~ con (-1) &&~ (ssym "a" :: s) ==~ con (minBound :: c) :: SymBool)
+                    ((ssym "b" :: s) .== con (-1) .&& (ssym "a" :: s) .== con (minBound :: c) :: SymBool)
                     (throwError ())
                     ( mrgSingle
                         ( wrapTerm $ pf1 (ssymTerm "a") (ssymTerm "b"),
@@ -482,7 +482,7 @@ safeDivModUnboundedOnlyTests f f' pf1 pf2 =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError DivideByZero)
                 ( mrgSingle
                     ( wrapTerm $ pf1 (ssymTerm "a") (ssymTerm "b"),
@@ -493,7 +493,7 @@ safeDivModUnboundedOnlyTests f f' pf1 pf2 =
             )
       f' (const ()) (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
-                ((ssym "b" :: s) ==~ con (0 :: c) :: SymBool)
+                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError ())
                 ( mrgSingle
                     ( wrapTerm $ pf1 (ssymTerm "a") (ssymTerm "b"),
@@ -607,17 +607,17 @@ symPrimTests =
             ],
           testGroup
             "ITEOp"
-            [ testCase "ites" $
-                ites (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c")
+            [ testCase "symIte" $
+                symIte (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c")
                   @=? SymInteger (pevalITETerm (ssymTerm "a") (ssymTerm "b") (ssymTerm "c"))
             ],
           testCase "Mergeable" $ do
             let SimpleStrategy s = rootStrategy :: MergingStrategy SymInteger
             s (ssym "a") (ssym "b") (ssym "c")
-              @=? ites (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c"),
+              @=? symIte (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c"),
           testCase "SimpleMergeable" $
             mrgIte (ssym "a" :: SymBool) (ssym "b") (ssym "c")
-              @=? ites (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c"),
+              @=? symIte (ssym "a" :: SymBool) (ssym "b" :: SymInteger) (ssym "c"),
           testCase "IsString" $ ("a" :: SymBool) @=? SymBool (ssymTerm "a"),
           testGroup
             "ToSym"
@@ -633,11 +633,11 @@ symPrimTests =
             let m1 = emptyModel :: Model
             let m2 = insertValue (SimpleSymbol "a") (1 :: Integer) m1
             let m3 = insertValue (SimpleSymbol "b") True m2
-            evaluateSym False m3 (ites ("c" :: SymBool) "a" ("a" + "a" :: SymInteger))
-              @=? ites ("c" :: SymBool) 1 2
-            evaluateSym True m3 (ites ("c" :: SymBool) "a" ("a" + "a" :: SymInteger)) @=? 2,
+            evaluateSym False m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger))
+              @=? symIte ("c" :: SymBool) 1 2
+            evaluateSym True m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger)) @=? 2,
           testCase "ExtractSymbolics" $
-            extractSymbolics (ites ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
+            extractSymbolics (symIte ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
               @=? SymbolSet
                 ( S.fromList
                     [ someTypedSymbol (SimpleSymbol "c" :: TypedSymbol Bool),
@@ -653,18 +653,18 @@ symPrimTests =
             (genSym () (nameWithInfo "a" True) :: UnionM SymBool) @=? mrgSingle (iinfosym "a" 0 True)
             (genSymSimple () (nameWithInfo "a" True) :: SymBool) @=? iinfosym "a" 0 True,
           testCase "SEq" $ do
-            (ssym "a" :: SymBool) ==~ ssym "b" @=? SymBool (pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
-            (ssym "a" :: SymBool) /=~ ssym "b" @=? SymBool (pevalNotTerm $ pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
+            (ssym "a" :: SymBool) .== ssym "b" @=? SymBool (pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
+            (ssym "a" :: SymBool) ./= ssym "b" @=? SymBool (pevalNotTerm $ pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
         ],
       testGroup
         "SymBool"
         [ testGroup
             "LogicalOp"
-            [ testCase "||~" $ ssym "a" ||~ ssym "b" @=? SymBool (pevalOrTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "&&~" $ ssym "a" &&~ ssym "b" @=? SymBool (pevalAndTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "nots" $ nots (ssym "a") @=? SymBool (pevalNotTerm (ssymTerm "a")),
-              testCase "xors" $ xors (ssym "a") (ssym "b") @=? SymBool (pevalXorTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "implies" $ implies (ssym "a") (ssym "b") @=? SymBool (pevalImplyTerm (ssymTerm "a") (ssymTerm "b"))
+            [ testCase ".||" $ ssym "a" .|| ssym "b" @=? SymBool (pevalOrTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase ".&&" $ ssym "a" .&& ssym "b" @=? SymBool (pevalAndTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase "symNot" $ symNot (ssym "a") @=? SymBool (pevalNotTerm (ssymTerm "a")),
+              testCase "symXor" $ symXor (ssym "a") (ssym "b") @=? SymBool (pevalXorTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase "symImplies" $ symImplies (ssym "a") (ssym "b") @=? SymBool (pevalImplyTerm (ssymTerm "a") (ssymTerm "b"))
             ]
         ],
       testGroup
@@ -727,10 +727,10 @@ symPrimTests =
           testGroup
             "SOrd"
             [ testProperty "SOrd on concrete" $ \(i :: Integer, j :: Integer) -> ioProperty $ do
-                (con i :: SymInteger) <=~ con j @=? (con (i <= j) :: SymBool)
-                (con i :: SymInteger) <~ con j @=? (con (i < j) :: SymBool)
-                (con i :: SymInteger) >=~ con j @=? (con (i >= j) :: SymBool)
-                (con i :: SymInteger) >~ con j @=? (con (i > j) :: SymBool)
+                (con i :: SymInteger) .<= con j @=? (con (i <= j) :: SymBool)
+                (con i :: SymInteger) .< con j @=? (con (i < j) :: SymBool)
+                (con i :: SymInteger) .>= con j @=? (con (i >= j) :: SymBool)
+                (con i :: SymInteger) .> con j @=? (con (i > j) :: SymBool)
                 (con i :: SymInteger)
                   `symCompare` con j
                   @=? (i `symCompare` j :: UnionM Ordering),
@@ -739,12 +739,12 @@ symPrimTests =
                 let b :: SymInteger = ssym "b"
                 let at :: Term Integer = ssymTerm "a"
                 let bt :: Term Integer = ssymTerm "b"
-                a <=~ b @=? SymBool (pevalLeNumTerm at bt)
-                a <~ b @=? SymBool (pevalLtNumTerm at bt)
-                a >=~ b @=? SymBool (pevalGeNumTerm at bt)
-                a >~ b @=? SymBool (pevalGtNumTerm at bt)
+                a .<= b @=? SymBool (pevalLeNumTerm at bt)
+                a .< b @=? SymBool (pevalLtNumTerm at bt)
+                a .>= b @=? SymBool (pevalGeNumTerm at bt)
+                a .> b @=? SymBool (pevalGtNumTerm at bt)
                 (a `symCompare` ssym "b" :: UnionM Ordering)
-                  @=? mrgIf (a <~ b) (mrgSingle LT) (mrgIf (a ==~ b) (mrgSingle EQ) (mrgSingle GT))
+                  @=? mrgIf (a .< b) (mrgSingle LT) (mrgIf (a .== b) (mrgSingle EQ) (mrgSingle GT))
             ]
         ],
       let au :: SymWordN 4 = ssym "a"
@@ -812,10 +812,10 @@ symPrimTests =
                               jint = fromIntegral j
                            in safeAdd (toSym i :: SymIntN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint + jint <~ fromIntegral (i + j))
+                                  (iint + jint .< fromIntegral (i + j))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (iint + jint >~ fromIntegral (i + j))
+                                      (iint + jint .> fromIntegral (i + j))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ i + j :: ExceptT ArithException UnionM (SymIntN 8))
                                   ),
@@ -825,10 +825,10 @@ symPrimTests =
                               jint = fromIntegral j
                            in safeMinus (toSym i :: SymIntN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint - jint <~ fromIntegral (i - j))
+                                  (iint - jint .< fromIntegral (i - j))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (iint - jint >~ fromIntegral (i - j))
+                                      (iint - jint .> fromIntegral (i - j))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ i - j :: ExceptT ArithException UnionM (SymIntN 8))
                                   ),
@@ -837,10 +837,10 @@ symPrimTests =
                           let iint = fromIntegral i :: Integer
                            in safeNeg (toSym i :: SymIntN 8)
                                 @=? mrgIf
-                                  (-iint <~ fromIntegral (-i))
+                                  (-iint .< fromIntegral (-i))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (-iint >~ fromIntegral (-i))
+                                      (-iint .> fromIntegral (-i))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ -i :: ExceptT ArithException UnionM (SymIntN 8))
                                   )
@@ -853,10 +853,10 @@ symPrimTests =
                               jint = fromIntegral j
                            in safeAdd (toSym i :: SymWordN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint + jint <~ fromIntegral (i + j))
+                                  (iint + jint .< fromIntegral (i + j))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (iint + jint >~ fromIntegral (i + j))
+                                      (iint + jint .> fromIntegral (i + j))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ i + j :: ExceptT ArithException UnionM (SymWordN 8))
                                   ),
@@ -866,10 +866,10 @@ symPrimTests =
                               jint = fromIntegral j
                            in safeMinus (toSym i :: SymWordN 8) (toSym j)
                                 @=? mrgIf
-                                  (iint - jint <~ fromIntegral (i - j))
+                                  (iint - jint .< fromIntegral (i - j))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (iint - jint >~ fromIntegral (i - j))
+                                      (iint - jint .> fromIntegral (i - j))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ i - j :: ExceptT ArithException UnionM (SymWordN 8))
                                   ),
@@ -878,10 +878,10 @@ symPrimTests =
                           let iint = fromIntegral i :: Integer
                            in safeNeg (toSym i :: SymWordN 8)
                                 @=? mrgIf
-                                  (-iint <~ fromIntegral (-i))
+                                  (-iint .< fromIntegral (-i))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (-iint >~ fromIntegral (-i))
+                                      (-iint .> fromIntegral (-i))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ -i :: ExceptT ArithException UnionM (SymWordN 8))
                                   )
@@ -896,34 +896,34 @@ symPrimTests =
                     let js :: IntN 4 = fromInteger j
                     let normalizeu k = k - k `div` 16 * 16
                     let normalizes k = if normalizeu k >= 8 then normalizeu k - 16 else normalizeu k
-                    (con iu :: SymWordN 4) <=~ con ju @=? (con (normalizeu i <= normalizeu j) :: SymBool)
-                    (con iu :: SymWordN 4) <~ con ju @=? (con (normalizeu i < normalizeu j) :: SymBool)
-                    (con iu :: SymWordN 4) >=~ con ju @=? (con (normalizeu i >= normalizeu j) :: SymBool)
-                    (con iu :: SymWordN 4) >~ con ju @=? (con (normalizeu i > normalizeu j) :: SymBool)
+                    (con iu :: SymWordN 4) .<= con ju @=? (con (normalizeu i <= normalizeu j) :: SymBool)
+                    (con iu :: SymWordN 4) .< con ju @=? (con (normalizeu i < normalizeu j) :: SymBool)
+                    (con iu :: SymWordN 4) .>= con ju @=? (con (normalizeu i >= normalizeu j) :: SymBool)
+                    (con iu :: SymWordN 4) .> con ju @=? (con (normalizeu i > normalizeu j) :: SymBool)
                     (con iu :: SymWordN 4)
                       `symCompare` con ju
                       @=? (normalizeu i `symCompare` normalizeu j :: UnionM Ordering)
-                    (con is :: SymIntN 4) <=~ con js @=? (con (normalizes i <= normalizes j) :: SymBool)
-                    (con is :: SymIntN 4) <~ con js @=? (con (normalizes i < normalizes j) :: SymBool)
-                    (con is :: SymIntN 4) >=~ con js @=? (con (normalizes i >= normalizes j) :: SymBool)
-                    (con is :: SymIntN 4) >~ con js @=? (con (normalizes i > normalizes j) :: SymBool)
+                    (con is :: SymIntN 4) .<= con js @=? (con (normalizes i <= normalizes j) :: SymBool)
+                    (con is :: SymIntN 4) .< con js @=? (con (normalizes i < normalizes j) :: SymBool)
+                    (con is :: SymIntN 4) .>= con js @=? (con (normalizes i >= normalizes j) :: SymBool)
+                    (con is :: SymIntN 4) .> con js @=? (con (normalizes i > normalizes j) :: SymBool)
                     (con is :: SymIntN 4)
                       `symCompare` con js
                       @=? (normalizes i `symCompare` normalizes j :: UnionM Ordering),
                   testCase "SOrd on symbolic" $ do
-                    au <=~ bu @=? SymBool (pevalLeNumTerm aut but)
-                    au <~ bu @=? SymBool (pevalLtNumTerm aut but)
-                    au >=~ bu @=? SymBool (pevalGeNumTerm aut but)
-                    au >~ bu @=? SymBool (pevalGtNumTerm aut but)
+                    au .<= bu @=? SymBool (pevalLeNumTerm aut but)
+                    au .< bu @=? SymBool (pevalLtNumTerm aut but)
+                    au .>= bu @=? SymBool (pevalGeNumTerm aut but)
+                    au .> bu @=? SymBool (pevalGtNumTerm aut but)
                     (au `symCompare` bu :: UnionM Ordering)
-                      @=? mrgIf (au <~ bu) (mrgSingle LT) (mrgIf (au ==~ bu) (mrgSingle EQ) (mrgSingle GT))
+                      @=? mrgIf (au .< bu) (mrgSingle LT) (mrgIf (au .== bu) (mrgSingle EQ) (mrgSingle GT))
 
-                    as <=~ bs @=? SymBool (pevalLeNumTerm ast bst)
-                    as <~ bs @=? SymBool (pevalLtNumTerm ast bst)
-                    as >=~ bs @=? SymBool (pevalGeNumTerm ast bst)
-                    as >~ bs @=? SymBool (pevalGtNumTerm ast bst)
+                    as .<= bs @=? SymBool (pevalLeNumTerm ast bst)
+                    as .< bs @=? SymBool (pevalLtNumTerm ast bst)
+                    as .>= bs @=? SymBool (pevalGeNumTerm ast bst)
+                    as .> bs @=? SymBool (pevalGtNumTerm ast bst)
                     (as `symCompare` bs :: UnionM Ordering)
-                      @=? mrgIf (as <~ bs) (mrgSingle LT) (mrgIf (as ==~ bs) (mrgSingle EQ) (mrgSingle GT))
+                      @=? mrgIf (as .< bs) (mrgSingle LT) (mrgIf (as .== bs) (mrgSingle EQ) (mrgSingle GT))
                 ],
               testGroup
                 "Bits"
@@ -1076,7 +1076,7 @@ symPrimTests =
             symSize (con 1 + ssym "a" :: SymInteger) @=? 3
             symSize (ssym "a" + ssym "a" :: SymInteger) @=? 2
             symSize (-(ssym "a") :: SymInteger) @=? 2
-            symSize (ites (ssym "a" :: SymBool) (ssym "b") (ssym "c") :: SymInteger) @=? 4,
+            symSize (symIte (ssym "a" :: SymBool) (ssym "b") (ssym "c") :: SymInteger) @=? 4,
           testCase "symsSize" $ symsSize [ssym "a" :: SymInteger, ssym "a" + ssym "a"] @=? 2
         ],
       let asymbol :: TypedSymbol Integer = "a"

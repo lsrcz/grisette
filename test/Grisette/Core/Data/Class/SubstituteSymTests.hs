@@ -19,7 +19,7 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((||~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.||)))
 import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.TestValues (ssymBool, ssymbolBool)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
@@ -48,7 +48,7 @@ substituteSymTests =
             let subst = substituteSym asym b
             subst a @?= b
             subst c @?= c
-            subst (a ||~ c) @?= b ||~ c,
+            subst (a .|| c) @?= b .|| c,
           testProperty "Bool" $ ioProperty . concreteSubstituteSymOkProp @Bool,
           testProperty "Integer" $
             ioProperty . concreteSubstituteSymOkProp @Integer,

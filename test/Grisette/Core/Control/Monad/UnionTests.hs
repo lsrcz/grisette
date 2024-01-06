@@ -8,8 +8,8 @@
 module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 
 import GHC.Generics (Generic)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy (SortedStrategy),
@@ -117,7 +117,7 @@ unionTests =
               "a"
               (UnionSingle ("b" :: SymInteger))
               (UnionSingle "c")
-              @?= UnionSingle (ites "a" "b" "c"),
+              @?= UnionSingle (symIte "a" "b" "c"),
           testGroup
             "ifWithStrategy with ordered mergeables"
             [ testGroup
@@ -166,7 +166,7 @@ unionTests =
                               "a"
                               (UnionSingle (Just ("b" :: SymInteger)))
                               (UnionSingle (Just "c"))
-                              @?= UnionSingle (Just (ites "a" "b" "c"))
+                              @?= UnionSingle (Just (symIte "a" "b" "c"))
                         ],
                       testGroup
                         "idxt == idxf but not terminal"
@@ -188,7 +188,7 @@ unionTests =
                               "a"
                               (UnionSingle $ Just $ Just ("b" :: SymInteger))
                               (UnionSingle $ Just $ Just "c")
-                              @?= UnionSingle (Just (Just (ites "a" "b" "c")))
+                              @?= UnionSingle (Just (Just (symIte "a" "b" "c")))
                         ]
                     ],
                   testGroup
@@ -202,7 +202,7 @@ unionTests =
                           @?= UnionIf
                             1
                             True
-                            (nots "a")
+                            (symNot "a")
                             (UnionSingle 1)
                             (UnionSingle 2),
                       testCase "Maybe Integer" $
@@ -214,7 +214,7 @@ unionTests =
                           @?= UnionIf
                             Nothing
                             True
-                            (nots "a")
+                            (symNot "a")
                             (UnionSingle Nothing)
                             (UnionSingle (Just 2))
                     ]
@@ -278,7 +278,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ("b" ||~ "a")
+                                    ("b" .|| "a")
                                     (UnionSingle $ Just 1)
                                     (UnionSingle (Just 3)),
                               testCase "subidxft < sub-idxt < sub-idxff" $
@@ -290,7 +290,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ((nots "b") &&~ "a")
+                                    ((symNot "b") .&& "a")
                                     (UnionSingle $ Just 1)
                                     ( UnionIf
                                         (Just 2)
@@ -308,7 +308,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ((nots "b") &&~ "a")
+                                    ((symNot "b") .&& "a")
                                     (UnionSingle $ Just 1)
                                     (UnionSingle (Just 3)),
                               testCase "sub-idxff < sub-idxt" $
@@ -320,12 +320,12 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ((nots "b") &&~ "a")
+                                    ((symNot "b") .&& "a")
                                     (UnionSingle $ Just 1)
                                     ( UnionIf
                                         (Just 3)
                                         True
-                                        (nots "b")
+                                        (symNot "b")
                                         (UnionSingle $ Just 3)
                                         (UnionSingle $ Just 4)
                                     )
@@ -345,7 +345,7 @@ unionTests =
                           @?= UnionIf
                             (Left 1)
                             True
-                            (nots "b")
+                            (symNot "b")
                             ( UnionIf
                                 (Left 1)
                                 True
@@ -386,7 +386,7 @@ unionTests =
                       @?= UnionIf
                         (Left 0)
                         True
-                        ("b" ||~ "a")
+                        ("b" .|| "a")
                         ( UnionIf
                             (Left 0)
                             True
@@ -406,7 +406,7 @@ unionTests =
                       @?= UnionIf
                         (Left 1)
                         True
-                        ((nots "b") &&~ "a")
+                        ((symNot "b") .&& "a")
                         (UnionSingle $ Left 1)
                         ( UnionIf
                             (Right 0)
@@ -461,7 +461,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 0)
                                     True
-                                    (nots "b")
+                                    (symNot "b")
                                     (UnionSingle $ Just 0)
                                     ( UnionIf
                                         (Just 1)
@@ -479,7 +479,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ((nots "b") ||~ "a")
+                                    ((symNot "b") .|| "a")
                                     (UnionSingle $ Just 1)
                                     (UnionSingle (Just 3)),
                               testCase "sub-idxtt < sub-idxf < sub-idxtf" $
@@ -491,12 +491,12 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ("b" &&~ "a")
+                                    ("b" .&& "a")
                                     (UnionSingle $ Just 1)
                                     ( UnionIf
                                         (Just 2)
                                         True
-                                        (nots "b")
+                                        (symNot "b")
                                         (UnionSingle $ Just 2)
                                         (UnionSingle $ Just 3)
                                     ),
@@ -509,7 +509,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ("b" &&~ "a")
+                                    ("b" .&& "a")
                                     (UnionSingle $ Just 1)
                                     (UnionSingle (Just 3)),
                               testCase "sub-idxtf < sub-idxf" $
@@ -521,7 +521,7 @@ unionTests =
                                   @?= UnionIf
                                     (Just 1)
                                     True
-                                    ("b" &&~ "a")
+                                    ("b" .&& "a")
                                     (UnionSingle $ Just 1)
                                     ( UnionIf
                                         (Just 3)
@@ -546,7 +546,7 @@ unionTests =
                           @?= UnionIf
                             (Left 1)
                             True
-                            (nots "b")
+                            (symNot "b")
                             (UnionSingle $ Left 1)
                             ( UnionIf
                                 (Right 1)
@@ -567,12 +567,12 @@ unionTests =
                       @?= UnionIf
                         (Left 1)
                         True
-                        ("b" &&~ "a")
+                        ("b" .&& "a")
                         (UnionSingle $ Left 1)
                         ( UnionIf
                             (Right 0)
                             True
-                            (nots "b")
+                            (symNot "b")
                             (UnionSingle $ Right 0)
                             (UnionSingle $ Right 3)
                         ),
@@ -587,11 +587,11 @@ unionTests =
                       @?= UnionIf
                         (Left 0)
                         True
-                        ((nots "b") ||~ "a")
+                        ((symNot "b") .|| "a")
                         ( UnionIf
                             (Left 0)
                             True
-                            (nots "b")
+                            (symNot "b")
                             (UnionSingle $ Left 0)
                             (UnionSingle $ Left 1)
                         )
@@ -607,7 +607,7 @@ unionTests =
                       @?= UnionIf
                         0
                         True
-                        (nots "b")
+                        (symNot "b")
                         (UnionSingle 0)
                         (UnionIf 1 True "a" (UnionSingle 1) (UnionSingle 3))
                 ],
@@ -630,11 +630,11 @@ unionTests =
                       @?= UnionIf
                         (Left 1)
                         True
-                        ("c" ||~ "b")
+                        ("c" .|| "b")
                         ( UnionIf
                             (Left 1)
                             True
-                            ((nots "c") ||~ "a")
+                            ((symNot "c") .|| "a")
                             (UnionSingle $ Left 1)
                             (UnionSingle $ Left 2)
                         )
@@ -656,11 +656,11 @@ unionTests =
                       @?= UnionIf
                         (Left 1)
                         True
-                        ((nots "c") ||~ "b")
+                        ((symNot "c") .|| "b")
                         ( UnionIf
                             (Left 1)
                             True
-                            ("c" ||~ "a")
+                            ("c" .|| "a")
                             (UnionSingle $ Left 1)
                             (UnionSingle $ Left 2)
                         )
@@ -682,16 +682,16 @@ unionTests =
                       @?= UnionIf
                         (TS1 1)
                         True
-                        ("c" &&~ "a")
+                        ("c" .&& "a")
                         (UnionSingle $ TS1 1)
                         ( UnionIf
                             (TS2 1)
                             True
-                            ("c" ||~ "b")
+                            ("c" .|| "b")
                             ( UnionIf
                                 (TS2 1)
                                 True
-                                (nots "c")
+                                (symNot "c")
                                 (UnionSingle $ TS2 1)
                                 (UnionSingle $ TS2 2)
                             )
@@ -714,7 +714,7 @@ unionTests =
                       @?= UnionIf
                         (TS1 1)
                         True
-                        (ites "c" "a" "b")
+                        (symIte "c" "a" "b")
                         ( UnionIf
                             (TS1 1)
                             True
@@ -746,12 +746,12 @@ unionTests =
                       @?= UnionIf
                         (TS1 1)
                         True
-                        ((nots "c") &&~ "b")
+                        ((symNot "c") .&& "b")
                         (UnionSingle $ TS1 1)
                         ( UnionIf
                             (TS2 1)
                             True
-                            ((nots "c") ||~ "a")
+                            ((symNot "c") .|| "a")
                             ( UnionIf
                                 (TS2 1)
                                 True
@@ -781,11 +781,11 @@ unionTests =
                   @?= UnionIf
                     (Left 1)
                     True
-                    (ites "c" (nots "a") (nots "b"))
+                    (symIte "c" (symNot "a") (symNot "b"))
                     ( UnionIf
                         (Left 1)
                         True
-                        (nots "c")
+                        (symNot "c")
                         (UnionSingle $ Left 1)
                         (UnionSingle $ Left 2)
                     )
@@ -820,11 +820,11 @@ unionTests =
               @?= UnionIf
                 (Left 1)
                 True
-                (ites "c" (nots "a") (nots "b"))
+                (symIte "c" (symNot "a") (symNot "b"))
                 ( UnionIf
                     (Left 1)
                     True
-                    (nots "c")
+                    (symNot "c")
                     (UnionSingle $ Left 1)
                     (UnionSingle $ Left 2)
                 )

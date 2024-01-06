@@ -137,12 +137,12 @@ class
 -- CEGIS with a single symbolic input to represent a set of inputs.
 --
 -- The following example tries to find the value of @c@ such that for all
--- positive @x@, @x * c < 0 && c > -2@. The @c >~ -2@ clause is used to make
+-- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ clause is used to make
 -- the solution unique.
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
--- >>> cegis (precise z3) x (cegisPrePost (x >~ 0) (x * c <~ 0 &&~ c >~ -2))
+-- >>> cegis (precise z3) x (cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
 -- ([],Right (Model {c -> -1 :: Integer}))
 cegis ::
   ( CEGISSolver config failure,
@@ -251,7 +251,7 @@ cegisExceptStdVCMultiInputs config cexes =
 -- readability and modularity of the code.
 --
 -- The following example tries to find the value of @c@ such that for all
--- positive @x@, @x * c < 0 && c > -2@. The @c >~ -2@ assertion is used to make
+-- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ assertion is used to make
 -- the solution unique.
 --
 -- >>> :set -XOverloadedStrings
@@ -260,9 +260,9 @@ cegisExceptStdVCMultiInputs config cexes =
 -- >>> :{
 --   res :: ExceptT VerificationConditions UnionM ()
 --   res = do
---     symAssume $ x >~ 0
---     symAssert $ x * c <~ 0
---     symAssert $ c >~ -2
+--     symAssume $ x .> 0
+--     symAssert $ x * c .< 0
+--     symAssert $ c .> -2
 -- :}
 --
 -- >>> :{
@@ -327,7 +327,7 @@ cegisExceptVC config inputs f v =
 -- The '()' result will not fail any conditions.
 --
 -- The following example tries to find the value of @c@ such that for all
--- positive @x@, @x * c < 0 && c > -2@. The @c >~ -2@ assertion is used to make
+-- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ assertion is used to make
 -- the solution unique.
 --
 -- >>> :set -XOverloadedStrings
@@ -336,9 +336,9 @@ cegisExceptVC config inputs f v =
 -- >>> :{
 --   res :: ExceptT VerificationConditions UnionM ()
 --   res = do
---     symAssume $ x >~ 0
---     symAssert $ x * c <~ 0
---     symAssert $ c >~ -2
+--     symAssume $ x .> 0
+--     symAssert $ x * c .< 0
+--     symAssert $ c .> -2
 -- :}
 --
 -- >>> cegisExceptStdVC (precise z3) x res

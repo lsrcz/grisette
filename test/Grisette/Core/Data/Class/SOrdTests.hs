@@ -22,10 +22,10 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (<=~), (<~), (>=~), (>~)),
+  ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
   )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
@@ -42,10 +42,10 @@ import Test.QuickCheck (ioProperty)
 
 concreteOrdOkProp :: (HasCallStack, SOrd a, Ord a) => (a, a) -> Assertion
 concreteOrdOkProp (i, j) = do
-  i <=~ j @?= conBool (i <= j)
-  i <~ j @?= conBool (i < j)
-  i >=~ j @?= conBool (i >= j)
-  i >~ j @?= conBool (i > j)
+  i .<= j @?= conBool (i <= j)
+  i .< j @?= conBool (i < j)
+  i .>= j @?= conBool (i >= j)
+  i .> j @?= conBool (i > j)
   symCompare i j @?= (mrgReturn $ compare i j :: UnionM Ordering)
 
 symbolicProdOrdOkProp ::
@@ -58,10 +58,10 @@ symbolicProdOrdOkProp ::
   vr ->
   Assertion
 symbolicProdOrdOkProp l r ll lr rl rr = do
-  l <=~ r @?= ((ll <~ rl) ||~ ((ll ==~ rl) &&~ (lr <=~ rr)))
-  l <~ r @?= ((ll <~ rl) ||~ ((ll ==~ rl) &&~ (lr <~ rr)))
-  l >=~ r @?= ((ll >~ rl) ||~ ((ll ==~ rl) &&~ (lr >=~ rr)))
-  l >~ r @?= ((ll >~ rl) ||~ ((ll ==~ rl) &&~ (lr >~ rr)))
+  l .<= r @?= ((ll .< rl) .|| ((ll .== rl) .&& (lr .<= rr)))
+  l .< r @?= ((ll .< rl) .|| ((ll .== rl) .&& (lr .< rr)))
+  l .>= r @?= ((ll .> rl) .|| ((ll .== rl) .&& (lr .>= rr)))
+  l .> r @?= ((ll .> rl) .|| ((ll .== rl) .&& (lr .> rr)))
   l
     `symCompare` r
     @?= ( ( do
@@ -82,45 +82,45 @@ sordTests =
         [ testGroup
             "SymBool"
             [ testCase "Concrete SymBool" $ do
-                conBool False <=~ conBool False @?= conBool True
-                conBool False <~ conBool False @?= conBool False
-                conBool False >=~ conBool False @?= conBool True
-                conBool False >~ conBool False @?= conBool False
-                conBool False <=~ conBool True @?= conBool True
-                conBool False <~ conBool True @?= conBool True
-                conBool False >=~ conBool True @?= conBool False
-                conBool False >~ conBool True @?= conBool False
-                conBool True <=~ conBool False @?= conBool False
-                conBool True <~ conBool False @?= conBool False
-                conBool True >=~ conBool False @?= conBool True
-                conBool True >~ conBool False @?= conBool True
-                conBool True <=~ conBool True @?= conBool True
-                conBool True <~ conBool True @?= conBool False
-                conBool True >=~ conBool True @?= conBool True
-                conBool True >~ conBool True @?= conBool False,
+                conBool False .<= conBool False @?= conBool True
+                conBool False .< conBool False @?= conBool False
+                conBool False .>= conBool False @?= conBool True
+                conBool False .> conBool False @?= conBool False
+                conBool False .<= conBool True @?= conBool True
+                conBool False .< conBool True @?= conBool True
+                conBool False .>= conBool True @?= conBool False
+                conBool False .> conBool True @?= conBool False
+                conBool True .<= conBool False @?= conBool False
+                conBool True .< conBool False @?= conBool False
+                conBool True .>= conBool False @?= conBool True
+                conBool True .> conBool False @?= conBool True
+                conBool True .<= conBool True @?= conBool True
+                conBool True .< conBool True @?= conBool False
+                conBool True .>= conBool True @?= conBool True
+                conBool True .> conBool True @?= conBool False,
               testCase "Symbolic SymBool" $ do
                 ssymBool "a"
-                  <=~ ssymBool "b"
-                  @?= (nots (ssymBool "a"))
-                    ||~ (ssymBool "b")
+                  .<= ssymBool "b"
+                  @?= (symNot (ssymBool "a"))
+                  .|| (ssymBool "b")
                 ssymBool "a"
-                  <~ ssymBool "b"
-                  @?= (nots (ssymBool "a"))
-                  &&~ (ssymBool "b")
+                  .< ssymBool "b"
+                  @?= (symNot (ssymBool "a"))
+                  .&& (ssymBool "b")
                 ssymBool "a"
-                  >=~ ssymBool "b"
+                  .>= ssymBool "b"
                   @?= (ssymBool "a")
-                    ||~ (nots (ssymBool "b"))
+                  .|| (symNot (ssymBool "b"))
                 ssymBool "a"
-                  >~ ssymBool "b"
+                  .> ssymBool "b"
                   @?= (ssymBool "a")
-                    &&~ (nots (ssymBool "b"))
+                  .&& (symNot (ssymBool "b"))
                 symCompare (ssymBool "a") (ssymBool "b")
                   @?= ( mrgIf
-                          ((nots (ssymBool "a")) &&~ (ssymBool "b"))
+                          ((symNot (ssymBool "a")) .&& (ssymBool "b"))
                           (mrgSingle LT)
                           ( mrgIf
-                              ((ssymBool "a") ==~ (ssymBool "b"))
+                              ((ssymBool "a") .== (ssymBool "b"))
                               (mrgSingle EQ)
                               (mrgSingle GT)
                           ) ::
@@ -147,44 +147,44 @@ sordTests =
               testProperty "[String]" $
                 ioProperty . concreteOrdOkProp @[String],
               testCase "[SymBool]" $ do
-                ([] :: [SymBool]) <=~ [] @?= conBool True
-                ([] :: [SymBool]) <~ [] @?= conBool False
-                ([] :: [SymBool]) >=~ [] @?= conBool True
-                ([] :: [SymBool]) >~ [] @?= conBool False
+                ([] :: [SymBool]) .<= [] @?= conBool True
+                ([] :: [SymBool]) .< [] @?= conBool False
+                ([] :: [SymBool]) .>= [] @?= conBool True
+                ([] :: [SymBool]) .> [] @?= conBool False
                 ([] :: [SymBool])
                   `symCompare` []
                   @?= (mrgSingle EQ :: UnionM Ordering)
-                [] <=~ [ssymBool "a"] @?= conBool True
-                [] <~ [ssymBool "a"] @?= conBool True
-                [] >=~ [ssymBool "a"] @?= conBool False
-                [] >~ [ssymBool "a"] @?= conBool False
+                [] .<= [ssymBool "a"] @?= conBool True
+                [] .< [ssymBool "a"] @?= conBool True
+                [] .>= [ssymBool "a"] @?= conBool False
+                [] .> [ssymBool "a"] @?= conBool False
                 []
                   `symCompare` [ssymBool "a"]
                   @?= (mrgSingle LT :: UnionM Ordering)
-                [ssymBool "a"] <=~ [] @?= conBool False
-                [ssymBool "a"] <~ [] @?= conBool False
-                [ssymBool "a"] >=~ [] @?= conBool True
-                [ssymBool "a"] >~ [] @?= conBool True
+                [ssymBool "a"] .<= [] @?= conBool False
+                [ssymBool "a"] .< [] @?= conBool False
+                [ssymBool "a"] .>= [] @?= conBool True
+                [ssymBool "a"] .> [] @?= conBool True
                 [ssymBool "a"]
                   `symCompare` []
                   @?= (mrgSingle GT :: UnionM Ordering)
 
                 [ssymBool "a", ssymBool "b"]
-                  <=~ [ssymBool "c"]
-                  @?= (ssymBool "a" <~ ssymBool "c" :: SymBool)
+                  .<= [ssymBool "c"]
+                  @?= (ssymBool "a" .< ssymBool "c" :: SymBool)
                 [ssymBool "a", ssymBool "b"]
-                  <~ [ssymBool "c"]
-                  @?= (ssymBool "a" <~ ssymBool "c" :: SymBool)
+                  .< [ssymBool "c"]
+                  @?= (ssymBool "a" .< ssymBool "c" :: SymBool)
                 [ssymBool "a", ssymBool "b"]
-                  >=~ [ssymBool "c"]
-                  @?= ( (ssymBool "a" >~ ssymBool "c")
-                          ||~ (ssymBool "a" ==~ ssymBool "c") ::
+                  .>= [ssymBool "c"]
+                  @?= ( (ssymBool "a" .> ssymBool "c")
+                          .|| (ssymBool "a" .== ssymBool "c") ::
                           SymBool
                       )
                 [ssymBool "a", ssymBool "b"]
-                  >~ [ssymBool "c"]
-                  @?= ( (ssymBool "a" >~ ssymBool "c")
-                          ||~ (ssymBool "a" ==~ ssymBool "c") ::
+                  .> [ssymBool "c"]
+                  @?= ( (ssymBool "a" .> ssymBool "c")
+                          .|| (ssymBool "a" .== ssymBool "c") ::
                           SymBool
                       )
                 [ssymBool "a"]
@@ -192,30 +192,30 @@ sordTests =
                   @?= (ssymBool "a" `symCompare` ssymBool "b" :: UnionM Ordering)
 
                 [ssymBool "a"]
-                  <=~ [ssymBool "b", ssymBool "c"]
-                  @?= ( (ssymBool "a" <~ ssymBool "b")
-                          ||~ (ssymBool "a" ==~ ssymBool "b") ::
+                  .<= [ssymBool "b", ssymBool "c"]
+                  @?= ( (ssymBool "a" .< ssymBool "b")
+                          .|| (ssymBool "a" .== ssymBool "b") ::
                           SymBool
                       )
                 [ssymBool "a"]
-                  <~ [ssymBool "b", ssymBool "c"]
-                  @?= ( (ssymBool "a" <~ ssymBool "b")
-                          ||~ (ssymBool "a" ==~ ssymBool "b") ::
+                  .< [ssymBool "b", ssymBool "c"]
+                  @?= ( (ssymBool "a" .< ssymBool "b")
+                          .|| (ssymBool "a" .== ssymBool "b") ::
                           SymBool
                       )
                 [ssymBool "a"]
-                  >=~ [ssymBool "b", ssymBool "c"]
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .>= [ssymBool "b", ssymBool "c"]
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 [ssymBool "a"]
-                  >~ [ssymBool "b", ssymBool "c"]
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> [ssymBool "b", ssymBool "c"]
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 [ssymBool "a"]
                   `symCompare` [ssymBool "b", ssymBool "c"]
                   @?= ( mrgIf
-                          (ssymBool "a" <~ ssymBool "b")
+                          (ssymBool "a" .< ssymBool "b")
                           (mrgSingle LT)
                           ( mrgIf
-                              (ssymBool "a" ==~ ssymBool "b")
+                              (ssymBool "a" .== ssymBool "b")
                               (mrgSingle LT)
                               (mrgSingle GT)
                           ) ::
@@ -223,52 +223,52 @@ sordTests =
                       )
 
                 [ssymBool "a", ssymBool "b"]
-                  <=~ [ssymBool "c", ssymBool "d"]
-                  @?= ( (ssymBool "a" <~ ssymBool "c")
-                          ||~ ( ssymBool "a"
-                                  ==~ ssymBool "c"
-                                  &&~ ( (ssymBool "b" <~ ssymBool "d")
-                                          ||~ (ssymBool "b" ==~ ssymBool "d")
+                  .<= [ssymBool "c", ssymBool "d"]
+                  @?= ( (ssymBool "a" .< ssymBool "c")
+                          .|| ( ssymBool "a"
+                                  .== ssymBool "c"
+                                  .&& ( (ssymBool "b" .< ssymBool "d")
+                                          .|| (ssymBool "b" .== ssymBool "d")
                                       )
                               ) ::
                           SymBool
                       )
                 [ssymBool "a", ssymBool "b"]
-                  <~ [ssymBool "c", ssymBool "d"]
-                  @?= ( (ssymBool "a" <~ ssymBool "c")
-                          ||~ ( ssymBool "a"
-                                  ==~ ssymBool "c"
-                                  &&~ (ssymBool "b" <~ ssymBool "d")
+                  .< [ssymBool "c", ssymBool "d"]
+                  @?= ( (ssymBool "a" .< ssymBool "c")
+                          .|| ( ssymBool "a"
+                                  .== ssymBool "c"
+                                  .&& (ssymBool "b" .< ssymBool "d")
                               ) ::
                           SymBool
                       )
                 [ssymBool "a", ssymBool "b"]
-                  >=~ [ssymBool "c", ssymBool "d"]
-                  @?= ( (ssymBool "a" >~ ssymBool "c")
-                          ||~ ( ssymBool "a"
-                                  ==~ ssymBool "c"
-                                  &&~ ( (ssymBool "b" >~ ssymBool "d")
-                                          ||~ (ssymBool "b" ==~ ssymBool "d")
+                  .>= [ssymBool "c", ssymBool "d"]
+                  @?= ( (ssymBool "a" .> ssymBool "c")
+                          .|| ( ssymBool "a"
+                                  .== ssymBool "c"
+                                  .&& ( (ssymBool "b" .> ssymBool "d")
+                                          .|| (ssymBool "b" .== ssymBool "d")
                                       )
                               ) ::
                           SymBool
                       )
                 [ssymBool "a", ssymBool "b"]
-                  >~ [ssymBool "c", ssymBool "d"]
-                  @?= ( (ssymBool "a" >~ ssymBool "c")
-                          ||~ ( ssymBool "a"
-                                  ==~ ssymBool "c"
-                                  &&~ (ssymBool "b" >~ ssymBool "d")
+                  .> [ssymBool "c", ssymBool "d"]
+                  @?= ( (ssymBool "a" .> ssymBool "c")
+                          .|| ( ssymBool "a"
+                                  .== ssymBool "c"
+                                  .&& (ssymBool "b" .> ssymBool "d")
                               ) ::
                           SymBool
                       )
                 [ssymBool "a", ssymBool "b"]
                   `symCompare` [ssymBool "c", ssymBool "d"]
                   @?= ( mrgIf
-                          (ssymBool "a" <~ ssymBool "c")
+                          (ssymBool "a" .< ssymBool "c")
                           (mrgSingle LT)
                           ( mrgIf
-                              (ssymBool "a" ==~ ssymBool "c")
+                              (ssymBool "a" .== ssymBool "c")
                               (ssymBool "b" `symCompare` ssymBool "d")
                               (mrgSingle GT)
                           ) ::
@@ -280,39 +280,39 @@ sordTests =
             [ testProperty "Maybe Integer" $
                 ioProperty . concreteOrdOkProp @(Maybe Integer),
               testCase "Maybe SymBool" $ do
-                (Nothing :: Maybe SymBool) <=~ Nothing @?= conBool True
-                (Nothing :: Maybe SymBool) <~ Nothing @?= conBool False
-                (Nothing :: Maybe SymBool) >=~ Nothing @?= conBool True
-                (Nothing :: Maybe SymBool) >~ Nothing @?= conBool False
+                (Nothing :: Maybe SymBool) .<= Nothing @?= conBool True
+                (Nothing :: Maybe SymBool) .< Nothing @?= conBool False
+                (Nothing :: Maybe SymBool) .>= Nothing @?= conBool True
+                (Nothing :: Maybe SymBool) .> Nothing @?= conBool False
                 (Nothing :: Maybe SymBool)
                   `symCompare` Nothing
                   @?= (mrgSingle EQ :: UnionM Ordering)
-                Nothing <=~ Just (ssymBool "a") @?= conBool True
-                Nothing <~ Just (ssymBool "a") @?= conBool True
-                Nothing >=~ Just (ssymBool "a") @?= conBool False
-                Nothing >~ Just (ssymBool "a") @?= conBool False
+                Nothing .<= Just (ssymBool "a") @?= conBool True
+                Nothing .< Just (ssymBool "a") @?= conBool True
+                Nothing .>= Just (ssymBool "a") @?= conBool False
+                Nothing .> Just (ssymBool "a") @?= conBool False
                 Nothing
                   `symCompare` Just (ssymBool "a")
                   @?= (mrgSingle LT :: UnionM Ordering)
-                Just (ssymBool "a") <=~ Nothing @?= conBool False
-                Just (ssymBool "a") <~ Nothing @?= conBool False
-                Just (ssymBool "a") >=~ Nothing @?= conBool True
-                Just (ssymBool "a") >~ Nothing @?= conBool True
+                Just (ssymBool "a") .<= Nothing @?= conBool False
+                Just (ssymBool "a") .< Nothing @?= conBool False
+                Just (ssymBool "a") .>= Nothing @?= conBool True
+                Just (ssymBool "a") .> Nothing @?= conBool True
                 Just (ssymBool "a")
                   `symCompare` Nothing
                   @?= (mrgSingle GT :: UnionM Ordering)
                 Just (ssymBool "a")
-                  <=~ Just (ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= Just (ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 Just (ssymBool "a")
-                  <~ Just (ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< Just (ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 Just (ssymBool "a")
-                  >=~ Just (ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= Just (ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 Just (ssymBool "a")
-                  >~ Just (ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> Just (ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 Just (ssymBool "a")
                   `symCompare` Just (ssymBool "b")
                   @?= ( ssymBool "a" `symCompare` ssymBool "b" ::
@@ -327,64 +327,64 @@ sordTests =
                   . bimap MaybeT MaybeT,
               testCase "MaybeT Maybe SymBool" $ do
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  <=~ MaybeT Nothing
+                  .<= MaybeT Nothing
                   @?= conBool True
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  <=~ MaybeT (Just (Just (ssymBool "a")))
+                  .<= MaybeT (Just (Just (ssymBool "a")))
                   @?= conBool True
                 MaybeT (Just (Just (ssymBool "a")))
-                  <=~ (MaybeT Nothing :: MaybeT Maybe SymBool)
+                  .<= (MaybeT Nothing :: MaybeT Maybe SymBool)
                   @?= conBool False
                 MaybeT (Just (Just (ssymBool "a")))
-                  <=~ ( MaybeT (Just (Just (ssymBool "b"))) ::
+                  .<= ( MaybeT (Just (Just (ssymBool "b"))) ::
                           MaybeT Maybe SymBool
                       )
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
 
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  <~ MaybeT Nothing
+                  .< MaybeT Nothing
                   @?= conBool False
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  <~ MaybeT (Just (Just (ssymBool "a")))
+                  .< MaybeT (Just (Just (ssymBool "a")))
                   @?= conBool True
                 MaybeT (Just (Just (ssymBool "a")))
-                  <~ (MaybeT Nothing :: MaybeT Maybe SymBool)
+                  .< (MaybeT Nothing :: MaybeT Maybe SymBool)
                   @?= conBool False
                 MaybeT (Just (Just (ssymBool "a")))
-                  <~ ( MaybeT (Just (Just (ssymBool "b"))) ::
+                  .< ( MaybeT (Just (Just (ssymBool "b"))) ::
                          MaybeT Maybe SymBool
                      )
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
 
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  >=~ MaybeT Nothing
+                  .>= MaybeT Nothing
                   @?= conBool True
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  >=~ MaybeT (Just (Just (ssymBool "a")))
+                  .>= MaybeT (Just (Just (ssymBool "a")))
                   @?= conBool False
                 MaybeT (Just (Just (ssymBool "a")))
-                  >=~ (MaybeT Nothing :: MaybeT Maybe SymBool)
+                  .>= (MaybeT Nothing :: MaybeT Maybe SymBool)
                   @?= conBool True
                 MaybeT (Just (Just (ssymBool "a")))
-                  >=~ ( MaybeT (Just (Just (ssymBool "b"))) ::
+                  .>= ( MaybeT (Just (Just (ssymBool "b"))) ::
                           MaybeT Maybe SymBool
                       )
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
 
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  >~ MaybeT Nothing
+                  .> MaybeT Nothing
                   @?= conBool False
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  >~ MaybeT (Just (Just (ssymBool "a")))
+                  .> MaybeT (Just (Just (ssymBool "a")))
                   @?= conBool False
                 MaybeT (Just (Just (ssymBool "a")))
-                  >~ (MaybeT Nothing :: MaybeT Maybe SymBool)
+                  .> (MaybeT Nothing :: MaybeT Maybe SymBool)
                   @?= conBool True
                 MaybeT (Just (Just (ssymBool "a")))
-                  >~ ( MaybeT (Just (Just (ssymBool "b"))) ::
+                  .> ( MaybeT (Just (Just (ssymBool "b"))) ::
                          MaybeT Maybe SymBool
                      )
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
 
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
                   `symCompare` MaybeT Nothing
@@ -409,62 +409,62 @@ sordTests =
                 ioProperty . concreteOrdOkProp @(Either Integer Integer),
               testCase "Either SymBool SymBool" $ do
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  <=~ Left (ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= Left (ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  <~ Left (ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< Left (ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  >=~ Left (ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= Left (ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  >~ Left (ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> Left (ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 (Left (ssymBool "a") :: Either SymBool SymBool)
                   `symCompare` Left (ssymBool "b")
                   @?= (ssymBool "a" `symCompare` ssymBool "b")
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  <=~ Right (ssymBool "b")
+                  .<= Right (ssymBool "b")
                   @?= conBool True
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  <~ Right (ssymBool "b")
+                  .< Right (ssymBool "b")
                   @?= conBool True
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  >=~ Right (ssymBool "b")
+                  .>= Right (ssymBool "b")
                   @?= conBool False
                 (Left (ssymBool "a") :: Either SymBool SymBool)
-                  >~ Right (ssymBool "b")
+                  .> Right (ssymBool "b")
                   @?= conBool False
                 (Left (ssymBool "a") :: Either SymBool SymBool)
                   `symCompare` Right (ssymBool "b")
                   @?= (mrgSingle LT :: UnionM Ordering)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  <=~ Left (ssymBool "b")
+                  .<= Left (ssymBool "b")
                   @?= conBool False
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  <~ Left (ssymBool "b")
+                  .< Left (ssymBool "b")
                   @?= conBool False
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  >=~ Left (ssymBool "b")
+                  .>= Left (ssymBool "b")
                   @?= conBool True
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  >~ Left (ssymBool "b")
+                  .> Left (ssymBool "b")
                   @?= conBool True
                 (Right (ssymBool "a") :: Either SymBool SymBool)
                   `symCompare` Left (ssymBool "b")
                   @?= (mrgSingle GT :: UnionM Ordering)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  <=~ Right (ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= Right (ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  <~ Right (ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< Right (ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  >=~ Right (ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= Right (ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
-                  >~ Right (ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> Right (ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
                   `symCompare` Right (ssymBool "b")
                   @?= (ssymBool "a" `symCompare` ssymBool "b")
@@ -478,148 +478,148 @@ sordTests =
                   . bimap ExceptT ExceptT,
               testCase "ExceptT SymBool Maybe SymBool" $ do
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  <=~ ExceptT Nothing
+                  .<= ExceptT Nothing
                   @?= conBool True
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  <=~ ExceptT (Just (Left (ssymBool "a")))
+                  .<= ExceptT (Just (Left (ssymBool "a")))
                   @?= conBool True
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  <=~ ExceptT (Just (Right (ssymBool "a")))
+                  .<= ExceptT (Just (Right (ssymBool "a")))
                   @?= conBool True
                 ExceptT (Just (Left (ssymBool "a")))
-                  <=~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .<= (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool False
                 ExceptT (Just (Right (ssymBool "a")))
-                  <=~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .<= (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool False
                 ExceptT (Just (Left (ssymBool "a")))
-                  <=~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .<= ( ExceptT (Just (Left (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 ExceptT (Just (Right (ssymBool "a")))
-                  <=~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .<= ( ExceptT (Just (Left (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
                   @?= conBool False
                 ExceptT (Just (Left (ssymBool "a")))
-                  <=~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .<= ( ExceptT (Just (Right (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
                   @?= conBool True
                 ExceptT (Just (Right (ssymBool "a")))
-                  <=~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .<= ( ExceptT (Just (Right (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
 
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  <~ ExceptT Nothing
+                  .< ExceptT Nothing
                   @?= conBool False
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  <~ ExceptT (Just (Left (ssymBool "a")))
+                  .< ExceptT (Just (Left (ssymBool "a")))
                   @?= conBool True
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  <~ ExceptT (Just (Right (ssymBool "a")))
+                  .< ExceptT (Just (Right (ssymBool "a")))
                   @?= conBool True
                 ExceptT (Just (Left (ssymBool "a")))
-                  <~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .< (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool False
                 ExceptT (Just (Right (ssymBool "a")))
-                  <~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .< (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool False
                 ExceptT (Just (Left (ssymBool "a")))
-                  <~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .< ( ExceptT (Just (Left (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 ExceptT (Just (Right (ssymBool "a")))
-                  <~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .< ( ExceptT (Just (Left (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
                   @?= conBool False
                 ExceptT (Just (Left (ssymBool "a")))
-                  <~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .< ( ExceptT (Just (Right (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
                   @?= conBool True
                 ExceptT (Just (Right (ssymBool "a")))
-                  <~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .< ( ExceptT (Just (Right (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
 
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  >=~ ExceptT Nothing
+                  .>= ExceptT Nothing
                   @?= conBool True
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  >=~ ExceptT (Just (Left (ssymBool "a")))
+                  .>= ExceptT (Just (Left (ssymBool "a")))
                   @?= conBool False
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  >=~ ExceptT (Just (Right (ssymBool "a")))
+                  .>= ExceptT (Just (Right (ssymBool "a")))
                   @?= conBool False
                 ExceptT (Just (Left (ssymBool "a")))
-                  >=~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .>= (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool True
                 ExceptT (Just (Right (ssymBool "a")))
-                  >=~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .>= (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool True
                 ExceptT (Just (Left (ssymBool "a")))
-                  >=~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .>= ( ExceptT (Just (Left (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 ExceptT (Just (Right (ssymBool "a")))
-                  >=~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .>= ( ExceptT (Just (Left (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
                   @?= conBool True
                 ExceptT (Just (Left (ssymBool "a")))
-                  >=~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .>= ( ExceptT (Just (Right (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
                   @?= conBool False
                 ExceptT (Just (Right (ssymBool "a")))
-                  >=~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .>= ( ExceptT (Just (Right (ssymBool "b"))) ::
                           ExceptT SymBool Maybe SymBool
                       )
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
 
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  >~ ExceptT Nothing
+                  .> ExceptT Nothing
                   @?= conBool False
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  >~ ExceptT (Just (Left (ssymBool "a")))
+                  .> ExceptT (Just (Left (ssymBool "a")))
                   @?= conBool False
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
-                  >~ ExceptT (Just (Right (ssymBool "a")))
+                  .> ExceptT (Just (Right (ssymBool "a")))
                   @?= conBool False
                 ExceptT (Just (Left (ssymBool "a")))
-                  >~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .> (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool True
                 ExceptT (Just (Right (ssymBool "a")))
-                  >~ (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
+                  .> (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= conBool True
                 ExceptT (Just (Left (ssymBool "a")))
-                  >~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .> ( ExceptT (Just (Left (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 ExceptT (Just (Right (ssymBool "a")))
-                  >~ ( ExceptT (Just (Left (ssymBool "b"))) ::
+                  .> ( ExceptT (Just (Left (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
                   @?= conBool True
                 ExceptT (Just (Left (ssymBool "a")))
-                  >~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .> ( ExceptT (Just (Right (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
                   @?= conBool False
                 ExceptT (Just (Right (ssymBool "a")))
-                  >~ ( ExceptT (Just (Right (ssymBool "b"))) ::
+                  .> ( ExceptT (Just (Right (ssymBool "b"))) ::
                          ExceptT SymBool Maybe SymBool
                      )
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
 
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   `symCompare` ExceptT Nothing
@@ -893,52 +893,52 @@ sordTests =
                 ),
               testCase "Sum Maybe Maybe SymBool" $ do
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <=~ InL (Just $ ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= InL (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <~ InL (Just $ ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< InL (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >=~ InL (Just $ ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= InL (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >~ InL (Just $ ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> InL (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <=~ InR (Just $ ssymBool "b")
+                  .<= InR (Just $ ssymBool "b")
                   @?= conBool True
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <~ InR (Just $ ssymBool "b")
+                  .< InR (Just $ ssymBool "b")
                   @?= conBool True
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >=~ InR (Just $ ssymBool "b")
+                  .>= InR (Just $ ssymBool "b")
                   @?= conBool False
                 (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >~ InR (Just $ ssymBool "b")
+                  .> InR (Just $ ssymBool "b")
                   @?= conBool False
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <=~ InR (Just $ ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= InR (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <~ InR (Just $ ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< InR (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >=~ InR (Just $ ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= InR (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >~ InR (Just $ ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> InR (Just $ ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <=~ InL (Just $ ssymBool "b")
+                  .<= InL (Just $ ssymBool "b")
                   @?= conBool False
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  <~ InL (Just $ ssymBool "b")
+                  .< InL (Just $ ssymBool "b")
                   @?= conBool False
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >=~ InL (Just $ ssymBool "b")
+                  .>= InL (Just $ ssymBool "b")
                   @?= conBool True
                 (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
-                  >~ InL (Just $ ssymBool "b")
+                  .> InL (Just $ ssymBool "b")
                   @?= conBool True
             ],
           testGroup
@@ -960,23 +960,23 @@ sordTests =
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterLazy.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                      .<= WriterLazy.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterLazy.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                      .< WriterLazy.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterLazy.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                      .>= WriterLazy.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterLazy.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                      .> WriterLazy.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
@@ -988,25 +988,25 @@ sordTests =
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterLazy.WriterT
+                      .<= WriterLazy.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool True
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterLazy.WriterT
+                      .< WriterLazy.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool True
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterLazy.WriterT
+                      .>= WriterLazy.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool False
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
+                      .> WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool False
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
@@ -1018,22 +1018,22 @@ sordTests =
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterLazy.WriterT (Left $ ssymBool "b")
+                      .<= WriterLazy.WriterT (Left $ ssymBool "b")
                       @?= conBool False
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterLazy.WriterT (Left $ ssymBool "b")
+                      .< WriterLazy.WriterT (Left $ ssymBool "b")
                       @?= conBool False
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterLazy.WriterT (Left $ ssymBool "b")
+                      .>= WriterLazy.WriterT (Left $ ssymBool "b")
                       @?= conBool True
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterLazy.WriterT (Left $ ssymBool "b")
+                      .> WriterLazy.WriterT (Left $ ssymBool "b")
                       @?= conBool True
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
@@ -1044,34 +1044,34 @@ sordTests =
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
+                      .<= WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              <=~ (ssymBool "b", ssymBool "d") ::
+                              .<= (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
+                      .< WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              <~ (ssymBool "b", ssymBool "d") ::
+                              .< (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterLazy.WriterT
+                      .>= WriterLazy.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              >=~ (ssymBool "b", ssymBool "d") ::
+                              .>= (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
+                      .> WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              >~ (ssymBool "b", ssymBool "d") ::
+                              .> (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
@@ -1101,23 +1101,23 @@ sordTests =
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterStrict.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                      .<= WriterStrict.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterStrict.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                      .< WriterStrict.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterStrict.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                      .>= WriterStrict.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterStrict.WriterT (Left $ ssymBool "b")
-                      @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                      .> WriterStrict.WriterT (Left $ ssymBool "b")
+                      @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
@@ -1129,25 +1129,25 @@ sordTests =
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterStrict.WriterT
+                      .<= WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool True
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterStrict.WriterT
+                      .< WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool True
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterStrict.WriterT
+                      .>= WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool False
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterStrict.WriterT
+                      .> WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= conBool False
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
@@ -1161,25 +1161,25 @@ sordTests =
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterStrict.WriterT (Left $ ssymBool "b")
+                      .<= WriterStrict.WriterT (Left $ ssymBool "b")
                       @?= conBool False
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterStrict.WriterT (Left $ ssymBool "b")
+                      .< WriterStrict.WriterT (Left $ ssymBool "b")
                       @?= conBool False
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterStrict.WriterT (Left $ ssymBool "b")
+                      .>= WriterStrict.WriterT (Left $ ssymBool "b")
                       @?= conBool True
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterStrict.WriterT (Left $ ssymBool "b")
+                      .> WriterStrict.WriterT (Left $ ssymBool "b")
                       @?= conBool True
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
@@ -1192,40 +1192,40 @@ sordTests =
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <=~ WriterStrict.WriterT
+                      .<= WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              <=~ (ssymBool "b", ssymBool "d") ::
+                              .<= (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      <~ WriterStrict.WriterT
+                      .< WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              <~ (ssymBool "b", ssymBool "d") ::
+                              .< (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >=~ WriterStrict.WriterT
+                      .>= WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              >=~ (ssymBool "b", ssymBool "d") ::
+                              .>= (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
-                      >~ WriterStrict.WriterT
+                      .> WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
-                              >~ (ssymBool "b", ssymBool "d") ::
+                              .> (ssymBool "b", ssymBool "d") ::
                               SymBool
                           )
                     ( WriterStrict.WriterT $
@@ -1249,17 +1249,17 @@ sordTests =
                 ),
               testCase "Identity SymBool" $ do
                 (Identity $ ssymBool "a" :: Identity SymBool)
-                  <=~ Identity (ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= Identity (ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 (Identity $ ssymBool "a" :: Identity SymBool)
-                  <~ Identity (ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< Identity (ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 (Identity $ ssymBool "a" :: Identity SymBool)
-                  >=~ Identity (ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= Identity (ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 (Identity $ ssymBool "a" :: Identity SymBool)
-                  >~ Identity (ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> Identity (ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
             ],
           testGroup
             "IdentityT"
@@ -1272,23 +1272,23 @@ sordTests =
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <=~ IdentityT (Left $ ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= IdentityT (Left $ ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <~ IdentityT (Left $ ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< IdentityT (Left $ ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >=~ IdentityT (Left $ ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= IdentityT (Left $ ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >~ IdentityT (Left $ ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> IdentityT (Left $ ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
@@ -1298,22 +1298,22 @@ sordTests =
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <=~ IdentityT (Right $ ssymBool "b")
+                  .<= IdentityT (Right $ ssymBool "b")
                   @?= conBool True
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <~ IdentityT (Right $ ssymBool "b")
+                  .< IdentityT (Right $ ssymBool "b")
                   @?= conBool True
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >=~ IdentityT (Right $ ssymBool "b")
+                  .>= IdentityT (Right $ ssymBool "b")
                   @?= conBool False
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >~ IdentityT (Right $ ssymBool "b")
+                  .> IdentityT (Right $ ssymBool "b")
                   @?= conBool False
                 ( IdentityT $ Left $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
@@ -1324,22 +1324,22 @@ sordTests =
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <=~ IdentityT (Left $ ssymBool "b")
+                  .<= IdentityT (Left $ ssymBool "b")
                   @?= conBool False
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <~ IdentityT (Left $ ssymBool "b")
+                  .< IdentityT (Left $ ssymBool "b")
                   @?= conBool False
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >=~ IdentityT (Left $ ssymBool "b")
+                  .>= IdentityT (Left $ ssymBool "b")
                   @?= conBool True
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >~ IdentityT (Left $ ssymBool "b")
+                  .> IdentityT (Left $ ssymBool "b")
                   @?= conBool True
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
@@ -1350,23 +1350,23 @@ sordTests =
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <=~ IdentityT (Right $ ssymBool "b")
-                  @?= (ssymBool "a" <=~ ssymBool "b" :: SymBool)
+                  .<= IdentityT (Right $ ssymBool "b")
+                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  <~ IdentityT (Right $ ssymBool "b")
-                  @?= (ssymBool "a" <~ ssymBool "b" :: SymBool)
+                  .< IdentityT (Right $ ssymBool "b")
+                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >=~ IdentityT (Right $ ssymBool "b")
-                  @?= (ssymBool "a" >=~ ssymBool "b" :: SymBool)
+                  .>= IdentityT (Right $ ssymBool "b")
+                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )
-                  >~ IdentityT (Right $ ssymBool "b")
-                  @?= (ssymBool "a" >~ ssymBool "b" :: SymBool)
+                  .> IdentityT (Right $ ssymBool "b")
+                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
                   )

@@ -26,13 +26,13 @@ import Generics.Deriving (Default (Default))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.ModelOps
   ( SymbolSetOps (emptySet),
     SymbolSetRep (buildSymbolSet),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.TestValues
   ( isymBool,
     isymbolBool,
@@ -72,24 +72,24 @@ extractSymbolicsTests =
                 extractSymbolics (isymBool "a" 1)
                   @?= buildSymbolSet (isymbolBool "a" 1),
               testCase "And" $
-                extractSymbolics (ssymBool "a" &&~ isymBool "b" 1)
+                extractSymbolics (ssymBool "a" .&& isymBool "b" 1)
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "Or" $
-                extractSymbolics (ssymBool "a" ||~ isymBool "b" 1)
+                extractSymbolics (ssymBool "a" .|| isymBool "b" 1)
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "Equal" $
-                extractSymbolics (ssymBool "a" ==~ isymBool "b" 1)
+                extractSymbolics (ssymBool "a" .== isymBool "b" 1)
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "ITE" $
                 extractSymbolics
-                  (ites (ssymBool "a") (isymBool "b" 1) (ssymBool "c"))
+                  (symIte (ssymBool "a") (isymBool "b" 1) (ssymBool "c"))
                   @?= buildSymbolSet
                     ( ssymbolBool "a",
                       isymbolBool "b" 1,
                       ssymbolBool "c"
                     ),
               testCase "Not" $
-                extractSymbolics (nots $ isymBool "a" 1)
+                extractSymbolics (symNot $ isymBool "a" 1)
                   @?= buildSymbolSet (isymbolBool "a" 1)
             ],
           testProperty "Bool" $

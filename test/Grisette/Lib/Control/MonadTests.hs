@@ -16,8 +16,8 @@ import Grisette.Lib.Control.Monad
     mrgMplus,
     mrgMzero,
     mrgReturn,
-    (>>=~),
-    (>>~),
+    (.>>),
+    (.>>=),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -53,12 +53,12 @@ monadFunctionTests =
       testCase "mrgFmap" $ do
         mrgFmap (\x -> x * x) (mrgIf "a" (mrgReturn $ -1) (mrgReturn 1) :: UnionM Integer)
           @?= mrgReturn 1,
-      testCase ">>~" $ do
+      testCase ".>>" $ do
         (unionIf "a" (single $ -1) (single 1) :: UnionM Integer)
-          >>~ unionIf "a" (single $ -1) (single 1)
+          .>> unionIf "a" (single $ -1) (single 1)
           @?= (mrgIf "a" (mrgReturn $ -1) (mrgReturn 1) :: UnionM Integer),
-      testCase ">>=~" $ do
+      testCase ".>>=" $ do
         unionIf "a" (single $ -1) (single 1)
-          >>=~ (\x -> return $ x * x)
+          .>>= (\x -> return $ x * x)
           @?= (mrgSingle 1 :: UnionM Integer)
     ]

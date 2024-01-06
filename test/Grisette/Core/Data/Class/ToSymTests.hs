@@ -21,9 +21,9 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
@@ -53,11 +53,11 @@ toSymTests =
                       [ con True,
                         ssym "a",
                         isym "a" 1,
-                        ssym "a" &&~ ssym "b",
-                        ssym "a" ||~ ssym "b",
-                        nots (ssym "a"),
-                        (ssym "a" :: SymBool) ==~ ssym "b",
-                        ites (ssym "a") (ssym "b") (ssym "c")
+                        ssym "a" .&& ssym "b",
+                        ssym "a" .|| ssym "b",
+                        symNot (ssym "a"),
+                        (ssym "a" :: SymBool) .== ssym "b",
+                        symIte (ssym "a") (ssym "b") (ssym "c")
                       ]
                 traverse_ (\v -> toSym v @?= v) sbools
             ],

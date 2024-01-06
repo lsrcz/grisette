@@ -39,11 +39,11 @@ import Grisette.Core.Data.BV
     SomeWordN (SomeWordN),
     WordN,
   )
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((&&~), (||~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SOrd
-  ( SOrd ((<=~), (<~), (>=~), (>~)),
+  ( SOrd ((.<), (.<=), (.>), (.>=)),
   )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( merge,
@@ -110,7 +110,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeQuot l r = do
     (d, m) <- safeDivMod l r
     mrgIf
-      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
       (mrgSingle d)
       (mrgSingle $ d + 1)
 
@@ -119,7 +119,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeRem l r = do
     (_, m) <- safeDivMod l r
     mrgIf
-      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
       (mrgSingle m)
       (mrgSingle $ m - r)
 
@@ -128,7 +128,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeQuotRem l r = do
     (d, m) <- safeDivMod l r
     mrgIf
-      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
       (mrgSingle (d, m))
       (mrgSingle (d + 1, m - r))
 
@@ -169,7 +169,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeQuot' t l r = do
     (d, m) <- safeDivMod' t l r
     mrgIf
-      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
       (mrgSingle d)
       (mrgSingle $ d + 1)
 
@@ -179,7 +179,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeRem' t l r = do
     (_, m) <- safeDivMod' t l r
     mrgIf
-      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
       (mrgSingle m)
       (mrgSingle $ m - r)
 
@@ -189,7 +189,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeQuotRem' t l r = do
     (d, m) <- safeDivMod' t l r
     mrgIf
-      ((l >=~ 0 &&~ r >~ 0) ||~ (l <=~ 0 &&~ r <~ 0) ||~ m ==~ 0)
+      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
       (mrgSingle (d, m))
       (mrgSingle (d + 1, m - r))
 
@@ -295,24 +295,24 @@ instance SafeDivision (Either BitwidthMismatch ArithException) SomeWordN where
 #define SAFE_DIVISION_SYMBOLIC_FUNC(name, type, op) \
 name (type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError DivideByZero) \
     (mrgSingle $ type $ op l r); \
 QRIGHT(name) t (type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError (t DivideByZero)) \
     (mrgSingle $ type $ op l r)
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2(name, type, op1, op2) \
 name (type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError DivideByZero) \
     (mrgSingle (type $ op1 l r, type $ op2 l r)); \
 QRIGHT(name) t (type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError (t DivideByZero)) \
     (mrgSingle (type $ op1 l r, type $ op2 l r))
 
@@ -329,32 +329,32 @@ instance SafeDivision ArithException SymInteger where
 #define SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(name, type, op) \
 name ls@(type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError DivideByZero) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
       (mrgSingle $ type $ op l r)); \
 QRIGHT(name) t ls@(type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError (t DivideByZero)) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError (t Overflow)) \
       (mrgSingle $ type $ op l r))
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
 name ls@(type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError DivideByZero) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
       (mrgSingle (type $ op1 l r, type $ op2 l r))); \
 QRIGHT(name) t ls@(type l) rs@(type r) = \
   mrgIf \
-    (rs ==~ con 0) \
+    (rs .== con 0) \
     (throwError (t DivideByZero)) \
-    (mrgIf (rs ==~ con (-1) &&~ ls ==~ con minBound) \
+    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError (t Overflow)) \
       (mrgSingle (type $ op1 l r, type $ op2 l r)))
 

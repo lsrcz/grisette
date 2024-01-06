@@ -166,7 +166,7 @@ module Grisette.Core
     --
     -- >>> let a = "a" :: SymInteger
     -- >>> let b = "b" :: SymInteger
-    -- >>> a ==~ b
+    -- >>> a .== b
     -- (= a b)
 
     -- *** Creation of solvable type values
@@ -609,7 +609,7 @@ module Grisette.Core
     onUnion2,
     onUnion3,
     onUnion4,
-    (#~),
+    (.#),
 
     -- * Conversion between Concrete and Symbolic values
     ToCon (..),
@@ -842,9 +842,9 @@ module Grisette.Core
     -- >>> import Grisette.Backend.SBV
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
-    -- >>> solve (precise z3) (x + y ==~ 6 &&~ x - y ==~ 20)
+    -- >>> solve (precise z3) (x + y .== 6 .&& x - y .== 20)
     -- Right (Model {x -> 13 :: Integer, y -> -7 :: Integer})
-    -- >>> solve (precise z3) (x + y ==~ 6 &&~ x - y ==~ 19)
+    -- >>> solve (precise z3) (x + y .== 6 .&& x - y .== 19)
     -- Left Unsat
     --
     -- The first parameter of 'solve' is the solver configuration.
@@ -863,7 +863,7 @@ module Grisette.Core
     -- evaluate symbolic values. The following code evaluates the product of
     -- x and y under the solution of the equation system.
     --
-    -- >>> Right m <- solve (precise z3) (x + y ==~ 6 &&~ x - y ==~ 20)
+    -- >>> Right m <- solve (precise z3) (x + y .== 6 .&& x - y .== 20)
     -- >>> evaluateSym False m (x * y)
     -- -91
     --
@@ -921,7 +921,7 @@ module Grisette.Core
     --   res :: ExceptT Error UnionM ()
     --   res = do
     --     z <- x `sdiv` y
-    --     mrgIf (z >~ 0) (assert (x >=~ y)) (return ())
+    --     mrgIf (z .> 0) (assert (x .>= y)) (return ())
     -- :}
     --
     -- Then we can ask the solver to find a counter-example that would lead to
@@ -933,7 +933,7 @@ module Grisette.Core
     -- >>> res
     -- ExceptT {If (|| (= y 0) (&& (< 0 (div x y)) (! (<= y x)))) (If (= y 0) (Left Arith) (Left Assert)) (Right ())}
     --
-    -- > >>> solveExcept (UnboundedReasoning z3) (==~ Left Assert) res
+    -- > >>> solveExcept (UnboundedReasoning z3) (.== Left Assert) res
     -- > Right (Model {x -> -6 :: Integer, y -> -3 :: Integer}) -- possible output
     --
     -- Grisette also provide implementation for counter-example guided inductive
@@ -1050,7 +1050,7 @@ import Grisette.Core.Control.Monad.UnionM
     UnionM,
     liftToMonadUnion,
     unionSize,
-    (#~),
+    (.#),
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (..),

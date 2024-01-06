@@ -64,7 +64,7 @@ import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~)))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (exact, exceptFor),
     SymbolSetOps (isEmptySet),
@@ -214,9 +214,9 @@ approximateExtraConfig p =
 --
 -- >>> :set -XTypeApplications -XOverloadedStrings -XDataKinds
 -- >>> let a = "a" :: SymInteger
--- >>> solve (precise z3) $ a >~ 7 &&~ a <~ 9
+-- >>> solve (precise z3) $ a .> 7 .&& a .< 9
 -- Right (Model {a -> 8 :: Integer})
--- >>> solve (approx (Proxy @4) z3) $ a >~ 7 &&~ a <~ 9
+-- >>> solve (approx (Proxy @4) z3) $ a .> 7 .&& a .< 9
 -- Left Unsat
 --
 -- This may be avoided by setting an large enough reasoning precision to prevent
@@ -380,14 +380,14 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
           [] -> return (cexes, Right previousModel)
           newInput : vs -> do
             let CEGISCondition nextPre nextPost = func newInput
-            let finalPre = pre &&~ nextPre
-            let finalPost = post &&~ nextPost
+            let finalPre = pre .&& nextPre
+            let finalPost = post .&& nextPost
             r <- go cexFormula newInput (newInput : inputs) finalPre finalPost
             case r of
               (newCexes, Left failure) -> return (cexes ++ newCexes, Left failure)
               (newCexes, Right mo) -> do
                 go1
-                  (cexFormula &&~ cexesAssertFun newCexes)
+                  (cexFormula .&& cexesAssertFun newCexes)
                   (cexes ++ newCexes)
                   mo
                   (newInput : inputs)
@@ -395,9 +395,9 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
                   finalPost
                   vs
       cexAssertFun input =
-        let CEGISCondition pre post = func input in pre &&~ post
+        let CEGISCondition pre post = func input in pre .&& post
       cexesAssertFun :: [inputs] -> SymBool
-      cexesAssertFun = foldl (\acc x -> acc &&~ cexAssertFun x) (con True)
+      cexesAssertFun = foldl (\acc x -> acc .&& cexAssertFun x) (con True)
       go ::
         SymBool ->
         inputs ->
@@ -407,7 +407,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
         IO ([inputs], Either SolvingFailure PM.Model)
       go cexFormula inputs allInputs pre post =
         SBV.runSMTWith (sbvConfig config) $ do
-          let SymBool t = phi &&~ cexFormula
+          let SymBool t = phi .&& cexFormula
           (newm, a) <- lowerSinglePrim config t
           SBVC.query $
             applyTimeout config $
@@ -423,8 +423,8 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
         where
           forallSymbols :: SymbolSet
           forallSymbols = extractSymbolics allInputs
-          phi = pre &&~ post
-          negphi = pre &&~ nots post
+          phi = pre .&& post
+          negphi = pre .&& symNot post
           check :: Model -> IO (Either SolvingFailure (inputs, PM.Model))
           check candidate = do
             let evaluated = evaluateSym False candidate negphi

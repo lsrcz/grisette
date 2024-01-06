@@ -22,12 +22,14 @@ import Data.Bits (Bits (shiftL, shiftR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
-import Grisette (LogicalOp ((&&~), (||~)), SOrd ((>=~)))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.Core.Data.Class.LogicalOp
+  ( LogicalOp ((.&&), (.||)),
+  )
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SOrd
-  ( SOrd ((<~)),
+  ( SOrd ((.<), (.>=)),
   )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionLike,
@@ -152,36 +154,36 @@ instance (KnownNat n, 1 <= n) => SafeSymShift ArithException (SymWordN n) where
     return $ SymWordN $ pevalShiftRightTerm a s
   safeSymStrictShiftL' f a@(SymWordN ta) s@(SymWordN ts) =
     mrgIf
-      (s >=~ fromIntegral (finiteBitSize a))
+      (s .>= fromIntegral (finiteBitSize a))
       (mrgThrowError $ f Overflow)
       (return $ SymWordN $ pevalShiftLeftTerm ta ts)
   safeSymStrictShiftR' f a@(SymWordN ta) s@(SymWordN ts) =
     mrgIf
-      (s >=~ fromIntegral (finiteBitSize a))
+      (s .>= fromIntegral (finiteBitSize a))
       (mrgThrowError $ f Overflow)
       (return $ SymWordN $ pevalShiftRightTerm ta ts)
 
 instance (KnownNat n, 1 <= n) => SafeSymShift ArithException (SymIntN n) where
   safeSymShiftL' f (SymIntN a) ss@(SymIntN s) =
     mrgIf
-      (ss <~ 0)
+      (ss .< 0)
       (mrgThrowError $ f Overflow)
       (return $ SymIntN $ pevalShiftLeftTerm a s)
   safeSymShiftR' f (SymIntN a) ss@(SymIntN s) =
     mrgIf
-      (ss <~ 0)
+      (ss .< 0)
       (mrgThrowError $ f Overflow)
       (return $ SymIntN $ pevalShiftRightTerm a s)
   safeSymStrictShiftL' f a@(SymIntN ta) s@(SymIntN ts) =
     mrgIf
-      (s <~ 0 ||~ (bs >=~ 0 &&~ s >=~ bs))
+      (s .< 0 .|| (bs .>= 0 .&& s .>= bs))
       (mrgThrowError $ f Overflow)
       (return $ SymIntN $ pevalShiftLeftTerm ta ts)
     where
       bs = fromIntegral (finiteBitSize a)
   safeSymStrictShiftR' f a@(SymIntN ta) s@(SymIntN ts) =
     mrgIf
-      (s <~ 0 ||~ (bs >=~ 0 &&~ s >=~ bs))
+      (s .< 0 .|| (bs .>= 0 .&& s .>= bs))
       (mrgThrowError $ f Overflow)
       (return $ SymIntN $ pevalShiftRightTerm ta ts)
     where

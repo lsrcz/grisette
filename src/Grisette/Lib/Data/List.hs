@@ -10,7 +10,7 @@
 -- Portability :   GHC only
 module Grisette.Lib.Data.List
   ( -- * Symbolic versions of 'Data.List' operations
-    (!!~),
+    (.!!),
     symFilter,
     symTake,
     symDrop,
@@ -22,15 +22,15 @@ import Control.Monad.Except (MonadError (throwError))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Error (TransformError (transformError))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((<=~)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
+import Grisette.Core.Data.Class.SOrd (SOrd ((.<=)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
 
 -- | Symbolic version of 'Data.List.!!', the result would be merged and
 -- propagate the mergeable knowledge.
-(!!~) ::
+(.!!) ::
   ( MonadUnion uf,
     MonadError e uf,
     TransformError ArrayException e,
@@ -39,10 +39,10 @@ import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
   [a] ->
   SymInteger ->
   uf a
-l !!~ p = go l p 0
+l .!! p = go l p 0
   where
     go [] _ _ = throwError $ transformError (IndexOutOfBounds "!!~")
-    go (x : xs) p1 i = mrgIf (p1 ==~ i) (mrgReturn x) (go xs p1 $ i + 1)
+    go (x : xs) p1 i = mrgIf (p1 .== i) (mrgReturn x) (go xs p1 $ i + 1)
 
 -- | Symbolic version of 'Data.List.filter', the result would be merged and
 -- propagate the mergeable knowledge.
@@ -58,10 +58,10 @@ symFilter f = go
 -- propagate the mergeable knowledge.
 symTake :: (MonadUnion u, Mergeable a) => SymInteger -> [a] -> u [a]
 symTake _ [] = mrgReturn []
-symTake x (v : vs) = mrgIf (x <=~ 0) (mrgReturn []) (mrgFmap (v :) $ symTake (x - 1) vs)
+symTake x (v : vs) = mrgIf (x .<= 0) (mrgReturn []) (mrgFmap (v :) $ symTake (x - 1) vs)
 
 -- | Symbolic version of 'Data.List.drop', the result would be merged and
 -- propagate the mergeable knowledge.
 symDrop :: (MonadUnion u, Mergeable a) => SymInteger -> [a] -> u [a]
 symDrop _ [] = mrgReturn []
-symDrop x r@(_ : vs) = mrgIf (x <=~ 0) (mrgReturn r) (symDrop (x - 1) vs)
+symDrop x r@(_ : vs) = mrgIf (x .<= 0) (mrgReturn r) (symDrop (x - 1) vs)

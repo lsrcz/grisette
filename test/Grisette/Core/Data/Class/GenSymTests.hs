@@ -26,7 +26,7 @@ import Grisette.Core.Data.Class.GenSym
     runFresh,
     runFreshT,
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
     mrgSingle,
@@ -1202,16 +1202,16 @@ genSymTests =
                 (mrgIf (isymBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
           testCase "chooseSimpleFresh" $ do
             (runFresh (chooseSimpleFresh ["x", "y", "z"]) "a" :: SymBool)
-              @?= ites
+              @?= symIte
                 (isymBool "a" 0)
                 (ssymBool "x")
-                (ites (isymBool "a" 1) (ssymBool "y") (ssymBool "z")),
+                (symIte (isymBool "a" 1) (ssymBool "y") (ssymBool "z")),
           testCase "chooseSimple" $ do
             (chooseSimple ["x", "y", "z"] "a" :: SymBool)
-              @?= ites
+              @?= symIte
                 (isymBool "a" 0)
                 (ssymBool "x")
-                (ites (isymBool "a" 1) (ssymBool "y") (ssymBool "z")),
+                (symIte (isymBool "a" 1) (ssymBool "y") (ssymBool "z")),
           testCase "chooseUnionFresh" $ do
             ( runFresh
                 ( chooseUnionFresh

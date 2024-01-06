@@ -74,8 +74,8 @@ import Grisette.IR.SymPrim.Data.SymPrim
 -- | Substitution of symbolic constants.
 --
 -- >>> a = "a" :: TypedSymbol Bool
--- >>> v = "x" &&~ "y" :: SymBool
--- >>> substituteSym a v (["a" &&~ "b", "a"] :: [SymBool])
+-- >>> v = "x" .&& "y" :: SymBool
+-- >>> substituteSym a v (["a" .&& "b", "a"] :: [SymBool])
 -- [(&& (&& x y) b),(&& x y)]
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.
@@ -85,7 +85,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
 class SubstituteSym a where
   -- Substitute a symbolic constant to some symbolic value
   --
-  -- >>> substituteSym "a" ("c" &&~ "d" :: Sym Bool) ["a" &&~ "b" :: Sym Bool, "a"]
+  -- >>> substituteSym "a" ("c" .&& "d" :: Sym Bool) ["a" .&& "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
   substituteSym :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a -> a
 

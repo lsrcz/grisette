@@ -50,31 +50,31 @@ import Grisette.IR.SymPrim.Data.SymPrim
 -- >>> let a = "a" :: SymBool
 -- >>> let b = "b" :: SymBool
 -- >>> let c = "c" :: SymBool
--- >>> ites a b c
+-- >>> symIte a b c
 -- (ite a b c)
 class ITEOp v where
-  ites :: SymBool -> v -> v -> v
+  symIte :: SymBool -> v -> v -> v
 
 -- ITEOp instances
 #define ITEOP_SIMPLE(type) \
 instance ITEOp type where \
-  ites (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
-  {-# INLINE ites #-}
+  symIte (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
+  {-# INLINE symIte #-}
 
 #define ITEOP_BV(type) \
 instance (KnownNat n, 1 <= n) => ITEOp (type n) where \
-  ites (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
-  {-# INLINE ites #-}
+  symIte (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
+  {-# INLINE symIte #-}
 
 #define ITEOP_BV_SOME(symtype, bf) \
 instance ITEOp symtype where \
-  ites c = bf (ites c) "ites"; \
-  {-# INLINE ites #-}
+  symIte c = bf (symIte c) "symIte"; \
+  {-# INLINE symIte #-}
 
 #define ITEOP_FUN(op, cons) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ITEOp (sa op sb) where \
-  ites (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
-  {-# INLINE ites #-}
+  symIte (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
+  {-# INLINE symIte #-}
 
 #if 1
 ITEOP_SIMPLE(SymBool)

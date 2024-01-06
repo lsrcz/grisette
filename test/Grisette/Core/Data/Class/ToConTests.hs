@@ -18,9 +18,9 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
-import Grisette.Core.Data.Class.SEq (SEq ((==~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.TestValues
   ( conBool,
     isymBool,
@@ -57,11 +57,11 @@ toConTests =
                     let sbools :: [SymBool] =
                           [ ssymBool "a",
                             isymBool "a" 1,
-                            ssymBool "a" &&~ ssymBool "b",
-                            ssymBool "a" ||~ ssymBool "b",
-                            nots $ ssymBool "a",
-                            ssymBool "a" ==~ ssymBool "b",
-                            ites (ssymBool "a") (ssymBool "b") (ssymBool "c")
+                            ssymBool "a" .&& ssymBool "b",
+                            ssymBool "a" .|| ssymBool "b",
+                            symNot $ ssymBool "a",
+                            ssymBool "a" .== ssymBool "b",
+                            symIte (ssymBool "a") (ssymBool "b") (ssymBool "c")
                           ]
                     traverse_ (\v -> toCon v @?= (Nothing :: Maybe Bool)) sbools
                 ],
@@ -70,11 +70,11 @@ toConTests =
                       [ symTrue,
                         ssymBool "a",
                         isymBool "a" 1,
-                        ssymBool "a" &&~ ssymBool "b",
-                        ssymBool "a" ||~ ssymBool "b",
-                        nots $ ssymBool "a",
-                        ssymBool "a" ==~ ssymBool "b",
-                        ites (ssymBool "a") (ssymBool "b") (ssymBool "c")
+                        ssymBool "a" .&& ssymBool "b",
+                        ssymBool "a" .|| ssymBool "b",
+                        symNot $ ssymBool "a",
+                        ssymBool "a" .== ssymBool "b",
+                        symIte (ssymBool "a") (ssymBool "b") (ssymBool "c")
                       ]
                 traverse_ (\v -> toCon v @?= Just v) sbools
             ],

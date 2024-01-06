@@ -28,8 +28,8 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (nots, (&&~), (||~)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable
   ( DynamicSortedIdx (DynamicSortedIdx),
     Mergeable (rootStrategy),
@@ -87,7 +87,7 @@ mergeableTests =
                     f (con False) (ssym "a") (ssym "b") @?= ssym "b",
                   testCase "general condition" $
                     f (ssym "a") (ssym "b") (ssym "c")
-                      @?= ites (ssym "a") (ssym "b") (ssym "c")
+                      @?= symIte (ssym "a") (ssym "b") (ssym "c")
                 ],
           testProperty "Bool" $
             ioProperty . \(x :: Bool) ->
@@ -203,7 +203,7 @@ mergeableTests =
                             (Left (ssym "a") :: Either SymBool SymBool)
                     idxsL @?= [DynamicSortedIdx False]
                     fL (ssym "a") (Left $ ssym "b") (Left $ ssym "c")
-                      @?= Left (ites (ssym "a") (ssym "b") (ssym "c")),
+                      @?= Left (symIte (ssym "a") (ssym "b") (ssym "c")),
                   testCase "Right v" $ do
                     let (idxsR, SimpleStrategy fR) =
                           resolveStrategy
@@ -211,7 +211,7 @@ mergeableTests =
                             (Right (ssym "a") :: Either SymBool SymBool)
                     idxsR @?= [DynamicSortedIdx True]
                     fR (ssym "a") (Right $ ssym "b") (Right $ ssym "c")
-                      @?= Right (ites (ssym "a") (ssym "b") (ssym "c"))
+                      @?= Right (symIte (ssym "a") (ssym "b") (ssym "c"))
                 ]
             ],
           testGroup
@@ -238,7 +238,7 @@ mergeableTests =
                         (Just (ssym "a") :: Maybe SymBool)
                 idxsJ @?= [DynamicSortedIdx True]
                 fJ (ssym "a") (Just $ ssym "b") (Just $ ssym "c")
-                  @?= Just (ites (ssym "a") (ssym "b") (ssym "c"))
+                  @?= Just (symIte (ssym "a") (ssym "b") (ssym "c"))
             ],
           testGroup
             "List"
@@ -280,8 +280,8 @@ mergeableTests =
                       [ ( ssym "a",
                           [ssym "b", ssym "c"],
                           [ssym "d", ssym "e"],
-                          [ ites (ssym "a") (ssym "b") (ssym "d"),
-                            ites (ssym "a") (ssym "c") (ssym "e")
+                          [ symIte (ssym "a") (ssym "b") (ssym "d"),
+                            symIte (ssym "a") (ssym "c") (ssym "e")
                           ]
                         )
                       ]
@@ -299,8 +299,8 @@ mergeableTests =
                   ([1], [ssym "c", ssym "d"]),
                   ([1], [ssym "f", ssym "g"]),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ]
                   )
                 )
@@ -320,10 +320,10 @@ mergeableTests =
                   ([1], [ssym "c", ssym "d"], ssym "e"),
                   ([1], [ssym "f", ssym "g"], ssym "h"),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ],
-                    ites (ssym "a") (ssym "e") (ssym "h")
+                    symIte (ssym "a") (ssym "e") (ssym "h")
                   )
                 )
               ],
@@ -344,11 +344,11 @@ mergeableTests =
                   ([1], [ssym "c", ssym "d"], ssym "e", [ssym "i"]),
                   ([1], [ssym "f", ssym "g"], ssym "h", [ssym "j"]),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ],
-                    ites (ssym "a") (ssym "e") (ssym "h"),
-                    [ites (ssym "a") (ssym "i") (ssym "j")]
+                    symIte (ssym "a") (ssym "e") (ssym "h"),
+                    [symIte (ssym "a") (ssym "i") (ssym "j")]
                   )
                 )
               ],
@@ -373,11 +373,11 @@ mergeableTests =
                   ([1], [ssym "c", ssym "d"], ssym "e", [ssym "i"], [2, 3]),
                   ([1], [ssym "f", ssym "g"], ssym "h", [ssym "j"], [2, 3]),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ],
-                    ites (ssym "a") (ssym "e") (ssym "h"),
-                    [ites (ssym "a") (ssym "i") (ssym "j")],
+                    symIte (ssym "a") (ssym "e") (ssym "h"),
+                    [symIte (ssym "a") (ssym "i") (ssym "j")],
                     [2, 3]
                   )
                 )
@@ -405,11 +405,11 @@ mergeableTests =
                   ([1], [ssym "c", ssym "d"], ssym "e", [ssym "i"], [2, 3], 2),
                   ([1], [ssym "f", ssym "g"], ssym "h", [ssym "j"], [2, 3], 2),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ],
-                    ites (ssym "a") (ssym "e") (ssym "h"),
-                    [ites (ssym "a") (ssym "i") (ssym "j")],
+                    symIte (ssym "a") (ssym "e") (ssym "h"),
+                    [symIte (ssym "a") (ssym "i") (ssym "j")],
                     [2, 3],
                     2
                   )
@@ -454,14 +454,14 @@ mergeableTests =
                     Just (ssym "l")
                   ),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ],
-                    ites (ssym "a") (ssym "e") (ssym "h"),
-                    [ites (ssym "a") (ssym "i") (ssym "j")],
+                    symIte (ssym "a") (ssym "e") (ssym "h"),
+                    [symIte (ssym "a") (ssym "i") (ssym "j")],
                     [2, 3],
                     2,
-                    Just $ ites (ssym "a") (ssym "k") (ssym "l")
+                    Just $ symIte (ssym "a") (ssym "k") (ssym "l")
                   )
                 )
               ],
@@ -509,14 +509,14 @@ mergeableTests =
                     Left 1
                   ),
                   ( [1],
-                    [ ites (ssym "a") (ssym "c") (ssym "f"),
-                      ites (ssym "a") (ssym "d") (ssym "g")
+                    [ symIte (ssym "a") (ssym "c") (ssym "f"),
+                      symIte (ssym "a") (ssym "d") (ssym "g")
                     ],
-                    ites (ssym "a") (ssym "e") (ssym "h"),
-                    [ites (ssym "a") (ssym "i") (ssym "j")],
+                    symIte (ssym "a") (ssym "e") (ssym "h"),
+                    [symIte (ssym "a") (ssym "i") (ssym "j")],
                     [2, 3],
                     2,
-                    Just $ ites (ssym "a") (ssym "k") (ssym "l"),
+                    Just $ symIte (ssym "a") (ssym "k") (ssym "l"),
                     Left 1
                   )
                 )
@@ -524,7 +524,7 @@ mergeableTests =
           let f1 :: Maybe SymBool -> SymBool =
                 \case Just x -> x; Nothing -> (con True)
               f2 :: Maybe SymBool -> SymBool =
-                \case Just x -> (nots x); Nothing -> (con False)
+                \case Just x -> (symNot x); Nothing -> (con False)
            in testGroup
                 "Function"
                 [ testCase "Simply mergeable result" $ do
@@ -533,8 +533,8 @@ mergeableTests =
                       SimpleStrategy f -> do
                         let r = f (ssym "a") f1 f2
                         r (Just (ssym "x"))
-                          @?= ites (ssym "a") (ssym "x") (nots (ssym "x"))
-                        r Nothing @?= ites (ssym "a") (con True) (con False)
+                          @?= symIte (ssym "a") (ssym "x") (symNot (ssym "x"))
+                        r Nothing @?= symIte (ssym "a") (con True) (con False)
                       _ -> assertFailure "Bad mergeable strategy type",
                   testCase "Other mergeable result" $ do
                     case rootStrategy ::
@@ -594,7 +594,7 @@ mergeableTests =
                   (MaybeT $ Just $ Just $ ssym "b")
                   (MaybeT $ Just $ Just $ ssym "c")
                   @?= MaybeT
-                    (Just (Just (ites (ssym "a") (ssym "b") (ssym "c"))))
+                    (Just (Just (symIte (ssym "a") (ssym "b") (ssym "c"))))
             ],
           testGroup
             "ExceptT"
@@ -658,7 +658,7 @@ mergeableTests =
                       (ExceptT $ Just $ Left $ ssym "b")
                       (ExceptT $ Just $ Left $ ssym "c")
                       @?= ExceptT
-                        (Just (Left (ites (ssym "a") (ssym "b") (ssym "c")))),
+                        (Just (Left (symIte (ssym "a") (ssym "b") (ssym "c")))),
                   testCase "ExceptT (Just (Right v))" $ do
                     let (idxsJR, SimpleStrategy fJR) =
                           resolveStrategy
@@ -672,7 +672,7 @@ mergeableTests =
                       (ExceptT $ Just $ Right $ ssym "b")
                       (ExceptT $ Just $ Right $ ssym "c")
                       @?= ExceptT
-                        (Just (Right (ites (ssym "a") (ssym "b") (ssym "c"))))
+                        (Just (Right (symIte (ssym "a") (ssym "b") (ssym "c"))))
                 ]
             ],
           testGroup
@@ -690,7 +690,7 @@ mergeableTests =
                         mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
                 StateLazy.runStateT st3 2
-                  @?= mrgSingle (ites (ssym "c") (ssym "a") (ssym "b"), 4)
+                  @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateLazy.runStateT st3 3
                   @?= mrgIf
                     (ssym "c")
@@ -709,7 +709,7 @@ mergeableTests =
                         \(x :: Integer) -> mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
                 StateStrict.runStateT st3 2
-                  @?= mrgSingle (ites (ssym "c") (ssym "a") (ssym "b"), 4)
+                  @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateStrict.runStateT st3 3
                   @?= mrgIf
                     (ssym "c")
@@ -732,19 +732,19 @@ mergeableTests =
                   mrgIf
                     (ssym "p")
                     (mrgSingle (a, x))
-                    (mrgSingle (nots a, x + 1))
+                    (mrgSingle (symNot a, x + 1))
               )
               @?= mrgIf
                 (ssym "c")
                 ( mrgIf
                     (ssym "p")
                     (mrgSingle (ssym "a", 2))
-                    (mrgSingle (nots $ ssym "a", 3))
+                    (mrgSingle (symNot $ ssym "a", 3))
                 )
                 ( mrgIf
                     (ssym "p")
                     (mrgSingle (ssym "b", 3))
-                    (mrgSingle (nots $ ssym "b", 4))
+                    (mrgSingle (symNot $ ssym "b", 4))
                 ),
           testGroup
             "RWST"
@@ -768,9 +768,9 @@ mergeableTests =
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
-                            ( (ir + is, br &&~ bs),
-                              (ir - is, br ||~ bs),
-                              (ir * is, bs &&~ br)
+                            ( (ir + is, br .&& bs),
+                              (ir - is, br .|| bs),
+                              (ir * is, bs .&& br)
                             )
                 let rws2 ::
                       RWSTLazy.RWST
@@ -781,9 +781,9 @@ mergeableTests =
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
-                            ( (ir + is, br ||~ bs),
-                              (ir - is, br &&~ bs),
-                              (ir * is, bs ||~ br)
+                            ( (ir + is, br .|| bs),
+                              (ir - is, br .&& bs),
+                              (ir * is, bs .|| br)
                             )
                 let rws3 = s (ssym "c") rws1 rws2
 
@@ -796,15 +796,15 @@ mergeableTests =
                         mrgIf
                           (ssym "c")
                           ( mrgSingle
-                              ( (1, ssym "a" &&~ ssym "b"),
-                                (-1, ssym "a" ||~ ssym "b"),
-                                (0, ssym "b" &&~ ssym "a")
+                              ( (1, ssym "a" .&& ssym "b"),
+                                (-1, ssym "a" .|| ssym "b"),
+                                (0, ssym "b" .&& ssym "a")
                               )
                           )
                           ( mrgSingle
-                              ( (1, ssym "a" ||~ ssym "b"),
-                                (-1, ssym "a" &&~ ssym "b"),
-                                (0, ssym "b" ||~ ssym "a")
+                              ( (1, ssym "a" .|| ssym "b"),
+                                (-1, ssym "a" .&& ssym "b"),
+                                (0, ssym "b" .|| ssym "a")
                               )
                           )
                 RWSTLazy.runRWST rws3 (0, ssym "a") (1, ssym "b") @?= res1,
@@ -828,9 +828,9 @@ mergeableTests =
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
-                            ( (ir + is, br &&~ bs),
-                              (ir - is, br ||~ bs),
-                              (ir * is, bs &&~ br)
+                            ( (ir + is, br .&& bs),
+                              (ir - is, br .|| bs),
+                              (ir * is, bs .&& br)
                             )
                 let rws2 ::
                       RWSTStrict.RWST
@@ -841,9 +841,9 @@ mergeableTests =
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
-                            ( (ir + is, br ||~ bs),
-                              (ir - is, br &&~ bs),
-                              (ir * is, bs ||~ br)
+                            ( (ir + is, br .|| bs),
+                              (ir - is, br .&& bs),
+                              (ir * is, bs .|| br)
                             )
                 let rws3 = s (ssym "c") rws1 rws2
 
@@ -856,15 +856,15 @@ mergeableTests =
                         mrgIf
                           (ssym "c")
                           ( mrgSingle
-                              ( (1, "a" &&~ "b"),
-                                (-1, "a" ||~ "b"),
-                                (0, "b" &&~ "a")
+                              ( (1, "a" .&& "b"),
+                                (-1, "a" .|| "b"),
+                                (0, "b" .&& "a")
                               )
                           )
                           ( mrgSingle
-                              ( (1, "a" ||~ "b"),
-                                (-1, "a" &&~ "b"),
-                                (0, "b" ||~ "a")
+                              ( (1, "a" .|| "b"),
+                                (-1, "a" .&& "b"),
+                                (0, "b" .|| "a")
                               )
                           )
                 RWSTStrict.runRWST rws3 (0, ssym "a") (1, ssym "b") @?= res1
@@ -890,7 +890,7 @@ mergeableTests =
                     (mrgSingle (ssym "a", 1))
                     (mrgSingle (ssym "b", 2))
                 WriterLazy.runWriterT w5
-                  @?= mrgSingle (ites (ssym "d") (ssym "a") (ssym "c"), 1),
+                  @?= mrgSingle (symIte (ssym "d") (ssym "a") (ssym "c"), 1),
               testCase "Strict WriterT" $ do
                 let SimpleStrategy s =
                       rootStrategy ::
@@ -910,7 +910,7 @@ mergeableTests =
                     (mrgSingle (ssym "a", 1))
                     (mrgSingle (ssym "b", 2))
                 WriterStrict.runWriterT w5
-                  @?= mrgSingle (ites (ssym "d") (ssym "a") (ssym "c"), 1)
+                  @?= mrgSingle (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
             ],
           testCase "ReaderT" $ do
             let SimpleStrategy s =
@@ -938,7 +938,7 @@ mergeableTests =
                   [ ( ssym "a",
                       Identity $ ssym "b",
                       Identity $ ssym "c",
-                      Identity $ ites (ssym "a") (ssym "b") (ssym "c")
+                      Identity $ symIte (ssym "a") (ssym "b") (ssym "c")
                     )
                   ]
             ],
@@ -989,7 +989,7 @@ mergeableTests =
                           IdentityT $ Just $ ssym "c",
                           IdentityT $
                             Just $
-                              ites (ssym "a") (ssym "b") (ssym "c")
+                              symIte (ssym "a") (ssym "b") (ssym "c")
                         )
                       ]
                 ]
@@ -1041,7 +1041,7 @@ mergeableTests =
                       [ ( ssym "a",
                           InL $ Just $ ssym "b",
                           InL $ Just $ ssym "c",
-                          InL $ Just $ ites (ssym "a") (ssym "b") (ssym "c")
+                          InL $ Just $ symIte (ssym "a") (ssym "b") (ssym "c")
                         )
                       ],
                   testCase "InR Nothing" $
@@ -1056,7 +1056,7 @@ mergeableTests =
                       [ ( ssym "a",
                           InR $ Just $ ssym "b",
                           InR $ Just $ ssym "c",
-                          InR $ Just $ ites (ssym "a") (ssym "b") (ssym "c")
+                          InR $ Just $ symIte (ssym "a") (ssym "b") (ssym "c")
                         )
                       ]
                 ]

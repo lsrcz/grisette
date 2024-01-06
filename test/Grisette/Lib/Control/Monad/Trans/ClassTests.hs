@@ -7,7 +7,7 @@ where
 
 import Control.Monad.Except (ExceptT)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (ites))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionLike (single, unionIf),
     mrgSingle,
@@ -29,5 +29,5 @@ monadTransClassTests =
             ) ::
             ExceptT SymBool UnionM SymBool
           )
-          @?= mrgSingle (ites "a" "b" "c")
+          @?= mrgSingle (symIte "a" "b" "c")
     ]
