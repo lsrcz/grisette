@@ -81,16 +81,16 @@ data Union a
     UnionSingle a
   | -- | A if value
     UnionIf
-      -- | Cached leftmost value
       a
-      -- | Is merged invariant already maintained?
+      -- ^ Cached leftmost value
       !Bool
-      -- | If condition
+      -- ^ Is merged invariant already maintained?
       !SymBool
-      -- | True branch
+      -- ^ If condition
       (Union a)
-      -- | False branch
+      -- ^ True branch
       (Union a)
+      -- ^ False branch
   deriving (Generic, Eq, Lift, Generic1)
 
 instance Eq1 Union where
