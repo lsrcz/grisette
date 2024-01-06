@@ -144,10 +144,10 @@ unionMTests =
             let v :: UnionM Integer = mrgIf "b" (mrgSingle 1) (mrgSingle 3)
             f
               <*> v
-                @?= unionIf
-                  "a"
-                  (unionIf "b" (single 1) (single 3))
-                  (unionIf "b" (single 2) (single 4))
+              @?= unionIf
+                "a"
+                (unionIf "b" (single 1) (single 3))
+                (unionIf "b" (single 2) (single 4))
         ],
       testGroup
         "Monad"
@@ -624,24 +624,24 @@ unionMTests =
           testCase "plus" $
             (mrgIf "a" (mrgSingle 0) (mrgSingle 1) :: UnionM Integer)
               + mrgIf "b" (mrgSingle 1) (mrgSingle 3)
-                @?= mrgIf
-                  "a"
-                  (mrgIf "b" (mrgSingle 1) (mrgSingle 3))
-                  (mrgIf "b" (mrgSingle 2) (mrgSingle 4)),
+              @?= mrgIf
+                "a"
+                (mrgIf "b" (mrgSingle 1) (mrgSingle 3))
+                (mrgIf "b" (mrgSingle 2) (mrgSingle 4)),
           testCase "minus" $
             (mrgIf "a" (mrgSingle 0) (mrgSingle 1) :: UnionM Integer)
               - mrgIf "b" (mrgSingle $ -3) (mrgSingle $ -1)
-                @?= mrgIf
-                  "a"
-                  (mrgIf (symNot "b") (mrgSingle 1) (mrgSingle 3))
-                  (mrgIf (symNot "b") (mrgSingle 2) (mrgSingle 4)),
+              @?= mrgIf
+                "a"
+                (mrgIf (symNot "b") (mrgSingle 1) (mrgSingle 3))
+                (mrgIf (symNot "b") (mrgSingle 2) (mrgSingle 4)),
           testCase "times" $
             (mrgIf "a" (mrgSingle 1) (mrgSingle 2) :: UnionM Integer)
               * mrgIf "b" (mrgSingle 3) (mrgSingle 4)
-                @?= mrgIf
-                  "a"
-                  (mrgIf "b" (mrgSingle 3) (mrgSingle 4))
-                  (mrgIf "b" (mrgSingle 6) (mrgSingle 8)),
+              @?= mrgIf
+                "a"
+                (mrgIf "b" (mrgSingle 3) (mrgSingle 4))
+                (mrgIf "b" (mrgSingle 6) (mrgSingle 8)),
           testCase "abs" $
             abs (mrgIf "a" (mrgSingle $ -1) (mrgSingle 2) :: UnionM Integer)
               @?= mrgIf "a" (mrgSingle 1) (mrgSingle 2),
