@@ -70,6 +70,8 @@ extra-deps:
   - test-framework-hunit-0.3.0.2
   - test-framework-quickcheck2-0.3.0.5
   - HUnit-1.6.0.0
+  - stm-2.5.0.1
+  - async-2.2.2
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

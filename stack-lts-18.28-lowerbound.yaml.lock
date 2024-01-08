@@ -193,6 +193,20 @@ packages:
       size: 878
   original:
     hackage: HUnit-1.6.0.0
+- completed:
+    hackage: stm-2.5.0.1@sha256:542ac8bc1d7f8cf7ccdc787ef30105549234c858b82d61e4f9100f4b2f521e6f,2165
+    pantry-tree:
+      sha256: a90a7d82c1803ee6a7235e15050af7bba7cb87dc5be0ef78cf19ddc3834c1e31
+      size: 1392
+  original:
+    hackage: stm-2.5.0.1
+- completed:
+    hackage: async-2.2.2@sha256:a178c166856da7ff22fe4500337b54812e94fd2059409452187d72e057ede9cd,2934
+    pantry-tree:
+      sha256: 647557f470dd934404806bcc7201ff9b2d440daaf11f570ac6a46d9b2ef42d98
+      size: 501
+  original:
+    hackage: async-2.2.2
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

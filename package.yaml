@@ -47,8 +47,8 @@ dependencies:
   - text >= 1.2.4.1 && < 2.2
   - QuickCheck >= 2.14 && < 2.15
   - prettyprinter >= 1.5.0 && < 1.8
-  - async
-  - stm
+  - async >= 2.2.2 && < 2.3
+  - stm >= 2.5.0.1 && < 2.6
 
 flags:
   {
