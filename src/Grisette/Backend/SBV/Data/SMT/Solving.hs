@@ -43,10 +43,9 @@ import Control.Concurrent.STM
     newTMVarIO,
     putTMVar,
     takeTMVar,
-    tryReadTMVar,
+    tryReadTMVar, tryTakeTMVar,
   )
 import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
-import Control.Concurrent.STM.TMVar (writeTMVar)
 import Control.Exception (handle, throwTo)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader
@@ -93,6 +92,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model as PM
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Control.Monad.STM (STM)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -313,6 +313,11 @@ data SBVSolverHandle = SBVSolverHandle
     sbvSolverHandleOutChan :: TChan (Either SolvingFailure Model)
   }
 
+setTerminated :: TMVar SBVSolverStatus -> STM ()
+setTerminated status = do
+  _ <- tryTakeTMVar status
+  putTMVar status SBVSolverTerminated
+
 instance ConfigurableSolver (GrisetteSMTConfig n) SBVSolverHandle where
   newSolver config = do
     sbvSolverHandleInChan <- atomically newTChan
@@ -322,7 +327,7 @@ instance ConfigurableSolver (GrisetteSMTConfig n) SBVSolverHandle where
       let handler e =
             liftIO $
               atomically $ do
-                writeTMVar sbvSolverHandleStatus SBVSolverTerminated
+                setTerminated sbvSolverHandleStatus
                 writeTChan sbvSolverHandleOutChan (Left (SolvingError e))
       handle handler $ runSBVIncremental config $ do
         let loop = do
@@ -337,7 +342,7 @@ instance ConfigurableSolver (GrisetteSMTConfig n) SBVSolverHandle where
                   loop
         loop
         liftIO $ atomically $ do
-          writeTMVar sbvSolverHandleStatus SBVSolverTerminated
+          setTerminated sbvSolverHandleStatus
           writeTChan sbvSolverHandleOutChan $ Left Terminated
     return $ SBVSolverHandle {..}
 
@@ -355,7 +360,7 @@ instance Solver SBVSolverHandle where
             Just _ -> return ()
         return r
       SBVSolverTerminated -> do
-        liftIO $ atomically $ writeTMVar status SBVSolverTerminated
+        liftIO $ atomically $ setTerminated status
         return $ Left Terminated
   solverSolve handle nextFormula =
     solverRunCommand
@@ -366,12 +371,12 @@ instance Solver SBVSolverHandle where
       $ SolverSolve nextFormula
   solverTerminate (SBVSolverHandle thread status inChan _) = do
     liftIO $ atomically $ do
-      writeTMVar status SBVSolverTerminated
+      setTerminated status
       writeTChan inChan SolverTerminate
     wait thread
   solverForceTerminate (SBVSolverHandle thread status _ outChan) = do
     liftIO $ atomically $ do
-      writeTMVar status SBVSolverTerminated
+      setTerminated status
       writeTChan outChan (Left Terminated)
     throwTo (asyncThreadId thread) ExitSuccess
     wait thread
