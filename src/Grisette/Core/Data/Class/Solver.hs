@@ -33,6 +33,7 @@ module Grisette.Core.Data.Class.Solver
     UnionWithExcept (..),
 
     -- * Solver interfaces
+    MonadicIncrementalSolver (..),
     Solver (..),
     solveExcept,
     solveMultiExcept,
@@ -59,6 +60,9 @@ data SolveInternal = SolveInternal
 -- >>> import Grisette.IR.SymPrim
 -- >>> import Grisette.Backend.SBV
 -- >>> :set -XOverloadedStrings
+
+class MonadicIncrementalSolver m failure | m -> failure where
+  solveNext :: SymBool -> m (Either failure Model)
 
 -- | A solver interface.
 class

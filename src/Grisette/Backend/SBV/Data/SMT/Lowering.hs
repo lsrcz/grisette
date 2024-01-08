@@ -34,6 +34,8 @@ module Grisette.Backend.SBV.Data.SMT.Lowering
 where
 
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Reader (MonadTrans (lift), ReaderT)
+import Control.Monad.State (StateT)
 import Data.Bifunctor (Bifunctor (bimap, first, second))
 import Data.Bits
   ( Bits (complement, xor, (.&.), (.|.)),
@@ -631,6 +633,12 @@ instance (MonadIO m) => SBVFreshMonad (SBVT.SymbolicT m) where
 
 instance (MonadIO m) => SBVFreshMonad (SBVTC.QueryT m) where
   sbvFresh = SBVTC.freshVar
+
+instance (SBVFreshMonad m) => SBVFreshMonad (ReaderT r m) where
+  sbvFresh = lift . sbvFresh
+
+instance (SBVFreshMonad m) => SBVFreshMonad (StateT s m) where
+  sbvFresh = lift . sbvFresh
 
 lowerUnaryTerm ::
   forall integerBitWidth a a1 x x1 m.
