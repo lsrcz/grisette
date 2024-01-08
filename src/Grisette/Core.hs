@@ -941,23 +941,35 @@ module Grisette.Core
     -- more details.
 
     -- ** Solver interface
-    Solver (..),
     UnionWithExcept (..),
+    MonadicSolver (..),
+    ConfigurableSolver (..),
+    SolvingFailure (..),
+    SolverCommand (..),
+    Solver (..),
+    withSolver,
     solveExcept,
     solveMultiExcept,
+    solve,
+    solveMulti,
 
     -- ** Counter-example Guided Inductive Synthesis (CEGIS)
-    CEGISSolver (..),
+    CEGISResult (..),
+    StatefulVerifierFun,
+    SynthesisConstraintFun,
+    VerifierResult,
+    genericCEGIS,
     CEGISCondition (..),
     cegisPostCond,
     cegisPrePost,
     cegis,
     cegisExcept,
-    cegisExceptStdVC,
-    cegisExceptVC,
     cegisExceptMultiInputs,
+    cegisExceptStdVC,
     cegisExceptStdVCMultiInputs,
+    cegisExceptVC,
     cegisExceptVCMultiInputs,
+    cegisMultiInputs,
 
     -- ** Symbolic constant extraction
 
@@ -1060,7 +1072,10 @@ import Grisette.Core.Data.Class.BitVector
   )
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISCondition (..),
-    CEGISSolver (..),
+    CEGISResult (..),
+    StatefulVerifierFun,
+    SynthesisConstraintFun,
+    VerifierResult,
     cegis,
     cegisExcept,
     cegisExceptMultiInputs,
@@ -1068,8 +1083,10 @@ import Grisette.Core.Data.Class.CEGISSolver
     cegisExceptStdVCMultiInputs,
     cegisExceptVC,
     cegisExceptVCMultiInputs,
+    cegisMultiInputs,
     cegisPostCond,
     cegisPrePost,
+    genericCEGIS,
   )
 import Grisette.Core.Data.Class.Error
   ( TransformError (..),
@@ -1171,10 +1188,17 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (..), pattern Con)
 import Grisette.Core.Data.Class.Solver
-  ( Solver (..),
+  ( ConfigurableSolver (..),
+    MonadicSolver (..),
+    Solver (..),
+    SolverCommand (..),
+    SolvingFailure (..),
     UnionWithExcept (..),
+    solve,
     solveExcept,
+    solveMulti,
     solveMultiExcept,
+    withSolver,
   )
 import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (..),

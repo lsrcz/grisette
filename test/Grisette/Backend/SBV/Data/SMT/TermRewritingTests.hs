@@ -52,7 +52,7 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     uminusNumSpec,
   )
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.Solver (Solver (solve))
+import Grisette.Core.Data.Class.Solver (solve)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
   )

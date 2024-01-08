@@ -2,7 +2,6 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -25,7 +24,6 @@ module Grisette.Core.Data.Class.CEGISSolver
     -- | The examples assumes a [z3](https://github.com/Z3Prover/z3) solver available in @PATH@.
 
     -- * CEGIS solver interfaces
-    CEGISSolver (..),
     CEGISCondition (..),
     cegisPostCond,
     cegisPrePost,
@@ -36,26 +34,48 @@ module Grisette.Core.Data.Class.CEGISSolver
     cegisExceptMultiInputs,
     cegisExceptStdVCMultiInputs,
     cegisExceptVCMultiInputs,
+    SynthesisConstraintFun,
+    VerifierResult (..),
+    StatefulVerifierFun,
+    CEGISResult (..),
+    genericCEGIS,
+    cegisMultiInputs,
   )
 where
 
+import Control.Monad (foldM, unless)
+import Data.List (partition)
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Exception
   ( VerificationConditions (AssertionViolation, AssumptionViolation),
   )
-import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym)
+import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym, evaluateSym)
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics,
+    extractSymbolics,
   )
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.ModelOps
+  ( ModelOps (exact, exceptFor),
+    SymbolSetOps (isEmptySet),
+  )
+import Grisette.Core.Data.Class.SEq (SEq)
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
     UnionPrjOp,
     simpleMerge,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
+import Grisette.Core.Data.Class.Solver
+  ( ConfigurableSolver,
+    Solver (solverSolve),
+    SolvingFailure (Unsat),
+    UnionWithExcept (extractUnionExcept),
+    solve,
+    withSolver,
+  )
 import Grisette.IR.SymPrim.Data.Prim.Model (Model)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
@@ -64,6 +84,57 @@ import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 -- >>> import Grisette.Lib.Base
 -- >>> import Grisette.IR.SymPrim
 -- >>> import Grisette.Backend.SBV
+
+type SynthesisConstraintFun input = Int -> input -> IO SymBool
+
+data VerifierResult input exception
+  = FoundCex input
+  | NoCex
+  | VerifierFailure exception
+
+type StatefulVerifierFun state input exception =
+  state -> Model -> IO (state, VerifierResult input exception)
+
+data CEGISResult exception
+  = CEGISSuccess Model
+  | CEGISVerifierFailure exception
+  | CEGISSolverFailure SolvingFailure
+  deriving (Show)
+
+genericCEGIS ::
+  (ConfigurableSolver config handle, Solver handle) =>
+  config ->
+  SymBool ->
+  SynthesisConstraintFun input ->
+  verifierState ->
+  StatefulVerifierFun verifierState input exception ->
+  IO ([input], CEGISResult exception)
+genericCEGIS config initConstr synthConstr initVerifierState verifier =
+  withSolver config $ \solver -> do
+    firstResult <- solverSolve solver initConstr
+    case firstResult of
+      Left err -> return ([], CEGISSolverFailure err)
+      Right model -> go solver model 0 initVerifierState
+  where
+    go solver prevModel iterNum verifierState = do
+      (newVerifierState, verifierResult) <-
+        verifier verifierState prevModel
+      case verifierResult of
+        FoundCex cex -> do
+          newResult <- solverSolve solver =<< synthConstr iterNum cex
+          case newResult of
+            Left err -> return ([], CEGISSolverFailure err)
+            Right model -> do
+              (cexes, result) <- go solver model (iterNum + 1) newVerifierState
+              return (cex : cexes, result)
+        NoCex -> return ([], CEGISSuccess prevModel)
+        VerifierFailure exception -> return ([], CEGISVerifierFailure exception)
+
+data CEGISMultiInputsState input = CEGISMultiInputsState
+  { _cegisMultiInputsRemainingSymInputs :: [input],
+    _cegisMultiInputsPre :: SymBool,
+    _cegisMultiInputsPost :: SymBool
+  }
 
 -- | The condition for CEGIS to solve.
 --
@@ -82,7 +153,9 @@ import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 -- meets the pre-conditions on every possible inputs, and there are at least
 -- one possible input. The post-condition is used to specify the desired program
 -- behaviors.
-data CEGISCondition = CEGISCondition SymBool SymBool deriving (Generic)
+data CEGISCondition = CEGISCondition SymBool SymBool
+  deriving (Generic)
+  deriving (EvaluateSym) via (Default CEGISCondition)
 
 -- | Construct a CEGIS condition with only a post-condition. The pre-condition
 -- would be set to true, meaning that all programs in the program space are
@@ -98,40 +171,87 @@ deriving via (Default CEGISCondition) instance Mergeable CEGISCondition
 
 deriving via (Default CEGISCondition) instance SimpleMergeable CEGISCondition
 
--- | Counter-example guided inductive synthesis (CEGIS) solver interface.
-class
-  CEGISSolver config failure
-    | config -> failure
+cegisMultiInputs ::
+  ( EvaluateSym input,
+    ExtractSymbolics input,
+    ConfigurableSolver config handle,
+    Solver handle
+  ) =>
+  config ->
+  [input] ->
+  (input -> CEGISCondition) ->
+  IO ([input], CEGISResult SolvingFailure)
+cegisMultiInputs config inputs toCEGISCondition = do
+  initConstr <- cexesAssertFun conInputs
+  genericCEGIS
+    config
+    initConstr
+    synthConstr
+    (CEGISMultiInputsState symInputs (con True) (con True))
+    verifier
   where
-  -- |
-  -- CEGIS with multiple (possibly symbolic) inputs. Solves the following formula (see
-  -- 'CEGISCondition' for details).
-  --
-  -- \[
-  --   \forall P. (\exists I\in\mathrm{inputs}. \mathrm{pre}(P, I)) \wedge (\forall I\in\mathrm{inputs}. \mathrm{pre}(P, I)\implies \mathrm{post}(P, I))
-  -- \]
-  --
-  -- For simpler queries, where the inputs are representable by a single
-  -- symbolic value, you may want to use 'cegis' or 'cegisExcept' instead.
-  -- We have an example for the 'cegis' call.
-  cegisMultiInputs ::
-    (EvaluateSym inputs, ExtractSymbolics inputs) =>
-    -- | The configuration of the solver
-    config ->
-    -- | Some initial counter-examples. Providing some concrete
-    -- inputs may help the solver to find a model faster. Providing
-    -- symbolic inputs would cause the solver to find the program
-    -- that works on all the inputs representable by it (see
-    -- 'CEGISCondition').
-    [inputs] ->
-    -- | The function mapping the inputs to
-    -- the conditions for the solver to
-    -- solve.
-    (inputs -> CEGISCondition) ->
-    -- | The counter-examples generated
-    -- during the CEGIS loop, and the
-    -- model found by the solver.
-    IO ([inputs], Either failure Model)
+    (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
+    forallSymbols = extractSymbolics symInputs
+    cexAssertFun input = do
+      unless (isEmptySet (extractSymbolics input)) $ error "BUG"
+      CEGISCondition pre post <- return $ toCEGISCondition input
+      return $ pre .&& post
+    cexesAssertFun = foldM (\acc x -> (acc .&&) <$> cexAssertFun x) (con True)
+    synthConstr _ = cexAssertFun
+    verifier state@(CEGISMultiInputsState [] _ _) _ = return (state, NoCex)
+    verifier (CEGISMultiInputsState (nextSymInput : symInputs) pre post) candidate = do
+      CEGISCondition nextPre nextPost <- return $ toCEGISCondition nextSymInput
+      let newPre = pre .&& nextPre
+      let newPost = post .&& nextPost
+      let evaluated =
+            evaluateSym False (exceptFor forallSymbols candidate) $
+              newPre .&& symNot newPost
+      r <- solve config evaluated
+      case r of
+        Left Unsat ->
+          verifier (CEGISMultiInputsState symInputs newPre newPost) candidate
+        Left err -> return (CEGISMultiInputsState [] newPre newPost, VerifierFailure err)
+        Right model ->
+          return
+            ( CEGISMultiInputsState (nextSymInput : symInputs) newPre newPost,
+              FoundCex $
+                evaluateSym False (exact forallSymbols model) nextSymInput
+            )
+
+-- -- | Counter-example guided inductive synthesis (CEGIS) solver interface.
+-- class
+--   CEGISSolver config failure
+--     | config -> failure
+--   where
+--   -- |
+--   -- CEGIS with multiple (possibly symbolic) inputs. Solves the following formula (see
+--   -- 'CEGISCondition' for details).
+--   --
+--   -- \[
+--   --   \forall P. (\exists I\in\mathrm{inputs}. \mathrm{pre}(P, I)) \wedge (\forall I\in\mathrm{inputs}. \mathrm{pre}(P, I)\implies \mathrm{post}(P, I))
+--   -- \]
+--   --
+--   -- For simpler queries, where the inputs are representable by a single
+--   -- symbolic value, you may want to use 'cegis' or 'cegisExcept' instead.
+--   -- We have an example for the 'cegis' call.
+--   cegisMultiInputs ::
+--     (EvaluateSym inputs, ExtractSymbolics inputs) =>
+--     -- | The configuration of the solver
+--     config ->
+--     -- | Some initial counter-examples. Providing some concrete
+--     -- inputs may help the solver to find a model faster. Providing
+--     -- symbolic inputs would cause the solver to find the program
+--     -- that works on all the inputs representable by it (see
+--     -- 'CEGISCondition').
+--     [inputs] ->
+--     -- | The function mapping the inputs to
+--     -- the conditions for the solver to
+--     -- solve.
+--     (inputs -> CEGISCondition) ->
+--     -- | The counter-examples generated
+--     -- during the CEGIS loop, and the
+--     -- model found by the solver.
+--     IO ([inputs], Either failure Model)
 
 -- |
 -- CEGIS with a single symbolic input to represent a set of inputs.
@@ -142,12 +262,14 @@ class
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
--- >>> cegis (precise z3) x (cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
--- ([],Right (Model {c -> -1 :: Integer}))
+-- >>> cegis (precise z3) x (\x -> cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
+-- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegis ::
-  ( CEGISSolver config failure,
+  ( ConfigurableSolver config handle,
+    Solver handle,
     EvaluateSym inputs,
-    ExtractSymbolics inputs
+    ExtractSymbolics inputs,
+    SEq inputs
   ) =>
   -- | The configuration of the solver
   config ->
@@ -158,18 +280,19 @@ cegis ::
   -- | The condition for the solver to solve. All the
   -- symbolic constants that are not in the inputs will
   -- be considered as part of the symbolic program.
-  CEGISCondition ->
+  (inputs -> CEGISCondition) ->
   -- | The counter-examples generated
   -- during the CEGIS loop, and the
   -- model found by the solver.
-  IO ([inputs], Either failure Model)
-cegis config inputs cond = cegisMultiInputs config [inputs] (const cond)
+  IO ([inputs], CEGISResult SolvingFailure)
+cegis config inputs = cegisMultiInputs config [inputs]
 
 -- |
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
 -- symbolic) inputs to represent a set of inputs.
 cegisExceptMultiInputs ::
-  ( CEGISSolver config failure,
+  ( ConfigurableSolver config handle,
+    Solver handle,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
     UnionWithExcept t u e v,
@@ -180,7 +303,7 @@ cegisExceptMultiInputs ::
   [inputs] ->
   (Either e v -> CEGISCondition) ->
   (inputs -> t) ->
-  IO ([inputs], Either failure Model)
+  IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptMultiInputs config cexes interpretFun f =
   cegisMultiInputs config cexes (simpleMerge . (interpretFun <$>) . extractUnionExcept . f)
 
@@ -190,7 +313,8 @@ cegisExceptMultiInputs config cexes interpretFun f =
 --
 -- The errors should be translated to assertion or assumption violations.
 cegisExceptVCMultiInputs ::
-  ( CEGISSolver config failure,
+  ( ConfigurableSolver config handle,
+    Solver handle,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
     UnionWithExcept t u e v,
@@ -201,7 +325,7 @@ cegisExceptVCMultiInputs ::
   [inputs] ->
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->
-  IO ([inputs], Either failure Model)
+  IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptVCMultiInputs config cexes interpretFun f =
   cegisMultiInputs
     config
@@ -227,7 +351,8 @@ cegisExceptVCMultiInputs config cexes interpretFun f =
 -- and translates assertion violations to failed post-conditions.
 -- The '()' result will not fail any conditions.
 cegisExceptStdVCMultiInputs ::
-  ( CEGISSolver config failure,
+  ( ConfigurableSolver config handle,
+    Solver handle,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
     UnionWithExcept t u VerificationConditions (),
@@ -237,7 +362,7 @@ cegisExceptStdVCMultiInputs ::
   config ->
   [inputs] ->
   (inputs -> t) ->
-  IO ([inputs], Either failure Model)
+  IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptStdVCMultiInputs config cexes =
   cegisExceptVCMultiInputs config cexes return
 
@@ -258,8 +383,8 @@ cegisExceptStdVCMultiInputs config cexes =
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> import Control.Monad.Except
 -- >>> :{
---   res :: ExceptT VerificationConditions UnionM ()
---   res = do
+--   res :: SymInteger -> ExceptT VerificationConditions UnionM ()
+--   res x = do
 --     symAssume $ x .> 0
 --     symAssert $ x * c .< 0
 --     symAssert $ c .> -2
@@ -272,21 +397,23 @@ cegisExceptStdVCMultiInputs config cexes =
 -- :}
 --
 -- >>> cegisExcept (precise z3) x translation res
--- ([],Right (Model {c -> -1 :: Integer}))
+-- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExcept ::
   ( UnionWithExcept t u e v,
     UnionPrjOp u,
     Functor u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
-    CEGISSolver config failure
+    ConfigurableSolver config handle,
+    Solver handle,
+    SEq inputs
   ) =>
   config ->
   inputs ->
   (Either e v -> CEGISCondition) ->
-  t ->
-  IO ([inputs], Either failure Model)
-cegisExcept config inputs f v = cegis config inputs $ simpleMerge $ f <$> extractUnionExcept v
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+cegisExcept config inputs f v = cegis config inputs $ \i -> simpleMerge $ f <$> extractUnionExcept (v i)
 
 -- |
 -- CEGIS for symbolic programs with error handling, using a single symbolic
@@ -299,22 +426,24 @@ cegisExceptVC ::
     Monad u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
-    CEGISSolver config failure
+    ConfigurableSolver config handle,
+    Solver handle,
+    SEq inputs
   ) =>
   config ->
   inputs ->
   (Either e v -> u (Either VerificationConditions ())) ->
-  t ->
-  IO ([inputs], Either failure Model)
-cegisExceptVC config inputs f v =
-  cegis config inputs $
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+cegisExceptVC config inputs f v = do
+  cegis config inputs $ \i ->
     simpleMerge $
       ( \case
           Left AssumptionViolation -> cegisPrePost (con False) (con True)
           Left AssertionViolation -> cegisPostCond (con False)
           _ -> cegisPostCond (con True)
       )
-        <$> (extractUnionExcept v >>= f)
+        <$> (extractUnionExcept (v i) >>= f)
 
 -- |
 -- CEGIS for symbolic programs with error handling, using a single symbolic
@@ -334,25 +463,27 @@ cegisExceptVC config inputs f v =
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> import Control.Monad.Except
 -- >>> :{
---   res :: ExceptT VerificationConditions UnionM ()
---   res = do
+--   res :: SymInteger -> ExceptT VerificationConditions UnionM ()
+--   res x = do
 --     symAssume $ x .> 0
 --     symAssert $ x * c .< 0
 --     symAssert $ c .> -2
 -- :}
 --
 -- >>> cegisExceptStdVC (precise z3) x res
--- ([],Right (Model {c -> -1 :: Integer}))
+-- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
     UnionPrjOp u,
     Monad u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
-    CEGISSolver config failure
+    ConfigurableSolver config handle,
+    Solver handle,
+    SEq inputs
   ) =>
   config ->
   inputs ->
-  t ->
-  IO ([inputs], Either failure Model)
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptStdVC config inputs = cegisExceptVC config inputs return

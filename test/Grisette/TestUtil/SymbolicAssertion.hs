@@ -6,7 +6,7 @@ import Grisette.Backend.SBV.Data.SMT.Solving (SolvingFailure (Unsat), precise)
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.Solver (Solver (solve))
+import Grisette.Core.Data.Class.Solver (solve)
 import Test.HUnit (Assertion)
 
 (@?=~) :: (HasCallStack, SEq a, Show a, EvaluateSym a) => a -> a -> Assertion
