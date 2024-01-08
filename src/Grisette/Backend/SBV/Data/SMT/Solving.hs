@@ -39,22 +39,25 @@ where
 
 import Control.DeepSeq (NFData)
 import Control.Exception (handle)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader (MonadReader (ask), MonadTrans (lift), ReaderT (runReaderT))
+import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
 import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
 import Data.Kind (Type)
 import Data.List (partition)
 import Data.Maybe (fromJust)
 import qualified Data.SBV as SBV
-import Data.SBV.Control (Query)
 import qualified Data.SBV.Control as SBVC
+import qualified Data.SBV.Trans as SBVT
+import qualified Data.SBV.Trans.Control as SBVTC
 import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Backend.SBV.Data.SMT.Lowering
   ( SymBiMap,
-    lowerSinglePrim,
     lowerSinglePrimCached,
     parseModel,
   )
+import Grisette.Backend.SBV.Data.SMT.SymBiMap (emptySymBiMap)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISCondition (CEGISCondition),
@@ -70,13 +73,15 @@ import Grisette.Core.Data.Class.ModelOps
     SymbolSetOps (isEmptySet),
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.Solver (Solver (solve, solveAll, solveMulti))
+import Grisette.Core.Data.Class.Solver
+  ( MonadicIncrementalSolver (solveNext),
+    Solver (solve, solveAll, solveMulti),
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( conTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
-    Term,
     type (-->),
   )
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
@@ -267,32 +272,19 @@ sbvCheckSatResult (SBVC.DSat msg) = DSat msg
 sbvCheckSatResult SBVC.Unsat = Unsat
 sbvCheckSatResult SBVC.Unk = Unk
 
-applyTimeout :: GrisetteSMTConfig i -> Query a -> Query a
+applyTimeout ::
+  (MonadIO m, SBVTC.MonadQuery m) => GrisetteSMTConfig i -> m a -> m a
 applyTimeout config q = case timeout (extraConfig config) of
   Nothing -> q
-  Just t -> SBVC.timeout t q
-
-solveTermWith ::
-  forall integerBitWidth.
-  GrisetteSMTConfig integerBitWidth ->
-  Term Bool ->
-  IO (Either SolvingFailure PM.Model)
-solveTermWith config term =
-  handle (return . Left . SolvingError) $
-    SBV.runSMTWith (sbvConfig config) $ do
-      (m, a) <- lowerSinglePrim config term
-      SBVC.query $ applyTimeout config $ do
-        SBV.constrain a
-        r <- SBVC.checkSat
-        case r of
-          SBVC.Sat -> do
-            md <- SBVC.getModel
-            return (Right $ parseModel config md m)
-          _ -> return (Left $ sbvCheckSatResult r)
+  Just t -> SBVTC.timeout t q
 
 instance Solver (GrisetteSMTConfig n) SolvingFailure where
-  solve config (SymBool t) = solveTermWith config t
-  solveMulti config n s@(SymBool t)
+  solve config s = do
+    (m, failure) <- solveMulti config 1 s
+    case failure of
+      ResultNumLimitReached -> return $ Right $ head m
+      _ -> return $ Left failure
+  solveMulti config n s
     | n > 0 =
         handle
           ( \(x :: SBV.SBVException) -> do
@@ -304,45 +296,33 @@ instance Solver (GrisetteSMTConfig n) SolvingFailure where
                   ++ "timeouts in any iteration."
               return ([], SolvingError x)
           )
-          $ SBV.runSMTWith (sbvConfig config)
+          $ runSBVIncrementalT config
           $ do
-            (newm, a) <- lowerSinglePrim config t
-            SBVC.query $ applyTimeout config $ do
-              SBV.constrain a
-              r <- SBVC.checkSat
-              case r of
-                SBVC.Sat -> do
-                  md <- SBVC.getModel
-                  let model = parseModel config md newm
-                  remainingModels n model newm
-                _ -> return ([], sbvCheckSatResult r)
+            r <- solveNext s
+            case r of
+              Right model -> remainingModels n model
+              Left failure -> return ([], failure)
     | otherwise = return ([], ResultNumLimitReached)
     where
       allSymbols = extractSymbolics s :: SymbolSet
-      next :: PM.Model -> SymBiMap -> Query (SymBiMap, Either SBVC.CheckSatResult PM.Model)
-      next md origm = do
+      next :: PM.Model -> SBVIncrementalT n IO (Either SolvingFailure PM.Model)
+      next md = do
         let newtm =
               S.foldl'
-                (\acc (SomeTypedSymbol _ v) -> pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md)))
+                ( \acc (SomeTypedSymbol _ v) ->
+                    pevalOrTerm acc (pevalNotTerm (fromJust $ equation v md))
+                )
                 (conTerm False)
                 (unSymbolSet allSymbols)
-        (newm, lowered) <- lowerSinglePrimCached config newtm origm
-        SBV.constrain lowered
-        r <- SBVC.checkSat
-        case r of
-          SBVC.Sat -> do
-            md1 <- SBVC.getModel
-            let model = parseModel config md1 newm
-            return (newm, Right model)
-          _ -> return (newm, Left r)
-      remainingModels :: Int -> PM.Model -> SymBiMap -> Query ([PM.Model], SolvingFailure)
-      remainingModels n1 md origm
+        solveNext $ SymBool newtm
+      remainingModels :: Int -> PM.Model -> SBVIncrementalT n IO ([PM.Model], SolvingFailure)
+      remainingModels n1 md
         | n1 > 1 = do
-            (newm, r) <- next md origm
+            r <- next md
             case r of
-              Left r -> return ([md], sbvCheckSatResult r)
+              Left r -> return ([md], r)
               Right mo -> do
-                (rmmd, e) <- remainingModels (n1 - 1) mo newm
+                (rmmd, e) <- remainingModels (n1 - 1) mo
                 return (md : rmmd, e)
         | otherwise = return ([md], ResultNumLimitReached)
   solveAll = undefined
@@ -367,14 +347,30 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
               print x
               print $
                 "Warning: Note that CEGIS procedures do not fully support "
-                  ++ "timeouts, and will return an empty counter example list if "
-                  ++ "the solver timeouts during guessing phase."
+                  ++ "timeouts, and will return an empty counter example list "
+                  ++ "if the solver timeouts during guessing phase."
               return ([], Left $ SolvingError x)
           )
-          $ go1 (cexesAssertFun conInputs) conInputs (error "Should have at least one gen") [] (con True) (con True) symInputs
+          $ runSBVIncrementalT config
+          $ go1
+            (cexesAssertFun conInputs)
+            conInputs
+            (error "Should have at least one gen")
+            []
+            (con True)
+            (con True)
+            symInputs
     where
       (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
-      go1 :: SymBool -> [inputs] -> PM.Model -> [inputs] -> SymBool -> SymBool -> [inputs] -> IO ([inputs], Either SolvingFailure PM.Model)
+      go1 ::
+        SymBool ->
+        [inputs] ->
+        PM.Model ->
+        [inputs] ->
+        SymBool ->
+        SymBool ->
+        [inputs] ->
+        SBVIncrementalT n IO ([inputs], Either SolvingFailure PM.Model)
       go1 cexFormula cexes previousModel inputs pre post remainingSymInputs = do
         case remainingSymInputs of
           [] -> return (cexes, Right previousModel)
@@ -384,7 +380,8 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
             let finalPost = post .&& nextPost
             r <- go cexFormula newInput (newInput : inputs) finalPre finalPost
             case r of
-              (newCexes, Left failure) -> return (cexes ++ newCexes, Left failure)
+              (newCexes, Left failure) ->
+                return (cexes ++ newCexes, Left failure)
               (newCexes, Right mo) -> do
                 go1
                   (cexFormula .&& cexesAssertFun newCexes)
@@ -404,22 +401,10 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
         [inputs] ->
         SymBool ->
         SymBool ->
-        IO ([inputs], Either SolvingFailure PM.Model)
-      go cexFormula inputs allInputs pre post =
-        SBV.runSMTWith (sbvConfig config) $ do
-          let SymBool t = phi .&& cexFormula
-          (newm, a) <- lowerSinglePrim config t
-          SBVC.query $
-            applyTimeout config $
-              snd <$> do
-                SBV.constrain a
-                r <- SBVC.checkSat
-                mr <- case r of
-                  SBVC.Sat -> do
-                    md <- SBVC.getModel
-                    return $ Right $ parseModel config md newm
-                  _ -> return $ Left $ sbvCheckSatResult r
-                loop ((forallSymbols `exceptFor`) <$> mr) [] newm
+        SBVIncrementalT n IO ([inputs], Either SolvingFailure PM.Model)
+      go cexFormula inputs allInputs pre post = do
+        r <- solveNext $ phi .&& cexFormula
+        loop ((forallSymbols `exceptFor`) <$> r) []
         where
           forallSymbols :: SymbolSet
           forallSymbols = extractSymbolics allInputs
@@ -433,33 +418,57 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
               m <- r
               let newm = exact forallSymbols m
               return (evaluateSym False newm inputs, newm)
-          guess :: Model -> SymBiMap -> Query (SymBiMap, Either SolvingFailure PM.Model)
-          guess candidate origm = do
-            let SymBool evaluated = evaluateSym False candidate phi
-            (newm, lowered) <- lowerSinglePrimCached config evaluated origm
-            SBV.constrain lowered
-            r <- SBVC.checkSat
-            case r of
-              SBVC.Sat -> do
-                md <- SBVC.getModel
-                let model = parseModel config md newm
-                return (newm, Right $ exceptFor forallSymbols model)
-              _ -> return (newm, Left $ sbvCheckSatResult r)
+          guess :: Model -> SBVIncrementalT n IO (Either SolvingFailure PM.Model)
+          guess candidate = do
+            r <- solveNext $ evaluateSym False candidate phi
+            return $ exceptFor forallSymbols <$> r
           loop ::
             Either SolvingFailure PM.Model ->
             [inputs] ->
-            SymBiMap ->
-            Query (SymBiMap, ([inputs], Either SolvingFailure PM.Model))
-          loop (Right mo) cexes origm = do
+            SBVIncrementalT n IO ([inputs], Either SolvingFailure PM.Model)
+          loop (Right mo) cexes = do
             r <- liftIO $ check mo
             case r of
-              Left Unsat -> return (origm, (cexes, Right mo))
-              Left v -> return (origm, (cexes, Left v))
+              Left Unsat -> return (cexes, Right mo)
+              Left v -> return (cexes, Left v)
               Right (cex, cexm) -> do
-                (newm, res) <- guess cexm origm
-                loop res (cex : cexes) newm
-          loop (Left v) cexes origm = return (origm, (cexes, Left v))
+                res <- guess cexm
+                loop res (cex : cexes)
+          loop (Left v) cexes = return (cexes, Left v)
 
 newtype CegisInternal = CegisInternal Int
   deriving (Eq, Show, Ord, Lift)
   deriving newtype (Hashable, NFData)
+
+type SBVIncrementalT n m =
+  ReaderT (GrisetteSMTConfig n) (StateT SymBiMap (SBVTC.QueryT m))
+
+runSBVIncrementalT ::
+  (SBVTC.ExtractIO m) =>
+  GrisetteSMTConfig n ->
+  SBVIncrementalT n m a ->
+  m a
+runSBVIncrementalT config sbvIncrementalT =
+  SBVT.runSMTWith (sbvConfig config) $
+    SBVTC.query $
+      applyTimeout config $
+        flip evalStateT emptySymBiMap $
+          runReaderT sbvIncrementalT config
+
+instance
+  (MonadIO m) =>
+  MonadicIncrementalSolver (SBVIncrementalT n m) SolvingFailure
+  where
+  solveNext (SymBool formula) = do
+    symBiMap <- get
+    config <- ask
+    (newSymBiMap, lowered) <- lowerSinglePrimCached config formula symBiMap
+    lift $ lift $ SBV.constrain lowered
+    put newSymBiMap
+    checkSatResult <- SBVTC.checkSat
+    case checkSatResult of
+      SBVC.Sat -> do
+        sbvModel <- SBVTC.getModel
+        let model = parseModel config sbvModel newSymBiMap
+        return $ Right model
+      r -> return $ Left $ sbvCheckSatResult r
