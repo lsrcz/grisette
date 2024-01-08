@@ -8,6 +8,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -34,13 +35,30 @@ module Grisette.Backend.SBV.Data.SMT.Solving
     GrisetteSMTConfig (..),
     SolvingFailure (..),
     TermTy,
+    SBVSolverHandle,
+    newSBVSolver,
   )
 where
 
+import Control.Concurrent.Async (Async (asyncThreadId), async, wait)
+import Control.Concurrent.STM
+  ( TMVar,
+    atomically,
+    newTMVarIO,
+    putTMVar,
+    takeTMVar,
+    tryReadTMVar,
+  )
+import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
+import Control.Concurrent.STM.TMVar (writeTMVar)
 import Control.DeepSeq (NFData)
-import Control.Exception (handle)
+import Control.Exception (handle, throwTo)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (MonadReader (ask), MonadTrans (lift), ReaderT (runReaderT))
+import Control.Monad.Reader
+  ( MonadReader (ask),
+    MonadTrans (lift),
+    ReaderT (runReaderT),
+  )
 import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
 import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
@@ -51,6 +69,7 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
 import qualified Data.SBV.Trans as SBVT
 import qualified Data.SBV.Trans.Control as SBVTC
+import GHC.IO.Exception (ExitCode (ExitSuccess))
 import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Backend.SBV.Data.SMT.Lowering
   ( SymBiMap,
@@ -74,8 +93,19 @@ import Grisette.Core.Data.Class.ModelOps
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.Solver
-  ( MonadicIncrementalSolver (solveNext),
+  ( IncrementalSolver
+      ( solverForceTerminate,
+        solverRunCommand,
+        solverSolve,
+        solverTerminate
+      ),
+    MonadicIncrementalSolver
+      ( monadicSolverPop,
+        monadicSolverPush,
+        monadicSolverSolve
+      ),
     Solver (solve, solveAll, solveMulti),
+    SolverCommand (SolverPop, SolverPush, SolverSolve, SolverTerminate),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( conTerm,
@@ -264,6 +294,7 @@ data SolvingFailure
   | Unk
   | ResultNumLimitReached
   | SolvingError SBV.SBVException
+  | Terminated
   deriving (Show)
 
 sbvCheckSatResult :: SBVC.CheckSatResult -> SolvingFailure
@@ -298,7 +329,7 @@ instance Solver (GrisetteSMTConfig n) SolvingFailure where
           )
           $ runSBVIncrementalT config
           $ do
-            r <- solveNext s
+            r <- monadicSolverSolve s
             case r of
               Right model -> remainingModels n model
               Left failure -> return ([], failure)
@@ -314,7 +345,7 @@ instance Solver (GrisetteSMTConfig n) SolvingFailure where
                 )
                 (conTerm False)
                 (unSymbolSet allSymbols)
-        solveNext $ SymBool newtm
+        monadicSolverSolve $ SymBool newtm
       remainingModels :: Int -> PM.Model -> SBVIncrementalT n IO ([PM.Model], SolvingFailure)
       remainingModels n1 md
         | n1 > 1 = do
@@ -403,7 +434,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
         SymBool ->
         SBVIncrementalT n IO ([inputs], Either SolvingFailure PM.Model)
       go cexFormula inputs allInputs pre post = do
-        r <- solveNext $ phi .&& cexFormula
+        r <- monadicSolverSolve $ phi .&& cexFormula
         loop ((forallSymbols `exceptFor`) <$> r) []
         where
           forallSymbols :: SymbolSet
@@ -420,7 +451,7 @@ instance CEGISSolver (GrisetteSMTConfig n) SolvingFailure where
               return (evaluateSym False newm inputs, newm)
           guess :: Model -> SBVIncrementalT n IO (Either SolvingFailure PM.Model)
           guess candidate = do
-            r <- solveNext $ evaluateSym False candidate phi
+            r <- monadicSolverSolve $ evaluateSym False candidate phi
             return $ exceptFor forallSymbols <$> r
           loop ::
             Either SolvingFailure PM.Model ->
@@ -443,6 +474,11 @@ newtype CegisInternal = CegisInternal Int
 type SBVIncrementalT n m =
   ReaderT (GrisetteSMTConfig n) (StateT SymBiMap (SBVTC.QueryT m))
 
+type SBVIncremental n = SBVIncrementalT n IO
+
+runSBVIncremental :: GrisetteSMTConfig n -> SBVIncremental n a -> IO a
+runSBVIncremental = runSBVIncrementalT
+
 runSBVIncrementalT ::
   (SBVTC.ExtractIO m) =>
   GrisetteSMTConfig n ->
@@ -459,7 +495,7 @@ instance
   (MonadIO m) =>
   MonadicIncrementalSolver (SBVIncrementalT n m) SolvingFailure
   where
-  solveNext (SymBool formula) = do
+  monadicSolverSolve (SymBool formula) = do
     symBiMap <- get
     config <- ask
     (newSymBiMap, lowered) <- lowerSinglePrimCached config formula symBiMap
@@ -472,3 +508,71 @@ instance
         let model = parseModel config sbvModel newSymBiMap
         return $ Right model
       r -> return $ Left $ sbvCheckSatResult r
+  monadicSolverPush = SBVTC.push
+  monadicSolverPop = SBVTC.pop
+
+data SBVSolverStatus = SBVSolverNormal | SBVSolverTerminated
+
+data SBVSolverHandle = SBVSolverHandle
+  { sbvSolverHandleMonad :: Async (),
+    sbvSolverHandleStatus :: TMVar SBVSolverStatus,
+    sbvSolverHandleInChan :: TChan SolverCommand,
+    sbvSolverHandleOutChan :: TChan (Either SolvingFailure Model)
+  }
+
+newSBVSolver :: GrisetteSMTConfig n -> IO SBVSolverHandle
+newSBVSolver config = do
+  sbvSolverHandleInChan <- atomically newTChan
+  sbvSolverHandleOutChan <- atomically newTChan
+  sbvSolverHandleStatus <- newTMVarIO SBVSolverNormal
+  sbvSolverHandleMonad <- async $ runSBVIncremental config $ do
+    let loop = do
+          nextFormula <- liftIO $ atomically $ readTChan sbvSolverHandleInChan
+          case nextFormula of
+            SolverPush n -> monadicSolverPush n >> loop
+            SolverPop n -> monadicSolverPop n >> loop
+            SolverTerminate -> return ()
+            SolverSolve formula -> do
+              r <- monadicSolverSolve formula
+              liftIO $ atomically $ writeTChan sbvSolverHandleOutChan r
+              loop
+    loop
+    liftIO $ atomically $ do
+      writeTMVar sbvSolverHandleStatus SBVSolverTerminated
+      writeTChan sbvSolverHandleOutChan $ Left Terminated
+  return $ SBVSolverHandle {..}
+
+instance IncrementalSolver SBVSolverHandle SolvingFailure where
+  solverRunCommand f handle@(SBVSolverHandle _ status inChan _) command = do
+    st <- liftIO $ atomically $ takeTMVar status
+    case st of
+      SBVSolverNormal -> do
+        liftIO $ atomically $ writeTChan inChan command
+        r <- f handle
+        liftIO $ atomically $ do
+          currStatus <- tryReadTMVar status
+          case currStatus of
+            Nothing -> putTMVar status SBVSolverNormal
+            Just _ -> return ()
+        return r
+      SBVSolverTerminated -> do
+        liftIO $ atomically $ writeTMVar status SBVSolverTerminated
+        return $ Left Terminated
+  solverSolve handle nextFormula =
+    solverRunCommand
+      ( \(SBVSolverHandle _ _ _ outChan) ->
+          liftIO $ atomically $ readTChan outChan
+      )
+      handle
+      $ SolverSolve nextFormula
+  solverTerminate (SBVSolverHandle thread status inChan _) = do
+    liftIO $ atomically $ do
+      writeTMVar status SBVSolverTerminated
+      writeTChan inChan SolverTerminate
+    wait thread
+  solverForceTerminate (SBVSolverHandle thread status _ outChan) = do
+    liftIO $ atomically $ do
+      writeTMVar status SBVSolverTerminated
+      writeTChan outChan (Left Terminated)
+    throwTo (asyncThreadId thread) ExitSuccess
+    wait thread
