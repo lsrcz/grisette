@@ -142,6 +142,7 @@ library
   build-depends:
       QuickCheck ==2.14.*
     , array >=0.5.4 && <0.6
+    , async
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
     , deepseq >=1.4.4 && <1.6
@@ -154,6 +155,7 @@ library
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
+    , stm
     , template-haskell >=2.16 && <2.21
     , text >=1.2.4.1 && <2.2
     , th-compat >=0.1.2 && <0.2
@@ -177,6 +179,7 @@ test-suite doctest
       Glob
     , QuickCheck ==2.14.*
     , array >=0.5.4 && <0.6
+    , async
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
     , deepseq >=1.4.4 && <1.6
@@ -191,6 +194,7 @@ test-suite doctest
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
+    , stm
     , template-haskell >=2.16 && <2.21
     , text >=1.2.4.1 && <2.2
     , th-compat >=0.1.2 && <0.2
@@ -259,6 +263,7 @@ test-suite spec
       HUnit ==1.6.*
     , QuickCheck ==2.14.*
     , array >=0.5.4 && <0.6
+    , async
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
     , deepseq >=1.4.4 && <1.6
@@ -272,6 +277,7 @@ test-suite spec
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
     , sbv >=8.11 && <10.3
+    , stm
     , template-haskell >=2.16 && <2.21
     , test-framework >=0.8.2 && <0.9
     , test-framework-hunit >=0.3.0.2 && <0.4

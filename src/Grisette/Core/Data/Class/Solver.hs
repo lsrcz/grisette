@@ -34,6 +34,8 @@ module Grisette.Core.Data.Class.Solver
 
     -- * Solver interfaces
     MonadicIncrementalSolver (..),
+    SolverCommand (..),
+    IncrementalSolver (..),
     Solver (..),
     solveExcept,
     solveMultiExcept,
@@ -62,7 +64,31 @@ data SolveInternal = SolveInternal
 -- >>> :set -XOverloadedStrings
 
 class MonadicIncrementalSolver m failure | m -> failure where
-  solveNext :: SymBool -> m (Either failure Model)
+  monadicSolverPush :: Int -> m ()
+  monadicSolverPop :: Int -> m ()
+  monadicSolverSolve :: SymBool -> m (Either failure Model)
+
+data SolverCommand
+  = SolverSolve SymBool
+  | SolverPush Int
+  | SolverPop Int
+  | SolverTerminate
+
+class IncrementalSolver handle failure | handle -> failure where
+  solverRunCommand ::
+    (handle -> IO (Either failure a)) ->
+    handle ->
+    SolverCommand ->
+    IO (Either failure a)
+  solverSolve :: handle -> SymBool -> IO (Either failure Model)
+  solverPush :: handle -> Int -> IO (Either failure ())
+  solverPush handle n =
+    solverRunCommand (const $ return $ Right ()) handle $ SolverPush n
+  solverPop :: handle -> Int -> IO (Either failure ())
+  solverPop handle n =
+    solverRunCommand (const $ return $ Right ()) handle $ SolverPop n
+  solverTerminate :: handle -> IO ()
+  solverForceTerminate :: handle -> IO ()
 
 -- | A solver interface.
 class
