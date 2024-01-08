@@ -43,7 +43,8 @@ import Control.Concurrent.STM
     newTMVarIO,
     putTMVar,
     takeTMVar,
-    tryReadTMVar, tryTakeTMVar,
+    tryReadTMVar,
+    tryTakeTMVar,
   )
 import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
 import Control.Exception (handle, throwTo)
@@ -53,6 +54,7 @@ import Control.Monad.Reader
     MonadTrans (lift),
     ReaderT (runReaderT),
   )
+import Control.Monad.STM (STM)
 import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
 import Data.Kind (Type)
 import qualified Data.SBV as SBV
@@ -92,7 +94,6 @@ import Grisette.IR.SymPrim.Data.Prim.Model as PM
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
-import Control.Monad.STM (STM)
 
 -- $setup
 -- >>> import Grisette.Core
