@@ -47,7 +47,7 @@ module Grisette.Core.Data.Class.Solver
 where
 
 import Control.DeepSeq (NFData)
-import Control.Exception (SomeException, bracketOnError)
+import Control.Exception (SomeException, bracket)
 import Control.Monad.Except (ExceptT, runExceptT)
 import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
@@ -126,7 +126,7 @@ withSolver ::
   config ->
   (handle -> IO a) ->
   IO a
-withSolver config = bracketOnError (newSolver config) solverTerminate
+withSolver config = bracket (newSolver config) solverTerminate
 
 -- | Solve a single formula. Find an assignment to it to make it true.
 --
