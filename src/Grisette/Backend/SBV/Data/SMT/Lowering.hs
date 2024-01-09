@@ -966,7 +966,16 @@ bvIsNonZeroFromGEq1 :: forall w r. (1 <= w) => ((SBV.BVIsNonZero w) => r) -> r
 bvIsNonZeroFromGEq1 r1 = case unsafeAxiom :: w :~: 1 of
   Refl -> r1
 
-#if MIN_VERSION_sbv(10,0,0)
+#if MIN_VERSION_sbv(10,3,0)
+preprocessUIFuncs ::
+  [(String, (Bool, SBVI.SBVType, Either String ([([SBVI.CV], SBVI.CV)], SBVI.CV)))] ->
+  Maybe [(String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV)))]
+preprocessUIFuncs =
+  traverse
+    (\case
+      (a, (_, b, Right c)) -> Just (a, (b, c))
+      _ -> Nothing)
+#elif MIN_VERSION_sbv(10,0,0)
 preprocessUIFuncs ::
   [(String, (SBVI.SBVType, Either String ([([SBVI.CV], SBVI.CV)], SBVI.CV)))] ->
   Maybe [(String, (SBVI.SBVType, ([([SBVI.CV], SBVI.CV)], SBVI.CV)))]
