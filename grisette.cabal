@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           grisette
-version:        0.3.1.1
+version:        0.4.0.0
 synopsis:       Symbolic evaluation as a library
 description:    Grisette is a reusable symbolic evaluation library for Haskell. By
                 translating programs into constraints, Grisette can help the development of
