@@ -21,7 +21,11 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Backend.SBV.Data.SMT.Solving
-  ( ApproximationConfig (..),
+  ( -- * Term type computation
+    TermTy,
+
+    -- * SBV backend configuration
+    ApproximationConfig (..),
     ExtraConfig (..),
     precise,
     approx,
@@ -30,8 +34,14 @@ module Grisette.Backend.SBV.Data.SMT.Solving
     withApprox,
     clearApprox,
     GrisetteSMTConfig (..),
-    SolvingFailure (..),
-    TermTy,
+
+    -- * SBV monadic solver interface
+    SBVIncrementalT,
+    SBVIncremental,
+    runSBVIncrementalT,
+    runSBVIncremental,
+
+    -- * SBV solver handle
     SBVSolverHandle,
   )
 where
@@ -84,7 +94,7 @@ import Grisette.Core.Data.Class.Solver
         solverTerminate
       ),
     SolverCommand (SolverPop, SolverPush, SolverSolve, SolverTerminate),
-    SolvingFailure (DSat, SolvingError, Terminated, Unk, Unsat),
+    SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( type (-->),
@@ -123,8 +133,8 @@ type family TermTy bitWidth b where
 
 -- | Configures how to approximate unbounded values.
 --
--- For example, if we use @'Approx' ('Data.Proxy' :: 'Data.Proxy' 4)@ to approximate the
--- following unbounded integer:
+-- For example, if we use @'Approx' ('Data.Proxy' :: 'Data.Proxy' 4)@ to
+-- approximate the following unbounded integer:
 --
 -- > (+ a 9)
 --
@@ -139,8 +149,12 @@ type family TermTy bitWidth b where
 -- more details.
 data ApproximationConfig (n :: Nat) where
   NoApprox :: ApproximationConfig 0
-  Approx :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) => p n -> ApproximationConfig n
+  Approx ::
+    (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+    p n ->
+    ApproximationConfig n
 
+-- | Grisette specific extra configurations for the SBV backend.
 data ExtraConfig (i :: Nat) = ExtraConfig
   { -- | Timeout in milliseconds for each solver call. CEGIS may call the
     -- solver multiple times and each call has its own timeout.
@@ -206,11 +220,12 @@ approximateExtraConfig p =
 -- one, and should work well when no overflow is possible, in which case the
 -- performance can be improved with almost no cost.
 --
--- We must note that the bounded translation is an approximation and is __/not/__
--- __/sound/__. As the approximation happens only during the final translation,
--- the symbolic evaluation may aggressively optimize the term based on the
--- properties of mathematical integer arithmetic. This may cause the solver yield
--- results that is incorrect under both unbounded or bounded semantics.
+-- We must note that the bounded translation is an approximation and is
+-- __/not sound/__. As the approximation happens only during the final
+-- translation, the symbolic evaluation may aggressively optimize the term based
+-- on the properties of mathematical integer arithmetic. This may cause the
+-- solver yield results that is incorrect under both unbounded or bounded
+-- semantics.
 --
 -- The following is an example that is correct under bounded semantics, while is
 -- incorrect under the unbounded semantics:
@@ -224,13 +239,17 @@ approximateExtraConfig p =
 --
 -- This may be avoided by setting an large enough reasoning precision to prevent
 -- overflows.
-data GrisetteSMTConfig (i :: Nat) = GrisetteSMTConfig {sbvConfig :: SBV.SMTConfig, extraConfig :: ExtraConfig i}
+data GrisetteSMTConfig (i :: Nat) = GrisetteSMTConfig
+  { sbvConfig :: SBV.SMTConfig,
+    extraConfig :: ExtraConfig i
+  }
 
 -- | A precise reasoning configuration with the given SBV solver configuration.
 precise :: SBV.SMTConfig -> GrisetteSMTConfig 0
 precise config = GrisetteSMTConfig config preciseExtraConfig
 
--- | An approximate reasoning configuration with the given SBV solver configuration.
+-- | An approximate reasoning configuration with the given SBV solver
+-- configuration.
 approx ::
   forall p n.
   (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
@@ -241,41 +260,54 @@ approx p config = GrisetteSMTConfig config (approximateExtraConfig p)
 
 -- | Set the timeout for the solver configuration.
 withTimeout :: Int -> GrisetteSMTConfig i -> GrisetteSMTConfig i
-withTimeout t config = config {extraConfig = (extraConfig config) {timeout = Just t}}
+withTimeout t config =
+  config {extraConfig = (extraConfig config) {timeout = Just t}}
 
 -- | Clear the timeout for the solver configuration.
 clearTimeout :: GrisetteSMTConfig i -> GrisetteSMTConfig i
-clearTimeout config = config {extraConfig = (extraConfig config) {timeout = Nothing}}
+clearTimeout config =
+  config {extraConfig = (extraConfig config) {timeout = Nothing}}
 
 -- | Set the reasoning precision for the solver configuration.
-withApprox :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) => p n -> GrisetteSMTConfig i -> GrisetteSMTConfig n
-withApprox p config = config {extraConfig = (extraConfig config) {integerApprox = Approx p}}
+withApprox ::
+  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+  p n ->
+  GrisetteSMTConfig i ->
+  GrisetteSMTConfig n
+withApprox p config =
+  config {extraConfig = (extraConfig config) {integerApprox = Approx p}}
 
 -- | Clear the reasoning precision and perform precise reasoning with the
 -- solver configuration.
 clearApprox :: GrisetteSMTConfig i -> GrisetteSMTConfig 0
-clearApprox config = config {extraConfig = (extraConfig config) {integerApprox = NoApprox}}
+clearApprox config =
+  config {extraConfig = (extraConfig config) {integerApprox = NoApprox}}
 
 sbvCheckSatResult :: SBVC.CheckSatResult -> SolvingFailure
 sbvCheckSatResult SBVC.Sat = error "Should not happen"
-sbvCheckSatResult (SBVC.DSat msg) = DSat msg
+sbvCheckSatResult (SBVC.DSat _) = error "DSat is currently not supported"
 sbvCheckSatResult SBVC.Unsat = Unsat
 sbvCheckSatResult SBVC.Unk = Unk
 
+-- | Apply the timeout to the configuration.
 applyTimeout ::
   (MonadIO m, SBVTC.MonadQuery m) => GrisetteSMTConfig i -> m a -> m a
 applyTimeout config q = case timeout (extraConfig config) of
   Nothing -> q
   Just t -> SBVTC.timeout t q
 
+-- | Incremental solver monad transformer with the SBV backend.
 type SBVIncrementalT n m =
   ReaderT (GrisetteSMTConfig n) (StateT SymBiMap (SBVTC.QueryT m))
 
+-- | Incremental solver monad with the SBV backend.
 type SBVIncremental n = SBVIncrementalT n IO
 
+-- | Run the incremental solver monad with a given configuration.
 runSBVIncremental :: GrisetteSMTConfig n -> SBVIncremental n a -> IO a
 runSBVIncremental = runSBVIncrementalT
 
+-- | Run the incremental solver monad transformer with a given configuration.
 runSBVIncrementalT ::
   (SBVTC.ExtractIO m) =>
   GrisetteSMTConfig n ->
@@ -307,6 +339,9 @@ instance (MonadIO m) => MonadicSolver (SBVIncrementalT n m) where
 
 data SBVSolverStatus = SBVSolverNormal | SBVSolverTerminated
 
+-- | The handle type for the SBV solver.
+--
+-- See 'ConfigurableSolver' and 'Solver' for the interfaces.
 data SBVSolverHandle = SBVSolverHandle
   { sbvSolverHandleMonad :: Async (),
     sbvSolverHandleStatus :: TMVar SBVSolverStatus,

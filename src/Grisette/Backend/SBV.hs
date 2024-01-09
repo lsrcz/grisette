@@ -20,7 +20,6 @@ module Grisette.Backend.SBV
     withApprox,
     clearApprox,
     GrisetteSMTConfig (..),
-    SolvingFailure (..),
 
     -- * SBV backend solver configuration
     SBV.SMTConfig (..),
@@ -40,7 +39,6 @@ import Grisette.Backend.SBV.Data.SMT.Solving
   ( ApproximationConfig (..),
     ExtraConfig (..),
     GrisetteSMTConfig (..),
-    SolvingFailure (..),
     approx,
     clearApprox,
     clearTimeout,

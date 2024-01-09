@@ -2,11 +2,11 @@ module Grisette.TestUtil.SymbolicAssertion ((@?=~)) where
 
 import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV (z3)
-import Grisette.Backend.SBV.Data.SMT.Solving (SolvingFailure (Unsat), precise)
+import Grisette.Backend.SBV.Data.SMT.Solving (precise)
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.Solver (solve)
+import Grisette.Core.Data.Class.Solver (SolvingFailure (Unsat), solve)
 import Test.HUnit (Assertion)
 
 (@?=~) :: (HasCallStack, SEq a, Show a, EvaluateSym a) => a -> a -> Assertion
