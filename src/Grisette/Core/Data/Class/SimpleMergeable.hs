@@ -149,7 +149,10 @@ instance (Generic a, Mergeable' (Rep a), SimpleMergeable' (Rep a)) => SimpleMerg
   {-# INLINE mrgIte #-}
 
 -- | Lifting of the 'SimpleMergeable' class to unary type constructors.
-class SimpleMergeable1 u where
+class
+  (forall a. (SimpleMergeable a) => SimpleMergeable (u a), Mergeable1 u) =>
+  SimpleMergeable1 u
+  where
   -- | Lift 'mrgIte' through the type constructor.
   --
   -- >>> liftMrgIte mrgIte "a" (Identity "b") (Identity "c") :: Identity SymInteger
@@ -165,7 +168,10 @@ mrgIte1 = liftMrgIte mrgIte
 {-# INLINE mrgIte1 #-}
 
 -- | Lifting of the 'SimpleMergeable' class to binary type constructors.
-class (Mergeable2 u) => SimpleMergeable2 u where
+class
+  (forall a. (SimpleMergeable a) => SimpleMergeable1 (u a), Mergeable2 u) =>
+  SimpleMergeable2 u
+  where
   -- | Lift 'mrgIte' through the type constructor.
   --
   -- >>> liftMrgIte2 mrgIte mrgIte "a" ("b", "c") ("d", "e") :: (SymInteger, SymBool)

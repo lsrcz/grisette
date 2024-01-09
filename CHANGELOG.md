@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Renamed multiple symbolic operators. ([#158](https://github.com/lsrcz/grisette/pull/158))
 - [Breaking] Changed the solver interface. ([#159](https://github.com/lsrcz/grisette/pull/159))
 - [Breaking] Changed the CEGIS solver interface. ([#159](https://github.com/lsrcz/grisette/pull/159))
+- [Breaking] Changed the constraints for `Mergeable1` and `SimpleMergeable1` classes as described in https://github.com/haskell/core-libraries-committee/issues/10. ([#160](https://github.com/lsrcz/grisette/pull/160))
 
 ## [0.3.1.1] -- 2023-09-29
 

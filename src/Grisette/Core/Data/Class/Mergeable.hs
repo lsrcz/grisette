@@ -317,7 +317,10 @@ class Mergeable a where
   rootStrategy :: MergingStrategy a
 
 -- | Lifting of the 'Mergeable' class to unary type constructors.
-class Mergeable1 (u :: Type -> Type) where
+class
+  (forall a. (Mergeable a) => Mergeable (u a)) =>
+  Mergeable1 (u :: Type -> Type)
+  where
   -- | Lift merge strategy through the type constructor.
   liftRootStrategy :: MergingStrategy a -> MergingStrategy (u a)
 
@@ -327,7 +330,10 @@ rootStrategy1 = liftRootStrategy rootStrategy
 {-# INLINE rootStrategy1 #-}
 
 -- | Lifting of the 'Mergeable' class to binary type constructors.
-class Mergeable2 (u :: Type -> Type -> Type) where
+class
+  (forall a. (Mergeable a) => Mergeable1 (u a)) =>
+  Mergeable2 (u :: Type -> Type -> Type)
+  where
   -- | Lift merge strategy through the type constructor.
   liftRootStrategy2 :: MergingStrategy a -> MergingStrategy b -> MergingStrategy (u a b)
 
@@ -337,7 +343,10 @@ rootStrategy2 = liftRootStrategy2 rootStrategy rootStrategy
 {-# INLINE rootStrategy2 #-}
 
 -- | Lifting of the 'Mergeable' class to ternary type constructors.
-class Mergeable3 (u :: Type -> Type -> Type -> Type) where
+class
+  (forall a. (Mergeable a) => Mergeable2 (u a)) =>
+  Mergeable3 (u :: Type -> Type -> Type -> Type)
+  where
   -- | Lift merge strategy through the type constructor.
   liftRootStrategy3 :: MergingStrategy a -> MergingStrategy b -> MergingStrategy c -> MergingStrategy (u a b c)
 
@@ -1001,6 +1010,9 @@ instance (Generic a, Mergeable' (Rep a)) => Mergeable (Default a) where
 derivedRootStrategy :: (Generic a, Mergeable' (Rep a)) => MergingStrategy a
 derivedRootStrategy = wrapStrategy rootStrategy' to from
 {-# INLINE derivedRootStrategy #-}
+
+instance (Generic1 u, Mergeable1' (Rep1 u), Mergeable a) => Mergeable (Default1 u a) where
+  rootStrategy = liftRootStrategy rootStrategy
 
 instance (Generic1 u, Mergeable1' (Rep1 u)) => Mergeable1 (Default1 u) where
   liftRootStrategy = unsafeCoerce (derivedLiftMergingStrategy :: MergingStrategy a -> MergingStrategy (u a))
