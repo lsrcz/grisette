@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added shift functions by symbolic shift amounts. ([#151](https://github.com/lsrcz/grisette/pull/151))
 - Added `apply` for uninterpreted functions. ([#155](https://github.com/lsrcz/grisette/pull/155))
 - Added `liftFresh` to lift a `Fresh` into `MonadFresh`. ([#156](https://github.com/lsrcz/grisette/pull/156))
+- Added a handle types for SBV solvers. This allows users to use SBV solvers without the need to wrap everything in the SBV monads. ([#159](https://github.com/lsrcz/grisette/pull/159))
+- Added a new generic CEGIS interface. This allows any verifier/fuzzer to be used in the CEGIS loop. ([#159](https://github.com/lsrcz/grisette/pull/159))
 
 ### Removed
 
@@ -48,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Split the `Grisette.Data.Class.SafeArith` module to `Grisette.Data.Class.SafeDivision` and `Grisette.Data.Class.SafeLinearArith`. ([#146](https://github.com/lsrcz/grisette/pull/146))
 - [Breaking] Changed the API to `MonadFresh`. ([#156](https://github.com/lsrcz/grisette/pull/156))
 - [Breaking] Renamed multiple symbolic operators. ([#158](https://github.com/lsrcz/grisette/pull/158))
+- [Breaking] Changed the solver interface. ([#159](https://github.com/lsrcz/grisette/pull/159))
+- [Breaking] Changed the CEGIS solver interface. ([#159](https://github.com/lsrcz/grisette/pull/159))
 
 ## [0.3.1.1] -- 2023-09-29
 
