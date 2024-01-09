@@ -12,10 +12,10 @@ For a detailed description of the system, please refer to our POPL'23 paper
 ## Features
 
 - **Multi-path** symbolic evaluation with efficient (customizable) state merging.
-- Symbolic evaluation is **purely functional**. The propagated symbolic value includes the assertion / error state of the execution, yet it is just a data structure. As a result, Grisette is a library that does not modify the Haskell compiler.  
-- The separation of symbolic and concrete values is enforced with **static types**. These types help discover opportunities for partial evaluation as well as safe use of Haskell libraries. 
+- Symbolic evaluation is **purely functional**. The propagated symbolic value includes the assertion / error state of the execution, yet it is just a data structure. As a result, Grisette is a library that does not modify the Haskell compiler.
+- The separation of symbolic and concrete values is enforced with **static types**. These types help discover opportunities for partial evaluation as well as safe use of Haskell libraries.
 
-## Design and Benefits 
+## Design and Benefits
 
 - Modular purely functional design, with a focus on composability.
   - Allows for symbolic evaluation of user-defined data structures / data
@@ -47,7 +47,7 @@ packages. You can add it to your project's `.cabal` file:
 ```cabal
 library
   ...
-  build-depends: grisette >= 0.3 < 0.4
+  build-depends: grisette >= 0.4 < 0.5
 ```
 
 #### Quick start template with `stack new`
@@ -79,7 +79,7 @@ through `PATH`. You can install it with the instructions below.
 
 ### Install SMT Solvers
 
-To run the examples, you also need to install an SMT solver and make it 
+To run the examples, you also need to install an SMT solver and make it
 available through `PATH`. We recommend that you start with
 [Z3](https://github.com/Z3Prover/z3), as it supports all our examples and is
 usually easier to install.
@@ -114,17 +114,17 @@ for the build instructions.
 
 ## Example
 
-The following example uses Grisette to build a synthesizer of arithmetic programs. Given the input-output pair (2,5), the synthesizer may output the program (\x -> x+3).  The example is adapted from [this blog
+The following example uses Grisette to build a synthesizer of arithmetic programs. Given the input-output pair (2,5), the synthesizer may output the program (\x -> x+3). The example is adapted from [this blog
 post](https://www.cs.utexas.edu/~bornholt/post/building-synthesizer.html) by
 James Bornholt.
 
-
 The example has three parts:
+
 - We define the arithmetic language. The language is _symbolic_:
   - its syntax tree represents a set of concrete syntax trees, and
-  - its interpreter accepts such symbolic syntax trees, and interprete at once all represented concrete syntax trees. 
-- We define the candidate program space of the synthesizer by creating a particular symbolic syntax tree. The synthesizer will search the space of concrete trees for a solution. 
-- We interpret the symbolic syntax tree and pass the resulting constraints to the solver. If a solution exists, the solver returns a concrete tree that agrees with the input-out example. 
+  - its interpreter accepts such symbolic syntax trees, and interprete at once all represented concrete syntax trees.
+- We define the candidate program space of the synthesizer by creating a particular symbolic syntax tree. The synthesizer will search the space of concrete trees for a solution.
+- We interpret the symbolic syntax tree and pass the resulting constraints to the solver. If a solution exists, the solver returns a concrete tree that agrees with the input-out example.
 
 ### Defining the Arithmetic Language
 
@@ -183,6 +183,7 @@ data SExpr
 -- UMrg (Single (SConst 1))
 $(makeUnionWrapper "mrg" ''SExpr)
 ```
+
 Then we can define the program space.
 The following code defines a program space `\x -> x + {x, c}`. Some example
 programs in this space are `\x -> x + x`, `\x -> x + 1`, and `\x -> x + 2`.
@@ -239,15 +240,17 @@ For more details, please refer to [the Grisette examples](https://github.com/lsr
 
 ## Documentation
 
-- Haddock documentation at  [grisette](https://hackage.haskell.org/package/grisette).
+- Haddock documentation at [grisette](https://hackage.haskell.org/package/grisette).
 - Grisette essentials (WIP).
 - Grisette tutorials (WIP).
 
 ## License
+
 The Grisette library is distributed under the terms of the BSD3 license. The
 [LICENSE](LICENSE) file contains the full license text.
 
 ## Citing Grisette
+
 If you use Grisette in your research, please use the following bibtex entry:
 
 ```bibtex
