@@ -940,36 +940,40 @@ module Grisette.Core
     -- synthesis (CEGIS) algorithm. See the documentation for 'CEGISSolver' for
     -- more details.
 
-    -- ** Solver interface
-    UnionWithExcept (..),
-    MonadicSolver (..),
-    ConfigurableSolver (..),
+    -- ** Solver interfaces
     SolvingFailure (..),
+    MonadicSolver (..),
     SolverCommand (..),
+    ConfigurableSolver (..),
     Solver (..),
     withSolver,
-    solveExcept,
-    solveMultiExcept,
     solve,
     solveMulti,
 
-    -- ** Counter-example Guided Inductive Synthesis (CEGIS)
-    CEGISResult (..),
-    StatefulVerifierFun,
+    -- ** Union with exceptions
+    UnionWithExcept (..),
+    solveExcept,
+    solveMultiExcept,
+
+    -- ** Generic Counter-example Guided Inductive Synthesis (CEGIS) interface
     SynthesisConstraintFun,
-    VerifierResult,
+    VerifierResult (..),
+    StatefulVerifierFun,
+    CEGISResult (..),
     genericCEGIS,
+
+    -- ** CEGIS interfaces with pre/post conditions
     CEGISCondition (..),
+    cegisMultiInputs,
     cegisPostCond,
     cegisPrePost,
     cegis,
     cegisExcept,
-    cegisExceptMultiInputs,
     cegisExceptStdVC,
-    cegisExceptStdVCMultiInputs,
     cegisExceptVC,
+    cegisExceptMultiInputs,
+    cegisExceptStdVCMultiInputs,
     cegisExceptVCMultiInputs,
-    cegisMultiInputs,
 
     -- ** Symbolic constant extraction
 
@@ -1075,7 +1079,7 @@ import Grisette.Core.Data.Class.CEGISSolver
     CEGISResult (..),
     StatefulVerifierFun,
     SynthesisConstraintFun,
-    VerifierResult,
+    VerifierResult (..),
     cegis,
     cegisExcept,
     cegisExceptMultiInputs,

@@ -27,22 +27,23 @@ module Grisette.Core.Data.Class.Solver
 
     --
 
-    -- | The examples assumes a [z3](https://github.com/Z3Prover/z3) solver available in @PATH@.
+    -- | The examples assumes that the [z3](https://github.com/Z3Prover/z3)
+    -- solver is available in @PATH@.
+
+    -- * Solver interfaces
+    SolvingFailure (..),
+    MonadicSolver (..),
+    SolverCommand (..),
+    ConfigurableSolver (..),
+    Solver (..),
+    withSolver,
+    solve,
+    solveMulti,
 
     -- * Union with exceptions
     UnionWithExcept (..),
-
-    -- * Solver interfaces
-    MonadicSolver (..),
-    ConfigurableSolver (..),
-    SolvingFailure (..),
-    SolverCommand (..),
-    Solver (..),
-    withSolver,
     solveExcept,
     solveMultiExcept,
-    solve,
-    solveMulti,
   )
 where
 
@@ -82,47 +83,82 @@ data SolveInternal = SolveInternal
 -- >>> import Grisette.Backend.SBV
 -- >>> :set -XOverloadedStrings
 
+-- | The current failures that can be returned by the solver.
 data SolvingFailure
-  = DSat (Maybe String)
-  | Unsat
-  | Unk
-  | ResultNumLimitReached
-  | SolvingError SomeException
-  | Terminated
+  = -- | Unsatisfiable: No model is available.
+    Unsat
+  | -- | Unknown: The solver cannot determine whether the formula is
+    -- satisfiable.
+    Unk
+  | -- | The solver has reached the maximum number of models to return.
+    ResultNumLimitReached
+  | -- | The solver has encountered an error.
+    SolvingError SomeException
+  | -- | The solver has been terminated.
+    Terminated
   deriving (Show)
 
+-- | A monadic solver interface.
+--
+-- This interface abstract the monadic interface of a solver. All the operations
+-- performed in the monad are using a single solver instance. The solver
+-- instance is management by the monad's @run@ function.
 class MonadicSolver m where
   monadicSolverPush :: Int -> m ()
   monadicSolverPop :: Int -> m ()
   monadicSolverSolve :: SymBool -> m (Either SolvingFailure Model)
 
+-- | The commands that can be sent to a solver.
 data SolverCommand
   = SolverSolve SymBool
   | SolverPush Int
   | SolverPop Int
   | SolverTerminate
 
-class ConfigurableSolver config handle | config -> handle where
-  newSolver :: config -> IO handle
-
+-- | A class that abstracts the solver interface.
 class Solver handle where
+  -- | Run a solver command.
   solverRunCommand ::
     (handle -> IO (Either SolvingFailure a)) ->
     handle ->
     SolverCommand ->
     IO (Either SolvingFailure a)
+
+  -- | Solve a formula.
   solverSolve :: handle -> SymBool -> IO (Either SolvingFailure Model)
+
+  -- | Push @n@ levels.
   solverPush :: handle -> Int -> IO (Either SolvingFailure ())
   solverPush handle n =
     solverRunCommand (const $ return $ Right ()) handle $ SolverPush n
+
+  -- | Pop @n@ levels.
   solverPop :: handle -> Int -> IO (Either SolvingFailure ())
   solverPop handle n =
     solverRunCommand (const $ return $ Right ()) handle $ SolverPop n
+
+  -- | Terminate the solver, wait until the last command is finished.
   solverTerminate :: handle -> IO ()
+
+  -- | Force terminate the solver, do not wait for the last command to finish.
   solverForceTerminate :: handle -> IO ()
 
+-- | A class that abstracts the creation of a solver instance based on a
+-- configuration.
+--
+-- The solver instance will need to be terminated by the user, with the solver
+-- interface.
+class
+  (Solver handle) =>
+  ConfigurableSolver config handle
+    | config -> handle
+  where
+  newSolver :: config -> IO handle
+
+-- | Start a solver, run a computation with the solver, and terminate the
+-- solver after the computation finishes.
 withSolver ::
-  (ConfigurableSolver config handle, Solver handle) =>
+  (ConfigurableSolver config handle) =>
   config ->
   (handle -> IO a) ->
   IO a
@@ -135,7 +171,7 @@ withSolver config = bracket (newSolver config) solverTerminate
 -- >>> solve (precise z3) ("a" .&& symNot "a")
 -- Left Unsat
 solve ::
-  (ConfigurableSolver config handle, Solver handle) =>
+  (ConfigurableSolver config handle) =>
   -- | solver configuration
   config ->
   -- | formula to solve, the solver will try to make it true
@@ -149,7 +185,7 @@ solve config formula = withSolver config (`solverSolve` formula)
 -- > >>> solveMulti (precise z3) 4 ("a" .|| "b")
 -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
 solveMulti ::
-  (ConfigurableSolver config handle, Solver handle) =>
+  (ConfigurableSolver config handle) =>
   -- | solver configuration
   config ->
   -- | maximum number of models to return
@@ -217,8 +253,7 @@ solveExcept ::
   ( UnionWithExcept t u e v,
     UnionPrjOp u,
     Functor u,
-    ConfigurableSolver config handle,
-    Solver handle
+    ConfigurableSolver config handle
   ) =>
   -- | solver configuration
   config ->
@@ -237,8 +272,7 @@ solveMultiExcept ::
   ( UnionWithExcept t u e v,
     UnionPrjOp u,
     Functor u,
-    ConfigurableSolver config handle,
-    Solver handle
+    ConfigurableSolver config handle
   ) =>
   -- | solver configuration
   config ->
@@ -250,4 +284,5 @@ solveMultiExcept ::
   -- | the program to be solved, should be a union of exception and values
   t ->
   IO ([Model], SolvingFailure)
-solveMultiExcept config n f v = solveMulti config n (simpleMerge $ f <$> extractUnionExcept v)
+solveMultiExcept config n f v =
+  solveMulti config n (simpleMerge $ f <$> extractUnionExcept v)
