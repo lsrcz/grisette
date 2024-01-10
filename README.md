@@ -47,7 +47,7 @@ packages. You can add it to your project's `.cabal` file:
 ```cabal
 library
   ...
-  build-depends: grisette >= 0.4 < 0.5
+  build-depends: grisette >= 0.4.1 < 0.5
 ```
 
 #### Quick start template with `stack new`
