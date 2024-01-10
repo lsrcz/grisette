@@ -20,7 +20,7 @@
           stack-wrapped
           pkgs.zlib # External C library needed by some Haskell packages
           pkgs.boolector
-          pkgs.z3
+          pkgs.z3_4_12
           pkgs.nixpkgs-fmt
         ];
         # Wrap Stack to work with our Nix integration. We don't want to modify
