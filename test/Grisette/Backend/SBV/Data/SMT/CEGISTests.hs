@@ -7,7 +7,7 @@
 
 module Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests) where
 
-import Control.Monad.Except (ExceptT, runExceptT)
+import Control.Monad.Except (ExceptT)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import Data.String (IsString (fromString))
@@ -24,6 +24,7 @@ import Grisette.Core.Data.Class.CEGISSolver
   ( CEGISResult (CEGISSuccess),
     cegis,
     cegisExceptVC,
+    cegisForAllExceptVC,
     cegisMultiInputs,
     cegisPostCond,
   )
@@ -64,30 +65,35 @@ testCegis ::
   (a -> [SymBool]) ->
   Assertion
 testCegis config shouldSuccess inputs bs = do
-  x <-
-    cegisExceptVC
-      config
-      (inputs, "internal" :: SymInteger)
-      return
-      ( \(cexInputs, internal) ->
-          runExceptT $ buildFormula internal (bs cexInputs)
-      )
-  case x of
+  cegisExceptVCResult <-
+    cegisExceptVC config (inputs, "internal" :: SymInteger) return $
+      \(cexInputs, internal) -> buildFormula internal (bs cexInputs)
+  case cegisExceptVCResult of
     (_, CEGISSuccess m) -> do
       shouldSuccess @=? True
-      verify (bs inputs)
-      where
-        verify [] = return ()
-        verify (v : vs) = do
-          y <- solve config (evaluateSym False m $ symNot v)
-          case y of
-            Left _ -> do
-              verify vs
-            Right _ ->
-              assertFailure $
-                "Failed to verify " ++ show v ++ " with the model " ++ show m
+      verify "cegisExceptVC" m (bs inputs)
+    _ -> shouldSuccess @=? False
+  cegisForAllExceptVCResult <-
+    cegisForAllExceptVC config (inputs, "internal" :: SymInteger) return $
+      buildFormula "internal" (bs inputs)
+  case cegisForAllExceptVCResult of
+    (_, CEGISSuccess m) -> do
+      shouldSuccess @=? True
+      verify "cegisForAllExceptVC" m (bs inputs)
     _ -> shouldSuccess @=? False
   where
+    verify _ _ [] = return ()
+    verify funName m (v : vs) = do
+      y <- solve config (evaluateSym False m $ symNot v)
+      case y of
+        Left _ -> verify funName m vs
+        Right _ ->
+          assertFailure $
+            funName
+              ++ ": Failed to verify "
+              ++ show v
+              ++ " with the model "
+              ++ show m
     buildFormula internal l = do
       symAssume (internal .>= 0)
       go l 0

@@ -33,9 +33,9 @@ module Grisette.Core.Data.Class.CEGISSolver
 
     -- * CEGIS interfaces with pre/post conditions
     CEGISCondition (..),
-    cegisMultiInputs,
     cegisPostCond,
     cegisPrePost,
+    cegisMultiInputs,
     cegis,
     cegisExcept,
     cegisExceptStdVC,
@@ -43,6 +43,10 @@ module Grisette.Core.Data.Class.CEGISSolver
     cegisExceptMultiInputs,
     cegisExceptStdVCMultiInputs,
     cegisExceptVCMultiInputs,
+    cegisForAll,
+    cegisForAllExcept,
+    cegisForAllExceptStdVC,
+    cegisForAllExceptVC,
   )
 where
 
@@ -275,7 +279,7 @@ cegisMultiInputs config inputs toCEGISCondition = do
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> cegis (precise z3) x (\x -> cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
--- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
+-- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
 cegis ::
   ( ConfigurableSolver config handle,
     EvaluateSym inputs,
@@ -496,3 +500,115 @@ cegisExceptStdVC ::
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptStdVC config inputs = cegisExceptVC config inputs return
+
+-- |
+-- CEGIS with a single symbolic input to represent a set of inputs.
+--
+-- The following example tries to find the value of @c@ such that for all
+-- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ clause is used to make
+-- the solution unique.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> let [x,c] = ["x","c"] :: [SymInteger]
+-- >>> cegisForAll (precise z3) x $ cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2)
+-- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
+cegisForAll ::
+  ( ExtractSymbolics forallInput,
+    ConfigurableSolver config handle
+  ) =>
+  config ->
+  -- | A symbolic value. All the symbolic constants in the value are treated as
+  -- for-all variables.
+  forallInput ->
+  CEGISCondition ->
+  -- | First output are the counter-examples for all the for-all variables, and
+  -- the second output is the model for all other variables if CEGIS succeeds.
+  IO ([Model], CEGISResult SolvingFailure)
+cegisForAll config input (CEGISCondition pre post) = do
+  (models, result) <- genericCEGIS config phi synthConstr () verifier
+  let exactResult = case result of
+        CEGISSuccess model -> CEGISSuccess $ exceptFor forallSymbols model
+        _ -> result
+  return (models, exactResult)
+  where
+    phi = pre .&& post
+    negphi = pre .&& symNot post
+    forallSymbols = extractSymbolics input
+    synthConstr _ model = return $ evaluateSym False model phi
+    verifier () candidate = do
+      let evaluated =
+            evaluateSym False (exceptFor forallSymbols candidate) negphi
+      r <- solve config evaluated
+      case r of
+        Left Unsat -> return ((), CEGISVerifierNoCex)
+        Left err -> return ((), CEGISVerifierException err)
+        Right model ->
+          return ((), CEGISVerifierFoundCex $ exact forallSymbols model)
+
+-- |
+-- CEGIS for symbolic programs with error handling, with a forall variable.
+--
+-- See 'cegisForAll' and 'cegisExcept'.
+cegisForAllExcept ::
+  ( UnionWithExcept t u e v,
+    UnionPrjOp u,
+    Functor u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    ConfigurableSolver config handle,
+    SEq inputs
+  ) =>
+  config ->
+  inputs ->
+  (Either e v -> CEGISCondition) ->
+  t ->
+  IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExcept config inputs f v =
+  cegisForAll config inputs $ simpleMerge $ f <$> extractUnionExcept v
+
+-- |
+-- CEGIS for symbolic programs with error handling, with a forall variable.
+--
+-- See 'cegisForAll' and 'cegisExceptVC'.
+cegisForAllExceptVC ::
+  ( UnionWithExcept t u e v,
+    UnionPrjOp u,
+    Monad u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    ConfigurableSolver config handle,
+    SEq inputs
+  ) =>
+  config ->
+  inputs ->
+  (Either e v -> u (Either VerificationConditions ())) ->
+  t ->
+  IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExceptVC config inputs f v = do
+  cegisForAll config inputs $
+    simpleMerge $
+      ( \case
+          Left AssumptionViolation -> cegisPrePost (con False) (con True)
+          Left AssertionViolation -> cegisPostCond (con False)
+          _ -> cegisPostCond (con True)
+      )
+        <$> (extractUnionExcept v >>= f)
+
+-- |
+-- CEGIS for symbolic programs with error handling, with a forall variable.
+--
+-- See 'cegisForAll' and 'cegisExceptStdVC'.
+cegisForAllExceptStdVC ::
+  ( UnionWithExcept t u VerificationConditions (),
+    UnionPrjOp u,
+    Monad u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    ConfigurableSolver config handle,
+    SEq inputs
+  ) =>
+  config ->
+  inputs ->
+  t ->
+  IO ([Model], CEGISResult SolvingFailure)
+cegisForAllExceptStdVC config inputs = cegisForAllExceptVC config inputs return

@@ -964,9 +964,9 @@ module Grisette.Core
 
     -- ** CEGIS interfaces with pre/post conditions
     CEGISCondition (..),
-    cegisMultiInputs,
     cegisPostCond,
     cegisPrePost,
+    cegisMultiInputs,
     cegis,
     cegisExcept,
     cegisExceptStdVC,
@@ -974,6 +974,10 @@ module Grisette.Core
     cegisExceptMultiInputs,
     cegisExceptStdVCMultiInputs,
     cegisExceptVCMultiInputs,
+    cegisForAll,
+    cegisForAllExcept,
+    cegisForAllExceptStdVC,
+    cegisForAllExceptVC,
 
     -- ** Symbolic constant extraction
 
@@ -1087,6 +1091,10 @@ import Grisette.Core.Data.Class.CEGISSolver
     cegisExceptStdVCMultiInputs,
     cegisExceptVC,
     cegisExceptVCMultiInputs,
+    cegisForAll,
+    cegisForAllExcept,
+    cegisForAllExceptStdVC,
+    cegisForAllExceptVC,
     cegisMultiInputs,
     cegisPostCond,
     cegisPrePost,
