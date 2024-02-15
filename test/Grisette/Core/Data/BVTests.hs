@@ -44,9 +44,15 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Typeable (Typeable, typeRep)
 import Data.Word (Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.BV (IntN (IntN), WordN (unWordN))
+import Grisette.Core.Data.BV
+  ( IntN (IntN),
+    SomeIntN (SomeIntN),
+    SomeWordN (SomeWordN),
+    WordN (unWordN),
+  )
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV
+  ( BV (bv),
+    SizedBV
       ( sizedBVConcat,
         sizedBVExt,
         sizedBVSelect,
@@ -57,7 +63,7 @@ import Grisette.Core.Data.Class.BitVector
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit (Assertion, assertFailure, (@=?))
+import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
 import Test.QuickCheck (Arbitrary, Property, ioProperty)
 
 unaryConform :: forall a b c d. (Show c, Eq c, HasCallStack) => (a -> b) -> (d -> c) -> (a -> c) -> (b -> d) -> a -> Property
@@ -326,10 +332,10 @@ integralConformTest pref ptyp =
       testProperty "toInteger" $ unaryConform @ref @typ fromIntegral id toInteger toInteger
     ]
 
-bvTests :: Test
-bvTests =
+sizedBVTests :: Test
+sizedBVTests =
   testGroup
-    "BV"
+    "sizedBV"
     [ testGroup
         "WordN 8 conform to Word8 for Bits instances"
         [ testProperty "(.&.)" $ \x y -> ioProperty $ wordBinConform (.&.) (.&.) x y,
@@ -481,3 +487,34 @@ bvTests =
             ioProperty $ shiftL x maxBound @=? 0
         ]
     ]
+
+someWordNTests :: Test
+someWordNTests =
+  testGroup
+    "SomeWordN"
+    [ testGroup
+        "BV"
+        [ testGroup
+            "bv"
+            [ testCase "bv 12 21" $
+                (bv 12 21 :: SomeWordN) @?= SomeWordN (0x015 :: WordN 12)
+            ]
+        ]
+    ]
+
+someIntNTests :: Test
+someIntNTests =
+  testGroup
+    "SomeIntN"
+    [ testGroup
+        "BV"
+        [ testGroup
+            "bv"
+            [ testCase "bv 12 21" $
+                (bv 12 21 :: SomeIntN) @?= SomeIntN (0x015 :: IntN 12)
+            ]
+        ]
+    ]
+
+bvTests :: Test
+bvTests = testGroup "BV" [sizedBVTests, someWordNTests, someIntNTests]

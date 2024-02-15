@@ -127,7 +127,7 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.BitVector
-  ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
+  ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
 import Grisette.Core.Data.Class.Function (Apply (FunType, apply), Function (Arg, Ret, (#)))
@@ -210,11 +210,14 @@ import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
+    NatRepr,
+    Some (Some),
     knownAdd,
     leqAddPos,
     leqTrans,
     unsafeKnownProof,
     unsafeLeqProof,
+    withKnownNat, mkNatRepr,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -960,6 +963,13 @@ bvSelect ix w (somety (a :: origty n)) \
           (KnownProof, KnownProof, LeqProof, LeqProof) -> \
             somety $ sizedBVSelect (Proxy @ix) (Proxy @w) a
 
+#define BVBV(somety, origty) \
+  bv n i = case mkNatRepr n of \
+    Some (natRepr :: NatRepr x) -> \
+      case unsafeLeqProof @1 @x of \
+        LeqProof -> withKnownNat natRepr $ \
+          somety (fromIntegral i :: origty x)
+
 #if 1
 instance BV SomeSymIntN where
   BVCONCAT(SomeSymIntN, SymIntN)
@@ -972,6 +982,8 @@ instance BV SomeSymIntN where
   {-# INLINE bvExt #-}
   BVSELECT(SomeSymIntN, SymIntN)
   {-# INLINE bvSelect #-}
+  BVBV(SomeSymIntN, SymIntN)
+  {-# INLINE bv #-}
 
 instance BV SomeSymWordN where
   BVCONCAT(SomeSymWordN, SymWordN)
@@ -984,6 +996,8 @@ instance BV SomeSymWordN where
   {-# INLINE bvExt #-}
   BVSELECT(SomeSymWordN, SymWordN)
   {-# INLINE bvSelect #-}
+  BVBV(SomeSymWordN, SymWordN)
+  {-# INLINE bv #-}
 #endif
 
 -- BVSignConversion

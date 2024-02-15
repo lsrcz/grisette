@@ -40,7 +40,8 @@ import Data.Word (Word8)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV
+  ( BV (bv),
+    SizedBV
       ( sizedBVConcat,
         sizedBVExt,
         sizedBVSelect,
@@ -182,6 +183,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( ModelSymPair ((:=)),
+    SomeSymIntN (SomeSymIntN),
+    SomeSymWordN (SomeSymWordN),
     SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
@@ -196,7 +199,7 @@ import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit (Assertion, assertFailure, (@=?))
+import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
 import Test.QuickCheck (Arbitrary, ioProperty)
 
 newtype AEWrapper = AEWrapper ArithException deriving (Eq)
@@ -1026,6 +1029,15 @@ symPrimTests =
                     toCon (con 255 :: SymWordN 8) @=? Just (255 :: Word8)
                 ]
             ],
+      testGroup
+        "SomeSym"
+        [ testGroup
+            "BV"
+            [ testCase "bv" $ do
+                (bv 12 21 :: SomeSymWordN) @?= SomeSymWordN (21 :: SymWordN 12)
+                (bv 12 21 :: SomeSymIntN) @?= SomeSymIntN (21 :: SymIntN 12)
+            ]
+        ],
       testGroup
         "TabularFun"
         [ testCase "#" $

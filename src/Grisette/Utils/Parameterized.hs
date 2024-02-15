@@ -53,10 +53,14 @@ module Grisette.Utils.Parameterized
   ( -- * Unsafe axiom
     unsafeAxiom,
 
+    -- * Unparameterized type
+    Some (..),
+
     -- * Runtime representation of type-level natural numbers
     NatRepr,
+    withKnownNat,
     natValue,
-    unsafeMkNatRepr,
+    mkNatRepr,
     natRepr,
     decNat,
     predNat,
@@ -88,6 +92,7 @@ module Grisette.Utils.Parameterized
   )
 where
 
+import Data.Kind (Type)
 import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import GHC.Natural (Natural)
 import GHC.TypeNats
@@ -103,10 +108,19 @@ import GHC.TypeNats
   )
 import Unsafe.Coerce (unsafeCoerce)
 
+data Some (f :: k -> Type) = forall x. Some (f x)
+
 -- | Assert a proof of equality between two types.
 -- This is unsafe if used improperly, so use this with caution!
 unsafeAxiom :: forall a b. a :~: b
 unsafeAxiom = unsafeCoerce (Refl @a)
+
+withKnownNat :: forall n r. NatRepr n -> ((KnownNat n) => r) -> r
+withKnownNat (NatRepr nVal) v =
+  case someNatVal nVal of
+    SomeNat (Proxy :: Proxy n') ->
+      case unsafeAxiom :: n :~: n' of
+        Refl -> v
 
 -- | A runtime representation of type-level natural numbers.
 -- This can be used for performing dynamic checks on type-level natural numbers.
@@ -116,14 +130,9 @@ newtype NatRepr (n :: Nat) = NatRepr Natural
 natValue :: NatRepr n -> Natural
 natValue (NatRepr n) = n
 
--- | Construct a runtime representation of a type-level natural number.
---
--- __Note:__ This function is unsafe, as it does not check that the runtime
--- representation is consistent with the type-level representation.
--- You should ensure the consistency yourself or the program can crash or
--- generate incorrect results.
-unsafeMkNatRepr :: Natural -> NatRepr n
-unsafeMkNatRepr = NatRepr
+-- | Turn a @Natural@ into the corresponding @NatRepr@
+mkNatRepr :: Natural -> Some NatRepr
+mkNatRepr n = Some (NatRepr n)
 
 -- | Construct a runtime representation of a type-level natural number when its
 -- runtime value is known.
