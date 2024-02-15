@@ -119,7 +119,7 @@ class BV bv where
   -- | Create a bit vector from an integer. The bit-width is the first argument,
   -- which should not be zero.
   --
-  -- >>> bv 12 21 :: SomeSymIntN 12
+  -- >>> bv 12 21 :: SomeSymIntN
   -- 0x015
   bv :: Natural -> Integer -> bv
 
