@@ -94,7 +94,6 @@ where
 
 import Data.Kind (Type)
 import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
-import GHC.Natural (Natural)
 import GHC.TypeNats
   ( Div,
     KnownNat,
@@ -106,6 +105,7 @@ import GHC.TypeNats
     type (-),
     type (<=),
   )
+import Numeric.Natural (Natural)
 import Unsafe.Coerce (unsafeCoerce)
 
 data Some (f :: k -> Type) = forall x. Some (f x)

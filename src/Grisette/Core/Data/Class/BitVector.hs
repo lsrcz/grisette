@@ -27,7 +27,7 @@ module Grisette.Core.Data.Class.BitVector
 where
 
 import Data.Proxy (Proxy (Proxy))
-import GHC.TypeNats (KnownNat, Natural, type (+), type (-), type (<=))
+import GHC.TypeNats (KnownNat, type (+), type (-), type (<=))
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
@@ -37,6 +37,7 @@ import Grisette.Utils.Parameterized
     subNat,
     unsafeLeqProof,
   )
+import Numeric.Natural (Natural)
 
 -- $setup
 -- >>> import Grisette.Core
