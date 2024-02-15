@@ -215,9 +215,10 @@ import Grisette.Utils.Parameterized
     knownAdd,
     leqAddPos,
     leqTrans,
+    mkNatRepr,
     unsafeKnownProof,
     unsafeLeqProof,
-    withKnownNat, mkNatRepr,
+    withKnownNat,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
