@@ -18,7 +18,6 @@ module Grisette.Utils
     -- ** Runtime representation of type-level natural numbers
     NatRepr,
     natValue,
-    unsafeMkNatRepr,
     natRepr,
     decNat,
     predNat,
@@ -76,7 +75,6 @@ import Grisette.Utils.Parameterized
     unsafeAxiom,
     unsafeKnownProof,
     unsafeLeqProof,
-    unsafeMkNatRepr,
     withKnownProof,
     withLeqProof,
   )

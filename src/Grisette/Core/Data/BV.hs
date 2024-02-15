@@ -108,7 +108,7 @@ import GHC.TypeNats
     type (<=),
   )
 import Grisette.Core.Data.Class.BitVector
-  ( BV (bvConcat, bvExt, bvSelect, bvSext, bvZext),
+  ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV
       ( sizedBVConcat,
         sizedBVExt,
@@ -131,10 +131,14 @@ import Grisette.Core.Data.Class.SymShift
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
+    NatRepr,
+    Some (Some),
     knownAdd,
     leqAddPos,
+    mkNatRepr,
     unsafeKnownProof,
     unsafeLeqProof,
+    withKnownNat,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Numeric (showHex, showIntAtBase)
@@ -802,6 +806,12 @@ instance BV SomeWordN where
              ) of
           (KnownProof, KnownProof, LeqProof, LeqProof) ->
             SomeWordN $ sizedBVSelect (Proxy @ix) (Proxy @w) a
+  bv n _ | n == 0 = error "bv: trying to create a bitvector of size 0"
+  bv n i = case mkNatRepr n of
+    Some (natRepr :: NatRepr x) ->
+      case unsafeLeqProof @1 @x of
+        LeqProof -> withKnownNat natRepr $ SomeWordN (fromIntegral i :: WordN x)
+  {-# INLINE bv #-}
 
 instance BV SomeIntN where
   bvConcat l r = toSigned $ bvConcat (toUnsigned l) (toUnsigned r)
@@ -814,6 +824,12 @@ instance BV SomeIntN where
   {-# INLINE bvExt #-}
   bvSelect ix w = toSigned . bvSelect ix w . toUnsigned
   {-# INLINE bvSelect #-}
+  bv n _ | n == 0 = error "bv: trying to create a bitvector of size 0"
+  bv n i = case mkNatRepr n of
+    Some (natRepr :: NatRepr x) ->
+      case unsafeLeqProof @1 @x of
+        LeqProof -> withKnownNat natRepr $ SomeIntN (fromIntegral i :: IntN x)
+  {-# INLINE bv #-}
 
 instance (KnownNat n, 1 <= n) => SignConversion (WordN n) (IntN n) where
   toSigned (WordN i) = IntN i

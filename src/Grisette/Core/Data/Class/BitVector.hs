@@ -27,7 +27,7 @@ module Grisette.Core.Data.Class.BitVector
 where
 
 import Data.Proxy (Proxy (Proxy))
-import GHC.TypeNats (KnownNat, type (+), type (-), type (<=))
+import GHC.TypeNats (KnownNat, type (+), type (-), type (<=), Natural)
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
@@ -114,6 +114,14 @@ class BV bv where
     -- | Bit vector to select from
     bv ->
     bv
+
+  -- | Create a bit vector from an integer. The bit-width is the first argument,
+  -- which should not be zero.
+  --
+  -- >>> bv 12 21 :: SomeSymIntN 12
+  -- 0x015
+  bv :: Natural -> Integer -> bv
+
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.
