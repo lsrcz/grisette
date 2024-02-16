@@ -109,8 +109,14 @@ class SafeDivision a m where
 #define QRIGHTU(a) QID(a)' _'
 
 #define SAFE_DIVISION_CONCRETE_FUNC(name, op) \
+name _ r \
+  | r == 0 = throwError DivideByZero; \
+name l r = return $ l `op` r;
+
+#define SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(name, op) \
 name _ r | r == 0 = throwError DivideByZero; \
-name l r = return $ l `op` r; \
+name l r | l == minBound && r == -1 = throwError Overflow; \
+name l r = return $ l `op` r;
 
 #define SAFE_DIVISION_CONCRETE(type) \
 instance MonadError ArithException m => SafeDivision type m where \
@@ -120,6 +126,15 @@ instance MonadError ArithException m => SafeDivision type m where \
   SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot); \
   SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem); \
   SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
+
+#define SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(type) \
+instance MonadError ArithException m => SafeDivision type m where \
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDiv, div); \
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeMod, mod); \
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDivMod, divMod); \
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuot, quot); \
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeRem, rem); \
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuotRem, quotRem)
 
 #define SAFE_DIVISION_CONCRETE_BV(type) \
 instance \
@@ -134,39 +149,57 @@ instance \
 
 #if 1
 SAFE_DIVISION_CONCRETE(Integer)
-SAFE_DIVISION_CONCRETE(Int8)
-SAFE_DIVISION_CONCRETE(Int16)
-SAFE_DIVISION_CONCRETE(Int32)
-SAFE_DIVISION_CONCRETE(Int64)
-SAFE_DIVISION_CONCRETE(Int)
+SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(Int8)
+SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(Int16)
+SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(Int32)
+SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(Int64)
+SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(Int)
 SAFE_DIVISION_CONCRETE(Word8)
 SAFE_DIVISION_CONCRETE(Word16)
 SAFE_DIVISION_CONCRETE(Word32)
 SAFE_DIVISION_CONCRETE(Word64)
 SAFE_DIVISION_CONCRETE(Word)
+
+instance
+  (MonadError ArithException m, KnownNat n, 1 <= n) =>
+  SafeDivision (IntN n) m where
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDiv, div)
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeMod, mod)
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDivMod, divMod)
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuot, quot)
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeRem, rem)
+  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuotRem, quotRem)
+
+instance
+  (MonadError ArithException m, KnownNat n, 1 <= n) =>
+  SafeDivision (WordN n) m where
+  SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div)
+  SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod)
+  SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod)
+  SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot)
+  SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem)
+  SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
 #endif
 
 #define SAFE_DIVISION_CONCRETE_FUNC_SOME(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
-        if r == 0 \
-          then throwError $ Right DivideByZero \
-          else return $ stype $ l `op` r; \
+        (case name l r of \
+          Left err -> throwError $ Right err; \
+          Right value -> return $ stype value); \
       Nothing -> throwError $ Left BitwidthMismatch); \
   
 #define SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
-        if r == 0 \
-          then throwError $ Right DivideByZero \
-          else (case l `op` r of (d, m) -> return (stype d, stype m)); \
+        (case name l r of \
+          Left err -> throwError $ Right err; \
+          Right (value1, value2) -> return (stype value1, stype value2)); \
       Nothing -> throwError $ Left BitwidthMismatch); \
 
 #if 1
-SAFE_DIVISION_CONCRETE_BV(IntN)
-SAFE_DIVISION_CONCRETE_BV(WordN)
 instance
   MonadError (Either BitwidthMismatch ArithException) m =>
   SafeDivision SomeIntN m where

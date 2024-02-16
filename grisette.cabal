@@ -230,6 +230,7 @@ test-suite spec
       Grisette.Core.Data.Class.GPrettyTests
       Grisette.Core.Data.Class.MergeableTests
       Grisette.Core.Data.Class.PlainUnionTests
+      Grisette.Core.Data.Class.SafeDivisionTests
       Grisette.Core.Data.Class.SafeSymRotateTests
       Grisette.Core.Data.Class.SafeSymShiftTests
       Grisette.Core.Data.Class.SEqTests
