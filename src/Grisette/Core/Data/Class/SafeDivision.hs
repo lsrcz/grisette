@@ -39,19 +39,14 @@ import Grisette.Core.Data.BV
     SomeWordN (SomeWordN),
     WordN,
   )
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&), (.||)))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SOrd
-  ( SOrd ((.<), (.<=), (.>), (.>=)),
-  )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
   ( mrgPure,
-    tryMerge,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
@@ -78,124 +73,33 @@ import Grisette.IR.SymPrim.Data.SymPrim
 -- execution. These procedures throw an exception when the
 -- divisor is zero. The result should be able to handle errors with
 -- `MonadError`.
-class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e where
+class SafeDivision a m where
   -- | Safe signed 'div' with monadic error handling in multi-path execution.
   --
   -- >>> safeDiv (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
   -- ExceptT {If (= b 0) (Left divide by zero) (Right (div a b))}
-  safeDiv :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
-  safeDiv l r = do
-    (d, _) <- safeDivMod l r
-    mrgPure d
+  safeDiv :: a -> a -> m a
 
   -- | Safe signed 'mod' with monadic error handling in multi-path execution.
   --
   -- >>> safeMod (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
   -- ExceptT {If (= b 0) (Left divide by zero) (Right (mod a b))}
-  safeMod :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
-  safeMod l r = do
-    (_, m) <- safeDivMod l r
-    mrgPure m
+  safeMod :: a -> a -> m a
 
   -- | Safe signed 'divMod' with monadic error handling in multi-path execution.
   --
   -- >>> safeDivMod (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymInteger, SymInteger)
   -- ExceptT {If (= b 0) (Left divide by zero) (Right ((div a b),(mod a b)))}
-  safeDivMod :: (MonadError e uf, MonadUnion uf) => a -> a -> uf (a, a)
-  safeDivMod l r = do
-    d <- safeDiv l r
-    m <- safeMod l r
-    mrgPure (d, m)
+  safeDivMod :: a -> a -> m (a, a)
 
   -- | Safe signed 'quot' with monadic error handling in multi-path execution.
-  safeQuot :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
-  safeQuot l r = do
-    (d, m) <- safeDivMod l r
-    mrgIf
-      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgPure d)
-      (mrgPure $ d + 1)
+  safeQuot :: a -> a -> m a
 
   -- | Safe signed 'rem' with monadic error handling in multi-path execution.
-  safeRem :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
-  safeRem l r = do
-    (_, m) <- safeDivMod l r
-    mrgIf
-      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgPure m)
-      (mrgPure $ m - r)
+  safeRem :: a -> a -> m a
 
   -- | Safe signed 'quotRem' with monadic error handling in multi-path execution.
-  safeQuotRem :: (MonadError e uf, MonadUnion uf) => a -> a -> uf (a, a)
-  safeQuotRem l r = do
-    (d, m) <- safeDivMod l r
-    mrgIf
-      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgPure (d, m))
-      (mrgPure (d + 1, m - r))
-
-  -- | Safe signed 'div' with monadic error handling in multi-path execution.
-  -- The error is transformed.
-  --
-  -- >>> safeDiv' (const ()) (ssym "a") (ssym "b") :: ExceptT () UnionM SymInteger
-  -- ExceptT {If (= b 0) (Left ()) (Right (div a b))}
-  safeDiv' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
-  safeDiv' t l r = do
-    (d, _) <- safeDivMod' t l r
-    mrgPure d
-
-  -- | Safe signed 'mod' with monadic error handling in multi-path execution.
-  -- The error is transformed.
-  --
-  -- >>> safeMod' (const ()) (ssym "a") (ssym "b") :: ExceptT () UnionM SymInteger
-  -- ExceptT {If (= b 0) (Left ()) (Right (mod a b))}
-  safeMod' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
-  safeMod' t l r = do
-    (_, m) <- safeDivMod' t l r
-    mrgPure m
-
-  -- | Safe signed 'divMod' with monadic error handling in multi-path execution.
-  -- The error is transformed.
-  --
-  -- >>> safeDivMod' (const ()) (ssym "a") (ssym "b") :: ExceptT () UnionM (SymInteger, SymInteger)
-  -- ExceptT {If (= b 0) (Left ()) (Right ((div a b),(mod a b)))}
-  safeDivMod' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf (a, a)
-  safeDivMod' t l r = do
-    d <- safeDiv' t l r
-    m <- safeMod' t l r
-    mrgPure (d, m)
-
-  -- | Safe signed 'quot' with monadic error handling in multi-path execution.
-  -- The error is transformed.
-  safeQuot' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
-  safeQuot' t l r = do
-    (d, m) <- safeDivMod' t l r
-    mrgIf
-      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgPure d)
-      (mrgPure $ d + 1)
-
-  -- | Safe signed 'rem' with monadic error handling in multi-path execution.
-  -- The error is transformed.
-  safeRem' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
-  safeRem' t l r = do
-    (_, m) <- safeDivMod' t l r
-    mrgIf
-      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgPure m)
-      (mrgPure $ m - r)
-
-  -- | Safe signed 'quotRem' with monadic error handling in multi-path execution.
-  -- The error is transformed.
-  safeQuotRem' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf (a, a)
-  safeQuotRem' t l r = do
-    (d, m) <- safeDivMod' t l r
-    mrgIf
-      ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgPure (d, m))
-      (mrgPure (d + 1, m - r))
-
-  {-# MINIMAL (safeDivMod | (safeDiv, safeMod)), (safeDivMod' | (safeDiv', safeMod')) #-}
+  safeQuotRem :: a -> a -> m (a, a)
 
 #define QUOTE() '
 #define QID(a) a
@@ -205,13 +109,11 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
 #define QRIGHTU(a) QID(a)' _'
 
 #define SAFE_DIVISION_CONCRETE_FUNC(name, op) \
-name _ r | r == 0 = tryMerge $ throwError DivideByZero; \
-name l r = mrgPure $ l `op` r; \
-QRIGHTT(name) _ r | r == 0 = let _ = t' in tryMerge $ throwError (t' DivideByZero); \
-QRIGHTU(name) l r = mrgPure $ l `op` r
+name _ r | r == 0 = throwError DivideByZero; \
+name l r = return $ l `op` r; \
 
 #define SAFE_DIVISION_CONCRETE(type) \
-instance SafeDivision ArithException type where \
+instance MonadError ArithException m => SafeDivision type m where \
   SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div); \
   SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod); \
   SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod); \
@@ -220,7 +122,9 @@ instance SafeDivision ArithException type where \
   SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
 
 #define SAFE_DIVISION_CONCRETE_BV(type) \
-instance (KnownNat n, 1 <= n) => SafeDivision ArithException (type n) where \
+instance \
+  (MonadError ArithException m, KnownNat n, 1 <= n) => \
+  SafeDivision (type n) m where \
   SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div); \
   SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod); \
   SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod); \
@@ -247,37 +151,25 @@ SAFE_DIVISION_CONCRETE(Word)
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
-          then tryMerge $ throwError $ Right DivideByZero \
-          else mrgPure $ stype $ l `op` r; \
-      Nothing -> tryMerge $ throwError $ Left BitwidthMismatch); \
-  QRIGHT(name) t (stype (l :: type l)) (stype (r :: type r)) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> \
-        if r == 0 \
-          then tryMerge $ throwError $ t (Right DivideByZero) \
-          else mrgPure $ stype $ l `op` r; \
-      Nothing -> tryMerge $ throwError $ t (Left BitwidthMismatch))
-
+          then throwError $ Right DivideByZero \
+          else return $ stype $ l `op` r; \
+      Nothing -> throwError $ Left BitwidthMismatch); \
+  
 #define SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
-          then tryMerge $ throwError $ Right DivideByZero \
-          else (case l `op` r of (d, m) -> mrgPure (stype d, stype m)); \
-      Nothing -> tryMerge $ throwError $ Left BitwidthMismatch); \
-  QRIGHT(name) t (stype (l :: type l)) (stype (r :: type r)) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> \
-        if r == 0 \
-          then tryMerge $ throwError $ t (Right DivideByZero) \
-          else (case l `op` r of (d, m) -> mrgPure (stype d, stype m)); \
-      Nothing -> tryMerge $ throwError $ t (Left BitwidthMismatch))
+          then throwError $ Right DivideByZero \
+          else (case l `op` r of (d, m) -> return (stype d, stype m)); \
+      Nothing -> throwError $ Left BitwidthMismatch); \
 
 #if 1
 SAFE_DIVISION_CONCRETE_BV(IntN)
 SAFE_DIVISION_CONCRETE_BV(WordN)
-instance SafeDivision (Either BitwidthMismatch ArithException) SomeIntN where
+instance
+  MonadError (Either BitwidthMismatch ArithException) m =>
+  SafeDivision SomeIntN m where
   SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeDiv, div)
   SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeMod, mod)
   SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeDivMod, divMod)
@@ -285,7 +177,9 @@ instance SafeDivision (Either BitwidthMismatch ArithException) SomeIntN where
   SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeRem, rem)
   SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeQuotRem, quotRem)
 
-instance SafeDivision (Either BitwidthMismatch ArithException) SomeWordN where
+instance
+  MonadError (Either BitwidthMismatch ArithException) m =>
+  SafeDivision SomeWordN m where
   SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeDiv, div)
   SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeMod, mod)
   SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeDivMod, divMod)
@@ -300,11 +194,6 @@ name (type l) rs@(type r) = \
     (rs .== con 0) \
     (throwError DivideByZero) \
     (mrgPure $ type $ op l r); \
-QRIGHT(name) t (type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgPure $ type $ op l r)
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2(name, type, op1, op2) \
 name (type l) rs@(type r) = \
@@ -312,14 +201,11 @@ name (type l) rs@(type r) = \
     (rs .== con 0) \
     (throwError DivideByZero) \
     (mrgPure (type $ op1 l r, type $ op2 l r)); \
-QRIGHT(name) t (type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgPure (type $ op1 l r, type $ op2 l r))
 
 #if 1
-instance SafeDivision ArithException SymInteger where
+instance
+  (MonadUnion m, MonadError ArithException m) =>
+  SafeDivision SymInteger m where
   SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymInteger, pevalDivIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymInteger, pevalModIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymInteger, pevalQuotIntegralTerm)
@@ -336,13 +222,6 @@ name ls@(type l) rs@(type r) = \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
       (mrgPure $ type $ op l r)); \
-QRIGHT(name) t ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
-      (throwError (t Overflow)) \
-      (mrgPure $ type $ op l r))
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
 name ls@(type l) rs@(type r) = \
@@ -352,16 +231,11 @@ name ls@(type l) rs@(type r) = \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
       (mrgPure (type $ op1 l r, type $ op2 l r))); \
-QRIGHT(name) t ls@(type l) rs@(type r) = \
-  mrgIf \
-    (rs .== con 0) \
-    (throwError (t DivideByZero)) \
-    (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
-      (throwError (t Overflow)) \
-      (mrgPure (type $ op1 l r, type $ op2 l r)))
 
 #if 1
-instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where
+instance
+  (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
+  SafeDivision (SymIntN n) m where
   SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeDiv, SymIntN, pevalDivBoundedIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymIntN, pevalModBoundedIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeQuot, SymIntN, pevalQuotBoundedIntegralTerm)
@@ -371,7 +245,9 @@ instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where
 #endif
 
 #if 1
-instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymWordN n) where
+instance
+  (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
+  SafeDivision (SymWordN n) m where
   SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymWordN, pevalDivIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymWordN, pevalModIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymWordN, pevalQuotIntegralTerm)
