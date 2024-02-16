@@ -1,11 +1,13 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -101,6 +103,23 @@ class SafeDivision a m where
   -- | Safe signed 'quotRem' with monadic error handling in multi-path execution.
   safeQuotRem :: a -> a -> m (a, a)
 
+concreteSafeDivisionHelper ::
+  (MonadError ArithException m, Integral a) => (a -> a -> r) -> a -> a -> m r
+concreteSafeDivisionHelper f l r
+  | r == 0 = throwError DivideByZero
+  | otherwise = return $ f l r
+
+concreteSignedBoundedSafeDivisionHelper ::
+  (MonadError ArithException m, Integral a, Bounded a) =>
+  (a -> a -> r) ->
+  a ->
+  a ->
+  m r
+concreteSignedBoundedSafeDivisionHelper f l r
+  | r == 0 = throwError DivideByZero
+  | l == minBound && r == -1 = throwError Overflow
+  | otherwise = return $ f l r
+
 #define QUOTE() '
 #define QID(a) a
 #define QRIGHT(a) QID(a)'
@@ -108,44 +127,34 @@ class SafeDivision a m where
 #define QRIGHTT(a) QID(a)' t'
 #define QRIGHTU(a) QID(a)' _'
 
-#define SAFE_DIVISION_CONCRETE_FUNC(name, op) \
-name _ r \
-  | r == 0 = throwError DivideByZero; \
-name l r = return $ l `op` r;
-
-#define SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(name, op) \
-name _ r | r == 0 = throwError DivideByZero; \
-name l r | l == minBound && r == -1 = throwError Overflow; \
-name l r = return $ l `op` r;
-
 #define SAFE_DIVISION_CONCRETE(type) \
 instance MonadError ArithException m => SafeDivision type m where \
-  SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
+  safeDiv = concreteSafeDivisionHelper div; \
+  safeMod = concreteSafeDivisionHelper mod; \
+  safeDivMod = concreteSafeDivisionHelper divMod; \
+  safeQuot = concreteSafeDivisionHelper quot; \
+  safeRem = concreteSafeDivisionHelper rem; \
+  safeQuotRem = concreteSafeDivisionHelper quotRem
 
 #define SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(type) \
 instance MonadError ArithException m => SafeDivision type m where \
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDiv, div); \
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeMod, mod); \
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDivMod, divMod); \
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuot, quot); \
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeRem, rem); \
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuotRem, quotRem)
+  safeDiv = concreteSignedBoundedSafeDivisionHelper div; \
+  safeMod = concreteSignedBoundedSafeDivisionHelper mod; \
+  safeDivMod = concreteSignedBoundedSafeDivisionHelper divMod; \
+  safeQuot = concreteSignedBoundedSafeDivisionHelper quot; \
+  safeRem = concreteSignedBoundedSafeDivisionHelper rem; \
+  safeQuotRem = concreteSignedBoundedSafeDivisionHelper quotRem
 
 #define SAFE_DIVISION_CONCRETE_BV(type) \
 instance \
   (MonadError ArithException m, KnownNat n, 1 <= n) => \
   SafeDivision (type n) m where \
-  SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem); \
-  SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
+  safeDiv = concreteSafeDivisionHelper div; \
+  safeMod = concreteSafeDivisionHelper mod; \
+  safeDivMod = concreteSafeDivisionHelper divMod; \
+  safeQuot = concreteSafeDivisionHelper quot; \
+  safeRem = concreteSafeDivisionHelper rem; \
+  safeQuotRem = concreteSafeDivisionHelper quotRem
 
 #if 1
 SAFE_DIVISION_CONCRETE(Integer)
@@ -163,22 +172,22 @@ SAFE_DIVISION_CONCRETE(Word)
 instance
   (MonadError ArithException m, KnownNat n, 1 <= n) =>
   SafeDivision (IntN n) m where
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDiv, div)
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeMod, mod)
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeDivMod, divMod)
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuot, quot)
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeRem, rem)
-  SAFE_DIVISION_CONCRETE_FUNC_SIGNED_BOUNDED(safeQuotRem, quotRem)
+  safeDiv = concreteSignedBoundedSafeDivisionHelper div
+  safeMod = concreteSignedBoundedSafeDivisionHelper mod
+  safeDivMod = concreteSignedBoundedSafeDivisionHelper divMod
+  safeQuot = concreteSignedBoundedSafeDivisionHelper quot
+  safeRem = concreteSignedBoundedSafeDivisionHelper rem
+  safeQuotRem = concreteSignedBoundedSafeDivisionHelper quotRem
 
 instance
   (MonadError ArithException m, KnownNat n, 1 <= n) =>
   SafeDivision (WordN n) m where
-  SAFE_DIVISION_CONCRETE_FUNC(safeDiv, div)
-  SAFE_DIVISION_CONCRETE_FUNC(safeMod, mod)
-  SAFE_DIVISION_CONCRETE_FUNC(safeDivMod, divMod)
-  SAFE_DIVISION_CONCRETE_FUNC(safeQuot, quot)
-  SAFE_DIVISION_CONCRETE_FUNC(safeRem, rem)
-  SAFE_DIVISION_CONCRETE_FUNC(safeQuotRem, quotRem)
+  safeDiv = concreteSafeDivisionHelper div
+  safeMod = concreteSafeDivisionHelper mod
+  safeDivMod = concreteSafeDivisionHelper divMod
+  safeQuot = concreteSafeDivisionHelper quot
+  safeRem = concreteSafeDivisionHelper rem
+  safeQuotRem = concreteSafeDivisionHelper quotRem
 #endif
 
 #define SAFE_DIVISION_CONCRETE_FUNC_SOME(stype, type, name, op) \
