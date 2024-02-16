@@ -80,17 +80,11 @@ import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SafeDivision
   ( SafeDivision
       ( safeDiv,
-        safeDiv',
         safeDivMod,
-        safeDivMod',
         safeMod,
-        safeMod',
         safeQuot,
-        safeQuot',
         safeQuotRem,
-        safeQuotRem',
-        safeRem,
-        safeRem'
+        safeRem
       ),
   )
 import Grisette.Core.Data.Class.SafeLinearArith
@@ -230,27 +224,6 @@ sameSafeDiv i j f cf = do
     Left (AEWrapper e) -> f (con i :: s) (con j) @=? tryMerge (throwError e)
     Right c -> f (con i :: s) (con j) @=? mrgPure (con c)
 
-sameSafeDiv' ::
-  forall c s.
-  ( Show s,
-    Eq s,
-    Eq c,
-    Num c,
-    Mergeable s,
-    NFData c,
-    Solvable c s
-  ) =>
-  c ->
-  c ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
-  (c -> c -> c) ->
-  Assertion
-sameSafeDiv' i j f cf = do
-  xc <- evaluate (force $ Right $ cf i j) `catch` \(_ :: ArithException) -> return $ Left ()
-  case xc of
-    Left () -> f (const ()) (con i :: s) (con j) @=? tryMerge (throwError ())
-    Right c -> f (const ()) (con i :: s) (con j) @=? mrgPure (con c)
-
 sameSafeDivMod ::
   forall c s.
   ( Show s,
@@ -272,39 +245,16 @@ sameSafeDivMod i j f cf = do
     Left (AEWrapper e) -> f (con i :: s) (con j) @=? tryMerge (throwError e)
     Right (c1, c2) -> f (con i :: s) (con j) @=? mrgPure (con c1, con c2)
 
-sameSafeDivMod' ::
-  forall c s.
-  ( Show s,
-    Eq s,
-    Eq c,
-    Num c,
-    Mergeable s,
-    NFData c,
-    Solvable c s
-  ) =>
-  c ->
-  c ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM (s, s)) ->
-  (c -> c -> (c, c)) ->
-  Assertion
-sameSafeDivMod' i j f cf = do
-  xc <- evaluate (force $ Right $ cf i j) `catch` \(_ :: ArithException) -> return $ Left ()
-  case xc of
-    Left () -> f (const ()) (con i :: s) (con j) @=? tryMerge (throwError ())
-    Right (c1, c2) -> f (const ()) (con i :: s) (con j) @=? mrgPure (con c1, con c2)
-
 safeDivisionBoundedOnlyTests ::
   forall c s.
   (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   (s -> s -> ExceptT ArithException UnionM s) ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   [Test]
-safeDivisionBoundedOnlyTests f f' cf pf =
+safeDivisionBoundedOnlyTests f cf pf =
   [ testCase "on concrete min divided by minus one" $ do
-      sameSafeDiv minBound (-1) f cf
-      sameSafeDiv' minBound (-1) f' cf,
+      sameSafeDiv minBound (-1) f cf,
     testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
@@ -317,27 +267,15 @@ safeDivisionBoundedOnlyTests f f' cf pf =
                 ) ::
                 ExceptT ArithException UnionM s
             )
-      f' (const ()) (ssym "a" :: s) (ssym "b")
-        @=? ( mrgIf
-                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
-                (throwError ())
-                ( mrgIf
-                    ((ssym "b" :: s) .== con (-1) .&& (ssym "a" :: s) .== con (minBound :: c) :: SymBool)
-                    (throwError ())
-                    (mrgPure $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b"))
-                ) ::
-                ExceptT () UnionM s
-            )
   ]
 
 safeDivisionUnboundedOnlyTests ::
   forall c s.
   (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   (s -> s -> ExceptT ArithException UnionM s) ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (Term c -> Term c -> Term c) ->
   [Test]
-safeDivisionUnboundedOnlyTests f f' pf =
+safeDivisionUnboundedOnlyTests f pf =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
@@ -346,13 +284,6 @@ safeDivisionUnboundedOnlyTests f f' pf =
                 (mrgPure $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b")) ::
                 ExceptT ArithException UnionM s
             )
-      f' (const ()) (ssym "a" :: s) (ssym "b")
-        @=? ( mrgIf
-                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
-                (throwError ())
-                (mrgPure $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b")) ::
-                ExceptT () UnionM s
-            )
   ]
 
 safeDivisionGeneralTests ::
@@ -360,26 +291,21 @@ safeDivisionGeneralTests ::
   (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException UnionM s) ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   [Test]
-safeDivisionGeneralTests transform f f' cf =
+safeDivisionGeneralTests transform f cf =
   [ testProperty "on concrete prop" $ \(i0 :: c0, j0 :: c0) ->
       ioProperty $ do
         let i = transform i0
         let j = transform j0
-        sameSafeDiv i j f cf
-        sameSafeDiv' i j f' cf,
+        sameSafeDiv i j f cf,
     testProperty "on concrete divided by zero" $ \(i0 :: c0) ->
       ioProperty $ do
         let i = transform i0
-        sameSafeDiv i 0 f cf
-        sameSafeDiv' i 0 f' cf,
+        sameSafeDiv i 0 f cf,
     testCase "when divided by zero" $ do
       f (ssym "a" :: s) (con 0)
         @=? (tryMerge $ throwError DivideByZero :: ExceptT ArithException UnionM s)
-      f' (const ()) (ssym "a" :: s) (con 0)
-        @=? (tryMerge $ throwError () :: ExceptT () UnionM s)
   ]
 
 safeDivisionBoundedTests ::
@@ -388,14 +314,13 @@ safeDivisionBoundedTests ::
   TestName ->
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException UnionM s) ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   Test
-safeDivisionBoundedTests name transform f f' cf pf =
+safeDivisionBoundedTests name transform f cf pf =
   testGroup name $
-    safeDivisionGeneralTests transform f f' cf
-      ++ safeDivisionBoundedOnlyTests f f' cf pf
+    safeDivisionGeneralTests transform f cf
+      ++ safeDivisionBoundedOnlyTests f cf pf
 
 safeDivisionUnboundedTests ::
   forall c c0 s.
@@ -403,14 +328,13 @@ safeDivisionUnboundedTests ::
   TestName ->
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException UnionM s) ->
-  ((ArithException -> ()) -> s -> s -> ExceptT () UnionM s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   Test
-safeDivisionUnboundedTests name transform f f' cf pf =
+safeDivisionUnboundedTests name transform f cf pf =
   testGroup name $
-    safeDivisionGeneralTests transform f f' cf
-      ++ safeDivisionUnboundedOnlyTests f f' pf
+    safeDivisionGeneralTests transform f cf
+      ++ safeDivisionUnboundedOnlyTests f pf
 
 safeDivModBoundedOnlyTests ::
   forall c s.
@@ -419,19 +343,13 @@ safeDivModBoundedOnlyTests ::
     s ->
     ExceptT ArithException UnionM (s, s)
   ) ->
-  ( (ArithException -> ()) ->
-    s ->
-    s ->
-    ExceptT () UnionM (s, s)
-  ) ->
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
   [Test]
-safeDivModBoundedOnlyTests f f' cf pf1 pf2 =
-  [ testCase "on concrete min divided by minus one" $ do
-      sameSafeDivMod minBound (-1) f cf
-      sameSafeDivMod' minBound (-1) f' cf,
+safeDivModBoundedOnlyTests f cf pf1 pf2 =
+  [ testCase "on concrete min divided by minus one" $
+      sameSafeDivMod minBound (-1) f cf,
     testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
@@ -447,21 +365,6 @@ safeDivModBoundedOnlyTests f f' cf pf1 pf2 =
                     )
                 ) ::
                 ExceptT ArithException UnionM (s, s)
-            )
-      f' (const ()) (ssym "a" :: s) (ssym "b")
-        @=? ( mrgIf
-                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
-                (throwError ())
-                ( mrgIf
-                    ((ssym "b" :: s) .== con (-1) .&& (ssym "a" :: s) .== con (minBound :: c) :: SymBool)
-                    (throwError ())
-                    ( mrgPure
-                        ( wrapTerm $ pf1 (ssymTerm "a") (ssymTerm "b"),
-                          wrapTerm $ pf2 (ssymTerm "a") (ssymTerm "b")
-                        )
-                    )
-                ) ::
-                ExceptT () UnionM (s, s)
             )
   ]
 
@@ -472,15 +375,10 @@ safeDivModUnboundedOnlyTests ::
     s ->
     ExceptT ArithException UnionM (s, s)
   ) ->
-  ( (ArithException -> ()) ->
-    s ->
-    s ->
-    ExceptT () UnionM (s, s)
-  ) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
   [Test]
-safeDivModUnboundedOnlyTests f f' pf1 pf2 =
+safeDivModUnboundedOnlyTests f pf1 pf2 =
   [ testCase "on symbolic" $ do
       f (ssym "a" :: s) (ssym "b")
         @=? ( mrgIf
@@ -492,17 +390,6 @@ safeDivModUnboundedOnlyTests f f' pf1 pf2 =
                     )
                 ) ::
                 ExceptT ArithException UnionM (s, s)
-            )
-      f' (const ()) (ssym "a" :: s) (ssym "b")
-        @=? ( mrgIf
-                ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
-                (throwError ())
-                ( mrgPure
-                    ( wrapTerm $ pf1 (ssymTerm "a") (ssymTerm "b"),
-                      wrapTerm $ pf2 (ssymTerm "a") (ssymTerm "b")
-                    )
-                ) ::
-                ExceptT () UnionM (s, s)
             )
   ]
 
@@ -514,30 +401,21 @@ safeDivModGeneralTests ::
     s ->
     ExceptT ArithException UnionM (s, s)
   ) ->
-  ( (ArithException -> ()) ->
-    s ->
-    s ->
-    ExceptT () UnionM (s, s)
-  ) ->
   (c -> c -> (c, c)) ->
   [Test]
-safeDivModGeneralTests transform f f' cf =
+safeDivModGeneralTests transform f cf =
   [ testProperty "on concrete" $ \(i0 :: c0, j0 :: c0) ->
       ioProperty $ do
         let i = transform i0
         let j = transform j0
-        sameSafeDivMod i j f cf
-        sameSafeDivMod' i j f' cf,
+        sameSafeDivMod i j f cf,
     testProperty "on concrete divided by zero" $ \(i0 :: c0) ->
       ioProperty $ do
         let i = transform i0
-        sameSafeDivMod i 0 f cf
-        sameSafeDivMod' i 0 f' cf,
+        sameSafeDivMod i 0 f cf,
     testCase "when divided by zero" $ do
       f (ssym "a" :: s) (con 0)
         @=? (tryMerge $ throwError DivideByZero :: ExceptT ArithException UnionM (s, s))
-      f' (const ()) (ssym "a" :: s) (con 0)
-        @=? (tryMerge $ throwError () :: ExceptT () UnionM (s, s))
   ]
 
 safeDivModBoundedTests ::
@@ -549,19 +427,14 @@ safeDivModBoundedTests ::
     s ->
     ExceptT ArithException UnionM (s, s)
   ) ->
-  ( (ArithException -> ()) ->
-    s ->
-    s ->
-    ExceptT () UnionM (s, s)
-  ) ->
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
   Test
-safeDivModBoundedTests name transform f f' cf pf1 pf2 =
+safeDivModBoundedTests name transform f cf pf1 pf2 =
   testGroup name $
-    safeDivModGeneralTests transform f f' cf
-      ++ safeDivModBoundedOnlyTests f f' cf pf1 pf2
+    safeDivModGeneralTests transform f cf
+      ++ safeDivModBoundedOnlyTests f cf pf1 pf2
 
 safeDivModUnboundedTests ::
   forall c c0 s.
@@ -572,19 +445,14 @@ safeDivModUnboundedTests ::
     s ->
     ExceptT ArithException UnionM (s, s)
   ) ->
-  ( (ArithException -> ()) ->
-    s ->
-    s ->
-    ExceptT () UnionM (s, s)
-  ) ->
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
   Test
-safeDivModUnboundedTests name transform f f' cf pf1 pf2 =
+safeDivModUnboundedTests name transform f cf pf1 pf2 =
   testGroup name $
-    safeDivModGeneralTests transform f f' cf
-      ++ safeDivModUnboundedOnlyTests f f' pf1 pf2
+    safeDivModGeneralTests transform f cf
+      ++ safeDivModUnboundedOnlyTests f pf1 pf2
 
 symPrimTests :: Test
 symPrimTests =
@@ -683,12 +551,12 @@ symPrimTests =
             ],
           testGroup
             "SafeDivision"
-            [ safeDivisionUnboundedTests @Integer "safeDiv" id safeDiv safeDiv' div pevalDivIntegralTerm,
-              safeDivisionUnboundedTests @Integer "safeMod" id safeMod safeMod' mod pevalModIntegralTerm,
-              safeDivModUnboundedTests @Integer "safeDivMod" id safeDivMod safeDivMod' divMod pevalDivIntegralTerm pevalModIntegralTerm,
-              safeDivisionUnboundedTests @Integer "safeQuot" id safeQuot safeQuot' quot pevalQuotIntegralTerm,
-              safeDivisionUnboundedTests @Integer "safeRem" id safeRem safeRem' rem pevalRemIntegralTerm,
-              safeDivModUnboundedTests @Integer "safeQuotRem" id safeQuotRem safeQuotRem' quotRem pevalQuotIntegralTerm pevalRemIntegralTerm
+            [ safeDivisionUnboundedTests @Integer "safeDiv" id safeDiv div pevalDivIntegralTerm,
+              safeDivisionUnboundedTests @Integer "safeMod" id safeMod mod pevalModIntegralTerm,
+              safeDivModUnboundedTests @Integer "safeDivMod" id safeDivMod divMod pevalDivIntegralTerm pevalModIntegralTerm,
+              safeDivisionUnboundedTests @Integer "safeQuot" id safeQuot quot pevalQuotIntegralTerm,
+              safeDivisionUnboundedTests @Integer "safeRem" id safeRem rem pevalRemIntegralTerm,
+              safeDivModUnboundedTests @Integer "safeQuotRem" id safeQuotRem quotRem pevalQuotIntegralTerm pevalRemIntegralTerm
             ],
           testGroup
             "SafeLinearArith"
@@ -787,21 +655,21 @@ symPrimTests =
                 "SafeDivision"
                 [ testGroup
                     "WordN"
-                    [ safeDivisionUnboundedTests @(WordN 4) "safeDiv" WordN safeDiv safeDiv' div pevalDivIntegralTerm,
-                      safeDivisionUnboundedTests @(WordN 4) "safeMod" WordN safeMod safeMod' mod pevalModIntegralTerm,
-                      safeDivModUnboundedTests @(WordN 4) "safeDivMod" WordN safeDivMod safeDivMod' divMod pevalDivIntegralTerm pevalModIntegralTerm,
-                      safeDivisionUnboundedTests @(WordN 4) "safeQuot" WordN safeQuot safeQuot' quot pevalQuotIntegralTerm,
-                      safeDivisionUnboundedTests @(WordN 4) "safeRem" WordN safeRem safeRem' rem pevalRemIntegralTerm,
-                      safeDivModUnboundedTests @(WordN 4) "safeQuotRem" WordN safeQuotRem safeQuotRem' divMod pevalQuotIntegralTerm pevalRemIntegralTerm
+                    [ safeDivisionUnboundedTests @(WordN 4) "safeDiv" WordN safeDiv div pevalDivIntegralTerm,
+                      safeDivisionUnboundedTests @(WordN 4) "safeMod" WordN safeMod mod pevalModIntegralTerm,
+                      safeDivModUnboundedTests @(WordN 4) "safeDivMod" WordN safeDivMod divMod pevalDivIntegralTerm pevalModIntegralTerm,
+                      safeDivisionUnboundedTests @(WordN 4) "safeQuot" WordN safeQuot quot pevalQuotIntegralTerm,
+                      safeDivisionUnboundedTests @(WordN 4) "safeRem" WordN safeRem rem pevalRemIntegralTerm,
+                      safeDivModUnboundedTests @(WordN 4) "safeQuotRem" WordN safeQuotRem divMod pevalQuotIntegralTerm pevalRemIntegralTerm
                     ],
                   testGroup
                     "IntN"
-                    [ safeDivisionBoundedTests @(IntN 4) "safeDiv" IntN safeDiv safeDiv' div pevalDivBoundedIntegralTerm,
-                      safeDivisionUnboundedTests @(IntN 4) "safeMod" IntN safeMod safeMod' mod pevalModBoundedIntegralTerm,
-                      safeDivModBoundedTests @(IntN 4) "safeDivMod" IntN safeDivMod safeDivMod' divMod pevalDivBoundedIntegralTerm pevalModBoundedIntegralTerm,
-                      safeDivisionBoundedTests @(IntN 4) "safeQuot" IntN safeQuot safeQuot' quot pevalQuotBoundedIntegralTerm,
-                      safeDivisionUnboundedTests @(IntN 4) "safeRem" IntN safeRem safeRem' rem pevalRemBoundedIntegralTerm,
-                      safeDivModBoundedTests @(IntN 4) "safeQuotRem" IntN safeQuotRem safeQuotRem' quotRem pevalQuotBoundedIntegralTerm pevalRemBoundedIntegralTerm
+                    [ safeDivisionBoundedTests @(IntN 4) "safeDiv" IntN safeDiv div pevalDivBoundedIntegralTerm,
+                      safeDivisionUnboundedTests @(IntN 4) "safeMod" IntN safeMod mod pevalModBoundedIntegralTerm,
+                      safeDivModBoundedTests @(IntN 4) "safeDivMod" IntN safeDivMod divMod pevalDivBoundedIntegralTerm pevalModBoundedIntegralTerm,
+                      safeDivisionBoundedTests @(IntN 4) "safeQuot" IntN safeQuot quot pevalQuotBoundedIntegralTerm,
+                      safeDivisionUnboundedTests @(IntN 4) "safeRem" IntN safeRem rem pevalRemBoundedIntegralTerm,
+                      safeDivModBoundedTests @(IntN 4) "safeQuotRem" IntN safeQuotRem quotRem pevalQuotBoundedIntegralTerm pevalRemBoundedIntegralTerm
                     ]
                 ],
               testGroup
