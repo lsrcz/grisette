@@ -30,8 +30,8 @@ module Grisette.Core.Data.Union
   )
 where
 
-import Control.Monad (ap)
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
+import Control.Monad (ap)
 import Data.Functor.Classes
   ( Eq1 (liftEq),
     Show1 (liftShowsPrec),
@@ -51,6 +51,9 @@ import Grisette.Core.Data.Class.Mergeable
     Mergeable1 (liftRootStrategy),
     MergingStrategy (NoStrategy, SimpleStrategy, SortedStrategy),
   )
+import Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion (ifView, singleView),
+  )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
@@ -59,9 +62,6 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (pattern Con)
 import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
-import Grisette.Core.Data.Class.UnionLike
-  ( UnionLike (ifView, singleView),
-  )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( AllSyms (allSymsS),
     SomeSym (SomeSym),
@@ -136,7 +136,7 @@ ifWithLeftMost _ (Con c) t f
 ifWithLeftMost inv cond t f = UnionIf (leftMost t) inv cond t f
 {-# INLINE ifWithLeftMost #-}
 
-instance UnionLike Union where
+instance PlainUnion Union where
   singleView (UnionSingle a) = Just a
   singleView _ = Nothing
   {-# INLINE singleView #-}

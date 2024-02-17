@@ -76,6 +76,10 @@ import Grisette.Core.Data.Class.Mergeable
     Mergeable1 (liftRootStrategy),
     MergingStrategy (SimpleStrategy),
   )
+import Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion (ifView, singleView),
+    simpleMerge,
+  )
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
@@ -95,10 +99,6 @@ import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
     mrgPure,
     tryMerge,
-  )
-import Grisette.Core.Data.Class.UnionLike
-  ( UnionLike (ifView, singleView),
-    simpleMerge,
   )
 import Grisette.Core.Data.Union
   ( Union (UnionIf, UnionSingle),
@@ -307,7 +307,7 @@ isMerged UAny {} = False
 isMerged UMrg {} = True
 {-# INLINE isMerged #-}
 
-instance UnionLike UnionM where
+instance PlainUnion UnionM where
   singleView = singleView . underlyingUnion
   {-# INLINE singleView #-}
   ifView (UAny u) = case ifView u of

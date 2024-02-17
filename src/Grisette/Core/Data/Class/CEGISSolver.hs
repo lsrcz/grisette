@@ -68,6 +68,10 @@ import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (exact, exceptFor),
     SymbolSetOps (isEmptySet),
   )
+import Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion,
+    simpleMerge,
+  )
 import Grisette.Core.Data.Class.SEq (SEq)
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
@@ -80,10 +84,6 @@ import Grisette.Core.Data.Class.Solver
     UnionWithExcept (extractUnionExcept),
     solve,
     withSolver,
-  )
-import Grisette.Core.Data.Class.UnionLike
-  ( UnionLike,
-    simpleMerge,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model (Model)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
@@ -312,7 +312,7 @@ cegisExceptMultiInputs ::
     EvaluateSym inputs,
     ExtractSymbolics inputs,
     UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Monad u
   ) =>
   config ->
@@ -336,7 +336,7 @@ cegisExceptVCMultiInputs ::
     EvaluateSym inputs,
     ExtractSymbolics inputs,
     UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Monad u
   ) =>
   config ->
@@ -373,7 +373,7 @@ cegisExceptStdVCMultiInputs ::
     EvaluateSym inputs,
     ExtractSymbolics inputs,
     UnionWithExcept t u VerificationConditions (),
-    UnionLike u,
+    PlainUnion u,
     Monad u
   ) =>
   config ->
@@ -417,7 +417,7 @@ cegisExceptStdVCMultiInputs config cexes =
 -- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExcept ::
   ( UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Functor u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
@@ -439,7 +439,7 @@ cegisExcept config inputs f v =
 -- The errors should be translated to assertion or assumption violations.
 cegisExceptVC ::
   ( UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Monad u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
@@ -490,7 +490,7 @@ cegisExceptVC config inputs f v = do
 -- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
-    UnionLike u,
+    PlainUnion u,
     Monad u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
@@ -553,7 +553,7 @@ cegisForAll config input (CEGISCondition pre post) = do
 -- See 'cegisForAll' and 'cegisExcept'.
 cegisForAllExcept ::
   ( UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Functor u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
@@ -574,7 +574,7 @@ cegisForAllExcept config inputs f v =
 -- See 'cegisForAll' and 'cegisExceptVC'.
 cegisForAllExceptVC ::
   ( UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Monad u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,
@@ -602,7 +602,7 @@ cegisForAllExceptVC config inputs f v = do
 -- See 'cegisForAll' and 'cegisExceptStdVC'.
 cegisForAllExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
-    UnionLike u,
+    PlainUnion u,
     Monad u,
     EvaluateSym inputs,
     ExtractSymbolics inputs,

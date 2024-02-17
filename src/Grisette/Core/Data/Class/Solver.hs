@@ -59,8 +59,8 @@ import Grisette.Core.Data.Class.ExtractSymbolics
   )
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.UnionLike
-  ( UnionLike,
+import Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion,
     simpleMerge,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -251,7 +251,7 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- Right (Model {x -> 1 :: Integer})
 solveExcept ::
   ( UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Functor u,
     ConfigurableSolver config handle
   ) =>
@@ -270,7 +270,7 @@ solveExcept config f v = solve config (simpleMerge $ f <$> extractUnionExcept v)
 -- models if possible.
 solveMultiExcept ::
   ( UnionWithExcept t u e v,
-    UnionLike u,
+    PlainUnion u,
     Functor u,
     ConfigurableSolver config handle
   ) =>

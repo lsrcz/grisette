@@ -71,6 +71,7 @@ library
       Grisette.Core.Data.Class.LogicalOp
       Grisette.Core.Data.Class.Mergeable
       Grisette.Core.Data.Class.ModelOps
+      Grisette.Core.Data.Class.PlainUnion
       Grisette.Core.Data.Class.SafeDivision
       Grisette.Core.Data.Class.SafeLinearArith
       Grisette.Core.Data.Class.SafeSymRotate
@@ -87,7 +88,6 @@ library
       Grisette.Core.Data.Class.ToCon
       Grisette.Core.Data.Class.ToSym
       Grisette.Core.Data.Class.TryMerge
-      Grisette.Core.Data.Class.UnionLike
       Grisette.Core.Data.FileLocation
       Grisette.Core.Data.MemoUtils
       Grisette.Core.Data.Union
@@ -228,6 +228,7 @@ test-suite spec
       Grisette.Core.Data.Class.GenSymTests
       Grisette.Core.Data.Class.GPrettyTests
       Grisette.Core.Data.Class.MergeableTests
+      Grisette.Core.Data.Class.PlainUnionTests
       Grisette.Core.Data.Class.SafeSymRotateTests
       Grisette.Core.Data.Class.SafeSymShiftTests
       Grisette.Core.Data.Class.SEqTests
@@ -240,7 +241,6 @@ test-suite spec
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.TryMergeTests
-      Grisette.Core.Data.Class.UnionLikeTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
       Grisette.IR.SymPrim.Data.Prim.BVTests

@@ -608,8 +608,8 @@ module Grisette.Core
     mrgSingleWithStrategy,
     tryMerge,
 
-    -- **** UnionLike operations
-    UnionLike (..),
+    -- **** PlainUnion operations
+    PlainUnion (..),
     pattern Single,
     pattern If,
     simpleMerge,
@@ -1186,6 +1186,17 @@ import Grisette.Core.Data.Class.ModelOps
     SymbolSetOps (..),
     SymbolSetRep (..),
   )
+import Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion (..),
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
+    simpleMerge,
+    (.#),
+    pattern If,
+    pattern Single,
+  )
 import Grisette.Core.Data.Class.SEq (SEq (..))
 import Grisette.Core.Data.Class.SOrd (SOrd (..))
 import Grisette.Core.Data.Class.SafeDivision (SafeDivision (..))
@@ -1228,17 +1239,6 @@ import Grisette.Core.Data.Class.TryMerge
     mrgSingle,
     mrgSingleWithStrategy,
     tryMerge,
-  )
-import Grisette.Core.Data.Class.UnionLike
-  ( UnionLike (..),
-    onUnion,
-    onUnion2,
-    onUnion3,
-    onUnion4,
-    simpleMerge,
-    (.#),
-    pattern If,
-    pattern Single,
   )
 import Grisette.Core.Data.FileLocation
   ( FileLocation (..),

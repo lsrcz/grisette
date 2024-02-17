@@ -33,6 +33,9 @@ import Grisette.Core.Data.Class.ModelOps
     ModelRep (buildModel),
     SymbolSetRep (buildSymbolSet),
   )
+import Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion (ifView, singleView),
+  )
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<=)))
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -51,9 +54,6 @@ import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
     mrgPure,
     tryMerge,
-  )
-import Grisette.Core.Data.Class.UnionLike
-  ( UnionLike (ifView, singleView),
   )
 import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (TypedSymbol)
@@ -141,7 +141,7 @@ unionMTests =
       testCase "SimpleMergeable1" $
         mrgIte1 "u12c" unionMSimple1 unionMSimple2 @?= unionMSimple12Merged,
       testGroup
-        "UnionLike"
+        "PlainUnion"
         [ testGroup
             "SingleView"
             [ testCase "is single" $ do
