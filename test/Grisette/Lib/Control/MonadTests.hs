@@ -4,15 +4,15 @@
 module Grisette.Lib.Control.MonadTests (monadFunctionTests) where
 
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
-import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike (single, unionIf),
-    mrgIf,
-    mrgSingle,
+  ( mrgIf,
+  )
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
   )
 import Grisette.Lib.Control.Monad
-  ( mrgFmap,
-    mrgFoldM,
+  ( mrgFoldM,
     mrgMplus,
     mrgMzero,
     mrgReturn,
@@ -28,10 +28,10 @@ monadFunctionTests =
   testGroup
     "Monad"
     [ testCase "mrgReturn" $ do
-        (mrgReturn 1 :: UnionM Integer) @?= mrgSingle 1,
+        (mrgReturn 1 :: UnionM Integer) @?= mrgPure 1,
       testCase "mrgFoldM" $ do
         ( mrgFoldM
-            (\acc (c, v) -> unionIf c (single $ acc + v) (single $ acc * v))
+            (\acc (c, v) -> mergePropagatedIf c (return $ acc + v) (return $ acc * v))
             10
             [("a", 2), ("b", 3)] ::
             UnionM Integer
@@ -50,15 +50,12 @@ monadFunctionTests =
           @?= mrgReturn 1
         (mrgReturn 2 `mrgMplus` mrgReturn 1 :: MaybeT UnionM Integer)
           @?= mrgReturn 2,
-      testCase "mrgFmap" $ do
-        mrgFmap (\x -> x * x) (mrgIf "a" (mrgReturn $ -1) (mrgReturn 1) :: UnionM Integer)
-          @?= mrgReturn 1,
       testCase ".>>" $ do
-        (unionIf "a" (single $ -1) (single 1) :: UnionM Integer)
-          .>> unionIf "a" (single $ -1) (single 1)
+        (mergePropagatedIf "a" (return $ -1) (return 1) :: UnionM Integer)
+          .>> mergePropagatedIf "a" (return $ -1) (return 1)
           @?= (mrgIf "a" (mrgReturn $ -1) (mrgReturn 1) :: UnionM Integer),
       testCase ".>>=" $ do
-        unionIf "a" (single $ -1) (single 1)
+        mergePropagatedIf "a" (return $ -1) (return 1)
           .>>= (\x -> return $ x * x)
-          @?= (mrgSingle 1 :: UnionM Integer)
+          @?= (mrgPure 1 :: UnionM Integer)
     ]

@@ -558,8 +558,11 @@ module Grisette.Core
     -- *** UnionM Monad
     UnionM,
     IsConcrete,
+    unionMUnaryOp,
+    unionMBinOp,
     makeUnionWrapper,
     makeUnionWrapper',
+    liftUnionM,
     liftToMonadUnion,
     unionSize,
 
@@ -593,23 +596,30 @@ module Grisette.Core
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
+    UnionMergeable1 (..),
+    mrgIf,
+
+    -- **** TryMerge operations
+    MonadTryMerge,
+    TryMerge (..),
+    mrgPure,
+    mrgPureWithStrategy,
+    mrgSingle,
+    mrgSingleWithStrategy,
+    tryMerge,
 
     -- **** UnionLike operations
     UnionLike (..),
-    mrgIf,
-    merge,
-    mrgSingle,
-    UnionPrjOp (..),
     pattern Single,
     pattern If,
-    MonadUnion,
-    MonadParallelUnion (..),
     simpleMerge,
+    (.#),
     onUnion,
     onUnion2,
     onUnion3,
     onUnion4,
-    (.#),
+    MonadUnion,
+    MonadParallelUnion (..),
 
     -- * Conversion between Concrete and Symbolic values
     ToCon (..),
@@ -1069,8 +1079,10 @@ import Grisette.Core.Control.Monad.UnionM
   ( IsConcrete,
     UnionM,
     liftToMonadUnion,
+    liftUnionM,
+    unionMBinOp,
+    unionMUnaryOp,
     unionSize,
-    (.#),
   )
 import Grisette.Core.Data.Class.BitVector
   ( BV (..),
@@ -1183,20 +1195,10 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (..),
     SimpleMergeable1 (..),
     SimpleMergeable2 (..),
-    UnionLike (..),
-    UnionPrjOp (..),
-    merge,
+    UnionMergeable1 (..),
     mrgIf,
     mrgIte1,
     mrgIte2,
-    mrgSingle,
-    onUnion,
-    onUnion2,
-    onUnion3,
-    onUnion4,
-    simpleMerge,
-    pattern If,
-    pattern Single,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (..), pattern Con)
 import Grisette.Core.Data.Class.Solver
@@ -1218,6 +1220,26 @@ import Grisette.Core.Data.Class.SubstituteSym
   )
 import Grisette.Core.Data.Class.ToCon (ToCon (..))
 import Grisette.Core.Data.Class.ToSym (ToSym (..))
+import Grisette.Core.Data.Class.TryMerge
+  ( MonadTryMerge,
+    TryMerge (..),
+    mrgPure,
+    mrgPureWithStrategy,
+    mrgSingle,
+    mrgSingleWithStrategy,
+    tryMerge,
+  )
+import Grisette.Core.Data.Class.UnionLike
+  ( UnionLike (..),
+    onUnion,
+    onUnion2,
+    onUnion3,
+    onUnion4,
+    simpleMerge,
+    (.#),
+    pattern If,
+    pattern Single,
+  )
 import Grisette.Core.Data.FileLocation
   ( FileLocation (..),
     ilocsym,

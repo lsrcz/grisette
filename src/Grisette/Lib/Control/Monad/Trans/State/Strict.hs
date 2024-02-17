@@ -29,13 +29,13 @@ import Control.Monad.Trans.State.Strict
     runStateT,
   )
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (UnionLike, merge)
+import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 
 -- | 'Control.Monad.Trans.State.Strict.state' with 'MergingStrategy' knowledge
 -- propagation.
 mrgState ::
-  (Monad m, UnionLike m, Mergeable s, Mergeable a) =>
+  (Monad m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> (a, s)) ->
   StateT s m a
 mrgState f = StateT (mrgReturn . f)
@@ -44,7 +44,7 @@ mrgState f = StateT (mrgReturn . f)
 -- | 'Control.Monad.Trans.State.Strict.runStateT' with 'MergingStrategy'
 -- knowledge propagation.
 mrgRunStateT ::
-  (Monad m, UnionLike m, Mergeable s, Mergeable a) =>
+  (Monad m, TryMerge m, Mergeable s, Mergeable a) =>
   StateT s m a ->
   s ->
   m (a, s)
@@ -54,7 +54,7 @@ mrgRunStateT m s = runStateT m s >>= mrgReturn
 -- | 'Control.Monad.Trans.State.Strict.evalStateT' with 'MergingStrategy'
 -- knowledge propagation.
 mrgEvalStateT ::
-  (Monad m, UnionLike m, Mergeable a) =>
+  (Monad m, TryMerge m, Mergeable a) =>
   StateT s m a ->
   s ->
   m a
@@ -66,7 +66,7 @@ mrgEvalStateT m s = do
 -- | 'Control.Monad.Trans.State.Strict.execStateT' with 'MergingStrategy'
 -- knowledge propagation.
 mrgExecStateT ::
-  (Monad m, UnionLike m, Mergeable s) =>
+  (Monad m, TryMerge m, Mergeable s) =>
   StateT s m a ->
   s ->
   m s
@@ -78,44 +78,44 @@ mrgExecStateT m s = do
 -- | 'Control.Monad.Trans.State.Strict.mapStateT' with 'MergingStrategy'
 -- knowledge propagation.
 mrgMapStateT ::
-  (UnionLike n, Mergeable b, Mergeable s) =>
+  (TryMerge n, Mergeable b, Mergeable s) =>
   (m (a, s) -> n (b, s)) ->
   StateT s m a ->
   StateT s n b
-mrgMapStateT f m = StateT $ merge . f . runStateT m
+mrgMapStateT f m = StateT $ tryMerge . f . runStateT m
 {-# INLINE mrgMapStateT #-}
 
 -- | 'Control.Monad.Trans.State.Strict.withStateT' with 'MergingStrategy'
 -- knowledge propagation.
 mrgWithStateT ::
-  (UnionLike m, Mergeable s, Mergeable a) =>
+  (TryMerge m, Mergeable s, Mergeable a) =>
   (s -> s) ->
   StateT s m a ->
   StateT s m a
-mrgWithStateT f m = StateT $ merge . runStateT m . f
+mrgWithStateT f m = StateT $ tryMerge . runStateT m . f
 {-# INLINE mrgWithStateT #-}
 
 -- | 'Control.Monad.Trans.State.Strict.get' with 'MergingStrategy' knowledge
 -- propagation.
-mrgGet :: (Monad m, UnionLike m, Mergeable s) => StateT s m s
+mrgGet :: (Monad m, TryMerge m, Mergeable s) => StateT s m s
 mrgGet = mrgState (\s -> (s, s))
 {-# INLINE mrgGet #-}
 
 -- | 'Control.Monad.Trans.State.Strict.put' with 'MergingStrategy' knowledge
 -- propagation.
-mrgPut :: (Monad m, UnionLike m, Mergeable s) => s -> StateT s m ()
+mrgPut :: (Monad m, TryMerge m, Mergeable s) => s -> StateT s m ()
 mrgPut s = mrgState (const ((), s))
 {-# INLINE mrgPut #-}
 
 -- | 'Control.Monad.Trans.State.Strict.modify' with 'MergingStrategy' knowledge
 -- propagation.
-mrgModify :: (Monad m, UnionLike m, Mergeable s) => (s -> s) -> StateT s m ()
+mrgModify :: (Monad m, TryMerge m, Mergeable s) => (s -> s) -> StateT s m ()
 mrgModify f = mrgState (\s -> ((), f s))
 {-# INLINE mrgModify #-}
 
 -- | 'Control.Monad.Trans.State.Strict.modify'' with 'MergingStrategy' knowledge
 -- propagation.
-mrgModify' :: (Monad m, UnionLike m, Mergeable s) => (s -> s) -> StateT s m ()
+mrgModify' :: (Monad m, TryMerge m, Mergeable s) => (s -> s) -> StateT s m ()
 mrgModify' f = do
   s <- mrgGet
   mrgPut $! f s
@@ -124,7 +124,7 @@ mrgModify' f = do
 -- | 'Control.Monad.Trans.State.Strict.gets' with 'MergingStrategy' knowledge
 -- propagation.
 mrgGets ::
-  (Monad m, UnionLike m, Mergeable s, Mergeable a) =>
+  (Monad m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> a) ->
   StateT s m a
 mrgGets f = mrgState $ \s -> (f s, s)

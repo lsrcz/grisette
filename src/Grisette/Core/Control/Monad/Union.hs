@@ -19,11 +19,12 @@ module Grisette.Core.Control.Monad.Union
   )
 where
 
-import Grisette.Core.Data.Class.SimpleMergeable (UnionLike)
+import Grisette.Core.Data.Class.SimpleMergeable (UnionMergeable1)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 
--- | Class for monads that support union-like operations and 'Grisette.Core.Data.Class.Mergeable' knowledge propagation.
-type MonadUnion u = (UnionLike u, Monad u)
+-- | Class for monads that support union-like operations and
+-- 'Grisette.Core.Data.Class.Mergeable' knowledge propagation.
+type MonadUnion u = (UnionMergeable1 u, Monad u)

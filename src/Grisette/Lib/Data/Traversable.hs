@@ -21,15 +21,15 @@ module Grisette.Lib.Data.Traversable
   )
 where
 
-import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable,
     Mergeable1,
     rootStrategy1,
   )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike (mergeWithStrategy),
-    merge,
+import Grisette.Core.Data.Class.TryMerge
+  ( MonadTryMerge,
+    TryMerge (tryMergeWithStrategy),
+    tryMerge,
   )
 
 -- | 'Data.Traversable.traverse' with 'MergingStrategy' knowledge propagation.
@@ -37,13 +37,14 @@ mrgTraverse ::
   forall a b t f.
   ( Mergeable b,
     Mergeable1 t,
-    MonadUnion f,
+    TryMerge f,
+    Applicative f,
     Traversable t
   ) =>
   (a -> f b) ->
   t a ->
   f (t b)
-mrgTraverse f = mergeWithStrategy rootStrategy1 . traverse (merge . f)
+mrgTraverse f = tryMergeWithStrategy rootStrategy1 . traverse (tryMerge . f)
 {-# INLINE mrgTraverse #-}
 
 -- | 'Data.Traversable.sequenceA' with 'MergingStrategy' knowledge propagation.
@@ -51,7 +52,8 @@ mrgSequenceA ::
   forall a t f.
   ( Mergeable a,
     Mergeable1 t,
-    MonadUnion f,
+    Applicative f,
+    TryMerge f,
     Traversable t
   ) =>
   t (f a) ->
@@ -64,7 +66,7 @@ mrgMapM ::
   forall a b t f.
   ( Mergeable b,
     Mergeable1 t,
-    MonadUnion f,
+    MonadTryMerge f,
     Traversable t
   ) =>
   (a -> f b) ->
@@ -78,7 +80,7 @@ mrgSequence ::
   forall a t f.
   ( Mergeable a,
     Mergeable1 t,
-    MonadUnion f,
+    MonadTryMerge f,
     Traversable t
   ) =>
   t (f a) ->
@@ -91,7 +93,8 @@ mrgFor ::
   ( Mergeable b,
     Mergeable1 t,
     Traversable t,
-    MonadUnion m
+    TryMerge m,
+    Applicative m
   ) =>
   t a ->
   (a -> m b) ->
@@ -104,7 +107,7 @@ mrgForM ::
   ( Mergeable b,
     Mergeable1 t,
     Traversable t,
-    MonadUnion m
+    MonadTryMerge m
   ) =>
   t a ->
   (a -> m b) ->

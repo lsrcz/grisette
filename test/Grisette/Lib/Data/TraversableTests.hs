@@ -7,11 +7,12 @@ import Control.Monad.Except
     MonadError (throwError),
     runExceptT,
   )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike (unionIf),
-    mrgIf,
-    mrgSingle,
+  ( mrgIf,
+  )
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
   )
 import Grisette.Lib.Data.Traversable
   ( mrgFor,
@@ -32,7 +33,7 @@ traversableFunctionTests =
     [ testCase "mrgTraverse" $ do
         runExceptT
           ( mrgTraverse
-              (\(c, d, x, y, z) -> ExceptT $ unionIf c (return $ Left x) (unionIf d (return $ Right y) (return $ Right z)))
+              (\(c, d, x, y, z) -> ExceptT $ mergePropagatedIf c (return $ Left x) (mergePropagatedIf d (return $ Right y) (return $ Right z)))
               [("a", "c", 3, 4, 5), ("b", "d", 2, 3, 6)] ::
               ExceptT Integer UnionM [Integer]
           )
@@ -40,13 +41,13 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgSingle [a, b]
+                mrgPure [a, b]
             ),
       testCase "mrgSequenceA" $ do
         runExceptT
           ( mrgSequenceA
-              [ ExceptT $ unionIf "a" (return $ Left 3) (unionIf "c" (return $ Right 4) (return $ Right 5)),
-                ExceptT $ unionIf "b" (return $ Left 2) (unionIf "d" (return $ Right 3) (return $ Right 6))
+              [ ExceptT $ mergePropagatedIf "a" (return $ Left 3) (mergePropagatedIf "c" (return $ Right 4) (return $ Right 5)),
+                ExceptT $ mergePropagatedIf "b" (return $ Left 2) (mergePropagatedIf "d" (return $ Right 3) (return $ Right 6))
               ] ::
               ExceptT Integer UnionM [Integer]
           )
@@ -54,12 +55,12 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgSingle [a, b]
+                mrgPure [a, b]
             ),
       testCase "mrgMapM" $ do
         runExceptT
           ( mrgMapM
-              (\(c, d, x, y, z) -> ExceptT $ unionIf c (return $ Left x) (unionIf d (return $ Right y) (return $ Right z)))
+              (\(c, d, x, y, z) -> ExceptT $ mergePropagatedIf c (return $ Left x) (mergePropagatedIf d (return $ Right y) (return $ Right z)))
               [("a", "c", 3, 4, 5), ("b", "d", 2, 3, 6)] ::
               ExceptT Integer UnionM [Integer]
           )
@@ -67,13 +68,13 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgSingle [a, b]
+                mrgPure [a, b]
             ),
       testCase "mrgSequence" $ do
         runExceptT
           ( mrgSequence
-              [ ExceptT $ unionIf "a" (return $ Left 3) (unionIf "c" (return $ Right 4) (return $ Right 5)),
-                ExceptT $ unionIf "b" (return $ Left 2) (unionIf "d" (return $ Right 3) (return $ Right 6))
+              [ ExceptT $ mergePropagatedIf "a" (return $ Left 3) (mergePropagatedIf "c" (return $ Right 4) (return $ Right 5)),
+                ExceptT $ mergePropagatedIf "b" (return $ Left 2) (mergePropagatedIf "d" (return $ Right 3) (return $ Right 6))
               ] ::
               ExceptT Integer UnionM [Integer]
           )
@@ -81,32 +82,32 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgSingle [a, b]
+                mrgPure [a, b]
             ),
       testCase "mrgFor" $ do
         runExceptT
           ( mrgFor
               [("a", "c", 3, 4, 5), ("b", "d", 2, 3, 6)]
-              (\(c, d, x, y, z) -> ExceptT $ unionIf c (return $ Left x) (unionIf d (return $ Right y) (return $ Right z))) ::
+              (\(c, d, x, y, z) -> ExceptT $ mergePropagatedIf c (return $ Left x) (mergePropagatedIf d (return $ Right y) (return $ Right z))) ::
               ExceptT Integer UnionM [Integer]
           )
           @?= runExceptT
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgSingle [a, b]
+                mrgPure [a, b]
             ),
       testCase "mrgForM" $ do
         runExceptT
           ( mrgForM
               [("a", "c", 3, 4, 5), ("b", "d", 2, 3, 6)]
-              (\(c, d, x, y, z) -> ExceptT $ unionIf c (return $ Left x) (unionIf d (return $ Right y) (return $ Right z))) ::
+              (\(c, d, x, y, z) -> ExceptT $ mergePropagatedIf c (return $ Left x) (mergePropagatedIf d (return $ Right y) (return $ Right z))) ::
               ExceptT Integer UnionM [Integer]
           )
           @?= runExceptT
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgSingle [a, b]
+                mrgPure [a, b]
             )
     ]

@@ -1,12 +1,13 @@
-module Grisette.TestUtil.SymbolicAssertion ((@?=~)) where
+module Grisette.TestUtil.SymbolicAssertion ((@?=~), (.@?=), symShouldEq) where
 
 import GHC.Stack (HasCallStack)
 import Grisette.Backend.SBV (z3)
 import Grisette.Backend.SBV.Data.SMT.Solving (precise)
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
+import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.Solver (SolvingFailure (Unsat), solve)
+import Grisette.IR.SymPrim.Data.Prim.Model (Model)
 import Test.HUnit (Assertion)
 
 (@?=~) :: (HasCallStack, SEq a, Show a, EvaluateSym a) => a -> a -> Assertion
@@ -27,3 +28,31 @@ actual @?=~ expected = do
             "  Expected value: " ++ show expected,
             "  Actual value: " ++ show actual
           ]
+
+(.@?=) :: (HasCallStack, Show a, SEq a, EvaluateSym a) => a -> a -> IO ()
+(.@?=) actual expected =
+  symShouldEq
+    actual
+    expected
+    ( \m ->
+        "Can be not equal, model: "
+          <> show m
+          <> ". Actual value: "
+          <> show (evaluateSym False m actual)
+          <> ". Expected value: "
+          <> show (evaluateSym False m expected)
+    )
+
+symShouldEq ::
+  (HasCallStack, Show a, SEq a, EvaluateSym a) =>
+  a ->
+  a ->
+  (Model -> String) ->
+  IO ()
+symShouldEq actual expected notEqualCaseMessage = do
+  canBeNotEqual <- solve (precise z3) $ actual ./= expected
+  canBeEqual <- solve (precise z3) $ actual .== expected
+  case (canBeNotEqual, canBeEqual) of
+    (Left _, Right _) -> return ()
+    (Right m, _) -> fail $ notEqualCaseMessage m
+    (_, Left _) -> fail "Cannot be equal"

@@ -38,11 +38,13 @@ import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     mrgIf,
-    mrgSingle,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
+  )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -66,7 +68,7 @@ exceptionTests =
             AssertionError .> AssertionError @?= con False
             AssertionError
               `symCompare` AssertionError
-              @?= (mrgSingle EQ :: UnionM Ordering),
+              @?= (mrgPure EQ :: UnionM Ordering),
           testCase "GEvaluateSym" $ do
             evaluateSym False emptyModel AssertionError @?= AssertionError,
           testCase "GExtractSymbolics" $ do
@@ -107,7 +109,7 @@ exceptionTests =
             AssertionViolation .> AssertionViolation @?= con False
             AssertionViolation
               `symCompare` AssertionViolation
-              @?= (mrgSingle EQ :: UnionM Ordering)
+              @?= (mrgPure EQ :: UnionM Ordering)
 
             AssertionViolation .<= AssumptionViolation @?= con True
             AssertionViolation .< AssumptionViolation @?= con True
@@ -115,7 +117,7 @@ exceptionTests =
             AssertionViolation .> AssumptionViolation @?= con False
             AssertionViolation
               `symCompare` AssumptionViolation
-              @?= (mrgSingle LT :: UnionM Ordering)
+              @?= (mrgPure LT :: UnionM Ordering)
 
             AssumptionViolation .<= AssertionViolation @?= con False
             AssumptionViolation .< AssertionViolation @?= con False
@@ -123,7 +125,7 @@ exceptionTests =
             AssumptionViolation .> AssertionViolation @?= con True
             AssumptionViolation
               `symCompare` AssertionViolation
-              @?= (mrgSingle GT :: UnionM Ordering)
+              @?= (mrgPure GT :: UnionM Ordering)
 
             AssumptionViolation .<= AssumptionViolation @?= con True
             AssumptionViolation .< AssumptionViolation @?= con False
@@ -131,7 +133,7 @@ exceptionTests =
             AssumptionViolation .> AssumptionViolation @?= con False
             AssumptionViolation
               `symCompare` AssumptionViolation
-              @?= (mrgSingle EQ :: UnionM Ordering),
+              @?= (mrgPure EQ :: UnionM Ordering),
           testCase "GEvaluateSym" $ do
             evaluateSym False emptyModel AssertionViolation
               @?= AssertionViolation
@@ -143,12 +145,12 @@ exceptionTests =
           testCase "Mergeable" $ do
             mrgIf
               "a"
-              (mrgSingle AssumptionViolation)
-              (mrgSingle AssertionViolation)
+              (mrgPure AssumptionViolation)
+              (mrgPure AssertionViolation)
               @?= ( mrgIf
                       (symNot "a")
-                      (mrgSingle AssertionViolation)
-                      (mrgSingle AssumptionViolation) ::
+                      (mrgPure AssertionViolation)
+                      (mrgPure AssumptionViolation) ::
                       UnionM VerificationConditions
                   ),
           testCase
@@ -162,7 +164,7 @@ exceptionTests =
           @?= ExceptT
             ( mrgIf
                 (symNot "a")
-                (mrgSingle $ Left AssertionViolation)
-                (mrgSingle $ Right ())
+                (mrgPure $ Left AssertionViolation)
+                (mrgPure $ Right ())
             )
     ]

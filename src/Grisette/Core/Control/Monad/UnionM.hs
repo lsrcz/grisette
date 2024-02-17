@@ -30,12 +30,15 @@
 module Grisette.Core.Control.Monad.UnionM
   ( -- * UnionM and helpers
     UnionM (..),
+    unionMUnaryOp,
+    unionMBinOp,
+    liftUnionM,
     liftToMonadUnion,
     underlyingUnion,
     isMerged,
-    (.#),
-    IsConcrete,
     unionSize,
+    mergePropagatedIf,
+    IsConcrete,
   )
 where
 
@@ -77,13 +80,8 @@ import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionLike (mergeWithStrategy, mrgIfWithStrategy, single, unionIf),
-    UnionPrjOp (ifView, leftMost, singleView),
-    merge,
+    UnionMergeable1 (mrgIfWithStrategy),
     mrgIf,
-    mrgSingle,
-    simpleMerge,
-    (.#),
   )
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
@@ -93,10 +91,18 @@ import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
 import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
+import Grisette.Core.Data.Class.TryMerge
+  ( TryMerge (tryMergeWithStrategy),
+    mrgPure,
+    tryMerge,
+  )
+import Grisette.Core.Data.Class.UnionLike
+  ( UnionLike (ifView, singleView),
+    simpleMerge,
+  )
 import Grisette.Core.Data.Union
   ( Union (UnionIf, UnionSingle),
-    fullReconstruct,
-    ifWithStrategy,
+    ifWithLeftMost,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
@@ -202,7 +208,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> :{
 --   do
 --     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
---     mrgSingle $ x + 1 :: UnionM Integer
+--     mrgPure $ x + 1 :: UnionM Integer
 -- :}
 -- {If (|| a b) 2 3}
 --
@@ -301,7 +307,7 @@ isMerged UAny {} = False
 isMerged UMrg {} = True
 {-# INLINE isMerged #-}
 
-instance UnionPrjOp UnionM where
+instance UnionLike UnionM where
   singleView = singleView . underlyingUnion
   {-# INLINE singleView #-}
   ifView (UAny u) = case ifView u of
@@ -311,23 +317,26 @@ instance UnionPrjOp UnionM where
     Just (c, t, f) -> Just (c, UMrg m t, UMrg m f)
     Nothing -> Nothing
   {-# INLINE ifView #-}
-  leftMost = leftMost . underlyingUnion
-  {-# INLINE leftMost #-}
 
 instance Functor UnionM where
   fmap f fa = fa >>= return . f
   {-# INLINE fmap #-}
 
 instance Applicative UnionM where
-  pure = single
+  pure = UAny . pure
   {-# INLINE pure #-}
   f <*> a = f >>= (\xf -> a >>= (return . xf))
   {-# INLINE (<*>) #-}
 
+mergePropagatedIf :: SymBool -> UnionM a -> UnionM a -> UnionM a
+mergePropagatedIf cond (UAny t) (UAny f) = UAny $ ifWithLeftMost False cond t f
+mergePropagatedIf cond t@(UMrg m _) f = mrgIfWithStrategy m cond t f
+mergePropagatedIf cond t f@(UMrg m _) = mrgIfWithStrategy m cond t f
+
 bindUnion :: Union a -> (a -> UnionM b) -> UnionM b
 bindUnion (UnionSingle a') f' = f' a'
 bindUnion (UnionIf _ _ cond ifTrue ifFalse) f' =
-  unionIf cond (bindUnion ifTrue f') (bindUnion ifFalse f')
+  mergePropagatedIf cond (bindUnion ifTrue f') (bindUnion ifFalse f')
 {-# INLINE bindUnion #-}
 
 instance Monad UnionM where
@@ -335,7 +344,7 @@ instance Monad UnionM where
   {-# INLINE (>>=) #-}
 
 parBindUnion'' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
-parBindUnion'' (UnionSingle a) f = merge $ f a
+parBindUnion'' (UnionSingle a) f = tryMerge $ f a
 parBindUnion'' u f = parBindUnion' u f
 
 parBindUnion' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
@@ -352,8 +361,26 @@ instance MonadParallelUnion UnionM where
   parBindUnion = parBindUnion'' . underlyingUnion
   {-# INLINE parBindUnion #-}
 
+unionMUnaryOp :: (Mergeable a, Mergeable b) => (a -> b) -> UnionM a -> UnionM b
+unionMUnaryOp f a = do
+  a1 <- tryMerge a
+  mrgPure $ f a1
+{-# INLINE unionMUnaryOp #-}
+
+unionMBinOp ::
+  (Mergeable a, Mergeable b, Mergeable c) =>
+  (a -> b -> c) ->
+  UnionM a ->
+  UnionM b ->
+  UnionM c
+unionMBinOp f a b = do
+  a1 <- tryMerge a
+  b1 <- tryMerge b
+  mrgPure $ f a1 b1
+{-# INLINE unionMBinOp #-}
+
 instance (Mergeable a) => Mergeable (UnionM a) where
-  rootStrategy = SimpleStrategy $ \cond t f -> unionIf cond t f >>= mrgSingle
+  rootStrategy = SimpleStrategy mrgIf
   {-# INLINE rootStrategy #-}
 
 instance (Mergeable a) => SimpleMergeable (UnionM a) where
@@ -361,47 +388,45 @@ instance (Mergeable a) => SimpleMergeable (UnionM a) where
   {-# INLINE mrgIte #-}
 
 instance Mergeable1 UnionM where
-  liftRootStrategy m = SimpleStrategy $
-    \cond t f -> unionIf cond t f >>= (UMrg m . UnionSingle)
+  liftRootStrategy m = SimpleStrategy $ mrgIfWithStrategy m
   {-# INLINE liftRootStrategy #-}
 
 instance SimpleMergeable1 UnionM where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance UnionLike UnionM where
-  mergeWithStrategy _ m@(UMrg _ _) = m
-  mergeWithStrategy s (UAny u) = UMrg s $ fullReconstruct s u
-  {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s (Con c) l r = if c then mergeWithStrategy s l else mergeWithStrategy s r
+instance TryMerge UnionM where
+  tryMergeWithStrategy _ m@(UMrg _ _) = m
+  tryMergeWithStrategy s (UAny u) = UMrg s $ tryMergeWithStrategy s u
+  {-# INLINE tryMergeWithStrategy #-}
+
+instance UnionMergeable1 UnionM where
+  mrgIfWithStrategy s (Con c) l r =
+    if c then tryMergeWithStrategy s l else tryMergeWithStrategy s r
   mrgIfWithStrategy s cond l r =
-    mergeWithStrategy s $ unionIf cond l r
+    UMrg s $ mrgIfWithStrategy s cond (underlyingUnion l) (underlyingUnion r)
   {-# INLINE mrgIfWithStrategy #-}
-  single = UAny . single
-  {-# INLINE single #-}
-  unionIf cond (UAny a) (UAny b) = UAny $ unionIf cond a b
-  unionIf cond (UMrg m a) (UAny b) = UMrg m $ ifWithStrategy m cond a b
-  unionIf cond a (UMrg m b) = UMrg m $ ifWithStrategy m cond (underlyingUnion a) b
-  {-# INLINE unionIf #-}
 
-instance (SEq a) => SEq (UnionM a) where
-  x .== y = simpleMerge $ do
-    x1 <- x
-    y1 <- y
-    mrgSingle $ x1 .== y1
+instance (Mergeable a, SEq a) => SEq (UnionM a) where
+  x .== y = simpleMerge $ unionMBinOp (.==) x y
+  {-# INLINE (.==) #-}
 
--- | Lift the 'UnionM' to any 'MonadUnion'.
-liftToMonadUnion :: (Mergeable a, MonadUnion u) => UnionM a -> u a
-liftToMonadUnion u = go (underlyingUnion u)
+-- | Lift the 'UnionM' to any Applicative 'UnionMergeable1'.
+liftUnionM :: (Mergeable a, UnionMergeable1 u, Applicative u) => UnionM a -> u a
+liftUnionM u = go (underlyingUnion u)
   where
-    go (UnionSingle v) = mrgSingle v
+    go (UnionSingle v) = mrgPure v
     go (UnionIf _ _ c t f) = mrgIf c (go t) (go f)
 
+-- | Alias for `liftUnionM`, but for monads.
+liftToMonadUnion :: (Mergeable a, MonadUnion u) => UnionM a -> u a
+liftToMonadUnion = liftUnionM
+
 instance {-# INCOHERENT #-} (ToSym a b, Mergeable b) => ToSym a (UnionM b) where
-  toSym = mrgSingle . toSym
+  toSym = mrgPure . toSym
 
 instance (ToSym a b, Mergeable b) => ToSym (UnionM a) (UnionM b) where
-  toSym = merge . fmap toSym
+  toSym = tryMerge . fmap toSym
 
 #define TO_SYM_FROM_UNION_CON_SIMPLE(contype, symtype) \
 instance ToSym (UnionM contype) symtype where \
@@ -428,18 +453,21 @@ TO_SYM_FROM_UNION_CON_FUN((=->), (=~>))
 TO_SYM_FROM_UNION_CON_FUN((-->), (-~>))
 #endif
 
-instance {-# INCOHERENT #-} (ToCon a b) => ToCon (UnionM a) b where
-  toCon v = go $ underlyingUnion v
+instance {-# INCOHERENT #-} (ToCon a b, Mergeable a) => ToCon (UnionM a) b where
+  toCon v = go $ underlyingUnion $ tryMerge v
     where
       go (UnionSingle x) = toCon x
       go _ = Nothing
 
-instance (ToCon a b, Mergeable b) => ToCon (UnionM a) (UnionM b) where
-  toCon v = go $ underlyingUnion v
+instance
+  (ToCon a b, Mergeable a, Mergeable b) =>
+  ToCon (UnionM a) (UnionM b)
+  where
+  toCon v = go $ underlyingUnion $ tryMerge v
     where
       go (UnionSingle x) = case toCon x of
         Nothing -> Nothing
-        Just v -> Just $ mrgSingle v
+        Just v -> Just $ mrgPure v
       go (UnionIf _ _ c t f) = do
         t' <- go t
         f' <- go f
@@ -449,7 +477,7 @@ instance (Mergeable a, EvaluateSym a) => EvaluateSym (UnionM a) where
   evaluateSym fillDefault model x = go $ underlyingUnion x
     where
       go :: Union a -> UnionM a
-      go (UnionSingle v) = mrgSingle $ evaluateSym fillDefault model v
+      go (UnionSingle v) = mrgPure $ evaluateSym fillDefault model v
       go (UnionIf _ _ cond t f) =
         mrgIf
           (evaluateSym fillDefault model cond)
@@ -460,7 +488,7 @@ instance (Mergeable a, SubstituteSym a) => SubstituteSym (UnionM a) where
   substituteSym sym val x = go $ underlyingUnion x
     where
       go :: Union a -> UnionM a
-      go (UnionSingle v) = mrgSingle $ substituteSym sym val v
+      go (UnionSingle v) = mrgPure $ substituteSym sym val v
       go (UnionIf _ _ cond t f) =
         mrgIf
           (substituteSym sym val cond)
@@ -489,51 +517,37 @@ instance Eq1 UnionM where
   liftEq e l r = liftEq e (underlyingUnion l) (underlyingUnion r)
 
 instance (Num a, Mergeable a) => Num (UnionM a) where
-  fromInteger = mrgSingle . fromInteger
-  negate x = x >>= (mrgSingle . negate)
-  x + y = x >>= \x1 -> y >>= \y1 -> mrgSingle $ x1 + y1
-  x - y = x >>= \x1 -> y >>= \y1 -> mrgSingle $ x1 - y1
-  x * y = x >>= \x1 -> y >>= \y1 -> mrgSingle $ x1 * y1
-  abs x = x >>= mrgSingle . abs
-  signum x = x >>= mrgSingle . signum
+  fromInteger = mrgPure . fromInteger
+  negate = unionMUnaryOp negate
+  (+) = unionMBinOp (+)
+  (*) = unionMBinOp (*)
+  (-) = unionMBinOp (-)
+  abs = unionMUnaryOp abs
+  signum = unionMUnaryOp signum
 
 instance (ITEOp a, Mergeable a) => ITEOp (UnionM a) where
   symIte = mrgIf
 
 instance (LogicalOp a, Mergeable a) => LogicalOp (UnionM a) where
-  a .|| b = do
-    a1 <- a
-    b1 <- b
-    mrgSingle $ a1 .|| b1
-  a .&& b = do
-    a1 <- a
-    b1 <- b
-    mrgSingle $ a1 .&& b1
-  symNot x = do
-    x1 <- x
-    mrgSingle $ symNot x1
-  symXor a b = do
-    a1 <- a
-    b1 <- b
-    mrgSingle $ a1 `symXor` b1
-  symImplies a b = do
-    a1 <- a
-    b1 <- b
-    mrgSingle $ a1 `symImplies` b1
+  (.||) = unionMBinOp (.||)
+  (.&&) = unionMBinOp (.&&)
+  symNot = unionMUnaryOp symNot
+  symXor = unionMBinOp symXor
+  symImplies = unionMBinOp symImplies
 
 instance (Solvable c t, Mergeable t) => Solvable c (UnionM t) where
-  con = mrgSingle . con
+  con = mrgPure . con
   {-# INLINE con #-}
-  ssym = mrgSingle . ssym
+  ssym = mrgPure . ssym
   {-# INLINE ssym #-}
-  isym i s = mrgSingle $ isym i s
+  isym s i = mrgPure $ isym s i
   {-# INLINE isym #-}
-  sinfosym s info = mrgSingle $ sinfosym s info
+  sinfosym s info = mrgPure $ sinfosym s info
   {-# INLINE sinfosym #-}
-  iinfosym i s info = mrgSingle $ iinfosym i s info
+  iinfosym i s info = mrgPure $ iinfosym i s info
   {-# INLINE iinfosym #-}
   conView v = do
-    c <- singleView v
+    c <- singleView $ tryMerge v
     conView c
   {-# INLINE conView #-}
 
@@ -545,10 +559,10 @@ instance
   type Ret (UnionM f) = UnionM (Ret f)
   f # a = do
     f1 <- f
-    mrgSingle $ f1 # a
+    mrgPure $ f1 # a
 
 instance (IsString a, Mergeable a) => IsString (UnionM a) where
-  fromString = mrgSingle . fromString
+  fromString = mrgPure . fromString
 
 -- AllSyms
 instance (AllSyms a) => AllSyms (UnionM a) where
@@ -575,7 +589,7 @@ instance (IsConcrete k, Mergeable t) => SimpleMergeable (HML.HashMap k (UnionM (
       ul =
         foldr
           ( \k m -> case HML.lookup k m of
-              Nothing -> HML.insert k (mrgSingle Nothing) m
+              Nothing -> HML.insert k (mrgPure Nothing) m
               _ -> m
           )
           l
@@ -583,7 +597,7 @@ instance (IsConcrete k, Mergeable t) => SimpleMergeable (HML.HashMap k (UnionM (
       ur =
         foldr
           ( \k m -> case HML.lookup k m of
-              Nothing -> HML.insert k (mrgSingle Nothing) m
+              Nothing -> HML.insert k (mrgPure Nothing) m
               _ -> m
           )
           r

@@ -14,17 +14,22 @@ module Grisette.Lib.Control.Monad.Trans.State.Common
   )
 where
 
-import Grisette.Core.Control.Monad.UnionM (UnionM, unionSize)
+import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf, unionSize)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
-    UnionLike (unionIf),
-    mrgSingle,
+    mrgIf,
   )
 import Grisette.Core.Data.Class.TestValues (ssymBool)
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
+  )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Grisette.TestUtil.SymbolicAssertion ((@?=~))
 import Test.HUnit (Assertion, (@?=))
+
+type StateConstructor stateT s a = (s -> UnionM (a, s)) -> stateT s UnionM a
 
 type StateFunc stateT s a = (s -> (a, s)) -> stateT s UnionM a
 
@@ -52,26 +57,36 @@ type ModifyFunc stateT s a = (s -> s) -> stateT s UnionM ()
 
 type GetsFunc stateT s a = (s -> a) -> stateT s UnionM a
 
+bodyA :: SymBool -> UnionM (SymBool, SymBool)
+bodyA s = return (s .&& ssymBool "av", s .&& ssymBool "as")
+
 stateA ::
-  StateFunc stateT SymBool SymBool -> stateT SymBool UnionM SymBool
-stateA state = state (\s -> (s .&& ssymBool "av", s .&& ssymBool "as"))
+  StateConstructor stateT SymBool SymBool -> stateT SymBool UnionM SymBool
+stateA state = state bodyA
+
+bodyB :: SymBool -> UnionM (SymBool, SymBool)
+bodyB s = return (s .&& ssymBool "bv", s .&& ssymBool "bs")
 
 stateB ::
-  StateFunc stateT SymBool SymBool -> stateT SymBool UnionM SymBool
-stateB state = state (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
+  StateConstructor stateT SymBool SymBool -> stateT SymBool UnionM SymBool
+stateB state = state bodyB
 
 stateAB ::
-  (UnionLike (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  StateConstructor stateT SymBool SymBool ->
   stateT SymBool UnionM SymBool
 stateAB state =
-  unionIf
-    (ssymBool "c")
-    (stateA state)
-    (stateB state)
+  state
+    (\s -> mergePropagatedIf (ssymBool "c") (bodyA s) (bodyB s))
+
+mergePropagatedIf' :: (MonadUnion m) => SymBool -> m b -> m b -> m b
+mergePropagatedIf' c a b = do
+  x <- mrgIf c (return True) (return False)
+  case x of
+    True -> a
+    False -> b
 
 mrgStateTest ::
-  (UnionLike (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool UnionM)) =>
   StateFunc stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   Assertion
@@ -80,9 +95,9 @@ mrgStateTest mrgState runStateT = do
         mrgState (\s -> (s .&& ssymBool "av", s .&& ssymBool "as"))
   let b =
         mrgState (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av",
@@ -96,14 +111,14 @@ mrgStateTest mrgState runStateT = do
   actual @?=~ expected
 
 mrgRunStateTTest ::
-  (UnionLike (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   Assertion
 mrgRunStateTTest state mrgRunStateT = do
   let actual = mrgRunStateT (stateAB state) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av",
@@ -117,14 +132,14 @@ mrgRunStateTTest state mrgRunStateT = do
   actual @?=~ expected
 
 mrgEvalStateTTest ::
-  (UnionLike (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   EvalStateFunc stateT SymBool SymBool ->
   Assertion
 mrgEvalStateTTest state mrgEvalStateT = do
   let actual = mrgEvalStateT (stateAB state) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               (ssymBool "d" .&& ssymBool "av")
@@ -134,14 +149,14 @@ mrgEvalStateTTest state mrgEvalStateT = do
   actual @?=~ expected
 
 mrgExecStateTTest ::
-  (UnionLike (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   ExecStateFunc stateT SymBool SymBool ->
   Assertion
 mrgExecStateTTest state mrgExecStateT = do
   let actual = mrgExecStateT (stateAB state) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               (ssymBool "d" .&& ssymBool "as")
@@ -151,17 +166,17 @@ mrgExecStateTTest state mrgExecStateT = do
   actual @?=~ expected
 
 mrgMapStateTTest ::
-  (UnionLike (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   MapStateFunc stateT SymBool SymBool ->
   Assertion
 mrgMapStateTTest state runStateT mrgMapStateT = do
   let a = mrgMapStateT id (stateA state)
   let b = mrgMapStateT id (stateB state)
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av",
@@ -175,17 +190,17 @@ mrgMapStateTTest state runStateT mrgMapStateT = do
   actual @?=~ expected
 
 mrgWithStateTTest ::
-  (UnionLike (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   WithStateFunc stateT SymBool SymBool ->
   Assertion
 mrgWithStateTTest state runStateT mrgWithStateT = do
   let a = mrgWithStateT (.&& ssymBool "x") (stateA state)
   let b = mrgWithStateT (.&& ssymBool "y") (stateB state)
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av" .&& ssymBool "x",
@@ -199,17 +214,17 @@ mrgWithStateTTest state runStateT mrgWithStateT = do
   actual @?=~ expected
 
 mrgGetTest ::
-  (UnionLike (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   GetFunc stateT SymBool SymBool ->
   Assertion
 mrgGetTest state runStateT mrgGet = do
   let a = do stateA state; mrgGet
   let b = do stateB state; mrgGet
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "as",
@@ -223,34 +238,34 @@ mrgGetTest state runStateT mrgGet = do
   actual @?=~ expected
 
 mrgPutTest ::
-  (UnionLike (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool () ->
   PutFunc stateT SymBool SymBool ->
   Assertion
 mrgPutTest state runStateT mrgPut = do
   let a = do stateA state; mrgPut (ssymBool "x")
   let b = do stateB state; mrgPut (ssymBool "y")
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte (ssymBool "c") ((), ssymBool "x") ((), ssymBool "y")
           )
   unionSize actual @?= 1
   actual @?=~ expected
 
 mrgModifyTest ::
-  (UnionLike (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool () ->
   ModifyFunc stateT SymBool SymBool ->
   Assertion
 mrgModifyTest state runStateT mrgModify = do
   let a = do stateA state; mrgModify (.&& ssymBool "x")
   let b = do stateB state; mrgModify (.&& ssymBool "y")
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( (),
@@ -264,17 +279,17 @@ mrgModifyTest state runStateT mrgModify = do
   actual @?=~ expected
 
 mrgGetsTest ::
-  (UnionLike (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
-  StateFunc stateT SymBool SymBool ->
+  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   GetsFunc stateT SymBool SymBool ->
   Assertion
 mrgGetsTest state runStateT mrgGets = do
   let a = do stateA state; mrgGets (.&& ssymBool "x")
   let b = do stateB state; mrgGets (.&& ssymBool "y")
-  let actual = runStateT (unionIf (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgSingle
+        mrgPure
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "as" .&& ssymBool "x",

@@ -46,11 +46,13 @@ import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<), (.>), (.>=)))
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( merge,
-    mrgIf,
-    mrgSingle,
+  ( mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
+    tryMerge,
+  )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymIntN,
     SymInteger,
@@ -109,12 +111,12 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeLinearArith e a | a -> e 
   safeMinus' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
 
 instance SafeLinearArith ArithException Integer where
-  safeAdd l r = mrgSingle (l + r)
-  safeNeg l = mrgSingle (-l)
-  safeMinus l r = mrgSingle (l - r)
-  safeAdd' _ l r = mrgSingle (l + r)
-  safeNeg' _ l = mrgSingle (-l)
-  safeMinus' _ l r = mrgSingle (l - r)
+  safeAdd l r = mrgPure (l + r)
+  safeNeg l = mrgPure (-l)
+  safeMinus l r = mrgPure (l - r)
+  safeAdd' _ l r = mrgPure (l + r)
+  safeNeg' _ l = mrgPure (-l)
+  safeMinus' _ l r = mrgPure (l - r)
 
 #define SAFE_LINARITH_SIGNED_CONCRETE_BODY \
   safeAdd l r = let res = l + r in \
@@ -182,24 +184,24 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (type n) where \
 
 #define SAFE_LINARITH_SOME_CONCRETE(type, ctype) \
 instance SafeLinearArith (Either BitwidthMismatch ArithException) type where \
-  safeAdd (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
+  safeAdd (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeAdd' Right l r; \
       _ -> throwError $ Left BitwidthMismatch); \
-  safeAdd' t (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
+  safeAdd' t (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeAdd' (t . Right) l r; \
       _ -> let t' = t; _ = t' in throwError $ t' $ Left BitwidthMismatch); \
-  safeMinus (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
+  safeMinus (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeMinus' Right l r; \
       _ -> throwError $ Left BitwidthMismatch); \
-  safeMinus' t (type (l :: ctype l)) (type (r :: ctype r)) = merge (\
+  safeMinus' t (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
     case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> type <$> safeMinus' (t . Right) l r; \
       _ -> let t' = t; _ = t' in throwError $ t' $ Left BitwidthMismatch); \
-  safeNeg (type l) = merge $ type <$> safeNeg' Right l; \
-  safeNeg' t (type l) = merge $ type <$> safeNeg' (t . Right) l
+  safeNeg (type l) = tryMerge $ type <$> safeNeg' Right l; \
+  safeNeg' t (type l) = tryMerge $ type <$> safeNeg' (t . Right) l
 
 #if 1
 SAFE_LINARITH_SIGNED_CONCRETE(Int8)
@@ -219,12 +221,12 @@ SAFE_LINARITH_SOME_CONCRETE(SomeWordN, WordN)
 #endif
 
 instance SafeLinearArith ArithException SymInteger where
-  safeAdd ls rs = mrgSingle $ ls + rs
-  safeAdd' _ ls rs = mrgSingle $ ls + rs
-  safeNeg v = mrgSingle $ -v
-  safeNeg' _ v = mrgSingle $ -v
-  safeMinus ls rs = mrgSingle $ ls - rs
-  safeMinus' _ ls rs = mrgSingle $ ls - rs
+  safeAdd ls rs = mrgPure $ ls + rs
+  safeAdd' _ ls rs = mrgPure $ ls + rs
+  safeNeg v = mrgPure $ -v
+  safeNeg' _ v = mrgPure $ -v
+  safeMinus ls rs = mrgPure $ ls - rs
+  safeMinus' _ ls rs = mrgPure $ ls - rs
 
 instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) where
   safeAdd ls rs =
@@ -234,7 +236,7 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       ( mrgIf
           (ls .< 0 .&& rs .< 0 .&& res .>= 0)
           (throwError Underflow)
-          (mrgSingle res)
+          (mrgPure res)
       )
     where
       res = ls + rs
@@ -245,12 +247,12 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       ( mrgIf
           (ls .< 0 .&& rs .< 0 .&& res .>= 0)
           (throwError $ f Underflow)
-          (mrgSingle res)
+          (mrgPure res)
       )
     where
       res = ls + rs
-  safeNeg v = mrgIf (v .== con minBound) (throwError Overflow) (mrgSingle $ -v)
-  safeNeg' f v = mrgIf (v .== con minBound) (throwError $ f Overflow) (mrgSingle $ -v)
+  safeNeg v = mrgIf (v .== con minBound) (throwError Overflow) (mrgPure $ -v)
+  safeNeg' f v = mrgIf (v .== con minBound) (throwError $ f Overflow) (mrgPure $ -v)
   safeMinus ls rs =
     mrgIf
       (ls .>= 0)
@@ -258,7 +260,7 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       ( mrgIf
           (ls .< 0 .&& rs .> 0 .&& res .> 0)
           (throwError Underflow)
-          (mrgSingle res)
+          (mrgPure res)
       )
     where
       res = ls - rs
@@ -269,7 +271,7 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       ( mrgIf
           (ls .< 0 .&& rs .> 0 .&& res .> 0)
           (throwError $ f Underflow)
-          (mrgSingle res)
+          (mrgPure res)
       )
     where
       res = ls - rs
@@ -279,29 +281,29 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) whe
     mrgIf
       (ls .> res .|| rs .> res)
       (throwError Overflow)
-      (mrgSingle res)
+      (mrgPure res)
     where
       res = ls + rs
   safeAdd' f ls rs =
     mrgIf
       (ls .> res .|| rs .> res)
       (throwError $ f Overflow)
-      (mrgSingle res)
+      (mrgPure res)
     where
       res = ls + rs
-  safeNeg v = mrgIf (v ./= 0) (throwError Underflow) (mrgSingle v)
-  safeNeg' f v = mrgIf (v ./= 0) (throwError $ f Underflow) (mrgSingle v)
+  safeNeg v = mrgIf (v ./= 0) (throwError Underflow) (mrgPure v)
+  safeNeg' f v = mrgIf (v ./= 0) (throwError $ f Underflow) (mrgPure v)
   safeMinus ls rs =
     mrgIf
       (rs .> ls)
       (throwError Underflow)
-      (mrgSingle res)
+      (mrgPure res)
     where
       res = ls - rs
   safeMinus' f ls rs =
     mrgIf
       (rs .> ls)
       (throwError $ f Underflow)
-      (mrgSingle res)
+      (mrgPure res)
     where
       res = ls - rs

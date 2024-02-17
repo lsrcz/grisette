@@ -26,7 +26,8 @@ import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<=)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
-import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
+import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Data.Functor (mrgFmap)
 
 -- | Symbolic version of 'Data.List.!!', the result would be merged and
 -- propagate the mergeable knowledge.

@@ -32,8 +32,7 @@ import Grisette.Core.Data.Class.SOrd
   ( SOrd ((.<), (.>=)),
   )
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike,
-    mrgIf,
+  ( mrgIf,
   )
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
@@ -62,22 +61,22 @@ import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 -- size. Shifting by more than or equal to the bit size is an error, otherwise
 -- they are the same as the non-strict versions.
 class (SymShift a) => SafeSymShift e a | a -> e where
-  safeSymShiftL :: (MonadError e m, UnionLike m) => a -> a -> m a
+  safeSymShiftL :: (MonadError e m, MonadUnion m) => a -> a -> m a
   safeSymShiftL = safeSymShiftL' id
-  safeSymShiftR :: (MonadError e m, UnionLike m) => a -> a -> m a
+  safeSymShiftR :: (MonadError e m, MonadUnion m) => a -> a -> m a
   safeSymShiftR = safeSymShiftR' id
   safeSymShiftL' ::
-    (MonadError e' m, UnionLike m) => (e -> e') -> a -> a -> m a
+    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
   safeSymShiftR' ::
-    (MonadError e' m, UnionLike m) => (e -> e') -> a -> a -> m a
-  safeSymStrictShiftL :: (MonadError e m, UnionLike m) => a -> a -> m a
+    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
+  safeSymStrictShiftL :: (MonadError e m, MonadUnion m) => a -> a -> m a
   safeSymStrictShiftL = safeSymStrictShiftL' id
-  safeSymStrictShiftR :: (MonadError e m, UnionLike m) => a -> a -> m a
+  safeSymStrictShiftR :: (MonadError e m, MonadUnion m) => a -> a -> m a
   safeSymStrictShiftR = safeSymStrictShiftR' id
   safeSymStrictShiftL' ::
-    (MonadError e' m, UnionLike m) => (e -> e') -> a -> a -> m a
+    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
   safeSymStrictShiftR' ::
-    (MonadError e' m, UnionLike m) => (e -> e') -> a -> a -> m a
+    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
   {-# MINIMAL
     safeSymShiftL',
     safeSymShiftR',

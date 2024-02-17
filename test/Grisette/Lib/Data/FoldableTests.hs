@@ -8,10 +8,9 @@ import Control.Monad.Except
     runExceptT,
   )
 import Control.Monad.Trans.Maybe (MaybeT)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike (single, unionIf),
-    mrgIf,
+  ( mrgIf,
   )
 import Grisette.Lib.Control.Monad (mrgMzero, mrgReturn)
 import Grisette.Lib.Data.Foldable
@@ -34,7 +33,7 @@ foldableFunctionTests =
     "Foldable"
     [ testCase "mrgFoldlM" $ do
         ( mrgFoldlM
-            (\acc (c, v) -> unionIf c (single $ acc + v) (single $ acc * v))
+            (\acc (c, v) -> mergePropagatedIf c (return $ acc + v) (return $ acc * v))
             10
             [("a", 2), ("b", 3)] ::
             UnionM Integer
@@ -49,7 +48,7 @@ foldableFunctionTests =
             ),
       testCase "mrgFoldrM" $ do
         ( mrgFoldrM
-            (\(c, v) acc -> unionIf c (single $ acc + v) (single $ acc * v))
+            (\(c, v) acc -> mergePropagatedIf c (return $ acc + v) (return $ acc * v))
             10
             [("a", 2), ("b", 3)] ::
             UnionM Integer
@@ -61,7 +60,7 @@ foldableFunctionTests =
       testCase "mrgTraverse_" $ do
         runExceptT
           ( mrgTraverse_
-              (\(c, x) -> ExceptT $ unionIf c (return $ Left x) (return $ Right c))
+              (\(c, x) -> ExceptT $ mergePropagatedIf c (return $ Left x) (return $ Right c))
               [("a", 3), ("b", 2)] ::
               ExceptT Integer (UnionM) ()
           )
@@ -75,7 +74,7 @@ foldableFunctionTests =
         runExceptT
           ( mrgFor_
               [("a", 3), ("b", 2)]
-              (\(c, x) -> ExceptT $ unionIf c (return $ Left x) (return $ Right c)) ::
+              (\(c, x) -> ExceptT $ mergePropagatedIf c (return $ Left x) (return $ Right c)) ::
               ExceptT Integer UnionM ()
           )
           @?= runExceptT
@@ -87,7 +86,7 @@ foldableFunctionTests =
       testCase "mrgMapM_" $ do
         runExceptT
           ( mrgMapM_
-              (\(c, x) -> ExceptT $ unionIf c (return $ Left x) (return $ Right c))
+              (\(c, x) -> ExceptT $ mergePropagatedIf c (return $ Left x) (return $ Right c))
               [("a", 3), ("b", 2)] ::
               ExceptT Integer UnionM ()
           )
@@ -101,7 +100,7 @@ foldableFunctionTests =
         runExceptT
           ( mrgForM_
               [("a", 3), ("b", 2)]
-              (\(c, x) -> ExceptT $ unionIf c (return $ Left x) (return $ Right c)) ::
+              (\(c, x) -> ExceptT $ mergePropagatedIf c (return $ Left x) (return $ Right c)) ::
               ExceptT Integer UnionM ()
           )
           @?= runExceptT

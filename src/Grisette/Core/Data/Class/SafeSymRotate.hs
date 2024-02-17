@@ -17,7 +17,7 @@ import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<)))
-import Grisette.Core.Data.Class.SimpleMergeable (UnionLike, mrgIf)
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalRotateLeftTerm,
@@ -31,14 +31,14 @@ import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 class (SymRotate a) => SafeSymRotate e a | a -> e where
-  safeSymRotateL :: (MonadError e m, UnionLike m) => a -> a -> m a
+  safeSymRotateL :: (MonadError e m, MonadUnion m) => a -> a -> m a
   safeSymRotateL = safeSymRotateL' id
-  safeSymRotateR :: (MonadError e m, UnionLike m) => a -> a -> m a
+  safeSymRotateR :: (MonadError e m, MonadUnion m) => a -> a -> m a
   safeSymRotateR = safeSymRotateR' id
   safeSymRotateL' ::
-    (MonadError e' m, UnionLike m) => (e -> e') -> a -> a -> m a
+    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
   safeSymRotateR' ::
-    (MonadError e' m, UnionLike m) => (e -> e') -> a -> a -> m a
+    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
   {-# MINIMAL safeSymRotateL', safeSymRotateR' #-}
 
 -- | This function handles the case when the shift amount is out the range of
