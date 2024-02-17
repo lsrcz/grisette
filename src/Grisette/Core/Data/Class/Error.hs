@@ -32,7 +32,8 @@ import Grisette.Core.Control.Exception
   )
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (merge, mrgIf)
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Core.Data.Class.TryMerge (tryMerge)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 -- $setup
@@ -92,7 +93,7 @@ symThrowTransformableError ::
   ) =>
   from ->
   erm a
-symThrowTransformableError = merge . throwError . transformError
+symThrowTransformableError = tryMerge . throwError . transformError
 {-# INLINE symThrowTransformableError #-}
 
 -- | Used within a monadic multi path computation for exception processing.

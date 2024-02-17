@@ -38,6 +38,7 @@ import GHC.Generics
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Control.Monad.UnionM
   ( UnionM,
     liftToMonadUnion,
@@ -57,10 +58,11 @@ import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.||)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<), (.>=)))
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike,
-    merge,
-    mrgIf,
-    mrgSingle,
+  ( mrgIf,
+  )
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
+    tryMerge,
   )
 
 -- $setup
@@ -83,7 +85,7 @@ class (Mergeable a) => GenSymConstrained spec a where
   -- >>> runFreshT (freshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () UnionM (UnionM SymInteger)
   -- ExceptT <If (<= 1 a@0) (Left ()) (Right {a@0})>
   freshConstrained ::
-    (MonadFresh m, MonadError e m, UnionLike m) =>
+    (MonadFresh m, MonadError e m, MonadUnion m) =>
     e ->
     spec ->
     m (UnionM a)
@@ -91,15 +93,15 @@ class (Mergeable a) => GenSymConstrained spec a where
     (GenSymSimpleConstrained spec a) =>
     ( MonadFresh m,
       MonadError e m,
-      UnionLike m
+      MonadUnion m
     ) =>
     e ->
     spec ->
     m (UnionM a)
-  freshConstrained e spec = mrgSingle <$> simpleFreshConstrained e spec
+  freshConstrained e spec = mrgPure <$> simpleFreshConstrained e spec
 
 genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> FreshIdent -> ExceptT e UnionM (UnionM a)
-genSymConstrained e spec = merge . runFreshT (freshConstrained e spec)
+genSymConstrained e spec = tryMerge . runFreshT (freshConstrained e spec)
 
 -- | Class of types in which symbolic values can be generated with some
 -- specification.
@@ -114,13 +116,13 @@ class (Mergeable a) => GenSymSimpleConstrained spec a where
   -- >>> runFreshT (simpleFreshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () UnionM SymInteger
   -- ExceptT <If (<= 1 a@0) (Left ()) (Right a@0)>
   simpleFreshConstrained ::
-    (MonadFresh m, MonadError e m, UnionLike m) =>
+    (MonadFresh m, MonadError e m, MonadUnion m) =>
     e ->
     spec ->
     m a
 
 genSymSimpleConstrained :: forall spec a e. (GenSymSimpleConstrained spec a, Mergeable e) => e -> spec -> FreshIdent -> ExceptT e UnionM a
-genSymSimpleConstrained e spec = merge . runFreshT (simpleFreshConstrained e spec)
+genSymSimpleConstrained e spec = tryMerge . runFreshT (simpleFreshConstrained e spec)
 
 instance {-# OVERLAPPABLE #-} (Mergeable a, GenSym spec a) => GenSymConstrained spec a where
   freshConstrained _ = fresh
@@ -137,13 +139,13 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymCons
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .>= u) (throwError e) (return ())
-    mrgSingle $ mrgSingle v
+    mrgPure $ mrgPure v
 
 instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdUpperBound a spec) a where
   simpleFreshConstrained e (SOrdUpperBound u spec) = do
     s <- simpleFresh spec
     mrgIf (s .>= u) (throwError e) (return ())
-    mrgSingle s
+    mrgPure s
 
 -- | Inclusive bound, generates the values with the specification, then filters
 -- out the ones that are less than the bound
@@ -154,13 +156,13 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymCons
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .< l) (throwError e) (return ())
-    mrgSingle $ mrgSingle v
+    mrgPure $ mrgPure v
 
 instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdLowerBound a spec) a where
   simpleFreshConstrained e (SOrdLowerBound l spec) = do
     s <- simpleFresh spec
     mrgIf (s .< l) (throwError e) (return ())
-    mrgSingle s
+    mrgPure s
 
 -- | Left-inclusive, right-exclusive bound, generates the values with the
 -- specification, then filters out the ones that are out-of-bound
@@ -171,13 +173,13 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymCons
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .< l .|| v .>= u) (throwError e) (return ())
-    mrgSingle $ mrgSingle v
+    mrgPure $ mrgPure v
 
 instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdBound a spec) a where
   simpleFreshConstrained e (SOrdBound l u spec) = do
     s <- simpleFresh spec
     mrgIf (s .< l .|| s .>= u) (throwError e) (return ())
-    mrgSingle s
+    mrgPure s
 
 instance GenSymConstrained (SOrdBound Integer ()) Integer where
   freshConstrained _ (SOrdBound l r _) = chooseFresh [l .. r - 1]
@@ -191,8 +193,8 @@ instance
   ) =>
   GenSymConstrained (Either aspec bspec) (Either a b)
   where
-  freshConstrained e (Left aspec) = merge $ (merge . fmap Left) <$> freshConstrained e aspec
-  freshConstrained e (Right bspec) = merge $ (merge . fmap Right) <$> freshConstrained e bspec
+  freshConstrained e (Left aspec) = tryMerge $ (tryMerge . fmap Left) <$> freshConstrained e aspec
+  freshConstrained e (Right bspec) = tryMerge $ (tryMerge . fmap Right) <$> freshConstrained e bspec
 
 instance
   ( GenSymSimpleConstrained a a,
@@ -213,20 +215,20 @@ instance
   (GenSymConstrained aspec a, Mergeable a) =>
   GenSymConstrained (Maybe aspec) (Maybe a)
   where
-  freshConstrained _ Nothing = mrgSingle $ mrgSingle Nothing
-  freshConstrained e (Just aspec) = merge $ (merge . fmap Just) <$> freshConstrained e aspec
+  freshConstrained _ Nothing = mrgPure $ mrgPure Nothing
+  freshConstrained e (Just aspec) = tryMerge $ (tryMerge . fmap Just) <$> freshConstrained e aspec
 
 instance
   (GenSymSimpleConstrained aspec a) =>
   GenSymSimpleConstrained (Maybe aspec) (Maybe a)
   where
-  simpleFreshConstrained _ Nothing = mrgSingle Nothing
-  simpleFreshConstrained e (Just aspec) = merge $ Just <$> simpleFreshConstrained e aspec
+  simpleFreshConstrained _ Nothing = mrgPure Nothing
+  simpleFreshConstrained e (Just aspec) = tryMerge $ Just <$> simpleFreshConstrained e aspec
 
 instance (GenSymConstrained aspec a, Mergeable a) => GenSymConstrained aspec (Maybe a) where
   freshConstrained e aspec = do
     a :: UnionM a <- freshConstrained e aspec
-    merge $ chooseUnionFresh [return Nothing, Just <$> a]
+    tryMerge $ chooseUnionFresh [return Nothing, Just <$> a]
 
 -- List
 instance
@@ -236,15 +238,15 @@ instance
   freshConstrained e v = do
     l <- gl e v
     let xs = reverse $ scanr (:) [] l
-    merge $ chooseUnionFresh $ merge . sequence <$> xs
+    tryMerge $ chooseUnionFresh $ tryMerge . sequence <$> xs
     where
-      gl :: (MonadFresh m, MonadError e m, UnionLike m) => e -> Integer -> m [UnionM a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Integer -> m [UnionM a]
       gl e1 v1
-        | v1 <= 0 = mrgSingle []
+        | v1 <= 0 = mrgPure []
         | otherwise = do
             l <- freshConstrained e1 ()
             r <- gl e1 (v1 - 1)
-            mrgSingle $ l : r
+            mrgPure $ l : r
 
 instance
   (GenSymConstrained spec a, Mergeable a) =>
@@ -256,9 +258,9 @@ instance
       else do
         l <- gl e maxLen
         let xs = drop minLen $ reverse $ scanr (:) [] l
-        merge $ chooseUnionFresh $ merge . sequence <$> xs
+        tryMerge $ chooseUnionFresh $ tryMerge . sequence <$> xs
     where
-      gl :: (MonadFresh m, MonadError e m, UnionLike m) => e -> Int -> m [UnionM a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [UnionM a]
       gl e1 currLen
         | currLen <= 0 = return []
         | otherwise = do
@@ -272,7 +274,7 @@ instance
   where
   freshConstrained e l = do
     r :: [UnionM a] <- traverse (freshConstrained e) l
-    mrgSingle $ merge $ sequence r
+    mrgPure $ tryMerge $ sequence r
 
 instance
   (GenSymSimpleConstrained a a) =>
@@ -288,15 +290,15 @@ instance
     if len < 0
       then error $ "Bad lengths: " ++ show len
       else do
-        merge $ merge . sequence <$> gl e len
+        tryMerge $ tryMerge . sequence <$> gl e len
     where
-      gl :: (MonadFresh m, MonadError e m, UnionLike m) => e -> Int -> m [UnionM a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [UnionM a]
       gl e1 currLen
-        | currLen <= 0 = mrgSingle []
+        | currLen <= 0 = mrgPure []
         | otherwise = do
             l <- freshConstrained e1 subSpec
             r <- gl e1 (currLen - 1)
-            mrgSingle $ l : r
+            mrgPure $ l : r
 
 instance
   (GenSymSimpleConstrained spec a) =>
@@ -308,13 +310,13 @@ instance
       else do
         gl e len
     where
-      gl :: (MonadFresh m, MonadError e m, UnionLike m) => e -> Int -> m [a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [a]
       gl e1 currLen
-        | currLen <= 0 = mrgSingle []
+        | currLen <= 0 = mrgPure []
         | otherwise = do
             l <- simpleFreshConstrained e1 subSpec
             r <- gl e1 (currLen - 1)
-            mrgSingle $ l : r
+            mrgPure $ l : r
 
 -- (,)
 instance
@@ -328,10 +330,10 @@ instance
   freshConstrained err (aspec, bspec) = do
     a1 <- freshConstrained err aspec
     b1 <- freshConstrained err bspec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
-      mrgSingle (ax, bx)
+      mrgPure (ax, bx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -340,7 +342,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec) (a, b)
   where
   simpleFreshConstrained e (aspec, bspec) = do
-    merge $
+    tryMerge $
       (,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -360,11 +362,11 @@ instance
     a1 <- freshConstrained err aspec
     b1 <- freshConstrained err bspec
     c1 <- freshConstrained err cspec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
       cx <- c1
-      mrgSingle (ax, bx, cx)
+      mrgPure (ax, bx, cx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -374,7 +376,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec, cspec) (a, b, c)
   where
   simpleFreshConstrained e (aspec, bspec, cspec) = do
-    merge $
+    tryMerge $
       (,,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -398,12 +400,12 @@ instance
     b1 <- freshConstrained err bspec
     c1 <- freshConstrained err cspec
     d1 <- freshConstrained err dspec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
       cx <- c1
       dx <- d1
-      mrgSingle (ax, bx, cx, dx)
+      mrgPure (ax, bx, cx, dx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -414,7 +416,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec, cspec, dspec) (a, b, c, d)
   where
   simpleFreshConstrained e (aspec, bspec, cspec, dspec) = do
-    merge $
+    tryMerge $
       (,,,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -442,13 +444,13 @@ instance
     c1 <- freshConstrained err cspec
     d1 <- freshConstrained err dspec
     e1 <- freshConstrained err espec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
       cx <- c1
       dx <- d1
       ex <- e1
-      mrgSingle (ax, bx, cx, dx, ex)
+      mrgPure (ax, bx, cx, dx, ex)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -460,7 +462,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec, cspec, dspec, espec) (a, b, c, d, e)
   where
   simpleFreshConstrained e (aspec, bspec, cspec, dspec, espec) = do
-    merge $
+    tryMerge $
       (,,,,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -492,14 +494,14 @@ instance
     d1 <- freshConstrained err dspec
     e1 <- freshConstrained err espec
     f1 <- freshConstrained err fspec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
       cx <- c1
       dx <- d1
       ex <- e1
       fx <- f1
-      mrgSingle (ax, bx, cx, dx, ex, fx)
+      mrgPure (ax, bx, cx, dx, ex, fx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -512,7 +514,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec, cspec, dspec, espec, fspec) (a, b, c, d, e, f)
   where
   simpleFreshConstrained e (aspec, bspec, cspec, dspec, espec, fspec) = do
-    merge $
+    tryMerge $
       (,,,,,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -548,7 +550,7 @@ instance
     e1 <- freshConstrained err espec
     f1 <- freshConstrained err fspec
     g1 <- freshConstrained err gspec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
       cx <- c1
@@ -556,7 +558,7 @@ instance
       ex <- e1
       fx <- f1
       gx <- g1
-      mrgSingle (ax, bx, cx, dx, ex, fx, gx)
+      mrgPure (ax, bx, cx, dx, ex, fx, gx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -570,7 +572,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec, cspec, dspec, espec, fspec, gspec) (a, b, c, d, e, f, g)
   where
   simpleFreshConstrained e (aspec, bspec, cspec, dspec, espec, fspec, gspec) = do
-    merge $
+    tryMerge $
       (,,,,,,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -610,7 +612,7 @@ instance
     f1 <- freshConstrained err fspec
     g1 <- freshConstrained err gspec
     h1 <- freshConstrained err hspec
-    mrgSingle $ do
+    mrgPure $ do
       ax <- a1
       bx <- b1
       cx <- c1
@@ -619,7 +621,7 @@ instance
       fx <- f1
       gx <- g1
       hx <- h1
-      mrgSingle (ax, bx, cx, dx, ex, fx, gx, hx)
+      mrgPure (ax, bx, cx, dx, ex, fx, gx, hx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -634,7 +636,7 @@ instance
   GenSymSimpleConstrained (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) (a, b, c, d, e, f, g, h)
   where
   simpleFreshConstrained e (aspec, bspec, cspec, dspec, espec, fspec, gspec, hspec) = do
-    merge $
+    tryMerge $
       (,,,,,,,)
         <$> simpleFreshConstrained e aspec
         <*> simpleFreshConstrained e bspec
@@ -656,7 +658,7 @@ instance
   where
   freshConstrained e v = do
     x <- freshConstrained e v
-    mrgSingle $ merge . fmap MaybeT $ x
+    mrgPure $ tryMerge . fmap MaybeT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -666,7 +668,7 @@ instance
   ) =>
   GenSymSimpleConstrained spec (MaybeT m a)
   where
-  simpleFreshConstrained e v = merge $ MaybeT <$> simpleFreshConstrained e v
+  simpleFreshConstrained e v = tryMerge $ MaybeT <$> simpleFreshConstrained e v
 
 instance
   {-# OVERLAPPING #-}
@@ -676,7 +678,7 @@ instance
   ) =>
   GenSymSimpleConstrained (MaybeT m a) (MaybeT m a)
   where
-  simpleFreshConstrained e (MaybeT v) = merge $ MaybeT <$> simpleFreshConstrained e v
+  simpleFreshConstrained e (MaybeT v) = tryMerge $ MaybeT <$> simpleFreshConstrained e v
 
 instance
   {-# OVERLAPPING #-}
@@ -698,7 +700,7 @@ instance
   where
   freshConstrained e v = do
     x <- freshConstrained e v
-    mrgSingle $ merge . fmap ExceptT $ x
+    mrgPure $ tryMerge . fmap ExceptT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -709,7 +711,7 @@ instance
   ) =>
   GenSymSimpleConstrained spec (ExceptT a m b)
   where
-  simpleFreshConstrained e v = merge $ ExceptT <$> simpleFreshConstrained e v
+  simpleFreshConstrained e v = tryMerge $ ExceptT <$> simpleFreshConstrained e v
 
 instance
   {-# OVERLAPPING #-}
@@ -720,7 +722,7 @@ instance
   ) =>
   GenSymSimpleConstrained (ExceptT e m a) (ExceptT e m a)
   where
-  simpleFreshConstrained e (ExceptT v) = merge $ ExceptT <$> simpleFreshConstrained e v
+  simpleFreshConstrained e (ExceptT v) = tryMerge $ ExceptT <$> simpleFreshConstrained e v
 
 instance
   {-# OVERLAPPING #-}
@@ -737,13 +739,13 @@ class GenSymConstrainedNoSpec a where
   freshConstrainedNoSpec ::
     ( MonadFresh m,
       MonadError e m,
-      UnionLike m
+      MonadUnion m
     ) =>
     e ->
     m (UnionM (a c))
 
 instance GenSymConstrainedNoSpec U1 where
-  freshConstrainedNoSpec _ = return $ mrgSingle U1
+  freshConstrainedNoSpec _ = return $ mrgPure U1
 
 instance (GenSymConstrained () c) => GenSymConstrainedNoSpec (K1 i c) where
   freshConstrainedNoSpec e = fmap K1 <$> freshConstrained e ()
@@ -763,7 +765,7 @@ instance
     forall m c e.
     ( MonadFresh m,
       MonadError e m,
-      UnionLike m
+      MonadUnion m
     ) =>
     e ->
     m (UnionM ((a :+: b) c))
@@ -781,7 +783,7 @@ instance
     forall m c e.
     ( MonadFresh m,
       MonadError e m,
-      UnionLike m
+      MonadUnion m
     ) =>
     e ->
     m (UnionM ((a :*: b) c))
@@ -808,18 +810,18 @@ derivedFreshConstrainedNoSpec ::
     Mergeable a,
     MonadFresh m,
     MonadError e m,
-    UnionLike m
+    MonadUnion m
   ) =>
   e ->
   () ->
   m (UnionM a)
-derivedFreshConstrainedNoSpec e _ = merge $ (merge . fmap to) <$> freshConstrainedNoSpec e
+derivedFreshConstrainedNoSpec e _ = tryMerge $ (tryMerge . fmap to) <$> freshConstrainedNoSpec e
 
 class GenSymSimpleConstrainedNoSpec a where
   simpleFreshConstrainedNoSpec ::
     ( MonadFresh m,
       MonadError e m,
-      UnionLike m
+      MonadUnion m
     ) =>
     e ->
     m (a c)
@@ -857,19 +859,19 @@ derivedSimpleFreshConstrainedNoSpec ::
     GenSymSimpleConstrainedNoSpec (Rep a),
     MonadFresh m,
     MonadError e m,
-    UnionLike m,
+    MonadUnion m,
     Mergeable a
   ) =>
   e ->
   () ->
   m a
-derivedSimpleFreshConstrainedNoSpec e _ = merge $ (merge . fmap to) $ simpleFreshConstrainedNoSpec e
+derivedSimpleFreshConstrainedNoSpec e _ = tryMerge $ (tryMerge . fmap to) $ simpleFreshConstrainedNoSpec e
 
 class GenSymConstrainedSameShape a where
   simpleFreshConstrainedSameShape ::
     ( MonadFresh m,
       MonadError e m,
-      UnionLike m
+      MonadUnion m
     ) =>
     e ->
     a c ->
@@ -918,9 +920,9 @@ derivedSimpleFreshConstrainedSameShape ::
     Mergeable a,
     MonadFresh m,
     MonadError e m,
-    UnionLike m
+    MonadUnion  m
   ) =>
   e ->
   a ->
   m a
-derivedSimpleFreshConstrainedSameShape e a = merge $ (merge . fmap to) $ simpleFreshConstrainedSameShape e (from a)
+derivedSimpleFreshConstrainedSameShape e a = tryMerge $ (tryMerge . fmap to) $ simpleFreshConstrainedSameShape e (from a)

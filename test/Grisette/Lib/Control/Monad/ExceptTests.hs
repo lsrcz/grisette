@@ -3,11 +3,10 @@
 module Grisette.Lib.Control.Monad.ExceptTests (monadExceptFunctionTests) where
 
 import Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike (unionIf),
-    mrgSingle,
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Grisette.Lib.Control.Monad.Except
@@ -24,11 +23,12 @@ monadExceptFunctionTests =
     "Except"
     [ testCase "mrgThrowError" $
         runExceptT (mrgThrowError 1 :: ExceptT Integer UnionM ())
-          @?= mrgSingle (Left 1),
+          @?= mrgPure (Left 1),
       testCase "mrgCatchError" $
-        ( ExceptT (unionIf "a" (return $ Left "b") (return $ Right "c")) ::
+        ( ExceptT
+            (mergePropagatedIf "a" (return $ Left "b") (return $ Right "c")) ::
             ExceptT SymBool UnionM SymBool
         )
           `mrgCatchError` return
-          @?= mrgSingle (symIte "a" "b" "c")
+          @?= mrgPure (symIte "a" "b" "c")
     ]

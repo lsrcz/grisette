@@ -27,11 +27,9 @@ import Grisette.Core.Data.Class.GenSym
     runFreshT,
   )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( mrgIf,
-    mrgSingle,
-  )
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TestValues (conBool, isymBool, ssymBool)
+import Grisette.Core.Data.Class.TryMerge (mrgPure)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -49,7 +47,7 @@ genSymTests =
                 "() spec"
                 [ testCase "genSym" $
                     (genSym () "a" :: UnionM SymBool)
-                      @?= mrgSingle (isymBool "a" 0),
+                      @?= mrgPure (isymBool "a" 0),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: SymBool)
                       @?= isymBool "a" 0
@@ -58,7 +56,7 @@ genSymTests =
                 "SymBool spec"
                 [ testCase "genSym" $
                     (genSym (conBool True) "a" :: UnionM SymBool)
-                      @?= mrgSingle (isymBool "a" 0),
+                      @?= mrgPure (isymBool "a" 0),
                   testCase "genSymSimple" $
                     (genSymSimple (conBool True) "a" :: SymBool)
                       @?= isymBool "a" 0
@@ -68,17 +66,17 @@ genSymTests =
             "Bool"
             [ testCase "() spec" $
                 (genSym () "a" :: UnionM Bool)
-                  @?= mrgIf (isymBool "a" 0) (mrgSingle False) (mrgSingle True),
+                  @?= mrgIf (isymBool "a" 0) (mrgPure False) (mrgPure True),
               testGroup
                 "Bool spec"
                 [ testGroup
                     "genSym"
                     [ testCase "True" $
                         (genSym True "a" :: UnionM Bool)
-                          @?= mrgSingle True,
+                          @?= mrgPure True,
                       testCase "False" $
                         (genSym False "a" :: UnionM Bool)
-                          @?= mrgSingle False
+                          @?= mrgPure False
                     ],
                   testGroup
                     "genSymSimple"
@@ -97,7 +95,7 @@ genSymTests =
                 "Integer spec"
                 [ testCase "genSym" $
                     (genSym (1 :: Integer) "a" :: UnionM Integer)
-                      @?= mrgSingle 1,
+                      @?= mrgPure 1,
                   testCase "genSymSimple" $
                     (genSymSimple (1 :: Integer) "a" :: Integer)
                       @?= 1
@@ -108,14 +106,14 @@ genSymTests =
                 )
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle 0)
-                    (mrgIf (isymBool "a" 1) (mrgSingle 1) (mrgSingle 2)),
+                    (mrgPure 0)
+                    (mrgIf (isymBool "a" 1) (mrgPure 1) (mrgPure 2)),
               testCase "Bound spec" $
                 (genSym (EnumGenBound (-1 :: Integer) 2) "a" :: UnionM Integer)
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle (-1))
-                    (mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1))
+                    (mrgPure (-1))
+                    (mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1))
             ],
           testGroup
             "Char"
@@ -123,7 +121,7 @@ genSymTests =
                 "Char spec"
                 [ testCase "genSym" $
                     (genSym 'x' "a" :: UnionM Char)
-                      @?= mrgSingle 'x',
+                      @?= mrgPure 'x',
                   testCase "genSymSimple" $
                     (genSymSimple 'x' "a" :: Char) @?= 'x'
                 ],
@@ -131,18 +129,18 @@ genSymTests =
                 (genSym (EnumGenUpperBound @Char (toEnum 3)) "a" :: UnionM Char)
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle $ toEnum 0)
+                    (mrgPure $ toEnum 0)
                     ( mrgIf
                         (isymBool "a" 1)
-                        (mrgSingle $ toEnum 1)
-                        (mrgSingle $ toEnum 2)
+                        (mrgPure $ toEnum 1)
+                        (mrgPure $ toEnum 2)
                     ),
               testCase "Bound spec" $
                 (genSym (EnumGenBound 'a' 'd') "a" :: UnionM Char)
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle 'a')
-                    (mrgIf (isymBool "a" 1) (mrgSingle 'b') (mrgSingle 'c'))
+                    (mrgPure 'a')
+                    (mrgIf (isymBool "a" 1) (mrgPure 'b') (mrgPure 'c'))
             ],
           testGroup
             "Maybe SymBool"
@@ -154,7 +152,7 @@ genSymTests =
                         ( genSym (Nothing :: Maybe SymBool) "a" ::
                             UnionM (Maybe SymBool)
                         )
-                          @?= mrgSingle Nothing,
+                          @?= mrgPure Nothing,
                       testCase "genSymSimple" $
                         ( genSymSimple (Nothing :: Maybe SymBool) "a" ::
                             Maybe SymBool
@@ -167,7 +165,7 @@ genSymTests =
                         ( genSym (Just (ssymBool "a")) "a" ::
                             UnionM (Maybe SymBool)
                         )
-                          @?= mrgSingle (Just (isymBool "a" 0)),
+                          @?= mrgPure (Just (isymBool "a" 0)),
                       testCase "genSymSimple" $
                         ( genSymSimple (Just (ssymBool "a")) "a" ::
                             Maybe SymBool
@@ -179,8 +177,8 @@ genSymTests =
                 (genSym () "a" :: UnionM (Maybe SymBool))
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle Nothing)
-                    (mrgSingle (Just (isymBool "a" 1)))
+                    (mrgPure Nothing)
+                    (mrgPure (Just (isymBool "a" 1)))
             ],
           testGroup
             "Either SymBool SymBool"
@@ -196,7 +194,7 @@ genSymTests =
                             "a" ::
                             UnionM (Either SymBool SymBool)
                         )
-                          @?= mrgSingle (Left (isymBool "a" 0)),
+                          @?= mrgPure (Left (isymBool "a" 0)),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( Left (ssymBool "a") ::
@@ -217,7 +215,7 @@ genSymTests =
                             "a" ::
                             UnionM (Either SymBool SymBool)
                         )
-                          @?= mrgSingle (Right (isymBool "a" 0)),
+                          @?= mrgPure (Right (isymBool "a" 0)),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( Right (ssymBool "a") ::
@@ -233,8 +231,8 @@ genSymTests =
                 (genSym () "a" :: UnionM (Either SymBool SymBool))
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle $ Left $ isymBool "a" 1)
-                    (mrgSingle $ Right $ isymBool "a" 2)
+                    (mrgPure $ Left $ isymBool "a" 1)
+                    (mrgPure $ Right $ isymBool "a" 2)
             ],
           testGroup
             "lists"
@@ -242,19 +240,19 @@ genSymTests =
                 "Max length spec"
                 [ testCase "max length = 0" $
                     (genSym (0 :: Integer) "a" :: UnionM [SymBool])
-                      @?= mrgSingle [],
+                      @?= mrgPure [],
                   testCase "max length = 3" $
                     (genSym (3 :: Integer) "a" :: UnionM [SymBool])
                       @?= mrgIf
                         (isymBool "a" 3)
-                        (mrgSingle [])
+                        (mrgPure [])
                         ( mrgIf
                             (isymBool "a" 4)
-                            (mrgSingle [isymBool "a" 2])
+                            (mrgPure [isymBool "a" 2])
                             ( mrgIf
                                 (isymBool "a" 5)
-                                (mrgSingle [isymBool "a" 1, isymBool "a" 2])
-                                ( mrgSingle
+                                (mrgPure [isymBool "a" 1, isymBool "a" 2])
+                                ( mrgPure
                                     [ isymBool "a" 0,
                                       isymBool "a" 1,
                                       isymBool "a" 2
@@ -269,11 +267,11 @@ genSymTests =
                     (genSym (ListSpec 1 3 ()) "a" :: UnionM [SymBool])
                       @?= mrgIf
                         (isymBool "a" 3)
-                        (mrgSingle [isymBool "a" 2])
+                        (mrgPure [isymBool "a" 2])
                         ( mrgIf
                             (isymBool "a" 4)
-                            (mrgSingle [isymBool "a" 1, isymBool "a" 2])
-                            ( mrgSingle
+                            (mrgPure [isymBool "a" 1, isymBool "a" 2])
+                            ( mrgPure
                                 [ isymBool "a" 0,
                                   isymBool "a" 1,
                                   isymBool "a" 2
@@ -286,22 +284,22 @@ genSymTests =
                     )
                       @?= mrgIf
                         (isymBool "a" 6)
-                        ( mrgSingle
+                        ( mrgPure
                             [ mrgIf
                                 (isymBool "a" 5)
-                                (mrgSingle [isymBool "a" 4])
-                                (mrgSingle [isymBool "a" 3, isymBool "a" 4])
+                                (mrgPure [isymBool "a" 4])
+                                (mrgPure [isymBool "a" 3, isymBool "a" 4])
                             ]
                         )
-                        ( mrgSingle
+                        ( mrgPure
                             [ mrgIf
                                 (isymBool "a" 2)
-                                (mrgSingle [isymBool "a" 1])
-                                (mrgSingle [isymBool "a" 0, isymBool "a" 1]),
+                                (mrgPure [isymBool "a" 1])
+                                (mrgPure [isymBool "a" 0, isymBool "a" 1]),
                               mrgIf
                                 (isymBool "a" 5)
-                                (mrgSingle [isymBool "a" 4])
-                                (mrgSingle [isymBool "a" 3, isymBool "a" 4])
+                                (mrgPure [isymBool "a" 4])
+                                (mrgPure [isymBool "a" 3, isymBool "a" 4])
                             ]
                         )
                 ],
@@ -311,7 +309,7 @@ genSymTests =
                     "length = 2"
                     [ testCase "genSym" $
                         (genSym (SimpleListSpec 2 ()) "a" :: UnionM [SymBool])
-                          @?= mrgSingle [isymBool "a" 0, isymBool "a" 1],
+                          @?= mrgPure [isymBool "a" 0, isymBool "a" 1],
                       testCase "genSymSimple" $
                         (genSymSimple (SimpleListSpec 2 ()) "a" :: [SymBool])
                           @?= [isymBool "a" 0, isymBool "a" 1]
@@ -324,7 +322,7 @@ genSymTests =
                             "a" ::
                             UnionM [[SymBool]]
                         )
-                          @?= mrgSingle
+                          @?= mrgPure
                             [ [isymBool "a" 0, isymBool "a" 1],
                               [isymBool "a" 2, isymBool "a" 3]
                             ],
@@ -347,7 +345,7 @@ genSymTests =
                         "a" ::
                         UnionM [[SymBool]]
                     )
-                      @?= mrgSingle
+                      @?= mrgPure
                         [ [isymBool "a" 0],
                           [isymBool "a" 1, isymBool "a" 2]
                         ],
@@ -365,7 +363,7 @@ genSymTests =
           testGroup
             "()"
             [ testCase "() spec" $ do
-                (genSym () "a" :: UnionM ()) @?= mrgSingle ()
+                (genSym () "a" :: UnionM ()) @?= mrgPure ()
                 (genSymSimple () "a" :: ()) @?= ()
             ],
           testGroup
@@ -381,9 +379,9 @@ genSymTests =
                         UnionM (Integer, Integer)
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
@@ -404,7 +402,7 @@ genSymTests =
                 "No spec"
                 [ testCase "genSym" $
                     (genSym () "a" :: UnionM (SymBool, SymBool))
-                      @?= mrgSingle (isymBool "a" 0, isymBool "a" 1),
+                      @?= mrgPure (isymBool "a" 0, isymBool "a" 1),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: (SymBool, SymBool))
                       @?= (isymBool "a" 0, isymBool "a" 1)
@@ -424,10 +422,10 @@ genSymTests =
                         UnionM (Integer, Integer, Integer)
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2, x3),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        x3 <- mrgIf (isymBool "a" 2) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2, x3),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ((), [[ssymBool "b"], [ssymBool "b", ssymBool "c"]], ())
@@ -445,7 +443,7 @@ genSymTests =
                 "No spec"
                 [ testCase "genSym" $
                     (genSym () "a" :: UnionM (SymBool, SymBool, SymBool))
-                      @?= mrgSingle
+                      @?= mrgPure
                         (isymBool "a" 0, isymBool "a" 1, isymBool "a" 2),
                   testCase "genSymSimple" $
                     (genSymSimple () "a" :: (SymBool, SymBool, SymBool))
@@ -467,11 +465,11 @@ genSymTests =
                         UnionM (Integer, Integer, Integer, Integer)
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2, x3, x4),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        x3 <- mrgIf (isymBool "a" 2) (mrgPure 0) (mrgPure 1)
+                        x4 <- mrgIf (isymBool "a" 3) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2, x3, x4),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
@@ -496,7 +494,7 @@ genSymTests =
                     ( genSym () "a" ::
                         UnionM (SymBool, SymBool, SymBool, SymBool)
                     )
-                      @?= mrgSingle
+                      @?= mrgPure
                         ( isymBool "a" 0,
                           isymBool "a" 1,
                           isymBool "a" 2,
@@ -529,12 +527,12 @@ genSymTests =
                         UnionM (Integer, Integer, Integer, Integer, Integer)
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2, x3, x4, x5),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        x3 <- mrgIf (isymBool "a" 2) (mrgPure 0) (mrgPure 1)
+                        x4 <- mrgIf (isymBool "a" 3) (mrgPure 0) (mrgPure 1)
+                        x5 <- mrgIf (isymBool "a" 4) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2, x3, x4, x5),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
@@ -563,7 +561,7 @@ genSymTests =
                     ( genSym () "a" ::
                         UnionM (SymBool, SymBool, SymBool, SymBool, SymBool)
                     )
-                      @?= mrgSingle
+                      @?= mrgPure
                         ( isymBool "a" 0,
                           isymBool "a" 1,
                           isymBool "a" 2,
@@ -606,13 +604,13 @@ genSymTests =
                           )
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        x6 <- mrgIf (isymBool "a" 5) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2, x3, x4, x5, x6),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        x3 <- mrgIf (isymBool "a" 2) (mrgPure 0) (mrgPure 1)
+                        x4 <- mrgIf (isymBool "a" 3) (mrgPure 0) (mrgPure 1)
+                        x5 <- mrgIf (isymBool "a" 4) (mrgPure 0) (mrgPure 1)
+                        x6 <- mrgIf (isymBool "a" 5) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2, x3, x4, x5, x6),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
@@ -656,7 +654,7 @@ genSymTests =
                             SymBool
                           )
                     )
-                      @?= mrgSingle
+                      @?= mrgPure
                         ( isymBool "a" 0,
                           isymBool "a" 1,
                           isymBool "a" 2,
@@ -709,14 +707,14 @@ genSymTests =
                           )
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        x6 <- mrgIf (isymBool "a" 5) (mrgSingle 0) (mrgSingle 1)
-                        x7 <- mrgIf (isymBool "a" 6) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2, x3, x4, x5, x6, x7),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        x3 <- mrgIf (isymBool "a" 2) (mrgPure 0) (mrgPure 1)
+                        x4 <- mrgIf (isymBool "a" 3) (mrgPure 0) (mrgPure 1)
+                        x5 <- mrgIf (isymBool "a" 4) (mrgPure 0) (mrgPure 1)
+                        x6 <- mrgIf (isymBool "a" 5) (mrgPure 0) (mrgPure 1)
+                        x7 <- mrgIf (isymBool "a" 6) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2, x3, x4, x5, x6, x7),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
@@ -764,7 +762,7 @@ genSymTests =
                             SymBool
                           )
                     )
-                      @?= mrgSingle
+                      @?= mrgPure
                         ( isymBool "a" 0,
                           isymBool "a" 1,
                           isymBool "a" 2,
@@ -822,15 +820,15 @@ genSymTests =
                           )
                     )
                       @?= do
-                        x1 <- mrgIf (isymBool "a" 0) (mrgSingle 0) (mrgSingle 1)
-                        x2 <- mrgIf (isymBool "a" 1) (mrgSingle 0) (mrgSingle 1)
-                        x3 <- mrgIf (isymBool "a" 2) (mrgSingle 0) (mrgSingle 1)
-                        x4 <- mrgIf (isymBool "a" 3) (mrgSingle 0) (mrgSingle 1)
-                        x5 <- mrgIf (isymBool "a" 4) (mrgSingle 0) (mrgSingle 1)
-                        x6 <- mrgIf (isymBool "a" 5) (mrgSingle 0) (mrgSingle 1)
-                        x7 <- mrgIf (isymBool "a" 6) (mrgSingle 0) (mrgSingle 1)
-                        x8 <- mrgIf (isymBool "a" 7) (mrgSingle 0) (mrgSingle 1)
-                        mrgSingle (x1, x2, x3, x4, x5, x6, x7, x8),
+                        x1 <- mrgIf (isymBool "a" 0) (mrgPure 0) (mrgPure 1)
+                        x2 <- mrgIf (isymBool "a" 1) (mrgPure 0) (mrgPure 1)
+                        x3 <- mrgIf (isymBool "a" 2) (mrgPure 0) (mrgPure 1)
+                        x4 <- mrgIf (isymBool "a" 3) (mrgPure 0) (mrgPure 1)
+                        x5 <- mrgIf (isymBool "a" 4) (mrgPure 0) (mrgPure 1)
+                        x6 <- mrgIf (isymBool "a" 5) (mrgPure 0) (mrgPure 1)
+                        x7 <- mrgIf (isymBool "a" 6) (mrgPure 0) (mrgPure 1)
+                        x8 <- mrgIf (isymBool "a" 7) (mrgPure 0) (mrgPure 1)
+                        mrgPure (x1, x2, x3, x4, x5, x6, x7, x8),
                   testCase "genSymSimple" $
                     ( genSymSimple
                         ( (),
@@ -882,7 +880,7 @@ genSymTests =
                             SymBool
                           )
                     )
-                      @?= mrgSingle
+                      @?= mrgPure
                         ( isymBool "a" 0,
                           isymBool "a" 1,
                           isymBool "a" 2,
@@ -925,7 +923,7 @@ genSymTests =
                         ( genSym (MaybeT Nothing :: MaybeT Maybe SymBool) "a" ::
                             UnionM (MaybeT Maybe SymBool)
                         )
-                          @?= mrgSingle (MaybeT Nothing),
+                          @?= mrgPure (MaybeT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             (MaybeT Nothing :: MaybeT Maybe SymBool)
@@ -944,7 +942,7 @@ genSymTests =
                             "a" ::
                             UnionM (MaybeT Maybe SymBool)
                         )
-                          @?= mrgSingle (MaybeT (Just Nothing)),
+                          @?= mrgPure (MaybeT (Just Nothing)),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( MaybeT (Just (Just $ ssymBool "a")) ::
@@ -965,7 +963,7 @@ genSymTests =
                             "a" ::
                             UnionM (MaybeT Maybe SymBool)
                         )
-                          @?= mrgSingle (MaybeT (Just (Just $ isymBool "a" 0))),
+                          @?= mrgPure (MaybeT (Just (Just $ isymBool "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( MaybeT (Just (Just $ ssymBool "a")) ::
@@ -981,11 +979,11 @@ genSymTests =
                 (genSym () "a" :: UnionM (MaybeT Maybe SymBool))
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle $ MaybeT Nothing)
+                    (mrgPure $ MaybeT Nothing)
                     ( mrgIf
                         (isymBool "a" 1)
-                        (mrgSingle $ MaybeT $ Just Nothing)
-                        (mrgSingle $ MaybeT $ Just $ Just $ isymBool "a" 2)
+                        (mrgPure $ MaybeT $ Just Nothing)
+                        (mrgPure $ MaybeT $ Just $ Just $ isymBool "a" 2)
                     ),
               testGroup
                 "Maybe (Maybe SymBool) spec"
@@ -995,7 +993,7 @@ genSymTests =
                         ( genSym (Nothing :: Maybe (Maybe SymBool)) "a" ::
                             UnionM (MaybeT Maybe SymBool)
                         )
-                          @?= mrgSingle (MaybeT Nothing),
+                          @?= mrgPure (MaybeT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple (Nothing :: Maybe (Maybe SymBool)) "a" ::
                             MaybeT Maybe SymBool
@@ -1008,7 +1006,7 @@ genSymTests =
                         ( genSym (Just Nothing :: Maybe (Maybe SymBool)) "a" ::
                             UnionM (MaybeT Maybe SymBool)
                         )
-                          @?= mrgSingle (MaybeT (Just Nothing)),
+                          @?= mrgPure (MaybeT (Just Nothing)),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             (Just Nothing :: Maybe (Maybe SymBool))
@@ -1027,7 +1025,7 @@ genSymTests =
                             "a" ::
                             UnionM (MaybeT Maybe SymBool)
                         )
-                          @?= mrgSingle (MaybeT (Just (Just $ isymBool "a" 0))),
+                          @?= mrgPure (MaybeT (Just (Just $ isymBool "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( Just $ Just $ ssymBool "a" ::
@@ -1054,7 +1052,7 @@ genSymTests =
                             "a" ::
                             UnionM (ExceptT SymBool Maybe SymBool)
                         )
-                          @?= mrgSingle (ExceptT Nothing),
+                          @?= mrgPure (ExceptT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             ( ExceptT Nothing ::
@@ -1075,7 +1073,7 @@ genSymTests =
                             "a" ::
                             UnionM (ExceptT SymBool Maybe SymBool)
                         )
-                          @?= mrgSingle
+                          @?= mrgPure
                             (ExceptT $ Just $ Left $ isymBool "a" 0),
                       testCase "genSymSimple" $
                         ( genSymSimple
@@ -1097,7 +1095,7 @@ genSymTests =
                             "a" ::
                             UnionM (ExceptT SymBool Maybe SymBool)
                         )
-                          @?= mrgSingle
+                          @?= mrgPure
                             (ExceptT $ Just $ Right $ isymBool "a" 0),
                       testCase "genSymSimple" $
                         ( genSymSimple
@@ -1114,11 +1112,11 @@ genSymTests =
                 (genSym () "a" :: UnionM (ExceptT SymBool Maybe SymBool))
                   @?= mrgIf
                     (isymBool "a" 0)
-                    (mrgSingle $ ExceptT Nothing)
+                    (mrgPure $ ExceptT Nothing)
                     ( mrgIf
                         (isymBool "a" 1)
-                        (mrgSingle $ ExceptT $ Just $ Left $ isymBool "a" 2)
-                        (mrgSingle $ ExceptT $ Just $ Right $ isymBool "a" 3)
+                        (mrgPure $ ExceptT $ Just $ Left $ isymBool "a" 2)
+                        (mrgPure $ ExceptT $ Just $ Right $ isymBool "a" 3)
                     ),
               testGroup
                 "Maybe (Either SymBool SymBool) spec"
@@ -1130,7 +1128,7 @@ genSymTests =
                             "a" ::
                             UnionM (ExceptT SymBool Maybe SymBool)
                         )
-                          @?= mrgSingle (ExceptT Nothing),
+                          @?= mrgPure (ExceptT Nothing),
                       testCase "genSymSimple" $
                         ( genSymSimple
                             (Nothing :: Maybe (Either SymBool SymBool))
@@ -1149,7 +1147,7 @@ genSymTests =
                             "a" ::
                             UnionM (ExceptT SymBool Maybe SymBool)
                         )
-                          @?= mrgSingle
+                          @?= mrgPure
                             (ExceptT (Just (Left $ isymBool "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
@@ -1171,7 +1169,7 @@ genSymTests =
                             "a" ::
                             UnionM (ExceptT SymBool Maybe SymBool)
                         )
-                          @?= mrgSingle
+                          @?= mrgPure
                             (ExceptT (Just (Right $ isymBool "a" 0))),
                       testCase "genSymSimple" $
                         ( genSymSimple
@@ -1192,14 +1190,14 @@ genSymTests =
             (runFresh (chooseFresh [1, 2, 3]) "a" :: UnionM Int)
               @?= mrgIf
                 (isymBool "a" 0)
-                (mrgSingle 1)
-                (mrgIf (isymBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
+                (mrgPure 1)
+                (mrgIf (isymBool "a" 1) (mrgPure 2) (mrgPure 3)),
           testCase "choose" $ do
             (choose [1, 2, 3] "a" :: UnionM Int)
               @?= mrgIf
                 (isymBool "a" 0)
-                (mrgSingle 1)
-                (mrgIf (isymBool "a" 1) (mrgSingle 2) (mrgSingle 3)),
+                (mrgPure 1)
+                (mrgIf (isymBool "a" 1) (mrgPure 2) (mrgPure 3)),
           testCase "chooseSimpleFresh" $ do
             (runFresh (chooseSimpleFresh ["x", "y", "z"]) "a" :: SymBool)
               @?= symIte

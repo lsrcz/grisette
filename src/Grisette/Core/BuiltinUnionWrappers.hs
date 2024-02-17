@@ -32,7 +32,7 @@ where
 
 import Data.Functor.Sum (Sum)
 import Grisette.Core.Control.Exception (VerificationConditions)
-import Grisette.Core.Data.Class.SimpleMergeable (mrgSingle)
+import Grisette.Core.Data.Class.TryMerge (mrgPure)
 import Grisette.Core.TH (makeUnionWrapper, makeUnionWrapper')
 
 $(makeUnionWrapper "mrg" ''Bool)

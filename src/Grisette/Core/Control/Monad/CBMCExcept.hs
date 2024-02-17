@@ -87,13 +87,16 @@ import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (.<), (.<=), (.>), (.>=)
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionLike (mergeWithStrategy, mrgIfWithStrategy, single, unionIf),
-    merge,
+    UnionMergeable1 (mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
+import Grisette.Core.Data.Class.TryMerge
+  ( TryMerge (tryMergeWithStrategy),
+    tryMerge,
+  )
 import Language.Haskell.TH.Syntax (Lift)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -386,7 +389,7 @@ instance
   where
   fresh v = do
     x <- fresh v
-    return $ merge . fmap CBMCExceptT $ x
+    return $ tryMerge . fmap CBMCExceptT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -414,31 +417,32 @@ instance
   GenSym (CBMCExceptT e m a) (CBMCExceptT e m a)
 
 instance
-  (UnionLike m, Mergeable e, Mergeable a) =>
+  (UnionMergeable1 m, Mergeable e, Mergeable a) =>
   SimpleMergeable (CBMCExceptT e m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (UnionLike m, Mergeable e) =>
+  (UnionMergeable1 m, Mergeable e) =>
   SimpleMergeable1 (CBMCExceptT e m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (UnionLike m, Mergeable e) =>
-  UnionLike (CBMCExceptT e m)
+  (TryMerge m, Mergeable e) =>
+  TryMerge (CBMCExceptT e m)
   where
-  mergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ mergeWithStrategy (liftRootStrategy s) v
-  {-# INLINE mergeWithStrategy #-}
+  tryMergeWithStrategy s (CBMCExceptT v) = CBMCExceptT $ tryMergeWithStrategy (liftRootStrategy s) v
+  {-# INLINE tryMergeWithStrategy #-}
+
+instance
+  (UnionMergeable1 m, Mergeable e) =>
+  UnionMergeable1 (CBMCExceptT e m)
+  where
   mrgIfWithStrategy s cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
-  single = CBMCExceptT . single . return
-  {-# INLINE single #-}
-  unionIf cond (CBMCExceptT l) (CBMCExceptT r) = CBMCExceptT $ unionIf cond l r
-  {-# INLINE unionIf #-}
 
 instance (SOrd (m (CBMCEither e a))) => SOrd (CBMCExceptT e m a) where
   (CBMCExceptT l) .<= (CBMCExceptT r) = l .<= r
@@ -466,10 +470,10 @@ instance
   toSym (CBMCExceptT v) = CBMCExceptT $ toSym v
 
 instance
-  (Monad u, UnionLike u, Mergeable e, Mergeable v) =>
+  (Monad u, TryMerge u, Mergeable e, Mergeable v) =>
   UnionWithExcept (CBMCExceptT e u v) u e v
   where
-  extractUnionExcept = merge . fmap runCBMCEither . runCBMCExceptT
+  extractUnionExcept = tryMerge . fmap runCBMCEither . runCBMCExceptT
 
 instance UnionWithExcept (UnionM (CBMCEither e v)) UnionM e v where
   extractUnionExcept = fmap runCBMCEither

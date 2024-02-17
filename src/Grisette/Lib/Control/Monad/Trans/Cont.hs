@@ -19,23 +19,26 @@ where
 import Control.Monad.Cont (ContT (runContT))
 import Control.Monad.Trans.Class (lift)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike,
-    merge,
+import Grisette.Core.Data.Class.TryMerge
+  ( TryMerge,
+    tryMerge,
   )
 import Grisette.Lib.Control.Monad (mrgReturn)
 
 -- | 'Control.Monad.Cont.runContT' with 'MergingStrategy' knowledge propagation
-mrgRunContT :: (UnionLike m, Mergeable r) => ContT r m a -> (a -> m r) -> m r
-mrgRunContT c = merge . runContT c
+mrgRunContT :: (TryMerge m, Mergeable r) => ContT r m a -> (a -> m r) -> m r
+mrgRunContT c = tryMerge . runContT c
 {-# INLINE mrgRunContT #-}
 
 -- | 'Control.Monad.Cont.evalContT' with 'MergingStrategy' knowledge propagation
-mrgEvalContT :: (UnionLike m, Mergeable r, Monad m) => ContT r m r -> m r
+mrgEvalContT :: (TryMerge m, Mergeable r, Monad m) => ContT r m r -> m r
 mrgEvalContT c = runContT c mrgReturn
 {-# INLINE mrgEvalContT #-}
 
 -- | 'Control.Monad.Cont.resetT' with 'MergingStrategy' knowledge propagation
-mrgResetT :: (UnionLike m, Mergeable r, Monad m) => (Monad m) => ContT r m r -> ContT r' m r
+mrgResetT ::
+  (TryMerge m, Mergeable r, Monad m) =>
+  ContT r m r ->
+  ContT r' m r
 mrgResetT = lift . mrgEvalContT
 {-# INLINE mrgResetT #-}

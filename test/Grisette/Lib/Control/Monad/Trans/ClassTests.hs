@@ -6,11 +6,10 @@ module Grisette.Lib.Control.Monad.Trans.ClassTests
 where
 
 import Control.Monad.Except (ExceptT)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionLike (single, unionIf),
-    mrgSingle,
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Grisette.Lib.Control.Monad.Trans (mrgLift)
@@ -24,10 +23,10 @@ monadTransClassTests =
     "Class"
     [ testCase "mrgLift" $ do
         ( mrgLift
-            ( unionIf "a" (single "b") (single "c") ::
+            ( mergePropagatedIf "a" (return "b") (return "c") ::
                 UnionM SymBool
             ) ::
             ExceptT SymBool UnionM SymBool
           )
-          @?= mrgSingle (symIte "a" "b" "c")
+          @?= mrgPure (symIte "a" "b" "c")
     ]

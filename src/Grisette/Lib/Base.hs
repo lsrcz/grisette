@@ -50,7 +50,6 @@ where
 
 import Grisette.Lib.Control.Monad
   ( mrgBindWithStrategy,
-    mrgFmap,
     mrgFoldM,
     mrgMplus,
     mrgMzero,
@@ -69,6 +68,7 @@ import Grisette.Lib.Data.Foldable
     mrgSequence_,
     mrgTraverse_,
   )
+import Grisette.Lib.Data.Functor (mrgFmap)
 import Grisette.Lib.Data.List
   ( symDrop,
     symFilter,

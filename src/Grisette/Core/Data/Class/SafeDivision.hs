@@ -46,11 +46,13 @@ import Grisette.Core.Data.Class.SOrd
   ( SOrd ((.<), (.<=), (.>), (.>=)),
   )
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( merge,
-    mrgIf,
-    mrgSingle,
+  ( mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.TryMerge
+  ( mrgPure,
+    tryMerge,
+  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
     pevalDivIntegralTerm,
@@ -84,7 +86,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeDiv :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
   safeDiv l r = do
     (d, _) <- safeDivMod l r
-    mrgSingle d
+    mrgPure d
 
   -- | Safe signed 'mod' with monadic error handling in multi-path execution.
   --
@@ -93,7 +95,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeMod :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
   safeMod l r = do
     (_, m) <- safeDivMod l r
-    mrgSingle m
+    mrgPure m
 
   -- | Safe signed 'divMod' with monadic error handling in multi-path execution.
   --
@@ -103,7 +105,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeDivMod l r = do
     d <- safeDiv l r
     m <- safeMod l r
-    mrgSingle (d, m)
+    mrgPure (d, m)
 
   -- | Safe signed 'quot' with monadic error handling in multi-path execution.
   safeQuot :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
@@ -111,8 +113,8 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
     (d, m) <- safeDivMod l r
     mrgIf
       ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgSingle d)
-      (mrgSingle $ d + 1)
+      (mrgPure d)
+      (mrgPure $ d + 1)
 
   -- | Safe signed 'rem' with monadic error handling in multi-path execution.
   safeRem :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
@@ -120,8 +122,8 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
     (_, m) <- safeDivMod l r
     mrgIf
       ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgSingle m)
-      (mrgSingle $ m - r)
+      (mrgPure m)
+      (mrgPure $ m - r)
 
   -- | Safe signed 'quotRem' with monadic error handling in multi-path execution.
   safeQuotRem :: (MonadError e uf, MonadUnion uf) => a -> a -> uf (a, a)
@@ -129,8 +131,8 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
     (d, m) <- safeDivMod l r
     mrgIf
       ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgSingle (d, m))
-      (mrgSingle (d + 1, m - r))
+      (mrgPure (d, m))
+      (mrgPure (d + 1, m - r))
 
   -- | Safe signed 'div' with monadic error handling in multi-path execution.
   -- The error is transformed.
@@ -140,7 +142,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeDiv' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
   safeDiv' t l r = do
     (d, _) <- safeDivMod' t l r
-    mrgSingle d
+    mrgPure d
 
   -- | Safe signed 'mod' with monadic error handling in multi-path execution.
   -- The error is transformed.
@@ -150,7 +152,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeMod' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
   safeMod' t l r = do
     (_, m) <- safeDivMod' t l r
-    mrgSingle m
+    mrgPure m
 
   -- | Safe signed 'divMod' with monadic error handling in multi-path execution.
   -- The error is transformed.
@@ -161,7 +163,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
   safeDivMod' t l r = do
     d <- safeDiv' t l r
     m <- safeMod' t l r
-    mrgSingle (d, m)
+    mrgPure (d, m)
 
   -- | Safe signed 'quot' with monadic error handling in multi-path execution.
   -- The error is transformed.
@@ -170,8 +172,8 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
     (d, m) <- safeDivMod' t l r
     mrgIf
       ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgSingle d)
-      (mrgSingle $ d + 1)
+      (mrgPure d)
+      (mrgPure $ d + 1)
 
   -- | Safe signed 'rem' with monadic error handling in multi-path execution.
   -- The error is transformed.
@@ -180,8 +182,8 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
     (_, m) <- safeDivMod' t l r
     mrgIf
       ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgSingle m)
-      (mrgSingle $ m - r)
+      (mrgPure m)
+      (mrgPure $ m - r)
 
   -- | Safe signed 'quotRem' with monadic error handling in multi-path execution.
   -- The error is transformed.
@@ -190,8 +192,8 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
     (d, m) <- safeDivMod' t l r
     mrgIf
       ((l .>= 0 .&& r .> 0) .|| (l .<= 0 .&& r .< 0) .|| m .== 0)
-      (mrgSingle (d, m))
-      (mrgSingle (d + 1, m - r))
+      (mrgPure (d, m))
+      (mrgPure (d + 1, m - r))
 
   {-# MINIMAL (safeDivMod | (safeDiv, safeMod)), (safeDivMod' | (safeDiv', safeMod')) #-}
 
@@ -203,10 +205,10 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeDivision e a | a -> e whe
 #define QRIGHTU(a) QID(a)' _'
 
 #define SAFE_DIVISION_CONCRETE_FUNC(name, op) \
-name _ r | r == 0 = merge $ throwError DivideByZero; \
-name l r = mrgSingle $ l `op` r; \
-QRIGHTT(name) _ r | r == 0 = let _ = t' in merge $ throwError (t' DivideByZero); \
-QRIGHTU(name) l r = mrgSingle $ l `op` r
+name _ r | r == 0 = tryMerge $ throwError DivideByZero; \
+name l r = mrgPure $ l `op` r; \
+QRIGHTT(name) _ r | r == 0 = let _ = t' in tryMerge $ throwError (t' DivideByZero); \
+QRIGHTU(name) l r = mrgPure $ l `op` r
 
 #define SAFE_DIVISION_CONCRETE(type) \
 instance SafeDivision ArithException type where \
@@ -245,32 +247,32 @@ SAFE_DIVISION_CONCRETE(Word)
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
-          then merge $ throwError $ Right DivideByZero \
-          else mrgSingle $ stype $ l `op` r; \
-      Nothing -> merge $ throwError $ Left BitwidthMismatch); \
+          then tryMerge $ throwError $ Right DivideByZero \
+          else mrgPure $ stype $ l `op` r; \
+      Nothing -> tryMerge $ throwError $ Left BitwidthMismatch); \
   QRIGHT(name) t (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
-          then merge $ throwError $ t (Right DivideByZero) \
-          else mrgSingle $ stype $ l `op` r; \
-      Nothing -> merge $ throwError $ t (Left BitwidthMismatch))
+          then tryMerge $ throwError $ t (Right DivideByZero) \
+          else mrgPure $ stype $ l `op` r; \
+      Nothing -> tryMerge $ throwError $ t (Left BitwidthMismatch))
 
 #define SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
-          then merge $ throwError $ Right DivideByZero \
-          else (case l `op` r of (d, m) -> mrgSingle (stype d, stype m)); \
-      Nothing -> merge $ throwError $ Left BitwidthMismatch); \
+          then tryMerge $ throwError $ Right DivideByZero \
+          else (case l `op` r of (d, m) -> mrgPure (stype d, stype m)); \
+      Nothing -> tryMerge $ throwError $ Left BitwidthMismatch); \
   QRIGHT(name) t (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         if r == 0 \
-          then merge $ throwError $ t (Right DivideByZero) \
-          else (case l `op` r of (d, m) -> mrgSingle (stype d, stype m)); \
-      Nothing -> merge $ throwError $ t (Left BitwidthMismatch))
+          then tryMerge $ throwError $ t (Right DivideByZero) \
+          else (case l `op` r of (d, m) -> mrgPure (stype d, stype m)); \
+      Nothing -> tryMerge $ throwError $ t (Left BitwidthMismatch))
 
 #if 1
 SAFE_DIVISION_CONCRETE_BV(IntN)
@@ -297,24 +299,24 @@ name (type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError DivideByZero) \
-    (mrgSingle $ type $ op l r); \
+    (mrgPure $ type $ op l r); \
 QRIGHT(name) t (type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError (t DivideByZero)) \
-    (mrgSingle $ type $ op l r)
+    (mrgPure $ type $ op l r)
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2(name, type, op1, op2) \
 name (type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError DivideByZero) \
-    (mrgSingle (type $ op1 l r, type $ op2 l r)); \
+    (mrgPure (type $ op1 l r, type $ op2 l r)); \
 QRIGHT(name) t (type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError (t DivideByZero)) \
-    (mrgSingle (type $ op1 l r, type $ op2 l r))
+    (mrgPure (type $ op1 l r, type $ op2 l r))
 
 #if 1
 instance SafeDivision ArithException SymInteger where
@@ -333,14 +335,14 @@ name ls@(type l) rs@(type r) = \
     (throwError DivideByZero) \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
-      (mrgSingle $ type $ op l r)); \
+      (mrgPure $ type $ op l r)); \
 QRIGHT(name) t ls@(type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError (t DivideByZero)) \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError (t Overflow)) \
-      (mrgSingle $ type $ op l r))
+      (mrgPure $ type $ op l r))
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
 name ls@(type l) rs@(type r) = \
@@ -349,14 +351,14 @@ name ls@(type l) rs@(type r) = \
     (throwError DivideByZero) \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
-      (mrgSingle (type $ op1 l r, type $ op2 l r))); \
+      (mrgPure (type $ op1 l r, type $ op2 l r))); \
 QRIGHT(name) t ls@(type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError (t DivideByZero)) \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError (t Overflow)) \
-      (mrgSingle (type $ op1 l r, type $ op2 l r)))
+      (mrgPure (type $ op1 l r, type $ op2 l r)))
 
 #if 1
 instance (KnownNat n, 1 <= n) => SafeDivision ArithException (SymIntN n) where

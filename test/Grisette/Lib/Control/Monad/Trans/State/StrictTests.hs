@@ -3,8 +3,7 @@ module Grisette.Lib.Control.Monad.Trans.State.StrictTests
   )
 where
 
-import Control.Monad.State.Strict (state)
-import Control.Monad.Trans.State.Strict (runStateT)
+import Control.Monad.Trans.State.Strict (StateT (StateT), runStateT)
 import Grisette.Lib.Control.Monad.Trans.State.Common
   ( mrgEvalStateTTest,
     mrgExecStateTTest,
@@ -38,15 +37,15 @@ monadTransStateStrictTests =
   testGroup
     "Strict"
     [ testCase "mrgState" $ mrgStateTest mrgState runStateT,
-      testCase "mrgRunStateT" $ mrgRunStateTTest state mrgRunStateT,
-      testCase "mrgEvalStateT" $ mrgEvalStateTTest state mrgEvalStateT,
-      testCase "mrgExecStateT" $ mrgExecStateTTest state mrgExecStateT,
-      testCase "mrgMapStateT" $ mrgMapStateTTest state runStateT mrgMapStateT,
+      testCase "mrgRunStateT" $ mrgRunStateTTest StateT mrgRunStateT,
+      testCase "mrgEvalStateT" $ mrgEvalStateTTest StateT mrgEvalStateT,
+      testCase "mrgExecStateT" $ mrgExecStateTTest StateT mrgExecStateT,
+      testCase "mrgMapStateT" $ mrgMapStateTTest StateT runStateT mrgMapStateT,
       testCase "mrgWithStateT" $
-        mrgWithStateTTest state runStateT mrgWithStateT,
-      testCase "mrgGet" $ mrgGetTest state runStateT mrgGet,
-      testCase "mrgPut" $ mrgPutTest state runStateT mrgPut,
-      testCase "mrgModify" $ mrgModifyTest state runStateT mrgModify,
-      testCase "mrgModify'" $ mrgModifyTest state runStateT mrgModify',
-      testCase "mrgGets" $ mrgGetsTest state runStateT mrgGets
+        mrgWithStateTTest StateT runStateT mrgWithStateT,
+      testCase "mrgGet" $ mrgGetTest StateT runStateT mrgGet,
+      testCase "mrgPut" $ mrgPutTest StateT runStateT mrgPut,
+      testCase "mrgModify" $ mrgModifyTest StateT runStateT mrgModify,
+      testCase "mrgModify'" $ mrgModifyTest StateT runStateT mrgModify',
+      testCase "mrgGets" $ mrgGetsTest StateT runStateT mrgGets
     ]

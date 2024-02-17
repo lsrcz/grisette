@@ -27,6 +27,7 @@ import Grisette.Core.Data.Class.SymRotateTests (symRotateTests)
 import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
+import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
 import Grisette.Core.Data.Class.UnionLikeTests (unionLikeTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests)
@@ -56,6 +57,7 @@ import Grisette.Lib.Control.Monad.Trans.State.StrictTests
   )
 import Grisette.Lib.Control.MonadTests (monadFunctionTests)
 import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
+import Grisette.Lib.Data.FunctorTests (functorFunctionTests)
 import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
 import Test.Framework (Test, defaultMain, testGroup)
 
@@ -101,6 +103,7 @@ coreTests =
               symShiftTests,
               toConTests,
               toSymTests,
+              tryMergeTests,
               unionLikeTests
             ],
           Grisette.Core.Data.BVTests.bvTests
@@ -135,7 +138,8 @@ libTests =
       testGroup
         "Data"
         [ foldableFunctionTests,
-          traversableFunctionTests
+          traversableFunctionTests,
+          functorFunctionTests
         ]
     ]
 

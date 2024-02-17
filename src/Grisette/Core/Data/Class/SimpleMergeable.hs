@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,7 +12,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns #-}
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SimpleMergeable
@@ -30,21 +28,8 @@ module Grisette.Core.Data.Class.SimpleMergeable
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
-
-    -- * UnionLike operations
-    UnionLike (..),
+    UnionMergeable1 (..),
     mrgIf,
-    merge,
-    mrgSingle,
-    UnionPrjOp (..),
-    pattern Single,
-    pattern If,
-    simpleMerge,
-    onUnion,
-    onUnion2,
-    onUnion3,
-    onUnion4,
-    (.#),
   )
 where
 
@@ -62,7 +47,6 @@ import Control.Monad.Trans.Cont (ContT (ContT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
-import Data.Bifunctor (Bifunctor (first))
 import Data.Kind (Type)
 import GHC.Generics
   ( Generic (Rep, from, to),
@@ -75,9 +59,7 @@ import GHC.Generics
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Control.Exception (AssertionError)
-import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable',
@@ -86,7 +68,7 @@ import Grisette.Core.Data.Class.Mergeable
     Mergeable3 (liftRootStrategy3),
     MergingStrategy (SimpleStrategy),
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -149,7 +131,7 @@ instance (Generic a, Mergeable' (Rep a), SimpleMergeable' (Rep a)) => SimpleMerg
   {-# INLINE mrgIte #-}
 
 -- | Lifting of the 'SimpleMergeable' class to unary type constructors.
-class SimpleMergeable1 u where
+class (Mergeable1 u) => SimpleMergeable1 u where
   -- | Lift 'mrgIte' through the type constructor.
   --
   -- >>> liftMrgIte mrgIte "a" (Identity "b") (Identity "c") :: Identity SymInteger
@@ -186,42 +168,7 @@ mrgIte2 = liftMrgIte2 mrgIte mrgIte
 --
 -- This type class is used to generalize the 'mrgIf' function to other
 -- containers, for example, monad transformer transformed Unions.
-class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
-  -- | Wrap a single value in the union.
-  --
-  -- Note that this function cannot propagate the 'Mergeable' knowledge.
-  --
-  -- >>> single "a" :: UnionM SymInteger
-  -- <a>
-  -- >>> mrgSingle "a" :: UnionM SymInteger
-  -- {a}
-  single :: a -> u a
-
-  -- | If-then-else on two union values.
-  --
-  -- Note that this function cannot capture the 'Mergeable' knowledge. However,
-  -- it may use the merging strategy from the branches to merge the results.
-  --
-  -- >>> unionIf "a" (single "b") (single "c") :: UnionM SymInteger
-  -- <If a b c>
-  -- >>> unionIf "a" (mrgSingle "b") (single "c") :: UnionM SymInteger
-  -- {(ite a b c)}
-  unionIf :: SymBool -> u a -> u a -> u a
-
-  -- | Merge the contents with some merge strategy.
-  --
-  -- >>> mergeWithStrategy rootStrategy $ unionIf "a" (single "b") (single "c") :: UnionM SymInteger
-  -- {(ite a b c)}
-  --
-  -- __Note:__ Be careful to call this directly in your code.
-  -- The supplied merge strategy should be consistent with the type's root merge strategy,
-  -- or some internal invariants would be broken and the program can crash.
-  --
-  -- This function is to be called when the 'Mergeable' constraint can not be resolved,
-  -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
-  -- In other cases, 'merge' is usually a better alternative.
-  mergeWithStrategy :: MergingStrategy a -> u a -> u a
-
+class (SimpleMergeable1 u, TryMerge u) => UnionMergeable1 (u :: Type -> Type) where
   -- | Symbolic @if@ control flow with the result merged with some merge strategy.
   --
   -- >>> mrgIfWithStrategy rootStrategy "a" (mrgSingle "b") (single "c") :: UnionM SymInteger
@@ -235,24 +182,6 @@ class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
   -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
-  mrgIfWithStrategy s cond l r = mergeWithStrategy s $ unionIf cond l r
-  {-# INLINE mrgIfWithStrategy #-}
-
-  -- | Wrap a single value in the union and capture the 'Mergeable' knowledge.
-  --
-  -- >>> mrgSingleWithStrategy rootStrategy "a" :: UnionM SymInteger
-  -- {a}
-  --
-  -- __Note:__ Be careful to call this directly in your code.
-  -- The supplied merge strategy should be consistent with the type's root merge strategy,
-  -- or some internal invariants would be broken and the program can crash.
-  --
-  -- This function is to be called when the 'Mergeable' constraint can not be resolved,
-  -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
-  -- In other cases, 'mrgSingle' is usually a better alternative.
-  mrgSingleWithStrategy :: MergingStrategy a -> a -> u a
-  mrgSingleWithStrategy s = mergeWithStrategy s . single
-  {-# INLINE mrgSingleWithStrategy #-}
 
 -- | Symbolic @if@ control flow with the result merged with the type's root merge strategy.
 --
@@ -260,29 +189,9 @@ class (SimpleMergeable1 u, Mergeable1 u) => UnionLike u where
 --
 -- >>> mrgIf "a" (single "b") (single "c") :: UnionM SymInteger
 -- {(ite a b c)}
-mrgIf :: (UnionLike u, Mergeable a) => SymBool -> u a -> u a -> u a
+mrgIf :: (UnionMergeable1 u, Mergeable a) => SymBool -> u a -> u a -> u a
 mrgIf = mrgIfWithStrategy rootStrategy
 {-# INLINE mrgIf #-}
-
--- | Merge the contents with the type's root merge strategy.
---
--- Equivalent to @'mergeWithStrategy' 'rootStrategy'@.
---
--- >>> merge $ unionIf "a" (single "b") (single "c") :: UnionM SymInteger
--- {(ite a b c)}
-merge :: (UnionLike u, Mergeable a) => u a -> u a
-merge = mergeWithStrategy rootStrategy
-{-# INLINE merge #-}
-
--- | Wrap a single value in the type and propagate the type's root merge strategy.
---
--- Equivalent to @'mrgSingleWithStrategy' 'rootStrategy'@.
---
--- >>> mrgSingle "a" :: UnionM SymInteger
--- {a}
-mrgSingle :: (UnionLike u, Mergeable a) => a -> u a
-mrgSingle = mrgSingleWithStrategy rootStrategy
-{-# INLINE mrgSingle #-}
 
 instance SimpleMergeable () where
   mrgIte _ t _ = t
@@ -400,426 +309,249 @@ instance SimpleMergeable1 ((->) a) where
   liftMrgIte ms cond t f v = ms cond (t v) (f v)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionLike m, Mergeable a) => SimpleMergeable (MaybeT m a) where
+instance (UnionMergeable1 m, Mergeable a) => SimpleMergeable (MaybeT m a) where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
-instance (UnionLike m) => SimpleMergeable1 (MaybeT m) where
+instance (UnionMergeable1 m) => SimpleMergeable1 (MaybeT m) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionLike m) => UnionLike (MaybeT m) where
-  mergeWithStrategy s (MaybeT v) = MaybeT $ mergeWithStrategy (liftRootStrategy s) v
-  {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (MaybeT t) (MaybeT f) = MaybeT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
+instance (UnionMergeable1 m) => UnionMergeable1 (MaybeT m) where
+  mrgIfWithStrategy strategy cond (MaybeT l) (MaybeT r) =
+    MaybeT $ mrgIfWithStrategy (liftRootStrategy strategy) cond l r
   {-# INLINE mrgIfWithStrategy #-}
-  single = MaybeT . single . return
-  {-# INLINE single #-}
-  unionIf cond (MaybeT l) (MaybeT r) = MaybeT $ unionIf cond l r
-  {-# INLINE unionIf #-}
 
 instance
-  (UnionLike m, Mergeable e, Mergeable a) =>
+  (UnionMergeable1 m, Mergeable e, Mergeable a) =>
   SimpleMergeable (ExceptT e m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (UnionLike m, Mergeable e) =>
+  (UnionMergeable1 m, Mergeable e) =>
   SimpleMergeable1 (ExceptT e m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (UnionLike m, Mergeable e) =>
-  UnionLike (ExceptT e m)
+  (UnionMergeable1 m, Mergeable e) =>
+  UnionMergeable1 (ExceptT e m)
   where
-  mergeWithStrategy s (ExceptT v) = ExceptT $ mergeWithStrategy (liftRootStrategy s) v
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) = ExceptT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
-  single = ExceptT . single . return
-  {-# INLINE single #-}
-  unionIf cond (ExceptT l) (ExceptT r) = ExceptT $ unionIf cond l r
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable s, Mergeable a, UnionLike m) =>
+  (Mergeable s, Mergeable a, UnionMergeable1 m) =>
   SimpleMergeable (StateLazy.StateT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m) =>
+  (Mergeable s, UnionMergeable1 m) =>
   SimpleMergeable1 (StateLazy.StateT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m) =>
-  UnionLike (StateLazy.StateT s m)
+  (Mergeable s, UnionMergeable1 m) =>
+  UnionMergeable1 (StateLazy.StateT s m)
   where
-  mergeWithStrategy ms (StateLazy.StateT f) =
-    StateLazy.StateT $ \v -> mergeWithStrategy (liftRootStrategy2 ms rootStrategy) $ f v
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (StateLazy.StateT t) (StateLazy.StateT f) =
-    StateLazy.StateT $ \v -> mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond (t v) (f v)
+    StateLazy.StateT $ \v ->
+      mrgIfWithStrategy
+        (liftRootStrategy2 s rootStrategy)
+        cond
+        (t v)
+        (f v)
   {-# INLINE mrgIfWithStrategy #-}
-  single x = StateLazy.StateT $ \s -> single (x, s)
-  {-# INLINE single #-}
-  unionIf cond (StateLazy.StateT l) (StateLazy.StateT r) =
-    StateLazy.StateT $ \s -> unionIf cond (l s) (r s)
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable s, Mergeable a, UnionLike m) =>
+  (Mergeable s, Mergeable a, UnionMergeable1 m) =>
   SimpleMergeable (StateStrict.StateT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m) =>
+  (Mergeable s, UnionMergeable1 m) =>
   SimpleMergeable1 (StateStrict.StateT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m) =>
-  UnionLike (StateStrict.StateT s m)
+  (Mergeable s, UnionMergeable1 m) =>
+  UnionMergeable1 (StateStrict.StateT s m)
   where
-  mergeWithStrategy ms (StateStrict.StateT f) =
-    StateStrict.StateT $ \v -> mergeWithStrategy (liftRootStrategy2 ms rootStrategy) $ f v
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (StateStrict.StateT t) (StateStrict.StateT f) =
-    StateStrict.StateT $ \v -> mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond (t v) (f v)
+    StateStrict.StateT $
+      \v ->
+        mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
-  single x = StateStrict.StateT $ \s -> single (x, s)
-  {-# INLINE single #-}
-  unionIf cond (StateStrict.StateT l) (StateStrict.StateT r) =
-    StateStrict.StateT $ \s -> unionIf cond (l s) (r s)
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable s, Mergeable a, UnionLike m, Monoid s) =>
+  (Mergeable s, Mergeable a, UnionMergeable1 m, Monoid s) =>
   SimpleMergeable (WriterLazy.WriterT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m, Monoid s) =>
+  (Mergeable s, UnionMergeable1 m, Monoid s) =>
   SimpleMergeable1 (WriterLazy.WriterT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m, Monoid s) =>
-  UnionLike (WriterLazy.WriterT s m)
+  (Mergeable s, UnionMergeable1 m, Monoid s) =>
+  UnionMergeable1 (WriterLazy.WriterT s m)
   where
-  mergeWithStrategy ms (WriterLazy.WriterT f) = WriterLazy.WriterT $ mergeWithStrategy (liftRootStrategy2 ms rootStrategy) f
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (WriterLazy.WriterT t) (WriterLazy.WriterT f) =
-    WriterLazy.WriterT $ mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
+    WriterLazy.WriterT $
+      mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
-  single x = WriterLazy.WriterT $ single (x, mempty)
-  {-# INLINE single #-}
-  unionIf cond (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
-    WriterLazy.WriterT $ unionIf cond l r
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable s, Mergeable a, UnionLike m, Monoid s) =>
+  (Mergeable s, Mergeable a, UnionMergeable1 m, Monoid s) =>
   SimpleMergeable (WriterStrict.WriterT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m, Monoid s) =>
+  (Mergeable s, UnionMergeable1 m, Monoid s) =>
   SimpleMergeable1 (WriterStrict.WriterT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionLike m, Monoid s) =>
-  UnionLike (WriterStrict.WriterT s m)
+  (Mergeable s, UnionMergeable1 m, Monoid s) =>
+  UnionMergeable1 (WriterStrict.WriterT s m)
   where
-  mergeWithStrategy ms (WriterStrict.WriterT f) = WriterStrict.WriterT $ mergeWithStrategy (liftRootStrategy2 ms rootStrategy) f
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (WriterStrict.WriterT t) (WriterStrict.WriterT f) =
-    WriterStrict.WriterT $ mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
+    WriterStrict.WriterT $
+      mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
-  single x = WriterStrict.WriterT $ single (x, mempty)
-  {-# INLINE single #-}
-  unionIf cond (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
-    WriterStrict.WriterT $ unionIf cond l r
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable a, UnionLike m) =>
+  (Mergeable a, UnionMergeable1 m) =>
   SimpleMergeable (ReaderT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (UnionLike m) =>
+  (UnionMergeable1 m) =>
   SimpleMergeable1 (ReaderT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (UnionLike m) =>
-  UnionLike (ReaderT s m)
+  (UnionMergeable1 m) =>
+  UnionMergeable1 (ReaderT s m)
   where
-  mergeWithStrategy ms (ReaderT f) = ReaderT $ \v -> mergeWithStrategy ms $ f v
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy s cond (ReaderT t) (ReaderT f) =
     ReaderT $ \v -> mrgIfWithStrategy s cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
-  single x = ReaderT $ \_ -> single x
-  {-# INLINE single #-}
-  unionIf cond (ReaderT l) (ReaderT r) = ReaderT $ \s -> unionIf cond (l s) (r s)
-  {-# INLINE unionIf #-}
 
 instance (SimpleMergeable a) => SimpleMergeable (Identity a) where
-  mrgIte cond (Identity l) (Identity r) = Identity $ mrgIte cond l r
+  mrgIte = mrgIte1
   {-# INLINE mrgIte #-}
 
 instance SimpleMergeable1 Identity where
   liftMrgIte mite cond (Identity l) (Identity r) = Identity $ mite cond l r
   {-# INLINE liftMrgIte #-}
 
-instance (UnionLike m, Mergeable a) => SimpleMergeable (IdentityT m a) where
+instance
+  (UnionMergeable1 m, Mergeable a) =>
+  SimpleMergeable (IdentityT m a)
+  where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
-instance (UnionLike m) => SimpleMergeable1 (IdentityT m) where
+instance (UnionMergeable1 m) => SimpleMergeable1 (IdentityT m) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionLike m) => UnionLike (IdentityT m) where
-  mergeWithStrategy ms (IdentityT f) =
-    IdentityT $ mergeWithStrategy ms f
-  {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy s cond (IdentityT l) (IdentityT r) = IdentityT $ mrgIfWithStrategy s cond l r
+instance (UnionMergeable1 m) => UnionMergeable1 (IdentityT m) where
+  mrgIfWithStrategy s cond (IdentityT l) (IdentityT r) =
+    IdentityT $ mrgIfWithStrategy s cond l r
   {-# INLINE mrgIfWithStrategy #-}
-  single x = IdentityT $ single x
-  {-# INLINE single #-}
-  unionIf cond (IdentityT l) (IdentityT r) = IdentityT $ unionIf cond l r
-  {-# INLINE unionIf #-}
 
-instance (UnionLike m, Mergeable r) => SimpleMergeable (ContT r m a) where
+instance (UnionMergeable1 m, Mergeable r) => SimpleMergeable (ContT r m a) where
   mrgIte cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
   {-# INLINE mrgIte #-}
 
-instance (UnionLike m, Mergeable r) => SimpleMergeable1 (ContT r m) where
+instance (UnionMergeable1 m, Mergeable r) => SimpleMergeable1 (ContT r m) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionLike m, Mergeable r) => UnionLike (ContT r m) where
-  mergeWithStrategy _ (ContT f) = ContT $ \c -> merge (f c)
-  {-# INLINE mergeWithStrategy #-}
-  mrgIfWithStrategy _ cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
+instance (UnionMergeable1 m, Mergeable r) => UnionMergeable1 (ContT r m) where
+  mrgIfWithStrategy _ cond (ContT l) (ContT r) =
+    ContT $ \c -> mrgIf cond (l c) (r c)
   {-# INLINE mrgIfWithStrategy #-}
-  single x = ContT $ \c -> c x
-  {-# INLINE single #-}
-  unionIf cond (ContT l) (ContT r) = ContT $ \c -> unionIf cond (l c) (r c)
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionLike m) =>
+  (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionMergeable1 m) =>
   SimpleMergeable (RWSLazy.RWST r w s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionLike m) =>
+  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
   SimpleMergeable1 (RWSLazy.RWST r w s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionLike m) =>
-  UnionLike (RWSLazy.RWST r w s m)
+  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
+  UnionMergeable1 (RWSLazy.RWST r w s m)
   where
-  mergeWithStrategy ms (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> mergeWithStrategy (liftRootStrategy3 ms rootStrategy rootStrategy) $ f r s
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy ms cond (RWSLazy.RWST t) (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> mrgIfWithStrategy (liftRootStrategy3 ms rootStrategy rootStrategy) cond (t r s) (f r s)
+    RWSLazy.RWST $ \r s ->
+      mrgIfWithStrategy
+        (liftRootStrategy3 ms rootStrategy rootStrategy)
+        cond
+        (t r s)
+        (f r s)
   {-# INLINE mrgIfWithStrategy #-}
-  single x = RWSLazy.RWST $ \_ s -> single (x, s, mempty)
-  {-# INLINE single #-}
-  unionIf cond (RWSLazy.RWST t) (RWSLazy.RWST f) =
-    RWSLazy.RWST $ \r s -> unionIf cond (t r s) (f r s)
-  {-# INLINE unionIf #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionLike m) =>
+  (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionMergeable1 m) =>
   SimpleMergeable (RWSStrict.RWST r w s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionLike m) =>
+  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
   SimpleMergeable1 (RWSStrict.RWST r w s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionLike m) =>
-  UnionLike (RWSStrict.RWST r w s m)
+  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
+  UnionMergeable1 (RWSStrict.RWST r w s m)
   where
-  mergeWithStrategy ms (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> mergeWithStrategy (liftRootStrategy3 ms rootStrategy rootStrategy) $ f r s
-  {-# INLINE mergeWithStrategy #-}
   mrgIfWithStrategy ms cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> mrgIfWithStrategy (liftRootStrategy3 ms rootStrategy rootStrategy) cond (t r s) (f r s)
+    RWSStrict.RWST $ \r s ->
+      mrgIfWithStrategy
+        (liftRootStrategy3 ms rootStrategy rootStrategy)
+        cond
+        (t r s)
+        (f r s)
   {-# INLINE mrgIfWithStrategy #-}
-  single x = RWSStrict.RWST $ \_ s -> single (x, s, mempty)
-  {-# INLINE single #-}
-  unionIf cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
-    RWSStrict.RWST $ \r s -> unionIf cond (t r s) (f r s)
-  {-# INLINE unionIf #-}
-
--- | Union containers that can be projected back into single value or
--- if-guarded values.
-class (UnionLike u) => UnionPrjOp (u :: Type -> Type) where
-  -- | Pattern match to extract single values.
-  --
-  -- >>> singleView (single 1 :: UnionM Integer)
-  -- Just 1
-  -- >>> singleView (unionIf "a" (single 1) (single 2) :: UnionM Integer)
-  -- Nothing
-  singleView :: u a -> Maybe a
-
-  -- | Pattern match to extract if values.
-  --
-  -- >>> ifView (single 1 :: UnionM Integer)
-  -- Nothing
-  -- >>> ifView (unionIf "a" (single 1) (single 2) :: UnionM Integer)
-  -- Just (a,<1>,<2>)
-  -- >>> ifView (mrgIf "a" (single 1) (single 2) :: UnionM Integer)
-  -- Just (a,{1},{2})
-  ifView :: u a -> Maybe (SymBool, u a, u a)
-
-  -- | The leftmost value in the union.
-  --
-  -- >>> leftMost (unionIf "a" (single 1) (single 2) :: UnionM Integer)
-  -- 1
-  leftMost :: u a -> a
-
-  -- | Convert the union to a guarded list.
-  --
-  -- >>> toGuardedList (mrgIf "a" (single 1) (mrgIf "b" (single 2) (single 3)) :: UnionM Integer)
-  -- [(a,1),((&& b (! a)),2),((! (|| b a)),3)]
-  toGuardedList :: u a -> [(SymBool, a)]
-  toGuardedList u =
-    case (singleView u, ifView u) of
-      (Just x, _) -> [(con True, x)]
-      (_, Just (c, l, r)) ->
-        fmap (first (.&& c)) (toGuardedList l)
-          ++ fmap (first (.&& symNot c)) (toGuardedList r)
-      _ -> error "Should not happen"
-
--- | Pattern match to extract single values with 'singleView'.
---
--- >>> case (single 1 :: UnionM Integer) of Single v -> v
--- 1
-pattern Single :: (UnionPrjOp u, Mergeable a) => a -> u a
-pattern Single x <-
-  (singleView -> Just x)
-  where
-    Single x = mrgSingle x
-
--- | Pattern match to extract guard values with 'ifView'
--- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of If c t f -> (c,t,f)
--- (a,<1>,<2>)
-pattern If :: (UnionPrjOp u, Mergeable a) => SymBool -> u a -> u a -> u a
-pattern If c t f <-
-  (ifView -> Just (c, t, f))
-  where
-    If c t f = unionIf c t f
-
--- | Merge the simply mergeable values in a union, and extract the merged value.
---
--- In the following example, 'unionIf' will not merge the results, and
--- 'simpleMerge' will merge it and extract the single merged value.
---
--- >>> unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool
--- <If a b c>
--- >>> simpleMerge $ (unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
--- (ite a b c)
-simpleMerge :: forall u a. (SimpleMergeable a, UnionLike u, UnionPrjOp u) => u a -> a
-simpleMerge u = case merge u of
-  Single x -> x
-  _ -> error "Should not happen"
-{-# INLINE simpleMerge #-}
-
--- | Lift a function to work on union values.
---
--- >>> sumU = onUnion sum
--- >>> sumU (unionIf "cond" (return ["a"]) (return ["b","c"]) :: UnionM [SymInteger])
--- (ite cond a (+ b c))
-onUnion ::
-  forall u a r.
-  (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
-  (a -> r) ->
-  (u a -> r)
-onUnion f = simpleMerge . fmap f
-
--- | Lift a function to work on union values.
-onUnion2 ::
-  forall u a b r.
-  (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
-  (a -> b -> r) ->
-  (u a -> u b -> r)
-onUnion2 f ua ub = simpleMerge $ f <$> ua <*> ub
-
--- | Lift a function to work on union values.
-onUnion3 ::
-  forall u a b c r.
-  (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
-  (a -> b -> c -> r) ->
-  (u a -> u b -> u c -> r)
-onUnion3 f ua ub uc = simpleMerge $ f <$> ua <*> ub <*> uc
-
--- | Lift a function to work on union values.
-onUnion4 ::
-  forall u a b c d r.
-  (SimpleMergeable r, UnionLike u, UnionPrjOp u, Monad u) =>
-  (a -> b -> c -> d -> r) ->
-  (u a -> u b -> u c -> u d -> r)
-onUnion4 f ua ub uc ud = simpleMerge $ f <$> ua <*> ub <*> uc <*> ud
-
--- | Helper for applying functions on 'UnionPrjOp' and 'SimpleMergeable'.
---
--- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
--- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
--- {If (&& b a) 1 (If b 2 (If a 3 4))}
-(.#) ::
-  (Function f, SimpleMergeable (Ret f), UnionPrjOp u, Functor u) =>
-  f ->
-  u (Arg f) ->
-  Ret f
-(.#) f u = simpleMerge $ fmap (f #) u
-{-# INLINE (.#) #-}
-
-infixl 9 .#
 
 #define SIMPLE_MERGEABLE_SIMPLE(symtype) \
 instance SimpleMergeable symtype where \
@@ -832,7 +564,8 @@ instance (KnownNat n, 1 <= n) => SimpleMergeable (symtype n) where \
   {-# INLINE mrgIte #-}
 
 #define SIMPLE_MERGEABLE_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SimpleMergeable (sa op sb) where \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => \
+  SimpleMergeable (sa op sb) where \
   mrgIte = symIte; \
   {-# INLINE mrgIte #-}
 

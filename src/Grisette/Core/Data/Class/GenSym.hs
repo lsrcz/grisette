@@ -131,13 +131,16 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionLike (mergeWithStrategy, mrgIfWithStrategy, single, unionIf),
-    merge,
+    UnionMergeable1 (mrgIfWithStrategy),
     mrgIf,
-    mrgSingle,
   )
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (iinfosym, isym),
+  )
+import Grisette.Core.Data.Class.TryMerge
+  ( TryMerge (tryMergeWithStrategy),
+    mrgPure,
+    tryMerge,
   )
 import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -331,39 +334,38 @@ instance (Mergeable1 m) => Mergeable1 (FreshT m) where
       runFreshTFromIndex
 
 instance
-  (UnionLike m, Mergeable a) =>
+  (UnionMergeable1 m, Mergeable a) =>
   SimpleMergeable (FreshT m a)
   where
   mrgIte = mrgIf
 
 instance
-  (UnionLike m) =>
+  (UnionMergeable1 m) =>
   SimpleMergeable1 (FreshT m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
+instance (TryMerge m) => TryMerge (FreshT m) where
+  tryMergeWithStrategy s (FreshT f) =
+    FreshT $ \ident index -> tryMergeWithStrategy (liftRootStrategy2 s rootStrategy) $ f ident index
+
 instance
-  (UnionLike m) =>
-  UnionLike (FreshT m)
+  (UnionMergeable1 m) =>
+  UnionMergeable1 (FreshT m)
   where
-  mergeWithStrategy s (FreshT f) =
-    FreshT $ \ident index -> mergeWithStrategy (liftRootStrategy2 s rootStrategy) $ f ident index
   mrgIfWithStrategy s cond (FreshT t) (FreshT f) =
     FreshT $ \ident index -> mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond (t ident index) (f ident index)
-  single x = FreshT $ \_ i -> single (x, i)
-  unionIf cond (FreshT t) (FreshT f) =
-    FreshT $ \ident index -> unionIf cond (t ident index) (f ident index)
 
 -- | Run the symbolic generation with the given identifier and 0 as the initial index.
 runFreshT :: (Monad m) => FreshT m a -> FreshIdent -> m a
 runFreshT m ident = fst <$> runFreshTFromIndex m ident (FreshIndex 0)
 
 mrgRunFreshT ::
-  (Monad m, UnionLike m, Mergeable a) =>
+  (Monad m, TryMerge m, Mergeable a) =>
   FreshT m a ->
   FreshIdent ->
   m a
-mrgRunFreshT m ident = merge $ runFreshT m ident
+mrgRunFreshT m ident = tryMerge $ runFreshT m ident
 
 instance (Functor f) => Functor (FreshT f) where
   fmap f (FreshT s) = FreshT $ \ident idx -> first f <$> s ident idx
@@ -509,7 +511,7 @@ class (Mergeable a) => GenSym spec a where
     ) =>
     spec ->
     m (UnionM a)
-  fresh spec = mrgSingle <$> simpleFresh spec
+  fresh spec = mrgPure <$> simpleFresh spec
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
@@ -561,7 +563,7 @@ class GenSymNoSpec a where
     m (UnionM (a c))
 
 instance GenSymNoSpec U1 where
-  freshNoSpec = return $ mrgSingle U1
+  freshNoSpec = return $ mrgPure U1
 
 instance (GenSym () c) => GenSymNoSpec (K1 i c) where
   freshNoSpec = fmap K1 <$> fresh ()
@@ -622,7 +624,7 @@ derivedNoSpecFresh ::
   ) =>
   () ->
   m (UnionM a)
-derivedNoSpecFresh _ = merge . fmap to <$> freshNoSpec
+derivedNoSpecFresh _ = tryMerge . fmap to <$> freshNoSpec
 
 class GenSymSimpleNoSpec a where
   simpleFreshNoSpec :: (MonadFresh m) => m (a c)
@@ -735,11 +737,11 @@ chooseFresh ::
   ) =>
   [a] ->
   m (UnionM a)
-chooseFresh [x] = return $ mrgSingle x
+chooseFresh [x] = return $ mrgPure x
 chooseFresh (r : rs) = do
   b <- simpleFresh ()
   res <- chooseFresh rs
-  return $ mrgIf b (mrgSingle r) res
+  return $ mrgIf b (mrgPure r) res
 chooseFresh [] = error "chooseFresh expects at least one value"
 
 -- | A wrapper for `chooseFresh` that executes the `MonadFresh` context.
@@ -829,13 +831,13 @@ chooseUnion ::
 chooseUnion = runFresh . chooseUnionFresh
 
 #define CONCRETE_GENSYM_SAME_SHAPE(type) \
-instance GenSym type type where fresh = return . mrgSingle
+instance GenSym type type where fresh = return . mrgPure
 
 #define CONCRETE_GENSYMSIMPLE_SAME_SHAPE(type) \
 instance GenSymSimple type type where simpleFresh = return
 
 #define CONCRETE_GENSYM_SAME_SHAPE_BV(type) \
-instance (KnownNat n, 1 <= n) => GenSym (type n) (type n) where fresh = return . mrgSingle
+instance (KnownNat n, 1 <= n) => GenSym (type n) (type n) where fresh = return . mrgPure
 
 #define CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(type) \
 instance (KnownNat n, 1 <= n) => GenSymSimple (type n) (type n) where simpleFresh = return
@@ -915,8 +917,8 @@ instance
   ) =>
   GenSym (Either aspec bspec) (Either a b)
   where
-  fresh (Left aspec) = (merge . fmap Left) <$> fresh aspec
-  fresh (Right bspec) = (merge . fmap Right) <$> fresh bspec
+  fresh (Left aspec) = (tryMerge . fmap Left) <$> fresh aspec
+  fresh (Right bspec) = (tryMerge . fmap Right) <$> fresh bspec
 
 instance
   ( GenSymSimple aspec a,
@@ -952,8 +954,8 @@ instance
   (GenSym aspec a, Mergeable a) =>
   GenSym (Maybe aspec) (Maybe a)
   where
-  fresh Nothing = return $ mrgSingle Nothing
-  fresh (Just aspec) = (merge . fmap Just) <$> fresh aspec
+  fresh Nothing = return $ mrgPure Nothing
+  fresh (Just aspec) = (tryMerge . fmap Just) <$> fresh aspec
 
 instance
   (GenSymSimple aspec a) =>
@@ -970,7 +972,7 @@ instance
   fresh aspec = do
     cond <- simpleFresh ()
     a :: UnionM a <- fresh aspec
-    return $ mrgIf cond (mrgSingle Nothing) (Just <$> a)
+    return $ mrgIf cond (mrgPure Nothing) (Just <$> a)
 
 -- List
 instance
@@ -980,7 +982,7 @@ instance
   fresh v = do
     l <- gl v
     let xs = reverse $ scanr (:) [] l
-    chooseUnionFresh $ merge . sequence <$> xs
+    chooseUnionFresh $ tryMerge . sequence <$> xs
     where
       gl :: (MonadFresh m) => Integer -> m [UnionM a]
       gl v1
@@ -1017,7 +1019,7 @@ instance
       else do
         l <- gl maxLen
         let xs = drop minLen $ reverse $ scanr (:) [] l
-        chooseUnionFresh $ merge . sequence <$> xs
+        chooseUnionFresh $ tryMerge . sequence <$> xs
     where
       gl :: (MonadFresh m) => Int -> m [UnionM a]
       gl currLen
@@ -1033,7 +1035,7 @@ instance
   where
   fresh l = do
     r :: [UnionM a] <- traverse fresh l
-    return $ merge $ sequence r
+    return $ tryMerge $ sequence r
 
 instance
   (GenSymSimple a a) =>
@@ -1061,7 +1063,7 @@ instance
     if len < 0
       then error $ "Bad lengths: " ++ show len
       else do
-        merge . sequence <$> gl len
+        tryMerge . sequence <$> gl len
     where
       gl :: (MonadFresh m) => Int -> m [UnionM a]
       gl currLen
@@ -1110,7 +1112,7 @@ instance
     return $ do
       ax <- a1
       bx <- b1
-      mrgSingle (ax, bx)
+      mrgPure (ax, bx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1156,7 +1158,7 @@ instance
       ax <- a1
       bx <- b1
       cx <- c1
-      mrgSingle (ax, bx, cx)
+      mrgPure (ax, bx, cx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1215,7 +1217,7 @@ instance
       bx <- b1
       cx <- c1
       dx <- d1
-      mrgSingle (ax, bx, cx, dx)
+      mrgPure (ax, bx, cx, dx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1283,7 +1285,7 @@ instance
       cx <- c1
       dx <- d1
       ex <- e1
-      mrgSingle (ax, bx, cx, dx, ex)
+      mrgPure (ax, bx, cx, dx, ex)
 
 instance
   ( GenSymSimple aspec a,
@@ -1360,7 +1362,7 @@ instance
       dx <- d1
       ex <- e1
       fx <- f1
-      mrgSingle (ax, bx, cx, dx, ex, fx)
+      mrgPure (ax, bx, cx, dx, ex, fx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1446,7 +1448,7 @@ instance
       ex <- e1
       fx <- f1
       gx <- g1
-      mrgSingle (ax, bx, cx, dx, ex, fx, gx)
+      mrgPure (ax, bx, cx, dx, ex, fx, gx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1541,7 +1543,7 @@ instance
       fx <- f1
       gx <- g1
       hx <- h1
-      mrgSingle (ax, bx, cx, dx, ex, fx, gx, hx)
+      mrgPure (ax, bx, cx, dx, ex, fx, gx, hx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1613,7 +1615,7 @@ instance
   where
   fresh v = do
     x <- fresh v
-    return $ merge . fmap MaybeT $ x
+    return $ tryMerge . fmap MaybeT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -1651,7 +1653,7 @@ instance
   where
   fresh v = do
     x <- fresh v
-    return $ merge . fmap ExceptT $ x
+    return $ tryMerge . fmap ExceptT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -1685,7 +1687,7 @@ instance GenSymSimple symtype symtype where \
   simpleFresh _ = simpleFresh ()
 #define GENSYM_UNIT_SIMPLE(symtype) \
 instance GenSym () symtype where \
-  fresh _ = mrgSingle <$> simpleFresh ()
+  fresh _ = mrgPure <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_SIMPLE(symtype) \
 instance GenSymSimple () symtype where \
   simpleFresh _ = do; \
@@ -1702,7 +1704,7 @@ instance (KnownNat n, 1 <= n) => GenSymSimple (symtype n) (symtype n) where \
   simpleFresh _ = simpleFresh ()
 #define GENSYM_UNIT_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSym () (symtype n) where \
-  fresh _ = mrgSingle <$> simpleFresh ()
+  fresh _ = mrgPure <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
   simpleFresh _ = do; \
@@ -1719,7 +1721,7 @@ instance GenSymSimple symtype symtype where \
   simpleFresh (symtype v) = simpleFresh v
 #define GENSYM_N_BV_SOME(symtype) \
 instance (KnownNat n, 1 <= n) => GenSym (p n) symtype where \
-  fresh p = mrgSingle <$> simpleFresh p
+  fresh p = mrgPure <$> simpleFresh p
 #define GENSYM_N_SIMPLE_BV_SOME(symtype, origtype) \
 instance (KnownNat n, 1 <= n) => GenSymSimple (p n) symtype where \
   simpleFresh _ = do; \
@@ -1727,7 +1729,7 @@ instance (KnownNat n, 1 <= n) => GenSymSimple (p n) symtype where \
     return $ symtype i
 #define GENSYM_N_INT_BV_SOME(symtype) \
 instance GenSym Int symtype where \
-  fresh p = mrgSingle <$> simpleFresh p
+  fresh p = mrgPure <$> simpleFresh p
 #define GENSYM_N_INT_SIMPLE_BV_SOME(symtype, origtype) \
 instance GenSymSimple Int symtype where \
   simpleFresh i = if i > 0 then f (Proxy @0) else \
@@ -1746,7 +1748,7 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
   simpleFresh _ = simpleFresh ()
 #define GENSYM_UNIT_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym () (sa op sb) where \
-  fresh _ = mrgSingle <$> simpleFresh ()
+  fresh _ = mrgPure <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple () (sa op sb) where \
   simpleFresh _ = do; \
@@ -1809,7 +1811,7 @@ instance
   (GenSym a a, Mergeable a) =>
   GenSym (UnionM a) a
   where
-  fresh spec = go (underlyingUnion $ merge spec)
+  fresh spec = go (underlyingUnion $ tryMerge spec)
     where
       go (UnionSingle x) = fresh x
       go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f

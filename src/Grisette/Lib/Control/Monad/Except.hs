@@ -16,20 +16,19 @@ module Grisette.Lib.Control.Monad.Except
 where
 
 import Control.Monad.Except (MonadError (catchError, throwError))
-import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (merge)
+import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
 -- | 'throwError' with 'MergingStrategy' knowledge propagation.
-mrgThrowError :: (MonadError e m, MonadUnion m, Mergeable a) => e -> m a
-mrgThrowError = merge . throwError
+mrgThrowError :: (MonadError e m, TryMerge m, Mergeable a) => e -> m a
+mrgThrowError = tryMerge . throwError
 {-# INLINE mrgThrowError #-}
 
 -- | 'catchError' with 'MergingStrategy' knowledge propagation.
 mrgCatchError ::
-  (MonadError e m, MonadUnion m, Mergeable a) =>
+  (MonadError e m, TryMerge m, Mergeable a) =>
   m a ->
   (e -> m a) ->
   m a
-mrgCatchError v handler = merge $ v `catchError` (merge . handler)
+mrgCatchError v handler = tryMerge $ v `catchError` (tryMerge . handler)
 {-# INLINE mrgCatchError #-}

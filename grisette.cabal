@@ -86,6 +86,8 @@ library
       Grisette.Core.Data.Class.SymShift
       Grisette.Core.Data.Class.ToCon
       Grisette.Core.Data.Class.ToSym
+      Grisette.Core.Data.Class.TryMerge
+      Grisette.Core.Data.Class.UnionLike
       Grisette.Core.Data.FileLocation
       Grisette.Core.Data.MemoUtils
       Grisette.Core.Data.Union
@@ -130,6 +132,7 @@ library
       Grisette.Lib.Control.Monad.Trans.State.Lazy
       Grisette.Lib.Control.Monad.Trans.State.Strict
       Grisette.Lib.Data.Foldable
+      Grisette.Lib.Data.Functor
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Traversable
       Grisette.Qualified.ParallelUnionDo
@@ -236,6 +239,7 @@ test-suite spec
       Grisette.Core.Data.Class.TestValues
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
+      Grisette.Core.Data.Class.TryMergeTests
       Grisette.Core.Data.Class.UnionLikeTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
@@ -254,7 +258,9 @@ test-suite spec
       Grisette.Lib.Control.Monad.Trans.State.StrictTests
       Grisette.Lib.Control.MonadTests
       Grisette.Lib.Data.FoldableTests
+      Grisette.Lib.Data.FunctorTests
       Grisette.Lib.Data.TraversableTests
+      Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
       Paths_grisette
   hs-source-dirs:

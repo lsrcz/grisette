@@ -21,25 +21,25 @@ where
 
 import Control.Monad.State.Class (MonadState (get, put))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (UnionLike, merge)
+import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 
 -- | 'Control.Monad.State.Class.get' with 'MergingStrategy' knowledge
 -- propagation.
-mrgGet :: (MonadState s m, UnionLike m, Mergeable s) => m s
-mrgGet = merge get
+mrgGet :: (MonadState s m, TryMerge m, Mergeable s) => m s
+mrgGet = tryMerge get
 {-# INLINE mrgGet #-}
 
 -- | 'Control.Monad.State.Class.put' with 'MergingStrategy' knowledge
 -- propagation.
-mrgPut :: (MonadState s m, UnionLike m) => s -> m ()
-mrgPut = merge . put
+mrgPut :: (MonadState s m, TryMerge m) => s -> m ()
+mrgPut = tryMerge . put
 {-# INLINE mrgPut #-}
 
 -- | 'Control.Monad.State.Class.state' with 'MergingStrategy' knowledge
 -- propagation.
 mrgState ::
-  (MonadState s m, UnionLike m, Mergeable s, Mergeable a) =>
+  (MonadState s m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> (a, s)) ->
   m a
 mrgState f = do
@@ -50,13 +50,13 @@ mrgState f = do
 
 -- | 'Control.Monad.State.Class.modify' with 'MergingStrategy' knowledge
 -- propagation.
-mrgModify :: (MonadState s m, UnionLike m, Mergeable s) => (s -> s) -> m ()
+mrgModify :: (MonadState s m, TryMerge m, Mergeable s) => (s -> s) -> m ()
 mrgModify f = mrgState (\s -> ((), f s))
 {-# INLINE mrgModify #-}
 
 -- | 'Control.Monad.State.Class.modify'' with 'MergingStrategy' knowledge
 -- propagation.
-mrgModify' :: (MonadState s m, UnionLike m, Mergeable s) => (s -> s) -> m ()
+mrgModify' :: (MonadState s m, TryMerge m, Mergeable s) => (s -> s) -> m ()
 mrgModify' f = do
   s' <- mrgGet
   mrgPut $! f s'
@@ -65,7 +65,7 @@ mrgModify' f = do
 -- | 'Control.Monad.State.Class.gets' with 'MergingStrategy' knowledge
 -- propagation.
 mrgGets ::
-  (MonadState s m, UnionLike m, Mergeable s, Mergeable a) =>
+  (MonadState s m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> a) ->
   m a
 mrgGets f = do

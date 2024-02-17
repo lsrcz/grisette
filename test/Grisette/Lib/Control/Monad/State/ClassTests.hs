@@ -3,8 +3,7 @@ module Grisette.Lib.Control.Monad.State.ClassTests
   )
 where
 
-import Control.Monad.State.Lazy (state)
-import Control.Monad.Trans.State.Lazy (runStateT)
+import Control.Monad.Trans.State.Lazy (StateT (StateT), runStateT)
 import Grisette.Lib.Control.Monad.State.Class
   ( mrgGet,
     mrgGets,
@@ -28,9 +27,9 @@ monadStateClassTests =
   testGroup
     "Class"
     [ testCase "mrgState" $ mrgStateTest mrgState runStateT,
-      testCase "mrgGet" $ mrgGetTest state runStateT mrgGet,
-      testCase "mrgPut" $ mrgPutTest state runStateT mrgPut,
-      testCase "mrgModify" $ mrgModifyTest state runStateT mrgModify,
-      testCase "mrgModify'" $ mrgModifyTest state runStateT mrgModify',
-      testCase "mrgGets" $ mrgGetsTest state runStateT mrgGets
+      testCase "mrgGet" $ mrgGetTest StateT runStateT mrgGet,
+      testCase "mrgPut" $ mrgPutTest StateT runStateT mrgPut,
+      testCase "mrgModify" $ mrgModifyTest StateT runStateT mrgModify,
+      testCase "mrgModify'" $ mrgModifyTest StateT runStateT mrgModify',
+      testCase "mrgGets" $ mrgGetsTest StateT runStateT mrgGets
     ]

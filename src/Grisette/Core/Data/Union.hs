@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -28,6 +30,7 @@ module Grisette.Core.Data.Union
   )
 where
 
+import Control.Monad (ap)
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
 import Data.Functor.Classes
   ( Eq1 (liftEq),
@@ -51,17 +54,14 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionLike
-      ( mergeWithStrategy,
-        mrgIfWithStrategy,
-        mrgSingleWithStrategy,
-        single,
-        unionIf
-      ),
-    UnionPrjOp (ifView, leftMost, singleView),
+    UnionMergeable1 (mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (pattern Con)
+import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
+import Grisette.Core.Data.Class.UnionLike
+  ( UnionLike (ifView, singleView),
+  )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( AllSyms (allSymsS),
     SomeSym (SomeSym),
@@ -81,17 +81,31 @@ data Union a
     UnionSingle a
   | -- | A if value
     UnionIf
+      -- | Cached leftmost value
       a
-      -- ^ Cached leftmost value
+      -- | Is merged invariant already maintained?
       !Bool
-      -- ^ Is merged invariant already maintained?
+      -- | If condition
       !SymBool
-      -- ^ If condition
+      -- | True branch
       (Union a)
-      -- ^ True branch
+      -- | False branch
       (Union a)
-      -- ^ False branch
   deriving (Generic, Eq, Lift, Generic1)
+  deriving (Functor)
+
+instance Applicative Union where
+  pure = UnionSingle
+  {-# INLINE pure #-}
+  (<*>) = ap
+  {-# INLINE (<*>) #-}
+
+instance Monad Union where
+  return = pure
+  {-# INLINE return #-}
+  UnionSingle a >>= f = f a
+  UnionIf _ _ c t f >>= f' = ifWithLeftMost False c (t >>= f') (f >>= f')
+  {-# INLINE (>>=) #-}
 
 instance Eq1 Union where
   liftEq e (UnionSingle a) (UnionSingle b) = e a b
@@ -122,16 +136,18 @@ ifWithLeftMost _ (Con c) t f
 ifWithLeftMost inv cond t f = UnionIf (leftMost t) inv cond t f
 {-# INLINE ifWithLeftMost #-}
 
-instance UnionPrjOp Union where
+instance UnionLike Union where
   singleView (UnionSingle a) = Just a
   singleView _ = Nothing
   {-# INLINE singleView #-}
   ifView (UnionIf _ _ cond ifTrue ifFalse) = Just (cond, ifTrue, ifFalse)
   ifView _ = Nothing
   {-# INLINE ifView #-}
-  leftMost (UnionSingle a) = a
-  leftMost (UnionIf a _ _ _ _) = a
-  {-# INLINE leftMost #-}
+
+leftMost :: Union a -> a
+leftMost (UnionSingle a) = a
+leftMost (UnionIf a _ _ _ _) = a
+{-# INLINE leftMost #-}
 
 instance (Mergeable a) => Mergeable (Union a) where
   rootStrategy = SimpleStrategy $ ifWithStrategy rootStrategy
@@ -147,17 +163,13 @@ instance (Mergeable a) => SimpleMergeable (Union a) where
 instance SimpleMergeable1 Union where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
-instance UnionLike Union where
-  mergeWithStrategy = fullReconstruct
-  {-# INLINE mergeWithStrategy #-}
-  single = UnionSingle
-  {-# INLINE single #-}
-  unionIf = ifWithLeftMost False
-  {-# INLINE unionIf #-}
+instance TryMerge Union where
+  tryMergeWithStrategy = fullReconstruct
+  {-# INLINE tryMergeWithStrategy #-}
+
+instance UnionMergeable1 Union where
   mrgIfWithStrategy = ifWithStrategy
   {-# INLINE mrgIfWithStrategy #-}
-  mrgSingleWithStrategy _ = UnionSingle
-  {-# INLINE mrgSingleWithStrategy #-}
 
 instance Show1 Union where
   liftShowsPrec sp _ i (UnionSingle a) = showsUnaryWith sp "Single" i a
