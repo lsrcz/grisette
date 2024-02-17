@@ -173,7 +173,7 @@ mrgIte2 = liftMrgIte2 mrgIte mrgIte
 class (SimpleMergeable1 u, TryMerge u) => UnionMergeable1 (u :: Type -> Type) where
   -- | Symbolic @if@ control flow with the result merged with some merge strategy.
   --
-  -- >>> mrgIfWithStrategy rootStrategy "a" (mrgSingle "b") (single "c") :: UnionM SymInteger
+  -- >>> mrgIfWithStrategy rootStrategy "a" (mrgPure "b") (return "c") :: UnionM SymInteger
   -- {(ite a b c)}
   --
   -- __Note:__ Be careful to call this directly in your code.
@@ -198,7 +198,7 @@ merge = mergeWithStrategy rootStrategy
 --
 -- Equivalent to @'mrgIfWithStrategy' 'rootStrategy'@.
 --
--- >>> mrgIf "a" (single "b") (single "c") :: UnionM SymInteger
+-- >>> mrgIf "a" (return "b") (return "c") :: UnionM SymInteger
 -- {(ite a b c)}
 mrgIf :: (UnionMergeable1 u, Mergeable a) => SymBool -> u a -> u a -> u a
 mrgIf = mrgIfWithStrategy rootStrategy
