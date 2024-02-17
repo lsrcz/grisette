@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 
 module Grisette.Core.Data.Class.TryMerge
@@ -14,7 +15,8 @@ where
 import Control.Monad.Cont (ContT (ContT))
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
-  ( IdentityT (IdentityT),
+  ( Identity,
+    IdentityT (IdentityT),
   )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
@@ -24,6 +26,8 @@ import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Data.Functor.Sum (Sum (InL, InR))
+import qualified Data.Monoid as Monoid
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -105,22 +109,17 @@ instance (Mergeable e, TryMerge m) => TryMerge (ExceptT e m) where
   {-# INLINE tryMergeWithStrategy #-}
 
 instance (TryMerge m) => TryMerge (ReaderT r m) where
-  tryMergeWithStrategy strategy (ReaderT f) = ReaderT $ \v -> tryMergeWithStrategy strategy $ f v
+  tryMergeWithStrategy strategy (ReaderT f) =
+    ReaderT $ \v -> tryMergeWithStrategy strategy $ f v
   {-# INLINE tryMergeWithStrategy #-}
 
-instance
-  (Mergeable s, TryMerge m) =>
-  TryMerge (StateLazy.StateT s m)
-  where
+instance (Mergeable s, TryMerge m) => TryMerge (StateLazy.StateT s m) where
   tryMergeWithStrategy strategy (StateLazy.StateT f) =
     StateLazy.StateT $
       \s -> tryMergeWithStrategy (liftRootStrategy2 strategy rootStrategy) (f s)
   {-# INLINE tryMergeWithStrategy #-}
 
-instance
-  (Mergeable s, TryMerge m) =>
-  TryMerge (StateStrict.StateT s m)
-  where
+instance (Mergeable s, TryMerge m) => TryMerge (StateStrict.StateT s m) where
   tryMergeWithStrategy strategy (StateStrict.StateT f) =
     StateStrict.StateT $
       \s -> tryMergeWithStrategy (liftRootStrategy2 strategy rootStrategy) (f s)
@@ -169,12 +168,44 @@ instance
   {-# INLINE tryMergeWithStrategy #-}
 
 instance (TryMerge m) => TryMerge (IdentityT m) where
-  tryMergeWithStrategy strategy (IdentityT ma) = IdentityT $ tryMergeWithStrategy strategy ma
+  tryMergeWithStrategy strategy (IdentityT ma) =
+    IdentityT $ tryMergeWithStrategy strategy ma
   {-# INLINE tryMergeWithStrategy #-}
 
 instance (TryMerge m, Mergeable r) => TryMerge (ContT r m) where
-  tryMergeWithStrategy _ (ContT ma) = ContT $ \c -> tryMergeWithStrategy rootStrategy (ma c)
+  tryMergeWithStrategy _ (ContT ma) =
+    ContT $ \c -> tryMergeWithStrategy rootStrategy (ma c)
   {-# INLINE tryMergeWithStrategy #-}
 
 -- | Alias for a monad type that has 'TryMerge'.
 type MonadTryMerge f = (TryMerge f, Monad f)
+
+#define TRYMERGE_ID(T) \
+  instance TryMerge (T) where { \
+    tryMergeWithStrategy _ = id; {-# INLINE tryMergeWithStrategy #-} \
+  }
+
+#if 1
+TRYMERGE_ID(Either a)
+TRYMERGE_ID(Maybe)
+TRYMERGE_ID(Identity)
+TRYMERGE_ID([])
+TRYMERGE_ID((,) a)
+TRYMERGE_ID((,,) a b)
+TRYMERGE_ID((,,,) a b c)
+TRYMERGE_ID((,,,,) a b c d)
+TRYMERGE_ID((,,,,,) a b c d e)
+TRYMERGE_ID((,,,,,,) a b c d e f)
+TRYMERGE_ID((,,,,,,,) a b c d e f g)
+TRYMERGE_ID((,,,,,,,,) a b c d e f g h)
+#endif
+
+instance (TryMerge f, TryMerge g) => TryMerge (Sum f g) where
+  tryMergeWithStrategy strategy (InL fa) =
+    InL $ tryMergeWithStrategy strategy fa
+  tryMergeWithStrategy strategy (InR fa) =
+    InR $ tryMergeWithStrategy strategy fa
+
+instance TryMerge Monoid.Sum where
+  tryMergeWithStrategy _ = id
+  {-# INLINE tryMergeWithStrategy #-}
