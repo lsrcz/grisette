@@ -920,7 +920,7 @@ derivedSimpleFreshConstrainedSameShape ::
     Mergeable a,
     MonadFresh m,
     MonadError e m,
-    MonadUnion  m
+    MonadUnion m
   ) =>
   e ->
   a ->

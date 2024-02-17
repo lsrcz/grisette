@@ -58,11 +58,11 @@ import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.PlainUnion
   ( PlainUnion,
     simpleMerge,
   )
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
   )
