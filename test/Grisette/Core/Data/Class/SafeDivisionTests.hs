@@ -76,7 +76,7 @@ testType ::
   forall t.
   ( NFData t,
     Show t,
-    SafeDivision t (Either ArithException),
+    SafeDivision ArithException t (Either ArithException),
     Integral t,
     Typeable t
   ) =>
@@ -87,12 +87,12 @@ testType ::
 testType divQuotTest modRemTest p =
   testGroup
     (show $ typeRep p)
-    [ divQuotTest "div" (safeDiv @t) div,
-      modRemTest "mod" (safeMod @t) mod,
-      divQuotTest "divMod" (safeDivMod @t) divMod,
-      divQuotTest "quot" (safeQuot @t) quot,
-      modRemTest "rem" (safeRem @t) rem,
-      modRemTest "quotRem" (safeQuotRem @t) quotRem
+    [ divQuotTest "div" safeDiv (div @t),
+      modRemTest "mod" safeMod (mod @t),
+      divQuotTest "divMod" safeDivMod (divMod @t),
+      divQuotTest "quot" safeQuot (quot @t),
+      modRemTest "rem" safeRem (rem @t),
+      modRemTest "quotRem" safeQuotRem (quotRem @t)
     ]
 
 safeDivisionTests :: Test
