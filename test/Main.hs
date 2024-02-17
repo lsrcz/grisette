@@ -49,6 +49,7 @@ import Grisette.Lib.Control.Monad.State.ClassTests
 import Grisette.Lib.Control.Monad.Trans.ClassTests
   ( monadTransClassTests,
   )
+import Grisette.Lib.Control.Monad.Trans.ExceptTests (exceptTests)
 import Grisette.Lib.Control.Monad.Trans.State.LazyTests
   ( monadTransStateLazyTests,
   )
@@ -125,7 +126,8 @@ libTests =
                 ],
               testGroup
                 "Trans"
-                [ monadTransClassTests,
+                [ exceptTests,
+                  monadTransClassTests,
                   testGroup
                     "State"
                     [ monadTransStateLazyTests,

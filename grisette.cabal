@@ -128,6 +128,7 @@ library
       Grisette.Lib.Control.Monad.Trans
       Grisette.Lib.Control.Monad.Trans.Class
       Grisette.Lib.Control.Monad.Trans.Cont
+      Grisette.Lib.Control.Monad.Trans.Except
       Grisette.Lib.Control.Monad.Trans.State
       Grisette.Lib.Control.Monad.Trans.State.Lazy
       Grisette.Lib.Control.Monad.Trans.State.Strict
@@ -253,6 +254,7 @@ test-suite spec
       Grisette.Lib.Control.Monad.ExceptTests
       Grisette.Lib.Control.Monad.State.ClassTests
       Grisette.Lib.Control.Monad.Trans.ClassTests
+      Grisette.Lib.Control.Monad.Trans.ExceptTests
       Grisette.Lib.Control.Monad.Trans.State.Common
       Grisette.Lib.Control.Monad.Trans.State.LazyTests
       Grisette.Lib.Control.Monad.Trans.State.StrictTests

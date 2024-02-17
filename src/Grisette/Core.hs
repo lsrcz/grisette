@@ -909,6 +909,7 @@ module Grisette.Core
     --
     -- >>> :set -XLambdaCase -XDeriveGeneric -XDerivingStrategies -XDerivingVia
     -- >>> import Control.Monad.Except
+    -- >>> import Grisette.Lib.Control.Monad.Trans.Except
     -- >>> import Control.Exception
     -- >>> import GHC.Generics
     -- >>> :{
@@ -925,7 +926,7 @@ module Grisette.Core
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
     -- >>> assert = symAssertWith Assert
-    -- >>> sdiv = safeDiv' (const Arith)
+    -- >>> sdiv l r = mrgWithExceptT (\(_::ArithException) -> Arith) $ safeDiv l r
     -- >>> :{
     --   -- equivalent concrete program:
     --   -- let x = x `div` y
