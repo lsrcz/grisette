@@ -4,8 +4,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Grisette.Core.Data.Class.UnionLike
-  ( UnionLike (..),
+module Grisette.Core.Data.Class.PlainUnion
+  ( PlainUnion (..),
     pattern Single,
     pattern If,
     simpleMerge,
@@ -36,9 +36,9 @@ import Grisette.Core.Data.Class.TryMerge
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
--- | Union containers that can be projected back into single value or
+-- | Plain union containers that can be projected back into single value or
 -- if-guarded values.
-class (Applicative u, UnionMergeable1 u) => UnionLike (u :: Type -> Type) where
+class (Applicative u, UnionMergeable1 u) => PlainUnion (u :: Type -> Type) where
   -- | Pattern match to extract single values.
   --
   -- >>> singleView (single 1 :: UnionM Integer)
@@ -74,7 +74,7 @@ class (Applicative u, UnionMergeable1 u) => UnionLike (u :: Type -> Type) where
 --
 -- >>> case (single 1 :: UnionM Integer) of Single v -> v
 -- 1
-pattern Single :: (UnionLike u, Mergeable a) => a -> u a
+pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
 pattern Single x <-
   (singleView -> Just x)
   where
@@ -83,7 +83,7 @@ pattern Single x <-
 -- | Pattern match to extract guard values with 'ifView'
 -- >>> case (unionIf "a" (single 1) (single 2) :: UnionM Integer) of If c t f -> (c,t,f)
 -- (a,<1>,<2>)
-pattern If :: (UnionLike u, Mergeable a) => SymBool -> u a -> u a -> u a
+pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
 pattern If c t f <-
   (ifView -> Just (c, t, f))
   where
@@ -98,7 +98,7 @@ pattern If c t f <-
 -- <If a b c>
 -- >>> simpleMerge $ (unionIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
 -- (ite a b c)
-simpleMerge :: forall u a. (SimpleMergeable a, UnionMergeable1 u, UnionLike u) => u a -> a
+simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
 simpleMerge u = case tryMerge u of
   Single x -> x
   _ -> error "Should not happen"
@@ -110,7 +110,7 @@ simpleMerge u = case tryMerge u of
 -- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
 -- {If (&& b a) 1 (If b 2 (If a 3 4))}
 (.#) ::
-  (Function f, SimpleMergeable (Ret f), UnionLike u, Functor u) =>
+  (Function f, SimpleMergeable (Ret f), PlainUnion u) =>
   f ->
   u (Arg f) ->
   Ret f
@@ -126,7 +126,7 @@ infixl 9 .#
 -- (ite cond a (+ b c))
 onUnion ::
   forall u a r.
-  (SimpleMergeable r, UnionMergeable1 u, UnionLike u, Monad u, Mergeable a) =>
+  (SimpleMergeable r, UnionMergeable1 u, PlainUnion u, Mergeable a) =>
   (a -> r) ->
   (u a -> r)
 onUnion f = simpleMerge . fmap f . tryMerge
@@ -136,8 +136,7 @@ onUnion2 ::
   forall u a b r.
   ( SimpleMergeable r,
     UnionMergeable1 u,
-    UnionLike u,
-    Monad u,
+    PlainUnion u,
     Mergeable a,
     Mergeable b
   ) =>
@@ -150,8 +149,7 @@ onUnion3 ::
   forall u a b c r.
   ( SimpleMergeable r,
     UnionMergeable1 u,
-    UnionLike u,
-    Monad u,
+    PlainUnion u,
     Mergeable a,
     Mergeable b,
     Mergeable c
@@ -166,8 +164,7 @@ onUnion4 ::
   forall u a b c d r.
   ( SimpleMergeable r,
     UnionMergeable1 u,
-    UnionLike u,
-    Monad u,
+    PlainUnion u,
     Mergeable a,
     Mergeable b,
     Mergeable c,

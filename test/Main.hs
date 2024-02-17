@@ -17,6 +17,7 @@ import Grisette.Core.Data.Class.ExtractSymbolicsTests (extractSymbolicsTests)
 import Grisette.Core.Data.Class.GPrettyTests (gprettyTests)
 import Grisette.Core.Data.Class.GenSymTests (genSymTests)
 import Grisette.Core.Data.Class.MergeableTests (mergeableTests)
+import Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests)
 import Grisette.Core.Data.Class.SEqTests (seqTests)
 import Grisette.Core.Data.Class.SOrdTests (sordTests)
 import Grisette.Core.Data.Class.SafeSymRotateTests (safeSymRotateTests)
@@ -28,7 +29,6 @@ import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
-import Grisette.Core.Data.Class.UnionLikeTests (unionLikeTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BoolTests
@@ -93,6 +93,7 @@ coreTests =
               genSymTests,
               gprettyTests,
               mergeableTests,
+              plainUnionTests,
               safeSymShiftTests,
               safeSymRotateTests,
               seqTests,
@@ -103,8 +104,7 @@ coreTests =
               symShiftTests,
               toConTests,
               toSymTests,
-              tryMergeTests,
-              unionLikeTests
+              tryMergeTests
             ],
           Grisette.Core.Data.BVTests.bvTests
         ]

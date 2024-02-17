@@ -56,6 +56,9 @@ import Grisette.Core.Control.Monad.UnionM (UnionM, liftToMonadUnion)
 import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.PlainUnion
+  ( simpleMerge,
+  )
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)), SEq' ((..==)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
@@ -64,9 +67,6 @@ import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
   ( mrgPure,
     tryMerge,
-  )
-import Grisette.Core.Data.Class.UnionLike
-  ( simpleMerge,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalGeNumTerm,
@@ -117,7 +117,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
 -- (<= b a)
 --
 -- For `symCompare`, `Ordering` is not a solvable type, and the result would
--- be wrapped in a union-like monad. See `Grisette.Core.Control.Monad.UnionMBase` and `UnionLike` for more
+-- be wrapped in a union-like monad. See `Grisette.Core.Control.Monad.UnionMBase` and `PlainUnion` for more
 -- information.
 --
 -- >>> a `symCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool
