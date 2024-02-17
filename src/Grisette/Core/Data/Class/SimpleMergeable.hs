@@ -30,6 +30,8 @@ module Grisette.Core.Data.Class.SimpleMergeable
     mrgIte2,
     UnionMergeable1 (..),
     mrgIf,
+    mergeWithStrategy,
+    merge,
   )
 where
 
@@ -68,7 +70,7 @@ import Grisette.Core.Data.Class.Mergeable
     Mergeable3 (liftRootStrategy3),
     MergingStrategy (SimpleStrategy),
   )
-import Grisette.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -182,6 +184,15 @@ class (SimpleMergeable1 u, TryMerge u) => UnionMergeable1 (u :: Type -> Type) wh
   -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
   -- In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
+
+mergeWithStrategy :: (UnionMergeable1 m) => MergingStrategy a -> m a -> m a
+mergeWithStrategy = tryMergeWithStrategy
+{-# INLINE mergeWithStrategy #-}
+
+-- | Try to merge the container with the root strategy.
+merge :: (UnionMergeable1 m, Mergeable a) => m a -> m a
+merge = mergeWithStrategy rootStrategy
+{-# INLINE merge #-}
 
 -- | Symbolic @if@ control flow with the result merged with the type's root merge strategy.
 --

@@ -598,6 +598,8 @@ module Grisette.Core
     mrgIte2,
     UnionMergeable1 (..),
     mrgIf,
+    mergeWithStrategy,
+    merge,
 
     -- **** TryMerge operations
     MonadTryMerge,
@@ -1207,6 +1209,8 @@ import Grisette.Core.Data.Class.SimpleMergeable
     SimpleMergeable1 (..),
     SimpleMergeable2 (..),
     UnionMergeable1 (..),
+    merge,
+    mergeWithStrategy,
     mrgIf,
     mrgIte1,
     mrgIte2,
