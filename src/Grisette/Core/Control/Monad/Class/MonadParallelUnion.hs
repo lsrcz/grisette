@@ -24,8 +24,8 @@ import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (UnionMergeable1)
 import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
 -- | Parallel union monad.
@@ -41,7 +41,7 @@ import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 -- >   return $ x + 1
 -- >
 -- > -- {If a 2 3}
-class (Monad m, UnionMergeable1 m, TryMerge m) => MonadParallelUnion m where
+class (MonadUnion m, TryMerge m) => MonadParallelUnion m where
   parBindUnion :: (Mergeable b, NFData b) => m a -> (a -> m b) -> m b
 
 instance (MonadParallelUnion m) => MonadParallelUnion (MaybeT m) where
