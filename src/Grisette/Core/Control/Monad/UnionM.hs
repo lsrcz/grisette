@@ -124,6 +124,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 
 -- $setup
 -- >>> import Grisette.Core
+-- >>> import Grisette.Core.Control.Monad.UnionM
 -- >>> import Grisette.IR.SymPrim
 -- >>> :set -XScopedTypeVariables
 
@@ -192,22 +193,24 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> mrgReturn 1 :: UnionM Integer
 -- {1}
 --
--- 'unionIf' cannot resolve the 'Mergeable' constraint.
+-- 'mergePropagatedIf' cannot resolve the 'Mergeable' constraint.
 --
--- >>> unionIf "a" (return 1) (unionIf "b" (return 1) (return 2)) :: UnionM Integer
+-- >>> mergePropagatedIf "a" (return 1) (mergePropagatedIf "b" (return 1) (return 2)) :: UnionM Integer
 -- <If a 1 (If b 1 2)>
 --
--- But 'unionIf' is able to merge the result if some of the branches are merged:
+-- But 'mergePropagatedIf' is able to merge the result if some of the branches
+-- are merged:
 --
--- >>> unionIf "a" (return 1) (unionIf "b" (mrgReturn 1) (return 2)) :: UnionM Integer
+-- >>> mergePropagatedIf "a" (return 1) (mergePropagatedIf "b" (mrgReturn 1) (return 2)) :: UnionM Integer
 -- {If (|| a b) 1 2}
 --
--- The '>>=' operator uses 'unionIf' internally. When the final statement in a do-block
--- merges the values, the system can then merge the final result.
+-- The '>>=' operator uses 'mergePropagatedIf' internally. When the final
+-- statement in a do-block merges the values, the system can then merge the
+-- final result.
 --
 -- >>> :{
 --   do
---     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
+--     x <- mergePropagatedIf (ssym "a") (return 1) (mergePropagatedIf (ssym "b") (return 1) (return 2))
 --     mrgPure $ x + 1 :: UnionM Integer
 -- :}
 -- {If (|| a b) 2 3}
@@ -220,7 +223,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> f x y = mrgIf "c" x y
 -- >>> :{
 --   do
---     x <- unionIf (ssym "a") (return 1) (unionIf (ssym "b") (return 1) (return 2))
+--     x <- mergePropagatedIf (ssym "a") (return 1) (mergePropagatedIf (ssym "b") (return 1) (return 2))
 --     f x (x + 1) :: UnionM Integer
 -- :}
 -- {If (&& c (|| a b)) 1 (If (|| a (|| b c)) 2 3)}
@@ -609,9 +612,9 @@ instance UnionWithExcept (UnionM (Either e v)) UnionM e v where
 -- | The size of a union is defined as the number of branches.
 -- For example,
 --
--- >>> unionSize (single True)
+-- >>> unionSize (return True)
 -- 1
--- >>> unionSize (mrgIf "a" (single 1) (single 2) :: UnionM Integer)
+-- >>> unionSize (mrgIf "a" (return 1) (return 2) :: UnionM Integer)
 -- 2
 -- >>> unionSize (choose [1..7] "a" :: UnionM Integer)
 -- 7

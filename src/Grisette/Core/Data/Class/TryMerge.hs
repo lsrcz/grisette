@@ -36,6 +36,10 @@ import Grisette.Core.Data.Class.Mergeable
     MergingStrategy,
   )
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+
 -- | A class for containers that may or may not be merged.
 --
 -- If the container is capable of multi-path execution, then the

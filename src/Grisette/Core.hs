@@ -229,8 +229,8 @@ module Grisette.Core
     --
     -- >>> :{
     --   ret :: UnionM [SymInteger]
-    --   ret = do x <- mrgIf "a" (single ["b"]) (single ["b","c"])
-    --            y <- mrgIf "d" (single ["e"]) (single ["e","f"])
+    --   ret = do x <- mrgIf "a" (return ["b"]) (return ["b","c"])
+    --            y <- mrgIf "d" (return ["e"]) (return ["e","f"])
     --            mrgReturn $ x ++ y -- we will explain mrgReturn later
     -- :}
     --
