@@ -7,9 +7,6 @@ module Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests) where
 import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.TryMerge (mrgPure)
 import Grisette.Core.Data.Class.PlainUnion
   ( onUnion,
     simpleMerge,
@@ -17,6 +14,9 @@ import Grisette.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Core.Data.Class.TryMerge (mrgPure)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
