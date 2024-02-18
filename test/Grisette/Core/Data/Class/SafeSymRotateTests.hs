@@ -34,7 +34,7 @@ import Test.QuickCheck (Arbitrary, ioProperty)
 import Test.QuickCheck.Gen (chooseInt)
 import Test.QuickCheck.Property (forAll)
 
-type EM a = ExceptT ArithException UnionM a
+type EM = ExceptT ArithException UnionM
 
 overflowError :: (Mergeable a) => EM a
 overflowError = mrgThrowError Overflow
@@ -45,7 +45,7 @@ concreteTypeSafeSymRotateTests ::
     Show a,
     Num a,
     Eq a,
-    SafeSymRotate ArithException a,
+    SafeSymRotate ArithException a EM,
     FiniteBits a,
     Bounded a,
     Typeable a,
@@ -75,7 +75,7 @@ concreteSignedAtLeastThreeBitsTypeSafeSymRotateTests ::
     Show a,
     Num a,
     Eq a,
-    SafeSymRotate ArithException a,
+    SafeSymRotate ArithException a EM,
     FiniteBits a,
     Bounded a,
     Typeable a,
@@ -101,7 +101,7 @@ concreteUnsignedSymTypeSafeSymRotateTests ::
     Show s,
     Num s,
     Eq s,
-    SafeSymRotate ArithException s,
+    SafeSymRotate ArithException s EM,
     FiniteBits c,
     FiniteBits s,
     Bounded c,
@@ -134,7 +134,7 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymRotateTests ::
     Show s,
     Num s,
     Eq s,
-    SafeSymRotate ArithException s,
+    SafeSymRotate ArithException s EM,
     FiniteBits c,
     FiniteBits s,
     Bounded c,
