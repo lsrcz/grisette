@@ -4,8 +4,8 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
@@ -34,7 +34,7 @@ import Grisette.Core.Data.Class.SOrd
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
-import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalShiftLeftTerm,
     pevalShiftRightTerm,
@@ -45,8 +45,8 @@ import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe version for `shiftL` or `shiftR`.
 --
--- The `safeSymShiftL` and `safeSymShiftR` and their primed versions are defined
--- for all non-negative shift amounts.
+-- The `safeSymShiftL` and `safeSymShiftR` are defined for all non-negative
+-- shift amounts.
 --
 -- * Shifting by negative shift amounts is an error.
 -- * The result is defined to be 0 when shifting left by more than or equal to
@@ -56,70 +56,56 @@ import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 -- * The result is defined to be -1 when shifting right by more than or equal to
 -- the bit size of the number and the number is signed negative.
 --
--- The `safeSymStrictShiftL` and `safeSymStrictShiftR` and their primed versions
--- are defined for all non-negative shift amounts that is less than the bit
--- size. Shifting by more than or equal to the bit size is an error, otherwise
--- they are the same as the non-strict versions.
-class (SymShift a) => SafeSymShift e a | a -> e where
-  safeSymShiftL :: (MonadError e m, MonadUnion m) => a -> a -> m a
-  safeSymShiftL = safeSymShiftL' id
-  safeSymShiftR :: (MonadError e m, MonadUnion m) => a -> a -> m a
-  safeSymShiftR = safeSymShiftR' id
-  safeSymShiftL' ::
-    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
-  safeSymShiftR' ::
-    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
-  safeSymStrictShiftL :: (MonadError e m, MonadUnion m) => a -> a -> m a
-  safeSymStrictShiftL = safeSymStrictShiftL' id
-  safeSymStrictShiftR :: (MonadError e m, MonadUnion m) => a -> a -> m a
-  safeSymStrictShiftR = safeSymStrictShiftR' id
-  safeSymStrictShiftL' ::
-    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
-  safeSymStrictShiftR' ::
-    (MonadError e' m, MonadUnion m) => (e -> e') -> a -> a -> m a
-  {-# MINIMAL
-    safeSymShiftL',
-    safeSymShiftR',
-    safeSymStrictShiftL',
-    safeSymStrictShiftR'
-    #-}
+-- The `safeSymStrictShiftL` and `safeSymStrictShiftR` are defined for all
+-- non-negative shift amounts that is less than the bit size. Shifting by more
+-- than or equal to the bit size is an error, otherwise they are the same as the
+-- non-strict versions.
+class (MonadError e m, TryMerge m, Mergeable a) => SafeSymShift e a m where
+  safeSymShiftL :: a -> a -> m a
+  safeSymShiftR :: a -> a -> m a
+  safeSymStrictShiftL :: a -> a -> m a
+  safeSymStrictShiftR :: a -> a -> m a
 
 -- | This function handles the case when the shift amount is out the range of
 -- `Int` correctly.
 safeSymShiftLConcreteNum ::
-  (MonadError e m, MonadUnion m, Integral a, FiniteBits a, Mergeable a) =>
-  e ->
+  (MonadError ArithException m, TryMerge m, Integral a, FiniteBits a, Mergeable a) =>
   Bool ->
   a ->
   a ->
   m a
-safeSymShiftLConcreteNum e _ _ s | s < 0 = mrgThrowError e
-safeSymShiftLConcreteNum e allowLargeShiftAmount a s
+safeSymShiftLConcreteNum _ _ s | s < 0 = mrgThrowError Overflow
+safeSymShiftLConcreteNum allowLargeShiftAmount a s
   | (fromIntegral s :: Integer) >= fromIntegral (finiteBitSize a) =
-      if allowLargeShiftAmount then mrgReturn 0 else mrgThrowError e
-safeSymShiftLConcreteNum _ _ a s = mrgReturn $ shiftL a (fromIntegral s)
+      if allowLargeShiftAmount then mrgReturn 0 else mrgThrowError Overflow
+safeSymShiftLConcreteNum _ a s = mrgReturn $ shiftL a (fromIntegral s)
 
 -- | This function handles the case when the shift amount is out the range of
 -- `Int` correctly.
 safeSymShiftRConcreteNum ::
-  (MonadError e m, MonadUnion m, Integral a, FiniteBits a, Mergeable a) =>
-  e ->
+  ( MonadError ArithException m,
+    TryMerge m,
+    Integral a,
+    FiniteBits a,
+    Mergeable a
+  ) =>
   Bool ->
   a ->
   a ->
   m a
-safeSymShiftRConcreteNum e _ _ s | s < 0 = mrgThrowError e
-safeSymShiftRConcreteNum e allowLargeShiftAmount a s
+safeSymShiftRConcreteNum _ _ s | s < 0 = mrgThrowError Overflow
+safeSymShiftRConcreteNum allowLargeShiftAmount a s
   | (fromIntegral s :: Integer) >= fromIntegral (finiteBitSize a) =
-      if allowLargeShiftAmount then mrgReturn 0 else mrgThrowError e
-safeSymShiftRConcreteNum _ _ a s = mrgReturn $ shiftR a (fromIntegral s)
+      if allowLargeShiftAmount then mrgReturn 0 else mrgThrowError Overflow
+safeSymShiftRConcreteNum _ a s = mrgReturn $ shiftR a (fromIntegral s)
 
 #define SAFE_SYM_SHIFT_CONCRETE(T) \
-  instance SafeSymShift ArithException T where \
-    safeSymShiftL' f = safeSymShiftLConcreteNum (f Overflow) True; \
-    safeSymShiftR' f = safeSymShiftRConcreteNum (f Overflow) True; \
-    safeSymStrictShiftL' f = safeSymShiftLConcreteNum (f Overflow) False; \
-    safeSymStrictShiftR' f = safeSymShiftRConcreteNum (f Overflow) False
+  instance (MonadError ArithException m, TryMerge m) => \
+    SafeSymShift ArithException T m where \
+    safeSymShiftL = safeSymShiftLConcreteNum True; \
+    safeSymShiftR = safeSymShiftRConcreteNum True; \
+    safeSymStrictShiftL = safeSymShiftLConcreteNum False; \
+    safeSymStrictShiftR = safeSymShiftRConcreteNum False
 
 #if 1
 SAFE_SYM_SHIFT_CONCRETE(Word8)
@@ -134,56 +120,68 @@ SAFE_SYM_SHIFT_CONCRETE(Int64)
 SAFE_SYM_SHIFT_CONCRETE(Int)
 #endif
 
-instance (KnownNat n, 1 <= n) => SafeSymShift ArithException (WordN n) where
-  safeSymShiftL' f = safeSymShiftLConcreteNum (f Overflow) True
-  safeSymShiftR' f = safeSymShiftRConcreteNum (f Overflow) True
-  safeSymStrictShiftL' f = safeSymShiftLConcreteNum (f Overflow) False
-  safeSymStrictShiftR' f = safeSymShiftRConcreteNum (f Overflow) False
+instance
+  (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) =>
+  SafeSymShift ArithException (WordN n) m
+  where
+  safeSymShiftL = safeSymShiftLConcreteNum True
+  safeSymShiftR = safeSymShiftRConcreteNum True
+  safeSymStrictShiftL = safeSymShiftLConcreteNum False
+  safeSymStrictShiftR = safeSymShiftRConcreteNum False
 
-instance (KnownNat n, 1 <= n) => SafeSymShift ArithException (IntN n) where
-  safeSymShiftL' f = safeSymShiftLConcreteNum (f Overflow) True
-  safeSymShiftR' f = safeSymShiftRConcreteNum (f Overflow) True
-  safeSymStrictShiftL' f = safeSymShiftLConcreteNum (f Overflow) False
-  safeSymStrictShiftR' f = safeSymShiftRConcreteNum (f Overflow) False
+instance
+  (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) =>
+  SafeSymShift ArithException (IntN n) m
+  where
+  safeSymShiftL = safeSymShiftLConcreteNum True
+  safeSymShiftR = safeSymShiftRConcreteNum True
+  safeSymStrictShiftL = safeSymShiftLConcreteNum False
+  safeSymStrictShiftR = safeSymShiftRConcreteNum False
 
-instance (KnownNat n, 1 <= n) => SafeSymShift ArithException (SymWordN n) where
-  safeSymShiftL' _ (SymWordN a) (SymWordN s) =
+instance
+  (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
+  SafeSymShift ArithException (SymWordN n) m
+  where
+  safeSymShiftL (SymWordN a) (SymWordN s) =
     return $ SymWordN $ pevalShiftLeftTerm a s
-  safeSymShiftR' _ (SymWordN a) (SymWordN s) =
+  safeSymShiftR (SymWordN a) (SymWordN s) =
     return $ SymWordN $ pevalShiftRightTerm a s
-  safeSymStrictShiftL' f a@(SymWordN ta) s@(SymWordN ts) =
+  safeSymStrictShiftL a@(SymWordN ta) s@(SymWordN ts) =
     mrgIf
       (s .>= fromIntegral (finiteBitSize a))
-      (mrgThrowError $ f Overflow)
+      (mrgThrowError Overflow)
       (return $ SymWordN $ pevalShiftLeftTerm ta ts)
-  safeSymStrictShiftR' f a@(SymWordN ta) s@(SymWordN ts) =
+  safeSymStrictShiftR a@(SymWordN ta) s@(SymWordN ts) =
     mrgIf
       (s .>= fromIntegral (finiteBitSize a))
-      (mrgThrowError $ f Overflow)
+      (mrgThrowError Overflow)
       (return $ SymWordN $ pevalShiftRightTerm ta ts)
 
-instance (KnownNat n, 1 <= n) => SafeSymShift ArithException (SymIntN n) where
-  safeSymShiftL' f (SymIntN a) ss@(SymIntN s) =
+instance
+  (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
+  SafeSymShift ArithException (SymIntN n) m
+  where
+  safeSymShiftL (SymIntN a) ss@(SymIntN s) =
     mrgIf
       (ss .< 0)
-      (mrgThrowError $ f Overflow)
+      (mrgThrowError Overflow)
       (return $ SymIntN $ pevalShiftLeftTerm a s)
-  safeSymShiftR' f (SymIntN a) ss@(SymIntN s) =
+  safeSymShiftR (SymIntN a) ss@(SymIntN s) =
     mrgIf
       (ss .< 0)
-      (mrgThrowError $ f Overflow)
+      (mrgThrowError Overflow)
       (return $ SymIntN $ pevalShiftRightTerm a s)
-  safeSymStrictShiftL' f a@(SymIntN ta) s@(SymIntN ts) =
+  safeSymStrictShiftL a@(SymIntN ta) s@(SymIntN ts) =
     mrgIf
       (s .< 0 .|| (bs .>= 0 .&& s .>= bs))
-      (mrgThrowError $ f Overflow)
+      (mrgThrowError Overflow)
       (return $ SymIntN $ pevalShiftLeftTerm ta ts)
     where
       bs = fromIntegral (finiteBitSize a)
-  safeSymStrictShiftR' f a@(SymIntN ta) s@(SymIntN ts) =
+  safeSymStrictShiftR a@(SymIntN ta) s@(SymIntN ts) =
     mrgIf
       (s .< 0 .|| (bs .>= 0 .&& s .>= bs))
-      (mrgThrowError $ f Overflow)
+      (mrgThrowError Overflow)
       (return $ SymIntN $ pevalShiftRightTerm ta ts)
     where
       bs = fromIntegral (finiteBitSize a)
