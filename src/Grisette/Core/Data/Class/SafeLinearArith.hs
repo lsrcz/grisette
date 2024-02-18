@@ -2,8 +2,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
@@ -13,7 +13,7 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SafeLinearArith
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -50,7 +50,8 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( TryMerge,
+    mrgPure,
     tryMerge,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
@@ -58,6 +59,8 @@ import Grisette.IR.SymPrim.Data.SymPrim
     SymInteger,
     SymWordN,
   )
+import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -67,7 +70,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
 -- | Safe division with monadic error handling in multi-path
 -- execution. These procedures throw an exception when overflow or underflow happens.
 -- The result should be able to handle errors with `MonadError`.
-class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeLinearArith e a | a -> e where
+class (MonadError e m, TryMerge m, Mergeable a) => SafeLinearArith e a m where
   -- | Safe '+' with monadic error handling in multi-path execution.
   -- Overflows or underflows are treated as errors.
   --
@@ -75,7 +78,7 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeLinearArith e a | a -> e 
   -- ExceptT {Right (+ a b)}
   -- >>> safeAdd (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymIntN 4)
   -- ExceptT {If (ite (< 0x0 a) (&& (< 0x0 b) (< (+ a b) 0x0)) (&& (< a 0x0) (&& (< b 0x0) (<= 0x0 (+ a b))))) (If (< 0x0 a) (Left arithmetic overflow) (Left arithmetic underflow)) (Right (+ a b))}
-  safeAdd :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
+  safeAdd :: a -> a -> m a
 
   -- | Safe 'negate' with monadic error handling in multi-path execution.
   -- Overflows or underflows are treated as errors.
@@ -84,124 +87,93 @@ class (SOrd a, Num a, Mergeable a, Mergeable e) => SafeLinearArith e a | a -> e 
   -- ExceptT {Right (- a)}
   -- >>> safeNeg (ssym "a") :: ExceptT ArithException UnionM (SymIntN 4)
   -- ExceptT {If (= a 0x8) (Left arithmetic overflow) (Right (- a))}
-  safeNeg :: (MonadError e uf, MonadUnion uf) => a -> uf a
+  safeNeg :: a -> m a
 
   -- | Safe '-' with monadic error handling in multi-path execution.
   -- Overflows or underflows are treated as errors.
   --
-  -- >>> safeMinus (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
+  -- >>> safeSub (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
   -- ExceptT {Right (+ a (- b))}
-  -- >>> safeMinus (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymIntN 4)
+  -- >>> safeSub (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymIntN 4)
   -- ExceptT {If (ite (<= 0x0 a) (&& (< b 0x0) (< (+ a (- b)) 0x0)) (&& (< a 0x0) (&& (< 0x0 b) (< 0x0 (+ a (- b)))))) (If (<= 0x0 a) (Left arithmetic overflow) (Left arithmetic underflow)) (Right (+ a (- b)))}
-  safeMinus :: (MonadError e uf, MonadUnion uf) => a -> a -> uf a
+  safeSub :: a -> a -> m a
 
-  -- | Safe '+' with monadic error handling in multi-path execution.
-  -- Overflows or underflows are treated as errors.
-  -- The error is transformed.
-  safeAdd' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
-
-  -- | Safe 'negate' with monadic error handling in multi-path execution.
-  -- Overflows or underflows are treated as errors.
-  -- The error is transformed.
-  safeNeg' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> uf a
-
-  -- | Safe '-' with monadic error handling in multi-path execution.
-  -- Overflows or underflows are treated as errors.
-  -- The error is transformed.
-  safeMinus' :: (MonadError e' uf, MonadUnion uf, Mergeable e') => (e -> e') -> a -> a -> uf a
-
-instance SafeLinearArith ArithException Integer where
+instance
+  (MonadError ArithException m, TryMerge m) =>
+  SafeLinearArith ArithException Integer m
+  where
   safeAdd l r = mrgPure (l + r)
   safeNeg l = mrgPure (-l)
-  safeMinus l r = mrgPure (l - r)
-  safeAdd' _ l r = mrgPure (l + r)
-  safeNeg' _ l = mrgPure (-l)
-  safeMinus' _ l r = mrgPure (l - r)
+  safeSub l r = mrgPure (l - r)
 
 #define SAFE_LINARITH_SIGNED_CONCRETE_BODY \
   safeAdd l r = let res = l + r in \
-    mrgIf (con $ l > 0 && r > 0 && res < 0) \
-          (throwError Overflow) \
-          (mrgIf (con $ l < 0 && r < 0 && res >= 0) \
-                 (throwError Underflow) \
-                 (return res));\
-  safeAdd' t' l r = let res = l + r in \
-    mrgIf (con $ l > 0 && r > 0 && res < 0) \
-          (throwError (t' Overflow)) \
-          (mrgIf (con $ l < 0 && r < 0 && res >= 0) \
-                 (throwError (t' Underflow)) \
-                 (return res)); \
-  safeMinus l r = let res = l - r in \
-    mrgIf (con $ l >= 0 && r < 0 && res < 0) \
-          (throwError Overflow) \
-          (mrgIf (con $ l < 0 && r > 0 && res > 0) \
-                 (throwError Underflow) \
-                 (return res));\
-  safeMinus' t' l r = let res = l - r in \
-    mrgIf (con $ l >= 0 && r < 0 && res < 0) \
-          (throwError (t' Overflow)) \
-          (mrgIf (con $ l < 0 && r > 0 && res > 0) \
-                 (throwError (t' Underflow)) \
-                 (return res)); \
-  safeNeg v = mrgIf (con $ v == minBound) (throwError Overflow) (return $ -v);\
-  safeNeg' t' v = mrgIf (con $ v == minBound) (throwError (t' Overflow)) (return $ -v)
+    if l > 0 && r > 0 && res < 0 \
+      then mrgThrowError Overflow \
+      else if l < 0 && r < 0 && res >= 0 \
+        then mrgThrowError Underflow \
+        else mrgReturn res;\
+  safeSub l r = let res = l - r in \
+    if l >= 0 && r < 0 && res < 0 \
+      then mrgThrowError Overflow \
+      else if l < 0 && r > 0 && res > 0 \
+        then mrgThrowError Underflow \
+        else mrgReturn res;\
+  safeNeg v = if v == minBound then mrgThrowError Overflow else mrgReturn $ -v
 
 #define SAFE_LINARITH_SIGNED_CONCRETE(type) \
-instance SafeLinearArith ArithException type where \
+instance \
+  (MonadError ArithException m, TryMerge m) => \
+  SafeLinearArith ArithException type m \
+  where \
   SAFE_LINARITH_SIGNED_CONCRETE_BODY
 
 #define SAFE_LINARITH_SIGNED_BV_CONCRETE(type) \
-instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (type n) where \
+instance \
+  (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) => \
+  SafeLinearArith ArithException (type n) m \
+  where \
   SAFE_LINARITH_SIGNED_CONCRETE_BODY
 
 #define SAFE_LINARITH_UNSIGNED_CONCRETE_BODY \
   safeAdd l r = let res = l + r in \
-    mrgIf (con $ l > res || r > res) \
-          (throwError Overflow) \
-          (return res);\
-  safeAdd' t' l r = let res = l + r in \
-    mrgIf (con $ l > res || r > res) \
-          (throwError (t' Overflow)) \
-          (return res); \
-  safeMinus l r = \
-    mrgIf (con $ r > l) \
-          (throwError Underflow) \
-          (return $ l - r);\
-  safeMinus' t' l r = \
-    mrgIf (con $ r > l) \
-          (throwError $ t' Underflow) \
-          (return $ l - r);\
-  safeNeg v = mrgIf (con $ v /= 0) (throwError Underflow) (return $ -v);\
-  safeNeg' t' v = mrgIf (con $ v /= 0) (throwError (t' Underflow)) (return $ -v)
+    if l > res || r > res \
+      then mrgThrowError Overflow \
+      else mrgReturn res;\
+  safeSub l r = \
+    if r > l \
+      then mrgThrowError Underflow \
+      else mrgReturn $ l - r;\
+  safeNeg v = if v /= 0 then mrgThrowError Underflow else mrgReturn $ -v
 
 #define SAFE_LINARITH_UNSIGNED_CONCRETE(type) \
-instance SafeLinearArith ArithException type where \
+instance \
+  (MonadError ArithException m, TryMerge m) => \
+  SafeLinearArith ArithException type m \
+  where \
   SAFE_LINARITH_UNSIGNED_CONCRETE_BODY
 
 #define SAFE_LINARITH_UNSIGNED_BV_CONCRETE(type) \
-instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (type n) where \
+instance \
+  (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) => \
+  SafeLinearArith ArithException (type n) m \
+  where \
   SAFE_LINARITH_UNSIGNED_CONCRETE_BODY
 
 #define SAFE_LINARITH_SOME_CONCRETE(type, ctype) \
-instance SafeLinearArith (Either BitwidthMismatch ArithException) type where \
+instance \
+  (MonadError (Either BitwidthMismatch ArithException) m, TryMerge m) => \
+  SafeLinearArith (Either BitwidthMismatch ArithException) type m \
+  where \
   safeAdd (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
     case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> type <$> safeAdd' Right l r; \
-      _ -> throwError $ Left BitwidthMismatch); \
-  safeAdd' t (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
+      Just Refl -> mrgModifyError Right $ type <$> safeAdd l r; \
+      _ -> mrgThrowError $ Left BitwidthMismatch); \
+  safeSub (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
     case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> type <$> safeAdd' (t . Right) l r; \
-      _ -> let t' = t; _ = t' in throwError $ t' $ Left BitwidthMismatch); \
-  safeMinus (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
-    case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> type <$> safeMinus' Right l r; \
-      _ -> throwError $ Left BitwidthMismatch); \
-  safeMinus' t (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
-    case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> type <$> safeMinus' (t . Right) l r; \
-      _ -> let t' = t; _ = t' in throwError $ t' $ Left BitwidthMismatch); \
-  safeNeg (type l) = tryMerge $ type <$> safeNeg' Right l; \
-  safeNeg' t (type l) = tryMerge $ type <$> safeNeg' (t . Right) l
+      Just Refl -> mrgModifyError Right $ type <$> safeSub l r; \
+      _ -> mrgThrowError $ Left BitwidthMismatch); \
+  safeNeg (type l) = mrgModifyError Right $ type <$> safeNeg l
 
 #if 1
 SAFE_LINARITH_SIGNED_CONCRETE(Int8)
@@ -220,15 +192,18 @@ SAFE_LINARITH_UNSIGNED_BV_CONCRETE(WordN)
 SAFE_LINARITH_SOME_CONCRETE(SomeWordN, WordN)
 #endif
 
-instance SafeLinearArith ArithException SymInteger where
+instance
+  (MonadError ArithException m, TryMerge m) =>
+  SafeLinearArith ArithException SymInteger m
+  where
   safeAdd ls rs = mrgPure $ ls + rs
-  safeAdd' _ ls rs = mrgPure $ ls + rs
   safeNeg v = mrgPure $ -v
-  safeNeg' _ v = mrgPure $ -v
-  safeMinus ls rs = mrgPure $ ls - rs
-  safeMinus' _ ls rs = mrgPure $ ls - rs
+  safeSub ls rs = mrgPure $ ls - rs
 
-instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) where
+instance
+  (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
+  SafeLinearArith ArithException (SymIntN n) m
+  where
   safeAdd ls rs =
     mrgIf
       (ls .> 0)
@@ -240,20 +215,8 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       )
     where
       res = ls + rs
-  safeAdd' f ls rs =
-    mrgIf
-      (ls .> 0)
-      (mrgIf (rs .> 0 .&& res .< 0) (throwError $ f Overflow) (return res))
-      ( mrgIf
-          (ls .< 0 .&& rs .< 0 .&& res .>= 0)
-          (throwError $ f Underflow)
-          (mrgPure res)
-      )
-    where
-      res = ls + rs
   safeNeg v = mrgIf (v .== con minBound) (throwError Overflow) (mrgPure $ -v)
-  safeNeg' f v = mrgIf (v .== con minBound) (throwError $ f Overflow) (mrgPure $ -v)
-  safeMinus ls rs =
+  safeSub ls rs =
     mrgIf
       (ls .>= 0)
       (mrgIf (rs .< 0 .&& res .< 0) (throwError Overflow) (return res))
@@ -264,19 +227,11 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymIntN n) wher
       )
     where
       res = ls - rs
-  safeMinus' f ls rs =
-    mrgIf
-      (ls .>= 0)
-      (mrgIf (rs .< 0 .&& res .< 0) (throwError $ f Overflow) (return res))
-      ( mrgIf
-          (ls .< 0 .&& rs .> 0 .&& res .> 0)
-          (throwError $ f Underflow)
-          (mrgPure res)
-      )
-    where
-      res = ls - rs
 
-instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) where
+instance
+  (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
+  SafeLinearArith ArithException (SymWordN n) m
+  where
   safeAdd ls rs =
     mrgIf
       (ls .> res .|| rs .> res)
@@ -284,26 +239,11 @@ instance (KnownNat n, 1 <= n) => SafeLinearArith ArithException (SymWordN n) whe
       (mrgPure res)
     where
       res = ls + rs
-  safeAdd' f ls rs =
-    mrgIf
-      (ls .> res .|| rs .> res)
-      (throwError $ f Overflow)
-      (mrgPure res)
-    where
-      res = ls + rs
   safeNeg v = mrgIf (v ./= 0) (throwError Underflow) (mrgPure v)
-  safeNeg' f v = mrgIf (v ./= 0) (throwError $ f Underflow) (mrgPure v)
-  safeMinus ls rs =
+  safeSub ls rs =
     mrgIf
       (rs .> ls)
       (throwError Underflow)
-      (mrgPure res)
-    where
-      res = ls - rs
-  safeMinus' f ls rs =
-    mrgIf
-      (rs .> ls)
-      (throwError $ f Underflow)
       (mrgPure res)
     where
       res = ls - rs
