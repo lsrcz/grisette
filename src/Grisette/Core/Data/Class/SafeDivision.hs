@@ -141,15 +141,20 @@ concreteSafeDivisionHelper f l r
   | otherwise = mrgReturn $ f l r
 
 concreteSignedBoundedSafeDivisionHelper ::
-  (MonadError ArithException m, Integral a, Bounded a) =>
+  ( MonadError ArithException m,
+    TryMerge m,
+    Integral a,
+    Bounded a,
+    Mergeable r
+  ) =>
   (a -> a -> r) ->
   a ->
   a ->
   m r
 concreteSignedBoundedSafeDivisionHelper f l r
-  | r == 0 = throwError DivideByZero
-  | l == minBound && r == -1 = throwError Overflow
-  | otherwise = return $ f l r
+  | r == 0 = mrgThrowError DivideByZero
+  | l == minBound && r == -1 = mrgThrowError Overflow
+  | otherwise = mrgReturn $ f l r
 
 #define QUOTE() '
 #define QID(a) a
@@ -172,10 +177,10 @@ instance (MonadError ArithException m, TryMerge m) => \
 instance (MonadError ArithException m, TryMerge m) => \
   SafeDivision ArithException type m where \
   safeDiv = concreteSignedBoundedSafeDivisionHelper div; \
-  safeMod = concreteSignedBoundedSafeDivisionHelper mod; \
+  safeMod = concreteSafeDivisionHelper mod; \
   safeDivMod = concreteSignedBoundedSafeDivisionHelper divMod; \
   safeQuot = concreteSignedBoundedSafeDivisionHelper quot; \
-  safeRem = concreteSignedBoundedSafeDivisionHelper rem; \
+  safeRem = concreteSafeDivisionHelper rem; \
   safeQuotRem = concreteSignedBoundedSafeDivisionHelper quotRem
 
 #define SAFE_DIVISION_CONCRETE_BV(type) \
@@ -206,10 +211,10 @@ instance
   (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) =>
   SafeDivision ArithException (IntN n) m where
   safeDiv = concreteSignedBoundedSafeDivisionHelper div
-  safeMod = concreteSignedBoundedSafeDivisionHelper mod
+  safeMod = concreteSafeDivisionHelper mod
   safeDivMod = concreteSignedBoundedSafeDivisionHelper divMod
   safeQuot = concreteSignedBoundedSafeDivisionHelper quot
-  safeRem = concreteSignedBoundedSafeDivisionHelper rem
+  safeRem = concreteSafeDivisionHelper rem
   safeQuotRem = concreteSignedBoundedSafeDivisionHelper quotRem
 
 instance
@@ -228,18 +233,18 @@ instance
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         (case name l r of \
-          Left err -> throwError $ Right err; \
-          Right value -> return $ stype value); \
-      Nothing -> throwError $ Left BitwidthMismatch); \
+          Left err -> mrgThrowError $ Right err; \
+          Right value -> mrgReturn $ stype value); \
+      Nothing -> mrgThrowError $ Left BitwidthMismatch); \
   
 #define SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(stype, type, name, op) \
   name (stype (l :: type l)) (stype (r :: type r)) = \
     (case sameNat (Proxy @l) (Proxy @r) of \
       Just Refl -> \
         (case name l r of \
-          Left err -> throwError $ Right err; \
-          Right (value1, value2) -> return (stype value1, stype value2)); \
-      Nothing -> throwError $ Left BitwidthMismatch); \
+          Left err -> mrgThrowError $ Right err; \
+          Right (value1, value2) -> mrgReturn (stype value1, stype value2)); \
+      Nothing -> mrgThrowError $ Left BitwidthMismatch); \
 
 #if 1
 instance
