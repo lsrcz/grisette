@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added the creation of unparameterized bit vectors from run-time bit-widths. ([#168])(https://github.com/lsrcz/grisette/pull/168)
+- Added all the functions available for the exception transformer in `transformers` and `mtl` packages. ([#171](https://github.com/lsrcz/grisette/pull/171))
+
+### Changed
+
+- [Breaking] Removed the `UnionLike` and `UnionPrjOp` interface, added the
+  `TryMerge` and `PlainUnion` interface. This allows `mrg*` operations to be
+  used with non-union programs. ([#170](https://github.com/lsrcz/grisette/pull/170))
+- [Breaking] Refined the safe operations interface using `TryMerge`. ([#172](https://github.com/lsrcz/grisette/pull/172))
+- [Breaking] Renamed `safeMinus` to `safeSub` to be more consistent. ([#172](https://github.com/lsrcz/grisette/pull/172))
 
 ## [0.4.1.0] -- 2024-01-10
 
