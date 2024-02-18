@@ -125,6 +125,11 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeDivision e a m where
     mrgReturn (q, m)
   {-# INLINE safeQuotRem #-}
 
+  {-# MINIMAL
+    ((safeDiv, safeMod) | safeDivMod),
+    ((safeQuot, safeRem) | safeQuotRem)
+    #-}
+
 concreteSafeDivisionHelper ::
   (MonadError ArithException m, TryMerge m, Integral a, Mergeable r) =>
   (a -> a -> r) ->
