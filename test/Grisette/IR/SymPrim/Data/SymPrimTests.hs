@@ -90,11 +90,8 @@ import Grisette.Core.Data.Class.SafeDivision
 import Grisette.Core.Data.Class.SafeLinearArith
   ( SafeLinearArith
       ( safeAdd,
-        safeAdd',
-        safeMinus,
-        safeMinus',
         safeNeg,
-        safeNeg'
+        safeSub
       ),
   )
 import Grisette.Core.Data.Class.SimpleMergeable
@@ -563,36 +560,24 @@ symPrimTests =
             [ testProperty "safeAdd on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $ do
                   safeAdd (con i :: SymInteger) (con j)
-                    @=? (mrgPure $ con $ i + j :: ExceptT ArithException UnionM SymInteger)
-                  safeAdd' (const ()) (con i :: SymInteger) (con j)
-                    @=? (mrgPure $ con $ i + j :: ExceptT () UnionM SymInteger),
+                    @=? (mrgPure $ con $ i + j :: ExceptT ArithException UnionM SymInteger),
               testCase "safeAdd on symbolic" $ do
                 safeAdd (ssym "a" :: SymInteger) (ssym "b")
-                  @=? (mrgPure $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
-                safeAdd' (const ()) (ssym "a" :: SymInteger) (ssym "b")
-                  @=? (mrgPure $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT () UnionM SymInteger),
+                  @=? (mrgPure $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger),
               testProperty "safeNeg on concrete" $ \(i :: Integer) ->
                 ioProperty $ do
                   safeNeg (con i :: SymInteger)
-                    @=? (mrgPure $ con $ -i :: ExceptT ArithException UnionM SymInteger)
-                  safeNeg' (const ()) (con i :: SymInteger)
-                    @=? (mrgPure $ con $ -i :: ExceptT () UnionM SymInteger),
+                    @=? (mrgPure $ con $ -i :: ExceptT ArithException UnionM SymInteger),
               testCase "safeNeg on symbolic" $ do
                 safeNeg (ssym "a" :: SymInteger)
-                  @=? (mrgPure $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT ArithException UnionM SymInteger)
-                safeNeg' (const ()) (ssym "a" :: SymInteger)
-                  @=? (mrgPure $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT () UnionM SymInteger),
-              testProperty "safeMinus on concrete" $ \(i :: Integer, j :: Integer) ->
+                  @=? (mrgPure $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT ArithException UnionM SymInteger),
+              testProperty "safeSub on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $ do
-                  safeMinus (con i :: SymInteger) (con j)
-                    @=? (mrgPure $ con $ i - j :: ExceptT ArithException UnionM SymInteger)
-                  safeMinus' (const ()) (con i :: SymInteger) (con j)
-                    @=? (mrgPure $ con $ i - j :: ExceptT () UnionM SymInteger),
-              testCase "safeMinus on symbolic" $ do
-                safeMinus (ssym "a" :: SymInteger) (ssym "b")
+                  safeSub (con i :: SymInteger) (con j)
+                    @=? (mrgPure $ con $ i - j :: ExceptT ArithException UnionM SymInteger),
+              testCase "safeSub on symbolic" $ do
+                safeSub (ssym "a" :: SymInteger) (ssym "b")
                   @=? (mrgPure $ SymInteger $ pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
-                safeMinus' (const ()) (ssym "a" :: SymInteger) (ssym "b")
-                  @=? (mrgPure $ SymInteger $ pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT () UnionM SymInteger)
             ],
           testGroup
             "SOrd"
@@ -689,11 +674,11 @@ symPrimTests =
                                       (throwError Overflow)
                                       (mrgPure $ toSym $ i + j :: ExceptT ArithException UnionM (SymIntN 8))
                                   ),
-                      testProperty "safeMinus on concrete" $ \(i :: Int8, j :: Int8) ->
+                      testProperty "safeSub on concrete" $ \(i :: Int8, j :: Int8) ->
                         ioProperty $
                           let iint = fromIntegral i :: Integer
                               jint = fromIntegral j
-                           in safeMinus (toSym i :: SymIntN 8) (toSym j)
+                           in safeSub (toSym i :: SymIntN 8) (toSym j)
                                 @=? mrgIf
                                   (iint - jint .< fromIntegral (i - j))
                                   (throwError Underflow)
@@ -730,11 +715,11 @@ symPrimTests =
                                       (throwError Overflow)
                                       (mrgPure $ toSym $ i + j :: ExceptT ArithException UnionM (SymWordN 8))
                                   ),
-                      testProperty "safeMinus on concrete" $ \(i :: Word8, j :: Word8) ->
+                      testProperty "safeSub on concrete" $ \(i :: Word8, j :: Word8) ->
                         ioProperty $
                           let iint = fromIntegral i :: Integer
                               jint = fromIntegral j
-                           in safeMinus (toSym i :: SymWordN 8) (toSym j)
+                           in safeSub (toSym i :: SymWordN 8) (toSym j)
                                 @=? mrgIf
                                   (iint - jint .< fromIntegral (i - j))
                                   (throwError Underflow)
