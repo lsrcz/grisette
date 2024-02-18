@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the creation of unparameterized bit vectors from run-time bit-widths. ([#168])(https://github.com/lsrcz/grisette/pull/168)
 - Added all the functions available for the exception transformer in `transformers` and `mtl` packages. ([#171](https://github.com/lsrcz/grisette/pull/171))
 
+### Fixed
+- Fixed the merging for safe division. ([#173](https://github.com/lsrcz/grisette/pull/173))
+- Fixed the behavior for safe `mod` and `rem` for signed, bounded concrete types. ([#173](https://github.com/lsrcz/grisette/pull/173))
+
 ### Changed
 
 - [Breaking] Removed the `UnionLike` and `UnionPrjOp` interface, added the
