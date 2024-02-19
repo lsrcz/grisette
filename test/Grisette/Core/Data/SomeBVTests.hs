@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Grisette.Core.Data.SomeBVTests (someBVTests) where
 
@@ -171,7 +173,10 @@ someBVTests =
             let expected = SomeBV (iinfosym "a" 3 info :: SymIntN 4)
             actual @?= expected,
           testCase "unarySomeBV" $ do
-            let actual = unarySomeBV (SomeIntN . negate) (bv 4 5 :: SomeIntN)
+            let actual =
+                  unarySomeBV @IntN @SomeIntN
+                    (SomeIntN . negate)
+                    (bv 4 5 :: SomeIntN)
             let expected = bv 4 (-5)
             actual @?= expected,
           testCase "unarySomeBVR1" $ do
@@ -180,12 +185,12 @@ someBVTests =
             actual @?= expected,
           testGroup
             "binSomeBV"
-            [ testFuncMatch
+            [ testFuncMatch @SomeIntN
                 (binSomeBV (\l r -> SomeIntN $ l + r))
                 (bv 4 5)
                 (bv 4 2)
                 (bv 4 7),
-              testFuncMisMatch
+              testFuncMisMatch @SomeIntN
                 (binSomeBV (\l r -> SomeIntN $ l + r))
                 (bv 4 5)
                 (bv 5 4)
@@ -211,17 +216,17 @@ someBVTests =
             ],
           testGroup "binSomeBVSafe" $ do
             let func l r = mrgFmap SomeIntN $ safeAdd l r
-            [ testSafeFuncMatch
+            [ testSafeFuncMatch @SomeIntN
                 (binSomeBVSafe func)
                 (bv 4 5)
                 (bv 4 2)
                 (bv 4 7),
-              testSafeFuncMatchException
+              testSafeFuncMatchException @SomeIntN
                 (binSomeBVSafe func)
                 (bv 4 5)
                 (bv 4 5)
                 Overflow,
-              testSafeFuncMisMatch
+              testSafeFuncMisMatch @SomeIntN
                 (binSomeBVSafe func)
                 (bv 4 5)
                 (bv 5 4)
