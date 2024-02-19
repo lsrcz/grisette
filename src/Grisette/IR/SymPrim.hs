@@ -1,10 +1,11 @@
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE PatternSynonyms #-}
 -- Disable this warning because we are re-exporting things.
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -16,11 +17,30 @@ module Grisette.IR.SymPrim
     -- ** Extended types
     IntN,
     WordN,
-    SomeWordN (..),
-    SomeIntN (..),
+    SomeBV (..),
+    pattern SomeIntN,
+    type SomeIntN,
+    pattern SomeWordN,
+    type SomeWordN,
     type (=->) (..),
     type (-->),
     (-->),
+    unsafeSomeBV,
+    unarySomeBV,
+    unarySomeBVR1,
+    binSomeBV,
+    binSomeBVR1,
+    binSomeBVR2,
+    binSomeBVSafe,
+    binSomeBVSafeR1,
+    binSomeBVSafeR2,
+    conBV,
+    conBVView,
+    pattern ConBV,
+    ssymBV,
+    isymBV,
+    sinfosymBV,
+    iinfosymBV,
 
     -- ** Symbolic types
     SupportedPrim,
@@ -31,8 +51,10 @@ module Grisette.IR.SymPrim
     SymInteger (..),
     SymWordN (..),
     SymIntN (..),
-    SomeSymWordN (..),
-    SomeSymIntN (..),
+    SomeSymIntN,
+    SomeSymWordN,
+    pattern SomeSymIntN,
+    pattern SomeSymWordN,
     type (=~>) (..),
     type (-~>) (..),
     TypedSymbol (..),
@@ -51,9 +73,34 @@ where
 
 import Grisette.Core.Data.BV
   ( IntN,
-    SomeIntN (..),
-    SomeWordN (..),
     WordN,
+  )
+import Grisette.Core.Data.SomeBV
+  ( SomeBV (..),
+    binSomeBV,
+    binSomeBVR1,
+    binSomeBVR2,
+    binSomeBVSafe,
+    binSomeBVSafeR1,
+    binSomeBVSafeR2,
+    conBV,
+    conBVView,
+    iinfosymBV,
+    isymBV,
+    sinfosymBV,
+    ssymBV,
+    unarySomeBV,
+    unarySomeBVR1,
+    unsafeSomeBV,
+    pattern ConBV,
+    pattern SomeIntN,
+    pattern SomeSymIntN,
+    pattern SomeSymWordN,
+    pattern SomeWordN,
+    type SomeIntN,
+    type SomeSymIntN,
+    type SomeSymWordN,
+    type SomeWordN,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( ConRep (..),
@@ -71,8 +118,6 @@ import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.SymPrim
   ( AllSyms (..),
     ModelSymPair (..),
-    SomeSymIntN (..),
-    SomeSymWordN (..),
     SymBool (..),
     SymIntN (..),
     SymInteger (..),

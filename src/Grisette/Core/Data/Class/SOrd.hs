@@ -53,7 +53,7 @@ import Generics.Deriving
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Control.Monad.UnionM (UnionM, liftToMonadUnion)
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.PlainUnion
@@ -75,14 +75,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalLtNumTerm,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN,
-    SomeSymWordN,
-    SymBool (SymBool),
+  ( SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
     SymWordN (SymWordN),
-    binSomeSymIntN,
-    binSomeSymWordN,
   )
 
 -- $setup
@@ -184,8 +180,6 @@ CONCRETE_SORD(Word8)
 CONCRETE_SORD(Word16)
 CONCRETE_SORD(Word32)
 CONCRETE_SORD(Word64)
-CONCRETE_SORD(SomeWordN)
-CONCRETE_SORD(SomeIntN)
 CONCRETE_SORD(B.ByteString)
 CONCRETE_SORD(T.Text)
 CONCRETE_SORD_BV(WordN)
@@ -336,19 +330,6 @@ instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
     (mrgPure LT) \
     (mrgIf (a .== b) (mrgPure EQ) (mrgPure GT))
 
-#define SORD_BV_SOME(somety, bf) \
-instance SOrd somety where \
-  (.<=) = bf (.<=) ".<="; \
-  {-# INLINE (.<=) #-}; \
-  (.<) = bf (.<) ".<"; \
-  {-# INLINE (.<) #-}; \
-  (.>=) = bf (.>=) ".>="; \
-  {-# INLINE (.>=) #-}; \
-  (.>) = bf (.>) ".>"; \
-  {-# INLINE (.>) #-}; \
-  symCompare = bf symCompare "symCompare"; \
-  {-# INLINE symCompare #-}
-
 instance SOrd SymBool where
   l .<= r = symNot l .|| r
   l .< r = symNot l .&& r
@@ -364,8 +345,6 @@ instance SOrd SymBool where
 SORD_SIMPLE(SymInteger)
 SORD_BV(SymIntN)
 SORD_BV(SymWordN)
-SORD_BV_SOME(SomeSymIntN, binSomeSymIntN)
-SORD_BV_SOME(SomeSymWordN, binSomeSymWordN)
 #endif
 
 -- Exception

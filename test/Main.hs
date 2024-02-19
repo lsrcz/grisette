@@ -31,6 +31,7 @@ import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
+import Grisette.Core.Data.SomeBVTests (someBVTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BVTests
 import Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.BoolTests
@@ -111,7 +112,8 @@ coreTests =
               toSymTests,
               tryMergeTests
             ],
-          Grisette.Core.Data.BVTests.bvTests
+          Grisette.Core.Data.BVTests.bvTests,
+          someBVTests
         ]
     ]
 

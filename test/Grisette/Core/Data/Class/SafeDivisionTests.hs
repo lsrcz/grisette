@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -20,14 +21,18 @@ import Grisette
     IntN,
     Mergeable,
     SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
     UnionM,
     WordN,
     mrgPure,
   )
 import Grisette.Core.Control.Monad.UnionM (isMerged)
 import Grisette.Core.Data.BV (BitwidthMismatch (BitwidthMismatch))
+import Grisette.Core.Data.SomeBV
+  ( SomeIntN,
+    SomeWordN,
+    pattern SomeIntN,
+    pattern SomeWordN,
+  )
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

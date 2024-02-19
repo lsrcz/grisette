@@ -54,8 +54,6 @@ import Generics.Deriving
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV
   ( IntN,
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
     WordN,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
@@ -66,9 +64,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     type (-->),
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool,
+  ( SymBool,
     SymIntN,
     SymInteger,
     SymWordN,
@@ -113,8 +109,6 @@ CONCRETE_TOSYM(Word8)
 CONCRETE_TOSYM(Word16)
 CONCRETE_TOSYM(Word32)
 CONCRETE_TOSYM(Word64)
-CONCRETE_TOSYM(SomeIntN)
-CONCRETE_TOSYM(SomeWordN)
 CONCRETE_TOSYM(B.ByteString)
 CONCRETE_TOSYM(T.Text)
 CONCRETE_TOSYM_BV(IntN)
@@ -243,8 +237,6 @@ TO_SYM_SYMID_BV(SymIntN)
 TO_SYM_SYMID_BV(SymWordN)
 TO_SYM_SYMID_FUN(=~>)
 TO_SYM_SYMID_FUN(-~>)
-TO_SYM_SYMID_SIMPLE(SomeSymIntN)
-TO_SYM_SYMID_SIMPLE(SomeSymWordN)
 #endif
 
 #define TO_SYM_FROMCON_SIMPLE(contype, symtype) \
@@ -259,10 +251,6 @@ instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToSym (conop ca cb) (symop sa sb) where \
   toSym = con
 
-#define TO_SYM_FROMCON_BV_SOME(contype, symtype) \
-instance ToSym contype symtype where \
-  toSym (contype v) = symtype (con v)
-
 #if 1
 TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
 TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
@@ -270,26 +258,11 @@ TO_SYM_FROMCON_BV(IntN, SymIntN)
 TO_SYM_FROMCON_BV(WordN, SymWordN)
 TO_SYM_FROMCON_FUN((=->), (=~>))
 TO_SYM_FROMCON_FUN((-->), (-~>))
-TO_SYM_FROMCON_BV_SOME(SomeIntN, SomeSymIntN)
-TO_SYM_FROMCON_BV_SOME(SomeWordN, SomeSymWordN)
-#endif
-
-#define TO_SYM_FROMBV_SOME(somesymbv, bv) \
-instance (KnownNat n, 1 <= n) => ToSym (bv n) somesymbv where \
-  toSym = somesymbv . con
-
-#if 1
-TO_SYM_FROMBV_SOME(SomeSymIntN, IntN)
-TO_SYM_FROMBV_SOME(SomeSymWordN, WordN)
 #endif
 
 #define TOSYM_MACHINE_INTEGER(int, bv) \
 instance ToSym int (bv) where \
   toSym = fromIntegral
-
-#define TOSYM_MACHINE_INTEGER_SOME(int, somesymbv, bv, bitwidth) \
-instance ToSym int somesymbv where \
-  toSym v = somesymbv (con (fromIntegral v :: bv bitwidth))
 
 #if 1
 TOSYM_MACHINE_INTEGER(Int8, SymIntN 8)
@@ -302,17 +275,6 @@ TOSYM_MACHINE_INTEGER(Word32, SymWordN 32)
 TOSYM_MACHINE_INTEGER(Word64, SymWordN 64)
 TOSYM_MACHINE_INTEGER(Int, SymIntN $intBitwidthQ)
 TOSYM_MACHINE_INTEGER(Word, SymWordN $intBitwidthQ)
-
-TOSYM_MACHINE_INTEGER_SOME(Int8, SomeSymIntN, IntN, 8)
-TOSYM_MACHINE_INTEGER_SOME(Int16, SomeSymIntN, IntN, 16)
-TOSYM_MACHINE_INTEGER_SOME(Int32, SomeSymIntN, IntN, 32)
-TOSYM_MACHINE_INTEGER_SOME(Int64, SomeSymIntN, IntN, 64)
-TOSYM_MACHINE_INTEGER_SOME(Word8, SomeSymWordN, WordN, 8)
-TOSYM_MACHINE_INTEGER_SOME(Word16, SomeSymWordN, WordN, 16)
-TOSYM_MACHINE_INTEGER_SOME(Word32, SomeSymWordN, WordN, 32)
-TOSYM_MACHINE_INTEGER_SOME(Word64, SomeSymWordN, WordN, 64)
-TOSYM_MACHINE_INTEGER_SOME(Int, SomeSymIntN, IntN, $intBitwidthQ)
-TOSYM_MACHINE_INTEGER_SOME(Word, SomeSymWordN, WordN, $intBitwidthQ)
 #endif
 
 -- Exception

@@ -32,8 +32,6 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SymInteger (..),
     SymWordN (..),
     SymIntN (..),
-    SomeSymWordN (..),
-    SomeSymIntN (..),
     type (=~>) (..),
     type (-~>) (..),
     (-->),
@@ -43,16 +41,6 @@ module Grisette.IR.SymPrim.Data.SymPrim
     SomeSym (..),
     AllSyms (..),
     allSymsSize,
-    unarySomeSymIntN,
-    unarySomeSymIntNR1,
-    binSomeSymIntN,
-    binSomeSymIntNR1,
-    binSomeSymIntNR2,
-    unarySomeSymWordN,
-    unarySomeSymWordNR1,
-    binSomeSymWordN,
-    binSomeSymWordNR1,
-    binSomeSymWordNR2,
   )
 where
 
@@ -70,23 +58,13 @@ import Data.Bits
       ( bit,
         bitSize,
         bitSizeMaybe,
-        clearBit,
         complement,
-        complementBit,
         isSigned,
         popCount,
         rotate,
-        rotateL,
-        rotateR,
-        setBit,
         shift,
-        shiftL,
-        shiftR,
         testBit,
-        unsafeShiftL,
-        unsafeShiftR,
         xor,
-        zeroBits,
         (.&.),
         (.|.)
       ),
@@ -99,7 +77,6 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
-import Data.Typeable (typeRep, type (:~:) (Refl))
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
   ( Generic (Rep, from),
@@ -113,7 +90,6 @@ import GHC.TypeNats
   ( KnownNat,
     Nat,
     natVal,
-    sameNat,
     type (+),
     type (<=),
   )
@@ -127,8 +103,7 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.BitVector
-  ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
-    SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
+  ( SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
 import Grisette.Core.Data.Class.Function (Apply (FunType, apply), Function (Arg, Ret, (#)))
 import Grisette.Core.Data.Class.ModelOps
@@ -210,15 +185,9 @@ import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
-    NatRepr,
-    Some (Some),
     knownAdd,
     leqAddPos,
     leqTrans,
-    mkNatRepr,
-    unsafeKnownProof,
-    unsafeLeqProof,
-    withKnownNat,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -274,57 +243,6 @@ newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
 
--- | Symbolic signed bit vector type. Not indexed, but the bit width is
--- fixed at the creation time.
---
--- A 'SomeSymIntN' must be created by wrapping a 'SymIntN' with the
--- 'SomeSymIntN' constructor to fix the bit width:
---
--- >>> (SomeSymIntN ("a" :: SymIntN 5))
--- a
---
--- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
--- >>> (SomeSymIntN ("a" :: SymIntN 5)) + (SomeSymIntN (5 :: SymIntN 5))
--- (+ 0b00101 a)
--- >>> bvConcat (SomeSymIntN (con 0b101 :: SymIntN 3)) (SomeSymIntN (con 0b110 :: SymIntN 3))
--- 0b101110
---
--- More symbolic operations are available. Please refer to the documentation
--- for the type class instances.
-data SomeSymIntN where
-  SomeSymIntN :: (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
-
-unarySomeSymIntN :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> r) -> String -> SomeSymIntN -> r
-unarySomeSymIntN op _ (SomeSymIntN (w :: SymIntN w)) = op w
-{-# INLINE unarySomeSymIntN #-}
-
-unarySomeSymIntNR1 :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n) -> String -> SomeSymIntN -> SomeSymIntN
-unarySomeSymIntNR1 op _ (SomeSymIntN (w :: SymIntN w)) = SomeSymIntN $ op w
-{-# INLINE unarySomeSymIntNR1 #-}
-
-binSomeSymIntN :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n -> r) -> String -> SomeSymIntN -> SomeSymIntN -> r
-binSomeSymIntN op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) =
-  case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl -> op l r
-    Nothing -> error $ "Operation " ++ str ++ " on SymIntN with different bitwidth"
-{-# INLINE binSomeSymIntN #-}
-
-binSomeSymIntNR1 :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n -> SymIntN n) -> String -> SomeSymIntN -> SomeSymIntN -> SomeSymIntN
-binSomeSymIntNR1 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) =
-  case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl -> SomeSymIntN $ op l r
-    Nothing -> error $ "Operation " ++ str ++ " on SymIntN with different bitwidth"
-{-# INLINE binSomeSymIntNR1 #-}
-
-binSomeSymIntNR2 :: (forall n. (KnownNat n, 1 <= n) => SymIntN n -> SymIntN n -> (SymIntN n, SymIntN n)) -> String -> SomeSymIntN -> SomeSymIntN -> (SomeSymIntN, SomeSymIntN)
-binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) =
-  case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl ->
-      case op l r of
-        (a, b) -> (SomeSymIntN a, SomeSymIntN b)
-    Nothing -> error $ "Operation " ++ str ++ " on SymIntN with different bitwidth"
-{-# INLINE binSomeSymIntNR2 #-}
-
 -- | Symbolic unsigned bit vector type. Indexed with the bit width.
 -- Signedness affects the semantics of the operations, including
 -- comparison/extension, etc.
@@ -343,57 +261,6 @@ binSomeSymIntNR2 op str (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymInt
 -- for the type class instances.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
-
--- | Symbolic unsigned bit vector type. Not indexed, but the bit width is
--- fixed at the creation time.
---
--- A 'SomeSymWordN' must be created by wrapping a 'SymWordN' with the
--- 'SomeSymWordN' constructor to fix the bit width:
---
--- >>> (SomeSymWordN ("a" :: SymWordN 5))
--- a
---
--- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
--- >>> (SomeSymWordN ("a" :: SymWordN 5)) + (SomeSymWordN (5 :: SymWordN 5))
--- (+ 0b00101 a)
--- >>> bvConcat (SomeSymWordN (con 0b101 :: SymWordN 3)) (SomeSymWordN (con 0b110 :: SymWordN 3))
--- 0b101110
---
--- More symbolic operations are available. Please refer to the documentation
--- for the type class instances.
-data SomeSymWordN where
-  SomeSymWordN :: (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
-
-unarySomeSymWordN :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> r) -> String -> SomeSymWordN -> r
-unarySomeSymWordN op _ (SomeSymWordN (w :: SymWordN w)) = op w
-{-# INLINE unarySomeSymWordN #-}
-
-unarySomeSymWordNR1 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n) -> String -> SomeSymWordN -> SomeSymWordN
-unarySomeSymWordNR1 op _ (SomeSymWordN (w :: SymWordN w)) = SomeSymWordN $ op w
-{-# INLINE unarySomeSymWordNR1 #-}
-
-binSomeSymWordN :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> r) -> String -> SomeSymWordN -> SomeSymWordN -> r
-binSomeSymWordN op str (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) =
-  case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl -> op l r
-    Nothing -> error $ "Operation " ++ str ++ " on SymWordN with different bitwidth"
-{-# INLINE binSomeSymWordN #-}
-
-binSomeSymWordNR1 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> SymWordN n) -> String -> SomeSymWordN -> SomeSymWordN -> SomeSymWordN
-binSomeSymWordNR1 op str (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) =
-  case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl -> SomeSymWordN $ op l r
-    Nothing -> error $ "Operation " ++ str ++ " on SymWordN with different bitwidth"
-{-# INLINE binSomeSymWordNR1 #-}
-
-binSomeSymWordNR2 :: (forall n. (KnownNat n, 1 <= n) => SymWordN n -> SymWordN n -> (SymWordN n, SymWordN n)) -> String -> SomeSymWordN -> SomeSymWordN -> (SomeSymWordN, SomeSymWordN)
-binSomeSymWordNR2 op str (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) =
-  case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl ->
-      case op l r of
-        (a, b) -> (SomeSymWordN a, SomeSymWordN b)
-    Nothing -> error $ "Operation " ++ str ++ " on SymWordN with different bitwidth"
-{-# INLINE binSomeSymWordNR2 #-}
 
 instance ConRep SymBool where
   type ConType SymBool = Bool
@@ -618,28 +485,9 @@ instance (KnownNat n, 1 <= n) => Num (symtype n) where \
   signum (symtype v) = symtype $ pevalSignumNumTerm v; \
   fromInteger i = con $ fromInteger i
 
-#define NUM_SOME_BV(somety, br1, ur1) \
-instance Num somety where \
-  (+) = br1 (+) "+"; \
-  {-# INLINE (+) #-}; \
-  (-) = br1 (-) "-"; \
-  {-# INLINE (-) #-}; \
-  (*) = br1 (*) "*"; \
-  {-# INLINE (*) #-}; \
-  negate = ur1 negate "negate"; \
-  {-# INLINE negate #-}; \
-  abs = ur1 abs "abs"; \
-  {-# INLINE abs #-}; \
-  signum = ur1 signum "signum"; \
-  {-# INLINE signum #-}; \
-  fromInteger = error "fromInteger is not defined for SomeSymWordN as no bitwidth is known"; \
-  {-# INLINE fromInteger #-}
-
 #if 1
 NUM_BV(SymIntN)
 NUM_BV(SymWordN)
-NUM_SOME_BV(SomeSymWordN, binSomeSymWordNR1, unarySomeSymWordNR1)
-NUM_SOME_BV(SomeSymIntN, binSomeSymIntNR1, unarySomeSymIntNR1)
 #endif
 
 instance Num SymInteger where
@@ -686,58 +534,9 @@ instance (KnownNat n, 1 <= n) => Bits (symtype n) where \
   popCount _ = error "You cannot call popCount on symbolic variables"; \
   {-# INLINE popCount #-}
 
-#define BITS_BV_SOME(somety, origty, br1, uf, ur1) \
-instance Bits somety where \
-  (.&.) = br1 (.&.) ".&."; \
-  {-# INLINE (.&.) #-}; \
-  (.|.) = br1 (.|.) ".|."; \
-  {-# INLINE (.|.) #-}; \
-  xor = br1 xor "xor"; \
-  {-# INLINE xor #-}; \
-  complement = ur1 complement "complement"; \
-  {-# INLINE complement #-}; \
-  shift s i = ur1 (`shift` i) "shift" s; \
-  {-# INLINE shift #-}; \
-  rotate s i = ur1 (`rotate` i) "rotate" s; \
-  {-# INLINE rotate #-}; \
-  zeroBits = error ("zeroBits is not defined for " ++ show (typeRep (Proxy @somety)) ++ " as no bitwidth is known"); \
-  {-# INLINE zeroBits #-}; \
-  bit = error ("bit is not defined for " ++ show (typeRep (Proxy @somety)) ++ " as no bitwidth is known"); \
-  {-# INLINE bit #-}; \
-  setBit s i = ur1 (`setBit` i) "setBit" s; \
-  {-# INLINE setBit #-}; \
-  clearBit s i = ur1 (`clearBit` i) "clearBit" s; \
-  {-# INLINE clearBit #-}; \
-  complementBit s i = ur1 (`complementBit` i) "complementBit" s; \
-  {-# INLINE complementBit #-}; \
-  testBit s i = uf (`testBit` i) "testBit" s; \
-  {-# INLINE testBit #-}; \
-  bitSizeMaybe = Just . finiteBitSize; \
-  {-# INLINE bitSizeMaybe #-}; \
-  bitSize = finiteBitSize; \
-  {-# INLINE bitSize #-}; \
-  isSigned _ = False; \
-  {-# INLINE isSigned #-}; \
-  shiftL s i = ur1 (`shiftL` i) "shiftL" s; \
-  {-# INLINE shiftL #-}; \
-  unsafeShiftL s i = ur1 (`unsafeShiftL` i) "unsafeShiftL" s; \
-  {-# INLINE unsafeShiftL #-}; \
-  shiftR s i = ur1 (`shiftR` i) "shiftR" s; \
-  {-# INLINE shiftR #-}; \
-  unsafeShiftR s i = ur1 (`unsafeShiftR` i) "unsafeShiftR" s; \
-  {-# INLINE unsafeShiftR #-}; \
-  rotateL s i = ur1 (`rotateL` i) "rotateL" s; \
-  {-# INLINE rotateL #-}; \
-  rotateR s i = ur1 (`rotateR` i) "rotateR" s; \
-  {-# INLINE rotateR #-}; \
-  popCount = uf popCount "popCount"; \
-  {-# INLINE popCount #-}
-
 #if 1
 BITS_BV(SymIntN, True)
 BITS_BV(SymWordN, False)
-BITS_BV_SOME(SomeSymIntN, SymIntN, binSomeSymIntNR1, unarySomeSymIntN, unarySomeSymIntNR1)
-BITS_BV_SOME(SomeSymWordN, SymWordN, binSomeSymWordNR1, unarySomeSymWordN, unarySomeSymWordNR1)
 #endif
 
 -- FiniteBits
@@ -747,16 +546,9 @@ instance (KnownNat n, 1 <= n) => FiniteBits (symtype n) where \
   finiteBitSize _ = fromIntegral $ natVal (Proxy @n); \
   {-# INLINE finiteBitSize #-}; \
 
-#define FINITE_BITS_BV_SOME(somety, origty) \
-instance FiniteBits somety where \
-  finiteBitSize (somety (n :: origty n)) = fromIntegral $ natVal n; \
-  {-# INLINE finiteBitSize #-}
-
 #if 1
 FINITE_BITS_BV(SymIntN)
 FINITE_BITS_BV(SymWordN)
-FINITE_BITS_BV_SOME(SomeSymIntN, SymIntN)
-FINITE_BITS_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- Show
@@ -773,10 +565,6 @@ instance (KnownNat n, 1 <= n) => Show (symtype n) where \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Show (sa op sb) where \
   show (cons t) = pformat t
 
-#define SHOW_BV_SOME(somety) \
-instance Show somety where \
-  show (somety t) = show t
-
 #if 1
 SHOW_SIMPLE(SymBool)
 SHOW_SIMPLE(SymInteger)
@@ -784,8 +572,6 @@ SHOW_BV(SymIntN)
 SHOW_BV(SymWordN)
 SHOW_FUN(=~>, SymTabularFun)
 SHOW_FUN(-~>, SymGeneralFun)
-SHOW_BV_SOME(SomeSymIntN)
-SHOW_BV_SOME(SomeSymWordN)
 #endif
 
 -- Hashable
@@ -802,10 +588,6 @@ instance (KnownNat n, 1 <= n) => Hashable (symtype n) where \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Hashable (sa op sb) where \
   hashWithSalt s (cons v) = s `hashWithSalt` v
 
-#define HASHABLE_BV_SOME(somety, origty) \
-instance Hashable somety where \
-  s `hashWithSalt` (somety (w :: origty n)) = s `hashWithSalt` natVal (Proxy @n) `hashWithSalt` w
-
 #if 1
 HASHABLE_SIMPLE(SymBool)
 HASHABLE_SIMPLE(SymInteger)
@@ -813,8 +595,6 @@ HASHABLE_BV(SymIntN)
 HASHABLE_BV(SymWordN)
 HASHABLE_FUN(=~>, SymTabularFun)
 HASHABLE_FUN(-~>, SymGeneralFun)
-HASHABLE_BV_SOME(SomeSymIntN, SymIntN)
-HASHABLE_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- Eq
@@ -827,13 +607,6 @@ instance Eq symtype where \
 instance (KnownNat n, 1 <= n) => Eq (symtype n) where \
   (symtype l) == (symtype r) = l == r
 
-#define EQ_BV_SOME(symtype, bf) \
-instance Eq symtype where; \
-  (==) = bf (==) "=="; \
-  {-# INLINE (==) #-}; \
-  (/=) = bf (/=) "/="; \
-  {-# INLINE (/=) #-}
-
 #define EQ_FUN(op, cons) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Eq (sa op sb) where \
   (cons l) == (cons r) = l == r
@@ -845,8 +618,6 @@ EQ_BV(SymIntN)
 EQ_BV(SymWordN)
 EQ_FUN(=~>, SymTabularFun)
 EQ_FUN(-~>, SymGeneralFun)
-EQ_BV_SOME(SomeSymIntN, binSomeSymIntN)
-EQ_BV_SOME(SomeSymWordN, binSomeSymWordN)
 #endif
 
 -- IsString
@@ -971,45 +742,11 @@ bvSelect ix w (somety (a :: origty n)) \
         LeqProof -> withKnownNat natRepr $ \
           somety (fromIntegral i :: origty x)
 
-#if 1
-instance BV SomeSymIntN where
-  BVCONCAT(SomeSymIntN, SymIntN)
-  {-# INLINE bvConcat #-}
-  BVZEXT(SomeSymIntN, SymIntN)
-  {-# INLINE bvZext #-}
-  BVSEXT(SomeSymIntN, SymIntN)
-  {-# INLINE bvSext #-}
-  bvExt = bvSext
-  {-# INLINE bvExt #-}
-  BVSELECT(SomeSymIntN, SymIntN)
-  {-# INLINE bvSelect #-}
-  BVBV(SomeSymIntN, SymIntN)
-  {-# INLINE bv #-}
-
-instance BV SomeSymWordN where
-  BVCONCAT(SomeSymWordN, SymWordN)
-  {-# INLINE bvConcat #-}
-  BVZEXT(SomeSymWordN, SymWordN)
-  {-# INLINE bvZext #-}
-  BVSEXT(SomeSymWordN, SymWordN)
-  {-# INLINE bvSext #-}
-  bvExt = bvZext
-  {-# INLINE bvExt #-}
-  BVSELECT(SomeSymWordN, SymWordN)
-  {-# INLINE bvSelect #-}
-  BVBV(SomeSymWordN, SymWordN)
-  {-# INLINE bv #-}
-#endif
-
 -- BVSignConversion
 
 instance (KnownNat n, 1 <= n) => SignConversion (SymWordN n) (SymIntN n) where
   toSigned (SymWordN n) = SymIntN $ pevalToSignedTerm n
   toUnsigned (SymIntN n) = SymWordN $ pevalToUnsignedTerm n
-
-instance SignConversion SomeSymWordN SomeSymIntN where
-  toSigned (SomeSymWordN n) = SomeSymIntN $ toSigned n
-  toUnsigned (SomeSymIntN n) = SomeSymWordN $ toUnsigned n
 
 -- SymShift
 instance (KnownNat n, 1 <= n) => SymShift (SymWordN n) where
@@ -1181,10 +918,6 @@ instance AllSyms t where \
 instance (KnownNat n, 1 <= n) => AllSyms (t n) where \
   allSymsS v = (SomeSym v :)
 
-#define ALLSYMS_SOME_BV(t) \
-instance AllSyms t where \
-  allSymsS (t v) = (SomeSym v :)
-
 #define ALLSYMS_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => AllSyms (sa op sb) where \
   allSymsS v = (SomeSym v :)
@@ -1209,8 +942,6 @@ ALLSYMS_SIMPLE(SymBool)
 ALLSYMS_SIMPLE(SymInteger)
 ALLSYMS_BV(SymIntN)
 ALLSYMS_BV(SymWordN)
-ALLSYMS_SOME_BV(SomeSymIntN)
-ALLSYMS_SOME_BV(SomeSymWordN)
 ALLSYMS_FUN(=~>)
 ALLSYMS_FUN(-~>)
 #endif

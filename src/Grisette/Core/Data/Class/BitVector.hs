@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -213,6 +214,12 @@ class SizedBV bv where
     -- | Bit vector to select from
     bv n ->
     bv w
+
+  -- Analogous to 'fromIntegral'.
+  sizedBVFromIntegral :: (Integral a, KnownNat n, 1 <= n) => a -> bv n
+  default sizedBVFromIntegral ::
+    (Num (bv n), Integral a, KnownNat n, 1 <= n) => a -> bv n
+  sizedBVFromIntegral = fromIntegral
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.
