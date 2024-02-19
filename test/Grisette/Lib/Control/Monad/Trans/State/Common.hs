@@ -81,9 +81,7 @@ stateAB state =
 mergePropagatedIf' :: (MonadUnion m) => SymBool -> m b -> m b -> m b
 mergePropagatedIf' c a b = do
   x <- mrgIf c (return True) (return False)
-  case x of
-    True -> a
-    False -> b
+  if x then a else b
 
 mrgStateTest ::
   (MonadUnion (stateT SymBool UnionM)) =>
