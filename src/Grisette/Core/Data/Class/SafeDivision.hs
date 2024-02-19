@@ -29,15 +29,11 @@ where
 import Control.Exception (ArithException (DivideByZero, Overflow, Underflow))
 import Control.Monad.Except (MonadError (throwError))
 import Data.Int (Int16, Int32, Int64, Int8)
-import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeNats (KnownNat, sameNat, type (<=))
+import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV
-  ( BitwidthMismatch (BitwidthMismatch),
-    IntN,
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
+  ( IntN,
     WordN,
   )
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
@@ -226,46 +222,6 @@ instance
   safeQuot = concreteSafeDivisionHelper quot
   safeRem = concreteSafeDivisionHelper rem
   safeQuotRem = concreteSafeDivisionHelper quotRem
-#endif
-
-#define SAFE_DIVISION_CONCRETE_FUNC_SOME(stype, type, name, op) \
-  name (stype (l :: type l)) (stype (r :: type r)) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> \
-        (case name l r of \
-          Left err -> mrgThrowError $ Right err; \
-          Right value -> mrgReturn $ stype value); \
-      Nothing -> mrgThrowError $ Left BitwidthMismatch); \
-  
-#define SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(stype, type, name, op) \
-  name (stype (l :: type l)) (stype (r :: type r)) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> \
-        (case name l r of \
-          Left err -> mrgThrowError $ Right err; \
-          Right (value1, value2) -> mrgReturn (stype value1, stype value2)); \
-      Nothing -> mrgThrowError $ Left BitwidthMismatch); \
-
-#if 1
-instance
-  (MonadError (Either BitwidthMismatch ArithException) m, TryMerge m) =>
-  SafeDivision (Either BitwidthMismatch ArithException) SomeIntN m where
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeDiv, div)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeMod, mod)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeDivMod, divMod)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeQuot, quot)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeIntN, IntN, safeRem, rem)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeIntN, IntN, safeQuotRem, quotRem)
-
-instance
-  (MonadError (Either BitwidthMismatch ArithException) m, TryMerge m) =>
-  SafeDivision (Either BitwidthMismatch ArithException) SomeWordN m where
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeDiv, div)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeMod, mod)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeDivMod, divMod)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeQuot, quot)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME(SomeWordN, WordN, safeRem, rem)
-  SAFE_DIVISION_CONCRETE_FUNC_SOME_DIVMOD(SomeWordN, WordN, safeQuotRem, quotRem)
 #endif
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC(name, type, op) \

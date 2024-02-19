@@ -90,6 +90,7 @@ library
       Grisette.Core.Data.Class.TryMerge
       Grisette.Core.Data.FileLocation
       Grisette.Core.Data.MemoUtils
+      Grisette.Core.Data.SomeBV
       Grisette.Core.Data.Union
       Grisette.Core.TH
       Grisette.Core.THCompat
@@ -244,6 +245,7 @@ test-suite spec
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.TryMergeTests
+      Grisette.Core.Data.SomeBVTests
       Grisette.IR.SymPrim.Data.Prim.BitsTests
       Grisette.IR.SymPrim.Data.Prim.BoolTests
       Grisette.IR.SymPrim.Data.Prim.BVTests

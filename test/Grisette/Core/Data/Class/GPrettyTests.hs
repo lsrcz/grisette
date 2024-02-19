@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Grisette.Core.Data.Class.GPrettyTests (gprettyTests) where
@@ -15,12 +16,14 @@ import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default))
 import Grisette.Core.Data.BV
   ( IntN,
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
     WordN,
   )
 import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
+import Grisette.Core.Data.SomeBV
+  ( pattern SomeIntN,
+    pattern SomeWordN,
+  )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

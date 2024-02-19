@@ -24,14 +24,10 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalITETerm)
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN,
-    SomeSymWordN,
-    SymBool (SymBool),
+  ( SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
     SymWordN (SymWordN),
-    binSomeSymIntNR1,
-    binSomeSymWordNR1,
     type (-~>) (SymGeneralFun),
     type (=~>) (SymTabularFun),
   )
@@ -66,11 +62,6 @@ instance (KnownNat n, 1 <= n) => ITEOp (type n) where \
   symIte (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
   {-# INLINE symIte #-}
 
-#define ITEOP_BV_SOME(symtype, bf) \
-instance ITEOp symtype where \
-  symIte c = bf (symIte c) "symIte"; \
-  {-# INLINE symIte #-}
-
 #define ITEOP_FUN(op, cons) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ITEOp (sa op sb) where \
   symIte (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
@@ -81,8 +72,6 @@ ITEOP_SIMPLE(SymBool)
 ITEOP_SIMPLE(SymInteger)
 ITEOP_BV(SymIntN)
 ITEOP_BV(SymWordN)
-ITEOP_BV_SOME(SomeSymIntN, binSomeSymIntNR1)
-ITEOP_BV_SOME(SomeSymWordN, binSomeSymWordNR1)
 ITEOP_FUN(=~>, SymTabularFun)
 ITEOP_FUN(-~>, SymGeneralFun)
 #endif

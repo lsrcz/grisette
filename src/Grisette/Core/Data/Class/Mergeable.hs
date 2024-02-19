@@ -89,14 +89,12 @@ import Data.Kind (Type)
 import qualified Data.Monoid as Monoid
 import qualified Data.Text as T
 import Data.Typeable
-  ( Proxy (Proxy),
-    Typeable,
+  ( Typeable,
     eqT,
     type (:~:) (Refl),
   )
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.Natural (Natural)
-import GHC.TypeNats (KnownNat, natVal, type (<=))
+import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default),
     Default1 (Default1),
@@ -114,10 +112,8 @@ import Generics.Deriving
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV
   ( BitwidthMismatch,
-    IntN (IntN),
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
-    WordN (WordN),
+    IntN,
+    WordN,
   )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
@@ -125,16 +121,13 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool,
+  ( SymBool,
     SymIntN,
     SymInteger,
     SymWordN,
     type (-~>),
     type (=~>),
   )
-import Grisette.Utils.Parameterized (unsafeAxiom)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Helper type for combining arbitrary number of indices into one.
@@ -416,26 +409,6 @@ CONCRETE_ORD_MERGEABLE(T.Text)
 CONCRETE_ORD_MERGEABLE_BV(WordN)
 CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif
-
-instance Mergeable SomeIntN where
-  rootStrategy =
-    SortedStrategy @Natural
-      (\(SomeIntN (_ :: IntN n)) -> natVal (Proxy @n))
-      ( \_ ->
-          SortedStrategy @Integer
-            (\(SomeIntN (IntN i)) -> i)
-            (const $ SimpleStrategy $ \_ l _ -> l)
-      )
-
-instance Mergeable SomeWordN where
-  rootStrategy =
-    SortedStrategy @Natural
-      (\(SomeWordN (_ :: WordN n)) -> natVal (Proxy @n))
-      ( \_ ->
-          SortedStrategy @Integer
-            (\(SomeWordN (WordN i)) -> i)
-            (const $ SimpleStrategy $ \_ l _ -> l)
-      )
 
 -- ()
 deriving via (Default ()) instance Mergeable ()
@@ -943,30 +916,6 @@ MERGEABLE_BV(SymWordN)
 MERGEABLE_FUN(=~>)
 MERGEABLE_FUN(-~>)
 #endif
-
-instance Mergeable SomeSymIntN where
-  rootStrategy =
-    SortedStrategy @Natural
-      (\(SomeSymIntN (_ :: SymIntN n)) -> natVal (Proxy @n))
-      ( \_ ->
-          SimpleStrategy
-            ( \c (SomeSymIntN (l :: SymIntN l)) (SomeSymIntN (r :: SymIntN r)) ->
-                case unsafeAxiom @l @r of
-                  Refl -> SomeSymIntN $ symIte c l r
-            )
-      )
-
-instance Mergeable SomeSymWordN where
-  rootStrategy =
-    SortedStrategy @Natural
-      (\(SomeSymWordN (_ :: SymWordN n)) -> natVal (Proxy @n))
-      ( \_ ->
-          SimpleStrategy
-            ( \c (SomeSymWordN (l :: SymWordN l)) (SomeSymWordN (r :: SymWordN r)) ->
-                case unsafeAxiom @l @r of
-                  Refl -> SomeSymWordN $ symIte c l r
-            )
-      )
 
 -- Exceptions
 instance Mergeable ArithException where

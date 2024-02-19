@@ -8,7 +8,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -39,9 +38,7 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
-import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeLits (sameNat)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default),
@@ -54,14 +51,12 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalEqvTerm)
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool (SymBool),
+  ( SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
     SymWordN (SymWordN),
@@ -138,8 +133,6 @@ CONCRETE_SEQ(B.ByteString)
 CONCRETE_SEQ(T.Text)
 CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
-CONCRETE_SEQ(SomeWordN)
-CONCRETE_SEQ(SomeIntN)
 #endif
 
 -- List
@@ -241,26 +234,11 @@ instance SEq symtype where \
 instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
   (symtype l) .== (symtype r) = SymBool $ pevalEqvTerm l r
 
-#define SEQ_BV_SOME(somety, origty) \
-instance SEq somety where \
-  somety (l :: origty l) .== somety (r :: origty r) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> l .== r; \
-      Nothing -> con False); \
-  {-# INLINE (.==) #-}; \
-  somety (l :: origty l) ./= somety (r :: origty r) = \
-    (case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> l ./= r; \
-      Nothing -> con True); \
-  {-# INLINE (./=) #-}
-
 #if 1
 SEQ_SIMPLE(SymBool)
 SEQ_SIMPLE(SymInteger)
 SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
-SEQ_BV_SOME(SomeSymIntN, SymIntN)
-SEQ_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- Exceptions

@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -18,8 +19,6 @@ import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.BV
   ( BitwidthMismatch (BitwidthMismatch),
     IntN,
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
     WordN,
   )
 import Grisette.Core.Data.Class.BitVector (BV (bv))
@@ -28,6 +27,12 @@ import Grisette.Core.Data.Class.SafeLinearArith
   ( SafeLinearArith (safeAdd, safeNeg, safeSub),
   )
 import Grisette.Core.Data.Class.TryMerge (TryMerge, mrgPure)
+import Grisette.Core.Data.SomeBV
+  ( SomeIntN,
+    SomeWordN,
+    pattern SomeIntN,
+    pattern SomeWordN,
+  )
 import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)
 import Test.Framework (Test, testGroup)

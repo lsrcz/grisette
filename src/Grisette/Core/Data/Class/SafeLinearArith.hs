@@ -7,7 +7,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -28,15 +27,11 @@ where
 import Control.Exception (ArithException (DivideByZero, Overflow, Underflow))
 import Control.Monad.Except (MonadError (throwError))
 import Data.Int (Int16, Int32, Int64, Int8)
-import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeNats (KnownNat, sameNat, type (<=))
+import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV
-  ( BitwidthMismatch (BitwidthMismatch),
-    IntN,
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
+  ( IntN,
     WordN,
   )
 import Grisette.Core.Data.Class.LogicalOp
@@ -52,7 +47,6 @@ import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgPure,
-    tryMerge,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymIntN,
@@ -60,7 +54,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     SymWordN,
   )
 import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)
+import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -160,21 +154,6 @@ instance \
   where \
   SAFE_LINARITH_UNSIGNED_CONCRETE_BODY
 
-#define SAFE_LINARITH_SOME_CONCRETE(type, ctype) \
-instance \
-  (MonadError (Either BitwidthMismatch ArithException) m, TryMerge m) => \
-  SafeLinearArith (Either BitwidthMismatch ArithException) type m \
-  where \
-  safeAdd (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
-    case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> mrgModifyError Right $ type <$> safeAdd l r; \
-      _ -> mrgThrowError $ Left BitwidthMismatch); \
-  safeSub (type (l :: ctype l)) (type (r :: ctype r)) = tryMerge (\
-    case sameNat (Proxy @l) (Proxy @r) of \
-      Just Refl -> mrgModifyError Right $ type <$> safeSub l r; \
-      _ -> mrgThrowError $ Left BitwidthMismatch); \
-  safeNeg (type l) = mrgModifyError Right $ type <$> safeNeg l
-
 #if 1
 SAFE_LINARITH_SIGNED_CONCRETE(Int8)
 SAFE_LINARITH_SIGNED_CONCRETE(Int16)
@@ -182,14 +161,12 @@ SAFE_LINARITH_SIGNED_CONCRETE(Int32)
 SAFE_LINARITH_SIGNED_CONCRETE(Int64)
 SAFE_LINARITH_SIGNED_CONCRETE(Int)
 SAFE_LINARITH_SIGNED_BV_CONCRETE(IntN)
-SAFE_LINARITH_SOME_CONCRETE(SomeIntN, IntN)
 SAFE_LINARITH_UNSIGNED_CONCRETE(Word8)
 SAFE_LINARITH_UNSIGNED_CONCRETE(Word16)
 SAFE_LINARITH_UNSIGNED_CONCRETE(Word32)
 SAFE_LINARITH_UNSIGNED_CONCRETE(Word64)
 SAFE_LINARITH_UNSIGNED_CONCRETE(Word)
 SAFE_LINARITH_UNSIGNED_BV_CONCRETE(WordN)
-SAFE_LINARITH_SOME_CONCRETE(SomeWordN, WordN)
 #endif
 
 instance

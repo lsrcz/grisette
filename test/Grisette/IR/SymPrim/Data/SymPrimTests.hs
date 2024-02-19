@@ -105,6 +105,12 @@ import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge (mrgPure, tryMerge)
+import Grisette.Core.Data.SomeBV
+  ( SomeSymIntN,
+    SomeSymWordN,
+    pattern SomeSymIntN,
+    pattern SomeSymWordN,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( conTerm,
     isymTerm,
@@ -173,8 +179,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( ModelSymPair ((:=)),
-    SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
     SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),

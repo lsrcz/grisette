@@ -51,16 +51,14 @@ import GHC.Generics
   )
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
     prettyPrintTerm,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool (SymBool),
+  ( SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
     SymWordN (SymWordN),
@@ -135,8 +133,6 @@ GPRETTY_SIMPLE(Word8)
 GPRETTY_SIMPLE(Word16)
 GPRETTY_SIMPLE(Word32)
 GPRETTY_SIMPLE(Word64)
-GPRETTY_SIMPLE(SomeIntN)
-GPRETTY_SIMPLE(SomeWordN)
 #endif
 
 instance GPretty B.ByteString where
@@ -340,10 +336,6 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
   => GPretty (sa op sb) where \
   gpretty (cons t) = prettyPrintTerm t
 
-#define GPRETTY_SYM_SOME_BV(symtype) \
-instance GPretty symtype where \
-  gpretty (symtype t) = gpretty t
-
 #if 1
 GPRETTY_SYM_SIMPLE(SymBool)
 GPRETTY_SYM_SIMPLE(SymInteger)
@@ -351,8 +343,6 @@ GPRETTY_SYM_BV(SymIntN)
 GPRETTY_SYM_BV(SymWordN)
 GPRETTY_SYM_FUN(=~>, SymTabularFun)
 GPRETTY_SYM_FUN(-~>, SymGeneralFun)
-GPRETTY_SYM_SOME_BV(SomeSymIntN)
-GPRETTY_SYM_SOME_BV(SomeSymWordN)
 #endif
 
 instance (Generic a, GPretty' (Rep a)) => GPretty (Default a) where

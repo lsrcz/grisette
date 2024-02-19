@@ -1,6 +1,7 @@
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NegativeLiterals #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -46,8 +47,6 @@ import Data.Word (Word8)
 import GHC.Stack (HasCallStack)
 import Grisette.Core.Data.BV
   ( IntN (IntN),
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
     WordN (unWordN),
   )
 import Grisette.Core.Data.Class.BitVector
@@ -59,6 +58,12 @@ import Grisette.Core.Data.Class.BitVector
         sizedBVSext,
         sizedBVZext
       ),
+  )
+import Grisette.Core.Data.SomeBV
+  ( SomeIntN,
+    SomeWordN,
+    pattern SomeIntN,
+    pattern SomeWordN,
   )
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

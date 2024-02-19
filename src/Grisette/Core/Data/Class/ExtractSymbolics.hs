@@ -48,7 +48,7 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
@@ -58,9 +58,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (SymbolSet),
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool (SymBool),
+  ( SymBool (SymBool),
     SymIntN (SymIntN),
     SymInteger (SymInteger),
     SymWordN (SymWordN),
@@ -113,8 +111,6 @@ CONCRETE_EXTRACT_SYMBOLICS(Word8)
 CONCRETE_EXTRACT_SYMBOLICS(Word16)
 CONCRETE_EXTRACT_SYMBOLICS(Word32)
 CONCRETE_EXTRACT_SYMBOLICS(Word64)
-CONCRETE_EXTRACT_SYMBOLICS(SomeWordN)
-CONCRETE_EXTRACT_SYMBOLICS(SomeIntN)
 CONCRETE_EXTRACT_SYMBOLICS(B.ByteString)
 CONCRETE_EXTRACT_SYMBOLICS(T.Text)
 CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
@@ -274,10 +270,6 @@ instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ExtractSymbolics (sa op sb) where \
   extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
 
-#define EXTRACT_SYMBOLICS_BV_SOME(somety, origty) \
-instance ExtractSymbolics somety where \
-  extractSymbolics (somety (origty t)) = SymbolSet $ extractSymbolicsTerm t
-
 #if 1
 EXTRACT_SYMBOLICS_SIMPLE(SymBool)
 EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
@@ -285,8 +277,6 @@ EXTRACT_SYMBOLICS_BV(SymIntN)
 EXTRACT_SYMBOLICS_BV(SymWordN)
 EXTRACT_SYMBOLICS_FUN(=~>, SymTabularFun)
 EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
-EXTRACT_SYMBOLICS_BV_SOME(SomeSymIntN, SymIntN)
-EXTRACT_SYMBOLICS_BV_SOME(SomeSymWordN, SymWordN)
 #endif
 
 -- Exception

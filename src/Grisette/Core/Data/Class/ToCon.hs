@@ -54,8 +54,6 @@ import Generics.Deriving.Instances ()
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV
   ( IntN (IntN),
-    SomeIntN (SomeIntN),
-    SomeWordN (SomeWordN),
     WordN (WordN),
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (conView), pattern Con)
@@ -66,9 +64,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     type (-->),
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool,
+  ( SymBool,
     SymIntN,
     SymInteger,
     SymWordN,
@@ -123,8 +119,6 @@ CONCRETE_TOCON(Word8)
 CONCRETE_TOCON(Word16)
 CONCRETE_TOCON(Word32)
 CONCRETE_TOCON(Word64)
-CONCRETE_TOCON(SomeWordN)
-CONCRETE_TOCON(SomeIntN)
 CONCRETE_TOCON(B.ByteString)
 CONCRETE_TOCON(T.Text)
 CONCRETE_TOCON_BV(WordN)
@@ -256,8 +250,6 @@ TO_CON_SYMID_BV(SymIntN)
 TO_CON_SYMID_BV(SymWordN)
 TO_CON_SYMID_FUN(=~>)
 TO_CON_SYMID_FUN(-~>)
-TO_CON_SYMID_SIMPLE(SomeSymIntN)
-TO_CON_SYMID_SIMPLE(SomeSymWordN)
 
 #endif
 
@@ -273,10 +265,6 @@ instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToCon (symop sa sb) (conop ca cb) where \
   toCon = conView
 
-#define TO_CON_FROMSYM_BV_SOME(contype, symtype) \
-instance ToCon symtype contype where \
-  toCon (symtype v) = contype <$> conView v
-
 #if 1
 TO_CON_FROMSYM_SIMPLE(Bool, SymBool)
 TO_CON_FROMSYM_SIMPLE(Integer, SymInteger)
@@ -284,8 +272,6 @@ TO_CON_FROMSYM_BV(IntN, SymIntN)
 TO_CON_FROMSYM_BV(WordN, SymWordN)
 TO_CON_FROMSYM_FUN((=->), (=~>))
 TO_CON_FROMSYM_FUN((-->), (-~>))
-TO_CON_FROMSYM_BV_SOME(SomeIntN, SomeSymIntN)
-TO_CON_FROMSYM_BV_SOME(SomeWordN, SomeSymWordN)
 #endif
 
 #define TOCON_MACHINE_INTEGER(sbvw, bvw, n, int) \

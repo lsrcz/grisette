@@ -109,7 +109,7 @@ import Data.Typeable
     type (:~:) (Refl),
   )
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeNats (KnownNat, Nat, type (<=))
+import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Generic (Rep, from, to),
     K1 (K1),
@@ -119,7 +119,7 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM, isMerged, underlyingUnion)
-import Grisette.Core.Data.BV (IntN, SomeIntN, SomeWordN, WordN)
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -148,20 +148,12 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
-  ( SomeSymIntN (SomeSymIntN),
-    SomeSymWordN (SomeSymWordN),
-    SymBool,
+  ( SymBool,
     SymIntN,
     SymInteger,
     SymWordN,
     type (-~>),
     type (=~>),
-  )
-import Grisette.Utils.Parameterized
-  ( KnownProof (KnownProof),
-    LeqProof (LeqProof),
-    unsafeKnownProof,
-    unsafeLeqProof,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
@@ -856,8 +848,6 @@ CONCRETE_GENSYM_SAME_SHAPE(Word8)
 CONCRETE_GENSYM_SAME_SHAPE(Word16)
 CONCRETE_GENSYM_SAME_SHAPE(Word32)
 CONCRETE_GENSYM_SAME_SHAPE(Word64)
-CONCRETE_GENSYM_SAME_SHAPE(SomeWordN)
-CONCRETE_GENSYM_SAME_SHAPE(SomeIntN)
 CONCRETE_GENSYM_SAME_SHAPE(B.ByteString)
 CONCRETE_GENSYM_SAME_SHAPE(T.Text)
 CONCRETE_GENSYM_SAME_SHAPE_BV(WordN)
@@ -876,8 +866,6 @@ CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word8)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word16)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word32)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word64)
-CONCRETE_GENSYMSIMPLE_SAME_SHAPE(SomeWordN)
-CONCRETE_GENSYMSIMPLE_SAME_SHAPE(SomeIntN)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(B.ByteString)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(T.Text)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(WordN)
@@ -1714,33 +1702,6 @@ instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
       FreshIdent s -> return $ isym s i; \
       FreshIdentWithInfo s info -> return $ iinfosym s i info
 
-#define GENSYM_BV_SOME(symtype) \
-instance GenSym symtype symtype
-#define GENSYM_SIMPLE_BV_SOME(symtype) \
-instance GenSymSimple symtype symtype where \
-  simpleFresh (symtype v) = simpleFresh v
-#define GENSYM_N_BV_SOME(symtype) \
-instance (KnownNat n, 1 <= n) => GenSym (p n) symtype where \
-  fresh p = mrgPure <$> simpleFresh p
-#define GENSYM_N_SIMPLE_BV_SOME(symtype, origtype) \
-instance (KnownNat n, 1 <= n) => GenSymSimple (p n) symtype where \
-  simpleFresh _ = do; \
-    i :: origtype n <- simpleFresh (); \
-    return $ symtype i
-#define GENSYM_N_INT_BV_SOME(symtype) \
-instance GenSym Int symtype where \
-  fresh p = mrgPure <$> simpleFresh p
-#define GENSYM_N_INT_SIMPLE_BV_SOME(symtype, origtype) \
-instance GenSymSimple Int symtype where \
-  simpleFresh i = if i > 0 then f (Proxy @0) else \
-    error "Can only generate bit vectors with positive bit size" \
-    where \
-      f :: forall p (n :: Nat) m. (MonadFresh m) => p n -> m symtype; \
-      f _ = case (unsafeKnownProof @n (fromIntegral i), unsafeLeqProof @1 @n) of \
-        (KnownProof, LeqProof) -> do \
-        v :: origtype n <- simpleFresh (); \
-        return $ symtype v; \
-
 #define GENSYM_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym (sa op sb) (sa op sb)
 #define GENSYM_SIMPLE_FUN(op) \
@@ -1776,19 +1737,6 @@ GENSYM_BV(SymWordN)
 GENSYM_SIMPLE_BV(SymWordN)
 GENSYM_UNIT_BV(SymWordN)
 GENSYM_UNIT_SIMPLE_BV(SymWordN)
-
-GENSYM_BV_SOME(SomeSymIntN)
-GENSYM_SIMPLE_BV_SOME(SomeSymIntN)
-GENSYM_N_BV_SOME(SomeSymIntN)
-GENSYM_N_SIMPLE_BV_SOME(SomeSymIntN, SymIntN)
-GENSYM_N_INT_BV_SOME(SomeSymIntN)
-GENSYM_N_INT_SIMPLE_BV_SOME(SomeSymIntN, SymIntN)
-GENSYM_BV_SOME(SomeSymWordN)
-GENSYM_SIMPLE_BV_SOME(SomeSymWordN)
-GENSYM_N_BV_SOME(SomeSymWordN)
-GENSYM_N_SIMPLE_BV_SOME(SomeSymWordN, SymWordN)
-GENSYM_N_INT_BV_SOME(SomeSymWordN)
-GENSYM_N_INT_SIMPLE_BV_SOME(SomeSymWordN, SymWordN)
 
 GENSYM_FUN(=~>)
 GENSYM_SIMPLE_FUN(=~>)
