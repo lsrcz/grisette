@@ -511,7 +511,7 @@ instance
   ( KnownNat n,
     1 <= n,
     forall m. (KnownNat m, 1 <= m) => GenSym () (bv m),
-    forall m. (KnownNat m, 1 <= m) => Mergeable (bv m)
+    Mergeable (SomeBV bv)
   ) =>
   GenSym (Proxy n) (SomeBV bv)
   where
@@ -523,7 +523,7 @@ instance
   ( KnownNat n,
     1 <= n,
     forall m. (KnownNat m, 1 <= m) => GenSymSimple () (bv m),
-    forall m. (KnownNat m, 1 <= m) => Mergeable (bv m)
+    Mergeable (SomeBV bv)
   ) =>
   GenSymSimple (Proxy n) (SomeBV bv)
   where
@@ -532,7 +532,7 @@ instance
 
 instance
   ( forall m. (KnownNat m, 1 <= m) => GenSym () (bv m),
-    forall m. (KnownNat m, 1 <= m) => Mergeable (bv m)
+    Mergeable (SomeBV bv)
   ) =>
   GenSym (SomeBV bv) (SomeBV bv)
   where
@@ -541,7 +541,7 @@ instance
 
 instance
   ( forall m. (KnownNat m, 1 <= m) => GenSymSimple () (bv m),
-    forall m. (KnownNat m, 1 <= m) => Mergeable (bv m)
+    Mergeable (SomeBV bv)
   ) =>
   GenSymSimple (SomeBV bv) (SomeBV bv)
   where
@@ -550,7 +550,7 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => GenSym () (bv n),
-    forall n. (KnownNat n, 1 <= n) => Mergeable (bv n)
+    Mergeable (SomeBV bv)
   ) =>
   GenSym Natural (SomeBV bv)
   where
@@ -563,7 +563,7 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => GenSymSimple () (bv n),
-    forall n. (KnownNat n, 1 <= n) => Mergeable (bv n)
+    Mergeable (SomeBV bv)
   ) =>
   GenSymSimple Natural (SomeBV bv)
   where
@@ -882,7 +882,7 @@ iinfosymBV n s i info =
 
 -- | Lift a unary operation on sized bitvectors that returns anything to
 -- 'SomeBV'.
-unarySomeBV :: (forall n. (KnownNat n, 1 <= n) => bv n -> r) -> SomeBV bv -> r
+unarySomeBV :: forall bv r. (forall n. (KnownNat n, 1 <= n) => bv n -> r) -> SomeBV bv -> r
 unarySomeBV f (SomeBV bv) = f bv
 {-# INLINE unarySomeBV #-}
 
