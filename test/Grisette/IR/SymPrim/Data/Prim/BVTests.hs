@@ -68,6 +68,26 @@ data BVSelectTest where
     } ->
     BVSelectTest
 
+data BVExtendTest where
+  BVExtendTest ::
+    forall l r bv.
+    ( KnownNat l,
+      1 <= l,
+      KnownNat r,
+      1 <= r,
+      l <= r,
+      forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      Typeable bv,
+      SizedBV bv
+    ) =>
+    { bvExtendTestName :: String,
+      bvExtendSigned :: Bool,
+      bvExtendR :: Proxy r,
+      bvExtendTestTerm :: Term (bv l),
+      bvExtendExpected :: Term (bv r)
+    } ->
+    BVExtendTest
+
 bvTests :: Test
 bvTests =
   testGroup
@@ -373,23 +393,68 @@ bvTests =
             ]
         return . testCase name $
           pevalBVSelectTerm ix w term @?= expected,
-      testGroup
-        "Extension"
-        [ testCase "On concrete" $ do
-            pevalBVExtendTerm True (Proxy @6) (conTerm 15 :: Term (WordN 4))
-              @=? (conTerm 63 :: Term (WordN 6))
-            pevalBVExtendTerm False (Proxy @6) (conTerm 15 :: Term (WordN 4))
-              @=? (conTerm 15 :: Term (WordN 6))
-            pevalBVExtendTerm True (Proxy @6) (conTerm 15 :: Term (IntN 4))
-              @=? (conTerm 63 :: Term (IntN 6))
-            pevalBVExtendTerm False (Proxy @6) (conTerm 15 :: Term (IntN 4))
-              @=? (conTerm 15 :: Term (IntN 6)),
-          testCase "On symbolic" $ do
-            pevalBVExtendTerm True (Proxy @6) (ssymTerm "a" :: Term (WordN 4))
-              @=? bvextendTerm True (Proxy @6) (ssymTerm "a" :: Term (WordN 4))
-            pevalBVExtendTerm False (Proxy @6) (ssymTerm "a" :: Term (WordN 4))
-              @=? bvextendTerm False (Proxy @6) (ssymTerm "a" :: Term (WordN 4))
-        ],
+      testGroup "pevalBVExtendTerm" $ do
+        BVExtendTest name signed pr term expected <-
+          [ BVExtendTest
+              { bvExtendTestName = "Concrete zext on negative",
+                bvExtendSigned = False,
+                bvExtendR = Proxy @6,
+                bvExtendTestTerm = conTerm 15 :: Term (WordN 4),
+                bvExtendExpected = conTerm 15 :: Term (WordN 6)
+              },
+            BVExtendTest
+              { bvExtendTestName = "Concrete sext on negative",
+                bvExtendSigned = True,
+                bvExtendR = Proxy @6,
+                bvExtendTestTerm = conTerm 15 :: Term (WordN 4),
+                bvExtendExpected = conTerm 63 :: Term (WordN 6)
+              },
+            BVExtendTest
+              { bvExtendTestName = "Concrete zext on positive",
+                bvExtendSigned = False,
+                bvExtendR = Proxy @6,
+                bvExtendTestTerm = conTerm 7 :: Term (WordN 4),
+                bvExtendExpected = conTerm 7 :: Term (WordN 6)
+              },
+            BVExtendTest
+              { bvExtendTestName = "Concrete sext on positive",
+                bvExtendSigned = True,
+                bvExtendR = Proxy @6,
+                bvExtendTestTerm = conTerm 7 :: Term (WordN 4),
+                bvExtendExpected = conTerm 7 :: Term (WordN 6)
+              },
+            BVExtendTest
+              { bvExtendTestName = "Same width",
+                bvExtendSigned = False,
+                bvExtendR = Proxy @4,
+                bvExtendTestTerm = ssymTerm "a" :: Term (WordN 4),
+                bvExtendExpected = ssymTerm "a" :: Term (WordN 4)
+              },
+            BVExtendTest
+              { bvExtendTestName = "Symbolic zext",
+                bvExtendSigned = False,
+                bvExtendR = Proxy @6,
+                bvExtendTestTerm = ssymTerm "a" :: Term (WordN 4),
+                bvExtendExpected =
+                  bvconcatTerm
+                    (conTerm 0 :: Term (WordN 2))
+                    (ssymTerm "a" :: Term (WordN 4))
+              },
+            BVExtendTest
+              { bvExtendTestName = "Symbolic sext on sext",
+                bvExtendSigned = True,
+                bvExtendR = Proxy @6,
+                bvExtendTestTerm =
+                  pevalBVExtendTerm
+                    True
+                    (Proxy @4)
+                    (ssymTerm "a" :: Term (WordN 2)),
+                bvExtendExpected =
+                  bvextendTerm True (Proxy @6) (ssymTerm "a" :: Term (WordN 2))
+              }
+            ]
+        return . testCase name $
+          pevalBVExtendTerm signed pr term @?= expected,
       testGroup
         "Concat"
         [ testCase "On concrete" $ do
