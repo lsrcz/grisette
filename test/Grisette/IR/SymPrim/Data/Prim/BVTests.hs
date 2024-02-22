@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
@@ -33,7 +34,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@=?), (@?=))
+import Test.HUnit ((@?=))
 
 data ToSignedTest = ToSignedTest
   { toSignedTestName :: String,
@@ -87,6 +88,26 @@ data BVExtendTest where
       bvExtendExpected :: Term (bv r)
     } ->
     BVExtendTest
+
+data BVConcatTest where
+  BVConcatTest ::
+    forall l r bv.
+    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+      KnownNat l,
+      KnownNat r,
+      KnownNat (l + r),
+      1 <= l,
+      1 <= r,
+      1 <= (l + r),
+      Typeable bv,
+      SizedBV bv
+    ) =>
+    { bvConcatTestName :: String,
+      bvConcatTestLhs :: Term (bv l),
+      bvConcatTestRhs :: Term (bv r),
+      bvConcatTestExpected :: Term (bv (l + r))
+    } ->
+    BVConcatTest
 
 bvTests :: Test
 bvTests =
@@ -455,17 +476,455 @@ bvTests =
             ]
         return . testCase name $
           pevalBVExtendTerm signed pr term @?= expected,
-      testGroup
-        "Concat"
-        [ testCase "On concrete" $ do
-            pevalBVConcatTerm (conTerm 3 :: Term (WordN 4)) (conTerm 5 :: Term (WordN 3))
-              @=? conTerm 29
-            pevalBVConcatTerm (conTerm 3 :: Term (IntN 4)) (conTerm 5 :: Term (IntN 3))
-              @=? conTerm 29,
-          testCase "On symbolic" $ do
-            pevalBVConcatTerm (ssymTerm "a" :: Term (WordN 4)) (ssymTerm "b" :: Term (WordN 3))
-              @=? bvconcatTerm
-                (ssymTerm "a" :: Term (WordN 4))
-                (ssymTerm "b" :: Term (WordN 3))
-        ]
+      testGroup "pevalBVConcatTerm" $ do
+        BVConcatTest name lhs rhs expected <-
+          [ BVConcatTest
+              { bvConcatTestName = "[c1 c2] -> c1c2",
+                bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
+                bvConcatTestRhs = conTerm 5 :: Term (WordN 3),
+                bvConcatTestExpected = conTerm 29
+              },
+            BVConcatTest
+              { bvConcatTestName = "[c1 (c2 s)] -> (c1c2 s)",
+                bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 5 :: Term (WordN 3))
+                    (ssymTerm "b" :: Term (WordN 3)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 29 :: Term (WordN 7))
+                    ( ssymTerm "b" :: Term (WordN 3)
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[c1 (s c2)] -> (c1 (s c2))",
+                bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (ssymTerm "b" :: Term (WordN 3))
+                    (conTerm 5 :: Term (WordN 3)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "b" :: Term (WordN 3))
+                        (conTerm 5 :: Term (WordN 3))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[c1 (c2 (s c3))] -> (c1c2 (s c3))",
+                bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
+                bvConcatTestRhs =
+                  bvconcatTerm (conTerm 5 :: Term (WordN 5)) $
+                    bvconcatTerm
+                      (ssymTerm "b" :: Term (WordN 6))
+                      (conTerm 7 :: Term (WordN 7)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 101 :: Term (WordN 9))
+                    ( bvconcatTerm
+                        (ssymTerm "b" :: Term (WordN 6))
+                        (conTerm 7 :: Term (WordN 7))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[c s] -> (c s)",
+                bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
+                bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 3))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(c1 s) c2] -> (c1 (s c2))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "a" :: Term (WordN 4)),
+                bvConcatTestRhs = conTerm 5 :: Term (WordN 3),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        ( conTerm 5 :: Term (WordN 3)
+                        )
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(c1 s1) (c2 s2)] -> (c1 (s1 (c2 s2)))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "a" :: Term (WordN 4)),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 5 :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        ( bvconcatTerm
+                            (conTerm 5 :: Term (WordN 4))
+                            (ssymTerm "b" :: Term (WordN 4))
+                        )
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(c1 s1) (s2 c2)] -> (c1 ((s1 s2) c2))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "a" :: Term (WordN 4)),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (ssymTerm "b" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            (ssymTerm "a" :: Term (WordN 4))
+                            (ssymTerm "b" :: Term (WordN 4))
+                        )
+                        (conTerm 5 :: Term (WordN 4))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName =
+                  "[(c1 s1) (c2 (s2 c3))] -> (c1 (((s1 c2) s2)) c3))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "a" :: Term (WordN 4)),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 5 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "b" :: Term (WordN 4))
+                        (conTerm 7 :: Term (WordN 4))
+                    ),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            ( bvconcatTerm
+                                (ssymTerm "a" :: Term (WordN 4))
+                                (conTerm 5 :: Term (WordN 4))
+                            )
+                            (ssymTerm "b" :: Term (WordN 4))
+                        )
+                        (conTerm 7 :: Term (WordN 4))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(c s1) s2] -> (c (s1 s2))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "a" :: Term (WordN 4)),
+                bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (ssymTerm "b" :: Term (WordN 3))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(s c1) c2] -> (s c1c2)",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 3)),
+                bvConcatTestRhs = conTerm 3 :: Term (WordN 4),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 83 :: Term (WordN 7))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(s1 c1) (c2 s2)] -> (s1 (c1c2 s2))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4)),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (conTerm 83 :: Term (WordN 8))
+                        (ssymTerm "b" :: Term (WordN 4))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(s1 c1) (s2 c2)] -> (((s1 c1) s2) c2)",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4)),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (ssymTerm "b" :: Term (WordN 4))
+                    (conTerm 3 :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            (ssymTerm "a" :: Term (WordN 4))
+                            (conTerm 5 :: Term (WordN 4))
+                        )
+                        (ssymTerm "b" :: Term (WordN 4))
+                    )
+                    (conTerm 3 :: Term (WordN 4))
+              },
+            BVConcatTest
+              { bvConcatTestName =
+                  "[(s1 c1) (c2 (s2 c3))] -> (((s1 c1c2) s2) c3)",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4)),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "b" :: Term (WordN 4))
+                        (conTerm 7 :: Term (WordN 4))
+                    ),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            (ssymTerm "a" :: Term (WordN 4))
+                            (conTerm 83 :: Term (WordN 8))
+                        )
+                        ( ssymTerm "b" :: Term (WordN 4)
+                        )
+                    )
+                    (conTerm 7 :: Term (WordN 4))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(s1 c1) s2] -> ((s1 c1) s2)",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4)),
+                bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 5 :: Term (WordN 4))
+                    )
+                    (ssymTerm "b" :: Term (WordN 3))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(c1 (s1 c2)) c3] -> (c1 (s1 c2c3))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 5 :: Term (WordN 4))
+                    ),
+                bvConcatTestRhs = conTerm 7 :: Term (WordN 4),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 87 :: Term (WordN 8))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName =
+                  "[(c1 (s1 c2)) (c3 s3)] -> (c1 (s1 (c2c3 s3)))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 5 :: Term (WordN 4))
+                    ),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 7 :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        ( bvconcatTerm
+                            (conTerm 87 :: Term (WordN 8))
+                            ( ssymTerm "b" :: Term (WordN 4)
+                            )
+                        )
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName =
+                  "[(c1 (s1 c2)) (s2 c3)] -> (c1 (((s1 c2) s2) c3))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 5 :: Term (WordN 4))
+                    ),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (ssymTerm "b" :: Term (WordN 4))
+                    (conTerm 7 :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            ( bvconcatTerm
+                                (ssymTerm "a" :: Term (WordN 4))
+                                (conTerm 5 :: Term (WordN 4))
+                            )
+                            (ssymTerm "b" :: Term (WordN 4))
+                        )
+                        (conTerm 7 :: Term (WordN 4))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName =
+                  "[(c1 (s1 c2)) (c3 (s2 c4))] -> (c1 (((s1 c2c3) s2) c4))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 5 :: Term (WordN 4))
+                    ),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 7 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "b" :: Term (WordN 4))
+                        (conTerm 9 :: Term (WordN 4))
+                    ),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            ( bvconcatTerm
+                                (ssymTerm "a" :: Term (WordN 4))
+                                (conTerm 87 :: Term (WordN 8))
+                            )
+                            (ssymTerm "b" :: Term (WordN 4))
+                        )
+                        (conTerm 9 :: Term (WordN 4))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[(c1 (s1 c2)) s2] -> (c1 ((s1 c2) s2))",
+                bvConcatTestLhs =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (conTerm 5 :: Term (WordN 4))
+                    ),
+                bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (conTerm 3 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            (ssymTerm "a" :: Term (WordN 4))
+                            (conTerm 5 :: Term (WordN 4))
+                        )
+                        ( ssymTerm "b" :: Term (WordN 3)
+                        )
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[s c] -> (s c)",
+                bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
+                bvConcatTestRhs = conTerm 5 :: Term (WordN 4),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[s (c s)] -> (s (c s))",
+                bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 5 :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (conTerm 5 :: Term (WordN 4))
+                        (ssymTerm "b" :: Term (WordN 4))
+                    )
+              },
+            BVConcatTest
+              { bvConcatTestName = "[s (s c)] -> ((s s) c))",
+                bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (ssymTerm "b" :: Term (WordN 4))
+                    (conTerm 5 :: Term (WordN 4)),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    ( bvconcatTerm
+                        (ssymTerm "a" :: Term (WordN 4))
+                        (ssymTerm "b" :: Term (WordN 4))
+                    )
+                    (conTerm 5 :: Term (WordN 4))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[s (c (s c))] -> (((s c) s)) c)",
+                bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
+                bvConcatTestRhs =
+                  bvconcatTerm
+                    (conTerm 5 :: Term (WordN 4))
+                    ( bvconcatTerm
+                        (ssymTerm "b" :: Term (WordN 4))
+                        (conTerm 7 :: Term (WordN 4))
+                    ),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    ( bvconcatTerm
+                        ( bvconcatTerm
+                            (ssymTerm "a" :: Term (WordN 4))
+                            (conTerm 5 :: Term (WordN 4))
+                        )
+                        (ssymTerm "b" :: Term (WordN 4))
+                    )
+                    (conTerm 7 :: Term (WordN 4))
+              },
+            BVConcatTest
+              { bvConcatTestName = "[s1 s2] -> (s1 s2)",
+                bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
+                bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
+                bvConcatTestExpected =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 3))
+              }
+            ]
+        return . testCase name $
+          pevalBVConcatTerm lhs rhs @?= expected
     ]
