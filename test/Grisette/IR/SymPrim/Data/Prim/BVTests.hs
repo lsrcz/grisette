@@ -88,6 +88,27 @@ bvTests =
               { toSignedTestName = "toUnsigned",
                 toSignedTestTerm = toUnsignedTerm $ ssymTerm "a",
                 toSignedTestExpected = ssymTerm "a"
+              },
+            ToSignedTest
+              { toSignedTestName = "bvConcat",
+                toSignedTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 2))
+                    (ssymTerm "b" :: Term (WordN 2)),
+                toSignedTestExpected =
+                  bvconcatTerm
+                    (toSignedTerm (ssymTerm "a" :: Term (WordN 2)))
+                    (toSignedTerm (ssymTerm "b" :: Term (WordN 2)))
+              },
+            ToSignedTest
+              { toSignedTestName = "bvExtend",
+                toSignedTestTerm =
+                  bvextendTerm True (Proxy @4) (ssymTerm "a" :: Term (WordN 2)),
+                toSignedTestExpected =
+                  bvextendTerm
+                    True
+                    (Proxy @4)
+                    (toSignedTerm (ssymTerm "a" :: Term (WordN 2)))
               }
             ]
         return $ testCase name $ do
@@ -109,6 +130,27 @@ bvTests =
               { toUnsignedTestName = "toSigned",
                 toUnsignedTestTerm = toSignedTerm $ ssymTerm "a",
                 toUnsignedTestExpected = ssymTerm "a"
+              },
+            ToUnsignedTest
+              { toUnsignedTestName = "bvConcat",
+                toUnsignedTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (IntN 2))
+                    (ssymTerm "b" :: Term (IntN 2)),
+                toUnsignedTestExpected =
+                  bvconcatTerm
+                    (toUnsignedTerm (ssymTerm "a" :: Term (IntN 2)))
+                    (toUnsignedTerm (ssymTerm "b" :: Term (IntN 2)))
+              },
+            ToUnsignedTest
+              { toUnsignedTestName = "bvExtend",
+                toUnsignedTestTerm =
+                  bvextendTerm True (Proxy @4) (ssymTerm "a" :: Term (IntN 2)),
+                toUnsignedTestExpected =
+                  bvextendTerm
+                    True
+                    (Proxy @4)
+                    (toUnsignedTerm (ssymTerm "a" :: Term (IntN 2)))
               }
             ]
         return $ testCase name $ do
@@ -294,6 +336,39 @@ bvTests =
                         (Proxy @1)
                         (ssymTerm "b" :: Term (WordN 4))
                     )
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvExtend only lower part",
+                bvSelectIx = Proxy @1,
+                bvSelectW = Proxy @2,
+                bvSelectTestTerm =
+                  bvextendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
+                bvSelectTestExpected =
+                  bvselectTerm
+                    (Proxy @1)
+                    (Proxy @2)
+                    (ssymTerm "a" :: Term (WordN 4))
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvExtend whole lower part",
+                bvSelectIx = Proxy @0,
+                bvSelectW = Proxy @4,
+                bvSelectTestTerm =
+                  bvextendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
+                bvSelectTestExpected = ssymTerm "a" :: Term (WordN 4)
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvExtend cross boarder",
+                bvSelectIx = Proxy @3,
+                bvSelectW = Proxy @4,
+                bvSelectTestTerm =
+                  bvextendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
+                bvSelectTestExpected =
+                  bvextendTerm True (Proxy @4) $
+                    bvselectTerm
+                      (Proxy @3)
+                      (Proxy @1)
+                      (ssymTerm "a" :: Term (WordN 4))
               }
             ]
         return . testCase name $
