@@ -218,6 +218,82 @@ bvTests =
                     (Proxy @5)
                     (Proxy @2)
                     (ssymTerm "a" :: Term (WordN 16))
+              },
+            BVSelectTest
+              { bvSelectTestName = "Whole vector",
+                bvSelectIx = Proxy @0,
+                bvSelectW = Proxy @4,
+                bvSelectTestTerm = ssymTerm "a" :: Term (WordN 4),
+                bvSelectTestExpected = ssymTerm "a"
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvConcat only lower part",
+                bvSelectIx = Proxy @1,
+                bvSelectW = Proxy @2,
+                bvSelectTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvSelectTestExpected =
+                  bvselectTerm
+                    (Proxy @1)
+                    (Proxy @2)
+                    (ssymTerm "b" :: Term (WordN 4))
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvConcat whole lower part",
+                bvSelectIx = Proxy @0,
+                bvSelectW = Proxy @4,
+                bvSelectTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvSelectTestExpected = ssymTerm "b" :: Term (WordN 4)
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvConcat only higher part",
+                bvSelectIx = Proxy @5,
+                bvSelectW = Proxy @2,
+                bvSelectTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvSelectTestExpected =
+                  bvselectTerm
+                    (Proxy @1)
+                    (Proxy @2)
+                    (ssymTerm "a" :: Term (WordN 4))
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvConcat whole higher part",
+                bvSelectIx = Proxy @4,
+                bvSelectW = Proxy @4,
+                bvSelectTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvSelectTestExpected = ssymTerm "a" :: Term (WordN 4)
+              },
+            BVSelectTest
+              { bvSelectTestName = "bvConcat cross border",
+                bvSelectIx = Proxy @3,
+                bvSelectW = Proxy @4,
+                bvSelectTestTerm =
+                  bvconcatTerm
+                    (ssymTerm "a" :: Term (WordN 4))
+                    (ssymTerm "b" :: Term (WordN 4)),
+                bvSelectTestExpected =
+                  bvconcatTerm
+                    ( bvselectTerm
+                        (Proxy @0)
+                        (Proxy @3)
+                        (ssymTerm "a" :: Term (WordN 4))
+                    )
+                    ( bvselectTerm
+                        (Proxy @3)
+                        (Proxy @1)
+                        (ssymTerm "b" :: Term (WordN 4))
+                    )
               }
             ]
         return . testCase name $
