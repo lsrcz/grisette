@@ -41,6 +41,7 @@ module Grisette.IR.SymPrim
     isymBV,
     sinfosymBV,
     iinfosymBV,
+    arbitraryBV,
 
     -- ** Symbolic types
     SupportedPrim,
@@ -77,6 +78,7 @@ import Grisette.Core.Data.BV
   )
 import Grisette.Core.Data.SomeBV
   ( SomeBV (..),
+    arbitraryBV,
     binSomeBV,
     binSomeBVR1,
     binSomeBVR2,

@@ -11,6 +11,7 @@ module Grisette.Core.Data.SomeBVTests (someBVTests) where
 import Control.DeepSeq (NFData, force)
 import Control.Exception (ArithException (Overflow), catch, evaluate)
 import Control.Monad.Except (ExceptT)
+import Data.Bits (FiniteBits (finiteBitSize))
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
 import Grisette (ITEOp (symIte))
@@ -35,6 +36,7 @@ import Grisette.Core.Data.SomeBV
     SomeIntN,
     SomeSymIntN,
     SomeWordN,
+    arbitraryBV,
     binSomeBV,
     binSomeBVR1,
     binSomeBVR2,
@@ -58,7 +60,9 @@ import Grisette.Lib.Data.Functor (mrgFmap)
 import Numeric.Natural (Natural)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
+import Test.QuickCheck (forAll, ioProperty)
 
 testFuncMatch ::
   (Eq r, Show r) =>
@@ -388,5 +392,8 @@ someBVTests =
             let actual = genSymSimple (4 :: Natural) "a" :: SomeSymIntN
             let expected = isymBV 4 "a" 0
             actual @?= expected
-        ]
+        ],
+      testProperty "arbitraryBV" $
+        forAll (arbitraryBV 4) $
+          \(bv :: SomeIntN) -> ioProperty $ finiteBitSize bv @?= 4
     ]
