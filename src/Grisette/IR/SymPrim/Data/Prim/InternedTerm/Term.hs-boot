@@ -191,35 +191,21 @@ data Term t where
   RotateLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   RotateRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (u n)) ->
-    Term (s n)
+    !(Term u) ->
+    Term s
   ToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (s n)) ->
-    Term (u n)
+    !(Term s) ->
+    Term u
   BVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
       Typeable bv,
@@ -329,33 +315,19 @@ data UTerm t where
   URotateLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => !(Term t) -> !(Term t) -> UTerm t
   URotateRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => !(Term t) -> !(Term t) -> UTerm t
   UToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
-    !(Term (u n)) ->
-    UTerm (s n)
+    !(Term u) ->
+    UTerm s
   UToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
+    ( SupportedPrim u,
+      SupportedPrim s,
+      SignConversion u s
     ) =>
-    !(Term (s n)) ->
-    UTerm (u n)
+    !(Term s) ->
+    UTerm u
   UBVConcatTerm ::
     ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
       Typeable bv,

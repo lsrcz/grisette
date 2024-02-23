@@ -302,33 +302,21 @@ rotateRightTerm t n = internTerm $ URotateRightTerm t n
 {-# INLINE rotateRightTerm #-}
 
 toSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (u n) ->
-  Term (s n)
+  Term u ->
+  Term s
 toSignedTerm = internTerm . UToSignedTerm
 
 toUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (s n) ->
-  Term (u n)
+  Term s ->
+  Term u
 toUnsignedTerm = internTerm . UToUnsignedTerm
 
 bvconcatTerm ::

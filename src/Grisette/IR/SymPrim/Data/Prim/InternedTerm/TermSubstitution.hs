@@ -177,7 +177,7 @@ substTerm sym term = gov
         RotateLeftTerm _ op n -> SomeTerm $ pevalRotateLeftTerm (gov op) (gov n)
         ShiftRightTerm _ op n -> SomeTerm $ pevalShiftRightTerm (gov op) (gov n)
         RotateRightTerm _ op n -> SomeTerm $ pevalRotateRightTerm (gov op) (gov n)
-        ToSignedTerm _ op -> SomeTerm $ pevalToSignedTerm op 
+        ToSignedTerm _ op -> SomeTerm $ pevalToSignedTerm op
         ToUnsignedTerm _ op -> SomeTerm $ pevalToUnsignedTerm op
         BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)
         BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)

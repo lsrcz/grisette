@@ -139,31 +139,19 @@ shiftRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Ter
 rotateLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
 rotateRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
 toSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (u n) ->
-  Term (s n)
+  Term u ->
+  Term s
 toUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s
+  ( SupportedPrim u,
+    SupportedPrim s,
+    SignConversion u s
   ) =>
-  Term (s n) ->
-  Term (u n)
+  Term s ->
+  Term u
 bvconcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
