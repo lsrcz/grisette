@@ -34,6 +34,7 @@ module Grisette.Core.Data.SomeBV
     isymBV,
     sinfosymBV,
     iinfosymBV,
+    arbitraryBV,
 
     -- * Synonyms
     pattern SomeIntN,
@@ -188,6 +189,7 @@ import Grisette.Utils.Parameterized
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Numeric.Natural (Natural)
+import Test.QuickCheck (Arbitrary (arbitrary), Gen)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
@@ -868,6 +870,19 @@ iinfosymBV ::
   SomeBV bv
 iinfosymBV n s i info =
   unsafeSomeBV n $ \(_ :: proxy n) -> iinfosym @(cbv n) s i info
+
+-- | Generate an arbitrary 'SomeBV' with a given run-time bitwidth.
+arbitraryBV ::
+  forall bv.
+  (forall n. (KnownNat n, 1 <= n) => Arbitrary (bv n)) =>
+  Natural ->
+  Gen (SomeBV bv)
+arbitraryBV n
+  | n == 0 = error "arbitraryBV: trying to create a bitvector of size 0"
+  | otherwise = case mkPositiveNatRepr n of
+      SomePositiveNatRepr (_ :: NatRepr x) -> do
+        v <- arbitrary :: Gen (bv x)
+        return $ SomeBV v
 
 -- Helpers
 
