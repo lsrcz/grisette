@@ -408,30 +408,6 @@ pevalBVConcatTerm ::
   Term (bv (a + b))
 pevalBVConcatTerm = binaryUnfoldOnce doPevalBVConcatTerm bvconcatTerm
 
-unsafeBVConcatTerm ::
-  forall bv n1 n2 r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv
-  ) =>
-  NatRepr n1 ->
-  NatRepr n2 ->
-  NatRepr r ->
-  Term (bv n1) ->
-  Term (bv n2) ->
-  Term (bv r)
-unsafeBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
-  case ( unsafeAxiom :: (n1 + n2) :~: r,
-         unsafeLeqProof @1 @r,
-         unsafeLeqProof @1 @n1,
-         unsafeLeqProof @1 @n2
-       ) of
-    (Refl, LeqProof, LeqProof, LeqProof) ->
-      withKnownNat n1Repr $
-        withKnownNat n2Repr $
-          withKnownNat rRepr $
-            bvconcatTerm lhs rhs
-
 unsafePevalBVConcatTerm ::
   forall bv n1 n2 r.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
@@ -457,128 +433,19 @@ unsafePevalBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
             pevalBVConcatTerm lhs rhs
 
 doPevalBVConcatTerm ::
-  forall bv l r.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
-    KnownNat l,
-    KnownNat r,
-    KnownNat (l + r),
-    1 <= l,
-    1 <= r,
-    1 <= (l + r),
+    KnownNat a,
+    KnownNat b,
+    KnownNat (a + b),
+    1 <= a,
+    1 <= b,
+    1 <= (a + b),
     SizedBV bv
   ) =>
-  Term (bv l) ->
-  Term (bv r) ->
-  Maybe (Term (bv (l + r)))
--- 1. [c1 c2] -> c1c2
+  Term (bv a) ->
+  Term (bv b) ->
+  Maybe (Term (bv (a + b)))
 doPevalBVConcatTerm (ConTerm _ v) (ConTerm _ v') =
   Just $ conTerm $ sizedBVConcat v v'
--- 2. [c1 (c2 ?)] -> (c1c2 ?)
-doPevalBVConcatTerm
-  (ConTerm _ vl)
-  (BVConcatTerm _ (ConTerm _ (vrl :: bv rl)) (rr :: Term (bv rr))) =
-    case unsafeLeqProof @1 @(l + rl) of
-      LeqProof ->
-        Just $
-          withKnownNat lRlRepr $
-            unsafeBVConcatTerm
-              lRlRepr
-              (natRepr @rr)
-              (addNat (natRepr @l) (natRepr @r))
-              (conTerm $ sizedBVConcat vl vrl)
-              rr
-    where
-      lRlRepr = addNat (natRepr @l) (natRepr @rl)
--- 3. [c1 (s c2)] -> (c1 (s c2))
-doPevalBVConcatTerm (ConTerm {}) (BVConcatTerm _ _ ConTerm {}) = Nothing
--- 4. [(c s) ?) -> (c [s ?])
-doPevalBVConcatTerm
-  (BVConcatTerm _ (ll@ConTerm {} :: Term (bv ll)) (lr :: Term (bv lr)))
-  r =
-    Just $ unsafeBVConcatTerm llRepr lrRRepr lRRepr ll rhs
-    where
-      llRepr = natRepr @ll
-      lrRepr = natRepr @lr
-      lRepr = natRepr @l
-      rRepr = natRepr @r
-      lrRRepr = addNat lrRepr rRepr
-      lRRepr = addNat lRepr rRepr
-      rhs :: Term (bv (lr + r))
-      rhs = unsafePevalBVConcatTerm lrRepr rRepr lrRRepr lr r
--- 5. [? (c1 (s2 c2))] -> (([? c1] s2) c2)
-doPevalBVConcatTerm
-  l
-  ( BVConcatTerm
-      _
-      (rl@ConTerm {} :: Term (bv rl))
-      (BVConcatTerm _ (rrl :: Term (bv rrl)) (rrr@ConTerm {} :: Term (bv rrr)))
-    ) =
-    Just $ unsafeBVConcatTerm lRlRrlRepr rrrRepr lRRepr lRlRrl rrr
-    where
-      lRepr = natRepr @l
-      rlRepr = natRepr @rl
-      rrlRepr = natRepr @rrl
-      rrrRepr = natRepr @rrr
-      lRlRepr = addNat lRepr rlRepr
-      rRepr = natRepr @r
-      lRRepr = addNat lRepr rRepr
-      lRl = unsafePevalBVConcatTerm lRepr rlRepr lRlRepr l rl
-      lRlRrlRepr = addNat lRlRepr rrlRepr
-      lRlRrl = unsafeBVConcatTerm lRlRepr rrlRepr lRlRrlRepr lRl rrl
--- 6. [(s1 c1) c2] -> (s1 c1c2)
-doPevalBVConcatTerm
-  (BVConcatTerm _ (ll :: Term (bv ll)) ((ConTerm _ vlr) :: Term (bv lr)))
-  (ConTerm _ vr) =
-    Just $ unsafeBVConcatTerm llRepr lrRRepr lRRepr ll rhs
-    where
-      llRepr = natRepr @ll
-      lrRepr = natRepr @lr
-      lRepr = natRepr @l
-      rRepr = natRepr @r
-      lrRRepr = addNat lrRepr rRepr
-      lRRepr = addNat lRepr rRepr
-      rhs :: Term (bv (lr + r))
-      rhs = case unsafeLeqProof @1 @(lr + r) of
-        LeqProof ->
-          withKnownNat lrRRepr $ conTerm $ sizedBVConcat vlr vr
--- 7. [(s1 c1) (c2 s2)] -> (s1 (c1c2 s2))
-doPevalBVConcatTerm
-  (BVConcatTerm _ (ll :: Term (bv ll)) ((ConTerm _ vlr) :: Term (bv lr)))
-  (BVConcatTerm _ ((ConTerm _ vrl) :: Term (bv rl)) (rr :: Term (bv rr))) =
-    Just $ unsafeBVConcatTerm llRepr lrRlRrRepr lRRepr ll lrRlRR
-    where
-      lRepr = natRepr @l
-      rRepr = natRepr @r
-      llRepr = natRepr @ll
-      lrRepr = natRepr @lr
-      rlRepr = natRepr @rl
-      rrRepr = natRepr @rr
-      lRRepr = addNat lRepr rRepr
-      lrRlRepr :: NatRepr (lr + rl)
-      lrRlRepr = addNat lrRepr rlRepr
-      lrRlRrRepr :: NatRepr ((lr + rl) + rr)
-      lrRlRrRepr = addNat lrRlRepr rrRepr
-      lrRl :: Term (bv (lr + rl))
-      lrRl = case unsafeLeqProof @1 @(lr + rl) of
-        LeqProof -> withKnownNat lrRlRepr $ conTerm $ sizedBVConcat vlr vrl
-      lrRlRR :: Term (bv ((lr + rl) + rr))
-      lrRlRR = unsafeBVConcatTerm lrRlRepr rrRepr lrRlRrRepr lrRl rr
--- 8. [?notc (s2 c)] -> ((s1 s2) c)
-doPevalBVConcatTerm
-  l
-  (BVConcatTerm _ (rl :: Term (bv rl)) (rr@ConTerm {} :: Term (bv rr))) =
-    Just $
-      unsafeBVConcatTerm
-        lRlRepr
-        (natRepr @rr)
-        (addNat (natRepr @l) (natRepr @r))
-        lhs
-        rr
-    where
-      lRepr = natRepr @l
-      rlRepr = natRepr @rl
-      lRlRepr = addNat lRepr rlRepr
-      lhs :: Term (bv (l + rl))
-      lhs = unsafeBVConcatTerm lRepr rlRepr lRlRepr l rl
 doPevalBVConcatTerm _ _ = Nothing
