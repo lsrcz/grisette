@@ -30,9 +30,8 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   )
 where
 
-import Data.Maybe (isJust)
-import Data.Typeable (Proxy (Proxy), Typeable, (:~:) (Refl))
-import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (<=))
+import Data.Typeable (Typeable)
+import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
@@ -49,7 +48,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
-    Term (BVConcatTerm, BVSelectTerm, ConTerm, ToSignedTerm, ToUnsignedTerm),
+    Term (BVSelectTerm, ConTerm, ToSignedTerm, ToUnsignedTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( castTerm,
@@ -61,11 +60,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
 import Grisette.Utils.Parameterized
   ( LeqProof (LeqProof),
     NatRepr,
-    Some (Some),
     addNat,
-    mkNatRepr,
     natRepr,
-    unsafeAxiom,
     unsafeLeqProof,
     withKnownNat,
   )
@@ -206,45 +202,11 @@ doPevalBVSelectTerm ::
   q w ->
   Term (bv n) ->
   Maybe (Term (bv w))
-doPevalBVSelectTerm ix w rhs
-  | isJust (sameNat ix (Proxy @0)) && isJust (sameNat w (Proxy @n)) =
-      Just rhs >>= castTerm
 doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
 doPevalBVSelectTerm ix w (ToSignedTerm _ b) =
   Just $ pevalToSignedTerm $ pevalBVSelectTerm ix w b
 doPevalBVSelectTerm ix w (ToUnsignedTerm _ b) =
   Just $ pevalToUnsignedTerm $ pevalBVSelectTerm ix w b
-doPevalBVSelectTerm
-  pix
-  pw
-  (BVConcatTerm _ (b1 :: Term (bv n1)) (b2 :: Term (bv n2)))
-    | ix + w <= n2 = Just $ unsafePevalBVSelectTerm n2Repr ixRepr wRepr b2
-    | ix >= n2 =
-        case mkNatRepr (ix - n2) of
-          Some ixpn2Repr ->
-            Just $
-              unsafePevalBVSelectTerm n1Repr ixpn2Repr wRepr b1
-    | otherwise =
-        case (mkNatRepr (w + ix - n2), mkNatRepr (n2 - ix)) of
-          (Some wixpn2Repr, Some n2pixRepr) ->
-            let b1Part =
-                  unsafePevalBVSelectTerm n1Repr (natRepr @0) wixpn2Repr b1
-                b2Part = unsafePevalBVSelectTerm n2Repr ixRepr n2pixRepr b2
-             in Just $
-                  unsafePevalBVConcatTerm
-                    wixpn2Repr
-                    n2pixRepr
-                    wRepr
-                    b1Part
-                    b2Part
-    where
-      ixRepr = natRepr @ix
-      wRepr = natRepr @w
-      n1Repr = natRepr @n1
-      n2Repr = natRepr @n2
-      ix = natVal @ix pix
-      w = natVal @w pw
-      n2 = natVal @n2 (Proxy @n2)
 doPevalBVSelectTerm
   _
   _
@@ -340,30 +302,6 @@ pevalBVConcatTerm ::
   Term (bv b) ->
   Term (bv (a + b))
 pevalBVConcatTerm = binaryUnfoldOnce doPevalBVConcatTerm bvconcatTerm
-
-unsafePevalBVConcatTerm ::
-  forall bv n1 n2 r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv
-  ) =>
-  NatRepr n1 ->
-  NatRepr n2 ->
-  NatRepr r ->
-  Term (bv n1) ->
-  Term (bv n2) ->
-  Term (bv r)
-unsafePevalBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
-  case ( unsafeAxiom :: (n1 + n2) :~: r,
-         unsafeLeqProof @1 @r,
-         unsafeLeqProof @1 @n1,
-         unsafeLeqProof @1 @n2
-       ) of
-    (Refl, LeqProof, LeqProof, LeqProof) ->
-      withKnownNat n1Repr $
-        withKnownNat n2Repr $
-          withKnownNat rRepr $
-            pevalBVConcatTerm lhs rhs
 
 doPevalBVConcatTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
