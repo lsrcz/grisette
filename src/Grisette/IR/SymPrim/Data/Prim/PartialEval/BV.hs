@@ -34,7 +34,7 @@ import Data.Maybe (isJust)
 import Data.Typeable (Proxy (Proxy), Typeable, (:~:) (Refl))
 import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV (sizedBVConcat, sizedBVFromIntegral, sizedBVSelect, sizedBVSext, sizedBVZext),
+  ( SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
@@ -49,14 +49,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
-    Term
-      ( BVConcatTerm,
-        BVExtendTerm,
-        BVSelectTerm,
-        ConTerm,
-        ToSignedTerm,
-        ToUnsignedTerm
-      ),
+    Term (BVConcatTerm, BVExtendTerm, BVSelectTerm, ConTerm, ToSignedTerm, ToUnsignedTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( castTerm,
@@ -327,8 +320,7 @@ pevalBVExtendTerm ::
   proxy r ->
   Term (bv l) ->
   Term (bv r)
-pevalBVExtendTerm signed p =
-  unaryUnfoldOnce (doPevalBVExtendTerm signed p) (bvextendTerm signed p)
+pevalBVExtendTerm signed p = unaryUnfoldOnce (doPevalBVExtendTerm signed p) (bvextendTerm signed p)
 
 unsafePevalBVExtendTerm ::
   forall bv l r.
@@ -363,33 +355,7 @@ doPevalBVExtendTerm ::
   proxy r ->
   Term (bv l) ->
   Maybe (Term (bv r))
-doPevalBVExtendTerm signed p (ConTerm _ b) =
-  Just $ conTerm $ if signed then sizedBVSext p b else sizedBVZext p b
-doPevalBVExtendTerm _ p b | isJust $ sameNat p (Proxy @l) =
-  case sameNat p (Proxy @r) of
-    Just Refl -> Just b >>= castTerm
-    _ -> error "Impossible"
-doPevalBVExtendTerm False pr b =
-  case (mkNatRepr $ r - l) of
-    Some (rplRepr :: NatRepr lpr) ->
-      withKnownNat rplRepr $
-        case unsafeLeqProof @1 @lpr of
-          LeqProof ->
-            Just $
-              unsafePevalBVConcatTerm
-                rplRepr
-                lRepr
-                rRepr
-                (conTerm $ sizedBVFromIntegral 0)
-                b
-  where
-    lRepr = natRepr @l
-    rRepr = natRepr @r
-    l = natVal @l (Proxy @l)
-    r = natVal @r pr
-doPevalBVExtendTerm True p (BVExtendTerm _ True _ (b :: Term (bv l1))) =
-  case unsafeLeqProof @l1 @r of
-    LeqProof -> Just $ pevalBVExtendTerm True p b
+doPevalBVExtendTerm signed p (ConTerm _ b) = Just $ conTerm $ if signed then sizedBVSext p b else sizedBVZext p b
 doPevalBVExtendTerm _ _ _ = Nothing
 
 pevalBVConcatTerm ::
@@ -446,6 +412,5 @@ doPevalBVConcatTerm ::
   Term (bv a) ->
   Term (bv b) ->
   Maybe (Term (bv (a + b)))
-doPevalBVConcatTerm (ConTerm _ v) (ConTerm _ v') =
-  Just $ conTerm $ sizedBVConcat v v'
+doPevalBVConcatTerm (ConTerm _ v) (ConTerm _ v') = Just $ conTerm $ sizedBVConcat v v'
 doPevalBVConcatTerm _ _ = Nothing
