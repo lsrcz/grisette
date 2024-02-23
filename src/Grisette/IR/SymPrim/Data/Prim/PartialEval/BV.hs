@@ -210,8 +210,9 @@ doPevalBVSelectTerm ::
   q w ->
   Term (bv n) ->
   Maybe (Term (bv w))
-doPevalBVSelectTerm ix w rhs
-  | isJust (sameNat ix (Proxy @0)) && isJust (sameNat w (Proxy @n)) =
+doPevalBVSelectTerm _ _ rhs
+  | isJust (sameNat (Proxy @ix) (Proxy @0))
+      && isJust (sameNat (Proxy @w) (Proxy @n)) =
       Just rhs >>= castTerm
 doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
 doPevalBVSelectTerm ix w (ToSignedTerm _ b) =
@@ -365,10 +366,9 @@ doPevalBVExtendTerm ::
   Maybe (Term (bv r))
 doPevalBVExtendTerm signed p (ConTerm _ b) =
   Just $ conTerm $ if signed then sizedBVSext p b else sizedBVZext p b
-doPevalBVExtendTerm _ p b | isJust $ sameNat p (Proxy @l) =
-  case sameNat p (Proxy @r) of
-    Just Refl -> Just b >>= castTerm
-    _ -> error "Impossible"
+doPevalBVExtendTerm _ _ b
+  | isJust $ sameNat (Proxy @l) (Proxy @r) =
+      Just b >>= castTerm
 doPevalBVExtendTerm False pr b =
   case (mkNatRepr $ r - l) of
     Some (rplRepr :: NatRepr lpr) ->
