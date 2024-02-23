@@ -54,13 +54,15 @@ module Grisette.Utils.Parameterized
     unsafeAxiom,
 
     -- * Unparameterized type
-    Some (..),
+    SomeNatRepr (..),
+    SomePositiveNatRepr (..),
 
     -- * Runtime representation of type-level natural numbers
     NatRepr,
     withKnownNat,
     natValue,
     mkNatRepr,
+    mkPositiveNatRepr,
     natRepr,
     decNat,
     predNat,
@@ -92,7 +94,6 @@ module Grisette.Utils.Parameterized
   )
 where
 
-import Data.Kind (Type)
 import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import GHC.TypeNats
   ( Div,
@@ -107,8 +108,6 @@ import GHC.TypeNats
   )
 import Numeric.Natural (Natural)
 import Unsafe.Coerce (unsafeCoerce)
-
-data Some (f :: k -> Type) = forall x. Some (f x)
 
 -- | Assert a proof of equality between two types.
 -- This is unsafe if used improperly, so use this with caution!
@@ -130,9 +129,29 @@ newtype NatRepr (n :: Nat) = NatRepr Natural
 natValue :: NatRepr n -> Natural
 natValue (NatRepr n) = n
 
--- | Turn a @Natural@ into the corresponding @NatRepr@
-mkNatRepr :: Natural -> Some NatRepr
-mkNatRepr n = Some (NatRepr n)
+data SomeNatReprHelper where
+  SomeNatReprHelper :: NatRepr n -> SomeNatReprHelper
+
+data SomeNatRepr where
+  SomeNatRepr :: (KnownNat n) => NatRepr n -> SomeNatRepr
+
+-- | Turn a @Natural@ into the corresponding @NatRepr@ with the KnownNat
+-- constraint.
+mkNatRepr :: Natural -> SomeNatRepr
+mkNatRepr n = case SomeNatReprHelper (NatRepr n) of
+  SomeNatReprHelper natRepr -> withKnownNat natRepr $ SomeNatRepr natRepr
+
+data SomePositiveNatRepr where
+  SomePositiveNatRepr ::
+    (KnownNat n, 1 <= n) => NatRepr n -> SomePositiveNatRepr
+
+-- | Turn a @NatRepr@ into the corresponding @NatRepr@ with the KnownNat
+-- constraint and asserts that its greater than 0.
+mkPositiveNatRepr :: Natural -> SomePositiveNatRepr
+mkPositiveNatRepr 0 = error "mkPositiveNatRepr: 0 is not a positive number"
+mkPositiveNatRepr n = case mkNatRepr n of
+  SomeNatRepr (natRepr :: NatRepr n) -> case unsafeLeqProof @1 @n of
+    LeqProof -> SomePositiveNatRepr natRepr
 
 -- | Construct a runtime representation of a type-level natural number when its
 -- runtime value is known.

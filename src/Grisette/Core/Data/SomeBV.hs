@@ -179,13 +179,12 @@ import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
     NatRepr,
-    Some (Some),
+    SomePositiveNatRepr (SomePositiveNatRepr),
     knownAdd,
     leqAddPos,
-    mkNatRepr,
+    mkPositiveNatRepr,
     unsafeKnownProof,
     unsafeLeqProof,
-    withKnownNat,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Numeric.Natural (Natural)
@@ -555,10 +554,8 @@ instance
   GenSym Natural (SomeBV bv)
   where
   fresh 0 = error "fresh: cannot generate a bitvector of size 0"
-  fresh n = case mkNatRepr n of
-    Some (natRepr :: NatRepr x) ->
-      case unsafeLeqProof @1 @x of
-        LeqProof -> withKnownNat natRepr $ fresh (Proxy @x)
+  fresh n = case mkPositiveNatRepr n of
+    SomePositiveNatRepr (_ :: NatRepr x) -> fresh (Proxy @x)
   {-# INLINE fresh #-}
 
 instance
@@ -568,10 +565,8 @@ instance
   GenSymSimple Natural (SomeBV bv)
   where
   simpleFresh 0 = error "fresh: cannot generate a bitvector of size 0"
-  simpleFresh n = case mkNatRepr n of
-    Some (natRepr :: NatRepr x) ->
-      case unsafeLeqProof @1 @x of
-        LeqProof -> withKnownNat natRepr $ simpleFresh (Proxy @x)
+  simpleFresh n = case mkPositiveNatRepr n of
+    SomePositiveNatRepr (_ :: NatRepr x) -> simpleFresh (Proxy @x)
   {-# INLINE simpleFresh #-}
 
 instance
@@ -744,12 +739,8 @@ unsafeSomeBV ::
   SomeBV bv
 unsafeSomeBV n i
   | n == 0 = error "unsafeBV: trying to create a bitvector of size 0"
-  | otherwise = case mkNatRepr n of
-      Some (natRepr :: NatRepr x) ->
-        case unsafeLeqProof @1 @x of
-          LeqProof ->
-            withKnownNat natRepr $
-              SomeBV (i (Proxy @x))
+  | otherwise = case mkPositiveNatRepr n of
+      SomePositiveNatRepr (_ :: NatRepr x) -> SomeBV (i (Proxy @x))
 
 -- | Construct a symbolic 'SomeBV' with a given concrete 'SomeBV'. Similar to
 -- 'con' but for 'SomeBV'.

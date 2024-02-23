@@ -34,7 +34,13 @@ import Data.Maybe (isJust)
 import Data.Typeable (Proxy (Proxy), Typeable, (:~:) (Refl))
 import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV (sizedBVConcat, sizedBVFromIntegral, sizedBVSelect, sizedBVSext, sizedBVZext),
+  ( SizedBV
+      ( sizedBVConcat,
+        sizedBVFromIntegral,
+        sizedBVSelect,
+        sizedBVSext,
+        sizedBVZext
+      ),
   )
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
@@ -68,9 +74,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
 import Grisette.Utils.Parameterized
   ( LeqProof (LeqProof),
     NatRepr,
-    Some (Some),
+    SomeNatRepr (SomeNatRepr),
+    SomePositiveNatRepr (SomePositiveNatRepr),
     addNat,
     mkNatRepr,
+    mkPositiveNatRepr,
     natRepr,
     unsafeAxiom,
     unsafeLeqProof,
@@ -226,12 +234,11 @@ doPevalBVSelectTerm
     | ix + w <= n2 = Just $ unsafePevalBVSelectTerm n2Repr ixRepr wRepr b2
     | ix >= n2 =
         case mkNatRepr (ix - n2) of
-          Some ixpn2Repr ->
-            Just $
-              unsafePevalBVSelectTerm n1Repr ixpn2Repr wRepr b1
+          SomeNatRepr ixpn2Repr ->
+            Just $ unsafePevalBVSelectTerm n1Repr ixpn2Repr wRepr b1
     | otherwise =
         case (mkNatRepr (w + ix - n2), mkNatRepr (n2 - ix)) of
-          (Some wixpn2Repr, Some n2pixRepr) ->
+          (SomeNatRepr wixpn2Repr, SomeNatRepr n2pixRepr) ->
             let b1Part =
                   unsafePevalBVSelectTerm n1Repr (natRepr @0) wixpn2Repr b1
                 b2Part = unsafePevalBVSelectTerm n2Repr ixRepr n2pixRepr b2
@@ -267,7 +274,7 @@ doPevalBVSelectTerm
     | ix + w <= n1 = Just $ unsafePevalBVSelectTerm n1Repr ixRepr wRepr b
     | ix < n1 =
         case mkNatRepr (n1 - ix) of
-          Some n1pixRepr ->
+          SomeNatRepr n1pixRepr ->
             let bPart = unsafePevalBVSelectTerm n1Repr ixRepr n1pixRepr b
              in Just $ unsafePevalBVExtendTerm n1pixRepr wRepr signed bPart
     | otherwise = Nothing
@@ -370,18 +377,15 @@ doPevalBVExtendTerm _ _ b
   | isJust $ sameNat (Proxy @l) (Proxy @r) =
       Just b >>= castTerm
 doPevalBVExtendTerm False pr b =
-  case (mkNatRepr $ r - l) of
-    Some (rplRepr :: NatRepr lpr) ->
-      withKnownNat rplRepr $
-        case unsafeLeqProof @1 @lpr of
-          LeqProof ->
-            Just $
-              unsafePevalBVConcatTerm
-                rplRepr
-                lRepr
-                rRepr
-                (conTerm $ sizedBVFromIntegral 0)
-                b
+  case (mkPositiveNatRepr $ r - l) of
+    SomePositiveNatRepr (rplRepr :: NatRepr lpr) ->
+      Just $
+        unsafePevalBVConcatTerm
+          rplRepr
+          lRepr
+          rRepr
+          (conTerm $ sizedBVFromIntegral 0)
+          b
   where
     lRepr = natRepr @l
     rRepr = natRepr @r
