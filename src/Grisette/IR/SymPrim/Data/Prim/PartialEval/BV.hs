@@ -49,7 +49,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
-    Term (BVConcatTerm, BVExtendTerm, BVSelectTerm, ConTerm, ToSignedTerm, ToUnsignedTerm),
+    Term (BVConcatTerm, BVSelectTerm, ConTerm, ToSignedTerm, ToUnsignedTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( castTerm,
@@ -102,10 +102,6 @@ doPevalToSignedTerm ::
   Maybe (Term (s n))
 doPevalToSignedTerm (ConTerm _ b) = Just $ conTerm $ toSigned b
 doPevalToSignedTerm (ToUnsignedTerm _ b) = Just b >>= castTerm
-doPevalToSignedTerm (BVConcatTerm _ b1 b2) =
-  Just $ pevalBVConcatTerm (pevalToSignedTerm b1) (pevalToSignedTerm b2)
-doPevalToSignedTerm (BVExtendTerm _ signed pr b) =
-  Just $ pevalBVExtendTerm signed pr $ pevalToSignedTerm b
 doPevalToSignedTerm _ = Nothing
 
 -- ToUnsigned
@@ -128,11 +124,11 @@ pevalToUnsignedTerm = unaryUnfoldOnce doPevalToUnsignedTerm toUnsignedTerm
 doPevalToUnsignedTerm ::
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
     forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
     Typeable u,
     Typeable s,
     KnownNat n,
     1 <= n,
+    SignConversion (u n) (s n),
     SizedBV u,
     SizedBV s
   ) =>
@@ -140,11 +136,24 @@ doPevalToUnsignedTerm ::
   Maybe (Term (u n))
 doPevalToUnsignedTerm (ConTerm _ b) = Just $ conTerm $ toUnsigned b
 doPevalToUnsignedTerm (ToSignedTerm _ b) = Just b >>= castTerm
-doPevalToUnsignedTerm (BVConcatTerm _ b1 b2) =
-  Just $ pevalBVConcatTerm (pevalToUnsignedTerm b1) (pevalToUnsignedTerm b2)
-doPevalToUnsignedTerm (BVExtendTerm _ signed pr b) =
-  Just $ pevalBVExtendTerm signed pr $ pevalToUnsignedTerm b
 doPevalToUnsignedTerm _ = Nothing
+
+data BVSelectWitness n ix w where
+  BVSelectWitness ::
+    (KnownNat n, 1 <= n, KnownNat w, 1 <= w, KnownNat ix, ix + w <= n) =>
+    BVSelectWitness n ix w
+
+unsafeBVSelectWitness ::
+  forall n ix w. NatRepr n -> NatRepr ix -> NatRepr w -> BVSelectWitness n ix w
+unsafeBVSelectWitness n ix w =
+  withKnownNat n $
+    withKnownNat ix $
+      withKnownNat w $
+        case ( unsafeLeqProof @1 @n,
+               unsafeLeqProof @1 @w,
+               unsafeLeqProof @(ix + w) @n
+             ) of
+          (LeqProof, LeqProof, LeqProof) -> BVSelectWitness
 
 -- select
 pevalBVSelectTerm ::
@@ -178,14 +187,8 @@ unsafePevalBVSelectTerm ::
   Term (bv n) ->
   Term (bv w)
 unsafePevalBVSelectTerm n ix w term =
-  withKnownNat n $
-    withKnownNat ix $
-      withKnownNat w $
-        case ( unsafeLeqProof @1 @n,
-               unsafeLeqProof @1 @w,
-               unsafeLeqProof @(ix + w) @n
-             ) of
-          (LeqProof, LeqProof, LeqProof) -> pevalBVSelectTerm ix w term
+  case unsafeBVSelectWitness n ix w of
+    BVSelectWitness -> pevalBVSelectTerm ix w term
 
 doPevalBVSelectTerm ::
   forall bv n ix w p q.
@@ -252,24 +255,6 @@ doPevalBVSelectTerm
         (addNat (natRepr @ix) (natRepr @ix1))
         (natRepr @w)
         b
-doPevalBVSelectTerm
-  pix
-  pw
-  (BVExtendTerm _ signed _ (b :: Term (bv n1)))
-    | ix + w <= n1 = Just $ unsafePevalBVSelectTerm n1Repr ixRepr wRepr b
-    | ix < n1 =
-        case mkNatRepr (n1 - ix) of
-          Some n1pixRepr ->
-            let bPart = unsafePevalBVSelectTerm n1Repr ixRepr n1pixRepr b
-             in Just $ unsafePevalBVExtendTerm n1pixRepr wRepr signed bPart
-    | otherwise = Nothing
-    where
-      ixRepr = natRepr @ix
-      wRepr = natRepr @w
-      n1Repr = natRepr @n1
-      ix = natVal @ix pix
-      w = natVal @w pw
-      n1 = natVal @n1 (Proxy @n1)
 doPevalBVSelectTerm _ _ _ = Nothing
 
 -- ext
@@ -321,24 +306,6 @@ pevalBVExtendTerm ::
   Term (bv l) ->
   Term (bv r)
 pevalBVExtendTerm signed p = unaryUnfoldOnce (doPevalBVExtendTerm signed p) (bvextendTerm signed p)
-
-unsafePevalBVExtendTerm ::
-  forall bv l r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv
-  ) =>
-  NatRepr l ->
-  NatRepr r ->
-  Bool ->
-  Term (bv l) ->
-  Term (bv r)
-unsafePevalBVExtendTerm lRepr rRepr signed v =
-  case (unsafeLeqProof @1 @l, unsafeLeqProof @1 @r, unsafeLeqProof @l @r) of
-    (LeqProof, LeqProof, LeqProof) ->
-      withKnownNat lRepr $
-        withKnownNat rRepr $
-          pevalBVExtendTerm signed (Proxy @r) v
 
 doPevalBVExtendTerm ::
   forall proxy l r bv.
