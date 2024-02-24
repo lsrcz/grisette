@@ -1,7 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Grisette.Core.Data.Class.PlainUnion
@@ -19,7 +22,7 @@ where
 
 import Data.Bifunctor (Bifunctor (first))
 import Data.Kind (Type)
-import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&)),
   )
@@ -115,10 +118,10 @@ simpleMerge u = case tryMerge u of
 -- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
 -- {If (&& b a) 1 (If b 2 (If a 3 4))}
 (.#) ::
-  (Function f, SimpleMergeable (Ret f), PlainUnion u) =>
+  (Function f a r, SimpleMergeable r, PlainUnion u) =>
   f ->
-  u (Arg f) ->
-  Ret f
+  u a ->
+  r
 (.#) f u = simpleMerge $ fmap (f #) u
 {-# INLINE (.#) #-}
 

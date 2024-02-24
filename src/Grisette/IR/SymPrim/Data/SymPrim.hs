@@ -105,7 +105,7 @@ import Grisette.Core.Data.BV
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.Function (Apply (FunType, apply), Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.Function (Apply (FunType, apply), Function ((#)))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
@@ -335,9 +335,7 @@ instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca =-> cb) (sa =~> sb)
   underlyingTerm (SymTabularFun a) = a
   wrapTerm = SymTabularFun
 
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) where
-  type Arg (sa =~> sb) = sa
-  type Ret (sa =~> sb) = sb
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) sa sb where
   (SymTabularFun f) # t = wrapTerm $ pevalTabularFunApplyTerm f (underlyingTerm t)
 
 instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa =~> st) where
@@ -380,9 +378,7 @@ instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca --> cb) (sa -~> sb)
   underlyingTerm (SymGeneralFun a) = a
   wrapTerm = SymGeneralFun
 
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa -~> sb) where
-  type Arg (sa -~> sb) = sa
-  type Ret (sa -~> sb) = sb
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa -~> sb) sa sb where
   (SymGeneralFun f) # t = wrapTerm $ pevalGeneralFunApplyTerm f (underlyingTerm t)
 
 instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa -~> st) where
