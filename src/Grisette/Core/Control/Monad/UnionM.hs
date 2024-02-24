@@ -62,7 +62,7 @@ import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (extractSymbolics),
   )
-import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.Class.GPretty
   ( GPretty (gpretty),
     groupedEnclose,
@@ -555,11 +555,9 @@ instance (Solvable c t, Mergeable t) => Solvable c (UnionM t) where
   {-# INLINE conView #-}
 
 instance
-  (Function f, Mergeable f, Mergeable a, Ret f ~ a) =>
-  Function (UnionM f)
+  (Function f arg ret, Mergeable f, Mergeable ret) =>
+  Function (UnionM f) arg (UnionM ret)
   where
-  type Arg (UnionM f) = Arg f
-  type Ret (UnionM f) = UnionM (Ret f)
   f # a = do
     f1 <- f
     mrgPure $ f1 # a

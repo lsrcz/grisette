@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -28,13 +30,7 @@ where
 -- >>> :set -XTypeOperators
 
 -- | Abstraction for function-like types.
-class Function f where
-  -- | Argument type
-  type Arg f
-
-  -- | Return type
-  type Ret f
-
+class Function f arg ret | f -> arg ret where
   -- | Function application operator.
   --
   -- The operator is not right associated (like `($)`). It is left associated,
@@ -45,13 +41,11 @@ class Function f where
   --
   -- >>> (+) # 2 # 3
   -- 5
-  (#) :: f -> Arg f -> Ret f
+  (#) :: f -> arg -> ret
 
   infixl 9 #
 
-instance Function (a -> b) where
-  type Arg (a -> b) = a
-  type Ret (a -> b) = b
+instance Function (a -> b) a b where
   f # a = f a
 
 -- | Applying an uninterpreted function.

@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -21,7 +23,7 @@ where
 import Control.DeepSeq (NFData, NFData1)
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic, Generic1)
-import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
@@ -44,9 +46,7 @@ data (=->) a b = TabularFun {funcTable :: [(a, b)], defaultFuncValue :: b}
 
 infixr 0 =->
 
-instance (Eq a) => Function (a =-> b) where
-  type Arg (a =-> b) = a
-  type Ret (a =-> b) = b
+instance (Eq a) => Function (a =-> b) a b where
   (TabularFun table d) # a = go table
     where
       go [] = d

@@ -70,7 +70,7 @@ import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
-import Grisette.Core.Data.Class.Function (Function (Arg, Ret, (#)))
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
@@ -1167,9 +1167,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
 data (-->) a b where
   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 
-instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) where
-  type Arg (a --> b) = SymType a
-  type Ret (a --> b) = SymType b
+instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
   (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
 
 {-
