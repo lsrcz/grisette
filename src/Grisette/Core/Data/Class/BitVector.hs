@@ -38,7 +38,6 @@ import Grisette.Utils.Parameterized
     subNat,
     unsafeLeqProof,
   )
-import Numeric.Natural (Natural)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -122,7 +121,7 @@ class BV bv where
   --
   -- >>> bv 12 21 :: SomeSymIntN
   -- 0x015
-  bv :: Natural -> Integer -> bv
+  bv :: Int -> Integer -> bv
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.

@@ -188,7 +188,6 @@ import Grisette.Utils.Parameterized
     unsafeLeqProof,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
-import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (arbitrary), Gen)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -553,22 +552,24 @@ instance
   ( forall n. (KnownNat n, 1 <= n) => GenSym () (bv n),
     Mergeable (SomeBV bv)
   ) =>
-  GenSym Natural (SomeBV bv)
+  GenSym Int (SomeBV bv)
   where
-  fresh 0 = error "fresh: cannot generate a bitvector of size 0"
-  fresh n = case mkPositiveNatRepr n of
-    SomePositiveNatRepr (_ :: NatRepr x) -> fresh (Proxy @x)
+  fresh n
+    | n <= 0 = error "fresh: cannot generate a bitvector of non-positive size"
+    | otherwise = case mkPositiveNatRepr (fromIntegral n) of
+        SomePositiveNatRepr (_ :: NatRepr x) -> fresh (Proxy @x)
   {-# INLINE fresh #-}
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => GenSymSimple () (bv n),
     Mergeable (SomeBV bv)
   ) =>
-  GenSymSimple Natural (SomeBV bv)
+  GenSymSimple Int (SomeBV bv)
   where
-  simpleFresh 0 = error "fresh: cannot generate a bitvector of size 0"
-  simpleFresh n = case mkPositiveNatRepr n of
-    SomePositiveNatRepr (_ :: NatRepr x) -> simpleFresh (Proxy @x)
+  simpleFresh n
+    | n <= 0 = error "fresh: cannot generate a bitvector of non-positive size"
+    | otherwise = case mkPositiveNatRepr (fromIntegral n) of
+        SomePositiveNatRepr (_ :: NatRepr x) -> simpleFresh (Proxy @x)
   {-# INLINE simpleFresh #-}
 
 instance
@@ -736,12 +737,12 @@ pattern SomeSymWordN a = SomeBV a
 -- value for the underlying bitvector.
 unsafeSomeBV ::
   forall bv.
-  Natural ->
+  Int ->
   (forall proxy n. (KnownNat n, 1 <= n) => proxy n -> bv n) ->
   SomeBV bv
 unsafeSomeBV n i
-  | n == 0 = error "unsafeBV: trying to create a bitvector of size 0"
-  | otherwise = case mkPositiveNatRepr n of
+  | n <= 0 = error "unsafeBV: trying to create a bitvector of non-positive size"
+  | otherwise = case mkPositiveNatRepr (fromIntegral n) of
       SomePositiveNatRepr (_ :: NatRepr x) -> SomeBV (i (Proxy @x))
 
 -- | Construct a symbolic 'SomeBV' with a given concrete 'SomeBV'. Similar to
@@ -803,7 +804,7 @@ ssymBV ::
   ( forall n. (KnownNat n, 1 <= n) => Solvable (cbv n) (bv n),
     Solvable (cbv 1) (bv 1)
   ) =>
-  Natural ->
+  Int ->
   T.Text ->
   SomeBV bv
 ssymBV n s = unsafeSomeBV n $ \(_ :: proxy n) -> ssym @(cbv n) s
@@ -818,7 +819,7 @@ isymBV ::
   ( forall n. (KnownNat n, 1 <= n) => Solvable (cbv n) (bv n),
     Solvable (cbv 1) (bv 1)
   ) =>
-  Natural ->
+  Int ->
   T.Text ->
   Int ->
   SomeBV bv
@@ -840,7 +841,7 @@ sinfosymBV ::
     Show a,
     Hashable a
   ) =>
-  Natural ->
+  Int ->
   T.Text ->
   a ->
   SomeBV bv
@@ -863,7 +864,7 @@ iinfosymBV ::
     Show a,
     Hashable a
   ) =>
-  Natural ->
+  Int ->
   T.Text ->
   Int ->
   a ->
@@ -875,11 +876,12 @@ iinfosymBV n s i info =
 arbitraryBV ::
   forall bv.
   (forall n. (KnownNat n, 1 <= n) => Arbitrary (bv n)) =>
-  Natural ->
+  Int ->
   Gen (SomeBV bv)
 arbitraryBV n
-  | n == 0 = error "arbitraryBV: trying to create a bitvector of size 0"
-  | otherwise = case mkPositiveNatRepr n of
+  | n <= 0 =
+      error "arbitraryBV: trying to create a bitvector of non-positive size"
+  | otherwise = case mkPositiveNatRepr (fromIntegral n) of
       SomePositiveNatRepr (_ :: NatRepr x) -> do
         v <- arbitrary :: Gen (bv x)
         return $ SomeBV v
