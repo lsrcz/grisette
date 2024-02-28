@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added the creation of unparameterized bit vectors from run-time bit-widths. ([#168])(https://github.com/lsrcz/grisette/pull/168), ([#177](https://github.com/lsrcz/grisette/pull/177))
+- Added the creation of unparameterized bit vectors from run-time bit-widths. ([#168](https://github.com/lsrcz/grisette/pull/168), [#177](https://github.com/lsrcz/grisette/pull/177))
 - Added all the functions available for the exception transformer in `transformers` and `mtl` packages. ([#171](https://github.com/lsrcz/grisette/pull/171))
 - Improved the partial evaluation for bit vectors. ([#176](https://github.com/lsrcz/grisette/pull/176))
 
@@ -26,13 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Refined the safe operations interface using `TryMerge`. ([#172](https://github.com/lsrcz/grisette/pull/172))
 - [Breaking] Renamed `safeMinus` to `safeSub` to be more consistent. ([#172](https://github.com/lsrcz/grisette/pull/172))
 - [Breaking] Unifies the implementation for all symbolic non-indexed
-  bit-vectors. The legacy types are now type and pattern synonyms. ([#174])(https://github.com/lsrcz/grisette/pull/174)
+  bit-vectors. The legacy types are now type and pattern synonyms. ([#174](https://github.com/lsrcz/grisette/pull/174), [#179](https://github.com/lsrcz/grisette/pull/179))
+- [Breaking] Use functional dependency instead of type family for the `Function` class. ([#178](https://github.com/lsrcz/grisette/pull/178))
 
 ## [0.4.1.0] -- 2024-01-10
 
 ### Added
 
-- Added `cegisForAll` interfaces. ([#165])(https://github.com/lsrcz/grisette/pull/165)
+- Added `cegisForAll` interfaces. ([#165](https://github.com/lsrcz/grisette/pull/165))
 
 ## [0.4.0.0] -- 2024-01-08
 
