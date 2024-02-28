@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Refined the safe operations interface using `TryMerge`. ([#172](https://github.com/lsrcz/grisette/pull/172))
 - [Breaking] Renamed `safeMinus` to `safeSub` to be more consistent. ([#172](https://github.com/lsrcz/grisette/pull/172))
 - [Breaking] Unifies the implementation for all symbolic non-indexed
-  bit-vectors. The legacy types are now type and pattern synonyms. ([#174](https://github.com/lsrcz/grisette/pull/174), [#179](https://github.com/lsrcz/grisette/pull/179))
+  bit-vectors. The legacy types are now type and pattern synonyms. ([#174](https://github.com/lsrcz/grisette/pull/174), [#179](https://github.com/lsrcz/grisette/pull/179), [#180](https://github.com/lsrcz/grisette/pull/180))
 - [Breaking] Use functional dependency instead of type family for the `Function` class. ([#178](https://github.com/lsrcz/grisette/pull/178))
 
 ## [0.4.1.0] -- 2024-01-10

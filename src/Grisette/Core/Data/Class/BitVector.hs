@@ -121,7 +121,13 @@ class BV bv where
   --
   -- >>> bv 12 21 :: SomeSymIntN
   -- 0x015
-  bv :: Int -> Integer -> bv
+  bv ::
+    (Integral a) =>
+    -- | Bit width
+    Int ->
+    -- | Integral value
+    a ->
+    bv
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.
