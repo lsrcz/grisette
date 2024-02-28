@@ -57,7 +57,6 @@ import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
 import Grisette.IR.SymPrim.Data.SymPrim (SymIntN)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)
-import Numeric.Natural (Natural)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -371,9 +370,9 @@ someBVTests =
                   genSym (bv 4 1 :: SomeSymIntN) "a" :: UnionM SomeSymIntN
             let expected = mrgPure $ isymBV 4 "a" 0
             actual @?= expected,
-          testCase "Natural" $ do
+          testCase "Int" $ do
             let actual =
-                  genSym (4 :: Natural) "a" :: UnionM SomeSymIntN
+                  genSym (4 :: Int) "a" :: UnionM SomeSymIntN
             let expected = mrgPure $ isymBV 4 "a" 0
             actual @?= expected
         ],
@@ -388,8 +387,8 @@ someBVTests =
                   genSymSimple (bv 4 1 :: SomeSymIntN) "a" :: SomeSymIntN
             let expected = isymBV 4 "a" 0
             actual @?= expected,
-          testCase "Natural" $ do
-            let actual = genSymSimple (4 :: Natural) "a" :: SomeSymIntN
+          testCase "Int" $ do
+            let actual = genSymSimple (4 :: Int) "a" :: SomeSymIntN
             let expected = isymBV 4 "a" 0
             actual @?= expected
         ],
