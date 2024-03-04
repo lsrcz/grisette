@@ -165,7 +165,7 @@ import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (substituteSym),
   )
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
-import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
+import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
@@ -644,6 +644,8 @@ instance
   where
   symShift = binSomeBVR1 symShift
   {-# INLINE symShift #-}
+  symShiftNegated = binSomeBVR1 symShiftNegated
+  {-# INLINE symShiftNegated #-}
 
 instance
   (forall n. (KnownNat n, 1 <= n) => SymRotate (bv n)) =>

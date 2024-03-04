@@ -103,21 +103,39 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV (sizedBVConcat, sizedBVExt, sizedBVSelect, sizedBVSext, sizedBVZext),
+  ( SizedBV
+      ( sizedBVConcat,
+        sizedBVExt,
+        sizedBVSelect,
+        sizedBVSext,
+        sizedBVZext
+      ),
   )
-import Grisette.Core.Data.Class.Function (Apply (FunType, apply), Function ((#)))
+import Grisette.Core.Data.Class.Function
+  ( Apply (FunType, apply),
+    Function ((#)),
+  )
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
   )
-import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
+import Grisette.Core.Data.Class.SignConversion
+  ( SignConversion (toSigned, toUnsigned),
+  )
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
-import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors (conTerm, iinfosymTerm, isymTerm, sinfosymTerm, ssymTerm, symTerm)
+import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
+  ( conTerm,
+    iinfosymTerm,
+    isymTerm,
+    sinfosymTerm,
+    ssymTerm,
+    symTerm,
+  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -747,6 +765,7 @@ instance (KnownNat n, 1 <= n) => SignConversion (SymWordN n) (SymIntN n) where
 -- SymShift
 instance (KnownNat n, 1 <= n) => SymShift (SymWordN n) where
   symShift (SymWordN a) (SymWordN s) = SymWordN $ pevalShiftLeftTerm a s
+  symShiftNegated (SymWordN a) (SymWordN s) = SymWordN $ pevalShiftRightTerm a s
 
 instance (KnownNat n, 1 <= n) => SymShift (SymIntN n) where
   symShift a _ | finiteBitSize a == 1 = a
@@ -774,6 +793,18 @@ instance (KnownNat n, 1 <= n) => SymShift (SymIntN n) where
             (pevalLeNumTerm s (conTerm (-bs)))
             (pevalShiftRightTerm a (conTerm bs))
             (pevalShiftRightTerm a (pevalUMinusNumTerm s))
+        )
+    where
+      bs = fromIntegral (finiteBitSize (0 :: IntN n)) :: IntN n
+  symShiftNegated (SymIntN a) (SymIntN s) =
+    SymIntN $
+      pevalITETerm
+        (pevalGeNumTerm s (conTerm 0))
+        (pevalShiftRightTerm a s)
+        ( pevalITETerm
+            (pevalLeNumTerm s (conTerm (-bs)))
+            (conTerm 0)
+            (pevalShiftLeftTerm a (pevalUMinusNumTerm s))
         )
     where
       bs = fromIntegral (finiteBitSize (0 :: IntN n)) :: IntN n
