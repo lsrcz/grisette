@@ -4,6 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Grisette.Core.Data.Class.SymShift
   ( SymShift (..),
@@ -11,18 +12,23 @@ module Grisette.Core.Data.Class.SymShift
   )
 where
 
-import Data.Bits (Bits (isSigned, shift), FiniteBits (finiteBitSize))
+import Data.Bits (Bits (isSigned, shift, shiftR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 
 class (Bits a) => SymShift a where
   symShift :: a -> a -> a
+  symShiftNegated :: a -> a -> a
 
 instance SymShift Int where
   symShift a s
     | s >= finiteBitSize s = 0
     | s <= -finiteBitSize s = if a >= 0 then 0 else -1
     | otherwise = shift a s
+  symShiftNegated :: Int -> Int -> Int
+  symShiftNegated a s
+    | s <= -finiteBitSize a = 0
+    | otherwise = symShift a (-s)
 
 newtype DefaultFiniteBitsSymShift a = DefaultFiniteBitsSymShift
   { unDefaultFiniteBitsSymShift :: a
@@ -38,21 +44,39 @@ instance
     | otherwise = DefaultFiniteBitsSymShift $ symShiftUnsigned a s
     where
       symShiftUnsigned :: (Integral a, FiniteBits a) => a -> a -> a
-      symShiftUnsigned a s | s >= fromIntegral (finiteBitSize a) = 0
-      symShiftUnsigned a s = shift a (fromIntegral s)
+      symShiftUnsigned a s
+        | s >= fromIntegral (finiteBitSize a) = 0
+        | otherwise = shift a (fromIntegral s)
+      {-# INLINE symShiftUnsigned #-}
 
       symShiftSigned :: (Integral a, FiniteBits a) => a -> a -> a
-      symShiftSigned a s | finiteBitSize s == 1 = a
       symShiftSigned a s
-        | finiteBitSize s == 2 =
-            if s == -2
-              then if a < 0 then -1 else 0
-              else shift a (fromIntegral s)
-      symShiftSigned a s | s >= fromIntegral (finiteBitSize a) = 0
+        | finiteBitSize s == 1 = shift a (fromIntegral s)
+        | finiteBitSize s == 2 = shift a (fromIntegral s)
+        | s >= fromIntegral (finiteBitSize a) = 0
+        | s <= fromIntegral (-finiteBitSize a) = if a < 0 then -1 else 0
+        | otherwise = shift a (fromIntegral s)
+      {-# INLINE symShiftSigned #-}
+  {-# INLINE symShift #-}
+  symShiftNegated (DefaultFiniteBitsSymShift a) (DefaultFiniteBitsSymShift s)
+    | isSigned a = DefaultFiniteBitsSymShift $ symShiftSigned a s
+    | otherwise = DefaultFiniteBitsSymShift $ symShiftUnsigned a s
+    where
+      symShiftUnsigned :: (Integral a, FiniteBits a) => a -> a -> a
+      symShiftUnsigned a s
+        | s >= fromIntegral (finiteBitSize a) = 0
+        | otherwise = shiftR a (fromIntegral s)
+      {-# INLINE symShiftUnsigned #-}
+
+      symShiftSigned :: (Integral a, FiniteBits a) => a -> a -> a
       symShiftSigned a s
-        | s <= fromIntegral (-finiteBitSize a) =
-            if a < 0 then -1 else 0
-      symShiftSigned a s = shift a (fromIntegral s)
+        | finiteBitSize s == 1 = shift a (-fromIntegral s)
+        | finiteBitSize s == 2 = shift a (-fromIntegral s)
+        | s <= fromIntegral (-finiteBitSize a) = 0
+        | s >= fromIntegral (finiteBitSize a) = if a < 0 then -1 else 0
+        | otherwise = shift a (-fromIntegral s)
+      {-# INLINE symShiftSigned #-}
+  {-# INLINE symShiftNegated #-}
 
 deriving via (DefaultFiniteBitsSymShift Int8) instance SymShift Int8
 

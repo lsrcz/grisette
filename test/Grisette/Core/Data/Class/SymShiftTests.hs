@@ -10,7 +10,7 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette (IntN, LinkedRep, Solvable, SymIntN, SymWordN)
 import Grisette.Core.Data.BV (WordN)
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
+import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
@@ -40,8 +40,15 @@ concreteUnsignedTypeSymShiftTests p =
               \(s :: Int) ->
                 ioProperty $
                   symShift x (fromIntegral s) @?= shift x s,
+          testProperty "symShiftNegated" $ \(x :: a) ->
+            forAll (chooseInt (0, finiteBitSize x)) $
+              \(s :: Int) ->
+                ioProperty $
+                  symShiftNegated x (fromIntegral s) @?= shift x (-s),
           testProperty "symShift max" $ \(x :: a) ->
-            ioProperty $ symShift x maxBound @?= 0
+            ioProperty $ symShift x maxBound @?= 0,
+          testProperty "symShiftNegated max" $ \(x :: a) ->
+            ioProperty $ symShiftNegated x maxBound @?= 0
         ]
     ]
 
@@ -69,21 +76,31 @@ concreteSignedTypeSymShiftTests p =
               \(s :: Int) -> ioProperty $ do
                 symShift x (fromIntegral s)
                   @?= shift x (fromIntegral (fromIntegral s :: a)),
+          testProperty "symShiftNegated" $ \(x :: a) ->
+            forAll (chooseInt (-finiteBitSize x, finiteBitSize x)) $
+              \(s :: Int) -> ioProperty $ do
+                symShiftNegated x (fromIntegral s)
+                  @?= shift x (-fromIntegral (fromIntegral s :: a)),
           testProperty "symShift max" $ \(x :: a) ->
             ioProperty $ do
               case finiteBitSize x of
                 1 -> symShift x maxBound @?= x
                 2 -> symShift x maxBound @?= shift x 1
                 _ -> symShift x maxBound @?= 0,
+          testProperty "symShiftNegated max" $ \(x :: a) ->
+            ioProperty $ do
+              case finiteBitSize x of
+                1 -> symShiftNegated x maxBound @?= x
+                2 -> symShiftNegated x maxBound @?= shift x (-1)
+                _ -> symShiftNegated x maxBound @?= if x >= 0 then 0 else -1,
           testProperty "symShift min" $ \(x :: a) ->
             ioProperty $ do
               case finiteBitSize x of
-                1 ->
-                  symShift x minBound @?= shift x (-1)
-                2 ->
-                  symShift x minBound @?= shift x (-2)
-                _ ->
-                  symShift x minBound @?= if x >= 0 then 0 else -1
+                1 -> symShift x minBound @?= shift x (-1)
+                2 -> symShift x minBound @?= shift x (-2)
+                _ -> symShift x minBound @?= if x >= 0 then 0 else -1,
+          testProperty "symShiftNegated min" $ \(x :: a) ->
+            ioProperty $ symShiftNegated x minBound @?= 0
         ]
     ]
 
@@ -116,14 +133,28 @@ symbolicTypeSymShiftTests p =
                 ioProperty $
                   symShift (con x :: s) (fromIntegral s)
                     @?= con (symShift x (fromIntegral s)),
+          testProperty "concrete/concrete symShiftNegated" $ \(x :: c) ->
+            forAll (chooseInt (-finiteBitSize x, finiteBitSize x)) $
+              \(s :: Int) ->
+                ioProperty $
+                  symShiftNegated (con x :: s) (fromIntegral s)
+                    @?= con (symShiftNegated x (fromIntegral s)),
           testProperty "symShift max" $ \(x :: c) ->
             ioProperty $
               symShift (con x :: s) (con maxBound)
                 @?= con (symShift x maxBound),
+          testProperty "symShiftNegated max" $ \(x :: c) ->
+            ioProperty $
+              symShiftNegated (con x :: s) (con maxBound)
+                @?= con (symShiftNegated x maxBound),
           testProperty "symShift min" $ \(x :: c) ->
             ioProperty $ do
               symShift (con x :: s) (con minBound)
-                @?= con (symShift x minBound)
+                @?= con (symShift x minBound),
+          testProperty "symShiftNegated min" $ \(x :: c) ->
+            ioProperty $ do
+              symShiftNegated (con x :: s) (con minBound)
+                @?= con (symShiftNegated x minBound)
         ]
     ]
 
@@ -138,6 +169,7 @@ symShiftTests =
       concreteUnsignedTypeSymShiftTests (Proxy :: Proxy Word),
       concreteUnsignedTypeSymShiftTests (Proxy :: Proxy (WordN 1)),
       concreteUnsignedTypeSymShiftTests (Proxy :: Proxy (WordN 2)),
+      concreteUnsignedTypeSymShiftTests (Proxy :: Proxy (WordN 3)),
       concreteUnsignedTypeSymShiftTests (Proxy :: Proxy (WordN 63)),
       concreteUnsignedTypeSymShiftTests (Proxy :: Proxy (WordN 64)),
       concreteUnsignedTypeSymShiftTests (Proxy :: Proxy (WordN 65)),
@@ -149,18 +181,21 @@ symShiftTests =
       concreteSignedTypeSymShiftTests (Proxy :: Proxy Int),
       concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 1)),
       concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 2)),
+      concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 3)),
       concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 63)),
       concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 64)),
       concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 65)),
       concreteSignedTypeSymShiftTests (Proxy :: Proxy (IntN 128)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 1)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 2)),
+      symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 3)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 63)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 64)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 65)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymWordN 128)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymIntN 1)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymIntN 2)),
+      symbolicTypeSymShiftTests (Proxy :: Proxy (SymIntN 3)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymIntN 63)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymIntN 64)),
       symbolicTypeSymShiftTests (Proxy :: Proxy (SymIntN 65)),
