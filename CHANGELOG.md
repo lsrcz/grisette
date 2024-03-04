@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the creation of unparameterized bit vectors from run-time bit-widths. ([#168](https://github.com/lsrcz/grisette/pull/168), [#177](https://github.com/lsrcz/grisette/pull/177))
 - Added all the functions available for the exception transformer in `transformers` and `mtl` packages. ([#171](https://github.com/lsrcz/grisette/pull/171))
 - Improved the partial evaluation for bit vectors. ([#176](https://github.com/lsrcz/grisette/pull/176))
+- Added `symRotateNegated` and `symShiftNegated`. ([#181](https://github.com/lsrcz/grisette/pull/181))
 
 ### Fixed
 
