@@ -164,7 +164,7 @@ import Grisette.Core.Data.Class.Solvable
 import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (substituteSym),
   )
-import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
+import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
@@ -653,6 +653,8 @@ instance
   where
   symRotate = binSomeBVR1 symRotate
   {-# INLINE symRotate #-}
+  symRotateNegated = binSomeBVR1 symRotateNegated
+  {-# INLINE symRotateNegated #-}
 
 instance
   ( forall n.
