@@ -16,11 +16,22 @@ import Data.Bits (Bits (isSigned, rotate), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 
+-- | The `symRotate` is similar to `rotate`, but accepts the type itself instead
+-- of `Int` for the rotate amount. The function works on all inputs, including
+-- the rotate amounts that are beyond the bit width of the value.
+--
+-- The `symRotateNegated` function rotates to the opposite direction of
+-- `symRotate`. This function is introduced to handle the asymmetry of the range
+-- of values.
 class (Bits a) => SymRotate a where
   symRotate :: a -> a -> a
+  symRotateNegated :: a -> a -> a
 
 instance SymRotate Int where
   symRotate = rotate
+  symRotateNegated a s
+    | s /= minBound = rotate a (-s)
+    | otherwise = rotate a (-(s + finiteBitSize s))
 
 newtype DefaultFiniteBitsSymRotate a = DefaultFiniteBitsSymRotate
   { unDefaultFiniteBitsSymRotate :: a
@@ -44,6 +55,23 @@ instance
         | finiteBitSize s == 2 = rotate a (fromIntegral s)
         | otherwise =
             rotate a (fromIntegral (s `mod` fromIntegral (finiteBitSize a)))
+  symRotateNegated (DefaultFiniteBitsSymRotate a) (DefaultFiniteBitsSymRotate s)
+    | isSigned a = DefaultFiniteBitsSymRotate $ symRotateSigned a s
+    | otherwise = DefaultFiniteBitsSymRotate $ symRotateUnsigned a s
+    where
+      bs = fromIntegral (finiteBitSize a)
+      smodbs = s `mod` bs
+      symRotateUnsigned :: a -> a -> a
+      symRotateUnsigned a _ =
+        rotate a (fromIntegral (bs - smodbs))
+      symRotateSigned :: a -> a -> a
+      symRotateSigned a s
+        | finiteBitSize a == 1 = a
+        | finiteBitSize a == 2 = rotate a (-fromIntegral s)
+        | otherwise =
+            if smodbs > 0
+              then rotate a (fromIntegral (bs - smodbs))
+              else rotate a (fromIntegral (-smodbs))
 
 deriving via (DefaultFiniteBitsSymRotate Int8) instance SymRotate Int8
 
