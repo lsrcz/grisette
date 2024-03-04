@@ -2,9 +2,9 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module Grisette.Core.Data.Class.SymShift
   ( SymShift (..),
@@ -16,6 +16,16 @@ import Data.Bits (Bits (isSigned, shift, shiftR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 
+-- | A class for shifting operations.
+--
+-- The `symShift` function shifts the value to the left if the shift amount is
+-- positive, and to the right if the shift amount is negative. If shifting
+-- beyond the bit width of the value, the result is the same as shifting with
+-- the bit width.
+--
+-- The `symShiftNegated` function shifts the value to the right if the shift
+-- amount is positive, and to the left if the shift amount is negative. This
+-- function is introduced to handle the asymmetry of the range of values.
 class (Bits a) => SymShift a where
   symShift :: a -> a -> a
   symShiftNegated :: a -> a -> a
