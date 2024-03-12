@@ -21,11 +21,16 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
+import Grisette (ITEOp (symIte))
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SOrd
   ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    mrgMax,
+    mrgMin,
+    symMax,
+    symMin,
   )
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
@@ -34,8 +39,9 @@ import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -104,19 +110,19 @@ sordTests =
                 ssymBool "a"
                   .<= ssymBool "b"
                   @?= (symNot (ssymBool "a"))
-                    .|| (ssymBool "b")
+                  .|| (ssymBool "b")
                 ssymBool "a"
                   .< ssymBool "b"
                   @?= (symNot (ssymBool "a"))
-                    .&& (ssymBool "b")
+                  .&& (ssymBool "b")
                 ssymBool "a"
                   .>= ssymBool "b"
                   @?= (ssymBool "a")
-                    .|| (symNot (ssymBool "b"))
+                  .|| (symNot (ssymBool "b"))
                 ssymBool "a"
                   .> ssymBool "b"
                   @?= (ssymBool "a")
-                    .&& (symNot (ssymBool "b"))
+                  .&& (symNot (ssymBool "b"))
                 symCompare (ssymBool "a") (ssymBool "b")
                   @?= ( mrgIf
                           ((symNot (ssymBool "a")) .&& (ssymBool "b"))
@@ -1381,5 +1387,23 @@ sordTests =
             traverse_
               concreteOrdOkProp
               [(x, y) | x <- bytestrings, y <- bytestrings]
-        ]
+        ],
+      testCase "symMax" $ do
+        symMax (1 :: SymInteger) 2 @?= 2
+        let [a, b] = ["a", "b"] :: [SymInteger]
+        symMax a b .@?= symIte (a .>= b) a b,
+      testCase "symMin" $ do
+        symMin (1 :: SymInteger) 2 @?= 1
+        let [a, b] = ["a", "b"] :: [SymInteger]
+        symMin a b .@?= symIte (a .>= b) b a,
+      testCase "mrgMax" $ do
+        mrgMax [1] [0, 3] @?= (mrgReturn [1] :: UnionM [SymInteger])
+        let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
+        (mrgMax [a] [b, c] :: UnionM [SymInteger])
+          .@?= (mrgIf (a .<= b) (return [b, c]) (return [a])),
+      testCase "mrgMin" $ do
+        mrgMin [1] [0, 3] @?= (mrgReturn [0, 3] :: UnionM [SymInteger])
+        let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
+        (mrgMin [a] [b, c] :: UnionM [SymInteger])
+          .@?= (mrgIf (b .<= a) (return [b, c]) (return [a]))
     ]

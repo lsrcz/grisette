@@ -23,6 +23,10 @@ module Grisette.Core.Data.Class.SOrd
   ( -- * Symbolic total order relation
     SOrd (..),
     SOrd' (..),
+    symMax,
+    symMin,
+    mrgMax,
+    mrgMin,
   )
 where
 
@@ -53,6 +57,7 @@ import Generics.Deriving
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Control.Monad.UnionM (UnionM, liftToMonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.Core.Data.Class.ITEOp (ITEOp, symIte)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.PlainUnion
@@ -60,7 +65,8 @@ import Grisette.Core.Data.Class.PlainUnion
   )
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)), SEq' ((..==)))
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( mrgIf,
+  ( UnionMergeable1,
+    mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
@@ -486,3 +492,23 @@ derivedSymGe x y = from x ..>= from y
 
 derivedSymCompare :: (Generic a, SOrd' (Rep a)) => a -> a -> UnionM Ordering
 derivedSymCompare x y = symCompare' (from x) (from y)
+
+symMax :: (SOrd a, ITEOp a) => a -> a -> a
+symMax x y = symIte (x .>= y) x y
+
+symMin :: (SOrd a, ITEOp a) => a -> a -> a
+symMin x y = symIte (x .>= y) y x
+
+mrgMax ::
+  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
+  a ->
+  a ->
+  m a
+mrgMax x y = mrgIf (x .>= y) (pure x) (pure y)
+
+mrgMin ::
+  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
+  a ->
+  a ->
+  m a
+mrgMin x y = mrgIf (x .>= y) (pure y) (pure x)
