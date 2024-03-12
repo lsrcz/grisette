@@ -21,7 +21,7 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.GenSym
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -139,7 +139,7 @@ import Grisette.Core.Data.Class.Solvable
   )
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
-    mrgPure,
+    mrgSingle,
     tryMerge,
   )
 import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
@@ -503,7 +503,7 @@ class (Mergeable a) => GenSym spec a where
     ) =>
     spec ->
     m (UnionM a)
-  fresh spec = mrgPure <$> simpleFresh spec
+  fresh spec = mrgSingle <$> simpleFresh spec
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
@@ -555,7 +555,7 @@ class GenSymNoSpec a where
     m (UnionM (a c))
 
 instance GenSymNoSpec U1 where
-  freshNoSpec = return $ mrgPure U1
+  freshNoSpec = return $ mrgSingle U1
 
 instance (GenSym () c) => GenSymNoSpec (K1 i c) where
   freshNoSpec = fmap K1 <$> fresh ()
@@ -729,11 +729,11 @@ chooseFresh ::
   ) =>
   [a] ->
   m (UnionM a)
-chooseFresh [x] = return $ mrgPure x
+chooseFresh [x] = return $ mrgSingle x
 chooseFresh (r : rs) = do
   b <- simpleFresh ()
   res <- chooseFresh rs
-  return $ mrgIf b (mrgPure r) res
+  return $ mrgIf b (mrgSingle r) res
 chooseFresh [] = error "chooseFresh expects at least one value"
 
 -- | A wrapper for `chooseFresh` that executes the `MonadFresh` context.
@@ -823,13 +823,13 @@ chooseUnion ::
 chooseUnion = runFresh . chooseUnionFresh
 
 #define CONCRETE_GENSYM_SAME_SHAPE(type) \
-instance GenSym type type where fresh = return . mrgPure
+instance GenSym type type where fresh = return . mrgSingle
 
 #define CONCRETE_GENSYMSIMPLE_SAME_SHAPE(type) \
 instance GenSymSimple type type where simpleFresh = return
 
 #define CONCRETE_GENSYM_SAME_SHAPE_BV(type) \
-instance (KnownNat n, 1 <= n) => GenSym (type n) (type n) where fresh = return . mrgPure
+instance (KnownNat n, 1 <= n) => GenSym (type n) (type n) where fresh = return . mrgSingle
 
 #define CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(type) \
 instance (KnownNat n, 1 <= n) => GenSymSimple (type n) (type n) where simpleFresh = return
@@ -942,7 +942,7 @@ instance
   (GenSym aspec a, Mergeable a) =>
   GenSym (Maybe aspec) (Maybe a)
   where
-  fresh Nothing = return $ mrgPure Nothing
+  fresh Nothing = return $ mrgSingle Nothing
   fresh (Just aspec) = (tryMerge . fmap Just) <$> fresh aspec
 
 instance
@@ -960,7 +960,7 @@ instance
   fresh aspec = do
     cond <- simpleFresh ()
     a :: UnionM a <- fresh aspec
-    return $ mrgIf cond (mrgPure Nothing) (Just <$> a)
+    return $ mrgIf cond (mrgSingle Nothing) (Just <$> a)
 
 -- List
 instance
@@ -1100,7 +1100,7 @@ instance
     return $ do
       ax <- a1
       bx <- b1
-      mrgPure (ax, bx)
+      mrgSingle (ax, bx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1146,7 +1146,7 @@ instance
       ax <- a1
       bx <- b1
       cx <- c1
-      mrgPure (ax, bx, cx)
+      mrgSingle (ax, bx, cx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1205,7 +1205,7 @@ instance
       bx <- b1
       cx <- c1
       dx <- d1
-      mrgPure (ax, bx, cx, dx)
+      mrgSingle (ax, bx, cx, dx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1273,7 +1273,7 @@ instance
       cx <- c1
       dx <- d1
       ex <- e1
-      mrgPure (ax, bx, cx, dx, ex)
+      mrgSingle (ax, bx, cx, dx, ex)
 
 instance
   ( GenSymSimple aspec a,
@@ -1350,7 +1350,7 @@ instance
       dx <- d1
       ex <- e1
       fx <- f1
-      mrgPure (ax, bx, cx, dx, ex, fx)
+      mrgSingle (ax, bx, cx, dx, ex, fx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1436,7 +1436,7 @@ instance
       ex <- e1
       fx <- f1
       gx <- g1
-      mrgPure (ax, bx, cx, dx, ex, fx, gx)
+      mrgSingle (ax, bx, cx, dx, ex, fx, gx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1531,7 +1531,7 @@ instance
       fx <- f1
       gx <- g1
       hx <- h1
-      mrgPure (ax, bx, cx, dx, ex, fx, gx, hx)
+      mrgSingle (ax, bx, cx, dx, ex, fx, gx, hx)
 
 instance
   ( GenSymSimple aspec a,
@@ -1675,7 +1675,7 @@ instance GenSymSimple symtype symtype where \
   simpleFresh _ = simpleFresh ()
 #define GENSYM_UNIT_SIMPLE(symtype) \
 instance GenSym () symtype where \
-  fresh _ = mrgPure <$> simpleFresh ()
+  fresh _ = mrgSingle <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_SIMPLE(symtype) \
 instance GenSymSimple () symtype where \
   simpleFresh _ = do; \
@@ -1692,7 +1692,7 @@ instance (KnownNat n, 1 <= n) => GenSymSimple (symtype n) (symtype n) where \
   simpleFresh _ = simpleFresh ()
 #define GENSYM_UNIT_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSym () (symtype n) where \
-  fresh _ = mrgPure <$> simpleFresh ()
+  fresh _ = mrgSingle <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
   simpleFresh _ = do; \
@@ -1709,7 +1709,7 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
   simpleFresh _ = simpleFresh ()
 #define GENSYM_UNIT_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym () (sa op sb) where \
-  fresh _ = mrgPure <$> simpleFresh ()
+  fresh _ = mrgSingle <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple () (sa op sb) where \
   simpleFresh _ = do; \

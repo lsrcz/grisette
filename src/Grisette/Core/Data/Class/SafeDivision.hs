@@ -13,7 +13,7 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SafeDivision
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -44,7 +44,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
-    mrgPure,
+    mrgSingle,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
@@ -228,14 +228,14 @@ name (type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError DivideByZero) \
-    (mrgPure $ type $ op l r); \
+    (mrgSingle $ type $ op l r); \
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2(name, type, op1, op2) \
 name (type l) rs@(type r) = \
   mrgIf \
     (rs .== con 0) \
     (throwError DivideByZero) \
-    (mrgPure (type $ op1 l r, type $ op2 l r)); \
+    (mrgSingle (type $ op1 l r, type $ op2 l r)); \
 
 #if 1
 instance
@@ -256,7 +256,7 @@ name ls@(type l) rs@(type r) = \
     (throwError DivideByZero) \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
-      (mrgPure $ type $ op l r)); \
+      (mrgSingle $ type $ op l r)); \
 
 #define SAFE_DIVISION_SYMBOLIC_FUNC2_BOUNDED_SIGNED(name, type, op1, op2) \
 name ls@(type l) rs@(type r) = \
@@ -265,7 +265,7 @@ name ls@(type l) rs@(type r) = \
     (throwError DivideByZero) \
     (mrgIf (rs .== con (-1) .&& ls .== con minBound) \
       (throwError Overflow) \
-      (mrgPure (type $ op1 l r, type $ op2 l r))); \
+      (mrgSingle (type $ op1 l r, type $ op2 l r))); \
 
 #if 1
 instance

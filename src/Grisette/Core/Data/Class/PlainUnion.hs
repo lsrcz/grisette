@@ -7,6 +7,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
+-- |
+-- Module      :   Grisette.Core.Data.Class.PlainUnion
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Data.Class.PlainUnion
   ( PlainUnion (..),
     pattern Single,
@@ -34,7 +42,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
     tryMerge,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
@@ -86,7 +94,7 @@ pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
 pattern Single x <-
   (singleView -> Just x)
   where
-    Single x = mrgPure x
+    Single x = mrgSingle x
 
 -- | Pattern match to extract guard values with 'ifView'
 -- >>> case (mergePropagatedIf "a" (return 1) (return 2) :: UnionM Integer) of If c t f -> (c,t,f)

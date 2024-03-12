@@ -26,7 +26,7 @@ import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SafeLinearArith
   ( SafeLinearArith (safeAdd, safeNeg, safeSub),
   )
-import Grisette.Core.Data.Class.TryMerge (TryMerge, mrgPure)
+import Grisette.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
 import Grisette.Core.Data.SomeBV
   ( SomeIntN,
     SomeWordN,
@@ -58,7 +58,7 @@ binSafeOp op l r
       mrgThrowError Overflow
   | result < fromIntegral (minBound :: a) =
       mrgThrowError Underflow
-  | otherwise = mrgPure $ fromIntegral result
+  | otherwise = mrgSingle $ fromIntegral result
   where
     result = op (fromIntegral l) (fromIntegral r)
 
@@ -78,7 +78,7 @@ unarySafeOp op l
       mrgThrowError Overflow
   | result < fromIntegral (minBound :: a) =
       mrgThrowError Underflow
-  | otherwise = mrgPure $ fromIntegral result
+  | otherwise = mrgSingle $ fromIntegral result
   where
     result = op (fromIntegral l)
 

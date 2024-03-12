@@ -43,7 +43,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con, ssym))
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
@@ -686,18 +686,18 @@ mergeableTests =
                           (StateLazy.StateT Integer UnionM SymBool)
                 let st1 :: StateLazy.StateT Integer UnionM SymBool =
                       StateLazy.StateT $ \(x :: Integer) ->
-                        mrgPure (ssym "a", x + 2)
+                        mrgSingle (ssym "a", x + 2)
                 let st2 :: StateLazy.StateT Integer UnionM SymBool =
                       StateLazy.StateT $ \(x :: Integer) ->
-                        mrgPure (ssym "b", x * 2)
+                        mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
                 StateLazy.runStateT st3 2
-                  @?= mrgPure (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
+                  @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateLazy.runStateT st3 3
                   @?= mrgIf
                     (ssym "c")
-                    (mrgPure (ssym "a", 5))
-                    (mrgPure (ssym "b", 6)),
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6)),
               testCase "Strict StateT" $ do
                 let SimpleStrategy s =
                       rootStrategy ::
@@ -705,18 +705,18 @@ mergeableTests =
                           (StateStrict.StateT Integer UnionM SymBool)
                 let st1 :: StateStrict.StateT Integer UnionM SymBool =
                       StateStrict.StateT $
-                        \(x :: Integer) -> mrgPure (ssym "a", x + 2)
+                        \(x :: Integer) -> mrgSingle (ssym "a", x + 2)
                 let st2 :: StateStrict.StateT Integer UnionM SymBool =
                       StateStrict.StateT $
-                        \(x :: Integer) -> mrgPure (ssym "b", x * 2)
+                        \(x :: Integer) -> mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
                 StateStrict.runStateT st3 2
-                  @?= mrgPure (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
+                  @?= mrgSingle (symIte (ssym "c") (ssym "a") (ssym "b"), 4)
                 StateStrict.runStateT st3 3
                   @?= mrgIf
                     (ssym "c")
-                    (mrgPure (ssym "a", 5))
-                    (mrgPure (ssym "b", 6))
+                    (mrgSingle (ssym "a", 5))
+                    (mrgSingle (ssym "b", 6))
             ],
           testCase "ContT" $ do
             let SimpleStrategy s =
@@ -733,20 +733,20 @@ mergeableTests =
               ( \(a, x) ->
                   mrgIf
                     (ssym "p")
-                    (mrgPure (a, x))
-                    (mrgPure (symNot a, x + 1))
+                    (mrgSingle (a, x))
+                    (mrgSingle (symNot a, x + 1))
               )
               @?= mrgIf
                 (ssym "c")
                 ( mrgIf
                     (ssym "p")
-                    (mrgPure (ssym "a", 2))
-                    (mrgPure (symNot $ ssym "a", 3))
+                    (mrgSingle (ssym "a", 2))
+                    (mrgSingle (symNot $ ssym "a", 3))
                 )
                 ( mrgIf
                     (ssym "p")
-                    (mrgPure (ssym "b", 3))
-                    (mrgPure (symNot $ ssym "b", 4))
+                    (mrgSingle (ssym "b", 3))
+                    (mrgSingle (symNot $ ssym "b", 4))
                 ),
           testGroup
             "RWST"
@@ -769,7 +769,7 @@ mergeableTests =
                         UnionM
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
-                          mrgPure
+                          mrgSingle
                             ( (ir + is, br .&& bs),
                               (ir - is, br .|| bs),
                               (ir * is, bs .&& br)
@@ -782,7 +782,7 @@ mergeableTests =
                         UnionM
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
-                          mrgPure
+                          mrgSingle
                             ( (ir + is, br .|| bs),
                               (ir - is, br .&& bs),
                               (ir * is, bs .|| br)
@@ -797,13 +797,13 @@ mergeableTests =
                         ) =
                         mrgIf
                           (ssym "c")
-                          ( mrgPure
+                          ( mrgSingle
                               ( (1, ssym "a" .&& ssym "b"),
                                 (-1, ssym "a" .|| ssym "b"),
                                 (0, ssym "b" .&& ssym "a")
                               )
                           )
-                          ( mrgPure
+                          ( mrgSingle
                               ( (1, ssym "a" .|| ssym "b"),
                                 (-1, ssym "a" .&& ssym "b"),
                                 (0, ssym "b" .|| ssym "a")
@@ -829,7 +829,7 @@ mergeableTests =
                         UnionM
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
-                          mrgPure
+                          mrgSingle
                             ( (ir + is, br .&& bs),
                               (ir - is, br .|| bs),
                               (ir * is, bs .&& br)
@@ -842,7 +842,7 @@ mergeableTests =
                         UnionM
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
-                          mrgPure
+                          mrgSingle
                             ( (ir + is, br .|| bs),
                               (ir - is, br .&& bs),
                               (ir * is, bs .|| br)
@@ -857,13 +857,13 @@ mergeableTests =
                         ) =
                         mrgIf
                           (ssym "c")
-                          ( mrgPure
+                          ( mrgSingle
                               ( (1, "a" .&& "b"),
                                 (-1, "a" .|| "b"),
                                 (0, "b" .&& "a")
                               )
                           )
-                          ( mrgPure
+                          ( mrgSingle
                               ( (1, "a" .|| "b"),
                                 (-1, "a" .&& "b"),
                                 (0, "b" .|| "a")
@@ -879,52 +879,52 @@ mergeableTests =
                         MergingStrategy
                           (WriterLazy.WriterT Integer UnionM SymBool)
                 let w1 :: WriterLazy.WriterT Integer UnionM SymBool =
-                      WriterLazy.WriterT $ mrgPure (ssym "a", 1)
+                      WriterLazy.WriterT $ mrgSingle (ssym "a", 1)
                 let w2 :: WriterLazy.WriterT Integer UnionM SymBool =
-                      WriterLazy.WriterT $ mrgPure (ssym "b", 2)
+                      WriterLazy.WriterT $ mrgSingle (ssym "b", 2)
                 let w3 :: WriterLazy.WriterT Integer UnionM SymBool =
-                      WriterLazy.WriterT $ mrgPure (ssym "c", 1)
+                      WriterLazy.WriterT $ mrgSingle (ssym "c", 1)
                 let w4 = s (ssym "d") w1 w2
                 let w5 = s (ssym "d") w1 w3
                 WriterLazy.runWriterT w4
                   @?= mrgIf
                     (ssym "d")
-                    (mrgPure (ssym "a", 1))
-                    (mrgPure (ssym "b", 2))
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterLazy.runWriterT w5
-                  @?= mrgPure (symIte (ssym "d") (ssym "a") (ssym "c"), 1),
+                  @?= mrgSingle (symIte (ssym "d") (ssym "a") (ssym "c"), 1),
               testCase "Strict WriterT" $ do
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
                           (WriterStrict.WriterT Integer UnionM SymBool)
                 let w1 :: WriterStrict.WriterT Integer UnionM SymBool =
-                      WriterStrict.WriterT $ mrgPure (ssym "a", 1)
+                      WriterStrict.WriterT $ mrgSingle (ssym "a", 1)
                 let w2 :: WriterStrict.WriterT Integer UnionM SymBool =
-                      WriterStrict.WriterT $ mrgPure (ssym "b", 2)
+                      WriterStrict.WriterT $ mrgSingle (ssym "b", 2)
                 let w3 :: WriterStrict.WriterT Integer UnionM SymBool =
-                      WriterStrict.WriterT $ mrgPure (ssym "c", 1)
+                      WriterStrict.WriterT $ mrgSingle (ssym "c", 1)
                 let w4 = s (ssym "d") w1 w2
                 let w5 = s (ssym "d") w1 w3
                 WriterStrict.runWriterT w4
                   @?= mrgIf
                     (ssym "d")
-                    (mrgPure (ssym "a", 1))
-                    (mrgPure (ssym "b", 2))
+                    (mrgSingle (ssym "a", 1))
+                    (mrgSingle (ssym "b", 2))
                 WriterStrict.runWriterT w5
-                  @?= mrgPure (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
+                  @?= mrgSingle (symIte (ssym "d") (ssym "a") (ssym "c"), 1)
             ],
           testCase "ReaderT" $ do
             let SimpleStrategy s =
                   rootStrategy ::
                     MergingStrategy (ReaderT Integer UnionM Integer)
             let r1 :: ReaderT Integer UnionM Integer =
-                  ReaderT $ \(x :: Integer) -> mrgPure $ x + 2
+                  ReaderT $ \(x :: Integer) -> mrgSingle $ x + 2
             let r2 :: ReaderT Integer UnionM Integer =
-                  ReaderT $ \(x :: Integer) -> mrgPure $ x * 2
+                  ReaderT $ \(x :: Integer) -> mrgSingle $ x * 2
             let r3 = s (ssym "c") r1 r2
-            runReaderT r3 2 @?= mrgPure 4
-            runReaderT r3 3 @?= mrgIf (ssym "c") (mrgPure 5) (mrgPure 6),
+            runReaderT r3 2 @?= mrgSingle 4
+            runReaderT r3 3 @?= mrgIf (ssym "c") (mrgSingle 5) (mrgSingle 6),
           testGroup
             "Identity"
             [ testProperty "Identity Integer" $

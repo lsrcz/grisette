@@ -1,8 +1,9 @@
 {-# LANGUAGE Trustworthy #-}
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
 -- Module      :   Grisette.Lib.Base
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -10,76 +11,18 @@
 -- Portability :   GHC only
 module Grisette.Lib.Base
   ( -- * Symbolic or mrg* variants for the operations in the base package
-
-    -- ** mrg* variants for operations in "Control.Monad"
-    mrgReturnWithStrategy,
-    mrgBindWithStrategy,
-    mrgReturn,
-    (.>>=),
-    (.>>),
-    mrgFoldM,
-    mrgMzero,
-    mrgMplus,
-    mrgFmap,
-
-    -- ** mrg* variants for operations in "Data.Foldable"
-    mrgFoldlM,
-    mrgFoldrM,
-    mrgTraverse_,
-    mrgFor_,
-    mrgMapM_,
-    mrgForM_,
-    mrgSequence_,
-    mrgMsum,
-
-    -- ** mrg* variants for operations in "Data.Traversable"
-    mrgTraverse,
-    mrgSequenceA,
-    mrgFor,
-    mrgMapM,
-    mrgForM,
-    mrgSequence,
-
-    -- ** Symbolic versions for operations in "Data.List"
-    (.!!),
-    symFilter,
-    symTake,
-    symDrop,
+    module Grisette.Lib.Control.Monad,
+    module Grisette.Lib.Control.Applicative,
+    module Grisette.Lib.Data.Foldable,
+    module Grisette.Lib.Data.Functor,
+    module Grisette.Lib.Data.List,
+    module Grisette.Lib.Data.Traversable,
   )
 where
 
+import Grisette.Lib.Control.Applicative
 import Grisette.Lib.Control.Monad
-  ( mrgBindWithStrategy,
-    mrgFoldM,
-    mrgMplus,
-    mrgMzero,
-    mrgReturn,
-    mrgReturnWithStrategy,
-    (.>>),
-    (.>>=),
-  )
 import Grisette.Lib.Data.Foldable
-  ( mrgFoldlM,
-    mrgFoldrM,
-    mrgForM_,
-    mrgFor_,
-    mrgMapM_,
-    mrgMsum,
-    mrgSequence_,
-    mrgTraverse_,
-  )
-import Grisette.Lib.Data.Functor (mrgFmap)
+import Grisette.Lib.Data.Functor
 import Grisette.Lib.Data.List
-  ( symDrop,
-    symFilter,
-    symTake,
-    (.!!),
-  )
 import Grisette.Lib.Data.Traversable
-  ( mrgFor,
-    mrgForM,
-    mrgMapM,
-    mrgSequence,
-    mrgSequenceA,
-    mrgTraverse,
-  )

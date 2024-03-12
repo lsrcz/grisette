@@ -52,7 +52,7 @@ import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
-    mrgPure,
+    mrgSingle,
     tryMerge,
   )
 import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
@@ -119,7 +119,7 @@ unionMTests =
         isMerged unionM12Merged @?= True,
       testCase "liftUnionM & liftToMonadUnion" $ do
         let expected =
-              mrgPure (symIte "u1c" "u1a" "u1b") :: ExceptT () UnionM SymInteger
+              mrgSingle (symIte "u1c" "u1a" "u1b") :: ExceptT () UnionM SymInteger
         liftUnionM unionMSimple1 @?= expected
         liftToMonadUnion unionMSimple1 @?= expected,
       testCase "unionSize" $
@@ -129,7 +129,7 @@ unionMTests =
       testCase "binOp" $ do
         let actual = unionMBinOp (+) unionMSimple1 unionMSimple2
         let expected =
-              mrgPure (symIte "u1c" "u1a" "u1b" + symIte "u2c" "u2a" "u2b")
+              mrgSingle (symIte "u1c" "u1a" "u1b" + symIte "u2c" "u2a" "u2b")
         actual .@?= expected,
       testCase "Mergeable & TryMerge" $
         tryMergeWithStrategy rootStrategy unionM12 @?= unionM12Merged,
@@ -164,7 +164,7 @@ unionMTests =
               testCase "is not single (merged)" $ do
                 let actual = ifView (tryMerge unionM1)
                 let expected =
-                      Just ("u1c", mrgPure $ Left "u1a", mrgPure $ Right "u1b")
+                      Just ("u1c", mrgSingle $ Left "u1a", mrgSingle $ Right "u1b")
                 actual @?= expected
             ]
         ],
@@ -222,8 +222,8 @@ unionMTests =
           testCase ">>= should work" $
             (unionMSimple1 >>= (\i -> return (i + 1))) @?= unionMSimple1Plus1,
           testCase ">>= should propagate merge strategy" $ do
-            let actual = unionMSimple1 >>= (\i -> mrgPure (i + 1))
-            let expected = mrgPure (symIte "u1c" ("u1a" + 1) ("u1b" + 1))
+            let actual = unionMSimple1 >>= (\i -> mrgSingle (i + 1))
+            let expected = mrgSingle (symIte "u1c" ("u1a" + 1) ("u1b" + 1))
             actual @?= expected
         ],
       testCase "SEq" $ do
@@ -250,11 +250,11 @@ unionMTests =
         actual .@?= expected,
       testCase "ToSym a (UnionM b)" $ do
         let actual = toSym True :: UnionM SymBool
-        let expected = mrgPure (con True)
+        let expected = mrgSingle (con True)
         actual @?= expected,
       testCase "ToSym (UnionM a) (UnionM b)" $ do
-        let actual = toSym (mrgPure True :: UnionM Bool) :: UnionM SymBool
-        let expected = mrgPure (con True)
+        let actual = toSym (mrgSingle True :: UnionM Bool) :: UnionM SymBool
+        let expected = mrgSingle (con True)
         actual @?= expected,
       testCase "ToSym (UnionM Integer) SymInteger" $ do
         let actual = toSym (mrgIf "a" 1 2 :: UnionM Integer)
@@ -263,22 +263,22 @@ unionMTests =
       testGroup
         "ToCon (UnionM a) b"
         [ testCase "Const" $ do
-            let actual = mrgPure (con True) :: UnionM SymBool
+            let actual = mrgSingle (con True) :: UnionM SymBool
             let expected = Just True :: Maybe Bool
             toCon actual @?= expected,
           testCase "Not const" $ do
-            let actual = mrgPure "a" :: UnionM SymBool
+            let actual = mrgSingle "a" :: UnionM SymBool
             let expected = Nothing :: Maybe Bool
             toCon actual @?= expected
         ],
       testGroup
         "ToCon (UnionM a) (UnionM b)"
         [ testCase "Const" $ do
-            let actual = mrgPure (con True) :: UnionM SymBool
-            let expected = Just (mrgPure True) :: Maybe (UnionM Bool)
+            let actual = mrgSingle (con True) :: UnionM SymBool
+            let expected = Just (mrgSingle True) :: Maybe (UnionM Bool)
             toCon actual @?= expected,
           testCase "Not const" $ do
-            let actual = mrgPure "a" :: UnionM SymBool
+            let actual = mrgSingle "a" :: UnionM SymBool
             let expected = Nothing :: Maybe (UnionM Bool)
             toCon actual @?= expected
         ],
@@ -286,15 +286,15 @@ unionMTests =
         let model = buildModel ("a" ::= True, "b" ::= False, "c" ::= True)
         [ testCase "EmptyModel with no fill default" $ do
             let actual = evaluateSym False emptyModel (return "a")
-            let expected = mrgPure "a" :: UnionM SymBool
+            let expected = mrgSingle "a" :: UnionM SymBool
             actual @?= expected,
           testCase "EmptyModel with filling default" $ do
             let actual = evaluateSym True emptyModel (return "a")
-            let expected = mrgPure $ con False :: UnionM SymBool
+            let expected = mrgSingle $ con False :: UnionM SymBool
             actual @?= expected,
           testCase "non-empty model, simple test" $ do
             let actual = evaluateSym False model (return "a")
-            let expected = mrgPure $ con True :: UnionM SymBool
+            let expected = mrgSingle $ con True :: UnionM SymBool
             actual @?= expected,
           testCase "non-empty model, complex test" $ do
             let actual =
@@ -303,12 +303,12 @@ unionMTests =
                     model
                     ( mrgIf
                         "d"
-                        (mrgIf "a" (mrgPure $ Left "b") (mrgPure $ Right "e"))
-                        (mrgPure $ Right "f")
+                        (mrgIf "a" (mrgSingle $ Left "b") (mrgSingle $ Right "e"))
+                        (mrgSingle $ Right "f")
                     ) ::
                     UnionM (Either SymBool SymBool)
             let expected =
-                  mrgIf "d" (mrgPure $ Left (con False)) (mrgPure $ Right "f")
+                  mrgIf "d" (mrgSingle $ Left (con False)) (mrgSingle $ Right "f")
             actual .@?= expected
           ],
       testCase "SubstituteSym" $ do
@@ -332,15 +332,15 @@ unionMTests =
         actual @?= expected,
       testGroup
         "Solvable"
-        [ testCase "con" $ (con True :: UnionM SymBool) @?= mrgPure (con True),
-          testCase "sym" $ (ssym "a" :: UnionM SymBool) @?= mrgPure (ssym "a"),
+        [ testCase "con" $ (con True :: UnionM SymBool) @?= mrgSingle (con True),
+          testCase "sym" $ (ssym "a" :: UnionM SymBool) @?= mrgSingle (ssym "a"),
           testCase "isym" $
-            (isym "a" 1 :: UnionM SymBool) @?= mrgPure (isym "a" 1),
+            (isym "a" 1 :: UnionM SymBool) @?= mrgSingle (isym "a" 1),
           testCase "sinfoym" $
-            (sinfosym "a" () :: UnionM SymBool) @?= mrgPure (sinfosym "a" ()),
+            (sinfosym "a" () :: UnionM SymBool) @?= mrgSingle (sinfosym "a" ()),
           testCase "iinfosym" $ do
             let actual = iinfosym "a" 1 () :: UnionM SymBool
-            let expected = mrgPure (iinfosym "a" 1 ())
+            let expected = mrgSingle (iinfosym "a" 1 ())
             actual @?= expected,
           testGroup
             "conView"
@@ -356,6 +356,6 @@ unionMTests =
             ]
         ],
       testCase "Function" $ do
-        let f = mrgPure (+ 1) :: UnionM (SymInteger -> SymInteger)
+        let f = mrgSingle (+ 1) :: UnionM (SymInteger -> SymInteger)
         f # 1 @?= 2
     ]

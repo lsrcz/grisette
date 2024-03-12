@@ -8,7 +8,7 @@ import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad.Except
@@ -35,22 +35,22 @@ monadExceptFunctionTests =
     "Except"
     [ testCase "mrgThrowError" $
         runExceptT (mrgThrowError 1 :: ExceptT Integer UnionM ())
-          @?= mrgPure (Left 1),
+          @?= mrgSingle (Left 1),
       testCase "mrgCatchError" $
         ( ExceptT
             (mergePropagatedIf "a" (return $ Left "b") (return $ Right "c")) ::
             ExceptT SymBool UnionM SymBool
         )
           `mrgCatchError` return
-          @?= mrgPure (symIte "a" "b" "c"),
+          @?= mrgSingle (symIte "a" "b" "c"),
       testCase "mrgLiftEither" $ do
         runExceptT (mrgLiftEither (Left "a") :: ExceptT SymBool UnionM ())
-          @?= mrgPure (Left "a"),
+          @?= mrgSingle (Left "a"),
       testCase "mrgTryError" $ do
-        let expected = mrgIf "a" (mrgPure (Left "b")) (mrgPure (Right "c"))
+        let expected = mrgIf "a" (mrgSingle (Left "b")) (mrgSingle (Right "c"))
         mrgTryError exceptUnion @?= expected,
       testCase "mrgWithError" $ do
-        let expected = mrgIf "a" (mrgThrowError $ "b" + 1) (mrgPure "c")
+        let expected = mrgIf "a" (mrgThrowError $ "b" + 1) (mrgSingle "c")
         mrgWithError (+ 1) exceptUnion @?= expected,
       testCase "mrgCatchError" $
         mrgHandleError
@@ -59,13 +59,13 @@ monadExceptFunctionTests =
               (mergePropagatedIf "a" (return $ Left "b") (return $ Right "c")) ::
               ExceptT SymBool UnionM SymBool
           )
-          @?= mrgPure (symIte "a" "b" "c"),
+          @?= mrgSingle (symIte "a" "b" "c"),
       testCase "mrgMapError" $ do
         let expected =
               ( mrgIf
                   "a"
                   (mrgThrowError (Just "b"))
-                  (mrgPure $ ("c" :: SymInteger) .== 1) ::
+                  (mrgSingle $ ("c" :: SymInteger) .== 1) ::
                   ExceptT (Maybe SymInteger) UnionM SymBool
               )
         mrgMapError
@@ -80,12 +80,12 @@ monadExceptFunctionTests =
           @?= expected,
       testCase "mrgModifyError" $ do
         let original =
-              mrgIf "a" (mrgThrowError "b") (mrgPure "c") ::
+              mrgIf "a" (mrgThrowError "b") (mrgSingle "c") ::
                 ExceptT SymInteger (ExceptT SymBool UnionM) SymInteger
         let expected =
               mrgIf
                 "a"
                 (mrgThrowError $ ("b" :: SymInteger) .== 1)
-                (mrgPure "c")
+                (mrgSingle "c")
         mrgModifyError (.== 1) original @?= expected
     ]

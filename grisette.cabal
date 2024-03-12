@@ -123,6 +123,7 @@ library
       Grisette.IR.SymPrim.Data.SymPrim
       Grisette.IR.SymPrim.Data.TabularFun
       Grisette.Lib.Base
+      Grisette.Lib.Control.Applicative
       Grisette.Lib.Control.Monad
       Grisette.Lib.Control.Monad.Except
       Grisette.Lib.Control.Monad.State.Class
@@ -255,6 +256,7 @@ test-suite spec
       Grisette.IR.SymPrim.Data.Prim.TabularFunTests
       Grisette.IR.SymPrim.Data.SymPrimTests
       Grisette.IR.SymPrim.Data.TabularFunTests
+      Grisette.Lib.Control.ApplicativeTest
       Grisette.Lib.Control.Monad.ExceptTests
       Grisette.Lib.Control.Monad.State.ClassTests
       Grisette.Lib.Control.Monad.Trans.ClassTests
@@ -266,6 +268,7 @@ test-suite spec
       Grisette.Lib.Data.FoldableTests
       Grisette.Lib.Data.FunctorTests
       Grisette.Lib.Data.TraversableTests
+      Grisette.TestUtil.NoMerge
       Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
       Paths_grisette

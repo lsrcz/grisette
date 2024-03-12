@@ -16,7 +16,7 @@ import Grisette.Core.Data.Class.PlainUnion
   )
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.TryMerge (mrgPure)
+import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -62,7 +62,7 @@ plainUnionTests =
               Single v -> v @?= symIte "a" "b" "c"
               _ -> fail "Should not happen",
           testCase "Construct single" $
-            (Single "a" :: UnionM SymBool) @?= mrgPure "a",
+            (Single "a" :: UnionM SymBool) @?= mrgSingle "a",
           testCase "Construct If" $ do
             let actual = If "a" (return "b") (return "c") :: UnionM SymBool
             let expected = mrgIf "a" (return "b") (return "c")

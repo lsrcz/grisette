@@ -23,7 +23,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.TestValues (ssymBool)
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Grisette.TestUtil.SymbolicAssertion ((@?=~))
@@ -95,7 +95,7 @@ mrgStateTest mrgState runStateT = do
         mrgState (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av",
@@ -116,7 +116,7 @@ mrgRunStateTTest ::
 mrgRunStateTTest state mrgRunStateT = do
   let actual = mrgRunStateT (stateAB state) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av",
@@ -137,7 +137,7 @@ mrgEvalStateTTest ::
 mrgEvalStateTTest state mrgEvalStateT = do
   let actual = mrgEvalStateT (stateAB state) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               (ssymBool "d" .&& ssymBool "av")
@@ -154,7 +154,7 @@ mrgExecStateTTest ::
 mrgExecStateTTest state mrgExecStateT = do
   let actual = mrgExecStateT (stateAB state) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               (ssymBool "d" .&& ssymBool "as")
@@ -174,7 +174,7 @@ mrgMapStateTTest state runStateT mrgMapStateT = do
   let b = mrgMapStateT id (stateB state)
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av",
@@ -198,7 +198,7 @@ mrgWithStateTTest state runStateT mrgWithStateT = do
   let b = mrgWithStateT (.&& ssymBool "y") (stateB state)
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "av" .&& ssymBool "x",
@@ -222,7 +222,7 @@ mrgGetTest state runStateT mrgGet = do
   let b = do stateB state; mrgGet
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "as",
@@ -246,7 +246,7 @@ mrgPutTest state runStateT mrgPut = do
   let b = do stateB state; mrgPut (ssymBool "y")
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte (ssymBool "c") ((), ssymBool "x") ((), ssymBool "y")
           )
   unionSize actual @?= 1
@@ -263,7 +263,7 @@ mrgModifyTest state runStateT mrgModify = do
   let b = do stateB state; mrgModify (.&& ssymBool "y")
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( (),
@@ -287,7 +287,7 @@ mrgGetsTest state runStateT mrgGets = do
   let b = do stateB state; mrgGets (.&& ssymBool "y")
   let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
   let expected =
-        mrgPure
+        mrgSingle
           ( mrgIte
               (ssymBool "c")
               ( ssymBool "d" .&& ssymBool "as" .&& ssymBool "x",

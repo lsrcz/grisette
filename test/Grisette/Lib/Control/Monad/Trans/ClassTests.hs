@@ -9,7 +9,7 @@ import Control.Monad.Except (ExceptT)
 import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Grisette.Lib.Control.Monad.Trans (mrgLift)
@@ -28,5 +28,5 @@ monadTransClassTests =
             ) ::
             ExceptT SymBool UnionM SymBool
           )
-          @?= mrgPure (symIte "a" "b" "c")
+          @?= mrgSingle (symIte "a" "b" "c")
     ]

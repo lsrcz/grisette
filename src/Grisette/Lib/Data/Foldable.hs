@@ -3,7 +3,7 @@
 
 -- |
 -- Module      :   Grisette.Lib.Control.Foldable
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -19,6 +19,7 @@ module Grisette.Lib.Data.Foldable
     mrgForM_,
     mrgSequence_,
     mrgMsum,
+    mrgSequenceA_,
   )
 where
 
@@ -27,25 +28,24 @@ import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge,
-    mrgPure,
     tryMerge,
   )
+import Grisette.Lib.Control.Applicative (mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
   ( mrgMplus,
     mrgMzero,
-    mrgReturn,
   )
 
 -- | 'Data.Foldable.foldlM' with 'MergingStrategy' knowledge propagation.
 mrgFoldlM :: (MonadTryMerge m, Mergeable b, Foldable t) => (b -> a -> m b) -> b -> t a -> m b
-mrgFoldlM f z0 xs = foldr c mrgReturn xs z0
+mrgFoldlM f z0 xs = foldr c mrgPure xs z0
   where
     c x k z = tryMerge (f z x) >>= k
 {-# INLINE mrgFoldlM #-}
 
 -- | 'Data.Foldable.foldrM' with 'MergingStrategy' knowledge propagation.
 mrgFoldrM :: (MonadTryMerge m, Mergeable b, Foldable t) => (a -> b -> m b) -> b -> t a -> m b
-mrgFoldrM f z0 xs = foldl c mrgReturn xs z0
+mrgFoldrM f z0 xs = foldl c mrgPure xs z0
   where
     c k x z = tryMerge (f x z) >>= k
 {-# INLINE mrgFoldrM #-}
@@ -74,10 +74,18 @@ mrgForM_ = flip mrgMapM_
 
 -- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
 mrgSequence_ :: (Foldable t, MonadTryMerge m) => t (m a) -> m ()
-mrgSequence_ = foldr c (mrgReturn ())
+mrgSequence_ = foldr c (mrgPure ())
   where
     c m k = m >> k
 {-# INLINE mrgSequence_ #-}
+
+-- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
+mrgSequenceA_ ::
+  (Foldable t, TryMerge m, Mergeable a, Applicative m) => t (m a) -> m ()
+mrgSequenceA_ = foldr c (mrgPure ())
+  where
+    c m k = m .*> k
+{-# INLINE mrgSequenceA_ #-}
 
 -- | 'Data.Foldable.msum' with 'MergingStrategy' knowledge propagation.
 mrgMsum :: forall m a t. (MonadTryMerge m, Mergeable a, MonadPlus m, Foldable t) => t (m a) -> m a

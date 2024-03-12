@@ -23,7 +23,7 @@ where
 
 import Control.Monad.Except (ExceptT, MonadError (catchError, throwError))
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, mrgPure, tryMerge)
+import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Trans.Except (mrgRunExceptT)
 import Grisette.Lib.Data.Functor (mrgFmap)
@@ -57,7 +57,7 @@ mrgTryError ::
   (MonadError e m, TryMerge m, Mergeable a, Mergeable e) =>
   m a ->
   m (Either e a)
-mrgTryError action = (mrgFmap Right action) `mrgCatchError` (mrgPure . Left)
+mrgTryError action = (mrgFmap Right action) `mrgCatchError` (mrgReturn . Left)
 {-# INLINE mrgTryError #-}
 
 -- | 'Control.Monad.Except.withError' with 'MergingStrategy' knowledge
@@ -111,5 +111,5 @@ mrgModifyError ::
   (e -> e') ->
   ExceptT e m a ->
   m a
-mrgModifyError f m = mrgRunExceptT m >>= either (mrgThrowError . f) mrgPure
+mrgModifyError f m = mrgRunExceptT m >>= either (mrgThrowError . f) mrgReturn
 {-# INLINE mrgModifyError #-}
