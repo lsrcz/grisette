@@ -1,10 +1,16 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 
+-- |
+-- Module      :   Grisette.Core.Data.Class.TryMerge
+-- Copyright   :   (c) Sirui Lu 2023-2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Core.Data.Class.TryMerge
   ( TryMerge (..),
-    mrgPureWithStrategy,
-    mrgPure,
     tryMerge,
     MonadTryMerge,
     mrgSingle,
@@ -58,24 +64,10 @@ tryMerge :: (TryMerge m, Mergeable a) => m a -> m a
 tryMerge = tryMergeWithStrategy rootStrategy
 {-# INLINE tryMerge #-}
 
--- | Alias for 'mrgPureWithStrategy'.
-mrgSingleWithStrategy ::
-  (TryMerge m, Applicative m) =>
-  MergingStrategy a ->
-  a ->
-  m a
-mrgSingleWithStrategy = mrgPureWithStrategy
-{-# INLINE mrgSingleWithStrategy #-}
-
--- | Alias for 'mrgPure'.
-mrgSingle :: (TryMerge m, Applicative m, Mergeable a) => a -> m a
-mrgSingle = mrgPure
-{-# INLINE mrgSingle #-}
-
 -- | Wrap a value in the applicative functor and capture the 'Mergeable'
 -- knowledge.
 --
--- >>> mrgPureWithStrategy rootStrategy "a" :: UnionM SymInteger
+-- >>> mrgSingleWithStrategy rootStrategy "a" :: UnionM SymInteger
 -- {a}
 --
 -- __Note:__ Be careful to call this directly from your code.
@@ -86,21 +78,24 @@ mrgSingle = mrgPure
 -- This function is to be called when the 'Mergeable' constraint can not be
 -- resolved, e.g., the merge strategy for the contained type is given with
 -- 'Mergeable1'. In other cases, 'mrgPure' is usually a better alternative.
-mrgPureWithStrategy ::
-  (TryMerge m, Applicative m) => MergingStrategy a -> a -> m a
-mrgPureWithStrategy strategy = tryMergeWithStrategy strategy . pure
-{-# INLINE mrgPureWithStrategy #-}
+mrgSingleWithStrategy ::
+  (TryMerge m, Applicative m) =>
+  MergingStrategy a ->
+  a ->
+  m a
+mrgSingleWithStrategy strategy = tryMergeWithStrategy strategy . pure
+{-# INLINE mrgSingleWithStrategy #-}
 
 -- | Wrap a value in the applicative functor and propagate the type's root merge
 -- strategy.
 --
--- Equivalent to @'mrgPureWithStrategy' 'rootStrategy'@.
+-- Equivalent to @'mrgSingleWithStrategy' 'rootStrategy'@.
 --
 -- >>> mrgSingle "a" :: UnionM SymInteger
 -- {a}
-mrgPure :: (TryMerge m, Applicative m, Mergeable a) => a -> m a
-mrgPure = mrgPureWithStrategy rootStrategy
-{-# INLINE mrgPure #-}
+mrgSingle :: (TryMerge m, Applicative m, Mergeable a) => a -> m a
+mrgSingle = mrgSingleWithStrategy rootStrategy
+{-# INLINE mrgSingle #-}
 
 instance (TryMerge m) => TryMerge (MaybeT m) where
   tryMergeWithStrategy strategy (MaybeT ma) =

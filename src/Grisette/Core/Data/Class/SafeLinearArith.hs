@@ -46,7 +46,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
-    mrgPure,
+    mrgSingle,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymIntN,
@@ -96,9 +96,9 @@ instance
   (MonadError ArithException m, TryMerge m) =>
   SafeLinearArith ArithException Integer m
   where
-  safeAdd l r = mrgPure (l + r)
-  safeNeg l = mrgPure (-l)
-  safeSub l r = mrgPure (l - r)
+  safeAdd l r = mrgSingle (l + r)
+  safeNeg l = mrgSingle (-l)
+  safeSub l r = mrgSingle (l - r)
 
 #define SAFE_LINARITH_SIGNED_CONCRETE_BODY \
   safeAdd l r = let res = l + r in \
@@ -173,9 +173,9 @@ instance
   (MonadError ArithException m, TryMerge m) =>
   SafeLinearArith ArithException SymInteger m
   where
-  safeAdd ls rs = mrgPure $ ls + rs
-  safeNeg v = mrgPure $ -v
-  safeSub ls rs = mrgPure $ ls - rs
+  safeAdd ls rs = mrgSingle $ ls + rs
+  safeNeg v = mrgSingle $ -v
+  safeSub ls rs = mrgSingle $ ls - rs
 
 instance
   (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
@@ -188,11 +188,11 @@ instance
       ( mrgIf
           (ls .< 0 .&& rs .< 0 .&& res .>= 0)
           (throwError Underflow)
-          (mrgPure res)
+          (mrgSingle res)
       )
     where
       res = ls + rs
-  safeNeg v = mrgIf (v .== con minBound) (throwError Overflow) (mrgPure $ -v)
+  safeNeg v = mrgIf (v .== con minBound) (throwError Overflow) (mrgSingle $ -v)
   safeSub ls rs =
     mrgIf
       (ls .>= 0)
@@ -200,7 +200,7 @@ instance
       ( mrgIf
           (ls .< 0 .&& rs .> 0 .&& res .> 0)
           (throwError Underflow)
-          (mrgPure res)
+          (mrgSingle res)
       )
     where
       res = ls - rs
@@ -213,14 +213,14 @@ instance
     mrgIf
       (ls .> res .|| rs .> res)
       (throwError Overflow)
-      (mrgPure res)
+      (mrgSingle res)
     where
       res = ls + rs
-  safeNeg v = mrgIf (v ./= 0) (throwError Underflow) (mrgPure v)
+  safeNeg v = mrgIf (v ./= 0) (throwError Underflow) (mrgSingle v)
   safeSub ls rs =
     mrgIf
       (rs .> ls)
       (throwError Underflow)
-      (mrgPure res)
+      (mrgSingle res)
     where
       res = ls - rs

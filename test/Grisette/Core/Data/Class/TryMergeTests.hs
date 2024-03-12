@@ -21,7 +21,6 @@ import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.Mergeable (Mergeable (rootStrategy))
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
-    mrgPure,
     mrgSingle,
     tryMerge,
   )
@@ -52,8 +51,8 @@ tryMergeTests :: Test
 tryMergeTests =
   testGroup
     "TryMerge"
-    [ testCase "mrgPure" $ do
-        let actual = mrgPure 1 :: UnionM Integer
+    [ testCase "mrgSingle" $ do
+        let actual = mrgSingle 1 :: UnionM Integer
         actual @?= (UMrg rootStrategy (UnionSingle 1)),
       testCase "mrgSingle" $ do
         let actual = mrgSingle 1 :: UnionM Integer
@@ -79,7 +78,7 @@ tryMergeTests =
               { testName = "ReaderT",
                 testUnmerged =
                   runReaderT (ReaderT $ \r -> (r +) <$> unmergedUnion) "x",
-                testMerged = mrgPure (symIte "a" ("x" + "b") ("x" + "c"))
+                testMerged = mrgSingle (symIte "a" ("x" + "b") ("x" + "c"))
               },
             TryMergeInstanceTest
               { testName = "Lazy StateT",
@@ -88,7 +87,7 @@ tryMergeTests =
                     (StateLazy.StateT $ \s -> (,s) <$> unmergedUnion)
                     "x" ::
                     UnionM (SymInteger, SymInteger),
-                testMerged = mrgPure (symIte "a" "b" "c", "x")
+                testMerged = mrgSingle (symIte "a" "b" "c", "x")
               },
             TryMergeInstanceTest
               { testName = "Strict StateT",
@@ -97,7 +96,7 @@ tryMergeTests =
                     (StateStrict.StateT $ \s -> (,s) <$> unmergedUnion)
                     "x" ::
                     UnionM (SymInteger, SymInteger),
-                testMerged = mrgPure (symIte "a" "b" "c", "x")
+                testMerged = mrgSingle (symIte "a" "b" "c", "x")
               },
             TryMergeInstanceTest
               { testName = "Lazy WriterT",
@@ -108,7 +107,7 @@ tryMergeTests =
                     ) ::
                     UnionM (SymInteger, SymInteger),
                 testMerged =
-                  mrgPure (symIte "a" "b" "c", symIte "a" ("b" + 1) ("c" + 1))
+                  mrgSingle (symIte "a" "b" "c", symIte "a" ("b" + 1) ("c" + 1))
               },
             TryMergeInstanceTest
               { testName = "Strict WriterT",
@@ -119,7 +118,7 @@ tryMergeTests =
                     ) ::
                     UnionM (SymInteger, SymInteger),
                 testMerged =
-                  mrgPure (symIte "a" "b" "c", symIte "a" ("b" + 1) ("c" + 1))
+                  mrgSingle (symIte "a" "b" "c", symIte "a" ("b" + 1) ("c" + 1))
               },
             TryMergeInstanceTest
               { testName = "Lazy RWST",
@@ -131,7 +130,7 @@ tryMergeTests =
                     "r"
                     "s" ::
                     UnionM (SymInteger, SymInteger, SymInteger),
-                testMerged = mrgPure (symIte "a" "b" "c", "s", "r")
+                testMerged = mrgSingle (symIte "a" "b" "c", "s", "r")
               },
             TryMergeInstanceTest
               { testName = "Strict RWST",
@@ -143,7 +142,7 @@ tryMergeTests =
                     "r"
                     "s" ::
                     UnionM (SymInteger, SymInteger, SymInteger),
-                testMerged = mrgPure (symIte "a" "b" "c", "s", "r")
+                testMerged = mrgSingle (symIte "a" "b" "c", "s", "r")
               },
             TryMergeInstanceTest
               { testName = "IdentityT",

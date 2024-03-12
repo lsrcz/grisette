@@ -43,6 +43,7 @@ import Grisette.IR.SymPrim.Data.Prim.NumTests (numTests)
 import qualified Grisette.IR.SymPrim.Data.Prim.TabularFunTests
 import Grisette.IR.SymPrim.Data.SymPrimTests (symPrimTests)
 import qualified Grisette.IR.SymPrim.Data.TabularFunTests
+import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
   )
@@ -141,7 +142,8 @@ libTests =
                     ]
                 ]
             ],
-          monadFunctionTests
+          monadFunctionTests,
+          applicativeFunctionTests
         ],
       testGroup
         "Data"

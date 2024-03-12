@@ -15,7 +15,7 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SimpleMergeable
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -173,7 +173,7 @@ mrgIte2 = liftMrgIte2 mrgIte mrgIte
 class (SimpleMergeable1 u, TryMerge u) => UnionMergeable1 (u :: Type -> Type) where
   -- | Symbolic @if@ control flow with the result merged with some merge strategy.
   --
-  -- >>> mrgIfWithStrategy rootStrategy "a" (mrgPure "b") (return "c") :: UnionM SymInteger
+  -- >>> mrgIfWithStrategy rootStrategy "a" (mrgSingle "b") (return "c") :: UnionM SymInteger
   -- {(ite a b c)}
   --
   -- __Note:__ Be careful to call this directly in your code.

@@ -11,6 +11,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Experimental.GenSymConstrained
+-- Copyright   :   (c) Sirui Lu 2021-2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Experimental.GenSymConstrained
   ( -- * Symbolic value generation with errors
     GenSymConstrained (..),
@@ -61,7 +69,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
     tryMerge,
   )
 
@@ -98,7 +106,7 @@ class (Mergeable a) => GenSymConstrained spec a where
     e ->
     spec ->
     m (UnionM a)
-  freshConstrained e spec = mrgPure <$> simpleFreshConstrained e spec
+  freshConstrained e spec = mrgSingle <$> simpleFreshConstrained e spec
 
 genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> FreshIdent -> ExceptT e UnionM (UnionM a)
 genSymConstrained e spec = tryMerge . runFreshT (freshConstrained e spec)
@@ -139,13 +147,13 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymCons
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .>= u) (throwError e) (return ())
-    mrgPure $ mrgPure v
+    mrgSingle $ mrgSingle v
 
 instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdUpperBound a spec) a where
   simpleFreshConstrained e (SOrdUpperBound u spec) = do
     s <- simpleFresh spec
     mrgIf (s .>= u) (throwError e) (return ())
-    mrgPure s
+    mrgSingle s
 
 -- | Inclusive bound, generates the values with the specification, then filters
 -- out the ones that are less than the bound
@@ -156,13 +164,13 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymCons
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .< l) (throwError e) (return ())
-    mrgPure $ mrgPure v
+    mrgSingle $ mrgSingle v
 
 instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdLowerBound a spec) a where
   simpleFreshConstrained e (SOrdLowerBound l spec) = do
     s <- simpleFresh spec
     mrgIf (s .< l) (throwError e) (return ())
-    mrgPure s
+    mrgSingle s
 
 -- | Left-inclusive, right-exclusive bound, generates the values with the
 -- specification, then filters out the ones that are out-of-bound
@@ -173,13 +181,13 @@ instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymCons
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .< l .|| v .>= u) (throwError e) (return ())
-    mrgPure $ mrgPure v
+    mrgSingle $ mrgSingle v
 
 instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdBound a spec) a where
   simpleFreshConstrained e (SOrdBound l u spec) = do
     s <- simpleFresh spec
     mrgIf (s .< l .|| s .>= u) (throwError e) (return ())
-    mrgPure s
+    mrgSingle s
 
 instance GenSymConstrained (SOrdBound Integer ()) Integer where
   freshConstrained _ (SOrdBound l r _) = chooseFresh [l .. r - 1]
@@ -215,14 +223,14 @@ instance
   (GenSymConstrained aspec a, Mergeable a) =>
   GenSymConstrained (Maybe aspec) (Maybe a)
   where
-  freshConstrained _ Nothing = mrgPure $ mrgPure Nothing
+  freshConstrained _ Nothing = mrgSingle $ mrgSingle Nothing
   freshConstrained e (Just aspec) = tryMerge $ (tryMerge . fmap Just) <$> freshConstrained e aspec
 
 instance
   (GenSymSimpleConstrained aspec a) =>
   GenSymSimpleConstrained (Maybe aspec) (Maybe a)
   where
-  simpleFreshConstrained _ Nothing = mrgPure Nothing
+  simpleFreshConstrained _ Nothing = mrgSingle Nothing
   simpleFreshConstrained e (Just aspec) = tryMerge $ Just <$> simpleFreshConstrained e aspec
 
 instance (GenSymConstrained aspec a, Mergeable a) => GenSymConstrained aspec (Maybe a) where
@@ -242,11 +250,11 @@ instance
     where
       gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Integer -> m [UnionM a]
       gl e1 v1
-        | v1 <= 0 = mrgPure []
+        | v1 <= 0 = mrgSingle []
         | otherwise = do
             l <- freshConstrained e1 ()
             r <- gl e1 (v1 - 1)
-            mrgPure $ l : r
+            mrgSingle $ l : r
 
 instance
   (GenSymConstrained spec a, Mergeable a) =>
@@ -274,7 +282,7 @@ instance
   where
   freshConstrained e l = do
     r :: [UnionM a] <- traverse (freshConstrained e) l
-    mrgPure $ tryMerge $ sequence r
+    mrgSingle $ tryMerge $ sequence r
 
 instance
   (GenSymSimpleConstrained a a) =>
@@ -294,11 +302,11 @@ instance
     where
       gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [UnionM a]
       gl e1 currLen
-        | currLen <= 0 = mrgPure []
+        | currLen <= 0 = mrgSingle []
         | otherwise = do
             l <- freshConstrained e1 subSpec
             r <- gl e1 (currLen - 1)
-            mrgPure $ l : r
+            mrgSingle $ l : r
 
 instance
   (GenSymSimpleConstrained spec a) =>
@@ -312,11 +320,11 @@ instance
     where
       gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [a]
       gl e1 currLen
-        | currLen <= 0 = mrgPure []
+        | currLen <= 0 = mrgSingle []
         | otherwise = do
             l <- simpleFreshConstrained e1 subSpec
             r <- gl e1 (currLen - 1)
-            mrgPure $ l : r
+            mrgSingle $ l : r
 
 -- (,)
 instance
@@ -330,10 +338,10 @@ instance
   freshConstrained err (aspec, bspec) = do
     a1 <- freshConstrained err aspec
     b1 <- freshConstrained err bspec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
-      mrgPure (ax, bx)
+      mrgSingle (ax, bx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -362,11 +370,11 @@ instance
     a1 <- freshConstrained err aspec
     b1 <- freshConstrained err bspec
     c1 <- freshConstrained err cspec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
       cx <- c1
-      mrgPure (ax, bx, cx)
+      mrgSingle (ax, bx, cx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -400,12 +408,12 @@ instance
     b1 <- freshConstrained err bspec
     c1 <- freshConstrained err cspec
     d1 <- freshConstrained err dspec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
       cx <- c1
       dx <- d1
-      mrgPure (ax, bx, cx, dx)
+      mrgSingle (ax, bx, cx, dx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -444,13 +452,13 @@ instance
     c1 <- freshConstrained err cspec
     d1 <- freshConstrained err dspec
     e1 <- freshConstrained err espec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
       cx <- c1
       dx <- d1
       ex <- e1
-      mrgPure (ax, bx, cx, dx, ex)
+      mrgSingle (ax, bx, cx, dx, ex)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -494,14 +502,14 @@ instance
     d1 <- freshConstrained err dspec
     e1 <- freshConstrained err espec
     f1 <- freshConstrained err fspec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
       cx <- c1
       dx <- d1
       ex <- e1
       fx <- f1
-      mrgPure (ax, bx, cx, dx, ex, fx)
+      mrgSingle (ax, bx, cx, dx, ex, fx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -550,7 +558,7 @@ instance
     e1 <- freshConstrained err espec
     f1 <- freshConstrained err fspec
     g1 <- freshConstrained err gspec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
       cx <- c1
@@ -558,7 +566,7 @@ instance
       ex <- e1
       fx <- f1
       gx <- g1
-      mrgPure (ax, bx, cx, dx, ex, fx, gx)
+      mrgSingle (ax, bx, cx, dx, ex, fx, gx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -612,7 +620,7 @@ instance
     f1 <- freshConstrained err fspec
     g1 <- freshConstrained err gspec
     h1 <- freshConstrained err hspec
-    mrgPure $ do
+    mrgSingle $ do
       ax <- a1
       bx <- b1
       cx <- c1
@@ -621,7 +629,7 @@ instance
       fx <- f1
       gx <- g1
       hx <- h1
-      mrgPure (ax, bx, cx, dx, ex, fx, gx, hx)
+      mrgSingle (ax, bx, cx, dx, ex, fx, gx, hx)
 
 instance
   ( GenSymSimpleConstrained aspec a,
@@ -658,7 +666,7 @@ instance
   where
   freshConstrained e v = do
     x <- freshConstrained e v
-    mrgPure $ tryMerge . fmap MaybeT $ x
+    mrgSingle $ tryMerge . fmap MaybeT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -700,7 +708,7 @@ instance
   where
   freshConstrained e v = do
     x <- freshConstrained e v
-    mrgPure $ tryMerge . fmap ExceptT $ x
+    mrgSingle $ tryMerge . fmap ExceptT $ x
 
 instance
   {-# OVERLAPPABLE #-}
@@ -745,7 +753,7 @@ class GenSymConstrainedNoSpec a where
     m (UnionM (a c))
 
 instance GenSymConstrainedNoSpec U1 where
-  freshConstrainedNoSpec _ = return $ mrgPure U1
+  freshConstrainedNoSpec _ = return $ mrgSingle U1
 
 instance (GenSymConstrained () c) => GenSymConstrainedNoSpec (K1 i c) where
   freshConstrainedNoSpec e = fmap K1 <$> freshConstrained e ()

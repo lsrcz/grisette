@@ -30,7 +30,7 @@ import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (iinfosym, isym, sinfosym, ssym),
   )
-import Grisette.Core.Data.Class.TryMerge (mrgPure)
+import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Core.Data.SomeBV
   ( SomeBV (SomeBV),
     SomeIntN,
@@ -116,7 +116,7 @@ testSafeFuncMatch ::
   Test
 testSafeFuncMatch f a b r = testCase "bit width match" $ do
   let actual = f a b
-  let expected = mrgPure r
+  let expected = mrgSingle r
   actual @?= expected
 
 testSafeFuncMisMatch ::
@@ -252,7 +252,7 @@ someBVTests =
             let func l r = do
                   a <- safeAdd l r
                   b <- safeSub l r
-                  mrgPure (a, b)
+                  mrgSingle (a, b)
             [ testSafeFuncMatch
                 func
                 (bv 4 5)
@@ -363,17 +363,17 @@ someBVTests =
         "GenSym"
         [ testCase "Proxy n" $ do
             let actual = genSym (Proxy :: Proxy 4) "a" :: UnionM SomeSymIntN
-            let expected = mrgPure $ isymBV 4 "a" 0
+            let expected = mrgSingle $ isymBV 4 "a" 0
             actual @?= expected,
           testCase "SomeBV" $ do
             let actual =
                   genSym (bv 4 1 :: SomeSymIntN) "a" :: UnionM SomeSymIntN
-            let expected = mrgPure $ isymBV 4 "a" 0
+            let expected = mrgSingle $ isymBV 4 "a" 0
             actual @?= expected,
           testCase "Int" $ do
             let actual =
                   genSym (4 :: Int) "a" :: UnionM SomeSymIntN
-            let expected = mrgPure $ isymBV 4 "a" 0
+            let expected = mrgSingle $ isymBV 4 "a" 0
             actual @?= expected
         ],
       testGroup

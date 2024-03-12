@@ -6,7 +6,7 @@
 
 -- |
 -- Module      :   Grisette.Core.BuiltinUnionWrapper
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -32,7 +32,7 @@ where
 
 import Data.Functor.Sum (Sum)
 import Grisette.Core.Control.Exception (VerificationConditions)
-import Grisette.Core.Data.Class.TryMerge (mrgPure)
+import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Core.TH (makeUnionWrapper, makeUnionWrapper')
 
 $(makeUnionWrapper "mrg" ''Bool)

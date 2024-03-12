@@ -10,7 +10,7 @@ import Control.Monad.Except
 import Grisette (mrgIf)
 import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.TryMerge (mrgPure)
+import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad.Trans.Except
   ( mrgCatchE,
@@ -35,12 +35,12 @@ unmergedExceptT =
 mergedExceptT :: ExceptT SymInteger UnionM SymBool
 mergedExceptT =
   ExceptT $
-    mrgIf "e" (mrgPure (Left (symIte "c" "a" "b"))) (mrgPure (Right "d"))
+    mrgIf "e" (mrgSingle (Left (symIte "c" "a" "b"))) (mrgSingle (Right "d"))
 
 mergedExceptTPlus1 :: ExceptT SymInteger UnionM SymBool
 mergedExceptTPlus1 =
   ExceptT $
-    mrgIf "e" (mrgPure (Left (symIte "c" "a" "b" + 1))) (mrgPure (Right "d"))
+    mrgIf "e" (mrgSingle (Left (symIte "c" "a" "b" + 1))) (mrgSingle (Right "d"))
 
 exceptTests :: Test
 exceptTests =
@@ -48,7 +48,7 @@ exceptTests =
     "Except"
     [ testCase "mrgExcept" $ do
         let actual = mrgExcept (Left "a") :: ExceptT SymInteger UnionM SymBool
-        let expected = ExceptT (mrgPure (Left "a"))
+        let expected = ExceptT (mrgSingle (Left "a"))
         actual @?= expected,
       testCase "mrgRunExceptT" $ do
         mrgRunExceptT unmergedExceptT @?= runExceptT mergedExceptT,
@@ -56,7 +56,7 @@ exceptTests =
         mrgWithExceptT (+ 1) unmergedExceptT @?= mergedExceptTPlus1,
       testCase "mrgThrowE" $ do
         let actual = mrgThrowE "a" :: ExceptT SymInteger UnionM SymBool
-        actual @?= ExceptT (mrgPure (Left "a")),
+        actual @?= ExceptT (mrgSingle (Left "a")),
       testCase "mrgCatchE" $ do
         let actual = mrgCatchE unmergedExceptT (throwError . (+ 1))
         actual @?= mergedExceptTPlus1

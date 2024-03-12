@@ -12,7 +12,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
   )
 import Grisette.Lib.Data.Traversable
   ( mrgFor,
@@ -41,7 +41,7 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgPure [a, b]
+                mrgSingle [a, b]
             ),
       testCase "mrgSequenceA" $ do
         runExceptT
@@ -55,7 +55,7 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgPure [a, b]
+                mrgSingle [a, b]
             ),
       testCase "mrgMapM" $ do
         runExceptT
@@ -68,7 +68,7 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgPure [a, b]
+                mrgSingle [a, b]
             ),
       testCase "mrgSequence" $ do
         runExceptT
@@ -82,7 +82,7 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgPure [a, b]
+                mrgSingle [a, b]
             ),
       testCase "mrgFor" $ do
         runExceptT
@@ -95,7 +95,7 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgPure [a, b]
+                mrgSingle [a, b]
             ),
       testCase "mrgForM" $ do
         runExceptT
@@ -108,6 +108,6 @@ traversableFunctionTests =
             ( do
                 a <- mrgIf "a" (throwError 3) (mrgIf "c" (return 4) (return 5))
                 b <- mrgIf "b" (throwError 2) (mrgIf "d" (return 3) (return 6))
-                mrgPure [a, b]
+                mrgSingle [a, b]
             )
     ]

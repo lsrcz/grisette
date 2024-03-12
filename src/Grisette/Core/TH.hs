@@ -4,7 +4,7 @@
 
 -- |
 -- Module      :   Grisette.Core.TH
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -44,7 +44,7 @@ import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
 -- generates
 --
 -- > mrgTuple2 :: (SymBoolOp bool, Monad u, Mergeable bool t1, Mergeable bool t2, MonadUnion bool u) => t1 -> t2 -> u (t1, t2)
--- > mrgTuple2 = \v1 v2 -> mrgPure (v1, v2)
+-- > mrgTuple2 = \v1 v2 -> mrgSingle (v1, v2)
 makeUnionWrapper' ::
   -- | Names for generated wrappers
   [String] ->
@@ -86,9 +86,9 @@ getConstructors typName = do
 -- generates
 --
 -- > mrgNothing :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => u (Maybe t)
--- > mrgNothing = mrgPure Nothing
+-- > mrgNothing = mrgSingle Nothing
 -- > mrgJust :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => t -> u (Maybe t)
--- > mrgJust = \x -> mrgPure (Just x)
+-- > mrgJust = \x -> mrgSingle (Just x)
 makeUnionWrapper ::
   -- | Prefix for generated wrappers
   String ->
@@ -104,11 +104,11 @@ augmentNormalCExpr :: Int -> Exp -> Q Exp
 augmentNormalCExpr n f = do
   xs <- replicateM n (newName "x")
   let args = map VarP xs
-  mrgPureFun <- [|mrgPure|]
+  mrgSingleFun <- [|mrgSingle|]
   return $
     LamE
       args
-      ( AppE mrgPureFun $
+      ( AppE mrgSingleFun $
           foldl AppE f (map VarE xs)
       )
 

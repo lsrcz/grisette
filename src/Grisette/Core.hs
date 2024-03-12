@@ -5,7 +5,7 @@
 
 -- |
 -- Module      :   Grisette.Core
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -604,8 +604,6 @@ module Grisette.Core
     -- **** TryMerge operations
     MonadTryMerge,
     TryMerge (..),
-    mrgPure,
-    mrgPureWithStrategy,
     mrgSingle,
     mrgSingleWithStrategy,
     tryMerge,
@@ -1239,8 +1237,6 @@ import Grisette.Core.Data.Class.ToSym (ToSym (..))
 import Grisette.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge (..),
-    mrgPure,
-    mrgPureWithStrategy,
     mrgSingle,
     mrgSingleWithStrategy,
     tryMerge,

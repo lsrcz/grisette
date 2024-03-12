@@ -13,7 +13,7 @@
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.SOrd
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -64,7 +64,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge
-  ( mrgPure,
+  ( mrgSingle,
     tryMerge,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
@@ -138,8 +138,8 @@ class (SEq a) => SOrd a where
   symCompare l r =
     mrgIf
       (l .< r)
-      (mrgPure LT)
-      (mrgIf (l .== r) (mrgPure EQ) (mrgPure GT))
+      (mrgSingle LT)
+      (mrgIf (l .== r) (mrgSingle EQ) (mrgSingle GT))
   {-# MINIMAL (.<=) #-}
 
 instance (SEq a, Generic a, SOrd' (Rep a)) => SOrd (Default a) where
@@ -155,7 +155,7 @@ instance SOrd type where \
   l .< r = con $ l < r; \
   l .>= r = con $ l >= r; \
   l .> r = con $ l > r; \
-  symCompare l r = mrgPure $ compare l r
+  symCompare l r = mrgSingle $ compare l r
 
 #define CONCRETE_SORD_BV(type) \
 instance (KnownNat n, 1 <= n) => SOrd (type n) where \
@@ -163,7 +163,7 @@ instance (KnownNat n, 1 <= n) => SOrd (type n) where \
   l .< r = con $ l < r; \
   l .>= r = con $ l >= r; \
   l .> r = con $ l > r; \
-  symCompare l r = mrgPure $ compare l r
+  symCompare l r = mrgSingle $ compare l r
 
 #if 1
 CONCRETE_SORD(Bool)
@@ -194,15 +194,15 @@ symCompareSingleList isLess isStrict = go
     go _ [] = if isLess then con False else con True
 
 symCompareList :: (SOrd a) => [a] -> [a] -> UnionM Ordering
-symCompareList [] [] = mrgPure EQ
+symCompareList [] [] = mrgSingle EQ
 symCompareList (x : xs) (y : ys) = do
   oxy <- symCompare x y
   case oxy of
-    LT -> mrgPure LT
+    LT -> mrgSingle LT
     EQ -> symCompareList xs ys
-    GT -> mrgPure GT
-symCompareList [] _ = mrgPure LT
-symCompareList _ [] = mrgPure GT
+    GT -> mrgSingle GT
+symCompareList [] _ = mrgSingle LT
+symCompareList _ [] = mrgSingle GT
 
 instance (SOrd a) => SOrd [a] where
   (.<=) = symCompareSingleList True False
@@ -315,8 +315,8 @@ instance SOrd symtype where \
   (symtype a) .> (symtype b) = SymBool $ pevalGtNumTerm a b; \
   a `symCompare` b = mrgIf \
     (a .< b) \
-    (mrgPure LT) \
-    (mrgIf (a .== b) (mrgPure EQ) (mrgPure GT))
+    (mrgSingle LT) \
+    (mrgIf (a .== b) (mrgSingle EQ) (mrgSingle GT))
 
 #define SORD_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
@@ -326,8 +326,8 @@ instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
   (symtype a) .> (symtype b) = SymBool $ pevalGtNumTerm a b; \
   a `symCompare` b = mrgIf \
     (a .< b) \
-    (mrgPure LT) \
-    (mrgIf (a .== b) (mrgPure EQ) (mrgPure GT))
+    (mrgSingle LT) \
+    (mrgIf (a .== b) (mrgSingle EQ) (mrgSingle GT))
 
 instance SOrd SymBool where
   l .<= r = symNot l .|| r
@@ -337,8 +337,8 @@ instance SOrd SymBool where
   symCompare l r =
     mrgIf
       (symNot l .&& r)
-      (mrgPure LT)
-      (mrgIf (l .== r) (mrgPure EQ) (mrgPure GT))
+      (mrgSingle LT)
+      (mrgIf (l .== r) (mrgSingle EQ) (mrgSingle GT))
 
 #if 1
 SORD_SIMPLE(SymInteger)
@@ -352,33 +352,33 @@ instance SOrd AssertionError where
   _ .< _ = con False
   _ .>= _ = con True
   _ .> _ = con False
-  _ `symCompare` _ = mrgPure EQ
+  _ `symCompare` _ = mrgSingle EQ
 
 instance SOrd VerificationConditions where
   l .>= r = con $ l >= r
   l .> r = con $ l > r
   l .<= r = con $ l <= r
   l .< r = con $ l < r
-  l `symCompare` r = mrgPure $ l `compare` r
+  l `symCompare` r = mrgSingle $ l `compare` r
 
 -- UnionM
 instance (SOrd a, Mergeable a) => SOrd (UnionM a) where
   x .<= y = simpleMerge $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
-    mrgPure $ x1 .<= y1
+    mrgSingle $ x1 .<= y1
   x .< y = simpleMerge $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
-    mrgPure $ x1 .< y1
+    mrgSingle $ x1 .< y1
   x .>= y = simpleMerge $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
-    mrgPure $ x1 .>= y1
+    mrgSingle $ x1 .>= y1
   x .> y = simpleMerge $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
-    mrgPure $ x1 .> y1
+    mrgSingle $ x1 .> y1
   x `symCompare` y = liftToMonadUnion $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
@@ -414,14 +414,14 @@ instance SOrd' U1 where
   _ ..<= _ = con True
   _ ..> _ = con False
   _ ..>= _ = con True
-  symCompare' _ _ = mrgPure EQ
+  symCompare' _ _ = mrgSingle EQ
 
 instance SOrd' V1 where
   _ ..< _ = con False
   _ ..<= _ = con True
   _ ..> _ = con False
   _ ..>= _ = con True
-  symCompare' _ _ = mrgPure EQ
+  symCompare' _ _ = mrgSingle EQ
 
 instance (SOrd c) => SOrd' (K1 i c) where
   (K1 a) ..< (K1 b) = a .< b
@@ -457,9 +457,9 @@ instance (SOrd' a, SOrd' b) => SOrd' (a :+: b) where
   (R1 a) ..>= (R1 b) = a ..>= b
 
   symCompare' (L1 a) (L1 b) = symCompare' a b
-  symCompare' (L1 _) (R1 _) = mrgPure LT
+  symCompare' (L1 _) (R1 _) = mrgSingle LT
   symCompare' (R1 a) (R1 b) = symCompare' a b
-  symCompare' (R1 _) (L1 _) = mrgPure GT
+  symCompare' (R1 _) (L1 _) = mrgSingle GT
 
 instance (SOrd' a, SOrd' b) => SOrd' (a :*: b) where
   (a1 :*: b1) ..< (a2 :*: b2) = (a1 ..< a2) .|| ((a1 ..== a2) .&& (b1 ..< b2))
@@ -470,7 +470,7 @@ instance (SOrd' a, SOrd' b) => SOrd' (a :*: b) where
     l <- symCompare' a1 a2
     case l of
       EQ -> symCompare' b1 b2
-      _ -> mrgPure l
+      _ -> mrgSingle l
 
 derivedSymLt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
 derivedSymLt x y = from x ..< from y
