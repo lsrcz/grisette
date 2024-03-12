@@ -11,19 +11,25 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Lib.Data.Traversable
-  ( -- * mrg* variants for operations in "Data.Traversable"
+  ( -- * The 'Traversable' class
     mrgTraverse,
     mrgSequenceA,
-    mrgFor,
     mrgMapM,
-    mrgForM,
     mrgSequence,
+
+    -- * Utility functions
+    mrgFor,
+    mrgForM,
+    mrgMapAccumM,
+    mrgForAccumM,
   )
 where
 
+import Control.Monad.State (StateT (StateT, runStateT))
 import Grisette.Core.Data.Class.Mergeable
-  ( Mergeable,
+  ( Mergeable (rootStrategy),
     Mergeable1,
+    Mergeable2 (liftRootStrategy2),
     rootStrategy1,
   )
 import Grisette.Core.Data.Class.TryMerge
@@ -31,6 +37,7 @@ import Grisette.Core.Data.Class.TryMerge
     TryMerge (tryMergeWithStrategy),
     tryMerge,
   )
+import Grisette.Lib.Control.Applicative (mrgPure)
 
 -- | 'Data.Traversable.traverse' with 'MergingStrategy' knowledge propagation.
 mrgTraverse ::
@@ -114,3 +121,32 @@ mrgForM ::
   m (t b)
 mrgForM = flip mrgMapM
 {-# INLINE mrgForM #-}
+
+-- | 'Data.Traversable.mapAccumM' with 'MergingStrategy' knowledge propagation.
+mrgMapAccumM ::
+  (MonadTryMerge m, Traversable t, Mergeable s, Mergeable b, Mergeable1 t) =>
+  (s -> a -> m (s, b)) ->
+  s ->
+  t a ->
+  m (s, t b)
+mrgMapAccumM f s t =
+  tryMergeWithStrategy (liftRootStrategy2 rootStrategy rootStrategy1) $ do
+    (tb, s) <- flip runStateT s $ do
+      mrgMapM
+        ( \a -> StateT $ \s -> do
+            (sr, br) <- f s a
+            mrgPure (br, sr)
+        )
+        t
+    return (s, tb)
+{-# INLINE mrgMapAccumM #-}
+
+-- | 'Data.Traversable.forAccumM' and 'MergingStrategy' knowledge propagation.
+mrgForAccumM ::
+  (MonadTryMerge m, Traversable t, Mergeable s, Mergeable b, Mergeable1 t) =>
+  s ->
+  t a ->
+  (s -> a -> m (s, b)) ->
+  m (s, t b)
+mrgForAccumM s t f = mrgMapAccumM f s t
+{-# INLINE mrgForAccumM #-}
