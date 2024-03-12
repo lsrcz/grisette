@@ -20,6 +20,7 @@ module Grisette.Core.Data.Class.PlainUnion
     pattern Single,
     pattern If,
     simpleMerge,
+    symIteMerge,
     (.#),
     onUnion,
     onUnion2,
@@ -31,6 +32,7 @@ where
 import Data.Bifunctor (Bifunctor (first))
 import Data.Kind (Type)
 import Grisette.Core.Data.Class.Function (Function ((#)))
+import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&)),
   )
@@ -119,6 +121,18 @@ simpleMerge u = case tryMerge u of
   Single x -> x
   _ -> error "Should not happen"
 {-# INLINE simpleMerge #-}
+
+-- | Merge the mergeable values in a union, using `symIte`, and extract the
+-- merged value.
+--
+-- The reason why we provide this class is that for some types, we only have
+-- `ITEOp` (which may throw an error), and we don't have a `SimpleMergeable`
+-- instance. In this case, we can use `symIteMerge` to merge the values.
+symIteMerge :: (ITEOp a, Mergeable a, PlainUnion u) => u a -> a
+symIteMerge (Single x) = x
+symIteMerge (If cond l r) = symIte cond (symIteMerge l) (symIteMerge r)
+symIteMerge _ = error "Should not happen"
+{-# INLINE symIteMerge #-}
 
 -- | Helper for applying functions on 'UnionLike' and 'SimpleMergeable'.
 --

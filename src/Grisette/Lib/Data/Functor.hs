@@ -17,6 +17,7 @@ module Grisette.Lib.Data.Functor
   )
 where
 
+import Control.Monad (void)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
@@ -73,6 +74,6 @@ mrgUnzip ab =
 {-# INLINE mrgUnzip #-}
 
 -- | 'void' with 'MergingStrategy' knowledge propagation.
-mrgVoid :: (TryMerge f, Mergeable a, Functor f) => f a -> f ()
-mrgVoid x = () .<$ x
+mrgVoid :: (TryMerge f, Functor f) => f a -> f ()
+mrgVoid x = tryMerge $ void x
 {-# INLINE mrgVoid #-}

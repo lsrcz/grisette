@@ -1405,5 +1405,5 @@ sordTests =
         mrgMin [1] [0, 3] @?= (mrgReturn [0, 3] :: UnionM [SymInteger])
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
         (mrgMin [a] [b, c] :: UnionM [SymInteger])
-          .@?= (mrgIf (b .<= a) (return [b, c]) (return [a]))
+          .@?= (mrgIf (b .< a) (return [b, c]) (return [a]))
     ]
