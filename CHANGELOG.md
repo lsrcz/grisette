@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added all the functions available for the exception transformer in `transformers` and `mtl` packages. ([#171](https://github.com/lsrcz/grisette/pull/171))
 - Improved the partial evaluation for bit vectors. ([#176](https://github.com/lsrcz/grisette/pull/176))
 - Added `symRotateNegated` and `symShiftNegated`. ([#181](https://github.com/lsrcz/grisette/pull/181))
+- Added `mrg` and `sym` variants for all reasonable operations from
+  `Control.Monad`, `Control.Applicative`, `Data.Foldable`, `Data.List`, and `Data.Traversable`.
+  ([#182](https://github.com/lsrcz/grisette/pull/182))
 
 ### Fixed
 
@@ -29,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Unifies the implementation for all symbolic non-indexed
   bit-vectors. The legacy types are now type and pattern synonyms. ([#174](https://github.com/lsrcz/grisette/pull/174), [#179](https://github.com/lsrcz/grisette/pull/179), [#180](https://github.com/lsrcz/grisette/pull/180))
 - [Breaking] Use functional dependency instead of type family for the `Function` class. ([#178](https://github.com/lsrcz/grisette/pull/178))
+- [Breaking] Added `Mergeable` constraints to some `mrg*` list operators
+  ([#182](https://github.com/lsrcz/grisette/pull/182))
 
 ## [0.4.1.0] -- 2024-01-10
 
