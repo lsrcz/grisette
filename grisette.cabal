@@ -267,6 +267,7 @@ test-suite spec
       Grisette.Lib.Control.MonadTests
       Grisette.Lib.Data.FoldableTests
       Grisette.Lib.Data.FunctorTests
+      Grisette.Lib.Data.ListTests
       Grisette.Lib.Data.TraversableTests
       Grisette.TestUtil.NoMerge
       Grisette.TestUtil.PrettyPrint
