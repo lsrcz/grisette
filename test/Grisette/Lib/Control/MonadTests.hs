@@ -23,8 +23,10 @@ import Grisette
     mrgLiftM5,
     mrgMapAndUnzipM,
     mrgReplicateM,
+    mrgReplicateM_,
     mrgWhen,
     mrgZipWithM,
+    symReplicateM_,
     symWhen,
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
@@ -371,6 +373,19 @@ monadFunctionTests =
                       (mrgIf (a .== 1) (return [1]) (return [1, 1])) ::
                       UnionM [Int]
               actual .@?= expected
+          ],
+      plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
+        testCase "mrgReplicateM_" $ do
+          let actual = mrgReplicateM_ 100 noMergeNotMerged :: UnionM ()
+          actual @?= mrgReturn (),
+      plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
+        testGroup
+          "symReplicateM_"
+          [ testCase "merge result and intermediate" $ do
+              let actual =
+                    symReplicateM_ 200 (100 :: SymInteger) noMergeNotMerged ::
+                      UnionM ()
+              actual @?= mrgReturn ()
           ],
       testCase "mrgGuard" $ do
         mrgGuard True @?= (mrgReturn () :: MaybeT UnionM ())
