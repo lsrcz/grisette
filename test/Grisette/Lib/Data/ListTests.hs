@@ -339,7 +339,7 @@ listTests =
               @?= ( (aint .== cint .&& bint .== dint)
                       .|| (aint .== dint .&& bint .== eint)
                   )
-              .|| (aint .== eint .&& bint .== fint),
+                .|| (aint .== eint .&& bint .== fint),
           testCase "symbolic int, not long enough" $ do
             let actual = symIsInfixOf [cint, dint, eint] [aint, bint]
             actual @?= con False
