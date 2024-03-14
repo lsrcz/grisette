@@ -242,7 +242,8 @@ For more details, please refer to [the Grisette examples](https://github.com/lsr
 
 - Haddock documentation at [grisette](https://hackage.haskell.org/package/grisette).
 - Grisette essentials (WIP).
-- Grisette tutorials (WIP).
+- A tutorial to Grisette is in the [tutorials](tutorials) directory. They are
+  provided as jupyter notebooks with the [IHaskell](https://github.com/IHaskell/IHaskell) kernel.
 
 ## License
 
