@@ -25,3 +25,4 @@ cabal.project.local~
 .envrc
 .direnv/
 *.o-boot
+.ipynb_checkpoints/
