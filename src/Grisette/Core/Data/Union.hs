@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -76,21 +77,22 @@ import Data.Text.Prettyprint.Doc (align, group, nest, vsep)
 #endif
 
 -- | The default union implementation.
-data Union a
-  = -- | A single value
-    UnionSingle a
-  | -- | A if value
-    UnionIf
-      a
-      -- ^ Cached leftmost value
-      !Bool
-      -- ^ Is merged invariant already maintained?
-      !SymBool
-      -- ^ If condition
-      (Union a)
-      -- ^ True branch
-      (Union a)
-      -- ^ False branch
+data Union a where
+  -- | A single value
+  UnionSingle :: a -> Union a
+  -- | A if value
+  UnionIf ::
+    -- | Cached leftmost value
+    a ->
+    -- | Is merged invariant already maintained?
+    !Bool ->
+    -- | If condition
+    !SymBool ->
+    -- | True branch
+    Union a ->
+    -- | False branch
+    Union a ->
+    Union a
   deriving (Generic, Eq, Lift, Generic1)
   deriving (Functor)
 
