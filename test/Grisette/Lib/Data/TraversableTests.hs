@@ -6,9 +6,10 @@ import Control.Monad.Except
   ( ExceptT (ExceptT),
     MonadError (throwError),
   )
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( mrgIf,
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
   )
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
@@ -54,10 +55,10 @@ traversableFunctionTests =
                         func0
                           ( \(c, d, x, y, z) ->
                               ExceptT $
-                                mergePropagatedIf
+                                mrgIfPropagatedStrategy
                                   c
                                   (return $ Left x)
-                                  ( mergePropagatedIf
+                                  ( mrgIfPropagatedStrategy
                                       d
                                       (return $ Right y)
                                       (return $ Right z)
@@ -96,19 +97,19 @@ traversableFunctionTests =
                   let actual =
                         func0
                           [ ExceptT $
-                              mergePropagatedIf
+                              mrgIfPropagatedStrategy
                                 "a"
                                 (return $ Left 3)
-                                ( mergePropagatedIf
+                                ( mrgIfPropagatedStrategy
                                     "c"
                                     (return $ Right 4)
                                     (return $ Right 5)
                                 ),
                             ExceptT $
-                              mergePropagatedIf
+                              mrgIfPropagatedStrategy
                                 "b"
                                 (return $ Left 2)
-                                ( mergePropagatedIf
+                                ( mrgIfPropagatedStrategy
                                     "d"
                                     (return $ Right 3)
                                     (return $ Right 6)
@@ -159,7 +160,7 @@ traversableFunctionTests =
                   let actual =
                         func1
                           ( \_ _ ->
-                              mergePropagatedIf
+                              mrgIfPropagatedStrategy
                                 "a"
                                 (return (1, 1))
                                 (return (1, 1))

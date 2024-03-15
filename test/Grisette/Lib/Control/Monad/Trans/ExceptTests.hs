@@ -8,8 +8,11 @@ import Control.Monad.Except
     runExceptT,
   )
 import Grisette (mrgIf)
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+  )
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad.Trans.Except
@@ -25,12 +28,10 @@ import Test.HUnit ((@?=))
 
 unmergedExceptT :: ExceptT SymInteger UnionM SymBool
 unmergedExceptT =
-  ExceptT
-    ( mergePropagatedIf
-        "e"
-        (mergePropagatedIf "c" (return $ Left "a") (return $ Left "b"))
-        (return $ Right "d")
-    )
+  mrgIfPropagatedStrategy
+    "e"
+    (mrgIfPropagatedStrategy "c" (throwError "a") (throwError "b"))
+    (return "d")
 
 mergedExceptT :: ExceptT SymInteger UnionM SymBool
 mergedExceptT =

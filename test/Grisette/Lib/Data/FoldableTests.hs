@@ -15,12 +15,13 @@ import Grisette
     symAny,
     symOr,
   )
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&), (.||)))
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<=), (.>)))
 import Grisette.Core.Data.Class.SimpleMergeable
-  ( mrgIf,
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad (mrgMzero, mrgReturn)
@@ -103,7 +104,7 @@ foldableFunctionTests =
               let actual =
                     mrgFoldrM
                       ( \(c, v) acc ->
-                          mergePropagatedIf
+                          mrgIfPropagatedStrategy
                             c
                             (return $ acc + v)
                             (return $ acc * v)
@@ -129,7 +130,7 @@ foldableFunctionTests =
               let actual =
                     mrgFoldlM
                       ( \acc (c, v) ->
-                          mergePropagatedIf
+                          mrgIfPropagatedStrategy
                             c
                             (return $ acc + v)
                             (return $ acc * v)
@@ -164,7 +165,7 @@ foldableFunctionTests =
                           ( func0
                               ( \(c, x) ->
                                   ExceptT $
-                                    mergePropagatedIf
+                                    mrgIfPropagatedStrategy
                                       c
                                       (return $ Left x)
                                       (return $ Right c)
@@ -197,7 +198,7 @@ foldableFunctionTests =
                           ( func0 $
                               ( \(c, x) ->
                                   ExceptT $
-                                    mergePropagatedIf
+                                    mrgIfPropagatedStrategy
                                       c
                                       (return $ Left x)
                                       (return $ Right c)
@@ -222,7 +223,7 @@ foldableFunctionTests =
           [ testCase "merge" $ do
               let none =
                     MaybeT $
-                      mergePropagatedIf "a" (return Nothing) (return Nothing)
+                      mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
               let expected =
                     MaybeT (mrgReturn Nothing) ::
                       MaybeT UnionM (Maybe Int)

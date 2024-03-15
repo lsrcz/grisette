@@ -61,7 +61,7 @@ class (Applicative u, UnionMergeable1 u) => PlainUnion (u :: Type -> Type) where
   --
   -- >>> singleView (return 1 :: UnionM Integer)
   -- Just 1
-  -- >>> singleView (mergePropagatedIf "a" (return 1) (return 2) :: UnionM Integer)
+  -- >>> singleView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: UnionM Integer)
   -- Nothing
   singleView :: u a -> Maybe a
 
@@ -69,7 +69,7 @@ class (Applicative u, UnionMergeable1 u) => PlainUnion (u :: Type -> Type) where
   --
   -- >>> ifView (return 1 :: UnionM Integer)
   -- Nothing
-  -- >>> ifView (mergePropagatedIf "a" (return 1) (return 2) :: UnionM Integer)
+  -- >>> ifView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: UnionM Integer)
   -- Just (a,<1>,<2>)
   -- >>> ifView (mrgIf "a" (return 1) (return 2) :: UnionM Integer)
   -- Just (a,{1},{2})
@@ -99,7 +99,7 @@ pattern Single x <-
     Single x = mrgSingle x
 
 -- | Pattern match to extract guard values with 'ifView'
--- >>> case (mergePropagatedIf "a" (return 1) (return 2) :: UnionM Integer) of If c t f -> (c,t,f)
+-- >>> case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: UnionM Integer) of If c t f -> (c,t,f)
 -- (a,<1>,<2>)
 pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
 pattern If c t f <-
@@ -109,12 +109,12 @@ pattern If c t f <-
 
 -- | Merge the simply mergeable values in a union, and extract the merged value.
 --
--- In the following example, 'mergePropagatedIf' will not merge the results, and
+-- In the following example, 'mrgIfPropagatedStrategy' will not merge the results, and
 -- 'simpleMerge' will merge it and extract the single merged value.
 --
--- >>> mergePropagatedIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool
+-- >>> mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool
 -- <If a b c>
--- >>> simpleMerge $ (mergePropagatedIf (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
+-- >>> simpleMerge $ (mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
 -- (ite a b c)
 simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
 simpleMerge u = case tryMerge u of
@@ -152,7 +152,7 @@ infixl 9 .#
 -- | Lift a function to work on union values.
 --
 -- >>> sumU = onUnion sum
--- >>> sumU (mergePropagatedIf "cond" (return ["a"]) (return ["b","c"]) :: UnionM [SymInteger])
+-- >>> sumU (mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b","c"]) :: UnionM [SymInteger])
 -- (ite cond a (+ b c))
 onUnion ::
   forall u a r.

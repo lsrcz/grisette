@@ -13,7 +13,6 @@ import Grisette.Core.Control.Monad.UnionM
     isMerged,
     liftToMonadUnion,
     liftUnionM,
-    mergePropagatedIf,
     underlyingUnion,
     unionMBinOp,
     unionMUnaryOp,
@@ -40,7 +39,7 @@ import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<=)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
-    UnionMergeable1 (mrgIfWithStrategy),
+    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
     mrgIte1,
   )
@@ -68,13 +67,13 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
 unionM1 :: UnionM (Either SymBool SymInteger)
-unionM1 = mergePropagatedIf "u1c" (return $ Left "u1a") (return $ Right "u1b")
+unionM1 = mrgIfPropagatedStrategy "u1c" (return $ Left "u1a") (return $ Right "u1b")
 
 unionM2 :: UnionM (Either SymBool SymInteger)
-unionM2 = mergePropagatedIf "u2c" (return $ Left "u2a") (return $ Right "u2b")
+unionM2 = mrgIfPropagatedStrategy "u2c" (return $ Left "u2a") (return $ Right "u2b")
 
 unionM12 :: UnionM (Either SymBool SymInteger)
-unionM12 = mergePropagatedIf "u12c" unionM1 unionM2
+unionM12 = mrgIfPropagatedStrategy "u12c" unionM1 unionM2
 
 union12Merged :: Union (Either SymBool SymInteger)
 union12Merged =
@@ -88,17 +87,17 @@ unionM12Merged :: UnionM (Either SymBool SymInteger)
 unionM12Merged = UMrg rootStrategy union12Merged
 
 unionMSimple1 :: UnionM SymInteger
-unionMSimple1 = mergePropagatedIf "u1c" (return "u1a") (return "u1b")
+unionMSimple1 = mrgIfPropagatedStrategy "u1c" (return "u1a") (return "u1b")
 
 unionMSimple1Plus1 :: UnionM SymInteger
 unionMSimple1Plus1 =
-  mergePropagatedIf
+  mrgIfPropagatedStrategy
     "u1c"
     (return $ "u1a" + 1)
     (return $ "u1b" + 1)
 
 unionMSimple2 :: UnionM SymInteger
-unionMSimple2 = mergePropagatedIf "u2c" (return "u2a") (return "u2b")
+unionMSimple2 = mrgIfPropagatedStrategy "u2c" (return "u2a") (return "u2b")
 
 unionMSimple12Merged :: UnionM SymInteger
 unionMSimple12Merged =
@@ -346,7 +345,7 @@ unionMTests =
             "conView"
             [ testCase "is concrete" $ do
                 let value =
-                      mergePropagatedIf
+                      mrgIfPropagatedStrategy
                         "a"
                         (return $ con True)
                         (return $ con True)

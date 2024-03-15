@@ -2,11 +2,15 @@
 
 module Grisette.Lib.Control.Monad.ExceptTests (monadExceptFunctionTests) where
 
+import Control.Monad.Error.Class (MonadError (throwError))
 import Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
+  )
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )
@@ -26,8 +30,7 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
 exceptUnion :: ExceptT SymInteger UnionM SymInteger
-exceptUnion =
-  ExceptT (mergePropagatedIf "a" (return $ Left "b") (return $ Right "c"))
+exceptUnion = mrgIfPropagatedStrategy "a" (throwError "b") (return "c")
 
 monadExceptFunctionTests :: Test
 monadExceptFunctionTests =
@@ -37,8 +40,7 @@ monadExceptFunctionTests =
         runExceptT (mrgThrowError 1 :: ExceptT Integer UnionM ())
           @?= mrgSingle (Left 1),
       testCase "mrgCatchError" $
-        ( ExceptT
-            (mergePropagatedIf "a" (return $ Left "b") (return $ Right "c")) ::
+        ( mrgIfPropagatedStrategy "a" (throwError "b") (return "c") ::
             ExceptT SymBool UnionM SymBool
         )
           `mrgCatchError` return
@@ -55,8 +57,7 @@ monadExceptFunctionTests =
       testCase "mrgCatchError" $
         mrgHandleError
           return
-          ( ExceptT
-              (mergePropagatedIf "a" (return $ Left "b") (return $ Right "c")) ::
+          ( mrgIfPropagatedStrategy "a" (throwError "b") (return "c") ::
               ExceptT SymBool UnionM SymBool
           )
           @?= mrgSingle (symIte "a" "b" "c"),

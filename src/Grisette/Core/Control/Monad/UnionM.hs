@@ -35,7 +35,6 @@ module Grisette.Core.Control.Monad.UnionM
     underlyingUnion,
     isMerged,
     unionSize,
-    mergePropagatedIf,
     IsConcrete,
   )
 where
@@ -82,7 +81,7 @@ import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfWithStrategy),
+    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
@@ -191,24 +190,24 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> mrgReturn 1 :: UnionM Integer
 -- {1}
 --
--- 'mergePropagatedIf' cannot resolve the 'Mergeable' constraint.
+-- 'mrgIfPropagatedStrategy' does not try to 'Mergeable' constraint.
 --
--- >>> mergePropagatedIf "a" (return 1) (mergePropagatedIf "b" (return 1) (return 2)) :: UnionM Integer
+-- >>> mrgIfPropagatedStrategy "a" (return 1) (mrgIfPropagatedStrategy "b" (return 1) (return 2)) :: UnionM Integer
 -- <If a 1 (If b 1 2)>
 --
--- But 'mergePropagatedIf' is able to merge the result if some of the branches
--- are merged:
+-- But 'mrgIfPropagatedStrategy' is able to merge the result if some of the
+-- branches are merged and have a cached merging strategy:
 --
--- >>> mergePropagatedIf "a" (return 1) (mergePropagatedIf "b" (mrgReturn 1) (return 2)) :: UnionM Integer
+-- >>> mrgIfPropagatedStrategy "a" (return 1) (mrgIfPropagatedStrategy "b" (mrgReturn 1) (return 2)) :: UnionM Integer
 -- {If (|| a b) 1 2}
 --
--- The '>>=' operator uses 'mergePropagatedIf' internally. When the final
+-- The '>>=' operator uses 'mrgIfPropagatedStrategy' internally. When the final
 -- statement in a do-block merges the values, the system can then merge the
 -- final result.
 --
 -- >>> :{
 --   do
---     x <- mergePropagatedIf (ssym "a") (return 1) (mergePropagatedIf (ssym "b") (return 1) (return 2))
+--     x <- mrgIfPropagatedStrategy (ssym "a") (return 1) (mrgIfPropagatedStrategy (ssym "b") (return 1) (return 2))
 --     mrgSingle $ x + 1 :: UnionM Integer
 -- :}
 -- {If (|| a b) 2 3}
@@ -221,7 +220,7 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- >>> f x y = mrgIf "c" x y
 -- >>> :{
 --   do
---     x <- mergePropagatedIf (ssym "a") (return 1) (mergePropagatedIf (ssym "b") (return 1) (return 2))
+--     x <- mrgIfPropagatedStrategy (ssym "a") (return 1) (mrgIfPropagatedStrategy (ssym "b") (return 1) (return 2))
 --     f x (x + 1) :: UnionM Integer
 -- :}
 -- {If (&& c (|| a b)) 1 (If (|| a (|| b c)) 2 3)}
@@ -329,15 +328,10 @@ instance Applicative UnionM where
   f <*> a = f >>= (\xf -> a >>= (return . xf))
   {-# INLINE (<*>) #-}
 
-mergePropagatedIf :: SymBool -> UnionM a -> UnionM a -> UnionM a
-mergePropagatedIf cond (UAny t) (UAny f) = UAny $ ifWithLeftMost False cond t f
-mergePropagatedIf cond t@(UMrg m _) f = mrgIfWithStrategy m cond t f
-mergePropagatedIf cond t f@(UMrg m _) = mrgIfWithStrategy m cond t f
-
 bindUnion :: Union a -> (a -> UnionM b) -> UnionM b
 bindUnion (UnionSingle a') f' = f' a'
 bindUnion (UnionIf _ _ cond ifTrue ifFalse) f' =
-  mergePropagatedIf cond (bindUnion ifTrue f') (bindUnion ifFalse f')
+  mrgIfPropagatedStrategy cond (bindUnion ifTrue f') (bindUnion ifFalse f')
 {-# INLINE bindUnion #-}
 
 instance Monad UnionM where
@@ -407,6 +401,10 @@ instance UnionMergeable1 UnionM where
   mrgIfWithStrategy s cond l r =
     UMrg s $ mrgIfWithStrategy s cond (underlyingUnion l) (underlyingUnion r)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (UAny t) (UAny f) = UAny $ ifWithLeftMost False cond t f
+  mrgIfPropagatedStrategy cond t@(UMrg m _) f = mrgIfWithStrategy m cond t f
+  mrgIfPropagatedStrategy cond t f@(UMrg m _) = mrgIfWithStrategy m cond t f
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance (Mergeable a, SEq a) => SEq (UnionM a) where
   x .== y = simpleMerge $ unionMBinOp (.==) x y

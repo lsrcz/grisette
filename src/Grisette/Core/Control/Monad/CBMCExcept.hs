@@ -87,7 +87,7 @@ import Grisette.Core.Data.Class.SOrd (SOrd (symCompare, (.<), (.<=), (.>), (.>=)
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfWithStrategy),
+    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
@@ -443,6 +443,8 @@ instance
   where
   mrgIfWithStrategy s cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfPropagatedStrategy cond t f
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance (SOrd (m (CBMCEither e a))) => SOrd (CBMCExceptT e m a) where
   (CBMCExceptT l) .<= (CBMCExceptT r) = l .<= r

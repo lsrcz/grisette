@@ -16,9 +16,12 @@ import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
-import Grisette.Core.Control.Monad.UnionM (UnionM (UMrg), mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM (UMrg))
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.Mergeable (Mergeable (rootStrategy))
+import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+  )
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
@@ -42,7 +45,7 @@ data TryMergeInstanceTest where
 
 unmergedUnion :: UnionM SymInteger
 unmergedUnion =
-  mergePropagatedIf
+  mrgIfPropagatedStrategy
     "a"
     (return "b")
     (return "c")

@@ -57,7 +57,7 @@ import Grisette.Core.Data.Class.PlainUnion
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfWithStrategy),
+    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable (pattern Con)
@@ -81,16 +81,16 @@ data Union a
     UnionSingle a
   | -- | A if value
     UnionIf
+      -- | Cached leftmost value
       a
-      -- ^ Cached leftmost value
+      -- | Is merged invariant already maintained?
       !Bool
-      -- ^ Is merged invariant already maintained?
+      -- | If condition
       !SymBool
-      -- ^ If condition
+      -- | True branch
       (Union a)
-      -- ^ True branch
+      -- | False branch
       (Union a)
-      -- ^ False branch
   deriving (Generic, Eq, Lift, Generic1)
   deriving (Functor)
 
@@ -170,6 +170,9 @@ instance TryMerge Union where
 instance UnionMergeable1 Union where
   mrgIfWithStrategy = ifWithStrategy
   {-# INLINE mrgIfWithStrategy #-}
+
+  mrgIfPropagatedStrategy = ifWithLeftMost False
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance Show1 Union where
   liftShowsPrec sp _ i (UnionSingle a) = showsUnaryWith sp "Single" i a

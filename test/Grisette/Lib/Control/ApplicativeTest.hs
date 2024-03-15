@@ -6,13 +6,41 @@ module Grisette.Lib.Control.ApplicativeTest
 where
 
 import Control.Applicative (Alternative (empty))
-import Control.Monad.State (MonadState (get, put), MonadTrans (lift), StateT (runStateT))
+import Control.Monad.State
+  ( MonadState (get, put),
+    MonadTrans (lift),
+    StateT (runStateT),
+  )
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette (mrgAsum, mrgEmpty, mrgPure, mrgReturn, mrgSingle)
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
-import Grisette.Lib.Control.Applicative (mrgLiftA, mrgLiftA2, mrgLiftA3, mrgMany, mrgOptional, mrgSome, (.*>), (.<*), (.<**>), (.<*>), (.<|>))
-import Grisette.TestUtil.NoMerge (NoMerge (NoMerge), noMergeNotMerged, oneNotMerged)
-import Test.Framework (Test, TestOptions' (topt_timeout), plusTestOptions, testGroup)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+  )
+import Grisette.Lib.Control.Applicative
+  ( mrgLiftA,
+    mrgLiftA2,
+    mrgLiftA3,
+    mrgMany,
+    mrgOptional,
+    mrgSome,
+    (.*>),
+    (.<*),
+    (.<**>),
+    (.<*>),
+    (.<|>),
+  )
+import Grisette.TestUtil.NoMerge
+  ( NoMerge (NoMerge),
+    noMergeNotMerged,
+    oneNotMerged,
+  )
+import Test.Framework
+  ( Test,
+    TestOptions' (topt_timeout),
+    plusTestOptions,
+    testGroup,
+  )
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
@@ -26,7 +54,7 @@ applicativeFunctionTests =
         [ testCase "merge result" $ do
             let actual =
                   (return (\x -> x * x))
-                    .<*> mergePropagatedIf "a" (return $ -1) (return 1)
+                    .<*> mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
             actual @?= (mrgSingle 1 :: UnionM Integer),
           testCase "merge arguments" $ do
             let actual = (return (const NoMerge)) .<*> oneNotMerged
@@ -68,7 +96,7 @@ applicativeFunctionTests =
           testCase "merge lhs" $ do
             let lhs =
                   MaybeT $
-                    mergePropagatedIf "a" (return Nothing) (return Nothing)
+                    mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
             let expected = mrgSingle NoMerge :: MaybeT UnionM NoMerge
             lhs .<|> return NoMerge @?= expected
         ],
@@ -96,7 +124,7 @@ applicativeFunctionTests =
         ".<**>"
         [ testCase "merge result" $ do
             let actual =
-                  mergePropagatedIf "a" (return $ -1) (return 1)
+                  mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
                     .<**> (return (\x -> x * x))
             actual @?= (mrgSingle 1 :: UnionM Integer),
           testCase "merge arguments" $ do
@@ -141,7 +169,7 @@ applicativeFunctionTests =
             let actual =
                   mrgOptional
                     ( MaybeT $
-                        mergePropagatedIf
+                        mrgIfPropagatedStrategy
                           "a"
                           (return $ Just 1)
                           (return $ Just 1)
@@ -152,7 +180,7 @@ applicativeFunctionTests =
             let actual =
                   mrgOptional
                     ( MaybeT $
-                        mergePropagatedIf "a" (return Nothing) (return Nothing)
+                        mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
                     )
             let expected = mrgSingle Nothing :: MaybeT UnionM (Maybe Int)
             actual @?= expected
@@ -163,7 +191,7 @@ applicativeFunctionTests =
           [ testCase "merge" $ do
               let none =
                     MaybeT $
-                      mergePropagatedIf "a" (return Nothing) (return Nothing)
+                      mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
               let expected =
                     MaybeT (mrgSingle Nothing) ::
                       MaybeT UnionM (Maybe Int)
@@ -188,4 +216,4 @@ f = do
     else do
       put (i - 1)
       lift . lift $
-        mergePropagatedIf "a" (return ()) (return ())
+        mrgIfPropagatedStrategy "a" (return ()) (return ())

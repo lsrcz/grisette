@@ -185,6 +185,8 @@ class (SimpleMergeable1 u, TryMerge u) => UnionMergeable1 (u :: Type -> Type) wh
   -- In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
 
+  mrgIfPropagatedStrategy :: SymBool -> u a -> u a -> u a
+
 mergeWithStrategy :: (UnionMergeable1 m) => MergingStrategy a -> m a -> m a
 mergeWithStrategy = tryMergeWithStrategy
 {-# INLINE mergeWithStrategy #-}
@@ -332,6 +334,9 @@ instance (UnionMergeable1 m) => UnionMergeable1 (MaybeT m) where
   mrgIfWithStrategy strategy cond (MaybeT l) (MaybeT r) =
     MaybeT $ mrgIfWithStrategy (liftRootStrategy strategy) cond l r
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (MaybeT l) (MaybeT r) =
+    MaybeT $ mrgIfPropagatedStrategy cond l r
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (UnionMergeable1 m, Mergeable e, Mergeable a) =>
@@ -351,8 +356,12 @@ instance
   (UnionMergeable1 m, Mergeable e) =>
   UnionMergeable1 (ExceptT e m)
   where
-  mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) = ExceptT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
+  mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) =
+    ExceptT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (ExceptT t) (ExceptT f) =
+    ExceptT $ mrgIfPropagatedStrategy cond t f
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable s, Mergeable a, UnionMergeable1 m) =>
@@ -380,6 +389,9 @@ instance
         (t v)
         (f v)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (StateLazy.StateT t) (StateLazy.StateT f) =
+    StateLazy.StateT $ \v -> mrgIfPropagatedStrategy cond (t v) (f v)
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable s, Mergeable a, UnionMergeable1 m) =>
@@ -404,6 +416,9 @@ instance
       \v ->
         mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (StateStrict.StateT t) (StateStrict.StateT f) =
+    StateStrict.StateT $ \v -> mrgIfPropagatedStrategy cond (t v) (f v)
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable s, Mergeable a, UnionMergeable1 m, Monoid s) =>
@@ -427,6 +442,9 @@ instance
     WriterLazy.WriterT $
       mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (WriterLazy.WriterT t) (WriterLazy.WriterT f) =
+    WriterLazy.WriterT $ mrgIfPropagatedStrategy cond t f
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable s, Mergeable a, UnionMergeable1 m, Monoid s) =>
@@ -450,6 +468,9 @@ instance
     WriterStrict.WriterT $
       mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (WriterStrict.WriterT t) (WriterStrict.WriterT f) =
+    WriterStrict.WriterT $ mrgIfPropagatedStrategy cond t f
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable a, UnionMergeable1 m) =>
@@ -472,6 +493,9 @@ instance
   mrgIfWithStrategy s cond (ReaderT t) (ReaderT f) =
     ReaderT $ \v -> mrgIfWithStrategy s cond (t v) (f v)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (ReaderT t) (ReaderT f) =
+    ReaderT $ \v -> mrgIfPropagatedStrategy cond (t v) (f v)
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance (SimpleMergeable a) => SimpleMergeable (Identity a) where
   mrgIte = mrgIte1
@@ -496,6 +520,9 @@ instance (UnionMergeable1 m) => UnionMergeable1 (IdentityT m) where
   mrgIfWithStrategy s cond (IdentityT l) (IdentityT r) =
     IdentityT $ mrgIfWithStrategy s cond l r
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (IdentityT l) (IdentityT r) =
+    IdentityT $ mrgIfPropagatedStrategy cond l r
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance (UnionMergeable1 m, Mergeable r) => SimpleMergeable (ContT r m a) where
   mrgIte cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
@@ -509,6 +536,9 @@ instance (UnionMergeable1 m, Mergeable r) => UnionMergeable1 (ContT r m) where
   mrgIfWithStrategy _ cond (ContT l) (ContT r) =
     ContT $ \c -> mrgIf cond (l c) (r c)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (ContT l) (ContT r) =
+    ContT $ \c -> mrgIfPropagatedStrategy cond (l c) (r c)
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionMergeable1 m) =>
@@ -536,6 +566,9 @@ instance
         (t r s)
         (f r s)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (RWSLazy.RWST t) (RWSLazy.RWST f) =
+    RWSLazy.RWST $ \r s -> mrgIfPropagatedStrategy cond (t r s) (f r s)
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
   (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionMergeable1 m) =>
@@ -563,6 +596,9 @@ instance
         (t r s)
         (f r s)
   {-# INLINE mrgIfWithStrategy #-}
+  mrgIfPropagatedStrategy cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
+    RWSStrict.RWST $ \r s -> mrgIfPropagatedStrategy cond (t r s) (f r s)
+  {-# INLINE mrgIfPropagatedStrategy #-}
 
 #define SIMPLE_MERGEABLE_SIMPLE(symtype) \
 instance SimpleMergeable symtype where \

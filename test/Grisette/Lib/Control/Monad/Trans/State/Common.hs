@@ -15,11 +15,11 @@ module Grisette.Lib.Control.Monad.Trans.State.Common
 where
 
 import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf, unionSize)
+import Grisette.Core.Control.Monad.UnionM (UnionM, unionSize)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
-    mrgIf,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
   )
 import Grisette.Core.Data.Class.TestValues (ssymBool)
 import Grisette.Core.Data.Class.TryMerge
@@ -72,16 +72,10 @@ stateB ::
 stateB state = state bodyB
 
 stateAB ::
+  (UnionMergeable1 (stateT SymBool UnionM)) =>
   StateConstructor stateT SymBool SymBool ->
   stateT SymBool UnionM SymBool
-stateAB state =
-  state
-    (\s -> mergePropagatedIf (ssymBool "c") (bodyA s) (bodyB s))
-
-mergePropagatedIf' :: (MonadUnion m) => SymBool -> m b -> m b -> m b
-mergePropagatedIf' c a b = do
-  x <- mrgIf c (return True) (return False)
-  if x then a else b
+stateAB state = mrgIfPropagatedStrategy (ssymBool "c") (state bodyA) (state bodyB)
 
 mrgStateTest ::
   (MonadUnion (stateT SymBool UnionM)) =>
@@ -93,7 +87,7 @@ mrgStateTest mrgState runStateT = do
         mrgState (\s -> (s .&& ssymBool "av", s .&& ssymBool "as"))
   let b =
         mrgState (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
@@ -172,7 +166,7 @@ mrgMapStateTTest ::
 mrgMapStateTTest state runStateT mrgMapStateT = do
   let a = mrgMapStateT id (stateA state)
   let b = mrgMapStateT id (stateB state)
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
@@ -196,7 +190,7 @@ mrgWithStateTTest ::
 mrgWithStateTTest state runStateT mrgWithStateT = do
   let a = mrgWithStateT (.&& ssymBool "x") (stateA state)
   let b = mrgWithStateT (.&& ssymBool "y") (stateB state)
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
@@ -220,7 +214,7 @@ mrgGetTest ::
 mrgGetTest state runStateT mrgGet = do
   let a = do stateA state; mrgGet
   let b = do stateB state; mrgGet
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
@@ -244,7 +238,7 @@ mrgPutTest ::
 mrgPutTest state runStateT mrgPut = do
   let a = do stateA state; mrgPut (ssymBool "x")
   let b = do stateB state; mrgPut (ssymBool "y")
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte (ssymBool "c") ((), ssymBool "x") ((), ssymBool "y")
@@ -261,7 +255,7 @@ mrgModifyTest ::
 mrgModifyTest state runStateT mrgModify = do
   let a = do stateA state; mrgModify (.&& ssymBool "x")
   let b = do stateB state; mrgModify (.&& ssymBool "y")
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
@@ -285,7 +279,7 @@ mrgGetsTest ::
 mrgGetsTest state runStateT mrgGets = do
   let a = do stateA state; mrgGets (.&& ssymBool "x")
   let b = do stateB state; mrgGets (.&& ssymBool "y")
-  let actual = runStateT (mergePropagatedIf' (ssymBool "c") a b) (ssymBool "d")
+  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
