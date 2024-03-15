@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `mrg` and `sym` variants for all reasonable operations from
   `Control.Monad`, `Control.Applicative`, `Data.Foldable`, `Data.List`, and `Data.Traversable`.
   ([#182](https://github.com/lsrcz/grisette/pull/182))
+- Added `mrgIfPropagatedStrategy`. ([#184](https://github.com/lsrcz/grisette/pull/184))
 
 ### Fixed
 
