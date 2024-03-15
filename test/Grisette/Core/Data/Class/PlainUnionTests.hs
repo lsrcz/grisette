@@ -4,7 +4,7 @@
 
 module Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests) where
 
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Core.Data.Class.PlainUnion
@@ -14,7 +14,10 @@ import Grisette.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
+  )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
@@ -28,12 +31,17 @@ plainUnionTests =
     "PlainUnion"
     [ testCase "simpleMerge" $ do
         simpleMerge
-          (mergePropagatedIf "a" (return "b") (return "c") :: UnionM SymBool)
+          ( mrgIfPropagatedStrategy "a" (return "b") (return "c") ::
+              UnionM SymBool
+          )
           @?= symIte "a" "b" "c",
       testCase "(.#)" $ do
         let symAll = foldl (.&&) (con True)
         symAll
-          .# ( mergePropagatedIf "cond" (return ["a"]) (return ["b", "c"]) ::
+          .# ( mrgIfPropagatedStrategy
+                 "cond"
+                 (return ["a"])
+                 (return ["b", "c"]) ::
                  UnionM [SymBool]
              )
           @?= symIte "cond" "a" ("b" .&& "c"),
@@ -41,14 +49,14 @@ plainUnionTests =
         let symAll = foldl (.&&) (con True)
         let symAllU = onUnion symAll
         symAllU
-          ( mergePropagatedIf "cond" (return ["a"]) (return ["b", "c"]) ::
+          ( mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b", "c"]) ::
               UnionM [SymBool]
           )
           @?= symIte "cond" "a" ("b" .&& "c"),
       testGroup
         "Single and If pattern"
         [ testCase "Unmerged" $
-            case mergePropagatedIf "a" (return "b") (return "c") ::
+            case mrgIfPropagatedStrategy "a" (return "b") (return "c") ::
                    UnionM SymBool of
               Single _ -> fail "Expected If"
               If c l r -> do

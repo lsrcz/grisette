@@ -131,7 +131,7 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfWithStrategy),
+    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
@@ -346,7 +346,15 @@ instance
   UnionMergeable1 (FreshT m)
   where
   mrgIfWithStrategy s cond (FreshT t) (FreshT f) =
-    FreshT $ \ident index -> mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond (t ident index) (f ident index)
+    FreshT $ \ident index ->
+      mrgIfWithStrategy
+        (liftRootStrategy2 s rootStrategy)
+        cond
+        (t ident index)
+        (f ident index)
+  mrgIfPropagatedStrategy cond (FreshT t) (FreshT f) =
+    FreshT $ \ident index ->
+      mrgIfPropagatedStrategy cond (t ident index) (f ident index)
 
 -- | Run the symbolic generation with the given identifier and 0 as the initial index.
 runFreshT :: (Monad m) => FreshT m a -> FreshIdent -> m a

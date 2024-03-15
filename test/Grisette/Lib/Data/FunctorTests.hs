@@ -3,10 +3,24 @@
 module Grisette.Lib.Data.FunctorTests (functorFunctionTests) where
 
 import Grisette (ITEOp (symIte), SymInteger, mrgIf, mrgVoid)
-import Grisette.Core.Control.Monad.UnionM (UnionM, mergePropagatedIf)
+import Grisette.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Core.Data.Class.SimpleMergeable
+  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+  )
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Lib.Data.Functor (mrgFmap, mrgUnzip, (.$>), (.<$), (.<$>), (.<&>))
-import Grisette.TestUtil.NoMerge (NoMerge (NoMerge), noMergeNotMerged, oneNotMerged)
+import Grisette.Lib.Data.Functor
+  ( mrgFmap,
+    mrgUnzip,
+    (.$>),
+    (.<$),
+    (.<$>),
+    (.<&>),
+  )
+import Grisette.TestUtil.NoMerge
+  ( NoMerge (NoMerge),
+    noMergeNotMerged,
+    oneNotMerged,
+  )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -20,7 +34,7 @@ functorFunctionTests =
         [ testCase "merge result" $ do
             let actual =
                   mrgFmap (\x -> x * x) $
-                    mergePropagatedIf "a" (return $ -1) (return 1)
+                    mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
             actual @?= (mrgSingle 1 :: UnionM Integer),
           testCase "merge arguments" $ do
             let actual = mrgFmap (const NoMerge) oneNotMerged
@@ -31,7 +45,7 @@ functorFunctionTests =
         [ testCase "merge result" $ do
             let actual =
                   (\x -> x * x)
-                    .<$> mergePropagatedIf "a" (return $ -1) (return 1)
+                    .<$> mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
             actual @?= (mrgSingle 1 :: UnionM Integer),
           testCase "merge arguments" $ do
             let actual = (const NoMerge) .<$> oneNotMerged
@@ -55,7 +69,7 @@ functorFunctionTests =
         ".<&>"
         [ testCase "merge result" $ do
             let actual =
-                  mergePropagatedIf "a" (return $ -1) (return 1)
+                  mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
                     .<&> (\x -> x * x)
             actual @?= (mrgSingle 1 :: UnionM Integer),
           testCase "merge arguments" $ do
@@ -65,7 +79,7 @@ functorFunctionTests =
       testCase "mrgUnzip" $ do
         let actual =
               mrgUnzip
-                (mergePropagatedIf "x" (return ("a", 1)) (return ("b", 2)))
+                (mrgIfPropagatedStrategy "x" (return ("a", 1)) (return ("b", 2)))
         let expected =
               ( mrgSingle (symIte "x" "a" "b"),
                 mrgIf "x" 1 2
