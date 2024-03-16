@@ -11,18 +11,26 @@
 -- Portability :   GHC only
 module Grisette.Lib.Base
   ( -- * Symbolic or mrg* variants for the operations in the base package
-    module Grisette.Lib.Control.Monad,
     module Grisette.Lib.Control.Applicative,
+    module Grisette.Lib.Control.Monad,
+    module Grisette.Lib.Data.Either,
     module Grisette.Lib.Data.Foldable,
     module Grisette.Lib.Data.Functor,
+    module Grisette.Lib.Data.Functor.Sum,
     module Grisette.Lib.Data.List,
+    module Grisette.Lib.Data.Maybe,
     module Grisette.Lib.Data.Traversable,
+    module Grisette.Lib.Data.Tuple,
   )
 where
 
 import Grisette.Lib.Control.Applicative
 import Grisette.Lib.Control.Monad
+import Grisette.Lib.Data.Either
 import Grisette.Lib.Data.Foldable
 import Grisette.Lib.Data.Functor
+import Grisette.Lib.Data.Functor.Sum
 import Grisette.Lib.Data.List
+import Grisette.Lib.Data.Maybe
 import Grisette.Lib.Data.Traversable
+import Grisette.Lib.Data.Tuple

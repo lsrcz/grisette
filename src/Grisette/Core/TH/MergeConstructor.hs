@@ -3,22 +3,23 @@
 {-# LANGUAGE Trustworthy #-}
 
 -- |
--- Module      :   Grisette.Core.TH
+-- Module      :   Grisette.Core.TH.MergedConstructor
 -- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Core.TH
-  ( -- * Template Haskell procedures for building constructor wrappers
-    makeUnionWrapper,
-    makeUnionWrapper',
+module Grisette.Core.TH.MergeConstructor
+  ( mkMergeConstructor,
+    mkMergeConstructor',
   )
 where
 
 import Control.Monad (join, replicateM, when, zipWithM)
-import Grisette.Core.THCompat (augmentFinalType)
+import Data.Bifunctor (Bifunctor (second))
+import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.TryMerge (TryMerge)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
@@ -28,30 +29,41 @@ import Language.Haskell.TH
     Info (DataConI, TyConI),
     Name,
     Pat (VarP),
+    Pred,
     Q,
-    Type (ForallT),
+    TyVarBndr (PlainTV),
+    Type (AppT, ArrowT, ForallT, VarT),
     mkName,
     newName,
     pprint,
     reify,
   )
+#if MIN_VERSION_template_haskell(2,17,0)
+import Language.Haskell.TH.Syntax
+  ( Name (Name),
+    OccName (OccName),
+    Specificity (SpecifiedSpec),
+    Type (MulArrowT),
+  )
+#else
 import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
+#endif
 
--- | Generate constructor wrappers that wraps the result in a union-like monad with provided names.
+-- | Generate constructor wrappers that wraps the result in a container with `TryMerge` with provided names.
 --
--- > $(makeUnionWrapper' ["mrgTuple2"] ''(,))
+-- > mkMergeConstructor' ["mrgTuple2"] ''(,)
 --
 -- generates
 --
--- > mrgTuple2 :: (SymBoolOp bool, Monad u, Mergeable bool t1, Mergeable bool t2, MonadUnion bool u) => t1 -> t2 -> u (t1, t2)
+-- > mrgTuple2 :: (Mergeable (a, b), Applicative m, TryMerge m) => a -> b -> u (a, b)
 -- > mrgTuple2 = \v1 v2 -> mrgSingle (v1, v2)
-makeUnionWrapper' ::
+mkMergeConstructor' ::
   -- | Names for generated wrappers
   [String] ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makeUnionWrapper' names typName = do
+mkMergeConstructor' names typName = do
   constructors <- getConstructors typName
   when (length names /= length constructors) $
     fail "Number of names does not match the number of constructors"
@@ -65,7 +77,7 @@ getConstructorName :: Con -> Q String
 getConstructorName (NormalC name _) = return $ occName name
 getConstructorName (RecC name _) = return $ occName name
 getConstructorName InfixC {} =
-  fail "You should use makeUnionWrapper' to manually provide the name for infix constructors"
+  fail "You should use mkMergeConstructor' to manually provide the name for infix constructors"
 getConstructorName (ForallC _ _ c) = getConstructorName c
 getConstructorName (GadtC [name] _ _) = return $ occName name
 getConstructorName (RecGadtC [name] _ _) = return $ occName name
@@ -79,26 +91,26 @@ getConstructors typName = do
     TyConI (NewtypeD _ _ _ _ constructor _) -> return [constructor]
     _ -> fail $ "Unsupported declaration: " ++ pprint d
 
--- | Generate constructor wrappers that wraps the result in a union-like monad.
+-- | Generate constructor wrappers that wraps the result in a container with `TryMerge`.
 --
--- > $(makeUnionWrapper "mrg" ''Maybe)
+-- > mkMergeConstructor "mrg" ''Maybe
 --
 -- generates
 --
--- > mrgNothing :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => u (Maybe t)
+-- > mrgJust :: (Mergeable (Maybe a), Applicative m, TryMerge m) => m (Maybe a)
 -- > mrgNothing = mrgSingle Nothing
--- > mrgJust :: (SymBoolOp bool, Monad u, Mergeable bool t, MonadUnion bool u) => t -> u (Maybe t)
+-- > mrgJust :: (Mergeable (Maybe a), Applicative m, TryMerge m) => a -> m (Maybe a)
 -- > mrgJust = \x -> mrgSingle (Just x)
-makeUnionWrapper ::
+mkMergeConstructor ::
   -- | Prefix for generated wrappers
   String ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makeUnionWrapper prefix typName = do
+mkMergeConstructor prefix typName = do
   constructors <- getConstructors typName
   constructorNames <- mapM getConstructorName constructors
-  makeUnionWrapper' ((prefix ++) <$> constructorNames) typName
+  mkMergeConstructor' ((prefix ++) <$> constructorNames) typName
 
 augmentNormalCExpr :: Int -> Exp -> Q Exp
 augmentNormalCExpr n f = do
@@ -112,10 +124,45 @@ augmentNormalCExpr n f = do
           foldl AppE f (map VarE xs)
       )
 
+#if MIN_VERSION_template_haskell(2,17,0)
+augmentFinalType :: Type -> Q (([TyVarBndr Specificity], [Pred]), Type)
+#else
+augmentFinalType :: Type -> Q (([TyVarBndr], [Pred]), Type)
+#endif
+augmentFinalType (AppT a@(AppT ArrowT _) t) = do
+  tl <- augmentFinalType t
+  return $ second (AppT a) tl
+#if MIN_VERSION_template_haskell(2,17,0)
+augmentFinalType (AppT (AppT (AppT MulArrowT _) var) t) = do
+  tl <- augmentFinalType t
+  return $ second (AppT (AppT ArrowT var)) tl
+#endif
+augmentFinalType t = do
+  mName <- newName "m"
+  let mTy = VarT mName
+  mergeable <- [t|Mergeable|]
+  applicative <- [t|Applicative|]
+  tryMerge <- [t|TryMerge|]
+#if MIN_VERSION_template_haskell(2,17,0)
+  return
+    ( ( [ PlainTV mName SpecifiedSpec ],
+        [ AppT mergeable t, AppT applicative mTy, AppT tryMerge mTy]
+      ),
+      AppT mTy t
+    )
+#else
+  return
+    ( ( [ PlainTV mName ],
+        [ AppT mergeable t, AppT applicative mTy, AppT tryMerge mTy]
+      ),
+      AppT mTy t
+    )
+#endif
+
 augmentNormalCType :: Type -> Q Type
 augmentNormalCType (ForallT tybinders ctx ty1) = do
   ((bndrs, preds), augmentedTyp) <- augmentFinalType ty1
-  return $ ForallT (bndrs ++ tybinders) (preds ++ ctx) augmentedTyp
+  return $ ForallT (tybinders ++ bndrs) (preds ++ ctx) augmentedTyp
 augmentNormalCType t = do
   ((bndrs, preds), augmentedTyp) <- augmentFinalType t
   return $ ForallT bndrs preds augmentedTyp
