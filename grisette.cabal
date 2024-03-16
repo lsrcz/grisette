@@ -52,7 +52,6 @@ library
       Grisette.Backend.SBV.Data.SMT.Solving
       Grisette.Backend.SBV.Data.SMT.SymBiMap
       Grisette.Core
-      Grisette.Core.BuiltinUnionWrappers
       Grisette.Core.Control.Exception
       Grisette.Core.Control.Monad.CBMCExcept
       Grisette.Core.Control.Monad.Class.MonadParallelUnion
@@ -92,8 +91,7 @@ library
       Grisette.Core.Data.MemoUtils
       Grisette.Core.Data.SomeBV
       Grisette.Core.Data.Union
-      Grisette.Core.TH
-      Grisette.Core.THCompat
+      Grisette.Core.TH.MergeConstructor
       Grisette.Experimental
       Grisette.Experimental.GenSymConstrained
       Grisette.Internal.Backend.SBV
@@ -134,10 +132,15 @@ library
       Grisette.Lib.Control.Monad.Trans.State
       Grisette.Lib.Control.Monad.Trans.State.Lazy
       Grisette.Lib.Control.Monad.Trans.State.Strict
+      Grisette.Lib.Data.Bool
+      Grisette.Lib.Data.Either
       Grisette.Lib.Data.Foldable
       Grisette.Lib.Data.Functor
+      Grisette.Lib.Data.Functor.Sum
       Grisette.Lib.Data.List
+      Grisette.Lib.Data.Maybe
       Grisette.Lib.Data.Traversable
+      Grisette.Lib.Data.Tuple
       Grisette.Qualified.ParallelUnionDo
       Grisette.Utils
       Grisette.Utils.Parameterized

@@ -560,8 +560,6 @@ module Grisette.Core
     IsConcrete,
     unionMUnaryOp,
     unionMBinOp,
-    makeUnionWrapper,
-    makeUnionWrapper',
     liftUnionM,
     liftToMonadUnion,
     unionSize,
@@ -1028,39 +1026,13 @@ module Grisette.Core
     htmup,
     htmemoFix,
 
-    -- ** Bundled Constructor Wrappers
-    mrgTrue,
-    mrgFalse,
-    mrgUnit,
-    mrgTuple2,
-    mrgTuple3,
-    mrgJust,
-    mrgNothing,
-    mrgLeft,
-    mrgRight,
-    mrgInL,
-    mrgInR,
-    mrgAssertionViolation,
-    mrgAssumptionViolation,
+    -- ** Template Haskell
+    mkMergeConstructor,
+    mkMergeConstructor',
   )
 where
 
 import Generics.Deriving (Default (..), Default1 (..))
-import Grisette.Core.BuiltinUnionWrappers
-  ( mrgAssertionViolation,
-    mrgAssumptionViolation,
-    mrgFalse,
-    mrgInL,
-    mrgInR,
-    mrgJust,
-    mrgLeft,
-    mrgNothing,
-    mrgRight,
-    mrgTrue,
-    mrgTuple2,
-    mrgTuple3,
-    mrgUnit,
-  )
 import Grisette.Core.Control.Exception
   ( AssertionError (..),
     VerificationConditions (..),
@@ -1254,7 +1226,7 @@ import Grisette.Core.Data.MemoUtils
     htmemoFix,
     htmup,
   )
-import Grisette.Core.TH (makeUnionWrapper, makeUnionWrapper')
+import Grisette.Core.TH.MergeConstructor (mkMergeConstructor, mkMergeConstructor')
 
 -- $setup
 -- >>> import Grisette.Core
