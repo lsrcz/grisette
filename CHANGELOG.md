@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Use functional dependency instead of type family for the `Function` class. ([#178](https://github.com/lsrcz/grisette/pull/178))
 - [Breaking] Added `Mergeable` constraints to some `mrg*` list operators
   ([#182](https://github.com/lsrcz/grisette/pull/182))
+- [Breaking] Refactored the `mrg*` constructor related template haskell code.
+  ([#185](https://github.com/lsrc/grisette/pull/185))
 
 ## [0.4.1.0] -- 2024-01-10
 
