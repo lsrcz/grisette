@@ -135,6 +135,7 @@ library
       Grisette.Lib.Data.Bool
       Grisette.Lib.Data.Either
       Grisette.Lib.Data.Foldable
+      Grisette.Lib.Data.Function
       Grisette.Lib.Data.Functor
       Grisette.Lib.Data.Functor.Const
       Grisette.Lib.Data.Functor.Sum
@@ -270,6 +271,7 @@ test-suite spec
       Grisette.Lib.Control.Monad.Trans.State.StrictTests
       Grisette.Lib.Control.MonadTests
       Grisette.Lib.Data.FoldableTests
+      Grisette.Lib.Data.FunctionTests
       Grisette.Lib.Data.FunctorTests
       Grisette.Lib.Data.ListTests
       Grisette.Lib.Data.TraversableTests
