@@ -14,9 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved the partial evaluation for bit vectors. ([#176](https://github.com/lsrcz/grisette/pull/176))
 - Added `symRotateNegated` and `symShiftNegated`. ([#181](https://github.com/lsrcz/grisette/pull/181))
 - Added `mrg` and `sym` variants for all reasonable operations from
-  `Control.Monad`, `Control.Applicative`, `Data.Foldable`, `Data.List`, and `Data.Traversable`.
-  ([#182](https://github.com/lsrcz/grisette/pull/182))
+  `Control.Monad`, `Control.Applicative`, `Data.Foldable`, `Data.List`, `Data.Traversable`,
+  and `Data.Function`.
+  ([#182](https://github.com/lsrcz/grisette/pull/182),
+  [#186](https://github.com/lsrcz/grisette/pull/186))
 - Added `mrgIfPropagatedStrategy`. ([#184](https://github.com/lsrcz/grisette/pull/184))
+- Added instances for `Const`. ([#186](https://github.com/lsrcz/grisette/pull/186))
+- Added support for [microlens](https://hackage.haskell.org/package/microlens). ([#186](https://github.com/lsrcz/grisette/pull/186))
 - Added `freshString`. ([#188](https://github.com/lsrcz/grisette/pull/188))
 
 ### Fixed
