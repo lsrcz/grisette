@@ -28,6 +28,7 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
+import Data.Functor.Const (Const)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
@@ -80,7 +81,6 @@ import Prettyprinter
     Doc,
     Pretty(pretty),
   )
-import Data.Functor.Const (Const)
 #else
 import Data.Text.Prettyprint.Doc
   ( (<+>),
