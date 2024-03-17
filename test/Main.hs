@@ -66,6 +66,7 @@ import Grisette.Lib.Data.FunctionTests (functionTests)
 import Grisette.Lib.Data.FunctorTests (functorFunctionTests)
 import Grisette.Lib.Data.ListTests (listTests)
 import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
+import Grisette.Lib.Lens.MicroTests (microTests)
 import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()
@@ -154,7 +155,8 @@ libTests =
           functorFunctionTests,
           listTests,
           functionTests
-        ]
+        ],
+      testGroup "Micro" [microTests]
     ]
 
 irTests :: Test

@@ -50,6 +50,8 @@ dependencies:
   - prettyprinter >= 1.5.0 && < 1.8
   - async >= 2.2.2 && < 2.3
   - stm >= 2.5 && < 2.6
+  - microlens
+  - microlens-th
 
 flags:
   {
