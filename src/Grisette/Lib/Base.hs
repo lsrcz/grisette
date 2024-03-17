@@ -15,6 +15,7 @@ module Grisette.Lib.Base
     module Grisette.Lib.Control.Monad,
     module Grisette.Lib.Data.Either,
     module Grisette.Lib.Data.Foldable,
+    module Grisette.Lib.Data.Function,
     module Grisette.Lib.Data.Functor,
     module Grisette.Lib.Data.Functor.Const,
     module Grisette.Lib.Data.Functor.Sum,
@@ -29,6 +30,7 @@ import Grisette.Lib.Control.Applicative
 import Grisette.Lib.Control.Monad
 import Grisette.Lib.Data.Either
 import Grisette.Lib.Data.Foldable
+import Grisette.Lib.Data.Function
 import Grisette.Lib.Data.Functor
 import Grisette.Lib.Data.Functor.Const
 import Grisette.Lib.Data.Functor.Sum
