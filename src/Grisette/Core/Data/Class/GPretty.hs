@@ -80,6 +80,7 @@ import Prettyprinter
     Doc,
     Pretty(pretty),
   )
+import Data.Functor.Const (Const)
 #else
 import Data.Text.Prettyprint.Doc
   ( (<+>),
@@ -321,6 +322,12 @@ instance (GPretty (m a)) => GPretty (IdentityT m a) where
           [ "IdentityT",
             gprettyPrec 11 a
           ]
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (GPretty a) => GPretty (Const a b)
 
 -- Prettyprint
 #define GPRETTY_SYM_SIMPLE(symtype) \

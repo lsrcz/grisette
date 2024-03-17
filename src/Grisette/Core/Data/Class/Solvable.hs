@@ -21,6 +21,7 @@ module Grisette.Core.Data.Class.Solvable
   )
 where
 
+import Data.Functor.Const (Const (Const))
 import Data.String (IsString)
 import qualified Data.Text as T
 
@@ -80,3 +81,13 @@ pattern Con c <-
   (conView -> Just c)
   where
     Con c = con c
+
+instance (Solvable c t) => Solvable (Const c b) (Const t b) where
+  con (Const c) = Const $ con c
+  {-# INLINE con #-}
+  conView (Const t) = Const <$> conView t
+  {-# INLINE conView #-}
+  ssym = Const . ssym
+  {-# INLINE ssym #-}
+  isym symbol = Const . isym symbol
+  {-# INLINE isym #-}

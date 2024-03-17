@@ -49,6 +49,7 @@ import Control.Monad.Trans.Cont (ContT (ContT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Data.Functor.Const (Const (Const))
 import Data.Kind (Type)
 import GHC.Generics
   ( Generic (Rep, from, to),
@@ -627,3 +628,17 @@ SIMPLE_MERGEABLE_FUN(-~>)
 
 -- Exception
 deriving via (Default AssertionError) instance SimpleMergeable AssertionError
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (SimpleMergeable a) => SimpleMergeable (Const a b)
+
+instance (SimpleMergeable a) => SimpleMergeable1 (Const a) where
+  liftMrgIte _ cond (Const l) (Const r) = Const $ mrgIte cond l r
+  {-# INLINE liftMrgIte #-}
+
+instance SimpleMergeable2 Const where
+  liftMrgIte2 ma _ cond (Const a1) (Const a2) = Const $ ma cond a1 a2
+  {-# INLINE liftMrgIte2 #-}

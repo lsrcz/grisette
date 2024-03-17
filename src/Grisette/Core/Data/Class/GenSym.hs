@@ -97,6 +97,7 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Hashable (Hashable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
@@ -1720,3 +1721,15 @@ instance
     where
       go (UnionSingle x) = fresh x
       go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f
+
+instance (GenSym spec a) => GenSym spec (Const a b) where
+  fresh spec = do
+    u <- fresh spec
+    return $ do
+      a <- u
+      mrgSingle $ Const a
+  {-# INLINE fresh #-}
+
+instance (GenSymSimple spec a) => GenSymSimple spec (Const a b) where
+  simpleFresh spec = Const <$> simpleFresh spec
+  {-# INLINE simpleFresh #-}

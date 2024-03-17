@@ -36,6 +36,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -301,6 +302,10 @@ deriving via
   (Default VerificationConditions)
   instance
     ToCon VerificationConditions VerificationConditions
+
+instance (ToCon as a) => ToCon (Const as bs) (Const a b) where
+  toCon (Const a) = Const <$> toCon a
+  {-# INLINE toCon #-}
 
 -- Derivation of ToCon for generic types
 instance (Generic a, Generic b, ToCon' (Rep a) (Rep b)) => ToCon a (Default b) where

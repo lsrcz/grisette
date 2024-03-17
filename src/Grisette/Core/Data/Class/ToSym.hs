@@ -37,6 +37,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -217,6 +218,11 @@ instance (ToSym a b) => ToSym (Identity a) (Identity b) where
 -- IdentityT
 instance (ToSym (m a) (m1 b)) => ToSym (IdentityT m a) (IdentityT m1 b) where
   toSym (IdentityT v) = IdentityT $ toSym v
+
+-- Const
+instance (ToSym a as) => ToSym (Const a b) (Const as bs) where
+  toSym (Const a) = Const $ toSym a
+  {-# INLINE toSym #-}
 
 #define TO_SYM_SYMID_SIMPLE(symtype) \
 instance ToSym symtype symtype where \

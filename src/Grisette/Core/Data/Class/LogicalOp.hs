@@ -3,6 +3,7 @@ module Grisette.Core.Data.Class.LogicalOp
   )
 where
 
+import Data.Functor.Const (Const (Const))
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalAndTerm,
     pevalImplyTerm,
@@ -104,3 +105,15 @@ instance LogicalOp SymBool where
   symNot (SymBool v) = SymBool $ pevalNotTerm v
   (SymBool l) `symXor` (SymBool r) = SymBool $ pevalXorTerm l r
   (SymBool l) `symImplies` (SymBool r) = SymBool $ pevalImplyTerm l r
+
+instance (LogicalOp a) => LogicalOp (Const a b) where
+  (.||) (Const a) (Const b) = Const $ a .|| b
+  {-# INLINE (.||) #-}
+  (.&&) (Const a) (Const b) = Const $ a .&& b
+  {-# INLINE (.&&) #-}
+  symNot (Const a) = Const $ symNot a
+  {-# INLINE symNot #-}
+  symXor (Const a) (Const b) = Const $ symXor a b
+  {-# INLINE symXor #-}
+  symImplies (Const a) (Const b) = Const $ symImplies a b
+  {-# INLINE symImplies #-}

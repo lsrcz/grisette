@@ -27,6 +27,7 @@ module Grisette.Core.Data.Class.BitVector
   )
 where
 
+import Data.Functor.Const (Const (Const))
 import Data.Proxy (Proxy (Proxy))
 import GHC.TypeNats (KnownNat, type (+), type (-), type (<=))
 import Grisette.Utils.Parameterized
@@ -128,6 +129,25 @@ class BV bv where
     -- | Integral value
     a ->
     bv
+
+instance (BV a) => BV (Const a b) where
+  bvConcat (Const a) (Const b) = Const (bvConcat a b)
+  {-# INLINE bvConcat #-}
+
+  bvZext n (Const a) = Const (bvZext n a)
+  {-# INLINE bvZext #-}
+
+  bvSext n (Const a) = Const (bvSext n a)
+  {-# INLINE bvSext #-}
+
+  bvExt n (Const a) = Const (bvExt n a)
+  {-# INLINE bvExt #-}
+
+  bvSelect i j (Const a) = Const (bvSelect i j a)
+  {-# INLINE bvSelect #-}
+
+  bv i w = Const (bv i w)
+  {-# INLINE bv #-}
 
 -- | Slicing out a smaller bit vector from a larger one, extract a slice from
 -- bit @i@ down to @j@.

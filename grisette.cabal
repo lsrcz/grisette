@@ -136,6 +136,7 @@ library
       Grisette.Lib.Data.Either
       Grisette.Lib.Data.Foldable
       Grisette.Lib.Data.Functor
+      Grisette.Lib.Data.Functor.Const
       Grisette.Lib.Data.Functor.Sum
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Maybe
