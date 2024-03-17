@@ -1,6 +1,5 @@
 module Grisette.Lib.Data.Function ((.$), (.&), mrgOn) where
 
-import Data.Function (on)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.PlainUnion (simpleMerge)
