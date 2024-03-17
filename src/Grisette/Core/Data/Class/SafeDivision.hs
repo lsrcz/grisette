@@ -27,6 +27,7 @@ where
 
 import Control.Exception (ArithException (DivideByZero, Overflow, Underflow))
 import Control.Monad.Except (MonadError (throwError))
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -290,3 +291,21 @@ instance
   SAFE_DIVISION_SYMBOLIC_FUNC2(safeDivMod, SymWordN, pevalDivIntegralTerm, pevalModIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC2(safeQuotRem, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 #endif
+
+instance (SafeDivision e a m) => SafeDivision e (Const a b) m where
+  safeDiv (Const c) (Const r) = mrgFmap Const $ safeDiv c r
+  {-# INLINE safeDiv #-}
+  safeMod (Const c) (Const r) = mrgFmap Const $ safeMod c r
+  {-# INLINE safeMod #-}
+  safeDivMod (Const c) (Const r) = do
+    (d, m) <- safeDivMod c r
+    mrgReturn (Const d, Const m)
+  {-# INLINE safeDivMod #-}
+  safeQuot (Const c) (Const r) = mrgFmap Const $ safeQuot c r
+  {-# INLINE safeQuot #-}
+  safeRem (Const c) (Const r) = mrgFmap Const $ safeRem c r
+  {-# INLINE safeRem #-}
+  safeQuotRem (Const c) (Const r) = do
+    (q, m) <- safeQuotRem c r
+    mrgReturn (Const q, Const m)
+  {-# INLINE safeQuotRem #-}

@@ -1,10 +1,12 @@
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Core.Data.Class.SignConversion
   ( SignConversion (..),
   )
 where
 
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 
@@ -35,3 +37,10 @@ instance SignConversion Word64 Int64 where
 instance SignConversion Word Int where
   toSigned = fromIntegral
   toUnsigned = fromIntegral
+
+instance
+  (SignConversion au ai) =>
+  SignConversion (Const au b) (Const ai b)
+  where
+  toSigned (Const a) = Const $ toSigned a
+  toUnsigned (Const a) = Const $ toUnsigned a

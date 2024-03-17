@@ -13,6 +13,7 @@ module Grisette.Core.Data.Class.SymRotate
 where
 
 import Data.Bits (Bits (isSigned, rotate), FiniteBits (finiteBitSize))
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 
@@ -90,3 +91,9 @@ deriving via (DefaultFiniteBitsSymRotate Word32) instance SymRotate Word32
 deriving via (DefaultFiniteBitsSymRotate Word64) instance SymRotate Word64
 
 deriving via (DefaultFiniteBitsSymRotate Word) instance SymRotate Word
+
+instance (SymRotate a) => SymRotate (Const a b) where
+  symRotate (Const a) (Const b) = Const $ symRotate a b
+  {-# INLINE symRotate #-}
+  symRotateNegated (Const a) (Const b) = Const $ symRotateNegated a b
+  {-# INLINE symRotateNegated #-}

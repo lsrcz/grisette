@@ -3,10 +3,10 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Grisette.Lib.Data.Functor.Sum (mrgInR, mrgInL) where
+module Grisette.Lib.Data.Functor.Const (mrgConst) where
 
-import Data.Functor.Sum (Sum)
+import Data.Functor.Const (Const)
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Core.TH.MergeConstructor (mkMergeConstructor)
 
-mkMergeConstructor "mrg" ''Sum
+mkMergeConstructor "mrg" ''Const

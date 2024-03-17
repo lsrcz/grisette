@@ -13,6 +13,7 @@ module Grisette.Core.Data.Class.SymShift
 where
 
 import Data.Bits (Bits (isSigned, shift, shiftR), FiniteBits (finiteBitSize))
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 
@@ -105,3 +106,10 @@ deriving via (DefaultFiniteBitsSymShift Word32) instance SymShift Word32
 deriving via (DefaultFiniteBitsSymShift Word64) instance SymShift Word64
 
 deriving via (DefaultFiniteBitsSymShift Word) instance SymShift Word
+
+-- Const
+instance (SymShift a) => SymShift (Const a b) where
+  symShift (Const a) (Const b) = Const $ symShift a b
+  {-# INLINE symShift #-}
+  symShiftNegated (Const a) (Const b) = Const $ symShiftNegated a b
+  {-# INLINE symShiftNegated #-}

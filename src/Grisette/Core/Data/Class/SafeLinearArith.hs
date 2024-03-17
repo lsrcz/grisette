@@ -26,6 +26,7 @@ where
 
 import Control.Exception (ArithException (DivideByZero, Overflow, Underflow))
 import Control.Monad.Except (MonadError (throwError))
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -53,7 +54,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     SymInteger,
     SymWordN,
   )
-import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- $setup
@@ -224,3 +225,11 @@ instance
       (mrgSingle res)
     where
       res = ls - rs
+
+instance (SafeLinearArith e a m) => SafeLinearArith e (Const a b) m where
+  safeAdd (Const a) (Const b) = mrgFmap Const $ safeAdd a b
+  {-# INLINE safeAdd #-}
+  safeNeg (Const a) = mrgFmap Const $ safeNeg a
+  {-# INLINE safeNeg #-}
+  safeSub (Const a) (Const b) = mrgFmap Const $ safeSub a b
+  {-# INLINE safeSub #-}
