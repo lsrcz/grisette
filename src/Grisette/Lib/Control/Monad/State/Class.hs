@@ -42,7 +42,7 @@ mrgState ::
   (MonadState s m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> (a, s)) ->
   m a
-mrgState f = do
+mrgState f = tryMerge $ do
   s <- mrgGet
   let ~(a, s') = f s
   mrgPut s'

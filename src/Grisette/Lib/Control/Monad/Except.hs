@@ -68,7 +68,7 @@ mrgWithError ::
   m a ->
   m a
 mrgWithError f action =
-  mrgTryError action >>= either (mrgThrowError . f) mrgReturn
+  tryMerge $ mrgTryError action >>= either (mrgThrowError . f) mrgReturn
 {-# INLINE mrgWithError #-}
 
 -- | 'Control.Monad.Except.handleError' with 'MergingStrategy' knowledge
@@ -111,5 +111,6 @@ mrgModifyError ::
   (e -> e') ->
   ExceptT e m a ->
   m a
-mrgModifyError f m = mrgRunExceptT m >>= either (mrgThrowError . f) mrgReturn
+mrgModifyError f m =
+  tryMerge $ mrgRunExceptT m >>= either (mrgThrowError . f) mrgReturn
 {-# INLINE mrgModifyError #-}

@@ -48,7 +48,7 @@ mrgRunStateT ::
   StateT s m a ->
   s ->
   m (a, s)
-mrgRunStateT m s = runStateT m s >>= mrgReturn
+mrgRunStateT m s = tryMerge $ runStateT m s
 {-# INLINE mrgRunStateT #-}
 
 -- | 'Control.Monad.Trans.State.Lazy.evalStateT' with 'MergingStrategy'
@@ -58,9 +58,9 @@ mrgEvalStateT ::
   StateT s m a ->
   s ->
   m a
-mrgEvalStateT m s = do
+mrgEvalStateT m s = tryMerge $ do
   ~(a, _) <- runStateT m s
-  mrgReturn a
+  return a
 {-# INLINE mrgEvalStateT #-}
 
 -- | 'Control.Monad.Trans.State.Lazy.execStateT' with 'MergingStrategy'
@@ -70,9 +70,9 @@ mrgExecStateT ::
   StateT s m a ->
   s ->
   m s
-mrgExecStateT m s = do
+mrgExecStateT m s = tryMerge $ do
   ~(_, s') <- runStateT m s
-  mrgReturn s'
+  return s'
 {-# INLINE mrgExecStateT #-}
 
 -- | 'Control.Monad.Trans.State.Lazy.mapStateT' with 'MergingStrategy' knowledge
