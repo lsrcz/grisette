@@ -151,6 +151,12 @@ The `Mergeable` type classes allows to represent multiple ASTs compactly in a
 returned by a solver to replace the symbolic holes inside to concrete values.
 
 ```haskell
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+import Grisette
+import GHC.Generics
 data SExpr
   -- `SConst` represents a constant in the syntax tree.
   --
@@ -180,8 +186,8 @@ data SExpr
 -- >>> SConst 1 :: SExpr
 -- SConst 1
 -- >>> mrgSConst 1 :: UnionM SExpr
--- UMrg (Single (SConst 1))
-$(makeUnionWrapper "mrg" ''SExpr)
+-- {SConst 1}
+mkMergeConstructor "mrg" ''SExpr
 ```
 
 Then we can define the program space.
@@ -204,7 +210,8 @@ to lift the interpreter to work on `UnionM` values.
 
 ```haskell
 interpret :: SExpr -> SymInteger
-interpret (SInt x) = x
+interpret (SConst x) = x
+interpret (SInput x) = x
 interpret (SPlus x y) = interpretU x + interpretU y
 interpret (SMul x y) = interpretU x * interpretU y
 
@@ -227,7 +234,7 @@ We can then use the model to evaluate the program space, and get the synthesized
 ```haskell
 example :: IO ()
 example = do
-  Right model <- solve (UnboundedReasoning z3) $ executableSpace 2 ==~ 5
+  Right model <- solve (precise z3) $ executableSpace 2 .== 5
   print $ evaluateSym False model (space "x")
   -- result: SPlus {SInput x} {SConst 3}
   let synthesizedProgram :: Integer -> Integer =
