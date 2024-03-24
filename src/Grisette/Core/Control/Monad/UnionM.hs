@@ -534,6 +534,12 @@ instance (LogicalOp a, Mergeable a) => LogicalOp (UnionM a) where
   symXor = unionMBinOp symXor
   symImplies = unionMBinOp symImplies
 
+instance (Monoid a, Mergeable a) => Monoid (UnionM a) where
+  mempty = mrgSingle mempty
+
+instance (Monoid a, Mergeable a) => Semigroup (UnionM a) where
+  (<>) = unionMBinOp (<>)
+
 instance (Solvable c t, Mergeable t) => Solvable c (UnionM t) where
   con = mrgSingle . con
   {-# INLINE con #-}

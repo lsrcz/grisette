@@ -21,6 +21,7 @@ module Grisette.Core.Data.Class.SafeSymRotate (SafeSymRotate (..)) where
 import Control.Exception (ArithException (Overflow))
 import Control.Monad.Error.Class (MonadError)
 import Data.Bits (Bits (rotateL, rotateR), FiniteBits (finiteBitSize))
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
@@ -38,7 +39,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe rotation operations. The operators will reject negative shift amounts.
@@ -134,3 +135,9 @@ instance
       (r .< 0)
       (mrgThrowError Overflow)
       (mrgReturn $ SymIntN $ pevalRotateRightTerm ta tr)
+
+instance (SafeSymRotate e a m) => SafeSymRotate e (Const a b) m where
+  safeSymRotateL (Const a) (Const b) = mrgFmap Const $ safeSymRotateL a b
+  {-# INLINE safeSymRotateL #-}
+  safeSymRotateR (Const a) (Const b) = mrgFmap Const $ safeSymRotateR a b
+  {-# INLINE safeSymRotateR #-}

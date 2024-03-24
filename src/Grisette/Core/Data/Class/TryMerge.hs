@@ -32,6 +32,7 @@ import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Data.Functor.Const (Const)
 import Data.Functor.Sum (Sum (InL, InR))
 import qualified Data.Monoid as Monoid
 import Grisette.Core.Data.Class.Mergeable
@@ -206,5 +207,9 @@ instance (TryMerge f, TryMerge g) => TryMerge (Sum f g) where
     InR $ tryMergeWithStrategy strategy fa
 
 instance TryMerge Monoid.Sum where
+  tryMergeWithStrategy _ = id
+  {-# INLINE tryMergeWithStrategy #-}
+
+instance TryMerge (Const a) where
   tryMergeWithStrategy _ = id
   {-# INLINE tryMergeWithStrategy #-}
