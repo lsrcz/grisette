@@ -14,8 +14,6 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     symTerm,
     ssymTerm,
     isymTerm,
-    sinfosymTerm,
-    iinfosymTerm,
     notTerm,
     orTerm,
     andTerm,
@@ -56,7 +54,6 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 where
 
-import Control.DeepSeq (NFData)
 import Data.Bits (Bits, FiniteBits)
 import Data.Hashable (Hashable)
 import qualified Data.Text as T
@@ -80,7 +77,6 @@ import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFun
   ( type (=->),
   )
-import Language.Haskell.TH.Syntax (Lift)
 
 constructUnary ::
   forall tag arg t.
@@ -107,17 +103,6 @@ conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term 
 symTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
 ssymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Term t
 isymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Int -> Term t
-sinfosymTerm ::
-  (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  T.Text ->
-  a ->
-  Term t
-iinfosymTerm ::
-  (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  T.Text ->
-  Int ->
-  a ->
-  Term t
 notTerm :: Term Bool -> Term Bool
 orTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm :: Term Bool -> Term Bool -> Term Bool

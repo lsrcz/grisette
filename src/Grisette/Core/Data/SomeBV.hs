@@ -32,8 +32,6 @@ module Grisette.Core.Data.SomeBV
     pattern ConBV,
     ssymBV,
     isymBV,
-    sinfosymBV,
-    iinfosymBV,
     arbitraryBV,
 
     -- * Synonyms
@@ -89,7 +87,7 @@ import Data.Bits
       ),
     FiniteBits (countLeadingZeros, countTrailingZeros, finiteBitSize),
   )
-import Data.Data (Proxy (Proxy), Typeable)
+import Data.Data (Proxy (Proxy))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
@@ -159,7 +157,7 @@ import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
+  ( Solvable (con, conView, isym, ssym),
   )
 import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (substituteSym),
@@ -828,53 +826,6 @@ isymBV ::
   Int ->
   SomeBV bv
 isymBV n s i = unsafeSomeBV n $ \(_ :: proxy n) -> isym @(cbv n) s i
-
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth, a name and
--- some extra info. Similar to 'sinfosym' but for 'SomeBV'.
---
--- >>> sinfosymBV 8 "a" "someinfo" :: SomeSymIntN
--- a:"someinfo"
-sinfosymBV ::
-  forall cbv bv a.
-  ( forall n. (KnownNat n, 1 <= n) => Solvable (cbv n) (bv n),
-    Solvable (cbv 1) (bv 1),
-    Typeable a,
-    Ord a,
-    Lift a,
-    NFData a,
-    Show a,
-    Hashable a
-  ) =>
-  Int ->
-  T.Text ->
-  a ->
-  SomeBV bv
-sinfosymBV n s info =
-  unsafeSomeBV n $ \(_ :: proxy n) -> sinfosym @(cbv n) s info
-
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth, a name, an
--- index and some extra info. Similar to 'iinfosym' but for 'SomeBV'.
---
--- >>> iinfosymBV 8 "a" 1 "someinfo" :: SomeSymIntN
--- a@1:"someinfo"
-iinfosymBV ::
-  forall cbv bv a.
-  ( forall n. (KnownNat n, 1 <= n) => Solvable (cbv n) (bv n),
-    Solvable (cbv 1) (bv 1),
-    Typeable a,
-    Ord a,
-    Lift a,
-    NFData a,
-    Show a,
-    Hashable a
-  ) =>
-  Int ->
-  T.Text ->
-  Int ->
-  a ->
-  SomeBV bv
-iinfosymBV n s i info =
-  unsafeSomeBV n $ \(_ :: proxy n) -> iinfosym @(cbv n) s i info
 
 -- | Generate an arbitrary 'SomeBV' with a given run-time bitwidth.
 arbitraryBV ::

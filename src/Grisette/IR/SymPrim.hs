@@ -39,8 +39,6 @@ module Grisette.IR.SymPrim
     pattern ConBV,
     ssymBV,
     isymBV,
-    sinfosymBV,
-    iinfosymBV,
     arbitraryBV,
 
     -- ** Symbolic types
@@ -87,9 +85,7 @@ import Grisette.Core.Data.SomeBV
     binSomeBVSafeR2,
     conBV,
     conBVView,
-    iinfosymBV,
     isymBV,
-    sinfosymBV,
     ssymBV,
     unarySomeBV,
     unarySomeBVR1,

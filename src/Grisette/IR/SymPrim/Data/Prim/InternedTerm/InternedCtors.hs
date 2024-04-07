@@ -25,8 +25,6 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     symTerm,
     ssymTerm,
     isymTerm,
-    sinfosymTerm,
-    iinfosymTerm,
     notTerm,
     orTerm,
     andTerm,
@@ -67,7 +65,6 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 where
 
-import Control.DeepSeq (NFData)
 import Data.Array ((!))
 import Data.Bits (Bits, FiniteBits)
 import qualified Data.HashMap.Strict as M
@@ -94,7 +91,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
     Term,
     TernaryOp,
-    TypedSymbol (IndexedSymbol, SimpleSymbol, WithInfo),
+    TypedSymbol (IndexedSymbol, SimpleSymbol),
     UTerm
       ( UAbsNumTerm,
         UAddNumTerm,
@@ -143,7 +140,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
 import Grisette.IR.SymPrim.Data.TabularFun
   ( type (=->),
   )
-import Language.Haskell.TH.Syntax (Lift)
 import Type.Reflection (Typeable, typeRep)
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
@@ -203,23 +199,6 @@ ssymTerm = symTerm . SimpleSymbol
 isymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Int -> Term t
 isymTerm str idx = symTerm $ IndexedSymbol str idx
 {-# INLINE isymTerm #-}
-
-sinfosymTerm ::
-  (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  T.Text ->
-  a ->
-  Term t
-sinfosymTerm s info = symTerm $ WithInfo (SimpleSymbol s) info
-{-# INLINE sinfosymTerm #-}
-
-iinfosymTerm ::
-  (SupportedPrim t, Typeable t, Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  T.Text ->
-  Int ->
-  a ->
-  Term t
-iinfosymTerm str idx info = symTerm $ WithInfo (IndexedSymbol str idx) info
-{-# INLINE iinfosymTerm #-}
 
 notTerm :: Term Bool -> Term Bool
 notTerm = internTerm . UNotTerm

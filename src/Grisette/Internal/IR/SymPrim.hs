@@ -35,8 +35,6 @@ module Grisette.Internal.IR.SymPrim
     symTerm,
     ssymTerm,
     isymTerm,
-    sinfosymTerm,
-    iinfosymTerm,
     termSize,
     termsSize,
     extractSymbolicsTerm,
@@ -102,9 +100,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     constructBinary,
     constructTernary,
     constructUnary,
-    iinfosymTerm,
     isymTerm,
-    sinfosymTerm,
     ssymTerm,
     symTerm,
   )

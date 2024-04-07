@@ -129,19 +129,6 @@ class
 data TypedSymbol t where
   SimpleSymbol :: (SupportedPrim t) => T.Text -> TypedSymbol t
   IndexedSymbol :: (SupportedPrim t) => T.Text -> Int -> TypedSymbol t
-  WithInfo ::
-    forall t a.
-    ( SupportedPrim t,
-      Typeable a,
-      Ord a,
-      Lift a,
-      NFData a,
-      Show a,
-      Hashable a
-    ) =>
-    TypedSymbol t ->
-    a ->
-    TypedSymbol t
 
 data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol

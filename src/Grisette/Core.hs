@@ -713,8 +713,6 @@ module Grisette.Core
     FreshIndex (..),
     FreshIdent (..),
     name,
-    nameWithInfo,
-    FileLocation (..),
     nameWithLoc,
 
     -- ** Symbolic Generation Monad
@@ -1128,7 +1126,6 @@ import Grisette.Core.Data.Class.GenSym
     liftFresh,
     mrgRunFreshT,
     name,
-    nameWithInfo,
     nextFreshIndex,
     runFresh,
     runFreshT,
@@ -1214,8 +1211,7 @@ import Grisette.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Core.Data.FileLocation
-  ( FileLocation (..),
-    ilocsym,
+  ( ilocsym,
     nameWithLoc,
     slocsym,
   )
