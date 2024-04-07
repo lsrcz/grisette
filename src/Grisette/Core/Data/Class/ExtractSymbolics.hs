@@ -33,6 +33,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -311,3 +312,7 @@ instance
   ExtractSymbolics' (a :*: b)
   where
   extractSymbolics' (l :*: r) = extractSymbolics' l <> extractSymbolics' r
+
+-- Const
+instance (ExtractSymbolics a) => ExtractSymbolics (Const a b) where
+  extractSymbolics (Const v) = extractSymbolics v

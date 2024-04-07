@@ -19,6 +19,7 @@ where
 import Control.Exception (ArithException (Overflow))
 import Control.Monad.Error.Class (MonadError)
 import Data.Bits (Bits (shiftL, shiftR), FiniteBits (finiteBitSize))
+import Data.Functor.Const (Const (Const))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
@@ -40,7 +41,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
     pevalShiftRightTerm,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymIntN (SymIntN), SymWordN (SymWordN))
-import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad (mrgFmap, mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe version for `shiftL` or `shiftR`.
@@ -185,3 +186,15 @@ instance
       (return $ SymIntN $ pevalShiftRightTerm ta ts)
     where
       bs = fromIntegral (finiteBitSize a)
+
+instance (SafeSymShift e a m) => SafeSymShift e (Const a b) m where
+  safeSymShiftL (Const a) (Const b) = mrgFmap Const $ safeSymShiftL a b
+  {-# INLINE safeSymShiftL #-}
+  safeSymShiftR (Const a) (Const b) = mrgFmap Const $ safeSymShiftR a b
+  {-# INLINE safeSymShiftR #-}
+  safeSymStrictShiftL (Const a) (Const b) =
+    mrgFmap Const $ safeSymStrictShiftL a b
+  {-# INLINE safeSymStrictShiftL #-}
+  safeSymStrictShiftR (Const a) (Const b) =
+    mrgFmap Const $ safeSymStrictShiftR a b
+  {-# INLINE safeSymStrictShiftR #-}

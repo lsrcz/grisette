@@ -17,6 +17,7 @@ module Grisette.Core.Data.Class.ITEOp
   )
 where
 
+import Data.Functor.Const (Const (Const))
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
@@ -75,3 +76,7 @@ ITEOP_BV(SymWordN)
 ITEOP_FUN(=~>, SymTabularFun)
 ITEOP_FUN(-~>, SymGeneralFun)
 #endif
+
+instance (ITEOp a) => ITEOp (Const a b) where
+  symIte c (Const t) (Const f) = Const $ symIte c t f
+  {-# INLINE symIte #-}

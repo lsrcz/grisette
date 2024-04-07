@@ -34,6 +34,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -256,6 +257,11 @@ instance (SubstituteSym a) => SubstituteSym (Identity a) where
 -- IdentityT
 instance (SubstituteSym (m a)) => SubstituteSym (IdentityT m a) where
   substituteSym sym val (IdentityT a) = IdentityT $ substituteSym sym val a
+
+-- Const
+instance (SubstituteSym a) => SubstituteSym (Const a b) where
+  substituteSym sym val (Const a) = Const $ substituteSym sym val a
+  {-# INLINE substituteSym #-}
 
 #define SUBSTITUTE_SYM_SIMPLE(symtype) \
 instance SubstituteSym symtype where \

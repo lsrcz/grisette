@@ -83,6 +83,7 @@ import Data.Functor.Classes
     eq1,
     showsPrec1,
   )
+import Data.Functor.Const (Const (Const, getConst))
 import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
@@ -1038,3 +1039,14 @@ instance (Mergeable' a, Mergeable' b) => Mergeable' (a :+: b) where
             else wrapStrategy rootStrategy' R1 (\case (R1 v) -> v; _ -> undefined)
       )
   {-# INLINE rootStrategy' #-}
+
+deriving via
+  (Default (Const a b))
+  instance
+    (Mergeable a) => Mergeable (Const a b)
+
+deriving via (Default1 (Const a)) instance (Mergeable a) => Mergeable1 (Const a)
+
+instance Mergeable2 Const where
+  liftRootStrategy2 sa _ = wrapStrategy sa Const getConst
+  {-# INLINE liftRootStrategy2 #-}

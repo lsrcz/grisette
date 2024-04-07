@@ -135,12 +135,15 @@ library
       Grisette.Lib.Data.Bool
       Grisette.Lib.Data.Either
       Grisette.Lib.Data.Foldable
+      Grisette.Lib.Data.Function
       Grisette.Lib.Data.Functor
+      Grisette.Lib.Data.Functor.Const
       Grisette.Lib.Data.Functor.Sum
       Grisette.Lib.Data.List
       Grisette.Lib.Data.Maybe
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Data.Tuple
+      Grisette.Lib.Lens.Micro
       Grisette.Qualified.ParallelUnionDo
       Grisette.Utils
       Grisette.Utils.Parameterized
@@ -161,6 +164,8 @@ library
     , hashtables >=1.2.3.4 && <1.4
     , intern >=0.9.2 && <0.10
     , loch-th >=0.2.2 && <0.3
+    , microlens
+    , microlens-th
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
@@ -200,6 +205,8 @@ test-suite doctest
     , hashtables >=1.2.3.4 && <1.4
     , intern >=0.9.2 && <0.10
     , loch-th >=0.2.2 && <0.3
+    , microlens
+    , microlens-th
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
@@ -269,9 +276,11 @@ test-suite spec
       Grisette.Lib.Control.Monad.Trans.State.StrictTests
       Grisette.Lib.Control.MonadTests
       Grisette.Lib.Data.FoldableTests
+      Grisette.Lib.Data.FunctionTests
       Grisette.Lib.Data.FunctorTests
       Grisette.Lib.Data.ListTests
       Grisette.Lib.Data.TraversableTests
+      Grisette.Lib.Lens.MicroTests
       Grisette.TestUtil.NoMerge
       Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
@@ -293,6 +302,8 @@ test-suite spec
     , hashtables >=1.2.3.4 && <1.4
     , intern >=0.9.2 && <0.10
     , loch-th >=0.2.2 && <0.3
+    , microlens
+    , microlens-th
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8

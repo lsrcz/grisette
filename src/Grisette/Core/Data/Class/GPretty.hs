@@ -28,6 +28,7 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
+import Data.Functor.Const (Const)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
@@ -321,6 +322,12 @@ instance (GPretty (m a)) => GPretty (IdentityT m a) where
           [ "IdentityT",
             gprettyPrec 11 a
           ]
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (GPretty a) => GPretty (Const a b)
 
 -- Prettyprint
 #define GPRETTY_SYM_SIMPLE(symtype) \

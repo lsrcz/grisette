@@ -34,6 +34,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Maybe (fromJust)
@@ -274,3 +275,8 @@ instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :+: b) where
 
 instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :*: b) where
   evaluateSym' fillDefault model (a :*: b) = evaluateSym' fillDefault model a :*: evaluateSym' fillDefault model b
+
+-- Const
+instance (EvaluateSym a) => EvaluateSym (Const a b) where
+  evaluateSym fillDefault model (Const a) =
+    Const $ evaluateSym fillDefault model a

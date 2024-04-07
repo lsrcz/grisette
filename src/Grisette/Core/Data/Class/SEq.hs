@@ -35,6 +35,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -282,3 +283,8 @@ instance (SEq' a, SEq' b) => SEq' (a :*: b) where
 instance (Generic a, SEq' (Rep a)) => SEq (Default a) where
   Default l .== Default r = from l ..== from r
   {-# INLINE (.==) #-}
+
+deriving via
+  (Default (Const a b))
+  instance
+    (SEq a) => SEq (Const a b)

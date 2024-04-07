@@ -39,6 +39,7 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Const (Const (Const))
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -389,6 +390,19 @@ instance (SOrd a, Mergeable a) => SOrd (UnionM a) where
     x1 <- tryMerge x
     y1 <- tryMerge y
     x1 `symCompare` y1
+
+-- | Const
+instance (SOrd a) => SOrd (Const a b) where
+  (Const l) .<= (Const r) = l .<= r
+  {-# INLINE (.<=) #-}
+  (Const l) .< (Const r) = l .< r
+  {-# INLINE (.<) #-}
+  (Const l) .>= (Const r) = l .>= r
+  {-# INLINE (.>=) #-}
+  (Const l) .> (Const r) = l .> r
+  {-# INLINE (.>) #-}
+  (Const l) `symCompare` (Const r) = l `symCompare` r
+  {-# INLINE symCompare #-}
 
 -- | Auxiliary class for 'SOrd' instance derivation
 class (SEq' f) => SOrd' f where
