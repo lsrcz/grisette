@@ -42,6 +42,7 @@ module Grisette.Core.Data.Class.GenSym
     runFreshT,
     runFresh,
     mrgRunFreshT,
+    freshString,
 
     -- * Symbolic value generation
     GenSym (..),
@@ -243,6 +244,18 @@ liftFresh (FreshT f) = do
   let (a, newIdx) = runIdentity $ f ident index
   setFreshIndex newIdx
   return a
+
+-- | Generate a fresh string with the given postfix.
+--
+-- >>> runFresh (freshString "b") "a" :: String
+-- "a@0[b]"
+freshString :: (MonadFresh m, IsString s) => String -> m s
+freshString postfix = do
+  FreshIdent ident <- getFreshIdent
+  FreshIndex index <- nextFreshIndex
+  return $
+    fromString $
+      T.unpack ident <> "@" <> show index <> "[" <> postfix <> "]"
 
 -- | A symbolic generation monad transformer.
 -- It is a reader monad transformer for identifiers and

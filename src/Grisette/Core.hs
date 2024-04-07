@@ -724,6 +724,7 @@ module Grisette.Core
     runFresh,
     runFreshT,
     mrgRunFreshT,
+    freshString,
 
     -- ** Symbolic Generation Class
     GenSym (..),
@@ -1121,6 +1122,7 @@ import Grisette.Core.Data.Class.GenSym
     derivedNoSpecFresh,
     derivedNoSpecSimpleFresh,
     derivedSameShapeSimpleFresh,
+    freshString,
     genSym,
     genSymSimple,
     liftFresh,
