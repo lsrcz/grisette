@@ -3,6 +3,7 @@
 
 module Grisette.Core.Data.Class.GenSymTests (genSymTests) where
 
+import Control.Monad (replicateM)
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette.Core.Control.Monad.UnionM (UnionM)
@@ -20,6 +21,7 @@ import Grisette.Core.Data.Class.GenSym
     chooseSimpleFresh,
     chooseUnion,
     chooseUnionFresh,
+    freshString,
     genSym,
     genSymSimple,
     liftFresh,
@@ -1259,5 +1261,7 @@ genSymTests =
                       (isymBool "a" 2, isymBool "a" 3)
                     )
             actual @?= expected
-        ]
+        ],
+      testCase "freshString" $ do
+        runFresh (replicateM 2 $ freshString "a") "b" @?= ["b@0[a]", "b@1[a]"]
     ]
