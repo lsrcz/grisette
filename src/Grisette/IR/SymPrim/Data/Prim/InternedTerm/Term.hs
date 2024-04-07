@@ -263,62 +263,38 @@ class
 data TypedSymbol t where
   SimpleSymbol :: (SupportedPrim t) => T.Text -> TypedSymbol t
   IndexedSymbol :: (SupportedPrim t) => T.Text -> Int -> TypedSymbol t
-  WithInfo ::
-    forall t a.
-    ( SupportedPrim t,
-      Typeable a,
-      Ord a,
-      Lift a,
-      NFData a,
-      Show a,
-      Hashable a
-    ) =>
-    TypedSymbol t ->
-    a ->
-    TypedSymbol t
 
 -- deriving (Eq, Ord, Generic, Lift, NFData)
 
 instance Eq (TypedSymbol t) where
   SimpleSymbol x == SimpleSymbol y = x == y
   IndexedSymbol x i == IndexedSymbol y j = i == j && x == y
-  WithInfo s1 (i1 :: a) == WithInfo s2 (i2 :: b) = case eqTypeRep (typeRep @a) (typeRep @b) of
-    Just HRefl -> i1 == i2 && s1 == s2
-    _ -> False
   _ == _ = False
 
 instance Ord (TypedSymbol t) where
   SimpleSymbol x <= SimpleSymbol y = x <= y
   IndexedSymbol x i <= IndexedSymbol y j = i < j || (i == j && x <= y)
-  WithInfo s1 (i1 :: a) <= WithInfo s2 (i2 :: b) = case eqTypeRep (typeRep @a) (typeRep @b) of
-    Just HRefl -> s1 < s2 || (s1 == s2 && i1 <= i2)
-    _ -> False
   _ <= _ = False
 
 instance Lift (TypedSymbol t) where
   liftTyped (SimpleSymbol x) = [||SimpleSymbol x||]
   liftTyped (IndexedSymbol x i) = [||IndexedSymbol x i||]
-  liftTyped (WithInfo s1 i1) = [||WithInfo s1 i1||]
 
 instance Show (TypedSymbol t) where
   show (SimpleSymbol str) = T.unpack str ++ " :: " ++ show (typeRep @t)
   show (IndexedSymbol str i) = T.unpack str ++ "@" ++ show i ++ " :: " ++ show (typeRep @t)
-  show (WithInfo s info) = showUntyped s ++ ":" ++ show info ++ " :: " ++ show (typeRep @t)
 
 showUntyped :: TypedSymbol t -> String
 showUntyped (SimpleSymbol str) = T.unpack str
 showUntyped (IndexedSymbol str i) = T.unpack str ++ "@" ++ show i
-showUntyped (WithInfo s info) = showUntyped s ++ ":" ++ show info
 
 instance Hashable (TypedSymbol t) where
   s `hashWithSalt` SimpleSymbol x = s `hashWithSalt` x
   s `hashWithSalt` IndexedSymbol x i = s `hashWithSalt` x `hashWithSalt` i
-  s `hashWithSalt` WithInfo sym info = s `hashWithSalt` sym `hashWithSalt` info
 
 instance NFData (TypedSymbol t) where
   rnf (SimpleSymbol str) = rnf str
   rnf (IndexedSymbol str i) = rnf str `seq` rnf i
-  rnf (WithInfo s info) = rnf s `seq` rnf info
 
 instance (SupportedPrim t) => IsString (TypedSymbol t) where
   fromString = SimpleSymbol . T.pack
@@ -326,33 +302,6 @@ instance (SupportedPrim t) => IsString (TypedSymbol t) where
 withSymbolSupported :: TypedSymbol t -> ((SupportedPrim t) => a) -> a
 withSymbolSupported (SimpleSymbol _) a = a
 withSymbolSupported (IndexedSymbol _ _) a = a
-withSymbolSupported (WithInfo _ _) a = a
-
-{-
-data TypedSymbol t where
-  TypedSymbol :: (SupportedPrim t) => Symbol -> TypedSymbol t
-
-typedSymbol :: forall proxy t. (SupportedPrim t) => proxy t -> Symbol -> TypedSymbol t
-typedSymbol _ = TypedSymbol
-
-instance NFData (TypedSymbol t) where
-  rnf (TypedSymbol s) = rnf s
-
-instance Eq (TypedSymbol t) where
-  (TypedSymbol s1) == (TypedSymbol s2) = s1 == s2
-
-instance Ord (TypedSymbol t) where
-  (TypedSymbol s1) <= (TypedSymbol s2) = s1 <= s2
-
-instance Hashable (TypedSymbol t) where
-  hashWithSalt s (TypedSymbol s1) = s `hashWithSalt` s1
-
-instance Show (TypedSymbol t) where
-  show (TypedSymbol s) = show s ++ " :: " ++ show (typeRep @t)
-
-instance Lift (TypedSymbol t) where
-  liftTyped (TypedSymbol s) = [||TypedSymbol s||]
-  -}
 
 data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
@@ -382,7 +331,6 @@ instance Show SomeTypedSymbol where
 someTypedSymbol :: forall t. TypedSymbol t -> SomeTypedSymbol
 someTypedSymbol s@(SimpleSymbol _) = SomeTypedSymbol (typeRep @t) s
 someTypedSymbol s@(IndexedSymbol _ _) = SomeTypedSymbol (typeRep @t) s
-someTypedSymbol s@(WithInfo _ _) = SomeTypedSymbol (typeRep @t) s
 
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
@@ -1179,10 +1127,13 @@ pattern GeneralFun arg v <- GeneralFun arg v
 
 infixr 0 -->
 
-buildGeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+buildGeneralFun ::
+  (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 buildGeneralFun arg v = GeneralFun newarg (substTerm arg (symTerm newarg) v)
   where
-    newarg = WithInfo arg ARG
+    newarg = case arg of
+      SimpleSymbol s -> SimpleSymbol $ s <> "[Grisette:GeneralFun:ARG]"
+      IndexedSymbol s i -> IndexedSymbol (s <> "[Grisette:GeneralFun:ARG]") i
 
 data ARG = ARG
   deriving (Eq, Ord, Lift, Show, Generic)

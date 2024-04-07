@@ -44,7 +44,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIte1,
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
+  ( Solvable (con, conView, isym, ssym),
   )
 import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
@@ -335,12 +335,6 @@ unionMTests =
           testCase "sym" $ (ssym "a" :: UnionM SymBool) @?= mrgSingle (ssym "a"),
           testCase "isym" $
             (isym "a" 1 :: UnionM SymBool) @?= mrgSingle (isym "a" 1),
-          testCase "sinfoym" $
-            (sinfosym "a" () :: UnionM SymBool) @?= mrgSingle (sinfosym "a" ()),
-          testCase "iinfosym" $ do
-            let actual = iinfosym "a" 1 () :: UnionM SymBool
-            let expected = mrgSingle (iinfosym "a" 1 ())
-            actual @?= expected,
           testGroup
             "conView"
             [ testCase "is concrete" $ do

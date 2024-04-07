@@ -13,7 +13,6 @@ import Control.Exception (ArithException (Overflow), catch, evaluate)
 import Control.Monad.Except (ExceptT)
 import Data.Bits (FiniteBits (finiteBitSize))
 import Data.Proxy (Proxy (Proxy))
-import qualified Data.Text as T
 import Grisette (ITEOp (symIte))
 import Grisette.Core.Control.Monad.UnionM (UnionM (UMrg))
 import Grisette.Core.Data.BV (BitwidthMismatch (BitwidthMismatch), IntN)
@@ -28,7 +27,7 @@ import Grisette.Core.Data.Class.SafeLinearArith
   )
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (iinfosym, isym, sinfosym, ssym),
+  ( Solvable (isym, ssym),
   )
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Core.Data.SomeBV
@@ -44,9 +43,7 @@ import Grisette.Core.Data.SomeBV
     binSomeBVSafeR1,
     conBV,
     conBVView,
-    iinfosymBV,
     isymBV,
-    sinfosymBV,
     ssymBV,
     unarySomeBV,
     unarySomeBVR1,
@@ -165,16 +162,6 @@ someBVTests =
           testCase "ssymBV" $ ssymBV 4 "a" @?= SomeBV (ssym "a" :: SymIntN 4),
           testCase "isymBV" $
             isymBV 4 "a" 1 @?= SomeBV (isym "a" 1 :: SymIntN 4),
-          testCase "sinfosymBV" $ do
-            let info = "abc" :: T.Text
-            let actual = sinfosymBV 4 "a" info
-            let expected = SomeBV (sinfosym "a" info :: SymIntN 4)
-            actual @?= expected,
-          testCase "iinfosymBV" $ do
-            let info = "abc" :: T.Text
-            let actual = iinfosymBV 4 "a" 3 info
-            let expected = SomeBV (iinfosym "a" 3 info :: SymIntN 4)
-            actual @?= expected,
           testCase "unarySomeBV" $ do
             let actual =
                   unarySomeBV @IntN @SomeIntN

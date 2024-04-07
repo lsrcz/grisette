@@ -59,7 +59,6 @@ import Grisette.Core.Data.Class.Function (Apply (apply), Function ((#)))
 import Grisette.Core.Data.Class.GenSym
   ( genSym,
     genSymSimple,
-    nameWithInfo,
   )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp
@@ -99,7 +98,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, iinfosym, isym, ssym),
+  ( Solvable (con, conView, isym, ssym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
@@ -520,9 +519,7 @@ symPrimTests =
             (genSym () "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple () "a" :: SymBool) @=? isym "a" 0
             (genSym (ssym "a" :: SymBool) "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
-            (genSymSimple (ssym "a" :: SymBool) "a" :: SymBool) @=? isym "a" 0
-            (genSym () (nameWithInfo "a" True) :: UnionM SymBool) @=? mrgSingle (iinfosym "a" 0 True)
-            (genSymSimple () (nameWithInfo "a" True) :: SymBool) @=? iinfosym "a" 0 True,
+            (genSymSimple (ssym "a" :: SymBool) "a" :: SymBool) @=? isym "a" 0,
           testCase "SEq" $ do
             (ssym "a" :: SymBool) .== ssym "b" @=? SymBool (pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
             (ssym "a" :: SymBool) ./= ssym "b" @=? SymBool (pevalNotTerm $ pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))

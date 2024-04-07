@@ -123,18 +123,15 @@ import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, iinfosym, isym, sinfosym, ssym),
+  ( Solvable (con, conView, isym, ssym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( conTerm,
-    iinfosymTerm,
     isymTerm,
-    sinfosymTerm,
     ssymTerm,
-    symTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -145,11 +142,9 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     SupportedPrim,
     SymRep (SymType),
     Term (ConTerm, SymTerm),
-    TypedSymbol (WithInfo),
-    type (-->) (GeneralFun),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
-  ( substTerm,
+    TypedSymbol,
+    buildGeneralFun,
+    type (-->),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( pformat,
@@ -371,7 +366,7 @@ instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa =~> st) where
 --
 -- >>> f' = con ("a" --> "a" + 1) :: SymInteger -~> SymInteger
 -- >>> f'
--- \(a:ARG :: Integer) -> (+ 1 a:ARG)
+-- \(a[Grisette:GeneralFun:ARG] :: Integer) -> (+ 1 a[Grisette:GeneralFun:ARG])
 -- >>> f = (f' #)
 -- >>> f 1
 -- 2
@@ -407,15 +402,17 @@ instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa -~> st) where
 --
 -- >>> f = "a" --> "a" + 1 :: Integer --> Integer
 -- >>> f
--- \(a:ARG :: Integer) -> (+ 1 a:ARG)
+-- \(a[Grisette:GeneralFun:ARG] :: Integer) -> (+ 1 a[Grisette:GeneralFun:ARG])
 --
 -- This general symbolic function needs to be applied to symbolic values:
 -- >>> f # ("a" :: SymInteger)
 -- (+ 1 a)
-(-->) :: (SupportedPrim ca, SupportedPrim cb, LinkedRep cb sb) => TypedSymbol ca -> sb -> ca --> cb
-(-->) arg v = GeneralFun newarg (substTerm arg (symTerm newarg) (underlyingTerm v))
-  where
-    newarg = WithInfo arg ARG
+(-->) ::
+  (SupportedPrim ca, SupportedPrim cb, LinkedRep cb sb) =>
+  TypedSymbol ca ->
+  sb ->
+  ca --> cb
+(-->) arg = buildGeneralFun arg . underlyingTerm
 
 infixr 0 -->
 
@@ -451,8 +448,6 @@ instance Solvable contype symtype where \
   con = symtype . conTerm; \
   ssym = symtype . ssymTerm; \
   isym str i = symtype $ isymTerm str i; \
-  sinfosym str info = symtype $ sinfosymTerm str info; \
-  iinfosym str i info = symtype $ iinfosymTerm str i info; \
   conView (symtype (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 
@@ -461,8 +456,6 @@ instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
   con = symtype . conTerm; \
   ssym = symtype . ssymTerm; \
   isym str i = symtype $ isymTerm str i; \
-  sinfosym str info = symtype $ sinfosymTerm str info; \
-  iinfosym str i info = symtype $ iinfosymTerm str i info; \
   conView (symtype (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 
@@ -473,8 +466,6 @@ instance \
   con = symcons . conTerm; \
   ssym = symcons . ssymTerm; \
   isym str i = symcons $ isymTerm str i; \
-  sinfosym str info = symcons $ sinfosymTerm str info; \
-  iinfosym str i info = symcons $ iinfosymTerm str i info; \
   conView (symcons (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 

@@ -21,12 +21,8 @@ module Grisette.Core.Data.Class.Solvable
   )
 where
 
-import Control.DeepSeq (NFData)
-import Data.Hashable (Hashable)
 import Data.String (IsString)
 import qualified Data.Text as T
-import Data.Typeable (Typeable)
-import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -74,27 +70,6 @@ class (IsString t) => Solvable c t | t -> c where
   -- >>> isym "a" 1 :: SymBool
   -- a@1
   isym :: T.Text -> Int -> t
-
-  -- | Generate simply-named symbolic constants with some extra information for
-  -- disambiguation.
-  --
-  -- Two symbolic constants with the same name but different extra information
-  -- (including info with different types) are considered to be different.
-  --
-  -- >>> sinfosym "a" "someInfo" :: SymInteger
-  -- a:"someInfo"
-  sinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> a -> t
-
-  -- | Generate indexed symbolic constants with some extra information for
-  -- disambiguation.
-  --
-  -- Two symbolic constants with the same name and index but different extra
-  -- information (including info with different types) are considered to be
-  -- different.
-  --
-  -- >>> iinfosym "a" 1 "someInfo" :: SymInteger
-  -- a@1:"someInfo"
-  iinfosym :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> Int -> a -> t
 
 -- | Extract the concrete value from a solvable value with 'conView'.
 --

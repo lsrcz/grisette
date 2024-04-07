@@ -1,6 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,14 +11,11 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -32,7 +32,6 @@ module Grisette.Core.Data.Class.GenSym
     FreshIndex (..),
     FreshIdent (..),
     name,
-    nameWithInfo,
 
     -- * Monad for fresh symbolic value generation
     MonadFresh (..),
@@ -69,7 +68,7 @@ module Grisette.Core.Data.Class.GenSym
   )
 where
 
-import Control.DeepSeq (NFData (rnf))
+import Control.DeepSeq (NFData)
 import Control.Monad.Except
   ( ExceptT (ExceptT),
     MonadError (catchError, throwError),
@@ -97,17 +96,10 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.ByteString as B
-import Data.Hashable (Hashable (hashWithSalt))
+import Data.Hashable (Hashable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
-import Data.Typeable
-  ( Proxy (Proxy),
-    Typeable,
-    eqT,
-    typeRep,
-    type (:~:) (Refl),
-  )
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
@@ -135,7 +127,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (iinfosym, isym),
+  ( Solvable (isym),
   )
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
@@ -155,7 +147,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>),
     type (=~>),
   )
-import Language.Haskell.TH.Syntax (Lift (liftTyped))
+import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -202,57 +194,16 @@ instance SimpleMergeable FreshIndex where
 --     same. The identifiers created at the same location will be the same.
 --
 --     >>> $$(nameWithLoc "a") -- a sample result could be "a:<interactive>:18:4-18"
---     a:<interactive>:...
---
---   * bundle the calling file location with some user provided information
---
---     Identifiers created with different name or different additional
---     information will not be the same.
---
---     >>> nameWithInfo "a" (1 :: Int)
---     a:1
-data FreshIdent where
-  FreshIdent :: T.Text -> FreshIdent
-  FreshIdentWithInfo :: (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> a -> FreshIdent
+--     a[<interactive>:...]
+newtype FreshIdent = FreshIdent {unFreshIdent :: T.Text}
+  deriving (Eq, Ord, Lift, Generic)
+  deriving anyclass (Hashable, NFData)
 
 instance Show FreshIdent where
   show (FreshIdent i) = T.unpack i
-  show (FreshIdentWithInfo s i) = T.unpack s ++ ":" ++ show i
 
 instance IsString FreshIdent where
   fromString = name . T.pack
-
-instance Eq FreshIdent where
-  FreshIdent l == FreshIdent r = l == r
-  FreshIdentWithInfo l (linfo :: linfo) == FreshIdentWithInfo r (rinfo :: rinfo) = case eqT @linfo @rinfo of
-    Just Refl -> l == r && linfo == rinfo
-    _ -> False
-  _ == _ = False
-
-instance Ord FreshIdent where
-  FreshIdent l <= FreshIdent r = l <= r
-  FreshIdent _ <= _ = True
-  _ <= FreshIdent _ = False
-  FreshIdentWithInfo l (linfo :: linfo) <= FreshIdentWithInfo r (rinfo :: rinfo) =
-    l < r
-      || ( l == r
-             && ( case eqT @linfo @rinfo of
-                    Just Refl -> linfo <= rinfo
-                    _ -> typeRep (Proxy @linfo) <= typeRep (Proxy @rinfo)
-                )
-         )
-
-instance Hashable FreshIdent where
-  hashWithSalt s (FreshIdent n) = s `hashWithSalt` n
-  hashWithSalt s (FreshIdentWithInfo n i) = s `hashWithSalt` n `hashWithSalt` i
-
-instance Lift FreshIdent where
-  liftTyped (FreshIdent n) = [||FreshIdent n||]
-  liftTyped (FreshIdentWithInfo n i) = [||FreshIdentWithInfo n i||]
-
-instance NFData FreshIdent where
-  rnf (FreshIdent n) = rnf n
-  rnf (FreshIdentWithInfo n i) = rnf n `seq` rnf i
 
 -- | Simple name identifier.
 -- The same identifier refers to the same symbolic variable in the whole program.
@@ -261,15 +212,6 @@ instance NFData FreshIdent where
 -- collision.
 name :: T.Text -> FreshIdent
 name = FreshIdent
-
--- | Identifier with extra information.
--- The same name with the same information
--- refers to the same symbolic variable in the whole program.
---
--- The user may need to use unique names or additional information to avoid
--- unintentional identifier collision.
-nameWithInfo :: forall a. (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) => T.Text -> a -> FreshIdent
-nameWithInfo = FreshIdentWithInfo
 
 -- | Monad class for fresh symbolic value generation.
 --
@@ -1687,11 +1629,9 @@ instance GenSym () symtype where \
 #define GENSYM_UNIT_SIMPLE_SIMPLE(symtype) \
 instance GenSymSimple () symtype where \
   simpleFresh _ = do; \
-    ident <- getFreshIdent; \
-    FreshIndex i <- nextFreshIndex; \
-    case ident of; \
-      FreshIdent s -> return $ isym s i; \
-      FreshIdentWithInfo s info -> return $ iinfosym s i info
+    FreshIdent ident <- getFreshIdent; \
+    FreshIndex index <- nextFreshIndex; \
+    return $ isym ident index
 
 #define GENSYM_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSym (symtype n) (symtype n)
@@ -1704,11 +1644,9 @@ instance (KnownNat n, 1 <= n) => GenSym () (symtype n) where \
 #define GENSYM_UNIT_SIMPLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
   simpleFresh _ = do; \
-    ident <- getFreshIdent; \
-    FreshIndex i <- nextFreshIndex; \
-    case ident of; \
-      FreshIdent s -> return $ isym s i; \
-      FreshIdentWithInfo s info -> return $ iinfosym s i info
+    FreshIdent ident <- getFreshIdent; \
+    FreshIndex index <- nextFreshIndex; \
+    return $ isym ident index
 
 #define GENSYM_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym (sa op sb) (sa op sb)
@@ -1721,11 +1659,9 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
 #define GENSYM_UNIT_SIMPLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple () (sa op sb) where \
   simpleFresh _ = do; \
-    ident <- getFreshIdent; \
-    FreshIndex i <- nextFreshIndex; \
-    case ident of; \
-      FreshIdent s -> return $ isym s i; \
-      FreshIdentWithInfo s info -> return $ iinfosym s i info
+    FreshIdent ident <- getFreshIdent; \
+    FreshIndex index <- nextFreshIndex; \
+    return $ isym ident index
 
 #if 1
 GENSYM_SIMPLE(SymBool)
