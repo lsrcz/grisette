@@ -22,7 +22,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "8107",
-              cachekey: "stack-18.28",
+              cachekey: "stack-810",
             }
           - {
               build: stack,
@@ -30,7 +30,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "8107",
-              cachekey: "stack-18.28-l",
+              cachekey: "stack-810-l",
             }
           - {
               build: stack,
@@ -38,7 +38,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "902",
-              cachekey: "stack-19.33",
+              cachekey: "stack-90",
             }
           - {
               build: stack,
@@ -46,7 +46,7 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "928",
-              cachekey: "stack-20.26",
+              cachekey: "stack-92",
             }
           - {
               build: stack,
@@ -54,31 +54,31 @@ jobs:
               ismain: false,
               experimental: false,
               ghc: "948",
-              cachekey: "stack-21.25",
+              cachekey: "stack-94",
             }
           - {
               build: stack,
               arg: "",
               ismain: true,
               experimental: false,
-              ghc: "963",
-              cachekey: "stack-22.6",
+              ghc: "964",
+              cachekey: "stack-96",
             }
           - {
               build: stack,
               arg: "--stack-yaml stack-nightly.yaml",
               ismain: false,
               experimental: false,
-              ghc: "981",
-              cachekey: "stack-nightly",
+              ghc: "982",
+              cachekey: "stack-98",
             }
           - {
               build: cabal,
               arg: "",
               ismain: false,
               experimental: false,
-              ghc: "963",
-              cachekey: "cabal-963",
+              ghc: "964",
+              cachekey: "cabal-96",
             }
         include:
           - os: macOS-latest
@@ -88,8 +88,8 @@ jobs:
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "963",
-                cachekey: "stack-22.6",
+                ghc: "964",
+                cachekey: "stack-96",
               }
 
     runs-on: ${{ matrix.os }}
