@@ -48,6 +48,7 @@ import Generics.Deriving
     K1 (K1),
     M1 (M1),
     U1,
+    V1,
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
@@ -295,6 +296,9 @@ class ToSym' a b where
   toSym' :: a c -> b c
 
 instance ToSym' U1 U1 where
+  toSym' = id
+
+instance ToSym' V1 V1 where
   toSym' = id
 
 instance (ToSym a b) => ToSym' (K1 i a) (K1 i b) where

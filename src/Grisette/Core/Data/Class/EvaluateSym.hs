@@ -46,6 +46,7 @@ import Generics.Deriving
     K1 (K1),
     M1 (M1),
     U1,
+    V1,
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
@@ -254,23 +255,34 @@ deriving via (Default AssertionError) instance EvaluateSym AssertionError
 deriving via (Default VerificationConditions) instance EvaluateSym VerificationConditions
 
 instance (Generic a, EvaluateSym' (Rep a)) => EvaluateSym (Default a) where
-  evaluateSym fillDefault model = Default . to . evaluateSym' fillDefault model . from . unDefault
+  evaluateSym fillDefault model =
+    Default . to . evaluateSym' fillDefault model . from . unDefault
 
 class EvaluateSym' a where
   evaluateSym' :: Bool -> Model -> a c -> a c
 
 instance EvaluateSym' U1 where
   evaluateSym' _ _ = id
+  {-# INLINE evaluateSym' #-}
+
+instance EvaluateSym' V1 where
+  evaluateSym' _ _ = id
+  {-# INLINE evaluateSym' #-}
 
 instance (EvaluateSym c) => EvaluateSym' (K1 i c) where
   evaluateSym' fillDefault model (K1 v) = K1 $ evaluateSym fillDefault model v
+  {-# INLINE evaluateSym' #-}
 
 instance (EvaluateSym' a) => EvaluateSym' (M1 i c a) where
   evaluateSym' fillDefault model (M1 v) = M1 $ evaluateSym' fillDefault model v
+  {-# INLINE evaluateSym' #-}
 
 instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :+: b) where
   evaluateSym' fillDefault model (L1 l) = L1 $ evaluateSym' fillDefault model l
   evaluateSym' fillDefault model (R1 r) = R1 $ evaluateSym' fillDefault model r
+  {-# INLINE evaluateSym' #-}
 
 instance (EvaluateSym' a, EvaluateSym' b) => EvaluateSym' (a :*: b) where
-  evaluateSym' fillDefault model (a :*: b) = evaluateSym' fillDefault model a :*: evaluateSym' fillDefault model b
+  evaluateSym' fillDefault model (a :*: b) =
+    evaluateSym' fillDefault model a :*: evaluateSym' fillDefault model b
+  {-# INLINE evaluateSym' #-}
