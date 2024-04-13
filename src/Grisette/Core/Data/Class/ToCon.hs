@@ -40,14 +40,7 @@ import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.Generics
-  ( Generic (Rep, from, to),
-    K1 (K1),
-    M1 (M1),
-    U1,
-    type (:*:) ((:*:)),
-    type (:+:) (L1, R1),
-  )
+import GHC.Generics (Generic (Rep, from, to), K1 (K1), M1 (M1), U1, V1, type (:*:) ((:*:)), type (:+:) (L1, R1))
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
 import Generics.Deriving.Instances ()
@@ -310,6 +303,9 @@ class ToCon' a b where
   toCon' :: a c -> Maybe (b c)
 
 instance ToCon' U1 U1 where
+  toCon' = Just
+
+instance ToCon' V1 V1 where
   toCon' = Just
 
 instance (ToCon a b) => ToCon' (K1 i a) (K1 i b) where

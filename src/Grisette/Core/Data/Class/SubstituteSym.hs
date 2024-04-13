@@ -45,6 +45,7 @@ import Generics.Deriving
     K1 (K1),
     M1 (M1),
     U1,
+    V1,
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
@@ -292,6 +293,9 @@ instance
   substituteSym sym val = Default . to . substituteSym' sym val . from . unDefault
 
 instance SubstituteSym' U1 where
+  substituteSym' _ _ = id
+
+instance SubstituteSym' V1 where
   substituteSym' _ _ = id
 
 instance (SubstituteSym c) => SubstituteSym' (K1 i c) where

@@ -44,6 +44,7 @@ import Generics.Deriving
     K1 (unK1),
     M1 (unM1),
     U1,
+    V1,
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
@@ -291,6 +292,9 @@ class ExtractSymbolics' a where
   extractSymbolics' :: a c -> SymbolSet
 
 instance ExtractSymbolics' U1 where
+  extractSymbolics' _ = mempty
+
+instance ExtractSymbolics' V1 where
   extractSymbolics' _ = mempty
 
 instance (ExtractSymbolics c) => ExtractSymbolics' (K1 i c) where

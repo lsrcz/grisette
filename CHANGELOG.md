@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `mrgIfPropagatedStrategy`. ([#184](https://github.com/lsrcz/grisette/pull/184))
 - Added `freshString`. ([#188](https://github.com/lsrcz/grisette/pull/188))
 - Added `localFreshIdent`. ([#190](https://github.com/lsrcz/grisette/pull/190))
+- Added deriving for void types for builtin type classes. ([#191](https://github.com/lsrcz/grisette/pull/191))
 
 ### Fixed
 
