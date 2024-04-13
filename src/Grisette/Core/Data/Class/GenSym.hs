@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -85,7 +86,7 @@ import Control.Monad.RWS.Class
   )
 import qualified Control.Monad.RWS.Lazy as RWSLazy
 import qualified Control.Monad.RWS.Strict as RWSStrict
-import Control.Monad.Reader (ReaderT)
+import Control.Monad.Reader (ReaderT (ReaderT))
 import Control.Monad.Signatures (Catch)
 import qualified Control.Monad.State.Lazy as StateLazy
 import qualified Control.Monad.State.Strict as StateStrict
@@ -199,6 +200,7 @@ instance SimpleMergeable FreshIndex where
 newtype FreshIdent = FreshIdent {unFreshIdent :: T.Text}
   deriving (Eq, Ord, Lift, Generic)
   deriving anyclass (Hashable, NFData)
+  deriving newtype (Semigroup, Monoid)
 
 instance Show FreshIdent where
   show (FreshIdent i) = T.unpack i
@@ -227,6 +229,8 @@ class (Monad m) => MonadFresh m where
 
   -- | Get the identifier.
   getFreshIdent :: m FreshIdent
+
+  localFreshIdent :: (FreshIdent -> FreshIdent) -> m a -> m a
 
 -- | Get the next fresh index and increase the current index.
 nextFreshIndex :: (MonadFresh m) => m FreshIndex
@@ -367,41 +371,55 @@ instance (MonadFresh m) => MonadFresh (ExceptT e m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (ExceptT m) = ExceptT $ localFreshIdent f m
 
 instance (MonadFresh m, Monoid w) => MonadFresh (WriterLazy.WriterT w m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (WriterLazy.WriterT m) =
+    WriterLazy.WriterT $ localFreshIdent f m
 
 instance (MonadFresh m, Monoid w) => MonadFresh (WriterStrict.WriterT w m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (WriterStrict.WriterT m) =
+    WriterStrict.WriterT $ localFreshIdent f m
 
 instance (MonadFresh m) => MonadFresh (StateLazy.StateT s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (StateLazy.StateT m) =
+    StateLazy.StateT $ \s -> localFreshIdent f (m s)
 
 instance (MonadFresh m) => MonadFresh (StateStrict.StateT s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (StateStrict.StateT m) =
+    StateStrict.StateT $ \s -> localFreshIdent f (m s)
 
 instance (MonadFresh m) => MonadFresh (ReaderT r m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (ReaderT m) = ReaderT $ localFreshIdent f . m
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSLazy.RWST r w s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (RWSLazy.RWST m) =
+    RWSLazy.RWST $ \r s -> localFreshIdent f (m r s)
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSStrict.RWST r w s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
   getFreshIdent = lift getFreshIdent
+  localFreshIdent f (RWSStrict.RWST m) =
+    RWSStrict.RWST $ \r s -> localFreshIdent f (m r s)
 
 -- | 'FreshT' specialized with Identity.
 type Fresh = FreshT Identity
@@ -414,6 +432,10 @@ instance (Monad m) => MonadFresh (FreshT m) where
   getFreshIndex = FreshT $ \_ idx -> return (idx, idx)
   setFreshIndex newIdx = FreshT $ \_ _ -> return ((), newIdx)
   getFreshIdent = FreshT $ curry return
+  localFreshIdent f (FreshT m) = FreshT $ \ident idx -> do
+    let newIdent = f ident
+    (r, _) <- m newIdent 0
+    return (r, idx)
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
 --

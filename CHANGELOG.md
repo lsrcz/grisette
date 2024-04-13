@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#182](https://github.com/lsrcz/grisette/pull/182))
 - Added `mrgIfPropagatedStrategy`. ([#184](https://github.com/lsrcz/grisette/pull/184))
 - Added `freshString`. ([#188](https://github.com/lsrcz/grisette/pull/188))
+- Added `localFreshIdent`. ([#190](https://github.com/lsrcz/grisette/pull/190))
 
 ### Fixed
 

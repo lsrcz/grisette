@@ -14,6 +14,7 @@ import Grisette.Core.Data.Class.GenSym
     FreshT,
     GenSymSimple (simpleFresh),
     ListSpec (ListSpec),
+    MonadFresh (localFreshIdent),
     SimpleListSpec (SimpleListSpec),
     choose,
     chooseFresh,
@@ -1263,5 +1264,21 @@ genSymTests =
             actual @?= expected
         ],
       testCase "freshString" $ do
-        runFresh (replicateM 2 $ freshString "a") "b" @?= ["b@0[a]", "b@1[a]"]
+        runFresh (replicateM 2 $ freshString "a") "b" @?= ["b@0[a]", "b@1[a]"],
+      testCase "localFreshIdent" $ do
+        let computation = do
+              a <- simpleFresh ()
+              (b1, b2) <- localFreshIdent (<> "b") $ do
+                b1 <- simpleFresh ()
+                b2 <- simpleFresh ()
+                return (b1, b2)
+              c <- simpleFresh ()
+              return [a, b1, b2, c :: SymBool]
+        let actual = runFresh computation "c"
+        actual
+          @?= [ isymBool "c" 0,
+                isymBool "cb" 0,
+                isymBool "cb" 1,
+                isymBool "c" 1
+              ]
     ]
