@@ -8,14 +8,14 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        hPkgs = pkgs.haskell.packages."ghc982";
+        hPkgs = pkgs.haskell.packages."ghc964";
 
         myDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
           # hPkgs.ghcid # Continuous terminal Haskell compile checker
           # hPkgs.ormolu # Haskell formatter
-          # hPkgs.hlint # Haskell codestyle checker
-          # hPkgs.haskell-language-server # LSP server for editor
+          hPkgs.hlint # Haskell codestyle checker
+          hPkgs.haskell-language-server # LSP server for editor
           hPkgs.cabal-install
           stack-wrapped
           # (pkgs.ihaskell.override {
