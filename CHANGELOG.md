@@ -27,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the behavior for safe `mod` and `rem` for signed, bounded concrete types. ([#173](https://github.com/lsrcz/grisette/pull/173))
 - Fixed merging in `mrg*` operations for monad transformers to ensure that they merge the results. ([#187](https://github.com/lsrcz/grisette/pull/187))
 
-
 ### Changed
 
 - [Breaking] Removed the `UnionLike` and `UnionPrjOp` interface, added the
@@ -43,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Refactored the `mrg*` constructor related template haskell code.
   ([#185](https://github.com/lsrcz/grisette/pull/185))
 - [Breaking] Dropped symbols with extra information. ([#188](https://github.com/lsrcz/grisette/pull/188))
+- [Breaking] The `FreshIdent` is removed. It is now changed to `Identifier` and `Symbol` types. ([#192](https://github.com/lsrcz/grisette/pull/192))
 
 ## [0.4.1.0] -- 2024-01-10
 
