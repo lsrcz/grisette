@@ -41,6 +41,7 @@ import Language.Haskell.TH.Syntax.Compat (SpliceQ)
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 -- >>> :set -XOverloadedStrings
+-- >>> :set -XTemplateHaskell
 
 -- | The class defines the creation and pattern matching of solvable type
 -- values.
