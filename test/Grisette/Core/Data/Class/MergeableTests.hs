@@ -41,7 +41,7 @@ import Grisette.Core.Data.Class.Mergeable
 import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (con, ssym))
+import Grisette.Core.Data.Class.Solvable (Solvable (con), ssym)
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )

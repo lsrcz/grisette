@@ -58,6 +58,7 @@ import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Symbol (Identifier, withInfo)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( absNumTerm,
     addNumTerm,
@@ -156,7 +157,7 @@ class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   same :: a -> Term Bool
   counterExample :: a -> Term Bool
   counterExample = notTerm . same
-  symSpec :: T.Text -> a
+  symSpec :: Identifier -> a
   symSpec s = wrap (ssymTerm s) (ssymTerm s)
   conSpec :: b -> a
   conSpec v = wrap (conTerm v) (conTerm v)
@@ -405,7 +406,7 @@ boolonly :: Int -> Gen BoolOnlySpec
 boolonly 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bool")
+          return . symSpec . (`withInfo` ("bool" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -452,7 +453,7 @@ boolWithLIA :: Int -> Gen BoolWithLIASpec
 boolWithLIA 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bool")
+          return . symSpec . (`withInfo` ("bool" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -478,7 +479,7 @@ liaWithBool :: Int -> Gen LIAWithBoolSpec
 liaWithBool 0 =
   let s =
         oneof $
-          return . symSpec . (<> "int")
+          return . symSpec . (`withInfo` ("int" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec <$> arbitrary
    in oneof [r, s]
@@ -534,7 +535,7 @@ boolWithFSBV ::
 boolWithFSBV _ _ 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bool")
+          return . symSpec . (`withInfo` ("bool" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -566,7 +567,7 @@ fsbvWithBool ::
 fsbvWithBool _ _ 0 =
   let s =
         oneof $
-          return . symSpec . (<> "int")
+          return . symSpec . (`withInfo` ("int" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r =
         conSpec
@@ -642,7 +643,7 @@ dsbv1 ::
 dsbv1 _ 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bv1")
+          return . symSpec . (`withInfo` ("bv1" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -695,7 +696,7 @@ dsbv2 ::
 dsbv2 _ 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bv2")
+          return . symSpec . (`withInfo` ("bv2" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -748,7 +749,7 @@ dsbv3 ::
 dsbv3 _ 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bv3")
+          return . symSpec . (`withInfo` ("bv3" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -800,7 +801,7 @@ dsbv4 ::
 dsbv4 _ 0 =
   let s =
         oneof $
-          return . symSpec . (<> "bv4")
+          return . symSpec . (`withInfo` ("bv4" :: T.Text))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]

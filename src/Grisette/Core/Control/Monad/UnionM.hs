@@ -85,7 +85,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, isym, ssym),
+  ( Solvable (con, conView, sym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
@@ -537,10 +537,8 @@ instance (LogicalOp a, Mergeable a) => LogicalOp (UnionM a) where
 instance (Solvable c t, Mergeable t) => Solvable c (UnionM t) where
   con = mrgSingle . con
   {-# INLINE con #-}
-  ssym = mrgSingle . ssym
-  {-# INLINE ssym #-}
-  isym s i = mrgSingle $ isym s i
-  {-# INLINE isym #-}
+  sym = mrgSingle . sym
+  {-# INLINE sym #-}
   conView v = do
     c <- singleView $ tryMerge v
     conView c

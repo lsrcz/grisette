@@ -80,6 +80,7 @@ import Grisette.Core.Data.BV (IntN (IntN, unIntN), WordN (WordN))
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
   )
+import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( conTerm,
     symTerm,
@@ -132,7 +133,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         UnaryTerm,
         XorBitsTerm
       ),
-    TypedSymbol (IndexedSymbol),
+    TypedSymbol (TypedSymbol),
     buildGeneralFun,
     someTypedSymbol,
     withSymbolSupported,
@@ -1076,7 +1077,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc orguifuncs) mp =
                   )
                   (conTerm def)
                   funs
-           in buildGeneralFun sym body
+           in buildGeneralFun (TypedSymbol sym) body
         _ ->
           let sym = IndexedSymbol "arg" idx
               vs = bimap (resolveSingle ta1 . head) (resolveSingle ta2) <$> l
@@ -1091,7 +1092,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc orguifuncs) mp =
                   )
                   (conTerm def)
                   vs
-           in buildGeneralFun sym body
+           in buildGeneralFun (TypedSymbol sym) body
     partition :: R.TypeRep a -> [([SBVI.CV], SBVI.CV)] -> [(a, [([SBVI.CV], SBVI.CV)])]
     partition t = case (R.eqTypeRep t (R.typeRep @Bool), R.eqTypeRep t (R.typeRep @Integer)) of
       (Just R.HRefl, _) -> partitionWithOrd . resolveFirst t

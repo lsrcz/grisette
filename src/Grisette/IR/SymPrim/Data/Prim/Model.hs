@@ -113,7 +113,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         XorBitsTerm
       ),
     TernaryOp (partialEvalTernary),
-    TypedSymbol,
+    TypedSymbol (unTypedSymbol),
     UnaryOp (partialEvalUnary),
     showUntyped,
     someTypedSymbol,
@@ -220,7 +220,7 @@ instance Show Model where
 equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
 equation tsym m = withSymbolSupported tsym $
   case valueOf tsym m of
-    Just v -> Just $ pevalEqvTerm (symTerm tsym) (conTerm v)
+    Just v -> Just $ pevalEqvTerm (symTerm $ unTypedSymbol tsym) (conTerm v)
     Nothing -> Nothing
 
 instance SymbolSetOps SymbolSet TypedSymbol where

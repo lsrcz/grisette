@@ -172,6 +172,12 @@ module Grisette.Core
     -- *** Creation of solvable type values
     Solvable (..),
     pattern Con,
+    Identifier (..),
+    identifier,
+    withInfo,
+    withLoc,
+    ssym,
+    isym,
     slocsym,
     ilocsym,
 
@@ -711,9 +717,6 @@ module Grisette.Core
 
     -- ** Symbolic Generation Context
     FreshIndex (..),
-    FreshIdent (..),
-    name,
-    nameWithLoc,
 
     -- ** Symbolic Generation Monad
     MonadFresh (..),
@@ -1105,7 +1108,6 @@ import Grisette.Core.Data.Class.GenSym
   ( EnumGenBound (..),
     EnumGenUpperBound (..),
     Fresh,
-    FreshIdent (..),
     FreshIndex (..),
     FreshT (..),
     GenSym (..),
@@ -1127,7 +1129,6 @@ import Grisette.Core.Data.Class.GenSym
     genSymSimple,
     liftFresh,
     mrgRunFreshT,
-    name,
     nextFreshIndex,
     runFresh,
     runFreshT,
@@ -1185,7 +1186,14 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIte1,
     mrgIte2,
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (..), pattern Con)
+import Grisette.Core.Data.Class.Solvable
+  ( Solvable (..),
+    ilocsym,
+    isym,
+    slocsym,
+    ssym,
+    pattern Con,
+  )
 import Grisette.Core.Data.Class.Solver
   ( ConfigurableSolver (..),
     MonadicSolver (..),
@@ -1212,11 +1220,6 @@ import Grisette.Core.Data.Class.TryMerge
     mrgSingleWithStrategy,
     tryMerge,
   )
-import Grisette.Core.Data.FileLocation
-  ( ilocsym,
-    nameWithLoc,
-    slocsym,
-  )
 import Grisette.Core.Data.MemoUtils
   ( htmemo,
     htmemo2,
@@ -1224,7 +1227,16 @@ import Grisette.Core.Data.MemoUtils
     htmemoFix,
     htmup,
   )
-import Grisette.Core.TH.MergeConstructor (mkMergeConstructor, mkMergeConstructor')
+import Grisette.Core.Data.Symbol
+  ( Identifier (..),
+    identifier,
+    withInfo,
+    withLoc,
+  )
+import Grisette.Core.TH.MergeConstructor
+  ( mkMergeConstructor,
+    mkMergeConstructor',
+  )
 
 -- $setup
 -- >>> import Grisette.Core

@@ -77,7 +77,6 @@ import Data.Interned.Internal
   ( Cache (getCache),
     CacheState (CacheState),
   )
-import qualified Data.Text as T
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
@@ -86,12 +85,13 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Symbol (Identifier, Symbol (IndexedSymbol, SimpleSymbol))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
     SupportedPrim,
     Term,
     TernaryOp,
-    TypedSymbol (IndexedSymbol, SimpleSymbol),
+    TypedSymbol (TypedSymbol),
     UTerm
       ( UAbsNumTerm,
         UAddNumTerm,
@@ -188,15 +188,15 @@ conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term 
 conTerm t = internTerm $ UConTerm t
 {-# INLINE conTerm #-}
 
-symTerm :: forall t. (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
-symTerm t = internTerm $ USymTerm t
+symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
+symTerm t = internTerm $ USymTerm $ TypedSymbol t
 {-# INLINE symTerm #-}
 
-ssymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Term t
+ssymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Term t
 ssymTerm = symTerm . SimpleSymbol
 {-# INLINE ssymTerm #-}
 
-isymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Int -> Term t
+isymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Int -> Term t
 isymTerm str idx = symTerm $ IndexedSymbol str idx
 {-# INLINE isymTerm #-}
 

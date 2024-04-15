@@ -9,12 +9,14 @@ module Grisette.Core.Data.Class.TestValues
   )
 where
 
-import qualified Data.Text as T
-import Grisette
-  ( Solvable (isym),
-    TypedSymbol (IndexedSymbol, SimpleSymbol),
+import Grisette.Core.Data.Class.Solvable (Solvable (con), isym, ssym)
+import Grisette.Core.Data.Symbol
+  ( Identifier,
+    Symbol (IndexedSymbol, SimpleSymbol),
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (con, ssym))
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( TypedSymbol (TypedSymbol),
+  )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 
 conBool :: Bool -> SymBool
@@ -26,14 +28,14 @@ symTrue = conBool True
 symFalse :: SymBool
 symFalse = conBool False
 
-ssymBool :: T.Text -> SymBool
+ssymBool :: Identifier -> SymBool
 ssymBool = ssym
 
-isymBool :: T.Text -> Int -> SymBool
+isymBool :: Identifier -> Int -> SymBool
 isymBool = isym
 
-ssymbolBool :: T.Text -> TypedSymbol Bool
-ssymbolBool = SimpleSymbol
+ssymbolBool :: Identifier -> TypedSymbol Bool
+ssymbolBool = TypedSymbol . SimpleSymbol
 
-isymbolBool :: T.Text -> Int -> TypedSymbol Bool
-isymbolBool = IndexedSymbol
+isymbolBool :: Identifier -> Int -> TypedSymbol Bool
+isymbolBool i idx = TypedSymbol $ IndexedSymbol i idx

@@ -27,7 +27,8 @@ import Grisette.Core.Data.Class.SafeLinearArith
   )
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (isym, ssym),
+  ( isym,
+    ssym,
   )
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Core.Data.SomeBV

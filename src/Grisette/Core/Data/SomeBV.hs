@@ -30,6 +30,7 @@ module Grisette.Core.Data.SomeBV
     conBV,
     conBVView,
     pattern ConBV,
+    symBV,
     ssymBV,
     isymBV,
     arbitraryBV,
@@ -90,7 +91,6 @@ import Data.Bits
 import Data.Data (Proxy (Proxy))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Maybe (fromJust)
-import qualified Data.Text as T
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.TypeNats
   ( KnownNat,
@@ -156,9 +156,7 @@ import Grisette.Core.Data.Class.SafeSymShift
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
-import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, isym, ssym),
-  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, sym), isym, ssym)
 import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (substituteSym),
   )
@@ -167,6 +165,7 @@ import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.IR.SymPrim.Data.SymPrim
   ( AllSyms (allSyms, allSymsS),
     SymIntN,
@@ -796,8 +795,23 @@ pattern ConBV c <- (conBVView -> Just c)
   where
     ConBV c = conBV c
 
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth and a name.
--- Similar to 'ssym' but for 'SomeBV'.
+-- | Construct a symbolic 'SomeBV' with a given run-time bitwidth and a symbol.
+-- Similar to 'sym' but for 'SomeBV'.
+--
+-- >>> symBV 8 "a" :: SomeSymIntN
+-- a
+symBV ::
+  forall cbv bv.
+  ( forall n. (KnownNat n, 1 <= n) => Solvable (cbv n) (bv n),
+    Solvable (cbv 1) (bv 1)
+  ) =>
+  Int ->
+  Symbol ->
+  SomeBV bv
+symBV n s = unsafeSomeBV n $ \(_ :: proxy n) -> sym @(cbv n) s
+
+-- | Construct a symbolic 'SomeBV' with a given run-time bitwidth and an
+-- identifier. Similar to 'ssym' but for 'SomeBV'.
 --
 -- >>> ssymBV 8 "a" :: SomeSymIntN
 -- a
@@ -807,12 +821,12 @@ ssymBV ::
     Solvable (cbv 1) (bv 1)
   ) =>
   Int ->
-  T.Text ->
+  Identifier ->
   SomeBV bv
 ssymBV n s = unsafeSomeBV n $ \(_ :: proxy n) -> ssym @(cbv n) s
 
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth, a name and an
--- index. Similar to 'isym' but for 'SomeBV'.
+-- | Construct a symbolic 'SomeBV' with a given run-time bitwidth, an identifier
+-- and an index. Similar to 'isym' but for 'SomeBV'.
 --
 -- >>> isymBV 8 "a" 1 :: SomeSymIntN
 -- a@1
@@ -822,7 +836,7 @@ isymBV ::
     Solvable (cbv 1) (bv 1)
   ) =>
   Int ->
-  T.Text ->
+  Identifier ->
   Int ->
   SomeBV bv
 isymBV n s i = unsafeSomeBV n $ \(_ :: proxy n) -> isym @(cbv n) s i

@@ -6,6 +6,7 @@ module Grisette.Core.Data.Class.GenSymTests (genSymTests) where
 import Control.Monad (replicateM)
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
+import qualified Data.Text as T
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.Class.GenSym
   ( EnumGenBound (EnumGenBound),
@@ -14,7 +15,7 @@ import Grisette.Core.Data.Class.GenSym
     FreshT,
     GenSymSimple (simpleFresh),
     ListSpec (ListSpec),
-    MonadFresh (localFreshIdent),
+    MonadFresh (localIdentifier),
     SimpleListSpec (SimpleListSpec),
     choose,
     chooseFresh,
@@ -33,6 +34,7 @@ import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TestValues (conBool, isymBool, ssymBool)
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
+import Grisette.Core.Data.Symbol (withInfo)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -1265,10 +1267,10 @@ genSymTests =
         ],
       testCase "freshString" $ do
         runFresh (replicateM 2 $ freshString "a") "b" @?= ["b@0[a]", "b@1[a]"],
-      testCase "localFreshIdent" $ do
+      testCase "localIdentifier" $ do
         let computation = do
               a <- simpleFresh ()
-              (b1, b2) <- localFreshIdent (<> "b") $ do
+              (b1, b2) <- localIdentifier (`withInfo` ("b" :: T.Text)) $ do
                 b1 <- simpleFresh ()
                 b2 <- simpleFresh ()
                 return (b1, b2)
@@ -1277,8 +1279,8 @@ genSymTests =
         let actual = runFresh computation "c"
         actual
           @?= [ isymBool "c" 0,
-                isymBool "cb" 0,
-                isymBool "cb" 1,
+                isymBool (withInfo "c" ("b" :: T.Text)) 0,
+                isymBool (withInfo "c" ("b" :: T.Text)) 1,
                 isymBool "c" 1
               ]
     ]

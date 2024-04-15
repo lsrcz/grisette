@@ -18,7 +18,6 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette (TypedSymbol (IndexedSymbol))
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
@@ -27,7 +26,11 @@ import Grisette.Core.Data.Class.ModelOps
     ModelRep (buildModel),
   )
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
+import Grisette.Core.Data.Class.Solvable (Solvable (con), isym, ssym)
+import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( TypedSymbol (TypedSymbol),
+  )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
   )
@@ -64,15 +67,15 @@ evaluateSymTests =
                       testCase ".||" $
                         eval (ssym "a" .|| ssym "b")
                           @?= ssym "a"
-                            .|| ssym "b",
+                          .|| ssym "b",
                       testCase ".&&" $
                         eval (ssym "a" .&& ssym "b")
                           @?= ssym "a"
-                            .&& ssym "b",
+                          .&& ssym "b",
                       testCase ".==" $
                         eval ((ssym "a" :: SymBool) .== ssym "b")
                           @?= (ssym "a" :: SymBool)
-                            .== ssym "b",
+                          .== ssym "b",
                       testCase "symNot" $
                         eval (symNot (ssym "a"))
                           @?= symNot (ssym "a"),
@@ -106,7 +109,7 @@ evaluateSymTests =
               let model =
                     buildModel
                       ( "a" ::= True,
-                        IndexedSymbol "a" 1 ::= False,
+                        TypedSymbol (IndexedSymbol "a" 1) ::= False,
                         "b" ::= False,
                         "c" ::= True
                       )

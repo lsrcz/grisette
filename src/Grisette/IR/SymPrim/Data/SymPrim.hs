@@ -123,15 +123,15 @@ import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, isym, ssym),
+  ( Solvable (con, conView, sym),
+    ssym,
     pattern Con,
   )
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   ( conTerm,
-    isymTerm,
-    ssymTerm,
+    symTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -366,7 +366,7 @@ instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa =~> st) where
 --
 -- >>> f' = con ("a" --> "a" + 1) :: SymInteger -~> SymInteger
 -- >>> f'
--- \(a[Grisette:GeneralFun:ARG] :: Integer) -> (+ 1 a[Grisette:GeneralFun:ARG])
+-- \(a:ARG :: Integer) -> (+ 1 a:ARG)
 -- >>> f = (f' #)
 -- >>> f 1
 -- 2
@@ -402,7 +402,7 @@ instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa -~> st) where
 --
 -- >>> f = "a" --> "a" + 1 :: Integer --> Integer
 -- >>> f
--- \(a[Grisette:GeneralFun:ARG] :: Integer) -> (+ 1 a[Grisette:GeneralFun:ARG])
+-- \(a:ARG :: Integer) -> (+ 1 a:ARG)
 --
 -- This general symbolic function needs to be applied to symbolic values:
 -- >>> f # ("a" :: SymInteger)
@@ -446,16 +446,14 @@ instance (KnownNat n, 1 <= n) => Apply (SymWordN n) where
 #define SOLVABLE_SIMPLE(contype, symtype) \
 instance Solvable contype symtype where \
   con = symtype . conTerm; \
-  ssym = symtype . ssymTerm; \
-  isym str i = symtype $ isymTerm str i; \
+  sym = symtype . symTerm; \
   conView (symtype (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 
 #define SOLVABLE_BV(contype, symtype) \
 instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
   con = symtype . conTerm; \
-  ssym = symtype . ssymTerm; \
-  isym str i = symtype $ isymTerm str i; \
+  sym = symtype . symTerm; \
   conView (symtype (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 
@@ -464,8 +462,7 @@ instance \
   (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => \
   Solvable (conop ca cb) (symop sa sb) where \
   con = symcons . conTerm; \
-  ssym = symcons . ssymTerm; \
-  isym str i = symcons $ isymTerm str i; \
+  sym = symcons . symTerm; \
   conView (symcons (ConTerm _ t)) = Just t; \
   conView _ = Nothing
 

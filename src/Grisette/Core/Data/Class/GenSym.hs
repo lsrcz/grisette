@@ -1,14 +1,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -31,8 +27,6 @@
 module Grisette.Core.Data.Class.GenSym
   ( -- * Indices and identifiers for fresh symbolic value generation
     FreshIndex (..),
-    FreshIdent (..),
-    name,
 
     -- * Monad for fresh symbolic value generation
     MonadFresh (..),
@@ -70,7 +64,6 @@ module Grisette.Core.Data.Class.GenSym
   )
 where
 
-import Control.DeepSeq (NFData)
 import Control.Monad.Except
   ( ExceptT (ExceptT),
     MonadError (catchError, throwError),
@@ -98,7 +91,6 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.ByteString as B
-import Data.Hashable (Hashable)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
@@ -128,14 +120,13 @@ import Grisette.Core.Data.Class.SimpleMergeable
     UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
-import Grisette.Core.Data.Class.Solvable
-  ( Solvable (isym),
-  )
+import Grisette.Core.Data.Class.Solvable (isym)
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
     mrgSingle,
     tryMerge,
   )
+import Grisette.Core.Data.Symbol (Identifier)
 import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
@@ -149,7 +140,6 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>),
     type (=~>),
   )
-import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -172,53 +162,9 @@ instance Mergeable FreshIndex where
 instance SimpleMergeable FreshIndex where
   mrgIte _ = max
 
--- | Identifier type used for 'GenSym'
---
--- The constructor is hidden intentionally.
--- You can construct an identifier by:
---
---   * a raw name
---
---     The following two expressions will refer to the same identifier (the
---     solver won't distinguish them and would assign the same value to them).
---     The user may need to use unique names to avoid unintentional identifier
---     collision.
---
---     >>> name "a"
---     a
---
---     >>> "a" :: FreshIdent -- available when OverloadedStrings is enabled
---     a
---
---   * bundle the calling file location with the name to ensure global uniqueness
---
---     Identifiers created at different locations will not be the
---     same. The identifiers created at the same location will be the same.
---
---     >>> $$(nameWithLoc "a") -- a sample result could be "a:<interactive>:18:4-18"
---     a[<interactive>:...]
-newtype FreshIdent = FreshIdent {unFreshIdent :: T.Text}
-  deriving (Eq, Ord, Lift, Generic)
-  deriving anyclass (Hashable, NFData)
-  deriving newtype (Semigroup, Monoid)
-
-instance Show FreshIdent where
-  show (FreshIdent i) = T.unpack i
-
-instance IsString FreshIdent where
-  fromString = name . T.pack
-
--- | Simple name identifier.
--- The same identifier refers to the same symbolic variable in the whole program.
---
--- The user may need to use unique names to avoid unintentional identifier
--- collision.
-name :: T.Text -> FreshIdent
-name = FreshIdent
-
 -- | Monad class for fresh symbolic value generation.
 --
--- The monad should be a reader monad for the 'FreshIdent' and a state monad for
+-- The monad should be a reader monad for the 'Identifier' and a state monad for
 -- the 'FreshIndex'.
 class (Monad m) => MonadFresh m where
   -- | Get the current index for fresh variable generation.
@@ -228,9 +174,10 @@ class (Monad m) => MonadFresh m where
   setFreshIndex :: FreshIndex -> m ()
 
   -- | Get the identifier.
-  getFreshIdent :: m FreshIdent
+  getIdentifier :: m Identifier
 
-  localFreshIdent :: (FreshIdent -> FreshIdent) -> m a -> m a
+  -- | Change the identifier locally and use a new index from 0 locally.
+  localIdentifier :: (Identifier -> Identifier) -> m a -> m a
 
 -- | Get the next fresh index and increase the current index.
 nextFreshIndex :: (MonadFresh m) => m FreshIndex
@@ -244,7 +191,7 @@ nextFreshIndex = do
 liftFresh :: (MonadFresh m) => Fresh a -> m a
 liftFresh (FreshT f) = do
   index <- nextFreshIndex
-  ident <- getFreshIdent
+  ident <- getIdentifier
   let (a, newIdx) = runIdentity $ f ident index
   setFreshIndex newIdx
   return a
@@ -255,19 +202,21 @@ liftFresh (FreshT f) = do
 -- "a@0[b]"
 freshString :: (MonadFresh m, IsString s) => String -> m s
 freshString postfix = do
-  FreshIdent ident <- getFreshIdent
+  ident <- getIdentifier
   FreshIndex index <- nextFreshIndex
   return $
     fromString $
-      T.unpack ident <> "@" <> show index <> "[" <> postfix <> "]"
+      show ident <> "@" <> show index <> "[" <> postfix <> "]"
 
 -- | A symbolic generation monad transformer.
--- It is a reader monad transformer for identifiers and
--- a state monad transformer for indices.
 --
--- Each time a fresh symbolic variable is generated, the index should be increased.
+-- It is a reader monad transformer for an identifier and a state monad
+-- transformer for indices.
+--
+-- Each time a fresh symbolic variable is generated, the index should be
+-- increased.
 newtype FreshT m a = FreshT
-  { runFreshTFromIndex :: FreshIdent -> FreshIndex -> m (a, FreshIndex)
+  { runFreshTFromIndex :: Identifier -> FreshIndex -> m (a, FreshIndex)
   }
 
 instance
@@ -275,12 +224,17 @@ instance
   Mergeable (FreshT m a)
   where
   rootStrategy =
-    wrapStrategy (liftRootStrategy (liftRootStrategy rootStrategy1)) FreshT runFreshTFromIndex
+    wrapStrategy
+      (liftRootStrategy (liftRootStrategy rootStrategy1))
+      FreshT
+      runFreshTFromIndex
 
 instance (Mergeable1 m) => Mergeable1 (FreshT m) where
   liftRootStrategy m =
     wrapStrategy
-      (liftRootStrategy (liftRootStrategy (liftRootStrategy (liftRootStrategy2 m rootStrategy))))
+      ( liftRootStrategy . liftRootStrategy . liftRootStrategy $
+          liftRootStrategy2 m rootStrategy
+      )
       FreshT
       runFreshTFromIndex
 
@@ -298,7 +252,8 @@ instance
 
 instance (TryMerge m) => TryMerge (FreshT m) where
   tryMergeWithStrategy s (FreshT f) =
-    FreshT $ \ident index -> tryMergeWithStrategy (liftRootStrategy2 s rootStrategy) $ f ident index
+    FreshT $ \ident index ->
+      tryMergeWithStrategy (liftRootStrategy2 s rootStrategy) $ f ident index
 
 instance
   (UnionMergeable1 m) =>
@@ -315,14 +270,15 @@ instance
     FreshT $ \ident index ->
       mrgIfPropagatedStrategy cond (t ident index) (f ident index)
 
--- | Run the symbolic generation with the given identifier and 0 as the initial index.
-runFreshT :: (Monad m) => FreshT m a -> FreshIdent -> m a
+-- | Run the symbolic generation with the given identifier and 0 as the initial
+-- index.
+runFreshT :: (Monad m) => FreshT m a -> Identifier -> m a
 runFreshT m ident = fst <$> runFreshTFromIndex m ident (FreshIndex 0)
 
 mrgRunFreshT ::
   (Monad m, TryMerge m, Mergeable a) =>
   FreshT m a ->
-  FreshIdent ->
+  Identifier ->
   m a
 mrgRunFreshT m ident = tryMerge $ runFreshT m ident
 
@@ -370,74 +326,76 @@ instance (MonadRWS r w s m) => MonadRWS r w s (FreshT m)
 instance (MonadFresh m) => MonadFresh (ExceptT e m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (ExceptT m) = ExceptT $ localFreshIdent f m
+  getIdentifier = lift getIdentifier
+  localIdentifier f (ExceptT m) = ExceptT $ localIdentifier f m
 
 instance (MonadFresh m, Monoid w) => MonadFresh (WriterLazy.WriterT w m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (WriterLazy.WriterT m) =
-    WriterLazy.WriterT $ localFreshIdent f m
+  getIdentifier = lift getIdentifier
+  localIdentifier f (WriterLazy.WriterT m) =
+    WriterLazy.WriterT $ localIdentifier f m
 
 instance (MonadFresh m, Monoid w) => MonadFresh (WriterStrict.WriterT w m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (WriterStrict.WriterT m) =
-    WriterStrict.WriterT $ localFreshIdent f m
+  getIdentifier = lift getIdentifier
+  localIdentifier f (WriterStrict.WriterT m) =
+    WriterStrict.WriterT $ localIdentifier f m
 
 instance (MonadFresh m) => MonadFresh (StateLazy.StateT s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (StateLazy.StateT m) =
-    StateLazy.StateT $ \s -> localFreshIdent f (m s)
+  getIdentifier = lift getIdentifier
+  localIdentifier f (StateLazy.StateT m) =
+    StateLazy.StateT $ \s -> localIdentifier f (m s)
 
 instance (MonadFresh m) => MonadFresh (StateStrict.StateT s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (StateStrict.StateT m) =
-    StateStrict.StateT $ \s -> localFreshIdent f (m s)
+  getIdentifier = lift getIdentifier
+  localIdentifier f (StateStrict.StateT m) =
+    StateStrict.StateT $ \s -> localIdentifier f (m s)
 
 instance (MonadFresh m) => MonadFresh (ReaderT r m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (ReaderT m) = ReaderT $ localFreshIdent f . m
+  getIdentifier = lift getIdentifier
+  localIdentifier f (ReaderT m) = ReaderT $ localIdentifier f . m
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSLazy.RWST r w s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (RWSLazy.RWST m) =
-    RWSLazy.RWST $ \r s -> localFreshIdent f (m r s)
+  getIdentifier = lift getIdentifier
+  localIdentifier f (RWSLazy.RWST m) =
+    RWSLazy.RWST $ \r s -> localIdentifier f (m r s)
 
 instance (MonadFresh m, Monoid w) => MonadFresh (RWSStrict.RWST r w s m) where
   getFreshIndex = lift getFreshIndex
   setFreshIndex newIdx = lift $ setFreshIndex newIdx
-  getFreshIdent = lift getFreshIdent
-  localFreshIdent f (RWSStrict.RWST m) =
-    RWSStrict.RWST $ \r s -> localFreshIdent f (m r s)
+  getIdentifier = lift getIdentifier
+  localIdentifier f (RWSStrict.RWST m) =
+    RWSStrict.RWST $ \r s -> localIdentifier f (m r s)
 
 -- | 'FreshT' specialized with Identity.
 type Fresh = FreshT Identity
 
--- | Run the symbolic generation with the given identifier and 0 as the initial index.
-runFresh :: Fresh a -> FreshIdent -> a
+-- | Run the symbolic generation with the given identifier and 0 as the initial
+-- index.
+runFresh :: Fresh a -> Identifier -> a
 runFresh m ident = runIdentity $ runFreshT m ident
 
 instance (Monad m) => MonadFresh (FreshT m) where
   getFreshIndex = FreshT $ \_ idx -> return (idx, idx)
   setFreshIndex newIdx = FreshT $ \_ _ -> return ((), newIdx)
-  getFreshIdent = FreshT $ curry return
-  localFreshIdent f (FreshT m) = FreshT $ \ident idx -> do
+  getIdentifier = FreshT $ curry return
+  localIdentifier f (FreshT m) = FreshT $ \ident idx -> do
     let newIdent = f ident
     (r, _) <- m newIdent 0
     return (r, idx)
 
--- | Class of types in which symbolic values can be generated with respect to some specification.
+-- | Class of types in which symbolic values can be generated with respect to
+-- some specification.
 --
 -- The result will be wrapped in a union-like monad.
 -- This ensures that we can generate those types with complex merging rules.
@@ -496,7 +454,7 @@ class (Mergeable a) => GenSym spec a where
 --
 -- >>> genSym (ListSpec 1 2 ()) "a" :: UnionM [SymBool]
 -- {If a@2 [a@1] [a@0,a@1]}
-genSym :: (GenSym spec a) => spec -> FreshIdent -> UnionM a
+genSym :: (GenSym spec a) => spec -> Identifier -> UnionM a
 genSym = runFresh . fresh
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
@@ -530,7 +488,7 @@ class GenSymSimple spec a where
 --
 -- >>> genSymSimple (SimpleListSpec 2 ()) "a" :: [SymBool]
 -- [a@0,a@1]
-genSymSimple :: forall spec a. (GenSymSimple spec a) => spec -> FreshIdent -> a
+genSymSimple :: forall spec a. (GenSymSimple spec a) => spec -> Identifier -> a
 genSymSimple = runFresh . simpleFresh
 
 class GenSymNoSpec a where
@@ -729,7 +687,7 @@ choose ::
   ( Mergeable a
   ) =>
   [a] ->
-  FreshIdent ->
+  Identifier ->
   UnionM a
 choose = runFresh . chooseFresh
 
@@ -765,7 +723,7 @@ chooseSimple ::
   ( SimpleMergeable a
   ) =>
   [a] ->
-  FreshIdent ->
+  Identifier ->
   a
 chooseSimple = runFresh . chooseSimpleFresh
 
@@ -803,7 +761,7 @@ chooseUnion ::
   ( Mergeable a
   ) =>
   [UnionM a] ->
-  FreshIdent ->
+  Identifier ->
   UnionM a
 chooseUnion = runFresh . chooseUnionFresh
 
@@ -1664,7 +1622,7 @@ instance GenSym () symtype where \
 #define GENSYM_UNIT_SIMPLE_SIMPLE(symtype) \
 instance GenSymSimple () symtype where \
   simpleFresh _ = do; \
-    FreshIdent ident <- getFreshIdent; \
+    ident <- getIdentifier; \
     FreshIndex index <- nextFreshIndex; \
     return $ isym ident index
 
@@ -1679,7 +1637,7 @@ instance (KnownNat n, 1 <= n) => GenSym () (symtype n) where \
 #define GENSYM_UNIT_SIMPLE_BV(symtype) \
 instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
   simpleFresh _ = do; \
-    FreshIdent ident <- getFreshIdent; \
+    ident <- getIdentifier; \
     FreshIndex index <- nextFreshIndex; \
     return $ isym ident index
 
@@ -1694,7 +1652,7 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) 
 #define GENSYM_UNIT_SIMPLE_FUN(op) \
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple () (sa op sb) where \
   simpleFresh _ = do; \
-    FreshIdent ident <- getFreshIdent; \
+    ident <- getIdentifier; \
     FreshIndex index <- nextFreshIndex; \
     return $ isym ident index
 

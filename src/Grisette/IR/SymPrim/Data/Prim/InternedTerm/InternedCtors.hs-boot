@@ -56,7 +56,6 @@ where
 
 import Data.Bits (Bits, FiniteBits)
 import Data.Hashable (Hashable)
-import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
@@ -65,12 +64,12 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Symbol (Identifier, Symbol)
 import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp,
     SupportedPrim,
     Term,
     TernaryOp,
-    TypedSymbol,
     UnaryOp,
     type (-->),
   )
@@ -100,9 +99,9 @@ constructTernary ::
   Term arg3 ->
   Term t
 conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
-symTerm :: (SupportedPrim t, Typeable t) => TypedSymbol t -> Term t
-ssymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Term t
-isymTerm :: (SupportedPrim t, Typeable t) => T.Text -> Int -> Term t
+symTerm :: (SupportedPrim t, Typeable t) => Symbol -> Term t
+ssymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Term t
+isymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Int -> Term t
 notTerm :: Term Bool -> Term Bool
 orTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm :: Term Bool -> Term Bool -> Term Bool

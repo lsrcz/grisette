@@ -52,8 +52,7 @@ import Grisette.Core.Control.Monad.UnionM
     liftToMonadUnion,
   )
 import Grisette.Core.Data.Class.GenSym
-  ( FreshIdent,
-    GenSym (fresh),
+  ( GenSym (fresh),
     GenSymSimple (simpleFresh),
     ListSpec (ListSpec),
     MonadFresh,
@@ -72,6 +71,7 @@ import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
+import Grisette.Core.Data.Symbol (Identifier)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -108,7 +108,7 @@ class (Mergeable a) => GenSymConstrained spec a where
     m (UnionM a)
   freshConstrained e spec = mrgSingle <$> simpleFreshConstrained e spec
 
-genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> FreshIdent -> ExceptT e UnionM (UnionM a)
+genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e UnionM (UnionM a)
 genSymConstrained e spec = tryMerge . runFreshT (freshConstrained e spec)
 
 -- | Class of types in which symbolic values can be generated with some
@@ -129,7 +129,7 @@ class (Mergeable a) => GenSymSimpleConstrained spec a where
     spec ->
     m a
 
-genSymSimpleConstrained :: forall spec a e. (GenSymSimpleConstrained spec a, Mergeable e) => e -> spec -> FreshIdent -> ExceptT e UnionM a
+genSymSimpleConstrained :: forall spec a e. (GenSymSimpleConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e UnionM a
 genSymSimpleConstrained e spec = tryMerge . runFreshT (simpleFreshConstrained e spec)
 
 instance {-# OVERLAPPABLE #-} (Mergeable a, GenSym spec a) => GenSymConstrained spec a where

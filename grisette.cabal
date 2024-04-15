@@ -87,9 +87,9 @@ library
       Grisette.Core.Data.Class.ToCon
       Grisette.Core.Data.Class.ToSym
       Grisette.Core.Data.Class.TryMerge
-      Grisette.Core.Data.FileLocation
       Grisette.Core.Data.MemoUtils
       Grisette.Core.Data.SomeBV
+      Grisette.Core.Data.Symbol
       Grisette.Core.Data.Union
       Grisette.Core.TH.MergeConstructor
       Grisette.Experimental

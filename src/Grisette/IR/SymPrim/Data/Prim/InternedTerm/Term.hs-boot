@@ -33,7 +33,6 @@ import Data.Bits (Bits, FiniteBits)
 import Data.Hashable (Hashable)
 import Data.Interned (Cache, Id)
 import Data.Kind (Constraint)
-import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
@@ -41,6 +40,7 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Symbol (Symbol)
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
   ( ModelValue,
     toModelValue,
@@ -127,8 +127,7 @@ class
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
 data TypedSymbol t where
-  SimpleSymbol :: (SupportedPrim t) => T.Text -> TypedSymbol t
-  IndexedSymbol :: (SupportedPrim t) => T.Text -> Int -> TypedSymbol t
+  TypedSymbol :: (SupportedPrim t) => {unTypedSymbol :: Symbol} -> TypedSymbol t
 
 data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
