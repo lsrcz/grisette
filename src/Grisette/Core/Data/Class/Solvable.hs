@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -18,11 +19,20 @@ module Grisette.Core.Data.Class.Solvable
   ( -- * Solvable type interface
     Solvable (..),
     pattern Con,
+    ssym,
+    isym,
+    slocsym,
+    ilocsym,
   )
 where
 
 import Data.String (IsString)
-import qualified Data.Text as T
+import Grisette.Core.Data.Symbol
+  ( Identifier,
+    Symbol (IndexedSymbol, SimpleSymbol),
+    withLoc,
+  )
+import Language.Haskell.TH.Syntax.Compat (SpliceQ)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -47,29 +57,48 @@ class (IsString t) => Solvable c t | t -> c where
   -- Nothing
   conView :: t -> Maybe c
 
-  -- | Generate simply-named symbolic constants.
+  -- | Generate symbolic constants.
   --
-  -- Two symbolic constants with the same name are the same symbolic constant,
+  -- Two symbolic constants with the same symbol are the same symbolic constant,
   -- and will always be assigned with the same value by the solver.
   --
-  -- >>> ssym "a" :: SymBool
+  -- >>> sym "a" :: SymBool
   -- a
-  -- >>> (ssym "a" :: SymBool) == ssym "a"
+  -- >>> (sym "a" :: SymBool) == sym "a"
   -- True
-  -- >>> (ssym "a" :: SymBool) == ssym "b"
+  -- >>> (sym "a" :: SymBool) == sym "b"
   -- False
-  -- >>> (ssym "a" :: SymBool) .&& ssym "a"
+  -- >>> (sym "a" :: SymBool) .&& sym "a"
   -- a
-  ssym :: T.Text -> t
+  -- >>> (sym "a" :: SymBool) == isym "a" 1
+  -- False
+  sym :: Symbol -> t
 
-  -- | Generate indexed symbolic constants.
-  --
-  -- Two symbolic constants with the same name but different indices are
-  -- not the same symbolic constants.
-  --
-  -- >>> isym "a" 1 :: SymBool
-  -- a@1
-  isym :: T.Text -> Int -> t
+-- | Generate simply-named symbolic constants.
+--
+-- Two symbolic constants with the same identifier are the same symbolic
+-- constant, and will always be assigned with the same value by the solver.
+--
+-- >>> ssym "a" :: SymBool
+-- a
+-- >>> (ssym "a" :: SymBool) == ssym "a"
+-- True
+-- >>> (ssym "a" :: SymBool) == ssym "b"
+-- False
+-- >>> (ssym "a" :: SymBool) .&& ssym "a"
+-- a
+ssym :: (Solvable c t) => Identifier -> t
+ssym = sym . SimpleSymbol
+
+-- | Generate indexed symbolic constants.
+--
+-- Two symbolic constants with the same identifier but different indices are
+-- not the same symbolic constants.
+--
+-- >>> isym "a" 1 :: SymBool
+-- a@1
+isym :: (Solvable c t) => Identifier -> Int -> t
+isym nm idx = sym $ IndexedSymbol nm idx
 
 -- | Extract the concrete value from a solvable value with 'conView'.
 --
@@ -80,3 +109,33 @@ pattern Con c <-
   (conView -> Just c)
   where
     Con c = con c
+
+-- | Generate simply-named symbolic variables. The file location will be
+-- attached to the identifier.
+--
+-- >>> $$(slocsym "a") :: SymBool
+-- a:<interactive>:...
+--
+-- Calling 'slocsym' with the same name at different location will always
+-- generate different symbolic constants. Calling 'slocsym' at the same
+-- location for multiple times will generate the same symbolic constants.
+--
+-- >>> ($$(slocsym "a") :: SymBool) == $$(slocsym "a")
+-- False
+-- >>> let f _ = $$(slocsym "a") :: SymBool
+-- >>> f () == f ()
+-- True
+slocsym :: (Solvable c s) => Identifier -> SpliceQ s
+slocsym nm = [||ssym $$(withLoc nm)||]
+
+-- | Generate indexed symbolic variables. The file location will be attached to
+-- identifier.
+--
+-- >>> $$(ilocsym "a" 1) :: SymBool
+-- a:<interactive>:...@1
+--
+-- Calling 'ilocsym' with the same name and index at different location will
+-- always generate different symbolic constants. Calling 'slocsym' at the same
+-- location for multiple times will generate the same symbolic constants.
+ilocsym :: (Solvable c s) => Identifier -> Int -> SpliceQ s
+ilocsym nm idx = [||isym $$(withLoc nm) idx||]

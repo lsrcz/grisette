@@ -6,6 +6,7 @@ module Grisette.IR.SymPrim.Data.Prim.ModelTests (modelTests) where
 
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Grisette (TypedSymbol)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.ModelOps
   ( ModelOps
@@ -25,7 +26,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( Term,
-    TypedSymbol (SimpleSymbol),
     someTypedSymbol,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model
@@ -50,14 +50,14 @@ import Test.HUnit ((@=?))
 
 modelTests :: Test
 modelTests =
-  let asymbol :: TypedSymbol Integer = SimpleSymbol "a"
-      bsymbol :: TypedSymbol Bool = SimpleSymbol "b"
-      csymbol :: TypedSymbol Integer = SimpleSymbol "c"
-      dsymbol :: TypedSymbol Bool = SimpleSymbol "d"
-      esymbol :: TypedSymbol (WordN 4) = SimpleSymbol "e"
-      fsymbol :: TypedSymbol (IntN 4) = SimpleSymbol "f"
-      gsymbol :: TypedSymbol (WordN 16) = SimpleSymbol "g"
-      hsymbol :: TypedSymbol (IntN 16) = SimpleSymbol "h"
+  let asymbol :: TypedSymbol Integer = "a"
+      bsymbol :: TypedSymbol Bool = "b"
+      csymbol :: TypedSymbol Integer = "c"
+      dsymbol :: TypedSymbol Bool = "d"
+      esymbol :: TypedSymbol (WordN 4) = "e"
+      fsymbol :: TypedSymbol (IntN 4) = "f"
+      gsymbol :: TypedSymbol (WordN 16) = "g"
+      hsymbol :: TypedSymbol (IntN 16) = "h"
       m1 = emptyModel
       m2 = insertValue asymbol 1 m1
       m3 = insertValue bsymbol True m2

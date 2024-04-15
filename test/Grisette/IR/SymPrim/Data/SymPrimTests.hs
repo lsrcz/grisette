@@ -37,6 +37,7 @@ import qualified Data.HashSet as S
 import Data.Int (Int8)
 import Data.Proxy (Proxy (Proxy))
 import Data.Word (Word8)
+import Grisette (TypedSymbol)
 import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
 import Grisette.Core.Data.Class.BitVector
@@ -98,7 +99,9 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, isym, ssym),
+  ( Solvable (con, conView),
+    isym,
+    ssym,
     pattern Con,
   )
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
@@ -118,7 +121,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep (wrapTerm),
     Term,
-    TypedSymbol (SimpleSymbol),
     someTypedSymbol,
     type (-->),
   )
@@ -501,8 +503,8 @@ symPrimTests =
             ],
           testCase "EvaluateSym" $ do
             let m1 = emptyModel :: Model
-            let m2 = insertValue (SimpleSymbol "a") (1 :: Integer) m1
-            let m3 = insertValue (SimpleSymbol "b") True m2
+            let m2 = insertValue "a" (1 :: Integer) m1
+            let m3 = insertValue "b" True m2
             evaluateSym False m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger))
               @=? symIte ("c" :: SymBool) 1 2
             evaluateSym True m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger)) @=? 2,
@@ -510,9 +512,9 @@ symPrimTests =
             extractSymbolics (symIte ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
               @=? SymbolSet
                 ( S.fromList
-                    [ someTypedSymbol (SimpleSymbol "c" :: TypedSymbol Bool),
-                      someTypedSymbol (SimpleSymbol "a" :: TypedSymbol Integer),
-                      someTypedSymbol (SimpleSymbol "b" :: TypedSymbol Integer)
+                    [ someTypedSymbol ("c" :: TypedSymbol Bool),
+                      someTypedSymbol ("a" :: TypedSymbol Integer),
+                      someTypedSymbol ("b" :: TypedSymbol Integer)
                     ]
                 ),
           testCase "GenSym" $ do

@@ -73,7 +73,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
 
 -- | Evaluating symbolic values with some model.
 --
--- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
+-- >>> let model = insertValue "a" (1 :: Integer) emptyModel :: Model
 -- >>> evaluateSym False model ([ssym "a", ssym "b"] :: [SymInteger])
 -- [1,b]
 --
@@ -94,7 +94,7 @@ class EvaluateSym a where
 -- | Evaluate a symbolic variable with some model, fill in values for the missing variables,
 -- and transform to concrete ones
 --
--- >>> let model = insertValue (SimpleSymbol "a") (1 :: Integer) emptyModel :: Model
+-- >>> let model = insertValue "a" (1 :: Integer) emptyModel :: Model
 -- >>> evaluateSymToCon model ([ssym "a", ssym "b"] :: [SymInteger]) :: [Integer]
 -- [1,0]
 evaluateSymToCon :: (ToCon a b, EvaluateSym a) => Model -> a -> b
