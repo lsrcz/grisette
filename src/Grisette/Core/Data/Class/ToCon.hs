@@ -51,10 +51,10 @@ import Grisette.Core.Data.BV
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (conView), pattern Con)
 import Grisette.IR.SymPrim.Data.IntBitwidth (intBitwidthQ)
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep,
     SupportedPrim,
-    type (-->),
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool,

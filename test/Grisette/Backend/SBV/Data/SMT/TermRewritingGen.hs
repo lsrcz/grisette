@@ -59,8 +59,13 @@ import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.Core.Data.Symbol (Identifier, withInfo)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( absNumTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( BinaryOp (partialEvalBinary),
+    SupportedPrim,
+    Term,
+    TernaryOp (partialEvalTernary),
+    UnaryOp (partialEvalUnary),
+    absNumTerm,
     addNumTerm,
     andBitsTerm,
     andTerm,
@@ -83,6 +88,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     notTerm,
     orBitsTerm,
     orTerm,
+    pformat,
     quotBoundedIntegralTerm,
     quotIntegralTerm,
     remBoundedIntegralTerm,
@@ -96,16 +102,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     timesNumTerm,
     uminusNumTerm,
     xorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( BinaryOp (partialEvalBinary),
-    SupportedPrim,
-    Term,
-    TernaryOp (partialEvalTernary),
-    UnaryOp (partialEvalUnary),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( pformat,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,

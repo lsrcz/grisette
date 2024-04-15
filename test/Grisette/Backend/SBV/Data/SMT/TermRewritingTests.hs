@@ -55,9 +55,7 @@ import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Solver (solve)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( pformat,
+    pformat,
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
 import Test.Framework (Test, TestName, testGroup)

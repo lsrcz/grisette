@@ -18,9 +18,7 @@ import Data.Typeable (Proxy (Proxy), typeRep)
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
     Term,
-  )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( identityWithTypeRep,
+    identityWithTypeRep,
   )
 
 data SomeTerm where

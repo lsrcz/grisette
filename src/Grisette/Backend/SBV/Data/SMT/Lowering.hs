@@ -81,10 +81,7 @@ import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
   )
 import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    symTerm,
-  )
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun (buildGeneralFun, type (-->))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -96,6 +93,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         AddNumTerm,
         AndBitsTerm,
         AndTerm,
+        ApplyTerm,
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
@@ -105,7 +103,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqvTerm,
-        GeneralFunApplyTerm,
         ITETerm,
         LENumTerm,
         LTNumTerm,
@@ -134,13 +131,11 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         XorBitsTerm
       ),
     TypedSymbol (TypedSymbol),
-    buildGeneralFun,
+    conTerm,
+    introSupportedPrimConstraint,
     someTypedSymbol,
+    symTerm,
     withSymbolSupported,
-    type (-->),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( introSupportedPrimConstraint,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model as PM (Model)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
@@ -921,14 +916,17 @@ lowerSinglePrimImpl config t@(TabularFunApplyTerm _ (f :: Term (b =-> a)) (arg :
       let g = l1 l2
       return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
     _ -> translateBinaryError "tabularApply" (R.typeRep @(b =-> a)) (R.typeRep @b) (R.typeRep @a)
-lowerSinglePrimImpl config t@(GeneralFunApplyTerm _ (f :: Term (b --> a)) (arg :: Term b)) m =
-  case (config, R.typeRep @a) of
-    ResolvedDeepType -> do
-      (m1, l1) <- lowerSinglePrimCached config f m
-      (m2, l2) <- lowerSinglePrimCached config arg m1
-      let g = l1 l2
-      return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
-    _ -> translateBinaryError "generalApply" (R.typeRep @(b --> a)) (R.typeRep @b) (R.typeRep @a)
+lowerSinglePrimImpl config t@(ApplyTerm _ (f :: Term f) (arg :: Term b)) m =
+  case (R.typeRep @f, (config, R.typeRep @a)) of
+    (GFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2), ResolvedDeepType) -> do
+      case (R.eqTypeRep ta2' (R.typeRep @b), R.eqTypeRep tr2' (R.typeRep @a)) of
+        (Just R.HRefl, Just R.HRefl) -> do
+          (m1, l1) <- lowerSinglePrimCached config f m
+          (m2, l2) <- lowerSinglePrimCached config arg m1
+          let g = l1 l2
+          return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
+        _ -> translateBinaryError "apply" (R.typeRep @f) (R.typeRep @b) (R.typeRep @a)
+    _ -> translateBinaryError "apply" (R.typeRep @(b --> a)) (R.typeRep @b) (R.typeRep @a)
 lowerSinglePrimImpl config t@(DivIntegralTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
     ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sDiv m

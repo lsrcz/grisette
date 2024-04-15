@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -44,88 +45,94 @@ module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     showUntyped,
     withSymbolSupported,
     someTypedSymbol,
+    PEvalApplyTerm (..),
     Term (..),
+    identity,
+    identityWithTypeRep,
+    introSupportedPrimConstraint,
+    pformat,
     UTerm (..),
-    type (-->) (..),
-    buildGeneralFun,
     prettyPrintTerm,
+
+    -- * Interned constructors
+    constructUnary,
+    constructBinary,
+    constructTernary,
+    conTerm,
+    symTerm,
+    ssymTerm,
+    isymTerm,
+    notTerm,
+    orTerm,
+    andTerm,
+    eqvTerm,
+    iteTerm,
+    addNumTerm,
+    uminusNumTerm,
+    timesNumTerm,
+    absNumTerm,
+    signumNumTerm,
+    ltNumTerm,
+    leNumTerm,
+    andBitsTerm,
+    orBitsTerm,
+    xorBitsTerm,
+    complementBitsTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    toSignedTerm,
+    toUnsignedTerm,
+    bvconcatTerm,
+    bvselectTerm,
+    bvextendTerm,
+    bvsignExtendTerm,
+    bvzeroExtendTerm,
+    applyTerm,
+    tabularFunApplyTerm,
+    divIntegralTerm,
+    modIntegralTerm,
+    quotIntegralTerm,
+    remIntegralTerm,
+    divBoundedIntegralTerm,
+    modBoundedIntegralTerm,
+    quotBoundedIntegralTerm,
+    remBoundedIntegralTerm,
   )
 where
 
 import Control.DeepSeq (NFData (rnf))
+import Data.Array ((!))
 import Data.Bits (Bits, FiniteBits)
 import Data.Function (on)
-import Data.Hashable (Hashable (hashWithSalt))
+import qualified Data.HashMap.Strict as M
+import Data.Hashable (Hashable (hash, hashWithSalt))
+import Data.IORef (atomicModifyIORef')
 import Data.Interned
   ( Cache,
     Id,
-    Interned (Description, Uninterned, cache, describe, identify),
+    Interned (Description, Uninterned, cache, cacheWidth, describe, identify),
+  )
+import Data.Interned.Internal
+  ( Cache (getCache),
+    CacheState (CacheState),
   )
 import Data.Kind (Constraint)
 import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast)
-import GHC.Generics (Generic)
+import GHC.IO (unsafeDupablePerformIO)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
-import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Symbol (Identifier, Symbol (IndexedSymbol, SimpleSymbol))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
   ( typeMemoizedCache,
-  )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( absNumTerm,
-    addNumTerm,
-    andBitsTerm,
-    andTerm,
-    bvconcatTerm,
-    bvextendTerm,
-    bvselectTerm,
-    complementBitsTerm,
-    conTerm,
-    constructBinary,
-    constructTernary,
-    constructUnary,
-    divBoundedIntegralTerm,
-    divIntegralTerm,
-    eqvTerm,
-    generalFunApplyTerm,
-    iteTerm,
-    leNumTerm,
-    ltNumTerm,
-    modBoundedIntegralTerm,
-    modIntegralTerm,
-    notTerm,
-    orBitsTerm,
-    orTerm,
-    quotBoundedIntegralTerm,
-    quotIntegralTerm,
-    remBoundedIntegralTerm,
-    remIntegralTerm,
-    rotateLeftTerm,
-    rotateRightTerm,
-    shiftLeftTerm,
-    shiftRightTerm,
-    signumNumTerm,
-    symTerm,
-    tabularFunApplyTerm,
-    timesNumTerm,
-    toSignedTerm,
-    toUnsignedTerm,
-    uminusNumTerm,
-    xorBitsTerm,
-  )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
-  ( substTerm,
-  )
-import {-# SOURCE #-} Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( identity,
-    introSupportedPrimConstraint,
-    pformat,
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
   ( ModelValue,
@@ -145,6 +152,7 @@ import Type.Reflection
     TypeRep,
     Typeable,
     eqTypeRep,
+    someTypeRep,
     typeRep,
     type (:~~:) (HRefl),
   )
@@ -157,7 +165,6 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
-import Grisette.Core.Data.Symbol (withInfo, Symbol (SimpleSymbol, IndexedSymbol))
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -321,6 +328,9 @@ instance Show SomeTypedSymbol where
 someTypedSymbol :: forall t. TypedSymbol t -> SomeTypedSymbol
 someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
 
+class PEvalApplyTerm f a b | f -> a b where
+  pevalApplyTerm :: Term f -> Term a -> Term b
+
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
   SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
@@ -441,20 +451,22 @@ data Term t where
     !(TypeRep r) ->
     !(Term (bv l)) ->
     Term (bv r)
+  ApplyTerm ::
+    ( SupportedPrim a,
+      SupportedPrim b,
+      SupportedPrim f,
+      PEvalApplyTerm f a b
+    ) =>
+    {-# UNPACK #-} !Id ->
+    !(Term f) ->
+    !(Term a) ->
+    Term b
   TabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
     {-# UNPACK #-} !Id ->
     Term (a =-> b) ->
-    Term a ->
-    Term b
-  GeneralFunApplyTerm ::
-    ( SupportedPrim a,
-      SupportedPrim b
-    ) =>
-    {-# UNPACK #-} !Id ->
-    Term (a --> b) ->
     Term a ->
     Term b
   DivIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
@@ -465,6 +477,141 @@ data Term t where
   ModBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   QuotBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   RemBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+
+identity :: Term t -> Id
+identity = snd . identityWithTypeRep
+{-# INLINE identity #-}
+
+identityWithTypeRep :: forall t. Term t -> (SomeTypeRep, Id)
+identityWithTypeRep (ConTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (SymTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (UnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (TernaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (NotTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (OrTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AndTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (EqvTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ITETerm i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AddNumTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (UMinusNumTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (TimesNumTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AbsNumTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (SignumNumTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (LTNumTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (LENumTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AndBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (OrBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (XorBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ComplementBitsTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ShiftLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ShiftRightTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RotateLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RotateRightTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ToSignedTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ToUnsignedTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BVConcatTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BVSelectTerm i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BVExtendTerm i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (TabularFunApplyTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ApplyTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (DivIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ModIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (QuotIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RemIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (DivBoundedIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ModBoundedIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (QuotBoundedIntegralTerm i _ _) =
+  (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RemBoundedIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+{-# INLINE identityWithTypeRep #-}
+
+introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
+introSupportedPrimConstraint ConTerm {} x = x
+introSupportedPrimConstraint SymTerm {} x = x
+introSupportedPrimConstraint UnaryTerm {} x = x
+introSupportedPrimConstraint BinaryTerm {} x = x
+introSupportedPrimConstraint TernaryTerm {} x = x
+introSupportedPrimConstraint NotTerm {} x = x
+introSupportedPrimConstraint OrTerm {} x = x
+introSupportedPrimConstraint AndTerm {} x = x
+introSupportedPrimConstraint EqvTerm {} x = x
+introSupportedPrimConstraint ITETerm {} x = x
+introSupportedPrimConstraint AddNumTerm {} x = x
+introSupportedPrimConstraint UMinusNumTerm {} x = x
+introSupportedPrimConstraint TimesNumTerm {} x = x
+introSupportedPrimConstraint AbsNumTerm {} x = x
+introSupportedPrimConstraint SignumNumTerm {} x = x
+introSupportedPrimConstraint LTNumTerm {} x = x
+introSupportedPrimConstraint LENumTerm {} x = x
+introSupportedPrimConstraint AndBitsTerm {} x = x
+introSupportedPrimConstraint OrBitsTerm {} x = x
+introSupportedPrimConstraint XorBitsTerm {} x = x
+introSupportedPrimConstraint ComplementBitsTerm {} x = x
+introSupportedPrimConstraint ShiftLeftTerm {} x = x
+introSupportedPrimConstraint RotateLeftTerm {} x = x
+introSupportedPrimConstraint ShiftRightTerm {} x = x
+introSupportedPrimConstraint RotateRightTerm {} x = x
+introSupportedPrimConstraint ToSignedTerm {} x = x
+introSupportedPrimConstraint ToUnsignedTerm {} x = x
+introSupportedPrimConstraint BVConcatTerm {} x = x
+introSupportedPrimConstraint BVSelectTerm {} x = x
+introSupportedPrimConstraint BVExtendTerm {} x = x
+introSupportedPrimConstraint TabularFunApplyTerm {} x = x
+introSupportedPrimConstraint ApplyTerm {} x = x
+introSupportedPrimConstraint DivIntegralTerm {} x = x
+introSupportedPrimConstraint ModIntegralTerm {} x = x
+introSupportedPrimConstraint QuotIntegralTerm {} x = x
+introSupportedPrimConstraint RemIntegralTerm {} x = x
+introSupportedPrimConstraint DivBoundedIntegralTerm {} x = x
+introSupportedPrimConstraint ModBoundedIntegralTerm {} x = x
+introSupportedPrimConstraint QuotBoundedIntegralTerm {} x = x
+introSupportedPrimConstraint RemBoundedIntegralTerm {} x = x
+{-# INLINE introSupportedPrimConstraint #-}
+
+pformat :: forall t. (SupportedPrim t) => Term t -> String
+pformat (ConTerm _ t) = pformatCon t
+pformat (SymTerm _ sym) = pformatSym sym
+pformat (UnaryTerm _ tag arg1) = pformatUnary tag arg1
+pformat (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
+pformat (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
+pformat (NotTerm _ arg) = "(! " ++ pformat arg ++ ")"
+pformat (OrTerm _ arg1 arg2) = "(|| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (AndTerm _ arg1 arg2) = "(&& " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (EqvTerm _ arg1 arg2) = "(= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (ITETerm _ cond arg1 arg2) = "(ite " ++ pformat cond ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (AddNumTerm _ arg1 arg2) = "(+ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (UMinusNumTerm _ arg) = "(- " ++ pformat arg ++ ")"
+pformat (TimesNumTerm _ arg1 arg2) = "(* " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (AbsNumTerm _ arg) = "(abs " ++ pformat arg ++ ")"
+pformat (SignumNumTerm _ arg) = "(signum " ++ pformat arg ++ ")"
+pformat (LTNumTerm _ arg1 arg2) = "(< " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (LENumTerm _ arg1 arg2) = "(<= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (AndBitsTerm _ arg1 arg2) = "(& " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (OrBitsTerm _ arg1 arg2) = "(| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (XorBitsTerm _ arg1 arg2) = "(^ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (ComplementBitsTerm _ arg) = "(~ " ++ pformat arg ++ ")"
+pformat (ShiftLeftTerm _ arg n) = "(shl " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (ShiftRightTerm _ arg n) = "(shr " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (RotateLeftTerm _ arg n) = "(rotl " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (RotateRightTerm _ arg n) = "(rotr " ++ pformat arg ++ " " ++ pformat n ++ ")"
+pformat (ToSignedTerm _ arg) = "(u2s " ++ pformat arg ++ " " ++ ")"
+pformat (ToUnsignedTerm _ arg) = "(s2u " ++ pformat arg ++ " " ++ ")"
+pformat (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformat arg ++ ")"
+pformat (BVExtendTerm _ signed n arg) =
+  (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformat arg ++ ")"
+pformat (TabularFunApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
+pformat (ApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
+pformat (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (DivBoundedIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (ModBoundedIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (QuotBoundedIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (RemBoundedIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+{-# INLINE pformat #-}
 
 instance NFData (Term a) where
   rnf i = identity i `seq` ()
@@ -501,8 +648,8 @@ instance Lift (Term t) where
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
   liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) = [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
   liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) = [||bvextendTerm signed (Proxy @n) arg||]
+  liftTyped (ApplyTerm _ f arg) = [||applyTerm f arg||]
   liftTyped (TabularFunApplyTerm _ func arg) = [||tabularFunApplyTerm func arg||]
-  liftTyped (GeneralFunApplyTerm _ func arg) = [||generalFunApplyTerm func arg||]
   liftTyped (DivIntegralTerm _ arg1 arg2) = [||divIntegralTerm arg1 arg2||]
   liftTyped (ModIntegralTerm _ arg1 arg2) = [||modIntegralTerm arg1 arg2||]
   liftTyped (QuotIntegralTerm _ arg1 arg2) = [||quotIntegralTerm arg1 arg2||]
@@ -581,10 +728,10 @@ instance Show (Term ty) where
     "BVSelect{id=" ++ show i ++ ", ix=" ++ show ix ++ ", w=" ++ show w ++ ", arg=" ++ show arg ++ "}"
   show (BVExtendTerm i signed n arg) =
     "BVExtend{id=" ++ show i ++ ", signed=" ++ show signed ++ ", n=" ++ show n ++ ", arg=" ++ show arg ++ "}"
+  show (ApplyTerm i f arg) =
+    "Apply{id=" ++ show i ++ ", f=" ++ show f ++ ", arg=" ++ show arg ++ "}"
   show (TabularFunApplyTerm i func arg) =
     "TabularFunApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
-  show (GeneralFunApplyTerm i func arg) =
-    "GeneralFunApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
   show (DivIntegralTerm i arg1 arg2) =
     "DivIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (ModIntegralTerm i arg1 arg2) =
@@ -731,18 +878,20 @@ data UTerm t where
     !(TypeRep r) ->
     !(Term (bv l)) ->
     UTerm (bv r)
+  UApplyTerm ::
+    ( SupportedPrim a,
+      SupportedPrim b,
+      SupportedPrim f,
+      PEvalApplyTerm f a b
+    ) =>
+    Term f ->
+    Term a ->
+    UTerm b
   UTabularFunApplyTerm ::
     ( SupportedPrim a,
       SupportedPrim b
     ) =>
     Term (a =-> b) ->
-    Term a ->
-    UTerm b
-  UGeneralFunApplyTerm ::
-    ( SupportedPrim a,
-      SupportedPrim b
-    ) =>
-    Term (a --> b) ->
     Term a ->
     UTerm b
   UDivIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
@@ -823,12 +972,14 @@ instance (SupportedPrim t) => Interned (Term t) where
       !(TypeRep r) ->
       {-# UNPACK #-} !(TypeRep (bv l), Id) ->
       Description (Term (bv r))
-    DTabularFunApplyTerm ::
-      {-# UNPACK #-} !(TypeRep (a =-> b), Id) ->
+    DApplyTerm ::
+      ( PEvalApplyTerm f a b
+      ) =>
+      {-# UNPACK #-} !(TypeRep f, Id) ->
       {-# UNPACK #-} !(TypeRep a, Id) ->
       Description (Term b)
-    DGeneralFunApplyTerm ::
-      {-# UNPACK #-} !(TypeRep (a --> b), Id) ->
+    DTabularFunApplyTerm ::
+      {-# UNPACK #-} !(TypeRep (a =-> b), Id) ->
       {-# UNPACK #-} !(TypeRep a, Id) ->
       Description (Term b)
     DDivIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
@@ -880,10 +1031,10 @@ instance (SupportedPrim t) => Interned (Term t) where
     DBVSelectTerm ix (typeRep :: TypeRep arg, identity arg)
   describe (UBVExtendTerm signed (n :: TypeRep n) (arg :: Term arg)) =
     DBVExtendTerm signed n (typeRep :: TypeRep arg, identity arg)
+  describe (UApplyTerm (f :: Term f) (arg :: Term a)) =
+    DApplyTerm (typeRep :: TypeRep f, identity f) (typeRep :: TypeRep a, identity arg)
   describe (UTabularFunApplyTerm (func :: Term f) (arg :: Term a)) =
     DTabularFunApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
-  describe (UGeneralFunApplyTerm (func :: Term f) (arg :: Term a)) =
-    DGeneralFunApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
   describe (UDivIntegralTerm arg1 arg2) = DDivIntegralTerm (identity arg1) (identity arg2)
   describe (UModIntegralTerm arg1 arg2) = DModIntegralTerm (identity arg1) (identity arg2)
   describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (identity arg1) (identity arg2)
@@ -925,8 +1076,8 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
       go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
       go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
+      go (UApplyTerm f arg) = ApplyTerm i f arg
       go (UTabularFunApplyTerm func arg) = TabularFunApplyTerm i func arg
-      go (UGeneralFunApplyTerm func arg) = GeneralFunApplyTerm i func arg
       go (UDivIntegralTerm arg1 arg2) = DivIntegralTerm i arg1 arg2
       go (UModIntegralTerm arg1 arg2) = ModIntegralTerm i arg1 arg2
       go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm i arg1 arg2
@@ -975,8 +1126,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
     lIsSigned == rIsSigned
       && eqTypeRepBool ln rn
       && eqTypedId li ri
+  DApplyTerm lf li == DApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
   DTabularFunApplyTerm lf li == DTabularFunApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
-  DGeneralFunApplyTerm lf li == DGeneralFunApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
   DDivIntegralTerm li1 li2 == DDivIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DModIntegralTerm li1 li2 == DModIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
@@ -1039,7 +1190,6 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
       `hashWithSalt` n
       `hashWithSalt` id1
   hashWithSalt s (DTabularFunApplyTerm id1 id2) = s `hashWithSalt` (28 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DGeneralFunApplyTerm id1 id2) = s `hashWithSalt` (29 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DDivIntegralTerm id1 id2) = s `hashWithSalt` (30 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DModIntegralTerm id1 id2) = s `hashWithSalt` (31 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
@@ -1048,6 +1198,7 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DModBoundedIntegralTerm id1 id2) = s `hashWithSalt` (35 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DQuotBoundedIntegralTerm id1 id2) = s `hashWithSalt` (36 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DRemBoundedIntegralTerm id1 id2) = s `hashWithSalt` (37 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DApplyTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
 
 -- Basic Bool
 defaultValueForBool :: Bool
@@ -1086,74 +1237,74 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   pformatCon = show
   defaultValue = 0
 
--- | General symbolic function type. Use the '#' operator to apply the function.
--- Note that this function should be applied to symbolic values only. It is by
--- itself already a symbolic value, but can be considered partially concrete
--- as the function body is specified. Use 'Grisette.IR.SymPrim.Data.SymPrim.-~>' for uninterpreted general
--- symbolic functions.
+-- -- | General symbolic function type. Use the '#' operator to apply the function.
+-- -- Note that this function should be applied to symbolic values only. It is by
+-- -- itself already a symbolic value, but can be considered partially concrete
+-- -- as the function body is specified. Use 'Grisette.IR.SymPrim.Data.SymPrim.-~>' for uninterpreted general
+-- -- symbolic functions.
+-- --
+-- -- The result would be partially evaluated.
+-- --
+-- -- >>> :set -XOverloadedStrings
+-- -- >>> :set -XTypeOperators
+-- -- >>> let f = ("x" :: TypedSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
+-- -- >>> f # 1    -- 1 has the type SymInteger
+-- -- (+ 2 y)
+-- -- >>> f # "a"  -- "a" has the type SymInteger
+-- -- (+ 1 (+ a y))
+-- data (-->) a b where
+--   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 --
--- The result would be partially evaluated.
+-- instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
+--   (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
 --
--- >>> :set -XOverloadedStrings
--- >>> :set -XTypeOperators
--- >>> let f = ("x" :: TypedSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
--- >>> f # 1    -- 1 has the type SymInteger
--- (+ 2 y)
--- >>> f # "a"  -- "a" has the type SymInteger
--- (+ 1 (+ a y))
-data (-->) a b where
-  GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
-
-instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
-  (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
-
-{-
-pattern GeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
-pattern GeneralFun arg v <- GeneralFun arg v
-
-{-# COMPLETE GeneralFun #-}
--}
-
-infixr 0 -->
-
-buildGeneralFun ::
-  (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
-buildGeneralFun arg v =
-  GeneralFun
-    (TypedSymbol newarg)
-    (substTerm arg (symTerm newarg) v)
-  where
-    newarg = case unTypedSymbol arg of
-      SimpleSymbol s -> SimpleSymbol (withInfo s ARG)
-      IndexedSymbol s i -> IndexedSymbol (withInfo s ARG) i
-
-data ARG = ARG
-  deriving (Eq, Ord, Lift, Show, Generic)
-
-instance NFData ARG where
-  rnf ARG = ()
-
-instance Hashable ARG where
-  hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
-
-instance Eq (a --> b) where
-  GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
-
-instance Show (a --> b) where
-  show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
-
-instance Lift (a --> b) where
-  liftTyped (GeneralFun sym tm) = [||GeneralFun sym tm||]
-
-instance Hashable (a --> b) where
-  s `hashWithSalt` (GeneralFun sym tm) = s `hashWithSalt` sym `hashWithSalt` tm
-
-instance NFData (a --> b) where
-  rnf (GeneralFun sym tm) = rnf sym `seq` rnf tm
-
-instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
-  type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+-- {-
+-- pattern GeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+-- pattern GeneralFun arg v <- GeneralFun arg v
+--
+-- {-# COMPLETE GeneralFun #-}
+-- -}
+--
+-- infixr 0 -->
+--
+-- buildGeneralFun ::
+--   (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+-- buildGeneralFun arg v =
+--   GeneralFun
+--     (TypedSymbol newarg)
+--     (substTerm arg (symTerm newarg) v)
+--   where
+--     newarg = case unTypedSymbol arg of
+--       SimpleSymbol s -> SimpleSymbol (withInfo s ARG)
+--       IndexedSymbol s i -> IndexedSymbol (withInfo s ARG) i
+--
+-- data ARG = ARG
+--   deriving (Eq, Ord, Lift, Show, Generic)
+--
+-- instance NFData ARG where
+--   rnf ARG = ()
+--
+-- instance Hashable ARG where
+--   hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
+--
+-- instance Eq (a --> b) where
+--   GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
+--
+-- instance Show (a --> b) where
+--   show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
+--
+-- instance Lift (a --> b) where
+--   liftTyped (GeneralFun sym tm) = [||GeneralFun sym tm||]
+--
+-- instance Hashable (a --> b) where
+--   s `hashWithSalt` (GeneralFun sym tm) = s `hashWithSalt` sym `hashWithSalt` tm
+--
+-- instance NFData (a --> b) where
+--   rnf (GeneralFun sym tm) = rnf sym `seq` rnf tm
+--
+-- instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
+--   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
+--   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
 
 instance
   (SupportedPrim a, SupportedPrim b) =>
@@ -1161,3 +1312,306 @@ instance
   where
   type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = TabularFun [] (defaultValue @b)
+
+-- Interning
+internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
+internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
+  where
+    slot = getCache cache ! r
+    !dt = describe bt
+    !hdt = hash dt
+    !wid = cacheWidth dt
+    r = hdt `mod` wid
+    go (CacheState i m) = case M.lookup dt m of
+      Nothing -> let t = identify (wid * i + r) bt in (CacheState (i + 1) (M.insert dt t m), t)
+      Just t -> (CacheState i m, t)
+
+constructUnary ::
+  forall tag arg t.
+  (SupportedPrim t, UnaryOp tag arg t, Typeable tag, Typeable t, Show tag) =>
+  tag ->
+  Term arg ->
+  Term t
+constructUnary tag tm = let x = internTerm $ UUnaryTerm tag tm in x
+{-# INLINE constructUnary #-}
+
+constructBinary ::
+  forall tag arg1 arg2 t.
+  (SupportedPrim t, BinaryOp tag arg1 arg2 t, Typeable tag, Typeable t, Show tag) =>
+  tag ->
+  Term arg1 ->
+  Term arg2 ->
+  Term t
+constructBinary tag tm1 tm2 = internTerm $ UBinaryTerm tag tm1 tm2
+{-# INLINE constructBinary #-}
+
+constructTernary ::
+  forall tag arg1 arg2 arg3 t.
+  (SupportedPrim t, TernaryOp tag arg1 arg2 arg3 t, Typeable tag, Typeable t, Show tag) =>
+  tag ->
+  Term arg1 ->
+  Term arg2 ->
+  Term arg3 ->
+  Term t
+constructTernary tag tm1 tm2 tm3 = internTerm $ UTernaryTerm tag tm1 tm2 tm3
+{-# INLINE constructTernary #-}
+
+conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
+conTerm t = internTerm $ UConTerm t
+{-# INLINE conTerm #-}
+
+symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
+symTerm t = internTerm $ USymTerm $ TypedSymbol t
+{-# INLINE symTerm #-}
+
+ssymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Term t
+ssymTerm = symTerm . SimpleSymbol
+{-# INLINE ssymTerm #-}
+
+isymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Int -> Term t
+isymTerm str idx = symTerm $ IndexedSymbol str idx
+{-# INLINE isymTerm #-}
+
+notTerm :: Term Bool -> Term Bool
+notTerm = internTerm . UNotTerm
+{-# INLINE notTerm #-}
+
+orTerm :: Term Bool -> Term Bool -> Term Bool
+orTerm l r = internTerm $ UOrTerm l r
+{-# INLINE orTerm #-}
+
+andTerm :: Term Bool -> Term Bool -> Term Bool
+andTerm l r = internTerm $ UAndTerm l r
+{-# INLINE andTerm #-}
+
+eqvTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
+eqvTerm l r = internTerm $ UEqvTerm l r
+{-# INLINE eqvTerm #-}
+
+iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
+iteTerm c l r = internTerm $ UITETerm c l r
+{-# INLINE iteTerm #-}
+
+addNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a -> Term a
+addNumTerm l r = internTerm $ UAddNumTerm l r
+{-# INLINE addNumTerm #-}
+
+uminusNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
+uminusNumTerm = internTerm . UUMinusNumTerm
+{-# INLINE uminusNumTerm #-}
+
+timesNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a -> Term a
+timesNumTerm l r = internTerm $ UTimesNumTerm l r
+{-# INLINE timesNumTerm #-}
+
+absNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
+absNumTerm = internTerm . UAbsNumTerm
+{-# INLINE absNumTerm #-}
+
+signumNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
+signumNumTerm = internTerm . USignumNumTerm
+{-# INLINE signumNumTerm #-}
+
+ltNumTerm :: (SupportedPrim a, Num a, Ord a) => Term a -> Term a -> Term Bool
+ltNumTerm l r = internTerm $ ULTNumTerm l r
+{-# INLINE ltNumTerm #-}
+
+leNumTerm :: (SupportedPrim a, Num a, Ord a) => Term a -> Term a -> Term Bool
+leNumTerm l r = internTerm $ ULENumTerm l r
+{-# INLINE leNumTerm #-}
+
+andBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+andBitsTerm l r = internTerm $ UAndBitsTerm l r
+{-# INLINE andBitsTerm #-}
+
+orBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+orBitsTerm l r = internTerm $ UOrBitsTerm l r
+{-# INLINE orBitsTerm #-}
+
+xorBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+xorBitsTerm l r = internTerm $ UXorBitsTerm l r
+{-# INLINE xorBitsTerm #-}
+
+complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
+complementBitsTerm = internTerm . UComplementBitsTerm
+{-# INLINE complementBitsTerm #-}
+
+shiftLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Term a -> Term a -> Term a
+shiftLeftTerm t n = internTerm $ UShiftLeftTerm t n
+{-# INLINE shiftLeftTerm #-}
+
+shiftRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymShift a) => Term a -> Term a -> Term a
+shiftRightTerm t n = internTerm $ UShiftRightTerm t n
+{-# INLINE shiftRightTerm #-}
+
+rotateLeftTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
+rotateLeftTerm t n = internTerm $ URotateLeftTerm t n
+{-# INLINE rotateLeftTerm #-}
+
+rotateRightTerm :: (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) => Term a -> Term a -> Term a
+rotateRightTerm t n = internTerm $ URotateRightTerm t n
+{-# INLINE rotateRightTerm #-}
+
+toSignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
+    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
+    SignConversion (u 1) (s 1),
+    Typeable u,
+    Typeable s,
+    KnownNat n,
+    1 <= n,
+    SizedBV u,
+    SizedBV s
+  ) =>
+  Term (u n) ->
+  Term (s n)
+toSignedTerm = internTerm . UToSignedTerm
+
+toUnsignedTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
+    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
+    SignConversion (u 1) (s 1),
+    Typeable u,
+    Typeable s,
+    KnownNat n,
+    1 <= n,
+    SizedBV u,
+    SizedBV s
+  ) =>
+  Term (s n) ->
+  Term (u n)
+toUnsignedTerm = internTerm . UToUnsignedTerm
+
+bvconcatTerm ::
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat a,
+    KnownNat b,
+    KnownNat (a + b),
+    1 <= a,
+    1 <= b,
+    1 <= a + b,
+    SizedBV bv
+  ) =>
+  Term (bv a) ->
+  Term (bv b) ->
+  Term (bv (a + b))
+bvconcatTerm l r = internTerm $ UBVConcatTerm l r
+{-# INLINE bvconcatTerm #-}
+
+bvselectTerm ::
+  forall bv n ix w p q.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat n,
+    KnownNat ix,
+    KnownNat w,
+    1 <= n,
+    1 <= w,
+    ix + w <= n,
+    SizedBV bv
+  ) =>
+  p ix ->
+  q w ->
+  Term (bv n) ->
+  Term (bv w)
+bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
+{-# INLINE bvselectTerm #-}
+
+bvextendTerm ::
+  forall bv l r proxy.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SizedBV bv
+  ) =>
+  Bool ->
+  proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
+{-# INLINE bvextendTerm #-}
+
+bvsignExtendTerm ::
+  forall bv l r proxy.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SizedBV bv
+  ) =>
+  proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
+{-# INLINE bvsignExtendTerm #-}
+
+bvzeroExtendTerm ::
+  forall bv l r proxy.
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    Typeable bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SizedBV bv
+  ) =>
+  proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+bvzeroExtendTerm _ v = internTerm $ UBVExtendTerm False (typeRep @r) v
+{-# INLINE bvzeroExtendTerm #-}
+
+applyTerm ::
+  (SupportedPrim a, SupportedPrim b, SupportedPrim f, PEvalApplyTerm f a b) =>
+  Term f ->
+  Term a ->
+  Term b
+applyTerm f a = internTerm $ UApplyTerm f a
+{-# INLINE applyTerm #-}
+
+tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
+tabularFunApplyTerm f a = internTerm $ UTabularFunApplyTerm f a
+{-# INLINE tabularFunApplyTerm #-}
+
+divIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+divIntegralTerm l r = internTerm $ UDivIntegralTerm l r
+{-# INLINE divIntegralTerm #-}
+
+modIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+modIntegralTerm l r = internTerm $ UModIntegralTerm l r
+{-# INLINE modIntegralTerm #-}
+
+quotIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+quotIntegralTerm l r = internTerm $ UQuotIntegralTerm l r
+{-# INLINE quotIntegralTerm #-}
+
+remIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+remIntegralTerm l r = internTerm $ URemIntegralTerm l r
+{-# INLINE remIntegralTerm #-}
+
+divBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+divBoundedIntegralTerm l r = internTerm $ UDivBoundedIntegralTerm l r
+{-# INLINE divBoundedIntegralTerm #-}
+
+modBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+modBoundedIntegralTerm l r = internTerm $ UModBoundedIntegralTerm l r
+{-# INLINE modBoundedIntegralTerm #-}
+
+quotBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+quotBoundedIntegralTerm l r = internTerm $ UQuotBoundedIntegralTerm l r
+{-# INLINE quotBoundedIntegralTerm #-}
+
+remBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
+remBoundedIntegralTerm l r = internTerm $ URemBoundedIntegralTerm l r
+{-# INLINE remBoundedIntegralTerm #-}

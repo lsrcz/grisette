@@ -113,16 +113,16 @@ import Grisette.Core.Data.SomeBV
     pattern SomeSymIntN,
     pattern SomeSymWordN,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    isymTerm,
-    ssymTerm,
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun
+  ( type (-->),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( LinkedRep (wrapTerm),
     Term,
+    conTerm,
+    isymTerm,
     someTypedSymbol,
-    type (-->),
+    ssymTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model (Model),

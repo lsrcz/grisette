@@ -96,9 +96,7 @@ import Grisette.Core.Data.Class.Solver
     SolverCommand (SolverPop, SolverPush, SolverSolve, SolverTerminate),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( type (-->),
-  )
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
   ( Model,
   )

@@ -43,8 +43,13 @@ import Data.Bits
 import Data.Typeable (Typeable, cast)
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( andBitsTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term
+      ( ComplementBitsTerm,
+        ConTerm
+      ),
+    andBitsTerm,
     complementBitsTerm,
     conTerm,
     orBitsTerm,
@@ -53,13 +58,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     shiftLeftTerm,
     shiftRightTerm,
     xorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( SupportedPrim,
-    Term
-      ( ComplementBitsTerm,
-        ConTerm
-      ),
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   ( binaryUnfoldOnce,

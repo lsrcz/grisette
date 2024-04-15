@@ -34,16 +34,6 @@ where
 
 import Data.Typeable (Typeable, cast, eqT, type (:~:) (Refl))
 import Grisette.Core.Data.BV (WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( absNumTerm,
-    addNumTerm,
-    conTerm,
-    leNumTerm,
-    ltNumTerm,
-    signumNumTerm,
-    timesNumTerm,
-    uminusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
     Term
@@ -53,6 +43,14 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         TimesNumTerm,
         UMinusNumTerm
       ),
+    absNumTerm,
+    addNumTerm,
+    conTerm,
+    leNumTerm,
+    ltNumTerm,
+    signumNumTerm,
+    timesNumTerm,
+    uminusNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   ( binaryUnfoldOnce,

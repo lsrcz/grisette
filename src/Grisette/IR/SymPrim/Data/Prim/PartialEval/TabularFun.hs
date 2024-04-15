@@ -17,13 +17,11 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 where
 
 import Grisette.Core.Data.Class.Function (Function ((#)))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    tabularFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
     Term (ConTerm),
+    conTerm,
+    tabularFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalEqvTerm,

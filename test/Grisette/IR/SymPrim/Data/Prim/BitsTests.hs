@@ -10,8 +10,9 @@ import Data.Bits (Bits (rotateL, rotateR), FiniteBits)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.IR.SymPrim (SupportedPrim)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( andBitsTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( Term,
+    andBitsTerm,
     complementBitsTerm,
     conTerm,
     orBitsTerm,
@@ -22,7 +23,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     ssymTerm,
     xorBitsTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pevalAndBitsTerm,
     pevalComplementBitsTerm,

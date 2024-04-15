@@ -82,7 +82,7 @@ module Grisette.Internal.IR.SymPrim
     pevalGtNumTerm,
     pevalGeNumTerm,
     pevalTabularFunApplyTerm,
-    pevalGeneralFunApplyTerm,
+    PEvalApplyTerm (..),
     pevalDivIntegralTerm,
     pevalModIntegralTerm,
     pevalQuotIntegralTerm,
@@ -95,36 +95,35 @@ import Grisette.IR.SymPrim.Data.Prim.Helpers
     pattern TernaryTermPatt,
     pattern UnaryTermPatt,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    constructBinary,
-    constructTernary,
-    constructUnary,
-    isymTerm,
-    ssymTerm,
-    symTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (..),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp (..),
+    PEvalApplyTerm (pevalApplyTerm),
     SomeTypedSymbol (..),
     SupportedPrim (..),
     Term (..),
     TernaryOp (..),
     UnaryOp (..),
+    conTerm,
+    constructBinary,
+    constructTernary,
+    constructUnary,
+    identity,
+    identityWithTypeRep,
+    introSupportedPrimConstraint,
+    isymTerm,
+    pformat,
     showUntyped,
     someTypedSymbol,
+    ssymTerm,
+    symTerm,
     withSymbolSupported,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( castTerm,
     extractSymbolicsTerm,
-    identity,
-    identityWithTypeRep,
-    introSupportedPrimConstraint,
-    pformat,
     termSize,
     termsSize,
   )
@@ -144,9 +143,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
     pattern BoolTerm,
     pattern FalseTerm,
     pattern TrueTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-  ( pevalGeneralFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivIntegralTerm,
