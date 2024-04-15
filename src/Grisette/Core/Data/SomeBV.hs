@@ -156,7 +156,9 @@ import Grisette.Core.Data.Class.SafeSymShift
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, sym), isym, ssym)
+import Grisette.Core.Data.Class.Solvable
+  ( Solvable (con, conView, isym, ssym, sym),
+  )
 import Grisette.Core.Data.Class.SubstituteSym
   ( SubstituteSym (substituteSym),
   )

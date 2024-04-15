@@ -26,10 +26,7 @@ import Grisette.Core.Data.Class.SafeLinearArith
   ( SafeLinearArith (safeAdd, safeSub),
   )
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Core.Data.Class.Solvable
-  ( isym,
-    ssym,
-  )
+import Grisette.Core.Data.Class.Solvable (Solvable (isym, ssym))
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Core.Data.SomeBV
   ( SomeBV (SomeBV),

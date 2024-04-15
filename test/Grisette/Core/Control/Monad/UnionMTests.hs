@@ -43,11 +43,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
     mrgIte1,
   )
-import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView),
-    isym,
-    ssym,
-  )
+import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, isym, ssym))
 import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))

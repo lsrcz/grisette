@@ -22,8 +22,6 @@ module Grisette.Core.Data.Class.Solvable
   ( -- * Solvable type interface
     Solvable (..),
     pattern Con,
-    ssym,
-    isym,
     slocsym,
     ilocsym,
   )
@@ -78,31 +76,31 @@ class (IsString t) => Solvable c t | t -> c where
   -- False
   sym :: Symbol -> t
 
--- | Generate simply-named symbolic constants.
---
--- Two symbolic constants with the same identifier are the same symbolic
--- constant, and will always be assigned with the same value by the solver.
---
--- >>> ssym "a" :: SymBool
--- a
--- >>> (ssym "a" :: SymBool) == ssym "a"
--- True
--- >>> (ssym "a" :: SymBool) == ssym "b"
--- False
--- >>> (ssym "a" :: SymBool) .&& ssym "a"
--- a
-ssym :: (Solvable c t) => Identifier -> t
-ssym = sym . SimpleSymbol
+  -- | Generate simply-named symbolic constants.
+  --
+  -- Two symbolic constants with the same identifier are the same symbolic
+  -- constant, and will always be assigned with the same value by the solver.
+  --
+  -- >>> ssym "a" :: SymBool
+  -- a
+  -- >>> (ssym "a" :: SymBool) == ssym "a"
+  -- True
+  -- >>> (ssym "a" :: SymBool) == ssym "b"
+  -- False
+  -- >>> (ssym "a" :: SymBool) .&& ssym "a"
+  -- a
+  ssym :: Identifier -> t
+  ssym = sym . SimpleSymbol
 
--- | Generate indexed symbolic constants.
---
--- Two symbolic constants with the same identifier but different indices are
--- not the same symbolic constants.
---
--- >>> isym "a" 1 :: SymBool
--- a@1
-isym :: (Solvable c t) => Identifier -> Int -> t
-isym nm idx = sym $ IndexedSymbol nm idx
+  -- | Generate indexed symbolic constants.
+  --
+  -- Two symbolic constants with the same identifier but different indices are
+  -- not the same symbolic constants.
+  --
+  -- >>> isym "a" 1 :: SymBool
+  -- a@1
+  isym :: Identifier -> Int -> t
+  isym nm idx = sym $ IndexedSymbol nm idx
 
 -- | Extract the concrete value from a solvable value with 'conView'.
 --

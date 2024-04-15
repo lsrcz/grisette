@@ -176,8 +176,6 @@ module Grisette.Core
     identifier,
     withInfo,
     withLoc,
-    ssym,
-    isym,
     slocsym,
     ilocsym,
 
@@ -1189,9 +1187,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (..),
     ilocsym,
-    isym,
     slocsym,
-    ssym,
     pattern Con,
   )
 import Grisette.Core.Data.Class.Solver

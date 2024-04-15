@@ -120,7 +120,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
-import Grisette.Core.Data.Class.Solvable (isym)
+import Grisette.Core.Data.Class.Solvable (Solvable (isym))
 import Grisette.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
     mrgSingle,

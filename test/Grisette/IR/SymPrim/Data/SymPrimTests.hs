@@ -99,9 +99,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView),
-    isym,
-    ssym,
+  ( Solvable (con, conView, isym, ssym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
