@@ -26,7 +26,7 @@ import Grisette.Core.Data.Class.ModelOps
     ModelRep (buildModel),
   )
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.Solvable (Solvable (con), isym, ssym)
+import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
 import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( TypedSymbol (TypedSymbol),

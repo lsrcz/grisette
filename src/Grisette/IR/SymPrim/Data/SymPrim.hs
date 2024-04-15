@@ -123,8 +123,7 @@ import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
 import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, sym),
-    ssym,
+  ( Solvable (con, conView, ssym, sym),
     pattern Con,
   )
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))

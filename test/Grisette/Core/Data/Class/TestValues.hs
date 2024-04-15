@@ -9,7 +9,7 @@ module Grisette.Core.Data.Class.TestValues
   )
 where
 
-import Grisette.Core.Data.Class.Solvable (Solvable (con), isym, ssym)
+import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
 import Grisette.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
