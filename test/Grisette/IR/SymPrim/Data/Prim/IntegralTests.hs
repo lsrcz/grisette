@@ -10,8 +10,10 @@ import Control.DeepSeq (NFData (rnf), force)
 import Control.Exception (ArithException, catch, evaluate)
 import Data.Proxy (Proxy (Proxy))
 import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term,
+    conTerm,
     divBoundedIntegralTerm,
     divIntegralTerm,
     modIntegralTerm,
@@ -19,10 +21,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     quotIntegralTerm,
     remIntegralTerm,
     ssymTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( SupportedPrim,
-    Term,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,

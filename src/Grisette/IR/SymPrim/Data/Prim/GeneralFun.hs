@@ -1,38 +1,45 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
--- |
--- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
--- Copyright   :   (c) Sirui Lu 2021-2023
--- License     :   BSD-3-Clause (see the LICENSE file)
---
--- Maintainer  :   siruilu@cs.washington.edu
--- Stability   :   Experimental
--- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermSubstitution
-  ( substTerm,
+module Grisette.IR.SymPrim.Data.Prim.GeneralFun
+  ( type (-->) (..),
+    buildGeneralFun,
+    substTerm,
   )
 where
 
+import Control.DeepSeq (NFData (rnf))
+import Data.Hashable (Hashable (hashWithSalt))
+import GHC.Generics (Generic)
+import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.MemoUtils (htmemo)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
+import Grisette.Core.Data.Symbol
+  ( Symbol (IndexedSymbol, SimpleSymbol),
+    withInfo,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
-  ( SomeTerm (SomeTerm),
-  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp (partialEvalBinary),
-    SupportedPrim,
+    LinkedRep (underlyingTerm, wrapTerm),
+    PEvalApplyTerm (pevalApplyTerm),
+    SupportedPrim (PrimConstraint, defaultValue),
     Term
       ( AbsNumTerm,
         AddNumTerm,
         AndBitsTerm,
         AndTerm,
+        ApplyTerm,
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
@@ -42,7 +49,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqvTerm,
-        GeneralFunApplyTerm,
         ITETerm,
         LENumTerm,
         LTNumTerm,
@@ -71,10 +77,13 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         XorBitsTerm
       ),
     TernaryOp (partialEvalTernary),
-    TypedSymbol,
+    TypedSymbol (TypedSymbol, unTypedSymbol),
     UnaryOp (partialEvalUnary),
+    applyTerm,
+    conTerm,
+    pformat,
     someTypedSymbol,
-    type (-->) (GeneralFun),
+    symTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
@@ -100,9 +109,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
     pevalNotTerm,
     pevalOrTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-  ( pevalGeneralFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
     pevalDivIntegralTerm,
@@ -122,17 +128,100 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
   )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   ( pevalTabularFunApplyTerm,
   )
-import Type.Reflection
-  ( TypeRep,
-    eqTypeRep,
-    typeRep,
-    pattern App,
-    type (:~~:) (HRefl),
-  )
+import Language.Haskell.TH.Syntax (Lift (liftTyped))
+import Type.Reflection (TypeRep, eqTypeRep, typeRep, pattern App, type (:~~:) (HRefl))
 import Unsafe.Coerce (unsafeCoerce)
+
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.IR.SymPrim
+
+-- | General symbolic function type. Use the '#' operator to apply the function.
+-- Note that this function should be applied to symbolic values only. It is by
+-- itself already a symbolic value, but can be considered partially concrete
+-- as the function body is specified. Use 'Grisette.IR.SymPrim.Data.SymPrim.-~>'
+-- for uninterpreted general symbolic functions.
+--
+-- The result would be partially evaluated.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> :set -XTypeOperators
+-- >>> let f = ("x" :: TypedSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
+-- >>> f # 1    -- 1 has the type SymInteger
+-- (+ 2 y)
+-- >>> f # "a"  -- "a" has the type SymInteger
+-- (+ 1 (+ a y))
+data (-->) a b where
+  GeneralFun ::
+    (SupportedPrim a, SupportedPrim b) =>
+    TypedSymbol a ->
+    Term b ->
+    a --> b
+
+instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
+  (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
+
+infixr 0 -->
+
+buildGeneralFun ::
+  (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+buildGeneralFun arg v =
+  GeneralFun
+    (TypedSymbol newarg)
+    (substTerm arg (symTerm newarg) v)
+  where
+    newarg = case unTypedSymbol arg of
+      SimpleSymbol s -> SimpleSymbol (withInfo s ARG)
+      IndexedSymbol s i -> IndexedSymbol (withInfo s ARG) i
+
+data ARG = ARG
+  deriving (Eq, Ord, Lift, Show, Generic)
+
+instance NFData ARG where
+  rnf ARG = ()
+
+instance Hashable ARG where
+  hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
+
+instance Eq (a --> b) where
+  GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
+
+instance Show (a --> b) where
+  show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
+
+instance Lift (a --> b) where
+  liftTyped (GeneralFun sym tm) = [||GeneralFun sym tm||]
+
+instance Hashable (a --> b) where
+  s `hashWithSalt` (GeneralFun sym tm) = s `hashWithSalt` sym `hashWithSalt` tm
+
+instance NFData (a --> b) where
+  rnf (GeneralFun sym tm) = rnf sym `seq` rnf tm
+
+instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
+  type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+
+instance
+  (SupportedPrim a, SupportedPrim b) =>
+  PEvalApplyTerm (a --> b) a b
+  where
+  pevalApplyTerm = totalize2 doPevalApplyTerm applyTerm
+    where
+      doPevalApplyTerm ::
+        (SupportedPrim a, SupportedPrim b) =>
+        Term (a --> b) ->
+        Term a ->
+        Maybe (Term b)
+      doPevalApplyTerm (ConTerm _ (GeneralFun arg tm)) v =
+        Just $ substTerm arg v tm
+      doPevalApplyTerm (ITETerm _ c l r) v =
+        return $ pevalITETerm c (pevalApplyTerm l v) (pevalApplyTerm r v)
+      doPevalApplyTerm _ _ = Nothing
 
 substTerm :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
 substTerm sym term = gov
@@ -182,8 +271,8 @@ substTerm sym term = gov
         BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)
         BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)
         BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)
+        ApplyTerm _ f op -> SomeTerm $ pevalApplyTerm (gov f) (gov op)
         TabularFunApplyTerm _ f op -> SomeTerm $ pevalTabularFunApplyTerm (gov f) (gov op)
-        GeneralFunApplyTerm _ f op -> SomeTerm $ pevalGeneralFunApplyTerm (gov f) (gov op)
         DivIntegralTerm _ op1 op2 -> SomeTerm $ pevalDivIntegralTerm (gov op1) (gov op2)
         ModIntegralTerm _ op1 op2 -> SomeTerm $ pevalModIntegralTerm (gov op1) (gov op2)
         QuotIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotIntegralTerm (gov op1) (gov op2)

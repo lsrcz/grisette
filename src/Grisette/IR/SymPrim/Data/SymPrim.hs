@@ -129,26 +129,24 @@ import Grisette.Core.Data.Class.Solvable
   )
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    symTerm,
-  )
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun (buildGeneralFun, type (-->))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
+    PEvalApplyTerm (pevalApplyTerm),
     SupportedPrim,
     SymRep (SymType),
     Term (ConTerm, SymTerm),
     TypedSymbol,
-    buildGeneralFun,
-    type (-->),
+    conTerm,
+    pformat,
+    symTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( pformat,
-    someTermsSize,
+  ( someTermsSize,
     termSize,
     termsSize,
   )
@@ -176,9 +174,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalEqvTerm,
     pevalITETerm,
     pevalOrTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-  ( pevalGeneralFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral (pevalModBoundedIntegralTerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
@@ -392,7 +387,7 @@ instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca --> cb) (sa -~> sb)
   wrapTerm = SymGeneralFun
 
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa -~> sb) sa sb where
-  (SymGeneralFun f) # t = wrapTerm $ pevalGeneralFunApplyTerm f (underlyingTerm t)
+  (SymGeneralFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
 instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa -~> st) where
   type FunType (sa -~> st) = sa -> FunType st

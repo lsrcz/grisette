@@ -39,14 +39,6 @@ where
 import Control.Monad (msum)
 import Data.Maybe (fromMaybe)
 import Data.Typeable (cast, eqT, type (:~:) (Refl))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( andTerm,
-    conTerm,
-    eqvTerm,
-    iteTerm,
-    notTerm,
-    orTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
     Term
@@ -58,6 +50,12 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         NotTerm,
         OrTerm
       ),
+    andTerm,
+    conTerm,
+    eqvTerm,
+    iteTerm,
+    notTerm,
+    orTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( castTerm,

@@ -32,8 +32,13 @@ import Grisette.Backend.SBV.Data.SMT.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( absNumTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term,
+    absNumTerm,
     addNumTerm,
     andBitsTerm,
     andTerm,
@@ -68,13 +73,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     toUnsignedTerm,
     uminusNumTerm,
     xorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
-  ( SomeTerm (SomeTerm),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( SupportedPrim,
-    Term,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

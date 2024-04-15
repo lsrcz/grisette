@@ -45,14 +45,6 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( bvconcatTerm,
-    bvextendTerm,
-    bvselectTerm,
-    conTerm,
-    toSignedTerm,
-    toUnsignedTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( SupportedPrim,
     Term
@@ -63,6 +55,12 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         ToSignedTerm,
         ToUnsignedTerm
       ),
+    bvconcatTerm,
+    bvextendTerm,
+    bvselectTerm,
+    conTerm,
+    toSignedTerm,
+    toUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
   ( castTerm,

@@ -102,13 +102,13 @@ import Grisette.Core.Data.SomeBV
     type SomeSymWordN,
     type SomeWordN,
   )
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( ConRep (..),
     LinkedRep,
     SupportedPrim,
     SymRep (..),
     TypedSymbol (..),
-    type (-->),
   )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model (..),

@@ -20,13 +20,11 @@ import Grisette.Core.Data.Class.ModelOps
       ),
     ModelRep (buildModel),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    ssymTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( Term,
+    conTerm,
     someTypedSymbol,
+    ssymTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model (Model),

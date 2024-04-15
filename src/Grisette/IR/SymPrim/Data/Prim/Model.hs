@@ -59,15 +59,13 @@ import Grisette.Core.Data.Class.ModelOps
     SymbolSetRep (buildSymbolSet),
   )
 import Grisette.Core.Data.MemoUtils (htmemo)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
-    symTerm,
-  )
+import Grisette.IR.SymPrim.Data.Prim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
   ( BinaryOp (partialEvalBinary),
+    PEvalApplyTerm (pevalApplyTerm),
     SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim (defaultValue, defaultValueDynamic),
     Term
@@ -75,6 +73,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         AddNumTerm,
         AndBitsTerm,
         AndTerm,
+        ApplyTerm,
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
@@ -84,7 +83,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
         DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqvTerm,
-        GeneralFunApplyTerm,
         ITETerm,
         LENumTerm,
         LTNumTerm,
@@ -115,10 +113,11 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     TernaryOp (partialEvalTernary),
     TypedSymbol (unTypedSymbol),
     UnaryOp (partialEvalUnary),
+    conTerm,
     showUntyped,
     someTypedSymbol,
+    symTerm,
     withSymbolSupported,
-    type (-->) (GeneralFun),
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
   ( ModelValue,
@@ -148,9 +147,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
     pevalITETerm,
     pevalNotTerm,
     pevalOrTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.GeneralFun
-  ( pevalGeneralFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
@@ -472,10 +468,10 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goUnary (pevalBVSelectTerm ix w) arg
     go (SomeTerm (BVExtendTerm _ n signed arg)) =
       goUnary (pevalBVExtendTerm n signed) arg
+    go (SomeTerm (ApplyTerm _ f arg)) =
+      goBinary pevalApplyTerm f arg
     go (SomeTerm (TabularFunApplyTerm _ f arg)) =
       goBinary pevalTabularFunApplyTerm f arg
-    go (SomeTerm (GeneralFunApplyTerm _ f arg)) =
-      goBinary pevalGeneralFunApplyTerm f arg
     go (SomeTerm (DivIntegralTerm _ arg1 arg2)) =
       goBinary pevalDivIntegralTerm arg1 arg2
     go (SomeTerm (ModIntegralTerm _ arg1 arg2)) =

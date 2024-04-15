@@ -20,18 +20,16 @@ module Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   )
 where
 
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( conTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( SupportedPrim,
+    Term (ConTerm),
+    conTerm,
     divBoundedIntegralTerm,
     divIntegralTerm,
     modIntegralTerm,
     quotBoundedIntegralTerm,
     quotIntegralTerm,
     remIntegralTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( SupportedPrim,
-    Term (ConTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   ( binaryUnfoldOnce,

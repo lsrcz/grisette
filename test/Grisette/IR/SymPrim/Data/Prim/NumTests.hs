@@ -5,8 +5,9 @@
 module Grisette.IR.SymPrim.Data.Prim.NumTests (numTests) where
 
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
-  ( absNumTerm,
+import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+  ( Term,
+    absNumTerm,
     addNumTerm,
     conTerm,
     leNumTerm,
@@ -16,7 +17,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.InternedCtors
     timesNumTerm,
     uminusNumTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (Term)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalITETerm,
   )
