@@ -18,6 +18,7 @@ module Grisette.IR.SymPrim.Data.Prim.Term
   )
 where
 
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.BVPEval ()
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalDivModIntegralTerm
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalNumTerm

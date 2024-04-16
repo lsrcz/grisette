@@ -11,19 +11,18 @@
 module Grisette.IR.SymPrim.Data.Prim.BVTests (bvTests) where
 
 import Data.Proxy (Proxy (Proxy))
-import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.BitVector (SizedBV)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-    pevalToSignedTerm,
-    pevalToUnsignedTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( SupportedPrim,
+  ( PEvalBVSignConversionTerm
+      ( pevalBVToSignedTerm,
+        pevalBVToUnsignedTerm
+      ),
+    PEvalBVTerm
+      ( pevalBVConcatTerm,
+        pevalBVExtendTerm,
+        pevalBVSelectTerm
+      ),
     Term,
     bvconcatTerm,
     bvextendTerm,
@@ -52,15 +51,13 @@ data ToUnsignedTest = ToUnsignedTest
 data BVSelectTest where
   BVSelectTest ::
     forall ix w n bv.
-    ( KnownNat ix,
+    ( PEvalBVTerm bv,
+      KnownNat ix,
       1 <= n,
       KnownNat w,
       1 <= w,
       KnownNat n,
-      ix + w <= n,
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
-      SizedBV bv
+      ix + w <= n
     ) =>
     { bvSelectTestName :: String,
       bvSelectIx :: Proxy ix,
@@ -73,14 +70,12 @@ data BVSelectTest where
 data BVExtendTest where
   BVExtendTest ::
     forall l r bv.
-    ( KnownNat l,
+    ( PEvalBVTerm bv,
+      KnownNat l,
       1 <= l,
       KnownNat r,
       1 <= r,
-      l <= r,
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
-      SizedBV bv
+      l <= r
     ) =>
     { bvExtendTestName :: String,
       bvExtendSigned :: Bool,
@@ -93,15 +88,13 @@ data BVExtendTest where
 data BVConcatTest where
   BVConcatTest ::
     forall l r bv.
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    ( PEvalBVTerm bv,
       KnownNat l,
       KnownNat r,
       KnownNat (l + r),
       1 <= l,
       1 <= r,
-      1 <= (l + r),
-      Typeable bv,
-      SizedBV bv
+      1 <= l + r
     ) =>
     { bvConcatTestName :: String,
       bvConcatTestLhs :: Term (bv l),
@@ -114,7 +107,7 @@ bvTests :: Test
 bvTests =
   testGroup
     "BV"
-    [ testGroup "pevalToSignedTerm" $ do
+    [ testGroup "pevalBVToSignedTerm" $ do
         ToSignedTest name term expected <-
           [ ToSignedTest
               { toSignedTestName = "concrete",
@@ -154,9 +147,9 @@ bvTests =
               }
             ]
         return $ testCase name $ do
-          let actual = pevalToSignedTerm term
+          let actual = pevalBVToSignedTerm term
           actual @?= expected,
-      testGroup "pevalToUnsignedTerm" $ do
+      testGroup "pevalBVToUnsignedTerm" $ do
         ToUnsignedTest name term expected <-
           [ ToUnsignedTest
               { toUnsignedTestName = "concrete",
@@ -196,7 +189,7 @@ bvTests =
               }
             ]
         return $ testCase name $ do
-          let actual = pevalToUnsignedTerm term
+          let actual = pevalBVToUnsignedTerm term
           actual @?= expected,
       testGroup "pevalBVSelectTerm" $ do
         BVSelectTest name ix w term expected <-

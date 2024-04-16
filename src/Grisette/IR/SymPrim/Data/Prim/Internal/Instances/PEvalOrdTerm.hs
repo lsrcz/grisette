@@ -25,10 +25,11 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     Term (AddNumTerm, ConTerm),
     conTerm,
+    leOrdTerm,
     ltOrdTerm,
-    pevalSubNumTerm, leOrdTerm,
+    pevalSubNumTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold (binaryUnfoldOnce)
+import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold (binaryUnfoldOnce)
 
 -- Lt
 pevalGeneralLtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool

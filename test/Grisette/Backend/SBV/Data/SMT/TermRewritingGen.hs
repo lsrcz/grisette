@@ -55,13 +55,13 @@ import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.Core.Data.Symbol (Identifier, withInfo)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (pevalBinary),
+    PEvalBVTerm
+      ( pevalBVConcatTerm,
+        pevalBVExtendTerm,
+        pevalBVSelectTerm
+      ),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
@@ -306,15 +306,13 @@ bvconcatSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
     TermRewritingSpec c (bv (an + bn)),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
+    PEvalBVTerm bv,
     KnownNat an,
     KnownNat bn,
     KnownNat (an + bn),
     1 <= an,
     1 <= bn,
-    1 <= an + bn,
-    SizedBV bv
+    1 <= an + bn
   ) =>
   a ->
   b ->
@@ -324,16 +322,14 @@ bvconcatSpec = constructBinarySpec bvconcatTerm pevalBVConcatTerm
 bvselectSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
+    PEvalBVTerm bv,
     KnownNat an,
     KnownNat ix,
     KnownNat bn,
     1 <= an,
     1 <= bn,
     0 <= ix,
-    ix + bn <= an,
-    SizedBV bv
+    ix + bn <= an
   ) =>
   proxy ix ->
   proxy bn ->
@@ -344,14 +340,12 @@ bvselectSpec p1 p2 = constructUnarySpec (bvselectTerm p1 p2) (pevalBVSelectTerm 
 bvextendSpec ::
   ( TermRewritingSpec a (bv an),
     TermRewritingSpec b (bv bn),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
+    PEvalBVTerm bv,
     KnownNat an,
     KnownNat bn,
     1 <= an,
     1 <= bn,
-    an <= bn,
-    SizedBV bv
+    an <= bn
   ) =>
   Bool ->
   proxy bn ->
@@ -608,7 +602,8 @@ type SupportedBV bv (n :: Nat) =
     PEvalShiftTerm (bv n),
     PEvalRotateTerm (bv n),
     PEvalNumTerm (bv n),
-    PEvalOrdTerm (bv n)
+    PEvalOrdTerm (bv n),
+    PEvalBVTerm bv
   )
 
 dsbv1 ::

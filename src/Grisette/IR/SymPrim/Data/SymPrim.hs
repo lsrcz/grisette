@@ -132,13 +132,6 @@ import Grisette.Core.Data.Class.SymRotate
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
 import Grisette.IR.SymPrim.Data.GeneralFun (buildGeneralFun, type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Model (Model)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-    pevalToSignedTerm,
-    pevalToUnsignedTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -146,6 +139,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
+    PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
+    PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
@@ -172,10 +167,11 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     conTerm,
     pevalEqTerm,
     pevalGeOrdTerm,
+    pevalModIntegralTerm,
     pevalOrTerm,
     pevalSubNumTerm,
     pformat,
-    symTerm, pevalModIntegralTerm,
+    symTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.TermUtils
   ( someTermsSize,
@@ -760,8 +756,8 @@ bvSelect ix w (somety (a :: origty n)) \
 -- BVSignConversion
 
 instance (KnownNat n, 1 <= n) => SignConversion (SymWordN n) (SymIntN n) where
-  toSigned (SymWordN n) = SymIntN $ pevalToSignedTerm n
-  toUnsigned (SymIntN n) = SymWordN $ pevalToUnsignedTerm n
+  toSigned (SymWordN n) = SymIntN $ pevalBVToSignedTerm n
+  toUnsigned (SymIntN n) = SymWordN $ pevalBVToUnsignedTerm n
 
 -- SymShift
 instance (KnownNat n, 1 <= n) => SymShift (SymWordN n) where

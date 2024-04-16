@@ -119,14 +119,14 @@ import Grisette.IR.SymPrim.Data.Prim.Model
     SymbolSet (SymbolSet),
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue (toModelValue)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep (wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
+    PEvalBVTerm
+      ( pevalBVConcatTerm,
+        pevalBVExtendTerm,
+        pevalBVSelectTerm
+      ),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,

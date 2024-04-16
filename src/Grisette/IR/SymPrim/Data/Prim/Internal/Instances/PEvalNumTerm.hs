@@ -41,7 +41,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     pevalSubNumTerm,
     signumNumTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold
   ( binaryUnfoldOnce,
     unaryUnfoldOnce,
   )

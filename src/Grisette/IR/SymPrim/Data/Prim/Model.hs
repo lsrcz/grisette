@@ -65,19 +65,14 @@ import Grisette.IR.SymPrim.Data.Prim.ModelValue
     toModelValue,
     unsafeFromModelValue,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-    pevalToSignedTerm,
-    pevalToUnsignedTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (pevalBinary),
     PEvalApplyTerm (pevalApplyTerm),
+    PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
+    PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
@@ -448,9 +443,9 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
     go (SomeTerm (ShiftRightTerm _ arg n)) = goBinary pevalShiftRightTerm arg n
     go (SomeTerm (RotateRightTerm _ arg n)) = goBinary pevalRotateRightTerm arg n
     go (SomeTerm (ToSignedTerm _ arg)) =
-      goUnary pevalToSignedTerm arg
+      goUnary pevalBVToSignedTerm arg
     go (SomeTerm (ToUnsignedTerm _ arg)) =
-      goUnary pevalToUnsignedTerm arg
+      goUnary pevalBVToUnsignedTerm arg
     go (SomeTerm (BVConcatTerm _ arg1 arg2)) =
       goBinary pevalBVConcatTerm arg1 arg2
     go (SomeTerm (BVSelectTerm _ ix w arg)) =
