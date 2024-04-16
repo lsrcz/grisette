@@ -10,9 +10,13 @@
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.Term
   ( module Grisette.IR.SymPrim.Data.Prim.Internal.Term,
+    module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalShiftTerm,
+    module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm,
   )
 where
 
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalBitwiseTerm ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalShiftTerm
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term

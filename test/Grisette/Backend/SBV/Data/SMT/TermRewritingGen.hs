@@ -64,12 +64,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalBVExtendTerm,
     pevalBVSelectTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalRotateLeftTerm,
-    pevalRotateRightTerm,
-    pevalShiftLeftTerm,
-    pevalShiftRightTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
     pevalDivIntegralTerm,
@@ -96,6 +90,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalRotateTerm
+      ( pevalRotateLeftTerm,
+        pevalRotateRightTerm
+      ),
+    PEvalShiftTerm
+      ( pevalShiftLeftTerm,
+        pevalShiftRightTerm
       ),
     SupportedPrim (pevalITETerm),
     Term,
@@ -293,16 +295,16 @@ xorBitsSpec = constructBinarySpec xorBitsTerm pevalXorBitsTerm
 complementBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a
 complementBitsSpec = constructUnarySpec complementBitsTerm pevalComplementBitsTerm
 
-shiftLeftSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymShift av) => a -> a -> a
+shiftLeftSpec :: (TermRewritingSpec a av, PEvalShiftTerm av) => a -> a -> a
 shiftLeftSpec = constructBinarySpec shiftLeftTerm pevalShiftLeftTerm
 
-shiftRightSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymShift av) => a -> a -> a
+shiftRightSpec :: (TermRewritingSpec a av, PEvalShiftTerm av) => a -> a -> a
 shiftRightSpec = constructBinarySpec shiftRightTerm pevalShiftRightTerm
 
-rotateLeftSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymRotate av) => a -> a -> a
+rotateLeftSpec :: (TermRewritingSpec a av, PEvalRotateTerm av) => a -> a -> a
 rotateLeftSpec = constructBinarySpec rotateLeftTerm pevalRotateLeftTerm
 
-rotateRightSpec :: (TermRewritingSpec a av, Integral av, FiniteBits av, SymRotate av) => a -> a -> a
+rotateRightSpec :: (TermRewritingSpec a av, PEvalRotateTerm av) => a -> a -> a
 rotateRightSpec = constructBinarySpec rotateRightTerm pevalRotateRightTerm
 
 bvconcatSpec ::
@@ -619,7 +621,9 @@ type SupportedBV bv (n :: Nat) =
     Integral (bv n),
     Bounded (bv n),
     SymShift (bv n),
-    SymRotate (bv n)
+    SymRotate (bv n),
+    PEvalShiftTerm (bv n),
+    PEvalRotateTerm (bv n)
   )
 
 dsbv1 ::

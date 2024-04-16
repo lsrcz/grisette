@@ -9,19 +9,20 @@ module Grisette.IR.SymPrim.Data.Prim.BitsTests (bitsTests) where
 import Data.Bits (Bits (rotateL, rotateR), FiniteBits)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
-import Grisette.IR.SymPrim (SupportedPrim)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalRotateLeftTerm,
-    pevalRotateRightTerm,
-    pevalShiftLeftTerm,
-    pevalShiftRightTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalRotateTerm
+      ( pevalRotateLeftTerm,
+        pevalRotateRightTerm
+      ),
+    PEvalShiftTerm
+      ( pevalShiftLeftTerm,
+        pevalShiftRightTerm
       ),
     Term,
     andBitsTerm,
@@ -304,7 +305,7 @@ bitsTests =
     ]
 
 concreteSmallRotateRightCorrect ::
-  (SupportedPrim a, Integral a, FiniteBits a, SymRotate a) =>
+  (PEvalRotateTerm a, Integral a, FiniteBits a, SymRotate a) =>
   a ->
   a ->
   Property
