@@ -31,7 +31,8 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     Term (ConTerm),
     applyTerm,
     conTerm,
-    pevalEqvTerm,
+    pevalDefaultEqTerm,
+    pevalEqTerm,
     pevalITEBasicTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
@@ -74,6 +75,7 @@ instance
   type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = TabularFun [] (defaultValue @b)
   pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
 
 instance
   (SupportedPrim a, SupportedPrim b) =>
@@ -91,5 +93,5 @@ instance
         where
           go [] = conTerm d
           go ((x, y) : xs) =
-            pevalITETerm (pevalEqvTerm a (conTerm x)) (conTerm y) (go xs)
+            pevalITETerm (pevalEqTerm a (conTerm x)) (conTerm y) (go xs)
       doPevalApplyTerm _ _ = Nothing

@@ -123,7 +123,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ConTerm,
         DivBoundedIntegralTerm,
         DivIntegralTerm,
-        EqvTerm,
+        EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -151,11 +151,11 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         XorBitsTerm
       ),
     TernaryOp (pevalTernary),
-    TypedSymbol (unTypedSymbol),
+    TypedSymbol (TypedSymbol, unTypedSymbol),
     UnaryOp (pevalUnary),
     conTerm,
     pevalAndTerm,
-    pevalEqvTerm,
+    pevalEqTerm,
     pevalNotTerm,
     pevalOrTerm,
     showUntyped,
@@ -209,9 +209,9 @@ instance Show Model where
       go0 ((SomeTypedSymbol _ s, v) : xs) = showUntyped s ++ " -> " ++ show v ++ ", " ++ go0 xs
 
 equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
-equation tsym m = withSymbolSupported tsym $
+equation tsym@(TypedSymbol {}) m = withSymbolSupported tsym $
   case valueOf tsym m of
-    Just v -> Just $ pevalEqvTerm (symTerm $ unTypedSymbol tsym) (conTerm v)
+    Just v -> Just $ pevalEqTerm (symTerm $ unTypedSymbol tsym) (conTerm v)
     Nothing -> Nothing
 
 instance SymbolSetOps SymbolSet TypedSymbol where
@@ -429,8 +429,8 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goBinary pevalOrTerm arg1 arg2
     go (SomeTerm (AndTerm _ arg1 arg2)) =
       goBinary pevalAndTerm arg1 arg2
-    go (SomeTerm (EqvTerm _ arg1 arg2)) =
-      goBinary pevalEqvTerm arg1 arg2
+    go (SomeTerm (EqTerm _ arg1 arg2)) =
+      goBinary pevalEqTerm arg1 arg2
     go (SomeTerm (ITETerm _ cond arg1 arg2)) =
       goTernary pevalITETerm cond arg1 arg2
     go (SomeTerm (AddNumTerm _ arg1 arg2)) =

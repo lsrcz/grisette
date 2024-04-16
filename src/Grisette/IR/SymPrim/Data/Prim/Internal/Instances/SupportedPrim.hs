@@ -27,9 +27,11 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
       ( PrimConstraint,
         defaultValue,
         defaultValueDynamic,
+        pevalEqTerm,
         pevalITETerm,
         pformatCon
       ),
+    pevalDefaultEqTerm,
     pevalITEBasicTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue (ModelValue, toModelValue)
@@ -46,6 +48,7 @@ instance SupportedPrim Integer where
   defaultValue = defaultValueForInteger
   defaultValueDynamic _ = defaultValueForIntegerDyn
   pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
 
 -- Signed BV
 instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
@@ -53,6 +56,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   pformatCon = show
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
 
 -- Unsigned BV
 instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
@@ -60,3 +64,4 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   pformatCon = show
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm

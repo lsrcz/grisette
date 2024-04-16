@@ -164,7 +164,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     conTerm,
     isymTerm,
     pevalAndTerm,
-    pevalEqvTerm,
+    pevalEqTerm,
     pevalGeOrdTerm,
     pevalGtOrdTerm,
     pevalImplyTerm,
@@ -520,8 +520,8 @@ symPrimTests =
             (genSym (ssym "a" :: SymBool) "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple (ssym "a" :: SymBool) "a" :: SymBool) @=? isym "a" 0,
           testCase "SEq" $ do
-            (ssym "a" :: SymBool) .== ssym "b" @=? SymBool (pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
-            (ssym "a" :: SymBool) ./= ssym "b" @=? SymBool (pevalNotTerm $ pevalEqvTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
+            (ssym "a" :: SymBool) .== ssym "b" @=? SymBool (pevalEqTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
+            (ssym "a" :: SymBool) ./= ssym "b" @=? SymBool (pevalNotTerm $ pevalEqTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
         ],
       testGroup
         "SymBool"

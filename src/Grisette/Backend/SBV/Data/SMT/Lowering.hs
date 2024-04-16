@@ -82,6 +82,7 @@ import Grisette.Core.Data.Class.ModelOps
   )
 import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
 import Grisette.IR.SymPrim.Data.GeneralFun (buildGeneralFun, type (-->))
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term (SupportedPrim)
 import Grisette.IR.SymPrim.Data.Prim.Model as PM (Model)
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -103,7 +104,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ConTerm,
         DivBoundedIntegralTerm,
         DivIntegralTerm,
-        EqvTerm,
+        EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -133,7 +134,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     TypedSymbol (TypedSymbol),
     conTerm,
     introSupportedPrimConstraint,
-    pevalEqvTerm,
+    pevalEqTerm,
     someTypedSymbol,
     symTerm,
     withSymbolSupported,
@@ -723,7 +724,7 @@ lowerSinglePrimImpl ResolvedConfig {} (TernaryTerm _ op (_ :: Term x) (_ :: Term
 lowerSinglePrimImpl config t@(NotTerm _ arg) m = lowerUnaryTerm config t arg SBV.sNot m
 lowerSinglePrimImpl config t@(OrTerm _ arg1 arg2) m = lowerBinaryTerm config t arg1 arg2 (SBV..||) m
 lowerSinglePrimImpl config t@(AndTerm _ arg1 arg2) m = lowerBinaryTerm config t arg1 arg2 (SBV..&&) m
-lowerSinglePrimImpl config t@(EqvTerm _ (arg1 :: Term x) arg2) m =
+lowerSinglePrimImpl config t@(EqTerm _ (arg1 :: Term x) arg2) m =
   case (config, R.typeRep @x) of
     ResolvedSimpleType -> lowerBinaryTerm config t arg1 arg2 (SBV..==) m
     _ -> translateBinaryError "(==)" (R.typeRep @x) (R.typeRep @x) (R.typeRep @a)
@@ -1065,7 +1066,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc orguifuncs) mp =
                 foldl'
                   ( \acc (v, f) ->
                       pevalITETerm
-                        (pevalEqvTerm (symTerm sym) (conTerm v))
+                        (pevalEqTerm (symTerm sym) (conTerm v))
                         (conTerm f)
                         acc
                   )
@@ -1080,7 +1081,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc orguifuncs) mp =
                 foldl'
                   ( \acc (v, a) ->
                       pevalITETerm
-                        (pevalEqvTerm (symTerm sym) (conTerm v))
+                        (pevalEqTerm (symTerm sym) (conTerm v))
                         (conTerm a)
                         acc
                   )

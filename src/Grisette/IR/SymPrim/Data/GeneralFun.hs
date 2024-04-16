@@ -90,7 +90,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ConTerm,
         DivBoundedIntegralTerm,
         DivIntegralTerm,
-        EqvTerm,
+        EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -123,7 +123,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     applyTerm,
     conTerm,
     pevalAndTerm,
-    pevalEqvTerm,
+    pevalDefaultEqTerm,
+    pevalEqTerm,
     pevalITEBasicTerm,
     pevalNotTerm,
     pevalOrTerm,
@@ -212,6 +213,7 @@ instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
 
 instance
   (SupportedPrim a, SupportedPrim b) =>
@@ -256,7 +258,7 @@ substTerm sym term = gov
         NotTerm _ op -> SomeTerm $ pevalNotTerm (gov op)
         OrTerm _ op1 op2 -> SomeTerm $ pevalOrTerm (gov op1) (gov op2)
         AndTerm _ op1 op2 -> SomeTerm $ pevalAndTerm (gov op1) (gov op2)
-        EqvTerm _ op1 op2 -> SomeTerm $ pevalEqvTerm (gov op1) (gov op2)
+        EqTerm _ op1 op2 -> SomeTerm $ pevalEqTerm (gov op1) (gov op2)
         ITETerm _ c op1 op2 -> SomeTerm $ pevalITETerm (gov c) (gov op1) (gov op2)
         AddNumTerm _ op1 op2 -> SomeTerm $ pevalAddNumTerm (gov op1) (gov op2)
         NegNumTerm _ op -> SomeTerm $ pevalNegNumTerm (gov op)

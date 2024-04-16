@@ -41,8 +41,6 @@ module Grisette.Internal.IR.SymPrim
     pattern FalseTerm,
     pattern BoolTerm,
     pevalNotTerm,
-    pevalEqvTerm,
-    pevalNotEqvTerm,
     pevalOrTerm,
     pevalAndTerm,
     pevalImplyTerm,
@@ -84,6 +82,7 @@ module Grisette.Internal.IR.SymPrim
     PEvalOrdTerm (..),
     pevalGtOrdTerm,
     pevalGeOrdTerm,
+    pevalNEqTerm,
   )
 where
 
@@ -99,10 +98,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalQuotIntegralTerm,
     pevalRemIntegralTerm,
   )
--- import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
---   ( pattern NumConTerm,
---     pattern NumOrdConTerm,
---   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
   ( BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
@@ -147,11 +142,10 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     introSupportedPrimConstraint,
     isymTerm,
     pevalAndTerm,
-    pevalEqvTerm,
     pevalGeOrdTerm,
     pevalGtOrdTerm,
     pevalImplyTerm,
-    pevalNotEqvTerm,
+    pevalNEqTerm,
     pevalNotTerm,
     pevalOrTerm,
     pevalSubNumTerm,

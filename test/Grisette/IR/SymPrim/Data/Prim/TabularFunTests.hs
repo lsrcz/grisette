@@ -10,7 +10,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     Term,
     applyTerm,
     conTerm,
-    pevalEqvTerm,
+    pevalEqTerm,
     ssymTerm,
   )
 import Grisette.IR.SymPrim.Data.TabularFun
@@ -39,10 +39,10 @@ tabularFunTests =
                   TabularFun [(1, 2), (3, 4)] 5
             pevalApplyTerm (conTerm f) (ssymTerm "b")
               @=? pevalITETerm
-                (pevalEqvTerm (conTerm 1 :: Term Integer) (ssymTerm "b"))
+                (pevalEqTerm (conTerm 1 :: Term Integer) (ssymTerm "b"))
                 (conTerm 2)
                 ( pevalITETerm
-                    (pevalEqvTerm (conTerm 3 :: Term Integer) (ssymTerm "b"))
+                    (pevalEqTerm (conTerm 3 :: Term Integer) (ssymTerm "b"))
                     (conTerm 4)
                     (conTerm 5)
                 ),
