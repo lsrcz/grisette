@@ -34,7 +34,11 @@ where
 
 import Data.Typeable (Typeable, cast, eqT, type (:~:) (Refl))
 import Grisette.Core.Data.BV (WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term
       ( AbsNumTerm,
@@ -51,10 +55,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     signumNumTerm,
     timesNumTerm,
     uminusNumTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-  ( binaryUnfoldOnce,
-    unaryUnfoldOnce,
   )
 import Grisette.IR.SymPrim.Data.Prim.Utils (pattern Dyn)
 import qualified Type.Reflection as R

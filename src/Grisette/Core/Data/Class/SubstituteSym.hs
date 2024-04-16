@@ -51,8 +51,8 @@ import Generics.Deriving
   )
 import Generics.Deriving.Instances ()
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun (substTerm)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.GeneralFun (substTerm)
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep (underlyingTerm),
     SupportedPrim,
     TypedSymbol,

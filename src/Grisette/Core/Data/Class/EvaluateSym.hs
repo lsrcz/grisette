@@ -54,8 +54,8 @@ import Generics.Deriving.Instances ()
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (LinkedRep, SupportedPrim)
 import Grisette.IR.SymPrim.Data.Prim.Model (Model, evaluateTerm)
+import Grisette.IR.SymPrim.Data.Prim.Term (LinkedRep, SupportedPrim)
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (SymBool),
     SymIntN (SymIntN),

@@ -39,7 +39,7 @@ where
 import Control.Monad (msum)
 import Data.Maybe (fromMaybe)
 import Data.Typeable (cast, eqT, type (:~:) (Refl))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term
       ( AddNumTerm,
@@ -57,7 +57,7 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     notTerm,
     orTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+import Grisette.IR.SymPrim.Data.Prim.TermUtils
   ( castTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Utils (pattern Dyn)

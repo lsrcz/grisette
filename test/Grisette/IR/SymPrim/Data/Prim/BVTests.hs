@@ -15,7 +15,14 @@ import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector (SizedBV)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+    pevalToSignedTerm,
+    pevalToUnsignedTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term,
     bvconcatTerm,
@@ -25,13 +32,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     ssymTerm,
     toSignedTerm,
     toUnsignedTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-    pevalToSignedTerm,
-    pevalToUnsignedTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

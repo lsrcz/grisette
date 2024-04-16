@@ -126,32 +126,12 @@ import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
     pattern Con,
   )
-import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))
+import Grisette.Core.Data.Class.SymRotate
+  ( SymRotate (symRotate, symRotateNegated),
+  )
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun (buildGeneralFun, type (-->))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
-  ( SomeTerm (SomeTerm),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( ConRep (ConType),
-    LinkedRep (underlyingTerm, wrapTerm),
-    PEvalApplyTerm (pevalApplyTerm),
-    SupportedPrim,
-    SymRep (SymType),
-    Term (ConTerm, SymTerm),
-    TypedSymbol,
-    conTerm,
-    pformat,
-    symTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( someTermsSize,
-    termSize,
-    termsSize,
-  )
-import Grisette.IR.SymPrim.Data.Prim.Model
-  ( Model,
-  )
+import Grisette.IR.SymPrim.Data.GeneralFun (buildGeneralFun, type (-->))
+import Grisette.IR.SymPrim.Data.Prim.Model (Model)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
   ( pevalBVConcatTerm,
     pevalBVExtendTerm,
@@ -187,6 +167,26 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   ( pevalTabularFunApplyTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
+  ( SomeTerm (SomeTerm),
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( ConRep (ConType),
+    LinkedRep (underlyingTerm, wrapTerm),
+    PEvalApplyTerm (pevalApplyTerm),
+    SupportedPrim,
+    SymRep (SymType),
+    Term (ConTerm, SymTerm),
+    TypedSymbol,
+    conTerm,
+    pformat,
+    symTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.TermUtils
+  ( someTermsSize,
+    termSize,
+    termsSize,
   )
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Grisette.Utils.Parameterized

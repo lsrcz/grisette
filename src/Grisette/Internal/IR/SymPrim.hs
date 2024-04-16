@@ -95,38 +95,6 @@ import Grisette.IR.SymPrim.Data.Prim.Helpers
     pattern TernaryTermPatt,
     pattern UnaryTermPatt,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
-  ( SomeTerm (..),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( BinaryOp (..),
-    PEvalApplyTerm (pevalApplyTerm),
-    SomeTypedSymbol (..),
-    SupportedPrim (..),
-    Term (..),
-    TernaryOp (..),
-    UnaryOp (..),
-    conTerm,
-    constructBinary,
-    constructTernary,
-    constructUnary,
-    identity,
-    identityWithTypeRep,
-    introSupportedPrimConstraint,
-    isymTerm,
-    pformat,
-    showUntyped,
-    someTypedSymbol,
-    ssymTerm,
-    symTerm,
-    withSymbolSupported,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
-  ( castTerm,
-    extractSymbolicsTerm,
-    termSize,
-    termsSize,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Model (evaluateTerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( falseTerm,
@@ -184,4 +152,36 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   ( binaryUnfoldOnce,
     unaryUnfoldOnce,
+  )
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
+  ( SomeTerm (..),
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( BinaryOp (..),
+    PEvalApplyTerm (pevalApplyTerm),
+    SomeTypedSymbol (..),
+    SupportedPrim (..),
+    Term (..),
+    TernaryOp (..),
+    UnaryOp (..),
+    conTerm,
+    constructBinary,
+    constructTernary,
+    constructUnary,
+    identity,
+    identityWithTypeRep,
+    introSupportedPrimConstraint,
+    isymTerm,
+    pformat,
+    showUntyped,
+    someTypedSymbol,
+    ssymTerm,
+    symTerm,
+    withSymbolSupported,
+  )
+import Grisette.IR.SymPrim.Data.Prim.TermUtils
+  ( castTerm,
+    extractSymbolicsTerm,
+    termSize,
+    termsSize,
   )

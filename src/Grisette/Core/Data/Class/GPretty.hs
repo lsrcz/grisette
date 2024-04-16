@@ -52,7 +52,7 @@ import GHC.Generics
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
     prettyPrintTerm,

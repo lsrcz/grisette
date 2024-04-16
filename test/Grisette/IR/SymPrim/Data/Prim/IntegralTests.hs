@@ -10,7 +10,15 @@ import Control.DeepSeq (NFData (rnf), force)
 import Control.Exception (ArithException, catch, evaluate)
 import Data.Proxy (Proxy (Proxy))
 import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term,
     conTerm,
@@ -21,14 +29,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     quotIntegralTerm,
     remIntegralTerm,
     ssymTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemIntegralTerm,
   )
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

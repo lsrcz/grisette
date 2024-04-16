@@ -45,7 +45,11 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term
       ( BVConcatTerm,
@@ -62,12 +66,8 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     toSignedTerm,
     toUnsignedTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+import Grisette.IR.SymPrim.Data.Prim.TermUtils
   ( castTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-  ( binaryUnfoldOnce,
-    unaryUnfoldOnce,
   )
 import Grisette.Utils.Parameterized
   ( LeqProof (LeqProof),

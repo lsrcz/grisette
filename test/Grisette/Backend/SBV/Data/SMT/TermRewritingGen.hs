@@ -59,7 +59,48 @@ import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.Core.Data.Symbol (Identifier, withInfo)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
+    pevalXorBitsTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalAndTerm,
+    pevalEqvTerm,
+    pevalITETerm,
+    pevalNotTerm,
+    pevalOrTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModBoundedIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemBoundedIntegralTerm,
+    pevalRemIntegralTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (partialEvalBinary),
     SupportedPrim,
     Term,
@@ -102,47 +143,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     timesNumTerm,
     uminusNumTerm,
     xorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
-    pevalRotateRightTerm,
-    pevalShiftLeftTerm,
-    pevalShiftRightTerm,
-    pevalXorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalAndTerm,
-    pevalEqvTerm,
-    pevalITETerm,
-    pevalNotTerm,
-    pevalOrTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
   )
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, frequency, oneof, sized)
 

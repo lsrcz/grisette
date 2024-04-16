@@ -22,10 +22,10 @@ where
 import Data.Dynamic (Dynamic)
 import qualified Data.HashMap.Strict as M
 import GHC.Stack (HasCallStack)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SomeTypedSymbol,
   )
 

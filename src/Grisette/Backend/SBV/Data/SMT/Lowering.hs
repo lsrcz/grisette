@@ -81,11 +81,16 @@ import Grisette.Core.Data.Class.ModelOps
   ( ModelOps (emptyModel, insertValue),
   )
 import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun (buildGeneralFun, type (-->))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+import Grisette.IR.SymPrim.Data.GeneralFun (buildGeneralFun, type (-->))
+import Grisette.IR.SymPrim.Data.Prim.Model as PM (Model)
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+    pevalITETerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim (withPrim),
     Term
@@ -136,11 +141,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     someTypedSymbol,
     symTerm,
     withSymbolSupported,
-  )
-import Grisette.IR.SymPrim.Data.Prim.Model as PM (Model)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalEqvTerm,
-    pevalITETerm,
   )
 import Grisette.IR.SymPrim.Data.TabularFun
   ( type (=->) (TabularFun),

@@ -50,14 +50,14 @@ import Generics.Deriving
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( LinkedRep,
-    SupportedPrim,
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils (extractSymbolicsTerm)
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (SymbolSet),
   )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( LinkedRep,
+    SupportedPrim,
+  )
+import Grisette.IR.SymPrim.Data.Prim.TermUtils (extractSymbolicsTerm)
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (SymBool),
     SymIntN (SymIntN),

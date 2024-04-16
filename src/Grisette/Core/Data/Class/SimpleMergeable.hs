@@ -71,7 +71,7 @@ import Grisette.Core.Data.Class.Mergeable
     MergingStrategy (SimpleStrategy),
   )
 import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )

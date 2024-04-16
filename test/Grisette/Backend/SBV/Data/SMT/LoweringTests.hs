@@ -32,10 +32,10 @@ import Grisette.Backend.SBV.Data.SMT.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term,
     absNumTerm,
