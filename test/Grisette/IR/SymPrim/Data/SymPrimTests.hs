@@ -124,12 +124,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalBVExtendTerm,
     pevalBVSelectTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalRotateLeftTerm,
-    pevalRotateRightTerm,
-    pevalShiftLeftTerm,
-    pevalShiftRightTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
     pevalDivIntegralTerm,
@@ -160,6 +154,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalRotateTerm
+      ( pevalRotateLeftTerm,
+        pevalRotateRightTerm
+      ),
+    PEvalShiftTerm
+      ( pevalShiftLeftTerm,
+        pevalShiftRightTerm
       ),
     SupportedPrim (pevalITETerm),
     Term,
