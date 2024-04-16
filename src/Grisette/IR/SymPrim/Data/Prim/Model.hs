@@ -72,16 +72,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToSignedTerm,
     pevalToUnsignedTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -93,6 +83,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalDivModIntegralTerm
+      ( pevalDivIntegralTerm,
+        pevalModIntegralTerm,
+        pevalQuotIntegralTerm,
+        pevalRemIntegralTerm
       ),
     PEvalNumTerm
       ( pevalAbsNumTerm,
@@ -121,22 +117,18 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
-        DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
-        ModBoundedIntegralTerm,
         ModIntegralTerm,
         MulNumTerm,
         NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
-        QuotBoundedIntegralTerm,
         QuotIntegralTerm,
-        RemBoundedIntegralTerm,
         RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
@@ -475,14 +467,6 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goBinary pevalQuotIntegralTerm arg1 arg2
     go (SomeTerm (RemIntegralTerm _ arg1 arg2)) =
       goBinary pevalRemIntegralTerm arg1 arg2
-    go (SomeTerm (DivBoundedIntegralTerm _ arg1 arg2)) =
-      goBinary pevalDivBoundedIntegralTerm arg1 arg2
-    go (SomeTerm (ModBoundedIntegralTerm _ arg1 arg2)) =
-      goBinary pevalModBoundedIntegralTerm arg1 arg2
-    go (SomeTerm (QuotBoundedIntegralTerm _ arg1 arg2)) =
-      goBinary pevalQuotBoundedIntegralTerm arg1 arg2
-    go (SomeTerm (RemBoundedIntegralTerm _ arg1 arg2)) =
-      goBinary pevalRemBoundedIntegralTerm arg1 arg2
     goUnary :: (SupportedPrim a, SupportedPrim b) => (Term a -> Term b) -> Term a -> SomeTerm
     goUnary f a = SomeTerm $ f (gotyped a)
     goBinary ::

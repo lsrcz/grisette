@@ -43,16 +43,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToSignedTerm,
     pevalToUnsignedTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.Term
@@ -64,6 +54,10 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalDivModIntegralTerm
+      ( pevalDivIntegralTerm,
+        pevalModIntegralTerm
       ),
     PEvalNumTerm
       ( pevalAbsNumTerm,
@@ -88,22 +82,18 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
-        DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
-        ModBoundedIntegralTerm,
         ModIntegralTerm,
         MulNumTerm,
         NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
-        QuotBoundedIntegralTerm,
         QuotIntegralTerm,
-        RemBoundedIntegralTerm,
         RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
@@ -128,6 +118,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalITEBasicTerm,
     pevalNotTerm,
     pevalOrTerm,
+    pevalQuotIntegralTerm,
+    pevalRemIntegralTerm,
     pevalRotateLeftTerm,
     pformat,
     someTypedSymbol,
@@ -285,7 +277,3 @@ substTerm sym term = gov
         ModIntegralTerm _ op1 op2 -> SomeTerm $ pevalModIntegralTerm (gov op1) (gov op2)
         QuotIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotIntegralTerm (gov op1) (gov op2)
         RemIntegralTerm _ op1 op2 -> SomeTerm $ pevalRemIntegralTerm (gov op1) (gov op2)
-        DivBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalDivBoundedIntegralTerm (gov op1) (gov op2)
-        ModBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalModBoundedIntegralTerm (gov op1) (gov op2)
-        QuotBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotBoundedIntegralTerm (gov op1) (gov op2)
-        RemBoundedIntegralTerm _ op1 op2 -> SomeTerm $ pevalRemBoundedIntegralTerm (gov op1) (gov op2)

@@ -29,10 +29,6 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     modIntegralSpec,
     quotIntegralSpec,
     remIntegralSpec,
-    divBoundedIntegralSpec,
-    modBoundedIntegralSpec,
-    quotBoundedIntegralSpec,
-    remBoundedIntegralSpec,
     negNumSpec,
     mulNumSpec,
     addNumSpec,
@@ -64,16 +60,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalBVExtendTerm,
     pevalBVSelectTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (pevalBinary),
     PEvalBitwiseTerm
@@ -81,6 +67,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalDivModIntegralTerm
+      ( pevalDivIntegralTerm,
+        pevalModIntegralTerm,
+        pevalQuotIntegralTerm,
+        pevalRemIntegralTerm
       ),
     PEvalNumTerm
       ( pevalAbsNumTerm,
@@ -114,13 +106,11 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     constructBinary,
     constructTernary,
     constructUnary,
-    divBoundedIntegralTerm,
     divIntegralTerm,
     eqTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
-    modBoundedIntegralTerm,
     modIntegralTerm,
     mulNumTerm,
     negNumTerm,
@@ -132,9 +122,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalNotTerm,
     pevalOrTerm,
     pformat,
-    quotBoundedIntegralTerm,
     quotIntegralTerm,
-    remBoundedIntegralTerm,
     remIntegralTerm,
     rotateLeftTerm,
     rotateRightTerm,
@@ -371,29 +359,17 @@ bvextendSpec ::
   b
 bvextendSpec signed p = constructUnarySpec (bvextendTerm signed p) (pevalBVExtendTerm signed p)
 
-divIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+divIntegralSpec :: (TermRewritingSpec a b, PEvalDivModIntegralTerm b) => a -> a -> a
 divIntegralSpec = constructBinarySpec divIntegralTerm pevalDivIntegralTerm
 
-modIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+modIntegralSpec :: (TermRewritingSpec a b, PEvalDivModIntegralTerm b) => a -> a -> a
 modIntegralSpec = constructBinarySpec modIntegralTerm pevalModIntegralTerm
 
-quotIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+quotIntegralSpec :: (TermRewritingSpec a b, PEvalDivModIntegralTerm b) => a -> a -> a
 quotIntegralSpec = constructBinarySpec quotIntegralTerm pevalQuotIntegralTerm
 
-remIntegralSpec :: (TermRewritingSpec a b, Integral b) => a -> a -> a
+remIntegralSpec :: (TermRewritingSpec a b, PEvalDivModIntegralTerm b) => a -> a -> a
 remIntegralSpec = constructBinarySpec remIntegralTerm pevalRemIntegralTerm
-
-divBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
-divBoundedIntegralSpec = constructBinarySpec divBoundedIntegralTerm pevalDivBoundedIntegralTerm
-
-modBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
-modBoundedIntegralSpec = constructBinarySpec modBoundedIntegralTerm pevalModBoundedIntegralTerm
-
-quotBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
-quotBoundedIntegralSpec = constructBinarySpec quotBoundedIntegralTerm pevalQuotBoundedIntegralTerm
-
-remBoundedIntegralSpec :: (TermRewritingSpec a b, Bounded b, Integral b) => a -> a -> a
-remBoundedIntegralSpec = constructBinarySpec remBoundedIntegralTerm pevalRemBoundedIntegralTerm
 
 data BoolOnlySpec = BoolOnlySpec (Term Bool) (Term Bool)
 

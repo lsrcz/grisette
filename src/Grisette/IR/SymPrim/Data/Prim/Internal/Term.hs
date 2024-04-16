@@ -54,6 +54,7 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     pevalGtOrdTerm,
     pevalGeOrdTerm,
     pevalNEqTerm,
+    PEvalDivModIntegralTerm (..),
 
     -- * Typed symbols
     TypedSymbol (..),
@@ -111,10 +112,6 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     modIntegralTerm,
     quotIntegralTerm,
     remIntegralTerm,
-    divBoundedIntegralTerm,
-    modBoundedIntegralTerm,
-    quotBoundedIntegralTerm,
-    remBoundedIntegralTerm,
 
     -- * Support for boolean type
     trueTerm,
@@ -298,6 +295,12 @@ pevalGtOrdTerm = flip pevalLtOrdTerm
 
 pevalGeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGeOrdTerm = flip pevalLeOrdTerm
+
+class (SupportedPrim t, Integral t) => PEvalDivModIntegralTerm t where
+  pevalDivIntegralTerm :: Term t -> Term t -> Term t
+  pevalModIntegralTerm :: Term t -> Term t -> Term t
+  pevalQuotIntegralTerm :: Term t -> Term t -> Term t
+  pevalRemIntegralTerm :: Term t -> Term t -> Term t
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -610,14 +613,30 @@ data Term t where
     !(Term f) ->
     !(Term a) ->
     Term b
-  DivIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  ModIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  QuotIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  RemIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  DivBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  ModBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  QuotBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  RemBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+  DivIntegralTerm ::
+    (PEvalDivModIntegralTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  ModIntegralTerm ::
+    (PEvalDivModIntegralTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  QuotIntegralTerm ::
+    (PEvalDivModIntegralTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  RemIntegralTerm ::
+    (PEvalDivModIntegralTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
 
 identity :: Term t -> Id
 identity = snd . identityWithTypeRep
@@ -659,11 +678,6 @@ identityWithTypeRep (DivIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ModIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (QuotIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RemIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (DivBoundedIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ModBoundedIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (QuotBoundedIntegralTerm i _ _) =
-  (someTypeRep (Proxy @t), i)
-identityWithTypeRep (RemBoundedIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -702,10 +716,6 @@ introSupportedPrimConstraint DivIntegralTerm {} x = x
 introSupportedPrimConstraint ModIntegralTerm {} x = x
 introSupportedPrimConstraint QuotIntegralTerm {} x = x
 introSupportedPrimConstraint RemIntegralTerm {} x = x
-introSupportedPrimConstraint DivBoundedIntegralTerm {} x = x
-introSupportedPrimConstraint ModBoundedIntegralTerm {} x = x
-introSupportedPrimConstraint QuotBoundedIntegralTerm {} x = x
-introSupportedPrimConstraint RemBoundedIntegralTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
@@ -745,10 +755,6 @@ pformat (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pforma
 pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (DivBoundedIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (ModBoundedIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (QuotBoundedIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (RemBoundedIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -791,10 +797,6 @@ instance Lift (Term t) where
   liftTyped (ModIntegralTerm _ arg1 arg2) = [||modIntegralTerm arg1 arg2||]
   liftTyped (QuotIntegralTerm _ arg1 arg2) = [||quotIntegralTerm arg1 arg2||]
   liftTyped (RemIntegralTerm _ arg1 arg2) = [||remIntegralTerm arg1 arg2||]
-  liftTyped (DivBoundedIntegralTerm _ arg1 arg2) = [||divBoundedIntegralTerm arg1 arg2||]
-  liftTyped (ModBoundedIntegralTerm _ arg1 arg2) = [||modBoundedIntegralTerm arg1 arg2||]
-  liftTyped (QuotBoundedIntegralTerm _ arg1 arg2) = [||quotBoundedIntegralTerm arg1 arg2||]
-  liftTyped (RemBoundedIntegralTerm _ arg1 arg2) = [||remBoundedIntegralTerm arg1 arg2||]
 
 instance Show (Term ty) where
   show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
@@ -875,14 +877,6 @@ instance Show (Term ty) where
     "QuotIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (RemIntegralTerm i arg1 arg2) =
     "RemIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (DivBoundedIntegralTerm i arg1 arg2) =
-    "DivBoundedIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (ModBoundedIntegralTerm i arg1 arg2) =
-    "ModBoundedIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (QuotBoundedIntegralTerm i arg1 arg2) =
-    "QuotBoundedIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (RemBoundedIntegralTerm i arg1 arg2) =
-    "RemBoundedIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
 
 prettyPrintTerm :: Term t -> Doc ann
 prettyPrintTerm v =
@@ -1029,14 +1023,14 @@ data UTerm t where
     Term f ->
     Term a ->
     UTerm b
-  UDivIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  UModIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  UQuotIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  URemIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  UDivBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  UModBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  UQuotBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
-  URemBoundedIntegralTerm :: (SupportedPrim t, Bounded t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
+  UDivIntegralTerm ::
+    (PEvalDivModIntegralTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UModIntegralTerm ::
+    (PEvalDivModIntegralTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UQuotIntegralTerm ::
+    (PEvalDivModIntegralTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  URemIntegralTerm ::
+    (PEvalDivModIntegralTerm t) => !(Term t) -> !(Term t) -> UTerm t
 
 eqTypedId :: (TypeRep a, Id) -> (TypeRep b, Id) -> Bool
 eqTypedId (a, i1) (b, i2) = i1 == i2 && eqTypeRepBool a b
@@ -1117,10 +1111,6 @@ instance (SupportedPrim t) => Interned (Term t) where
     DModIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DQuotIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRemIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
-    DDivBoundedIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
-    DModBoundedIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
-    DQuotBoundedIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
-    DRemBoundedIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
@@ -1168,10 +1158,6 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UModIntegralTerm arg1 arg2) = DModIntegralTerm (identity arg1) (identity arg2)
   describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (identity arg1) (identity arg2)
   describe (URemIntegralTerm arg1 arg2) = DQuotIntegralTerm (identity arg1) (identity arg2)
-  describe (UDivBoundedIntegralTerm arg1 arg2) = DDivBoundedIntegralTerm (identity arg1) (identity arg2)
-  describe (UModBoundedIntegralTerm arg1 arg2) = DModBoundedIntegralTerm (identity arg1) (identity arg2)
-  describe (UQuotBoundedIntegralTerm arg1 arg2) = DRemBoundedIntegralTerm (identity arg1) (identity arg2)
-  describe (URemBoundedIntegralTerm arg1 arg2) = DQuotBoundedIntegralTerm (identity arg1) (identity arg2)
 
   identify i = go
     where
@@ -1210,10 +1196,6 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UModIntegralTerm arg1 arg2) = ModIntegralTerm i arg1 arg2
       go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm i arg1 arg2
       go (URemIntegralTerm arg1 arg2) = RemIntegralTerm i arg1 arg2
-      go (UDivBoundedIntegralTerm arg1 arg2) = DivBoundedIntegralTerm i arg1 arg2
-      go (UModBoundedIntegralTerm arg1 arg2) = ModBoundedIntegralTerm i arg1 arg2
-      go (UQuotBoundedIntegralTerm arg1 arg2) = QuotBoundedIntegralTerm i arg1 arg2
-      go (URemBoundedIntegralTerm arg1 arg2) = RemBoundedIntegralTerm i arg1 arg2
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
@@ -1259,10 +1241,6 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DModIntegralTerm li1 li2 == DModIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRemIntegralTerm li1 li2 == DRemIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
-  DDivBoundedIntegralTerm li1 li2 == DDivBoundedIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
-  DModBoundedIntegralTerm li1 li2 == DModBoundedIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
-  DQuotBoundedIntegralTerm li1 li2 == DQuotBoundedIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
-  DRemBoundedIntegralTerm li1 li2 == DRemBoundedIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
@@ -1320,10 +1298,6 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DModIntegralTerm id1 id2) = s `hashWithSalt` (31 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DRemIntegralTerm id1 id2) = s `hashWithSalt` (33 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DDivBoundedIntegralTerm id1 id2) = s `hashWithSalt` (34 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DModBoundedIntegralTerm id1 id2) = s `hashWithSalt` (35 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DQuotBoundedIntegralTerm id1 id2) = s `hashWithSalt` (36 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DRemBoundedIntegralTerm id1 id2) = s `hashWithSalt` (37 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DApplyTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
@@ -1592,37 +1566,21 @@ applyTerm ::
 applyTerm f a = internTerm $ UApplyTerm f a
 {-# INLINE applyTerm #-}
 
-divIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+divIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 divIntegralTerm l r = internTerm $ UDivIntegralTerm l r
 {-# INLINE divIntegralTerm #-}
 
-modIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+modIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 modIntegralTerm l r = internTerm $ UModIntegralTerm l r
 {-# INLINE modIntegralTerm #-}
 
-quotIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+quotIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 quotIntegralTerm l r = internTerm $ UQuotIntegralTerm l r
 {-# INLINE quotIntegralTerm #-}
 
-remIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
+remIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 remIntegralTerm l r = internTerm $ URemIntegralTerm l r
 {-# INLINE remIntegralTerm #-}
-
-divBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
-divBoundedIntegralTerm l r = internTerm $ UDivBoundedIntegralTerm l r
-{-# INLINE divBoundedIntegralTerm #-}
-
-modBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
-modBoundedIntegralTerm l r = internTerm $ UModBoundedIntegralTerm l r
-{-# INLINE modBoundedIntegralTerm #-}
-
-quotBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
-quotBoundedIntegralTerm l r = internTerm $ UQuotBoundedIntegralTerm l r
-{-# INLINE quotBoundedIntegralTerm #-}
-
-remBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
-remBoundedIntegralTerm l r = internTerm $ URemBoundedIntegralTerm l r
-{-# INLINE remBoundedIntegralTerm #-}
 
 -- Support for boolean type
 defaultValueForBool :: Bool

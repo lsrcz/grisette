@@ -35,19 +35,15 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     absNumSpec,
     addNumSpec,
     andSpec,
-    divBoundedIntegralSpec,
     divIntegralSpec,
     eqvSpec,
     iteSpec,
-    modBoundedIntegralSpec,
     modIntegralSpec,
     mulNumSpec,
     negNumSpec,
     notSpec,
     orSpec,
-    quotBoundedIntegralSpec,
     quotIntegralSpec,
-    remBoundedIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
   )
@@ -314,10 +310,10 @@ termRewritingTests =
         ],
       testGroup
         "divisions on signed bv"
-        [ divisionTest @(GeneralSpec (IntN 4)) "div" divBoundedIntegralSpec,
-          divisionTest @(GeneralSpec (IntN 4)) "mod" modBoundedIntegralSpec,
-          divisionTest @(GeneralSpec (IntN 4)) "quot" quotBoundedIntegralSpec,
-          divisionTest @(GeneralSpec (IntN 4)) "rem" remBoundedIntegralSpec
+        [ divisionTest @(GeneralSpec (IntN 4)) "div" divIntegralSpec,
+          divisionTest @(GeneralSpec (IntN 4)) "mod" modIntegralSpec,
+          divisionTest @(GeneralSpec (IntN 4)) "quot" quotIntegralSpec,
+          divisionTest @(GeneralSpec (IntN 4)) "rem" remIntegralSpec
         ],
       testGroup
         "divisions on unsigned bv"

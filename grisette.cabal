@@ -103,6 +103,7 @@ library
       Grisette.IR.SymPrim.Data.Prim.Helpers
       Grisette.IR.SymPrim.Data.Prim.Internal.Caches
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalBitwiseTerm
+      Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalDivModIntegralTerm
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalNumTerm
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalOrdTerm
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm
@@ -113,7 +114,6 @@ library
       Grisette.IR.SymPrim.Data.Prim.ModelValue
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
       Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-      Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
       Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
       Grisette.IR.SymPrim.Data.Prim.SomeTerm

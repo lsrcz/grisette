@@ -10,22 +10,17 @@ import Control.DeepSeq (NFData (rnf), force)
 import Control.Exception (ArithException, catch, evaluate)
 import Data.Proxy (Proxy (Proxy))
 import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( SupportedPrim,
+  ( PEvalDivModIntegralTerm
+      ( pevalDivIntegralTerm,
+        pevalModIntegralTerm,
+        pevalQuotIntegralTerm,
+        pevalRemIntegralTerm
+      ),
     Term,
     conTerm,
-    divBoundedIntegralTerm,
     divIntegralTerm,
     modIntegralTerm,
-    quotBoundedIntegralTerm,
     quotIntegralTerm,
     remIntegralTerm,
     ssymTerm,
@@ -46,7 +41,7 @@ instance NFData AEWrapper where
 
 sameDivPeval ::
   forall t.
-  (Num t, Eq t, SupportedPrim t, Integral t) =>
+  (Num t, Eq t, PEvalDivModIntegralTerm t) =>
   t ->
   t ->
   (Term t -> Term t -> Term t) ->
@@ -61,7 +56,7 @@ sameDivPeval i j pf cf consf = do
 
 divisionPevalBoundedTests ::
   forall p t.
-  (Num t, Eq t, Bounded t, SupportedPrim t, Integral t) =>
+  (Num t, Eq t, Bounded t, PEvalDivModIntegralTerm t) =>
   p t ->
   TestName ->
   (Term t -> Term t -> Term t) ->
@@ -77,7 +72,7 @@ divisionPevalBoundedTests _ name pf cf consf =
 
 divisionPevalTests ::
   forall p t0 t.
-  (Num t, Eq t, Arbitrary t0, Show t0, SupportedPrim t, Integral t) =>
+  (Num t, Eq t, Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
@@ -106,9 +101,9 @@ divisionPevalTests _ name transform pf cf consf =
 
 divisionPevalBoundedTestGroup ::
   TestName ->
-  (forall t. (SupportedPrim t, Bounded t, Integral t) => Term t -> Term t -> Term t) ->
+  (forall t. (PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t) ->
   (forall t. (Bounded t, Integral t) => t -> t -> t) ->
-  (forall t. (SupportedPrim t, Bounded t, Integral t) => Term t -> Term t -> Term t) ->
+  (forall t. (PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t) ->
   Test
 divisionPevalBoundedTestGroup name pf cf consf =
   testGroup
@@ -119,9 +114,9 @@ divisionPevalBoundedTestGroup name pf cf consf =
 
 divisionPevalUnboundedTestGroup ::
   TestName ->
-  (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
+  (forall t. (PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t) ->
   (forall t. (Integral t) => t -> t -> t) ->
-  (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
+  (forall t. (PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t) ->
   Test
 divisionPevalUnboundedTestGroup name pf cf consf =
   testGroup
@@ -133,7 +128,7 @@ divisionPevalUnboundedTestGroup name pf cf consf =
 
 moduloPevalTests ::
   forall p t0 t.
-  (Num t, Eq t, Arbitrary t0, Show t0, SupportedPrim t, Integral t) =>
+  (Num t, Eq t, Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
@@ -164,9 +159,9 @@ moduloPevalTests _ name transform pf cf consf =
 
 moduloPevalTestGroup ::
   TestName ->
-  (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
+  (forall t. (PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t) ->
   (forall t. (Integral t) => t -> t -> t) ->
-  (forall t. (SupportedPrim t, Integral t) => Term t -> Term t -> Term t) ->
+  (forall t. (PEvalDivModIntegralTerm t) => Term t -> Term t -> Term t) ->
   Test
 moduloPevalTestGroup name pf cf consf =
   testGroup
@@ -182,8 +177,8 @@ integralTests =
     "Integral"
     [ divisionPevalUnboundedTestGroup "Div unbounded" pevalDivIntegralTerm div divIntegralTerm,
       divisionPevalUnboundedTestGroup "Quot unbounded" pevalQuotIntegralTerm quot quotIntegralTerm,
-      divisionPevalBoundedTestGroup "Div bounded" pevalDivBoundedIntegralTerm div divBoundedIntegralTerm,
-      divisionPevalBoundedTestGroup "Quot bounded" pevalQuotBoundedIntegralTerm quot quotBoundedIntegralTerm,
+      divisionPevalBoundedTestGroup "Div bounded" pevalDivIntegralTerm div divIntegralTerm,
+      divisionPevalBoundedTestGroup "Quot bounded" pevalQuotIntegralTerm quot quotIntegralTerm,
       moduloPevalTestGroup "Mod" pevalModIntegralTerm mod modIntegralTerm,
       moduloPevalTestGroup "Rem" pevalRemIntegralTerm rem remIntegralTerm
     ]

@@ -51,22 +51,18 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
-        DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
-        ModBoundedIntegralTerm,
         ModIntegralTerm,
         MulNumTerm,
         NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
-        QuotBoundedIntegralTerm,
         QuotIntegralTerm,
-        RemBoundedIntegralTerm,
         RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
@@ -137,10 +133,6 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (ModIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (QuotIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (RemIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (DivBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (ModBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (QuotBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (RemBoundedIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     goUnary arg = gocached (SomeTerm arg)
     goBinary arg1 arg2 = do
       r1 <- gocached (SomeTerm arg1)
@@ -193,10 +185,6 @@ castTerm t@DivIntegralTerm {} = cast t
 castTerm t@ModIntegralTerm {} = cast t
 castTerm t@QuotIntegralTerm {} = cast t
 castTerm t@RemIntegralTerm {} = cast t
-castTerm t@DivBoundedIntegralTerm {} = cast t
-castTerm t@ModBoundedIntegralTerm {} = cast t
-castTerm t@QuotBoundedIntegralTerm {} = cast t
-castTerm t@RemBoundedIntegralTerm {} = cast t
 {-# INLINE castTerm #-}
 
 someTermsSize :: [SomeTerm] -> Int
@@ -242,10 +230,6 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(ModIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(QuotIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(RemIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(DivBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(ModBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(QuotBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(RemBoundedIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (S.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t

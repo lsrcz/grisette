@@ -124,16 +124,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalBVExtendTerm,
     pevalBVSelectTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep (wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
@@ -142,6 +132,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalComplementBitsTerm,
         pevalOrBitsTerm,
         pevalXorBitsTerm
+      ),
+    PEvalDivModIntegralTerm
+      ( pevalDivIntegralTerm,
+        pevalModIntegralTerm,
+        pevalQuotIntegralTerm,
+        pevalRemIntegralTerm
       ),
     PEvalNumTerm
       ( pevalAbsNumTerm,
@@ -649,12 +645,12 @@ symPrimTests =
                     ],
                   testGroup
                     "IntN"
-                    [ safeDivisionBoundedTests @(IntN 4) "safeDiv" IntN safeDiv div pevalDivBoundedIntegralTerm,
-                      safeDivisionUnboundedTests @(IntN 4) "safeMod" IntN safeMod mod pevalModBoundedIntegralTerm,
-                      safeDivModBoundedTests @(IntN 4) "safeDivMod" IntN safeDivMod divMod pevalDivBoundedIntegralTerm pevalModBoundedIntegralTerm,
-                      safeDivisionBoundedTests @(IntN 4) "safeQuot" IntN safeQuot quot pevalQuotBoundedIntegralTerm,
-                      safeDivisionUnboundedTests @(IntN 4) "safeRem" IntN safeRem rem pevalRemBoundedIntegralTerm,
-                      safeDivModBoundedTests @(IntN 4) "safeQuotRem" IntN safeQuotRem quotRem pevalQuotBoundedIntegralTerm pevalRemBoundedIntegralTerm
+                    [ safeDivisionBoundedTests @(IntN 4) "safeDiv" IntN safeDiv div pevalDivIntegralTerm,
+                      safeDivisionUnboundedTests @(IntN 4) "safeMod" IntN safeMod mod pevalModIntegralTerm,
+                      safeDivModBoundedTests @(IntN 4) "safeDivMod" IntN safeDivMod divMod pevalDivIntegralTerm pevalModIntegralTerm,
+                      safeDivisionBoundedTests @(IntN 4) "safeQuot" IntN safeQuot quot pevalQuotIntegralTerm,
+                      safeDivisionUnboundedTests @(IntN 4) "safeRem" IntN safeRem rem pevalRemIntegralTerm,
+                      safeDivModBoundedTests @(IntN 4) "safeQuotRem" IntN safeQuotRem quotRem pevalQuotIntegralTerm pevalRemIntegralTerm
                     ]
                 ],
               testGroup

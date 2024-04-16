@@ -62,12 +62,6 @@ module Grisette.Internal.IR.SymPrim
     BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
     binaryPartial,
-    -- pattern NumConTerm,
-    -- pattern NumOrdConTerm,
-    pevalDivIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemIntegralTerm,
 
     -- * Partial evaluation for the terms
     UnaryOp (..),
@@ -83,6 +77,7 @@ module Grisette.Internal.IR.SymPrim
     pevalGtOrdTerm,
     pevalGeOrdTerm,
     pevalNEqTerm,
+    PEvalDivModIntegralTerm (..),
   )
 where
 
@@ -92,12 +87,6 @@ import Grisette.IR.SymPrim.Data.Prim.Helpers
     pattern UnaryTermPatt,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model (evaluateTerm)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
   ( BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
@@ -123,6 +112,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (..),
     PEvalApplyTerm (..),
     PEvalBitwiseTerm (..),
+    PEvalDivModIntegralTerm (..),
     PEvalNumTerm (..),
     PEvalOrdTerm (..),
     PEvalRotateTerm (..),

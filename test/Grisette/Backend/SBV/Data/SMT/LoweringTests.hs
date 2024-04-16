@@ -47,22 +47,18 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     bvsignExtendTerm,
     bvzeroExtendTerm,
     complementBitsTerm,
-    divBoundedIntegralTerm,
     divIntegralTerm,
     eqTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
-    modBoundedIntegralTerm,
     modIntegralTerm,
     mulNumTerm,
     negNumTerm,
     notTerm,
     orBitsTerm,
     orTerm,
-    quotBoundedIntegralTerm,
     quotIntegralTerm,
-    remBoundedIntegralTerm,
     remIntegralTerm,
     rotateLeftTerm,
     rotateRightTerm,
@@ -604,17 +600,17 @@ loweringTests =
                           (SBV.sFromIntegral b :: SBV.SWord 5)
                   ),
               testCase "Div - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig divBoundedIntegralTerm "div" SBV.sDiv
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig divBoundedIntegralTerm "div" SBV.sDiv,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig divIntegralTerm "div" SBV.sDiv,
               testCase "Mod - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig modBoundedIntegralTerm "mod" SBV.sMod
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig modBoundedIntegralTerm "mod" SBV.sMod,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig modIntegralTerm "mod" SBV.sMod
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig modIntegralTerm "mod" SBV.sMod,
               testCase "Quot - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig quotBoundedIntegralTerm "quot" SBV.sQuot
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig quotBoundedIntegralTerm "quot" SBV.sQuot,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig quotIntegralTerm "quot" SBV.sQuot
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig quotIntegralTerm "quot" SBV.sQuot,
               testCase "Rem - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remBoundedIntegralTerm "rem" SBV.sRem
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remBoundedIntegralTerm "rem" SBV.sRem,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
               testCase "ToUnsigned" $ do
                 testUnaryOpLowering @(IntN 5) @(WordN 5) unboundedConfig toUnsignedTerm "toUnsigned" SBV.sFromIntegral
                 testUnaryOpLowering @(IntN 5) @(WordN 5) boundedConfig toUnsignedTerm "toUnsigned" SBV.sFromIntegral
