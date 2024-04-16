@@ -82,22 +82,26 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalRemBoundedIntegralTerm,
     pevalRemIntegralTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (pevalBinary),
     PEvalApplyTerm (pevalApplyTerm),
-    PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
+    PEvalBitwiseTerm
+      ( pevalAndBitsTerm,
+        pevalComplementBitsTerm,
+        pevalOrBitsTerm,
+        pevalXorBitsTerm
+      ),
+    PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalAddNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
+    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm
       ( pevalRotateLeftTerm,
         pevalRotateRightTerm
@@ -121,10 +125,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         DivIntegralTerm,
         EqvTerm,
         ITETerm,
-        LENumTerm,
-        LTNumTerm,
+        LeOrdTerm,
+        LtOrdTerm,
         ModBoundedIntegralTerm,
         ModIntegralTerm,
+        MulNumTerm,
+        NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
@@ -139,10 +145,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        TimesNumTerm,
         ToSignedTerm,
         ToUnsignedTerm,
-        UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -431,15 +435,15 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goTernary pevalITETerm cond arg1 arg2
     go (SomeTerm (AddNumTerm _ arg1 arg2)) =
       goBinary pevalAddNumTerm arg1 arg2
-    go (SomeTerm (UMinusNumTerm _ arg)) = goUnary pevalUMinusNumTerm arg
-    go (SomeTerm (TimesNumTerm _ arg1 arg2)) =
-      goBinary pevalTimesNumTerm arg1 arg2
+    go (SomeTerm (NegNumTerm _ arg)) = goUnary pevalNegNumTerm arg
+    go (SomeTerm (MulNumTerm _ arg1 arg2)) =
+      goBinary pevalMulNumTerm arg1 arg2
     go (SomeTerm (AbsNumTerm _ arg)) = goUnary pevalAbsNumTerm arg
     go (SomeTerm (SignumNumTerm _ arg)) = goUnary pevalSignumNumTerm arg
-    go (SomeTerm (LTNumTerm _ arg1 arg2)) =
-      goBinary pevalLtNumTerm arg1 arg2
-    go (SomeTerm (LENumTerm _ arg1 arg2)) =
-      goBinary pevalLeNumTerm arg1 arg2
+    go (SomeTerm (LtOrdTerm _ arg1 arg2)) =
+      goBinary pevalLtOrdTerm arg1 arg2
+    go (SomeTerm (LeOrdTerm _ arg1 arg2)) =
+      goBinary pevalLeOrdTerm arg1 arg2
     go (SomeTerm (AndBitsTerm _ arg1 arg2)) =
       goBinary pevalAndBitsTerm arg1 arg2
     go (SomeTerm (OrBitsTerm _ arg1 arg2)) =

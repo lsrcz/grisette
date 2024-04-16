@@ -51,10 +51,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     divIntegralTerm,
     eqvTerm,
     iteTerm,
-    leNumTerm,
-    ltNumTerm,
+    leOrdTerm,
+    ltOrdTerm,
     modBoundedIntegralTerm,
     modIntegralTerm,
+    mulNumTerm,
+    negNumTerm,
     notTerm,
     orBitsTerm,
     orTerm,
@@ -68,10 +70,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     shiftRightTerm,
     signumNumTerm,
     ssymTerm,
-    timesNumTerm,
     toSignedTerm,
     toUnsignedTerm,
-    uminusNumTerm,
     xorBitsTerm,
   )
 import Test.Framework (Test, testGroup)
@@ -355,16 +355,16 @@ loweringTests =
                   "(+)"
                   (\x y -> (x + 1) * (y + 1) - x * y - 1),
               testCase "Uminus" $ do
-                testUnaryOpLowering @Integer @Integer unboundedConfig uminusNumTerm "negate" negate
+                testUnaryOpLowering @Integer @Integer unboundedConfig negNumTerm "negate" negate
                 testUnaryOpLowering @Integer @Integer
                   unboundedConfig
-                  uminusNumTerm
+                  negNumTerm
                   "negate"
                   (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1)
-                testUnaryOpLowering @Integer @Integer boundedConfig uminusNumTerm "negate" negate
+                testUnaryOpLowering @Integer @Integer boundedConfig negNumTerm "negate" negate
                 testUnaryOpLowering @Integer @Integer
                   boundedConfig
-                  uminusNumTerm
+                  negNumTerm
                   "negate"
                   (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1),
               testCase "Abs" $ do
@@ -374,42 +374,42 @@ loweringTests =
                 testUnaryOpLowering @Integer @Integer unboundedConfig signumNumTerm "signum" signum
                 testUnaryOpLowering @Integer @Integer boundedConfig signumNumTerm "signum" signum,
               testCase "Times" $ do
-                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig timesNumTerm "(*)" (*)
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig mulNumTerm "(*)" (*)
                 testBinaryOpLowering @Integer @Integer @Integer
                   unboundedConfig
-                  timesNumTerm
+                  mulNumTerm
                   "(*)"
                   (\x y -> (x + 1) * (y + 1) - x - y - 1)
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig timesNumTerm "(*)" (*)
+                testBinaryOpLowering @Integer @Integer @Integer boundedConfig mulNumTerm "(*)" (*)
                 testBinaryOpLowering @Integer @Integer @Integer
                   boundedConfig
-                  timesNumTerm
+                  mulNumTerm
                   "(*)"
                   (\x y -> (x + 1) * (y + 1) - x - y - 1),
               testCase "Lt" $ do
-                testBinaryOpLowering @Integer @Integer @Bool unboundedConfig ltNumTerm "(<)" (SBV..<)
+                testBinaryOpLowering @Integer @Integer @Bool unboundedConfig ltOrdTerm "(<)" (SBV..<)
                 testBinaryOpLowering @Integer @Integer @Bool
                   unboundedConfig
-                  ltNumTerm
+                  ltOrdTerm
                   "(<)"
                   (\x y -> x * 2 - x SBV..< y * 2 - y)
-                testBinaryOpLowering @Integer @Integer @Bool boundedConfig ltNumTerm "(<)" (SBV..<)
+                testBinaryOpLowering @Integer @Integer @Bool boundedConfig ltOrdTerm "(<)" (SBV..<)
                 testBinaryOpLowering @Integer @Integer @Bool
                   boundedConfig
-                  ltNumTerm
+                  ltOrdTerm
                   "(<=)"
                   (\x y -> x * 2 - x SBV..< y * 2 - y),
               testCase "Le" $ do
-                testBinaryOpLowering @Integer @Integer @Bool unboundedConfig leNumTerm "(<=)" (SBV..<=)
+                testBinaryOpLowering @Integer @Integer @Bool unboundedConfig leOrdTerm "(<=)" (SBV..<=)
                 testBinaryOpLowering @Integer @Integer @Bool
                   unboundedConfig
-                  leNumTerm
+                  leOrdTerm
                   "(<=)"
                   (\x y -> x * 2 - x SBV..<= y * 2 - y)
-                testBinaryOpLowering @Integer @Integer @Bool boundedConfig leNumTerm "(<=)" (SBV..<=)
+                testBinaryOpLowering @Integer @Integer @Bool boundedConfig leOrdTerm "(<=)" (SBV..<=)
                 testBinaryOpLowering @Integer @Integer @Bool
                   boundedConfig
-                  leNumTerm
+                  leOrdTerm
                   "(<=)"
                   (\x y -> x * 2 - x SBV..<= y * 2 - y),
               testCase "Div" $ do
@@ -435,10 +435,10 @@ loweringTests =
                   "(+)"
                   (\x y -> (x + 1) * (y + 1) - x * y - 1),
               testCase "Uminus" $ do
-                testUnaryOpLowering @(IntN 5) unboundedConfig uminusNumTerm "negate" negate
+                testUnaryOpLowering @(IntN 5) unboundedConfig negNumTerm "negate" negate
                 testUnaryOpLowering @(IntN 5)
                   unboundedConfig
-                  uminusNumTerm
+                  negNumTerm
                   "negate"
                   (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1),
               testCase "Abs" $ do
@@ -446,24 +446,24 @@ loweringTests =
               testCase "Signum" $ do
                 testUnaryOpLowering @(IntN 5) unboundedConfig signumNumTerm "signum" signum,
               testCase "Times" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig timesNumTerm "(*)" (*)
+                testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig mulNumTerm "(*)" (*)
                 testBinaryOpLowering @(IntN 5) @(IntN 5)
                   unboundedConfig
-                  timesNumTerm
+                  mulNumTerm
                   "(*)"
                   (\x y -> (x + 1) * (y + 1) - x - y - 1),
               testCase "Lt" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig ltNumTerm "(<)" (SBV..<)
+                testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig ltOrdTerm "(<)" (SBV..<)
                 testBinaryOpLowering @(IntN 5) @(IntN 5)
                   unboundedConfig
-                  ltNumTerm
+                  ltOrdTerm
                   "(<)"
                   (\x y -> x * 2 - x SBV..< y * 2 - y),
               testCase "Le" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig leNumTerm "(<=)" (SBV..<=)
+                testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig leOrdTerm "(<=)" (SBV..<=)
                 testBinaryOpLowering @(IntN 5) @(IntN 5)
                   unboundedConfig
-                  leNumTerm
+                  leOrdTerm
                   "(<=)"
                   (\x y -> x * 2 - x SBV..<= y * 2 - y),
               testCase "Extract" $ do
@@ -629,10 +629,10 @@ loweringTests =
                   "(+)"
                   (\x y -> (x + 1) * (y + 1) - x * y - 1),
               testCase "Uminus" $ do
-                testUnaryOpLowering @(WordN 5) unboundedConfig uminusNumTerm "negate" negate
+                testUnaryOpLowering @(WordN 5) unboundedConfig negNumTerm "negate" negate
                 testUnaryOpLowering @(WordN 5)
                   unboundedConfig
-                  uminusNumTerm
+                  negNumTerm
                   "negate"
                   (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1),
               testCase "Abs" $ do
@@ -640,24 +640,24 @@ loweringTests =
               testCase "Signum" $ do
                 testUnaryOpLowering @(WordN 5) unboundedConfig signumNumTerm "signum" signum,
               testCase "Times" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig timesNumTerm "(*)" (*)
+                testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig mulNumTerm "(*)" (*)
                 testBinaryOpLowering @(WordN 5) @(WordN 5)
                   unboundedConfig
-                  timesNumTerm
+                  mulNumTerm
                   "(*)"
                   (\x y -> (x + 1) * (y + 1) - x - y - 1),
               testCase "Lt" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig ltNumTerm "(<)" (SBV..<)
+                testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig ltOrdTerm "(<)" (SBV..<)
                 testBinaryOpLowering @(WordN 5) @(WordN 5)
                   unboundedConfig
-                  ltNumTerm
+                  ltOrdTerm
                   "(<)"
                   (\x y -> x * 2 - x SBV..< y * 2 - y),
               testCase "Le" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig leNumTerm "(<=)" (SBV..<=)
+                testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig leOrdTerm "(<=)" (SBV..<=)
                 testBinaryOpLowering @(WordN 5) @(WordN 5)
                   unboundedConfig
-                  leNumTerm
+                  leOrdTerm
                   "(<=)"
                   (\x y -> x * 2 - x SBV..<= y * 2 - y),
               testCase "Extract" $ do

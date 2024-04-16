@@ -28,12 +28,9 @@ import Grisette.IR.SymPrim.Data.Prim.Model
     evaluateTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue (toModelValue)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAddNumTerm,
-    pevalUMinusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( SupportedPrim (pevalITETerm),
+  ( PEvalNumTerm (pevalAddNumTerm, pevalNegNumTerm),
+    SupportedPrim (pevalITETerm),
     Term,
     conTerm,
     pevalEqvTerm,
@@ -138,10 +135,10 @@ modelTests =
             evaluateTerm True m3 (ssymTerm "y" :: Term Bool) @=? conTerm False
             evaluateTerm False m3 (ssymTerm "z" :: Term (WordN 4)) @=? ssymTerm "z"
             evaluateTerm True m3 (ssymTerm "z" :: Term (WordN 4)) @=? conTerm 0
-            evaluateTerm False m3 (pevalUMinusNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
-            evaluateTerm True m3 (pevalUMinusNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
-            evaluateTerm False m3 (pevalUMinusNumTerm $ ssymTerm "x" :: Term Integer) @=? pevalUMinusNumTerm (ssymTerm "x")
-            evaluateTerm True m3 (pevalUMinusNumTerm $ ssymTerm "x" :: Term Integer) @=? conTerm 0
+            evaluateTerm False m3 (pevalNegNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
+            evaluateTerm True m3 (pevalNegNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
+            evaluateTerm False m3 (pevalNegNumTerm $ ssymTerm "x" :: Term Integer) @=? pevalNegNumTerm (ssymTerm "x")
+            evaluateTerm True m3 (pevalNegNumTerm $ ssymTerm "x" :: Term Integer) @=? conTerm 0
             evaluateTerm False m3 (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a") :: Term Integer) @=? conTerm 2
             evaluateTerm True m3 (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a") :: Term Integer) @=? conTerm 2
             evaluateTerm False m3 (pevalAddNumTerm (ssymTerm "x") (ssymTerm "a") :: Term Integer) @=? pevalAddNumTerm (conTerm 1) (ssymTerm "x")

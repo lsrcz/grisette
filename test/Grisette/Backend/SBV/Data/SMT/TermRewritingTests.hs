@@ -41,6 +41,8 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     iteSpec,
     modBoundedIntegralSpec,
     modIntegralSpec,
+    mulNumSpec,
+    negNumSpec,
     notSpec,
     orSpec,
     quotBoundedIntegralSpec,
@@ -48,8 +50,6 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     remBoundedIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
-    timesNumSpec,
-    uminusNumSpec,
   )
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Solver (solve)
@@ -245,63 +245,63 @@ termRewritingTests =
         [ testCase "abs on negate" $
             validateSpec @(FixedSizedBVWithBoolSpec WordN 4)
               unboundedConfig
-              (absNumSpec (uminusNumSpec (symSpec "a"))),
+              (absNumSpec (negNumSpec (symSpec "a"))),
           testCase "abs on times negate" $
             validateSpec @(FixedSizedBVWithBoolSpec WordN 4)
               unboundedConfig
-              (absNumSpec (timesNumSpec (symSpec "a") (uminusNumSpec (symSpec "b"))))
+              (absNumSpec (mulNumSpec (symSpec "a") (negNumSpec (symSpec "b"))))
         ],
       testGroup
-        "timesNumSpec on integer"
+        "mulNumSpec on integer"
         [ testCase "times on both concrete" $ do
             traverse_
-              (\(x, y) -> validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) (conSpec y))
+              (\(x, y) -> validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) (conSpec y))
               [(i, j) | i <- [-3 .. 3], j <- [-3 .. 3]],
           testCase "times on single concrete" $ do
             traverse_
               ( \x -> do
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) (symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (symSpec "a") (conSpec x)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) (symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (symSpec "a") (conSpec x)
               )
               [-3 .. 3],
           testCase "Two times with two concrete combined" $ do
             traverse_
               ( \(x, y) -> do
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) $ timesNumSpec (conSpec y) (symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) $ timesNumSpec (symSpec "a") (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (timesNumSpec (conSpec x) (symSpec "a")) (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (timesNumSpec (symSpec "a") (conSpec x)) (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) $ mulNumSpec (conSpec y) (symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) $ mulNumSpec (symSpec "a") (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (mulNumSpec (conSpec x) (symSpec "a")) (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (mulNumSpec (symSpec "a") (conSpec x)) (conSpec y)
               )
               [(i, j) | i <- [-3 .. 3], j <- [-3 .. 3]],
           testCase "Two times with one concrete" $ do
             traverse_
               ( \x -> do
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) $ timesNumSpec (symSpec "b") (symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (symSpec "b") $ timesNumSpec (symSpec "a") (conSpec x)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (symSpec "b") $ timesNumSpec (conSpec x) (symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (timesNumSpec (conSpec x) (symSpec "a")) (symSpec "b")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (timesNumSpec (symSpec "a") (conSpec x)) (symSpec "b")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (timesNumSpec (symSpec "a") (symSpec "b")) (conSpec x)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) $ mulNumSpec (symSpec "b") (symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (symSpec "b") $ mulNumSpec (symSpec "a") (conSpec x)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (symSpec "b") $ mulNumSpec (conSpec x) (symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (mulNumSpec (conSpec x) (symSpec "a")) (symSpec "b")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (mulNumSpec (symSpec "a") (conSpec x)) (symSpec "b")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (mulNumSpec (symSpec "a") (symSpec "b")) (conSpec x)
               )
               [-3 .. 3],
           testCase "times and add with two concretes combined" $ do
             traverse_
               ( \(x, y) -> do
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) $ addNumSpec (conSpec y) (symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) $ addNumSpec (symSpec "a") (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (addNumSpec (conSpec x) (symSpec "a")) (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (addNumSpec (symSpec "a") (conSpec x)) (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (conSpec x) $ timesNumSpec (conSpec y) (symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (conSpec x) $ timesNumSpec (symSpec "a") (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (timesNumSpec (conSpec x) (symSpec "a")) (conSpec y)
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (timesNumSpec (symSpec "a") (conSpec x)) (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) $ addNumSpec (conSpec y) (symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) $ addNumSpec (symSpec "a") (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (addNumSpec (conSpec x) (symSpec "a")) (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (addNumSpec (symSpec "a") (conSpec x)) (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (conSpec x) $ mulNumSpec (conSpec y) (symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (conSpec x) $ mulNumSpec (symSpec "a") (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (mulNumSpec (conSpec x) (symSpec "a")) (conSpec y)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ addNumSpec (mulNumSpec (symSpec "a") (conSpec x)) (conSpec y)
               )
               [(i, j) | i <- [-3 .. 3], j <- [-3 .. 3]],
-          testCase "times concrete with uminusNumSpec symbolic" $ do
+          testCase "times concrete with negNumSpec symbolic" $ do
             traverse_
               ( \x -> do
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (conSpec x) (uminusNumSpec $ symSpec "a")
-                  validateSpec @(GeneralSpec Integer) unboundedConfig $ timesNumSpec (uminusNumSpec $ symSpec "a") (conSpec x)
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (conSpec x) (negNumSpec $ symSpec "a")
+                  validateSpec @(GeneralSpec Integer) unboundedConfig $ mulNumSpec (negNumSpec $ symSpec "a") (conSpec x)
               )
               [-3 .. 3]
         ],

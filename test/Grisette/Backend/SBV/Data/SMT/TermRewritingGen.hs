@@ -33,8 +33,8 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
     modBoundedIntegralSpec,
     quotBoundedIntegralSpec,
     remBoundedIntegralSpec,
-    uminusNumSpec,
-    timesNumSpec,
+    negNumSpec,
+    mulNumSpec,
     addNumSpec,
     absNumSpec,
     iteSpec,
@@ -74,15 +74,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalRemBoundedIntegralTerm,
     pevalRemIntegralTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (pevalBinary),
     PEvalBitwiseTerm
@@ -91,6 +82,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalOrBitsTerm,
         pevalXorBitsTerm
       ),
+    PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalAddNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
+    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm
       ( pevalRotateLeftTerm,
         pevalRotateRightTerm
@@ -119,10 +118,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     divIntegralTerm,
     eqvTerm,
     iteTerm,
-    leNumTerm,
-    ltNumTerm,
+    leOrdTerm,
+    ltOrdTerm,
     modBoundedIntegralTerm,
     modIntegralTerm,
+    mulNumTerm,
+    negNumTerm,
     notTerm,
     orBitsTerm,
     orTerm,
@@ -141,8 +142,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     shiftRightTerm,
     signumNumTerm,
     ssymTerm,
-    timesNumTerm,
-    uminusNumTerm,
     xorBitsTerm,
   )
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, frequency, oneof, sized)
@@ -262,26 +261,34 @@ eqvSpec = constructBinarySpec eqvTerm pevalEqvTerm
 iteSpec :: (TermRewritingSpec a Bool, TermRewritingSpec b bv) => a -> b -> b -> b
 iteSpec = constructTernarySpec iteTerm pevalITETerm
 
-addNumSpec :: (TermRewritingSpec a av, Num av) => a -> a -> a
+addNumSpec :: (TermRewritingSpec a av, PEvalNumTerm av) => a -> a -> a
 addNumSpec = constructBinarySpec addNumTerm pevalAddNumTerm
 
-uminusNumSpec :: (TermRewritingSpec a av, Num av) => a -> a
-uminusNumSpec = constructUnarySpec uminusNumTerm pevalUMinusNumTerm
+negNumSpec :: (TermRewritingSpec a av, PEvalNumTerm av) => a -> a
+negNumSpec = constructUnarySpec negNumTerm pevalNegNumTerm
 
-timesNumSpec :: (TermRewritingSpec a av, Num av) => a -> a -> a
-timesNumSpec = constructBinarySpec timesNumTerm pevalTimesNumTerm
+mulNumSpec :: (TermRewritingSpec a av, PEvalNumTerm av) => a -> a -> a
+mulNumSpec = constructBinarySpec mulNumTerm pevalMulNumTerm
 
-absNumSpec :: (TermRewritingSpec a av, Num av) => a -> a
+absNumSpec :: (TermRewritingSpec a av, PEvalNumTerm av) => a -> a
 absNumSpec = constructUnarySpec absNumTerm pevalAbsNumTerm
 
-signumNumSpec :: (TermRewritingSpec a av, Num av) => a -> a
+signumNumSpec :: (TermRewritingSpec a av, PEvalNumTerm av) => a -> a
 signumNumSpec = constructUnarySpec signumNumTerm pevalSignumNumTerm
 
-ltNumSpec :: (TermRewritingSpec a av, Num av, Ord av, TermRewritingSpec b Bool) => a -> a -> b
-ltNumSpec = constructBinarySpec ltNumTerm pevalLtNumTerm
+ltOrdSpec ::
+  (TermRewritingSpec a av, PEvalOrdTerm av, TermRewritingSpec b Bool) =>
+  a ->
+  a ->
+  b
+ltOrdSpec = constructBinarySpec ltOrdTerm pevalLtOrdTerm
 
-leNumSpec :: (TermRewritingSpec a av, Num av, Ord av, TermRewritingSpec b Bool) => a -> a -> b
-leNumSpec = constructBinarySpec leNumTerm pevalLeNumTerm
+leOrdSpec ::
+  (TermRewritingSpec a av, PEvalOrdTerm av, TermRewritingSpec b Bool) =>
+  a ->
+  a ->
+  b
+leOrdSpec = constructBinarySpec leOrdTerm pevalLeOrdTerm
 
 andBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a -> a
 andBitsSpec = constructBinarySpec andBitsTerm pevalAndBitsTerm
@@ -466,8 +473,8 @@ boolWithLIA n | n > 0 = do
       (1, return $ orSpec v1 v2),
       (1, return $ eqvSpec v1 v2),
       (5, return $ eqvSpec v1i v2i),
-      (5, return $ ltNumSpec v1i v2i),
-      (5, return $ leNumSpec v1i v2i),
+      (5, return $ ltOrdSpec v1i v2i),
+      (5, return $ leOrdSpec v1i v2i),
       (1, return $ iteSpec v1 v2 v3)
     ]
 boolWithLIA _ = error "Should never be called"
@@ -485,7 +492,7 @@ liaWithBool n | n > 0 = do
   v1i <- liaWithBool (n - 1)
   v2i <- liaWithBool (n - 1)
   oneof
-    [ return $ uminusNumSpec v1i,
+    [ return $ negNumSpec v1i,
       return $ absNumSpec v1i,
       return $ signumNumSpec v1i,
       return $ addNumSpec v1i v2i,
@@ -548,8 +555,8 @@ boolWithFSBV pbv pn n | n > 0 = do
       (1, return $ orSpec v1 v2),
       (1, return $ eqvSpec v1 v2),
       (5, return $ eqvSpec v1i v2i),
-      (5, return $ ltNumSpec v1i v2i),
-      (5, return $ leNumSpec v1i v2i),
+      (5, return $ ltOrdSpec v1i v2i),
+      (5, return $ leOrdSpec v1i v2i),
       (1, return $ iteSpec v1 v2 v3)
     ]
 boolWithFSBV _ _ _ = error "Should never be called"
@@ -579,11 +586,11 @@ fsbvWithBool pbv pn n | n > 0 = do
   v1i <- fsbvWithBool pbv pn (n - 1)
   v2i <- fsbvWithBool pbv pn (n - 1)
   oneof
-    [ return $ uminusNumSpec v1i,
+    [ return $ negNumSpec v1i,
       return $ absNumSpec v1i,
       return $ signumNumSpec v1i,
       return $ addNumSpec v1i v2i,
-      return $ timesNumSpec v1i v2i,
+      return $ mulNumSpec v1i v2i,
       return $ andBitsSpec v1i v2i,
       return $ orBitsSpec v1i v2i,
       return $ xorBitsSpec v1i v2i,
@@ -623,7 +630,9 @@ type SupportedBV bv (n :: Nat) =
     SymShift (bv n),
     SymRotate (bv n),
     PEvalShiftTerm (bv n),
-    PEvalRotateTerm (bv n)
+    PEvalRotateTerm (bv n),
+    PEvalNumTerm (bv n),
+    PEvalOrdTerm (bv n)
   )
 
 dsbv1 ::
@@ -653,11 +662,11 @@ dsbv1 p depth | depth > 0 = do
   v3 <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
   oneof
-    [ return $ uminusNumSpec v1,
+    [ return $ negNumSpec v1,
       return $ absNumSpec v1,
       return $ signumNumSpec v1,
       return $ addNumSpec v1 v1',
-      return $ timesNumSpec v1 v1',
+      return $ mulNumSpec v1 v1',
       return $ andBitsSpec v1 v1',
       return $ orBitsSpec v1 v1',
       return $ xorBitsSpec v1 v1',
@@ -707,11 +716,11 @@ dsbv2 p depth | depth > 0 = do
   v3 <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
   oneof
-    [ return $ uminusNumSpec v2,
+    [ return $ negNumSpec v2,
       return $ absNumSpec v2,
       return $ signumNumSpec v2,
       return $ addNumSpec v2 v2',
-      return $ timesNumSpec v2 v2',
+      return $ mulNumSpec v2 v2',
       return $ andBitsSpec v2 v2',
       return $ orBitsSpec v2 v2',
       return $ xorBitsSpec v2 v2',
@@ -759,11 +768,11 @@ dsbv3 p depth | depth > 0 = do
   v3' <- dsbv3 p (depth - 1)
   v4 <- dsbv4 p (depth - 1)
   oneof
-    [ return $ uminusNumSpec v3,
+    [ return $ negNumSpec v3,
       return $ absNumSpec v3,
       return $ signumNumSpec v3,
       return $ addNumSpec v3 v3',
-      return $ timesNumSpec v3 v3',
+      return $ mulNumSpec v3 v3',
       return $ andBitsSpec v3 v3',
       return $ orBitsSpec v3 v3',
       return $ xorBitsSpec v3 v3',
@@ -812,11 +821,11 @@ dsbv4 p depth | depth > 0 = do
   v4 <- dsbv4 p (depth - 1)
   v4' <- dsbv4 p (depth - 1)
   oneof
-    [ return $ uminusNumSpec v4,
+    [ return $ negNumSpec v4,
       return $ absNumSpec v4,
       return $ signumNumSpec v4,
       return $ addNumSpec v4 v4',
-      return $ timesNumSpec v4 v4',
+      return $ mulNumSpec v4 v4',
       return $ andBitsSpec v4 v4',
       return $ orBitsSpec v4 v4',
       return $ xorBitsSpec v4 v4',

@@ -12,10 +12,14 @@ module Grisette.IR.SymPrim.Data.Prim.Term
   ( module Grisette.IR.SymPrim.Data.Prim.Internal.Term,
     module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalShiftTerm,
     module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm,
+    module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalNumTerm,
+    module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalOrdTerm,
   )
 where
 
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalBitwiseTerm ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalNumTerm
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalOrdTerm
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalShiftTerm
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()

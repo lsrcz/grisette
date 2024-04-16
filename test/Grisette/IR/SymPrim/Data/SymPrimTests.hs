@@ -134,18 +134,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalRemBoundedIntegralTerm,
     pevalRemIntegralTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalGeNumTerm,
-    pevalGtNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalMinusNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep (wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
@@ -155,6 +143,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalOrBitsTerm,
         pevalXorBitsTerm
       ),
+    PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalAddNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
+    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm
       ( pevalRotateLeftTerm,
         pevalRotateRightTerm
@@ -169,9 +165,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     isymTerm,
     pevalAndTerm,
     pevalEqvTerm,
+    pevalGeOrdTerm,
+    pevalGtOrdTerm,
     pevalImplyTerm,
     pevalNotTerm,
     pevalOrTerm,
+    pevalSubNumTerm,
     pevalXorTerm,
     someTypedSymbol,
     ssymTerm,
@@ -541,9 +540,9 @@ symPrimTests =
             "Num"
             [ testCase "fromInteger" $ (1 :: SymInteger) @=? SymInteger (conTerm 1),
               testCase "(+)" $ (ssym "a" :: SymInteger) + ssym "b" @=? SymInteger (pevalAddNumTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "(-)" $ (ssym "a" :: SymInteger) - ssym "b" @=? SymInteger (pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "(*)" $ (ssym "a" :: SymInteger) * ssym "b" @=? SymInteger (pevalTimesNumTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "negate" $ negate (ssym "a" :: SymInteger) @=? SymInteger (pevalUMinusNumTerm (ssymTerm "a")),
+              testCase "(-)" $ (ssym "a" :: SymInteger) - ssym "b" @=? SymInteger (pevalSubNumTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase "(*)" $ (ssym "a" :: SymInteger) * ssym "b" @=? SymInteger (pevalMulNumTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase "negate" $ negate (ssym "a" :: SymInteger) @=? SymInteger (pevalNegNumTerm (ssymTerm "a")),
               testCase "abs" $ abs (ssym "a" :: SymInteger) @=? SymInteger (pevalAbsNumTerm (ssymTerm "a")),
               testCase "signum" $ signum (ssym "a" :: SymInteger) @=? SymInteger (pevalSignumNumTerm (ssymTerm "a"))
             ],
@@ -571,14 +570,14 @@ symPrimTests =
                     @=? (mrgSingle $ con $ -i :: ExceptT ArithException UnionM SymInteger),
               testCase "safeNeg on symbolic" $ do
                 safeNeg (ssym "a" :: SymInteger)
-                  @=? (mrgSingle $ SymInteger $ pevalUMinusNumTerm (ssymTerm "a") :: ExceptT ArithException UnionM SymInteger),
+                  @=? (mrgSingle $ SymInteger $ pevalNegNumTerm (ssymTerm "a") :: ExceptT ArithException UnionM SymInteger),
               testProperty "safeSub on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $ do
                   safeSub (con i :: SymInteger) (con j)
                     @=? (mrgSingle $ con $ i - j :: ExceptT ArithException UnionM SymInteger),
               testCase "safeSub on symbolic" $ do
                 safeSub (ssym "a" :: SymInteger) (ssym "b")
-                  @=? (mrgSingle $ SymInteger $ pevalMinusNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
+                  @=? (mrgSingle $ SymInteger $ pevalSubNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
             ],
           testGroup
             "SOrd"
@@ -595,10 +594,10 @@ symPrimTests =
                 let b :: SymInteger = ssym "b"
                 let at :: Term Integer = ssymTerm "a"
                 let bt :: Term Integer = ssymTerm "b"
-                a .<= b @=? SymBool (pevalLeNumTerm at bt)
-                a .< b @=? SymBool (pevalLtNumTerm at bt)
-                a .>= b @=? SymBool (pevalGeNumTerm at bt)
-                a .> b @=? SymBool (pevalGtNumTerm at bt)
+                a .<= b @=? SymBool (pevalLeOrdTerm at bt)
+                a .< b @=? SymBool (pevalLtOrdTerm at bt)
+                a .>= b @=? SymBool (pevalGeOrdTerm at bt)
+                a .> b @=? SymBool (pevalGtOrdTerm at bt)
                 (a `symCompare` ssym "b" :: UnionM Ordering)
                   @=? mrgIf (a .< b) (mrgSingle LT) (mrgIf (a .== b) (mrgSingle EQ) (mrgSingle GT))
             ]
@@ -622,14 +621,14 @@ symPrimTests =
                     au + bu @=? SymWordN (pevalAddNumTerm aut but)
                     as + bs @=? SymIntN (pevalAddNumTerm ast bst),
                   testCase "(-)" $ do
-                    au - bu @=? SymWordN (pevalMinusNumTerm aut but)
-                    as - bs @=? SymIntN (pevalMinusNumTerm ast bst),
+                    au - bu @=? SymWordN (pevalSubNumTerm aut but)
+                    as - bs @=? SymIntN (pevalSubNumTerm ast bst),
                   testCase "(*)" $ do
-                    au * bu @=? SymWordN (pevalTimesNumTerm aut but)
-                    as * bs @=? SymIntN (pevalTimesNumTerm ast bst),
+                    au * bu @=? SymWordN (pevalMulNumTerm aut but)
+                    as * bs @=? SymIntN (pevalMulNumTerm ast bst),
                   testCase "negate" $ do
-                    negate au @=? SymWordN (pevalUMinusNumTerm aut)
-                    negate as @=? SymIntN (pevalUMinusNumTerm ast),
+                    negate au @=? SymWordN (pevalNegNumTerm aut)
+                    negate as @=? SymIntN (pevalNegNumTerm ast),
                   testCase "abs" $ do
                     abs au @=? SymWordN (pevalAbsNumTerm aut)
                     abs as @=? SymIntN (pevalAbsNumTerm ast),
@@ -767,17 +766,17 @@ symPrimTests =
                       `symCompare` con js
                       @=? (normalizes i `symCompare` normalizes j :: UnionM Ordering),
                   testCase "SOrd on symbolic" $ do
-                    au .<= bu @=? SymBool (pevalLeNumTerm aut but)
-                    au .< bu @=? SymBool (pevalLtNumTerm aut but)
-                    au .>= bu @=? SymBool (pevalGeNumTerm aut but)
-                    au .> bu @=? SymBool (pevalGtNumTerm aut but)
+                    au .<= bu @=? SymBool (pevalLeOrdTerm aut but)
+                    au .< bu @=? SymBool (pevalLtOrdTerm aut but)
+                    au .>= bu @=? SymBool (pevalGeOrdTerm aut but)
+                    au .> bu @=? SymBool (pevalGtOrdTerm aut but)
                     (au `symCompare` bu :: UnionM Ordering)
                       @=? mrgIf (au .< bu) (mrgSingle LT) (mrgIf (au .== bu) (mrgSingle EQ) (mrgSingle GT))
 
-                    as .<= bs @=? SymBool (pevalLeNumTerm ast bst)
-                    as .< bs @=? SymBool (pevalLtNumTerm ast bst)
-                    as .>= bs @=? SymBool (pevalGeNumTerm ast bst)
-                    as .> bs @=? SymBool (pevalGtNumTerm ast bst)
+                    as .<= bs @=? SymBool (pevalLeOrdTerm ast bst)
+                    as .< bs @=? SymBool (pevalLtOrdTerm ast bst)
+                    as .>= bs @=? SymBool (pevalGeOrdTerm ast bst)
+                    as .> bs @=? SymBool (pevalGtOrdTerm ast bst)
                     (as `symCompare` bs :: UnionM Ordering)
                       @=? mrgIf (as .< bs) (mrgSingle LT) (mrgIf (as .== bs) (mrgSingle EQ) (mrgSingle GT))
                 ],

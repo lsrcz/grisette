@@ -105,10 +105,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         DivIntegralTerm,
         EqvTerm,
         ITETerm,
-        LENumTerm,
-        LTNumTerm,
+        LeOrdTerm,
+        LtOrdTerm,
         ModBoundedIntegralTerm,
         ModIntegralTerm,
+        MulNumTerm,
+        NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
@@ -123,10 +125,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        TimesNumTerm,
         ToSignedTerm,
         ToUnsignedTerm,
-        UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -740,11 +740,11 @@ lowerSinglePrimImpl config t@(AddNumTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
     ResolvedNumType -> lowerBinaryTerm config t arg1 arg2 (+) m
     _ -> translateBinaryError "(+)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(UMinusNumTerm _ arg) m =
+lowerSinglePrimImpl config t@(NegNumTerm _ arg) m =
   case (config, R.typeRep @a) of
     ResolvedNumType -> lowerUnaryTerm config t arg negate m
     _ -> translateUnaryError "negate" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(TimesNumTerm _ arg1 arg2) m =
+lowerSinglePrimImpl config t@(MulNumTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
     ResolvedNumType -> lowerBinaryTerm config t arg1 arg2 (*) m
     _ -> translateBinaryError "(*)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
@@ -756,11 +756,11 @@ lowerSinglePrimImpl config t@(SignumNumTerm _ arg) m =
   case (config, R.typeRep @a) of
     ResolvedNumType -> lowerUnaryTerm config t arg signum m
     _ -> translateUnaryError "signum" (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(LTNumTerm _ (arg1 :: Term arg) arg2) m =
+lowerSinglePrimImpl config t@(LtOrdTerm _ (arg1 :: Term arg) arg2) m =
   case (config, R.typeRep @arg) of
     ResolvedNumOrdType -> lowerBinaryTerm config t arg1 arg2 (SBV..<) m
     _ -> translateBinaryError "(<)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @Bool)
-lowerSinglePrimImpl config t@(LENumTerm _ (arg1 :: Term arg) arg2) m =
+lowerSinglePrimImpl config t@(LeOrdTerm _ (arg1 :: Term arg) arg2) m =
   case (config, R.typeRep @arg) of
     ResolvedNumOrdType -> lowerBinaryTerm config t arg1 arg2 (SBV..<=) m
     _ -> translateBinaryError "(<=)" (R.typeRep @a) (R.typeRep @a) (R.typeRep @Bool)

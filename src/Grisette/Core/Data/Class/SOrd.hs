@@ -73,11 +73,13 @@ import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalGeNumTerm,
-    pevalGtNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( PEvalOrdTerm
+      ( pevalLeOrdTerm,
+        pevalLtOrdTerm
+      ),
+    pevalGeOrdTerm,
+    pevalGtOrdTerm,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (SymBool),
@@ -315,10 +317,10 @@ instance (SOrd (m a)) => SOrd (IdentityT m a) where
 -- SOrd
 #define SORD_SIMPLE(symtype) \
 instance SOrd symtype where \
-  (symtype a) .<= (symtype b) = SymBool $ pevalLeNumTerm a b; \
-  (symtype a) .< (symtype b) = SymBool $ pevalLtNumTerm a b; \
-  (symtype a) .>= (symtype b) = SymBool $ pevalGeNumTerm a b; \
-  (symtype a) .> (symtype b) = SymBool $ pevalGtNumTerm a b; \
+  (symtype a) .<= (symtype b) = SymBool $ pevalLeOrdTerm a b; \
+  (symtype a) .< (symtype b) = SymBool $ pevalLtOrdTerm a b; \
+  (symtype a) .>= (symtype b) = SymBool $ pevalGeOrdTerm a b; \
+  (symtype a) .> (symtype b) = SymBool $ pevalGtOrdTerm a b; \
   a `symCompare` b = mrgIf \
     (a .< b) \
     (mrgSingle LT) \
@@ -326,10 +328,10 @@ instance SOrd symtype where \
 
 #define SORD_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
-  (symtype a) .<= (symtype b) = SymBool $ pevalLeNumTerm a b; \
-  (symtype a) .< (symtype b) = SymBool $ pevalLtNumTerm a b; \
-  (symtype a) .>= (symtype b) = SymBool $ pevalGeNumTerm a b; \
-  (symtype a) .> (symtype b) = SymBool $ pevalGtNumTerm a b; \
+  (symtype a) .<= (symtype b) = SymBool $ pevalLeOrdTerm a b; \
+  (symtype a) .< (symtype b) = SymBool $ pevalLtOrdTerm a b; \
+  (symtype a) .>= (symtype b) = SymBool $ pevalGeOrdTerm a b; \
+  (symtype a) .> (symtype b) = SymBool $ pevalGtOrdTerm a b; \
   a `symCompare` b = mrgIf \
     (a .< b) \
     (mrgSingle LT) \

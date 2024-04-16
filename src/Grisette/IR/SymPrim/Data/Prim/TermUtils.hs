@@ -55,10 +55,12 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
         DivIntegralTerm,
         EqvTerm,
         ITETerm,
-        LENumTerm,
-        LTNumTerm,
+        LeOrdTerm,
+        LtOrdTerm,
         ModBoundedIntegralTerm,
         ModIntegralTerm,
+        MulNumTerm,
+        NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
@@ -73,10 +75,8 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        TimesNumTerm,
         ToSignedTerm,
         ToUnsignedTerm,
-        UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -113,12 +113,12 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (EqvTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (ITETerm _ cond arg1 arg2)) = goTernary cond arg1 arg2
     go (SomeTerm (AddNumTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (UMinusNumTerm _ arg)) = goUnary arg
-    go (SomeTerm (TimesNumTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (NegNumTerm _ arg)) = goUnary arg
+    go (SomeTerm (MulNumTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (AbsNumTerm _ arg)) = goUnary arg
     go (SomeTerm (SignumNumTerm _ arg)) = goUnary arg
-    go (SomeTerm (LTNumTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (LENumTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (LtOrdTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (LeOrdTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (AndBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (OrBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (XorBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
@@ -169,12 +169,12 @@ castTerm t@AndTerm {} = cast t
 castTerm t@EqvTerm {} = cast t
 castTerm t@ITETerm {} = cast t
 castTerm t@AddNumTerm {} = cast t
-castTerm t@UMinusNumTerm {} = cast t
-castTerm t@TimesNumTerm {} = cast t
+castTerm t@NegNumTerm {} = cast t
+castTerm t@MulNumTerm {} = cast t
 castTerm t@AbsNumTerm {} = cast t
 castTerm t@SignumNumTerm {} = cast t
-castTerm t@LTNumTerm {} = cast t
-castTerm t@LENumTerm {} = cast t
+castTerm t@LtOrdTerm {} = cast t
+castTerm t@LeOrdTerm {} = cast t
 castTerm t@AndBitsTerm {} = cast t
 castTerm t@OrBitsTerm {} = cast t
 castTerm t@XorBitsTerm {} = cast t
@@ -218,12 +218,12 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(EqvTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(ITETerm _ cond arg1 arg2) = goTernary t cond arg1 arg2
     go t@(AddNumTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(UMinusNumTerm _ arg) = goUnary t arg
-    go t@(TimesNumTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(NegNumTerm _ arg) = goUnary t arg
+    go t@(MulNumTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(AbsNumTerm _ arg) = goUnary t arg
     go t@(SignumNumTerm _ arg) = goUnary t arg
-    go t@(LTNumTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(LENumTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(LtOrdTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(LeOrdTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(AndBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(OrBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(XorBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
