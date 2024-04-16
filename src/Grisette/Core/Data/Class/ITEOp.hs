@@ -18,11 +18,11 @@ module Grisette.Core.Data.Class.ITEOp
 where
 
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalITETerm)
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalITETerm)
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (SymBool),
     SymIntN (SymIntN),

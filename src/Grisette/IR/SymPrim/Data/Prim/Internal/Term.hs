@@ -25,14 +25,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
--- Module      :   Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Term
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+module Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( SupportedPrim (..),
     SymRep (..),
     ConRep (..),
@@ -131,7 +131,7 @@ import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.Core.Data.Symbol (Identifier, Symbol (IndexedSymbol, SimpleSymbol))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Caches
+import Grisette.IR.SymPrim.Data.Prim.Internal.Caches
   ( typeMemoizedCache,
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue

@@ -111,16 +111,8 @@ import Grisette.Core.Data.SomeBV
     pattern SomeSymIntN,
     pattern SomeSymWordN,
   )
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun
+import Grisette.IR.SymPrim.Data.GeneralFun
   ( type (-->),
-  )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( LinkedRep (wrapTerm),
-    Term,
-    conTerm,
-    isymTerm,
-    someTypedSymbol,
-    ssymTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model (Model),
@@ -175,6 +167,14 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
   ( pevalTabularFunApplyTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( LinkedRep (wrapTerm),
+    Term,
+    conTerm,
+    isymTerm,
+    someTypedSymbol,
+    ssymTerm,
   )
 import Grisette.IR.SymPrim.Data.SymPrim
   ( ModelSymPair ((:=)),

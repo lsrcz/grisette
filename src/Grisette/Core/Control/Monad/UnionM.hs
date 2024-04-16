@@ -101,10 +101,10 @@ import Grisette.Core.Data.Union
   ( Union (UnionIf, UnionSingle),
     ifWithLeftMost,
   )
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun
+import Grisette.IR.SymPrim.Data.GeneralFun
   ( type (-->),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )

@@ -20,12 +20,6 @@ import Grisette.Core.Data.Class.ModelOps
       ),
     ModelRep (buildModel),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( Term,
-    conTerm,
-    someTypedSymbol,
-    ssymTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model (Model),
     ModelValuePair ((::=)),
@@ -41,6 +35,12 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAddNumTerm,
     pevalUMinusNumTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( Term,
+    conTerm,
+    someTypedSymbol,
+    ssymTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

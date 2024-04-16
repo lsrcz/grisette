@@ -5,18 +5,6 @@
 module Grisette.IR.SymPrim.Data.Prim.NumTests (numTests) where
 
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( Term,
-    absNumTerm,
-    addNumTerm,
-    conTerm,
-    leNumTerm,
-    ltNumTerm,
-    signumNumTerm,
-    ssymTerm,
-    timesNumTerm,
-    uminusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalITETerm,
   )
@@ -31,6 +19,18 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalSignumNumTerm,
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( Term,
+    absNumTerm,
+    addNumTerm,
+    conTerm,
+    leNumTerm,
+    ltNumTerm,
+    signumNumTerm,
+    ssymTerm,
+    timesNumTerm,
+    uminusNumTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

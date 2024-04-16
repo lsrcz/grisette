@@ -128,7 +128,7 @@ import Grisette.Core.Data.Class.TryMerge
   )
 import Grisette.Core.Data.Symbol (Identifier)
 import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )

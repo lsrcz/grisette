@@ -25,7 +25,7 @@ import Data.Kind (Type)
 import qualified Data.SBV as SBV
 import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun (type (-->))
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 type Aux :: Bool -> Nat -> Type

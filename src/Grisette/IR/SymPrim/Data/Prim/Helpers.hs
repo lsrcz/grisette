@@ -7,7 +7,7 @@
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Helpers
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -25,10 +25,10 @@ module Grisette.IR.SymPrim.Data.Prim.Helpers
 where
 
 import Data.Typeable (Typeable, cast)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( Term (BinaryTerm, TernaryTerm, UnaryTerm),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.TermUtils
+import Grisette.IR.SymPrim.Data.Prim.TermUtils
   ( castTerm,
   )
 import Unsafe.Coerce (unsafeCoerce)

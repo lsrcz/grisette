@@ -13,7 +13,7 @@
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Model
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -59,11 +59,62 @@ import Grisette.Core.Data.Class.ModelOps
     SymbolSetRep (buildSymbolSet),
   )
 import Grisette.Core.Data.MemoUtils (htmemo)
-import Grisette.IR.SymPrim.Data.Prim.GeneralFun (type (-->) (GeneralFun))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.SomeTerm
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->) (GeneralFun))
+import Grisette.IR.SymPrim.Data.Prim.ModelValue
+  ( ModelValue,
+    toModelValue,
+    unsafeFromModelValue,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
+  ( pevalBVConcatTerm,
+    pevalBVExtendTerm,
+    pevalBVSelectTerm,
+    pevalToSignedTerm,
+    pevalToUnsignedTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
+    pevalXorBitsTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalAndTerm,
+    pevalEqvTerm,
+    pevalITETerm,
+    pevalNotTerm,
+    pevalOrTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalDivBoundedIntegralTerm,
+    pevalDivIntegralTerm,
+    pevalModBoundedIntegralTerm,
+    pevalModIntegralTerm,
+    pevalQuotBoundedIntegralTerm,
+    pevalQuotIntegralTerm,
+    pevalRemBoundedIntegralTerm,
+    pevalRemIntegralTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+  ( pevalAbsNumTerm,
+    pevalAddNumTerm,
+    pevalLeNumTerm,
+    pevalLtNumTerm,
+    pevalSignumNumTerm,
+    pevalTimesNumTerm,
+    pevalUMinusNumTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
+  ( pevalTabularFunApplyTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (partialEvalBinary),
     PEvalApplyTerm (pevalApplyTerm),
     SomeTypedSymbol (SomeTypedSymbol),
@@ -118,57 +169,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     someTypedSymbol,
     symTerm,
     withSymbolSupported,
-  )
-import Grisette.IR.SymPrim.Data.Prim.ModelValue
-  ( ModelValue,
-    toModelValue,
-    unsafeFromModelValue,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalBVConcatTerm,
-    pevalBVExtendTerm,
-    pevalBVSelectTerm,
-    pevalToSignedTerm,
-    pevalToUnsignedTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
-    pevalRotateRightTerm,
-    pevalShiftLeftTerm,
-    pevalShiftRightTerm,
-    pevalXorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalAndTerm,
-    pevalEqvTerm,
-    pevalITETerm,
-    pevalNotTerm,
-    pevalOrTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalDivBoundedIntegralTerm,
-    pevalDivIntegralTerm,
-    pevalModBoundedIntegralTerm,
-    pevalModIntegralTerm,
-    pevalQuotBoundedIntegralTerm,
-    pevalQuotIntegralTerm,
-    pevalRemBoundedIntegralTerm,
-    pevalRemIntegralTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
   )
 import Type.Reflection
   ( TypeRep,

@@ -63,13 +63,13 @@ import Grisette.Core.Data.Class.PlainUnion
     simpleMerge,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
-  ( SomeTypedSymbol (SomeTypedSymbol),
-  )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model,
     SymbolSet (unSymbolSet),
     equation,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( SomeTypedSymbol (SomeTypedSymbol),
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
 import Language.Haskell.TH.Syntax (Lift)

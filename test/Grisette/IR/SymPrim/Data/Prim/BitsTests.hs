@@ -10,7 +10,17 @@ import Data.Bits (Bits (rotateL, rotateR), FiniteBits)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.IR.SymPrim (SupportedPrim)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
+  ( pevalAndBitsTerm,
+    pevalComplementBitsTerm,
+    pevalOrBitsTerm,
+    pevalRotateLeftTerm,
+    pevalRotateRightTerm,
+    pevalShiftLeftTerm,
+    pevalShiftRightTerm,
+    pevalXorBitsTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( Term,
     andBitsTerm,
     complementBitsTerm,
@@ -22,16 +32,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     shiftRightTerm,
     ssymTerm,
     xorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
-    pevalRotateRightTerm,
-    pevalShiftLeftTerm,
-    pevalShiftRightTerm,
-    pevalXorBitsTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

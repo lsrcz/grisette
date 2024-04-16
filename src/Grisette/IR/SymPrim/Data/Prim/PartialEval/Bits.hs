@@ -43,7 +43,11 @@ import Data.Bits
 import Data.Typeable (Typeable, cast)
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     Term
       ( ComplementBitsTerm,
@@ -58,10 +62,6 @@ import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term
     shiftLeftTerm,
     shiftRightTerm,
     xorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-  ( binaryUnfoldOnce,
-    unaryUnfoldOnce,
   )
 
 bitsConTermView :: (Bits b, Typeable b) => Term a -> Maybe b

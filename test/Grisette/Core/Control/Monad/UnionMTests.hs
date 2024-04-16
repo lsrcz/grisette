@@ -53,10 +53,10 @@ import Grisette.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
-import Grisette.IR.SymPrim.Data.Prim.InternedTerm.Term (TypedSymbol)
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
   )
+import Grisette.IR.SymPrim.Data.Prim.Term (TypedSymbol)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
 import Grisette.TestUtil.PrettyPrint (compactRenderedAs, renderedAs)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
