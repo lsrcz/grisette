@@ -15,7 +15,7 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+module Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval
   ( PartialFun,
     PartialRuleUnary,
     TotalRuleUnary,

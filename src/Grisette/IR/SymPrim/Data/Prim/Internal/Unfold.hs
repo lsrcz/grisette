@@ -10,7 +10,7 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+module Grisette.IR.SymPrim.Data.Prim.Internal.Unfold
   ( unaryUnfoldOnce,
     binaryUnfoldOnce,
   )
@@ -18,17 +18,17 @@ where
 
 import Control.Monad.Except (MonadError (catchError))
 import Data.Typeable (Typeable)
-import Grisette.IR.SymPrim.Data.Prim.Internal.Term
-  ( SupportedPrim (pevalITETerm),
-    Term (ITETerm),
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+import Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval
   ( PartialRuleBinary,
     PartialRuleUnary,
     TotalRuleBinary,
     TotalRuleUnary,
     totalize,
     totalize2,
+  )
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
+  ( SupportedPrim (pevalITETerm),
+    Term (ITETerm),
   )
 
 unaryPartialUnfoldOnce ::

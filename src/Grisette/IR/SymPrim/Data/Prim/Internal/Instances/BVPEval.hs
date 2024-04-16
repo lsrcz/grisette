@@ -1,56 +1,27 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- |
--- Module      :   Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
--- Copyright   :   (c) Sirui Lu 2021-2023
--- License     :   BSD-3-Clause (see the LICENSE file)
---
--- Maintainer  :   siruilu@cs.washington.edu
--- Stability   :   Experimental
--- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
-  ( pevalToSignedTerm,
-    pevalToUnsignedTerm,
-    pevalBVConcatTerm,
-    pevalBVSelectTerm,
-    pevalBVExtendTerm,
-    pevalBVZeroExtendTerm,
-    pevalBVSignExtendTerm,
-  )
-where
+module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.BVPEval () where
 
 import Data.Maybe (isJust)
-import Data.Typeable (Proxy (Proxy), Typeable, (:~:) (Refl))
+import Data.Proxy (Proxy (Proxy))
+import Data.Typeable (type (:~:) (Refl))
 import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (<=))
+import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV
-      ( sizedBVConcat,
-        sizedBVFromIntegral,
-        sizedBVSelect,
-        sizedBVSext,
-        sizedBVZext
-      ),
+  ( SizedBV (sizedBVConcat, sizedBVFromIntegral, sizedBVSelect, sizedBVSext, sizedBVZext),
   )
-import Grisette.Core.Data.Class.SignConversion
-  ( SignConversion (toSigned, toUnsigned),
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-  ( binaryUnfoldOnce,
-    unaryUnfoldOnce,
-  )
-import Grisette.IR.SymPrim.Data.Prim.Term
-  ( SupportedPrim,
+import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
+  ( PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
+    PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
     Term
       ( BVConcatTerm,
         BVExtendTerm,
@@ -66,9 +37,11 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     toSignedTerm,
     toUnsignedTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.TermUtils
-  ( castTerm,
+import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
   )
+import Grisette.IR.SymPrim.Data.Prim.TermUtils (castTerm)
 import Grisette.Utils.Parameterized
   ( LeqProof (LeqProof),
     NatRepr,
@@ -83,118 +56,56 @@ import Grisette.Utils.Parameterized
     withKnownNat,
   )
 
--- ToSigned
-pevalToSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    SignConversion (u 1) (s 1),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
-  ) =>
-  Term (u n) ->
-  Term (s n)
-pevalToSignedTerm = unaryUnfoldOnce doPevalToSignedTerm toSignedTerm
+instance PEvalBVSignConversionTerm WordN IntN where
+  pevalBVToSignedTerm = unaryUnfoldOnce doPevalToSignedTerm toSignedTerm
+    where
+      doPevalToSignedTerm ::
+        forall n.
+        (KnownNat n, 1 <= n) =>
+        Term (WordN n) ->
+        Maybe (Term (IntN n))
+      doPevalToSignedTerm (ConTerm _ b) = Just $ conTerm $ toSigned b
+      doPevalToSignedTerm (ToUnsignedTerm _ b) = Just b >>= castTerm
+      doPevalToSignedTerm (BVConcatTerm _ b1 b2) =
+        Just $ pevalBVConcatTerm (pevalBVToSignedTerm b1) (pevalBVToSignedTerm b2)
+      doPevalToSignedTerm (BVExtendTerm _ signed pr b) =
+        Just $ pevalBVExtendTerm signed pr $ pevalBVToSignedTerm b
+      doPevalToSignedTerm _ = Nothing
+  pevalBVToUnsignedTerm = unaryUnfoldOnce doPevalToUnsignedTerm toUnsignedTerm
+    where
+      doPevalToUnsignedTerm ::
+        forall n.
+        (KnownNat n, 1 <= n) =>
+        Term (IntN n) ->
+        Maybe (Term (WordN n))
+      doPevalToUnsignedTerm (ConTerm _ b) = Just $ conTerm $ toUnsigned b
+      doPevalToUnsignedTerm (ToSignedTerm _ b) = Just b >>= castTerm
+      doPevalToUnsignedTerm (BVConcatTerm _ b1 b2) =
+        Just $ pevalBVConcatTerm (pevalBVToUnsignedTerm b1) (pevalBVToUnsignedTerm b2)
+      doPevalToUnsignedTerm (BVExtendTerm _ signed pr b) =
+        Just $ pevalBVExtendTerm signed pr $ pevalBVToUnsignedTerm b
+      doPevalToUnsignedTerm _ = Nothing
 
-doPevalToSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
-  ) =>
-  Term (u n) ->
-  Maybe (Term (s n))
-doPevalToSignedTerm (ConTerm _ b) = Just $ conTerm $ toSigned b
-doPevalToSignedTerm (ToUnsignedTerm _ b) = Just b >>= castTerm
-doPevalToSignedTerm (BVConcatTerm _ b1 b2) =
-  Just $ pevalBVConcatTerm (pevalToSignedTerm b1) (pevalToSignedTerm b2)
-doPevalToSignedTerm (BVExtendTerm _ signed pr b) =
-  Just $ pevalBVExtendTerm signed pr $ pevalToSignedTerm b
-doPevalToSignedTerm _ = Nothing
-
--- ToUnsigned
-pevalToUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    SignConversion (u 1) (s 1),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
-  ) =>
-  Term (s n) ->
-  Term (u n)
-pevalToUnsignedTerm = unaryUnfoldOnce doPevalToUnsignedTerm toUnsignedTerm
-
-doPevalToUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
-  ) =>
-  Term (s n) ->
-  Maybe (Term (u n))
-doPevalToUnsignedTerm (ConTerm _ b) = Just $ conTerm $ toUnsigned b
-doPevalToUnsignedTerm (ToSignedTerm _ b) = Just b >>= castTerm
-doPevalToUnsignedTerm (BVConcatTerm _ b1 b2) =
-  Just $ pevalBVConcatTerm (pevalToUnsignedTerm b1) (pevalToUnsignedTerm b2)
-doPevalToUnsignedTerm (BVExtendTerm _ signed pr b) =
-  Just $ pevalBVExtendTerm signed pr $ pevalToUnsignedTerm b
-doPevalToUnsignedTerm _ = Nothing
-
--- select
-pevalBVSelectTerm ::
+pevalDefaultBVSelectTerm ::
   forall bv n ix w p q.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat n,
+  ( KnownNat n,
     KnownNat ix,
     KnownNat w,
     1 <= n,
     1 <= w,
     ix + w <= n,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
+    PEvalBVTerm bv
   ) =>
   p ix ->
   q w ->
   Term (bv n) ->
   Term (bv w)
-pevalBVSelectTerm ix w =
-  unaryUnfoldOnce (doPevalBVSelectTerm ix w) (bvselectTerm ix w)
+pevalDefaultBVSelectTerm ix w =
+  unaryUnfoldOnce (doPevalDefaultBVSelectTerm ix w) (bvselectTerm ix w)
 
 unsafePevalBVSelectTerm ::
   forall bv n ix w.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
-  ) =>
+  (PEvalBVTerm bv) =>
   NatRepr n ->
   NatRepr ix ->
   NatRepr w ->
@@ -210,33 +121,30 @@ unsafePevalBVSelectTerm n ix w term =
              ) of
           (LeqProof, LeqProof, LeqProof) -> pevalBVSelectTerm ix w term
 
-doPevalBVSelectTerm ::
+doPevalDefaultBVSelectTerm ::
   forall bv n ix w p q.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat n,
+  ( KnownNat n,
     KnownNat ix,
     KnownNat w,
     1 <= n,
     1 <= w,
     ix + w <= n,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
+    PEvalBVTerm bv
   ) =>
   p ix ->
   q w ->
   Term (bv n) ->
   Maybe (Term (bv w))
-doPevalBVSelectTerm _ _ rhs
+doPevalDefaultBVSelectTerm _ _ rhs
   | isJust (sameNat (Proxy @ix) (Proxy @0))
       && isJust (sameNat (Proxy @w) (Proxy @n)) =
       Just rhs >>= castTerm
-doPevalBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
-doPevalBVSelectTerm ix w (ToSignedTerm _ b) =
-  Just $ pevalToSignedTerm $ pevalBVSelectTerm ix w b
-doPevalBVSelectTerm ix w (ToUnsignedTerm _ b) =
-  Just $ pevalToUnsignedTerm $ pevalBVSelectTerm ix w b
-doPevalBVSelectTerm
+doPevalDefaultBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
+doPevalDefaultBVSelectTerm ix w (ToSignedTerm _ b) =
+  Just $ pevalBVToSignedTerm $ pevalBVSelectTerm ix w b
+doPevalDefaultBVSelectTerm ix w (ToUnsignedTerm _ b) =
+  Just $ pevalBVToUnsignedTerm $ pevalBVSelectTerm ix w b
+doPevalDefaultBVSelectTerm
   pix
   pw
   (BVConcatTerm _ (b1 :: Term (bv n1)) (b2 :: Term (bv n2)))
@@ -266,7 +174,7 @@ doPevalBVSelectTerm
       ix = natVal @ix pix
       w = natVal @w pw
       n2 = natVal @n2 (Proxy @n2)
-doPevalBVSelectTerm
+doPevalDefaultBVSelectTerm
   _
   _
   (BVSelectTerm _ (_ :: proxy ix1) _ (b :: Term (bv n1))) =
@@ -276,7 +184,7 @@ doPevalBVSelectTerm
         (addNat (natRepr @ix) (natRepr @ix1))
         (natRepr @w)
         b
-doPevalBVSelectTerm
+doPevalDefaultBVSelectTerm
   pix
   pw
   (BVExtendTerm _ signed _ (b :: Term (bv n1)))
@@ -294,69 +202,27 @@ doPevalBVSelectTerm
       ix = natVal @ix pix
       w = natVal @w pw
       n1 = natVal @n1 (Proxy @n1)
-doPevalBVSelectTerm _ _ _ = Nothing
+doPevalDefaultBVSelectTerm _ _ _ = Nothing
 
--- ext
-pevalBVZeroExtendTerm ::
+pevalDefaultBVExtendTerm ::
   forall proxy l r bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
+  ( PEvalBVTerm bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
     1 <= r,
-    l <= r,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
-  ) =>
-  proxy r ->
-  Term (bv l) ->
-  Term (bv r)
-pevalBVZeroExtendTerm = pevalBVExtendTerm False
-
-pevalBVSignExtendTerm ::
-  forall proxy l r bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat l,
-    KnownNat r,
-    1 <= l,
-    1 <= r,
-    l <= r,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
-  ) =>
-  proxy r ->
-  Term (bv l) ->
-  Term (bv r)
-pevalBVSignExtendTerm = pevalBVExtendTerm True
-
-pevalBVExtendTerm ::
-  forall proxy l r bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat l,
-    KnownNat r,
-    1 <= l,
-    1 <= r,
-    l <= r,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
+    l <= r
   ) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
   Term (bv r)
-pevalBVExtendTerm signed p =
-  unaryUnfoldOnce (doPevalBVExtendTerm signed p) (bvextendTerm signed p)
+pevalDefaultBVExtendTerm signed p =
+  unaryUnfoldOnce (doPevalDefaultBVExtendTerm signed p) (bvextendTerm signed p)
 
 unsafePevalBVExtendTerm ::
   forall bv l r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
-  ) =>
+  (PEvalBVTerm bv) =>
   NatRepr l ->
   NatRepr r ->
   Bool ->
@@ -369,28 +235,25 @@ unsafePevalBVExtendTerm lRepr rRepr signed v =
         withKnownNat rRepr $
           pevalBVExtendTerm signed (Proxy @r) v
 
-doPevalBVExtendTerm ::
+doPevalDefaultBVExtendTerm ::
   forall proxy l r bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
+  ( PEvalBVTerm bv,
     KnownNat l,
     KnownNat r,
     1 <= l,
     1 <= r,
-    l <= r,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
+    l <= r
   ) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
   Maybe (Term (bv r))
-doPevalBVExtendTerm signed p (ConTerm _ b) =
+doPevalDefaultBVExtendTerm signed p (ConTerm _ b) =
   Just $ conTerm $ if signed then sizedBVSext p b else sizedBVZext p b
-doPevalBVExtendTerm _ _ b
+doPevalDefaultBVExtendTerm _ _ b
   | isJust $ sameNat (Proxy @l) (Proxy @r) =
       Just b >>= castTerm
-doPevalBVExtendTerm False pr b =
+doPevalDefaultBVExtendTerm False pr b =
   case (mkPositiveNatRepr $ r - l) of
     SomePositiveNatRepr (rplRepr :: NatRepr lpr) ->
       Just $
@@ -405,35 +268,31 @@ doPevalBVExtendTerm False pr b =
     rRepr = natRepr @r
     l = natVal @l (Proxy @l)
     r = natVal @r pr
-doPevalBVExtendTerm True p (BVExtendTerm _ True _ (b :: Term (bv l1))) =
+doPevalDefaultBVExtendTerm True p (BVExtendTerm _ True _ (b :: Term (bv l1))) =
   case unsafeLeqProof @l1 @r of
     LeqProof -> Just $ pevalBVExtendTerm True p b
-doPevalBVExtendTerm _ _ _ = Nothing
+doPevalDefaultBVExtendTerm _ _ _ = Nothing
 
-pevalBVConcatTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat a,
+pevalDefaultBVConcatTerm ::
+  forall bv a b.
+  ( KnownNat a,
     KnownNat b,
-    KnownNat (a + b),
     1 <= a,
     1 <= b,
-    1 <= a + b,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
+    PEvalBVTerm bv
   ) =>
   Term (bv a) ->
   Term (bv b) ->
   Term (bv (a + b))
-pevalBVConcatTerm = binaryUnfoldOnce doPevalBVConcatTerm bvconcatTerm
+pevalDefaultBVConcatTerm =
+  withKnownNat (addNat (natRepr @a) (natRepr @b)) $
+    case (unsafeLeqProof @1 @(a + b)) of
+      LeqProof ->
+        binaryUnfoldOnce doPevalDefaultBVConcatTerm bvconcatTerm
 
 unsafeBVConcatTerm ::
   forall bv n1 n2 r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
-  ) =>
+  (PEvalBVTerm bv) =>
   NatRepr n1 ->
   NatRepr n2 ->
   NatRepr r ->
@@ -454,11 +313,7 @@ unsafeBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
 
 unsafePevalBVConcatTerm ::
   forall bv n1 n2 r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
-  ) =>
+  (PEvalBVTerm bv) =>
   NatRepr n1 ->
   NatRepr n2 ->
   NatRepr r ->
@@ -477,27 +332,26 @@ unsafePevalBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
           withKnownNat rRepr $
             pevalBVConcatTerm lhs rhs
 
-doPevalBVConcatTerm ::
+doPevalDefaultBVConcatTerm ::
   forall bv l r.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat l,
+  ( KnownNat l,
     KnownNat r,
-    KnownNat (l + r),
     1 <= l,
     1 <= r,
     1 <= (l + r),
-    SizedBV bv,
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
+    PEvalBVTerm bv
   ) =>
   Term (bv l) ->
   Term (bv r) ->
   Maybe (Term (bv (l + r)))
 -- 1. [c1 c2] -> c1c2
-doPevalBVConcatTerm (ConTerm _ v) (ConTerm _ v') =
-  Just $ conTerm $ sizedBVConcat v v'
+doPevalDefaultBVConcatTerm (ConTerm _ v) (ConTerm _ v') =
+  withKnownNat (addNat (natRepr @l) (natRepr @r)) $
+    Just $
+      conTerm $
+        sizedBVConcat v v'
 -- 2. [c1 (c2 ?)] -> (c1c2 ?)
-doPevalBVConcatTerm
+doPevalDefaultBVConcatTerm
   (ConTerm _ vl)
   (BVConcatTerm _ (ConTerm _ (vrl :: bv rl)) (rr :: Term (bv rr))) =
     case unsafeLeqProof @1 @(l + rl) of
@@ -513,9 +367,9 @@ doPevalBVConcatTerm
     where
       lRlRepr = addNat (natRepr @l) (natRepr @rl)
 -- 3. [c1 (s c2)] -> (c1 (s c2))
-doPevalBVConcatTerm (ConTerm {}) (BVConcatTerm _ _ ConTerm {}) = Nothing
+doPevalDefaultBVConcatTerm (ConTerm {}) (BVConcatTerm _ _ ConTerm {}) = Nothing
 -- 4. [(c s) ?) -> (c [s ?])
-doPevalBVConcatTerm
+doPevalDefaultBVConcatTerm
   (BVConcatTerm _ (ll@ConTerm {} :: Term (bv ll)) (lr :: Term (bv lr)))
   r =
     Just $ unsafeBVConcatTerm llRepr lrRRepr lRRepr ll rhs
@@ -529,7 +383,7 @@ doPevalBVConcatTerm
       rhs :: Term (bv (lr + r))
       rhs = unsafePevalBVConcatTerm lrRepr rRepr lrRRepr lr r
 -- 5. [? (c1 (s2 c2))] -> (([? c1] s2) c2)
-doPevalBVConcatTerm
+doPevalDefaultBVConcatTerm
   l
   ( BVConcatTerm
       _
@@ -549,7 +403,7 @@ doPevalBVConcatTerm
       lRlRrlRepr = addNat lRlRepr rrlRepr
       lRlRrl = unsafeBVConcatTerm lRlRepr rrlRepr lRlRrlRepr lRl rrl
 -- 6. [(s1 c1) c2] -> (s1 c1c2)
-doPevalBVConcatTerm
+doPevalDefaultBVConcatTerm
   (BVConcatTerm _ (ll :: Term (bv ll)) ((ConTerm _ vlr) :: Term (bv lr)))
   (ConTerm _ vr) =
     Just $ unsafeBVConcatTerm llRepr lrRRepr lRRepr ll rhs
@@ -565,7 +419,7 @@ doPevalBVConcatTerm
         LeqProof ->
           withKnownNat lrRRepr $ conTerm $ sizedBVConcat vlr vr
 -- 7. [(s1 c1) (c2 s2)] -> (s1 (c1c2 s2))
-doPevalBVConcatTerm
+doPevalDefaultBVConcatTerm
   (BVConcatTerm _ (ll :: Term (bv ll)) ((ConTerm _ vlr) :: Term (bv lr)))
   (BVConcatTerm _ ((ConTerm _ vrl) :: Term (bv rl)) (rr :: Term (bv rr))) =
     Just $ unsafeBVConcatTerm llRepr lrRlRrRepr lRRepr ll lrRlRR
@@ -587,7 +441,7 @@ doPevalBVConcatTerm
       lrRlRR :: Term (bv ((lr + rl) + rr))
       lrRlRR = unsafeBVConcatTerm lrRlRepr rrRepr lrRlRrRepr lrRl rr
 -- 8. [?notc (s2 c)] -> ((s1 s2) c)
-doPevalBVConcatTerm
+doPevalDefaultBVConcatTerm
   l
   (BVConcatTerm _ (rl :: Term (bv rl)) (rr@ConTerm {} :: Term (bv rr))) =
     Just $
@@ -603,4 +457,14 @@ doPevalBVConcatTerm
       lRlRepr = addNat lRepr rlRepr
       lhs :: Term (bv (l + rl))
       lhs = unsafeBVConcatTerm lRepr rlRepr lRlRepr l rl
-doPevalBVConcatTerm _ _ = Nothing
+doPevalDefaultBVConcatTerm _ _ = Nothing
+
+instance PEvalBVTerm WordN where
+  pevalBVSelectTerm = pevalDefaultBVSelectTerm
+  pevalBVConcatTerm = pevalDefaultBVConcatTerm
+  pevalBVExtendTerm = pevalDefaultBVExtendTerm
+
+instance PEvalBVTerm IntN where
+  pevalBVSelectTerm = pevalDefaultBVSelectTerm
+  pevalBVConcatTerm = pevalDefaultBVConcatTerm
+  pevalBVExtendTerm = pevalDefaultBVExtendTerm

@@ -37,7 +37,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     quotIntegralTerm,
     remIntegralTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold (binaryUnfoldOnce)
+import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold (binaryUnfoldOnce)
 
 -- div
 pevalDefaultDivIntegralTerm ::

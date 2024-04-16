@@ -30,7 +30,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     shiftLeftTerm,
     shiftRightTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold (unaryUnfoldOnce)
+import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold (unaryUnfoldOnce)
 
 pevalFiniteBitsSymShiftShiftLeftTerm ::
   forall a.

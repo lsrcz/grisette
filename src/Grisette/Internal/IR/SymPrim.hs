@@ -86,8 +86,7 @@ import Grisette.IR.SymPrim.Data.Prim.Helpers
     pattern TernaryTermPatt,
     pattern UnaryTermPatt,
   )
-import Grisette.IR.SymPrim.Data.Prim.Model (evaluateTerm)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
+import Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval
   ( BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
     PartialFun,
@@ -101,10 +100,11 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
     totalize2,
     unaryPartial,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold
   ( binaryUnfoldOnce,
     unaryUnfoldOnce,
   )
+import Grisette.IR.SymPrim.Data.Prim.Model (evaluateTerm)
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (..),
   )

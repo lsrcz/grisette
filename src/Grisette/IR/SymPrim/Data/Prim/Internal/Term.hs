@@ -55,6 +55,8 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     pevalGeOrdTerm,
     pevalNEqTerm,
     PEvalDivModIntegralTerm (..),
+    PEvalBVSignConversionTerm (..),
+    PEvalBVTerm (..),
 
     -- * Typed symbols
     TypedSymbol (..),
@@ -303,6 +305,43 @@ class (SupportedPrim t, Integral t) => PEvalDivModIntegralTerm t where
   pevalRemIntegralTerm :: Term t -> Term t -> Term t
 
 class
+  ( PEvalBVTerm s,
+    PEvalBVTerm u,
+    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n)
+  ) =>
+  PEvalBVSignConversionTerm u s
+    | u -> s,
+      s -> u
+  where
+  pevalBVToSignedTerm :: (KnownNat n, 1 <= n) => Term (u n) -> Term (s n)
+  pevalBVToUnsignedTerm :: (KnownNat n, 1 <= n) => Term (s n) -> Term (u n)
+
+class
+  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+    SizedBV bv,
+    Typeable bv
+  ) =>
+  PEvalBVTerm bv
+  where
+  pevalBVConcatTerm ::
+    (KnownNat l, KnownNat r, 1 <= l, 1 <= r) =>
+    Term (bv l) ->
+    Term (bv r) ->
+    Term (bv (l + r))
+  pevalBVExtendTerm ::
+    (KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+    Bool ->
+    proxy r ->
+    Term (bv l) ->
+    Term (bv r)
+  pevalBVSelectTerm ::
+    (KnownNat n, KnownNat ix, KnownNat w, 1 <= n, 1 <= w, ix + w <= n) =>
+    p ix ->
+    q w ->
+    Term (bv n) ->
+    Term (bv w)
+
+class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
   UnaryOp tag arg t
     | tag arg -> t
@@ -528,60 +567,36 @@ data Term t where
     !(Term t) ->
     Term t
   ToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
-    ) =>
+    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
     {-# UNPACK #-} !Id ->
     !(Term (u n)) ->
     Term (s n)
   ToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
-    ) =>
+    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
     {-# UNPACK #-} !Id ->
     !(Term (s n)) ->
     Term (u n)
   BVConcatTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
-      KnownNat a,
-      KnownNat b,
-      KnownNat (a + b),
-      1 <= a,
-      1 <= b,
-      1 <= a + b,
-      SizedBV bv
+    ( PEvalBVTerm bv,
+      KnownNat l,
+      KnownNat r,
+      KnownNat (l + r),
+      1 <= l,
+      1 <= r,
+      1 <= l + r
     ) =>
     {-# UNPACK #-} !Id ->
-    !(Term (bv a)) ->
-    !(Term (bv b)) ->
-    Term (bv (a + b))
+    !(Term (bv l)) ->
+    !(Term (bv r)) ->
+    Term (bv (l + r))
   BVSelectTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
+    ( PEvalBVTerm bv,
       KnownNat n,
       KnownNat ix,
       KnownNat w,
       1 <= n,
       1 <= w,
-      ix + w <= n,
-      SizedBV bv
+      ix + w <= n
     ) =>
     {-# UNPACK #-} !Id ->
     !(TypeRep ix) ->
@@ -589,15 +604,7 @@ data Term t where
     !(Term (bv n)) ->
     Term (bv w)
   BVExtendTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
-      KnownNat l,
-      KnownNat r,
-      1 <= l,
-      1 <= r,
-      l <= r,
-      SizedBV bv
-    ) =>
+    (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
     {-# UNPACK #-} !Id ->
     !Bool ->
     !(TypeRep r) ->
@@ -944,72 +951,40 @@ data UTerm t where
   URotateLeftTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URotateRightTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UToSignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
-    ) =>
+    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
     !(Term (u n)) ->
     UTerm (s n)
   UToUnsignedTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-      forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-      forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-      SignConversion (u 1) (s 1),
-      Typeable u,
-      Typeable s,
-      KnownNat n,
-      1 <= n,
-      SizedBV u,
-      SizedBV s
-    ) =>
+    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
     !(Term (s n)) ->
     UTerm (u n)
   UBVConcatTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
-      KnownNat a,
-      KnownNat b,
-      KnownNat (a + b),
-      1 <= a,
-      1 <= b,
-      1 <= a + b,
-      SizedBV bv
+    ( PEvalBVTerm bv,
+      KnownNat l,
+      KnownNat r,
+      KnownNat (l + r),
+      1 <= l,
+      1 <= r,
+      1 <= l + r
     ) =>
-    !(Term (bv a)) ->
-    !(Term (bv b)) ->
-    UTerm (bv (a + b))
+    !(Term (bv l)) ->
+    !(Term (bv r)) ->
+    UTerm (bv (l + r))
   UBVSelectTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
+    ( PEvalBVTerm bv,
       KnownNat n,
       KnownNat ix,
       KnownNat w,
       1 <= n,
       1 <= w,
-      ix + w <= n,
-      SizedBV bv
+      ix + w <= n
     ) =>
     !(TypeRep ix) ->
     !(TypeRep w) ->
     !(Term (bv n)) ->
     UTerm (bv w)
   UBVExtendTerm ::
-    ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-      Typeable bv,
-      KnownNat l,
-      KnownNat r,
-      1 <= l,
-      1 <= r,
-      l <= r,
-      SizedBV bv
-    ) =>
+    (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
     !Bool ->
     !(TypeRep r) ->
     !(Term (bv l)) ->
@@ -1439,65 +1414,41 @@ rotateRightTerm t n = internTerm $ URotateRightTerm t n
 {-# INLINE rotateRightTerm #-}
 
 toSignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    SignConversion (u 1) (s 1),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s
-  ) =>
+  (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
   Term (u n) ->
   Term (s n)
 toSignedTerm = internTerm . UToSignedTerm
 
 toUnsignedTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n),
-    SignConversion (u 1) (s 1),
-    Typeable u,
-    Typeable s,
-    KnownNat n,
-    1 <= n,
-    SizedBV u,
-    SizedBV s
-  ) =>
+  (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
   Term (s n) ->
   Term (u n)
 toUnsignedTerm = internTerm . UToUnsignedTerm
 
 bvconcatTerm ::
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat a,
-    KnownNat b,
-    KnownNat (a + b),
-    1 <= a,
-    1 <= b,
-    1 <= a + b,
-    SizedBV bv
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    KnownNat (l + r),
+    1 <= l,
+    1 <= r,
+    1 <= l + r
   ) =>
-  Term (bv a) ->
-  Term (bv b) ->
-  Term (bv (a + b))
+  Term (bv l) ->
+  Term (bv r) ->
+  Term (bv (l + r))
 bvconcatTerm l r = internTerm $ UBVConcatTerm l r
 {-# INLINE bvconcatTerm #-}
 
 bvselectTerm ::
   forall bv n ix w p q.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
+  ( PEvalBVTerm bv,
     KnownNat n,
     KnownNat ix,
     KnownNat w,
     1 <= n,
     1 <= w,
-    ix + w <= n,
-    SizedBV bv
+    ix + w <= n
   ) =>
   p ix ->
   q w ->
@@ -1508,15 +1459,7 @@ bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
 
 bvextendTerm ::
   forall bv l r proxy.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat l,
-    KnownNat r,
-    1 <= l,
-    1 <= r,
-    l <= r,
-    SizedBV bv
-  ) =>
+  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
@@ -1526,15 +1469,7 @@ bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
 
 bvsignExtendTerm ::
   forall bv l r proxy.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat l,
-    KnownNat r,
-    1 <= l,
-    1 <= r,
-    l <= r,
-    SizedBV bv
-  ) =>
+  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
   proxy r ->
   Term (bv l) ->
   Term (bv r)
@@ -1543,15 +1478,7 @@ bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
 
 bvzeroExtendTerm ::
   forall bv l r proxy.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    Typeable bv,
-    KnownNat l,
-    KnownNat r,
-    1 <= l,
-    1 <= r,
-    l <= r,
-    SizedBV bv
-  ) =>
+  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
   proxy r ->
   Term (bv l) ->
   Term (bv r)

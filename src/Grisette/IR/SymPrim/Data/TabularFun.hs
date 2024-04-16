@@ -25,6 +25,7 @@ import Control.DeepSeq (NFData, NFData1)
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic, Generic1)
 import Grisette.Core.Data.Class.Function (Function ((#)))
+import Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval (totalize2)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( PEvalApplyTerm (pevalApplyTerm),
     SupportedPrim (PrimConstraint, defaultValue, pevalITETerm),
@@ -35,7 +36,6 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     pevalEqTerm,
     pevalITEBasicTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
