@@ -6,26 +6,24 @@
 module Grisette.IR.SymPrim.Data.Prim.BoolTests (boolTests) where
 
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalAndTerm,
-    pevalEqvTerm,
-    pevalITETerm,
-    pevalImplyTerm,
-    pevalNotEqvTerm,
-    pevalNotTerm,
-    pevalOrTerm,
-    pevalXorTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAddNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( Term,
+  ( SupportedPrim (pevalITETerm),
+    Term,
     andTerm,
     conTerm,
     eqvTerm,
     notTerm,
     orTerm,
+    pevalAndTerm,
+    pevalEqvTerm,
+    pevalImplyTerm,
+    pevalNotEqvTerm,
+    pevalNotTerm,
+    pevalOrTerm,
+    pevalXorTerm,
     ssymTerm,
   )
 import Test.Framework (Test, testGroup)

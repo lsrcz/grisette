@@ -28,17 +28,15 @@ import Grisette.IR.SymPrim.Data.Prim.Model
     evaluateTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue (toModelValue)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalEqvTerm,
-    pevalITETerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAddNumTerm,
     pevalUMinusNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( Term,
+  ( SupportedPrim (pevalITETerm),
+    Term,
     conTerm,
+    pevalEqvTerm,
     someTypedSymbol,
     ssymTerm,
   )

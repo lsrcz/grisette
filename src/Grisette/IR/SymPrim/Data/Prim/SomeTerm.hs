@@ -15,7 +15,7 @@ module Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (..)) where
 
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Typeable (Proxy (Proxy), typeRep)
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( SupportedPrim,
     Term,
     identityWithTypeRep,

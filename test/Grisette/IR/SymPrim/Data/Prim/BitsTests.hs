@@ -11,17 +11,19 @@ import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.IR.SymPrim (SupportedPrim)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
+  ( pevalRotateLeftTerm,
     pevalRotateRightTerm,
     pevalShiftLeftTerm,
     pevalShiftRightTerm,
-    pevalXorBitsTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( Term,
+  ( PEvalBitwiseTerm
+      ( pevalAndBitsTerm,
+        pevalComplementBitsTerm,
+        pevalOrBitsTerm,
+        pevalXorBitsTerm
+      ),
+    Term,
     andBitsTerm,
     complementBitsTerm,
     conTerm,

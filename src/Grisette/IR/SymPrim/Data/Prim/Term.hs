@@ -13,4 +13,6 @@ module Grisette.IR.SymPrim.Data.Prim.Term
   )
 where
 
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalBitwiseTerm ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term

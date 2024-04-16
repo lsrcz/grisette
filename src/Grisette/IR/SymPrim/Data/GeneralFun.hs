@@ -44,21 +44,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
+  ( pevalRotateLeftTerm,
     pevalRotateRightTerm,
     pevalShiftLeftTerm,
     pevalShiftRightTerm,
-    pevalXorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalAndTerm,
-    pevalEqvTerm,
-    pevalITETerm,
-    pevalNotTerm,
-    pevalOrTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
@@ -85,7 +74,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (partialEvalBinary),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
-    SupportedPrim (PrimConstraint, defaultValue),
+    PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
+    SupportedPrim (PrimConstraint, defaultValue, pevalITETerm),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -132,6 +122,11 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     UnaryOp (partialEvalUnary),
     applyTerm,
     conTerm,
+    pevalAndTerm,
+    pevalEqvTerm,
+    pevalITEBasicTerm,
+    pevalNotTerm,
+    pevalOrTerm,
     pformat,
     someTypedSymbol,
     symTerm,
@@ -209,6 +204,7 @@ instance NFData (a --> b) where
 instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
 
 instance
   (SupportedPrim a, SupportedPrim b) =>
