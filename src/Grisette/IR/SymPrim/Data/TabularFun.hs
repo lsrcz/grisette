@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -24,6 +25,18 @@ import Control.DeepSeq (NFData, NFData1)
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic, Generic1)
 import Grisette.Core.Data.Class.Function (Function ((#)))
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
+  ( PEvalApplyTerm (pevalApplyTerm),
+    SupportedPrim (PrimConstraint, defaultValue),
+    Term (ConTerm),
+    applyTerm,
+    conTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+  ( pevalEqvTerm,
+    pevalITETerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
@@ -55,3 +68,29 @@ instance (Eq a) => Function (a =-> b) a b where
         | otherwise = go s
 
 instance (Hashable a, Hashable b) => Hashable (a =-> b)
+
+instance
+  (SupportedPrim a, SupportedPrim b) =>
+  SupportedPrim (a =-> b)
+  where
+  type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
+  defaultValue = TabularFun [] (defaultValue @b)
+
+instance
+  (SupportedPrim a, SupportedPrim b) =>
+  PEvalApplyTerm (a =-> b) a b
+  where
+  pevalApplyTerm = totalize2 doPevalApplyTerm applyTerm
+    where
+      doPevalApplyTerm ::
+        (SupportedPrim a, SupportedPrim b) =>
+        Term (a =-> b) ->
+        Term a ->
+        Maybe (Term b)
+      doPevalApplyTerm (ConTerm _ f) (ConTerm _ a) = Just $ conTerm $ f # a
+      doPevalApplyTerm (ConTerm _ (TabularFun f d)) a = Just $ go f
+        where
+          go [] = conTerm d
+          go ((x, y) : xs) =
+            pevalITETerm (pevalEqvTerm a (conTerm x)) (conTerm y) (go xs)
+      doPevalApplyTerm _ _ = Nothing

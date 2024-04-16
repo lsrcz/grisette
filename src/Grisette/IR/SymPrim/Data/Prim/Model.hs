@@ -108,9 +108,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -152,7 +149,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
         ToSignedTerm,
@@ -470,8 +466,6 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goUnary (pevalBVExtendTerm n signed) arg
     go (SomeTerm (ApplyTerm _ f arg)) =
       goBinary pevalApplyTerm f arg
-    go (SomeTerm (TabularFunApplyTerm _ f arg)) =
-      goBinary pevalTabularFunApplyTerm f arg
     go (SomeTerm (DivIntegralTerm _ arg1 arg2)) =
       goBinary pevalDivIntegralTerm arg1 arg2
     go (SomeTerm (ModIntegralTerm _ arg1 arg2)) =

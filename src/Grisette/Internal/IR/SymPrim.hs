@@ -81,7 +81,6 @@ module Grisette.Internal.IR.SymPrim
     pevalLeNumTerm,
     pevalGtNumTerm,
     pevalGeNumTerm,
-    pevalTabularFunApplyTerm,
     PEvalApplyTerm (..),
     pevalDivIntegralTerm,
     pevalModIntegralTerm,
@@ -145,9 +144,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
     totalize,
     totalize2,
     unaryPartial,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
   ( binaryUnfoldOnce,

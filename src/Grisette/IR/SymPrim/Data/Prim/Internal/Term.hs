@@ -90,7 +90,6 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     bvsignExtendTerm,
     bvzeroExtendTerm,
     applyTerm,
-    tabularFunApplyTerm,
     divIntegralTerm,
     modIntegralTerm,
     quotIntegralTerm,
@@ -130,7 +129,10 @@ import Grisette.Core.Data.Class.BitVector
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
-import Grisette.Core.Data.Symbol (Identifier, Symbol (IndexedSymbol, SimpleSymbol))
+import Grisette.Core.Data.Symbol
+  ( Identifier,
+    Symbol (IndexedSymbol, SimpleSymbol),
+  )
 import Grisette.IR.SymPrim.Data.Prim.Internal.Caches
   ( typeMemoizedCache,
   )
@@ -141,9 +143,6 @@ import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import Grisette.IR.SymPrim.Data.Prim.Utils
   ( eqHeteroRep,
     eqTypeRepBool,
-  )
-import Grisette.IR.SymPrim.Data.TabularFun
-  ( type (=->) (TabularFun),
   )
 import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
@@ -461,14 +460,6 @@ data Term t where
     !(Term f) ->
     !(Term a) ->
     Term b
-  TabularFunApplyTerm ::
-    ( SupportedPrim a,
-      SupportedPrim b
-    ) =>
-    {-# UNPACK #-} !Id ->
-    Term (a =-> b) ->
-    Term a ->
-    Term b
   DivIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ModIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   QuotIntegralTerm :: (SupportedPrim t, Integral t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
@@ -513,7 +504,6 @@ identityWithTypeRep (ToUnsignedTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVConcatTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVSelectTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVExtendTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (TabularFunApplyTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ApplyTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (DivIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ModIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
@@ -557,7 +547,6 @@ introSupportedPrimConstraint ToUnsignedTerm {} x = x
 introSupportedPrimConstraint BVConcatTerm {} x = x
 introSupportedPrimConstraint BVSelectTerm {} x = x
 introSupportedPrimConstraint BVExtendTerm {} x = x
-introSupportedPrimConstraint TabularFunApplyTerm {} x = x
 introSupportedPrimConstraint ApplyTerm {} x = x
 introSupportedPrimConstraint DivIntegralTerm {} x = x
 introSupportedPrimConstraint ModIntegralTerm {} x = x
@@ -601,7 +590,6 @@ pformat (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformat arg1 ++ " " ++ pfor
 pformat (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformat arg ++ ")"
 pformat (BVExtendTerm _ signed n arg) =
   (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformat arg ++ ")"
-pformat (TabularFunApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
 pformat (ApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
 pformat (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
@@ -649,7 +637,6 @@ instance Lift (Term t) where
   liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) = [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
   liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) = [||bvextendTerm signed (Proxy @n) arg||]
   liftTyped (ApplyTerm _ f arg) = [||applyTerm f arg||]
-  liftTyped (TabularFunApplyTerm _ func arg) = [||tabularFunApplyTerm func arg||]
   liftTyped (DivIntegralTerm _ arg1 arg2) = [||divIntegralTerm arg1 arg2||]
   liftTyped (ModIntegralTerm _ arg1 arg2) = [||modIntegralTerm arg1 arg2||]
   liftTyped (QuotIntegralTerm _ arg1 arg2) = [||quotIntegralTerm arg1 arg2||]
@@ -730,8 +717,6 @@ instance Show (Term ty) where
     "BVExtend{id=" ++ show i ++ ", signed=" ++ show signed ++ ", n=" ++ show n ++ ", arg=" ++ show arg ++ "}"
   show (ApplyTerm i f arg) =
     "Apply{id=" ++ show i ++ ", f=" ++ show f ++ ", arg=" ++ show arg ++ "}"
-  show (TabularFunApplyTerm i func arg) =
-    "TabularFunApply{id=" ++ show i ++ ", func=" ++ show func ++ ", arg=" ++ show arg ++ "}"
   show (DivIntegralTerm i arg1 arg2) =
     "DivIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (ModIntegralTerm i arg1 arg2) =
@@ -887,13 +872,6 @@ data UTerm t where
     Term f ->
     Term a ->
     UTerm b
-  UTabularFunApplyTerm ::
-    ( SupportedPrim a,
-      SupportedPrim b
-    ) =>
-    Term (a =-> b) ->
-    Term a ->
-    UTerm b
   UDivIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
   UModIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
   UQuotIntegralTerm :: (SupportedPrim t, Integral t) => !(Term t) -> !(Term t) -> UTerm t
@@ -978,10 +956,6 @@ instance (SupportedPrim t) => Interned (Term t) where
       {-# UNPACK #-} !(TypeRep f, Id) ->
       {-# UNPACK #-} !(TypeRep a, Id) ->
       Description (Term b)
-    DTabularFunApplyTerm ::
-      {-# UNPACK #-} !(TypeRep (a =-> b), Id) ->
-      {-# UNPACK #-} !(TypeRep a, Id) ->
-      Description (Term b)
     DDivIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DModIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DQuotIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
@@ -1033,8 +1007,6 @@ instance (SupportedPrim t) => Interned (Term t) where
     DBVExtendTerm signed n (typeRep :: TypeRep arg, identity arg)
   describe (UApplyTerm (f :: Term f) (arg :: Term a)) =
     DApplyTerm (typeRep :: TypeRep f, identity f) (typeRep :: TypeRep a, identity arg)
-  describe (UTabularFunApplyTerm (func :: Term f) (arg :: Term a)) =
-    DTabularFunApplyTerm (typeRep :: TypeRep f, identity func) (typeRep :: TypeRep a, identity arg)
   describe (UDivIntegralTerm arg1 arg2) = DDivIntegralTerm (identity arg1) (identity arg2)
   describe (UModIntegralTerm arg1 arg2) = DModIntegralTerm (identity arg1) (identity arg2)
   describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (identity arg1) (identity arg2)
@@ -1077,7 +1049,6 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
       go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
       go (UApplyTerm f arg) = ApplyTerm i f arg
-      go (UTabularFunApplyTerm func arg) = TabularFunApplyTerm i func arg
       go (UDivIntegralTerm arg1 arg2) = DivIntegralTerm i arg1 arg2
       go (UModIntegralTerm arg1 arg2) = ModIntegralTerm i arg1 arg2
       go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm i arg1 arg2
@@ -1127,7 +1098,6 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
       && eqTypeRepBool ln rn
       && eqTypedId li ri
   DApplyTerm lf li == DApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
-  DTabularFunApplyTerm lf li == DTabularFunApplyTerm rf ri = eqTypedId lf rf && eqTypedId li ri
   DDivIntegralTerm li1 li2 == DDivIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DModIntegralTerm li1 li2 == DModIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
@@ -1189,7 +1159,6 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
       `hashWithSalt` signed
       `hashWithSalt` n
       `hashWithSalt` id1
-  hashWithSalt s (DTabularFunApplyTerm id1 id2) = s `hashWithSalt` (28 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DDivIntegralTerm id1 id2) = s `hashWithSalt` (30 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DModIntegralTerm id1 id2) = s `hashWithSalt` (31 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
@@ -1305,13 +1274,6 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
 -- instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
 --   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
 --   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-
-instance
-  (SupportedPrim a, SupportedPrim b) =>
-  SupportedPrim (a =-> b)
-  where
-  type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
-  defaultValue = TabularFun [] (defaultValue @b)
 
 -- Interning
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
@@ -1579,10 +1541,6 @@ applyTerm ::
   Term b
 applyTerm f a = internTerm $ UApplyTerm f a
 {-# INLINE applyTerm #-}
-
-tabularFunApplyTerm :: (SupportedPrim a, SupportedPrim b) => Term (a =-> b) -> Term a -> Term b
-tabularFunApplyTerm f a = internTerm $ UTabularFunApplyTerm f a
-{-# INLINE tabularFunApplyTerm #-}
 
 divIntegralTerm :: (SupportedPrim a, Integral a) => Term a -> Term a -> Term a
 divIntegralTerm l r = internTerm $ UDivIntegralTerm l r

@@ -126,7 +126,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
         ToSignedTerm,
@@ -908,14 +907,6 @@ lowerSinglePrimImpl config t@(BVExtendTerm _ signed (n :: R.TypeRep n) (bv :: Te
                 )
                 m
     _ -> translateTernaryError "bvextend" (R.typeRep @Bool) n (R.typeRep @x) (R.typeRep @a)
-lowerSinglePrimImpl config t@(TabularFunApplyTerm _ (f :: Term (b =-> a)) (arg :: Term b)) m =
-  case (config, R.typeRep @a) of
-    ResolvedDeepType -> do
-      (m1, l1) <- lowerSinglePrimCached config f m
-      (m2, l2) <- lowerSinglePrimCached config arg m1
-      let g = l1 l2
-      return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
-    _ -> translateBinaryError "tabularApply" (R.typeRep @(b =-> a)) (R.typeRep @b) (R.typeRep @a)
 lowerSinglePrimImpl config t@(ApplyTerm _ (f :: Term f) (arg :: Term b)) m =
   case (R.typeRep @f, (config, R.typeRep @a)) of
     (GFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2), ResolvedDeepType) -> do
@@ -926,7 +917,15 @@ lowerSinglePrimImpl config t@(ApplyTerm _ (f :: Term f) (arg :: Term b)) m =
           let g = l1 l2
           return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
         _ -> translateBinaryError "apply" (R.typeRep @f) (R.typeRep @b) (R.typeRep @a)
-    _ -> translateBinaryError "apply" (R.typeRep @(b --> a)) (R.typeRep @b) (R.typeRep @a)
+    (TFunType (ta2' :: R.TypeRep a2) (tr2' :: R.TypeRep r2), ResolvedDeepType) -> do
+      case (R.eqTypeRep ta2' (R.typeRep @b), R.eqTypeRep tr2' (R.typeRep @a)) of
+        (Just R.HRefl, Just R.HRefl) -> do
+          (m1, l1) <- lowerSinglePrimCached config f m
+          (m2, l2) <- lowerSinglePrimCached config arg m1
+          let g = l1 l2
+          return (addBiMapIntermediate (SomeTerm t) (toDyn g) m2, g)
+        _ -> translateBinaryError "apply" (R.typeRep @f) (R.typeRep @b) (R.typeRep @a)
+    _ -> translateBinaryError "apply" (R.typeRep @f) (R.typeRep @b) (R.typeRep @a)
 lowerSinglePrimImpl config t@(DivIntegralTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
     ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sDiv m

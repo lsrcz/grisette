@@ -80,9 +80,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalUMinusNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (partialEvalBinary),
@@ -122,7 +119,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
         ToSignedTerm,
@@ -280,7 +276,6 @@ substTerm sym term = gov
         BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)
         BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)
         ApplyTerm _ f op -> SomeTerm $ pevalApplyTerm (gov f) (gov op)
-        TabularFunApplyTerm _ f op -> SomeTerm $ pevalTabularFunApplyTerm (gov f) (gov op)
         DivIntegralTerm _ op1 op2 -> SomeTerm $ pevalDivIntegralTerm (gov op1) (gov op2)
         ModIntegralTerm _ op1 op2 -> SomeTerm $ pevalModIntegralTerm (gov op1) (gov op2)
         QuotIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotIntegralTerm (gov op1) (gov op2)
