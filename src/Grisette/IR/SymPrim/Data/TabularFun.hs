@@ -27,14 +27,12 @@ import GHC.Generics (Generic, Generic1)
 import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( PEvalApplyTerm (pevalApplyTerm),
-    SupportedPrim (PrimConstraint, defaultValue),
+    SupportedPrim (PrimConstraint, defaultValue, pevalITETerm),
     Term (ConTerm),
     applyTerm,
     conTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalEqvTerm,
-    pevalITETerm,
+    pevalEqvTerm,
+    pevalITEBasicTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Language.Haskell.TH.Syntax (Lift)
@@ -75,6 +73,7 @@ instance
   where
   type PrimConstraint (a =-> b) = (SupportedPrim a, SupportedPrim b)
   defaultValue = TabularFun [] (defaultValue @b)
+  pevalITETerm = pevalITEBasicTerm
 
 instance
   (SupportedPrim a, SupportedPrim b) =>

@@ -73,21 +73,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
+  ( pevalRotateLeftTerm,
     pevalRotateRightTerm,
     pevalShiftLeftTerm,
     pevalShiftRightTerm,
-    pevalXorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalAndTerm,
-    pevalEqvTerm,
-    pevalITETerm,
-    pevalNotTerm,
-    pevalOrTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
   ( pevalDivBoundedIntegralTerm,
@@ -114,8 +103,9 @@ import Grisette.IR.SymPrim.Data.Prim.SomeTerm
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (partialEvalBinary),
     PEvalApplyTerm (pevalApplyTerm),
+    PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
     SomeTypedSymbol (SomeTypedSymbol),
-    SupportedPrim (defaultValue, defaultValueDynamic),
+    SupportedPrim (defaultValue, defaultValueDynamic, pevalITETerm),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -161,16 +151,22 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     TypedSymbol (unTypedSymbol),
     UnaryOp (partialEvalUnary),
     conTerm,
+    pevalAndTerm,
+    pevalEqvTerm,
+    pevalNotTerm,
+    pevalOrTerm,
     showUntyped,
     someTypedSymbol,
     symTerm,
     withSymbolSupported,
   )
+import Grisette.Utils.Parameterized (unsafeAxiom)
 import Type.Reflection
   ( TypeRep,
     eqTypeRep,
     typeRep,
     pattern App,
+    type (:~:) (Refl),
     type (:~~:) (HRefl),
   )
 import Unsafe.Coerce (unsafeCoerce)
@@ -407,10 +403,12 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
         App (App gf _) _ ->
           case eqTypeRep gf (typeRep @(-->)) of
             Just HRefl -> case cv of
-              GeneralFun sym tm ->
+              GeneralFun sym (tm :: Term r) ->
                 if modelContains sym m -- someTypedSymbol sym1 == someTypedSymbol sym
                   then case evaluateSomeTerm fillDefault (exceptFor' sym m) (SomeTerm tm) of
-                    SomeTerm tm' -> SomeTerm $ conTerm $ GeneralFun sym tm' -- stm
+                    SomeTerm (tm' :: Term r1) ->
+                      case unsafeAxiom @r @r1 of
+                        Refl -> SomeTerm $ conTerm $ GeneralFun sym tm' -- stm
                   else SomeTerm $ conTerm $ GeneralFun sym (gotyped tm)
             Nothing -> c
         _ -> c

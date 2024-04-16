@@ -3,7 +3,7 @@ module Grisette.Core.Data.Class.LogicalOp
   )
 where
 
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
+import Grisette.IR.SymPrim.Data.Prim.Term
   ( pevalAndTerm,
     pevalImplyTerm,
     pevalNotTerm,

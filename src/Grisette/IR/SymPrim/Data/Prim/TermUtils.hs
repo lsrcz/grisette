@@ -36,10 +36,7 @@ import Data.Typeable
   ( Typeable,
     cast,
   )
-import Grisette.IR.SymPrim.Data.Prim.SomeTerm
-  ( SomeTerm (SomeTerm),
-  )
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim,
     Term
@@ -85,6 +82,9 @@ import Grisette.IR.SymPrim.Data.Prim.Term
       ),
     TypedSymbol,
     introSupportedPrimConstraint,
+  )
+import Grisette.IR.SymPrim.Data.Prim.SomeTerm
+  ( SomeTerm (SomeTerm),
   )
 import qualified Type.Reflection as R
 

@@ -94,7 +94,9 @@ pevalToSignedTerm ::
     KnownNat n,
     1 <= n,
     SizedBV u,
-    SizedBV s
+    SizedBV s,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
   ) =>
   Term (u n) ->
   Term (s n)
@@ -109,7 +111,9 @@ doPevalToSignedTerm ::
     KnownNat n,
     1 <= n,
     SizedBV u,
-    SizedBV s
+    SizedBV s,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
   ) =>
   Term (u n) ->
   Maybe (Term (s n))
@@ -132,7 +136,9 @@ pevalToUnsignedTerm ::
     KnownNat n,
     1 <= n,
     SizedBV u,
-    SizedBV s
+    SizedBV s,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
   ) =>
   Term (s n) ->
   Term (u n)
@@ -147,7 +153,9 @@ doPevalToUnsignedTerm ::
     KnownNat n,
     1 <= n,
     SizedBV u,
-    SizedBV s
+    SizedBV s,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (s n),
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (u n)
   ) =>
   Term (s n) ->
   Maybe (Term (u n))
@@ -170,7 +178,8 @@ pevalBVSelectTerm ::
     1 <= n,
     1 <= w,
     ix + w <= n,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   p ix ->
   q w ->
@@ -183,7 +192,8 @@ unsafePevalBVSelectTerm ::
   forall bv n ix w.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   NatRepr n ->
   NatRepr ix ->
@@ -210,7 +220,8 @@ doPevalBVSelectTerm ::
     1 <= n,
     1 <= w,
     ix + w <= n,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   p ix ->
   q w ->
@@ -295,7 +306,8 @@ pevalBVZeroExtendTerm ::
     1 <= l,
     1 <= r,
     l <= r,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   proxy r ->
   Term (bv l) ->
@@ -311,7 +323,8 @@ pevalBVSignExtendTerm ::
     1 <= l,
     1 <= r,
     l <= r,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   proxy r ->
   Term (bv l) ->
@@ -327,7 +340,8 @@ pevalBVExtendTerm ::
     1 <= l,
     1 <= r,
     l <= r,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Bool ->
   proxy r ->
@@ -340,7 +354,8 @@ unsafePevalBVExtendTerm ::
   forall bv l r.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   NatRepr l ->
   NatRepr r ->
@@ -363,7 +378,8 @@ doPevalBVExtendTerm ::
     1 <= l,
     1 <= r,
     l <= r,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Bool ->
   proxy r ->
@@ -403,7 +419,8 @@ pevalBVConcatTerm ::
     1 <= a,
     1 <= b,
     1 <= a + b,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Term (bv a) ->
   Term (bv b) ->
@@ -414,7 +431,8 @@ unsafeBVConcatTerm ::
   forall bv n1 n2 r.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   NatRepr n1 ->
   NatRepr n2 ->
@@ -438,7 +456,8 @@ unsafePevalBVConcatTerm ::
   forall bv n1 n2 r.
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
     Typeable bv,
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   NatRepr n1 ->
   NatRepr n2 ->
@@ -468,7 +487,8 @@ doPevalBVConcatTerm ::
     1 <= l,
     1 <= r,
     1 <= (l + r),
-    SizedBV bv
+    SizedBV bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Term (bv l) ->
   Term (bv r) ->

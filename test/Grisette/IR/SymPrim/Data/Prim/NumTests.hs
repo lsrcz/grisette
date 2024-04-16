@@ -5,9 +5,6 @@
 module Grisette.IR.SymPrim.Data.Prim.NumTests (numTests) where
 
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalITETerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
   ( pevalAbsNumTerm,
     pevalAddNumTerm,
@@ -21,7 +18,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalUMinusNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( Term,
+  ( SupportedPrim (pevalITETerm),
+    Term,
     absNumTerm,
     addNumTerm,
     conTerm,

@@ -140,19 +140,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToUnsignedTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
-  ( pevalAndBitsTerm,
-    pevalComplementBitsTerm,
-    pevalOrBitsTerm,
-    pevalRotateLeftTerm,
+  ( pevalRotateLeftTerm,
     pevalRotateRightTerm,
     pevalShiftLeftTerm,
     pevalShiftRightTerm,
-    pevalXorBitsTerm,
-  )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalEqvTerm,
-    pevalITETerm,
-    pevalOrTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral (pevalModBoundedIntegralTerm)
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
@@ -172,11 +163,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
-    SupportedPrim,
+    PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
+    SupportedPrim (pevalITETerm),
     SymRep (SymType),
     Term (ConTerm, SymTerm),
     TypedSymbol,
     conTerm,
+    pevalEqvTerm,
+    pevalOrTerm,
     pformat,
     symTerm,
   )
@@ -342,7 +336,7 @@ instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca =-> cb) (sa =~> sb)
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) sa sb where
   (SymTabularFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
-instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa =~> st) where
+instance (LinkedRep ca sa, LinkedRep ct st, Apply st, SupportedPrim ct) => Apply (sa =~> st) where
   type FunType (sa =~> st) = sa -> FunType st
   apply uf a = apply (uf # a)
 
@@ -375,17 +369,17 @@ infixr 0 -~>
 instance (ConRep a, ConRep b) => ConRep (a -~> b) where
   type ConType (a -~> b) = ConType a --> ConType b
 
-instance (SymRep ca, SymRep cb) => SymRep (ca --> cb) where
+instance (SymRep ca, SymRep cb, SupportedPrim cb) => SymRep (ca --> cb) where
   type SymType (ca --> cb) = SymType ca -~> SymType cb
 
-instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca --> cb) (sa -~> sb) where
+instance (LinkedRep ca sa, LinkedRep cb sb, SupportedPrim cb) => LinkedRep (ca --> cb) (sa -~> sb) where
   underlyingTerm (SymGeneralFun a) = a
   wrapTerm = SymGeneralFun
 
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa -~> sb) sa sb where
   (SymGeneralFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
-instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa -~> st) where
+instance (LinkedRep ca sa, LinkedRep ct st, Apply st, SupportedPrim ct) => Apply (sa -~> st) where
   type FunType (sa -~> st) = sa -> FunType st
   apply uf a = apply (uf # a)
 

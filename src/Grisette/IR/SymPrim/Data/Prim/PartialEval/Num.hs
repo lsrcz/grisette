@@ -1,4 +1,5 @@
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -75,7 +76,7 @@ pattern NumOrdConTerm :: forall b a. (Num b, Ord b, Typeable b) => b -> Term a
 pattern NumOrdConTerm b <- (numOrdConTermView -> Just b)
 
 -- add
-pevalAddNumTerm :: forall a. (Num a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalAddNumTerm :: forall a. (SupportedPrim a, Num a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalAddNumTerm = binaryUnfoldOnce doPevalAddNumTerm (\a b -> normalizeAddNum $ addNumTerm a b)
 
 doPevalAddNumTerm :: forall a. (Num a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
@@ -154,7 +155,7 @@ doPevalTimesNumTermNoConc _ (TimesNumTerm _ (_ :: Term a) ConTerm {}) = error "S
 doPevalTimesNumTermNoConc _ _ = Nothing
 
 -- abs
-pevalAbsNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
+pevalAbsNumTerm :: (Num a, SupportedPrim a) => Term a -> Term a
 pevalAbsNumTerm = unaryUnfoldOnce doPevalAbsNumTerm absNumTerm
 
 isUnsignedBV :: R.TypeRep a -> Bool
@@ -185,10 +186,10 @@ doPevalSignumNumTerm (TimesNumTerm _ (Dyn (l :: Term Integer)) r) =
 doPevalSignumNumTerm _ = Nothing
 
 -- lt
-pevalLtNumTerm :: (Num a, Ord a, SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalLtNumTerm :: (Num a, Ord a, SupportedPrim a, SupportedPrim Bool, SupportedPrim Integer) => Term a -> Term a -> Term Bool
 pevalLtNumTerm = binaryUnfoldOnce doPevalLtNumTerm ltNumTerm
 
-doPevalLtNumTerm :: forall a. (Num a, Ord a, SupportedPrim a) => Term a -> Term a -> Maybe (Term Bool)
+doPevalLtNumTerm :: forall a. (Num a, Ord a, SupportedPrim a, SupportedPrim Bool, SupportedPrim Integer) => Term a -> Term a -> Maybe (Term Bool)
 doPevalLtNumTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm $ a < b
 doPevalLtNumTerm (ConTerm _ l) (AddNumTerm _ (ConTerm _ (Dyn (j :: Integer))) k) =
   Just $ pevalLtNumTerm (conTerm $ unsafeCoerce l - j) (unsafeCoerce k)
@@ -206,10 +207,10 @@ doPevalLtNumTerm l (ConTerm _ r) =
 doPevalLtNumTerm _ _ = Nothing
 
 -- le
-pevalLeNumTerm :: (Num a, Ord a, SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalLeNumTerm :: (Num a, Ord a, SupportedPrim a, SupportedPrim Bool, SupportedPrim Integer) => Term a -> Term a -> Term Bool
 pevalLeNumTerm = binaryUnfoldOnce doPevalLeNumTerm leNumTerm
 
-doPevalLeNumTerm :: forall a. (Num a, Ord a, SupportedPrim a) => Term a -> Term a -> Maybe (Term Bool)
+doPevalLeNumTerm :: forall a. (Num a, Ord a, SupportedPrim a, SupportedPrim Bool, SupportedPrim Integer) => Term a -> Term a -> Maybe (Term Bool)
 doPevalLeNumTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm $ a <= b
 doPevalLeNumTerm (ConTerm _ l) (AddNumTerm _ (ConTerm _ (Dyn (j :: Integer))) k) =
   Just $ pevalLeNumTerm (conTerm $ unsafeCoerce l - j) (unsafeCoerce k)
@@ -226,8 +227,8 @@ doPevalLeNumTerm l (ConTerm _ r) =
     _ -> Nothing
 doPevalLeNumTerm _ _ = Nothing
 
-pevalGtNumTerm :: (Num a, Ord a, SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalGtNumTerm :: (Num a, Ord a, SupportedPrim a, SupportedPrim Bool, SupportedPrim Integer) => Term a -> Term a -> Term Bool
 pevalGtNumTerm = flip pevalLtNumTerm
 
-pevalGeNumTerm :: (Num a, Ord a, SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalGeNumTerm :: (Num a, Ord a, SupportedPrim a, SupportedPrim Bool, SupportedPrim Integer) => Term a -> Term a -> Term Bool
 pevalGeNumTerm = flip pevalLeNumTerm

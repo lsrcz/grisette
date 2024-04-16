@@ -4,15 +4,13 @@
 
 module Grisette.IR.SymPrim.Data.Prim.TabularFunTests (tabularFunTests) where
 
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalEqvTerm,
-    pevalITETerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( PEvalApplyTerm (pevalApplyTerm),
+    SupportedPrim (pevalITETerm),
     Term,
     applyTerm,
     conTerm,
+    pevalEqvTerm,
     ssymTerm,
   )
 import Grisette.IR.SymPrim.Data.TabularFun

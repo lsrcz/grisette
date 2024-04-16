@@ -16,10 +16,6 @@
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.PartialEval.Bits
   ( pattern BitsConTerm,
-    pevalAndBitsTerm,
-    pevalOrBitsTerm,
-    pevalXorBitsTerm,
-    pevalComplementBitsTerm,
     pevalShiftLeftTerm,
     pevalShiftRightTerm,
     pevalRotateLeftTerm,
@@ -29,39 +25,27 @@ where
 
 import Data.Bits
   ( Bits
-      ( complement,
-        isSigned,
+      ( isSigned,
         rotateR,
         shiftR,
-        xor,
-        zeroBits,
-        (.&.),
-        (.|.)
+        zeroBits
       ),
     FiniteBits (finiteBitSize),
   )
 import Data.Typeable (Typeable, cast)
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
-  ( binaryUnfoldOnce,
-    unaryUnfoldOnce,
-  )
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( SupportedPrim,
-    Term
-      ( ComplementBitsTerm,
-        ConTerm
-      ),
-    andBitsTerm,
-    complementBitsTerm,
+    Term (ConTerm),
     conTerm,
-    orBitsTerm,
     rotateLeftTerm,
     rotateRightTerm,
     shiftLeftTerm,
     shiftRightTerm,
-    xorBitsTerm,
+  )
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
+  ( unaryUnfoldOnce,
   )
 
 bitsConTermView :: (Bits b, Typeable b) => Term a -> Maybe b
@@ -71,65 +55,8 @@ bitsConTermView _ = Nothing
 pattern BitsConTerm :: forall b a. (Bits b, Typeable b) => b -> Term a
 pattern BitsConTerm b <- (bitsConTermView -> Just b)
 
--- bitand
-pevalAndBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a -> Term a
-pevalAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
-
-doPevalAndBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
-doPevalAndBitsTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm (a .&. b)
-doPevalAndBitsTerm (ConTerm _ a) b
-  | a == zeroBits = Just $ conTerm zeroBits
-  | a == complement zeroBits = Just b
-doPevalAndBitsTerm a (ConTerm _ b)
-  | b == zeroBits = Just $ conTerm zeroBits
-  | b == complement zeroBits = Just a
-doPevalAndBitsTerm a b | a == b = Just a
-doPevalAndBitsTerm _ _ = Nothing
-
--- bitor
-pevalOrBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a -> Term a
-pevalOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
-
-doPevalOrBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
-doPevalOrBitsTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm (a .|. b)
-doPevalOrBitsTerm (ConTerm _ a) b
-  | a == zeroBits = Just b
-  | a == complement zeroBits = Just $ conTerm $ complement zeroBits
-doPevalOrBitsTerm a (ConTerm _ b)
-  | b == zeroBits = Just a
-  | b == complement zeroBits = Just $ conTerm $ complement zeroBits
-doPevalOrBitsTerm a b | a == b = Just a
-doPevalOrBitsTerm _ _ = Nothing
-
--- bitxor
-pevalXorBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a -> Term a
-pevalXorBitsTerm = binaryUnfoldOnce doPevalXorBitsTerm xorBitsTerm
-
-doPevalXorBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
-doPevalXorBitsTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm (a `xor` b)
-doPevalXorBitsTerm (ConTerm _ a) b
-  | a == zeroBits = Just b
-  | a == complement zeroBits = Just $ pevalComplementBitsTerm b
-doPevalXorBitsTerm a (ConTerm _ b)
-  | b == zeroBits = Just a
-  | b == complement zeroBits = Just $ pevalComplementBitsTerm a
-doPevalXorBitsTerm a b | a == b = Just $ conTerm zeroBits
-doPevalXorBitsTerm (ComplementBitsTerm _ i) (ComplementBitsTerm _ j) = Just $ pevalXorBitsTerm i j
-doPevalXorBitsTerm (ComplementBitsTerm _ i) j = Just $ pevalComplementBitsTerm $ pevalXorBitsTerm i j
-doPevalXorBitsTerm i (ComplementBitsTerm _ j) = Just $ pevalComplementBitsTerm $ pevalXorBitsTerm i j
-doPevalXorBitsTerm _ _ = Nothing
-
--- complement
-pevalComplementBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Term a
-pevalComplementBitsTerm = unaryUnfoldOnce doPevalComplementBitsTerm complementBitsTerm
-
-doPevalComplementBitsTerm :: forall a. (Bits a, SupportedPrim a) => Term a -> Maybe (Term a)
-doPevalComplementBitsTerm (ConTerm _ a) = Just $ conTerm $ complement a
-doPevalComplementBitsTerm (ComplementBitsTerm _ a) = Just a
-doPevalComplementBitsTerm _ = Nothing
-
 -- shift
-pevalShiftLeftTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalShiftLeftTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalShiftLeftTerm t n = unaryUnfoldOnce (`doPevalShiftLeftTerm` n) (`shiftLeftTerm` n) t
 
 doPevalShiftLeftTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
@@ -147,7 +74,7 @@ doPevalShiftLeftTerm _ (ConTerm _ n)
       Just $ conTerm zeroBits
 doPevalShiftLeftTerm _ _ = Nothing
 
-pevalShiftRightTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalShiftRightTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalShiftRightTerm t n = unaryUnfoldOnce (`doPevalShiftRightTerm` n) (`shiftRightTerm` n) t
 
 doPevalShiftRightTerm :: forall a. (Integral a, SymShift a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
@@ -167,10 +94,10 @@ doPevalShiftRightTerm _ (ConTerm _ n)
       Just $ conTerm zeroBits
 doPevalShiftRightTerm _ _ = Nothing
 
-pevalRotateLeftTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalRotateLeftTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalRotateLeftTerm t n = unaryUnfoldOnce (`doPevalRotateLeftTerm` n) (`rotateLeftTerm` n) t
 
-doPevalRotateLeftTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
+doPevalRotateLeftTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalRotateLeftTerm (ConTerm _ a) (ConTerm _ n)
   | n >= 0 = Just $ conTerm $ symRotate a n -- Just $ conTerm $ rotateL a (fromIntegral n)
 doPevalRotateLeftTerm x (ConTerm _ 0) = Just x
@@ -183,10 +110,10 @@ doPevalRotateLeftTerm x (ConTerm _ n)
     bs = finiteBitSize n
 doPevalRotateLeftTerm _ _ = Nothing
 
-pevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Term a
+pevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalRotateRightTerm t n = unaryUnfoldOnce (`doPevalRotateRightTerm` n) (`rotateRightTerm` n) t
 
-doPevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
+doPevalRotateRightTerm :: forall a. (Integral a, SymRotate a, FiniteBits a, SupportedPrim a, SupportedPrim a) => Term a -> Term a -> Maybe (Term a)
 doPevalRotateRightTerm (ConTerm _ a) (ConTerm _ n)
   | n >= 0 =
       Just . conTerm $

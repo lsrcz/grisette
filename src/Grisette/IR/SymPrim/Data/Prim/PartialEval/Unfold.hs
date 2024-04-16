@@ -18,8 +18,9 @@ where
 
 import Control.Monad.Except (MonadError (catchError))
 import Data.Typeable (Typeable)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
-  ( pevalITETerm,
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
+  ( SupportedPrim (pevalITETerm),
+    Term (ITETerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
   ( PartialRuleBinary,
@@ -29,14 +30,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
     totalize,
     totalize2,
   )
-import Grisette.IR.SymPrim.Data.Prim.Term
-  ( SupportedPrim,
-    Term (ITETerm),
-  )
 
 unaryPartialUnfoldOnce ::
   forall a b.
-  (Typeable a, SupportedPrim b) =>
+  (SupportedPrim b) =>
   PartialRuleUnary a b ->
   TotalRuleUnary a b ->
   PartialRuleUnary a b
@@ -59,7 +56,7 @@ unaryPartialUnfoldOnce partial fallback = ret
 
 unaryUnfoldOnce ::
   forall a b.
-  (Typeable a, SupportedPrim b) =>
+  (SupportedPrim b) =>
   PartialRuleUnary a b ->
   TotalRuleUnary a b ->
   TotalRuleUnary a b
@@ -67,13 +64,13 @@ unaryUnfoldOnce partial fallback = totalize (unaryPartialUnfoldOnce partial fall
 
 binaryPartialUnfoldOnce ::
   forall a b c.
-  (Typeable a, Typeable b, SupportedPrim c) =>
+  (SupportedPrim c) =>
   PartialRuleBinary a b c ->
   TotalRuleBinary a b c ->
   PartialRuleBinary a b c
 binaryPartialUnfoldOnce partial fallback = ret
   where
-    oneLevel :: (Typeable x, Typeable y) => PartialRuleBinary x y c -> TotalRuleBinary x y c -> PartialRuleBinary x y c
+    oneLevel :: PartialRuleBinary x y c -> TotalRuleBinary x y c -> PartialRuleBinary x y c
     oneLevel partial' fallback' x y =
       catchError
         (partial' x y)
@@ -89,7 +86,6 @@ binaryPartialUnfoldOnce partial fallback = ret
               )
         )
     left ::
-      (Typeable x, Typeable y) =>
       Term Bool ->
       Term x ->
       Term x ->

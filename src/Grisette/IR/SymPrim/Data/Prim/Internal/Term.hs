@@ -23,6 +23,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Term
@@ -33,28 +34,36 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.Internal.Term
-  ( SupportedPrim (..),
+  ( -- * Supported primitive types
+    SupportedPrim (..),
     SymRep (..),
     ConRep (..),
     LinkedRep (..),
+
+    -- * Partial evaluation for the terms
     UnaryOp (..),
     BinaryOp (..),
     TernaryOp (..),
+    PEvalApplyTerm (..),
+    PEvalBitwiseTerm (..),
+
+    -- * Typed symbols
     TypedSymbol (..),
     SomeTypedSymbol (..),
     showUntyped,
     withSymbolSupported,
     someTypedSymbol,
-    PEvalApplyTerm (..),
+
+    -- * Terms
     Term (..),
     identity,
     identityWithTypeRep,
     introSupportedPrimConstraint,
     pformat,
+
+    -- * Interning
     UTerm (..),
     prettyPrintTerm,
-
-    -- * Interned constructors
     constructUnary,
     constructBinary,
     constructTernary,
@@ -98,12 +107,29 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     modBoundedIntegralTerm,
     quotBoundedIntegralTerm,
     remBoundedIntegralTerm,
+
+    -- * Support for boolean type
+    trueTerm,
+    falseTerm,
+    pattern BoolConTerm,
+    pattern TrueTerm,
+    pattern FalseTerm,
+    pattern BoolTerm,
+    pevalNotTerm,
+    pevalEqvTerm,
+    pevalNotEqvTerm,
+    pevalOrTerm,
+    pevalAndTerm,
+    pevalImplyTerm,
+    pevalXorTerm,
+    pevalITEBasic,
+    pevalITEBasicTerm,
   )
 where
 
 import Control.DeepSeq (NFData (rnf))
 import Data.Array ((!))
-import Data.Bits (Bits, FiniteBits)
+import Data.Bits (FiniteBits)
 import Data.Function (on)
 import qualified Data.HashMap.Strict as M
 import Data.Hashable (Hashable (hash, hashWithSalt))
@@ -122,7 +148,6 @@ import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast)
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
-import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
@@ -143,6 +168,7 @@ import Grisette.IR.SymPrim.Data.Prim.ModelValue
 import Grisette.IR.SymPrim.Data.Prim.Utils
   ( eqHeteroRep,
     eqTypeRepBool,
+    pattern Dyn,
   )
 import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
@@ -164,6 +190,9 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
+import Data.Maybe (fromMaybe)
+import Unsafe.Coerce (unsafeCoerce)
+import Control.Monad (msum)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -196,6 +225,7 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
+  pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
 
 -- | Type family to resolve the concrete type associated with a symbolic type.
 class ConRep sym where
@@ -214,6 +244,20 @@ class
   where
   underlyingTerm :: sym -> Term con
   wrapTerm :: Term con -> sym
+
+-- Partial Evaluation for the terms
+class
+  (SupportedPrim f, SupportedPrim a, SupportedPrim b) =>
+  PEvalApplyTerm f a b
+    | f -> a b
+  where
+  pevalApplyTerm :: Term f -> Term a -> Term b
+
+class (SupportedPrim t) => PEvalBitwiseTerm t where
+  pevalAndBitsTerm :: Term t -> Term t -> Term t
+  pevalOrBitsTerm :: Term t -> Term t -> Term t
+  pevalXorBitsTerm :: Term t -> Term t -> Term t
+  pevalComplementBitsTerm :: Term t -> Term t
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -258,6 +302,8 @@ class
   partialEvalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
+-- Typed Symbols
+
 -- | A typed symbol is a symbol that is associated with a type. Note that the
 -- same symbol bodies with different types are considered different symbols
 -- and can coexist in a term.
@@ -269,8 +315,6 @@ class
 -- a :: Bool
 data TypedSymbol t where
   TypedSymbol :: (SupportedPrim t) => {unTypedSymbol :: Symbol} -> TypedSymbol t
-
--- deriving (Eq, Ord, Generic, Lift, NFData)
 
 instance Eq (TypedSymbol t) where
   TypedSymbol x == TypedSymbol y = x == y
@@ -327,8 +371,7 @@ instance Show SomeTypedSymbol where
 someTypedSymbol :: forall t. TypedSymbol t -> SomeTypedSymbol
 someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
 
-class PEvalApplyTerm f a b | f -> a b where
-  pevalApplyTerm :: Term f -> Term a -> Term b
+-- Terms
 
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
@@ -358,7 +401,13 @@ data Term t where
   OrTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
   AndTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
   EqvTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
-  ITETerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term t) -> !(Term t) -> Term t
+  ITETerm ::
+    (SupportedPrim t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term Bool) ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
   AddNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   UMinusNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   TimesNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
@@ -366,10 +415,29 @@ data Term t where
   SignumNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
   LTNumTerm :: (SupportedPrim t, Num t, Ord t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
   LENumTerm :: (SupportedPrim t, Num t, Ord t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
-  AndBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  OrBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  XorBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  ComplementBitsTerm :: (SupportedPrim t, Bits t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
+  AndBitsTerm ::
+    (PEvalBitwiseTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  OrBitsTerm ::
+    (PEvalBitwiseTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  XorBitsTerm ::
+    (PEvalBitwiseTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  ComplementBitsTerm ::
+    (PEvalBitwiseTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    Term t
   ShiftLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   ShiftRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
   RotateLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
@@ -755,6 +823,8 @@ instance (SupportedPrim t) => Eq (Term t) where
 instance (SupportedPrim t) => Hashable (Term t) where
   hashWithSalt s t = hashWithSalt s $ identity t
 
+-- Interning
+
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
   USymTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
@@ -776,7 +846,12 @@ data UTerm t where
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UEqvTerm :: (SupportedPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
-  UITETerm :: (SupportedPrim t) => !(Term Bool) -> !(Term t) -> !(Term t) -> UTerm t
+  UITETerm ::
+    (SupportedPrim t) =>
+    !(Term Bool) ->
+    !(Term t) ->
+    !(Term t) ->
+    UTerm t
   UAddNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> !(Term t) -> UTerm t
   UUMinusNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> UTerm t
   UTimesNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> !(Term t) -> UTerm t
@@ -784,10 +859,10 @@ data UTerm t where
   USignumNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> UTerm t
   ULTNumTerm :: (SupportedPrim t, Num t, Ord t) => !(Term t) -> !(Term t) -> UTerm Bool
   ULENumTerm :: (SupportedPrim t, Num t, Ord t) => !(Term t) -> !(Term t) -> UTerm Bool
-  UAndBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
-  UOrBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
-  UXorBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> !(Term t) -> UTerm t
-  UComplementBitsTerm :: (SupportedPrim t, Bits t) => !(Term t) -> UTerm t
+  UAndBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UOrBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UXorBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UComplementBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> UTerm t
   UShiftLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => !(Term t) -> !(Term t) -> UTerm t
   UShiftRightTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymShift t) => !(Term t) -> !(Term t) -> UTerm t
   URotateLeftTerm :: (SupportedPrim t, Integral t, FiniteBits t, SymRotate t) => !(Term t) -> !(Term t) -> UTerm t
@@ -1169,113 +1244,6 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DRemBoundedIntegralTerm id1 id2) = s `hashWithSalt` (37 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DApplyTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
 
--- Basic Bool
-defaultValueForBool :: Bool
-defaultValueForBool = False
-
-defaultValueForBoolDyn :: ModelValue
-defaultValueForBoolDyn = toModelValue defaultValueForBool
-
-instance SupportedPrim Bool where
-  pformatCon True = "true"
-  pformatCon False = "false"
-  defaultValue = defaultValueForBool
-  defaultValueDynamic _ = defaultValueForBoolDyn
-
-defaultValueForInteger :: Integer
-defaultValueForInteger = 0
-
-defaultValueForIntegerDyn :: ModelValue
-defaultValueForIntegerDyn = toModelValue defaultValueForInteger
-
--- Basic Integer
-instance SupportedPrim Integer where
-  pformatCon = show
-  defaultValue = defaultValueForInteger
-  defaultValueDynamic _ = defaultValueForIntegerDyn
-
--- Signed BV
-instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
-  type PrimConstraint (IntN w) = (KnownNat w, 1 <= w)
-  pformatCon = show
-  defaultValue = 0
-
--- Unsigned BV
-instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
-  type PrimConstraint (WordN w) = (KnownNat w, 1 <= w)
-  pformatCon = show
-  defaultValue = 0
-
--- -- | General symbolic function type. Use the '#' operator to apply the function.
--- -- Note that this function should be applied to symbolic values only. It is by
--- -- itself already a symbolic value, but can be considered partially concrete
--- -- as the function body is specified. Use 'Grisette.IR.SymPrim.Data.SymPrim.-~>' for uninterpreted general
--- -- symbolic functions.
--- --
--- -- The result would be partially evaluated.
--- --
--- -- >>> :set -XOverloadedStrings
--- -- >>> :set -XTypeOperators
--- -- >>> let f = ("x" :: TypedSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
--- -- >>> f # 1    -- 1 has the type SymInteger
--- -- (+ 2 y)
--- -- >>> f # "a"  -- "a" has the type SymInteger
--- -- (+ 1 (+ a y))
--- data (-->) a b where
---   GeneralFun :: (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
---
--- instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
---   (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
---
--- {-
--- pattern GeneralFun :: () => (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
--- pattern GeneralFun arg v <- GeneralFun arg v
---
--- {-# COMPLETE GeneralFun #-}
--- -}
---
--- infixr 0 -->
---
--- buildGeneralFun ::
---   (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
--- buildGeneralFun arg v =
---   GeneralFun
---     (TypedSymbol newarg)
---     (substTerm arg (symTerm newarg) v)
---   where
---     newarg = case unTypedSymbol arg of
---       SimpleSymbol s -> SimpleSymbol (withInfo s ARG)
---       IndexedSymbol s i -> IndexedSymbol (withInfo s ARG) i
---
--- data ARG = ARG
---   deriving (Eq, Ord, Lift, Show, Generic)
---
--- instance NFData ARG where
---   rnf ARG = ()
---
--- instance Hashable ARG where
---   hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
---
--- instance Eq (a --> b) where
---   GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
---
--- instance Show (a --> b) where
---   show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
---
--- instance Lift (a --> b) where
---   liftTyped (GeneralFun sym tm) = [||GeneralFun sym tm||]
---
--- instance Hashable (a --> b) where
---   s `hashWithSalt` (GeneralFun sym tm) = s `hashWithSalt` sym `hashWithSalt` tm
---
--- instance NFData (a --> b) where
---   rnf (GeneralFun sym tm) = rnf sym `seq` rnf tm
---
--- instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
---   type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
---   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-
--- Interning
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
   where
@@ -1382,19 +1350,19 @@ leNumTerm :: (SupportedPrim a, Num a, Ord a) => Term a -> Term a -> Term Bool
 leNumTerm l r = internTerm $ ULENumTerm l r
 {-# INLINE leNumTerm #-}
 
-andBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+andBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 andBitsTerm l r = internTerm $ UAndBitsTerm l r
 {-# INLINE andBitsTerm #-}
 
-orBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+orBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 orBitsTerm l r = internTerm $ UOrBitsTerm l r
 {-# INLINE orBitsTerm #-}
 
-xorBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a -> Term a
+xorBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 xorBitsTerm l r = internTerm $ UXorBitsTerm l r
 {-# INLINE xorBitsTerm #-}
 
-complementBitsTerm :: (SupportedPrim a, Bits a) => Term a -> Term a
+complementBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a
 complementBitsTerm = internTerm . UComplementBitsTerm
 {-# INLINE complementBitsTerm #-}
 
@@ -1573,3 +1541,418 @@ quotBoundedIntegralTerm l r = internTerm $ UQuotBoundedIntegralTerm l r
 remBoundedIntegralTerm :: (SupportedPrim a, Bounded a, Integral a) => Term a -> Term a -> Term a
 remBoundedIntegralTerm l r = internTerm $ URemBoundedIntegralTerm l r
 {-# INLINE remBoundedIntegralTerm #-}
+
+-- Support for boolean type
+defaultValueForBool :: Bool
+defaultValueForBool = False
+
+defaultValueForBoolDyn :: ModelValue
+defaultValueForBoolDyn = toModelValue defaultValueForBool
+
+trueTerm :: Term Bool
+trueTerm = conTerm True
+{-# INLINE trueTerm #-}
+
+falseTerm :: Term Bool
+falseTerm = conTerm False
+{-# INLINE falseTerm #-}
+
+boolConTermView :: forall a. Term a -> Maybe Bool
+boolConTermView (ConTerm _ b) = cast b
+boolConTermView _ = Nothing
+{-# INLINE boolConTermView #-}
+
+pattern BoolConTerm :: Bool -> Term a
+pattern BoolConTerm b <- (boolConTermView -> Just b)
+
+pattern TrueTerm :: Term a
+pattern TrueTerm <- BoolConTerm True
+
+pattern FalseTerm :: Term a
+pattern FalseTerm <- BoolConTerm False
+
+boolTermView :: forall a. Term a -> Maybe (Term Bool)
+boolTermView t = introSupportedPrimConstraint t $ cast t
+{-# INLINE boolTermView #-}
+
+pattern BoolTerm :: Term Bool -> Term a
+pattern BoolTerm b <- (boolTermView -> Just b)
+
+-- Not
+pevalNotTerm :: Term Bool -> Term Bool
+pevalNotTerm (NotTerm _ tm) = tm
+pevalNotTerm (ConTerm _ a) = if a then falseTerm else trueTerm
+pevalNotTerm (OrTerm _ (NotTerm _ n1) n2) = pevalAndTerm n1 (pevalNotTerm n2)
+pevalNotTerm (OrTerm _ n1 (NotTerm _ n2)) = pevalAndTerm (pevalNotTerm n1) n2
+pevalNotTerm (AndTerm _ (NotTerm _ n1) n2) = pevalOrTerm n1 (pevalNotTerm n2)
+pevalNotTerm (AndTerm _ n1 (NotTerm _ n2)) = pevalOrTerm (pevalNotTerm n1) n2
+pevalNotTerm tm = notTerm tm
+{-# INLINEABLE pevalNotTerm #-}
+
+-- Eqv
+pevalEqvTerm :: forall a. (SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalEqvTerm l@ConTerm {} r@ConTerm {} = conTerm $ l == r
+pevalEqvTerm l@ConTerm {} r = pevalEqvTerm r l
+pevalEqvTerm l (BoolConTerm rv) = if rv then unsafeCoerce l else pevalNotTerm $ unsafeCoerce l
+pevalEqvTerm (NotTerm _ lv) r
+  | lv == unsafeCoerce r = falseTerm
+pevalEqvTerm l (NotTerm _ rv)
+  | unsafeCoerce l == rv = falseTerm
+{-
+pevalBinary _ (ConTerm l) (ConTerm r) =
+  if l == r then trueTerm else falseTerm
+  -}
+pevalEqvTerm
+  ( AddNumTerm
+      _
+      (ConTerm _ c :: Term a)
+      (Dyn (v :: Term a))
+    )
+  (Dyn (ConTerm _ c2 :: Term a)) =
+    pevalEqvTerm v (conTerm $ c2 - c)
+pevalEqvTerm
+  (Dyn (ConTerm _ c2 :: Term a))
+  ( AddNumTerm
+      _
+      (Dyn (ConTerm _ c :: Term a))
+      (Dyn (v :: Term a))
+    ) =
+    pevalEqvTerm v (conTerm $ c2 - c)
+pevalEqvTerm l (ITETerm _ c t f)
+  | l == t = pevalOrTerm c (pevalEqvTerm l f)
+  | l == f = pevalOrTerm (pevalNotTerm c) (pevalEqvTerm l t)
+pevalEqvTerm (ITETerm _ c t f) r
+  | t == r = pevalOrTerm c (pevalEqvTerm f r)
+  | f == r = pevalOrTerm (pevalNotTerm c) (pevalEqvTerm t r)
+pevalEqvTerm l r
+  | l == r = trueTerm
+  | otherwise = eqvTerm l r
+{-# INLINEABLE pevalEqvTerm #-}
+
+pevalNotEqvTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalNotEqvTerm l r = pevalNotTerm $ pevalEqvTerm l r
+{-# INLINE pevalNotEqvTerm #-}
+
+orEqFirst :: Term Bool -> Term Bool -> Bool
+orEqFirst _ (ConTerm _ False) = True
+orEqFirst
+  (NotTerm _ (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+    | e1 == e2 && ec1 /= ec2 = True
+orEqFirst x y
+  | x == y = True
+  | otherwise = False
+{-# INLINE orEqFirst #-}
+
+orEqTrue :: Term Bool -> Term Bool -> Bool
+orEqTrue (ConTerm _ True) _ = True
+orEqTrue _ (ConTerm _ True) = True
+-- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
+orEqTrue
+  (NotTerm _ (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+    | e1 == e2 && ec1 /= ec2 = True
+orEqTrue (NotTerm _ l) r | l == r = True
+orEqTrue l (NotTerm _ r) | l == r = True
+orEqTrue _ _ = False
+{-# INLINE orEqTrue #-}
+
+andEqFirst :: Term Bool -> Term Bool -> Bool
+andEqFirst _ (ConTerm _ True) = True
+-- andEqFirst x (NotTerm _ y) = andEqFalse x y
+andEqFirst
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+    | e1 == e2 && ec1 /= ec2 = True
+andEqFirst x y
+  | x == y = True
+  | otherwise = False
+{-# INLINE andEqFirst #-}
+
+andEqFalse :: Term Bool -> Term Bool -> Bool
+andEqFalse (ConTerm _ False) _ = True
+andEqFalse _ (ConTerm _ False) = True
+-- andEqFalse (NotTerm _ e1) (NotTerm _ e2) = orEqTrue e1 e2
+andEqFalse
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+    | e1 == e2 && ec1 /= ec2 = True
+andEqFalse (NotTerm _ x) y | x == y = True
+andEqFalse x (NotTerm _ y) | x == y = True
+andEqFalse _ _ = False
+{-# INLINE andEqFalse #-}
+
+-- Or
+pevalOrTerm :: Term Bool -> Term Bool -> Term Bool
+pevalOrTerm l r
+  | orEqTrue l r = trueTerm
+  | orEqFirst l r = l
+  | orEqFirst r l = r
+pevalOrTerm l r@(OrTerm _ r1 r2)
+  | orEqTrue l r1 = trueTerm
+  | orEqTrue l r2 = trueTerm
+  | orEqFirst r1 l = r
+  | orEqFirst r2 l = r
+  | orEqFirst l r1 = pevalOrTerm l r2
+  | orEqFirst l r2 = pevalOrTerm l r1
+pevalOrTerm l@(OrTerm _ l1 l2) r
+  | orEqTrue l1 r = trueTerm
+  | orEqTrue l2 r = trueTerm
+  | orEqFirst l1 r = l
+  | orEqFirst l2 r = l
+  | orEqFirst r l1 = pevalOrTerm l2 r
+  | orEqFirst r l2 = pevalOrTerm l1 r
+pevalOrTerm l (AndTerm _ r1 r2)
+  | orEqFirst l r1 = l
+  | orEqFirst l r2 = l
+  | orEqTrue l r1 = pevalOrTerm l r2
+  | orEqTrue l r2 = pevalOrTerm l r1
+pevalOrTerm (AndTerm _ l1 l2) r
+  | orEqFirst r l1 = r
+  | orEqFirst r l2 = r
+  | orEqTrue l1 r = pevalOrTerm l2 r
+  | orEqTrue l2 r = pevalOrTerm l1 r
+pevalOrTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalAndTerm nl nr
+pevalOrTerm l r = orTerm l r
+{-# INLINEABLE pevalOrTerm #-}
+
+pevalAndTerm :: Term Bool -> Term Bool -> Term Bool
+pevalAndTerm l r
+  | andEqFalse l r = falseTerm
+  | andEqFirst l r = l
+  | andEqFirst r l = r
+pevalAndTerm l r@(AndTerm _ r1 r2)
+  | andEqFalse l r1 = falseTerm
+  | andEqFalse l r2 = falseTerm
+  | andEqFirst r1 l = r
+  | andEqFirst r2 l = r
+  | andEqFirst l r1 = pevalAndTerm l r2
+  | andEqFirst l r2 = pevalAndTerm l r1
+pevalAndTerm l@(AndTerm _ l1 l2) r
+  | andEqFalse l1 r = falseTerm
+  | andEqFalse l2 r = falseTerm
+  | andEqFirst l1 r = l
+  | andEqFirst l2 r = l
+  | andEqFirst r l1 = pevalAndTerm l2 r
+  | andEqFirst r l2 = pevalAndTerm l1 r
+pevalAndTerm l (OrTerm _ r1 r2)
+  | andEqFirst l r1 = l
+  | andEqFirst l r2 = l
+  | andEqFalse l r1 = pevalAndTerm l r2
+  | andEqFalse l r2 = pevalAndTerm l r1
+pevalAndTerm (OrTerm _ l1 l2) r
+  | andEqFirst r l1 = r
+  | andEqFirst r l2 = r
+  | andEqFalse l1 r = pevalAndTerm l2 r
+  | andEqFalse l2 r = pevalAndTerm l1 r
+pevalAndTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalOrTerm nl nr
+pevalAndTerm l r = andTerm l r
+{-# INLINEABLE pevalAndTerm #-}
+
+pevalImplyTerm :: Term Bool -> Term Bool -> Term Bool
+pevalImplyTerm l = pevalOrTerm (pevalNotTerm l)
+
+pevalXorTerm :: Term Bool -> Term Bool -> Term Bool
+pevalXorTerm l r = pevalOrTerm (pevalAndTerm (pevalNotTerm l) r) (pevalAndTerm l (pevalNotTerm r))
+
+pevalImpliesTerm :: Term Bool -> Term Bool -> Bool
+pevalImpliesTerm (ConTerm _ False) _ = True
+pevalImpliesTerm _ (ConTerm _ True) = True
+pevalImpliesTerm
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (NotTerm _ (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+    | e1 == e2 && ec1 /= ec2 = True
+pevalImpliesTerm a b
+  | a == b = True
+  | otherwise = False
+{-# INLINE pevalImpliesTerm #-}
+
+pevalITEBoolLeftNot :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolLeftNot cond nIfTrue ifFalse
+  -- need test
+  | cond == nIfTrue = Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
+  | otherwise = case nIfTrue of
+      AndTerm _ nt1 nt2 -> ra
+        where
+          ra
+            | pevalImpliesTerm cond nt1 =
+                Just $ pevalITETerm cond (pevalNotTerm nt2) ifFalse
+            | pevalImpliesTerm cond nt2 =
+                Just $ pevalITETerm cond (pevalNotTerm nt1) ifFalse
+            | pevalImpliesTerm cond (pevalNotTerm nt1)
+                || pevalImpliesTerm cond (pevalNotTerm nt2) =
+                Just $ pevalOrTerm cond ifFalse
+            | otherwise = Nothing
+      OrTerm _ nt1 nt2 -> ra
+        where
+          ra
+            | pevalImpliesTerm cond nt1 || pevalImpliesTerm cond nt2 =
+                Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
+            | pevalImpliesTerm cond (pevalNotTerm nt1) =
+                Just $ pevalITETerm cond (pevalNotTerm nt2) ifFalse
+            | pevalImpliesTerm cond (pevalNotTerm nt2) =
+                Just $ pevalITETerm cond (pevalNotTerm nt1) ifFalse
+            | otherwise = Nothing
+      _ -> Nothing
+
+pevalITEBoolBothNot :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolBothNot cond nIfTrue nIfFalse =
+  Just $ pevalNotTerm $ pevalITETerm cond nIfTrue nIfFalse
+
+pevalITEBoolRightNot :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolRightNot cond ifTrue nIfFalse
+  -- need test
+  | cond == nIfFalse = Just $ pevalOrTerm (pevalNotTerm cond) ifTrue
+  | otherwise = Nothing -- need work
+
+pevalInferImplies :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalInferImplies cond (NotTerm _ nt1) trueRes falseRes
+  | cond == nt1 = Just falseRes
+  | otherwise = case (cond, nt1) of
+      ( EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b),
+        EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))
+        )
+          | e1 == e2 && ec1 /= ec2 -> Just trueRes
+      _ -> Nothing
+pevalInferImplies
+  (EqvTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (EqvTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+  _
+  falseRes
+    | e1 == e2 && ec1 /= ec2 = Just falseRes
+pevalInferImplies _ _ _ _ = Nothing
+
+pevalITEBoolLeftAnd :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolLeftAnd cond t1 t2 ifFalse
+  | t1 == ifFalse = Just $ pevalAndTerm t1 $ pevalImplyTerm cond t2
+  | t2 == ifFalse = Just $ pevalAndTerm t2 $ pevalImplyTerm cond t1
+  | cond == t1 = Just $ pevalITETerm cond t2 ifFalse
+  | cond == t2 = Just $ pevalITETerm cond t1 ifFalse
+  | otherwise =
+      msum
+        [ pevalInferImplies cond t1 (pevalITETerm cond t2 ifFalse) (pevalAndTerm (pevalNotTerm cond) ifFalse),
+          pevalInferImplies cond t2 (pevalITETerm cond t1 ifFalse) (pevalAndTerm (pevalNotTerm cond) ifFalse)
+        ]
+
+pevalITEBoolBothAnd :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolBothAnd cond t1 t2 f1 f2
+  | t1 == f1 = Just $ pevalAndTerm t1 $ pevalITETerm cond t2 f2
+  | t1 == f2 = Just $ pevalAndTerm t1 $ pevalITETerm cond t2 f1
+  | t2 == f1 = Just $ pevalAndTerm t2 $ pevalITETerm cond t1 f2
+  | t2 == f2 = Just $ pevalAndTerm t2 $ pevalITETerm cond t1 f1
+  | otherwise = Nothing
+
+pevalITEBoolRightAnd :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolRightAnd cond ifTrue f1 f2
+  | f1 == ifTrue = Just $ pevalAndTerm f1 $ pevalOrTerm cond f2
+  | f2 == ifTrue = Just $ pevalAndTerm f2 $ pevalOrTerm cond f1
+  | otherwise = Nothing
+
+pevalITEBoolLeftOr :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolLeftOr cond t1 t2 ifFalse
+  | t1 == ifFalse = Just $ pevalOrTerm t1 $ pevalAndTerm cond t2
+  | t2 == ifFalse = Just $ pevalOrTerm t2 $ pevalAndTerm cond t1
+  | cond == t1 = Just $ pevalOrTerm cond ifFalse
+  | cond == t2 = Just $ pevalOrTerm cond ifFalse
+  | otherwise =
+      msum
+        [ pevalInferImplies cond t1 (pevalOrTerm cond ifFalse) (pevalITETerm cond t2 ifFalse),
+          pevalInferImplies cond t2 (pevalOrTerm cond ifFalse) (pevalITETerm cond t1 ifFalse)
+        ]
+
+pevalITEBoolBothOr :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolBothOr cond t1 t2 f1 f2
+  | t1 == f1 = Just $ pevalOrTerm t1 $ pevalITETerm cond t2 f2
+  | t1 == f2 = Just $ pevalOrTerm t1 $ pevalITETerm cond t2 f1
+  | t2 == f1 = Just $ pevalOrTerm t2 $ pevalITETerm cond t1 f2
+  | t2 == f2 = Just $ pevalOrTerm t2 $ pevalITETerm cond t1 f1
+  | otherwise = Nothing
+
+pevalITEBoolRightOr :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolRightOr cond ifTrue f1 f2
+  | f1 == ifTrue = Just $ pevalOrTerm f1 $ pevalAndTerm (pevalNotTerm cond) f2
+  | f2 == ifTrue = Just $ pevalOrTerm f2 $ pevalAndTerm (pevalNotTerm cond) f1
+  | otherwise = Nothing
+
+pevalITEBoolLeft :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolLeft cond (AndTerm _ t1 t2) ifFalse =
+  msum
+    [ pevalITEBoolLeftAnd cond t1 t2 ifFalse,
+      case ifFalse of
+        AndTerm _ f1 f2 -> pevalITEBoolBothAnd cond t1 t2 f1 f2
+        _ -> Nothing
+    ]
+pevalITEBoolLeft cond (OrTerm _ t1 t2) ifFalse =
+  msum
+    [ pevalITEBoolLeftOr cond t1 t2 ifFalse,
+      case ifFalse of
+        OrTerm _ f1 f2 -> pevalITEBoolBothOr cond t1 t2 f1 f2
+        _ -> Nothing
+    ]
+pevalITEBoolLeft cond (NotTerm _ nIfTrue) ifFalse =
+  msum
+    [ pevalITEBoolLeftNot cond nIfTrue ifFalse,
+      case ifFalse of
+        NotTerm _ nIfFalse ->
+          pevalITEBoolBothNot cond nIfTrue nIfFalse
+        _ -> Nothing
+    ]
+pevalITEBoolLeft _ _ _ = Nothing
+
+pevalITEBoolNoLeft :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolNoLeft cond ifTrue (AndTerm _ f1 f2) = pevalITEBoolRightAnd cond ifTrue f1 f2
+pevalITEBoolNoLeft cond ifTrue (OrTerm _ f1 f2) = pevalITEBoolRightOr cond ifTrue f1 f2
+pevalITEBoolNoLeft cond ifTrue (NotTerm _ nIfFalse) = pevalITEBoolRightNot cond ifTrue nIfFalse
+pevalITEBoolNoLeft _ _ _ = Nothing
+
+pevalITEBasic :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Maybe (Term a)
+pevalITEBasic (ConTerm _ True) ifTrue _ = Just ifTrue
+pevalITEBasic (ConTerm _ False) _ ifFalse = Just ifFalse
+pevalITEBasic (NotTerm _ ncond) ifTrue ifFalse = Just $ pevalITETerm ncond ifFalse ifTrue
+pevalITEBasic _ ifTrue ifFalse | ifTrue == ifFalse = Just ifTrue
+pevalITEBasic (ITETerm _ cc ct cf) (ITETerm _ tc tt tf) (ITETerm _ fc ft ff) -- later
+  | cc == tc && cc == fc = Just $ pevalITETerm cc (pevalITETerm ct tt ft) (pevalITETerm cf tf ff)
+pevalITEBasic cond (ITETerm _ tc tt tf) ifFalse -- later
+  | cond == tc = Just $ pevalITETerm cond tt ifFalse
+  | tt == ifFalse = Just $ pevalITETerm (pevalOrTerm (pevalNotTerm cond) tc) tt tf
+  | tf == ifFalse = Just $ pevalITETerm (pevalAndTerm cond tc) tt tf
+pevalITEBasic cond ifTrue (ITETerm _ fc ft ff) -- later
+  | ifTrue == ft = Just $ pevalITETerm (pevalOrTerm cond fc) ifTrue ff
+  | ifTrue == ff = Just $ pevalITETerm (pevalOrTerm cond (pevalNotTerm fc)) ifTrue ft
+  | pevalImpliesTerm fc cond = Just $ pevalITETerm cond ifTrue ff
+pevalITEBasic _ _ _ = Nothing
+
+pevalITEBoolBasic :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBoolBasic cond ifTrue ifFalse
+  | cond == ifTrue = Just $ pevalOrTerm cond ifFalse
+  | cond == ifFalse = Just $ pevalAndTerm cond ifTrue
+pevalITEBoolBasic cond (ConTerm _ v) ifFalse
+  | v = Just $ pevalOrTerm cond ifFalse
+  | otherwise = Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
+pevalITEBoolBasic cond ifTrue (ConTerm _ v)
+  | v = Just $ pevalOrTerm (pevalNotTerm cond) ifTrue
+  | otherwise = Just $ pevalAndTerm cond ifTrue
+pevalITEBoolBasic _ _ _ = Nothing
+
+pevalITEBool :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
+pevalITEBool cond ifTrue ifFalse =
+  msum
+    [ pevalITEBasic cond ifTrue ifFalse,
+      pevalITEBoolBasic cond ifTrue ifFalse,
+      pevalITEBoolLeft cond ifTrue ifFalse,
+      pevalITEBoolNoLeft cond ifTrue ifFalse
+    ]
+
+pevalITEBasicTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
+pevalITEBasicTerm cond ifTrue ifFalse =
+  fromMaybe (iteTerm cond ifTrue ifFalse) $
+    pevalITEBasic cond ifTrue ifFalse
+
+instance SupportedPrim Bool where
+  pformatCon True = "true"
+  pformatCon False = "false"
+  defaultValue = defaultValueForBool
+  defaultValueDynamic _ = defaultValueForBoolDyn
+  pevalITETerm cond ifTrue ifFalse =
+    fromMaybe (iteTerm cond ifTrue ifFalse) $
+      pevalITEBool cond ifTrue ifFalse

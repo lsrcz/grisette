@@ -54,7 +54,7 @@ import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool (pevalEqvTerm)
+import Grisette.IR.SymPrim.Data.Prim.Term (pevalEqvTerm)
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (SymBool),
     SymIntN (SymIntN),
