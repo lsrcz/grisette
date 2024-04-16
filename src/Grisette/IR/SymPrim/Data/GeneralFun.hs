@@ -53,15 +53,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalRemBoundedIntegralTerm,
     pevalRemIntegralTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.Term
@@ -74,6 +65,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalOrBitsTerm,
         pevalXorBitsTerm
       ),
+    PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalAddNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
+    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
     SupportedPrim (PrimConstraint, defaultValue, pevalITETerm),
@@ -93,10 +92,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         DivIntegralTerm,
         EqvTerm,
         ITETerm,
-        LENumTerm,
-        LTNumTerm,
+        LeOrdTerm,
+        LtOrdTerm,
         ModBoundedIntegralTerm,
         ModIntegralTerm,
+        MulNumTerm,
+        NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
@@ -111,10 +112,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        TimesNumTerm,
         ToSignedTerm,
         ToUnsignedTerm,
-        UMinusNumTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -134,7 +133,13 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     symTerm,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
-import Type.Reflection (TypeRep, eqTypeRep, typeRep, pattern App, type (:~~:) (HRefl))
+import Type.Reflection
+  ( TypeRep,
+    eqTypeRep,
+    typeRep,
+    pattern App,
+    type (:~~:) (HRefl),
+  )
 import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
@@ -254,12 +259,12 @@ substTerm sym term = gov
         EqvTerm _ op1 op2 -> SomeTerm $ pevalEqvTerm (gov op1) (gov op2)
         ITETerm _ c op1 op2 -> SomeTerm $ pevalITETerm (gov c) (gov op1) (gov op2)
         AddNumTerm _ op1 op2 -> SomeTerm $ pevalAddNumTerm (gov op1) (gov op2)
-        UMinusNumTerm _ op -> SomeTerm $ pevalUMinusNumTerm (gov op)
-        TimesNumTerm _ op1 op2 -> SomeTerm $ pevalTimesNumTerm (gov op1) (gov op2)
+        NegNumTerm _ op -> SomeTerm $ pevalNegNumTerm (gov op)
+        MulNumTerm _ op1 op2 -> SomeTerm $ pevalMulNumTerm (gov op1) (gov op2)
         AbsNumTerm _ op -> SomeTerm $ pevalAbsNumTerm (gov op)
         SignumNumTerm _ op -> SomeTerm $ pevalSignumNumTerm (gov op)
-        LTNumTerm _ op1 op2 -> SomeTerm $ pevalLtNumTerm (gov op1) (gov op2)
-        LENumTerm _ op1 op2 -> SomeTerm $ pevalLeNumTerm (gov op1) (gov op2)
+        LtOrdTerm _ op1 op2 -> SomeTerm $ pevalLtOrdTerm (gov op1) (gov op2)
+        LeOrdTerm _ op1 op2 -> SomeTerm $ pevalLeOrdTerm (gov op1) (gov op2)
         AndBitsTerm _ op1 op2 -> SomeTerm $ pevalAndBitsTerm (gov op1) (gov op2)
         OrBitsTerm _ op1 op2 -> SomeTerm $ pevalOrBitsTerm (gov op1) (gov op2)
         XorBitsTerm _ op1 op2 -> SomeTerm $ pevalXorBitsTerm (gov op1) (gov op2)

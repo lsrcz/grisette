@@ -48,6 +48,11 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     PEvalBitwiseTerm (..),
     PEvalShiftTerm (..),
     PEvalRotateTerm (..),
+    PEvalNumTerm (..),
+    pevalSubNumTerm,
+    PEvalOrdTerm (..),
+    pevalGtOrdTerm,
+    pevalGeOrdTerm,
 
     -- * Typed symbols
     TypedSymbol (..),
@@ -79,12 +84,12 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     eqvTerm,
     iteTerm,
     addNumTerm,
-    uminusNumTerm,
-    timesNumTerm,
+    negNumTerm,
+    mulNumTerm,
     absNumTerm,
     signumNumTerm,
-    ltNumTerm,
-    leNumTerm,
+    ltOrdTerm,
+    leOrdTerm,
     andBitsTerm,
     orBitsTerm,
     xorBitsTerm,
@@ -192,6 +197,9 @@ import Prettyprinter
 import Data.Maybe (fromMaybe)
 import Unsafe.Coerce (unsafeCoerce)
 import Control.Monad (msum)
+import Data.Bits (Bits)
+import Grisette.Core.Data.Class.SymShift (SymShift)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -252,19 +260,39 @@ class
   where
   pevalApplyTerm :: Term f -> Term a -> Term b
 
-class (SupportedPrim t) => PEvalBitwiseTerm t where
+class (SupportedPrim t, Bits t) => PEvalBitwiseTerm t where
   pevalAndBitsTerm :: Term t -> Term t -> Term t
   pevalOrBitsTerm :: Term t -> Term t -> Term t
   pevalXorBitsTerm :: Term t -> Term t -> Term t
   pevalComplementBitsTerm :: Term t -> Term t
 
-class (SupportedPrim t) => PEvalShiftTerm t where
+class (SupportedPrim t, SymShift t) => PEvalShiftTerm t where
   pevalShiftLeftTerm :: Term t -> Term t -> Term t
   pevalShiftRightTerm :: Term t -> Term t -> Term t
 
-class (SupportedPrim t) => PEvalRotateTerm t where
+class (SupportedPrim t, SymRotate t) => PEvalRotateTerm t where
   pevalRotateLeftTerm :: Term t -> Term t -> Term t
   pevalRotateRightTerm :: Term t -> Term t -> Term t
+
+class (SupportedPrim t, Num t) => PEvalNumTerm t where
+  pevalAddNumTerm :: Term t -> Term t -> Term t
+  pevalNegNumTerm :: Term t -> Term t
+  pevalMulNumTerm :: Term t -> Term t -> Term t
+  pevalAbsNumTerm :: Term t -> Term t
+  pevalSignumNumTerm :: Term t -> Term t
+
+pevalSubNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
+pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
+
+class (SupportedPrim t, Ord t) => PEvalOrdTerm t where
+  pevalLtOrdTerm :: Term t -> Term t -> Term Bool
+  pevalLeOrdTerm :: Term t -> Term t -> Term Bool
+
+pevalGtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
+pevalGtOrdTerm = flip pevalLtOrdTerm
+
+pevalGeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
+pevalGeOrdTerm = flip pevalLeOrdTerm
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -415,13 +443,38 @@ data Term t where
     !(Term t) ->
     !(Term t) ->
     Term t
-  AddNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  UMinusNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  TimesNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
-  AbsNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  SignumNumTerm :: (SupportedPrim t, Num t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  LTNumTerm :: (SupportedPrim t, Num t, Ord t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
-  LENumTerm :: (SupportedPrim t, Num t, Ord t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term Bool
+  AddNumTerm ::
+    (PEvalNumTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  NegNumTerm ::
+    (PEvalNumTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    Term t
+  MulNumTerm ::
+    (PEvalNumTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  AbsNumTerm ::
+    (PEvalNumTerm t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
+  SignumNumTerm :: (PEvalNumTerm t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
+  LtOrdTerm ::
+    (PEvalOrdTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term Bool
+  LeOrdTerm ::
+    (PEvalOrdTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term Bool
   AndBitsTerm ::
     (PEvalBitwiseTerm t) =>
     {-# UNPACK #-} !Id ->
@@ -572,12 +625,12 @@ identityWithTypeRep (AndTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (EqvTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ITETerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (AddNumTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (UMinusNumTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (TimesNumTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (NegNumTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (MulNumTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (AbsNumTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (SignumNumTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (LTNumTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (LENumTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (LtOrdTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (LeOrdTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (AndBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (OrBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (XorBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
@@ -615,12 +668,12 @@ introSupportedPrimConstraint AndTerm {} x = x
 introSupportedPrimConstraint EqvTerm {} x = x
 introSupportedPrimConstraint ITETerm {} x = x
 introSupportedPrimConstraint AddNumTerm {} x = x
-introSupportedPrimConstraint UMinusNumTerm {} x = x
-introSupportedPrimConstraint TimesNumTerm {} x = x
+introSupportedPrimConstraint NegNumTerm {} x = x
+introSupportedPrimConstraint MulNumTerm {} x = x
 introSupportedPrimConstraint AbsNumTerm {} x = x
 introSupportedPrimConstraint SignumNumTerm {} x = x
-introSupportedPrimConstraint LTNumTerm {} x = x
-introSupportedPrimConstraint LENumTerm {} x = x
+introSupportedPrimConstraint LtOrdTerm {} x = x
+introSupportedPrimConstraint LeOrdTerm {} x = x
 introSupportedPrimConstraint AndBitsTerm {} x = x
 introSupportedPrimConstraint OrBitsTerm {} x = x
 introSupportedPrimConstraint XorBitsTerm {} x = x
@@ -657,12 +710,12 @@ pformat (AndTerm _ arg1 arg2) = "(&& " ++ pformat arg1 ++ " " ++ pformat arg2 ++
 pformat (EqvTerm _ arg1 arg2) = "(= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (ITETerm _ cond arg1 arg2) = "(ite " ++ pformat cond ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (AddNumTerm _ arg1 arg2) = "(+ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (UMinusNumTerm _ arg) = "(- " ++ pformat arg ++ ")"
-pformat (TimesNumTerm _ arg1 arg2) = "(* " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (NegNumTerm _ arg) = "(- " ++ pformat arg ++ ")"
+pformat (MulNumTerm _ arg1 arg2) = "(* " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (AbsNumTerm _ arg) = "(abs " ++ pformat arg ++ ")"
 pformat (SignumNumTerm _ arg) = "(signum " ++ pformat arg ++ ")"
-pformat (LTNumTerm _ arg1 arg2) = "(< " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (LENumTerm _ arg1 arg2) = "(<= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (LtOrdTerm _ arg1 arg2) = "(< " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (LeOrdTerm _ arg1 arg2) = "(<= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (AndBitsTerm _ arg1 arg2) = "(& " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (OrBitsTerm _ arg1 arg2) = "(| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (XorBitsTerm _ arg1 arg2) = "(^ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
@@ -704,12 +757,12 @@ instance Lift (Term t) where
   liftTyped (EqvTerm _ arg1 arg2) = [||eqvTerm arg1 arg2||]
   liftTyped (ITETerm _ cond arg1 arg2) = [||iteTerm cond arg1 arg2||]
   liftTyped (AddNumTerm _ arg1 arg2) = [||addNumTerm arg1 arg2||]
-  liftTyped (UMinusNumTerm _ arg) = [||uminusNumTerm arg||]
-  liftTyped (TimesNumTerm _ arg1 arg2) = [||timesNumTerm arg1 arg2||]
+  liftTyped (NegNumTerm _ arg) = [||negNumTerm arg||]
+  liftTyped (MulNumTerm _ arg1 arg2) = [||mulNumTerm arg1 arg2||]
   liftTyped (AbsNumTerm _ arg) = [||absNumTerm arg||]
   liftTyped (SignumNumTerm _ arg) = [||signumNumTerm arg||]
-  liftTyped (LTNumTerm _ arg1 arg2) = [||ltNumTerm arg1 arg2||]
-  liftTyped (LENumTerm _ arg1 arg2) = [||leNumTerm arg1 arg2||]
+  liftTyped (LtOrdTerm _ arg1 arg2) = [||ltOrdTerm arg1 arg2||]
+  liftTyped (LeOrdTerm _ arg1 arg2) = [||leOrdTerm arg1 arg2||]
   liftTyped (AndBitsTerm _ arg1 arg2) = [||andBitsTerm arg1 arg2||]
   liftTyped (OrBitsTerm _ arg1 arg2) = [||orBitsTerm arg1 arg2||]
   liftTyped (XorBitsTerm _ arg1 arg2) = [||xorBitsTerm arg1 arg2||]
@@ -781,12 +834,12 @@ instance Show (Term ty) where
       ++ show r
       ++ "}"
   show (AddNumTerm i arg1 arg2) = "AddNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (UMinusNumTerm i arg) = "UMinusNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (TimesNumTerm i arg1 arg2) = "TimesNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (NegNumTerm i arg) = "NegNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (MulNumTerm i arg1 arg2) = "MulNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (AbsNumTerm i arg) = "AbsNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (SignumNumTerm i arg) = "SignumNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (LTNumTerm i arg1 arg2) = "LTNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (LENumTerm i arg1 arg2) = "LENum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (LtOrdTerm i arg1 arg2) = "LTNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (LeOrdTerm i arg1 arg2) = "LENum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (AndBitsTerm i arg1 arg2) = "AndBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (OrBitsTerm i arg1 arg2) = "OrBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (XorBitsTerm i arg1 arg2) = "XorBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
@@ -871,13 +924,13 @@ data UTerm t where
     !(Term t) ->
     !(Term t) ->
     UTerm t
-  UAddNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> !(Term t) -> UTerm t
-  UUMinusNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> UTerm t
-  UTimesNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> !(Term t) -> UTerm t
-  UAbsNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> UTerm t
-  USignumNumTerm :: (SupportedPrim t, Num t) => !(Term t) -> UTerm t
-  ULTNumTerm :: (SupportedPrim t, Num t, Ord t) => !(Term t) -> !(Term t) -> UTerm Bool
-  ULENumTerm :: (SupportedPrim t, Num t, Ord t) => !(Term t) -> !(Term t) -> UTerm Bool
+  UAddNumTerm :: (PEvalNumTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UNegNumTerm :: (PEvalNumTerm t) => !(Term t) -> UTerm t
+  UMulNumTerm :: (PEvalNumTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UAbsNumTerm :: (PEvalNumTerm t) => !(Term t) -> UTerm t
+  USignumNumTerm :: (PEvalNumTerm t) => !(Term t) -> UTerm t
+  ULtOrdTerm :: (PEvalOrdTerm t) => !(Term t) -> !(Term t) -> UTerm Bool
+  ULeOrdTerm :: (PEvalOrdTerm t) => !(Term t) -> !(Term t) -> UTerm Bool
   UAndBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UOrBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UXorBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
@@ -1012,12 +1065,12 @@ instance (SupportedPrim t) => Interned (Term t) where
     DEqvTerm :: TypeRep args -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DITETerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DAddNumTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
-    DUMinusNumTerm :: {-# UNPACK #-} !Id -> Description (Term t)
-    DTimesNumTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
+    DNegNumTerm :: {-# UNPACK #-} !Id -> Description (Term t)
+    DMulNumTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DAbsNumTerm :: {-# UNPACK #-} !Id -> Description (Term t)
     DSignumNumTerm :: {-# UNPACK #-} !Id -> Description (Term t)
-    DLTNumTerm :: TypeRep args -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
-    DLENumTerm :: TypeRep args -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DLtOrdTerm :: TypeRep args -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DLeOrdTerm :: TypeRep args -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DAndBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DOrBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DXorBitsTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
@@ -1077,12 +1130,12 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UEqvTerm (arg1 :: Term arg) arg2) = DEqvTerm (typeRep :: TypeRep arg) (identity arg1) (identity arg2)
   describe (UITETerm cond (l :: Term arg) r) = DITETerm (identity cond) (identity l) (identity r)
   describe (UAddNumTerm arg1 arg2) = DAddNumTerm (identity arg1) (identity arg2)
-  describe (UUMinusNumTerm arg) = DUMinusNumTerm (identity arg)
-  describe (UTimesNumTerm arg1 arg2) = DTimesNumTerm (identity arg1) (identity arg2)
+  describe (UNegNumTerm arg) = DNegNumTerm (identity arg)
+  describe (UMulNumTerm arg1 arg2) = DMulNumTerm (identity arg1) (identity arg2)
   describe (UAbsNumTerm arg) = DAbsNumTerm (identity arg)
   describe (USignumNumTerm arg) = DSignumNumTerm (identity arg)
-  describe (ULTNumTerm (arg1 :: arg) arg2) = DLTNumTerm (typeRep :: TypeRep arg) (identity arg1) (identity arg2)
-  describe (ULENumTerm (arg1 :: arg) arg2) = DLENumTerm (typeRep :: TypeRep arg) (identity arg1) (identity arg2)
+  describe (ULtOrdTerm (arg1 :: arg) arg2) = DLtOrdTerm (typeRep :: TypeRep arg) (identity arg1) (identity arg2)
+  describe (ULeOrdTerm (arg1 :: arg) arg2) = DLeOrdTerm (typeRep :: TypeRep arg) (identity arg1) (identity arg2)
   describe (UAndBitsTerm arg1 arg2) = DAndBitsTerm (identity arg1) (identity arg2)
   describe (UOrBitsTerm arg1 arg2) = DOrBitsTerm (identity arg1) (identity arg2)
   describe (UXorBitsTerm arg1 arg2) = DXorBitsTerm (identity arg1) (identity arg2)
@@ -1123,12 +1176,12 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UEqvTerm arg1 arg2) = EqvTerm i arg1 arg2
       go (UITETerm cond l r) = ITETerm i cond l r
       go (UAddNumTerm arg1 arg2) = AddNumTerm i arg1 arg2
-      go (UUMinusNumTerm arg) = UMinusNumTerm i arg
-      go (UTimesNumTerm arg1 arg2) = TimesNumTerm i arg1 arg2
+      go (UNegNumTerm arg) = NegNumTerm i arg
+      go (UMulNumTerm arg1 arg2) = MulNumTerm i arg1 arg2
       go (UAbsNumTerm arg) = AbsNumTerm i arg
       go (USignumNumTerm arg) = SignumNumTerm i arg
-      go (ULTNumTerm arg1 arg2) = LTNumTerm i arg1 arg2
-      go (ULENumTerm arg1 arg2) = LENumTerm i arg1 arg2
+      go (ULtOrdTerm arg1 arg2) = LtOrdTerm i arg1 arg2
+      go (ULeOrdTerm arg1 arg2) = LeOrdTerm i arg1 arg2
       go (UAndBitsTerm arg1 arg2) = AndBitsTerm i arg1 arg2
       go (UOrBitsTerm arg1 arg2) = OrBitsTerm i arg1 arg2
       go (UXorBitsTerm arg1 arg2) = XorBitsTerm i arg1 arg2
@@ -1167,12 +1220,12 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DEqvTerm lrep li1 li2 == DEqvTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && li1 == ri1 && li2 == ri2
   DITETerm lc li1 li2 == DITETerm rc ri1 ri2 = lc == rc && li1 == ri1 && li2 == ri2
   DAddNumTerm li1 li2 == DAddNumTerm ri1 ri2 = li1 == ri1 && li2 == ri2
-  DUMinusNumTerm li == DUMinusNumTerm ri = li == ri
-  DTimesNumTerm li1 li2 == DTimesNumTerm ri1 ri2 = li1 == ri1 && li2 == ri2
+  DNegNumTerm li == DNegNumTerm ri = li == ri
+  DMulNumTerm li1 li2 == DMulNumTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DAbsNumTerm li == DAbsNumTerm ri = li == ri
   DSignumNumTerm li == DSignumNumTerm ri = li == ri
-  DLTNumTerm lrep li1 li2 == DLTNumTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && li1 == ri1 && li2 == ri2
-  DLENumTerm lrep li1 li2 == DLENumTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && li1 == ri1 && li2 == ri2
+  DLtOrdTerm lrep li1 li2 == DLtOrdTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && li1 == ri1 && li2 == ri2
+  DLeOrdTerm lrep li1 li2 == DLeOrdTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && li1 == ri1 && li2 == ri2
   DAndBitsTerm li1 li2 == DAndBitsTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DOrBitsTerm li1 li2 == DOrBitsTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DXorBitsTerm li1 li2 == DXorBitsTerm ri1 ri2 = li1 == ri1 && li2 == ri2
@@ -1226,13 +1279,13 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
       `hashWithSalt` id1
       `hashWithSalt` id2
   hashWithSalt s (DAddNumTerm id1 id2) = s `hashWithSalt` (10 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DUMinusNumTerm id1) = s `hashWithSalt` (11 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DTimesNumTerm id1 id2) = s `hashWithSalt` (12 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DNegNumTerm id1) = s `hashWithSalt` (11 :: Int) `hashWithSalt` id1
+  hashWithSalt s (DMulNumTerm id1 id2) = s `hashWithSalt` (12 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DAbsNumTerm id1) = s `hashWithSalt` (13 :: Int) `hashWithSalt` id1
   hashWithSalt s (DSignumNumTerm id1) = s `hashWithSalt` (14 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DLTNumTerm rep id1 id2) =
+  hashWithSalt s (DLtOrdTerm rep id1 id2) =
     s `hashWithSalt` (15 :: Int) `hashWithSalt` rep `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DLENumTerm rep id1 id2) =
+  hashWithSalt s (DLeOrdTerm rep id1 id2) =
     s `hashWithSalt` (16 :: Int) `hashWithSalt` rep `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DAndBitsTerm id1 id2) = s `hashWithSalt` (17 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DOrBitsTerm id1 id2) = s `hashWithSalt` (18 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
@@ -1341,33 +1394,33 @@ iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 iteTerm c l r = internTerm $ UITETerm c l r
 {-# INLINE iteTerm #-}
 
-addNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a -> Term a
+addNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 addNumTerm l r = internTerm $ UAddNumTerm l r
 {-# INLINE addNumTerm #-}
 
-uminusNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
-uminusNumTerm = internTerm . UUMinusNumTerm
-{-# INLINE uminusNumTerm #-}
+negNumTerm :: (PEvalNumTerm a) => Term a -> Term a
+negNumTerm = internTerm . UNegNumTerm
+{-# INLINE negNumTerm #-}
 
-timesNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a -> Term a
-timesNumTerm l r = internTerm $ UTimesNumTerm l r
-{-# INLINE timesNumTerm #-}
+mulNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
+mulNumTerm l r = internTerm $ UMulNumTerm l r
+{-# INLINE mulNumTerm #-}
 
-absNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
+absNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 absNumTerm = internTerm . UAbsNumTerm
 {-# INLINE absNumTerm #-}
 
-signumNumTerm :: (SupportedPrim a, Num a) => Term a -> Term a
+signumNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 signumNumTerm = internTerm . USignumNumTerm
 {-# INLINE signumNumTerm #-}
 
-ltNumTerm :: (SupportedPrim a, Num a, Ord a) => Term a -> Term a -> Term Bool
-ltNumTerm l r = internTerm $ ULTNumTerm l r
-{-# INLINE ltNumTerm #-}
+ltOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
+ltOrdTerm l r = internTerm $ ULtOrdTerm l r
+{-# INLINE ltOrdTerm #-}
 
-leNumTerm :: (SupportedPrim a, Num a, Ord a) => Term a -> Term a -> Term Bool
-leNumTerm l r = internTerm $ ULENumTerm l r
-{-# INLINE leNumTerm #-}
+leOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
+leOrdTerm l r = internTerm $ ULeOrdTerm l r
+{-# INLINE leOrdTerm #-}
 
 andBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 andBitsTerm l r = internTerm $ UAndBitsTerm l r

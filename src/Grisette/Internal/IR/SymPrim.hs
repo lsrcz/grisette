@@ -11,11 +11,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.IR.SymPrim
-  ( -- Sym (..),
-    UnaryOp (..),
-    BinaryOp (..),
-    TernaryOp (..),
-    Term (..),
+  ( Term (..),
     showUntyped,
     withSymbolSupported,
     SomeTypedSymbol (..),
@@ -68,23 +64,26 @@ module Grisette.Internal.IR.SymPrim
     BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
     binaryPartial,
-    pattern NumConTerm,
-    pattern NumOrdConTerm,
-    pevalAddNumTerm,
-    pevalMinusNumTerm,
-    pevalUMinusNumTerm,
-    pevalAbsNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalLtNumTerm,
-    pevalLeNumTerm,
-    pevalGtNumTerm,
-    pevalGeNumTerm,
-    PEvalApplyTerm (..),
+    -- pattern NumConTerm,
+    -- pattern NumOrdConTerm,
     pevalDivIntegralTerm,
     pevalModIntegralTerm,
     pevalQuotIntegralTerm,
     pevalRemIntegralTerm,
+
+    -- * Partial evaluation for the terms
+    UnaryOp (..),
+    BinaryOp (..),
+    TernaryOp (..),
+    PEvalApplyTerm (..),
+    PEvalBitwiseTerm (..),
+    PEvalShiftTerm (..),
+    PEvalRotateTerm (..),
+    PEvalNumTerm (..),
+    pevalSubNumTerm,
+    PEvalOrdTerm (..),
+    pevalGtOrdTerm,
+    pevalGeOrdTerm,
   )
 where
 
@@ -100,20 +99,10 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
     pevalQuotIntegralTerm,
     pevalRemIntegralTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalGeNumTerm,
-    pevalGtNumTerm,
-    pevalLeNumTerm,
-    pevalLtNumTerm,
-    pevalMinusNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
-    pattern NumConTerm,
-    pattern NumOrdConTerm,
-  )
+-- import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
+--   ( pattern NumConTerm,
+--     pattern NumOrdConTerm,
+--   )
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
   ( BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
@@ -137,7 +126,12 @@ import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (..),
-    PEvalApplyTerm (pevalApplyTerm),
+    PEvalApplyTerm (..),
+    PEvalBitwiseTerm (..),
+    PEvalNumTerm (..),
+    PEvalOrdTerm (..),
+    PEvalRotateTerm (..),
+    PEvalShiftTerm (..),
     SomeTypedSymbol (..),
     SupportedPrim (..),
     Term (..),
@@ -154,10 +148,13 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     isymTerm,
     pevalAndTerm,
     pevalEqvTerm,
+    pevalGeOrdTerm,
+    pevalGtOrdTerm,
     pevalImplyTerm,
     pevalNotEqvTerm,
     pevalNotTerm,
     pevalOrTerm,
+    pevalSubNumTerm,
     pevalXorTerm,
     pformat,
     showUntyped,

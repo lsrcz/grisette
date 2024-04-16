@@ -139,16 +139,8 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToSignedTerm,
     pevalToUnsignedTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral (pevalModBoundedIntegralTerm)
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
-  ( pevalAbsNumTerm,
-    pevalAddNumTerm,
-    pevalGeNumTerm,
-    pevalLeNumTerm,
-    pevalMinusNumTerm,
-    pevalSignumNumTerm,
-    pevalTimesNumTerm,
-    pevalUMinusNumTerm,
+import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
+  ( pevalModBoundedIntegralTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -157,7 +149,20 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
-    PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
+    PEvalBitwiseTerm
+      ( pevalAndBitsTerm,
+        pevalComplementBitsTerm,
+        pevalOrBitsTerm,
+        pevalXorBitsTerm
+      ),
+    PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalAddNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
+    PEvalOrdTerm (pevalLeOrdTerm),
     PEvalRotateTerm
       ( pevalRotateLeftTerm,
         pevalRotateRightTerm
@@ -169,7 +174,9 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     TypedSymbol,
     conTerm,
     pevalEqvTerm,
+    pevalGeOrdTerm,
     pevalOrTerm,
+    pevalSubNumTerm,
     pformat,
     symTerm,
   )
@@ -464,9 +471,9 @@ SOLVABLE_FUN((-~>), (-->), SymGeneralFun)
 #define NUM_BV(symtype) \
 instance (KnownNat n, 1 <= n) => Num (symtype n) where \
   (symtype l) + (symtype r) = symtype $ pevalAddNumTerm l r; \
-  (symtype l) - (symtype r) = symtype $ pevalMinusNumTerm l r; \
-  (symtype l) * (symtype r) = symtype $ pevalTimesNumTerm l r; \
-  negate (symtype v) = symtype $ pevalUMinusNumTerm v; \
+  (symtype l) - (symtype r) = symtype $ pevalSubNumTerm l r; \
+  (symtype l) * (symtype r) = symtype $ pevalMulNumTerm l r; \
+  negate (symtype v) = symtype $ pevalNegNumTerm v; \
   abs (symtype v) = symtype $ pevalAbsNumTerm v; \
   signum (symtype v) = symtype $ pevalSignumNumTerm v; \
   fromInteger i = con $ fromInteger i
@@ -478,9 +485,9 @@ NUM_BV(SymWordN)
 
 instance Num SymInteger where
   (SymInteger l) + (SymInteger r) = SymInteger $ pevalAddNumTerm l r
-  (SymInteger l) - (SymInteger r) = SymInteger $ pevalMinusNumTerm l r
-  (SymInteger l) * (SymInteger r) = SymInteger $ pevalTimesNumTerm l r
-  negate (SymInteger v) = SymInteger $ pevalUMinusNumTerm v
+  (SymInteger l) - (SymInteger r) = SymInteger $ pevalSubNumTerm l r
+  (SymInteger l) * (SymInteger r) = SymInteger $ pevalMulNumTerm l r
+  negate (SymInteger v) = SymInteger $ pevalNegNumTerm v
   abs (SymInteger v) = SymInteger $ pevalAbsNumTerm v
   signum (SymInteger v) = SymInteger $ pevalSignumNumTerm v
   fromInteger = con
@@ -745,38 +752,38 @@ instance (KnownNat n, 1 <= n) => SymShift (SymIntN n) where
     | finiteBitSize as == 2 =
         SymIntN $
           pevalITETerm
-            (pevalGeNumTerm s (conTerm 0))
+            (pevalGeOrdTerm s (conTerm 0))
             (pevalShiftLeftTerm a s)
             ( pevalITETerm
                 (pevalEqvTerm s (conTerm (-2)))
                 ( pevalITETerm
-                    (pevalGeNumTerm a (conTerm 0))
+                    (pevalGeOrdTerm a (conTerm 0))
                     (conTerm 0)
                     (conTerm (-1))
                 )
-                (pevalShiftRightTerm a (pevalUMinusNumTerm s))
+                (pevalShiftRightTerm a (pevalNegNumTerm s))
             )
   symShift (SymIntN a) (SymIntN s) =
     SymIntN $
       pevalITETerm
-        (pevalGeNumTerm s (conTerm 0))
+        (pevalGeOrdTerm s (conTerm 0))
         (pevalShiftLeftTerm a s)
         ( pevalITETerm
-            (pevalLeNumTerm s (conTerm (-bs)))
+            (pevalLeOrdTerm s (conTerm (-bs)))
             (pevalShiftRightTerm a (conTerm bs))
-            (pevalShiftRightTerm a (pevalUMinusNumTerm s))
+            (pevalShiftRightTerm a (pevalNegNumTerm s))
         )
     where
       bs = fromIntegral (finiteBitSize (0 :: IntN n)) :: IntN n
   symShiftNegated (SymIntN a) (SymIntN s) =
     SymIntN $
       pevalITETerm
-        (pevalGeNumTerm s (conTerm 0))
+        (pevalGeOrdTerm s (conTerm 0))
         (pevalShiftRightTerm a s)
         ( pevalITETerm
-            (pevalLeNumTerm s (conTerm (-bs)))
+            (pevalLeOrdTerm s (conTerm (-bs)))
             (conTerm 0)
-            (pevalShiftLeftTerm a (pevalUMinusNumTerm s))
+            (pevalShiftLeftTerm a (pevalNegNumTerm s))
         )
     where
       bs = fromIntegral (finiteBitSize (0 :: IntN n)) :: IntN n
