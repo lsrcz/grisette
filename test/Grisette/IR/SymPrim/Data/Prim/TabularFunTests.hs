@@ -8,14 +8,12 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Bool
   ( pevalEqvTerm,
     pevalITETerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( Term,
+  ( PEvalApplyTerm (pevalApplyTerm),
+    Term,
+    applyTerm,
     conTerm,
     ssymTerm,
-    tabularFunApplyTerm,
   )
 import Grisette.IR.SymPrim.Data.TabularFun
   ( type (=->) (TabularFun),
@@ -29,19 +27,19 @@ tabularFunTests =
   testGroup
     "TabularFun"
     [ testGroup
-        "ApplyF"
+        "Apply"
         [ testCase "On concrete" $ do
             let f :: Integer =-> Integer =
                   TabularFun [(1, 2), (3, 4)] 5
-            pevalTabularFunApplyTerm (conTerm f) (conTerm 0) @=? conTerm 5
-            pevalTabularFunApplyTerm (conTerm f) (conTerm 1) @=? conTerm 2
-            pevalTabularFunApplyTerm (conTerm f) (conTerm 2) @=? conTerm 5
-            pevalTabularFunApplyTerm (conTerm f) (conTerm 3) @=? conTerm 4
-            pevalTabularFunApplyTerm (conTerm f) (conTerm 4) @=? conTerm 5,
+            pevalApplyTerm (conTerm f) (conTerm 0) @=? conTerm 5
+            pevalApplyTerm (conTerm f) (conTerm 1) @=? conTerm 2
+            pevalApplyTerm (conTerm f) (conTerm 2) @=? conTerm 5
+            pevalApplyTerm (conTerm f) (conTerm 3) @=? conTerm 4
+            pevalApplyTerm (conTerm f) (conTerm 4) @=? conTerm 5,
           testCase "On concrete function" $ do
             let f :: Integer =-> Integer =
                   TabularFun [(1, 2), (3, 4)] 5
-            pevalTabularFunApplyTerm (conTerm f) (ssymTerm "b")
+            pevalApplyTerm (conTerm f) (ssymTerm "b")
               @=? pevalITETerm
                 (pevalEqvTerm (conTerm 1 :: Term Integer) (ssymTerm "b"))
                 (conTerm 2)
@@ -51,8 +49,8 @@ tabularFunTests =
                     (conTerm 5)
                 ),
           testCase "On symbolic" $ do
-            pevalTabularFunApplyTerm (ssymTerm "f" :: Term (Integer =-> Integer)) (ssymTerm "a")
-              @=? tabularFunApplyTerm
+            pevalApplyTerm (ssymTerm "f" :: Term (Integer =-> Integer)) (ssymTerm "a")
+              @=? applyTerm
                 (ssymTerm "f" :: Term (Integer =-> Integer))
                 (ssymTerm "a" :: Term Integer)
         ]

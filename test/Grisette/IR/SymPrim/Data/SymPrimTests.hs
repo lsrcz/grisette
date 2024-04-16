@@ -165,11 +165,9 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep (wrapTerm),
+    PEvalApplyTerm (pevalApplyTerm),
     Term,
     conTerm,
     isymTerm,
@@ -896,15 +894,15 @@ symPrimTests =
         [ testCase "#" $
             (ssym "a" :: SymInteger =~> SymInteger)
               # ssym "b"
-              @=? SymInteger (pevalTabularFunApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b")),
+              @=? SymInteger (pevalApplyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b")),
           testCase "apply" $
             apply
               (ssym "f" :: SymInteger =~> SymInteger =~> SymInteger)
               (ssym "a")
               (ssym "b")
               @=? SymInteger
-                ( pevalTabularFunApplyTerm
-                    ( pevalTabularFunApplyTerm
+                ( pevalApplyTerm
+                    ( pevalApplyTerm
                         (ssymTerm "f" :: Term (Integer =-> Integer =-> Integer))
                         (ssymTerm "a")
                     )

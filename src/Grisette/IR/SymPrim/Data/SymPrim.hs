@@ -165,9 +165,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalTimesNumTerm,
     pevalUMinusNumTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
-  ( pevalTabularFunApplyTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -343,7 +340,7 @@ instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca =-> cb) (sa =~> sb)
   wrapTerm = SymTabularFun
 
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) sa sb where
-  (SymTabularFun f) # t = wrapTerm $ pevalTabularFunApplyTerm f (underlyingTerm t)
+  (SymTabularFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
 instance (LinkedRep ca sa, LinkedRep ct st, Apply st) => Apply (sa =~> st) where
   type FunType (sa =~> st) = sa -> FunType st

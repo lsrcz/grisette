@@ -75,7 +75,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TabularFunApplyTerm,
         TernaryTerm,
         TimesNumTerm,
         ToSignedTerm,
@@ -133,7 +132,6 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (BVConcatTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (BVSelectTerm _ _ _ arg)) = goUnary arg
     go (SomeTerm (BVExtendTerm _ _ _ arg)) = goUnary arg
-    go (SomeTerm (TabularFunApplyTerm _ func arg)) = goBinary func arg
     go (SomeTerm (ApplyTerm _ func arg)) = goBinary func arg
     go (SomeTerm (DivIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (ModIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
@@ -190,7 +188,6 @@ castTerm t@ToUnsignedTerm {} = cast t
 castTerm t@BVConcatTerm {} = cast t
 castTerm t@BVSelectTerm {} = cast t
 castTerm t@BVExtendTerm {} = cast t
-castTerm t@TabularFunApplyTerm {} = cast t
 castTerm t@ApplyTerm {} = cast t
 castTerm t@DivIntegralTerm {} = cast t
 castTerm t@ModIntegralTerm {} = cast t
@@ -240,7 +237,6 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(BVConcatTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(BVSelectTerm _ _ _ arg) = goUnary t arg
     go t@(BVExtendTerm _ _ _ arg) = goUnary t arg
-    go t@(TabularFunApplyTerm _ func arg) = goBinary t func arg
     go t@(ApplyTerm _ func arg) = goBinary t func arg
     go t@(DivIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(ModIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2

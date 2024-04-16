@@ -111,7 +111,6 @@ library
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
       Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval
-      Grisette.IR.SymPrim.Data.Prim.PartialEval.TabularFun
       Grisette.IR.SymPrim.Data.Prim.PartialEval.Unfold
       Grisette.IR.SymPrim.Data.Prim.SomeTerm
       Grisette.IR.SymPrim.Data.Prim.Term
