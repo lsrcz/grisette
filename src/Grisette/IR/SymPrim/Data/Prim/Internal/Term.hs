@@ -264,7 +264,7 @@ class
   UnaryOp tag arg t
     | tag arg -> t
   where
-  partialEvalUnary :: (Typeable tag, Typeable t) => tag -> Term arg -> Term t
+  pevalUnary :: (Typeable tag, Typeable t) => tag -> Term arg -> Term t
   pformatUnary :: tag -> Term arg -> String
 
 class
@@ -281,7 +281,7 @@ class
   BinaryOp tag arg1 arg2 t
     | tag arg1 arg2 -> t
   where
-  partialEvalBinary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term t
+  pevalBinary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term t
   pformatBinary :: tag -> Term arg1 -> Term arg2 -> String
 
 class
@@ -299,7 +299,7 @@ class
   TernaryOp tag arg1 arg2 arg3 t
     | tag arg1 arg2 arg3 -> t
   where
-  partialEvalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
+  pevalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
   pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
 
 -- Typed Symbols

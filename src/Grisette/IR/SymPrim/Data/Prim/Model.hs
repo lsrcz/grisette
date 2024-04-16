@@ -101,7 +101,7 @@ import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( BinaryOp (partialEvalBinary),
+  ( BinaryOp (pevalBinary),
     PEvalApplyTerm (pevalApplyTerm),
     PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
     SomeTypedSymbol (SomeTypedSymbol),
@@ -147,9 +147,9 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         UnaryTerm,
         XorBitsTerm
       ),
-    TernaryOp (partialEvalTernary),
+    TernaryOp (pevalTernary),
     TypedSymbol (unTypedSymbol),
-    UnaryOp (partialEvalUnary),
+    UnaryOp (pevalUnary),
     conTerm,
     pevalAndTerm,
     pevalEqvTerm,
@@ -416,11 +416,11 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       case M.lookup (someTypedSymbol sym) ma of
         Nothing -> if fillDefault then SomeTerm $ conTerm (defaultValue @a) else c
         Just dy -> SomeTerm $ conTerm (unsafeFromModelValue @a dy)
-    go (SomeTerm (UnaryTerm _ tag (arg :: Term a))) = goUnary (partialEvalUnary tag) arg
+    go (SomeTerm (UnaryTerm _ tag (arg :: Term a))) = goUnary (pevalUnary tag) arg
     go (SomeTerm (BinaryTerm _ tag (arg1 :: Term a1) (arg2 :: Term a2))) =
-      goBinary (partialEvalBinary tag) arg1 arg2
+      goBinary (pevalBinary tag) arg1 arg2
     go (SomeTerm (TernaryTerm _ tag (arg1 :: Term a1) (arg2 :: Term a2) (arg3 :: Term a3))) = do
-      goTernary (partialEvalTernary tag) arg1 arg2 arg3
+      goTernary (pevalTernary tag) arg1 arg2 arg3
     go (SomeTerm (NotTerm _ arg)) = goUnary pevalNotTerm arg
     go (SomeTerm (OrTerm _ arg1 arg2)) =
       goBinary pevalOrTerm arg1 arg2
