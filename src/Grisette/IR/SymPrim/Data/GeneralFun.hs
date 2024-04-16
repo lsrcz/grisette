@@ -71,7 +71,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
 import Grisette.IR.SymPrim.Data.Prim.PartialEval.PartialEval (totalize2)
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( BinaryOp (partialEvalBinary),
+  ( BinaryOp (pevalBinary),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
     PEvalBitwiseTerm (pevalAndBitsTerm, pevalComplementBitsTerm, pevalOrBitsTerm, pevalXorBitsTerm),
@@ -117,9 +117,9 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         UnaryTerm,
         XorBitsTerm
       ),
-    TernaryOp (partialEvalTernary),
+    TernaryOp (pevalTernary),
     TypedSymbol (TypedSymbol, unTypedSymbol),
-    UnaryOp (partialEvalUnary),
+    UnaryOp (pevalUnary),
     applyTerm,
     conTerm,
     pevalAndTerm,
@@ -243,9 +243,9 @@ substTerm sym term = gov
               Nothing -> stm
           _ -> stm
         SymTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
-        UnaryTerm _ tag te -> SomeTerm $ partialEvalUnary tag (gov te)
-        BinaryTerm _ tag te te' -> SomeTerm $ partialEvalBinary tag (gov te) (gov te')
-        TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ partialEvalTernary tag (gov op1) (gov op2) (gov op3)
+        UnaryTerm _ tag te -> SomeTerm $ pevalUnary tag (gov te)
+        BinaryTerm _ tag te te' -> SomeTerm $ pevalBinary tag (gov te) (gov te')
+        TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ pevalTernary tag (gov op1) (gov op2) (gov op3)
         NotTerm _ op -> SomeTerm $ pevalNotTerm (gov op)
         OrTerm _ op1 op2 -> SomeTerm $ pevalOrTerm (gov op1) (gov op2)
         AndTerm _ op1 op2 -> SomeTerm $ pevalAndTerm (gov op1) (gov op2)

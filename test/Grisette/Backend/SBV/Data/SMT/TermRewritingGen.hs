@@ -90,7 +90,7 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.Num
     pevalUMinusNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( BinaryOp (partialEvalBinary),
+  ( BinaryOp (pevalBinary),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
@@ -99,8 +99,8 @@ import Grisette.IR.SymPrim.Data.Prim.Term
       ),
     SupportedPrim (pevalITETerm),
     Term,
-    TernaryOp (partialEvalTernary),
-    UnaryOp (partialEvalUnary),
+    TernaryOp (pevalTernary),
+    UnaryOp (pevalUnary),
     absNumTerm,
     addNumTerm,
     andBitsTerm,
@@ -178,7 +178,7 @@ constructUnarySpec' ::
   tag ->
   a ->
   b
-constructUnarySpec' tag = constructUnarySpec @a @av @b @bv (constructUnary tag) (partialEvalUnary tag)
+constructUnarySpec' tag = constructUnarySpec @a @av @b @bv (constructUnary tag) (pevalUnary tag)
 
 constructBinarySpec ::
   forall a av b bv c cv.
@@ -207,7 +207,7 @@ constructBinarySpec' ::
   a ->
   b ->
   c
-constructBinarySpec' tag = constructBinarySpec @a @av @b @bv @c @cv (constructBinary tag) (partialEvalBinary tag)
+constructBinarySpec' tag = constructBinarySpec @a @av @b @bv @c @cv (constructBinary tag) (pevalBinary tag)
 
 constructTernarySpec ::
   forall a av b bv c cv d dv.
@@ -243,7 +243,7 @@ constructTernarySpec' ::
 constructTernarySpec' tag =
   constructTernarySpec @a @av @b @bv @c @cv @d @dv
     (constructTernary tag)
-    (partialEvalTernary tag)
+    (pevalTernary tag)
 
 notSpec :: (TermRewritingSpec a Bool) => a -> a
 notSpec = constructUnarySpec notTerm pevalNotTerm
