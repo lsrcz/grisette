@@ -27,7 +27,7 @@ import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
-import Grisette.IR.SymPrim.Data.Prim.Term (pevalEqvTerm)
+import Grisette.IR.SymPrim.Data.Prim.Term (pevalEqTerm)
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -76,7 +76,7 @@ seqTests =
                     SymBool termb = ssymBool "b"
                 ssymBool "a"
                   .== ssymBool "b"
-                  @=? SymBool (pevalEqvTerm terma termb)
+                  @=? SymBool (pevalEqTerm terma termb)
             ],
           testProperty "Bool" (ioProperty . concreteSEqOkProp @Bool),
           testProperty "Integer" (ioProperty . concreteSEqOkProp @Integer),

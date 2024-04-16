@@ -54,7 +54,7 @@ import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.IR.SymPrim.Data.Prim.Term (pevalEqvTerm)
+import Grisette.IR.SymPrim.Data.Prim.Term (pevalEqTerm)
 import Grisette.IR.SymPrim.Data.SymPrim
   ( SymBool (SymBool),
     SymIntN (SymIntN),
@@ -228,11 +228,11 @@ instance (SEq (m a)) => SEq (IdentityT m a) where
 -- Symbolic types
 #define SEQ_SIMPLE(symtype) \
 instance SEq symtype where \
-  (symtype l) .== (symtype r) = SymBool $ pevalEqvTerm l r
+  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r
 
 #define SEQ_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
-  (symtype l) .== (symtype r) = SymBool $ pevalEqvTerm l r
+  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r
 
 #if 1
 SEQ_SIMPLE(SymBool)

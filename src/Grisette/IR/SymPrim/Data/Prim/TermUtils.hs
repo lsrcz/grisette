@@ -53,7 +53,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
         ConTerm,
         DivBoundedIntegralTerm,
         DivIntegralTerm,
-        EqvTerm,
+        EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -110,7 +110,7 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (NotTerm _ arg)) = goUnary arg
     go (SomeTerm (OrTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (AndTerm _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (EqvTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (EqTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (ITETerm _ cond arg1 arg2)) = goTernary cond arg1 arg2
     go (SomeTerm (AddNumTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (NegNumTerm _ arg)) = goUnary arg
@@ -166,7 +166,7 @@ castTerm t@TernaryTerm {} = cast t
 castTerm t@NotTerm {} = cast t
 castTerm t@OrTerm {} = cast t
 castTerm t@AndTerm {} = cast t
-castTerm t@EqvTerm {} = cast t
+castTerm t@EqTerm {} = cast t
 castTerm t@ITETerm {} = cast t
 castTerm t@AddNumTerm {} = cast t
 castTerm t@NegNumTerm {} = cast t
@@ -215,7 +215,7 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(NotTerm _ arg) = goUnary t arg
     go t@(OrTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(AndTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(EqvTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(EqTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(ITETerm _ cond arg1 arg2) = goTernary t cond arg1 arg2
     go t@(AddNumTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(NegNumTerm _ arg) = goUnary t arg

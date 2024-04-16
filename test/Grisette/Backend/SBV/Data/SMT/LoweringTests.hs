@@ -49,7 +49,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     complementBitsTerm,
     divBoundedIntegralTerm,
     divIntegralTerm,
-    eqvTerm,
+    eqTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
@@ -325,10 +325,10 @@ loweringTests =
                   "or"
                   (\x y -> (x SBV..<+> y) SBV..|| (x SBV..&& y)),
               testCase "Eqv" $ do
-                testBinaryOpLowering @Bool @Bool @Bool unboundedConfig eqvTerm "eqv" (SBV..==)
+                testBinaryOpLowering @Bool @Bool @Bool unboundedConfig eqTerm "eqv" (SBV..==)
                 testBinaryOpLowering @Bool @Bool @Bool
                   unboundedConfig
-                  eqvTerm
+                  eqTerm
                   "eqv"
                   (\x y -> SBV.sNot (x SBV..<+> y)),
               testCase "ITE" $ do

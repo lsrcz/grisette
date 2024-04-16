@@ -33,7 +33,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     SupportedPrim (pevalITETerm),
     Term,
     conTerm,
-    pevalEqvTerm,
+    pevalEqTerm,
     someTypedSymbol,
     ssymTerm,
   )
@@ -67,8 +67,8 @@ modelTests =
                     ]
                 ),
           testCase "equation" $ do
-            equation asymbol m3 @=? Just (pevalEqvTerm (ssymTerm "a") (conTerm 1 :: Term Integer))
-            equation bsymbol m3 @=? Just (pevalEqvTerm (ssymTerm "b") (conTerm True))
+            equation asymbol m3 @=? Just (pevalEqTerm (ssymTerm "a") (conTerm 1 :: Term Integer))
+            equation bsymbol m3 @=? Just (pevalEqTerm (ssymTerm "b") (conTerm True))
             equation csymbol m3 @=? Nothing,
           testCase "valueOf" $ do
             valueOf asymbol m3 @=? Just (1 :: Integer)

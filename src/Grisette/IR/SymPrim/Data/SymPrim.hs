@@ -173,7 +173,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     Term (ConTerm, SymTerm),
     TypedSymbol,
     conTerm,
-    pevalEqvTerm,
+    pevalEqTerm,
     pevalGeOrdTerm,
     pevalOrTerm,
     pevalSubNumTerm,
@@ -342,7 +342,15 @@ instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca =-> cb) (sa =~> sb)
 instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) sa sb where
   (SymTabularFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
-instance (LinkedRep ca sa, LinkedRep ct st, Apply st, SupportedPrim ct) => Apply (sa =~> st) where
+instance
+  ( LinkedRep ca sa,
+    LinkedRep ct st,
+    Apply st,
+    SupportedPrim ca,
+    SupportedPrim ct
+  ) =>
+  Apply (sa =~> st)
+  where
   type FunType (sa =~> st) = sa -> FunType st
   apply uf a = apply (uf # a)
 
@@ -375,17 +383,34 @@ infixr 0 -~>
 instance (ConRep a, ConRep b) => ConRep (a -~> b) where
   type ConType (a -~> b) = ConType a --> ConType b
 
-instance (SymRep ca, SymRep cb, SupportedPrim cb) => SymRep (ca --> cb) where
+instance
+  (SymRep ca, SymRep cb, SupportedPrim ca, SupportedPrim cb) =>
+  SymRep (ca --> cb)
+  where
   type SymType (ca --> cb) = SymType ca -~> SymType cb
 
-instance (LinkedRep ca sa, LinkedRep cb sb, SupportedPrim cb) => LinkedRep (ca --> cb) (sa -~> sb) where
+instance
+  (LinkedRep ca sa, LinkedRep cb sb, SupportedPrim ca, SupportedPrim cb) =>
+  LinkedRep (ca --> cb) (sa -~> sb)
+  where
   underlyingTerm (SymGeneralFun a) = a
   wrapTerm = SymGeneralFun
 
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa -~> sb) sa sb where
+instance
+  (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) =>
+  Function (sa -~> sb) sa sb
+  where
   (SymGeneralFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
-instance (LinkedRep ca sa, LinkedRep ct st, Apply st, SupportedPrim ct) => Apply (sa -~> st) where
+instance
+  ( LinkedRep ca sa,
+    LinkedRep ct st,
+    Apply st,
+    SupportedPrim ca,
+    SupportedPrim ct
+  ) =>
+  Apply (sa -~> st)
+  where
   type FunType (sa -~> st) = sa -> FunType st
   apply uf a = apply (uf # a)
 
@@ -755,7 +780,7 @@ instance (KnownNat n, 1 <= n) => SymShift (SymIntN n) where
             (pevalGeOrdTerm s (conTerm 0))
             (pevalShiftLeftTerm a s)
             ( pevalITETerm
-                (pevalEqvTerm s (conTerm (-2)))
+                (pevalEqTerm s (conTerm (-2)))
                 ( pevalITETerm
                     (pevalGeOrdTerm a (conTerm 0))
                     (conTerm 0)
@@ -801,8 +826,8 @@ instance (KnownNat n, 1 <= n) => SymRotate (SymIntN n) where
         SymIntN $
           pevalITETerm
             ( pevalOrTerm
-                (pevalEqvTerm s (conTerm 0))
-                (pevalEqvTerm s (conTerm (-2)))
+                (pevalEqTerm s (conTerm 0))
+                (pevalEqTerm s (conTerm (-2)))
             )
             a
             (pevalRotateLeftTerm a (conTerm 1))
@@ -820,8 +845,8 @@ instance (KnownNat n, 1 <= n) => SymRotate (SymIntN n) where
         SymIntN $
           pevalITETerm
             ( pevalOrTerm
-                (pevalEqvTerm s (conTerm 0))
-                (pevalEqvTerm s (conTerm (-2)))
+                (pevalEqTerm s (conTerm 0))
+                (pevalEqTerm s (conTerm (-2)))
             )
             a
             (pevalRotateLeftTerm a (conTerm 1))

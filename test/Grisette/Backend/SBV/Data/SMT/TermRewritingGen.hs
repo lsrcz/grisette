@@ -116,7 +116,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     constructUnary,
     divBoundedIntegralTerm,
     divIntegralTerm,
-    eqvTerm,
+    eqTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
@@ -128,7 +128,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     orBitsTerm,
     orTerm,
     pevalAndTerm,
-    pevalEqvTerm,
+    pevalEqTerm,
     pevalNotTerm,
     pevalOrTerm,
     pformat,
@@ -256,7 +256,7 @@ orSpec :: (TermRewritingSpec a Bool) => a -> a -> a
 orSpec = constructBinarySpec orTerm pevalOrTerm
 
 eqvSpec :: (TermRewritingSpec a av, TermRewritingSpec b Bool) => a -> a -> b
-eqvSpec = constructBinarySpec eqvTerm pevalEqvTerm
+eqvSpec = constructBinarySpec eqTerm pevalEqTerm
 
 iteSpec :: (TermRewritingSpec a Bool, TermRewritingSpec b bv) => a -> b -> b -> b
 iteSpec = constructTernarySpec iteTerm pevalITETerm
@@ -404,7 +404,7 @@ instance TermRewritingSpec BoolOnlySpec Bool where
   norewriteVer (BoolOnlySpec n _) = n
   rewriteVer (BoolOnlySpec _ r) = r
   wrap = BoolOnlySpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
 
 boolonly :: Int -> Gen BoolOnlySpec
 boolonly 0 =
@@ -439,7 +439,7 @@ instance TermRewritingSpec BoolWithLIASpec Bool where
   norewriteVer (BoolWithLIASpec n _) = n
   rewriteVer (BoolWithLIASpec _ r) = r
   wrap = BoolWithLIASpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
 
 data LIAWithBoolSpec = LIAWithBoolSpec (Term Integer) (Term Integer)
 
@@ -451,7 +451,7 @@ instance TermRewritingSpec LIAWithBoolSpec Integer where
   norewriteVer (LIAWithBoolSpec n _) = n
   rewriteVer (LIAWithBoolSpec _ r) = r
   wrap = LIAWithBoolSpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
 
 boolWithLIA :: Int -> Gen BoolWithLIASpec
 boolWithLIA 0 =
@@ -515,7 +515,7 @@ instance (SupportedPrim (bv n)) => TermRewritingSpec (FixedSizedBVWithBoolSpec b
   norewriteVer (FixedSizedBVWithBoolSpec n _) = n
   rewriteVer (FixedSizedBVWithBoolSpec _ r) = r
   wrap = FixedSizedBVWithBoolSpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
 
 data BoolWithFixedSizedBVSpec (bv :: Nat -> Type) (n :: Nat) = BoolWithFixedSizedBVSpec (Term Bool) (Term Bool)
 
@@ -527,7 +527,7 @@ instance TermRewritingSpec (BoolWithFixedSizedBVSpec bv n) Bool where
   norewriteVer (BoolWithFixedSizedBVSpec n _) = n
   rewriteVer (BoolWithFixedSizedBVSpec _ r) = r
   wrap = BoolWithFixedSizedBVSpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
 
 boolWithFSBV ::
   forall p1 p2 bv n.
@@ -618,7 +618,7 @@ instance (SupportedPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec bv n) 
   norewriteVer (DifferentSizeBVSpec n _) = n
   rewriteVer (DifferentSizeBVSpec _ r) = r
   wrap = DifferentSizeBVSpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
 
 type SupportedBV bv (n :: Nat) =
   ( SupportedPrim (bv n),
@@ -869,4 +869,4 @@ instance (SupportedPrim s) => TermRewritingSpec (GeneralSpec s) s where
   norewriteVer (GeneralSpec n _) = n
   rewriteVer (GeneralSpec _ r) = r
   wrap = GeneralSpec
-  same s = eqvTerm (norewriteVer s) (rewriteVer s)
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
