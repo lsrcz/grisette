@@ -139,9 +139,6 @@ import Grisette.IR.SymPrim.Data.Prim.PartialEval.BV
     pevalToSignedTerm,
     pevalToUnsignedTerm,
   )
-import Grisette.IR.SymPrim.Data.Prim.PartialEval.Integral
-  ( pevalModBoundedIntegralTerm,
-  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -178,7 +175,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalOrTerm,
     pevalSubNumTerm,
     pformat,
-    symTerm,
+    symTerm, pevalModIntegralTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.TermUtils
   ( someTermsSize,
@@ -835,7 +832,7 @@ instance (KnownNat n, 1 <= n) => SymRotate (SymIntN n) where
         SymIntN $
           pevalRotateLeftTerm
             a
-            ( pevalModBoundedIntegralTerm
+            ( pevalModIntegralTerm
                 s
                 (conTerm (fromIntegral $ finiteBitSize as))
             )
@@ -854,7 +851,7 @@ instance (KnownNat n, 1 <= n) => SymRotate (SymIntN n) where
         SymIntN $
           pevalRotateRightTerm
             a
-            ( pevalModBoundedIntegralTerm
+            ( pevalModIntegralTerm
                 s
                 (conTerm (fromIntegral $ finiteBitSize as))
             )

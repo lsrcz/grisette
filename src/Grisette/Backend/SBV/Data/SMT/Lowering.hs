@@ -102,22 +102,18 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         BinaryTerm,
         ComplementBitsTerm,
         ConTerm,
-        DivBoundedIntegralTerm,
         DivIntegralTerm,
         EqTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
-        ModBoundedIntegralTerm,
         ModIntegralTerm,
         MulNumTerm,
         NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
-        QuotBoundedIntegralTerm,
         QuotIntegralTerm,
-        RemBoundedIntegralTerm,
         RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
@@ -937,22 +933,6 @@ lowerSinglePrimImpl config t@(QuotIntegralTerm _ arg1 arg2) m =
     ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sQuot m
     _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
 lowerSinglePrimImpl config t@(RemIntegralTerm _ arg1 arg2) m =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sRem m
-    _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(DivBoundedIntegralTerm _ arg1 arg2) m =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sDiv m
-    _ -> translateBinaryError "div" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(ModBoundedIntegralTerm _ arg1 arg2) m =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sMod m
-    _ -> translateBinaryError "mod" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(QuotBoundedIntegralTerm _ arg1 arg2) m =
-  case (config, R.typeRep @a) of
-    ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sQuot m
-    _ -> translateBinaryError "quot" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
-lowerSinglePrimImpl config t@(RemBoundedIntegralTerm _ arg1 arg2) m =
   case (config, R.typeRep @a) of
     ResolvedSDivisibleType -> lowerBinaryTerm config t arg1 arg2 SBV.sRem m
     _ -> translateBinaryError "rem" (R.typeRep @a) (R.typeRep @a) (R.typeRep @a)
