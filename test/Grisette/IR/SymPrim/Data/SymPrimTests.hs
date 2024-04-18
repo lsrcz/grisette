@@ -111,6 +111,18 @@ import Grisette.Core.Data.SomeBV
     pattern SomeSymIntN,
     pattern SomeSymWordN,
   )
+import Grisette.IR.SymPrim
+  ( ModelSymPair ((:=)),
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    symSize,
+    symsSize,
+    (-->),
+    type (-~>),
+    type (=~>),
+  )
 import Grisette.IR.SymPrim.Data.GeneralFun
   ( type (-->),
   )
@@ -170,18 +182,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalXorTerm,
     someTypedSymbol,
     ssymTerm,
-  )
-import Grisette.IR.SymPrim
-  ( ModelSymPair ((:=)),
-    SymBool (SymBool),
-    SymIntN (SymIntN),
-    SymInteger (SymInteger),
-    SymWordN (SymWordN),
-    symSize,
-    symsSize,
-    (-->),
-    type (-~>),
-    type (=~>),
   )
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Test.Framework (Test, TestName, testGroup)

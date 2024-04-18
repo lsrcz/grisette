@@ -30,6 +30,7 @@ import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
+import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
@@ -41,7 +42,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pformat,
     symTerm,
   )
-import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
