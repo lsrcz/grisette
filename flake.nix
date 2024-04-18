@@ -18,10 +18,10 @@
           hPkgs.haskell-language-server # LSP server for editor
           hPkgs.cabal-install
           stack-wrapped
-          # (pkgs.ihaskell.override {
-          #   haskell = hPkgs.haskell;
-          #   ghcWithPackages = hPkgs.ghcWithPackages;
-          # })
+          (pkgs.ihaskell.override {
+            haskell = hPkgs.haskell;
+            ghcWithPackages = hPkgs.ghcWithPackages;
+          })
           pkgs.zlib # External C library needed by some Haskell packages
           pkgs.boolector
           pkgs.z3_4_12
