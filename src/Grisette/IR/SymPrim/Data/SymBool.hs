@@ -20,6 +20,7 @@ import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, ssym, sym))
+import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
@@ -29,7 +30,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pformat,
     symTerm,
   )
-import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
