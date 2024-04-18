@@ -28,11 +28,11 @@ import Grisette.Core.Data.Class.ModelOps
 import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
 import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
-import Grisette.IR.SymPrim.Data.Prim.Term
-  ( TypedSymbol (TypedSymbol),
-  )
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
+  )
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( TypedSymbol (TypedSymbol),
   )
 import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
