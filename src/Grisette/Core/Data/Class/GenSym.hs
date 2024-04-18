@@ -128,6 +128,7 @@ import Grisette.Core.Data.Class.TryMerge
   )
 import Grisette.Core.Data.Symbol (Identifier)
 import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
@@ -140,6 +141,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>),
     type (=~>),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -1641,16 +1643,20 @@ instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
     FreshIndex index <- nextFreshIndex; \
     return $ isym ident index
 
-#define GENSYM_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym (sa op sb) (sa op sb)
-#define GENSYM_SIMPLE_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple (sa op sb) (sa op sb) where \
+#define GENSYM_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  GenSym (op sa sb) (op sa sb)
+#define GENSYM_SIMPLE_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  GenSymSimple (op sa sb) (op sa sb) where \
   simpleFresh _ = simpleFresh ()
-#define GENSYM_UNIT_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSym () (sa op sb) where \
+#define GENSYM_UNIT_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  GenSym () (op sa sb) where \
   fresh _ = mrgSingle <$> simpleFresh ()
-#define GENSYM_UNIT_SIMPLE_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => GenSymSimple () (sa op sb) where \
+#define GENSYM_UNIT_SIMPLE_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  GenSymSimple () (op sa sb) where \
   simpleFresh _ = do; \
     ident <- getIdentifier; \
     FreshIndex index <- nextFreshIndex; \
@@ -1675,14 +1681,14 @@ GENSYM_SIMPLE_BV(SymWordN)
 GENSYM_UNIT_BV(SymWordN)
 GENSYM_UNIT_SIMPLE_BV(SymWordN)
 
-GENSYM_FUN(=~>)
-GENSYM_SIMPLE_FUN(=~>)
-GENSYM_UNIT_FUN(=~>)
-GENSYM_UNIT_SIMPLE_FUN(=~>)
-GENSYM_FUN(-~>)
-GENSYM_SIMPLE_FUN(-~>)
-GENSYM_UNIT_FUN(-~>)
-GENSYM_UNIT_SIMPLE_FUN(-~>)
+GENSYM_FUN((=->), (=~>))
+GENSYM_SIMPLE_FUN((=->), (=~>))
+GENSYM_UNIT_FUN((=->), (=~>))
+GENSYM_UNIT_SIMPLE_FUN((=->), (=~>))
+GENSYM_FUN((-->), (-~>))
+GENSYM_SIMPLE_FUN((-->), (-~>))
+GENSYM_UNIT_FUN((-->), (-~>))
+GENSYM_UNIT_SIMPLE_FUN((-->), (-~>))
 #endif
 
 instance (GenSym spec a, Mergeable a) => GenSym spec (UnionM a)

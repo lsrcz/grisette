@@ -438,7 +438,7 @@ instance (KnownNat n, 1 <= n) => ToSym (UnionM (contype n)) (symtype n) where \
   toSym = simpleMerge . fmap con
 
 #define TO_SYM_FROM_UNION_CON_FUN(conop, symop) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToSym (UnionM (conop ca cb)) (symop sa sb) where \
+instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => ToSym (UnionM (conop ca cb)) (symop sa sb) where \
   toSym = simpleMerge . fmap con
 
 #define TO_SYM_FROM_UNION_CON_BV_SOME(contype, symtype) \

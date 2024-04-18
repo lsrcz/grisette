@@ -51,7 +51,7 @@ import Generics.Deriving
   )
 import Generics.Deriving.Instances ()
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.GeneralFun (substTerm)
+import Grisette.IR.SymPrim.Data.GeneralFun (substTerm, type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep (underlyingTerm),
     SupportedPrim,
@@ -65,6 +65,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>) (SymGeneralFun),
     type (=~>) (SymTabularFun),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -266,8 +267,9 @@ instance SubstituteSym symtype where \
 instance (KnownNat n, 1 <= n) => SubstituteSym (symtype n) where \
   substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
 
-#define SUBSTITUTE_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => SubstituteSym (sa op sb) where \
+#define SUBSTITUTE_SYM_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  SubstituteSym (op sa sb) where \
   substituteSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
 
 #if 1
@@ -275,8 +277,8 @@ SUBSTITUTE_SYM_SIMPLE(SymBool)
 SUBSTITUTE_SYM_SIMPLE(SymInteger)
 SUBSTITUTE_SYM_BV(SymIntN)
 SUBSTITUTE_SYM_BV(SymWordN)
-SUBSTITUTE_SYM_FUN(=~>, SymTabularFun)
-SUBSTITUTE_SYM_FUN(-~>, SymGeneralFun)
+SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
+SUBSTITUTE_SYM_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- | Auxiliary class for 'SubstituteSym' instance derivation

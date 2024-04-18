@@ -71,6 +71,7 @@ import Grisette.Core.Data.Class.Mergeable
     MergingStrategy (SimpleStrategy),
   )
 import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
@@ -83,6 +84,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>),
     type (=~>),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -610,9 +612,9 @@ instance (KnownNat n, 1 <= n) => SimpleMergeable (symtype n) where \
   mrgIte = symIte; \
   {-# INLINE mrgIte #-}
 
-#define SIMPLE_MERGEABLE_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => \
-  SimpleMergeable (sa op sb) where \
+#define SIMPLE_MERGEABLE_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  SimpleMergeable (op sa sb) where \
   mrgIte = symIte; \
   {-# INLINE mrgIte #-}
 
@@ -621,8 +623,8 @@ SIMPLE_MERGEABLE_SIMPLE(SymBool)
 SIMPLE_MERGEABLE_SIMPLE(SymInteger)
 SIMPLE_MERGEABLE_BV(SymIntN)
 SIMPLE_MERGEABLE_BV(SymWordN)
-SIMPLE_MERGEABLE_FUN(=~>)
-SIMPLE_MERGEABLE_FUN(-~>)
+SIMPLE_MERGEABLE_FUN((=->), (=~>))
+SIMPLE_MERGEABLE_FUN((-->), (-~>))
 #endif
 
 -- Exception

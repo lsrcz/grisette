@@ -249,7 +249,8 @@ instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
   toSym = con
 
 #define TO_SYM_FROMCON_FUN(conop, symop) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToSym (conop ca cb) (symop sa sb) where \
+instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  ToSym (conop ca cb) (symop sa sb) where \
   toSym = con
 
 #if 1

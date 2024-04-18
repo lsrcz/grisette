@@ -26,6 +26,7 @@ import qualified Data.SBV as SBV
 import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
+import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 type Aux :: Bool -> Nat -> Type
@@ -50,7 +51,7 @@ type family TermTy bitWidth b where
 
 data ApproximationConfig (n :: Nat) where
   NoApprox :: ApproximationConfig 0
-  Approx :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) => p n -> ApproximationConfig n
+  Approx :: (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n, KnownIsZero n) => p n -> ApproximationConfig n
 
 data ExtraConfig (i :: Nat) = ExtraConfig
   { timeout :: Maybe Int,

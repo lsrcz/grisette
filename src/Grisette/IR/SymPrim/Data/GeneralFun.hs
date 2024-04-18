@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -11,6 +13,9 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.GeneralFun
@@ -29,6 +34,7 @@ where
 
 import Control.DeepSeq (NFData (rnf))
 import Data.Hashable (Hashable (hashWithSalt))
+import qualified Data.SBV as SBV
 import GHC.Generics (Generic)
 import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.MemoUtils (htmemo)
@@ -37,11 +43,16 @@ import Grisette.Core.Data.Symbol
     withInfo,
   )
 import Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval (totalize2)
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term
+  ( SBVRep,
+    SupportedPrim (sbvEq),
+  )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( BinaryOp (pevalBinary),
     LinkedRep (underlyingTerm, wrapTerm),
-    PEvalApplyTerm (pevalApplyTerm),
+    NonFuncSBVBaseType,
+    PEvalApplyTerm (pevalApplyTerm, sbvApplyTerm),
     PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
     PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
     PEvalBitwiseTerm
@@ -64,7 +75,17 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
-    SupportedPrim (PrimConstraint, defaultValue, pevalITETerm),
+    SBVType,
+    SupportedNonFuncPrim (withNonFuncPrim),
+    SupportedPrim
+      ( conSBVTerm,
+        defaultValue,
+        pevalITETerm,
+        symSBVName,
+        symSBVTerm,
+        withPrim
+      ),
+    SupportedPrimConstraint (PrimConstraint),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -119,6 +140,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pformat,
     someTypedSymbol,
     symTerm,
+    translateTypeError,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection
@@ -196,28 +218,382 @@ instance Hashable (a --> b) where
 instance NFData (a --> b) where
   rnf (GeneralFun sym tm) = rnf sym `seq` rnf tm
 
-instance (SupportedPrim a, SupportedPrim b) => SupportedPrim (a --> b) where
-  type PrimConstraint (a --> b) = (SupportedPrim a, SupportedPrim b)
+instance
+  (SupportedNonFuncPrim a, SupportedPrim b) =>
+  SupportedPrimConstraint (a --> b)
+  where
+  type
+    PrimConstraint n (a --> b) =
+      ( SupportedNonFuncPrim a,
+        SupportedPrim b,
+        PrimConstraint n b,
+        SBVType n (a --> b) ~ (SBV.SBV (NonFuncSBVBaseType n a) -> SBVType n b)
+      )
+
+instance
+  (SupportedNonFuncPrim a, SupportedPrim b) =>
+  SBVRep (a --> b)
+  where
+  type
+    SBVType n (a --> b) =
+      SBV.SBV (NonFuncSBVBaseType n a) ->
+      SBVType n b
+
+instance
+  (SupportedNonFuncPrim a, SupportedNonFuncPrim b, SupportedPrim a, SupportedPrim b) =>
+  SupportedPrim (a --> b)
+  where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
   pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b))
+  symSBVName _ num = "gfunc2_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        return $
+          SBV.uninterpret name
+  withPrim p r = withNonFuncPrim @a p $ withNonFuncPrim @b p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b))
 
 instance
-  (SupportedPrim a, SupportedPrim b) =>
+  {-# OVERLAPPING #-}
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c
+  ) =>
+  SupportedPrim (a --> b --> c)
+  where
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b --> c))
+  symSBVName _ num = "gfunc3_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          return $
+            SBV.uninterpret name
+  withPrim p r =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c))
+
+instance
+  {-# OVERLAPPING #-}
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c,
+    SupportedPrim d
+  ) =>
+  SupportedPrim (a --> b --> c --> d)
+  where
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b --> c --> d))
+  symSBVName _ num = "gfunc4_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            return $
+              SBV.uninterpret name
+  withPrim p r =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d))
+
+instance
+  {-# OVERLAPPING #-}
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c,
+    SupportedPrim d,
+    SupportedPrim e
+  ) =>
+  SupportedPrim (a --> b --> c --> d --> e)
+  where
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b --> c --> d --> e))
+  symSBVName _ num = "gfunc5_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              return $
+                SBV.uninterpret name
+  withPrim p r =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e))
+
+instance
+  {-# OVERLAPPING #-}
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedNonFuncPrim f,
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c,
+    SupportedPrim d,
+    SupportedPrim e,
+    SupportedPrim f
+  ) =>
+  SupportedPrim (a --> b --> c --> d --> e --> f)
+  where
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f))
+  symSBVName _ num = "gfunc6_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                return $
+                  SBV.uninterpret name
+  withPrim p r =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f))
+
+instance
+  {-# OVERLAPPING #-}
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedNonFuncPrim f,
+    SupportedNonFuncPrim g,
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c,
+    SupportedPrim d,
+    SupportedPrim e,
+    SupportedPrim f,
+    SupportedPrim g
+  ) =>
+  SupportedPrim (a --> b --> c --> d --> e --> f --> g)
+  where
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f --> g))
+  symSBVName _ num = "gfunc7_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                withNonFuncPrim @g p $
+                  return $
+                    SBV.uninterpret name
+  withPrim p r =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                withNonFuncPrim @g p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f --> g))
+
+instance
+  {-# OVERLAPPING #-}
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedNonFuncPrim f,
+    SupportedNonFuncPrim g,
+    SupportedNonFuncPrim h,
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c,
+    SupportedPrim d,
+    SupportedPrim e,
+    SupportedPrim f,
+    SupportedPrim g,
+    SupportedPrim h
+  ) =>
+  SupportedPrim (a --> b --> c --> d --> e --> f --> g --> h)
+  where
+  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun must have already been "
+            <> "partial evaluated away before reaching this point."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
+  symSBVName _ num = "gfunc8_" <> show num
+  symSBVTerm (p :: proxy n) name =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                withNonFuncPrim @g p $
+                  withNonFuncPrim @h p $
+                    return $
+                      SBV.uninterpret name
+  withPrim p r =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                withNonFuncPrim @g p $
+                  withNonFuncPrim @h p r
+  sbvEq _ _ =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
+
+pevalGeneralFunApplyTerm ::
+  ( SupportedNonFuncPrim a,
+    SupportedPrim b,
+    SupportedPrim (a --> b)
+  ) =>
+  Term (a --> b) ->
+  Term a ->
+  Term b
+pevalGeneralFunApplyTerm = totalize2 doPevalApplyTerm applyTerm
+  where
+    doPevalApplyTerm (ConTerm _ (GeneralFun arg tm)) v =
+      Just $ substTerm arg v tm
+    doPevalApplyTerm (ITETerm _ c l r) v =
+      return $ pevalITETerm c (pevalApplyTerm l v) (pevalApplyTerm r v)
+    doPevalApplyTerm _ _ = Nothing
+
+instance
+  ( SupportedPrim (a --> b),
+    SupportedNonFuncPrim a,
+    SupportedPrim b
+  ) =>
   PEvalApplyTerm (a --> b) a b
   where
-  pevalApplyTerm = totalize2 doPevalApplyTerm applyTerm
-    where
-      doPevalApplyTerm ::
-        (SupportedPrim a, SupportedPrim b) =>
-        Term (a --> b) ->
-        Term a ->
-        Maybe (Term b)
-      doPevalApplyTerm (ConTerm _ (GeneralFun arg tm)) v =
-        Just $ substTerm arg v tm
-      doPevalApplyTerm (ITETerm _ c l r) v =
-        return $ pevalITETerm c (pevalApplyTerm l v) (pevalApplyTerm r v)
-      doPevalApplyTerm _ _ = Nothing
+  pevalApplyTerm = pevalGeneralFunApplyTerm
+  sbvApplyTerm p f a =
+    withPrim @(a --> b) p $ withNonFuncPrim @a p $ f a
 
 substTerm :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
 substTerm sym term = gov

@@ -1,5 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -18,12 +21,14 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalShiftTerm
 where
 
 import Data.Bits (Bits (isSigned, shiftR, zeroBits), FiniteBits (finiteBitSize))
+import Data.Proxy (Proxy (Proxy))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
-import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim (bvIsNonZeroFromGEq1)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
-  ( PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
+  ( SupportedNonFuncPrim (withNonFuncPrim),
+    PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm, withSbvShiftTermConstraint),
     SupportedPrim,
     Term (ConTerm),
     conTerm,
@@ -102,7 +107,13 @@ doPevalFiniteBitsSymShiftShiftRightTerm _ _ = Nothing
 instance (KnownNat n, 1 <= n) => PEvalShiftTerm (IntN n) where
   pevalShiftLeftTerm = pevalFiniteBitsSymShiftShiftLeftTerm
   pevalShiftRightTerm = pevalFiniteBitsSymShiftShiftRightTerm
+  withSbvShiftTermConstraint p r =
+    bvIsNonZeroFromGEq1 (Proxy @n) $
+      withNonFuncPrim @(IntN n) p r
 
 instance (KnownNat n, 1 <= n) => PEvalShiftTerm (WordN n) where
   pevalShiftLeftTerm = pevalFiniteBitsSymShiftShiftLeftTerm
   pevalShiftRightTerm = pevalFiniteBitsSymShiftShiftRightTerm
+  withSbvShiftTermConstraint p r =
+    bvIsNonZeroFromGEq1 (Proxy @n) $
+      withNonFuncPrim @(WordN n) p r

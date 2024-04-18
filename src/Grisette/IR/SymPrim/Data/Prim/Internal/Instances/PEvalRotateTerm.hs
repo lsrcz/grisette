@@ -1,5 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -18,12 +21,15 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm
 where
 
 import Data.Bits (Bits (rotateR), FiniteBits (finiteBitSize))
+import Data.Proxy (Proxy (Proxy))
+import qualified Data.SBV as SBV
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymRotate (SymRotate (symRotate))
-import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim (bvIsNonZeroFromGEq1)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
-  ( PEvalRotateTerm (pevalRotateLeftTerm, pevalRotateRightTerm),
+  ( PEvalRotateTerm (pevalRotateLeftTerm, pevalRotateRightTerm, sbvRotateLeftTerm, sbvRotateRightTerm, withSbvRotateTermConstraint),
+    SupportedNonFuncPrim (withNonFuncPrim),
     Term (ConTerm),
     conTerm,
     rotateLeftTerm,
@@ -107,7 +113,31 @@ doPevalFiniteBitsSymRotateRotateRightTerm _ _ = Nothing
 instance (KnownNat n, 1 <= n) => PEvalRotateTerm (IntN n) where
   pevalRotateLeftTerm = pevalFiniteBitsSymRotateRotateLeftTerm
   pevalRotateRightTerm = pevalFiniteBitsSymRotateRotateRightTerm
+  withSbvRotateTermConstraint p r =
+    bvIsNonZeroFromGEq1 (Proxy @n) $
+      withNonFuncPrim @(IntN n) p r
+
+  -- SBV's rotateLeft and rotateRight are broken for signed values, so we have to
+  -- do this
+  -- https://github.com/LeventErkok/sbv/issues/673
+  sbvRotateLeftTerm p l r =
+    withNonFuncPrim @(IntN n) p $
+      withSbvRotateTermConstraint @(IntN n) p $
+        SBV.sFromIntegral $
+          SBV.sRotateLeft
+            (SBV.sFromIntegral l :: SBV.SWord n)
+            (SBV.sFromIntegral r :: SBV.SWord n)
+  sbvRotateRightTerm p l r =
+    withNonFuncPrim @(IntN n) p $
+      withSbvRotateTermConstraint @(IntN n) p $
+        SBV.sFromIntegral $
+          SBV.sRotateRight
+            (SBV.sFromIntegral l :: SBV.SWord n)
+            (SBV.sFromIntegral r :: SBV.SWord n)
 
 instance (KnownNat n, 1 <= n) => PEvalRotateTerm (WordN n) where
   pevalRotateLeftTerm = pevalFiniteBitsSymRotateRotateLeftTerm
   pevalRotateRightTerm = pevalFiniteBitsSymRotateRotateRightTerm
+  withSbvRotateTermConstraint p r =
+    bvIsNonZeroFromGEq1 (Proxy @n) $
+      withNonFuncPrim @(WordN n) p r

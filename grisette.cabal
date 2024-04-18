@@ -49,6 +49,7 @@ library
       Grisette
       Grisette.Backend.SBV
       Grisette.Backend.SBV.Data.SMT.Lowering
+      Grisette.Backend.SBV.Data.SMT.LoweringNew
       Grisette.Backend.SBV.Data.SMT.Solving
       Grisette.Backend.SBV.Data.SMT.SymBiMap
       Grisette.Core
@@ -110,6 +111,7 @@ library
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalRotateTerm
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalShiftTerm
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim
+      Grisette.IR.SymPrim.Data.Prim.Internal.IsZero
       Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval
       Grisette.IR.SymPrim.Data.Prim.Internal.Term
       Grisette.IR.SymPrim.Data.Prim.Internal.Unfold
