@@ -137,6 +137,8 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     SBVRep (..),
     SBVFreshMonad (..),
     translateTypeError,
+    parseSMTModelResultError,
+    partitionCVArg,
   )
 where
 
@@ -163,10 +165,12 @@ import Data.Interned.Internal
 import Data.Kind (Constraint)
 import Data.Maybe (fromMaybe)
 import qualified Data.SBV as SBV
+import qualified Data.SBV.Dynamic as SBVD
 import qualified Data.SBV.Trans as SBVT
 import qualified Data.SBV.Trans.Control as SBVTC
 import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast)
+import GHC.Exts (sortWith)
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
@@ -255,7 +259,7 @@ translateTypeError (Just reason) ta =
   error $
     "Don't know how to translate the type " ++ show ta ++ " to SMT: " <> reason
 
-class (SupportedPrim a) => NonFuncSBVRep a where
+class (SupportedPrim a, Ord a) => NonFuncSBVRep a where
   type NonFuncSBVBaseType (n :: Nat) a
 
 class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
@@ -283,6 +287,41 @@ class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
       r
     ) ->
     r
+
+partitionCVArg ::
+  forall a.
+  (SupportedNonFuncPrim a) =>
+  [([SBVD.CV], SBVD.CV)] ->
+  [(a, [([SBVD.CV], SBVD.CV)])]
+partitionCVArg cv =
+  partitionOrdCVArg $
+    parseFirstCVArg cv
+  where
+    parseFirstCVArg ::
+      forall a.
+      (SupportedNonFuncPrim a) =>
+      [([SBVD.CV], SBVD.CV)] ->
+      [(a, [([SBVD.CV], SBVD.CV)])]
+    parseFirstCVArg =
+      fmap
+        ( \case
+            (x : xs, v) ->
+              (parseSMTModelResult 0 ([([], x)], x), [(xs, v)])
+            _ -> error "impossible"
+        )
+    partitionOrdCVArg ::
+      forall a.
+      (SupportedNonFuncPrim a) =>
+      [(a, [([SBVD.CV], SBVD.CV)])] ->
+      [(a, [([SBVD.CV], SBVD.CV)])]
+    partitionOrdCVArg v = go sorted
+      where
+        sorted = sortWith fst v :: [(a, [([SBVD.CV], SBVD.CV)])]
+        go (x : x1 : xs) =
+          if fst x == fst x1
+            then go $ (fst x, snd x ++ snd x1) : xs
+            else x : go (x1 : xs)
+        go x = x
 
 class SBVRep t where
   type SBVType (n :: Nat) t
@@ -373,6 +412,15 @@ class
     SBVType n t ->
     SBV.SBV Bool
   sbvEq _ = (SBV..==)
+  parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
+
+parseSMTModelResultError :: TypeRep a -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> a
+parseSMTModelResultError ty cv =
+  error $
+    "BUG: cannot parse SBV model value \""
+      <> show cv
+      <> "\" to Grisette model value with the type "
+      <> show ty
 
 pevalNEqTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
 pevalNEqTerm l r = pevalNotTerm $ pevalEqTerm l r
@@ -2298,6 +2346,9 @@ instance SupportedPrim Bool where
   symSBVName symbol _ = show symbol
   symSBVTerm _ = sbvFresh
   withPrim _ r = r
+  parseSMTModelResult _ ([], SBVD.CV SBVD.KBool (SBVD.CInteger n)) = n /= 0
+  parseSMTModelResult _ ([([], SBVD.CV SBVD.KBool (SBVD.CInteger n))], _) = n /= 0
+  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @Bool) cv
 
 instance NonFuncSBVRep Bool where
   type NonFuncSBVBaseType _ Bool = Bool

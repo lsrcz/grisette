@@ -74,11 +74,9 @@ import qualified Data.SBV.Trans.Control as SBVTC
 import GHC.IO.Exception (ExitCode (ExitSuccess))
 import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Backend.SBV.Data.SMT.Lowering
-  ( parseModel,
-  )
-import Grisette.Backend.SBV.Data.SMT.LoweringNew
   ( SymBiMap,
     lowerSinglePrimCached,
+    parseModel,
   )
 import Grisette.Backend.SBV.Data.SMT.SymBiMap (emptySymBiMap)
 import Grisette.Core.Data.BV (IntN, WordN)

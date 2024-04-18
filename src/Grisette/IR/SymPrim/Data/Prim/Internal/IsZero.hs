@@ -14,7 +14,7 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.IsZero
 where
 
 import qualified Data.SBV as SBV
-import GHC.TypeNats (KnownNat, Nat)
+import GHC.TypeNats (KnownNat, Nat, type (<=))
 
 type family IsZero (a :: Nat) :: Bool where
   IsZero 0 = 'True
@@ -22,7 +22,9 @@ type family IsZero (a :: Nat) :: Bool where
 
 data IsZeroCases (a :: Nat) where
   IsZeroEvidence :: (IsZero a ~ 'True) => IsZeroCases a
-  NonZeroEvidence :: (IsZero a ~ 'False, SBV.BVIsNonZero a) => IsZeroCases a
+  NonZeroEvidence ::
+    (IsZero a ~ 'False, SBV.BVIsNonZero a, 1 <= a) =>
+    IsZeroCases a
 
 instance Show (IsZeroCases a) where
   show IsZeroEvidence = "IsZeroEvidence"
@@ -36,7 +38,7 @@ instance KnownIsZero 0 where
 
 instance
   {-# OVERLAPPABLE #-}
-  (KnownNat a, IsZero a ~ 'False, SBV.BVIsNonZero a) =>
+  (KnownNat a, IsZero a ~ 'False, 1 <= a, SBV.BVIsNonZero a) =>
   KnownIsZero a
   where
   isZero _ = NonZeroEvidence

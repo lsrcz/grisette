@@ -28,8 +28,10 @@ module Grisette.IR.SymPrim.Data.TabularFun
 where
 
 import Control.DeepSeq (NFData, NFData1)
+import Data.Bifunctor (Bifunctor (second))
 import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
+import qualified Data.SBV.Dynamic as SBVD
 import GHC.Generics (Generic, Generic1)
 import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (KnownIsZero)
@@ -42,6 +44,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     SupportedPrim
       ( conSBVTerm,
         defaultValue,
+        parseSMTModelResult,
         pevalITETerm,
         sbvEq,
         sbvIte,
@@ -53,6 +56,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     Term (ConTerm),
     applyTerm,
     conTerm,
+    partitionCVArg,
     pevalDefaultEqTerm,
     pevalEqTerm,
     pevalITEBasicTerm,
@@ -102,14 +106,22 @@ instance
         PrimConstraint n b
       )
 
-instance
+instance (SupportedNonFuncPrim a, SupportedPrim b) => SBVRep (a =-> b) where
+  type SBVType n (a =-> b) = SBV.SBV (NonFuncSBVBaseType n a) -> SBVType n b
+
+parseTabularFunSMTModelResult ::
+  forall a b.
   (SupportedNonFuncPrim a, SupportedPrim b) =>
-  SBVRep (a =-> b)
-  where
-  type
-    SBVType n (a =-> b) =
-      SBV.SBV (NonFuncSBVBaseType n a) ->
-      SBVType n b
+  Int ->
+  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
+  a =-> b
+parseTabularFunSMTModelResult level (l, s) =
+  TabularFun
+    ( second
+        (\r -> parseSMTModelResult (level + 1) (r, s))
+        <$> partitionCVArg @a l
+    )
+    (parseSMTModelResult (level + 1) ([], s))
 
 instance
   (SupportedNonFuncPrim a, SupportedNonFuncPrim b) =>
@@ -136,6 +148,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -173,6 +186,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b =-> c))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -214,6 +228,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b =-> c =-> d))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -259,6 +274,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b =-> c =-> d =-> e))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -308,6 +324,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b =-> c =-> d =-> e =-> f))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 -- 7 arguments
 instance
@@ -362,6 +379,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 -- 8 arguments
 instance
@@ -420,6 +438,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
+  parseSMTModelResult = parseTabularFunSMTModelResult
 
 instance
   (SupportedPrim a, SupportedPrim b, SupportedPrim (a =-> b)) =>

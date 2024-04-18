@@ -1243,3 +1243,4 @@ import Grisette.Core.TH.MergeConstructor
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
+-- >>> :set -XOverloadedStrings
