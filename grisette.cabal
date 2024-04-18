@@ -112,12 +112,12 @@ library
       Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval
       Grisette.IR.SymPrim.Data.Prim.Internal.Term
       Grisette.IR.SymPrim.Data.Prim.Internal.Unfold
+      Grisette.IR.SymPrim.Data.Prim.Internal.Utils
       Grisette.IR.SymPrim.Data.Prim.Model
       Grisette.IR.SymPrim.Data.Prim.ModelValue
       Grisette.IR.SymPrim.Data.Prim.SomeTerm
       Grisette.IR.SymPrim.Data.Prim.Term
       Grisette.IR.SymPrim.Data.Prim.TermUtils
-      Grisette.IR.SymPrim.Data.Prim.Utils
       Grisette.IR.SymPrim.Data.SymPrim
       Grisette.IR.SymPrim.Data.TabularFun
       Grisette.Lib.Base

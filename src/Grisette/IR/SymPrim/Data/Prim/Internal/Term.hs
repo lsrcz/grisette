@@ -188,14 +188,14 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Caches
   ( typeMemoizedCache,
   )
 import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (KnownIsZero)
-import Grisette.IR.SymPrim.Data.Prim.ModelValue
-  ( ModelValue,
-    toModelValue,
-  )
-import Grisette.IR.SymPrim.Data.Prim.Utils
+import Grisette.IR.SymPrim.Data.Prim.Internal.Utils
   ( eqHeteroRep,
     eqTypeRepBool,
     pattern Dyn,
+  )
+import Grisette.IR.SymPrim.Data.Prim.ModelValue
+  ( ModelValue,
+    toModelValue,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection

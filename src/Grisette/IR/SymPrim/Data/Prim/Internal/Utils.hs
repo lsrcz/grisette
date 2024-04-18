@@ -8,14 +8,14 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- |
--- Module      :   Grisette.IR.SymPrim.Data.Prim.Utils
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Utils
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.IR.SymPrim.Data.Prim.Utils
+module Grisette.IR.SymPrim.Data.Prim.Internal.Utils
   ( pattern Dyn,
     cmpHetero,
     eqHetero,
