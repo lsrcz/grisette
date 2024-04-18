@@ -99,7 +99,6 @@ library
       Grisette.IR.SymPrim
       Grisette.IR.SymPrim.Data.GeneralFun
       Grisette.IR.SymPrim.Data.IntBitwidth
-      Grisette.IR.SymPrim.Data.Prim.Helpers
       Grisette.IR.SymPrim.Data.Prim.Internal.Caches
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.BVPEval
       Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalBitwiseTerm

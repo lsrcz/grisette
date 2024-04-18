@@ -47,9 +47,6 @@ module Grisette.Internal.IR.SymPrim
     pevalXorTerm,
     unaryUnfoldOnce,
     binaryUnfoldOnce,
-    pattern UnaryTermPatt,
-    pattern BinaryTermPatt,
-    pattern TernaryTermPatt,
     PartialFun,
     PartialRuleUnary,
     TotalRuleUnary,
@@ -81,11 +78,6 @@ module Grisette.Internal.IR.SymPrim
   )
 where
 
-import Grisette.IR.SymPrim.Data.Prim.Helpers
-  ( pattern BinaryTermPatt,
-    pattern TernaryTermPatt,
-    pattern UnaryTermPatt,
-  )
 import Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval
   ( BinaryCommPartialStrategy (..),
     BinaryPartialStrategy (..),
