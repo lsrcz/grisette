@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -609,8 +610,7 @@ type SupportedBV bv (n :: Nat) =
 
 dsbv1 ::
   forall proxy bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    SupportedBV bv 1,
+  ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -662,8 +662,7 @@ dsbv1 _ _ = error "Should never be called"
 
 dsbv2 ::
   forall proxy bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    SupportedBV bv 1,
+  ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -715,8 +714,7 @@ dsbv2 _ _ = error "Should never be called"
 
 dsbv3 ::
   forall proxy bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    SupportedBV bv 1,
+  ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -767,8 +765,7 @@ dsbv3 _ _ = error "Should never be called"
 
 dsbv4 ::
   forall proxy bv.
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    SupportedBV bv 1,
+  ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
@@ -820,8 +817,7 @@ dsbv4 p depth | depth > 0 = do
 dsbv4 _ _ = error "Should never be called"
 
 instance
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
-    SupportedBV bv 1,
+  ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
     SupportedBV bv 4,
