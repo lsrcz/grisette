@@ -38,6 +38,7 @@ import Grisette.Core.Data.Class.Function
 import Grisette.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
+import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.IR.SymPrim.Data.GeneralFun (buildGeneralFun, type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( ConRep (ConType),
@@ -52,7 +53,6 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pformat,
     symTerm,
   )
-import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
 -- $setup
