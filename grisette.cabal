@@ -48,7 +48,6 @@ library
   exposed-modules:
       Grisette
       Grisette.Backend.SBV
-      Grisette.Backend.SBV.Data.SMT.Lowering
       Grisette.Backend.SBV.Data.SMT.Solving
       Grisette.Backend.SBV.Data.SMT.SymBiMap
       Grisette.Core
