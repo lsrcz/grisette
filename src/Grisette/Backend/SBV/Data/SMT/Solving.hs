@@ -666,8 +666,8 @@ preprocessUIFuncs ::
   Maybe [(String, ([([SBVD.CV], SBVD.CV)], SBVD.CV))]
 preprocessUIFuncs =
   traverse
-    (\case
-      (a, (_, Right c)) -> Just (a, c)
+    (\v -> case v of
+      (a, (_, _, Right c)) -> Just (a, c)
       _ -> Nothing)
 #elif MIN_VERSION_sbv(10,0,0)
 preprocessUIFuncs ::
