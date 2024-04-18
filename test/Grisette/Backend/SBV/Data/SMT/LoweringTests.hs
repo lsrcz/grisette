@@ -32,10 +32,10 @@ import Grisette
     type (-~>),
     type (=~>),
   )
-import Grisette.Backend.SBV.Data.SMT.Lowering (lowerSinglePrim)
 import Grisette.Backend.SBV.Data.SMT.Solving
   ( GrisetteSMTConfig (sbvConfig),
     approx,
+    lowerSinglePrim,
     precise,
   )
 import Grisette.Backend.SBV.Data.SMT.SymBiMap

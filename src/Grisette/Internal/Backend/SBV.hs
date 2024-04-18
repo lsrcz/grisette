@@ -8,13 +8,13 @@
 -- Portability :   GHC only
 module Grisette.Internal.Backend.SBV
   ( lowerSinglePrim,
+    lowerSinglePrimCached,
     parseModel,
-    TermTy,
   )
 where
 
-import Grisette.Backend.SBV.Data.SMT.Lowering
+import Grisette.Backend.SBV.Data.SMT.Solving
   ( lowerSinglePrim,
+    lowerSinglePrimCached,
     parseModel,
   )
-import Grisette.Backend.SBV.Data.SMT.Solving (TermTy)
