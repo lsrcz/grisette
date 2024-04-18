@@ -46,7 +46,7 @@ import Grisette.Core.Data.Class.SOrd (SOrd ((.<), (.>=)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Core.Data.Class.Solver (solve)
-import Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim
   ( SymBool,
     SymIntN,
     SymInteger,

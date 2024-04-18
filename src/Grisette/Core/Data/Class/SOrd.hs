@@ -81,12 +81,12 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalGeOrdTerm,
     pevalGtOrdTerm,
   )
-import Grisette.IR.SymPrim.Data.SymPrim
-  ( SymBool (SymBool),
-    SymIntN (SymIntN),
-    SymInteger (SymInteger),
+import Grisette.IR.SymPrim.Data.SymBV
+  ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
+import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
 
 -- $setup
 -- >>> import Grisette.Core

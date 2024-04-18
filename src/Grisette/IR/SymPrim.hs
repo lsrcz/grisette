@@ -102,7 +102,14 @@ import Grisette.Core.Data.SomeBV
     type SomeSymWordN,
     type SomeWordN,
   )
+import Grisette.IR.SymPrim.Data.AllSyms
+  ( AllSyms (..),
+    allSymsSize,
+    symSize,
+    symsSize,
+  )
 import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
+import Grisette.IR.SymPrim.Data.ModelRep (ModelSymPair (..))
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( Model (..),
     ModelValuePair (..),
@@ -115,18 +122,16 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     SymRep (..),
     TypedSymbol (..),
   )
-import Grisette.IR.SymPrim.Data.SymPrim
-  ( AllSyms (..),
-    ModelSymPair (..),
-    SymBool (..),
-    SymIntN (..),
-    SymInteger (..),
+import Grisette.IR.SymPrim.Data.SymBV
+  ( SymIntN (..),
     SymWordN (..),
-    allSymsSize,
-    symSize,
-    symsSize,
-    (-->),
-    type (-~>) (..),
-    type (=~>) (..),
   )
+import Grisette.IR.SymPrim.Data.SymBool
+  ( SymBool (..),
+  )
+import Grisette.IR.SymPrim.Data.SymGeneralFun ((-->), type (-~>) (..))
+import Grisette.IR.SymPrim.Data.SymInteger
+  ( SymInteger (..),
+  )
+import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>) (..))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->) (..))

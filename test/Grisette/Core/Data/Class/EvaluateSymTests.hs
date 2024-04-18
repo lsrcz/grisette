@@ -34,7 +34,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( TypedSymbol (TypedSymbol),
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

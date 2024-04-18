@@ -25,7 +25,7 @@ import Grisette.Core.Data.Class.SafeSymShift
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.IR.SymPrim.Data.Prim.Term (LinkedRep)
-import Grisette.IR.SymPrim.Data.SymPrim (SymIntN, SymWordN)
+import Grisette.IR.SymPrim.Data.SymBV (SymIntN, SymWordN)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Test.Framework (Test, testGroup)

@@ -86,7 +86,7 @@ import Grisette.Core.Data.Class.Solver
     withSolver,
   )
 import Grisette.IR.SymPrim.Data.Prim.Model (Model)
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core

@@ -168,9 +168,9 @@ import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Core.Data.Symbol (Identifier, Symbol)
-import Grisette.IR.SymPrim.Data.SymPrim
-  ( AllSyms (allSyms, allSymsS),
-    SymIntN,
+import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSyms, allSymsS))
+import Grisette.IR.SymPrim.Data.SymBV
+  ( SymIntN,
     SymWordN,
   )
 import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)

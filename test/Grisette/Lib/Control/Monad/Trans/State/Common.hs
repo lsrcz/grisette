@@ -25,7 +25,7 @@ import Grisette.Core.Data.Class.TestValues (ssymBool)
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 import Grisette.TestUtil.SymbolicAssertion ((@?=~))
 import Test.HUnit (Assertion, (@?=))
 
