@@ -33,8 +33,11 @@ module Grisette.IR.SymPrim.Data.GeneralFun
 where
 
 import Control.DeepSeq (NFData (rnf))
+import Data.Bifunctor (Bifunctor (second))
+import Data.Foldable (Foldable (foldl'))
 import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.SBV as SBV
+import qualified Data.SBV.Dynamic as SBVD
 import GHC.Generics (Generic)
 import Grisette.Core.Data.Class.Function (Function ((#)))
 import Grisette.Core.Data.MemoUtils (htmemo)
@@ -45,7 +48,8 @@ import Grisette.Core.Data.Symbol
 import Grisette.IR.SymPrim.Data.Prim.Internal.PartialEval (totalize2)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( SBVRep,
-    SupportedPrim (sbvEq),
+    SupportedPrim (parseSMTModelResult, sbvEq),
+    partitionCVArg,
   )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.IR.SymPrim.Data.Prim.Term
@@ -239,8 +243,33 @@ instance
       SBV.SBV (NonFuncSBVBaseType n a) ->
       SBVType n b
 
+parseGeneralFunSMTModelResult ::
+  forall a b.
+  (SupportedNonFuncPrim a, SupportedPrim b) =>
+  Int ->
+  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
+  a --> b
+parseGeneralFunSMTModelResult level (l, s) =
+  let sym = IndexedSymbol "arg" level
+      funs =
+        second
+          (\r -> parseSMTModelResult (level + 1) (r, s))
+          <$> partitionCVArg @a l
+      def = parseSMTModelResult (level + 1) ([], s)
+      body =
+        foldl'
+          ( \acc (v, f) ->
+              pevalITETerm
+                (pevalEqTerm (symTerm sym) (conTerm v))
+                (conTerm f)
+                acc
+          )
+          (conTerm def)
+          funs
+   in buildGeneralFun (TypedSymbol sym) body
+
 instance
-  (SupportedNonFuncPrim a, SupportedNonFuncPrim b, SupportedPrim a, SupportedPrim b) =>
+  (SupportedNonFuncPrim a, SupportedNonFuncPrim b) =>
   SupportedPrim (a --> b)
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
@@ -267,6 +296,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -307,6 +337,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b --> c))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -351,6 +382,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b --> c --> d))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -399,6 +431,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b --> c --> d --> e))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -451,6 +484,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b --> c --> d --> e --> f))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -507,6 +541,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b --> c --> d --> e --> f --> g))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 instance
   {-# OVERLAPPING #-}
@@ -567,6 +602,7 @@ instance
             <> "equality comparison."
       )
       (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
+  parseSMTModelResult = parseGeneralFunSMTModelResult
 
 pevalGeneralFunApplyTerm ::
   ( SupportedNonFuncPrim a,

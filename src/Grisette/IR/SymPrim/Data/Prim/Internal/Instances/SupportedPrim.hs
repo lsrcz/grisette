@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -8,8 +10,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim
@@ -25,10 +25,12 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim
 where
 
 import Data.Proxy (Proxy (Proxy))
-import Data.SBV (BVIsNonZero)
+import Data.SBV (BVIsNonZero, FiniteBits (finiteBitSize))
 import qualified Data.SBV as SBV
+import qualified Data.SBV.Dynamic as SBVD
 import Data.Type.Bool (If)
 import Data.Type.Equality ((:~:) (Refl))
+import Debug.Trace (trace)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero
@@ -46,6 +48,7 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
       ( conSBVTerm,
         defaultValue,
         defaultValueDynamic,
+        parseSMTModelResult,
         pevalEqTerm,
         pevalITETerm,
         pformatCon,
@@ -56,12 +59,14 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     SupportedPrimConstraint
       ( PrimConstraint
       ),
+    parseSMTModelResultError,
     pevalDefaultEqTerm,
     pevalITEBasicTerm,
     sbvFresh,
   )
 import Grisette.IR.SymPrim.Data.Prim.ModelValue (ModelValue, toModelValue)
 import Grisette.Utils.Parameterized (unsafeAxiom)
+import Type.Reflection (typeRep)
 
 defaultValueForInteger :: Integer
 defaultValueForInteger = 0
@@ -91,6 +96,10 @@ instance SupportedPrim Integer where
   withPrim p r = case isZero p of
     IsZeroEvidence -> r
     NonZeroEvidence -> r
+  parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> Integer
+  parseSMTModelResult _ ([], SBVD.CV SBVD.KUnbounded (SBVD.CInteger i)) = i
+  parseSMTModelResult _ ([([], SBVD.CV SBVD.KUnbounded (SBVD.CInteger i))], _) = i
+  parseSMTModelResult _ cv = trace (show cv) $ parseSMTModelResultError (typeRep @Integer) cv
 
 instance NonFuncSBVRep Integer where
   type NonFuncSBVBaseType n Integer = If (IsZero n) Integer (SBV.IntN n)
@@ -100,7 +109,7 @@ instance SupportedNonFuncPrim Integer where
   symNonFuncSBVTerm = symSBVTerm @Integer
   withNonFuncPrim p r = case isZero p of
     IsZeroEvidence -> r
-    NonZeroEvidence -> r
+    NonZeroEvidence -> bvIsNonZeroFromGEq1 p r
 
 -- Signed BV
 instance (KnownNat w, 1 <= w) => SupportedPrimConstraint (IntN w) where
@@ -118,6 +127,16 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   symSBVName symbol _ = show symbol
   symSBVTerm _ name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim _ r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> IntN w
+  parseSMTModelResult
+    _
+    ([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))
+      | bitWidth == finiteBitSize (undefined :: IntN w) = fromIntegral i
+  parseSMTModelResult
+    _
+    ([([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))], _)
+      | bitWidth == finiteBitSize (undefined :: IntN w) = fromIntegral i
+  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(IntN w)) cv
 
 bvIsNonZeroFromGEq1 ::
   forall w r proxy.
@@ -152,6 +171,15 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   symSBVName symbol _ = show symbol
   symSBVTerm _ name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim _ r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  parseSMTModelResult
+    _
+    ([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))
+      | bitWidth == finiteBitSize (undefined :: WordN w) = fromIntegral i
+  parseSMTModelResult
+    _
+    ([([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))], _)
+      | bitWidth == finiteBitSize (undefined :: WordN w) = fromIntegral i
+  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(WordN w)) cv
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w

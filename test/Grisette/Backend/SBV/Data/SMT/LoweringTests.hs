@@ -21,7 +21,18 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBV
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
-import Grisette.Backend.SBV.Data.SMT.LoweringNew (lowerSinglePrim)
+import Grisette
+  ( EvaluateSym (evaluateSym),
+    Function ((#)),
+    LogicalOp ((.&&)),
+    SEq ((.==)),
+    Solvable (con),
+    SymInteger,
+    solve,
+    type (-~>),
+    type (=~>),
+  )
+import Grisette.Backend.SBV.Data.SMT.Lowering (lowerSinglePrim)
 import Grisette.Backend.SBV.Data.SMT.Solving
   ( GrisetteSMTConfig (sbvConfig),
     approx,
@@ -72,7 +83,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit (Assertion, assertFailure)
+import Test.HUnit (Assertion, assertFailure, (@?=))
 
 testUnaryOpLowering ::
   forall a b as n.
@@ -790,5 +801,33 @@ loweringTests =
               testCase "ToSigned" $ do
                 testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
                 testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
-            ]
+            ],
+          testCase "TabularFun" $ do
+            let f = "f" :: SymInteger =~> SymInteger =~> SymInteger
+            let a = "a" :: SymInteger
+            let b = "b" :: SymInteger
+            let c = "c" :: SymInteger
+            let d = "d" :: SymInteger
+            Right m <-
+              solve unboundedConfig $
+                (f # a # b .== a + b .&& a .== 10 .&& b .== 20)
+                  .&& (f # a # c .== a + c .&& a .== 10 .&& c .== 30)
+                  .&& (f # a # d .== a + d .&& a .== 10 .&& d .== 40)
+            evaluateSym False m (f # a # b .== a + b) @?= con True
+            evaluateSym False m (f # a # c .== a + c) @?= con True
+            evaluateSym False m (f # a # d .== a + d) @?= con True,
+          testCase "GeneralFun" $ do
+            let f = "f" :: SymInteger -~> SymInteger -~> SymInteger
+            let a = "a" :: SymInteger
+            let b = "b" :: SymInteger
+            let c = "c" :: SymInteger
+            let d = "d" :: SymInteger
+            Right m <-
+              solve unboundedConfig $
+                (f # a # b .== a + b .&& a .== 10 .&& b .== 20)
+                  .&& (f # a # c .== a + c .&& a .== 10 .&& c .== 30)
+                  .&& (f # a # d .== a + d .&& a .== 10 .&& d .== 40)
+            evaluateSym False m (f # a # b .== a + b) @?= con True
+            evaluateSym False m (f # a # c .== a + c) @?= con True
+            evaluateSym False m (f # a # d .== a + d) @?= con True
         ]
