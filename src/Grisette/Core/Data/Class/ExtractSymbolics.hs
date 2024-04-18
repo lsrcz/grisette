@@ -50,6 +50,7 @@ import Generics.Deriving
   )
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Model
   ( SymbolSet (SymbolSet),
   )
@@ -66,6 +67,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>) (SymGeneralFun),
     type (=~>) (SymTabularFun),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -267,8 +269,9 @@ instance ExtractSymbolics symtype where \
 instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
   extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
 
-#define EXTRACT_SYMBOLICS_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ExtractSymbolics (sa op sb) where \
+#define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  ExtractSymbolics (op sa sb) where \
   extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
 
 #if 1
@@ -276,8 +279,8 @@ EXTRACT_SYMBOLICS_SIMPLE(SymBool)
 EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
 EXTRACT_SYMBOLICS_BV(SymIntN)
 EXTRACT_SYMBOLICS_BV(SymWordN)
-EXTRACT_SYMBOLICS_FUN(=~>, SymTabularFun)
-EXTRACT_SYMBOLICS_FUN(-~>, SymGeneralFun)
+EXTRACT_SYMBOLICS_FUN((=->), (=~>), SymTabularFun)
+EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- Exception

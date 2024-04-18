@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      :   Grisette.Core.Data.Class.ITEOp
@@ -18,6 +19,7 @@ module Grisette.Core.Data.Class.ITEOp
 where
 
 import GHC.TypeNats (KnownNat, type (<=))
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim (pevalITETerm),
@@ -30,6 +32,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>) (SymGeneralFun),
     type (=~>) (SymTabularFun),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -61,8 +64,8 @@ instance (KnownNat n, 1 <= n) => ITEOp (type n) where \
   symIte (SymBool c) (type t) (type f) = type $ pevalITETerm c t f; \
   {-# INLINE symIte #-}
 
-#define ITEOP_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ITEOp (sa op sb) where \
+#define ITEOP_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => ITEOp (op sa sb) where \
   symIte (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
   {-# INLINE symIte #-}
 
@@ -71,6 +74,6 @@ ITEOP_SIMPLE(SymBool)
 ITEOP_SIMPLE(SymInteger)
 ITEOP_BV(SymIntN)
 ITEOP_BV(SymWordN)
-ITEOP_FUN(=~>, SymTabularFun)
-ITEOP_FUN(-~>, SymGeneralFun)
+ITEOP_FUN((=->), (=~>), SymTabularFun)
+ITEOP_FUN((-->), (-~>), SymGeneralFun)
 #endif

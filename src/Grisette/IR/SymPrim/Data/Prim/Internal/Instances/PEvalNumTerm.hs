@@ -1,8 +1,12 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalNumTerm
@@ -24,14 +28,20 @@ import Data.SBV (Bits (isSigned))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero
+  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
+    KnownIsZero (isZero),
+  )
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
         pevalMulNumTerm,
         pevalNegNumTerm,
-        pevalSignumNumTerm
+        pevalSignumNumTerm,
+        withSbvNumTermConstraint
       ),
+    SupportedPrim (withPrim),
     Term (AbsNumTerm, AddNumTerm, ConTerm, MulNumTerm, NegNumTerm),
     absNumTerm,
     addNumTerm,
@@ -210,6 +220,9 @@ instance PEvalNumTerm Integer where
                     pevalSignumNumTerm r
               _ -> Nothing
           ]
+  withSbvNumTermConstraint p r = case isZero p of
+    IsZeroEvidence -> r
+    NonZeroEvidence -> r
 
 instance (KnownNat n, 1 <= n) => PEvalNumTerm (WordN n) where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -217,6 +230,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (WordN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
+  withSbvNumTermConstraint p r = withPrim @(WordN n) p r
 
 instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -224,3 +238,4 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
+  withSbvNumTermConstraint p r = withPrim @(IntN n) p r

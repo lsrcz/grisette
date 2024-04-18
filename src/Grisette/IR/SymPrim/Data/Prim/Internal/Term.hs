@@ -35,6 +35,7 @@
 -- Portability :   GHC only
 module Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( -- * Supported primitive types
+    SupportedPrimConstraint (..),
     SupportedPrim (..),
     SymRep (..),
     ConRep (..),
@@ -130,11 +131,22 @@ module Grisette.IR.SymPrim.Data.Prim.Internal.Term
     pevalITEBasic,
     pevalITEBasicTerm,
     pevalDefaultEqTerm,
+    --
+    NonFuncSBVRep (..),
+    SupportedNonFuncPrim (..),
+    SBVRep (..),
+    SBVFreshMonad (..),
+    translateTypeError,
   )
 where
 
 import Control.DeepSeq (NFData (rnf))
+import Control.Monad (msum)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Reader (MonadTrans (lift), ReaderT)
+import Control.Monad.State (StateT)
 import Data.Array ((!))
+import Data.Bits (Bits)
 import Data.Function (on)
 import qualified Data.HashMap.Strict as M
 import Data.Hashable (Hashable (hash, hashWithSalt))
@@ -149,14 +161,21 @@ import Data.Interned.Internal
     CacheState (CacheState),
   )
 import Data.Kind (Constraint)
+import Data.Maybe (fromMaybe)
+import qualified Data.SBV as SBV
+import qualified Data.SBV.Trans as SBVT
+import qualified Data.SBV.Trans.Control as SBVTC
 import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast)
 import GHC.IO (unsafeDupablePerformIO)
+import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
 import Grisette.Core.Data.Class.BitVector
   ( SizedBV,
   )
 import Grisette.Core.Data.Class.SignConversion (SignConversion)
+import Grisette.Core.Data.Class.SymRotate (SymRotate)
+import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
@@ -164,6 +183,7 @@ import Grisette.Core.Data.Symbol
 import Grisette.IR.SymPrim.Data.Prim.Internal.Caches
   ( typeMemoizedCache,
   )
+import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.IR.SymPrim.Data.Prim.ModelValue
   ( ModelValue,
     toModelValue,
@@ -173,8 +193,7 @@ import Grisette.IR.SymPrim.Data.Prim.Utils
     eqTypeRepBool,
     pattern Dyn,
   )
-import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
-import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
+import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection
   ( SomeTypeRep (SomeTypeRep),
     TypeRep,
@@ -184,6 +203,7 @@ import Type.Reflection
     typeRep,
     type (:~~:) (HRefl),
   )
+import Unsafe.Coerce (unsafeCoerce)
 
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter
@@ -193,12 +213,6 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
-import Data.Maybe (fromMaybe)
-import Control.Monad (msum)
-import Data.Bits (Bits)
-import Grisette.Core.Data.Class.SymShift (SymShift)
-import Grisette.Core.Data.Class.SymRotate (SymRotate)
-import Unsafe.Coerce (unsafeCoerce)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -209,18 +223,88 @@ import Data.Text.Prettyprint.Doc
   )
 #endif
 
+#if !MIN_VERSION_sbv(10, 0, 0)
+#define SMTDefinable Uninterpreted
+#endif
+
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.IR.SymPrim
 
+-- SBV Translation
+class (Monad m) => SBVFreshMonad m where
+  sbvFresh :: (SBV.SymVal a) => String -> m (SBV.SBV a)
+
+instance (MonadIO m) => SBVFreshMonad (SBVT.SymbolicT m) where
+  sbvFresh = SBVT.free
+
+instance (MonadIO m) => SBVFreshMonad (SBVTC.QueryT m) where
+  sbvFresh = SBVTC.freshVar
+
+instance (SBVFreshMonad m) => SBVFreshMonad (ReaderT r m) where
+  sbvFresh = lift . sbvFresh
+
+instance (SBVFreshMonad m) => SBVFreshMonad (StateT s m) where
+  sbvFresh = lift . sbvFresh
+
+translateTypeError :: (HasCallStack) => Maybe String -> TypeRep a -> b
+translateTypeError Nothing ta =
+  error $
+    "Don't know how to translate the type " ++ show ta ++ " to SMT"
+translateTypeError (Just reason) ta =
+  error $
+    "Don't know how to translate the type " ++ show ta ++ " to SMT: " <> reason
+
+class (SupportedPrim a) => NonFuncSBVRep a where
+  type NonFuncSBVBaseType (n :: Nat) a
+
+class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
+  conNonFuncSBVTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    a ->
+    SBV.SBV (NonFuncSBVBaseType n a)
+  symNonFuncSBVTerm ::
+    (SBVFreshMonad m, KnownIsZero n) =>
+    proxy n ->
+    String ->
+    m (SBV.SBV (NonFuncSBVBaseType n a))
+  withNonFuncPrim ::
+    (KnownIsZero n) =>
+    proxy n ->
+    ( ( SBV.SymVal (NonFuncSBVBaseType n a),
+        SBV.EqSymbolic (SBVType n a),
+        SBV.Mergeable (SBVType n a),
+        SBV.SMTDefinable (SBVType n a),
+        SBV.Mergeable (SBVType n a),
+        SBVType n a ~ SBV.SBV (NonFuncSBVBaseType n a),
+        PrimConstraint n a
+      ) =>
+      r
+    ) ->
+    r
+
+class SBVRep t where
+  type SBVType (n :: Nat) t
+
+class SupportedPrimConstraint t where
+  type PrimConstraint (n :: Nat) t :: Constraint
+  type PrimConstraint _ _ = ()
+
 -- | Indicates that a type is supported and can be represented as a symbolic
 -- term.
-class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim t where
-  type PrimConstraint t :: Constraint
-  type PrimConstraint _ = ()
-  default withPrim :: (PrimConstraint t) => proxy t -> ((PrimConstraint t) => a) -> a
-  withPrim :: proxy t -> ((PrimConstraint t) => a) -> a
-  withPrim _ i = i
+class
+  ( Lift t,
+    Typeable t,
+    Hashable t,
+    Eq t,
+    Show t,
+    NFData t,
+    SupportedPrimConstraint t,
+    SBVRep t
+  ) =>
+  SupportedPrim t
+  where
   termCache :: Cache (Term t)
   termCache = typeMemoizedCache
   pformatCon :: t -> String
@@ -233,6 +317,62 @@ class (Lift t, Typeable t, Hashable t, Eq t, Show t, NFData t) => SupportedPrim 
   defaultValueDynamic _ = toModelValue (defaultValue @t)
   pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
   pevalEqTerm :: Term t -> Term t -> Term Bool
+  conSBVTerm :: (KnownIsZero n) => proxy n -> t -> SBVType n t
+  symSBVName :: TypedSymbol t -> Int -> String
+  symSBVTerm ::
+    (SBVFreshMonad m, KnownIsZero n) =>
+    proxy n ->
+    String ->
+    m (SBVType n t)
+  default withPrim ::
+    ( PrimConstraint n t,
+      SBV.SMTDefinable (SBVType n t),
+      SBV.Mergeable (SBVType n t),
+      Typeable (SBVType n t),
+      KnownIsZero n
+    ) =>
+    p n ->
+    ( ( PrimConstraint n t,
+        SBV.SMTDefinable (SBVType n t),
+        SBV.Mergeable (SBVType n t),
+        Typeable (SBVType n t)
+      ) =>
+      a
+    ) ->
+    a
+  withPrim ::
+    (KnownIsZero n) =>
+    p n ->
+    ( ( PrimConstraint n t,
+        SBV.SMTDefinable (SBVType n t),
+        SBV.Mergeable (SBVType n t),
+        Typeable (SBVType n t)
+      ) =>
+      a
+    ) ->
+    a
+  withPrim _ i = i
+  sbvIte ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBV.SBV Bool ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvIte p = withPrim @t p SBV.ite
+  sbvEq ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBV.SBV Bool
+  default sbvEq ::
+    (KnownIsZero n, SBVT.EqSymbolic (SBVType n t)) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBV.SBV Bool
+  sbvEq _ = (SBV..==)
 
 pevalNEqTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
 pevalNEqTerm l r = pevalNotTerm $ pevalEqTerm l r
@@ -263,20 +403,93 @@ class
     | f -> a b
   where
   pevalApplyTerm :: Term f -> Term a -> Term b
+  sbvApplyTerm ::
+    (KnownIsZero n) => proxy n -> SBVType n f -> SBVType n a -> SBVType n b
 
 class (SupportedPrim t, Bits t) => PEvalBitwiseTerm t where
   pevalAndBitsTerm :: Term t -> Term t -> Term t
   pevalOrBitsTerm :: Term t -> Term t -> Term t
   pevalXorBitsTerm :: Term t -> Term t -> Term t
   pevalComplementBitsTerm :: Term t -> Term t
+  withSbvBitwiseTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((Bits (SBVType n t)) => r)) ->
+    r
+  sbvAndBitsTerm ::
+    (KnownIsZero n) => proxy n -> SBVType n t -> SBVType n t -> SBVType n t
+  sbvAndBitsTerm p = withSbvBitwiseTermConstraint @t p (SBV..&.)
+  sbvOrBitsTerm ::
+    (KnownIsZero n) => proxy n -> SBVType n t -> SBVType n t -> SBVType n t
+  sbvOrBitsTerm p = withSbvBitwiseTermConstraint @t p (SBV..|.)
+  sbvXorBitsTerm ::
+    (KnownIsZero n) => proxy n -> SBVType n t -> SBVType n t -> SBVType n t
+  sbvXorBitsTerm p = withSbvBitwiseTermConstraint @t p SBV.xor
+  sbvComplementBitsTerm ::
+    (KnownIsZero n) => proxy n -> SBVType n t -> SBVType n t
+  sbvComplementBitsTerm p = withSbvBitwiseTermConstraint @t p SBV.complement
 
-class (SupportedPrim t, SymShift t) => PEvalShiftTerm t where
+class (SupportedNonFuncPrim t, SymShift t) => PEvalShiftTerm t where
   pevalShiftLeftTerm :: Term t -> Term t -> Term t
   pevalShiftRightTerm :: Term t -> Term t -> Term t
+  withSbvShiftTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((SBV.SIntegral (NonFuncSBVBaseType n t)) => r)) ->
+    r
+  sbvShiftLeftTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvShiftLeftTerm p l r =
+    withNonFuncPrim @t p $
+      withSbvShiftTermConstraint @t p $
+        SBV.sShiftLeft l r
+  sbvShiftRightTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvShiftRightTerm p l r =
+    withNonFuncPrim @t p $
+      withSbvShiftTermConstraint @t p $
+        SBV.sShiftRight l r
 
-class (SupportedPrim t, SymRotate t) => PEvalRotateTerm t where
+class (SupportedNonFuncPrim t, SymRotate t) => PEvalRotateTerm t where
   pevalRotateLeftTerm :: Term t -> Term t -> Term t
   pevalRotateRightTerm :: Term t -> Term t -> Term t
+  withSbvRotateTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((SBV.SIntegral (NonFuncSBVBaseType n t)) => r)) ->
+    r
+  sbvRotateLeftTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvRotateLeftTerm p l r =
+    withNonFuncPrim @t p $
+      withSbvRotateTermConstraint @t p $
+        SBV.sRotateLeft l r
+  sbvRotateRightTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvRotateRightTerm p l r =
+    withNonFuncPrim @t p $
+      withSbvRotateTermConstraint @t p $
+        SBV.sRotateRight l r
 
 class (SupportedPrim t, Num t) => PEvalNumTerm t where
   pevalAddNumTerm :: Term t -> Term t -> Term t
@@ -284,6 +497,48 @@ class (SupportedPrim t, Num t) => PEvalNumTerm t where
   pevalMulNumTerm :: Term t -> Term t -> Term t
   pevalAbsNumTerm :: Term t -> Term t
   pevalSignumNumTerm :: Term t -> Term t
+  withSbvNumTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((Num (SBVType n t)) => r)) ->
+    r
+  sbvAddNumTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvAddNumTerm p l r = withSbvNumTermConstraint @t p $ l + r
+  sbvNegNumTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t
+  sbvNegNumTerm p l = withSbvNumTermConstraint @t p $ -l
+  sbvMulNumTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvMulNumTerm p l r = withSbvNumTermConstraint @t p $ l * r
+  sbvAbsNumTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t
+  sbvAbsNumTerm p l = withSbvNumTermConstraint @t p $ abs l
+  sbvSignumNumTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t
+  sbvSignumNumTerm p l = withSbvNumTermConstraint @t p $ signum l
 
 pevalSubNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
@@ -291,6 +546,25 @@ pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
 class (SupportedPrim t, Ord t) => PEvalOrdTerm t where
   pevalLtOrdTerm :: Term t -> Term t -> Term Bool
   pevalLeOrdTerm :: Term t -> Term t -> Term Bool
+  withSbvOrdTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((SBV.OrdSymbolic (SBVType n t)) => r)) ->
+    r
+  sbvLtOrdTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBV.SBV Bool
+  sbvLtOrdTerm p l r = withSbvOrdTermConstraint @t p $ l SBV..< r
+  sbvLeOrdTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBV.SBV Bool
+  sbvLeOrdTerm p l r = withSbvOrdTermConstraint @t p $ l SBV..<= r
 
 pevalGtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGtOrdTerm = flip pevalLtOrdTerm
@@ -303,10 +577,53 @@ class (SupportedPrim t, Integral t) => PEvalDivModIntegralTerm t where
   pevalModIntegralTerm :: Term t -> Term t -> Term t
   pevalQuotIntegralTerm :: Term t -> Term t -> Term t
   pevalRemIntegralTerm :: Term t -> Term t -> Term t
+  withSbvDivModIntegralTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((SBV.SDivisible (SBVType n t)) => r)) ->
+    r
+  sbvDivIntegralTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvDivIntegralTerm p l r =
+    withSbvDivModIntegralTermConstraint @t p $ l `SBV.sDiv` r
+  sbvModIntegralTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvModIntegralTerm p l r =
+    withSbvDivModIntegralTermConstraint @t p $ l `SBV.sMod` r
+  sbvQuotIntegralTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvQuotIntegralTerm p l r =
+    withSbvDivModIntegralTermConstraint @t p $ l `SBV.sQuot` r
+  sbvRemIntegralTerm ::
+    forall proxy n.
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvRemIntegralTerm p l r =
+    withSbvDivModIntegralTermConstraint @t p $ l `SBV.sRem` r
 
 class
   ( PEvalBVTerm s,
     PEvalBVTerm u,
+    forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (u n),
+    forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (s n),
     forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n)
   ) =>
   PEvalBVSignConversionTerm u s
@@ -315,6 +632,44 @@ class
   where
   pevalBVToSignedTerm :: (KnownNat n, 1 <= n) => Term (u n) -> Term (s n)
   pevalBVToUnsignedTerm :: (KnownNat n, 1 <= n) => Term (s n) -> Term (u n)
+  withSbvSignConversionTermConstraint ::
+    forall n integerBitwidth p q r.
+    (KnownIsZero integerBitwidth, KnownNat n, 1 <= n) =>
+    p n ->
+    q integerBitwidth ->
+    ( ( ( Integral (NonFuncSBVBaseType integerBitwidth (u n)),
+          Integral (NonFuncSBVBaseType integerBitwidth (s n))
+        ) =>
+        r
+      )
+    ) ->
+    r
+  sbvToSigned ::
+    forall n integerBitwidth o p q.
+    (KnownIsZero integerBitwidth, KnownNat n, 1 <= n) =>
+    o u ->
+    p n ->
+    q integerBitwidth ->
+    SBVType integerBitwidth (u n) ->
+    SBVType integerBitwidth (s n)
+  sbvToSigned _ _ qint u =
+    withNonFuncPrim @(u n) qint $
+      withNonFuncPrim @(s n) qint $
+        withSbvSignConversionTermConstraint @u @s (Proxy @n) qint $
+          SBV.sFromIntegral u
+  sbvToUnsigned ::
+    forall n integerBitwidth o p q.
+    (KnownIsZero integerBitwidth, KnownNat n, 1 <= n) =>
+    o s ->
+    p n ->
+    q integerBitwidth ->
+    SBVType integerBitwidth (s n) ->
+    SBVType integerBitwidth (u n)
+  sbvToUnsigned _ _ qint u =
+    withNonFuncPrim @(u n) qint $
+      withNonFuncPrim @(s n) qint $
+        withSbvSignConversionTermConstraint @u @s (Proxy @n) qint $
+          SBV.sFromIntegral u
 
 class
   ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
@@ -340,6 +695,37 @@ class
     q w ->
     Term (bv n) ->
     Term (bv w)
+  sbvBVConcatTerm ::
+    (KnownIsZero n, KnownNat l, KnownNat r, 1 <= l, 1 <= r) =>
+    p0 n ->
+    p1 l ->
+    p2 r ->
+    SBVType n (bv l) ->
+    SBVType n (bv r) ->
+    SBVType n (bv (l + r))
+  sbvBVExtendTerm ::
+    (KnownIsZero n, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+    p0 n ->
+    p1 l ->
+    p2 r ->
+    Bool ->
+    SBVType n (bv l) ->
+    SBVType n (bv r)
+  sbvBVSelectTerm ::
+    ( KnownIsZero int,
+      KnownNat ix,
+      KnownNat w,
+      KnownNat n,
+      1 <= n,
+      1 <= w,
+      ix + w <= n
+    ) =>
+    p0 int ->
+    p1 ix ->
+    p2 w ->
+    p3 n ->
+    SBVType int (bv n) ->
+    SBVType int (bv w)
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -768,7 +1154,6 @@ instance NFData (Term a) where
   rnf i = identity i `seq` ()
 
 instance Lift (Term t) where
-  lift = unTypeSplice . liftTyped
   liftTyped (ConTerm _ i) = [||conTerm i||]
   liftTyped (SymTerm _ sym) = [||symTerm (unTypedSymbol sym)||]
   liftTyped (UnaryTerm _ tag arg) = [||constructUnary tag arg||]
@@ -1895,6 +2280,11 @@ pevalDefaultEqTerm l r
   | otherwise = eqTerm l r
 {-# INLINEABLE pevalDefaultEqTerm #-}
 
+instance SBVRep Bool where
+  type SBVType _ Bool = SBV.SBV Bool
+
+instance SupportedPrimConstraint Bool
+
 instance SupportedPrim Bool where
   pformatCon True = "true"
   pformatCon False = "false"
@@ -1904,3 +2294,15 @@ instance SupportedPrim Bool where
     fromMaybe (iteTerm cond ifTrue ifFalse) $
       pevalITEBool cond ifTrue ifFalse
   pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ n = if n then SBV.sTrue else SBV.sFalse
+  symSBVName symbol _ = show symbol
+  symSBVTerm _ = sbvFresh
+  withPrim _ r = r
+
+instance NonFuncSBVRep Bool where
+  type NonFuncSBVBaseType _ Bool = Bool
+
+instance SupportedNonFuncPrim Bool where
+  conNonFuncSBVTerm = conSBVTerm
+  symNonFuncSBVTerm = symSBVTerm @Bool
+  withNonFuncPrim _ r = r

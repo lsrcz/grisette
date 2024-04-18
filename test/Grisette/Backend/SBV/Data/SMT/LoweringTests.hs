@@ -21,10 +21,9 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBV
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
-import Grisette.Backend.SBV.Data.SMT.Lowering (lowerSinglePrim)
+import Grisette.Backend.SBV.Data.SMT.LoweringNew (lowerSinglePrim)
 import Grisette.Backend.SBV.Data.SMT.Solving
   ( GrisetteSMTConfig (sbvConfig),
-    TermTy,
     approx,
     precise,
   )
@@ -36,7 +35,8 @@ import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.IR.SymPrim.Data.Prim.Term
-  ( SupportedPrim,
+  ( SBVRep (SBVType),
+    SupportedPrim,
     Term,
     absNumTerm,
     addNumTerm,
@@ -78,23 +78,23 @@ testUnaryOpLowering ::
   forall a b as n.
   ( HasCallStack,
     SupportedPrim a,
-    SBV.EqSymbolic (TermTy n b),
-    Typeable (TermTy n a),
+    SBV.EqSymbolic (SBVType n b),
+    Typeable (SBVType n a),
     SBV.SymVal as,
-    TermTy n a ~ SBV.SBV as,
+    SBVType n a ~ SBV.SBV as,
     Show as
   ) =>
   GrisetteSMTConfig n ->
   (Term a -> Term b) ->
   String ->
-  (TermTy n a -> TermTy n b) ->
+  (SBVType n a -> SBVType n b) ->
   Assertion
 testUnaryOpLowering config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
   let fa :: Term b = f a
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fa
-    let sbva :: Maybe (TermTy n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
     case sbva of
       Nothing -> lift $ assertFailure "Failed to extract the term"
       Just sbvav -> SBV.query $ do
@@ -105,7 +105,7 @@ testUnaryOpLowering config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unsolvable formula"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fa
-    let sbvv :: Maybe (TermTy n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbvv :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
     case sbvv of
       Nothing -> lift $ assertFailure "Failed to extract the term"
       Just sbvvv -> SBV.query $ do
@@ -122,15 +122,15 @@ testUnaryOpLowering config f name sbvfun = do
 --   forall a b as n tag.
 --   ( HasCallStack,
 --     UnaryOp tag a b,
---     SBV.EqSymbolic (TermTy n b),
---     Typeable (TermTy n a),
+--     SBV.EqSymbolic (SBVType n b),
+--     Typeable (SBVType n a),
 --     SBV.SymVal as,
---     TermTy n a ~ SBV.SBV as,
+--     SBVType n a ~ SBV.SBV as,
 --     Show as
 --   ) =>
 --   GrisetteSMTConfig n ->
 --   tag ->
---   (TermTy n a -> TermTy n b) ->
+--   (SBVType n a -> SBVType n b) ->
 --   Assertion
 -- testUnaryOpLowering' config t = testUnaryOpLowering @a @b @as config (constructUnary t) (show t)
 
@@ -139,20 +139,20 @@ testBinaryOpLowering ::
   ( HasCallStack,
     SupportedPrim a,
     SupportedPrim b,
-    SBV.EqSymbolic (TermTy n c),
-    Typeable (TermTy n a),
-    Typeable (TermTy n b),
+    SBV.EqSymbolic (SBVType n c),
+    Typeable (SBVType n a),
+    Typeable (SBVType n b),
     SBV.SymVal as,
     SBV.SymVal bs,
     Show as,
     Show bs,
-    TermTy n a ~ SBV.SBV as,
-    TermTy n b ~ SBV.SBV bs
+    SBVType n a ~ SBV.SBV as,
+    SBVType n b ~ SBV.SBV bs
   ) =>
   GrisetteSMTConfig n ->
   (Term a -> Term b -> Term c) ->
   String ->
-  (TermTy n a -> TermTy n b -> TermTy n c) ->
+  (SBVType n a -> SBVType n b -> SBVType n c) ->
   Assertion
 testBinaryOpLowering config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
@@ -160,8 +160,8 @@ testBinaryOpLowering config f name sbvfun = do
   let fab :: Term c = f a b
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fab
-    let sbva :: Maybe (TermTy n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (TermTy n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
     case (sbva, sbvb) of
       (Just sbvav, Just sbvbv) -> SBV.query $ do
         SBV.constrain $ lt SBV..== sbvfun sbvav sbvbv
@@ -172,8 +172,8 @@ testBinaryOpLowering config f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fab
-    let sbva :: Maybe (TermTy n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (TermTy n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
     case (sbva, sbvb) of
       (Just sbvav, Just sbvbv) -> SBV.query $ do
         SBV.constrain $ lt SBV../= sbvfun sbvav sbvbv
@@ -191,19 +191,19 @@ testBinaryOpLowering config f name sbvfun = do
 --   forall a b c as bs n tag.
 --   ( HasCallStack,
 --     BinaryOp tag a b c,
---     SBV.EqSymbolic (TermTy n c),
---     Typeable (TermTy n a),
---     Typeable (TermTy n b),
+--     SBV.EqSymbolic (SBVType n c),
+--     Typeable (SBVType n a),
+--     Typeable (SBVType n b),
 --     SBV.SymVal as,
 --     SBV.SymVal bs,
 --     Show as,
 --     Show bs,
---     TermTy n a ~ SBV.SBV as,
---     TermTy n b ~ SBV.SBV bs
+--     SBVType n a ~ SBV.SBV as,
+--     SBVType n b ~ SBV.SBV bs
 --   ) =>
 --   GrisetteSMTConfig n ->
 --   tag ->
---   (TermTy n a -> TermTy n b -> TermTy n c) ->
+--   (SBVType n a -> SBVType n b -> SBVType n c) ->
 --   Assertion
 -- testBinaryOpLowering' config t = testBinaryOpLowering @a @b @c @as @bs config (constructBinary t) (show t)
 
@@ -213,24 +213,24 @@ testTernaryOpLowering ::
     SupportedPrim a,
     SupportedPrim b,
     SupportedPrim c,
-    SBV.EqSymbolic (TermTy n d),
-    Typeable (TermTy n a),
-    Typeable (TermTy n b),
-    Typeable (TermTy n c),
+    SBV.EqSymbolic (SBVType n d),
+    Typeable (SBVType n a),
+    Typeable (SBVType n b),
+    Typeable (SBVType n c),
     SBV.SymVal as,
     SBV.SymVal bs,
     SBV.SymVal cs,
     Show as,
     Show bs,
     Show cs,
-    TermTy n a ~ SBV.SBV as,
-    TermTy n b ~ SBV.SBV bs,
-    TermTy n c ~ SBV.SBV cs
+    SBVType n a ~ SBV.SBV as,
+    SBVType n b ~ SBV.SBV bs,
+    SBVType n c ~ SBV.SBV cs
   ) =>
   GrisetteSMTConfig n ->
   (Term a -> Term b -> Term c -> Term d) ->
   T.Text ->
-  (TermTy n a -> TermTy n b -> TermTy n c -> TermTy n d) ->
+  (SBVType n a -> SBVType n b -> SBVType n c -> SBVType n d) ->
   Assertion
 testTernaryOpLowering config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
@@ -239,9 +239,9 @@ testTernaryOpLowering config f name sbvfun = do
   let fabc :: Term d = f a b c
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc
-    let sbva :: Maybe (TermTy n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (TermTy n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
-    let sbvc :: Maybe (TermTy n c) = M.lookup (SomeTerm c) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
+    let sbvc :: Maybe (SBVType n c) = M.lookup (SomeTerm c) (biMapToSBV m) >>= fromDynamic
     case (sbva, sbvb, sbvc) of
       (Just sbvav, Just sbvbv, Just sbvcv) -> SBV.query $ do
         SBV.constrain $ lt SBV..== sbvfun sbvav sbvbv sbvcv
@@ -252,9 +252,9 @@ testTernaryOpLowering config f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc
-    let sbva :: Maybe (TermTy n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (TermTy n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
-    let sbvc :: Maybe (TermTy n c) = M.lookup (SomeTerm c) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
+    let sbvc :: Maybe (SBVType n c) = M.lookup (SomeTerm c) (biMapToSBV m) >>= fromDynamic
     case (sbva, sbvb, sbvc) of
       (Just sbvav, Just sbvbv, Just sbvcv) -> SBV.query $ do
         SBV.constrain $ lt SBV../= sbvfun sbvav sbvbv sbvcv
@@ -276,23 +276,23 @@ testTernaryOpLowering config f name sbvfun = do
 --   forall a b c d as bs cs n tag.
 --   ( HasCallStack,
 --     TernaryOp tag a b c d,
---     SBV.EqSymbolic (TermTy n d),
---     Typeable (TermTy n a),
---     Typeable (TermTy n b),
---     Typeable (TermTy n c),
+--     SBV.EqSymbolic (SBVType n d),
+--     Typeable (SBVType n a),
+--     Typeable (SBVType n b),
+--     Typeable (SBVType n c),
 --     SBV.SymVal as,
 --     SBV.SymVal bs,
 --     SBV.SymVal cs,
 --     Show as,
 --     Show bs,
 --     Show cs,
---     TermTy n a ~ SBV.SBV as,
---     TermTy n b ~ SBV.SBV bs,
---     TermTy n c ~ SBV.SBV cs
+--     SBVType n a ~ SBV.SBV as,
+--     SBVType n b ~ SBV.SBV bs,
+--     SBVType n c ~ SBV.SBV cs
 --   ) =>
 --   GrisetteSMTConfig n ->
 --   tag ->
---   (TermTy n a -> TermTy n b -> TermTy n c -> TermTy n d) ->
+--   (SBVType n a -> SBVType n b -> SBVType n c -> SBVType n d) ->
 --   Assertion
 -- testTernaryOpLowering' config t = testTernaryOpLowering @a @b @c @d @as @bs @cs config (constructTernary t) (show t)
 

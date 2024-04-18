@@ -74,9 +74,11 @@ import qualified Data.SBV.Trans.Control as SBVTC
 import GHC.IO.Exception (ExitCode (ExitSuccess))
 import GHC.TypeNats (KnownNat, Nat)
 import Grisette.Backend.SBV.Data.SMT.Lowering
+  ( parseModel,
+  )
+import Grisette.Backend.SBV.Data.SMT.LoweringNew
   ( SymBiMap,
     lowerSinglePrimCached,
-    parseModel,
   )
 import Grisette.Backend.SBV.Data.SMT.SymBiMap (emptySymBiMap)
 import Grisette.Core.Data.BV (IntN, WordN)
@@ -97,6 +99,7 @@ import Grisette.Core.Data.Class.Solver
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
 import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
+import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.IR.SymPrim.Data.Prim.Model as PM
   ( Model,
   )
@@ -148,7 +151,7 @@ type family TermTy bitWidth b where
 data ApproximationConfig (n :: Nat) where
   NoApprox :: ApproximationConfig 0
   Approx ::
-    (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+    (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n, KnownIsZero n) =>
     p n ->
     ApproximationConfig n
 
@@ -169,7 +172,7 @@ preciseExtraConfig =
     }
 
 approximateExtraConfig ::
-  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n, KnownIsZero n) =>
   p n ->
   ExtraConfig n
 approximateExtraConfig p =
@@ -250,7 +253,7 @@ precise config = GrisetteSMTConfig config preciseExtraConfig
 -- configuration.
 approx ::
   forall p n.
-  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n, KnownIsZero n) =>
   p n ->
   SBV.SMTConfig ->
   GrisetteSMTConfig n
@@ -268,7 +271,7 @@ clearTimeout config =
 
 -- | Set the reasoning precision for the solver configuration.
 withApprox ::
-  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n) =>
+  (KnownNat n, IsZero n ~ 'False, SBV.BVIsNonZero n, KnownIsZero n) =>
   p n ->
   GrisetteSMTConfig i ->
   GrisetteSMTConfig n

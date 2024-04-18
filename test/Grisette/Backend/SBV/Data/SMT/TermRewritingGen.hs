@@ -46,7 +46,7 @@ module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
   )
 where
 
-import Data.Bits (Bits, FiniteBits)
+import Data.Bits (FiniteBits)
 import Data.Data (Proxy (Proxy), Typeable)
 import Data.Kind (Type)
 import qualified Data.Text as T
@@ -278,16 +278,16 @@ leOrdSpec ::
   b
 leOrdSpec = constructBinarySpec leOrdTerm pevalLeOrdTerm
 
-andBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a -> a
+andBitsSpec :: (TermRewritingSpec a av, PEvalBitwiseTerm av) => a -> a -> a
 andBitsSpec = constructBinarySpec andBitsTerm pevalAndBitsTerm
 
-orBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a -> a
+orBitsSpec :: (TermRewritingSpec a av, PEvalBitwiseTerm av) => a -> a -> a
 orBitsSpec = constructBinarySpec orBitsTerm pevalOrBitsTerm
 
-xorBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a -> a
+xorBitsSpec :: (TermRewritingSpec a av, PEvalBitwiseTerm av) => a -> a -> a
 xorBitsSpec = constructBinarySpec xorBitsTerm pevalXorBitsTerm
 
-complementBitsSpec :: (TermRewritingSpec a av, Bits av) => a -> a
+complementBitsSpec :: (TermRewritingSpec a av, PEvalBitwiseTerm av) => a -> a
 complementBitsSpec = constructUnarySpec complementBitsTerm pevalComplementBitsTerm
 
 shiftLeftSpec :: (TermRewritingSpec a av, PEvalShiftTerm av) => a -> a -> a
@@ -603,6 +603,7 @@ type SupportedBV bv (n :: Nat) =
     PEvalRotateTerm (bv n),
     PEvalNumTerm (bv n),
     PEvalOrdTerm (bv n),
+    PEvalBitwiseTerm (bv n),
     PEvalBVTerm bv
   )
 

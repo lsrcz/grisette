@@ -1,27 +1,55 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Grisette.IR.SymPrim.Data.Prim.Internal.Instances.BVPEval () where
 
 import Data.Maybe (isJust)
 import Data.Proxy (Proxy (Proxy))
+import qualified Data.SBV as SBV
 import Data.Typeable (type (:~:) (Refl))
-import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (<=))
+import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (-), type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.BitVector
-  ( SizedBV (sizedBVConcat, sizedBVFromIntegral, sizedBVSelect, sizedBVSext, sizedBVZext),
+  ( SizedBV
+      ( sizedBVConcat,
+        sizedBVFromIntegral,
+        sizedBVSelect,
+        sizedBVSext,
+        sizedBVZext
+      ),
   )
-import Grisette.Core.Data.Class.SignConversion (SignConversion (toSigned, toUnsigned))
-import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.Core.Data.Class.SignConversion
+  ( SignConversion (toSigned, toUnsigned),
+  )
+import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim
+  ( bvIsNonZeroFromGEq1,
+  )
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
-  ( PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
-    PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
+  ( PEvalBVSignConversionTerm
+      ( pevalBVToSignedTerm,
+        pevalBVToUnsignedTerm,
+        sbvToSigned,
+        sbvToUnsigned,
+        withSbvSignConversionTermConstraint
+      ),
+    PEvalBVTerm
+      ( pevalBVConcatTerm,
+        pevalBVExtendTerm,
+        pevalBVSelectTerm,
+        sbvBVConcatTerm,
+        sbvBVExtendTerm,
+        sbvBVSelectTerm
+      ),
+    SupportedPrim (withPrim),
     Term
       ( BVConcatTerm,
         BVExtendTerm,
@@ -52,8 +80,10 @@ import Grisette.Utils.Parameterized
     mkPositiveNatRepr,
     natRepr,
     unsafeAxiom,
+    unsafeKnownProof,
     unsafeLeqProof,
     withKnownNat,
+    withKnownProof,
   )
 
 instance PEvalBVSignConversionTerm WordN IntN where
@@ -67,7 +97,8 @@ instance PEvalBVSignConversionTerm WordN IntN where
       doPevalToSignedTerm (ConTerm _ b) = Just $ conTerm $ toSigned b
       doPevalToSignedTerm (ToUnsignedTerm _ b) = Just b >>= castTerm
       doPevalToSignedTerm (BVConcatTerm _ b1 b2) =
-        Just $ pevalBVConcatTerm (pevalBVToSignedTerm b1) (pevalBVToSignedTerm b2)
+        Just $
+          pevalBVConcatTerm (pevalBVToSignedTerm b1) (pevalBVToSignedTerm b2)
       doPevalToSignedTerm (BVExtendTerm _ signed pr b) =
         Just $ pevalBVExtendTerm signed pr $ pevalBVToSignedTerm b
       doPevalToSignedTerm _ = Nothing
@@ -81,10 +112,15 @@ instance PEvalBVSignConversionTerm WordN IntN where
       doPevalToUnsignedTerm (ConTerm _ b) = Just $ conTerm $ toUnsigned b
       doPevalToUnsignedTerm (ToSignedTerm _ b) = Just b >>= castTerm
       doPevalToUnsignedTerm (BVConcatTerm _ b1 b2) =
-        Just $ pevalBVConcatTerm (pevalBVToUnsignedTerm b1) (pevalBVToUnsignedTerm b2)
+        Just $
+          pevalBVConcatTerm
+            (pevalBVToUnsignedTerm b1)
+            (pevalBVToUnsignedTerm b2)
       doPevalToUnsignedTerm (BVExtendTerm _ signed pr b) =
         Just $ pevalBVExtendTerm signed pr $ pevalBVToUnsignedTerm b
       doPevalToUnsignedTerm _ = Nothing
+  withSbvSignConversionTermConstraint (_ :: p n) qint r =
+    withPrim @(WordN n) qint r
 
 pevalDefaultBVSelectTerm ::
   forall bv n ix w p q.
@@ -139,7 +175,8 @@ doPevalDefaultBVSelectTerm _ _ rhs
   | isJust (sameNat (Proxy @ix) (Proxy @0))
       && isJust (sameNat (Proxy @w) (Proxy @n)) =
       Just rhs >>= castTerm
-doPevalDefaultBVSelectTerm ix w (ConTerm _ b) = Just $ conTerm $ sizedBVSelect ix w b
+doPevalDefaultBVSelectTerm ix w (ConTerm _ b) =
+  Just $ conTerm $ sizedBVSelect ix w b
 doPevalDefaultBVSelectTerm ix w (ToSignedTerm _ b) =
   Just $ pevalBVToSignedTerm $ pevalBVSelectTerm ix w b
 doPevalDefaultBVSelectTerm ix w (ToUnsignedTerm _ b) =
@@ -463,8 +500,83 @@ instance PEvalBVTerm WordN where
   pevalBVSelectTerm = pevalDefaultBVSelectTerm
   pevalBVConcatTerm = pevalDefaultBVConcatTerm
   pevalBVExtendTerm = pevalDefaultBVExtendTerm
+  sbvBVConcatTerm _ pl pr l r =
+    bvIsNonZeroFromGEq1 pl $
+      bvIsNonZeroFromGEq1 pr $
+        l SBV.# r
+  sbvBVSelectTerm _ (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
+    bvIsNonZeroFromGEq1 (Proxy @n) $
+      bvIsNonZeroFromGEq1 (Proxy @w) $
+        sbvDefaultBVSelectTerm pix pw pn bv
+  sbvBVExtendTerm _ (_ :: p0 l) (_ :: p1 r) signed bv =
+    withKnownProof
+      (unsafeKnownProof @(r - l) (natVal (Proxy @r) - natVal (Proxy @l)))
+      $ case (unsafeLeqProof @(l + 1) @r, unsafeLeqProof @1 @(r - l)) of
+        (LeqProof, LeqProof) ->
+          bvIsNonZeroFromGEq1 (Proxy @r) $
+            bvIsNonZeroFromGEq1 (Proxy @l) $
+              bvIsNonZeroFromGEq1 (Proxy @(r - l)) $
+                if signed then SBV.signExtend bv else SBV.zeroExtend bv
 
 instance PEvalBVTerm IntN where
   pevalBVSelectTerm = pevalDefaultBVSelectTerm
   pevalBVConcatTerm = pevalDefaultBVConcatTerm
   pevalBVExtendTerm = pevalDefaultBVExtendTerm
+  sbvBVConcatTerm pn (pl :: p l) (pr :: q r) l r =
+    bvIsNonZeroFromGEq1 pl $
+      bvIsNonZeroFromGEq1 pr $
+        withKnownNat (addNat (natRepr @l) (natRepr @r)) $
+          case unsafeLeqProof @1 @(l + r) of
+            LeqProof ->
+              bvIsNonZeroFromGEq1 (Proxy @(l + r)) $
+                sbvToSigned (Proxy @WordN) (Proxy @(l + r)) pn $
+                  sbvToUnsigned (Proxy @IntN) pl pn l
+                    SBV.# sbvToUnsigned (Proxy @IntN) pr pn r
+  sbvBVSelectTerm _ (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
+    bvIsNonZeroFromGEq1 (Proxy @n) $
+      bvIsNonZeroFromGEq1 (Proxy @w) $
+        sbvDefaultBVSelectTerm pix pw pn bv
+  sbvBVExtendTerm _ (_ :: p0 l) (_ :: p1 r) signed bv =
+    withKnownProof
+      (unsafeKnownProof @(r - l) (natVal (Proxy @r) - natVal (Proxy @l)))
+      $ case (unsafeLeqProof @(l + 1) @r, unsafeLeqProof @1 @(r - l)) of
+        (LeqProof, LeqProof) ->
+          bvIsNonZeroFromGEq1 (Proxy @r) $
+            bvIsNonZeroFromGEq1 (Proxy @l) $
+              bvIsNonZeroFromGEq1 (Proxy @(r - l)) $
+                if signed
+                  then SBV.signExtend bv
+                  else
+                    SBV.sFromIntegral
+                      ( SBV.zeroExtend
+                          (SBV.sFromIntegral bv :: SBV.SBV (SBV.WordN l)) ::
+                          SBV.SBV (SBV.WordN r)
+                      )
+
+sbvDefaultBVSelectTerm ::
+  ( KnownNat ix,
+    KnownNat w,
+    KnownNat n,
+    1 <= n,
+    1 <= w,
+    (ix + w) <= n,
+    SBV.SymVal (bv n)
+  ) =>
+  p1 ix ->
+  p2 w ->
+  p3 n ->
+  SBV.SBV (bv n) ->
+  SBV.SBV (bv w)
+sbvDefaultBVSelectTerm (_ :: p0 ix) (_ :: p1 w) (_ :: p2 n) bv =
+  withKnownProof
+    ( unsafeKnownProof @(w + ix - 1)
+        (natVal (Proxy @w) + natVal (Proxy @ix) - 1)
+    )
+    $ case ( unsafeAxiom @(w + ix - 1 - ix + 1) @w,
+             unsafeLeqProof @(((w + ix) - 1) + 1) @n,
+             unsafeLeqProof @ix @(w + ix - 1)
+           ) of
+      (Refl, LeqProof, LeqProof) ->
+        bvIsNonZeroFromGEq1 (Proxy @n) $
+          bvIsNonZeroFromGEq1 (Proxy @w) $
+            SBV.bvExtract (Proxy @(w + ix - 1)) (Proxy @ix) bv

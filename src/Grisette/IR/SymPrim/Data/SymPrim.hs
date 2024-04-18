@@ -160,6 +160,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalRotateRightTerm
       ),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
+    SupportedNonFuncPrim,
     SupportedPrim (pevalITETerm),
     SymRep (SymType),
     Term (ConTerm, SymTerm),
@@ -325,14 +326,25 @@ infixr 0 =~>
 instance (ConRep a, ConRep b) => ConRep (a =~> b) where
   type ConType (a =~> b) = ConType a =-> ConType b
 
-instance (SymRep a, SymRep b) => SymRep (a =-> b) where
+instance (SymRep a, SymRep b, SupportedPrim (a =-> b)) => SymRep (a =-> b) where
   type SymType (a =-> b) = SymType a =~> SymType b
 
-instance (LinkedRep ca sa, LinkedRep cb sb) => LinkedRep (ca =-> cb) (sa =~> sb) where
+instance
+  (LinkedRep ca sa, LinkedRep cb sb, SupportedPrim (ca =-> cb)) =>
+  LinkedRep (ca =-> cb) (sa =~> sb)
+  where
   underlyingTerm (SymTabularFun a) = a
   wrapTerm = SymTabularFun
 
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Function (sa =~> sb) sa sb where
+instance
+  ( SupportedPrim ca,
+    SupportedPrim cb,
+    LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim (ca =-> cb)
+  ) =>
+  Function (sa =~> sb) sa sb
+  where
   (SymTabularFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
 instance
@@ -340,7 +352,8 @@ instance
     LinkedRep ct st,
     Apply st,
     SupportedPrim ca,
-    SupportedPrim ct
+    SupportedPrim ct,
+    SupportedPrim (ca =-> ct)
   ) =>
   Apply (sa =~> st)
   where
@@ -377,20 +390,33 @@ instance (ConRep a, ConRep b) => ConRep (a -~> b) where
   type ConType (a -~> b) = ConType a --> ConType b
 
 instance
-  (SymRep ca, SymRep cb, SupportedPrim ca, SupportedPrim cb) =>
+  ( SymRep ca,
+    SymRep cb,
+    SupportedPrim (ca --> cb)
+  ) =>
   SymRep (ca --> cb)
   where
   type SymType (ca --> cb) = SymType ca -~> SymType cb
 
 instance
-  (LinkedRep ca sa, LinkedRep cb sb, SupportedPrim ca, SupportedPrim cb) =>
+  ( LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim ca,
+    SupportedPrim cb,
+    SupportedPrim (ca --> cb)
+  ) =>
   LinkedRep (ca --> cb) (sa -~> sb)
   where
   underlyingTerm (SymGeneralFun a) = a
   wrapTerm = SymGeneralFun
 
 instance
-  (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) =>
+  ( SupportedNonFuncPrim ca,
+    SupportedPrim cb,
+    LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim (ca --> cb)
+  ) =>
   Function (sa -~> sb) sa sb
   where
   (SymGeneralFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
@@ -399,8 +425,9 @@ instance
   ( LinkedRep ca sa,
     LinkedRep ct st,
     Apply st,
-    SupportedPrim ca,
-    SupportedPrim ct
+    SupportedNonFuncPrim ca,
+    SupportedPrim ct,
+    SupportedPrim (ca --> ct)
   ) =>
   Apply (sa -~> st)
   where
@@ -468,7 +495,9 @@ instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
 
 #define SOLVABLE_FUN(symop, conop, symcons) \
 instance \
-  (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => \
+  (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb, \
+    SupportedPrim (conop ca cb) \
+  ) => \
   Solvable (conop ca cb) (symop sa sb) where \
   con = symcons . conTerm; \
   sym = symcons . symTerm; \
@@ -572,8 +601,8 @@ instance Show symtype where \
 instance (KnownNat n, 1 <= n) => Show (symtype n) where \
   show (symtype t) = pformat t
 
-#define SHOW_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Show (sa op sb) where \
+#define SHOW_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => Show (op sa sb) where \
   show (cons t) = pformat t
 
 #if 1
@@ -581,8 +610,8 @@ SHOW_SIMPLE(SymBool)
 SHOW_SIMPLE(SymInteger)
 SHOW_BV(SymIntN)
 SHOW_BV(SymWordN)
-SHOW_FUN(=~>, SymTabularFun)
-SHOW_FUN(-~>, SymGeneralFun)
+SHOW_FUN((=->), (=~>), SymTabularFun)
+SHOW_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- Hashable
@@ -595,8 +624,8 @@ instance Hashable symtype where \
 instance (KnownNat n, 1 <= n) => Hashable (symtype n) where \
   hashWithSalt s (symtype v) = s `hashWithSalt` v
 
-#define HASHABLE_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Hashable (sa op sb) where \
+#define HASHABLE_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => Hashable (op sa sb) where \
   hashWithSalt s (cons v) = s `hashWithSalt` v
 
 #if 1
@@ -604,8 +633,8 @@ HASHABLE_SIMPLE(SymBool)
 HASHABLE_SIMPLE(SymInteger)
 HASHABLE_BV(SymIntN)
 HASHABLE_BV(SymWordN)
-HASHABLE_FUN(=~>, SymTabularFun)
-HASHABLE_FUN(-~>, SymGeneralFun)
+HASHABLE_FUN((=->), (=~>), SymTabularFun)
+HASHABLE_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- Eq
@@ -618,8 +647,8 @@ instance Eq symtype where \
 instance (KnownNat n, 1 <= n) => Eq (symtype n) where \
   (symtype l) == (symtype r) = l == r
 
-#define EQ_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Eq (sa op sb) where \
+#define EQ_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => Eq (op sa sb) where \
   (cons l) == (cons r) = l == r
 
 #if 1
@@ -627,8 +656,8 @@ EQ_SIMPLE(SymBool)
 EQ_SIMPLE(SymInteger)
 EQ_BV(SymIntN)
 EQ_BV(SymWordN)
-EQ_FUN(=~>, SymTabularFun)
-EQ_FUN(-~>, SymGeneralFun)
+EQ_FUN((=->), (=~>), SymTabularFun)
+EQ_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- IsString
@@ -641,8 +670,8 @@ instance IsString symtype where \
 instance (KnownNat n, 1 <= n) => IsString (symtype n) where \
   fromString = ssym . fromString
 
-#define IS_STRING_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => IsString (sa op sb) where \
+#define IS_STRING_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => IsString (op sa sb) where \
   fromString = ssym . fromString
 
 #if 1
@@ -650,8 +679,8 @@ IS_STRING_SIMPLE(SymBool)
 IS_STRING_SIMPLE(SymInteger)
 IS_STRING_BV(SymIntN)
 IS_STRING_BV(SymWordN)
-IS_STRING_FUN(=~>, SymTabularFunc)
-IS_STRING_FUN(-~>, SymGeneralFun)
+IS_STRING_FUN((=->), (=~>), SymTabularFunc)
+IS_STRING_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- SizedBV
@@ -963,8 +992,8 @@ instance AllSyms t where \
 instance (KnownNat n, 1 <= n) => AllSyms (t n) where \
   allSymsS v = (SomeSym v :)
 
-#define ALLSYMS_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => AllSyms (sa op sb) where \
+#define ALLSYMS_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => AllSyms (op sa sb) where \
   allSymsS v = (SomeSym v :)
 
 #if 1
@@ -987,8 +1016,8 @@ ALLSYMS_SIMPLE(SymBool)
 ALLSYMS_SIMPLE(SymInteger)
 ALLSYMS_BV(SymIntN)
 ALLSYMS_BV(SymWordN)
-ALLSYMS_FUN(=~>)
-ALLSYMS_FUN(-~>)
+ALLSYMS_FUN((=->), (=~>))
+ALLSYMS_FUN((-->), (-~>))
 #endif
 
 instance AllSyms () where

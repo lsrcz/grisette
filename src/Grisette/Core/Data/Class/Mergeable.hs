@@ -116,6 +116,7 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
@@ -128,6 +129,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>),
     type (=~>),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Helper type for combining arbitrary number of indices into one.
@@ -904,8 +906,9 @@ instance Mergeable symtype where \
 instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
   rootStrategy = SimpleStrategy symIte
 
-#define MERGEABLE_FUN(op) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => Mergeable (sa op sb) where \
+#define MERGEABLE_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  Mergeable (op sa sb) where \
   rootStrategy = SimpleStrategy symIte
 
 #if 1
@@ -913,8 +916,8 @@ MERGEABLE_SIMPLE(SymBool)
 MERGEABLE_SIMPLE(SymInteger)
 MERGEABLE_BV(SymIntN)
 MERGEABLE_BV(SymWordN)
-MERGEABLE_FUN(=~>)
-MERGEABLE_FUN(-~>)
+MERGEABLE_FUN((=->), (=~>))
+MERGEABLE_FUN((-->), (-~>))
 #endif
 
 -- Exceptions

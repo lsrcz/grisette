@@ -54,6 +54,7 @@ import Generics.Deriving.Instances ()
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
+import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
 import Grisette.IR.SymPrim.Data.Prim.Model (Model, evaluateTerm)
 import Grisette.IR.SymPrim.Data.Prim.Term (LinkedRep, SupportedPrim)
 import Grisette.IR.SymPrim.Data.SymPrim
@@ -64,6 +65,7 @@ import Grisette.IR.SymPrim.Data.SymPrim
     type (-~>) (SymGeneralFun),
     type (=~>) (SymTabularFun),
   )
+import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -236,17 +238,19 @@ instance EvaluateSym symtype where \
 instance (KnownNat n, 1 <= n) => EvaluateSym (symtype n) where \
   evaluateSym fillDefault model (symtype t) = symtype $ evaluateTerm fillDefault model t
 
-#define EVALUATE_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => EvaluateSym (sa op sb) where \
-  evaluateSym fillDefault model (cons t) = cons $ evaluateTerm fillDefault model t
+#define EVALUATE_SYM_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  EvaluateSym (op sa sb) where \
+  evaluateSym fillDefault model (cons t) = \
+    cons $ evaluateTerm fillDefault model t
 
 #if 1
 EVALUATE_SYM_SIMPLE(SymBool)
 EVALUATE_SYM_SIMPLE(SymInteger)
 EVALUATE_SYM_BV(SymIntN)
 EVALUATE_SYM_BV(SymWordN)
-EVALUATE_SYM_FUN(=~>, SymTabularFun)
-EVALUATE_SYM_FUN(-~>, SymGeneralFun)
+EVALUATE_SYM_FUN((=->), (=~>), SymTabularFun)
+EVALUATE_SYM_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 -- Exception

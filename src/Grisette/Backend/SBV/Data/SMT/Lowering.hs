@@ -21,13 +21,12 @@
 -- Module      :   Grisette.Backend.SBV.Data.SMT.Lowering
 -- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
---
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Backend.SBV.Data.SMT.Lowering
-  ( lowerSinglePrim,
-    lowerSinglePrimCached,
+  ( -- lowerSinglePrim,
+    -- lowerSinglePrimCached,
     parseModel,
     SymBiMap,
   )
@@ -82,7 +81,7 @@ import Grisette.Core.Data.Class.ModelOps
   )
 import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
 import Grisette.IR.SymPrim.Data.GeneralFun (buildGeneralFun, type (-->))
-import Grisette.IR.SymPrim.Data.Prim.Internal.Term (SupportedPrim)
+import Grisette.IR.SymPrim.Data.Prim.Internal.Term (SupportedNonFuncPrim, SupportedPrim)
 import Grisette.IR.SymPrim.Data.Prim.Model as PM (Model)
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -1110,7 +1109,7 @@ signedBVTypeView t = case t of
   R.App s (n :: R.TypeRep w) ->
     case (R.eqTypeRep s (R.typeRep @IntN), R.eqTypeRep (R.typeRepKind n) (R.typeRep @Nat)) of
       (Just R.HRefl, Just R.HRefl) ->
-        Just $ unsafeBVIsNonZero @w $ withPrim (Proxy @t) (BVTypeContainer Proxy)
+        Just $ unsafeBVIsNonZero @w $ withPrim @t (Proxy @0) (BVTypeContainer Proxy)
       _ -> Nothing
   _ -> Nothing
   where
@@ -1132,7 +1131,7 @@ unsignedBVTypeView t = case t of
   R.App s (n :: R.TypeRep w) ->
     case (R.eqTypeRep s (R.typeRep @WordN), R.eqTypeRep (R.typeRepKind n) (R.typeRep @Nat)) of
       (Just R.HRefl, Just R.HRefl) ->
-        Just $ unsafeBVIsNonZero @w $ withPrim (Proxy @t) (BVTypeContainer Proxy)
+        Just $ unsafeBVIsNonZero @w $ withPrim @t (Proxy @0) (BVTypeContainer Proxy)
       _ -> Nothing
   _ -> Nothing
   where
@@ -1150,13 +1149,20 @@ pattern UnsignedBVType ::
 pattern UnsignedBVType p <- (unsignedBVTypeView @t -> Just (BVTypeContainer p))
 
 data TFunTypeContainer :: forall k. k -> Type where
-  TFunTypeContainer :: (SupportedPrim a, SupportedPrim b) => R.TypeRep a -> R.TypeRep b -> TFunTypeContainer (a =-> b)
+  TFunTypeContainer ::
+    ( SupportedNonFuncPrim a,
+      SupportedPrim a,
+      SupportedPrim b
+    ) =>
+    R.TypeRep a ->
+    R.TypeRep b ->
+    TFunTypeContainer (a =-> b)
 
 tFunTypeView :: forall t. (SupportedPrim t) => R.TypeRep t -> Maybe (TFunTypeContainer t)
 tFunTypeView t = case t of
   R.App (R.App arr (ta2' :: R.TypeRep a2)) (tr2' :: R.TypeRep r2) ->
     case R.eqTypeRep arr (R.typeRep @(=->)) of
-      Just R.HRefl -> Just $ withPrim (Proxy @t) $ TFunTypeContainer ta2' tr2'
+      Just R.HRefl -> Just $ withPrim @t (Proxy @0) $ TFunTypeContainer ta2' tr2'
       Nothing -> Nothing
   _ -> Nothing
 
@@ -1164,7 +1170,7 @@ pattern TFunType ::
   forall t.
   (SupportedPrim t) =>
   forall (a :: Type) (b :: Type).
-  (t ~~ (a =-> b), SupportedPrim a, SupportedPrim b) =>
+  (t ~~ (a =-> b), SupportedNonFuncPrim a, SupportedPrim b) =>
   R.TypeRep a ->
   R.TypeRep b ->
   R.TypeRep t
@@ -1177,7 +1183,12 @@ pattern TFun3Type ::
   forall t.
   (SupportedPrim t) =>
   forall (a :: Type) (b :: Type) (c :: Type).
-  (t ~~ (a =-> b =-> c), SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+  ( t ~~ (a =-> b =-> c),
+    SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedPrim c,
+    SupportedPrim (b =-> c)
+  ) =>
   R.TypeRep a ->
   R.TypeRep b ->
   R.TypeRep c ->
@@ -1189,10 +1200,12 @@ pattern TFun4Type ::
   (SupportedPrim t) =>
   forall (a :: Type) (b :: Type) (c :: Type) (d :: Type).
   ( t ~~ (a =-> b =-> c =-> d),
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d
+    SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedPrim d,
+    SupportedPrim (c =-> d),
+    SupportedPrim (b =-> c =-> d)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1206,11 +1219,14 @@ pattern TFun5Type ::
   (SupportedPrim t) =>
   forall (a :: Type) (b :: Type) (c :: Type) (d :: Type) (e :: Type).
   ( t ~~ (a =-> b =-> c =-> d =-> e),
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e
+    SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedPrim e,
+    SupportedPrim (d =-> e),
+    SupportedPrim (c =-> d =-> e),
+    SupportedPrim (b =-> c =-> d =-> e)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1240,12 +1256,16 @@ pattern TFun6Type ::
     (e :: Type)
     (f :: Type).
   ( t ~~ (a =-> b =-> c =-> d =-> e =-> f),
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f
+    SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedPrim f,
+    SupportedPrim (e =-> f),
+    SupportedPrim (d =-> e =-> f),
+    SupportedPrim (c =-> d =-> e =-> f),
+    SupportedPrim (b =-> c =-> d =-> e =-> f)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1280,13 +1300,18 @@ pattern TFun7Type ::
     (f :: Type)
     (g :: Type).
   ( t ~~ (a =-> b =-> c =-> d =-> e =-> f =-> g),
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f,
-    SupportedPrim g
+    SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedNonFuncPrim f,
+    SupportedPrim g,
+    SupportedPrim (f =-> g),
+    SupportedPrim (e =-> f =-> g),
+    SupportedPrim (d =-> e =-> f =-> g),
+    SupportedPrim (c =-> d =-> e =-> f =-> g),
+    SupportedPrim (b =-> c =-> d =-> e =-> f =-> g)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1326,14 +1351,20 @@ pattern TFun8Type ::
     (g :: Type)
     (h :: Type).
   ( t ~~ (a =-> b =-> c =-> d =-> e =-> f =-> g =-> h),
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f,
-    SupportedPrim g,
-    SupportedPrim h
+    SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    SupportedNonFuncPrim c,
+    SupportedNonFuncPrim d,
+    SupportedNonFuncPrim e,
+    SupportedNonFuncPrim f,
+    SupportedNonFuncPrim g,
+    SupportedPrim h,
+    SupportedPrim (g =-> h),
+    SupportedPrim (f =-> g =-> h),
+    SupportedPrim (e =-> f =-> g =-> h),
+    SupportedPrim (d =-> e =-> f =-> g =-> h),
+    SupportedPrim (c =-> d =-> e =-> f =-> g =-> h),
+    SupportedPrim (b =-> c =-> d =-> e =-> f =-> g =-> h)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1371,7 +1402,7 @@ gFunTypeView :: forall t. (SupportedPrim t) => R.TypeRep t -> Maybe (GFunTypeCon
 gFunTypeView t = case t of
   R.App (R.App arr (ta2' :: R.TypeRep a2)) (tr2' :: R.TypeRep r2) ->
     case R.eqTypeRep arr (R.typeRep @(-->)) of
-      Just R.HRefl -> Just $ withPrim (Proxy @t) $ GFunTypeContainer ta2' tr2'
+      Just R.HRefl -> Just $ withPrim @t (Proxy @0) $ GFunTypeContainer ta2' tr2'
       Nothing -> Nothing
   _ -> Nothing
 
@@ -1392,7 +1423,12 @@ pattern GFun3Type ::
   forall t.
   (SupportedPrim t) =>
   forall (a :: Type) (b :: Type) (c :: Type).
-  (t ~~ (a --> b --> c), SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+  ( t ~~ (a --> b --> c),
+    SupportedPrim a,
+    SupportedPrim b,
+    SupportedPrim c,
+    SupportedPrim (b --> c)
+  ) =>
   R.TypeRep a ->
   R.TypeRep b ->
   R.TypeRep c ->
@@ -1407,7 +1443,9 @@ pattern GFun4Type ::
     SupportedPrim a,
     SupportedPrim b,
     SupportedPrim c,
-    SupportedPrim d
+    SupportedPrim d,
+    SupportedPrim (c --> d),
+    SupportedPrim (b --> c --> d)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1425,7 +1463,10 @@ pattern GFun5Type ::
     SupportedPrim b,
     SupportedPrim c,
     SupportedPrim d,
-    SupportedPrim e
+    SupportedPrim e,
+    SupportedPrim (d --> e),
+    SupportedPrim (c --> d --> e),
+    SupportedPrim (b --> c --> d --> e)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1460,7 +1501,11 @@ pattern GFun6Type ::
     SupportedPrim c,
     SupportedPrim d,
     SupportedPrim e,
-    SupportedPrim f
+    SupportedPrim f,
+    SupportedPrim (e --> f),
+    SupportedPrim (d --> e --> f),
+    SupportedPrim (c --> d --> e --> f),
+    SupportedPrim (b --> c --> d --> e --> f)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1501,7 +1546,12 @@ pattern GFun7Type ::
     SupportedPrim d,
     SupportedPrim e,
     SupportedPrim f,
-    SupportedPrim g
+    SupportedPrim g,
+    SupportedPrim (f --> g),
+    SupportedPrim (e --> f --> g),
+    SupportedPrim (d --> e --> f --> g),
+    SupportedPrim (c --> d --> e --> f --> g),
+    SupportedPrim (b --> c --> d --> e --> f --> g)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->
@@ -1548,7 +1598,13 @@ pattern GFun8Type ::
     SupportedPrim e,
     SupportedPrim f,
     SupportedPrim g,
-    SupportedPrim h
+    SupportedPrim h,
+    SupportedPrim (g --> h),
+    SupportedPrim (f --> g --> h),
+    SupportedPrim (e --> f --> g --> h),
+    SupportedPrim (d --> e --> f --> g --> h),
+    SupportedPrim (c --> d --> e --> f --> g --> h),
+    SupportedPrim (b --> c --> d --> e --> f --> g --> h)
   ) =>
   R.TypeRep a ->
   R.TypeRep b ->

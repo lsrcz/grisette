@@ -255,7 +255,8 @@ instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
   toCon = conView
 
 #define TO_CON_FROMSYM_FUN(conop, symop) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb) => ToCon (symop sa sb) (conop ca cb) where \
+instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  ToCon (symop sa sb) (conop ca cb) where \
   toCon = conView
 
 #if 1

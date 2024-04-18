@@ -1,6 +1,12 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalOrdTerm
@@ -20,14 +26,15 @@ import Control.Monad (msum)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalNumTerm ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (IsZeroCases (IsZeroEvidence, NonZeroEvidence), KnownIsZero (isZero))
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( PEvalNumTerm (pevalNegNumTerm),
-    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
+    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm, withSbvOrdTermConstraint),
     Term (AddNumTerm, ConTerm),
     conTerm,
     leOrdTerm,
     ltOrdTerm,
-    pevalSubNumTerm,
+    pevalSubNumTerm, SupportedPrim (withPrim),
   )
 import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold (binaryUnfoldOnce)
 
@@ -89,11 +96,16 @@ instance PEvalOrdTerm Integer where
                 Just $ pevalLeOrdTerm (conTerm $ -r) (pevalNegNumTerm l)
               _ -> Nothing
           ]
+  withSbvOrdTermConstraint p r = case isZero p of
+    IsZeroEvidence -> r
+    NonZeroEvidence -> r
 
 instance (KnownNat n, 1 <= n) => PEvalOrdTerm (WordN n) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
+  withSbvOrdTermConstraint p r = withPrim @(WordN n) p r
 
 instance (KnownNat n, 1 <= n) => PEvalOrdTerm (IntN n) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
+  withSbvOrdTermConstraint p r = withPrim @(IntN n) p r

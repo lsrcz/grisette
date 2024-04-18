@@ -1,6 +1,11 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- |
 -- Module      :   Grisette.IR.SymPrim.Data.Prim.Internal.Instances.PEvalDivModIntegralTerm
@@ -23,13 +28,16 @@ where
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (IsZeroCases (IsZeroEvidence, NonZeroEvidence), KnownIsZero (isZero))
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( PEvalDivModIntegralTerm
       ( pevalDivIntegralTerm,
         pevalModIntegralTerm,
         pevalQuotIntegralTerm,
-        pevalRemIntegralTerm
+        pevalRemIntegralTerm,
+        withSbvDivModIntegralTermConstraint
       ),
+    SupportedPrim (withPrim),
     Term (ConTerm),
     conTerm,
     divIntegralTerm,
@@ -128,15 +136,20 @@ instance PEvalDivModIntegralTerm Integer where
   pevalModIntegralTerm = pevalDefaultModIntegralTerm
   pevalQuotIntegralTerm = pevalDefaultQuotIntegralTerm
   pevalRemIntegralTerm = pevalDefaultRemIntegralTerm
+  withSbvDivModIntegralTermConstraint p r = case isZero p of
+    IsZeroEvidence -> r
+    NonZeroEvidence -> r
 
 instance (KnownNat n, 1 <= n) => PEvalDivModIntegralTerm (IntN n) where
   pevalDivIntegralTerm = pevalDefaultDivBoundedIntegralTerm
   pevalModIntegralTerm = pevalDefaultModIntegralTerm
   pevalQuotIntegralTerm = pevalDefaultQuotBoundedIntegralTerm
   pevalRemIntegralTerm = pevalDefaultRemIntegralTerm
+  withSbvDivModIntegralTermConstraint p r = withPrim @(IntN n) p r
 
 instance (KnownNat n, 1 <= n) => PEvalDivModIntegralTerm (WordN n) where
   pevalDivIntegralTerm = pevalDefaultDivIntegralTerm
   pevalModIntegralTerm = pevalDefaultModIntegralTerm
   pevalQuotIntegralTerm = pevalDefaultQuotIntegralTerm
   pevalRemIntegralTerm = pevalDefaultRemIntegralTerm
+  withSbvDivModIntegralTermConstraint p r = withPrim @(WordN n) p r
