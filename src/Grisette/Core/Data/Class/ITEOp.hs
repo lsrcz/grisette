@@ -24,14 +24,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim (pevalITETerm),
   )
-import Grisette.IR.SymPrim.Data.SymPrim
-  ( SymBool (SymBool),
-    SymIntN (SymIntN),
-    SymInteger (SymInteger),
+import Grisette.IR.SymPrim.Data.SymBV
+  ( SymIntN (SymIntN),
     SymWordN (SymWordN),
-    type (-~>) (SymGeneralFun),
-    type (=~>) (SymTabularFun),
   )
+import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>) (SymGeneralFun))
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
+import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 
 -- $setup

@@ -34,7 +34,7 @@ import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TryMerge (tryMerge)
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 
 -- $setup
 -- >>> import Control.Exception

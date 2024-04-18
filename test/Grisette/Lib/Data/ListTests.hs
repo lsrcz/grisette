@@ -50,7 +50,7 @@ import Grisette
     mrgIf,
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.IR.SymPrim.Data.SymPrim (SymInteger)
+import Grisette.IR.SymPrim (SymInteger)
 import Grisette.Lib.Control.Applicative (mrgPure)
 import Grisette.Lib.Data.List
   ( mrgBreak,

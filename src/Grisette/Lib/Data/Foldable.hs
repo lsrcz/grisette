@@ -68,7 +68,7 @@ import Grisette.Core.Data.Class.TryMerge
     TryMerge,
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
   ( mrgMplus,

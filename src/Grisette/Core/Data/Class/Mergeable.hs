@@ -121,14 +121,11 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import Grisette.IR.SymPrim.Data.SymPrim
-  ( SymBool,
-    SymIntN,
-    SymInteger,
-    SymWordN,
-    type (-~>),
-    type (=~>),
-  )
+import Grisette.IR.SymPrim.Data.SymBV (SymIntN, SymWordN)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>))
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
+import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Unsafe.Coerce (unsafeCoerce)
 

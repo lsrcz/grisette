@@ -17,7 +17,7 @@ import Grisette.Core.Data.Symbol
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( TypedSymbol (TypedSymbol),
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 
 conBool :: Bool -> SymBool
 conBool = con

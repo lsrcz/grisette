@@ -47,7 +47,7 @@ import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core

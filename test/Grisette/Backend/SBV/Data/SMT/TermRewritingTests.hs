@@ -53,7 +53,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( SupportedPrim,
     pformat,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

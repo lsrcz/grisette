@@ -186,7 +186,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model as PM
   ( Model,
   )
 import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
 
 -- $setup
 -- >>> import Grisette.Core

@@ -104,7 +104,7 @@ import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<=), (.>=)))
 import Grisette.Core.Data.Class.SimpleMergeable (UnionMergeable1, mrgIf)
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgPure)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Data.Foldable

@@ -46,12 +46,19 @@ import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
-import Grisette.IR.SymPrim.Data.Prim.Term (PEvalDivModIntegralTerm (pevalDivIntegralTerm, pevalModIntegralTerm, pevalQuotIntegralTerm, pevalRemIntegralTerm))
-import Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.Prim.Term
+  ( PEvalDivModIntegralTerm
+      ( pevalDivIntegralTerm,
+        pevalModIntegralTerm,
+        pevalQuotIntegralTerm,
+        pevalRemIntegralTerm
+      ),
+  )
+import Grisette.IR.SymPrim.Data.SymBV
   ( SymIntN (SymIntN),
-    SymInteger (SymInteger),
     SymWordN (SymWordN),
   )
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)

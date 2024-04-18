@@ -101,6 +101,9 @@ import Grisette.Core.Data.Union
   ( Union (UnionIf, UnionSingle),
     ifWithLeftMost,
   )
+import Grisette.IR.SymPrim.Data.AllSyms
+  ( AllSyms (allSymsS),
+  )
 import Grisette.IR.SymPrim.Data.GeneralFun
   ( type (-->),
   )
@@ -108,15 +111,14 @@ import Grisette.IR.SymPrim.Data.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import Grisette.IR.SymPrim.Data.SymPrim
-  ( AllSyms (allSymsS),
-    SymBool,
-    SymIntN,
-    SymInteger,
+import Grisette.IR.SymPrim.Data.SymBV
+  ( SymIntN,
     SymWordN,
-    type (-~>),
-    type (=~>),
   )
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>))
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
+import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>))
 import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
 import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)

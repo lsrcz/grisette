@@ -57,7 +57,8 @@ import Grisette.IR.SymPrim.Data.Prim.Model
   ( ModelValuePair ((::=)),
   )
 import Grisette.IR.SymPrim.Data.Prim.Term (TypedSymbol)
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool, SymInteger)
+import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
 import Grisette.TestUtil.PrettyPrint (compactRenderedAs, renderedAs)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)

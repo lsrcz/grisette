@@ -41,7 +41,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalShiftRightTerm
       ),
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymIntN (SymIntN), SymWordN (SymWordN))
+import Grisette.IR.SymPrim.Data.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 

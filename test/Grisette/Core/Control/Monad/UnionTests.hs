@@ -22,7 +22,7 @@ import Grisette.Core.Data.Union
     ifWithLeftMost,
     ifWithStrategy,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymInteger)
+import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

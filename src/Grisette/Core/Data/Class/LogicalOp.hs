@@ -10,7 +10,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalOrTerm,
     pevalXorTerm,
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
 
 -- $setup
 -- >>> import Grisette.Core

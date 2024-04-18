@@ -36,7 +36,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
         pevalRotateRightTerm
       ),
   )
-import Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim.Data.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )

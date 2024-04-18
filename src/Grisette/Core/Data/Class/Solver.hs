@@ -71,7 +71,7 @@ import Grisette.IR.SymPrim.Data.Prim.Model
 import Grisette.IR.SymPrim.Data.Prim.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
   )
-import Grisette.IR.SymPrim.Data.SymPrim (SymBool (SymBool))
+import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
 import Language.Haskell.TH.Syntax (Lift)
 
 data SolveInternal = SolveInternal

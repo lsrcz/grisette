@@ -171,7 +171,7 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     someTypedSymbol,
     ssymTerm,
   )
-import Grisette.IR.SymPrim.Data.SymPrim
+import Grisette.IR.SymPrim
   ( ModelSymPair ((:=)),
     SymBool (SymBool),
     SymIntN (SymIntN),
