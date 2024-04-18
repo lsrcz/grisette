@@ -27,8 +27,8 @@ import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.SymShift (SymShift (symShift))
 import Grisette.IR.SymPrim.Data.Prim.Internal.Instances.SupportedPrim (bvIsNonZeroFromGEq1)
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
-  ( SupportedNonFuncPrim (withNonFuncPrim),
-    PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm, withSbvShiftTermConstraint),
+  ( PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm, withSbvShiftTermConstraint),
+    SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim,
     Term (ConTerm),
     conTerm,

@@ -30,11 +30,12 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (IsZeroCases (IsZeroEvidenc
 import Grisette.IR.SymPrim.Data.Prim.Internal.Term
   ( PEvalNumTerm (pevalNegNumTerm),
     PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm, withSbvOrdTermConstraint),
+    SupportedPrim (withPrim),
     Term (AddNumTerm, ConTerm),
     conTerm,
     leOrdTerm,
     ltOrdTerm,
-    pevalSubNumTerm, SupportedPrim (withPrim),
+    pevalSubNumTerm,
   )
 import Grisette.IR.SymPrim.Data.Prim.Internal.Unfold (binaryUnfoldOnce)
 
