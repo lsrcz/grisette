@@ -76,7 +76,7 @@ import Grisette.Core.Data.Symbol (Identifier)
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.Experimental
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XTypeApplications
 

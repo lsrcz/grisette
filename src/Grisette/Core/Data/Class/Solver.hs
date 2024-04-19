@@ -63,15 +63,15 @@ import Grisette.Core.Data.Class.PlainUnion
     simpleMerge,
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.IR.SymPrim.Data.Prim.Model
+import Grisette.SymPrim.Prim.Model
   ( Model,
     SymbolSet (unSymbolSet),
     equation,
   )
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
 import Language.Haskell.TH.Syntax (Lift)
 
 data SolveInternal = SolveInternal
@@ -79,7 +79,7 @@ data SolveInternal = SolveInternal
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend.SBV
 -- >>> :set -XOverloadedStrings
 

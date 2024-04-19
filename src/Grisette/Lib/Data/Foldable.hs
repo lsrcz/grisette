@@ -68,7 +68,6 @@ import Grisette.Core.Data.Class.TryMerge
     TryMerge,
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
   ( mrgMplus,
@@ -77,6 +76,7 @@ import {-# SOURCE #-} Grisette.Lib.Control.Monad
     (.>>),
   )
 import Grisette.Lib.Data.Functor (mrgFmap, mrgVoid)
+import Grisette.SymPrim.SymBool (SymBool)
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem :: (Foldable t, SEq a) => a -> t a -> SymBool

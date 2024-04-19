@@ -1,0 +1,152 @@
+{-# LANGUAGE PatternSynonyms #-}
+-- Disable this warning because we are re-exporting things.
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
+
+-- |
+-- Module      :   Grisette.Internal.SymPrim
+-- Copyright   :   (c) Sirui Lu 2021-2023
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
+module Grisette.Internal.SymPrim
+  ( Term (..),
+    showUntyped,
+    withSymbolSupported,
+    SomeTypedSymbol (..),
+    someTypedSymbol,
+    evaluateTerm,
+    introSupportedPrimConstraint,
+    SomeTerm (..),
+    SupportedPrim (..),
+    castTerm,
+    identity,
+    identityWithTypeRep,
+    pformat,
+    constructUnary,
+    constructBinary,
+    constructTernary,
+    conTerm,
+    symTerm,
+    ssymTerm,
+    isymTerm,
+    termSize,
+    termsSize,
+    extractSymbolicsTerm,
+    trueTerm,
+    falseTerm,
+    pattern BoolConTerm,
+    pattern TrueTerm,
+    pattern FalseTerm,
+    pattern BoolTerm,
+    pevalNotTerm,
+    pevalOrTerm,
+    pevalAndTerm,
+    pevalImplyTerm,
+    pevalXorTerm,
+    unaryUnfoldOnce,
+    binaryUnfoldOnce,
+    PartialFun,
+    PartialRuleUnary,
+    TotalRuleUnary,
+    PartialRuleBinary,
+    TotalRuleBinary,
+    totalize,
+    totalize2,
+    UnaryPartialStrategy (..),
+    unaryPartial,
+    BinaryCommPartialStrategy (..),
+    BinaryPartialStrategy (..),
+    binaryPartial,
+
+    -- * Partial evaluation for the terms
+    UnaryOp (..),
+    BinaryOp (..),
+    TernaryOp (..),
+    PEvalApplyTerm (..),
+    PEvalBitwiseTerm (..),
+    PEvalShiftTerm (..),
+    PEvalRotateTerm (..),
+    PEvalNumTerm (..),
+    pevalSubNumTerm,
+    PEvalOrdTerm (..),
+    pevalGtOrdTerm,
+    pevalGeOrdTerm,
+    pevalNEqTerm,
+    PEvalDivModIntegralTerm (..),
+  )
+where
+
+import Grisette.SymPrim.Prim.Internal.PartialEval
+  ( BinaryCommPartialStrategy (..),
+    BinaryPartialStrategy (..),
+    PartialFun,
+    PartialRuleBinary,
+    PartialRuleUnary,
+    TotalRuleBinary,
+    TotalRuleUnary,
+    UnaryPartialStrategy (..),
+    binaryPartial,
+    totalize,
+    totalize2,
+    unaryPartial,
+  )
+import Grisette.SymPrim.Prim.Internal.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
+import Grisette.SymPrim.Prim.Model (evaluateTerm)
+import Grisette.SymPrim.Prim.SomeTerm
+  ( SomeTerm (..),
+  )
+import Grisette.SymPrim.Prim.Term
+  ( BinaryOp (..),
+    PEvalApplyTerm (..),
+    PEvalBitwiseTerm (..),
+    PEvalDivModIntegralTerm (..),
+    PEvalNumTerm (..),
+    PEvalOrdTerm (..),
+    PEvalRotateTerm (..),
+    PEvalShiftTerm (..),
+    SomeTypedSymbol (..),
+    SupportedPrim (..),
+    Term (..),
+    TernaryOp (..),
+    UnaryOp (..),
+    conTerm,
+    constructBinary,
+    constructTernary,
+    constructUnary,
+    falseTerm,
+    identity,
+    identityWithTypeRep,
+    introSupportedPrimConstraint,
+    isymTerm,
+    pevalAndTerm,
+    pevalGeOrdTerm,
+    pevalGtOrdTerm,
+    pevalImplyTerm,
+    pevalNEqTerm,
+    pevalNotTerm,
+    pevalOrTerm,
+    pevalSubNumTerm,
+    pevalXorTerm,
+    pformat,
+    showUntyped,
+    someTypedSymbol,
+    ssymTerm,
+    symTerm,
+    trueTerm,
+    withSymbolSupported,
+    pattern BoolConTerm,
+    pattern BoolTerm,
+    pattern FalseTerm,
+    pattern TrueTerm,
+  )
+import Grisette.SymPrim.Prim.TermUtils
+  ( castTerm,
+    extractSymbolicsTerm,
+    termSize,
+    termsSize,
+  )

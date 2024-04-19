@@ -35,13 +35,13 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( PEvalShiftTerm
       ( pevalShiftLeftTerm,
         pevalShiftRightTerm
       ),
   )
-import Grisette.IR.SymPrim.Data.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
+import Grisette.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 

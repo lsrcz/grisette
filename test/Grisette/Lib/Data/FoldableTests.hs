@@ -23,7 +23,7 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
   )
-import Grisette.IR.SymPrim (SymBool, SymInteger)
+import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad (mrgMzero, mrgReturn)
 import Grisette.Lib.Data.Foldable
   ( mrgFind,

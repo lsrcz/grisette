@@ -25,7 +25,7 @@ import Data.Kind (Type)
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 
 -- | The operations on symbolic constant sets
 --

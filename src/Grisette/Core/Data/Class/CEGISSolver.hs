@@ -85,13 +85,13 @@ import Grisette.Core.Data.Class.Solver
     solve,
     withSolver,
   )
-import Grisette.IR.SymPrim.Data.Prim.Model (Model)
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.SymPrim.Prim.Model (Model)
+import Grisette.SymPrim.SymBool (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.Lib.Base
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend.SBV
 
 -- | Synthesis constraint function.

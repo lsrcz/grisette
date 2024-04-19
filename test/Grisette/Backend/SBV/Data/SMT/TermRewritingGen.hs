@@ -56,7 +56,7 @@ import Grisette.Core.Data.Class.BitVector (SizedBV)
 import Grisette.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Core.Data.Class.SymShift (SymShift)
 import Grisette.Core.Data.Symbol (Identifier, withInfo)
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
     PEvalBVTerm
       ( pevalBVConcatTerm,

@@ -54,17 +54,17 @@ import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.IR.SymPrim.Data.Prim.Term (pevalEqTerm)
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.Prim.Term (pevalEqTerm)
+import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymInteger (SymInteger (SymInteger))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

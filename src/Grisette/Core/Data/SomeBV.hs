@@ -168,8 +168,8 @@ import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Core.Data.Symbol (Identifier, Symbol)
-import Grisette.IR.SymPrim.Data.AllSyms (AllSyms (allSyms, allSymsS))
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.AllSyms (AllSyms (allSyms, allSymsS))
+import Grisette.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
   )
@@ -192,7 +192,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

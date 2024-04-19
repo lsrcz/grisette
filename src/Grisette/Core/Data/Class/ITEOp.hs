@@ -19,24 +19,24 @@ module Grisette.Core.Data.Class.ITEOp
 where
 
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.GeneralFun (type (-->))
+import Grisette.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim (pevalITETerm),
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
-import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>) (SymGeneralFun))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
-import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>) (SymTabularFun))
-import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
+import Grisette.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
+import Grisette.SymPrim.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

@@ -54,22 +54,22 @@ import Generics.Deriving.Instances ()
 import Grisette.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
-import Grisette.IR.SymPrim.Data.Prim.Model (Model, evaluateTerm)
-import Grisette.IR.SymPrim.Data.Prim.Term (LinkedRep, SupportedPrim)
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.GeneralFun (type (-->))
+import Grisette.SymPrim.Prim.Model (Model, evaluateTerm)
+import Grisette.SymPrim.Prim.Term (LinkedRep, SupportedPrim)
+import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
-import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>) (SymGeneralFun))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
-import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>) (SymTabularFun))
-import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
+import Grisette.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
+import Grisette.SymPrim.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Data.Proxy
 -- >>> :set -XTypeApplications
 

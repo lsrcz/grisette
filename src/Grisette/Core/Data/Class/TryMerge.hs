@@ -44,7 +44,7 @@ import Grisette.Core.Data.Class.Mergeable
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 
 -- | A class for containers that may or may not be merged.
 --
