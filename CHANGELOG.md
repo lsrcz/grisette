@@ -8,6 +8,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0.0] -- 2024-04-18
+
 ### Added
 
 - Added the creation of unparameterized bit vectors from run-time bit-widths.
@@ -273,9 +275,10 @@ No user-facing changes.
 
 - Initial release for Grisette.
 
-[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.4.1.0...HEAD
-[0.4.1.0]: https://github.com/lsrcz/grisette/compare/v0.4.1.0...v0.4.0.0
-[0.4.0.0]: https://github.com/lsrcz/grisette/compare/v0.4.0.0...v0.3.1.0
+[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.5.0.0...HEAD
+[0.5.0.0]: https://github.com/lsrcz/grisette/compare/v0.4.1.0...v0.5.0.0
+[0.4.1.0]: https://github.com/lsrcz/grisette/compare/v0.4.0.0...v0.4.1.0
+[0.4.0.0]: https://github.com/lsrcz/grisette/compare/v0.3.1.1...v0.4.0.0
 [0.3.1.1]: https://github.com/lsrcz/grisette/compare/v0.3.1.0...v0.3.1.1
 [0.3.1.0]: https://github.com/lsrcz/grisette/compare/v0.3.0.0...v0.3.1.0
 [0.3.0.0]: https://github.com/lsrcz/grisette/compare/v0.2.0.0...v0.3.0.0
