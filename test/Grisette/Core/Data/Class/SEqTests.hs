@@ -106,12 +106,12 @@ seqTests =
                     [ssymBool "a"]
                       .== [ssymBool "b"]
                       @=? ssymBool "a"
-                      .== ssymBool "b",
+                        .== ssymBool "b",
                   testCase "Same length 2" $
                     [ssymBool "a", ssymBool "b"]
                       .== [ssymBool "c", ssymBool "d"]
                       @=? (ssymBool "a" .== ssymBool "c")
-                      .&& (ssymBool "b" .== ssymBool "d"),
+                        .&& (ssymBool "b" .== ssymBool "d"),
                   testCase "length 1 vs length 0" $
                     [ssymBool "a"] .== [] @=? conBool False,
                   testCase "length 1 vs length 2" $
@@ -136,7 +136,7 @@ seqTests =
                     Just (ssymBool "a")
                       .== Just (ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b"
+                        .== ssymBool "b"
                 ]
             ],
           testGroup
@@ -149,7 +149,7 @@ seqTests =
                     (Left (ssymBool "a") :: Either SymBool SymBool)
                       .== Left (ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b",
+                        .== ssymBool "b",
                   testCase "Right vs Left" $
                     (Right (ssymBool "a") :: Either SymBool SymBool)
                       .== Left (ssymBool "b")
@@ -162,7 +162,7 @@ seqTests =
                     (Right (ssymBool "a") :: Either SymBool SymBool)
                       .== Right (ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b"
+                        .== ssymBool "b"
                 ]
             ],
           testGroup
@@ -213,7 +213,7 @@ seqTests =
                               MaybeT Maybe SymBool
                           )
                       @=? ssymBool "a"
-                      .== ssymBool "b"
+                        .== ssymBool "b"
                 ]
             ],
           testGroup
@@ -251,7 +251,7 @@ seqTests =
                               ExceptT SymBool Maybe SymBool
                           )
                       @=? ssymBool "a"
-                      .== ssymBool "b",
+                        .== ssymBool "b",
                   testCase
                     "ExceptT (Just (Right v)) vs ExceptT (Just (Left v))"
                     $ ExceptT (Just (Right (ssymBool "a")))
@@ -273,7 +273,7 @@ seqTests =
                               ExceptT SymBool Maybe SymBool
                           )
                       @=? ssymBool "a"
-                      .== ssymBool "b"
+                        .== ssymBool "b"
                 ]
             ],
           testProperty "()" (ioProperty . concreteSEqOkProp @()),
@@ -285,9 +285,9 @@ seqTests =
                 (ssymBool "a", ssymBool "c")
                   .== (ssymBool "b", ssymBool "d")
                   @=? ssymBool "a"
-                  .== ssymBool "b"
-                  .&& ssymBool "c"
-                  .== ssymBool "d"
+                    .== ssymBool "b"
+                    .&& ssymBool "c"
+                      .== ssymBool "d"
             ],
           testGroup
             "(,,)"
@@ -297,9 +297,9 @@ seqTests =
                 (ssymBool "a", ssymBool "c", ssymBool "e")
                   .== (ssymBool "b", ssymBool "d", ssymBool "f")
                   @=? (ssymBool "a" .== ssymBool "b")
-                  .&& ( (ssymBool "c" .== ssymBool "d")
-                          .&& (ssymBool "e" .== ssymBool "f")
-                      )
+                    .&& ( (ssymBool "c" .== ssymBool "d")
+                            .&& (ssymBool "e" .== ssymBool "f")
+                        )
             ],
           testGroup
             "(,,,)"
@@ -313,9 +313,9 @@ seqTests =
                   @=? ( (ssymBool "a" .== ssymBool "b")
                           .&& (ssymBool "c" .== ssymBool "d")
                       )
-                  .&& ( (ssymBool "e" .== ssymBool "f")
-                          .&& (ssymBool "g" .== ssymBool "h")
-                      )
+                    .&& ( (ssymBool "e" .== ssymBool "f")
+                            .&& (ssymBool "g" .== ssymBool "h")
+                        )
             ],
           testGroup
             "(,,,,)"
@@ -340,11 +340,11 @@ seqTests =
                   @=? ( (ssymBool "a" .== ssymBool "b")
                           .&& (ssymBool "c" .== ssymBool "d")
                       )
-                  .&& ( (ssymBool "e" .== ssymBool "f")
-                          .&& ( (ssymBool "g" .== ssymBool "h")
-                                  .&& (ssymBool "i" .== ssymBool "j")
-                              )
-                      )
+                    .&& ( (ssymBool "e" .== ssymBool "f")
+                            .&& ( (ssymBool "g" .== ssymBool "h")
+                                    .&& (ssymBool "i" .== ssymBool "j")
+                                )
+                        )
             ],
           testGroup
             "(,,,,,)"
@@ -380,11 +380,11 @@ seqTests =
                                   .&& (ssymBool "e" .== ssymBool "f")
                               )
                       )
-                  .&& ( (ssymBool "g" .== ssymBool "h")
-                          .&& ( (ssymBool "i" .== ssymBool "j")
-                                  .&& (ssymBool "k" .== ssymBool "l")
-                              )
-                      )
+                    .&& ( (ssymBool "g" .== ssymBool "h")
+                            .&& ( (ssymBool "i" .== ssymBool "j")
+                                    .&& (ssymBool "k" .== ssymBool "l")
+                                )
+                        )
             ],
           testGroup
             "(,,,,,,)"
@@ -424,13 +424,13 @@ seqTests =
                                     .&& (ssymBool "e" .== ssymBool "f")
                                 )
                         )
-                    .&& ( ( (ssymBool "g" .== ssymBool "h")
-                              .&& (ssymBool "i" .== ssymBool "j")
+                      .&& ( ( (ssymBool "g" .== ssymBool "h")
+                                .&& (ssymBool "i" .== ssymBool "j")
+                            )
+                              .&& ( (ssymBool "k" .== ssymBool "l")
+                                      .&& (ssymBool "m" .== ssymBool "n")
+                                  )
                           )
-                            .&& ( (ssymBool "k" .== ssymBool "l")
-                                    .&& (ssymBool "m" .== ssymBool "n")
-                                )
-                        )
             ],
           testGroup
             "(,,,,,,,)"
@@ -474,13 +474,13 @@ seqTests =
                                   .&& (ssymBool "g" .== ssymBool "h")
                               )
                       )
-                  .&& ( ( (ssymBool "i" .== ssymBool "j")
-                            .&& (ssymBool "k" .== ssymBool "l")
+                    .&& ( ( (ssymBool "i" .== ssymBool "j")
+                              .&& (ssymBool "k" .== ssymBool "l")
+                          )
+                            .&& ( (ssymBool "m" .== ssymBool "n")
+                                    .&& (ssymBool "o" .== ssymBool "p")
+                                )
                         )
-                          .&& ( (ssymBool "m" .== ssymBool "n")
-                                  .&& (ssymBool "o" .== ssymBool "p")
-                              )
-                      )
             ],
           testCase "ByteString" $ do
             let bytestrings :: [B.ByteString] = ["", "a", "ab"]
@@ -505,7 +505,7 @@ seqTests =
                     (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
                       .== InL (Just $ ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b",
+                        .== ssymBool "b",
                   testCase "InL (Just v) vs InR (Just v)" $
                     (InL $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
                       .== InR (Just $ ssymBool "b")
@@ -514,7 +514,7 @@ seqTests =
                     (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
                       .== InR (Just $ ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b",
+                        .== ssymBool "b",
                   testCase "InR (Just v) vs InL (Just v)" $
                     (InR $ Just $ ssymBool "a" :: Sum Maybe Maybe SymBool)
                       .== InL (Just $ ssymBool "b")
@@ -544,7 +544,7 @@ seqTests =
                         )
                           .== WriterLazy.WriterT (Left $ ssymBool "b")
                           @=? ssymBool "a"
-                          .== ssymBool "b",
+                            .== ssymBool "b",
                       testCase "WriterT (Left v) vs WriterT (Right v)" $
                         ( WriterLazy.WriterT (Left $ ssymBool "a") ::
                             WriterLazy.WriterT SymBool (Either SymBool) SymBool
@@ -567,7 +567,7 @@ seqTests =
                           .== WriterLazy.WriterT
                             (Right (ssymBool "c", ssymBool "d"))
                           @=? (ssymBool "a" .== ssymBool "c")
-                          .&& (ssymBool "b" .== ssymBool "d")
+                            .&& (ssymBool "b" .== ssymBool "d")
                     ]
                 ],
               testGroup
@@ -594,7 +594,7 @@ seqTests =
                         )
                           .== WriterStrict.WriterT (Left $ ssymBool "b")
                           @=? ssymBool "a"
-                          .== ssymBool "b",
+                            .== ssymBool "b",
                       testCase "WriterT (Left v) vs WriterT (Right v)" $
                         ( WriterStrict.WriterT (Left $ ssymBool "a") ::
                             WriterStrict.WriterT
@@ -626,9 +626,9 @@ seqTests =
                           .== WriterStrict.WriterT
                             (Right (ssymBool "c", ssymBool "d"))
                           @=? ssymBool "a"
-                          .== ssymBool "c"
-                          .&& ssymBool "b"
-                          .== ssymBool "d"
+                            .== ssymBool "c"
+                            .&& ssymBool "b"
+                              .== ssymBool "d"
                     ]
                 ]
             ],
@@ -643,7 +643,7 @@ seqTests =
                 (Identity $ ssymBool "a" :: Identity SymBool)
                   .== Identity (ssymBool "b")
                   @=? ssymBool "a"
-                  .== ssymBool "b"
+                    .== ssymBool "b"
             ],
           testGroup
             "IdentityT"
@@ -660,7 +660,7 @@ seqTests =
                     )
                       .== IdentityT (Left $ ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b",
+                        .== ssymBool "b",
                   testCase "IdentityT (Left v) vs IdentityT (Right v)" $
                     ( IdentityT $ Left $ ssymBool "a" ::
                         IdentityT (Either SymBool) SymBool
@@ -679,7 +679,7 @@ seqTests =
                     )
                       .== IdentityT (Right $ ssymBool "b")
                       @=? ssymBool "a"
-                      .== ssymBool "b"
+                        .== ssymBool "b"
                 ]
             ]
         ],
@@ -699,7 +699,7 @@ seqTests =
                 A2 (ssymBool "a")
                   .== A2 (ssymBool "b")
                   @=? ssymBool "a"
-                  .== ssymBool "b",
+                    .== ssymBool "b",
               testCase "A2 vs A3" $
                 A2 (ssymBool "a")
                   .== A3 (ssymBool "b") (ssymBool "c")
@@ -714,7 +714,7 @@ seqTests =
                 A3 (ssymBool "a") (ssymBool "b")
                   .== A3 (ssymBool "c") (ssymBool "d")
                   @=? (ssymBool "a" .== ssymBool "c")
-                  .&& (ssymBool "b" .== ssymBool "d")
+                    .&& (ssymBool "b" .== ssymBool "d")
             ]
         ]
     ]
