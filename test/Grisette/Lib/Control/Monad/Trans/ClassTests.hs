@@ -14,8 +14,8 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )
-import Grisette.SymPrim (SymBool)
 import Grisette.Lib.Control.Monad.Trans (mrgLift)
+import Grisette.SymPrim (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

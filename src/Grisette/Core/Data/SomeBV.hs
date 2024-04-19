@@ -168,13 +168,13 @@ import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Core.Data.Symbol (Identifier, Symbol)
+import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)
+import Grisette.Lib.Data.Functor (mrgFmap)
 import Grisette.SymPrim.AllSyms (AllSyms (allSyms, allSymsS))
 import Grisette.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
   )
-import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)
-import Grisette.Lib.Data.Functor (mrgFmap)
 import Grisette.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),

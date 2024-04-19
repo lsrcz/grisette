@@ -24,10 +24,10 @@ import Grisette.Core.Data.Class.SafeSymShift
       ),
   )
 import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.SymPrim.Prim.Term (LinkedRep)
-import Grisette.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
+import Grisette.SymPrim.Prim.Term (LinkedRep)
+import Grisette.SymPrim.SymBV (SymIntN, SymWordN)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

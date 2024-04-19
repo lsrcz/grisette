@@ -49,9 +49,9 @@ import Grisette.Core.Data.SomeBV
     pattern SomeIntN,
   )
 import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
-import Grisette.SymPrim.SymBV (SymIntN)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)
+import Grisette.SymPrim.SymBV (SymIntN)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

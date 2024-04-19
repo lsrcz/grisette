@@ -46,6 +46,9 @@ import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
+import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad.Except (mrgThrowError)
+import Grisette.Lib.Data.Functor (mrgFmap)
 import Grisette.SymPrim.Prim.Term
   ( PEvalDivModIntegralTerm
       ( pevalDivIntegralTerm,
@@ -59,9 +62,6 @@ import Grisette.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.SymPrim.SymInteger (SymInteger (SymInteger))
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
-import Grisette.Lib.Data.Functor (mrgFmap)
 
 -- $setup
 -- >>> import Grisette.Core

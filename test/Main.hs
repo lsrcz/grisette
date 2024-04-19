@@ -32,17 +32,6 @@ import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
 import Grisette.Core.Data.SomeBVTests (someBVTests)
-import qualified Grisette.SymPrim.Prim.BVTests
-import Grisette.SymPrim.Prim.BitsTests (bitsTests)
-import qualified Grisette.SymPrim.Prim.BoolTests
-import Grisette.SymPrim.Prim.IntegralTests
-  ( integralTests,
-  )
-import Grisette.SymPrim.Prim.ModelTests (modelTests)
-import Grisette.SymPrim.Prim.NumTests (numTests)
-import qualified Grisette.SymPrim.Prim.TabularFunTests
-import Grisette.SymPrim.SymPrimTests (symPrimTests)
-import qualified Grisette.SymPrim.TabularFunTests
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
@@ -65,6 +54,17 @@ import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
 import Grisette.Lib.Data.FunctorTests (functorFunctionTests)
 import Grisette.Lib.Data.ListTests (listTests)
 import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
+import qualified Grisette.SymPrim.Prim.BVTests
+import Grisette.SymPrim.Prim.BitsTests (bitsTests)
+import qualified Grisette.SymPrim.Prim.BoolTests
+import Grisette.SymPrim.Prim.IntegralTests
+  ( integralTests,
+  )
+import Grisette.SymPrim.Prim.ModelTests (modelTests)
+import Grisette.SymPrim.Prim.NumTests (numTests)
+import qualified Grisette.SymPrim.Prim.TabularFunTests
+import Grisette.SymPrim.SymPrimTests (symPrimTests)
+import qualified Grisette.SymPrim.TabularFunTests
 import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()

@@ -14,7 +14,6 @@ import Grisette.Core.Data.Class.SimpleMergeable
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )
-import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad.Except
   ( mrgCatchError,
     mrgHandleError,
@@ -25,6 +24,7 @@ import Grisette.Lib.Control.Monad.Except
     mrgTryError,
     mrgWithError,
   )
+import Grisette.SymPrim (SymBool, SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

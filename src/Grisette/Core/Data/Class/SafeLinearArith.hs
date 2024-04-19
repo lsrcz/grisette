@@ -48,13 +48,13 @@ import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
+import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
   )
 import Grisette.SymPrim.SymInteger (SymInteger)
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- $setup
 -- >>> import Grisette.Core
