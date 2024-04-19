@@ -23,7 +23,6 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
   )
-import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad (mrgMzero, mrgReturn)
 import Grisette.Lib.Data.Foldable
   ( mrgFind,
@@ -48,6 +47,7 @@ import Grisette.Lib.Data.Foldable
     symMinimumBy,
     symNotElem,
   )
+import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.TestUtil.NoMerge (noMergeNotMerged, oneNotMerged)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework

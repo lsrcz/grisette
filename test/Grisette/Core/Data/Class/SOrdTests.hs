@@ -39,8 +39,8 @@ import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
 import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
   )
-import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

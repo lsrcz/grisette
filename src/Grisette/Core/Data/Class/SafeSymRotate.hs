@@ -30,6 +30,8 @@ import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.SymPrim.Prim.Term
   ( PEvalRotateTerm
       ( pevalRotateLeftTerm,
@@ -40,8 +42,6 @@ import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe rotation operations. The operators will reject negative shift amounts.
 class (MonadError e m, TryMerge m, Mergeable a) => SafeSymRotate e a m where

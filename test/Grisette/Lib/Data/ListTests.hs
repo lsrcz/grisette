@@ -50,7 +50,6 @@ import Grisette
     mrgIf,
   )
 import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.SymPrim (SymInteger)
 import Grisette.Lib.Control.Applicative (mrgPure)
 import Grisette.Lib.Data.List
   ( mrgBreak,
@@ -88,6 +87,7 @@ import Grisette.Lib.Data.List
     (.!?),
     (.\\),
   )
+import Grisette.SymPrim (SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

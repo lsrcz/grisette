@@ -35,6 +35,8 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Lib.Control.Monad (mrgReturn)
+import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.SymPrim.Prim.Term
   ( PEvalShiftTerm
       ( pevalShiftLeftTerm,
@@ -42,8 +44,6 @@ import Grisette.SymPrim.Prim.Term
       ),
   )
 import Grisette.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe version for `shiftL` or `shiftR`.
 --

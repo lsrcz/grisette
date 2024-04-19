@@ -14,7 +14,6 @@ import Grisette.Core.Data.Class.SimpleMergeable
   ( UnionMergeable1 (mrgIfPropagatedStrategy),
   )
 import Grisette.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.Lib.Control.Monad.Trans.Except
   ( mrgCatchE,
     mrgExcept,
@@ -22,6 +21,7 @@ import Grisette.Lib.Control.Monad.Trans.Except
     mrgThrowE,
     mrgWithExceptT,
   )
+import Grisette.SymPrim (SymBool, SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
