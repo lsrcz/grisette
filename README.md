@@ -47,7 +47,7 @@ packages. You can add it to your project's `.cabal` file:
 ```cabal
 library
   ...
-  build-depends: grisette >= 0.4.1 < 0.5
+  build-depends: grisette >= 0.5 < 0.6
 ```
 
 #### Quick start template with `stack new`
@@ -155,8 +155,11 @@ returned by a solver to replace the symbolic holes inside to concrete values.
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 import Grisette
 import GHC.Generics
+
 data SExpr
   -- `SConst` represents a constant in the syntax tree.
   --
