@@ -15,7 +15,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Backend.SBV.Data.SMT.TermRewritingGen
+module Grisette.Backend.TermRewritingGen
   ( TermRewritingSpec (..),
     GeneralSpec (..),
     DifferentSizeBVSpec (..),

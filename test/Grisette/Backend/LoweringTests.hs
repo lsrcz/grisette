@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grisette.Backend.SBV.Data.SMT.LoweringTests (loweringTests) where
+module Grisette.Backend.LoweringTests (loweringTests) where
 
 import Control.Monad.Trans (MonadTrans (lift))
 import Data.Bits
@@ -32,13 +32,13 @@ import Grisette
     type (-~>),
     type (=~>),
   )
-import Grisette.Backend.SBV.Data.SMT.Solving
+import Grisette.Backend.Solving
   ( GrisetteSMTConfig (sbvConfig),
     approx,
     lowerSinglePrim,
     precise,
   )
-import Grisette.Backend.SBV.Data.SMT.SymBiMap
+import Grisette.Backend.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
 import Grisette.Core.Data.BV (IntN, WordN)

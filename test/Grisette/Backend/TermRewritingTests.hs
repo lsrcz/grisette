@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Backend.SBV.Data.SMT.TermRewritingTests
+module Grisette.Backend.TermRewritingTests
   ( termRewritingTests,
     validateSpec,
   )
@@ -13,11 +13,11 @@ where
 
 import Data.Foldable (traverse_)
 import qualified Data.SBV as SBV
-import Grisette.Backend.SBV.Data.SMT.Solving
+import Grisette.Backend.Solving
   ( GrisetteSMTConfig,
     precise,
   )
-import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
+import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
     BoolWithLIASpec,
     DifferentSizeBVSpec,

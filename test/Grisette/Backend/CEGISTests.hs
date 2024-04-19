@@ -5,14 +5,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests) where
+module Grisette.Backend.CEGISTests (cegisTests) where
 
 import Control.Monad.Except (ExceptT)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import Data.String (IsString (fromString))
 import GHC.Stack (HasCallStack)
-import Grisette.Backend.SBV (GrisetteSMTConfig, precise, z3)
+import Grisette.Backend (GrisetteSMTConfig, precise, z3)
 import Grisette.Core.Control.Exception
   ( VerificationConditions,
   )
@@ -132,7 +132,7 @@ cegisTests =
                         apply (symIte cond s1 s2) (symIte cond 1 2)
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
-                            .== 100
+                          .== 100
                 let s1e = evaluateSym False m1 s1
                 let s2e = evaluateSym False m1 s2
                 s1e # 1 @=? 10
@@ -149,7 +149,7 @@ cegisTests =
                         apply (symIte cond s1 s2) (symIte cond 1 2)
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
-                            .== 100
+                          .== 100
                 let s1e = evaluateSym False m1 s1
                 let s2e = evaluateSym False m1 s2
                 s1e # 1 @=? 10

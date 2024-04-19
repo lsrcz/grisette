@@ -1,8 +1,7 @@
 module Grisette.TestUtil.SymbolicAssertion ((@?=~), (.@?=), symShouldEq) where
 
 import GHC.Stack (HasCallStack)
-import Grisette.Backend.SBV (z3)
-import Grisette.Backend.SBV.Data.SMT.Solving (precise)
+import Grisette.Backend (precise, z3)
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))

@@ -92,7 +92,7 @@ import Grisette.SymPrim.SymBool (SymBool)
 -- >>> import Grisette.Core
 -- >>> import Grisette.Lib.Base
 -- >>> import Grisette.SymPrim
--- >>> import Grisette.Backend.SBV
+-- >>> import Grisette.Backend
 
 -- | Synthesis constraint function.
 --

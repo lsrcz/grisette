@@ -769,7 +769,7 @@ module Grisette.Core
     --
     -- >>> :set -XDerivingVia -XDeriveGeneric -XDerivingStrategies -XLambdaCase
     -- >>> import GHC.Generics
-    -- >>> import Grisette.Backend.SBV
+    -- >>> import Grisette.Backend
     -- >>> :{
     --   data Error = Error1 | Error2 | Error3
     --     deriving (Show, Generic)
@@ -847,7 +847,7 @@ module Grisette.Core
     -- \]
     --
     -- >>> import Grisette.SymPrim
-    -- >>> import Grisette.Backend.SBV
+    -- >>> import Grisette.Backend
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
     -- >>> solve (precise z3) (x + y .== 6 .&& x - y .== 20)
