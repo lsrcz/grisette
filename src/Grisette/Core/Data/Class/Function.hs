@@ -20,7 +20,7 @@ where
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

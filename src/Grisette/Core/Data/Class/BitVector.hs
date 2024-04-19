@@ -41,7 +41,7 @@ import Grisette.Utils.Parameterized
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Grisette.Utils.Parameterized
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals

@@ -17,7 +17,7 @@ module Grisette
     module Grisette.Lib.Base,
 
     -- * Symbolic primitives
-    module Grisette.IR.SymPrim,
+    module Grisette.SymPrim,
 
     -- * Solver backend
     module Grisette.Backend.SBV,
@@ -29,6 +29,6 @@ where
 
 import Grisette.Backend.SBV
 import Grisette.Core
-import Grisette.IR.SymPrim
 import Grisette.Lib.Base
+import Grisette.SymPrim
 import Grisette.Utils

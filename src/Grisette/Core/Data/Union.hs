@@ -63,11 +63,11 @@ import Grisette.Core.Data.Class.SimpleMergeable
   )
 import Grisette.Core.Data.Class.Solvable (pattern Con)
 import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
-import Grisette.IR.SymPrim.Data.AllSyms
+import Grisette.SymPrim.AllSyms
   ( AllSyms (allSymsS),
     SomeSym (SomeSym),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.SymPrim.SymBool (SymBool)
 import Language.Haskell.TH.Syntax (Lift)
 
 #if MIN_VERSION_prettyprinter(1,7,0)

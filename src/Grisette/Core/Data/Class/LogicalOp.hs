@@ -3,18 +3,18 @@ module Grisette.Core.Data.Class.LogicalOp
   )
 where
 
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( pevalAndTerm,
     pevalImplyTerm,
     pevalNotTerm,
     pevalOrTerm,
     pevalXorTerm,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

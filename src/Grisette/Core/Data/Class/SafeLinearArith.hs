@@ -48,17 +48,17 @@ import Grisette.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
   )
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
+import Grisette.SymPrim.SymInteger (SymInteger)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Control.Monad.Except
 
 -- | Safe division with monadic error handling in multi-path

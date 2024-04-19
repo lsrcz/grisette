@@ -77,7 +77,7 @@ module Grisette.Core
     -- union, which is essentially an if-then-else tree.
     --
     -- For example, assume that the lists have the type
-    -- @['Grisette.IR.SymPrim.SymBool']@.
+    -- @['Grisette.SymPrim.SymBool']@.
     -- In the following example, the result shows that @[b]@ and @[c]@ can be
     -- merged together in the same symbolic union because they have the same
     -- length:
@@ -128,14 +128,14 @@ module Grisette.Core
     -- Grisette
     -- currently provides an implementation for the following solvable types:
     --
-    -- * 'Grisette.IR.SymPrim.SymBool' (symbolic Booleans)
-    -- * 'Grisette.IR.SymPrim.SymInteger' (symbolic unbounded integers)
-    -- * @'Grisette.IR.SymPrim.SymIntN' n@ (symbolic signed bit vectors of length @n@)
-    -- * @'Grisette.IR.SymPrim.SymWordN' n@ (symbolic unsigned bit vectors of length @n@)
+    -- * 'Grisette.SymPrim.SymBool' (symbolic Booleans)
+    -- * 'Grisette.SymPrim.SymInteger' (symbolic unbounded integers)
+    -- * @'Grisette.SymPrim.SymIntN' n@ (symbolic signed bit vectors of length @n@)
+    -- * @'Grisette.SymPrim.SymWordN' n@ (symbolic unsigned bit vectors of length @n@)
     --
     -- The two bit vector types has their lengths checked at compile time.
     -- Grisette also provides runtime-checked versions of these types:
-    -- 'Grisette.IR.SymPrim.SomeSymIntN' and 'Grisette.IR.SymPrim.SomeSymWordN'.
+    -- 'Grisette.SymPrim.SomeSymIntN' and 'Grisette.SymPrim.SomeSymWordN'.
     --
     -- Values of a solvable type can consist of concrete values, symbolic
     -- constants (placeholders for concrete values that can be assigned by a
@@ -846,7 +846,7 @@ module Grisette.Core
     --   \right.
     -- \]
     --
-    -- >>> import Grisette.IR.SymPrim
+    -- >>> import Grisette.SymPrim
     -- >>> import Grisette.Backend.SBV
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
@@ -1237,7 +1237,7 @@ import Grisette.Core.TH.MergeConstructor
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.Lib.Base
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

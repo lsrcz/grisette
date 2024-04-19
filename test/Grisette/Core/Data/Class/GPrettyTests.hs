@@ -24,7 +24,7 @@ import Grisette.Core.Data.SomeBV
   ( pattern SomeIntN,
     pattern SomeWordN,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

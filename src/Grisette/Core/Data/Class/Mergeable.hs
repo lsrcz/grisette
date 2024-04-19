@@ -116,17 +116,17 @@ import Grisette.Core.Data.BV
     WordN,
   )
 import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.GeneralFun (type (-->))
+import Grisette.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import Grisette.IR.SymPrim.Data.SymBV (SymIntN, SymWordN)
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
-import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
-import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>))
-import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Grisette.SymPrim.SymBV (SymIntN, SymWordN)
+import Grisette.SymPrim.SymBool (SymBool)
+import Grisette.SymPrim.SymGeneralFun (type (-~>))
+import Grisette.SymPrim.SymInteger (SymInteger)
+import Grisette.SymPrim.SymTabularFun (type (=~>))
+import Grisette.SymPrim.TabularFun (type (=->))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Helper type for combining arbitrary number of indices into one.

@@ -23,7 +23,7 @@ import Grisette.Core.Data.Class.SimpleMergeable (UnionMergeable1)
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 
 -- | Class for monads that support union-like operations and
 -- 'Grisette.Core.Data.Class.Mergeable' knowledge propagation.

@@ -7,7 +7,7 @@ import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
 import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
 import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Core.Data.Class.Solver (SolvingFailure (Unsat), solve)
-import Grisette.IR.SymPrim.Data.Prim.Model (Model)
+import Grisette.SymPrim.Prim.Model (Model)
 import Test.HUnit (Assertion)
 
 (@?=~) :: (HasCallStack, SEq a, Show a, EvaluateSym a) => a -> a -> Assertion

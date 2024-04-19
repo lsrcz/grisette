@@ -37,7 +37,7 @@ import Language.Haskell.TH.Syntax.Compat (SpliceQ)
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XTemplateHaskell
 

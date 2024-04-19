@@ -49,11 +49,11 @@ import Grisette.Backend.SBV.Data.SMT.TermRewritingGen
   )
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.Solver (solve)
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( SupportedPrim,
     pformat,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

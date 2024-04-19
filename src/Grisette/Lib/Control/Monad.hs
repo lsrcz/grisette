@@ -93,7 +93,7 @@ import Grisette.Core.Data.Class.TryMerge
     TryMerge (tryMergeWithStrategy),
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative
   ( mrgEmpty,
     mrgLiftA2,

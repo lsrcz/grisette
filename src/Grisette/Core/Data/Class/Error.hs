@@ -34,12 +34,12 @@ import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TryMerge (tryMerge)
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.SymPrim.SymBool (SymBool)
 
 -- $setup
 -- >>> import Control.Exception
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Grisette.Lib.Control.Monad
 -- >>> import Control.Monad.Except
 -- >>> :set -XOverloadedStrings

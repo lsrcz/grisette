@@ -73,7 +73,7 @@ import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( PEvalOrdTerm
       ( pevalLeOrdTerm,
         pevalLtOrdTerm
@@ -81,16 +81,16 @@ import Grisette.IR.SymPrim.Data.Prim.Term
     pevalGeOrdTerm,
     pevalGtOrdTerm,
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymInteger (SymInteger (SymInteger))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts

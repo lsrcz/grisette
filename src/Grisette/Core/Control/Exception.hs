@@ -32,7 +32,7 @@ import GHC.Generics (Generic)
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.Lib.Base
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Control.Monad.Trans.Except
 
 -- | Assertion error.

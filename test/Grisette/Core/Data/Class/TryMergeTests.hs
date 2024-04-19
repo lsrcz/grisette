@@ -28,7 +28,7 @@ import Grisette.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Core.Data.Union (Union (UnionSingle))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
+import Grisette.SymPrim.SymInteger (SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

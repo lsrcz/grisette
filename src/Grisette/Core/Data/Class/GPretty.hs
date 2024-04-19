@@ -52,19 +52,19 @@ import GHC.Generics
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
     prettyPrintTerm,
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
-import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>) (SymGeneralFun))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger (SymInteger))
-import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>) (SymTabularFun))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
+import Grisette.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter

@@ -105,8 +105,8 @@ import Grisette.Core.Data.Class.Solver
     SolverCommand (SolverPop, SolverPush, SolverSolve, SolverTerminate),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
-import Grisette.IR.SymPrim.Data.Prim.Internal.IsZero (KnownIsZero)
-import Grisette.IR.SymPrim.Data.Prim.Internal.Term
+import Grisette.SymPrim.Prim.Internal.IsZero (KnownIsZero)
+import Grisette.SymPrim.Prim.Internal.Term
   ( PEvalApplyTerm (sbvApplyTerm),
     PEvalBVSignConversionTerm (sbvToSigned, sbvToUnsigned),
     PEvalBVTerm (sbvBVConcatTerm, sbvBVExtendTerm, sbvBVSelectTerm),
@@ -182,15 +182,15 @@ import Grisette.IR.SymPrim.Data.Prim.Internal.Term
     someTypedSymbol,
     withSymbolSupported,
   )
-import Grisette.IR.SymPrim.Data.Prim.Model as PM
+import Grisette.SymPrim.Prim.Model as PM
   ( Model,
   )
-import Grisette.IR.SymPrim.Data.Prim.SomeTerm (SomeTerm (SomeTerm))
-import Grisette.IR.SymPrim.Data.SymBool (SymBool (SymBool))
+import Grisette.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
+import Grisette.SymPrim.SymBool (SymBool (SymBool))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend.SBV
 -- >>> import Data.Proxy
 

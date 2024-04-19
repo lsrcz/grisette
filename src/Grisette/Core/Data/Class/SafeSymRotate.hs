@@ -30,13 +30,13 @@ import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Core.Data.Class.SOrd (SOrd ((.<)))
 import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TryMerge (TryMerge)
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( PEvalRotateTerm
       ( pevalRotateLeftTerm,
         pevalRotateRightTerm
       ),
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )

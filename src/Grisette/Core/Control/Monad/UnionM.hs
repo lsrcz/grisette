@@ -101,32 +101,32 @@ import Grisette.Core.Data.Union
   ( Union (UnionIf, UnionSingle),
     ifWithLeftMost,
   )
-import Grisette.IR.SymPrim.Data.AllSyms
+import Grisette.SymPrim.AllSyms
   ( AllSyms (allSymsS),
   )
-import Grisette.IR.SymPrim.Data.GeneralFun
+import Grisette.SymPrim.GeneralFun
   ( type (-->),
   )
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
-import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
-import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>))
-import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Grisette.SymPrim.SymBool (SymBool)
+import Grisette.SymPrim.SymGeneralFun (type (-~>))
+import Grisette.SymPrim.SymInteger (SymInteger)
+import Grisette.SymPrim.SymTabularFun (type (=~>))
+import Grisette.SymPrim.TabularFun (type (=->))
 import Language.Haskell.TH.Syntax (Lift (lift, liftTyped))
 import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.Core.Control.Monad.UnionM
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> :set -XScopedTypeVariables
 
 -- | 'UnionM' is the 'Union' container (hidden) enhanced with

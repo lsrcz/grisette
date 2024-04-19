@@ -47,11 +47,11 @@ import Grisette.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
+import Grisette.SymPrim.SymBool (SymBool)
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Grisette.Core.Control.Monad.UnionM
 
 -- | Plain union containers that can be projected back into single value or

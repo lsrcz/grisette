@@ -71,24 +71,24 @@ import Grisette.Core.Data.Class.Mergeable
     MergingStrategy (SimpleStrategy),
   )
 import Grisette.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
-import Grisette.IR.SymPrim.Data.GeneralFun (type (-->))
-import Grisette.IR.SymPrim.Data.Prim.Term
+import Grisette.SymPrim.GeneralFun (type (-->))
+import Grisette.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
-import Grisette.IR.SymPrim.Data.SymBV
+import Grisette.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
   )
-import Grisette.IR.SymPrim.Data.SymBool (SymBool)
-import Grisette.IR.SymPrim.Data.SymGeneralFun (type (-~>))
-import Grisette.IR.SymPrim.Data.SymInteger (SymInteger)
-import Grisette.IR.SymPrim.Data.SymTabularFun (type (=~>))
-import Grisette.IR.SymPrim.Data.TabularFun (type (=->))
+import Grisette.SymPrim.SymBool (SymBool)
+import Grisette.SymPrim.SymGeneralFun (type (-~>))
+import Grisette.SymPrim.SymInteger (SymInteger)
+import Grisette.SymPrim.SymTabularFun (type (=~>))
+import Grisette.SymPrim.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
--- >>> import Grisette.IR.SymPrim
+-- >>> import Grisette.SymPrim
 -- >>> import Control.Monad.Identity
 
 -- | Auxiliary class for the generic derivation for the 'SimpleMergeable' class.
