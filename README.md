@@ -1,6 +1,8 @@
 # Grisette
 
 [![Haskell Tests](https://github.com/lsrcz/grisette/actions/workflows/test.yml/badge.svg)](https://github.com/lsrcz/grisette/actions/workflows/test.yml)
+[![Hackage Version](https://img.shields.io/hackage/v/grisette)](https://hackage.haskell.org/package/grisette)
+[![Hackage Dependencies](https://img.shields.io/hackage-deps/v/grisette)](https://packdeps.haskellers.com/feed?needle=grisette)
 
 Grisette is a symbolic evaluation library for Haskell. By translating
 programs into constraints, Grisette can help the development of program
