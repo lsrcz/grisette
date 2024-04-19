@@ -53,7 +53,6 @@ library
       Grisette.Core
       Grisette.Core.Control.Exception
       Grisette.Core.Control.Monad.CBMCExcept
-      Grisette.Core.Control.Monad.Class.MonadParallelUnion
       Grisette.Core.Control.Monad.Union
       Grisette.Core.Control.Monad.UnionM
       Grisette.Core.Data.BV
@@ -93,6 +92,8 @@ library
       Grisette.Core.TH.MergeConstructor
       Grisette.Experimental
       Grisette.Experimental.GenSymConstrained
+      Grisette.Experimental.MonadParallelUnion
+      Grisette.Experimental.Qualified.ParallelUnionDo
       Grisette.Internal.Backend
       Grisette.Internal.Core
       Grisette.Internal.SymPrim
@@ -117,7 +118,6 @@ library
       Grisette.Lib.Data.Maybe
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Data.Tuple
-      Grisette.Qualified.ParallelUnionDo
       Grisette.SymPrim
       Grisette.SymPrim.AllSyms
       Grisette.SymPrim.GeneralFun

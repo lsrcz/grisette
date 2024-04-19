@@ -1,19 +1,19 @@
 {-# LANGUAGE LambdaCase #-}
 
 -- |
--- Module      :   Grisette.Core.Control.Monad.Class.MonadParallelUnion
+-- Module      :   Grisette.Experimental.MonadParallelUnion
 -- Copyright   :   (c) Sirui Lu 2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Core.Control.Monad.Class.MonadParallelUnion
+module Grisette.Experimental.MonadParallelUnion
   ( MonadParallelUnion (..),
   )
 where
 
-import Control.DeepSeq (NFData)
+import Control.DeepSeq (NFData, force)
 import Control.Monad.Except (ExceptT (ExceptT), runExceptT)
 import Control.Monad.Identity (IdentityT (IdentityT, runIdentityT))
 import qualified Control.Monad.RWS.Lazy as RWSLazy
@@ -24,9 +24,13 @@ import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Control.Parallel.Strategies (rpar, rseq, runEval)
 import Grisette.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Core.Control.Monad.UnionM (UnionM, underlyingUnion)
 import Grisette.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
 
 -- | Parallel union monad.
 --
@@ -119,4 +123,22 @@ instance
       ~(a, s', w) ->
         RWSLazy.runRWST (k a) r s' `parBindUnion` \case
           ~(b, s'', w') -> return (b, s'', w <> w')
+  {-# INLINE parBindUnion #-}
+
+parBindUnion'' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion'' (UnionSingle a) f = tryMerge $ f a
+parBindUnion'' u f = parBindUnion' u f
+
+parBindUnion' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion' (UnionSingle a') f' = f' a'
+parBindUnion' (UnionIf _ _ cond ifTrue ifFalse) f' = runEval $ do
+  l <- rpar $ force $ parBindUnion' ifTrue f'
+  r <- rpar $ force $ parBindUnion' ifFalse f'
+  l' <- rseq l
+  r' <- rseq r
+  rseq $ mrgIf cond l' r'
+{-# INLINE parBindUnion' #-}
+
+instance MonadParallelUnion UnionM where
+  parBindUnion = parBindUnion'' . underlyingUnion
   {-# INLINE parBindUnion #-}
