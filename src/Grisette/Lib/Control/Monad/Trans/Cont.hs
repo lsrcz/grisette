@@ -18,8 +18,8 @@ where
 
 import Control.Monad.Cont (ContT (runContT))
 import Control.Monad.Trans.Class (lift)
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     tryMerge,
   )

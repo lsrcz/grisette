@@ -4,23 +4,21 @@
 
 module Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests) where
 
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Core.Data.Class.PlainUnion
-  ( onUnion,
+import Grisette
+  ( ITEOp (symIte),
+    LogicalOp ((.&&)),
+    Solvable (con),
+    SymBool,
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
+    mrgSingle,
+    onUnion,
     simpleMerge,
     (.#),
     pattern If,
     pattern Single,
   )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
-    mrgIf,
-  )
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

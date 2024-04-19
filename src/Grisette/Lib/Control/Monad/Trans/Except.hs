@@ -25,8 +25,8 @@ import Control.Monad.Trans.Except
     throwE,
     withExceptT,
   )
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (MonadTryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (MonadTryMerge, tryMerge)
 
 -- | 'Control.Monad.Trans.Except.except' with 'MergingStrategy' knowledge
 -- propagation.

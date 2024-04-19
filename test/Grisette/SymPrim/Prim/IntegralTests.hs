@@ -9,8 +9,8 @@ module Grisette.SymPrim.Prim.IntegralTests (integralTests) where
 import Control.DeepSeq (NFData (rnf), force)
 import Control.Exception (ArithException, catch, evaluate)
 import Data.Proxy (Proxy (Proxy))
-import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.BV (IntN (IntN), WordN (WordN))
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalDivModIntegralTerm
       ( pevalDivIntegralTerm,
         pevalModIntegralTerm,

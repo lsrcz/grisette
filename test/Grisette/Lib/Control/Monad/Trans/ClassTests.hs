@@ -6,13 +6,11 @@ module Grisette.Lib.Control.Monad.Trans.ClassTests
 where
 
 import Control.Monad.Except (ExceptT)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
-  )
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
+import Grisette
+  ( ITEOp (symIte),
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgSingle,
   )
 import Grisette.Lib.Control.Monad.Trans (mrgLift)
 import Grisette.SymPrim (SymBool)

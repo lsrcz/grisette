@@ -17,8 +17,8 @@ module Grisette.Lib.Control.Monad.Trans.Class
 where
 
 import Control.Monad.Trans (MonadTrans (lift))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
 -- | 'lift' with 'MergingStrategy' knowledge propagation.
 mrgLift ::

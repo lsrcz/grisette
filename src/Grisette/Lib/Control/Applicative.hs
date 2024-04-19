@@ -34,11 +34,11 @@ where
 
 import Control.Applicative (Alternative (empty, (<|>)), (<**>))
 import Data.Functor (void)
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy,
   )
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingleWithStrategy,
     tryMerge,

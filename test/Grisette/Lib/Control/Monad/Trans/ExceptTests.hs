@@ -7,13 +7,13 @@ import Control.Monad.Except
     MonadError (throwError),
     runExceptT,
   )
-import Grisette (mrgIf)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+import Grisette
+  ( ITEOp (symIte),
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
+    mrgSingle,
   )
-import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Lib.Control.Monad.Trans.Except
   ( mrgCatchE,
     mrgExcept,

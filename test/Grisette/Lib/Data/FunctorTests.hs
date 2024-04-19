@@ -2,12 +2,15 @@
 
 module Grisette.Lib.Data.FunctorTests (functorFunctionTests) where
 
-import Grisette (ITEOp (symIte), SymInteger, mrgIf, mrgVoid)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+import Grisette
+  ( ITEOp (symIte),
+    SymInteger,
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
+    mrgSingle,
+    mrgVoid,
   )
-import Grisette.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Lib.Data.Functor
   ( mrgFmap,
     mrgUnzip,

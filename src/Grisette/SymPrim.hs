@@ -18,6 +18,7 @@ module Grisette.SymPrim
     IntN,
     WordN,
     SomeBV (..),
+    BitwidthMismatch (..),
     pattern SomeIntN,
     type SomeIntN,
     pattern SomeWordN,
@@ -71,11 +72,32 @@ module Grisette.SymPrim
   )
 where
 
-import Grisette.Core.Data.BV
-  ( IntN,
+import Grisette.Internal.SymPrim.AllSyms
+  ( AllSyms (..),
+    allSymsSize,
+    symSize,
+    symsSize,
+  )
+import Grisette.Internal.SymPrim.BV
+  ( BitwidthMismatch (..),
+    IntN,
     WordN,
   )
-import Grisette.Core.Data.SomeBV
+import Grisette.Internal.SymPrim.GeneralFun (type (-->))
+import Grisette.Internal.SymPrim.ModelRep (ModelSymPair (..))
+import Grisette.Internal.SymPrim.Prim.Model
+  ( Model (..),
+    ModelValuePair (..),
+    SymbolSet (..),
+  )
+import Grisette.Internal.SymPrim.Prim.Term
+  ( ConRep (..),
+    LinkedRep,
+    SupportedPrim,
+    SymRep (..),
+    TypedSymbol (..),
+  )
+import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (..),
     arbitraryBV,
     binSomeBV,
@@ -102,36 +124,16 @@ import Grisette.Core.Data.SomeBV
     type SomeSymWordN,
     type SomeWordN,
   )
-import Grisette.SymPrim.AllSyms
-  ( AllSyms (..),
-    allSymsSize,
-    symSize,
-    symsSize,
-  )
-import Grisette.SymPrim.GeneralFun (type (-->))
-import Grisette.SymPrim.ModelRep (ModelSymPair (..))
-import Grisette.SymPrim.Prim.Model
-  ( Model (..),
-    ModelValuePair (..),
-    SymbolSet (..),
-  )
-import Grisette.SymPrim.Prim.Term
-  ( ConRep (..),
-    LinkedRep,
-    SupportedPrim,
-    SymRep (..),
-    TypedSymbol (..),
-  )
-import Grisette.SymPrim.SymBV
+import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (..),
     SymWordN (..),
   )
-import Grisette.SymPrim.SymBool
+import Grisette.Internal.SymPrim.SymBool
   ( SymBool (..),
   )
-import Grisette.SymPrim.SymGeneralFun ((-->), type (-~>) (..))
-import Grisette.SymPrim.SymInteger
+import Grisette.Internal.SymPrim.SymGeneralFun ((-->), type (-~>) (..))
+import Grisette.Internal.SymPrim.SymInteger
   ( SymInteger (..),
   )
-import Grisette.SymPrim.SymTabularFun (type (=~>) (..))
-import Grisette.SymPrim.TabularFun (type (=->) (..))
+import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (..))
+import Grisette.Internal.SymPrim.TabularFun (type (=->) (..))

@@ -8,7 +8,37 @@ module Grisette.Core.Control.Monad.UnionMTests (unionMTests) where
 
 import Control.Monad.Except (ExceptT)
 import qualified Data.Text as T
-import Grisette.Core.Control.Monad.UnionM
+import Grisette
+  ( EvaluateSym (evaluateSym),
+    ExtractSymbolics (extractSymbolics),
+    Function ((#)),
+    GPretty (gpretty),
+    ITEOp (symIte),
+    LogicalOp ((.&&)),
+    Mergeable (rootStrategy),
+    ModelOps (emptyModel),
+    ModelRep (buildModel),
+    ModelValuePair ((::=)),
+    PlainUnion (ifView, singleView),
+    SEq ((.==)),
+    SOrd ((.<=)),
+    SimpleMergeable (mrgIte),
+    Solvable (con, conView, isym, ssym),
+    SubstituteSym (substituteSym),
+    SymBool,
+    SymInteger,
+    SymbolSetRep (buildSymbolSet),
+    ToCon (toCon),
+    ToSym (toSym),
+    TryMerge (tryMergeWithStrategy),
+    TypedSymbol,
+    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+    mrgIf,
+    mrgIte1,
+    mrgSingle,
+    tryMerge,
+  )
+import Grisette.Internal.Core.Control.Monad.UnionM
   ( UnionM (UAny, UMrg),
     isMerged,
     liftToMonadUnion,
@@ -18,47 +48,7 @@ import Grisette.Core.Control.Monad.UnionM
     unionMUnaryOp,
     unionSize,
   )
-import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
-  )
-import Grisette.Core.Data.Class.Function (Function ((#)))
-import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Core.Data.Class.Mergeable (Mergeable (rootStrategy))
-import Grisette.Core.Data.Class.ModelOps
-  ( ModelOps (emptyModel),
-    ModelRep (buildModel),
-    SymbolSetRep (buildSymbolSet),
-  )
-import Grisette.Core.Data.Class.PlainUnion
-  ( PlainUnion (ifView, singleView),
-  )
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((.<=)))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (mrgIte),
-    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
-    mrgIf,
-    mrgIte1,
-  )
-import Grisette.Core.Data.Class.Solvable (Solvable (con, conView, isym, ssym))
-import Grisette.Core.Data.Class.SubstituteSym (SubstituteSym (substituteSym))
-import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.Core.Data.Class.TryMerge
-  ( TryMerge (tryMergeWithStrategy),
-    mrgSingle,
-    tryMerge,
-  )
-import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
-import Grisette.SymPrim.Prim.Model
-  ( ModelValuePair ((::=)),
-  )
-import Grisette.SymPrim.Prim.Term (TypedSymbol)
-import Grisette.SymPrim.SymBool (SymBool)
-import Grisette.SymPrim.SymInteger (SymInteger)
+import Grisette.Internal.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
 import Grisette.TestUtil.PrettyPrint (compactRenderedAs, renderedAs)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)

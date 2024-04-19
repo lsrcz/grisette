@@ -12,10 +12,14 @@ import Control.Monad.State
     StateT (runStateT),
   )
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
-import Grisette (mrgAsum, mrgEmpty, mrgPure, mrgReturn, mrgSingle)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+import Grisette
+  ( UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgAsum,
+    mrgEmpty,
+    mrgPure,
+    mrgReturn,
+    mrgSingle,
   )
 import Grisette.Lib.Control.Applicative
   ( mrgLiftA,

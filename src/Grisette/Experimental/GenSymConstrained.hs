@@ -46,12 +46,12 @@ import GHC.Generics
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM
+import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.UnionM
   ( UnionM,
     liftToMonadUnion,
   )
-import Grisette.Core.Data.Class.GenSym
+import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
     GenSymSimple (simpleFresh),
     ListSpec (ListSpec),
@@ -61,17 +61,17 @@ import Grisette.Core.Data.Class.GenSym
     chooseUnionFresh,
     runFreshT,
   )
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.||)))
-import Grisette.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
-import Grisette.Core.Data.Class.SOrd (SOrd ((.<), (.>=)))
-import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.||)))
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
+import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<), (.>=)))
+import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
-import Grisette.Core.Data.Symbol (Identifier)
+import Grisette.Internal.Core.Data.Symbol (Identifier)
 
 -- $setup
 -- >>> import Grisette.Core

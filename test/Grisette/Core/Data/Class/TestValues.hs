@@ -9,15 +9,13 @@ module Grisette.Core.Data.Class.TestValues
   )
 where
 
-import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
-import Grisette.Core.Data.Symbol
+import Grisette
   ( Identifier,
+    Solvable (con, isym, ssym),
+    SymBool,
     Symbol (IndexedSymbol, SimpleSymbol),
+    TypedSymbol (TypedSymbol),
   )
-import Grisette.SymPrim.Prim.Term
-  ( TypedSymbol (TypedSymbol),
-  )
-import Grisette.SymPrim.SymBool (SymBool)
 
 conBool :: Bool -> SymBool
 conBool = con

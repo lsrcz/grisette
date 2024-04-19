@@ -18,8 +18,8 @@ module Grisette.Lib.Data.Functor
 where
 
 import Control.Monad (void)
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
 -- | 'fmap' with 'MergingStrategy' knowledge propagation.
 mrgFmap ::

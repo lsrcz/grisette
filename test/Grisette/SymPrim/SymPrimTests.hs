@@ -37,48 +37,21 @@ import qualified Data.HashSet as S
 import Data.Int (Int8)
 import Data.Proxy (Proxy (Proxy))
 import Data.Word (Word8)
-import Grisette (TypedSymbol)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.BV (IntN (IntN), WordN (WordN))
-import Grisette.Core.Data.Class.BitVector
-  ( BV (bv),
-    SizedBV
-      ( sizedBVConcat,
-        sizedBVExt,
-        sizedBVSelect,
-        sizedBVSext,
-        sizedBVZext
-      ),
-  )
-import Grisette.Core.Data.Class.EvaluateSym
-  ( EvaluateSym (evaluateSym),
-  )
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
-  )
-import Grisette.Core.Data.Class.Function (Apply (apply), Function ((#)))
-import Grisette.Core.Data.Class.GenSym
-  ( genSym,
-    genSymSimple,
-  )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp
-  ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
-  )
-import Grisette.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy),
+import Grisette
+  ( Apply (apply),
+    BV (bv),
+    EvaluateSym (evaluateSym),
+    ExtractSymbolics (extractSymbolics),
+    Function ((#)),
+    ITEOp (symIte),
+    LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
+    Mergeable (rootStrategy),
     MergingStrategy (SimpleStrategy),
-  )
-import Grisette.Core.Data.Class.ModelOps
-  ( ModelOps (emptyModel, insertValue),
+    ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
-  )
-import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
-  )
-import Grisette.Core.Data.Class.SafeDivision
-  ( SafeDivision
+    SEq ((./=), (.==)),
+    SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    SafeDivision
       ( safeDiv,
         safeDivMod,
         safeMod,
@@ -86,52 +59,47 @@ import Grisette.Core.Data.Class.SafeDivision
         safeQuotRem,
         safeRem
       ),
-  )
-import Grisette.Core.Data.Class.SafeLinearArith
-  ( SafeLinearArith
+    SafeLinearArith
       ( safeAdd,
         safeNeg,
         safeSub
       ),
-  )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (mrgIte),
-    mrgIf,
-  )
-import Grisette.Core.Data.Class.Solvable
-  ( Solvable (con, conView, isym, ssym),
-    pattern Con,
-  )
-import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.Core.Data.Class.TryMerge (mrgSingle, tryMerge)
-import Grisette.Core.Data.SomeBV
-  ( SomeSymIntN,
+    SimpleMergeable (mrgIte),
+    SizedBV
+      ( sizedBVConcat,
+        sizedBVExt,
+        sizedBVSelect,
+        sizedBVSext,
+        sizedBVZext
+      ),
+    Solvable (con, conView, isym, ssym),
+    SomeSymIntN,
     SomeSymWordN,
+    ToCon (toCon),
+    ToSym (toSym),
+    TypedSymbol,
+    UnionM,
+    genSym,
+    genSymSimple,
+    mrgIf,
+    mrgSingle,
+    tryMerge,
+    pattern Con,
     pattern SomeSymIntN,
     pattern SomeSymWordN,
+    type (-->),
+    type (=->),
   )
-import Grisette.SymPrim
-  ( ModelSymPair ((:=)),
-    SymBool (SymBool),
-    SymIntN (SymIntN),
-    SymInteger (SymInteger),
-    SymWordN (SymWordN),
-    symSize,
-    symsSize,
-    (-->),
-    type (-~>),
-    type (=~>),
+import Grisette.Internal.SymPrim.BV
+  ( IntN (IntN),
+    WordN (WordN),
   )
-import Grisette.SymPrim.GeneralFun
-  ( type (-->),
-  )
-import Grisette.SymPrim.Prim.Model
+import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
     SymbolSet (SymbolSet),
   )
-import Grisette.SymPrim.Prim.ModelValue (toModelValue)
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.Prim.ModelValue (toModelValue)
+import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep (wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
     PEvalBVTerm
@@ -183,7 +151,18 @@ import Grisette.SymPrim.Prim.Term
     someTypedSymbol,
     ssymTerm,
   )
-import Grisette.SymPrim.TabularFun (type (=->))
+import Grisette.SymPrim
+  ( ModelSymPair ((:=)),
+    SymBool (SymBool),
+    SymIntN (SymIntN),
+    SymInteger (SymInteger),
+    SymWordN (SymWordN),
+    symSize,
+    symsSize,
+    (-->),
+    type (-~>),
+    type (=~>),
+  )
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

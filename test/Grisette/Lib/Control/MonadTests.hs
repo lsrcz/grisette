@@ -14,29 +14,25 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
   ( ITEOp (symIte),
     LogicalOp ((.&&), (.||)),
+    SEq ((./=), (.==)),
     SOrd ((.<=)),
     Solvable (con),
     SymInteger,
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgFilterM,
     mrgGuard,
+    mrgIf,
     mrgLiftM,
     mrgLiftM5,
     mrgMapAndUnzipM,
     mrgReplicateM,
     mrgReplicateM_,
+    mrgSingle,
     mrgWhen,
     mrgZipWithM,
     symReplicateM_,
     symWhen,
-  )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
-    mrgIf,
-  )
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
   )
 import Grisette.Lib.Control.Monad
   ( mrgAp,
@@ -66,7 +62,9 @@ import Grisette.Lib.Control.Monad
     (.>>),
     (.>>=),
   )
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
+import Grisette.Lib.Control.Monad.Except
+  ( mrgThrowError,
+  )
 import Grisette.TestUtil.NoMerge
   ( NoMerge (NoMerge),
     noMergeNotMerged,

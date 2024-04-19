@@ -26,13 +26,13 @@ module Grisette.Lib.Data.Traversable
 where
 
 import Control.Monad.State (StateT (StateT, runStateT))
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1,
     Mergeable2 (liftRootStrategy2),
     rootStrategy1,
   )
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge (tryMergeWithStrategy),
     tryMerge,

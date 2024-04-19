@@ -10,7 +10,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Backend
-  ( -- * Grisette SBV backend configuration
+  ( -- * Grisette.Internal.SBV backend configuration
     ApproximationConfig (..),
     ExtraConfig (..),
     precise,
@@ -35,7 +35,7 @@ module Grisette.Backend
 where
 
 import qualified Data.SBV as SBV
-import Grisette.Backend.Solving
+import Grisette.Internal.Backend.Solving
   ( ApproximationConfig (..),
     ExtraConfig (..),
     GrisetteSMTConfig (..),

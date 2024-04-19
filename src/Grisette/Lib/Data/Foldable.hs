@@ -53,21 +53,22 @@ where
 
 import Control.Monad (MonadPlus)
 import Data.Foldable (Foldable (foldl'))
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM (UnionM, liftUnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.PlainUnion (symIteMerge)
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SOrd (SOrd, mrgMax, mrgMin)
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftUnionM)
+import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.PlainUnion (symIteMerge)
+import Grisette.Internal.Core.Data.Class.SEq (SEq ((.==)))
+import Grisette.Internal.Core.Data.Class.SOrd (SOrd, mrgMax, mrgMin)
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge,
     tryMerge,
   )
+import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Lib.Control.Monad
   ( mrgMplus,
@@ -76,7 +77,6 @@ import {-# SOURCE #-} Grisette.Lib.Control.Monad
     (.>>),
   )
 import Grisette.Lib.Data.Functor (mrgFmap, mrgVoid)
-import Grisette.SymPrim.SymBool (SymBool)
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem :: (Foldable t, SEq a) => a -> t a -> SymBool

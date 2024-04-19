@@ -14,11 +14,11 @@ module Grisette.Lib.Control.Monad
 where
 
 import Control.Monad (MonadPlus)
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable,
     MergingStrategy,
   )
-import Grisette.Core.Data.Class.TryMerge (MonadTryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (MonadTryMerge)
 
 mrgReturnWithStrategy :: (MonadTryMerge u) => MergingStrategy a -> a -> u a
 mrgBindWithStrategy :: (MonadTryMerge u) => MergingStrategy a -> MergingStrategy b -> u a -> (a -> u b) -> u b

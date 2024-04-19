@@ -4,15 +4,13 @@ module Grisette.Lib.Control.Monad.ExceptTests (monadExceptFunctionTests) where
 
 import Control.Monad.Error.Class (MonadError (throwError))
 import Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+import Grisette
+  ( ITEOp (symIte),
+    SEq ((.==)),
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
-  )
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
+    mrgSingle,
   )
 import Grisette.Lib.Control.Monad.Except
   ( mrgCatchError,

@@ -80,15 +80,15 @@ where
 
 import Control.Applicative (Alternative)
 import Control.Monad (MonadPlus (mplus, mzero), join)
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
+import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy,
   )
-import Grisette.Core.Data.Class.SOrd (SOrd ((.<=)))
-import Grisette.Core.Data.Class.SimpleMergeable (UnionMergeable1, mrgIf)
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<=)))
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (UnionMergeable1, mrgIf)
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge (tryMergeWithStrategy),
     tryMerge,
@@ -117,7 +117,7 @@ import Grisette.Lib.Data.Traversable
     mrgSequenceA,
     mrgTraverse,
   )
-import Grisette.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymBool (SymBool)
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.
 mrgReturnWithStrategy :: (MonadTryMerge u) => MergingStrategy a -> a -> u a

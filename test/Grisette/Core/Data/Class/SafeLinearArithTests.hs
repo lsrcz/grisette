@@ -15,21 +15,18 @@ import Control.Monad.Except (ExceptT, MonadError)
 import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.BV
-  ( BitwidthMismatch (BitwidthMismatch),
+import Grisette
+  ( BV (bv),
+    BitwidthMismatch (BitwidthMismatch),
     IntN,
-    WordN,
-  )
-import Grisette.Core.Data.Class.BitVector (BV (bv))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SafeLinearArith
-  ( SafeLinearArith (safeAdd, safeNeg, safeSub),
-  )
-import Grisette.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
-import Grisette.Core.Data.SomeBV
-  ( SomeIntN,
+    Mergeable,
+    SafeLinearArith (safeAdd, safeNeg, safeSub),
+    SomeIntN,
     SomeWordN,
+    TryMerge,
+    UnionM,
+    WordN,
+    mrgSingle,
     pattern SomeIntN,
     pattern SomeWordN,
   )

@@ -4,7 +4,10 @@
 
 module Grisette.SymPrim.Prim.TabularFunTests (tabularFunTests) where
 
-import Grisette.SymPrim.Prim.Term
+import Grisette
+  ( type (=->) (TabularFun),
+  )
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalApplyTerm (pevalApplyTerm),
     SupportedPrim (pevalITETerm),
     Term,
@@ -12,9 +15,6 @@ import Grisette.SymPrim.Prim.Term
     conTerm,
     pevalEqTerm,
     ssymTerm,
-  )
-import Grisette.SymPrim.TabularFun
-  ( type (=->) (TabularFun),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

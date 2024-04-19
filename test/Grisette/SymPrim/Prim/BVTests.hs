@@ -12,8 +12,8 @@ module Grisette.SymPrim.Prim.BVTests (bvTests) where
 
 import Data.Proxy (Proxy (Proxy))
 import GHC.TypeNats (KnownNat, type (+), type (<=))
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalBVSignConversionTerm
       ( pevalBVToSignedTerm,
         pevalBVToUnsignedTerm

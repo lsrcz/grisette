@@ -25,12 +25,12 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Control.Parallel.Strategies (rpar, rseq, runEval)
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM (UnionM, underlyingUnion)
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
-import Grisette.Core.Data.Union (Union (UnionIf, UnionSingle))
+import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, underlyingUnion)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Union (Union (UnionIf, UnionSingle))
 
 -- | Parallel union monad.
 --

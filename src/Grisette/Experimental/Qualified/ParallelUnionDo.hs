@@ -9,10 +9,10 @@
 module Grisette.Experimental.Qualified.ParallelUnionDo ((>>=), (>>)) where
 
 import Control.Parallel.Strategies (NFData)
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Experimental.MonadParallelUnion
   ( MonadParallelUnion (parBindUnion),
   )
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Prelude (const, ($))
 
 (>>=) :: (MonadParallelUnion m, Mergeable b, NFData b) => m a -> (a -> m b) -> m b
