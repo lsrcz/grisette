@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Breaking] Dropped symbols with extra information. ([#188](https://github.com/lsrcz/grisette/pull/188))
 - [Breaking] The `FreshIdent` is removed. It is now changed to `Identifier` and `Symbol` types. ([#192](https://github.com/lsrcz/grisette/pull/192))
 - Changed the internal representation of the terms. ([#193](https://github.com/lsrcz/grisette/pull/193))
+- [Breaking] Refactored the project structures. ([#194](https://github.com/lsrcz/grisette/pull/194))
 
 ## [0.4.1.0] -- 2024-01-10
 
