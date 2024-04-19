@@ -39,8 +39,7 @@ module Grisette.Core.Control.Monad.UnionM
   )
 where
 
-import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), force, rnf1)
-import Control.Parallel.Strategies (rpar, rseq, runEval)
+import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
 import Data.Functor.Classes
   ( Eq1 (liftEq),
     Show1 (liftShowsPrec),
@@ -50,9 +49,6 @@ import qualified Data.HashMap.Lazy as HML
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.String (IsString (fromString))
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.Core.Control.Monad.Class.MonadParallelUnion
-  ( MonadParallelUnion (parBindUnion),
-  )
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Data.BV (IntN, WordN)
 import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
@@ -341,24 +337,6 @@ bindUnion (UnionIf _ _ cond ifTrue ifFalse) f' =
 instance Monad UnionM where
   a >>= f = bindUnion (underlyingUnion a) f
   {-# INLINE (>>=) #-}
-
-parBindUnion'' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
-parBindUnion'' (UnionSingle a) f = tryMerge $ f a
-parBindUnion'' u f = parBindUnion' u f
-
-parBindUnion' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
-parBindUnion' (UnionSingle a') f' = f' a'
-parBindUnion' (UnionIf _ _ cond ifTrue ifFalse) f' = runEval $ do
-  l <- rpar $ force $ parBindUnion' ifTrue f'
-  r <- rpar $ force $ parBindUnion' ifFalse f'
-  l' <- rseq l
-  r' <- rseq r
-  rseq $ mrgIf cond l' r'
-{-# INLINE parBindUnion' #-}
-
-instance MonadParallelUnion UnionM where
-  parBindUnion = parBindUnion'' . underlyingUnion
-  {-# INLINE parBindUnion #-}
 
 unionMUnaryOp :: (Mergeable a, Mergeable b) => (a -> b) -> UnionM a -> UnionM b
 unionMUnaryOp f a = do

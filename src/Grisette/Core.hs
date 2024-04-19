@@ -621,7 +621,6 @@ module Grisette.Core
     onUnion3,
     onUnion4,
     MonadUnion,
-    MonadParallelUnion (..),
 
     -- * Conversion between Concrete and Symbolic values
     ToCon (..),
@@ -1043,9 +1042,6 @@ import Grisette.Core.Control.Monad.CBMCExcept
     cbmcExcept,
     mapCBMCExceptT,
     withCBMCExceptT,
-  )
-import Grisette.Core.Control.Monad.Class.MonadParallelUnion
-  ( MonadParallelUnion (..),
   )
 import Grisette.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Core.Control.Monad.UnionM
