@@ -47,7 +47,7 @@ import Grisette.Internal.Core.Data.Symbol
   )
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( SBVRep,
+  ( SBVRep (SBVType),
     SupportedPrim (parseSMTModelResult, sbvEq),
     partitionCVArg,
   )
@@ -79,7 +79,6 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
-    SBVType,
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim
       ( conSBVTerm,

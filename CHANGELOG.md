@@ -8,6 +8,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0.1] -- 2024-04-18
+
+### Fixed
+
+- Fix an building error due to a GHC 9.8.1 regression
+  (https://gitlab.haskell.org/ghc/ghc/-/issues/24084).
+  ([#195](https://github.com/lsrcz/grisette/pull/195))
+
 ## [0.5.0.0] -- 2024-04-18
 
 ### Added
@@ -275,7 +283,8 @@ No user-facing changes.
 
 - Initial release for Grisette.
 
-[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.5.0.0...HEAD
+[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.5.0.1...HEAD
+[0.5.0.0]: https://github.com/lsrcz/grisette/compare/v0.5.0.0...v0.5.0.1
 [0.5.0.0]: https://github.com/lsrcz/grisette/compare/v0.4.1.0...v0.5.0.0
 [0.4.1.0]: https://github.com/lsrcz/grisette/compare/v0.4.0.0...v0.4.1.0
 [0.4.0.0]: https://github.com/lsrcz/grisette/compare/v0.3.1.1...v0.4.0.0
