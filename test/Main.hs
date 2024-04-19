@@ -1,10 +1,10 @@
 module Main (main) where
 
-import Grisette.Backend.SBV.Data.SMT.CEGISTests (cegisTests)
-import Grisette.Backend.SBV.Data.SMT.LoweringTests
+import Grisette.Backend.CEGISTests (cegisTests)
+import Grisette.Backend.LoweringTests
   ( loweringTests,
   )
-import Grisette.Backend.SBV.Data.SMT.TermRewritingTests
+import Grisette.Backend.TermRewritingTests
   ( termRewritingTests,
   )
 import Grisette.Core.Control.ExceptionTests (exceptionTests)
@@ -176,7 +176,7 @@ irTests =
 sbvTests :: Test
 sbvTests =
   testGroup
-    "Grisette.Backend.SBV.Data.SMT"
+    "Grisette.Backend"
     [ cegisTests,
       loweringTests,
       termRewritingTests

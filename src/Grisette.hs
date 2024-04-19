@@ -20,14 +20,14 @@ module Grisette
     module Grisette.SymPrim,
 
     -- * Solver backend
-    module Grisette.Backend.SBV,
+    module Grisette.Backend,
 
     -- * Utils
     module Grisette.Utils,
   )
 where
 
-import Grisette.Backend.SBV
+import Grisette.Backend
 import Grisette.Core
 import Grisette.Lib.Base
 import Grisette.SymPrim

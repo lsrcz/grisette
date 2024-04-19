@@ -47,9 +47,9 @@ flag optimize
 library
   exposed-modules:
       Grisette
-      Grisette.Backend.SBV
-      Grisette.Backend.SBV.Data.SMT.Solving
-      Grisette.Backend.SBV.Data.SMT.SymBiMap
+      Grisette.Backend
+      Grisette.Backend.Solving
+      Grisette.Backend.SymBiMap
       Grisette.Core
       Grisette.Core.Control.Exception
       Grisette.Core.Control.Monad.CBMCExcept
@@ -93,7 +93,7 @@ library
       Grisette.Core.TH.MergeConstructor
       Grisette.Experimental
       Grisette.Experimental.GenSymConstrained
-      Grisette.Internal.Backend.SBV
+      Grisette.Internal.Backend
       Grisette.Internal.Core
       Grisette.Internal.SymPrim
       Grisette.Lib.Base
@@ -226,10 +226,10 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Grisette.Backend.SBV.Data.SMT.CEGISTests
-      Grisette.Backend.SBV.Data.SMT.LoweringTests
-      Grisette.Backend.SBV.Data.SMT.TermRewritingGen
-      Grisette.Backend.SBV.Data.SMT.TermRewritingTests
+      Grisette.Backend.CEGISTests
+      Grisette.Backend.LoweringTests
+      Grisette.Backend.TermRewritingGen
+      Grisette.Backend.TermRewritingTests
       Grisette.Core.Control.ExceptionTests
       Grisette.Core.Control.Monad.UnionMTests
       Grisette.Core.Control.Monad.UnionTests

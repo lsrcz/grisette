@@ -13,14 +13,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
--- Module      :   Grisette.Backend.SBV.Data.SMT.Solving
+-- Module      :   Grisette.Backend.Solving
 -- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Backend.SBV.Data.SMT.Solving
+module Grisette.Backend.Solving
   ( -- * SBV backend configuration
     ApproximationConfig (..),
     ExtraConfig (..),
@@ -79,7 +79,7 @@ import qualified Data.SBV.Trans.Control as SBVTC
 import GHC.IO.Exception (ExitCode (ExitSuccess))
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat)
-import Grisette.Backend.SBV.Data.SMT.SymBiMap
+import Grisette.Backend.SymBiMap
   ( SymBiMap,
     addBiMap,
     addBiMapIntermediate,
@@ -191,7 +191,7 @@ import Grisette.SymPrim.SymBool (SymBool (SymBool))
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> import Grisette.Backend.SBV
+-- >>> import Grisette.Backend
 -- >>> import Data.Proxy
 
 -- | Configures how to approximate unbounded values.

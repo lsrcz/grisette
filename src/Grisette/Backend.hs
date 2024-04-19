@@ -2,14 +2,14 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 -- |
--- Module      :   Grisette.Backend.SBV
+-- Module      :   Grisette.Backend
 -- Copyright   :   (c) Sirui Lu 2021-2023
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Backend.SBV
+module Grisette.Backend
   ( -- * Grisette SBV backend configuration
     ApproximationConfig (..),
     ExtraConfig (..),
@@ -35,7 +35,7 @@ module Grisette.Backend.SBV
 where
 
 import qualified Data.SBV as SBV
-import Grisette.Backend.SBV.Data.SMT.Solving
+import Grisette.Backend.Solving
   ( ApproximationConfig (..),
     ExtraConfig (..),
     GrisetteSMTConfig (..),

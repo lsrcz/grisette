@@ -58,7 +58,7 @@ import Language.Haskell.TH.Syntax (Lift (liftTyped))
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> import Grisette.Backend.SBV
+-- >>> import Grisette.Backend
 -- >>> import Data.Proxy
 
 -- |
