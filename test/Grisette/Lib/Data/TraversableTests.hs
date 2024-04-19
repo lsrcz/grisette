@@ -6,13 +6,11 @@ import Control.Monad.Except
   ( ExceptT (ExceptT),
     MonadError (throwError),
   )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+import Grisette
+  ( UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
-  )
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
+    mrgSingle,
   )
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Data.Traversable

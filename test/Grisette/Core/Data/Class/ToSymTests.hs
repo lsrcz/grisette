@@ -21,12 +21,14 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
-import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.SymPrim.SymBool (SymBool)
+import Grisette
+  ( ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    SEq ((.==)),
+    Solvable (con, isym, ssym),
+    SymBool,
+    ToSym (toSym),
+  )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

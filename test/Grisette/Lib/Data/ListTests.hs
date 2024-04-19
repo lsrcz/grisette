@@ -46,10 +46,10 @@ import Grisette
     SOrd (symCompare, (.<=), (.>=)),
     Solvable (con),
     SymBool,
+    UnionM,
     mrgGroupBy,
     mrgIf,
   )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Lib.Control.Applicative (mrgPure)
 import Grisette.Lib.Data.List
   ( mrgBreak,
@@ -339,7 +339,7 @@ listTests =
               @?= ( (aint .== cint .&& bint .== dint)
                       .|| (aint .== dint .&& bint .== eint)
                   )
-                .|| (aint .== eint .&& bint .== fint),
+              .|| (aint .== eint .&& bint .== fint),
           testCase "symbolic int, not long enough" $ do
             let actual = symIsInfixOf [cint, dint, eint] [aint, bint]
             actual @?= con False

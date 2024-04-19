@@ -52,11 +52,8 @@ import Data.Data (Proxy (Proxy), Typeable)
 import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
-import Grisette.Core.Data.Class.BitVector (SizedBV)
-import Grisette.Core.Data.Class.SymRotate (SymRotate)
-import Grisette.Core.Data.Class.SymShift (SymShift)
-import Grisette.Core.Data.Symbol (Identifier, withInfo)
-import Grisette.SymPrim.Prim.Term
+import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
+import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
     PEvalBVTerm
       ( pevalBVConcatTerm,

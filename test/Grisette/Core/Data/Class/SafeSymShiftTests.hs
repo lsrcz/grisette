@@ -12,22 +12,24 @@ import Data.Bits (Bits (shiftL, shiftR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Typeable (Proxy (Proxy), Typeable)
 import Data.Word (Word16, Word32, Word64, Word8)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SafeSymShift
-  ( SafeSymShift
+import Grisette
+  ( IntN,
+    Mergeable,
+    SafeSymShift
       ( safeSymShiftL,
         safeSymShiftR,
         safeSymStrictShiftL,
         safeSymStrictShiftR
       ),
+    Solvable (con),
+    SymIntN,
+    SymWordN,
+    UnionM,
+    WordN,
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.SymPrim.Prim.Term (LinkedRep)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
-import Grisette.SymPrim.Prim.Term (LinkedRep)
-import Grisette.SymPrim.SymBV (SymIntN, SymWordN)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

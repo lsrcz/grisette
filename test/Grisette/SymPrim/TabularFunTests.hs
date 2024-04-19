@@ -3,9 +3,9 @@
 
 module Grisette.SymPrim.TabularFunTests (tabularFunTests) where
 
-import Grisette.Core.Data.Class.Function (Function ((#)))
-import Grisette.SymPrim.TabularFun
-  ( type (=->) (TabularFun),
+import Grisette
+  ( Function ((#)),
+    type (=->) (TabularFun),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

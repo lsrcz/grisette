@@ -7,16 +7,17 @@ import Control.Monad (replicateM)
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Data.Text as T
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.GenSym
+import Grisette
   ( EnumGenBound (EnumGenBound),
     EnumGenUpperBound (EnumGenUpperBound),
     Fresh,
     FreshT,
     GenSymSimple (simpleFresh),
+    ITEOp (symIte),
     ListSpec (ListSpec),
     MonadFresh (localIdentifier),
     SimpleListSpec (SimpleListSpec),
+    SymBool,
     choose,
     chooseFresh,
     chooseSimple,
@@ -27,15 +28,14 @@ import Grisette.Core.Data.Class.GenSym
     genSym,
     genSymSimple,
     liftFresh,
+    mrgIf,
+    mrgSingle,
     runFresh,
     runFreshT,
+    withInfo,
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Core.Data.Class.TestValues (conBool, isymBool, ssymBool)
-import Grisette.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Core.Data.Symbol (withInfo)
-import Grisette.SymPrim.SymBool (SymBool)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

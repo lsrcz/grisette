@@ -7,9 +7,12 @@
 module Grisette.SymPrim.Prim.BitsTests (bitsTests) where
 
 import Data.Bits (Bits (rotateL, rotateR), FiniteBits)
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.SymRotate (SymRotate)
-import Grisette.SymPrim.Prim.Term
+import Grisette
+  ( IntN,
+    SymRotate,
+    WordN,
+  )
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,

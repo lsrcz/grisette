@@ -18,9 +18,13 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
+import Grisette
+  ( ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    SEq ((.==)),
+    SymBool,
+    ToCon (toCon),
+  )
 import Grisette.Core.Data.Class.TestValues
   ( conBool,
     isymBool,
@@ -28,8 +32,6 @@ import Grisette.Core.Data.Class.TestValues
     symFalse,
     symTrue,
   )
-import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

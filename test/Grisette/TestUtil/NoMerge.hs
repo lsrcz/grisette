@@ -9,13 +9,11 @@ module Grisette.TestUtil.NoMerge
 where
 
 import GHC.Generics (Generic)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.Mergeable
+import Grisette
   ( Mergeable (rootStrategy),
     MergingStrategy (NoStrategy),
-  )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
   )
 
 data NoMerge = NoMerge

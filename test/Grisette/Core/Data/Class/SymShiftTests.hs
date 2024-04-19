@@ -7,10 +7,15 @@ import Data.Bits (Bits (shift), FiniteBits (finiteBitSize))
 import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
-import Grisette (IntN, LinkedRep, Solvable, SymIntN, SymWordN)
-import Grisette.Core.Data.BV (WordN)
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
+import Grisette
+  ( IntN,
+    LinkedRep,
+    Solvable (con),
+    SymIntN,
+    SymShift (symShift, symShiftNegated),
+    SymWordN,
+    WordN,
+  )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))

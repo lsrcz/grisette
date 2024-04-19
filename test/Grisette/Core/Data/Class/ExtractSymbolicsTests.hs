@@ -23,16 +23,15 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default))
-import Grisette.Core.Data.Class.ExtractSymbolics
+import Grisette
   ( ExtractSymbolics (extractSymbolics),
-  )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.ModelOps
-  ( SymbolSetOps (emptySet),
+    ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    SEq ((.==)),
+    SymBool,
+    SymbolSetOps (emptySet),
     SymbolSetRep (buildSymbolSet),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Core.Data.Class.TestValues
   ( isymBool,
     isymbolBool,
@@ -40,7 +39,6 @@ import Grisette.Core.Data.Class.TestValues
     ssymbolBool,
     symTrue,
   )
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

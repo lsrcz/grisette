@@ -14,17 +14,15 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default))
-import Grisette.Core.Data.BV
-  ( IntN,
+import Grisette
+  ( GPretty (gpretty),
+    IntN,
+    LogicalOp ((.&&)),
+    SymBool,
     WordN,
-  )
-import Grisette.Core.Data.Class.GPretty (GPretty (gpretty))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Core.Data.SomeBV
-  ( pattern SomeIntN,
+    pattern SomeIntN,
     pattern SomeWordN,
   )
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

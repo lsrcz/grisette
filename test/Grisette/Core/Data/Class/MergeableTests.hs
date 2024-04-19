@@ -27,25 +27,21 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.Mergeable
+import Grisette
   ( DynamicSortedIdx (DynamicSortedIdx),
+    ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
     Mergeable (rootStrategy),
     MergingStrategy (NoStrategy, SimpleStrategy),
+    Solvable (con, ssym),
     StrategyList (StrategyList),
+    SymBool,
+    UnionM,
     buildStrategyList,
+    mrgIf,
+    mrgSingle,
     resolveStrategy,
   )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( mrgIf,
-  )
-import Grisette.Core.Data.Class.Solvable (Solvable (con, ssym))
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
-  )
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

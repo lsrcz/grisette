@@ -1,6 +1,6 @@
 module Grisette.Core.Data.Class.BoolTests (boolTests) where
 
-import Grisette.Core.Data.Class.LogicalOp
+import Grisette
   ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
   )
 import Test.Framework (Test, testGroup)

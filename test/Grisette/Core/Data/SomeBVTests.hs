@@ -13,22 +13,22 @@ import Control.Exception (ArithException (Overflow), catch, evaluate)
 import Control.Monad.Except (ExceptT)
 import Data.Bits (FiniteBits (finiteBitSize))
 import Data.Proxy (Proxy (Proxy))
-import Grisette (ITEOp (symIte))
-import Grisette.Core.Control.Monad.UnionM (UnionM (UMrg))
-import Grisette.Core.Data.BV (BitwidthMismatch (BitwidthMismatch), IntN)
-import Grisette.Core.Data.Class.BitVector
+import Grisette
   ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
+    ITEOp (symIte),
+    LogicalOp (symNot),
+    Mergeable (rootStrategy),
+    SafeLinearArith (safeAdd, safeSub),
+    Solvable (isym, ssym),
+    genSym,
+    genSymSimple,
+    mrgIf,
+    mrgSingle,
   )
-import Grisette.Core.Data.Class.GenSym (genSym, genSymSimple)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
-import Grisette.Core.Data.Class.Mergeable (Mergeable (rootStrategy))
-import Grisette.Core.Data.Class.SafeLinearArith
-  ( SafeLinearArith (safeAdd, safeSub),
-  )
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Core.Data.Class.Solvable (Solvable (isym, ssym))
-import Grisette.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Core.Data.SomeBV
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM (UMrg))
+import Grisette.Internal.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
+import Grisette.Internal.SymPrim.BV (BitwidthMismatch (BitwidthMismatch), IntN)
+import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (SomeBV),
     SomeIntN,
     SomeSymIntN,
@@ -48,10 +48,9 @@ import Grisette.Core.Data.SomeBV
     pattern ConBV,
     pattern SomeIntN,
   )
-import Grisette.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
+import Grisette.Internal.SymPrim.SymBV (SymIntN)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)
-import Grisette.SymPrim.SymBV (SymIntN)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

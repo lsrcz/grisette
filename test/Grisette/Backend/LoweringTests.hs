@@ -24,28 +24,29 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( EvaluateSym (evaluateSym),
     Function ((#)),
+    IntN,
     LogicalOp ((.&&)),
     SEq ((.==)),
     Solvable (con),
     SymInteger,
+    WordN,
     solve,
     type (-~>),
     type (=~>),
   )
-import Grisette.Backend.Solving
+import Grisette.Internal.Backend.Solving
   ( GrisetteSMTConfig (sbvConfig),
     approx,
     lowerSinglePrim,
     precise,
   )
-import Grisette.Backend.SymBiMap
+import Grisette.Internal.Backend.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.SymPrim.Prim.SomeTerm
+import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.Prim.Term
   ( SBVRep (SBVType),
     SupportedPrim,
     Term,

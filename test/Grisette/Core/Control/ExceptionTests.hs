@@ -7,43 +7,27 @@ import Control.Exception
   ( ArrayException (IndexOutOfBounds, UndefinedElement),
   )
 import Control.Monad.Except (ExceptT (ExceptT))
-import Grisette.Core.Control.Exception
+import Grisette
   ( AssertionError (AssertionError),
-    VerificationConditions (AssertionViolation, AssumptionViolation),
-  )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.Error
-  ( TransformError (transformError),
-    symAssert,
-  )
-import Grisette.Core.Data.Class.EvaluateSym
-  ( EvaluateSym (evaluateSym),
-  )
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
-  )
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
-import Grisette.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy),
+    EvaluateSym (evaluateSym),
+    ExtractSymbolics (extractSymbolics),
+    LogicalOp (symNot),
+    Mergeable (rootStrategy),
     MergingStrategy (SimpleStrategy),
-  )
-import Grisette.Core.Data.Class.ModelOps
-  ( ModelOps (emptyModel),
+    ModelOps (emptyModel),
+    SEq ((.==)),
+    SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    SimpleMergeable (mrgIte),
+    Solvable (con),
     SymbolSetOps (emptySet),
-  )
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
-  )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (mrgIte),
+    ToCon (toCon),
+    ToSym (toSym),
+    TransformError (transformError),
+    UnionM,
+    VerificationConditions (AssertionViolation, AssumptionViolation),
     mrgIf,
-  )
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
+    mrgSingle,
+    symAssert,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

@@ -16,19 +16,17 @@ import qualified Control.Monad.State.Strict as StateStrict
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
-import Grisette.Core.Control.Monad.UnionM (UnionM (UMrg))
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.Mergeable (Mergeable (rootStrategy))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
-  )
-import Grisette.Core.Data.Class.TryMerge
-  ( TryMerge,
+import Grisette
+  ( ITEOp (symIte),
+    Mergeable (rootStrategy),
+    TryMerge,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgSingle,
     tryMerge,
   )
-import Grisette.Core.Data.Union (Union (UnionSingle))
-import Grisette.SymPrim.SymInteger (SymInteger)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM (UMrg))
+import Grisette.Internal.Core.Data.Union (Union (UnionSingle))
+import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

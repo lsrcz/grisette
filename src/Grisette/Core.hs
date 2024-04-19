@@ -173,11 +173,14 @@ module Grisette.Core
     Solvable (..),
     pattern Con,
     Identifier (..),
+    Symbol (..),
     identifier,
     withInfo,
     withLoc,
     slocsym,
     ilocsym,
+    simple,
+    indexed,
 
     -- *** Symbolic operators
 
@@ -186,6 +189,10 @@ module Grisette.Core
     ITEOp (..),
     SEq (..),
     SOrd (..),
+    symMax,
+    symMin,
+    mrgMax,
+    mrgMin,
     BV (..),
     bvExtract,
     SizedBV (..),
@@ -195,6 +202,10 @@ module Grisette.Core
     SafeLinearArith (..),
     Function (..),
     Apply (..),
+    SymShift (..),
+    SafeSymShift (..),
+    SymRotate (..),
+    SafeSymRotate (..),
 
     -- ** Unsolvable types
 
@@ -1032,19 +1043,19 @@ module Grisette.Core
 where
 
 import Generics.Deriving (Default (..), Default1 (..))
-import Grisette.Core.Control.Exception
+import Grisette.Internal.Core.Control.Exception
   ( AssertionError (..),
     VerificationConditions (..),
   )
-import Grisette.Core.Control.Monad.CBMCExcept
+import Grisette.Internal.Core.Control.Monad.CBMCExcept
   ( CBMCEither (..),
     CBMCExceptT (..),
     cbmcExcept,
     mapCBMCExceptT,
     withCBMCExceptT,
   )
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM
+import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.UnionM
   ( IsConcrete,
     UnionM,
     liftToMonadUnion,
@@ -1053,13 +1064,13 @@ import Grisette.Core.Control.Monad.UnionM
     unionMUnaryOp,
     unionSize,
   )
-import Grisette.Core.Data.Class.BitVector
+import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (..),
     SizedBV (..),
     bvExtract,
     sizedBVExtract,
   )
-import Grisette.Core.Data.Class.CEGISSolver
+import Grisette.Internal.Core.Data.Class.CEGISSolver
   ( CEGISCondition (..),
     CEGISResult (..),
     StatefulVerifierFun,
@@ -1081,7 +1092,7 @@ import Grisette.Core.Data.Class.CEGISSolver
     cegisPrePost,
     genericCEGIS,
   )
-import Grisette.Core.Data.Class.Error
+import Grisette.Internal.Core.Data.Class.Error
   ( TransformError (..),
     symAssert,
     symAssertTransformableError,
@@ -1089,16 +1100,16 @@ import Grisette.Core.Data.Class.Error
     symAssume,
     symThrowTransformableError,
   )
-import Grisette.Core.Data.Class.EvaluateSym
+import Grisette.Internal.Core.Data.Class.EvaluateSym
   ( EvaluateSym (..),
     evaluateSymToCon,
   )
-import Grisette.Core.Data.Class.ExtractSymbolics
+import Grisette.Internal.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (..),
   )
-import Grisette.Core.Data.Class.Function (Apply (..), Function (..))
-import Grisette.Core.Data.Class.GPretty (GPretty (..))
-import Grisette.Core.Data.Class.GenSym
+import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
+import Grisette.Internal.Core.Data.Class.GPretty (GPretty (..))
+import Grisette.Internal.Core.Data.Class.GenSym
   ( EnumGenBound (..),
     EnumGenUpperBound (..),
     Fresh,
@@ -1127,9 +1138,9 @@ import Grisette.Core.Data.Class.GenSym
     runFresh,
     runFreshT,
   )
-import Grisette.Core.Data.Class.ITEOp (ITEOp (..))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (..))
-import Grisette.Core.Data.Class.Mergeable
+import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (..))
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (..))
+import Grisette.Internal.Core.Data.Class.Mergeable
   ( DynamicSortedIdx (..),
     Mergeable (..),
     Mergeable1 (..),
@@ -1147,13 +1158,13 @@ import Grisette.Core.Data.Class.Mergeable
     rootStrategy3,
     wrapStrategy,
   )
-import Grisette.Core.Data.Class.ModelOps
+import Grisette.Internal.Core.Data.Class.ModelOps
   ( ModelOps (..),
     ModelRep (..),
     SymbolSetOps (..),
     SymbolSetRep (..),
   )
-import Grisette.Core.Data.Class.PlainUnion
+import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (..),
     onUnion,
     onUnion2,
@@ -1164,12 +1175,20 @@ import Grisette.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
-import Grisette.Core.Data.Class.SEq (SEq (..))
-import Grisette.Core.Data.Class.SOrd (SOrd (..))
-import Grisette.Core.Data.Class.SafeDivision (SafeDivision (..))
-import Grisette.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
-import Grisette.Core.Data.Class.SignConversion (SignConversion (..))
-import Grisette.Core.Data.Class.SimpleMergeable
+import Grisette.Internal.Core.Data.Class.SEq (SEq (..))
+import Grisette.Internal.Core.Data.Class.SOrd
+  ( SOrd (..),
+    mrgMax,
+    mrgMin,
+    symMax,
+    symMin,
+  )
+import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision (..))
+import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
+import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..))
+import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift (..))
+import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion (..))
+import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (..),
     SimpleMergeable1 (..),
     SimpleMergeable2 (..),
@@ -1180,13 +1199,13 @@ import Grisette.Core.Data.Class.SimpleMergeable
     mrgIte1,
     mrgIte2,
   )
-import Grisette.Core.Data.Class.Solvable
+import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (..),
     ilocsym,
     slocsym,
     pattern Con,
   )
-import Grisette.Core.Data.Class.Solver
+import Grisette.Internal.Core.Data.Class.Solver
   ( ConfigurableSolver (..),
     MonadicSolver (..),
     Solver (..),
@@ -1199,33 +1218,38 @@ import Grisette.Core.Data.Class.Solver
     solveMultiExcept,
     withSolver,
   )
-import Grisette.Core.Data.Class.SubstituteSym
+import Grisette.Internal.Core.Data.Class.SubstituteSym
   ( SubstituteSym (..),
     SubstituteSym' (..),
   )
-import Grisette.Core.Data.Class.ToCon (ToCon (..))
-import Grisette.Core.Data.Class.ToSym (ToSym (..))
-import Grisette.Core.Data.Class.TryMerge
+import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (..))
+import Grisette.Internal.Core.Data.Class.SymShift (SymShift (..))
+import Grisette.Internal.Core.Data.Class.ToCon (ToCon (..))
+import Grisette.Internal.Core.Data.Class.ToSym (ToSym (..))
+import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge (..),
     mrgSingle,
     mrgSingleWithStrategy,
     tryMerge,
   )
-import Grisette.Core.Data.MemoUtils
+import Grisette.Internal.Core.Data.MemoUtils
   ( htmemo,
     htmemo2,
     htmemo3,
     htmemoFix,
     htmup,
   )
-import Grisette.Core.Data.Symbol
+import Grisette.Internal.Core.Data.Symbol
   ( Identifier (..),
+    Symbol (..),
     identifier,
+    indexed,
+    simple,
     withInfo,
     withLoc,
   )
-import Grisette.Core.TH.MergeConstructor
+import Grisette.Internal.Core.TH.MergeConstructor
   ( mkMergeConstructor,
     mkMergeConstructor',
   )

@@ -4,8 +4,8 @@
 
 module Grisette.SymPrim.Prim.NumTests (numTests) where
 
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.SymPrim.Prim.Term
+import Grisette (IntN, WordN)
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,

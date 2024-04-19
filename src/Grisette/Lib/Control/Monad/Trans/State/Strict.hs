@@ -28,8 +28,8 @@ import Control.Monad.Trans.State.Strict
   ( StateT (StateT),
     runStateT,
   )
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 
 -- | 'Control.Monad.Trans.State.Strict.state' with 'MergingStrategy' knowledge

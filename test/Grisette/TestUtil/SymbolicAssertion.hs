@@ -1,12 +1,16 @@
 module Grisette.TestUtil.SymbolicAssertion ((@?=~), (.@?=), symShouldEq) where
 
 import GHC.Stack (HasCallStack)
-import Grisette.Backend (precise, z3)
-import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot))
-import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Core.Data.Class.Solver (SolvingFailure (Unsat), solve)
-import Grisette.SymPrim.Prim.Model (Model)
+import Grisette
+  ( EvaluateSym (evaluateSym),
+    LogicalOp (symNot),
+    Model,
+    SEq ((./=), (.==)),
+    SolvingFailure (Unsat),
+    precise,
+    solve,
+    z3,
+  )
 import Test.HUnit (Assertion)
 
 (@?=~) :: (HasCallStack, SEq a, Show a, EvaluateSym a) => a -> a -> Assertion

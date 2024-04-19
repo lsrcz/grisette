@@ -5,8 +5,8 @@
 
 module Grisette.Lib.Data.Bool (mrgTrue, mrgFalse) where
 
-import Grisette.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Core.TH.MergeConstructor
+import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
+import Grisette.Internal.Core.TH.MergeConstructor
   ( mkMergeConstructor,
   )
 

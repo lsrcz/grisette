@@ -20,8 +20,8 @@ module Grisette.Lib.Control.Monad.State.Class
 where
 
 import Control.Monad.State.Class (MonadState (get, put))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 
 -- | 'Control.Monad.State.Class.get' with 'MergingStrategy' knowledge

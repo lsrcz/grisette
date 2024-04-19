@@ -10,18 +10,17 @@ import Control.Monad.Except
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
   ( ITEOp (symIte),
-    SOrd (symCompare),
+    LogicalOp ((.&&), (.||)),
+    SEq ((./=), (.==)),
+    SOrd (symCompare, (.<=), (.>)),
+    SymBool,
+    SymInteger,
+    UnionM,
+    UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgIf,
     symAll,
     symAny,
     symOr,
-  )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&), (.||)))
-import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((.<=), (.>)))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1 (mrgIfPropagatedStrategy),
-    mrgIf,
   )
 import Grisette.Lib.Control.Monad (mrgMzero, mrgReturn)
 import Grisette.Lib.Data.Foldable
@@ -47,7 +46,6 @@ import Grisette.Lib.Data.Foldable
     symMinimumBy,
     symNotElem,
   )
-import Grisette.SymPrim (SymBool, SymInteger)
 import Grisette.TestUtil.NoMerge (noMergeNotMerged, oneNotMerged)
 import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework

@@ -14,18 +14,19 @@ module Grisette.Lib.Control.Monad.Trans.State.Common
   )
 where
 
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM (UnionM, unionSize)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (mrgIte),
+import Grisette
+  ( LogicalOp ((.&&)),
+    MonadUnion,
+    SimpleMergeable (mrgIte),
+    SymBool,
+    UnionM,
     UnionMergeable1 (mrgIfPropagatedStrategy),
+    mrgSingle,
+    unionSize,
   )
-import Grisette.Core.Data.Class.TestValues (ssymBool)
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
+import Grisette.Core.Data.Class.TestValues
+  ( ssymBool,
   )
-import Grisette.SymPrim.SymBool (SymBool)
 import Grisette.TestUtil.SymbolicAssertion ((@?=~))
 import Test.HUnit (Assertion, (@?=))
 

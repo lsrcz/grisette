@@ -18,21 +18,19 @@ import GHC.Int (Int16, Int32, Int64, Int8)
 import GHC.Word (Word16, Word32, Word64, Word8)
 import Grisette
   ( BV (bv),
+    BitwidthMismatch (BitwidthMismatch),
     IntN,
     Mergeable,
     SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
+    SomeIntN,
+    SomeWordN,
     UnionM,
     WordN,
     mrgPure,
-  )
-import Grisette.Core.Control.Monad.UnionM (isMerged)
-import Grisette.Core.Data.BV (BitwidthMismatch (BitwidthMismatch))
-import Grisette.Core.Data.SomeBV
-  ( SomeIntN,
-    SomeWordN,
     pattern SomeIntN,
     pattern SomeWordN,
   )
+import Grisette.Internal.Core.Control.Monad.UnionM (isMerged)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

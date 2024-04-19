@@ -5,8 +5,8 @@
 
 module Grisette.SymPrim.Prim.BoolTests (boolTests) where
 
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalNumTerm (pevalAddNumTerm),
     SupportedPrim (pevalITETerm),
     Term,

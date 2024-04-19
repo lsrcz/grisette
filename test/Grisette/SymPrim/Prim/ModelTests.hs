@@ -6,10 +6,9 @@ module Grisette.SymPrim.Prim.ModelTests (modelTests) where
 
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
-import Grisette (TypedSymbol)
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.ModelOps
-  ( ModelOps
+import Grisette
+  ( IntN,
+    ModelOps
       ( emptyModel,
         exact,
         exceptFor,
@@ -19,16 +18,18 @@ import Grisette.Core.Data.Class.ModelOps
         valueOf
       ),
     ModelRep (buildModel),
+    TypedSymbol,
+    WordN,
   )
-import Grisette.SymPrim.Prim.Model
+import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
     ModelValuePair ((::=)),
     SymbolSet (SymbolSet),
     equation,
     evaluateTerm,
   )
-import Grisette.SymPrim.Prim.ModelValue (toModelValue)
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.Prim.ModelValue (toModelValue)
+import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalNumTerm (pevalAddNumTerm, pevalNegNumTerm),
     SupportedPrim (pevalITETerm),
     Term,

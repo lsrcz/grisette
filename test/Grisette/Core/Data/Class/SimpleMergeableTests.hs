@@ -26,20 +26,18 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.Monoid as Monoid
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (mrgIte),
+import Grisette
+  ( ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    Mergeable,
+    SimpleMergeable (mrgIte),
+    SymBool,
+    UnionM,
     mrgIf,
     mrgIte1,
+    mrgSingle,
   )
 import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
-  )
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

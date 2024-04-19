@@ -8,21 +8,21 @@
 module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 
 import GHC.Generics (Generic)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy),
+import Grisette
+  ( ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    Mergeable (rootStrategy),
     MergingStrategy (SortedStrategy),
+    Solvable (con),
+    SymInteger,
     wrapStrategy,
   )
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Union
+import Grisette.Internal.Core.Data.Union
   ( Union (UnionIf, UnionSingle),
     fullReconstruct,
     ifWithLeftMost,
     ifWithStrategy,
   )
-import Grisette.SymPrim.SymInteger (SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

@@ -21,23 +21,22 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette (ITEOp (symIte))
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+import Grisette
+  ( ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    SEq ((.==)),
+    SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    UnionM,
+    mrgIf,
     mrgMax,
     mrgMin,
+    mrgSingle,
     symMax,
     symMin,
   )
-import Grisette.Core.Data.Class.SimpleMergeable
-  ( mrgIf,
-  )
-import Grisette.Core.Data.Class.TestValues (conBool, ssymBool)
-import Grisette.Core.Data.Class.TryMerge
-  ( mrgSingle,
+import Grisette.Core.Data.Class.TestValues
+  ( conBool,
+    ssymBool,
   )
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.SymPrim (SymBool, SymInteger)
@@ -110,19 +109,19 @@ sordTests =
                 ssymBool "a"
                   .<= ssymBool "b"
                   @?= (symNot (ssymBool "a"))
-                    .|| (ssymBool "b")
+                  .|| (ssymBool "b")
                 ssymBool "a"
                   .< ssymBool "b"
                   @?= (symNot (ssymBool "a"))
-                    .&& (ssymBool "b")
+                  .&& (ssymBool "b")
                 ssymBool "a"
                   .>= ssymBool "b"
                   @?= (ssymBool "a")
-                    .|| (symNot (ssymBool "b"))
+                  .|| (symNot (ssymBool "b"))
                 ssymBool "a"
                   .> ssymBool "b"
                   @?= (ssymBool "a")
-                    .&& (symNot (ssymBool "b"))
+                  .&& (symNot (ssymBool "b"))
                 symCompare (ssymBool "a") (ssymBool "b")
                   @?= ( mrgIf
                           ((symNot (ssymBool "a")) .&& (ssymBool "b"))

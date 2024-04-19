@@ -13,9 +13,13 @@ where
 
 import Data.Foldable (traverse_)
 import qualified Data.SBV as SBV
-import Grisette.Backend.Solving
+import Grisette
   ( GrisetteSMTConfig,
+    IntN,
+    SymBool (SymBool),
+    WordN,
     precise,
+    solve,
   )
 import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
@@ -47,13 +51,10 @@ import Grisette.Backend.TermRewritingGen
     remIntegralSpec,
     shiftRightSpec,
   )
-import Grisette.Core.Data.BV (IntN, WordN)
-import Grisette.Core.Data.Class.Solver (solve)
-import Grisette.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.Prim.Term
   ( SupportedPrim,
     pformat,
   )
-import Grisette.SymPrim.SymBool (SymBool (SymBool))
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)

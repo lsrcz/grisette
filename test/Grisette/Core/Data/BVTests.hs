@@ -45,11 +45,7 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Typeable (Typeable, typeRep)
 import Data.Word (Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.BV
-  ( IntN (IntN),
-    WordN (unWordN),
-  )
-import Grisette.Core.Data.Class.BitVector
+import Grisette
   ( BV (bv),
     SizedBV
       ( sizedBVConcat,
@@ -58,12 +54,14 @@ import Grisette.Core.Data.Class.BitVector
         sizedBVSext,
         sizedBVZext
       ),
-  )
-import Grisette.Core.Data.SomeBV
-  ( SomeIntN,
+    SomeIntN,
     SomeWordN,
     pattern SomeIntN,
     pattern SomeWordN,
+  )
+import Grisette.Internal.SymPrim.BV
+  ( IntN (IntN),
+    WordN (unWordN),
   )
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

@@ -12,40 +12,33 @@ import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import Data.String (IsString (fromString))
 import GHC.Stack (HasCallStack)
-import Grisette.Backend (GrisetteSMTConfig, precise, z3)
-import Grisette.Core.Control.Exception
-  ( VerificationConditions,
-  )
-import Grisette.Core.Control.Monad.UnionM (UnionM)
-import Grisette.Core.Data.Class.BitVector
-  ( SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
-  )
-import Grisette.Core.Data.Class.CEGISSolver
-  ( CEGISResult (CEGISSuccess),
+import Grisette
+  ( Apply (apply),
+    CEGISResult (CEGISSuccess),
+    EvaluateSym (evaluateSym),
+    ExtractSymbolics,
+    Function ((#)),
+    GrisetteSMTConfig,
+    ITEOp (symIte),
+    LogicalOp (symNot, symXor, (.&&), (.||)),
+    SEq ((.==)),
+    SOrd ((.<), (.>=)),
+    SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
+    Solvable (con),
+    UnionM,
+    VerificationConditions,
     cegis,
     cegisExceptVC,
     cegisForAllExceptVC,
     cegisMultiInputs,
     cegisPostCond,
-  )
-import Grisette.Core.Data.Class.Error
-  ( symAssert,
+    mrgIf,
+    precise,
+    solve,
+    symAssert,
     symAssume,
+    z3,
   )
-import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics,
-  )
-import Grisette.Core.Data.Class.Function (Apply (apply), Function ((#)))
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp
-  ( LogicalOp (symNot, symXor, (.&&), (.||)),
-  )
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((.<), (.>=)))
-import Grisette.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Core.Data.Class.Solver (solve)
 import Grisette.SymPrim
   ( SymBool,
     SymIntN,

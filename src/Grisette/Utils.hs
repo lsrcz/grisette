@@ -49,7 +49,7 @@ module Grisette.Utils
   )
 where
 
-import Grisette.Utils.Parameterized
+import Grisette.Internal.Utils.Parameterized
   ( KnownProof (..),
     LeqProof (..),
     NatRepr,

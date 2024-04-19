@@ -95,15 +95,16 @@ where
 import Data.Bifunctor (Bifunctor (first, second))
 import Data.List (tails)
 import Data.Maybe (listToMaybe)
-import Grisette.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Core.Control.Monad.UnionM (UnionM, liftUnionM)
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Core.Data.Class.SOrd (SOrd ((.<=), (.>=)))
-import Grisette.Core.Data.Class.SimpleMergeable (UnionMergeable1, mrgIf)
-import Grisette.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftUnionM)
+import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)))
+import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<=), (.>=)))
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (UnionMergeable1, mrgIf)
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgPure)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Data.Foldable
@@ -125,7 +126,6 @@ import Grisette.Lib.Data.Foldable
     symOr,
   )
 import Grisette.Lib.Data.Functor (mrgFmap)
-import Grisette.SymPrim.SymBool (SymBool)
 
 symListOpOnSymInt ::
   (Applicative u, UnionMergeable1 u, Mergeable b, Num int, SOrd int) =>

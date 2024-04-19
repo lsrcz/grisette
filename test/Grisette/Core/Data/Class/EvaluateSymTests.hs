@@ -18,23 +18,19 @@ import Data.Functor.Sum (Sum (InL, InR))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
-import Grisette.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
-import Grisette.Core.Data.Class.ModelOps
-  ( ModelOps (emptyModel),
+import Grisette
+  ( EvaluateSym (evaluateSym),
+    ITEOp (symIte),
+    LogicalOp (symNot, (.&&), (.||)),
+    ModelOps (emptyModel),
     ModelRep (buildModel),
+    ModelValuePair ((::=)),
+    SEq ((.==)),
+    Solvable (con, isym, ssym),
+    SymBool,
+    Symbol (IndexedSymbol),
+    TypedSymbol (TypedSymbol),
   )
-import Grisette.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Core.Data.Class.Solvable (Solvable (con, isym, ssym))
-import Grisette.Core.Data.Symbol (Symbol (IndexedSymbol))
-import Grisette.SymPrim.Prim.Model
-  ( ModelValuePair ((::=)),
-  )
-import Grisette.SymPrim.Prim.Term
-  ( TypedSymbol (TypedSymbol),
-  )
-import Grisette.SymPrim.SymBool (SymBool)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -67,15 +63,15 @@ evaluateSymTests =
                       testCase ".||" $
                         eval (ssym "a" .|| ssym "b")
                           @?= ssym "a"
-                            .|| ssym "b",
+                          .|| ssym "b",
                       testCase ".&&" $
                         eval (ssym "a" .&& ssym "b")
                           @?= ssym "a"
-                            .&& ssym "b",
+                          .&& ssym "b",
                       testCase ".==" $
                         eval ((ssym "a" :: SymBool) .== ssym "b")
                           @?= (ssym "a" :: SymBool)
-                            .== ssym "b",
+                          .== ssym "b",
                       testCase "symNot" $
                         eval (symNot (ssym "a"))
                           @?= symNot (ssym "a"),

@@ -22,8 +22,8 @@ module Grisette.Lib.Control.Monad.Except
 where
 
 import Control.Monad.Except (ExceptT, MonadError (catchError, throwError))
-import Grisette.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Trans.Except (mrgRunExceptT)
 import Grisette.Lib.Data.Functor (mrgFmap)
