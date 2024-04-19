@@ -93,6 +93,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     TryMerge (tryMergeWithStrategy),
     tryMerge,
   )
+import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative
   ( mrgEmpty,
     mrgLiftA2,
@@ -117,7 +118,6 @@ import Grisette.Lib.Data.Traversable
     mrgSequenceA,
     mrgTraverse,
   )
-import Grisette.Internal.SymPrim.SymBool (SymBool)
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.
 mrgReturnWithStrategy :: (MonadTryMerge u) => MergingStrategy a -> a -> u a

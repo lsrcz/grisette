@@ -17,7 +17,6 @@ import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import Data.Typeable (type (:~:) (Refl))
 import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (-), type (<=))
-import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV
       ( sizedBVConcat,
@@ -30,6 +29,7 @@ import Grisette.Internal.Core.Data.Class.BitVector
 import Grisette.Internal.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )

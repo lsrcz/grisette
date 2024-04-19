@@ -109,19 +109,19 @@ sordTests =
                 ssymBool "a"
                   .<= ssymBool "b"
                   @?= (symNot (ssymBool "a"))
-                  .|| (ssymBool "b")
+                    .|| (ssymBool "b")
                 ssymBool "a"
                   .< ssymBool "b"
                   @?= (symNot (ssymBool "a"))
-                  .&& (ssymBool "b")
+                    .&& (ssymBool "b")
                 ssymBool "a"
                   .>= ssymBool "b"
                   @?= (ssymBool "a")
-                  .|| (symNot (ssymBool "b"))
+                    .|| (symNot (ssymBool "b"))
                 ssymBool "a"
                   .> ssymBool "b"
                   @?= (ssymBool "a")
-                  .&& (symNot (ssymBool "b"))
+                    .&& (symNot (ssymBool "b"))
                 symCompare (ssymBool "a") (ssymBool "b")
                   @?= ( mrgIf
                           ((symNot (ssymBool "a")) .&& (ssymBool "b"))
