@@ -46,7 +46,7 @@ dependencies:
   - sbv >= 8.11 && < 11
   - parallel >= 3.2.2.0 && < 3.3
   - text >= 1.2.4.1 && < 2.2
-  - QuickCheck >= 2.14 && < 2.15
+  - QuickCheck >= 2.14 && < 2.16
   - prettyprinter >= 1.5.0 && < 1.8
   - async >= 2.2.2 && < 2.3
   - stm >= 2.5 && < 2.6
