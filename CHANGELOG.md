@@ -8,6 +8,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added solving procedures with solver handles. ([#198](https://github.com/lsrcz/grisette/pull/198))
+
 ## [0.5.0.1] -- 2024-04-18
 
 ### Fixed
