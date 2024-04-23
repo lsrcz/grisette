@@ -29,12 +29,25 @@ module Grisette.Internal.Core.Data.Class.CEGISSolver
     VerifierResult (..),
     StatefulVerifierFun,
     CEGISResult (..),
+    solverGenericCEGIS,
     genericCEGIS,
 
     -- * CEGIS interfaces with pre/post conditions
     CEGISCondition (..),
     cegisPostCond,
     cegisPrePost,
+    solverCegisMultiInputs,
+    solverCegis,
+    solverCegisExcept,
+    solverCegisExceptStdVC,
+    solverCegisExceptVC,
+    solverCegisExceptMultiInputs,
+    solverCegisExceptStdVCMultiInputs,
+    solverCegisExceptVCMultiInputs,
+    solverCegisForAll,
+    solverCegisForAllExcept,
+    solverCegisForAllExceptStdVC,
+    solverCegisForAllExceptVC,
     cegisMultiInputs,
     cegis,
     cegisExcept,
@@ -79,10 +92,9 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Core.Data.Class.Solver
   ( ConfigurableSolver,
-    Solver (solverSolve),
+    Solver (solverResetAssertions, solverSolve),
     SolvingFailure (Unsat),
     UnionWithExcept (extractUnionExcept),
-    solve,
     withSolver,
   )
 import Grisette.Internal.SymPrim.Prim.Model (Model)
@@ -126,6 +138,44 @@ data CEGISResult exception
   | CEGISSolverFailure SolvingFailure
   deriving (Show)
 
+-- | Generic CEGIS procedure. See 'genericCEGIS' for more details.
+--
+-- The difference from 'genericCEGIS' is that this function accepts a solver
+-- handle for the synthesizer, instead of a solver configuration.
+solverGenericCEGIS ::
+  (Solver handle) =>
+  -- | Configuration of the solver.
+  handle ->
+  -- | The initial synthesis constraint.
+  SymBool ->
+  -- | The synthesis constraint function.
+  SynthesisConstraintFun input ->
+  -- | The initial state of the verifier.
+  verifierState ->
+  -- | The verifier function.
+  StatefulVerifierFun verifierState input exception ->
+  IO ([input], CEGISResult exception)
+solverGenericCEGIS solver initConstr synthConstr initVerifierState verifier = do
+  firstResult <- solverSolve solver initConstr
+  case firstResult of
+    Left err -> return ([], CEGISSolverFailure err)
+    Right model -> go solver model 0 initVerifierState
+  where
+    go solver prevModel iterNum verifierState = do
+      (newVerifierState, verifierResult) <-
+        verifier verifierState prevModel
+      case verifierResult of
+        CEGISVerifierFoundCex cex -> do
+          newResult <- solverSolve solver =<< synthConstr iterNum cex
+          case newResult of
+            Left err -> return ([], CEGISSolverFailure err)
+            Right model -> do
+              (cexes, result) <- go solver model (iterNum + 1) newVerifierState
+              return (cex : cexes, result)
+        CEGISVerifierNoCex -> return ([], CEGISSuccess prevModel)
+        CEGISVerifierException exception ->
+          return ([], CEGISVerifierFailure exception)
+
 -- | Generic CEGIS procedure.
 --
 -- The CEGIS procedure will try to find a model that satisfies the initial
@@ -144,26 +194,8 @@ genericCEGIS ::
   StatefulVerifierFun verifierState input exception ->
   IO ([input], CEGISResult exception)
 genericCEGIS config initConstr synthConstr initVerifierState verifier =
-  withSolver config $ \solver -> do
-    firstResult <- solverSolve solver initConstr
-    case firstResult of
-      Left err -> return ([], CEGISSolverFailure err)
-      Right model -> go solver model 0 initVerifierState
-  where
-    go solver prevModel iterNum verifierState = do
-      (newVerifierState, verifierResult) <-
-        verifier verifierState prevModel
-      case verifierResult of
-        CEGISVerifierFoundCex cex -> do
-          newResult <- solverSolve solver =<< synthConstr iterNum cex
-          case newResult of
-            Left err -> return ([], CEGISSolverFailure err)
-            Right model -> do
-              (cexes, result) <- go solver model (iterNum + 1) newVerifierState
-              return (cex : cexes, result)
-        CEGISVerifierNoCex -> return ([], CEGISSuccess prevModel)
-        CEGISVerifierException exception ->
-          return ([], CEGISVerifierFailure exception)
+  withSolver config $ \solver ->
+    solverGenericCEGIS solver initConstr synthConstr initVerifierState verifier
 
 data CEGISMultiInputsState input = CEGISMultiInputsState
   { _cegisMultiInputsRemainingSymInputs :: [input],
@@ -206,6 +238,462 @@ deriving via (Default CEGISCondition) instance Mergeable CEGISCondition
 
 deriving via (Default CEGISCondition) instance SimpleMergeable CEGISCondition
 
+-- | CEGIS with multiple (possibly symbolic) inputs. See 'cegisMultiInputs' for
+-- more details.
+--
+-- The difference from 'cegisMultiInputs' is that this function accepts two
+-- solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisMultiInputs ::
+  ( EvaluateSym input,
+    ExtractSymbolics input,
+    Solver handle
+  ) =>
+  -- The synthesizer solver handle
+  handle ->
+  -- The verifier solver handle
+  handle ->
+  -- | Initial symbolic inputs. The solver will try to find a
+  -- program that works on all the inputs representable by these inputs (see
+  -- 'CEGISCondition').
+  [input] ->
+  -- | The condition for the solver to solve. All the
+  -- symbolic constants that are not in the inputs will
+  -- be considered as part of the symbolic program.
+  (input -> CEGISCondition) ->
+  -- | The counter-examples generated
+  -- during the CEGIS loop, and the
+  -- model found by the solver.
+  IO ([input], CEGISResult SolvingFailure)
+solverCegisMultiInputs
+  synthesizerSolver
+  verifierSolver
+  inputs
+  toCEGISCondition = do
+    initConstr <- cexesAssertFun conInputs
+    solverGenericCEGIS
+      synthesizerSolver
+      initConstr
+      synthConstr
+      (CEGISMultiInputsState symInputs (con True) (con True))
+      verifier
+    where
+      (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
+      forallSymbols = extractSymbolics symInputs
+      cexAssertFun input = do
+        unless (isEmptySet (extractSymbolics input)) $ error "BUG"
+        CEGISCondition pre post <- return $ toCEGISCondition input
+        return $ pre .&& post
+      cexesAssertFun = foldM (\acc x -> (acc .&&) <$> cexAssertFun x) (con True)
+      synthConstr _ = cexAssertFun
+      verifier state@(CEGISMultiInputsState [] _ _) _ =
+        return (state, CEGISVerifierNoCex)
+      verifier
+        (CEGISMultiInputsState (nextSymInput : symInputs) pre post)
+        candidate = do
+          CEGISCondition nextPre nextPost <-
+            return $ toCEGISCondition nextSymInput
+          let newPre = pre .&& nextPre
+          let newPost = post .&& nextPost
+          let evaluated =
+                evaluateSym False (exceptFor forallSymbols candidate) $
+                  newPre .&& symNot newPost
+          solverResetAssertions verifierSolver
+          r <- solverSolve verifierSolver evaluated
+          case r of
+            Left Unsat ->
+              verifier (CEGISMultiInputsState symInputs newPre newPost) candidate
+            Left err ->
+              return
+                ( CEGISMultiInputsState [] newPre newPost,
+                  CEGISVerifierException err
+                )
+            Right model ->
+              return
+                ( CEGISMultiInputsState (nextSymInput : symInputs) newPre newPost,
+                  CEGISVerifierFoundCex $
+                    evaluateSym False (exact forallSymbols model) nextSymInput
+                )
+
+-- | CEGIS with a single symbolic input to represent a set of inputs. See
+-- 'cegis' for more details.
+--
+-- The difference from 'cegis' is that this function accepts two solver handles,
+-- one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegis ::
+  ( Solver handle,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    SEq inputs
+  ) =>
+  -- | The synthesizer solver handle
+  handle ->
+  -- | The verifier solver handle
+  handle ->
+  -- | Initial symbolic inputs. The solver will try to find a
+  -- program that works on all the inputs representable by it (see
+  -- 'CEGISCondition').
+  inputs ->
+  -- | The condition for the solver to solve. All the
+  -- symbolic constants that are not in the inputs will
+  -- be considered as part of the symbolic program.
+  (inputs -> CEGISCondition) ->
+  -- | The counter-examples generated
+  -- during the CEGIS loop, and the
+  -- model found by the solver.
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegis synthesizerSolver verifierSolver inputs =
+  solverCegisMultiInputs synthesizerSolver verifierSolver [inputs]
+
+-- |
+-- CEGIS for symbolic programs with error handling, using multiple (possibly
+-- symbolic) inputs to represent a set of inputs.
+--
+-- The difference from 'cegisExceptMultiInputs' is that this function accepts
+-- two solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisExceptMultiInputs ::
+  ( Solver handle,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    UnionWithExcept t u e v,
+    PlainUnion u,
+    Monad u
+  ) =>
+  handle ->
+  handle ->
+  [inputs] ->
+  (Either e v -> CEGISCondition) ->
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptMultiInputs
+  synthesizerSolver
+  verifierSolver
+  cexes
+  interpretFun
+  f =
+    solverCegisMultiInputs
+      synthesizerSolver
+      verifierSolver
+      cexes
+      (simpleMerge . (interpretFun <$>) . extractUnionExcept . f)
+
+-- |
+-- CEGIS for symbolic programs with error handling, using multiple (possibly
+-- symbolic) inputs to represent a set of inputs.
+--
+-- The errors should be translated to assertion or assumption violations.
+--
+-- The difference from 'cegisExceptVCMultiInputs' is that this function accepts
+-- two solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisExceptVCMultiInputs ::
+  ( Solver handle,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    UnionWithExcept t u e v,
+    PlainUnion u,
+    Monad u
+  ) =>
+  handle ->
+  handle ->
+  [inputs] ->
+  (Either e v -> u (Either VerificationConditions ())) ->
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptVCMultiInputs
+  synthesizerSolver
+  verifierSolver
+  cexes
+  interpretFun
+  f =
+    solverCegisMultiInputs
+      synthesizerSolver
+      verifierSolver
+      cexes
+      ( \v ->
+          simpleMerge
+            ( ( \case
+                  Left AssumptionViolation ->
+                    cegisPrePost (con False) (con True)
+                  Left AssertionViolation -> cegisPostCond (con False)
+                  _ -> cegisPostCond (con True)
+              )
+                <$> (extractUnionExcept (f v) >>= interpretFun)
+            )
+      )
+
+-- |
+-- CEGIS for symbolic programs with error handling, using multiple (possibly
+-- symbolic) inputs to represent a set of inputs. See
+-- 'cegisExceptStdVCMultiInputs' for more details.
+--
+-- The difference from 'cegisExceptStdVCMultiInputs' is that this function
+-- accepts two solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisExceptStdVCMultiInputs ::
+  ( Solver handle,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    UnionWithExcept t u VerificationConditions (),
+    PlainUnion u,
+    Monad u
+  ) =>
+  handle ->
+  handle ->
+  [inputs] ->
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptStdVCMultiInputs synthesizerSolver verifierSolver cexes =
+  solverCegisExceptVCMultiInputs synthesizerSolver verifierSolver cexes return
+
+-- |
+-- CEGIS for symbolic programs with error handling, using a single symbolic
+-- input to represent a set of inputs. See 'cegisExcept' for more details.
+--
+-- The difference from 'cegisExcept' is that this function accepts two solver
+-- handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisExcept ::
+  ( UnionWithExcept t u e v,
+    PlainUnion u,
+    Functor u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    Solver handle,
+    SEq inputs
+  ) =>
+  handle ->
+  handle ->
+  inputs ->
+  (Either e v -> CEGISCondition) ->
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExcept synthesizerSolver verifierSolver inputs f v =
+  solverCegis synthesizerSolver verifierSolver inputs $
+    \i -> simpleMerge $ f <$> extractUnionExcept (v i)
+
+-- |
+-- CEGIS for symbolic programs with error handling, using a single symbolic
+-- input to represent a set of inputs.
+--
+-- The errors should be translated to assertion or assumption violations.
+--
+-- The difference from 'cegisExceptVC' is that this function accepts two solver
+-- handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisExceptVC ::
+  ( UnionWithExcept t u e v,
+    PlainUnion u,
+    Monad u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    Solver handle,
+    SEq inputs
+  ) =>
+  handle ->
+  handle ->
+  inputs ->
+  (Either e v -> u (Either VerificationConditions ())) ->
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptVC synthesizerSolver verifierSolver inputs f v = do
+  solverCegis synthesizerSolver verifierSolver inputs $ \i ->
+    simpleMerge $
+      ( \case
+          Left AssumptionViolation -> cegisPrePost (con False) (con True)
+          Left AssertionViolation -> cegisPostCond (con False)
+          _ -> cegisPostCond (con True)
+      )
+        <$> (extractUnionExcept (v i) >>= f)
+
+-- |
+-- CEGIS for symbolic programs with error handling, using a single symbolic
+-- input to represent a set of inputs. See 'cegisExceptStdVC' for more details.
+--
+-- The difference from 'cegisExceptStdVC' is that this function accepts two
+-- solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisExceptStdVC ::
+  ( UnionWithExcept t u VerificationConditions (),
+    PlainUnion u,
+    Monad u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    Solver handle,
+    SEq inputs
+  ) =>
+  handle ->
+  handle ->
+  inputs ->
+  (inputs -> t) ->
+  IO ([inputs], CEGISResult SolvingFailure)
+solverCegisExceptStdVC synthesizerSolver verifierSolver inputs =
+  solverCegisExceptVC synthesizerSolver verifierSolver inputs return
+
+-- |
+-- CEGIS with a single symbolic input to represent a set of inputs. See
+-- 'cegisForAll' for more details.
+--
+-- The difference from 'cegisForAll' is that this function accepts two solver
+-- handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisForAll ::
+  ( ExtractSymbolics forallInput,
+    Solver handle
+  ) =>
+  handle ->
+  handle ->
+  -- | A symbolic value. All the symbolic constants in the value are treated as
+  -- for-all variables.
+  forallInput ->
+  CEGISCondition ->
+  -- | First output are the counter-examples for all the for-all variables, and
+  -- the second output is the model for all other variables if CEGIS succeeds.
+  IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAll
+  synthesizerSolver
+  verifierSolver
+  input
+  (CEGISCondition pre post) = do
+    (models, result) <-
+      solverGenericCEGIS
+        synthesizerSolver
+        phi
+        synthConstr
+        ()
+        verifier
+    let exactResult = case result of
+          CEGISSuccess model -> CEGISSuccess $ exceptFor forallSymbols model
+          _ -> result
+    return (models, exactResult)
+    where
+      phi = pre .&& post
+      negphi = pre .&& symNot post
+      forallSymbols = extractSymbolics input
+      synthConstr _ model = return $ evaluateSym False model phi
+      verifier () candidate = do
+        let evaluated =
+              evaluateSym False (exceptFor forallSymbols candidate) negphi
+        solverResetAssertions verifierSolver
+        r <- solverSolve verifierSolver evaluated
+        case r of
+          Left Unsat -> return ((), CEGISVerifierNoCex)
+          Left err -> return ((), CEGISVerifierException err)
+          Right model ->
+            return ((), CEGISVerifierFoundCex $ exact forallSymbols model)
+
+-- |
+-- CEGIS for symbolic programs with error handling, with a forall variable.
+--
+-- See 'cegisForAllExcept', 'cegisForAll' and 'cegisExcept'.
+--
+-- The difference from 'cegisForAllExcept' is that this function accepts two
+-- solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisForAllExcept ::
+  ( UnionWithExcept t u e v,
+    PlainUnion u,
+    Functor u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    Solver handle,
+    SEq inputs
+  ) =>
+  handle ->
+  handle ->
+  inputs ->
+  (Either e v -> CEGISCondition) ->
+  t ->
+  IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExcept synthesizerSolver verifierSolver inputs f v =
+  solverCegisForAll synthesizerSolver verifierSolver inputs $
+    simpleMerge $
+      f <$> extractUnionExcept v
+
+-- |
+-- CEGIS for symbolic programs with error handling, with a forall variable.
+--
+-- See 'cegisForAllExceptVC' 'cegisForAll' and 'cegisExceptVC'.
+--
+-- The difference from 'cegisForAllExceptVC' is that this function accepts two
+-- solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisForAllExceptVC ::
+  ( UnionWithExcept t u e v,
+    PlainUnion u,
+    Monad u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    Solver handle,
+    SEq inputs
+  ) =>
+  handle ->
+  handle ->
+  inputs ->
+  (Either e v -> u (Either VerificationConditions ())) ->
+  t ->
+  IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExceptVC synthesizerSolver verifierSolver inputs f v = do
+  solverCegisForAll synthesizerSolver verifierSolver inputs $
+    simpleMerge $
+      ( \case
+          Left AssumptionViolation -> cegisPrePost (con False) (con True)
+          Left AssertionViolation -> cegisPostCond (con False)
+          _ -> cegisPostCond (con True)
+      )
+        <$> (extractUnionExcept v >>= f)
+
+-- |
+-- CEGIS for symbolic programs with error handling, with a forall variable.
+--
+-- See 'cegisForAllExceptStdVC' 'cegisForAll' and 'cegisExceptStdVC'.
+--
+-- The difference from 'cegisForAllExceptStdVC' is that this function accepts
+-- two solver handles, one for the synthesizer and one for the verifier.
+--
+-- The synthesizer solver will **not** be reset, while the verifier solver will
+-- be reset after each iteration.
+solverCegisForAllExceptStdVC ::
+  ( UnionWithExcept t u VerificationConditions (),
+    PlainUnion u,
+    Monad u,
+    EvaluateSym inputs,
+    ExtractSymbolics inputs,
+    Solver handle,
+    SEq inputs
+  ) =>
+  handle ->
+  handle ->
+  inputs ->
+  t ->
+  IO ([Model], CEGISResult SolvingFailure)
+solverCegisForAllExceptStdVC synthesizerSolver verifierSolver inputs =
+  solverCegisForAllExceptVC synthesizerSolver verifierSolver inputs return
+
 -- |
 -- CEGIS with multiple (possibly symbolic) inputs. Solves the following formula
 -- (see 'CEGISCondition' for details).
@@ -222,54 +710,28 @@ cegisMultiInputs ::
     ExtractSymbolics input,
     ConfigurableSolver config handle
   ) =>
+  -- | The configuration of the solver
   config ->
+  -- | Initial symbolic inputs. The solver will try to find a
+  -- program that works on all the inputs representable by these inputs (see
+  -- 'CEGISCondition').
   [input] ->
+  -- | The condition for the solver to solve. All the
+  -- symbolic constants that are not in the inputs will
+  -- be considered as part of the symbolic program.
   (input -> CEGISCondition) ->
+  -- | The counter-examples generated
+  -- during the CEGIS loop, and the
+  -- model found by the solver.
   IO ([input], CEGISResult SolvingFailure)
-cegisMultiInputs config inputs toCEGISCondition = do
-  initConstr <- cexesAssertFun conInputs
-  genericCEGIS
-    config
-    initConstr
-    synthConstr
-    (CEGISMultiInputsState symInputs (con True) (con True))
-    verifier
-  where
-    (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
-    forallSymbols = extractSymbolics symInputs
-    cexAssertFun input = do
-      unless (isEmptySet (extractSymbolics input)) $ error "BUG"
-      CEGISCondition pre post <- return $ toCEGISCondition input
-      return $ pre .&& post
-    cexesAssertFun = foldM (\acc x -> (acc .&&) <$> cexAssertFun x) (con True)
-    synthConstr _ = cexAssertFun
-    verifier state@(CEGISMultiInputsState [] _ _) _ =
-      return (state, CEGISVerifierNoCex)
-    verifier
-      (CEGISMultiInputsState (nextSymInput : symInputs) pre post)
-      candidate = do
-        CEGISCondition nextPre nextPost <-
-          return $ toCEGISCondition nextSymInput
-        let newPre = pre .&& nextPre
-        let newPost = post .&& nextPost
-        let evaluated =
-              evaluateSym False (exceptFor forallSymbols candidate) $
-                newPre .&& symNot newPost
-        r <- solve config evaluated
-        case r of
-          Left Unsat ->
-            verifier (CEGISMultiInputsState symInputs newPre newPost) candidate
-          Left err ->
-            return
-              ( CEGISMultiInputsState [] newPre newPost,
-                CEGISVerifierException err
-              )
-          Right model ->
-            return
-              ( CEGISMultiInputsState (nextSymInput : symInputs) newPre newPost,
-                CEGISVerifierFoundCex $
-                  evaluateSym False (exact forallSymbols model) nextSymInput
-              )
+cegisMultiInputs config inputs toCEGISCondition =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisMultiInputs
+        synthesizerSolver
+        verifierSolver
+        inputs
+        toCEGISCondition
 
 -- |
 -- CEGIS with a single symbolic input to represent a set of inputs.
@@ -302,7 +764,10 @@ cegis ::
   -- during the CEGIS loop, and the
   -- model found by the solver.
   IO ([inputs], CEGISResult SolvingFailure)
-cegis config inputs = cegisMultiInputs config [inputs]
+cegis config inputs condition =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegis synthesizerSolver verifierSolver inputs condition
 
 -- |
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
@@ -321,10 +786,14 @@ cegisExceptMultiInputs ::
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptMultiInputs config cexes interpretFun f =
-  cegisMultiInputs
-    config
-    cexes
-    (simpleMerge . (interpretFun <$>) . extractUnionExcept . f)
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisExceptMultiInputs
+        synthesizerSolver
+        verifierSolver
+        cexes
+        interpretFun
+        f
 
 -- |
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
@@ -345,19 +814,14 @@ cegisExceptVCMultiInputs ::
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
 cegisExceptVCMultiInputs config cexes interpretFun f =
-  cegisMultiInputs
-    config
-    cexes
-    ( \v ->
-        simpleMerge
-          ( ( \case
-                Left AssumptionViolation -> cegisPrePost (con False) (con True)
-                Left AssertionViolation -> cegisPostCond (con False)
-                _ -> cegisPostCond (con True)
-            )
-              <$> (extractUnionExcept (f v) >>= interpretFun)
-          )
-    )
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisExceptVCMultiInputs
+        synthesizerSolver
+        verifierSolver
+        cexes
+        interpretFun
+        f
 
 -- |
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
@@ -380,8 +844,10 @@ cegisExceptStdVCMultiInputs ::
   [inputs] ->
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
-cegisExceptStdVCMultiInputs config cexes =
-  cegisExceptVCMultiInputs config cexes return
+cegisExceptStdVCMultiInputs config cexes f =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisExceptStdVCMultiInputs synthesizerSolver verifierSolver cexes f
 
 -- |
 -- CEGIS for symbolic programs with error handling, using a single symbolic
@@ -430,7 +896,9 @@ cegisExcept ::
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
 cegisExcept config inputs f v =
-  cegis config inputs $ \i -> simpleMerge $ f <$> extractUnionExcept (v i)
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisExcept synthesizerSolver verifierSolver inputs f v
 
 -- |
 -- CEGIS for symbolic programs with error handling, using a single symbolic
@@ -451,15 +919,10 @@ cegisExceptVC ::
   (Either e v -> u (Either VerificationConditions ())) ->
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
-cegisExceptVC config inputs f v = do
-  cegis config inputs $ \i ->
-    simpleMerge $
-      ( \case
-          Left AssumptionViolation -> cegisPrePost (con False) (con True)
-          Left AssertionViolation -> cegisPostCond (con False)
-          _ -> cegisPostCond (con True)
-      )
-        <$> (extractUnionExcept (v i) >>= f)
+cegisExceptVC config inputs f v =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisExceptVC synthesizerSolver verifierSolver inputs f v
 
 -- |
 -- CEGIS for symbolic programs with error handling, using a single symbolic
@@ -501,7 +964,10 @@ cegisExceptStdVC ::
   inputs ->
   (inputs -> t) ->
   IO ([inputs], CEGISResult SolvingFailure)
-cegisExceptStdVC config inputs = cegisExceptVC config inputs return
+cegisExceptStdVC config inputs f =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisExceptStdVC synthesizerSolver verifierSolver inputs f
 
 -- |
 -- CEGIS with a single symbolic input to represent a set of inputs.
@@ -526,26 +992,14 @@ cegisForAll ::
   -- | First output are the counter-examples for all the for-all variables, and
   -- the second output is the model for all other variables if CEGIS succeeds.
   IO ([Model], CEGISResult SolvingFailure)
-cegisForAll config input (CEGISCondition pre post) = do
-  (models, result) <- genericCEGIS config phi synthConstr () verifier
-  let exactResult = case result of
-        CEGISSuccess model -> CEGISSuccess $ exceptFor forallSymbols model
-        _ -> result
-  return (models, exactResult)
-  where
-    phi = pre .&& post
-    negphi = pre .&& symNot post
-    forallSymbols = extractSymbolics input
-    synthConstr _ model = return $ evaluateSym False model phi
-    verifier () candidate = do
-      let evaluated =
-            evaluateSym False (exceptFor forallSymbols candidate) negphi
-      r <- solve config evaluated
-      case r of
-        Left Unsat -> return ((), CEGISVerifierNoCex)
-        Left err -> return ((), CEGISVerifierException err)
-        Right model ->
-          return ((), CEGISVerifierFoundCex $ exact forallSymbols model)
+cegisForAll config input (CEGISCondition pre post) =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisForAll
+        synthesizerSolver
+        verifierSolver
+        input
+        (CEGISCondition pre post)
 
 -- |
 -- CEGIS for symbolic programs with error handling, with a forall variable.
@@ -566,7 +1020,9 @@ cegisForAllExcept ::
   t ->
   IO ([Model], CEGISResult SolvingFailure)
 cegisForAllExcept config inputs f v =
-  cegisForAll config inputs $ simpleMerge $ f <$> extractUnionExcept v
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisForAllExcept synthesizerSolver verifierSolver inputs f v
 
 -- |
 -- CEGIS for symbolic programs with error handling, with a forall variable.
@@ -586,15 +1042,10 @@ cegisForAllExceptVC ::
   (Either e v -> u (Either VerificationConditions ())) ->
   t ->
   IO ([Model], CEGISResult SolvingFailure)
-cegisForAllExceptVC config inputs f v = do
-  cegisForAll config inputs $
-    simpleMerge $
-      ( \case
-          Left AssumptionViolation -> cegisPrePost (con False) (con True)
-          Left AssertionViolation -> cegisPostCond (con False)
-          _ -> cegisPostCond (con True)
-      )
-        <$> (extractUnionExcept v >>= f)
+cegisForAllExceptVC config inputs f v =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisForAllExceptVC synthesizerSolver verifierSolver inputs f v
 
 -- |
 -- CEGIS for symbolic programs with error handling, with a forall variable.
@@ -613,4 +1064,7 @@ cegisForAllExceptStdVC ::
   inputs ->
   t ->
   IO ([Model], CEGISResult SolvingFailure)
-cegisForAllExceptStdVC config inputs = cegisForAllExceptVC config inputs return
+cegisForAllExceptStdVC config inputs u =
+  withSolver config $ \synthesizerSolver ->
+    withSolver config $ \verifierSolver ->
+      solverCegisForAllExceptStdVC synthesizerSolver verifierSolver inputs u
