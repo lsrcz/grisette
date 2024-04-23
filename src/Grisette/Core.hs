@@ -967,11 +967,14 @@ module Grisette.Core
     Solver (..),
     withSolver,
     solve,
+    solverSolveMulti,
     solveMulti,
 
     -- ** Union with exceptions
     UnionWithExcept (..),
+    solverSolveExcept,
     solveExcept,
+    solverSolveMultiExcept,
     solveMultiExcept,
 
     -- ** Generic Counter-example Guided Inductive Synthesis (CEGIS) interface
@@ -979,10 +982,23 @@ module Grisette.Core
     VerifierResult (..),
     StatefulVerifierFun,
     CEGISResult (..),
+    solverGenericCEGIS,
     genericCEGIS,
 
     -- ** CEGIS interfaces with pre/post conditions
     CEGISCondition (..),
+    solverCegisMultiInputs,
+    solverCegis,
+    solverCegisExcept,
+    solverCegisExceptStdVC,
+    solverCegisExceptVC,
+    solverCegisExceptMultiInputs,
+    solverCegisExceptStdVCMultiInputs,
+    solverCegisExceptVCMultiInputs,
+    solverCegisForAll,
+    solverCegisForAllExcept,
+    solverCegisForAllExceptStdVC,
+    solverCegisForAllExceptVC,
     cegisPostCond,
     cegisPrePost,
     cegisMultiInputs,
@@ -1091,6 +1107,19 @@ import Grisette.Internal.Core.Data.Class.CEGISSolver
     cegisPostCond,
     cegisPrePost,
     genericCEGIS,
+    solverCegis,
+    solverCegisExcept,
+    solverCegisExceptMultiInputs,
+    solverCegisExceptStdVC,
+    solverCegisExceptStdVCMultiInputs,
+    solverCegisExceptVC,
+    solverCegisExceptVCMultiInputs,
+    solverCegisForAll,
+    solverCegisForAllExcept,
+    solverCegisForAllExceptStdVC,
+    solverCegisForAllExceptVC,
+    solverCegisMultiInputs,
+    solverGenericCEGIS,
   )
 import Grisette.Internal.Core.Data.Class.Error
   ( TransformError (..),
@@ -1216,6 +1245,9 @@ import Grisette.Internal.Core.Data.Class.Solver
     solveExcept,
     solveMulti,
     solveMultiExcept,
+    solverSolveExcept,
+    solverSolveMulti,
+    solverSolveMultiExcept,
     withSolver,
   )
 import Grisette.Internal.Core.Data.Class.SubstituteSym

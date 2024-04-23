@@ -38,11 +38,14 @@ module Grisette.Internal.Core.Data.Class.Solver
     Solver (..),
     withSolver,
     solve,
+    solverSolveMulti,
     solveMulti,
 
     -- * Union with exceptions
     UnionWithExcept (..),
+    solverSolveExcept,
     solveExcept,
+    solverSolveMultiExcept,
     solveMultiExcept,
   )
 where
@@ -165,6 +168,85 @@ class Solver handle where
   -- | Force terminate the solver, do not wait for the last command to finish.
   solverForceTerminate :: handle -> IO ()
 
+-- | Solve a single formula while returning multiple models to make it true.
+-- The maximum number of desired models are given.
+solverSolveMulti ::
+  (Solver handle) =>
+  -- | solver handle
+  handle ->
+  -- | maximum number of models to return
+  Int ->
+  -- | formula to solve, the solver will try to make it true
+  SymBool ->
+  IO ([Model], SolvingFailure)
+solverSolveMulti solver numOfModelRequested formula = do
+  firstModel <- solverSolve solver formula
+  case firstModel of
+    Left err -> return ([], err)
+    Right model -> do
+      (models, err) <- go solver model numOfModelRequested
+      return (model : models, err)
+  where
+    allSymbols = extractSymbolics formula :: SymbolSet
+    go solver prevModel n
+      | n <= 1 = return ([], ResultNumLimitReached)
+      | otherwise = do
+          let newFormula =
+                S.foldl'
+                  ( \acc (SomeTypedSymbol _ v) ->
+                      acc
+                        .|| (symNot (SymBool $ fromJust $ equation v prevModel))
+                  )
+                  (con False)
+                  (unSymbolSet allSymbols)
+          res <- solverSolve solver newFormula
+          case res of
+            Left err -> return ([], err)
+            Right model -> do
+              (models, err) <- go solver model (n - 1)
+              return (model : models, err)
+
+-- |
+-- Solver procedure for programs with error handling.
+solverSolveExcept ::
+  ( UnionWithExcept t u e v,
+    PlainUnion u,
+    Functor u,
+    Solver handle
+  ) =>
+  -- | solver handle
+  handle ->
+  -- | mapping the results to symbolic boolean formulas, the solver would try to
+  -- find a model to make the formula true
+  (Either e v -> SymBool) ->
+  -- | the program to be solved, should be a union of exception and values
+  t ->
+  IO (Either SolvingFailure Model)
+solverSolveExcept solver f v =
+  solverSolve solver (simpleMerge $ f <$> extractUnionExcept v)
+
+-- |
+-- Solver procedure for programs with error handling. Would return multiple
+-- models if possible.
+solverSolveMultiExcept ::
+  ( UnionWithExcept t u e v,
+    PlainUnion u,
+    Functor u,
+    Solver handle
+  ) =>
+  -- | solver configuration
+  handle ->
+  -- | maximum number of models to return
+  Int ->
+  -- | mapping the results to symbolic boolean formulas, the solver would try to
+  -- find a model to make the formula true
+  (Either e v -> SymBool) ->
+  -- | the program to be solved, should be a union of exception and values
+  t ->
+  IO ([Model], SolvingFailure)
+solverSolveMultiExcept handle n f v =
+  solverSolveMulti handle n (simpleMerge $ f <$> extractUnionExcept v)
+
 -- | A class that abstracts the creation of a solver instance based on a
 -- configuration.
 --
@@ -216,32 +298,8 @@ solveMulti ::
   SymBool ->
   IO ([Model], SolvingFailure)
 solveMulti config numOfModelRequested formula =
-  withSolver config $ \solver -> do
-    firstModel <- solverSolve solver formula
-    case firstModel of
-      Left err -> return ([], err)
-      Right model -> do
-        (models, err) <- go solver model numOfModelRequested
-        return (model : models, err)
-  where
-    allSymbols = extractSymbolics formula :: SymbolSet
-    go solver prevModel n
-      | n <= 1 = return ([], ResultNumLimitReached)
-      | otherwise = do
-          let newFormula =
-                S.foldl'
-                  ( \acc (SomeTypedSymbol _ v) ->
-                      acc
-                        .|| (symNot (SymBool $ fromJust $ equation v prevModel))
-                  )
-                  (con False)
-                  (unSymbolSet allSymbols)
-          res <- solverSolve solver newFormula
-          case res of
-            Left err -> return ([], err)
-            Right model -> do
-              (models, err) <- go solver model (n - 1)
-              return (model : models, err)
+  withSolver config $
+    \solver -> solverSolveMulti solver numOfModelRequested formula
 
 -- | A class that abstracts the union-like structures that contains exceptions.
 class UnionWithExcept t u e v | t -> u e v where
@@ -285,7 +343,9 @@ solveExcept ::
   -- | the program to be solved, should be a union of exception and values
   t ->
   IO (Either SolvingFailure Model)
-solveExcept config f v = solve config (simpleMerge $ f <$> extractUnionExcept v)
+solveExcept config f v =
+  withSolver config $
+    \solver -> solverSolveExcept solver f v
 
 -- |
 -- Solver procedure for programs with error handling. Would return multiple
@@ -307,4 +367,5 @@ solveMultiExcept ::
   t ->
   IO ([Model], SolvingFailure)
 solveMultiExcept config n f v =
-  solveMulti config n (simpleMerge $ f <$> extractUnionExcept v)
+  withSolver config $
+    \solver -> solverSolveMultiExcept solver n f v
