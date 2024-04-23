@@ -94,6 +94,7 @@ import Grisette.Internal.Core.Data.Class.Solver
     MonadicSolver
       ( monadicSolverPop,
         monadicSolverPush,
+        monadicSolverResetAssertions,
         monadicSolverSolve
       ),
     Solver
@@ -102,7 +103,7 @@ import Grisette.Internal.Core.Data.Class.Solver
         solverSolve,
         solverTerminate
       ),
-    SolverCommand (SolverPop, SolverPush, SolverSolve, SolverTerminate),
+    SolverCommand (SolverPop, SolverPush, SolverResetAssertions, SolverSolve, SolverTerminate),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
@@ -397,6 +398,7 @@ instance (MonadIO m) => MonadicSolver (SBVIncrementalT n m) where
         let model = parseModel config sbvModel newSymBiMap
         return $ Right model
       r -> return $ Left $ sbvCheckSatResult r
+  monadicSolverResetAssertions = SBVTC.resetAssertions
   monadicSolverPush = SBVTC.push
   monadicSolverPop = SBVTC.pop
 
@@ -435,6 +437,7 @@ instance ConfigurableSolver (GrisetteSMTConfig n) SBVSolverHandle where
                 SolverPush n -> monadicSolverPush n >> loop
                 SolverPop n -> monadicSolverPop n >> loop
                 SolverTerminate -> return ()
+                SolverResetAssertions -> monadicSolverResetAssertions >> loop
                 SolverSolve formula -> do
                   r <- monadicSolverSolve formula
                   liftIO $ atomically $ writeTChan sbvSolverHandleOutChan r

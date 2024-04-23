@@ -106,6 +106,7 @@ data SolvingFailure
 class MonadicSolver m where
   monadicSolverPush :: Int -> m ()
   monadicSolverPop :: Int -> m ()
+  monadicSolverResetAssertions :: m ()
   monadicSolverSolve :: SymBool -> m (Either SolvingFailure Model)
 
 -- | The commands that can be sent to a solver.
@@ -113,6 +114,7 @@ data SolverCommand
   = SolverSolve SymBool
   | SolverPush Int
   | SolverPop Int
+  | SolverResetAssertions
   | SolverTerminate
 
 -- | A class that abstracts the solver interface.
@@ -136,6 +138,26 @@ class Solver handle where
   solverPop :: handle -> Int -> IO (Either SolvingFailure ())
   solverPop handle n =
     solverRunCommand (const $ return $ Right ()) handle $ SolverPop n
+
+  -- | Reset all assertions in the solver.
+  --
+  -- The solver keeps all the assertions used in the previous commands:
+  --
+  -- >>> solver <- newSolver (precise z3)
+  -- >>> solverSolve solver "a"
+  -- Right (Model {a -> True :: Bool})
+  -- >>> solverSolve solver $ symNot "a"
+  -- Left Unsat
+  --
+  -- You can clear the assertions using @solverResetAssertions@:
+  --
+  -- >>> solverResetAssertions solver
+  -- Right ()
+  -- >>> solverSolve solver $ symNot "a"
+  -- Right (Model {a -> False :: Bool})
+  solverResetAssertions :: handle -> IO (Either SolvingFailure ())
+  solverResetAssertions handle =
+    solverRunCommand (const $ return $ Right ()) handle SolverResetAssertions
 
   -- | Terminate the solver, wait until the last command is finished.
   solverTerminate :: handle -> IO ()
