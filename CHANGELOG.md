@@ -13,6 +13,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added solving procedures with solver handles. ([#198](https://github.com/lsrcz/grisette/pull/198))
 - Added `overestimateUnionValues`. ([#203](https://github.com/lsrcz/grisette/pull/203))
 
+### Fixed
+
+- `withSolver` now forcifully terminate the solver when exiting the scope.
+  ([#199](https://github.com/lsrcz/grisette/pull/199))
+
 ### Changed
 
 - [Breaking] Equality test for `SomeBV` with different bit widths will now

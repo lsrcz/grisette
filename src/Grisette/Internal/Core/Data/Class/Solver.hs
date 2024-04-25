@@ -266,7 +266,7 @@ withSolver ::
   config ->
   (handle -> IO a) ->
   IO a
-withSolver config = bracket (newSolver config) solverTerminate
+withSolver config = bracket (newSolver config) solverForceTerminate
 
 -- | Solve a single formula. Find an assignment to it to make it true.
 --
