@@ -5,6 +5,10 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use /=" #-}
+{-# HLINT ignore "Use ==" #-}
 
 module Grisette.Core.Data.SomeBVTests (someBVTests) where
 
@@ -18,8 +22,9 @@ import Grisette
     ITEOp (symIte),
     LogicalOp (symNot),
     Mergeable (rootStrategy),
+    SEq ((./=), (.==)),
     SafeLinearArith (safeAdd, safeSub),
-    Solvable (isym, ssym),
+    Solvable (con, isym, ssym),
     genSym,
     genSymSimple,
     mrgIf,
@@ -54,7 +59,7 @@ import Grisette.Lib.Data.Functor (mrgFmap)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit ((@?=))
+import Test.HUnit (assertBool, (@?=))
 import Test.QuickCheck (forAll, ioProperty)
 
 testFuncMatch ::
@@ -378,5 +383,44 @@ someBVTests =
         ],
       testProperty "arbitraryBV" $
         forAll (arbitraryBV 4) $
-          \(bv :: SomeIntN) -> ioProperty $ finiteBitSize bv @?= 4
+          \(bv :: SomeIntN) -> ioProperty $ finiteBitSize bv @?= 4,
+      testGroup
+        "Eq"
+        [ testCase "same bitwidth equal" $ do
+            let a = bv 4 5 :: SomeIntN
+            let b = bv 4 5 :: SomeIntN
+            assertBool "SomeBV with same bitwidth should compare the value" $
+              a == b
+            assertBool "SomeBV with same bitwidth should compare the value" $
+              not $
+                a /= b,
+          testCase "same bitwidth not equal" $ do
+            let a = bv 4 4 :: SomeIntN
+            let b = bv 4 5 :: SomeIntN
+            assertBool "SomeBV with same bitwidth should compare the value" $
+              not $
+                a == b
+            assertBool "SomeBV with same bitwidth should compare the value" $
+              a /= b,
+          testCase "different bitwidth" $ do
+            let a = bv 3 5 :: SomeIntN
+            let b = bv 4 5 :: SomeIntN
+            assertBool "SomeBV with different bit width are not equal" $
+              not $
+                a == b
+            assertBool "SomeBV with different bit width are not equal" $ a /= b
+        ],
+      testGroup
+        "SEq"
+        [ testCase "same bitwidth" $ do
+            let a = ssymBV 4 "a" :: SomeSymIntN
+            let b = ssymBV 4 "b" :: SomeSymIntN
+            a .== b @?= ("a" :: SymIntN 4) .== "b"
+            a ./= b @?= ("a" :: SymIntN 4) ./= "b",
+          testCase "different bitwidth" $ do
+            let a = ssymBV 4 "a" :: SomeSymIntN
+            let b = ssymBV 3 "b" :: SomeSymIntN
+            a .== b @?= con False
+            a ./= b @?= con True
+        ]
     ]

@@ -12,6 +12,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added solving procedures with solver handles. ([#198](https://github.com/lsrcz/grisette/pull/198))
 
+### Changed
+
+- [Breaking] Equality test for `SomeBV` with different bit widths will now
+  return false rather than crash.
+  ([#200](https://github.com/lsrcz/grisette/pull/200))
+
 ## [0.5.0.1] -- 2024-04-18
 
 ### Fixed
