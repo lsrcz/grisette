@@ -204,6 +204,28 @@ import Unsafe.Coerce (unsafeCoerce)
 -- >>> :set -XFunctionalDependencies
 
 -- | Non-indexed bitvectors.
+--
+-- The creation of 'SomeBV' can be done with the `bv` function with a positive
+-- bit width and a value:
+--
+-- >>> bv 4 0xf :: SomeBV IntN
+-- 0xf
+--
+-- Operations on two 'SomeBV' values require the bitwidths to be the same. So
+-- you should check for the bit width (via `finiteBitSize`) before performing
+-- operations:
+--
+-- >>> bv 4 0x3 + bv 4 0x3 :: SomeBV IntN
+-- 0x6
+-- >>> bv 4 0x3 + bv 8 0x3 :: SomeBV IntN
+-- *** Exception: BitwidthMismatch
+--
+-- One exception is that the equality testing (both concrete and symbolic via
+-- 'SEq') does not require the bitwidths to be the same. Different bitwidths
+-- means the values are not equal:
+--
+-- >>> (bv 4 0x3 :: SomeBV IntN) == (bv 8 0x3)
+-- False
 data SomeBV bv where
   SomeBV :: (KnownNat n, 1 <= n) => bv n -> SomeBV bv
 
@@ -236,9 +258,15 @@ instance
   {-# INLINE rnf #-}
 
 instance (forall n. (KnownNat n, 1 <= n) => Eq (bv n)) => Eq (SomeBV bv) where
-  (==) = binSomeBV (==)
+  SomeBV (l :: bv l) == SomeBV (r :: bv r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l == r
+      Nothing -> False
   {-# INLINE (==) #-}
-  (/=) = binSomeBV (/=)
+  SomeBV (l :: bv l) /= SomeBV (r :: bv r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l /= r
+      Nothing -> True
   {-# INLINE (/=) #-}
 
 instance (forall n. (KnownNat n, 1 <= n) => Ord (bv n)) => Ord (SomeBV bv) where
@@ -483,9 +511,15 @@ instance
       )
 
 instance (forall n. (KnownNat n, 1 <= n) => SEq (bv n)) => SEq (SomeBV bv) where
-  (.==) = binSomeBV (.==)
+  SomeBV (l :: bv l) .== SomeBV (r :: bv r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l .== r
+      Nothing -> con False
   {-# INLINE (.==) #-}
-  (./=) = binSomeBV (./=)
+  SomeBV (l :: bv l) ./= SomeBV (r :: bv r) =
+    case sameNat (Proxy @l) (Proxy @r) of
+      Just Refl -> l ./= r
+      Nothing -> con True
   {-# INLINE (./=) #-}
 
 instance
