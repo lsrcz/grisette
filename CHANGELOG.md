@@ -23,7 +23,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - [Breaking] Equality test for `SomeBV` with different bit widths will now
   return false rather than crash.
   ([#200](https://github.com/lsrcz/grisette/pull/200))
-- [Breaking] Improved the generic CEGIS interface. ([#201](https://github.com/lsrcz/grisette/pull/201))
+- [Breaking] More intuitive CEGIS interface.
+  ([#201](https://github.com/lsrcz/grisette/pull/201))
 
 ## [0.5.0.1] -- 2024-04-18
 
