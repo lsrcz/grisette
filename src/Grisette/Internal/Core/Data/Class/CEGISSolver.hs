@@ -26,6 +26,7 @@ module Grisette.Internal.Core.Data.Class.CEGISSolver
 
     -- * Generic CEGIS interface
     VerifierResult (..),
+    SynthesisConstraintFun,
     VerifierFun,
     CEGISResult (..),
     solverGenericCEGIS,
@@ -107,9 +108,11 @@ import Grisette.Lib.Data.Foldable (symAll)
 
 -- | The response from a verifier.
 data VerifierResult input exception
-  = CEGISVerifierFoundCex input SymBool
+  = CEGISVerifierFoundCex input
   | CEGISVerifierNoCex
   | CEGISVerifierException exception
+
+type SynthesisConstraintFun input = Int -> input -> IO SymBool
 
 -- | The verifier. The first argument will be guaranteed to be distinct during
 -- each invocation of the verifier in the CEGIS algorithm, so it can be used
@@ -137,10 +140,12 @@ solverGenericCEGIS ::
   Bool ->
   -- | The initial synthesis constraint.
   SymBool ->
+  -- | Synthesis constraint from counter-examples
+  SynthesisConstraintFun input ->
   -- | The verifier functions.
   [VerifierFun input exception] ->
   IO ([input], CEGISResult exception)
-solverGenericCEGIS solver rerun initConstr verifiers = do
+solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
   firstResult <- solverSolve solver initConstr
   case firstResult of
     Left err -> return ([], CEGISSolverFailure err)
@@ -149,8 +154,8 @@ solverGenericCEGIS solver rerun initConstr verifiers = do
     go prevModel iterNum needRerun (verifier : remainingVerifiers) = do
       verifierResult <- verifier iterNum prevModel
       case verifierResult of
-        CEGISVerifierFoundCex cex constr -> do
-          newResult <- solverSolve solver constr
+        CEGISVerifierFoundCex cex -> do
+          newResult <- solverSolve solver =<< synthConstr iterNum cex
           case newResult of
             Left err -> return ([], CEGISSolverFailure err)
             Right model -> do
@@ -177,12 +182,14 @@ genericCEGIS ::
   Bool ->
   -- | The initial synthesis constraint.
   SymBool ->
+  -- | Synthesis constraint from counter-examples
+  SynthesisConstraintFun input ->
   -- | The verifier functions.
   [VerifierFun input exception] ->
   IO ([input], CEGISResult exception)
-genericCEGIS config rerun initConstr verifier =
+genericCEGIS config rerun initConstr synthConstr verifier =
   withSolver config $ \solver ->
-    solverGenericCEGIS solver rerun initConstr verifier
+    solverGenericCEGIS solver rerun initConstr synthConstr verifier
 
 -- | The condition for CEGIS to solve.
 --
@@ -253,8 +260,12 @@ solverCegisMultiInputs
   verifierSolver
   inputs
   toCEGISCondition = do
-    solverGenericCEGIS synthesizerSolver True (symAll cexAssertFun conInputs) $
-      getVerifier <$> symInputs
+    solverGenericCEGIS
+      synthesizerSolver
+      True
+      (symAll cexAssertFun conInputs)
+      (const $ return . cexAssertFun)
+      $ getVerifier <$> symInputs
     where
       cexAssertFun input =
         case toCEGISCondition input of
@@ -272,9 +283,7 @@ solverCegisMultiInputs
           Right model -> do
             let newCexInput =
                   evaluateSym True (exact (extractSymbolics input) model) input
-            return $
-              CEGISVerifierFoundCex newCexInput $
-                cexAssertFun newCexInput
+            return $ CEGISVerifierFoundCex newCexInput
       (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
 
 -- | CEGIS with a single symbolic input to represent a set of inputs. See
@@ -536,7 +545,12 @@ solverCegisForAll
   input
   (CEGISCondition pre post) = do
     (models, result) <-
-      solverGenericCEGIS synthesizerSolver False phi [verifier]
+      solverGenericCEGIS
+        synthesizerSolver
+        False
+        phi
+        (\_ md -> return $ evaluateSym False md phi)
+        [verifier]
     let exactResult = case result of
           CEGISSuccess model -> CEGISSuccess $ exceptFor forallSymbols model
           _ -> result
@@ -554,9 +568,7 @@ solverCegisForAll
           Left Unsat -> return CEGISVerifierNoCex
           Left err -> return $ CEGISVerifierException err
           Right model ->
-            return $
-              CEGISVerifierFoundCex (exact forallSymbols model) $
-                evaluateSym False model phi
+            return $ CEGISVerifierFoundCex (exact forallSymbols model)
 
 -- |
 -- CEGIS for symbolic programs with error handling, with a forall variable.
