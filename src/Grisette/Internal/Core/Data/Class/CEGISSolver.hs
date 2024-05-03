@@ -107,18 +107,19 @@ import Grisette.Lib.Data.Foldable (symAll)
 -- >>> import Grisette.Backend
 
 -- | The response from a verifier.
-data VerifierResult input exception
-  = CEGISVerifierFoundCex input
+data VerifierResult cex exception
+  = CEGISVerifierFoundCex cex
   | CEGISVerifierNoCex
   | CEGISVerifierException exception
 
-type SynthesisConstraintFun input = Int -> input -> IO SymBool
+-- | Build the synthesizer constraint from the verfication result. The first
+-- argument will be guaranteed to be distinct during each invocation of the
+-- function in the CEGIS algorithm, so it can be used to instantiate the
+-- identifiers for fresh variables.
+type SynthesisConstraintFun cex = Int -> cex -> IO SymBool
 
--- | The verifier. The first argument will be guaranteed to be distinct during
--- each invocation of the verifier in the CEGIS algorithm, so it can be used
--- to instantiate the identifiers for fresh variables.
-type VerifierFun input exception =
-  Int -> Model -> IO (VerifierResult input exception)
+-- | The verifier.
+type VerifierFun cex exception = Model -> IO (VerifierResult cex exception)
 
 -- | The result of the CEGIS procedure.
 data CEGISResult exception
@@ -152,7 +153,7 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
     Right model -> go model 0 False verifiers
   where
     go prevModel iterNum needRerun (verifier : remainingVerifiers) = do
-      verifierResult <- verifier iterNum prevModel
+      verifierResult <- verifier prevModel
       case verifierResult of
         CEGISVerifierFoundCex cex -> do
           newResult <- solverSolve solver =<< synthConstr iterNum cex
@@ -270,7 +271,7 @@ solverCegisMultiInputs
       cexAssertFun input =
         case toCEGISCondition input of
           CEGISCondition pre post -> pre .&& post
-      getVerifier input _ md = do
+      getVerifier input md = do
         let CEGISCondition pre post = toCEGISCondition input
         let evaluated =
               evaluateSym False (exceptFor (extractSymbolics input) md) $
@@ -559,7 +560,7 @@ solverCegisForAll
       phi = pre .&& post
       negphi = pre .&& symNot post
       forallSymbols = extractSymbolics input
-      verifier _ candidate = do
+      verifier candidate = do
         let evaluated =
               evaluateSym False (exceptFor forallSymbols candidate) negphi
         solverResetAssertions verifierSolver
