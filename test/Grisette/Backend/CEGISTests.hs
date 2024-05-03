@@ -1,6 +1,7 @@
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -14,13 +15,15 @@ import Data.String (IsString (fromString))
 import GHC.Stack (HasCallStack)
 import Grisette
   ( Apply (apply),
-    CEGISResult (CEGISSuccess),
+    CEGISResult (CEGISSolverFailure, CEGISSuccess, CEGISVerifierFailure),
     EvaluateSym (evaluateSym),
     ExtractSymbolics,
     Function ((#)),
     GrisetteSMTConfig,
     ITEOp (symIte),
     LogicalOp (symNot, symXor, (.&&), (.||)),
+    ModelRep (buildModel),
+    ModelValuePair ((::=)),
     SEq ((.==)),
     SOrd ((.<), (.>=)),
     SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
@@ -29,6 +32,7 @@ import Grisette
     VerificationConditions,
     cegis,
     cegisExceptVC,
+    cegisForAll,
     cegisForAllExceptVC,
     cegisMultiInputs,
     cegisPostCond,
@@ -48,7 +52,7 @@ import Grisette.SymPrim
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit (Assertion, assertFailure, (@=?))
+import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
 
 testCegis ::
   (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a, SEq a) =>
@@ -125,7 +129,7 @@ cegisTests =
                         apply (symIte cond s1 s2) (symIte cond 1 2)
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
-                            .== 100
+                          .== 100
                 let s1e = evaluateSym False m1 s1
                 let s2e = evaluateSym False m1 s2
                 s1e # 1 @=? 10
@@ -142,7 +146,7 @@ cegisTests =
                         apply (symIte cond s1 s2) (symIte cond 1 2)
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
-                            .== 100
+                          .== 100
                 let s1e = evaluateSym False m1 s1
                 let s2e = evaluateSym False m1 s2
                 s1e # 1 @=? 10
@@ -404,5 +408,70 @@ cegisTests =
                                 .== (con 1 :: SymIntN 10)
                             ]
                     ]
-                ]
+                ],
+          testCase "cegisMultiInputs" $ do
+            r <-
+              cegisMultiInputs
+                unboundedConfig
+                [["a" :: SymInteger], ["b", "c"]]
+                ( \case
+                    [a] ->
+                      cegisPostCond $
+                        symIte
+                          (a .== 1)
+                          "x"
+                          ("x" .&& symNot "y")
+                    [b, _] ->
+                      cegisPostCond $
+                        symIte
+                          (b .== 1)
+                          (symIte "x" "z" "w")
+                          (symIte "x" (symNot "w") (symNot "z"))
+                    _ -> cegisPostCond $ con True
+                )
+            case snd r of
+              CEGISSuccess m -> do
+                let expectedModel =
+                      buildModel
+                        ( "x" ::= True,
+                          "y" ::= False,
+                          "z" ::= True,
+                          "w" ::= False
+                        )
+                m @?= expectedModel
+              CEGISVerifierFailure _ -> fail "Verifier failed"
+              CEGISSolverFailure failure -> fail $ show failure,
+          testCase "cegisForAll" $ do
+            let a = "a" :: SymInteger
+            let b = "b"
+            r <-
+              cegisForAll
+                unboundedConfig
+                [a, b]
+                ( cegisPostCond $
+                    symIte
+                      (a .== 1)
+                      ( symIte
+                          (b .== 1)
+                          "x"
+                          ("x" .&& symNot "y")
+                      )
+                      ( symIte
+                          (b .== 1)
+                          (symIte "x" "z" "w")
+                          (symIte "x" (symNot "w") (symNot "z"))
+                      )
+                )
+            case snd r of
+              CEGISSuccess m -> do
+                let expectedModel =
+                      buildModel
+                        ( "x" ::= True,
+                          "y" ::= False,
+                          "z" ::= True,
+                          "w" ::= False
+                        )
+                m @?= expectedModel
+              CEGISVerifierFailure _ -> fail "Verifier failed"
+              CEGISSolverFailure failure -> fail $ show failure
         ]
