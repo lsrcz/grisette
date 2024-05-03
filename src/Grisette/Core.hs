@@ -978,9 +978,8 @@ module Grisette.Core
     solveMultiExcept,
 
     -- ** Generic Counter-example Guided Inductive Synthesis (CEGIS) interface
-    SynthesisConstraintFun,
     VerifierResult (..),
-    StatefulVerifierFun,
+    VerifierFun,
     CEGISResult (..),
     solverGenericCEGIS,
     genericCEGIS,
@@ -1089,8 +1088,7 @@ import Grisette.Internal.Core.Data.Class.BitVector
 import Grisette.Internal.Core.Data.Class.CEGISSolver
   ( CEGISCondition (..),
     CEGISResult (..),
-    StatefulVerifierFun,
-    SynthesisConstraintFun,
+    VerifierFun,
     VerifierResult (..),
     cegis,
     cegisExcept,
