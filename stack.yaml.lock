@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    commit: 2b25b54d9531bafff930520e7bd923277700a501
+    commit: ca5b7865008d812db66a923ca72103de1eb7ceba
     git: https://github.com/lsrcz/sbv.git
     name: sbv
     pantry-tree:
-      sha256: fee881031058a4fa7a20d5d83a058f09db23236c17eae6149e03ebc243a7f50b
+      sha256: 498cd42ce9d1a58be44a3ad8c51ee16b7727a0418ac5fe907e74e6bc5350fa49
       size: 73472
-    version: '10.9'
+    version: '10.10'
   original:
-    commit: 2b25b54d9531bafff930520e7bd923277700a501
+    commit: ca5b7865008d812db66a923ca72103de1eb7ceba
     git: https://github.com/lsrcz/sbv.git
 snapshots:
 - completed:
