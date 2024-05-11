@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
@@ -87,6 +88,18 @@ class (Applicative u, UnionMergeable1 u) => PlainUnion (u :: Type -> Type) where
           ++ fmap (first (.&& symNot c)) (toGuardedList r)
       _ -> error "Should not happen"
 
+  -- | Return all possible values in the union. Drop the path conditions.
+  --
+  -- >>> overestimateUnionValues (return 1 :: UnionM Integer)
+  -- [1]
+  --
+  -- >>> overestimateUnionValues (mrgIf "a" (return 1) (return 2) :: UnionM Integer)
+  -- [1,2]
+  overestimateUnionValues :: (Mergeable a) => u a -> [a]
+  overestimateUnionValues (Single v) = [v]
+  overestimateUnionValues (If _ l r) =
+    overestimateUnionValues l ++ overestimateUnionValues r
+
 -- | Pattern match to extract single values with 'singleView'.
 --
 -- >>> case (return 1 :: UnionM Integer) of Single v -> v
@@ -105,6 +118,10 @@ pattern If c t f <-
   (ifView -> Just (c, t, f))
   where
     If c t f = mrgIf c t f
+
+#if MIN_VERSION_base(4, 16, 4)
+{-# COMPLETE Single, If #-}
+#endif
 
 -- | Merge the simply mergeable values in a union, and extract the merged value.
 --
@@ -130,7 +147,6 @@ simpleMerge u = case tryMerge u of
 symIteMerge :: (ITEOp a, Mergeable a, PlainUnion u) => u a -> a
 symIteMerge (Single x) = x
 symIteMerge (If cond l r) = symIte cond (symIteMerge l) (symIteMerge r)
-symIteMerge _ = error "Should not happen"
 {-# INLINE symIteMerge #-}
 
 -- | Helper for applying functions on 'UnionLike' and 'SimpleMergeable'.
