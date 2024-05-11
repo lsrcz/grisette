@@ -19,6 +19,9 @@ import Grisette
     pattern If,
     pattern Single,
   )
+import Grisette.Internal.Core.Data.Class.PlainUnion
+  ( PlainUnion (overestimateUnionValues),
+  )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -60,18 +63,23 @@ plainUnionTests =
               If c l r -> do
                 c @?= "a"
                 l @?= return "b"
-                r @?= return "c"
-              _ -> fail "Should not happen",
+                r @?= return "c",
           testCase "Merged" $
             case mrgIf "a" (return "b") (return "c") :: UnionM SymBool of
               If {} -> fail "Expected Single"
-              Single v -> v @?= symIte "a" "b" "c"
-              _ -> fail "Should not happen",
+              Single v -> v @?= symIte "a" "b" "c",
           testCase "Construct single" $
             (Single "a" :: UnionM SymBool) @?= mrgSingle "a",
           testCase "Construct If" $ do
             let actual = If "a" (return "b") (return "c") :: UnionM SymBool
             let expected = mrgIf "a" (return "b") (return "c")
             actual @?= expected
-        ]
+        ],
+      testCase "overestimateUnionValues" $ do
+        overestimateUnionValues (return 1 :: UnionM Int) @?= [1]
+        overestimateUnionValues (mrgIf "a" (return 1) (return 2) :: UnionM Int)
+          @?= [1, 2 :: Int]
+        overestimateUnionValues
+          (mrgIf "a" (return 1) (mrgIf "x" (return 3) (return 2)) :: UnionM Int)
+          @?= [1, 2, 3 :: Int]
     ]
