@@ -52,7 +52,7 @@ module Grisette.Internal.Core.Data.Class.Solver
 where
 
 import Control.DeepSeq (NFData)
-import Control.Exception (SomeException, bracket)
+import Control.Exception (SomeException, mask, onException)
 import Control.Monad.Except (ExceptT, runExceptT)
 import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
@@ -263,9 +263,11 @@ class
 -- | Start a solver, run a computation with the solver, and terminate the
 -- solver after the computation finishes.
 --
+-- When an exception happens, this will forcibly terminate the solver.
+--
 -- Note: if Grisette is compiled with sbv < 10.10, the solver likely won't be
--- killed before it has finished the last action, and this will result in
--- long-running or zombie solver instances.
+-- really terminated until it has finished the last action, and this will
+-- result in long-running or zombie solver instances.
 --
 -- This was due to a bug in sbv, which is fixed in
 -- https://github.com/LeventErkok/sbv/pull/695.
@@ -274,7 +276,12 @@ withSolver ::
   config ->
   (handle -> IO a) ->
   IO a
-withSolver config = bracket (newSolver config) solverForceTerminate
+withSolver config action =
+  mask $ \restore -> do
+    handle <- newSolver config
+    r <- restore (action handle) `onException` solverForceTerminate handle
+    solverTerminate handle
+    return r
 
 -- | Solve a single formula. Find an assignment to it to make it true.
 --
