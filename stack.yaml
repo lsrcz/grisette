@@ -40,8 +40,6 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 # extra-deps: []
-extra-deps:
-  - sbv-10.10
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
