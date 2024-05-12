@@ -41,8 +41,7 @@ packages:
 #
 # extra-deps: []
 extra-deps:
-  - git: https://github.com/lsrcz/sbv.git
-    commit: ca5b7865008d812db66a923ca72103de1eb7ceba
+  - sbv-10.10
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
