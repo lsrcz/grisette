@@ -268,7 +268,7 @@ class
 -- long-running or zombie solver instances.
 --
 -- This was due to a bug in sbv, which is fixed in
--- https://github.com/LeventErkok/sbv/pull/695. 
+-- https://github.com/LeventErkok/sbv/pull/695.
 withSolver ::
   (ConfigurableSolver config handle) =>
   config ->
