@@ -15,6 +15,7 @@ module Grisette.Internal.Core.Data.Class.GPretty
   ( GPretty (..),
     groupedEnclose,
     condEnclose,
+    prettyWithConstructor,
   )
 where
 
@@ -29,6 +30,8 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 import Data.Functor.Sum (Sum)
+import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
@@ -256,71 +259,40 @@ instance
   (GPretty (m (Maybe a))) =>
   GPretty (MaybeT m a)
   where
-  gprettyPrec _ (MaybeT a) =
-    group $
-      nest 2 $
-        vsep
-          [ "MaybeT",
-            gprettyPrec 11 a
-          ]
+  gprettyPrec n (MaybeT a) = prettyWithConstructor n "MaybeT" [gprettyPrec 11 a]
 
 -- ExceptT
 instance
   (GPretty (m (Either e a))) =>
   GPretty (ExceptT e m a)
   where
-  gprettyPrec _ (ExceptT a) =
-    group $
-      nest 2 $
-        vsep
-          [ "ExceptT",
-            gprettyPrec 11 a
-          ]
+  gprettyPrec n (ExceptT a) =
+    prettyWithConstructor n "ExceptT" [gprettyPrec 11 a]
 
 -- WriterT
 instance
   (GPretty (m (a, w))) =>
   GPretty (WriterLazy.WriterT w m a)
   where
-  gprettyPrec _ (WriterLazy.WriterT a) =
-    group $
-      nest 2 $
-        vsep
-          [ "WriterT",
-            gprettyPrec 11 a
-          ]
+  gprettyPrec n (WriterLazy.WriterT a) =
+    prettyWithConstructor n "WriterT" [gprettyPrec 11 a]
 
 instance
   (GPretty (m (a, w))) =>
   GPretty (WriterStrict.WriterT w m a)
   where
-  gprettyPrec _ (WriterStrict.WriterT a) =
-    group $
-      nest 2 $
-        vsep
-          [ "WriterT",
-            gprettyPrec 11 a
-          ]
+  gprettyPrec n (WriterStrict.WriterT a) =
+    prettyWithConstructor n "WriterT" [gprettyPrec 11 a]
 
 -- Identity
 instance (GPretty a) => GPretty (Identity a) where
-  gprettyPrec _ (Identity a) =
-    group $
-      nest 2 $
-        vsep
-          [ "Identity",
-            gprettyPrec 11 a
-          ]
+  gprettyPrec n (Identity a) =
+    prettyWithConstructor n "Identity" [gprettyPrec 11 a]
 
 -- IdentityT
 instance (GPretty (m a)) => GPretty (IdentityT m a) where
-  gprettyPrec _ (IdentityT a) =
-    group $
-      nest 2 $
-        vsep
-          [ "IdentityT",
-            gprettyPrec 11 a
-          ]
+  gprettyPrec n (IdentityT a) =
+    prettyWithConstructor n "IdentityT" [gprettyPrec 11 a]
 
 -- Prettyprint
 #define GPRETTY_SYM_SIMPLE(symtype) \
@@ -344,6 +316,14 @@ GPRETTY_SYM_BV(SymWordN)
 GPRETTY_SYM_FUN(=~>, SymTabularFun)
 GPRETTY_SYM_FUN(-~>, SymGeneralFun)
 #endif
+
+instance (GPretty a) => GPretty (HS.HashSet a) where
+  gprettyPrec n s =
+    prettyWithConstructor n "fromList" [gprettyPrec 11 $ HS.toList s]
+
+instance (GPretty k, GPretty v) => GPretty (HM.HashMap k v) where
+  gprettyPrec n s =
+    prettyWithConstructor n "fromList" [gprettyPrec 11 $ HM.toList s]
 
 instance (Generic a, GPretty' (Rep a)) => GPretty (Default a) where
   gprettyPrec i v = gprettyPrec' Pref i $ from $ unDefault v
@@ -372,6 +352,10 @@ groupedEnclose l r d = group $ align $ vcat [l <> flatAlt " " "" <> d, r]
 condEnclose :: Bool -> Doc ann -> Doc ann -> Doc ann -> Doc ann
 condEnclose b = if b then groupedEnclose else const $ const id
 
+prettyWithConstructor :: Int -> Doc ann -> [Doc ann] -> Doc ann
+prettyWithConstructor n c l =
+  group $ condEnclose (n > 10) "(" ")" $ align $ nest 2 $ vsep (c : l)
+
 instance (GPretty' a, Constructor c) => GPretty' (M1 C c a) where
   gprettyPrec' _ n c@(M1 x) =
     case t of
@@ -381,16 +365,12 @@ instance (GPretty' a, Constructor c) => GPretty' (M1 C c a) where
         group $ condEnclose (n > m) "(" ")" $ gprettyPrec' t m x
       _ ->
         if isNullary x
-          then pretty (conName c)
+          then gpretty (conName c)
           else
-            group $
-              condEnclose (n > 10) "(" ")" $
-                align $
-                  nest 2 $
-                    vsep
-                      [ pretty (conName c),
-                        prettyBraces t (gprettyPrec' t 11 x)
-                      ]
+            prettyWithConstructor
+              n
+              (gpretty (conName c))
+              [prettyBraces t (gprettyPrec' t 11 x)]
     where
       prettyBraces :: Type -> Doc ann -> Doc ann
       prettyBraces Rec = groupedEnclose "{" "}"
