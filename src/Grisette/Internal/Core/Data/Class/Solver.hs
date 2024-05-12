@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
@@ -261,6 +262,13 @@ class
 
 -- | Start a solver, run a computation with the solver, and terminate the
 -- solver after the computation finishes.
+--
+-- Note: if Grisette is compiled with sbv < 10.10, the solver likely won't be
+-- killed before it has finished the last action, and this will result in
+-- long-running or zombie solver instances.
+--
+-- This was due to a bug in sbv, which is fixed in
+-- https://github.com/LeventErkok/sbv/pull/695. 
 withSolver ::
   (ConfigurableSolver config handle) =>
   config ->
