@@ -11,12 +11,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added solving procedures with solver handles. ([#198](https://github.com/lsrcz/grisette/pull/198))
-- Added `overestimateUnionValues`. ([#203](https://github.com/lsrcz/grisette/pull/203))
+- Added `overestimateUnionValues`.
+  ([#203](https://github.com/lsrcz/grisette/pull/203))
+- Added pretty printing for hashset and hashmaps.
+  ([#205](https://github.com/lsrcz/grisette/pull/205))
 
 ### Fixed
 
 - `withSolver` now forcifully terminate the solver when exiting the scope.
   ([#199](https://github.com/lsrcz/grisette/pull/199))
+- Fixed pretty printing for monad transformers.
+  ([#205](https://github.com/lsrcz/grisette/pull/205))
 
 ### Changed
 

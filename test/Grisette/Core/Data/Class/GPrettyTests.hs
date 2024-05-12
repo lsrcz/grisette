@@ -8,6 +8,12 @@
 
 module Grisette.Core.Data.Class.GPrettyTests (gprettyTests) where
 
+import Control.Monad.Except (ExceptT (ExceptT))
+import Control.Monad.Identity (Identity, IdentityT (IdentityT))
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
+import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
+import qualified Data.HashMap.Lazy as HM
+import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Text as T (Text, pack, unpack)
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -63,7 +69,8 @@ propertyGPrettyShow ::
   Test
 propertyGPrettyShow n g =
   testProperty n $ forAll g $ \(a :: a) -> do
-    renderStrict (layoutPretty (LayoutOptions Unbounded) (gpretty a)) == T.pack (show a)
+    renderStrict (layoutPretty (LayoutOptions Unbounded) (gpretty a))
+      == T.pack (show a)
 
 propertyGPrettyRead ::
   forall a.
@@ -340,7 +347,36 @@ gprettyTests =
           propertyGPretty
             "Record Record"
             ( arbitrary :: Gen (Record (Record Int Int) (Record Int Int))
-            )
+            ),
+          propertyGPretty
+            "Maybe (MaybeT Identity Int)"
+            (Just . MaybeT <$> arbitrary :: Gen (Maybe (MaybeT Identity Int))),
+          propertyGPretty
+            "Maybe (ExceptT Int Identity Int)"
+            ( Just . ExceptT <$> arbitrary ::
+                Gen (Maybe (ExceptT Int Identity Int))
+            ),
+          propertyGPretty
+            "Maybe (LazyWriterT Int Identity Int)"
+            ( Just . WriterLazy.WriterT <$> arbitrary ::
+                Gen (Maybe (WriterLazy.WriterT Int Identity Int))
+            ),
+          propertyGPretty
+            "Maybe (StrictWriterT Int Identity Int)"
+            ( Just . WriterLazy.WriterT <$> arbitrary ::
+                Gen (Maybe (WriterLazy.WriterT Int Identity Int))
+            ),
+          propertyGPretty
+            "Maybe (IdentityT Identity Int)"
+            ( Just . IdentityT <$> arbitrary ::
+                Gen (Maybe (IdentityT Identity Int))
+            ),
+          propertyGPrettyShow
+            "HS.HashSet Int"
+            (HS.fromList <$> arbitrary :: Gen (HS.HashSet Int)),
+          propertyGPrettyShow
+            "HM.HashMap Int Int"
+            (HM.fromList <$> arbitrary :: Gen (HM.HashMap Int Int))
         ],
       testGroup
         "Symbolic types"
