@@ -984,6 +984,7 @@ module Grisette.Core
     CEGISResult (..),
     solverGenericCEGIS,
     genericCEGIS,
+    genericCEGISWithRefinement,
 
     -- ** CEGIS interfaces with pre/post conditions
     CEGISCondition (..),
@@ -1107,6 +1108,7 @@ import Grisette.Internal.Core.Data.Class.CEGISSolver
     cegisPostCond,
     cegisPrePost,
     genericCEGIS,
+    genericCEGISWithRefinement,
     solverCegis,
     solverCegisExcept,
     solverCegisExceptMultiInputs,
