@@ -191,6 +191,7 @@ solverGenericCEGISWithRefinement ::
   SymBool ->
   -- | Synthesis constraint from counter-examples
   SynthesisConstraintFun input ->
+  -- | Refinement condition generator.
   Maybe RefinementConditionFun ->
   -- | The verifier functions.
   [VerifierFun input exception] ->
@@ -205,19 +206,19 @@ solverGenericCEGISWithRefinement
     (input, r) <-
       solverGenericCEGIS solver rerun initConstr synthConstr verifiers
     case r of
-      CEGISSuccess model -> do
-        refinedModel <- refine solver model
-        return (input, CEGISSuccess refinedModel)
+      CEGISSuccess model -> refine solver input model
       _ -> return (input, r)
     where
-      refine solver model = case refineCond of
+      refine solver input model = case refineCond of
         Just f -> do
           cond <- f model
-          newModel <- solverSolve solver cond
-          case newModel of
-            Left _ -> return model
-            Right m -> refine solver m
-        Nothing -> return model
+          newResult <-
+            solverGenericCEGIS solver rerun cond synthConstr verifiers
+          case newResult of
+            (newInputs, CEGISSuccess model) ->
+              refine solver (input ++ newInputs) model
+            _ -> return (input, CEGISSuccess model)
+        Nothing -> return (input, CEGISSuccess model)
 
 -- | Generic CEGIS procedure.
 --
@@ -256,6 +257,7 @@ genericCEGISWithRefinement ::
   SymBool ->
   -- | Synthesis constraint from counter-examples
   SynthesisConstraintFun input ->
+  -- | Refinement condition generator.
   Maybe RefinementConditionFun ->
   -- | The verifier functions.
   [VerifierFun input exception] ->
