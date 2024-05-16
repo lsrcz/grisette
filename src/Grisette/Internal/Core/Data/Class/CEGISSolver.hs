@@ -30,6 +30,7 @@ module Grisette.Internal.Core.Data.Class.CEGISSolver
     VerifierFun,
     CEGISResult (..),
     solverGenericCEGIS,
+    solverGenericCEGISWithRefinement,
     genericCEGIS,
     genericCEGISWithRefinement,
 
@@ -173,6 +174,51 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
     go prevModel _ False [] = return ([], CEGISSuccess prevModel)
     go prevModel iterNum True [] = go prevModel iterNum False verifiers
 
+-- | Generic CEGIS procedure with refinement. See 'genericCEGISWithRefinement'
+-- for more details.
+--
+-- The difference from 'genericCEGISWithRefinement' is that this function
+-- accepts a solver handle for the synthesizer, instead of a solver
+-- configuration.
+solverGenericCEGISWithRefinement ::
+  (Solver handle) =>
+  -- | Configuration of the solver.
+  handle ->
+  -- | Whether we should rerun the passed verifiers if any other verifier found
+  -- a counter-example.
+  Bool ->
+  -- | The initial synthesis constraint.
+  SymBool ->
+  -- | Synthesis constraint from counter-examples
+  SynthesisConstraintFun input ->
+  Maybe RefinementConditionFun ->
+  -- | The verifier functions.
+  [VerifierFun input exception] ->
+  IO ([input], CEGISResult exception)
+solverGenericCEGISWithRefinement
+  solver
+  rerun
+  initConstr
+  synthConstr
+  refineCond
+  verifiers = do
+    (input, r) <-
+      solverGenericCEGIS solver rerun initConstr synthConstr verifiers
+    case r of
+      CEGISSuccess model -> do
+        refinedModel <- refine solver model
+        return (input, CEGISSuccess refinedModel)
+      _ -> return (input, r)
+    where
+      refine solver model = case refineCond of
+        Just f -> do
+          cond <- f model
+          newModel <- solverSolve solver cond
+          case newModel of
+            Left _ -> return model
+            Right m -> refine solver m
+        Nothing -> return model
+
 -- | Generic CEGIS procedure.
 --
 -- The CEGIS procedure will try to find a model that satisfies the initial
@@ -222,22 +268,13 @@ genericCEGISWithRefinement
   refineCond
   verifier =
     withSolver config $ \solver -> do
-      (input, r) <-
-        solverGenericCEGIS solver rerun initConstr synthConstr verifier
-      case r of
-        CEGISSuccess model -> do
-          refinedModel <- refine solver model
-          return (input, CEGISSuccess refinedModel)
-        _ -> return (input, r)
-    where
-      refine solver model = case refineCond of
-        Just f -> do
-          cond <- f model
-          newModel <- solverSolve solver cond
-          case newModel of
-            Left _ -> return model
-            Right m -> refine solver m
-        Nothing -> return model
+      solverGenericCEGISWithRefinement
+        solver
+        rerun
+        initConstr
+        synthConstr
+        refineCond
+        verifier
 
 -- | The condition for CEGIS to solve.
 --
