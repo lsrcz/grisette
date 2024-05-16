@@ -93,9 +93,10 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Core.Data.Class.Solver
   ( ConfigurableSolver,
-    Solver (solverResetAssertions, solverSolve),
+    Solver (solverResetAssertions),
     SolvingFailure (Unsat),
     UnionWithExcept (extractUnionExcept),
+    solverSolve,
     withSolver,
   )
 import Grisette.Internal.SymPrim.Prim.Model (Model)

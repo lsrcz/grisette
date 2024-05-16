@@ -34,9 +34,11 @@ module Grisette.Internal.Core.Data.Class.Solver
     -- * Solver interfaces
     SolvingFailure (..),
     MonadicSolver (..),
+    monadicSolverSolve,
     SolverCommand (..),
     ConfigurableSolver (..),
     Solver (..),
+    solverSolve,
     withSolver,
     solve,
     solverSolveMulti,
@@ -107,15 +109,23 @@ data SolvingFailure
 -- This interface abstract the monadic interface of a solver. All the operations
 -- performed in the monad are using a single solver instance. The solver
 -- instance is management by the monad's @run@ function.
-class MonadicSolver m where
+class (Monad m) => MonadicSolver m where
   monadicSolverPush :: Int -> m ()
   monadicSolverPop :: Int -> m ()
   monadicSolverResetAssertions :: m ()
-  monadicSolverSolve :: SymBool -> m (Either SolvingFailure Model)
+  monadicSolverAssert :: SymBool -> m ()
+  monadicSolverCheckSat :: m (Either SolvingFailure Model)
+
+monadicSolverSolve ::
+  (MonadicSolver m) => SymBool -> m (Either SolvingFailure Model)
+monadicSolverSolve formula = do
+  monadicSolverAssert formula
+  monadicSolverCheckSat
 
 -- | The commands that can be sent to a solver.
 data SolverCommand
-  = SolverSolve SymBool
+  = SolverAssert SymBool
+  | SolverCheckSat
   | SolverPush Int
   | SolverPop Int
   | SolverResetAssertions
@@ -130,8 +140,13 @@ class Solver handle where
     SolverCommand ->
     IO (Either SolvingFailure a)
 
+  -- | Assert a formula.
+  solverAssert :: handle -> SymBool -> IO (Either SolvingFailure ())
+  solverAssert handle formula =
+    solverRunCommand (const $ return $ Right ()) handle $ SolverAssert formula
+
   -- | Solve a formula.
-  solverSolve :: handle -> SymBool -> IO (Either SolvingFailure Model)
+  solverCheckSat :: handle -> IO (Either SolvingFailure Model)
 
   -- | Push @n@ levels.
   solverPush :: handle -> Int -> IO (Either SolvingFailure ())
@@ -168,6 +183,14 @@ class Solver handle where
 
   -- | Force terminate the solver, do not wait for the last command to finish.
   solverForceTerminate :: handle -> IO ()
+
+solverSolve ::
+  (Solver handle) => handle -> SymBool -> IO (Either SolvingFailure Model)
+solverSolve solver formula = do
+  res <- solverAssert solver formula
+  case res of
+    Left err -> return $ Left err
+    Right _ -> solverCheckSat solver
 
 -- | Solve a single formula while returning multiple models to make it true.
 -- The maximum number of desired models are given.
