@@ -94,22 +94,24 @@ import Grisette.Internal.Core.Data.Class.ModelOps
 import Grisette.Internal.Core.Data.Class.Solver
   ( ConfigurableSolver (newSolver),
     MonadicSolver
-      ( monadicSolverPop,
+      ( monadicSolverAssert,
+        monadicSolverCheckSat,
+        monadicSolverPop,
         monadicSolverPush,
-        monadicSolverResetAssertions,
-        monadicSolverSolve
+        monadicSolverResetAssertions
       ),
     Solver
-      ( solverForceTerminate,
+      ( solverCheckSat,
+        solverForceTerminate,
         solverRunCommand,
-        solverSolve,
         solverTerminate
       ),
     SolverCommand
-      ( SolverPop,
+      ( SolverAssert,
+        SolverCheckSat,
+        SolverPop,
         SolverPush,
         SolverResetAssertions,
-        SolverSolve,
         SolverTerminate
       ),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
@@ -412,17 +414,20 @@ runSBVIncrementalT config sbvIncrementalT =
           runReaderT sbvIncrementalT config
 
 instance (MonadIO m) => MonadicSolver (SBVIncrementalT n m) where
-  monadicSolverSolve (SymBool formula) = do
+  monadicSolverAssert (SymBool formula) = do
     symBiMap <- get
     config <- ask
     (newSymBiMap, lowered) <- lowerSinglePrimCached config formula symBiMap
     lift $ lift $ SBV.constrain lowered
     put newSymBiMap
+  monadicSolverCheckSat = do
     checkSatResult <- SBVTC.checkSat
+    config <- ask
+    symBiMap <- get
     case checkSatResult of
       SBVC.Sat -> do
         sbvModel <- SBVTC.getModel
-        let model = parseModel config sbvModel newSymBiMap
+        let model = parseModel config sbvModel symBiMap
         return $ Right model
       r -> return $ Left $ sbvCheckSatResult r
   monadicSolverResetAssertions = SBVTC.resetAssertions
@@ -465,8 +470,11 @@ instance ConfigurableSolver (GrisetteSMTConfig n) SBVSolverHandle where
                 SolverPop n -> monadicSolverPop n >> loop
                 SolverTerminate -> return ()
                 SolverResetAssertions -> monadicSolverResetAssertions >> loop
-                SolverSolve formula -> do
-                  r <- monadicSolverSolve formula
+                SolverAssert formula -> do
+                  monadicSolverAssert formula
+                  loop
+                SolverCheckSat -> do
+                  r <- monadicSolverCheckSat
                   liftIO $ atomically $ writeTChan sbvSolverHandleOutChan r
                   loop
         loop
@@ -491,13 +499,13 @@ instance Solver SBVSolverHandle where
       SBVSolverTerminated -> do
         liftIO $ atomically $ setTerminated status
         return $ Left Terminated
-  solverSolve handle nextFormula =
+  solverCheckSat handle =
     solverRunCommand
       ( \(SBVSolverHandle _ _ _ outChan) ->
           liftIO $ atomically $ readTChan outChan
       )
       handle
-      $ SolverSolve nextFormula
+      SolverCheckSat
   solverTerminate (SBVSolverHandle thread status inChan _) = do
     liftIO $ atomically $ do
       setTerminated status
