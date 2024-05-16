@@ -983,6 +983,7 @@ module Grisette.Core
     VerifierFun,
     CEGISResult (..),
     solverGenericCEGIS,
+    solverGenericCEGISWithRefinement,
     genericCEGIS,
     genericCEGISWithRefinement,
 
@@ -1122,6 +1123,7 @@ import Grisette.Internal.Core.Data.Class.CEGISSolver
     solverCegisForAllExceptVC,
     solverCegisMultiInputs,
     solverGenericCEGIS,
+    solverGenericCEGISWithRefinement,
   )
 import Grisette.Internal.Core.Data.Class.Error
   ( TransformError (..),
