@@ -177,6 +177,7 @@ module Grisette.Core
     identifier,
     withInfo,
     withLoc,
+    uniqueIdentifier,
     slocsym,
     ilocsym,
     simple,
@@ -1286,6 +1287,7 @@ import Grisette.Internal.Core.Data.Symbol
     identifier,
     indexed,
     simple,
+    uniqueIdentifier,
     withInfo,
     withLoc,
   )

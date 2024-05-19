@@ -119,7 +119,7 @@ data VerifierResult cex exception
 -- argument will be guaranteed to be distinct during each invocation of the
 -- function in the CEGIS algorithm, so it can be used to instantiate the
 -- identifiers for fresh variables.
-type SynthesisConstraintFun cex = Int -> cex -> IO SymBool
+type SynthesisConstraintFun cex = cex -> IO SymBool
 
 -- | The verifier.
 type VerifierFun cex exception = Model -> IO (VerifierResult cex exception)
@@ -155,25 +155,25 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
   firstResult <- solverSolve solver initConstr
   case firstResult of
     Left err -> return ([], CEGISSolverFailure err)
-    Right model -> go model 0 False verifiers
+    Right model -> go model False verifiers
   where
-    go prevModel iterNum needRerun (verifier : remainingVerifiers) = do
+    go prevModel needRerun (verifier : remainingVerifiers) = do
       verifierResult <- verifier prevModel
       case verifierResult of
         CEGISVerifierFoundCex cex -> do
-          newResult <- solverSolve solver =<< synthConstr iterNum cex
+          newResult <- solverSolve solver =<< synthConstr cex
           case newResult of
             Left err -> return ([], CEGISSolverFailure err)
             Right model -> do
               (cexes, result) <-
-                go model (iterNum + 1) (needRerun || rerun) $
+                go model (needRerun || rerun) $
                   verifier : remainingVerifiers
               return (cex : cexes, result)
-        CEGISVerifierNoCex -> go prevModel iterNum needRerun remainingVerifiers
+        CEGISVerifierNoCex -> go prevModel needRerun remainingVerifiers
         CEGISVerifierException exception ->
           return ([], CEGISVerifierFailure exception)
-    go prevModel _ False [] = return ([], CEGISSuccess prevModel)
-    go prevModel iterNum True [] = go prevModel iterNum False verifiers
+    go prevModel False [] = return ([], CEGISSuccess prevModel)
+    go prevModel True [] = go prevModel False verifiers
 
 -- | Generic CEGIS procedure with refinement. See 'genericCEGISWithRefinement'
 -- for more details.
@@ -352,7 +352,7 @@ solverCegisMultiInputs
       synthesizerSolver
       True
       (symAll cexAssertFun conInputs)
-      (const $ return . cexAssertFun)
+      (return . cexAssertFun)
       $ getVerifier <$> symInputs
     where
       cexAssertFun input =
@@ -637,7 +637,7 @@ solverCegisForAll
         synthesizerSolver
         False
         phi
-        (\_ md -> return $ evaluateSym False md phi)
+        (\md -> return $ evaluateSym False md phi)
         [verifier]
     let exactResult = case result of
           CEGISSuccess model -> CEGISSuccess $ exceptFor forallSymbols model
