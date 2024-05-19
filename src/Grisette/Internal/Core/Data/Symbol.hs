@@ -1,14 +1,16 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
 -- Module      :   Grisette.Internal.Core.Data.Symbol
@@ -23,6 +25,7 @@ module Grisette.Internal.Core.Data.Symbol
     identifier,
     withInfo,
     withLoc,
+    uniqueIdentifier,
     Symbol (..),
     simple,
     indexed,
@@ -31,11 +34,13 @@ where
 
 import Control.DeepSeq (NFData (rnf))
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
 import Data.Typeable (Proxy (Proxy), Typeable, eqT, typeRep, type (:~:) (Refl))
 import Debug.Trace.LocationTH (__LOCATION__)
 import GHC.Generics (Generic)
+import GHC.IO (unsafePerformIO)
 import Language.Haskell.TH.Syntax (Lift (liftTyped), unsafeTExpCoerce)
 import Language.Haskell.TH.Syntax.Compat (SpliceQ, liftSplice)
 
@@ -192,6 +197,22 @@ withLoc s =
     s
     (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))
   ||]
+
+identifierCount :: IORef Int
+identifierCount = unsafePerformIO $ newIORef 0
+{-# NOINLINE identifierCount #-}
+
+newtype UniqueCount = UniqueCount Int
+  deriving newtype (Eq, Ord, NFData, Hashable)
+  deriving (Lift)
+
+instance Show UniqueCount where
+  show (UniqueCount i) = "unique<" <> show i <> ">"
+
+uniqueIdentifier :: IO Identifier
+uniqueIdentifier = do
+  i <- atomicModifyIORef' identifierCount (\x -> (x + 1, x))
+  return $ withInfo (identifier "ident") (UniqueCount i)
 
 -- | Symbol types for a symbolic variable.
 --
