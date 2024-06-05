@@ -53,6 +53,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ConTerm,
         DivIntegralTerm,
         EqTerm,
+        FPTraitTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -133,6 +134,7 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (ModIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (QuotIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (RemIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPTraitTerm _ _ arg)) = goUnary arg
     goUnary arg = gocached (SomeTerm arg)
     goBinary arg1 arg2 = do
       r1 <- gocached (SomeTerm arg1)
@@ -185,6 +187,7 @@ castTerm t@DivIntegralTerm {} = cast t
 castTerm t@ModIntegralTerm {} = cast t
 castTerm t@QuotIntegralTerm {} = cast t
 castTerm t@RemIntegralTerm {} = cast t
+castTerm t@FPTraitTerm {} = cast t
 {-# INLINE castTerm #-}
 
 someTermsSize :: [SomeTerm] -> Int
@@ -230,6 +233,7 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(ModIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(QuotIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(RemIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPTraitTerm _ _ arg) = goUnary t arg
     goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (S.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t

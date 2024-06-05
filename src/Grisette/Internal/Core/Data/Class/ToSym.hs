@@ -58,6 +58,7 @@ import Grisette.Internal.SymPrim.BV
   ( IntN,
     WordN,
   )
+import Grisette.Internal.SymPrim.FP (FP, ValidFP, doubleAsFP64, floatAsFP32)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -69,6 +70,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -110,11 +112,16 @@ CONCRETE_TOSYM(Word8)
 CONCRETE_TOSYM(Word16)
 CONCRETE_TOSYM(Word32)
 CONCRETE_TOSYM(Word64)
+CONCRETE_TOSYM(Float)
+CONCRETE_TOSYM(Double)
 CONCRETE_TOSYM(B.ByteString)
 CONCRETE_TOSYM(T.Text)
 CONCRETE_TOSYM_BV(IntN)
 CONCRETE_TOSYM_BV(WordN)
 #endif
+
+instance (ValidFP eb sb) => ToSym (FP eb sb) (FP eb sb) where
+  toSym = id
 
 -- Unit
 instance ToSym () () where
@@ -240,6 +247,9 @@ TO_SYM_SYMID_FUN(=~>)
 TO_SYM_SYMID_FUN(-~>)
 #endif
 
+instance (ValidFP eb sb) => ToSym (SymFP eb sb) (SymFP eb sb) where
+  toSym = id
+
 #define TO_SYM_FROMCON_SIMPLE(contype, symtype) \
 instance ToSym contype symtype where \
   toSym = con
@@ -262,6 +272,9 @@ TO_SYM_FROMCON_FUN((=->), (=~>))
 TO_SYM_FROMCON_FUN((-->), (-~>))
 #endif
 
+instance (ValidFP eb sb) => ToSym (FP eb sb) (SymFP eb sb) where
+  toSym = con
+
 #define TOSYM_MACHINE_INTEGER(int, bv) \
 instance ToSym int (bv) where \
   toSym = fromIntegral
@@ -278,6 +291,14 @@ TOSYM_MACHINE_INTEGER(Word64, SymWordN 64)
 TOSYM_MACHINE_INTEGER(Int, SymIntN $intBitwidthQ)
 TOSYM_MACHINE_INTEGER(Word, SymWordN $intBitwidthQ)
 #endif
+
+instance ToSym Float SymFP32 where
+  toSym = con . floatAsFP32
+  {-# INLINE toSym #-}
+
+instance ToSym Double SymFP64 where
+  toSym = con . doubleAsFP64
+  {-# INLINE toSym #-}
 
 -- Exception
 deriving via

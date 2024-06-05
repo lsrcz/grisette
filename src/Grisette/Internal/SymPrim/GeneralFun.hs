@@ -46,11 +46,7 @@ import Grisette.Internal.Core.Data.Symbol
     withInfo,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
-import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( SBVRep (SBVType),
-    SupportedPrim (parseSMTModelResult, sbvEq),
-    partitionCVArg,
-  )
+import Grisette.Internal.SymPrim.Prim.Internal.Term (SBVRep (SBVType), SupportedPrim (parseSMTModelResult, sbvEq), Term (FPTraitTerm), partitionCVArg)
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
@@ -134,6 +130,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalAndTerm,
     pevalDefaultEqTerm,
     pevalEqTerm,
+    pevalFPTraitTerm,
     pevalITEBasicTerm,
     pevalNotTerm,
     pevalOrTerm,
@@ -683,3 +680,4 @@ substTerm sym term = gov
         ModIntegralTerm _ op1 op2 -> SomeTerm $ pevalModIntegralTerm (gov op1) (gov op2)
         QuotIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotIntegralTerm (gov op1) (gov op2)
         RemIntegralTerm _ op1 op2 -> SomeTerm $ pevalRemIntegralTerm (gov op1) (gov op2)
+        FPTraitTerm _ trait op -> SomeTerm $ pevalFPTraitTerm trait (gov op)

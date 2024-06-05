@@ -10,7 +10,7 @@
 {-# HLINT ignore "Use /=" #-}
 {-# HLINT ignore "Use ==" #-}
 
-module Grisette.Core.Data.SomeBVTests (someBVTests) where
+module Grisette.SymPrim.SomeBVTests (someBVTests) where
 
 import Control.DeepSeq (NFData, force)
 import Control.Exception (ArithException (Overflow), catch, evaluate)

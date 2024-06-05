@@ -67,6 +67,7 @@ library
       Grisette.Internal.Core.Data.Class.Function
       Grisette.Internal.Core.Data.Class.GenSym
       Grisette.Internal.Core.Data.Class.GPretty
+      Grisette.Internal.Core.Data.Class.IEEEFP
       Grisette.Internal.Core.Data.Class.ITEOp
       Grisette.Internal.Core.Data.Class.LogicalOp
       Grisette.Internal.Core.Data.Class.Mergeable
@@ -94,6 +95,7 @@ library
       Grisette.Internal.Core.TH.MergeConstructor
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
+      Grisette.Internal.SymPrim.FP
       Grisette.Internal.SymPrim.GeneralFun
       Grisette.Internal.SymPrim.IntBitwidth
       Grisette.Internal.SymPrim.ModelRep
@@ -101,6 +103,7 @@ library
       Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
+      Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
@@ -119,6 +122,7 @@ library
       Grisette.Internal.SymPrim.SomeBV
       Grisette.Internal.SymPrim.SymBool
       Grisette.Internal.SymPrim.SymBV
+      Grisette.Internal.SymPrim.SymFP
       Grisette.Internal.SymPrim.SymGeneralFun
       Grisette.Internal.SymPrim.SymInteger
       Grisette.Internal.SymPrim.SymTabularFun
@@ -230,7 +234,6 @@ test-suite spec
       Grisette.Core.Control.ExceptionTests
       Grisette.Core.Control.Monad.UnionMTests
       Grisette.Core.Control.Monad.UnionTests
-      Grisette.Core.Data.BVTests
       Grisette.Core.Data.Class.BoolTests
       Grisette.Core.Data.Class.EvaluateSymTests
       Grisette.Core.Data.Class.ExtractSymbolicsTests
@@ -252,7 +255,6 @@ test-suite spec
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.TryMergeTests
-      Grisette.Core.Data.SomeBVTests
       Grisette.Lib.Control.ApplicativeTest
       Grisette.Lib.Control.Monad.ExceptTests
       Grisette.Lib.Control.Monad.State.ClassTests
@@ -266,6 +268,8 @@ test-suite spec
       Grisette.Lib.Data.FunctorTests
       Grisette.Lib.Data.ListTests
       Grisette.Lib.Data.TraversableTests
+      Grisette.SymPrim.BVTests
+      Grisette.SymPrim.FPTests
       Grisette.SymPrim.Prim.BitsTests
       Grisette.SymPrim.Prim.BoolTests
       Grisette.SymPrim.Prim.BVTests
@@ -273,6 +277,7 @@ test-suite spec
       Grisette.SymPrim.Prim.ModelTests
       Grisette.SymPrim.Prim.NumTests
       Grisette.SymPrim.Prim.TabularFunTests
+      Grisette.SymPrim.SomeBVTests
       Grisette.SymPrim.SymPrimTests
       Grisette.SymPrim.TabularFunTests
       Grisette.TestUtil.NoMerge

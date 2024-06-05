@@ -70,7 +70,10 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable3 (liftRootStrategy3),
     MergingStrategy (SimpleStrategy),
   )
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
+import Grisette.Internal.Core.Data.Class.TryMerge
+  ( TryMerge (tryMergeWithStrategy),
+  )
+import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
@@ -81,6 +84,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -626,6 +630,10 @@ SIMPLE_MERGEABLE_BV(SymWordN)
 SIMPLE_MERGEABLE_FUN((=->), (=~>))
 SIMPLE_MERGEABLE_FUN((-->), (-~>))
 #endif
+
+instance (ValidFP eb sb) => SimpleMergeable (SymFP eb sb) where
+  mrgIte = symIte
+  {-# INLINE mrgIte #-}
 
 -- Exception
 deriving via (Default AssertionError) instance SimpleMergeable AssertionError

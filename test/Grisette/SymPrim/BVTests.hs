@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.BVTests (bvTests) where
+module Grisette.SymPrim.BVTests (bvTests) where
 
 import Control.DeepSeq (NFData (rnf), deepseq, force)
 import Control.Exception
