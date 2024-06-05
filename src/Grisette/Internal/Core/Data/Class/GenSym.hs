@@ -128,6 +128,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
 import Grisette.Internal.Core.Data.Symbol (Identifier)
 import Grisette.Internal.Core.Data.Union (Union (UnionIf, UnionSingle))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
@@ -138,6 +139,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -793,6 +795,8 @@ CONCRETE_GENSYM_SAME_SHAPE(Word8)
 CONCRETE_GENSYM_SAME_SHAPE(Word16)
 CONCRETE_GENSYM_SAME_SHAPE(Word32)
 CONCRETE_GENSYM_SAME_SHAPE(Word64)
+CONCRETE_GENSYM_SAME_SHAPE(Float)
+CONCRETE_GENSYM_SAME_SHAPE(Double)
 CONCRETE_GENSYM_SAME_SHAPE(B.ByteString)
 CONCRETE_GENSYM_SAME_SHAPE(T.Text)
 CONCRETE_GENSYM_SAME_SHAPE_BV(WordN)
@@ -811,11 +815,21 @@ CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word8)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word16)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word32)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Word64)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Float)
+CONCRETE_GENSYMSIMPLE_SAME_SHAPE(Double)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(B.ByteString)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE(T.Text)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(WordN)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => GenSym (FP eb sb) (FP eb sb) where
+  fresh = return . mrgSingle
+  {-# INLINE fresh #-}
+
+instance (ValidFP eb sb) => GenSymSimple (FP eb sb) (FP eb sb) where
+  simpleFresh = return
+  {-# INLINE simpleFresh #-}
 
 -- Bool
 instance GenSym () Bool where
@@ -1690,6 +1704,20 @@ GENSYM_SIMPLE_FUN((-->), (-~>))
 GENSYM_UNIT_FUN((-->), (-~>))
 GENSYM_UNIT_SIMPLE_FUN((-->), (-~>))
 #endif
+
+instance (ValidFP eb sb) => GenSym (SymFP eb sb) (SymFP eb sb)
+
+instance (ValidFP eb sb) => GenSymSimple (SymFP eb sb) (SymFP eb sb) where
+  simpleFresh _ = simpleFresh ()
+
+instance (ValidFP eb sb) => GenSym () (SymFP eb sb) where
+  fresh _ = mrgSingle <$> simpleFresh ()
+
+instance (ValidFP eb sb) => GenSymSimple () (SymFP eb sb) where
+  simpleFresh _ = do
+    ident <- getIdentifier
+    FreshIndex index <- nextFreshIndex
+    return $ isym ident index
 
 instance (GenSym spec a, Mergeable a) => GenSym spec (UnionM a)
 

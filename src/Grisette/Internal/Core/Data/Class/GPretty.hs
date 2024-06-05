@@ -83,6 +83,8 @@ import Prettyprinter
     Doc,
     Pretty(pretty),
   )
+import Grisette.Internal.SymPrim.FP (ValidFP, FP)
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 #else
 import Data.Text.Prettyprint.Doc
   ( (<+>),
@@ -136,6 +138,8 @@ GPRETTY_SIMPLE(Word8)
 GPRETTY_SIMPLE(Word16)
 GPRETTY_SIMPLE(Word32)
 GPRETTY_SIMPLE(Word64)
+GPRETTY_SIMPLE(Float)
+GPRETTY_SIMPLE(Double)
 #endif
 
 instance GPretty B.ByteString where
@@ -148,6 +152,9 @@ instance (KnownNat n, 1 <= n) => GPretty (IntN n) where
   gpretty = viaShow
 
 instance (KnownNat n, 1 <= n) => GPretty (WordN n) where
+  gpretty = viaShow
+
+instance (ValidFP eb sb) => GPretty (FP eb sb) where
   gpretty = viaShow
 
 -- ()
@@ -316,6 +323,9 @@ GPRETTY_SYM_BV(SymWordN)
 GPRETTY_SYM_FUN(=~>, SymTabularFun)
 GPRETTY_SYM_FUN(-~>, SymGeneralFun)
 #endif
+
+instance (ValidFP eb sb) => GPretty (SymFP eb sb) where
+  gpretty (SymFP t) = prettyPrintTerm t
 
 instance (GPretty a) => GPretty (HS.HashSet a) where
   gprettyPrec n s =

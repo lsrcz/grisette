@@ -50,6 +50,7 @@ import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
   )
+import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, ValidFP, fp32AsFloat, fp64AsDouble)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -61,6 +62,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -112,11 +114,16 @@ CONCRETE_TOCON(Word8)
 CONCRETE_TOCON(Word16)
 CONCRETE_TOCON(Word32)
 CONCRETE_TOCON(Word64)
+CONCRETE_TOCON(Float)
+CONCRETE_TOCON(Double)
 CONCRETE_TOCON(B.ByteString)
 CONCRETE_TOCON(T.Text)
 CONCRETE_TOCON_BV(WordN)
 CONCRETE_TOCON_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => ToCon (FP eb sb) (FP eb sb) where
+  toCon = Just
 
 -- Unit
 instance ToCon () () where
@@ -246,6 +253,9 @@ TO_CON_SYMID_FUN(-~>)
 
 #endif
 
+instance (ValidFP eb sb) => ToCon (SymFP eb sb) (SymFP eb sb) where
+  toCon = Just
+
 #define TO_CON_FROMSYM_SIMPLE(contype, symtype) \
 instance ToCon symtype contype where \
   toCon = conView
@@ -268,6 +278,9 @@ TO_CON_FROMSYM_FUN((=->), (=~>))
 TO_CON_FROMSYM_FUN((-->), (-~>))
 #endif
 
+instance (ValidFP eb sb) => ToCon (SymFP eb sb) (FP eb sb) where
+  toCon = conView
+
 #define TOCON_MACHINE_INTEGER(sbvw, bvw, n, int) \
 instance ToCon (sbvw n) int where \
   toCon (Con (bvw v :: bvw n)) = Just $ fromIntegral v; \
@@ -285,6 +298,14 @@ TOCON_MACHINE_INTEGER(SymWordN, WordN, 64, Word64)
 TOCON_MACHINE_INTEGER(SymIntN, IntN, $intBitwidthQ, Int)
 TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
 #endif
+
+instance ToCon SymFP32 Float where
+  toCon (Con (fp :: FP32)) = Just $ fp32AsFloat fp
+  toCon _ = Nothing
+
+instance ToCon SymFP64 Double where
+  toCon (Con (fp :: FP64)) = Just $ fp64AsDouble fp
+  toCon _ = Nothing
 
 deriving via
   (Default AssertionError)

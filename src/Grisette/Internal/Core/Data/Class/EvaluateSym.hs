@@ -54,6 +54,7 @@ import Generics.Deriving.Instances ()
 import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Model (Model, evaluateTerm)
 import Grisette.Internal.SymPrim.Prim.Term (LinkedRep, SupportedPrim)
@@ -62,6 +63,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -126,11 +128,16 @@ CONCRETE_EVALUATESYM(Word8)
 CONCRETE_EVALUATESYM(Word16)
 CONCRETE_EVALUATESYM(Word32)
 CONCRETE_EVALUATESYM(Word64)
+CONCRETE_EVALUATESYM(Float)
+CONCRETE_EVALUATESYM(Double)
 CONCRETE_EVALUATESYM(B.ByteString)
 CONCRETE_EVALUATESYM(T.Text)
 CONCRETE_EVALUATESYM_BV(IntN)
 CONCRETE_EVALUATESYM_BV(WordN)
 #endif
+
+instance (ValidFP eb fb) => EvaluateSym (FP eb fb) where
+  evaluateSym _ _ = id
 
 -- ()
 instance EvaluateSym () where
@@ -252,6 +259,10 @@ EVALUATE_SYM_BV(SymWordN)
 EVALUATE_SYM_FUN((=->), (=~>), SymTabularFun)
 EVALUATE_SYM_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance (ValidFP eb sb) => EvaluateSym (SymFP eb sb) where
+  evaluateSym fillDefault model (SymFP t) =
+    SymFP $ evaluateTerm fillDefault model t
 
 -- Exception
 deriving via (Default AssertionError) instance EvaluateSym AssertionError

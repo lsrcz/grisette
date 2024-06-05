@@ -50,6 +50,7 @@ import Generics.Deriving
   )
 import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Model
   ( SymbolSet (SymbolSet),
@@ -64,6 +65,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -114,11 +116,16 @@ CONCRETE_EXTRACT_SYMBOLICS(Word8)
 CONCRETE_EXTRACT_SYMBOLICS(Word16)
 CONCRETE_EXTRACT_SYMBOLICS(Word32)
 CONCRETE_EXTRACT_SYMBOLICS(Word64)
+CONCRETE_EXTRACT_SYMBOLICS(Float)
+CONCRETE_EXTRACT_SYMBOLICS(Double)
 CONCRETE_EXTRACT_SYMBOLICS(B.ByteString)
 CONCRETE_EXTRACT_SYMBOLICS(T.Text)
 CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
 CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => ExtractSymbolics (FP eb sb) where
+  extractSymbolics _ = mempty
 
 -- ()
 instance ExtractSymbolics () where
@@ -282,6 +289,9 @@ EXTRACT_SYMBOLICS_BV(SymWordN)
 EXTRACT_SYMBOLICS_FUN((=->), (=~>), SymTabularFun)
 EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance (ValidFP eb fb) => ExtractSymbolics (SymFP eb fb) where
+  extractSymbolics (SymFP t) = SymbolSet $ extractSymbolicsTerm t
 
 -- Exception
 deriving via (Default AssertionError) instance ExtractSymbolics AssertionError

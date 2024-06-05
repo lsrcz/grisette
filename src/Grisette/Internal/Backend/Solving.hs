@@ -106,6 +106,7 @@ import Grisette.Internal.Core.Data.Class.Solver
     SolverCommand (SolverPop, SolverPush, SolverResetAssertions, SolverSolve, SolverTerminate),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP (sbvFPTraitTerm)
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalApplyTerm (sbvApplyTerm),
@@ -159,6 +160,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         DivIntegralTerm,
         EqTerm,
         ITETerm,
+        FPTraitTerm,
         LeOrdTerm,
         LtOrdTerm,
         ModIntegralTerm,
@@ -661,6 +663,9 @@ lowerSinglePrimIntermediate config (RemIntegralTerm _ a b) m = do
   (m1, a') <- lowerSinglePrimCached config a m
   (m2, b') <- lowerSinglePrimCached config b m1
   return (m2, sbvRemIntegralTerm @a config a' b')
+lowerSinglePrimIntermediate config (FPTraitTerm _ trait a) m = do
+  (m, a') <- lowerSinglePrimCached config a m
+  return (m, sbvFPTraitTerm trait a')
 lowerSinglePrimIntermediate _ _ _ = undefined
 
 #if MIN_VERSION_sbv(10,3,0)

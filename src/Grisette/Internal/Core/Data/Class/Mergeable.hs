@@ -116,6 +116,7 @@ import Grisette.Internal.SymPrim.BV
     IntN,
     WordN,
   )
+import Grisette.Internal.SymPrim.FP (FP, ValidFP, fpAsWordN, withValidFPProofs)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
@@ -123,6 +124,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -403,11 +405,18 @@ CONCRETE_ORD_MERGEABLE(Word8)
 CONCRETE_ORD_MERGEABLE(Word16)
 CONCRETE_ORD_MERGEABLE(Word32)
 CONCRETE_ORD_MERGEABLE(Word64)
+CONCRETE_ORD_MERGEABLE(Float)
+CONCRETE_ORD_MERGEABLE(Double)
 CONCRETE_ORD_MERGEABLE(B.ByteString)
 CONCRETE_ORD_MERGEABLE(T.Text)
 CONCRETE_ORD_MERGEABLE_BV(WordN)
 CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => Mergeable (FP eb sb) where
+  rootStrategy =
+    let sub = SimpleStrategy $ \_ t _ -> t
+     in withValidFPProofs @eb @sb $ SortedStrategy fpAsWordN $ const sub
 
 -- ()
 deriving via (Default ()) instance Mergeable ()
@@ -916,6 +925,9 @@ MERGEABLE_BV(SymWordN)
 MERGEABLE_FUN((=->), (=~>))
 MERGEABLE_FUN((-->), (-~>))
 #endif
+
+instance (ValidFP eb sb) => Mergeable (SymFP eb sb) where
+  rootStrategy = SimpleStrategy symIte
 
 -- Exceptions
 instance Mergeable ArithException where

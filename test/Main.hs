@@ -10,7 +10,6 @@ import Grisette.Backend.TermRewritingTests
 import Grisette.Core.Control.ExceptionTests (exceptionTests)
 import Grisette.Core.Control.Monad.UnionMTests (unionMTests)
 import Grisette.Core.Control.Monad.UnionTests (unionTests)
-import qualified Grisette.Core.Data.BVTests
 import qualified Grisette.Core.Data.Class.BoolTests
 import Grisette.Core.Data.Class.EvaluateSymTests (evaluateSymTests)
 import Grisette.Core.Data.Class.ExtractSymbolicsTests (extractSymbolicsTests)
@@ -31,7 +30,6 @@ import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
-import Grisette.Core.Data.SomeBVTests (someBVTests)
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
@@ -54,6 +52,8 @@ import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
 import Grisette.Lib.Data.FunctorTests (functorFunctionTests)
 import Grisette.Lib.Data.ListTests (listTests)
 import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
+import qualified Grisette.SymPrim.BVTests
+import Grisette.SymPrim.FPTests (fpTests)
 import qualified Grisette.SymPrim.Prim.BVTests
 import Grisette.SymPrim.Prim.BitsTests (bitsTests)
 import qualified Grisette.SymPrim.Prim.BoolTests
@@ -63,6 +63,7 @@ import Grisette.SymPrim.Prim.IntegralTests
 import Grisette.SymPrim.Prim.ModelTests (modelTests)
 import Grisette.SymPrim.Prim.NumTests (numTests)
 import qualified Grisette.SymPrim.Prim.TabularFunTests
+import Grisette.SymPrim.SomeBVTests (someBVTests)
 import Grisette.SymPrim.SymPrimTests (symPrimTests)
 import qualified Grisette.SymPrim.TabularFunTests
 import Test.Framework (Test, defaultMain, testGroup)
@@ -113,9 +114,7 @@ coreTests =
               toConTests,
               toSymTests,
               tryMergeTests
-            ],
-          Grisette.Core.Data.BVTests.bvTests,
-          someBVTests
+            ]
         ]
     ]
 
@@ -170,7 +169,10 @@ irTests =
           Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests
         ],
       symPrimTests,
-      Grisette.SymPrim.TabularFunTests.tabularFunTests
+      Grisette.SymPrim.TabularFunTests.tabularFunTests,
+      Grisette.SymPrim.BVTests.bvTests,
+      someBVTests,
+      fpTests
     ]
 
 sbvTests :: Test

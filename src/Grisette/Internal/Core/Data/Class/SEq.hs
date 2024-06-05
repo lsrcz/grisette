@@ -54,12 +54,14 @@ import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationCon
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term (pevalEqTerm)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 
 -- $setup
@@ -129,11 +131,17 @@ CONCRETE_SEQ(Word8)
 CONCRETE_SEQ(Word16)
 CONCRETE_SEQ(Word32)
 CONCRETE_SEQ(Word64)
+CONCRETE_SEQ(Float)
+CONCRETE_SEQ(Double)
 CONCRETE_SEQ(B.ByteString)
 CONCRETE_SEQ(T.Text)
 CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => SEq (FP eb sb) where
+  l .== r = con $ l == r
+  {-# INLINE (.==) #-}
 
 -- List
 deriving via (Default [a]) instance (SEq a) => SEq [a]
@@ -228,11 +236,13 @@ instance (SEq (m a)) => SEq (IdentityT m a) where
 -- Symbolic types
 #define SEQ_SIMPLE(symtype) \
 instance SEq symtype where \
-  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r
+  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
+  {-# INLINE (.==) #-}
 
 #define SEQ_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
-  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r
+  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
+  {-# INLINE (.==) #-}
 
 #if 1
 SEQ_SIMPLE(SymBool)
@@ -240,6 +250,10 @@ SEQ_SIMPLE(SymInteger)
 SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
 #endif
+
+instance (ValidFP eb sb) => SEq (SymFP eb sb) where
+  (SymFP l) .== (SymFP r) = SymBool $ pevalEqTerm l r
+  {-# INLINE (.==) #-}
 
 -- Exceptions
 deriving via (Default AssertionError) instance SEq AssertionError

@@ -51,6 +51,7 @@ import Generics.Deriving
   )
 import Generics.Deriving.Instances ()
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep (underlyingTerm),
@@ -62,6 +63,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -111,11 +113,16 @@ CONCRETE_SUBSTITUTESYM(Word8)
 CONCRETE_SUBSTITUTESYM(Word16)
 CONCRETE_SUBSTITUTESYM(Word32)
 CONCRETE_SUBSTITUTESYM(Word64)
+CONCRETE_SUBSTITUTESYM(Float)
+CONCRETE_SUBSTITUTESYM(Double)
 CONCRETE_SUBSTITUTESYM(B.ByteString)
 CONCRETE_SUBSTITUTESYM(T.Text)
 CONCRETE_SUBSTITUTESYM_BV(WordN)
 CONCRETE_SUBSTITUTESYM_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => SubstituteSym (FP eb sb) where
+  substituteSym _ _ = id
 
 instance SubstituteSym () where
   substituteSym _ _ = id
@@ -280,6 +287,9 @@ SUBSTITUTE_SYM_BV(SymWordN)
 SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
 SUBSTITUTE_SYM_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance (ValidFP eb sb) => SubstituteSym (SymFP eb sb) where
+  substituteSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) t
 
 -- | Auxiliary class for 'SubstituteSym' instance derivation
 class SubstituteSym' a where

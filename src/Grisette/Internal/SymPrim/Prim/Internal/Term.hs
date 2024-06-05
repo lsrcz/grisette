@@ -67,6 +67,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     someTypedSymbol,
 
     -- * Terms
+    FPTrait (..),
     Term (..),
     identity,
     identityWithTypeRep,
@@ -115,6 +116,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     modIntegralTerm,
     quotIntegralTerm,
     remIntegralTerm,
+    fpTraitTerm,
 
     -- * Support for boolean type
     trueTerm,
@@ -217,6 +219,8 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
+import Grisette.Internal.SymPrim.FP (ValidFP, FP)
+import GHC.Generics (Generic)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -889,6 +893,12 @@ someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
 
 -- Terms
 
+data FPTrait = FPIsNaN
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+
+instance Show FPTrait where
+  show FPIsNaN = "isnan"
+
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
   SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
@@ -1078,6 +1088,12 @@ data Term t where
     !(Term t) ->
     !(Term t) ->
     Term t
+  FPTraitTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    {-# UNPACK #-} !Id ->
+    !FPTrait ->
+    !(Term (FP eb sb)) ->
+    Term Bool
 
 identity :: Term t -> Id
 identity = snd . identityWithTypeRep
@@ -1119,6 +1135,7 @@ identityWithTypeRep (DivIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ModIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (QuotIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RemIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPTraitTerm i _ _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -1157,6 +1174,7 @@ introSupportedPrimConstraint DivIntegralTerm {} x = x
 introSupportedPrimConstraint ModIntegralTerm {} x = x
 introSupportedPrimConstraint QuotIntegralTerm {} x = x
 introSupportedPrimConstraint RemIntegralTerm {} x = x
+introSupportedPrimConstraint FPTraitTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
@@ -1196,6 +1214,7 @@ pformat (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pforma
 pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformat arg ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -1237,6 +1256,7 @@ instance Lift (Term t) where
   liftTyped (ModIntegralTerm _ arg1 arg2) = [||modIntegralTerm arg1 arg2||]
   liftTyped (QuotIntegralTerm _ arg1 arg2) = [||quotIntegralTerm arg1 arg2||]
   liftTyped (RemIntegralTerm _ arg1 arg2) = [||remIntegralTerm arg1 arg2||]
+  liftTyped (FPTraitTerm _ trait arg) = [||fpTraitTerm trait arg||]
 
 instance Show (Term ty) where
   show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
@@ -1317,6 +1337,8 @@ instance Show (Term ty) where
     "QuotIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (RemIntegralTerm i arg1 arg2) =
     "RemIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (FPTraitTerm i trait arg) =
+    "FPTrait{id=" ++ show i ++ ", trait=" ++ show trait ++ ", arg=" ++ show arg ++ "}"
 
 prettyPrintTerm :: Term t -> Doc ann
 prettyPrintTerm v =
@@ -1439,6 +1461,11 @@ data UTerm t where
     (PEvalDivModIntegralTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URemIntegralTerm ::
     (PEvalDivModIntegralTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UFPTraitTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    !FPTrait ->
+    !(Term (FP eb sb)) ->
+    UTerm Bool
 
 eqTypedId :: (TypeRep a, Id) -> (TypeRep b, Id) -> Bool
 eqTypedId (a, i1) (b, i2) = i1 == i2 && eqTypeRepBool a b
@@ -1519,6 +1546,7 @@ instance (SupportedPrim t) => Interned (Term t) where
     DModIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DQuotIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRemIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
+    DFPTraitTerm :: {-# UNPACK #-} !FPTrait -> {-# UNPACK #-} !Id -> Description (Term Bool)
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
@@ -1566,6 +1594,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UModIntegralTerm arg1 arg2) = DModIntegralTerm (identity arg1) (identity arg2)
   describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (identity arg1) (identity arg2)
   describe (URemIntegralTerm arg1 arg2) = DQuotIntegralTerm (identity arg1) (identity arg2)
+  describe (UFPTraitTerm trait arg) = DFPTraitTerm trait (identity arg)
 
   identify i = go
     where
@@ -1604,6 +1633,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UModIntegralTerm arg1 arg2) = ModIntegralTerm i arg1 arg2
       go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm i arg1 arg2
       go (URemIntegralTerm arg1 arg2) = RemIntegralTerm i arg1 arg2
+      go (UFPTraitTerm trait arg) = FPTraitTerm i trait arg
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
@@ -1649,6 +1679,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DModIntegralTerm li1 li2 == DModIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRemIntegralTerm li1 li2 == DRemIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
+  DFPTraitTerm lt li == DFPTraitTerm rt ri = lt == rt && li == ri
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
@@ -1707,6 +1738,7 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DRemIntegralTerm id1 id2) = s `hashWithSalt` (33 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DApplyTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DFPTraitTerm trait id1) = s `hashWithSalt` (39 :: Int) `hashWithSalt` trait `hashWithSalt` id1
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
@@ -1941,6 +1973,13 @@ quotIntegralTerm l r = internTerm $ UQuotIntegralTerm l r
 remIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 remIntegralTerm l r = internTerm $ URemIntegralTerm l r
 {-# INLINE remIntegralTerm #-}
+
+fpTraitTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPTrait ->
+  Term (FP eb sb) ->
+  Term Bool
+fpTraitTerm trait v = internTerm $ UFPTraitTerm trait v
 
 -- Support for boolean type
 defaultValueForBool :: Bool

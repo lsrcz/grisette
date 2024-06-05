@@ -31,8 +31,9 @@ import qualified Data.SBV.Dynamic as SBVD
 import Data.Type.Bool (If)
 import Data.Type.Equality ((:~:) (Refl))
 import Debug.Trace (trace)
-import GHC.TypeNats (KnownNat, type (<=))
+import GHC.TypeNats (KnownNat, natVal, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP (FP), ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero
   ( IsZero,
     IsZeroCases (IsZeroEvidence, NonZeroEvidence),
@@ -67,6 +68,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
 import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue, toModelValue)
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 import Type.Reflection (typeRep)
+import Unsafe.Coerce (unsafeCoerce)
 
 defaultValueForInteger :: Integer
 defaultValueForInteger = 0
@@ -180,6 +182,30 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
     ([([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))], _)
       | bitWidth == finiteBitSize (undefined :: WordN w) = fromIntegral i
   parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(WordN w)) cv
+
+instance (ValidFP eb sb) => SupportedPrimConstraint (FP eb sb) where
+  type PrimConstraint _ (FP eb sb) = ValidFP eb sb
+
+instance (ValidFP eb sb) => SBVRep (FP eb sb) where
+  type SBVType _ (FP eb sb) = SBV.SBV (SBV.FloatingPoint eb sb)
+
+instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
+  defaultValue = 0
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm = pevalDefaultEqTerm
+  conSBVTerm _ (FP fp) = SBV.literal fp
+  symSBVName symbol _ = show symbol
+  symSBVTerm _ name = sbvFresh name
+  withPrim _ r = r
+  parseSMTModelResult
+    _
+    ([], SBVD.CV (SBVD.KFP eb sb) (SBVD.CFP fp))
+      | eb == fromIntegral (natVal (Proxy @eb))
+          && sb == fromIntegral (natVal (Proxy @sb)) =
+          -- Assumes that in SBV, FloatingPoint is a newtype of FP as the
+          -- constructor isn't exposed
+          fromIntegral $ unsafeCoerce fp
+  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(FP eb sb)) cv
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w

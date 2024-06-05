@@ -38,16 +38,19 @@ import Grisette.Internal.Backend.Solving
   ( GrisetteSMTConfig (sbvConfig),
     approx,
     lowerSinglePrim,
+    lowerSinglePrimCached,
     precise,
   )
 import Grisette.Internal.Backend.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
+import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( SBVRep (SBVType),
+  ( FPTrait (FPIsNaN),
+    SBVRep (SBVType),
     SupportedPrim,
     Term,
     absNumTerm,
@@ -59,8 +62,10 @@ import Grisette.Internal.SymPrim.Prim.Term
     bvsignExtendTerm,
     bvzeroExtendTerm,
     complementBitsTerm,
+    conTerm,
     divIntegralTerm,
     eqTerm,
+    fpTraitTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
@@ -70,6 +75,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     notTerm,
     orBitsTerm,
     orTerm,
+    pevalAndTerm,
+    pevalFPTraitTerm,
+    pevalNotTerm,
     quotIntegralTerm,
     remIntegralTerm,
     rotateLeftTerm,
@@ -130,22 +138,6 @@ testUnaryOpLowering config f name sbvfun = do
           SBV.Unsat -> return ()
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
 
--- testUnaryOpLowering' ::
---   forall a b as n tag.
---   ( HasCallStack,
---     UnaryOp tag a b,
---     SBV.EqSymbolic (SBVType n b),
---     Typeable (SBVType n a),
---     SBV.SymVal as,
---     SBVType n a ~ SBV.SBV as,
---     Show as
---   ) =>
---   GrisetteSMTConfig n ->
---   tag ->
---   (SBVType n a -> SBVType n b) ->
---   Assertion
--- testUnaryOpLowering' config t = testUnaryOpLowering @a @b @as config (constructUnary t) (show t)
-
 testBinaryOpLowering ::
   forall a b c as bs n.
   ( HasCallStack,
@@ -199,26 +191,6 @@ testBinaryOpLowering config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
       _ -> lift $ assertFailure "Failed to extract the term"
 
--- testBinaryOpLowering' ::
---   forall a b c as bs n tag.
---   ( HasCallStack,
---     BinaryOp tag a b c,
---     SBV.EqSymbolic (SBVType n c),
---     Typeable (SBVType n a),
---     Typeable (SBVType n b),
---     SBV.SymVal as,
---     SBV.SymVal bs,
---     Show as,
---     Show bs,
---     SBVType n a ~ SBV.SBV as,
---     SBVType n b ~ SBV.SBV bs
---   ) =>
---   GrisetteSMTConfig n ->
---   tag ->
---   (SBVType n a -> SBVType n b -> SBVType n c) ->
---   Assertion
--- testBinaryOpLowering' config t = testBinaryOpLowering @a @b @c @as @bs config (constructBinary t) (show t)
-
 testTernaryOpLowering ::
   forall a b c d as bs cs n.
   ( HasCallStack,
@@ -240,11 +212,12 @@ testTernaryOpLowering ::
     SBVType n c ~ SBV.SBV cs
   ) =>
   GrisetteSMTConfig n ->
+  (Term a -> Term b -> Term c -> Term Bool) ->
   (Term a -> Term b -> Term c -> Term d) ->
   T.Text ->
   (SBVType n a -> SBVType n b -> SBVType n c -> SBVType n d) ->
   Assertion
-testTernaryOpLowering config f name sbvfun = do
+testTernaryOpLowering config precond f name sbvfun = do
   let a :: Term a = ssymTerm "a"
   let b :: Term b = ssymTerm "b"
   let c :: Term c = ssymTerm "c"
@@ -264,12 +237,13 @@ testTernaryOpLowering config f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc
-    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
-    let sbvc :: Maybe (SBVType n c) = M.lookup (SomeTerm c) (biMapToSBV m) >>= fromDynamic
+    (m2, p) <- lowerSinglePrimCached config (precond a b c) m
+    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m2) >>= fromDynamic
+    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m2) >>= fromDynamic
+    let sbvc :: Maybe (SBVType n c) = M.lookup (SomeTerm c) (biMapToSBV m2) >>= fromDynamic
     case (sbva, sbvb, sbvc) of
       (Just sbvav, Just sbvbv, Just sbvcv) -> SBV.query $ do
-        SBV.constrain $ lt SBV../= sbvfun sbvav sbvbv sbvcv
+        SBV.constrain $ (lt SBV../= sbvfun sbvav sbvbv sbvcv) SBV..&& p
         r <- SBV.checkSat
         case r of
           SBV.Sat -> do
@@ -283,30 +257,6 @@ testTernaryOpLowering config f name sbvfun = do
           SBV.Unsat -> return ()
           _ -> lift $ assertFailure $ T.unpack $ "Lowering for " <> name <> " generated unknown formula"
       _ -> lift $ assertFailure "Failed to extract the term"
-
--- testTernaryOpLowering' ::
---   forall a b c d as bs cs n tag.
---   ( HasCallStack,
---     TernaryOp tag a b c d,
---     SBV.EqSymbolic (SBVType n d),
---     Typeable (SBVType n a),
---     Typeable (SBVType n b),
---     Typeable (SBVType n c),
---     SBV.SymVal as,
---     SBV.SymVal bs,
---     SBV.SymVal cs,
---     Show as,
---     Show bs,
---     Show cs,
---     SBVType n a ~ SBV.SBV as,
---     SBVType n b ~ SBV.SBV bs,
---     SBVType n c ~ SBV.SBV cs
---   ) =>
---   GrisetteSMTConfig n ->
---   tag ->
---   (SBVType n a -> SBVType n b -> SBVType n c -> SBVType n d) ->
---   Assertion
--- testTernaryOpLowering' config t = testTernaryOpLowering @a @b @c @d @as @bs @cs config (constructTernary t) (show t)
 
 loweringTests :: Test
 loweringTests =
@@ -340,9 +290,16 @@ loweringTests =
                   "eqv"
                   (\x y -> SBV.sNot (x SBV..<+> y)),
               testCase "ITE" $ do
-                testTernaryOpLowering @Bool @Bool @Bool @Bool unboundedConfig iteTerm "ite" SBV.ite
+                let truePrecond _ _ _ = conTerm True
                 testTernaryOpLowering @Bool @Bool @Bool @Bool
                   unboundedConfig
+                  truePrecond
+                  iteTerm
+                  "ite"
+                  SBV.ite
+                testTernaryOpLowering @Bool @Bool @Bool @Bool
+                  unboundedConfig
+                  truePrecond
                   iteTerm
                   "ite"
                   (\c x y -> (c SBV..=> x) SBV..&& (SBV.sNot c SBV..=> y))
@@ -802,6 +759,31 @@ loweringTests =
               testCase "ToSigned" $ do
                 testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
                 testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
+            ],
+          testGroup
+            "FP"
+            [ testCase "Eqv" $
+                testBinaryOpLowering @FP32 @FP32 @Bool unboundedConfig eqTerm "eqv" (SBV..==),
+              testCase "ITE" $ do
+                let precond _ l r =
+                      pevalAndTerm
+                        (pevalNotTerm $ pevalFPTraitTerm FPIsNaN l)
+                        (pevalNotTerm $ pevalFPTraitTerm FPIsNaN r)
+                testTernaryOpLowering @Bool @FP32 @FP32 @FP32
+                  unboundedConfig
+                  precond
+                  iteTerm
+                  "ite"
+                  SBV.ite,
+              testGroup
+                "FPTrait"
+                [ testCase "isNaN" $ do
+                    testUnaryOpLowering @FP32 @Bool
+                      unboundedConfig
+                      (fpTraitTerm FPIsNaN)
+                      "isNaN"
+                      SBV.fpIsNaN
+                ]
             ],
           testCase "TabularFun" $ do
             let f = "f" :: SymInteger =~> SymInteger =~> SymInteger
