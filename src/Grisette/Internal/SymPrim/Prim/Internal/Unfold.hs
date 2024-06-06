@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -13,6 +14,8 @@
 module Grisette.Internal.SymPrim.Prim.Internal.Unfold
   ( unaryUnfoldOnce,
     binaryUnfoldOnce,
+    generalUnaryUnfolded,
+    generalBinaryUnfolded,
   )
 where
 
@@ -28,7 +31,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.PartialEval
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SupportedPrim (pevalITETerm),
-    Term (ITETerm),
+    Term (ConTerm, ITETerm),
+    conTerm,
   )
 
 unaryPartialUnfoldOnce ::
@@ -112,3 +116,32 @@ binaryUnfoldOnce ::
   TotalRuleBinary a b c ->
   TotalRuleBinary a b c
 binaryUnfoldOnce partial fallback = totalize2 (binaryPartialUnfoldOnce partial fallback) fallback
+
+generalUnaryUnfolded ::
+  forall a b.
+  (Typeable a, SupportedPrim b) =>
+  (a -> b) ->
+  (Term a -> Term b) ->
+  Term a ->
+  Term b
+generalUnaryUnfolded compute =
+  unaryUnfoldOnce
+    ( \case
+        ConTerm _ lv -> Just $ conTerm $ compute lv
+        _ -> Nothing
+    )
+
+generalBinaryUnfolded ::
+  forall a b c.
+  (Typeable a, Typeable b, SupportedPrim c) =>
+  (a -> b -> c) ->
+  (Term a -> Term b -> Term c) ->
+  Term a ->
+  Term b ->
+  Term c
+generalBinaryUnfolded compute =
+  binaryUnfoldOnce
+    ( \l r -> case (l, r) of
+        (ConTerm _ lv, ConTerm _ rv) -> Just $ conTerm $ compute lv rv
+        _ -> Nothing
+    )

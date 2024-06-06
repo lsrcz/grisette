@@ -27,6 +27,7 @@ import Data.Bits (Bits)
 import Data.SBV (Bits (isSigned))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero
   ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
@@ -53,6 +54,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
   ( binaryUnfoldOnce,
+    generalBinaryUnfolded,
+    generalUnaryUnfolded,
     unaryUnfoldOnce,
   )
 
@@ -239,3 +242,11 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
   withSbvNumTermConstraint p r = withPrim @(IntN n) p r
+
+instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
+  pevalAddNumTerm = generalBinaryUnfolded (+) addNumTerm
+  pevalNegNumTerm = generalUnaryUnfolded negate negNumTerm
+  pevalMulNumTerm = generalBinaryUnfolded (*) mulNumTerm
+  pevalAbsNumTerm = generalUnaryUnfolded abs absNumTerm
+  pevalSignumNumTerm = generalUnaryUnfolded signum signumNumTerm
+  withSbvNumTermConstraint p r = withPrim @(FP eb sb) p r
