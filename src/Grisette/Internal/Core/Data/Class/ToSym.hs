@@ -53,6 +53,7 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.BV
   ( IntN,
@@ -75,7 +76,6 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast(bitCast))
 
 -- $setup
 -- >>> import Grisette.SymPrim
