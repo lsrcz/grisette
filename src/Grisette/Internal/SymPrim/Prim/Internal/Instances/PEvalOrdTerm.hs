@@ -38,6 +38,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalSubNumTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
+import Grisette.Internal.SymPrim.FP (ValidFP, FP)
 
 -- Lt
 pevalGeneralLtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
@@ -110,3 +111,8 @@ instance (KnownNat n, 1 <= n) => PEvalOrdTerm (IntN n) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
   withSbvOrdTermConstraint p r = withPrim @(IntN n) p r
+
+instance (ValidFP eb sb) => PEvalOrdTerm (FP eb sb) where
+  pevalLtOrdTerm = pevalGeneralLtOrdTerm
+  pevalLeOrdTerm = pevalGeneralLeOrdTerm
+  withSbvOrdTermConstraint p r = withPrim @(FP eb sb) p r
