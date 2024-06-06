@@ -173,6 +173,7 @@ import qualified Data.SBV.Trans.Control as SBVTC
 import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast)
 import GHC.Exts (sortWith)
+import GHC.Generics (Generic)
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
@@ -186,6 +187,7 @@ import Grisette.Internal.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
   )
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( typeMemoizedCache,
   )
@@ -219,8 +221,6 @@ import Prettyprinter
     PageWidth(Unbounded, AvailablePerLine),
     Pretty(pretty),
   )
-import Grisette.Internal.SymPrim.FP (ValidFP, FP)
-import GHC.Generics (Generic)
 #else
 import Data.Text.Prettyprint.Doc
   ( column,
@@ -1569,7 +1569,7 @@ instance (SupportedPrim t) => Interned (Term t) where
     DModIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DQuotIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRemIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
-    DFPTraitTerm :: {-# UNPACK #-} !FPTrait -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DFPTraitTerm :: FPTrait -> {-# UNPACK #-} !Id -> Description (Term Bool)
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name

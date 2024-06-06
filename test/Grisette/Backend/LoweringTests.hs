@@ -767,8 +767,12 @@ loweringTests =
               testCase "ITE" $ do
                 let precond _ l r =
                       pevalAndTerm
-                        (pevalNotTerm $ pevalFPTraitTerm FPIsNaN l)
-                        (pevalNotTerm $ pevalFPTraitTerm FPIsNaN r)
+                        ( pevalNotTerm $
+                            pevalFPTraitTerm FPIsNaN (l :: Term FP32)
+                        )
+                        ( pevalNotTerm $
+                            pevalFPTraitTerm FPIsNaN (r :: Term FP32)
+                        )
                 testTernaryOpLowering @Bool @FP32 @FP32 @FP32
                   unboundedConfig
                   precond

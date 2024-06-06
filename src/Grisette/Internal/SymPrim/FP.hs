@@ -132,7 +132,7 @@ withValidFPProofs r =
         withLeqProof (unsafeLeqProof @1 @sb) $
           bvIsNonZeroFromGEq1 (Proxy @(eb + sb)) r
 
-instance (ValidFP eb sb, r ~ eb + sb) => BitCast (FP eb sb) (WordN r) where
+instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (WordN r) where
   bitCast (FP f)
     | isNaN f =
         withValidFPProofs @eb @sb $
@@ -150,10 +150,10 @@ instance (ValidFP eb sb, r ~ eb + sb) => BitCast (FP eb sb) (WordN r) where
                 sFloatingPointAsSWord $
                   literal f
 
-instance (ValidFP eb sb, r ~ eb + sb) => BitCast (FP eb sb) (IntN r) where
+instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (IntN r) where
   bitCast x = withValidFPProofs @eb @sb bitCast (bitCast x :: WordN r)
 
-instance (ValidFP eb sb, r ~ eb + sb) => BitCast (WordN r) (FP eb sb) where
+instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (WordN r) (FP eb sb) where
   bitCast v = FP fp
     where
       sword :: SWord r
@@ -165,7 +165,7 @@ instance (ValidFP eb sb, r ~ eb + sb) => BitCast (WordN r) (FP eb sb) where
             unliteral $
               sWordAsSFloatingPoint sword
 
-instance (ValidFP eb sb, r ~ eb + sb) => BitCast (IntN r) (FP eb sb) where
+instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (IntN r) (FP eb sb) where
   bitCast x = withValidFPProofs @eb @sb $ bitCast (bitCast x :: WordN (eb + sb))
 
 #define BITCAST_VIA_INTERMEDIATE(from, to, intermediate) \
