@@ -13,9 +13,21 @@ module Grisette.Backend.TermRewritingTests
 where
 
 import Data.Foldable (traverse_)
-import Data.SBV (SMTConfig (transcript), bitwuzla)
+import Data.SBV (SMTConfig (transcript))
+#if MIN_VERSION_sbv(8,17,0)
+import Data.SBV (bitwuzla)
+#endif
 import qualified Data.SBV as SBV
-import Grisette (GrisetteSMTConfig, IntN, LogicalOp (symNot), Solvable (con), SymBool (SymBool), WordN, precise, solve)
+import Grisette
+  ( GrisetteSMTConfig,
+    IntN,
+    LogicalOp (symNot),
+    Solvable (con),
+    SymBool (SymBool),
+    WordN,
+    precise,
+    solve,
+  )
 import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
     BoolWithLIASpec,
