@@ -55,6 +55,7 @@ import GHC.Generics
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
@@ -65,6 +66,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -83,8 +85,6 @@ import Prettyprinter
     Doc,
     Pretty(pretty),
   )
-import Grisette.Internal.SymPrim.FP (ValidFP, FP)
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 #else
 import Data.Text.Prettyprint.Doc
   ( (<+>),
