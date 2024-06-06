@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
@@ -27,7 +28,15 @@
 module Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch (..),
     IntN (..),
+    IntN8,
+    IntN16,
+    IntN32,
+    IntN64,
     WordN (..),
+    WordN8,
+    WordN16,
+    WordN32,
+    WordN64,
   )
 where
 
@@ -62,6 +71,8 @@ import Data.Bits
 import Data.Hashable (Hashable)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Proxy (Proxy (Proxy))
+import Data.SBV (Int16, Int32, Int64, Int8, Word8)
+import Data.Word (Word16, Word32, Word64)
 import GHC.Enum
   ( boundedEnumFrom,
     boundedEnumFromThen,
@@ -85,6 +96,7 @@ import GHC.TypeNats
     type (+),
     type (<=),
   )
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV
       ( sizedBVConcat,
@@ -129,6 +141,14 @@ instance Exception BitwidthMismatch where
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
   deriving (Eq, Ord, Generic, Lift, Hashable, NFData)
 
+type WordN8 = WordN 8
+
+type WordN16 = WordN 16
+
+type WordN32 = WordN 32
+
+type WordN64 = WordN 64
+
 instance (KnownNat n, 1 <= n) => Show (WordN n) where
   show (WordN w) = if (bitwidth `mod` 4) == 0 then hexRepPre ++ hexRep else binRepPre ++ binRep
     where
@@ -170,6 +190,14 @@ instance (KnownNat n, 1 <= n) => Read (WordN n) where
 -- Symbolic signed bit vectors.
 newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
   deriving (Eq, Generic, Lift, Hashable, NFData)
+
+type IntN8 = IntN 8
+
+type IntN16 = IntN 16
+
+type IntN32 = IntN 32
+
+type IntN64 = IntN 64
 
 instance (KnownNat n, 1 <= n) => Show (IntN n) where
   show (IntN w) = if (bitwidth `mod` 4) == 0 then hexRepPre ++ hexRep else binRepPre ++ binRep
@@ -494,3 +522,66 @@ deriving via
   (DefaultFiniteBitsSymRotate (WordN n))
   instance
     (KnownNat n, 1 <= n) => SymRotate (WordN n)
+
+#define BITCAST_FROM_INTEGRAL(from, to) \
+  instance BitCast (from) (to) where \
+    bitCast = fromIntegral
+
+#if 1
+BITCAST_FROM_INTEGRAL(WordN 8, Word8)
+BITCAST_FROM_INTEGRAL(WordN 16, Word16)
+BITCAST_FROM_INTEGRAL(WordN 32, Word32)
+BITCAST_FROM_INTEGRAL(WordN 64, Word64)
+BITCAST_FROM_INTEGRAL(WordN 8, Int8)
+BITCAST_FROM_INTEGRAL(WordN 16, Int16)
+BITCAST_FROM_INTEGRAL(WordN 32, Int32)
+BITCAST_FROM_INTEGRAL(WordN 64, Int64)
+
+BITCAST_FROM_INTEGRAL(Word8, WordN 8)
+BITCAST_FROM_INTEGRAL(Word16, WordN 16)
+BITCAST_FROM_INTEGRAL(Word32, WordN 32)
+BITCAST_FROM_INTEGRAL(Word64, WordN 64)
+BITCAST_FROM_INTEGRAL(Int8, WordN 8)
+BITCAST_FROM_INTEGRAL(Int16, WordN 16)
+BITCAST_FROM_INTEGRAL(Int32, WordN 32)
+BITCAST_FROM_INTEGRAL(Int64, WordN 64)
+
+BITCAST_FROM_INTEGRAL(IntN 8, Word8)
+BITCAST_FROM_INTEGRAL(IntN 16, Word16)
+BITCAST_FROM_INTEGRAL(IntN 32, Word32)
+BITCAST_FROM_INTEGRAL(IntN 64, Word64)
+BITCAST_FROM_INTEGRAL(IntN 8, Int8)
+BITCAST_FROM_INTEGRAL(IntN 16, Int16)
+BITCAST_FROM_INTEGRAL(IntN 32, Int32)
+BITCAST_FROM_INTEGRAL(IntN 64, Int64)
+
+BITCAST_FROM_INTEGRAL(Word8, IntN 8)
+BITCAST_FROM_INTEGRAL(Word16, IntN 16)
+BITCAST_FROM_INTEGRAL(Word32, IntN 32)
+BITCAST_FROM_INTEGRAL(Word64, IntN 64)
+BITCAST_FROM_INTEGRAL(Int8, IntN 8)
+BITCAST_FROM_INTEGRAL(Int16, IntN 16)
+BITCAST_FROM_INTEGRAL(Int32, IntN 32)
+BITCAST_FROM_INTEGRAL(Int64, IntN 64)
+#endif
+
+instance (KnownNat n, 1 <= n) => BitCast (WordN n) (IntN n) where
+  bitCast (WordN i) = IntN i
+
+instance (KnownNat n, 1 <= n) => BitCast (IntN n) (WordN n) where
+  bitCast (IntN i) = WordN i
+
+#define BITCAST_VIA_WORDx(from, to, intermediate) \
+  instance BitCast (from) (to) where \
+    bitCast x = bitCast (bitCast x :: intermediate)
+
+#if 1
+BITCAST_VIA_WORDx(WordN64, Double, Word64)
+BITCAST_VIA_WORDx(Double, WordN64, Word64)
+BITCAST_VIA_WORDx(IntN64, Double, Word64)
+BITCAST_VIA_WORDx(Double, IntN64, Word64)
+BITCAST_VIA_WORDx(WordN32, Float, Word32)
+BITCAST_VIA_WORDx(Float, WordN32, Word32)
+BITCAST_VIA_WORDx(IntN32, Float, Word32)
+BITCAST_VIA_WORDx(Float, IntN32, Word32)
+#endif

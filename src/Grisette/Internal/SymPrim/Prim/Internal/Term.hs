@@ -893,11 +893,34 @@ someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
 
 -- Terms
 
-data FPTrait = FPIsNaN
+data FPTrait
+  = FPIsNaN
+  | FPIsPositive
+  | FPIsNegative
+  | FPIsPositiveInfinite
+  | FPIsNegativeInfinite
+  | FPIsInfinite
+  | FPIsPositiveZero
+  | FPIsNegativeZero
+  | FPIsZero
+  | FPIsNormal
+  | FPIsSubnormal
+  | FPIsPoint
   deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
 
 instance Show FPTrait where
-  show FPIsNaN = "isnan"
+  show FPIsNaN = "is_nan"
+  show FPIsPositive = "is_pos"
+  show FPIsNegative = "is_neg"
+  show FPIsPositiveInfinite = "is_pos_inf"
+  show FPIsNegativeInfinite = "is_neg_inf"
+  show FPIsInfinite = "is_inf"
+  show FPIsPositiveZero = "is_pos_zero"
+  show FPIsNegativeZero = "is_neg_zero"
+  show FPIsZero = "is_zero"
+  show FPIsNormal = "is_normal"
+  show FPIsSubnormal = "is_subnormal"
+  show FPIsPoint = "is_point"
 
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t

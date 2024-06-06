@@ -23,8 +23,11 @@ module Grisette.Backend.TermRewritingGen
     BoolWithLIASpec (..),
     LIAWithBoolSpec (..),
     BoolOnlySpec (..),
+    constructUnarySpec,
     constructUnarySpec',
+    constructBinarySpec,
     constructBinarySpec',
+    constructTernarySpec,
     constructTernarySpec',
     divIntegralSpec,
     modIntegralSpec,
@@ -44,6 +47,8 @@ module Grisette.Backend.TermRewritingGen
     rotateLeftSpec,
     rotateRightSpec,
     xorBitsSpec,
+    IEEEFP32TraitsSpec (..),
+    singleFP32TraitsSpecGen,
   )
 where
 
@@ -53,8 +58,23 @@ import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
+import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
+    FPTrait
+      ( FPIsInfinite,
+        FPIsNaN,
+        FPIsNegative,
+        FPIsNegativeInfinite,
+        FPIsNegativeZero,
+        FPIsNormal,
+        FPIsPoint,
+        FPIsPositive,
+        FPIsPositiveInfinite,
+        FPIsPositiveZero,
+        FPIsSubnormal,
+        FPIsZero
+      ),
     PEvalBVTerm
       ( pevalBVConcatTerm,
         pevalBVExtendTerm,
@@ -106,6 +126,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     constructUnary,
     divIntegralTerm,
     eqTerm,
+    fpTraitTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
@@ -117,6 +138,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     orTerm,
     pevalAndTerm,
     pevalEqTerm,
+    pevalFPTraitTerm,
     pevalNotTerm,
     pevalOrTerm,
     pformat,
@@ -835,3 +857,56 @@ instance (SupportedPrim s) => TermRewritingSpec (GeneralSpec s) s where
   rewriteVer (GeneralSpec _ r) = r
   wrap = GeneralSpec
   same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+data IEEEFP32Spec = IEEEFP32Spec (Term FP32) (Term FP32)
+
+instance Show IEEEFP32Spec where
+  show (IEEEFP32Spec n r) =
+    "IEEEFP32Spec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec IEEEFP32Spec FP32 where
+  norewriteVer (IEEEFP32Spec n _) = n
+  rewriteVer (IEEEFP32Spec _ r) = r
+  wrap = IEEEFP32Spec
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+data IEEEFP32TraitsSpec = IEEEFP32TraitsSpec (Term Bool) (Term Bool)
+
+instance Show IEEEFP32TraitsSpec where
+  show (IEEEFP32TraitsSpec n r) =
+    "IEEEFP32TraitsSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec IEEEFP32TraitsSpec Bool where
+  norewriteVer (IEEEFP32TraitsSpec n _) = n
+  rewriteVer (IEEEFP32TraitsSpec _ r) = r
+  wrap = IEEEFP32TraitsSpec
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+singleFP32TraitsSpecGen :: Gen IEEEFP32TraitsSpec
+singleFP32TraitsSpecGen = do
+  v :: FP32 <- arbitrary
+  unary :: IEEEFP32Spec <- oneof [return $ conSpec v, return $ symSpec "a"]
+  oneof $
+    ( \trait ->
+        return $
+          constructUnarySpec
+            (fpTraitTerm trait)
+            (pevalFPTraitTerm trait)
+            unary
+    )
+      <$> [ FPIsNaN,
+            FPIsPositive,
+            FPIsNegative,
+            FPIsPositiveInfinite,
+            FPIsNegativeInfinite,
+            FPIsInfinite,
+            FPIsPositiveZero,
+            FPIsNegativeZero,
+            FPIsZero,
+            FPIsNormal,
+            FPIsSubnormal,
+            FPIsPoint
+          ]
+
+instance Arbitrary IEEEFP32TraitsSpec where
+  arbitrary = singleFP32TraitsSpecGen

@@ -58,7 +58,7 @@ import Grisette.Internal.SymPrim.BV
   ( IntN,
     WordN,
   )
-import Grisette.Internal.SymPrim.FP (FP, ValidFP, doubleAsFP64, floatAsFP32)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -75,6 +75,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast(bitCast))
 
 -- $setup
 -- >>> import Grisette.SymPrim
@@ -293,11 +294,11 @@ TOSYM_MACHINE_INTEGER(Word, SymWordN $intBitwidthQ)
 #endif
 
 instance ToSym Float SymFP32 where
-  toSym = con . floatAsFP32
+  toSym = con . bitCast
   {-# INLINE toSym #-}
 
 instance ToSym Double SymFP64 where
-  toSym = con . doubleAsFP64
+  toSym = con . bitCast
   {-# INLINE toSym #-}
 
 -- Exception

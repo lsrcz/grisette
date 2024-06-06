@@ -1,8 +1,21 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEFPTraits (..),
+  ( fpIsNaN,
+    fpIsPositiveZero,
+    fpIsNegativeZero,
+    fpIsPositiveInfinite,
+    fpIsNegativeInfinite,
+    fpIsPositive,
+    fpIsNegative,
+    fpIsInfinite,
+    fpIsZero,
+    fpIsNormal,
+    fpIsSubnormal,
+    fpIsPoint,
     SymIEEEFPTraits (..),
     IEEEConstants (..),
   )
@@ -14,69 +27,249 @@ import Grisette.Internal.SymPrim.FP (FP (FP), ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   ( pevalFPTraitTerm,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Term (FPTrait (FPIsNaN))
+import Grisette.Internal.SymPrim.Prim.Internal.Term
+  ( FPTrait
+      ( FPIsInfinite,
+        FPIsNaN,
+        FPIsNegative,
+        FPIsNegativeInfinite,
+        FPIsNegativeZero,
+        FPIsNormal,
+        FPIsPoint,
+        FPIsPositive,
+        FPIsPositiveInfinite,
+        FPIsPositiveZero,
+        FPIsSubnormal,
+        FPIsZero
+      ),
+  )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 
--- | A class for traits of IEEE floating-point numbers.
-class IEEEFPTraits a where
-  -- | Check if a floating-point number is not-a-number.
-  fpIsNaN :: a -> Bool
+-- | Check if a floating-point number is not-a-number.
+fpIsNaN :: (RealFloat a) => a -> Bool
+fpIsNaN = isNaN
+{-# INLINE fpIsNaN #-}
+
+-- | Check if a floating-point number is positive zero.
+fpIsPositiveZero :: (RealFloat a) => a -> Bool
+fpIsPositiveZero x = x == 0 && not (fpIsNegativeZero x)
+{-# INLINE fpIsPositiveZero #-}
+
+-- | Check if a floating-point number is negative zero.
+fpIsNegativeZero :: (RealFloat a) => a -> Bool
+fpIsNegativeZero = isNegativeZero
+{-# INLINE fpIsNegativeZero #-}
+
+-- | Check if a floating-point number is positive infinite.
+fpIsPositiveInfinite :: (RealFloat a) => a -> Bool
+fpIsPositiveInfinite x = isInfinite x && x > 0
+{-# INLINE fpIsPositiveInfinite #-}
+
+-- | Check if a floating-point number is negative infinite.
+fpIsNegativeInfinite :: (RealFloat a) => a -> Bool
+fpIsNegativeInfinite x = isInfinite x && x < 0
+{-# INLINE fpIsNegativeInfinite #-}
+
+-- | Check if a floating-point number is positive.
+-- +0, +inf are considered positive. nan, -0, -inf are not positive.
+fpIsPositive :: (RealFloat a) => a -> Bool
+fpIsPositive x = not (fpIsNaN x) && (x > 0 || fpIsPositiveZero x)
+{-# INLINE fpIsPositive #-}
+
+-- | Check if a floating-point number is negative.
+-- -0, -inf are considered negative. nan, +0, +inf are not negative.
+fpIsNegative :: (RealFloat a) => a -> Bool
+fpIsNegative = isNegativeZero
+{-# INLINE fpIsNegative #-}
+
+-- | Check if a floating-point number is infinite.
+fpIsInfinite :: (RealFloat a) => a -> Bool
+fpIsInfinite x = fpIsPositiveInfinite x || fpIsNegativeInfinite x
+{-# INLINE fpIsInfinite #-}
+
+-- | Check if a floating-point number is zero.
+fpIsZero :: (RealFloat a) => a -> Bool
+fpIsZero x = fpIsPositiveZero x || fpIsNegativeZero x
+{-# INLINE fpIsZero #-}
+
+-- | Check if a floating-point number is normal, i.e., not 0, not inf, not
+-- nan, and not denormalized.
+fpIsNormal :: (RealFloat a) => a -> Bool
+fpIsNormal x =
+  not (fpIsZero x)
+    && not (fpIsSubnormal x)
+    && not (fpIsInfinite x)
+    && not (fpIsNaN x)
+{-# INLINE fpIsNormal #-}
+
+-- | Check if a floating-point number is subnormal, i.e., denormalized. 0,
+-- inf, or nan are not subnormal.
+fpIsSubnormal :: (RealFloat a) => a -> Bool
+fpIsSubnormal = isDenormalized
+{-# INLINE fpIsSubnormal #-}
+
+-- | Check if a floating-point number is a point, i.e., not inf, not nan.
+fpIsPoint :: (RealFloat a) => a -> Bool
+fpIsPoint x = not (fpIsInfinite x) && not (fpIsNaN x)
+{-# INLINE fpIsPoint #-}
 
 -- | A class for symbolic traits of IEEE floating-point numbers.
 class SymIEEEFPTraits a where
   -- | Check if a symbolic floating-point number is not-a-number.
   symFpIsNaN :: a -> SymBool
 
+  -- | Check if a symbolic floating-point number is positive.
+  -- +0, +inf are considered positive. nan, -0, -inf are not positive.
+  symFpIsPositive :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is negative.
+  -- -0, -inf are considered negative. nan, +0, +inf are not negative.
+  symFpIsNegative :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is positive infinite.
+  symFpIsPositiveInfinite :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is negative infinite.
+  symFpIsNegativeInfinite :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is infinite.
+  symFpIsInfinite :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is positive zero.
+  symFpIsPositiveZero :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is negative zero.
+  symFpIsNegativeZero :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is zero.
+  symFpIsZero :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is normal, i.e., not 0, not
+  -- inf, not nan, and not denormalized.
+  symFpIsNormal :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is subnormal, i.e.,
+  -- denormalized. 0, inf, or nan are not subnormal.
+  symFpIsSubnormal :: a -> SymBool
+
+  -- | Check if a symbolic floating-point number is a point, i.e., not inf, not
+  -- nan.
+  symFpIsPoint :: a -> SymBool
+
+newtype ConcreteFloat f = ConcreteFloat f
+
+instance (RealFloat f) => SymIEEEFPTraits (ConcreteFloat f) where
+  symFpIsNaN (ConcreteFloat x) = con $ fpIsNaN x
+  {-# INLINE symFpIsNaN #-}
+
+  symFpIsPositive (ConcreteFloat x) = con $ fpIsPositive x
+  {-# INLINE symFpIsPositive #-}
+
+  symFpIsNegative (ConcreteFloat x) = con $ fpIsNegative x
+  {-# INLINE symFpIsNegative #-}
+
+  symFpIsInfinite (ConcreteFloat x) = con $ fpIsInfinite x
+  {-# INLINE symFpIsInfinite #-}
+
+  symFpIsPositiveInfinite (ConcreteFloat x) = con $ fpIsPositiveInfinite x
+  {-# INLINE symFpIsPositiveInfinite #-}
+
+  symFpIsNegativeInfinite (ConcreteFloat x) = con $ fpIsNegativeInfinite x
+  {-# INLINE symFpIsNegativeInfinite #-}
+
+  symFpIsPositiveZero (ConcreteFloat x) = con $ fpIsPositiveZero x
+  {-# INLINE symFpIsPositiveZero #-}
+
+  symFpIsNegativeZero (ConcreteFloat x) = con $ fpIsNegativeZero x
+  {-# INLINE symFpIsNegativeZero #-}
+
+  symFpIsZero (ConcreteFloat x) = con $ fpIsZero x
+  {-# INLINE symFpIsZero #-}
+
+  symFpIsNormal (ConcreteFloat x) = con $ fpIsNormal x
+  {-# INLINE symFpIsNormal #-}
+
+  symFpIsSubnormal (ConcreteFloat x) = con $ fpIsSubnormal x
+  {-# INLINE symFpIsSubnormal #-}
+
+  symFpIsPoint (ConcreteFloat x) = con $ fpIsPoint x
+  {-# INLINE symFpIsPoint #-}
+
+deriving via (ConcreteFloat Float) instance SymIEEEFPTraits Float
+
+deriving via (ConcreteFloat Double) instance SymIEEEFPTraits Double
+
+deriving via
+  (ConcreteFloat (FP eb sb))
+  instance
+    (ValidFP eb sb) => SymIEEEFPTraits (FP eb sb)
+
+instance (ValidFP eb sb) => SymIEEEFPTraits (SymFP eb sb) where
+  symFpIsNaN (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNaN x
+  {-# INLINE symFpIsNaN #-}
+  symFpIsPositive (SymFP x) = SymBool $ pevalFPTraitTerm FPIsPositive x
+  {-# INLINE symFpIsPositive #-}
+  symFpIsNegative (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNegative x
+  {-# INLINE symFpIsNegative #-}
+  symFpIsInfinite (SymFP x) = SymBool $ pevalFPTraitTerm FPIsInfinite x
+  {-# INLINE symFpIsInfinite #-}
+  symFpIsPositiveInfinite (SymFP x) =
+    SymBool $ pevalFPTraitTerm FPIsPositiveInfinite x
+  {-# INLINE symFpIsPositiveInfinite #-}
+  symFpIsNegativeInfinite (SymFP x) =
+    SymBool $ pevalFPTraitTerm FPIsNegativeInfinite x
+  {-# INLINE symFpIsNegativeInfinite #-}
+  symFpIsPositiveZero (SymFP x) = SymBool $ pevalFPTraitTerm FPIsPositiveZero x
+  {-# INLINE symFpIsPositiveZero #-}
+  symFpIsNegativeZero (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNegativeZero x
+  {-# INLINE symFpIsNegativeZero #-}
+  symFpIsZero (SymFP x) = SymBool $ pevalFPTraitTerm FPIsZero x
+  {-# INLINE symFpIsZero #-}
+  symFpIsNormal (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNormal x
+  {-# INLINE symFpIsNormal #-}
+  symFpIsSubnormal (SymFP x) = SymBool $ pevalFPTraitTerm FPIsSubnormal x
+  {-# INLINE symFpIsSubnormal #-}
+  symFpIsPoint (SymFP x) = SymBool $ pevalFPTraitTerm FPIsPoint x
+  {-# INLINE symFpIsPoint #-}
+
 -- | Constants for IEEE floating-point numbers.
 class IEEEConstants a where
   -- | Positive infinity.
-  fpPosInf :: a
+  fpPositiveInfinite :: a
 
   -- | Negative infinity.
-  fpNegInf :: a
+  fpNegativeInfinite :: a
 
   -- | Not-a-number.
   fpNaN :: a
 
   -- | Negative zero.
-  fpNegZero :: a
+  fpNegativeZero :: a
 
   -- | Positive zero.
-  fpPosZero :: a
-
-instance (ValidFP eb sb) => IEEEFPTraits (FP eb sb) where
-  fpIsNaN (FP x) = isNaN x
-  {-# INLINE fpIsNaN #-}
-
-instance (ValidFP eb sb) => SymIEEEFPTraits (FP eb sb) where
-  symFpIsNaN x = con $ fpIsNaN x
-  {-# INLINE symFpIsNaN #-}
+  fpPositiveZero :: a
 
 instance (ValidFP eb sb) => IEEEConstants (FP eb sb) where
-  fpPosInf = FP infinity
-  {-# INLINE fpPosInf #-}
-  fpNegInf = FP $ -infinity
-  {-# INLINE fpNegInf #-}
+  fpPositiveInfinite = FP infinity
+  {-# INLINE fpPositiveInfinite #-}
+  fpNegativeInfinite = FP $ -infinity
+  {-# INLINE fpNegativeInfinite #-}
   fpNaN = FP nan
   {-# INLINE fpNaN #-}
-  fpNegZero = FP $ -0
-  {-# INLINE fpNegZero #-}
-  fpPosZero = FP 0
-  {-# INLINE fpPosZero #-}
-
-instance (ValidFP eb sb) => SymIEEEFPTraits (SymFP eb sb) where
-  symFpIsNaN (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNaN x
-  {-# INLINE symFpIsNaN #-}
+  fpNegativeZero = FP $ -0
+  {-# INLINE fpNegativeZero #-}
+  fpPositiveZero = FP 0
+  {-# INLINE fpPositiveZero #-}
 
 instance (ValidFP eb sb) => IEEEConstants (SymFP eb sb) where
-  fpPosInf = con fpPosInf
-  fpNegInf = con fpNegInf
+  fpPositiveInfinite = con fpPositiveInfinite
+  {-# INLINE fpPositiveInfinite #-}
+  fpNegativeInfinite = con fpNegativeInfinite
+  {-# INLINE fpNegativeInfinite #-}
   fpNaN = con fpNaN
-  fpNegZero = con fpNegZero
-  fpPosZero = con fpPosZero
-  {-# INLINE fpPosInf #-}
-  {-# INLINE fpNegInf #-}
   {-# INLINE fpNaN #-}
-  {-# INLINE fpNegZero #-}
-  {-# INLINE fpPosZero #-}
+  fpNegativeZero = con fpNegativeZero
+  {-# INLINE fpNegativeZero #-}
+  fpPositiveZero = con fpPositiveZero
+  {-# INLINE fpPositiveZero #-}

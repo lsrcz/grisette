@@ -1,46 +1,51 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 module Grisette.SymPrim.FPTests (fpTests) where
 
-import Data.Array.ST (MArray, STUArray, newArray, readArray)
-import Data.Array.Unsafe (castSTUArray)
 import Data.Word (Word32, Word64)
-import GHC.ST (ST, runST)
-import Grisette.Internal.SymPrim.FP
-  ( FP32,
-    FP64,
-    doubleAsFP64,
-    floatAsFP32,
-    fp32AsFloat,
-    fp64AsDouble,
-    fpAsWordN,
-    wordNAsFP,
+import Grisette (WordN)
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEConstants
+      ( fpNaN,
+        fpNegativeInfinite,
+        fpNegativeZero,
+        fpPositiveInfinite,
+        fpPositiveZero
+      ),
+    SymIEEEFPTraits
+      ( symFpIsInfinite,
+        symFpIsNaN,
+        symFpIsNegative,
+        symFpIsNegativeInfinite,
+        symFpIsNegativeZero,
+        symFpIsNormal,
+        symFpIsPoint,
+        symFpIsPositive,
+        symFpIsPositiveInfinite,
+        symFpIsPositiveZero,
+        symFpIsSubnormal,
+        symFpIsZero
+      ),
+    fpIsNaN,
+    fpIsNegativeInfinite,
+    fpIsNegativeZero,
+    fpIsPositiveInfinite,
+    fpIsPositiveZero,
   )
+import Grisette.Internal.SymPrim.FP (FP32)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (assertBool, (@?=))
 import Test.QuickCheck (ioProperty)
-
-wordToFloat :: Word32 -> Float
-wordToFloat x = runST (cast x)
-
-floatToWord :: Float -> Word32
-floatToWord x = runST (cast x)
-
-wordToDouble :: Word64 -> Double
-wordToDouble x = runST (cast x)
-
-{-# INLINE cast #-}
-cast ::
-  ( MArray (STUArray s) a (ST s),
-    MArray (STUArray s) b (ST s)
-  ) =>
-  a ->
-  ST s b
-cast x = newArray (0 :: Int, 0) x >>= castSTUArray >>= flip readArray 0
 
 sameFP :: forall a b. (RealFloat a, RealFloat b) => a -> b -> Bool
 sameFP x y
@@ -70,43 +75,215 @@ fp64ConversionTest testFun =
     testCase "-0" $ testFun 0x8000000000000000
   ]
 
+unaryOpComplianceWithFloat ::
+  String ->
+  (FP32 -> a) ->
+  (Float -> b) ->
+  (a -> b -> Bool) ->
+  Test
+unaryOpComplianceWithFloat name fpOp floatOp cmp =
+  testProperty name $ \x ->
+    let x' = bitCast x
+        actual = fpOp x
+        expected = floatOp x'
+     in cmp actual expected
+
+binOpComplianceWithFloat ::
+  String ->
+  (FP32 -> FP32 -> a) ->
+  (Float -> Float -> b) ->
+  (a -> b -> Bool) ->
+  Test
+binOpComplianceWithFloat name fpOp floatOp cmp =
+  testProperty name $ \x y ->
+    let x' = bitCast x
+        y' = bitCast y
+        actual = fpOp x y
+        expected = floatOp x' y'
+     in cmp actual expected
+
 fpTests :: Test
 fpTests =
   testGroup
     "FP"
     [ testGroup
         "bitcast"
-        [ testGroup "wordNAsFP" $
+        [ testGroup "WordN -> FP" $
             fp32ConversionTest $ \(x :: Word32) -> do
-              let fp = wordNAsFP $ fromIntegral x :: FP32
-              let float = wordToFloat x
+              let fp = bitCast x :: FP32
+              let float = bitCast x :: Float
               assertBool "Must be the same FP" $ sameFP fp float,
-          testGroup "fpAsWordN" $ do
+          testGroup "FP -> WordN" $ do
             fp32ConversionTest $ \(x :: Word32) -> do
-              let fp = wordToFloat x
-              let expected = if isNaN fp then 0x7fc00000 else floatToWord fp
-              let actual =
-                    fpAsWordN (wordNAsFP $ fromIntegral expected :: FP32)
-              fromIntegral actual @?= expected,
-          testGroup "fp32AsFloat" $ do
-            fp32ConversionTest $ \(x :: Word32) -> do
-              let expected = wordToFloat x
-              let actual = fp32AsFloat (wordNAsFP $ fromIntegral x)
-              assertBool "Must be the same FP" $ sameFP actual expected,
-          testGroup "floatAsFp32" $ do
-            fp32ConversionTest $ \(x :: Word32) -> do
-              let expected = floatAsFP32 $ wordToFloat x
-              let actual = wordNAsFP (fromIntegral x) :: FP32
-              assertBool "Must be the same FP" $ sameFP actual expected,
-          testGroup "fp64AsDouble" $ do
-            fp64ConversionTest $ \(x :: Word64) -> do
-              let expected = wordToDouble x
-              let actual = fp64AsDouble (wordNAsFP $ fromIntegral x)
-              assertBool "Must be the same FP" $ sameFP actual expected,
-          testGroup "doubleAsFp64" $ do
-            fp64ConversionTest $ \(x :: Word64) -> do
-              let expected = doubleAsFP64 $ wordToDouble x
-              let actual = wordNAsFP (fromIntegral x) :: FP64
-              assertBool "Must be the same FP" $ sameFP actual expected
+              let fp = bitCast x :: FP32
+              let regulated =
+                    if isNaN fp
+                      then 0x7fc00000
+                      else bitCast fp :: WordN 32
+              let actual = bitCast (bitCast regulated :: FP32)
+              actual @?= regulated
+        ],
+      testGroup
+        "Eq"
+        [ binOpComplianceWithFloat "==" (==) (==) (==),
+          binOpComplianceWithFloat "/=" (/=) (/=) (==)
+        ],
+      testGroup
+        "Ord"
+        [ binOpComplianceWithFloat "<" (<) (<) (==),
+          binOpComplianceWithFloat "<=" (<=) (<=) (==),
+          binOpComplianceWithFloat ">" (>) (>) (==),
+          binOpComplianceWithFloat ">=" (>=) (>=) (==)
+        ],
+      testGroup
+        "Num"
+        [ binOpComplianceWithFloat "+" (+) (+) sameFP,
+          binOpComplianceWithFloat "-" (-) (-) sameFP,
+          binOpComplianceWithFloat "*" (*) (*) sameFP,
+          unaryOpComplianceWithFloat "negate" negate negate sameFP,
+          unaryOpComplianceWithFloat "abs" abs abs sameFP,
+          unaryOpComplianceWithFloat "signum" signum signum sameFP,
+          testProperty "fromInteger" $ \x ->
+            let fp = fromInteger x :: FP32
+                float = fromInteger x :: Float
+             in sameFP fp float
+        ],
+      testCase "Lift" $ do
+        let x = bitCast (0x12345678 :: WordN 32) :: FP32
+        $$([||x||]) @?= x,
+      testGroup
+        "Fractional"
+        [ binOpComplianceWithFloat "/" (/) (/) sameFP,
+          unaryOpComplianceWithFloat "recip" recip recip sameFP,
+          testProperty "fromRational" $ \x ->
+            let fp = fromRational x :: FP32
+                float = fromRational x :: Float
+             in sameFP fp float
+        ],
+      testGroup
+        "Floating"
+        [ -- Only the following operations are supported in SBV
+          unaryOpComplianceWithFloat "sqrt" sqrt sqrt sameFP,
+          binOpComplianceWithFloat "(**)" (**) (**) sameFP
+        ],
+      -- Real instantce is not compliant with Float.
+      -- testGroup
+      --   "Real"
+      --   [ unaryOpComplianceWithFloat "toRational" toRational toRational (==)
+      --   ]
+      -- RealFrac instance is not compliant with Float.
+      -- testGroup
+      --   "RealFrac"
+      --   [ unaryOpComplianceWithFloat
+      --       "truncate"
+      --       truncate
+      --       truncate
+      --       ((==) @Integer),
+      --     unaryOpComplianceWithFloat "round" round round ((==) @Integer),
+      --     unaryOpComplianceWithFloat "ceiling" ceiling ceiling ((==) @Integer),
+      --     unaryOpComplianceWithFloat "floor" floor floor ((==) @Integer)
+      --   ]
+      testGroup
+        "RealFloat"
+        [ unaryOpComplianceWithFloat "floatRadix" floatRadix floatRadix (==),
+          unaryOpComplianceWithFloat "floatDigits" floatDigits floatDigits (==),
+          unaryOpComplianceWithFloat "floatRange" floatRange floatRange (==),
+          -- decodeFloat is not compliant with Float
+          -- unaryOpComplianceWithFloat "decodeFloat" decodeFloat decodeFloat (==)
+          -- encodeFloat isn't tested
+          -- exponent is not compliant with Float
+          -- unaryOpComplianceWithFloat "exponent" exponent exponent (==)
+          -- significand is not compliant with Float
+          -- unaryOpComplianceWithFloat "significand" significand significand sameFP
+          testProperty "scaleFloat" $ \i (x :: FP32) ->
+            let x' = bitCast x :: Float
+                actual = scaleFloat i x
+                expected = scaleFloat i x'
+             in sameFP actual expected,
+          testProperty "isNaN" $ \(x :: FP32) ->
+            let x' = bitCast x :: Float
+             in isNaN x == isNaN x',
+          unaryOpComplianceWithFloat "isInfinite" isInfinite isInfinite (==),
+          unaryOpComplianceWithFloat
+            "isDenormalized"
+            isDenormalized
+            isDenormalized
+            (==),
+          unaryOpComplianceWithFloat
+            "isNegativeZero"
+            isNegativeZero
+            isNegativeZero
+            (==),
+          unaryOpComplianceWithFloat "isIEEE" isIEEE isIEEE (==) -- ,
+          -- atan2 is not supported
+          -- binOpComplianceWithFloat "atan2" atan2 atan2 sameFP
+        ],
+      testGroup
+        "SymIEEEFPTraits"
+        [ unaryOpComplianceWithFloat "symFpIsNaN" symFpIsNaN symFpIsNaN (==),
+          unaryOpComplianceWithFloat
+            "symFpIsPositive"
+            symFpIsPositive
+            symFpIsPositive
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsNegative"
+            symFpIsNegative
+            symFpIsNegative
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsPositiveInfinite"
+            symFpIsPositiveInfinite
+            symFpIsPositiveInfinite
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsNegativeInfinite"
+            symFpIsNegativeInfinite
+            symFpIsNegativeInfinite
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsInfinite"
+            symFpIsInfinite
+            symFpIsInfinite
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsPositiveZero"
+            symFpIsPositiveZero
+            symFpIsPositiveZero
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsNegativeZero"
+            symFpIsNegativeZero
+            symFpIsNegativeZero
+            (==),
+          unaryOpComplianceWithFloat "symFpIsZero" symFpIsZero symFpIsZero (==),
+          unaryOpComplianceWithFloat
+            "symFpIsNormal"
+            symFpIsNormal
+            symFpIsNormal
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsSubnormal"
+            symFpIsSubnormal
+            symFpIsSubnormal
+            (==),
+          unaryOpComplianceWithFloat
+            "symFpIsPoint"
+            symFpIsPoint
+            symFpIsPoint
+            (==)
+        ],
+      testGroup
+        "IEEEConstants"
+        [ testCase "fpPositiveInfinite" $
+            fpIsPositiveInfinite (fpPositiveInfinite :: FP32) @?= True,
+          testCase "fpNegativeInfinite" $
+            fpIsNegativeInfinite (fpNegativeInfinite :: FP32) @?= True,
+          testCase "fpNaN" $
+            fpIsNaN (fpNaN :: FP32) @?= True,
+          testCase "fpPositiveZero" $
+            fpIsPositiveZero (fpPositiveZero :: FP32) @?= True,
+          testCase "fpNegativeZero" $
+            fpIsNegativeZero (fpNegativeZero :: FP32) @?= True
         ]
     ]

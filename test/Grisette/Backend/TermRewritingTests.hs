@@ -27,6 +27,7 @@ import Grisette.Backend.TermRewritingGen
     DifferentSizeBVSpec,
     FixedSizedBVWithBoolSpec,
     GeneralSpec,
+    IEEEFP32TraitsSpec (IEEEFP32TraitsSpec),
     LIAWithBoolSpec,
     TermRewritingSpec
       ( conSpec,
@@ -51,8 +52,14 @@ import Grisette.Backend.TermRewritingGen
     remIntegralSpec,
     shiftRightSpec,
   )
+import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEConstants (fpNaN))
+import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( SupportedPrim,
+  ( FPTrait (FPIsPositive),
+    SupportedPrim,
+    Term,
+    conTerm,
+    fpTraitTerm,
     pformat,
   )
 import Test.Framework (Test, TestName, testGroup)
@@ -322,5 +329,16 @@ termRewritingTests =
           divisionTest @(GeneralSpec (WordN 4)) "mod" modIntegralSpec,
           divisionTest @(GeneralSpec (WordN 4)) "quot" quotIntegralSpec,
           divisionTest @(GeneralSpec (WordN 4)) "rem" remIntegralSpec
-        ]
+        ],
+      testProperty "FPTraits" $
+        mapSize (`min` 10) $
+          ioProperty . \(x :: IEEEFP32TraitsSpec) -> do
+            validateSpec unboundedConfig x,
+      testCase "is_pos(nan)" $
+        validateSpec @IEEEFP32TraitsSpec
+          unboundedConfig
+          ( IEEEFP32TraitsSpec
+              (fpTraitTerm FPIsPositive (conTerm fpNaN :: Term FP32))
+              (conTerm False)
+          )
     ]
