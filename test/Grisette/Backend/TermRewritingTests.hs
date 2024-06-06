@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,10 +13,12 @@ module Grisette.Backend.TermRewritingTests
 where
 
 import Data.Foldable (traverse_)
+import Data.SBV (SMTConfig (transcript), bitwuzla)
 import qualified Data.SBV as SBV
 import Grisette
   ( GrisetteSMTConfig,
     IntN,
+    Solvable (con),
     SymBool (SymBool),
     WordN,
     precise,
@@ -52,7 +55,9 @@ import Grisette.Backend.TermRewritingGen
     remIntegralSpec,
     shiftRightSpec,
   )
-import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEConstants (fpNaN))
+import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEConstants (fpNaN), SymIEEEFPTraits (symFpIsPositiveInfinite))
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
+import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=)))
 import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPTrait (FPIsPositive),
@@ -62,11 +67,13 @@ import Grisette.Internal.SymPrim.Prim.Term
     fpTraitTerm,
     pformat,
   )
+import Grisette.Internal.SymPrim.SymFP (SymFP32)
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure)
 import Test.QuickCheck (ioProperty, mapSize, withMaxSuccess)
+import Grisette (LogicalOp(symNot))
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
@@ -75,10 +82,35 @@ validateSpec config a = do
   case (r, rs) of
     (Left _, Right _) -> do
       return ()
-    (Left _, Left _) -> do
+    (Left _, Left err) -> do
+      print err
       assertFailure $ "Bad rewriting with unsolvable formula: " ++ pformat (norewriteVer a) ++ " was rewritten to " ++ pformat (rewriteVer a)
     (Right m, _) -> do
       assertFailure $ "With model" ++ show m ++ "Bad rewriting: " ++ pformat (norewriteVer a) ++ " was rewritten to " ++ pformat (rewriteVer a)
+
+bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
+bitwuzlaConfig = do
+#if MIN_VERSION_sbv(8,17,0)
+  v <- solve (precise bitwuzla{transcript=Just "bad.smt2"}) $
+         ("x" :: SymFP32) ./= "x" .&&
+         symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32))
+  case v of
+    Left _ -> return Nothing
+    Right _ -> return $ Just $ precise bitwuzla
+#else
+  return Nothing
+#endif
+
+onlyWhenBitwuzlaIsAvailable :: (GrisetteSMTConfig 0 -> IO ()) -> IO ()
+onlyWhenBitwuzlaIsAvailable action = do
+  config <- bitwuzlaConfig
+  case config of
+    Just config -> action config
+    Nothing ->
+      putStrLn $
+        "bitwuzla isn't available in the system, or the dependent sbv"
+          <> " library does not work well with it. This test is marked as "
+          <> " success."
 
 unboundedConfig = precise SBV.z3
 
@@ -332,13 +364,13 @@ termRewritingTests =
         ],
       testProperty "FP32BoolOp" $
         mapSize (`min` 10) $
-          ioProperty . \(x :: IEEEFP32BoolOpSpec) -> do
-            validateSpec unboundedConfig x,
+          ioProperty . \(x :: IEEEFP32BoolOpSpec) ->
+            onlyWhenBitwuzlaIsAvailable (`validateSpec` x),
       testCase "is_pos(nan)" $
-        validateSpec @IEEEFP32BoolOpSpec
-          unboundedConfig
-          ( IEEEFP32BoolOpSpec
-              (fpTraitTerm FPIsPositive (conTerm fpNaN :: Term FP32))
-              (conTerm False)
+        onlyWhenBitwuzlaIsAvailable
+          ( flip validateSpec $
+              IEEEFP32BoolOpSpec
+                (fpTraitTerm FPIsPositive (conTerm fpNaN :: Term FP32))
+                (conTerm False)
           )
     ]

@@ -881,7 +881,16 @@ instance Arbitrary IEEEFP32Spec where
     b <-
       oneof
         [conSpec <$> arbitrary, return $ symSpec "a", return $ symSpec "b"]
-    oneof [return a, return $ iteSpec bool a b]
+    oneof $
+      return
+        <$> [ a,
+              iteSpec bool a b,
+              addNumSpec a a,
+              negNumSpec a,
+              mulNumSpec a b,
+              absNumSpec a,
+              signumNumSpec a
+            ]
 
 data IEEEFP32BoolOpSpec = IEEEFP32BoolOpSpec (Term Bool) (Term Bool)
 
@@ -897,9 +906,8 @@ instance TermRewritingSpec IEEEFP32BoolOpSpec Bool where
 
 singleFP32BoolOpSpecGen :: Gen IEEEFP32BoolOpSpec
 singleFP32BoolOpSpecGen = do
-  (v0, v1) <- arbitrary
-  s0 :: IEEEFP32Spec <- oneof [return $ conSpec v0, return $ symSpec "a"]
-  s1 :: IEEEFP32Spec <- oneof [return $ conSpec v1, return $ symSpec "b"]
+  s0 :: IEEEFP32Spec <- arbitrary
+  s1 :: IEEEFP32Spec <- arbitrary
   let traitGens =
         [ FPIsNaN,
           FPIsPositive,

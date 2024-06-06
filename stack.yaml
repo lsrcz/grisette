@@ -40,6 +40,9 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 # extra-deps: []
+extra-deps:
+- git: https://github.com/lsrcz/sbv.git
+  commit: f207855d6578ade58bb7c06fafded86d049fd922
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

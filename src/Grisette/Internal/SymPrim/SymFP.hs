@@ -27,9 +27,11 @@ import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
+    PEvalNumTerm (pevalAbsNumTerm, pevalAddNumTerm, pevalMulNumTerm, pevalNegNumTerm, pevalSignumNumTerm),
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
+    pevalSubNumTerm,
     pformat,
     symTerm,
   )
@@ -83,3 +85,12 @@ instance (ValidFP eb sb) => Show (SymFP eb sb) where
 
 instance (ValidFP eb sb) => AllSyms (SymFP eb sb) where
   allSymsS v = (SomeSym v :)
+
+instance (ValidFP eb sb) => Num (SymFP eb sb) where
+  (SymFP l) + (SymFP r) = SymFP $ pevalAddNumTerm l r
+  (SymFP l) - (SymFP r) = SymFP $ pevalSubNumTerm l r
+  (SymFP l) * (SymFP r) = SymFP $ pevalMulNumTerm l r
+  negate (SymFP v) = SymFP $ pevalNegNumTerm v
+  abs (SymFP v) = SymFP $ pevalAbsNumTerm v
+  signum (SymFP v) = SymFP $ pevalSignumNumTerm v
+  fromInteger = con . fromInteger

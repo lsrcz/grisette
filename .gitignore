@@ -27,3 +27,4 @@ cabal.project.local~
 *.o-boot
 .ipynb_checkpoints/
 .DS_Store
+*.smt2
