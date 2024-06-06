@@ -25,6 +25,7 @@ where
 import Control.Monad (msum)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (IsZeroCases (IsZeroEvidence, NonZeroEvidence), KnownIsZero (isZero))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -38,7 +39,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalSubNumTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
-import Grisette.Internal.SymPrim.FP (ValidFP, FP)
 
 -- Lt
 pevalGeneralLtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
