@@ -15,15 +15,7 @@ where
 import Data.Foldable (traverse_)
 import Data.SBV (SMTConfig (transcript), bitwuzla)
 import qualified Data.SBV as SBV
-import Grisette
-  ( GrisetteSMTConfig,
-    IntN,
-    Solvable (con),
-    SymBool (SymBool),
-    WordN,
-    precise,
-    solve,
-  )
+import Grisette (GrisetteSMTConfig, IntN, LogicalOp (symNot), Solvable (con), SymBool (SymBool), WordN, precise, solve)
 import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
     BoolWithLIASpec,
@@ -73,7 +65,6 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure)
 import Test.QuickCheck (ioProperty, mapSize, withMaxSuccess)
-import Grisette (LogicalOp(symNot))
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
