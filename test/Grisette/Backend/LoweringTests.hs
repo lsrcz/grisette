@@ -49,7 +49,7 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( FPTrait (FPIsNaN),
+  ( FPTrait (FPIsInfinite, FPIsNaN, FPIsNegative, FPIsNegativeInfinite, FPIsNegativeZero, FPIsNormal, FPIsPoint, FPIsPositive, FPIsPositiveInfinite, FPIsPositiveZero, FPIsSubnormal, FPIsZero),
     SBVRep (SBVType),
     SupportedPrim,
     Term,
@@ -775,15 +775,33 @@ loweringTests =
                   iteTerm
                   "ite"
                   SBV.ite,
-              testGroup
-                "FPTrait"
-                [ testCase "isNaN" $ do
-                    testUnaryOpLowering @FP32 @Bool
-                      unboundedConfig
-                      (fpTraitTerm FPIsNaN)
-                      "isNaN"
-                      SBV.fpIsNaN
-                ]
+              testGroup "FPTrait" $ do
+                (name, trait, op) <-
+                  [ ("isNaN", FPIsNaN, SBV.fpIsNaN),
+                    ("isPositive", FPIsPositive, SBV.fpIsPositive),
+                    ("isNegative", FPIsNegative, SBV.fpIsNegative),
+                    ( "isPositiveInfinite",
+                      FPIsPositiveInfinite,
+                      \x -> SBV.fpIsPositive x SBV..&& SBV.fpIsInfinite x
+                    ),
+                    ( "isNegativeInfinite",
+                      FPIsNegativeInfinite,
+                      \x -> SBV.fpIsNegative x SBV..&& SBV.fpIsInfinite x
+                    ),
+                    ("isInfinite", FPIsInfinite, SBV.fpIsInfinite),
+                    ("isPositiveZero", FPIsPositiveZero, SBV.fpIsPositiveZero),
+                    ("isNegativeZero", FPIsNegativeZero, SBV.fpIsNegativeZero),
+                    ("isZero", FPIsZero, SBV.fpIsZero),
+                    ("isNormal", FPIsNormal, SBV.fpIsNormal),
+                    ("isSubnormal", FPIsSubnormal, SBV.fpIsSubnormal),
+                    ("isPoint", FPIsPoint, SBV.fpIsPoint)
+                    ]
+                return $ testCase name $ do
+                  testUnaryOpLowering @FP32 @Bool
+                    unboundedConfig
+                    (fpTraitTerm trait)
+                    "isNaN"
+                    op
             ],
           testCase "TabularFun" $ do
             let f = "f" :: SymInteger =~> SymInteger =~> SymInteger

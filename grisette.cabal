@@ -59,6 +59,7 @@ library
       Grisette.Internal.Core.Control.Monad.CBMCExcept
       Grisette.Internal.Core.Control.Monad.Union
       Grisette.Internal.Core.Control.Monad.UnionM
+      Grisette.Internal.Core.Data.Class.BitCast
       Grisette.Internal.Core.Data.Class.BitVector
       Grisette.Internal.Core.Data.Class.CEGISSolver
       Grisette.Internal.Core.Data.Class.Error

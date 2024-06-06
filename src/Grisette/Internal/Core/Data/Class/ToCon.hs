@@ -45,12 +45,13 @@ import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default))
 import Generics.Deriving.Instances ()
 import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (conView), pattern Con)
 import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
   )
-import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, ValidFP, fp32AsFloat, fp64AsDouble)
+import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -300,11 +301,11 @@ TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
 #endif
 
 instance ToCon SymFP32 Float where
-  toCon (Con (fp :: FP32)) = Just $ fp32AsFloat fp
+  toCon (Con (fp :: FP32)) = Just $ bitCast fp
   toCon _ = Nothing
 
 instance ToCon SymFP64 Double where
-  toCon (Con (fp :: FP64)) = Just $ fp64AsDouble fp
+  toCon (Con (fp :: FP64)) = Just $ bitCast fp
   toCon _ = Nothing
 
 deriving via

@@ -94,7 +94,7 @@ import Data.Typeable
     type (:~:) (Refl),
   )
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeNats (KnownNat, type (<=))
+import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Generics.Deriving
   ( Default (Default),
     Default1 (Default1),
@@ -110,13 +110,14 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch,
     IntN,
     WordN,
   )
-import Grisette.Internal.SymPrim.FP (FP, ValidFP, fpAsWordN, withValidFPProofs)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP, withValidFPProofs)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
@@ -416,7 +417,10 @@ CONCRETE_ORD_MERGEABLE_BV(IntN)
 instance (ValidFP eb sb) => Mergeable (FP eb sb) where
   rootStrategy =
     let sub = SimpleStrategy $ \_ t _ -> t
-     in withValidFPProofs @eb @sb $ SortedStrategy fpAsWordN $ const sub
+     in withValidFPProofs @eb @sb
+          $ SortedStrategy
+            (\fp -> (bitCast fp :: WordN (eb + sb)))
+          $ const sub
 
 -- ()
 deriving via (Default ()) instance Mergeable ()
