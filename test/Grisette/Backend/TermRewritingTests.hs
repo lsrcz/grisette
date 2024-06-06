@@ -27,7 +27,7 @@ import Grisette.Backend.TermRewritingGen
     DifferentSizeBVSpec,
     FixedSizedBVWithBoolSpec,
     GeneralSpec,
-    IEEEFP32TraitsSpec (IEEEFP32TraitsSpec),
+    IEEEFP32BoolOpSpec (IEEEFP32BoolOpSpec),
     LIAWithBoolSpec,
     TermRewritingSpec
       ( conSpec,
@@ -330,14 +330,14 @@ termRewritingTests =
           divisionTest @(GeneralSpec (WordN 4)) "quot" quotIntegralSpec,
           divisionTest @(GeneralSpec (WordN 4)) "rem" remIntegralSpec
         ],
-      testProperty "FPTraits" $
+      testProperty "FP32BoolOp" $
         mapSize (`min` 10) $
-          ioProperty . \(x :: IEEEFP32TraitsSpec) -> do
+          ioProperty . \(x :: IEEEFP32BoolOpSpec) -> do
             validateSpec unboundedConfig x,
       testCase "is_pos(nan)" $
-        validateSpec @IEEEFP32TraitsSpec
+        validateSpec @IEEEFP32BoolOpSpec
           unboundedConfig
-          ( IEEEFP32TraitsSpec
+          ( IEEEFP32BoolOpSpec
               (fpTraitTerm FPIsPositive (conTerm fpNaN :: Term FP32))
               (conTerm False)
           )

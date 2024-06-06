@@ -418,7 +418,8 @@ class
   sbvEq _ = (SBV..==)
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
 
-parseSMTModelResultError :: TypeRep a -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> a
+parseSMTModelResultError ::
+  (HasCallStack) => TypeRep a -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> a
 parseSMTModelResultError ty cv =
   error $
     "BUG: cannot parse SBV model value \""

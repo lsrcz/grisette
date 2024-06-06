@@ -60,6 +60,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SupportedPrimConstraint
       ( PrimConstraint
       ),
+    Term (ConTerm),
+    conTerm,
+    eqTerm,
     parseSMTModelResultError,
     pevalDefaultEqTerm,
     pevalITEBasicTerm,
@@ -192,7 +195,9 @@ instance (ValidFP eb sb) => SBVRep (FP eb sb) where
 instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm l@ConTerm {} r@ConTerm {} = conTerm $ l == r
+  pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
+  pevalEqTerm l r = eqTerm l r
   conSBVTerm _ (FP fp) = SBV.literal fp
   symSBVName symbol _ = show symbol
   symSBVTerm _ name = sbvFresh name
@@ -200,6 +205,14 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   parseSMTModelResult
     _
     ([], SBVD.CV (SBVD.KFP eb sb) (SBVD.CFP fp))
+      | eb == fromIntegral (natVal (Proxy @eb))
+          && sb == fromIntegral (natVal (Proxy @sb)) =
+          -- Assumes that in SBV, FloatingPoint is a newtype of FP as the
+          -- constructor isn't exposed
+          fromIntegral $ unsafeCoerce fp
+  parseSMTModelResult
+    _
+    ([([], SBVD.CV (SBVD.KFP eb sb) (SBVD.CFP fp))], _)
       | eb == fromIntegral (natVal (Proxy @eb))
           && sb == fromIntegral (natVal (Proxy @sb)) =
           -- Assumes that in SBV, FloatingPoint is a newtype of FP as the

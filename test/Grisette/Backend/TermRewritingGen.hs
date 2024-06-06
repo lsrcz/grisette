@@ -47,13 +47,14 @@ module Grisette.Backend.TermRewritingGen
     rotateLeftSpec,
     rotateRightSpec,
     xorBitsSpec,
-    IEEEFP32TraitsSpec (..),
-    singleFP32TraitsSpecGen,
+    IEEEFP32BoolOpSpec (..),
+    singleFP32BoolOpSpecGen,
   )
 where
 
 import Data.Bits (FiniteBits)
 import Data.Data (Proxy (Proxy), Typeable)
+import Data.Functor ((<&>))
 import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
@@ -870,43 +871,58 @@ instance TermRewritingSpec IEEEFP32Spec FP32 where
   wrap = IEEEFP32Spec
   same s = eqTerm (norewriteVer s) (rewriteVer s)
 
-data IEEEFP32TraitsSpec = IEEEFP32TraitsSpec (Term Bool) (Term Bool)
+instance Arbitrary IEEEFP32Spec where
+  arbitrary = do
+    bool :: BoolOnlySpec <-
+      oneof [conSpec <$> arbitrary, return $ symSpec "bool"]
+    a <-
+      oneof
+        [conSpec <$> arbitrary, return $ symSpec "a", return $ symSpec "b"]
+    b <-
+      oneof
+        [conSpec <$> arbitrary, return $ symSpec "a", return $ symSpec "b"]
+    oneof [return a, return $ iteSpec bool a b]
 
-instance Show IEEEFP32TraitsSpec where
-  show (IEEEFP32TraitsSpec n r) =
-    "IEEEFP32TraitsSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+data IEEEFP32BoolOpSpec = IEEEFP32BoolOpSpec (Term Bool) (Term Bool)
 
-instance TermRewritingSpec IEEEFP32TraitsSpec Bool where
-  norewriteVer (IEEEFP32TraitsSpec n _) = n
-  rewriteVer (IEEEFP32TraitsSpec _ r) = r
-  wrap = IEEEFP32TraitsSpec
+instance Show IEEEFP32BoolOpSpec where
+  show (IEEEFP32BoolOpSpec n r) =
+    "IEEEFP32BoolOpSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec IEEEFP32BoolOpSpec Bool where
+  norewriteVer (IEEEFP32BoolOpSpec n _) = n
+  rewriteVer (IEEEFP32BoolOpSpec _ r) = r
+  wrap = IEEEFP32BoolOpSpec
   same s = eqTerm (norewriteVer s) (rewriteVer s)
 
-singleFP32TraitsSpecGen :: Gen IEEEFP32TraitsSpec
-singleFP32TraitsSpecGen = do
-  v :: FP32 <- arbitrary
-  unary :: IEEEFP32Spec <- oneof [return $ conSpec v, return $ symSpec "a"]
-  oneof $
-    ( \trait ->
-        return $
-          constructUnarySpec
-            (fpTraitTerm trait)
-            (pevalFPTraitTerm trait)
-            unary
-    )
-      <$> [ FPIsNaN,
-            FPIsPositive,
-            FPIsNegative,
-            FPIsPositiveInfinite,
-            FPIsNegativeInfinite,
-            FPIsInfinite,
-            FPIsPositiveZero,
-            FPIsNegativeZero,
-            FPIsZero,
-            FPIsNormal,
-            FPIsSubnormal,
-            FPIsPoint
-          ]
+singleFP32BoolOpSpecGen :: Gen IEEEFP32BoolOpSpec
+singleFP32BoolOpSpecGen = do
+  (v0, v1) <- arbitrary
+  s0 :: IEEEFP32Spec <- oneof [return $ conSpec v0, return $ symSpec "a"]
+  s1 :: IEEEFP32Spec <- oneof [return $ conSpec v1, return $ symSpec "b"]
+  let traitGens =
+        [ FPIsNaN,
+          FPIsPositive,
+          FPIsNegative,
+          FPIsPositiveInfinite,
+          FPIsNegativeInfinite,
+          FPIsInfinite,
+          FPIsPositiveZero,
+          FPIsNegativeZero,
+          FPIsZero,
+          FPIsNormal,
+          FPIsSubnormal,
+          FPIsPoint
+        ]
+          <&> ( \trait ->
+                  return $
+                    constructUnarySpec
+                      (fpTraitTerm trait)
+                      (pevalFPTraitTerm trait)
+                      s0
+              )
+  let cmpGens = return <$> [eqvSpec s0 s1, ltOrdSpec s0 s1, leOrdSpec s0 s1]
+  oneof $ traitGens ++ cmpGens
 
-instance Arbitrary IEEEFP32TraitsSpec where
-  arbitrary = singleFP32TraitsSpecGen
+instance Arbitrary IEEEFP32BoolOpSpec where
+  arbitrary = singleFP32BoolOpSpecGen

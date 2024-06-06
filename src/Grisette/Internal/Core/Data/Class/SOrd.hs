@@ -73,6 +73,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalOrdTerm
       ( pevalLeOrdTerm,
@@ -86,6 +87,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 
 -- $setup
@@ -192,6 +194,12 @@ CONCRETE_SORD(T.Text)
 CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => SOrd (FP eb sb) where
+  l .<= r = con $ l <= r
+  l .< r = con $ l < r
+  l .>= r = con $ l >= r
+  l .> r = con $ l > r
 
 symCompareSingleList :: (SOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool
 symCompareSingleList isLess isStrict = go
@@ -336,6 +344,12 @@ instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
     (a .< b) \
     (mrgSingle LT) \
     (mrgIf (a .== b) (mrgSingle EQ) (mrgSingle GT))
+
+instance (ValidFP eb sb) => SOrd (SymFP eb sb) where
+  (SymFP a) .<= (SymFP b) = SymBool $ pevalLeOrdTerm a b
+  (SymFP a) .< (SymFP b) = SymBool $ pevalLtOrdTerm a b
+  (SymFP a) .>= (SymFP b) = SymBool $ pevalGeOrdTerm a b
+  (SymFP a) .> (SymFP b) = SymBool $ pevalGtOrdTerm a b
 
 instance SOrd SymBool where
   l .<= r = symNot l .|| r
