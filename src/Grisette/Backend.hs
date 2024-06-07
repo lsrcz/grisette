@@ -24,7 +24,9 @@ module Grisette.Backend
     -- * SBV backend solver configuration
     SBV.SMTConfig (..),
     SBV.boolector,
+    SBV.bitwuzla,
     SBV.cvc4,
+    SBV.cvc5,
     SBV.yices,
     SBV.dReal,
     SBV.z3,
