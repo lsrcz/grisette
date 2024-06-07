@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -51,7 +52,7 @@ import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
   )
-import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -63,7 +64,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64)
+import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -121,6 +122,7 @@ CONCRETE_TOCON(B.ByteString)
 CONCRETE_TOCON(T.Text)
 CONCRETE_TOCON_BV(WordN)
 CONCRETE_TOCON_BV(IntN)
+CONCRETE_TOCON(FPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => ToCon (FP eb sb) (FP eb sb) where
@@ -251,7 +253,7 @@ TO_CON_SYMID_BV(SymIntN)
 TO_CON_SYMID_BV(SymWordN)
 TO_CON_SYMID_FUN(=~>)
 TO_CON_SYMID_FUN(-~>)
-
+TO_CON_SYMID_SIMPLE(SymFPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => ToCon (SymFP eb sb) (SymFP eb sb) where
@@ -277,6 +279,7 @@ TO_CON_FROMSYM_BV(IntN, SymIntN)
 TO_CON_FROMSYM_BV(WordN, SymWordN)
 TO_CON_FROMSYM_FUN((=->), (=~>))
 TO_CON_FROMSYM_FUN((-->), (-~>))
+TO_CON_FROMSYM_SIMPLE(FPRoundingMode, SymFPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => ToCon (SymFP eb sb) (FP eb sb) where

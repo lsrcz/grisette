@@ -117,7 +117,12 @@ import Grisette.Internal.SymPrim.BV
     IntN,
     WordN,
   )
-import Grisette.Internal.SymPrim.FP (FP, ValidFP, withValidFPProofs)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    ValidFP,
+    withValidFPProofs,
+  )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
@@ -125,7 +130,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Internal.SymPrim.SymFP (SymFP)
+import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -410,6 +415,7 @@ CONCRETE_ORD_MERGEABLE(Float)
 CONCRETE_ORD_MERGEABLE(Double)
 CONCRETE_ORD_MERGEABLE(B.ByteString)
 CONCRETE_ORD_MERGEABLE(T.Text)
+CONCRETE_ORD_MERGEABLE(FPRoundingMode)
 CONCRETE_ORD_MERGEABLE_BV(WordN)
 CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif
@@ -924,6 +930,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 #if 1
 MERGEABLE_SIMPLE(SymBool)
 MERGEABLE_SIMPLE(SymInteger)
+MERGEABLE_SIMPLE(SymFPRoundingMode)
 MERGEABLE_BV(SymIntN)
 MERGEABLE_BV(SymWordN)
 MERGEABLE_FUN((=->), (=~>))

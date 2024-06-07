@@ -32,7 +32,11 @@ import Data.Type.Bool (If)
 import Data.Type.Equality ((:~:) (Refl))
 import GHC.TypeNats (KnownNat, natVal, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP (FP), ValidFP)
+import Grisette.Internal.SymPrim.FP
+  ( FP (FP),
+    FPRoundingMode (RNA, RNE, RTN, RTP, RTZ),
+    ValidFP,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero
   ( IsZero,
     IsZeroCases (IsZeroEvidence, NonZeroEvidence),
@@ -186,6 +190,15 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
       | bitWidth == finiteBitSize (undefined :: WordN w) = fromIntegral i
   parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(WordN w)) cv
 
+instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
+  type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w
+
+instance (KnownNat w, 1 <= w) => SupportedNonFuncPrim (WordN w) where
+  conNonFuncSBVTerm = conSBVTerm
+  symNonFuncSBVTerm = symSBVTerm @(WordN w)
+  withNonFuncPrim _ r = bvIsNonZeroFromGEq1 (Proxy @w) r
+
+-- FP
 instance (ValidFP eb sb) => SupportedPrimConstraint (FP eb sb) where
   type PrimConstraint _ (FP eb sb) = ValidFP eb sb
 
@@ -234,10 +247,41 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
                     (conSBVTerm @(FP eb sb) p $ correspondingZero b')
       _ -> SBV.ite c a b
 
-instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
-  type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w
+instance (ValidFP eb sb) => NonFuncSBVRep (FP eb sb) where
+  type NonFuncSBVBaseType _ (FP eb sb) = SBV.FloatingPoint eb sb
 
-instance (KnownNat w, 1 <= w) => SupportedNonFuncPrim (WordN w) where
+instance (ValidFP eb sb) => SupportedNonFuncPrim (FP eb sb) where
   conNonFuncSBVTerm = conSBVTerm
-  symNonFuncSBVTerm = symSBVTerm @(WordN w)
-  withNonFuncPrim _ r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  symNonFuncSBVTerm = symSBVTerm @(FP eb sb)
+  withNonFuncPrim _ r = r
+
+-- FPRoundingMode
+instance SupportedPrimConstraint FPRoundingMode
+
+instance SBVRep FPRoundingMode where
+  type SBVType _ FPRoundingMode = SBV.SBV SBV.RoundingMode
+
+instance SupportedPrim FPRoundingMode where
+  defaultValue = RNE
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
+  pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
+  pevalEqTerm l r = eqTerm l r
+  conSBVTerm _ RNE = SBV.sRNE
+  conSBVTerm _ RNA = SBV.sRNA
+  conSBVTerm _ RTP = SBV.sRTP
+  conSBVTerm _ RTN = SBV.sRTN
+  conSBVTerm _ RTZ = SBV.sRTZ
+  symSBVName symbol _ = show symbol
+  symSBVTerm _ name = sbvFresh name
+  withPrim _ r = r
+  parseSMTModelResult _ cv =
+    parseSMTModelResultError (typeRep @FPRoundingMode) cv
+
+instance NonFuncSBVRep FPRoundingMode where
+  type NonFuncSBVBaseType _ FPRoundingMode = SBV.RoundingMode
+
+instance SupportedNonFuncPrim FPRoundingMode where
+  conNonFuncSBVTerm = conSBVTerm
+  symNonFuncSBVTerm = symSBVTerm @FPRoundingMode
+  withNonFuncPrim _ r = r

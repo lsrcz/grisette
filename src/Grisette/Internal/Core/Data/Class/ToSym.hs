@@ -59,7 +59,7 @@ import Grisette.Internal.SymPrim.BV
   ( IntN,
     WordN,
   )
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -71,7 +71,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64)
+import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -117,6 +117,7 @@ CONCRETE_TOSYM(Float)
 CONCRETE_TOSYM(Double)
 CONCRETE_TOSYM(B.ByteString)
 CONCRETE_TOSYM(T.Text)
+CONCRETE_TOSYM(FPRoundingMode)
 CONCRETE_TOSYM_BV(IntN)
 CONCRETE_TOSYM_BV(WordN)
 #endif
@@ -246,6 +247,7 @@ TO_SYM_SYMID_BV(SymIntN)
 TO_SYM_SYMID_BV(SymWordN)
 TO_SYM_SYMID_FUN(=~>)
 TO_SYM_SYMID_FUN(-~>)
+TO_SYM_SYMID_SIMPLE(SymFPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => ToSym (SymFP eb sb) (SymFP eb sb) where
@@ -271,6 +273,7 @@ TO_SYM_FROMCON_BV(IntN, SymIntN)
 TO_SYM_FROMCON_BV(WordN, SymWordN)
 TO_SYM_FROMCON_FUN((=->), (=~>))
 TO_SYM_FROMCON_FUN((-->), (-~>))
+TO_SYM_FROMCON_SIMPLE(FPRoundingMode, SymFPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => ToSym (FP eb sb) (SymFP eb sb) where

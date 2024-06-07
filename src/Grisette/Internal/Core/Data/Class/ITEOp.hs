@@ -30,7 +30,10 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
+import Grisette.Internal.SymPrim.SymFP
+  ( SymFP (SymFP),
+    SymFPRoundingMode (SymFPRoundingMode),
+  )
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -74,6 +77,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => ITEOp 
 #if 1
 ITEOP_SIMPLE(SymBool)
 ITEOP_SIMPLE(SymInteger)
+ITEOP_SIMPLE(SymFPRoundingMode)
 ITEOP_BV(SymIntN)
 ITEOP_BV(SymWordN)
 ITEOP_FUN((=->), (=~>), SymTabularFun)
