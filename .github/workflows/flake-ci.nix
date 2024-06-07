@@ -26,11 +26,12 @@
           ];
         };
 
-        hPkgs = pkgs.haskell.packages."ghc902";
+        stableHPkgs = pkgs.haskell.packages."ghc982";
+        hPkgs = pkgs.haskell.packages."xxx";
 
         myDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
-          hPkgs.cabal-install
+          stableHPkgs.cabal-install
           stack-wrapped
           pkgs.zlib # External C library needed by some Haskell packages
           pkgs.z3_4_12
