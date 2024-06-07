@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -18,6 +19,8 @@ module Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPoint,
     SymIEEEFPTraits (..),
     IEEEConstants (..),
+    IEEEFPOp (..),
+    IEEEFPRoundingOp (..),
   )
 where
 
@@ -25,10 +28,18 @@ import Data.SBV (infinity, nan)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.FP (FP (FP), ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-  ( pevalFPTraitTerm,
+  ( pevalFPBinaryTerm,
+    pevalFPFMATerm,
+    pevalFPRoundingBinaryTerm,
+    pevalFPRoundingUnaryTerm,
+    pevalFPTraitTerm,
+    pevalFPUnaryTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( FPTrait
+  ( FPBinaryOp (FPMax, FPMin, FPRem),
+    FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
+    FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
+    FPTrait
       ( FPIsInfinite,
         FPIsNaN,
         FPIsNegative,
@@ -42,9 +53,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FPIsSubnormal,
         FPIsZero
       ),
+    FPUnaryOp (FPAbs, FPNeg),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP), SymFPRoundingMode (SymFPRoundingMode))
 
 -- | Check if a floating-point number is not-a-number.
 fpIsNaN :: (RealFloat a) => a -> Bool
@@ -273,3 +285,54 @@ instance (ValidFP eb sb) => IEEEConstants (SymFP eb sb) where
   {-# INLINE fpNegativeZero #-}
   fpPositiveZero = con fpPositiveZero
   {-# INLINE fpPositiveZero #-}
+
+class IEEEFPOp a where
+  symFpAbs :: a -> a
+  symFpNeg :: a -> a
+  symFpRem :: a -> a -> a
+  symFpMin :: a -> a -> a
+  symFpMax :: a -> a -> a
+
+instance (ValidFP eb sb) => IEEEFPOp (SymFP eb sb) where
+  symFpAbs (SymFP l) = SymFP $ pevalFPUnaryTerm FPAbs l
+  {-# INLINE symFpAbs #-}
+  symFpNeg (SymFP l) = SymFP $ pevalFPUnaryTerm FPNeg l
+  {-# INLINE symFpNeg #-}
+  symFpRem (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPRem l r
+  {-# INLINE symFpRem #-}
+  symFpMin (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPMin l r
+  {-# INLINE symFpMin #-}
+  symFpMax (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPMax l r
+  {-# INLINE symFpMax #-}
+
+class IEEEFPRoundingOp a mode where
+  symFpAdd :: mode -> a -> a -> a
+  symFpSub :: mode -> a -> a -> a
+  symFpMul :: mode -> a -> a -> a
+  symFpDiv :: mode -> a -> a -> a
+  symFpFMA :: mode -> a -> a -> a -> a
+  symFpSqrt :: mode -> a -> a
+  symFpRoundToIntegral :: mode -> a -> a
+
+instance (ValidFP eb sb) => IEEEFPRoundingOp (SymFP eb sb) SymFPRoundingMode where
+  symFpAdd (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPAdd mode l r
+  {-# INLINE symFpAdd #-}
+  symFpSub (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPSub mode l r
+  {-# INLINE symFpSub #-}
+  symFpMul (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPMul mode l r
+  {-# INLINE symFpMul #-}
+  symFpDiv (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPDiv mode l r
+  {-# INLINE symFpDiv #-}
+  symFpFMA (SymFPRoundingMode mode) (SymFP l) (SymFP m) (SymFP r) =
+    SymFP $ pevalFPFMATerm mode l m r
+  {-# INLINE symFpFMA #-}
+  symFpSqrt (SymFPRoundingMode mode) (SymFP v) =
+    SymFP $ pevalFPRoundingUnaryTerm FPSqrt mode v
+  {-# INLINE symFpSqrt #-}
+  symFpRoundToIntegral (SymFPRoundingMode mode) (SymFP v) =
+    SymFP $ pevalFPRoundingUnaryTerm FPRoundToIntegral mode v
+  {-# INLINE symFpRoundToIntegral #-}

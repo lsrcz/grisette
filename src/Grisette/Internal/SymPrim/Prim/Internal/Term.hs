@@ -70,6 +70,10 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
 
     -- * Terms
     FPTrait (..),
+    FPUnaryOp (..),
+    FPBinaryOp (..),
+    FPRoundingUnaryOp (..),
+    FPRoundingBinaryOp (..),
     Term (..),
     identity,
     identityWithTypeRep,
@@ -122,6 +126,11 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     fdivTerm,
     recipTerm,
     sqrtTerm,
+    fpUnaryTerm,
+    fpBinaryTerm,
+    fpRoundingUnaryTerm,
+    fpRoundingBinaryTerm,
+    fpFMATerm,
 
     -- * Support for boolean type
     trueTerm,
@@ -192,7 +201,7 @@ import Grisette.Internal.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
   )
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( typeMemoizedCache,
   )
@@ -964,6 +973,37 @@ instance Show FPTrait where
   show FPIsSubnormal = "is_subnormal"
   show FPIsPoint = "is_point"
 
+data FPUnaryOp = FPAbs | FPNeg
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+
+instance Show FPUnaryOp where
+  show FPAbs = "fp.abs"
+  show FPNeg = "fp.neg"
+
+data FPBinaryOp = FPRem | FPMin | FPMax
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+
+instance Show FPBinaryOp where
+  show FPRem = "fp.rem"
+  show FPMin = "fp.min"
+  show FPMax = "fp.max"
+
+data FPRoundingUnaryOp = FPSqrt | FPRoundToIntegral
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+
+instance Show FPRoundingUnaryOp where
+  show FPSqrt = "fp.sqrt"
+  show FPRoundToIntegral = "fp.roundToIntegral"
+
+data FPRoundingBinaryOp = FPAdd | FPSub | FPMul | FPDiv
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+
+instance Show FPRoundingBinaryOp where
+  show FPAdd = "fp.add"
+  show FPSub = "fp.sub"
+  show FPMul = "fp.mul"
+  show FPDiv = "fp.div"
+
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
   SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
@@ -1175,6 +1215,42 @@ data Term t where
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     Term t
+  FPUnaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    {-# UNPACK #-} !Id ->
+    !FPUnaryOp ->
+    !(Term (FP eb sb)) ->
+    Term (FP eb sb)
+  FPBinaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    {-# UNPACK #-} !Id ->
+    !FPBinaryOp ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    Term (FP eb sb)
+  FPRoundingUnaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    {-# UNPACK #-} !Id ->
+    !FPRoundingUnaryOp ->
+    !(Term FPRoundingMode) ->
+    !(Term (FP eb sb)) ->
+    Term (FP eb sb)
+  FPRoundingBinaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    {-# UNPACK #-} !Id ->
+    !FPRoundingBinaryOp ->
+    !(Term FPRoundingMode) ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    Term (FP eb sb)
+  FPFMATerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    {-# UNPACK #-} !Id ->
+    !(Term FPRoundingMode) ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    Term (FP eb sb)
 
 identity :: Term t -> Id
 identity = snd . identityWithTypeRep
@@ -1220,6 +1296,11 @@ identityWithTypeRep (FPTraitTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FdivTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RecipTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (SqrtTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPUnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPBinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPRoundingUnaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPRoundingBinaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPFMATerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -1262,6 +1343,11 @@ introSupportedPrimConstraint FPTraitTerm {} x = x
 introSupportedPrimConstraint FdivTerm {} x = x
 introSupportedPrimConstraint RecipTerm {} x = x
 introSupportedPrimConstraint SqrtTerm {} x = x
+introSupportedPrimConstraint FPUnaryTerm {} x = x
+introSupportedPrimConstraint FPBinaryTerm {} x = x
+introSupportedPrimConstraint FPRoundingUnaryTerm {} x = x
+introSupportedPrimConstraint FPRoundingBinaryTerm {} x = x
+introSupportedPrimConstraint FPFMATerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
@@ -1305,6 +1391,13 @@ pformat (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformat arg ++ "
 pformat (FdivTerm _ arg1 arg2) = "(fdiv " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (RecipTerm _ arg) = "(recip " ++ pformat arg ++ ")"
 pformat (SqrtTerm _ arg) = "(sqrt " ++ pformat arg ++ ")"
+pformat (FPUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformat arg ++ ")"
+pformat (FPBinaryTerm _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ show mode ++ " " ++ pformat arg ++ ")"
+pformat (FPRoundingBinaryTerm _ op mode arg1 arg2) =
+  "(" ++ show op ++ " " ++ show mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (FPFMATerm _ mode arg1 arg2 arg3) =
+  "(fp.fma " ++ show mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ " " ++ pformat arg3 ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -1350,6 +1443,11 @@ instance Lift (Term t) where
   liftTyped (FdivTerm _ arg1 arg2) = [||fdivTerm arg1 arg2||]
   liftTyped (RecipTerm _ arg) = [||recipTerm arg||]
   liftTyped (SqrtTerm _ arg) = [||sqrtTerm arg||]
+  liftTyped (FPUnaryTerm _ op arg) = [||fpUnaryTerm op arg||]
+  liftTyped (FPBinaryTerm _ op arg1 arg2) = [||fpBinaryTerm op arg1 arg2||]
+  liftTyped (FPRoundingUnaryTerm _ op mode arg) = [||fpRoundingUnaryTerm op mode arg||]
+  liftTyped (FPRoundingBinaryTerm _ op mode arg1 arg2) = [||fpRoundingBinaryTerm op mode arg1 arg2||]
+  liftTyped (FPFMATerm _ mode arg1 arg2 arg3) = [||fpFMATerm mode arg1 arg2 arg3||]
 
 instance Show (Term ty) where
   show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
@@ -1435,6 +1533,35 @@ instance Show (Term ty) where
   show (FdivTerm i arg1 arg2) = "Fdiv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (RecipTerm i arg) = "Recip{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (SqrtTerm i arg) = "Sqrt{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (FPUnaryTerm i op arg) = "FPUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
+  show (FPBinaryTerm i op arg1 arg2) =
+    "FPBinary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (FPRoundingUnaryTerm i op mode arg) =
+    "FPRoundingUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", mode=" ++ show mode ++ ", arg=" ++ show arg ++ "}"
+  show (FPRoundingBinaryTerm i op mode arg1 arg2) =
+    "FPRoundingBinary{id="
+      ++ show i
+      ++ ", op="
+      ++ show op
+      ++ ", mode="
+      ++ show mode
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (FPFMATerm i mode arg1 arg2 arg3) =
+    "FPFMA{id="
+      ++ show i
+      ++ ", mode="
+      ++ show mode
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ ", arg3="
+      ++ show arg3
+      ++ "}"
   {-# INLINE show #-}
 
 prettyPrintTerm :: Term t -> Doc ann
@@ -1566,6 +1693,37 @@ data UTerm t where
   UFdivTerm :: (PEvalFractionalTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URecipTerm :: (PEvalFractionalTerm t) => !(Term t) -> UTerm t
   USqrtTerm :: (PEvalFloatingTerm t) => !(Term t) -> UTerm t
+  UFPUnaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    !FPUnaryOp ->
+    !(Term (FP eb sb)) ->
+    UTerm (FP eb sb)
+  UFPBinaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    !FPBinaryOp ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    UTerm (FP eb sb)
+  UFPRoundingUnaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    !FPRoundingUnaryOp ->
+    !(Term FPRoundingMode) ->
+    !(Term (FP eb sb)) ->
+    UTerm (FP eb sb)
+  UFPRoundingBinaryTerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    !FPRoundingBinaryOp ->
+    !(Term FPRoundingMode) ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    UTerm (FP eb sb)
+  UFPFMATerm ::
+    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    !(Term FPRoundingMode) ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    !(Term (FP eb sb)) ->
+    UTerm (FP eb sb)
 
 eqTypedId :: (TypeRep a, Id) -> (TypeRep b, Id) -> Bool
 eqTypedId (a, i1) (b, i2) = i1 == i2 && eqTypeRepBool a b
@@ -1650,6 +1808,11 @@ instance (SupportedPrim t) => Interned (Term t) where
     DFdivTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRecipTerm :: {-# UNPACK #-} !Id -> Description (Term a)
     DSqrtTerm :: {-# UNPACK #-} !Id -> Description (Term a)
+    DFPUnaryTerm :: FPUnaryOp -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
+    DFPBinaryTerm :: FPBinaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
+    DFPRoundingUnaryTerm :: FPRoundingUnaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
+    DFPRoundingBinaryTerm :: FPRoundingBinaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
+    DFPFMATerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
@@ -1701,6 +1864,11 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UFdivTerm arg1 arg2) = DFdivTerm (identity arg1) (identity arg2)
   describe (URecipTerm arg) = DRecipTerm (identity arg)
   describe (USqrtTerm arg) = DSqrtTerm (identity arg)
+  describe (UFPUnaryTerm op arg) = DFPUnaryTerm op (identity arg)
+  describe (UFPBinaryTerm op arg1 arg2) = DFPBinaryTerm op (identity arg1) (identity arg2)
+  describe (UFPRoundingUnaryTerm op mode arg) = DFPRoundingUnaryTerm op (identity mode) (identity arg)
+  describe (UFPRoundingBinaryTerm op mode arg1 arg2) = DFPRoundingBinaryTerm op (identity mode) (identity arg1) (identity arg2)
+  describe (UFPFMATerm mode arg1 arg2 arg3) = DFPFMATerm (identity mode) (identity arg1) (identity arg2) (identity arg3)
 
   identify i = go
     where
@@ -1743,6 +1911,11 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFdivTerm arg1 arg2) = FdivTerm i arg1 arg2
       go (URecipTerm arg) = RecipTerm i arg
       go (USqrtTerm arg) = SqrtTerm i arg
+      go (UFPUnaryTerm op arg) = FPUnaryTerm i op arg
+      go (UFPBinaryTerm op arg1 arg2) = FPBinaryTerm i op arg1 arg2
+      go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm i op mode arg
+      go (UFPRoundingBinaryTerm op mode arg1 arg2) = FPRoundingBinaryTerm i op mode arg1 arg2
+      go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm i mode arg1 arg2 arg3
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
@@ -1792,6 +1965,14 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DFdivTerm li1 li2 == DFdivTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRecipTerm li == DRecipTerm ri = li == ri
   DSqrtTerm li == DSqrtTerm ri = li == ri
+  DFPUnaryTerm lop li == DFPUnaryTerm rop ri = lop == rop && li == ri
+  DFPBinaryTerm lop li1 li2 == DFPBinaryTerm rop ri1 ri2 = lop == rop && li1 == ri1 && li2 == ri2
+  DFPRoundingUnaryTerm lop lmode li == DFPRoundingUnaryTerm rop rmode ri =
+    lop == rop && lmode == rmode && li == ri
+  DFPRoundingBinaryTerm lop lmode li1 li2 == DFPRoundingBinaryTerm rop rmode ri1 ri2 =
+    lop == rop && lmode == rmode && li1 == ri1 && li2 == ri2
+  DFPFMATerm lmode li1 li2 li3 == DFPFMATerm rmode ri1 ri2 ri3 =
+    lmode == rmode && li1 == ri1 && li2 == ri2 && li3 == ri3
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
@@ -1854,6 +2035,14 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DFdivTerm id1 id2) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DRecipTerm id1) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1
   hashWithSalt s (DSqrtTerm id1) = s `hashWithSalt` (42 :: Int) `hashWithSalt` id1
+  hashWithSalt s (DFPUnaryTerm op id1) = s `hashWithSalt` (43 :: Int) `hashWithSalt` op `hashWithSalt` id1
+  hashWithSalt s (DFPBinaryTerm op id1 id2) = s `hashWithSalt` (44 :: Int) `hashWithSalt` op `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DFPRoundingUnaryTerm op mode id1) =
+    s `hashWithSalt` (45 :: Int) `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` id1
+  hashWithSalt s (DFPRoundingBinaryTerm op mode id1 id2) =
+    s `hashWithSalt` (46 :: Int) `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DFPFMATerm mode id1 id2 id3) =
+    s `hashWithSalt` (47 :: Int) `hashWithSalt` mode `hashWithSalt` id1 `hashWithSalt` id2 `hashWithSalt` id3
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
@@ -2107,6 +2296,47 @@ recipTerm = internTerm . URecipTerm
 sqrtTerm :: (PEvalFloatingTerm a) => Term a -> Term a
 sqrtTerm = internTerm . USqrtTerm
 {-# INLINE sqrtTerm #-}
+
+fpUnaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPUnaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+fpUnaryTerm op v = internTerm $ UFPUnaryTerm op v
+
+fpBinaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPBinaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+fpBinaryTerm op l r = internTerm $ UFPBinaryTerm op l r
+
+fpRoundingUnaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPRoundingUnaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+fpRoundingUnaryTerm op mode v = internTerm $ UFPRoundingUnaryTerm op mode v
+
+fpRoundingBinaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPRoundingBinaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+fpRoundingBinaryTerm op mode l r = internTerm $ UFPRoundingBinaryTerm op mode l r
+
+fpFMATerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+fpFMATerm mode l r s = internTerm $ UFPFMATerm mode l r s
 
 -- Support for boolean type
 defaultValueForBool :: Bool

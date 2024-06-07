@@ -61,8 +61,14 @@ import Grisette.Internal.Core.Data.Class.ModelOps
 import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-  ( pevalFPTraitTerm,
+  ( pevalFPBinaryTerm,
+    pevalFPFMATerm,
+    pevalFPRoundingBinaryTerm,
+    pevalFPRoundingUnaryTerm,
+    pevalFPTraitTerm,
+    pevalFPUnaryTerm,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Term (Term (FPFMATerm))
 import Grisette.Internal.SymPrim.Prim.ModelValue
   ( ModelValue,
     toModelValue,
@@ -119,7 +125,11 @@ import Grisette.Internal.SymPrim.Prim.Term
         ConTerm,
         DivIntegralTerm,
         EqTerm,
+        FPBinaryTerm,
+        FPRoundingBinaryTerm,
+        FPRoundingUnaryTerm,
         FPTraitTerm,
+        FPUnaryTerm,
         FdivTerm,
         ITETerm,
         LeOrdTerm,
@@ -476,6 +486,15 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
     go (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary pevalFdivTerm arg1 arg2
     go (SomeTerm (RecipTerm _ arg)) = goUnary pevalRecipTerm arg
     go (SomeTerm (SqrtTerm _ arg)) = goUnary pevalSqrtTerm arg
+    go (SomeTerm (FPUnaryTerm _ op arg)) = goUnary (pevalFPUnaryTerm op) arg
+    go (SomeTerm (FPBinaryTerm _ op arg1 arg2)) =
+      goBinary (pevalFPBinaryTerm op) arg1 arg2
+    go (SomeTerm (FPRoundingUnaryTerm _ op mode arg)) =
+      goUnary (pevalFPRoundingUnaryTerm op mode) arg
+    go (SomeTerm (FPRoundingBinaryTerm _ op mode arg1 arg2)) =
+      goBinary (pevalFPRoundingBinaryTerm op mode) arg1 arg2
+    go (SomeTerm (FPFMATerm _ mode arg1 arg2 arg3)) =
+      SomeTerm $ pevalFPFMATerm (gotyped mode) (gotyped arg1) (gotyped arg2) (gotyped arg3)
     goUnary :: (SupportedPrim a, SupportedPrim b) => (Term a -> Term b) -> Term a -> SomeTerm
     goUnary f a = SomeTerm $ f (gotyped a)
     goBinary ::

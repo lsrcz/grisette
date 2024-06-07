@@ -9,11 +9,11 @@
 module Grisette.Backend.TermRewritingTests
   ( termRewritingTests,
     validateSpec,
+    bitwuzlaConfig
   )
 where
 
 import Data.Foldable (traverse_)
-import Data.SBV (SMTConfig (transcript))
 #if MIN_VERSION_sbv(8,17,0)
 import Data.SBV (bitwuzla)
 #endif
@@ -106,7 +106,7 @@ validateSpec config a = do
 bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
 bitwuzlaConfig = do
 #if MIN_VERSION_sbv(8,17,0)
-  v <- solve (precise bitwuzla{transcript=Just "bad.smt2"}) $
+  v <- solve (precise bitwuzla) $
          ("x" :: SymFP32) ./= "x" .&&
          symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32)) .&&
          (symIte "bool"
