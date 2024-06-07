@@ -261,6 +261,14 @@ For more details, please refer to [the Grisette examples](https://github.com/lsr
 The Grisette library is distributed under the terms of the BSD3 license. The
 [LICENSE](LICENSE) file contains the full license text.
 
+## Note
+
+Grisette currently supports boolean, uninterpreted functions, bitvector,
+integer, and floating point theories. However, if you want to use the floating
+point theory, please make sure that you have the latest libBF (>=0.6.8) and sbv 
+installed (>=10.10.6). We've detected and fixed several bugs that would prevent
+a sound reasoning for floating points.
+
 ## Citing Grisette
 
 If you use Grisette in your research, please use the following bibtex entry:

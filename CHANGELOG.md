@@ -10,11 +10,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added solving procedures with solver handles. ([#198](https://github.com/lsrcz/grisette/pull/198))
+- Added solving procedures with solver handles.
+  ([#198](https://github.com/lsrcz/grisette/pull/198))
 - Added `overestimateUnionValues`.
   ([#203](https://github.com/lsrcz/grisette/pull/203))
 - Added pretty printing for hashset and hashmaps.
   ([#205](https://github.com/lsrcz/grisette/pull/205))
+- Added support for arbitrary precision floating point theory.
+  ([#207](https://github.com/lsrcz/grisette/pull/207))
 
 ### Fixed
 
@@ -30,6 +33,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#200](https://github.com/lsrcz/grisette/pull/200))
 - [Breaking] More intuitive CEGIS interface.
   ([#201](https://github.com/lsrcz/grisette/pull/201))
+- Bumped the minimum supported sbv version to 8.17.
+  ([#207](https://github.com/lsrcz/grisette/pull/207))
 
 ## [0.5.0.1] -- 2024-04-18
 
