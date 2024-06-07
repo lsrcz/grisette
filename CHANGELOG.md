@@ -16,6 +16,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#203](https://github.com/lsrcz/grisette/pull/203))
 - Added pretty printing for hashset and hashmaps.
   ([#205](https://github.com/lsrcz/grisette/pull/205))
+- Added support for refinement of solutions in CEGIS algorithm.
+  ([#206](https://github.com/lsrcz/grisette/pull/206))
+- Added generation of globally unique identifier with `uniqueIdentifier`.
+  ([#206](https://github.com/lsrcz/grisette/pull/206))
 - Added support for arbitrary precision floating point theory.
   ([#207](https://github.com/lsrcz/grisette/pull/207))
 
@@ -33,6 +37,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#200](https://github.com/lsrcz/grisette/pull/200))
 - [Breaking] More intuitive CEGIS interface.
   ([#201](https://github.com/lsrcz/grisette/pull/201))
+- [Breaking] Changed the low-level solver interface.
+  ([#206](https://github.com/lsrcz/grisette/pull/206))
+- [Breaking] Changed the CEGIS interface.
+  ([#206](https://github.com/lsrcz/grisette/pull/206))
 - Bumped the minimum supported sbv version to 8.17.
   ([#207](https://github.com/lsrcz/grisette/pull/207))
 
