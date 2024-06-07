@@ -2,6 +2,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -27,12 +30,8 @@ module Grisette.Internal.SymPrim.FP
     FP32,
     FP64,
     withValidFPProofs,
-    -- fpAsWordN,
-    -- wordNAsFP,
-    -- fp32AsFloat,
-    -- fp64AsDouble,
-    -- floatAsFP32,
-    -- doubleAsFP64,
+    FPRoundingMode (..),
+    allFPRoundingMode,
   )
 where
 
@@ -57,6 +56,7 @@ import Data.SBV
     sWordAsSFloatingPoint,
   )
 import Data.Type.Equality (type (:~:) (Refl))
+import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, Nat, natVal, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
@@ -256,3 +256,13 @@ instance (ValidFloat eb sb) => QC.Arbitrary (FP eb sb) where
         withValidFPProofs @eb @sb $
           oneof [return 0, return $ 1 `shiftL` (sb - 1)] ::
           QC.Gen (WordN (eb + sb))
+
+data FPRoundingMode = RNE | RNA | RTP | RTN | RTZ
+  deriving (Eq, Ord, Show, Generic, Lift)
+  deriving anyclass (Hashable, NFData)
+
+allFPRoundingMode :: [FPRoundingMode]
+allFPRoundingMode = [RNE, RNA, RTP, RTN, RTZ]
+
+instance QC.Arbitrary FPRoundingMode where
+  arbitrary = QC.elements [RNE, RNA, RTP, RTN, RTZ]

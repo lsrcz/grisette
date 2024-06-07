@@ -55,7 +55,7 @@ import GHC.Generics
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
@@ -66,7 +66,10 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
+import Grisette.Internal.SymPrim.SymFP
+  ( SymFP (SymFP),
+    SymFPRoundingMode (SymFPRoundingMode),
+  )
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -140,6 +143,7 @@ GPRETTY_SIMPLE(Word32)
 GPRETTY_SIMPLE(Word64)
 GPRETTY_SIMPLE(Float)
 GPRETTY_SIMPLE(Double)
+GPRETTY_SIMPLE(FPRoundingMode)
 #endif
 
 instance GPretty B.ByteString where
@@ -318,6 +322,7 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
 #if 1
 GPRETTY_SYM_SIMPLE(SymBool)
 GPRETTY_SYM_SIMPLE(SymInteger)
+GPRETTY_SYM_SIMPLE(SymFPRoundingMode)
 GPRETTY_SYM_BV(SymIntN)
 GPRETTY_SYM_BV(SymWordN)
 GPRETTY_SYM_FUN(=~>, SymTabularFun)

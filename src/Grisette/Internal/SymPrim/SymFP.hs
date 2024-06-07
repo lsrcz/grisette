@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -12,6 +12,7 @@ module Grisette.Internal.SymPrim.SymFP
     SymFP16,
     SymFP32,
     SymFP64,
+    SymFPRoundingMode (..),
   )
 where
 
@@ -24,7 +25,7 @@ import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
@@ -49,7 +50,8 @@ import Language.Haskell.TH.Syntax (Lift)
 -- | Symbolic IEEE 754 floating-point number with @eb@ exponent bits and @sb@
 -- significand bits.
 newtype SymFP eb sb = SymFP {underlyingFPTerm :: Term (FP eb sb)}
-  deriving (Lift, NFData, Generic)
+  deriving (Lift, Generic)
+  deriving anyclass (NFData)
 
 -- | Symbolic IEEE 754 half-precision floating-point number.
 type SymFP16 = SymFP 5 11
@@ -126,3 +128,42 @@ instance (ValidFP eb sb) => Floating (SymFP eb sb) where
   asinh = error "asinh isn't supported by the underlying sbv library"
   acosh = error "acosh isn't supported by the underlying sbv library"
   atanh = error "atanh isn't supported by the underlying sbv library"
+
+newtype SymFPRoundingMode = SymFPRoundingMode (Term FPRoundingMode)
+  deriving (Lift, Generic)
+  deriving anyclass (NFData)
+
+instance ConRep SymFPRoundingMode where
+  type ConType SymFPRoundingMode = FPRoundingMode
+
+instance SymRep FPRoundingMode where
+  type SymType FPRoundingMode = SymFPRoundingMode
+
+instance LinkedRep FPRoundingMode SymFPRoundingMode where
+  underlyingTerm (SymFPRoundingMode a) = a
+  wrapTerm = SymFPRoundingMode
+
+instance Apply SymFPRoundingMode where
+  type FunType SymFPRoundingMode = SymFPRoundingMode
+  apply = id
+
+instance Eq SymFPRoundingMode where
+  SymFPRoundingMode a == SymFPRoundingMode b = a == b
+
+instance Hashable SymFPRoundingMode where
+  hashWithSalt s (SymFPRoundingMode a) = hashWithSalt s a
+
+instance IsString SymFPRoundingMode where
+  fromString = ssym . fromString
+
+instance Solvable FPRoundingMode SymFPRoundingMode where
+  con = SymFPRoundingMode . conTerm
+  sym = SymFPRoundingMode . symTerm
+  conView (SymFPRoundingMode (ConTerm _ t)) = Just t
+  conView _ = Nothing
+
+instance Show SymFPRoundingMode where
+  show (SymFPRoundingMode a) = pformat a
+
+instance AllSyms SymFPRoundingMode where
+  allSymsS v = (SomeSym v :)

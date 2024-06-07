@@ -56,7 +56,8 @@ module Grisette.Backend.TermRewritingGen
     sqrtSpec,
     IEEEFP32Spec (..),
     IEEEFP32BoolOpSpec (..),
-    singleFP32BoolOpSpecGen,
+    FPRoundingModeSpec (..),
+    FPRoundingModeBoolOpSpec (..),
   )
 where
 
@@ -67,7 +68,12 @@ import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
-import Grisette.Internal.SymPrim.FP (FP, FP32, ValidFP)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FP32,
+    FPRoundingMode (RNA, RNE, RTN, RTP, RTZ),
+    ValidFP,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalFloatingTerm (pevalSqrtTerm),
     PEvalFractionalTerm (pevalRecipTerm),
@@ -169,7 +175,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     ssymTerm,
     xorBitsTerm,
   )
-import Test.QuickCheck (Arbitrary (arbitrary), Gen, frequency, oneof, sized)
+import Test.QuickCheck (Arbitrary (arbitrary), Gen, elements, frequency, oneof, sized)
+
+-- import Grisette.Internal.SymPrim.FP (FPRoundingMode(RNE))
 
 class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
   norewriteVer :: a -> Term b
@@ -966,3 +974,47 @@ singleFP32BoolOpSpecGen = do
 
 instance Arbitrary IEEEFP32BoolOpSpec where
   arbitrary = singleFP32BoolOpSpecGen
+
+data FPRoundingModeSpec
+  = FPRoundingModeSpec (Term FPRoundingMode) (Term FPRoundingMode)
+
+instance Show FPRoundingModeSpec where
+  show (FPRoundingModeSpec n r) =
+    "FPRoundingModeSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec FPRoundingModeSpec FPRoundingMode where
+  norewriteVer (FPRoundingModeSpec n _) = n
+  rewriteVer (FPRoundingModeSpec _ r) = r
+  wrap = FPRoundingModeSpec
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+instance Arbitrary FPRoundingModeSpec where
+  arbitrary =
+    elements
+      [ conSpec RNE,
+        conSpec RNA,
+        conSpec RTP,
+        conSpec RTN,
+        conSpec RTZ,
+        symSpec "a",
+        symSpec "b"
+      ]
+
+data FPRoundingModeBoolOpSpec = FPRoundingModeBoolOpSpec (Term Bool) (Term Bool)
+
+instance Show FPRoundingModeBoolOpSpec where
+  show (FPRoundingModeBoolOpSpec n r) =
+    "FPRoundingModeBoolOpSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec FPRoundingModeBoolOpSpec Bool where
+  norewriteVer (FPRoundingModeBoolOpSpec n _) = n
+  rewriteVer (FPRoundingModeBoolOpSpec _ r) = r
+  wrap = FPRoundingModeBoolOpSpec
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+instance Arbitrary FPRoundingModeBoolOpSpec where
+  arbitrary = do
+    l :: FPRoundingModeSpec <- arbitrary
+    r <- arbitrary
+    elements [eqvSpec l r, ltOrdSpec l r, leOrdSpec l r]
+    

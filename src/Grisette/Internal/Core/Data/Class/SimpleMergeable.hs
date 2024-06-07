@@ -84,7 +84,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Internal.SymPrim.SymFP (SymFP)
+import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
@@ -625,6 +625,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 #if 1
 SIMPLE_MERGEABLE_SIMPLE(SymBool)
 SIMPLE_MERGEABLE_SIMPLE(SymInteger)
+SIMPLE_MERGEABLE_SIMPLE(SymFPRoundingMode)
 SIMPLE_MERGEABLE_BV(SymIntN)
 SIMPLE_MERGEABLE_BV(SymWordN)
 SIMPLE_MERGEABLE_FUN((=->), (=~>))

@@ -88,7 +88,9 @@ import Grisette.Internal.Backend.SymBiMap
     lookupTerm,
     sizeBiMap,
   )
-import Grisette.Internal.Core.Data.Class.ModelOps (ModelOps (emptyModel, insertValue))
+import Grisette.Internal.Core.Data.Class.ModelOps
+  ( ModelOps (emptyModel, insertValue),
+  )
 import Grisette.Internal.Core.Data.Class.Solver
   ( ConfigurableSolver (newSolver),
     MonadicSolver
@@ -103,10 +105,18 @@ import Grisette.Internal.Core.Data.Class.Solver
         solverSolve,
         solverTerminate
       ),
-    SolverCommand (SolverPop, SolverPush, SolverResetAssertions, SolverSolve, SolverTerminate),
+    SolverCommand
+      ( SolverPop,
+        SolverPush,
+        SolverResetAssertions,
+        SolverSolve,
+        SolverTerminate
+      ),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP (sbvFPTraitTerm)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+  ( sbvFPTraitTerm,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalApplyTerm (sbvApplyTerm),

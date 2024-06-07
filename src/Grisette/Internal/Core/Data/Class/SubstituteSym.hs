@@ -51,7 +51,7 @@ import Generics.Deriving
   )
 import Generics.Deriving.Instances ()
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep (underlyingTerm),
@@ -63,7 +63,10 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
+import Grisette.Internal.SymPrim.SymFP
+  ( SymFP (SymFP),
+    SymFPRoundingMode (SymFPRoundingMode),
+  )
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
@@ -119,6 +122,7 @@ CONCRETE_SUBSTITUTESYM(B.ByteString)
 CONCRETE_SUBSTITUTESYM(T.Text)
 CONCRETE_SUBSTITUTESYM_BV(WordN)
 CONCRETE_SUBSTITUTESYM_BV(IntN)
+CONCRETE_SUBSTITUTESYM(FPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => SubstituteSym (FP eb sb) where
@@ -286,6 +290,7 @@ SUBSTITUTE_SYM_BV(SymIntN)
 SUBSTITUTE_SYM_BV(SymWordN)
 SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
 SUBSTITUTE_SYM_FUN((-->), (-~>), SymGeneralFun)
+SUBSTITUTE_SYM_SIMPLE(SymFPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => SubstituteSym (SymFP eb sb) where

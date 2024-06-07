@@ -33,6 +33,7 @@ import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
     BoolWithLIASpec,
     DifferentSizeBVSpec,
+    FPRoundingModeBoolOpSpec,
     FixedSizedBVWithBoolSpec,
     GeneralSpec,
     IEEEFP32BoolOpSpec (IEEEFP32BoolOpSpec),
@@ -446,6 +447,10 @@ termRewritingTests =
           testProperty "FP32BoolOp" $
             withMaxSuccess 1000 . mapSize (`min` 10) $
               ioProperty . \(x :: IEEEFP32BoolOpSpec) ->
+                onlyWhenBitwuzlaIsAvailable (`validateSpec` x),
+          testProperty "FPRoundingModeBoolOpSpec" $
+            mapSize (`min` 10) $
+              ioProperty . \(x :: FPRoundingModeBoolOpSpec) ->
                 onlyWhenBitwuzlaIsAvailable (`validateSpec` x)
         ]
     ]

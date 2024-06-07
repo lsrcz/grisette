@@ -73,7 +73,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalOrdTerm
       ( pevalLeOrdTerm,
@@ -87,7 +87,7 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
+import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP), SymFPRoundingMode (SymFPRoundingMode))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 
 -- $setup
@@ -191,6 +191,7 @@ CONCRETE_SORD(Word32)
 CONCRETE_SORD(Word64)
 CONCRETE_SORD(B.ByteString)
 CONCRETE_SORD(T.Text)
+CONCRETE_SORD(FPRoundingMode)
 CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
 #endif
@@ -364,6 +365,7 @@ instance SOrd SymBool where
 
 #if 1
 SORD_SIMPLE(SymInteger)
+SORD_SIMPLE(SymFPRoundingMode)
 SORD_BV(SymIntN)
 SORD_BV(SymWordN)
 #endif

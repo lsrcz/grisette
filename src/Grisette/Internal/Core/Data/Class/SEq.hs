@@ -50,18 +50,24 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term (pevalEqTerm)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
-import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
+import Grisette.Internal.SymPrim.SymFP
+  ( SymFP (SymFP),
+    SymFPRoundingMode (SymFPRoundingMode),
+  )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 
 -- $setup
@@ -135,6 +141,7 @@ CONCRETE_SEQ(Float)
 CONCRETE_SEQ(Double)
 CONCRETE_SEQ(B.ByteString)
 CONCRETE_SEQ(T.Text)
+CONCRETE_SEQ(FPRoundingMode)
 CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
 #endif
@@ -247,6 +254,7 @@ instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
 #if 1
 SEQ_SIMPLE(SymBool)
 SEQ_SIMPLE(SymInteger)
+SEQ_SIMPLE(SymFPRoundingMode)
 SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
 #endif
