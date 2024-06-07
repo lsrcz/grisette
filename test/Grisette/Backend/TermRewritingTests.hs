@@ -20,6 +20,7 @@ import Data.SBV (bitwuzla)
 import qualified Data.SBV as SBV
 import Grisette
   ( GrisetteSMTConfig,
+    ITEOp (symIte),
     IntN,
     LogicalOp (symNot),
     Solvable (con),
@@ -68,7 +69,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     SymIEEEFPTraits (symFpIsPositiveInfinite),
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=)))
+import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPTrait (FPIsPositive),
@@ -106,7 +107,10 @@ bitwuzlaConfig = do
 #if MIN_VERSION_sbv(8,17,0)
   v <- solve (precise bitwuzla{transcript=Just "bad.smt2"}) $
          ("x" :: SymFP32) ./= "x" .&&
-         symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32))
+         symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32)) .&&
+         (symIte "bool"
+            (con $ fpPositiveInfinite :: SymFP32)
+            (con $ -fpNegativeInfinite) .== "m")
   case v of
     Left _ -> return Nothing
     Right _ -> return $ Just $ precise bitwuzla
