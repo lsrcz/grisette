@@ -15,7 +15,7 @@
               rev = "0.5.0";
               sha256 = "sha256-/izxmN+zlrXsY6g6TRC1QqsLqltvrmZquXRd6h8RLRc=";
             };
-            patches = [];
+            patches = [ ];
           });
         });
         pkgs = import nixpkgs {
@@ -25,7 +25,8 @@
           ];
         };
 
-        hPkgs = pkgs.haskell.packages."ghc964";
+        stableHPkgs = pkgs.haskell.packages."ghc982";
+        hPkgs = pkgs.haskell.packages."ghc965";
 
         myDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
@@ -33,7 +34,7 @@
           # hPkgs.ormolu # Haskell formatter
           hPkgs.hlint # Haskell codestyle checker
           hPkgs.haskell-language-server # LSP server for editor
-          hPkgs.cabal-install
+          stableHPkgs.cabal-install
           stack-wrapped
           (pkgs.ihaskell.override {
             haskell = hPkgs.haskell;

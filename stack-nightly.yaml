@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: nightly-2024-04-19
+resolver: nightly-2024-06-04
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,6 +41,10 @@ packages:
 #
 # Override default flag values for local packages and extra-deps
 # flags: {}
+extra-deps:
+- git: https://github.com/LeventErkok/sbv.git
+  commit: 190ea1481d6eec70181ed000b4605cba7c218e85 
+- libBF-0.6.8
 
 # Extra package databases containing global packages
 # extra-package-dbs: []

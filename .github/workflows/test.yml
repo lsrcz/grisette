@@ -65,7 +65,7 @@ jobs:
               arg: "",
               ismain: true,
               experimental: false,
-              ghc: "964",
+              ghc: "965",
               cachekey: "stack-96",
             }
           - {
@@ -81,8 +81,8 @@ jobs:
               arg: "",
               ismain: false,
               experimental: false,
-              ghc: "964",
-              cachekey: "cabal-96",
+              ghc: "9101",
+              cachekey: "cabal-910",
             }
         include:
           - os: macOS-latest
@@ -92,7 +92,7 @@ jobs:
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "964",
+                ghc: "965",
                 cachekey: "stack-96",
               }
 
@@ -121,18 +121,18 @@ jobs:
           cp .github/workflows/flake-ci.nix flake.nix
           case ${{ matrix.os }} in
             macOS-latest)
-              sed -i '' "s/pkgs.haskell.packages.\"ghc902\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
+              sed -i '' "s/pkgs.haskell.packages.\"xxx\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
               case ${{ matrix.plan.build }} in
                 stack)
-                  sed -i '' "s/hPkgs.cabal-install//" flake.nix
+                  sed -i '' "s/stableHPkgs.cabal-install//" flake.nix
                   ;;
               esac
               ;;
             ubuntu-latest)
-              sed -i "s/pkgs.haskell.packages.\"ghc902\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
+              sed -i "s/pkgs.haskell.packages.\"xxx\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
               case ${{ matrix.plan.build }} in
                 stack)
-                  sed -i "s/hPkgs.cabal-install//" flake.nix
+                  sed -i "s/stableHPkgs.cabal-install//" flake.nix
                   ;;
               esac
               ;;
