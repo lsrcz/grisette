@@ -209,10 +209,10 @@ newtype UniqueCount = UniqueCount Int
 instance Show UniqueCount where
   show (UniqueCount i) = "unique<" <> show i <> ">"
 
-uniqueIdentifier :: IO Identifier
-uniqueIdentifier = do
+uniqueIdentifier :: T.Text -> IO Identifier
+uniqueIdentifier ident = do
   i <- atomicModifyIORef' identifierCount (\x -> (x + 1, x))
-  return $ withInfo (identifier "ident") (UniqueCount i)
+  return $ withInfo (identifier ident) (UniqueCount i)
 
 -- | Symbol types for a symbolic variable.
 --
