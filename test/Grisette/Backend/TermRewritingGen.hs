@@ -1017,4 +1017,3 @@ instance Arbitrary FPRoundingModeBoolOpSpec where
     l :: FPRoundingModeSpec <- arbitrary
     r <- arbitrary
     elements [eqvSpec l r, ltOrdSpec l r, leOrdSpec l r]
-    
