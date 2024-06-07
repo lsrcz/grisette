@@ -3,13 +3,26 @@
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   ( pevalFPTraitTerm,
     sbvFPTraitTerm,
+    pevalFPUnaryTerm,
+    sbvFPUnaryTerm,
+    pevalFPBinaryTerm,
+    sbvFPBinaryTerm,
+    pevalFPRoundingUnaryTerm,
+    sbvFPRoundingUnaryTerm,
+    pevalFPRoundingBinaryTerm,
+    sbvFPRoundingBinaryTerm,
+    pevalFPFMATerm,
+    sbvFPFMATerm,
   )
 where
 
 import qualified Data.SBV as SBV
-import Grisette.Internal.SymPrim.FP (FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( FPTrait
+  ( FPBinaryOp (FPMax, FPMin, FPRem),
+    FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
+    FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
+    FPTrait
       ( FPIsInfinite,
         FPIsNaN,
         FPIsNegative,
@@ -23,10 +36,16 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FPIsSubnormal,
         FPIsZero
       ),
+    FPUnaryOp (FPAbs, FPNeg),
     SupportedPrim,
     Term (ConTerm),
     conTerm,
+    fpBinaryTerm,
+    fpFMATerm,
+    fpRoundingBinaryTerm,
+    fpRoundingUnaryTerm,
     fpTraitTerm,
+    fpUnaryTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
@@ -98,3 +117,102 @@ sbvFPTraitTerm FPIsZero = SBV.fpIsZero
 sbvFPTraitTerm FPIsNormal = SBV.fpIsNormal
 sbvFPTraitTerm FPIsSubnormal = SBV.fpIsSubnormal
 sbvFPTraitTerm FPIsPoint = SBV.fpIsPoint
+
+pevalFPUnaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPUnaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+pevalFPUnaryTerm = fpUnaryTerm
+{-# INLINE pevalFPUnaryTerm #-}
+
+sbvFPUnaryTerm ::
+  (ValidFP eb sb) =>
+  FPUnaryOp ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb
+sbvFPUnaryTerm FPAbs = SBV.fpAbs
+sbvFPUnaryTerm FPNeg = SBV.fpNeg
+{-# INLINE sbvFPUnaryTerm #-}
+
+pevalFPBinaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPBinaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+pevalFPBinaryTerm = fpBinaryTerm
+{-# INLINE pevalFPBinaryTerm #-}
+
+sbvFPBinaryTerm ::
+  (ValidFP eb sb) =>
+  FPBinaryOp ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb
+sbvFPBinaryTerm FPRem = SBV.fpRem
+sbvFPBinaryTerm FPMin = SBV.fpMin
+sbvFPBinaryTerm FPMax = SBV.fpMax
+{-# INLINE sbvFPBinaryTerm #-}
+
+pevalFPRoundingUnaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPRoundingUnaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+pevalFPRoundingUnaryTerm = fpRoundingUnaryTerm
+{-# INLINE pevalFPRoundingUnaryTerm #-}
+
+sbvFPRoundingUnaryTerm ::
+  (ValidFP eb sb) =>
+  FPRoundingUnaryOp ->
+  SBV.SRoundingMode ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb
+sbvFPRoundingUnaryTerm FPSqrt = SBV.fpSqrt
+sbvFPRoundingUnaryTerm FPRoundToIntegral = SBV.fpRoundToIntegral
+{-# INLINE sbvFPRoundingUnaryTerm #-}
+
+pevalFPRoundingBinaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPRoundingBinaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+pevalFPRoundingBinaryTerm = fpRoundingBinaryTerm
+{-# INLINE pevalFPRoundingBinaryTerm #-}
+
+sbvFPRoundingBinaryTerm ::
+  (ValidFP eb sb) =>
+  FPRoundingBinaryOp ->
+  SBV.SRoundingMode ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb
+sbvFPRoundingBinaryTerm FPAdd = SBV.fpAdd
+sbvFPRoundingBinaryTerm FPSub = SBV.fpSub
+sbvFPRoundingBinaryTerm FPMul = SBV.fpMul
+sbvFPRoundingBinaryTerm FPDiv = SBV.fpDiv
+{-# INLINE sbvFPRoundingBinaryTerm #-}
+
+pevalFPFMATerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+pevalFPFMATerm = fpFMATerm
+{-# INLINE pevalFPFMATerm #-}
+
+sbvFPFMATerm ::
+  (ValidFP eb sb) =>
+  SBV.SRoundingMode ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb
+sbvFPFMATerm = SBV.fpFMA
+{-# INLINE sbvFPFMATerm #-}

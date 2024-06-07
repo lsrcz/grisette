@@ -115,7 +115,12 @@ import Grisette.Internal.Core.Data.Class.Solver
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
-  ( sbvFPTraitTerm,
+  ( sbvFPBinaryTerm,
+    sbvFPFMATerm,
+    sbvFPRoundingBinaryTerm,
+    sbvFPRoundingUnaryTerm,
+    sbvFPTraitTerm,
+    sbvFPUnaryTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -171,7 +176,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ConTerm,
         DivIntegralTerm,
         EqTerm,
+        FPBinaryTerm,
+        FPFMATerm,
+        FPRoundingBinaryTerm,
+        FPRoundingUnaryTerm,
         FPTraitTerm,
+        FPUnaryTerm,
         FdivTerm,
         ITETerm,
         LeOrdTerm,
@@ -691,6 +701,28 @@ lowerSinglePrimIntermediate config (RecipTerm _ a) m = do
 lowerSinglePrimIntermediate config (SqrtTerm _ a) m = do
   (m, a) <- lowerSinglePrimCached config a m
   return (m, sbvSqrtTerm @a config a)
+lowerSinglePrimIntermediate config (FPUnaryTerm _ op a) m = do
+  (m, a) <- lowerSinglePrimCached config a m
+  return (m, sbvFPUnaryTerm op a)
+lowerSinglePrimIntermediate config (FPBinaryTerm _ op a b) m = do
+  (m, a) <- lowerSinglePrimCached config a m
+  (m, b) <- lowerSinglePrimCached config b m
+  return (m, sbvFPBinaryTerm op a b)
+lowerSinglePrimIntermediate config (FPRoundingUnaryTerm _ op round a) m = do
+  (m, round) <- lowerSinglePrimCached config round m
+  (m, a) <- lowerSinglePrimCached config a m
+  return (m, sbvFPRoundingUnaryTerm op round a)
+lowerSinglePrimIntermediate config (FPRoundingBinaryTerm _ op round a b) m = do
+  (m, round) <- lowerSinglePrimCached config round m
+  (m, a) <- lowerSinglePrimCached config a m
+  (m, b) <- lowerSinglePrimCached config b m
+  return (m, sbvFPRoundingBinaryTerm op round a b)
+lowerSinglePrimIntermediate config (FPFMATerm _ round a b c) m = do
+  (m, round) <- lowerSinglePrimCached config round m
+  (m, a) <- lowerSinglePrimCached config a m
+  (m, b) <- lowerSinglePrimCached config b m
+  (m, c) <- lowerSinglePrimCached config c m
+  return (m, sbvFPFMATerm round a b c)
 lowerSinglePrimIntermediate _ _ _ = undefined
 
 #if MIN_VERSION_sbv(10,3,0)

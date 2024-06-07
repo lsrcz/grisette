@@ -53,7 +53,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ConTerm,
         DivIntegralTerm,
         EqTerm,
+        FPBinaryTerm,
+        FPFMATerm,
+        FPRoundingBinaryTerm,
+        FPRoundingUnaryTerm,
         FPTraitTerm,
+        FPUnaryTerm,
         FdivTerm,
         ITETerm,
         LeOrdTerm,
@@ -141,6 +146,16 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (RecipTerm _ arg)) = goUnary arg
     go (SomeTerm (SqrtTerm _ arg)) = goUnary arg
+    go (SomeTerm (FPUnaryTerm _ _ arg)) = goUnary arg
+    go (SomeTerm (FPBinaryTerm _ _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPRoundingUnaryTerm _ _ _ arg)) = goUnary arg
+    go (SomeTerm (FPRoundingBinaryTerm _ _ _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPFMATerm _ mode arg1 arg2 arg3)) = do
+      m <- gocached (SomeTerm mode)
+      r1 <- gocached (SomeTerm arg1)
+      r2 <- gocached (SomeTerm arg2)
+      r3 <- gocached (SomeTerm arg3)
+      return $ m <> r1 <> r2 <> r3
     goUnary arg = gocached (SomeTerm arg)
     goBinary arg1 arg2 = do
       r1 <- gocached (SomeTerm arg1)
@@ -197,6 +212,11 @@ castTerm t@FPTraitTerm {} = cast t
 castTerm t@FdivTerm {} = cast t
 castTerm t@RecipTerm {} = cast t
 castTerm t@SqrtTerm {} = cast t
+castTerm t@FPUnaryTerm {} = cast t
+castTerm t@FPBinaryTerm {} = cast t
+castTerm t@FPRoundingUnaryTerm {} = cast t
+castTerm t@FPRoundingBinaryTerm {} = cast t
+castTerm t@FPFMATerm {} = cast t
 {-# INLINE castTerm #-}
 
 someTermsSize :: [SomeTerm] -> Int
@@ -246,6 +266,11 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(FdivTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(RecipTerm _ arg) = goUnary t arg
     go t@(SqrtTerm _ arg) = goUnary t arg
+    go t@(FPUnaryTerm _ _ arg) = goUnary t arg
+    go t@(FPBinaryTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPRoundingUnaryTerm _ _ _ arg) = goUnary t arg
+    go t@(FPRoundingBinaryTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPFMATerm _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
     goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (S.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t

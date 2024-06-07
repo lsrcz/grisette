@@ -54,6 +54,11 @@ module Grisette.Backend.TermRewritingGen
     fdivSpec,
     recipSpec,
     sqrtSpec,
+    fpUnaryOpSpec,
+    fpBinaryOpSpec,
+    fpRoundingUnaryOpSpec,
+    fpRoundingBinarySpec,
+    fpFMASpec,
     IEEEFP32Spec (..),
     IEEEFP32BoolOpSpec (..),
     FPRoundingModeSpec (..),
@@ -75,9 +80,18 @@ import Grisette.Internal.SymPrim.FP
     ValidFP,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalFloatingTerm (pevalSqrtTerm),
+  ( FPBinaryOp (FPMax, FPMin, FPRem),
+    FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
+    FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
+    FPUnaryOp (FPAbs, FPNeg),
+    PEvalFloatingTerm (pevalSqrtTerm),
     PEvalFractionalTerm (pevalRecipTerm),
     fdivTerm,
+    fpBinaryTerm,
+    fpFMATerm,
+    fpRoundingBinaryTerm,
+    fpRoundingUnaryTerm,
+    fpUnaryTerm,
     sqrtTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Term
@@ -160,7 +174,12 @@ import Grisette.Internal.SymPrim.Prim.Term
     orTerm,
     pevalAndTerm,
     pevalEqTerm,
+    pevalFPBinaryTerm,
+    pevalFPFMATerm,
+    pevalFPRoundingBinaryTerm,
+    pevalFPRoundingUnaryTerm,
     pevalFPTraitTerm,
+    pevalFPUnaryTerm,
     pevalNotTerm,
     pevalOrTerm,
     pformat,
@@ -428,6 +447,65 @@ recipSpec = constructUnarySpec recipTerm pevalRecipTerm
 
 sqrtSpec :: (TermRewritingSpec a av, PEvalFloatingTerm av) => a -> a
 sqrtSpec = constructUnarySpec sqrtTerm pevalSqrtTerm
+
+fpUnaryOpSpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb)
+  ) =>
+  FPUnaryOp ->
+  a ->
+  a
+fpUnaryOpSpec op = constructUnarySpec (fpUnaryTerm op) (pevalFPUnaryTerm op)
+
+fpBinaryOpSpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb)
+  ) =>
+  FPBinaryOp ->
+  a ->
+  a ->
+  a
+fpBinaryOpSpec op = constructBinarySpec (fpBinaryTerm op) (pevalFPBinaryTerm op)
+
+fpRoundingUnaryOpSpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb),
+    TermRewritingSpec r FPRoundingMode
+  ) =>
+  FPRoundingUnaryOp ->
+  r ->
+  a ->
+  a
+fpRoundingUnaryOpSpec op =
+  constructBinarySpec (fpRoundingUnaryTerm op) (pevalFPRoundingUnaryTerm op)
+
+fpRoundingBinarySpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb),
+    TermRewritingSpec r FPRoundingMode
+  ) =>
+  FPRoundingBinaryOp ->
+  r ->
+  a ->
+  a ->
+  a
+fpRoundingBinarySpec op =
+  constructTernarySpec (fpRoundingBinaryTerm op) (pevalFPRoundingBinaryTerm op)
+
+fpFMASpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb),
+    TermRewritingSpec r FPRoundingMode
+  ) =>
+  r ->
+  a ->
+  a ->
+  a ->
+  a
+fpFMASpec a b c d =
+  wrap
+    (fpFMATerm (norewriteVer a) (norewriteVer b) (norewriteVer c) (norewriteVer d))
+    (pevalFPFMATerm (rewriteVer a) (rewriteVer b) (rewriteVer c) (norewriteVer d))
 
 data BoolOnlySpec = BoolOnlySpec (Term Bool) (Term Bool)
 
@@ -918,25 +996,46 @@ instance Arbitrary IEEEFP32Spec where
   arbitrary = do
     bool :: BoolOnlySpec <-
       oneof [conSpec <$> arbitrary, return $ symSpec "bool"]
-    a <-
-      oneof
-        [conSpec <$> arbitrary, return $ symSpec "a", return $ symSpec "b"]
-    b <-
-      oneof
-        [conSpec <$> arbitrary, return $ symSpec "a", return $ symSpec "b"]
+    rounding :: FPRoundingModeSpec <- arbitrary
+    let gen =
+          oneof
+            [conSpec <$> arbitrary, return $ symSpec "a", return $ symSpec "b"]
+    a <- gen
+    b <- gen
+    c <- gen
+    let regular =
+          [ a,
+            iteSpec bool a b,
+            addNumSpec a a,
+            negNumSpec a,
+            mulNumSpec a b,
+            absNumSpec a,
+            signumNumSpec a,
+            fdivSpec a b,
+            recipSpec a,
+            sqrtSpec a
+          ]
+    let uop = fpUnaryOpSpec <$> [FPAbs, FPNeg] <*> return a
+    let bop = fpBinaryOpSpec <$> [FPRem, FPMin, FPMax] <*> [a] <*> [b]
+    let ruop =
+          fpRoundingUnaryOpSpec
+            <$> [FPSqrt, FPRoundToIntegral]
+            <*> [rounding]
+            <*> [a]
+    let rbop =
+          fpRoundingBinarySpec
+            <$> [FPAdd, FPSub, FPMul, FPDiv]
+            <*> [rounding]
+            <*> [a]
+            <*> [b]
     oneof $
       return
-        <$> [ a,
-              iteSpec bool a b,
-              addNumSpec a a,
-              negNumSpec a,
-              mulNumSpec a b,
-              absNumSpec a,
-              signumNumSpec a,
-              fdivSpec a b,
-              recipSpec a,
-              sqrtSpec a
-            ]
+        <$> regular
+          ++ uop
+          ++ bop
+          ++ ruop
+          ++ rbop
+          ++ [fpFMASpec rounding a b c]
 
 data IEEEFP32BoolOpSpec = IEEEFP32BoolOpSpec (Term Bool) (Term Bool)
 
