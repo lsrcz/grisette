@@ -35,6 +35,7 @@ import Grisette.Backend.TermRewritingGen
     FixedSizedBVWithBoolSpec,
     GeneralSpec,
     IEEEFP32BoolOpSpec (IEEEFP32BoolOpSpec),
+    IEEEFP32Spec,
     LIAWithBoolSpec,
     TermRewritingSpec
       ( conSpec,
@@ -49,7 +50,9 @@ import Grisette.Backend.TermRewritingGen
     andSpec,
     divIntegralSpec,
     eqvSpec,
+    fpTraitSpec,
     iteSpec,
+    leOrdSpec,
     modIntegralSpec,
     mulNumSpec,
     negNumSpec,
@@ -58,8 +61,12 @@ import Grisette.Backend.TermRewritingGen
     quotIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
+    signumNumSpec,
   )
-import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEConstants (fpNaN), SymIEEEFPTraits (symFpIsPositiveInfinite))
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEConstants (fpNaN, fpNegativeInfinite, fpPositiveInfinite),
+    SymIEEEFPTraits (symFpIsPositiveInfinite),
+  )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=)))
 import Grisette.Internal.SymPrim.FP (FP32)
@@ -69,7 +76,10 @@ import Grisette.Internal.SymPrim.Prim.Term
     Term,
     conTerm,
     fpTraitTerm,
+    iteTerm,
+    notTerm,
     pformat,
+    ssymTerm,
   )
 import Grisette.Internal.SymPrim.SymFP (SymFP32)
 import Test.Framework (Test, TestName, testGroup)
@@ -365,15 +375,73 @@ termRewritingTests =
           divisionTest @(GeneralSpec (WordN 4)) "quot" quotIntegralSpec,
           divisionTest @(GeneralSpec (WordN 4)) "rem" remIntegralSpec
         ],
-      testProperty "FP32BoolOp" $
-        mapSize (`min` 10) $
-          ioProperty . \(x :: IEEEFP32BoolOpSpec) ->
-            onlyWhenBitwuzlaIsAvailable (`validateSpec` x),
-      testCase "is_pos(nan)" $
-        onlyWhenBitwuzlaIsAvailable
-          ( flip validateSpec $
-              IEEEFP32BoolOpSpec
-                (fpTraitTerm FPIsPositive (conTerm fpNaN :: Term FP32))
-                (conTerm False)
-          )
+      testGroup
+        "FP"
+        [ testCase "0.0 == -0.0" $
+            onlyWhenBitwuzlaIsAvailable
+              ( `validateSpec`
+                  ( eqvSpec
+                      (conSpec 0.0 :: IEEEFP32Spec)
+                      (conSpec $ -0.0) ::
+                      IEEEFP32BoolOpSpec
+                  )
+              ),
+          testCase "-0.0 <= -0.0" $
+            onlyWhenBitwuzlaIsAvailable
+              ( `validateSpec`
+                  ( leOrdSpec
+                      (conSpec 0.0 :: IEEEFP32Spec)
+                      (conSpec $ -0.0) ::
+                      IEEEFP32BoolOpSpec
+                  )
+              ),
+          testCase "is_pos(nan)" $
+            onlyWhenBitwuzlaIsAvailable
+              ( `validateSpec`
+                  ( fpTraitSpec FPIsPositive (conSpec fpNaN :: IEEEFP32Spec) ::
+                      IEEEFP32BoolOpSpec
+                  )
+              ),
+          testCase "is_pos(+inf)" $
+            onlyWhenBitwuzlaIsAvailable
+              ( `validateSpec`
+                  ( fpTraitSpec
+                      FPIsPositive
+                      ( iteSpec
+                          (symSpec "bool" :: BoolOnlySpec)
+                          (conSpec fpNegativeInfinite)
+                          (conSpec fpPositiveInfinite) ::
+                          IEEEFP32Spec
+                      ) ::
+                      IEEEFP32BoolOpSpec
+                  )
+              ),
+          testCase "regression 2" $
+            onlyWhenBitwuzlaIsAvailable
+              ( `validateSpec`
+                  ( eqvSpec
+                      (signumNumSpec (conSpec (1.175e-38) :: IEEEFP32Spec))
+                      (symSpec "b") ::
+                      IEEEFP32BoolOpSpec
+                  )
+              ),
+          testCase "test sbv bug mitigation sbv#702" $
+            onlyWhenBitwuzlaIsAvailable
+              ( flip validateSpec $
+                  IEEEFP32BoolOpSpec
+                    ( fpTraitTerm
+                        FPIsPositive
+                        ( iteTerm
+                            (ssymTerm "bool")
+                            (conTerm fpNegativeInfinite :: Term FP32)
+                            (conTerm fpPositiveInfinite :: Term FP32)
+                        )
+                    )
+                    (notTerm $ ssymTerm "bool")
+              ),
+          testProperty "FP32BoolOp" $
+            withMaxSuccess 1000 . mapSize (`min` 10) $
+              ioProperty . \(x :: IEEEFP32BoolOpSpec) ->
+                onlyWhenBitwuzlaIsAvailable (`validateSpec` x)
+        ]
     ]

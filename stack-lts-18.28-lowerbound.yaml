@@ -60,7 +60,6 @@ extra-deps:
   - random-1.1
   - splitmix-0.0.5
   - vector-0.12.1.2
-  - sbv-8.11
   - doctest-0.18.2
   - call-stack-0.1.0
   - parallel-3.2.2.0
@@ -72,6 +71,7 @@ extra-deps:
   - HUnit-1.6.0.0
   - stm-2.5.0.1
   - async-2.2.2
+  - sbv-8.17
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

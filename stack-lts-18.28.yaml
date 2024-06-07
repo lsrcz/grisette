@@ -43,6 +43,7 @@ packages:
 #
 # extra-deps: []
 extra-deps:
+  - sbv-8.17
   - doctest-0.18.2
 
 # Override default flag values for local packages and extra-deps

@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -27,7 +28,15 @@ import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
-    PEvalNumTerm (pevalAbsNumTerm, pevalAddNumTerm, pevalMulNumTerm, pevalNegNumTerm, pevalSignumNumTerm),
+    PEvalFloatingTerm (pevalSqrtTerm),
+    PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
+    PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalAddNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
@@ -94,3 +103,26 @@ instance (ValidFP eb sb) => Num (SymFP eb sb) where
   abs (SymFP v) = SymFP $ pevalAbsNumTerm v
   signum (SymFP v) = SymFP $ pevalSignumNumTerm v
   fromInteger = con . fromInteger
+
+instance (ValidFP eb sb) => Fractional (SymFP eb sb) where
+  (SymFP l) / (SymFP r) = SymFP $ pevalFdivTerm l r
+  recip (SymFP v) = SymFP $ pevalRecipTerm v
+  fromRational = con . fromRational
+
+instance (ValidFP eb sb) => Floating (SymFP eb sb) where
+  pi = error "pi isn't supported by the underlying sbv library"
+  exp = error "exp isn't supported by the underlying sbv library"
+  log = error "log isn't supported by the underlying sbv library"
+  sqrt (SymFP v) = SymFP $ pevalSqrtTerm v
+  (**) = error "(**) isn't supported by the underlying sbv library"
+  logBase = error "logBase isn't supported by the underlying sbv library"
+  sin = error "sin isn't supported by the underlying sbv library"
+  cos = error "cos isn't supported by the underlying sbv library"
+  asin = error "asin isn't supported by the underlying sbv library"
+  acos = error "acos isn't supported by the underlying sbv library"
+  atan = error "atan isn't supported by the underlying sbv library"
+  sinh = error "sinh isn't supported by the underlying sbv library"
+  cosh = error "cosh isn't supported by the underlying sbv library"
+  asinh = error "asinh isn't supported by the underlying sbv library"
+  acosh = error "acosh isn't supported by the underlying sbv library"
+  atanh = error "atanh isn't supported by the underlying sbv library"

@@ -37,6 +37,9 @@ module Grisette.Backend.TermRewritingGen
     mulNumSpec,
     addNumSpec,
     absNumSpec,
+    signumNumSpec,
+    ltOrdSpec,
+    leOrdSpec,
     iteSpec,
     eqvSpec,
     notSpec,
@@ -47,6 +50,11 @@ module Grisette.Backend.TermRewritingGen
     rotateLeftSpec,
     rotateRightSpec,
     xorBitsSpec,
+    fpTraitSpec,
+    fdivSpec,
+    recipSpec,
+    sqrtSpec,
+    IEEEFP32Spec (..),
     IEEEFP32BoolOpSpec (..),
     singleFP32BoolOpSpecGen,
   )
@@ -59,7 +67,13 @@ import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
-import Grisette.Internal.SymPrim.FP (FP32)
+import Grisette.Internal.SymPrim.FP (FP, FP32, ValidFP)
+import Grisette.Internal.SymPrim.Prim.Internal.Term
+  ( PEvalFloatingTerm (pevalSqrtTerm),
+    PEvalFractionalTerm (pevalRecipTerm),
+    fdivTerm,
+    sqrtTerm,
+  )
 import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
     FPTrait
@@ -93,6 +107,7 @@ import Grisette.Internal.SymPrim.Prim.Term
         pevalQuotIntegralTerm,
         pevalRemIntegralTerm
       ),
+    PEvalFractionalTerm (pevalFdivTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
@@ -144,6 +159,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalOrTerm,
     pformat,
     quotIntegralTerm,
+    recipTerm,
     remIntegralTerm,
     rotateLeftTerm,
     rotateRightTerm,
@@ -385,6 +401,25 @@ quotIntegralSpec = constructBinarySpec quotIntegralTerm pevalQuotIntegralTerm
 
 remIntegralSpec :: (TermRewritingSpec a b, PEvalDivModIntegralTerm b) => a -> a -> a
 remIntegralSpec = constructBinarySpec remIntegralTerm pevalRemIntegralTerm
+
+fpTraitSpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb),
+    TermRewritingSpec b Bool
+  ) =>
+  FPTrait ->
+  a ->
+  b
+fpTraitSpec trait = constructUnarySpec (fpTraitTerm trait) (pevalFPTraitTerm trait)
+
+fdivSpec :: (TermRewritingSpec a av, PEvalFractionalTerm av) => a -> a -> a
+fdivSpec = constructBinarySpec fdivTerm pevalFdivTerm
+
+recipSpec :: (TermRewritingSpec a av, PEvalFractionalTerm av) => a -> a
+recipSpec = constructUnarySpec recipTerm pevalRecipTerm
+
+sqrtSpec :: (TermRewritingSpec a av, PEvalFloatingTerm av) => a -> a
+sqrtSpec = constructUnarySpec sqrtTerm pevalSqrtTerm
 
 data BoolOnlySpec = BoolOnlySpec (Term Bool) (Term Bool)
 
@@ -889,7 +924,10 @@ instance Arbitrary IEEEFP32Spec where
               negNumSpec a,
               mulNumSpec a b,
               absNumSpec a,
-              signumNumSpec a
+              signumNumSpec a,
+              fdivSpec a b,
+              recipSpec a,
+              sqrtSpec a
             ]
 
 data IEEEFP32BoolOpSpec = IEEEFP32BoolOpSpec (Term Bool) (Term Bool)
@@ -922,13 +960,7 @@ singleFP32BoolOpSpecGen = do
           FPIsSubnormal,
           FPIsPoint
         ]
-          <&> ( \trait ->
-                  return $
-                    constructUnarySpec
-                      (fpTraitTerm trait)
-                      (pevalFPTraitTerm trait)
-                      s0
-              )
+          <&> (\trait -> return $ fpTraitSpec trait s0)
   let cmpGens = return <$> [eqvSpec s0 s1, ltOrdSpec s0 s1, leOrdSpec s0 s1]
   oneof $ traitGens ++ cmpGens
 

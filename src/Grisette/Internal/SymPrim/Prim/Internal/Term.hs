@@ -58,6 +58,8 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalDivModIntegralTerm (..),
     PEvalBVSignConversionTerm (..),
     PEvalBVTerm (..),
+    PEvalFractionalTerm (..),
+    PEvalFloatingTerm (..),
 
     -- * Typed symbols
     TypedSymbol (..),
@@ -117,6 +119,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     quotIntegralTerm,
     remIntegralTerm,
     fpTraitTerm,
+    fdivTerm,
+    recipTerm,
+    sqrtTerm,
 
     -- * Support for boolean type
     trueTerm,
@@ -780,6 +785,42 @@ class
     SBVType int (bv n) ->
     SBVType int (bv w)
 
+class (SupportedPrim t, Fractional t) => PEvalFractionalTerm t where
+  pevalFdivTerm :: Term t -> Term t -> Term t
+  pevalRecipTerm :: Term t -> Term t
+  withSbvFractionalTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((Fractional (SBVType n t)) => r)) ->
+    r
+  sbvFdivTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t ->
+    SBVType n t
+  sbvFdivTerm p l r = withSbvFractionalTermConstraint @t p $ l / r
+  sbvRecipTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t
+  sbvRecipTerm p l = withSbvFractionalTermConstraint @t p $ recip l
+
+class (SupportedPrim t, Floating t) => PEvalFloatingTerm t where
+  pevalSqrtTerm :: Term t -> Term t
+  withSbvFloatingTermConstraint ::
+    (KnownIsZero n) =>
+    proxy n ->
+    (((Floating (SBVType n t)) => r)) ->
+    r
+  sbvSqrtTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    SBVType n t ->
+    SBVType n t
+  sbvSqrtTerm p l = withSbvFloatingTermConstraint @t p $ sqrt l
+
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
   UnaryOp tag arg t
@@ -1118,6 +1159,22 @@ data Term t where
     !FPTrait ->
     !(Term (FP eb sb)) ->
     Term Bool
+  FdivTerm ::
+    (PEvalFractionalTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
+  RecipTerm ::
+    (PEvalFractionalTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    Term t
+  SqrtTerm ::
+    (PEvalFloatingTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    Term t
 
 identity :: Term t -> Id
 identity = snd . identityWithTypeRep
@@ -1160,6 +1217,9 @@ identityWithTypeRep (ModIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (QuotIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RemIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPTraitTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FdivTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RecipTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (SqrtTerm i _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -1199,6 +1259,9 @@ introSupportedPrimConstraint ModIntegralTerm {} x = x
 introSupportedPrimConstraint QuotIntegralTerm {} x = x
 introSupportedPrimConstraint RemIntegralTerm {} x = x
 introSupportedPrimConstraint FPTraitTerm {} x = x
+introSupportedPrimConstraint FdivTerm {} x = x
+introSupportedPrimConstraint RecipTerm {} x = x
+introSupportedPrimConstraint SqrtTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
@@ -1239,6 +1302,9 @@ pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pforma
 pformat (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformat arg ++ ")"
+pformat (FdivTerm _ arg1 arg2) = "(fdiv " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (RecipTerm _ arg) = "(recip " ++ pformat arg ++ ")"
+pformat (SqrtTerm _ arg) = "(sqrt " ++ pformat arg ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -1281,6 +1347,9 @@ instance Lift (Term t) where
   liftTyped (QuotIntegralTerm _ arg1 arg2) = [||quotIntegralTerm arg1 arg2||]
   liftTyped (RemIntegralTerm _ arg1 arg2) = [||remIntegralTerm arg1 arg2||]
   liftTyped (FPTraitTerm _ trait arg) = [||fpTraitTerm trait arg||]
+  liftTyped (FdivTerm _ arg1 arg2) = [||fdivTerm arg1 arg2||]
+  liftTyped (RecipTerm _ arg) = [||recipTerm arg||]
+  liftTyped (SqrtTerm _ arg) = [||sqrtTerm arg||]
 
 instance Show (Term ty) where
   show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
@@ -1363,6 +1432,10 @@ instance Show (Term ty) where
     "RemIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (FPTraitTerm i trait arg) =
     "FPTrait{id=" ++ show i ++ ", trait=" ++ show trait ++ ", arg=" ++ show arg ++ "}"
+  show (FdivTerm i arg1 arg2) = "Fdiv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (RecipTerm i arg) = "Recip{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (SqrtTerm i arg) = "Sqrt{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  {-# INLINE show #-}
 
 prettyPrintTerm :: Term t -> Doc ann
 prettyPrintTerm v =
@@ -1490,6 +1563,9 @@ data UTerm t where
     !FPTrait ->
     !(Term (FP eb sb)) ->
     UTerm Bool
+  UFdivTerm :: (PEvalFractionalTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  URecipTerm :: (PEvalFractionalTerm t) => !(Term t) -> UTerm t
+  USqrtTerm :: (PEvalFloatingTerm t) => !(Term t) -> UTerm t
 
 eqTypedId :: (TypeRep a, Id) -> (TypeRep b, Id) -> Bool
 eqTypedId (a, i1) (b, i2) = i1 == i2 && eqTypeRepBool a b
@@ -1571,6 +1647,9 @@ instance (SupportedPrim t) => Interned (Term t) where
     DQuotIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRemIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DFPTraitTerm :: FPTrait -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DFdivTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
+    DRecipTerm :: {-# UNPACK #-} !Id -> Description (Term a)
+    DSqrtTerm :: {-# UNPACK #-} !Id -> Description (Term a)
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
@@ -1619,6 +1698,9 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (identity arg1) (identity arg2)
   describe (URemIntegralTerm arg1 arg2) = DQuotIntegralTerm (identity arg1) (identity arg2)
   describe (UFPTraitTerm trait arg) = DFPTraitTerm trait (identity arg)
+  describe (UFdivTerm arg1 arg2) = DFdivTerm (identity arg1) (identity arg2)
+  describe (URecipTerm arg) = DRecipTerm (identity arg)
+  describe (USqrtTerm arg) = DSqrtTerm (identity arg)
 
   identify i = go
     where
@@ -1658,6 +1740,9 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm i arg1 arg2
       go (URemIntegralTerm arg1 arg2) = RemIntegralTerm i arg1 arg2
       go (UFPTraitTerm trait arg) = FPTraitTerm i trait arg
+      go (UFdivTerm arg1 arg2) = FdivTerm i arg1 arg2
+      go (URecipTerm arg) = RecipTerm i arg
+      go (USqrtTerm arg) = SqrtTerm i arg
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
@@ -1704,6 +1789,9 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRemIntegralTerm li1 li2 == DRemIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DFPTraitTerm lt li == DFPTraitTerm rt ri = lt == rt && li == ri
+  DFdivTerm li1 li2 == DFdivTerm ri1 ri2 = li1 == ri1 && li2 == ri2
+  DRecipTerm li == DRecipTerm ri = li == ri
+  DSqrtTerm li == DSqrtTerm ri = li == ri
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
@@ -1763,6 +1851,9 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DRemIntegralTerm id1 id2) = s `hashWithSalt` (33 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DApplyTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DFPTraitTerm trait id1) = s `hashWithSalt` (39 :: Int) `hashWithSalt` trait `hashWithSalt` id1
+  hashWithSalt s (DFdivTerm id1 id2) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
+  hashWithSalt s (DRecipTerm id1) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1
+  hashWithSalt s (DSqrtTerm id1) = s `hashWithSalt` (42 :: Int) `hashWithSalt` id1
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
@@ -2004,6 +2095,18 @@ fpTraitTerm ::
   Term (FP eb sb) ->
   Term Bool
 fpTraitTerm trait v = internTerm $ UFPTraitTerm trait v
+
+fdivTerm :: (PEvalFractionalTerm a) => Term a -> Term a -> Term a
+fdivTerm l r = internTerm $ UFdivTerm l r
+{-# INLINE fdivTerm #-}
+
+recipTerm :: (PEvalFractionalTerm a) => Term a -> Term a
+recipTerm = internTerm . URecipTerm
+{-# INLINE recipTerm #-}
+
+sqrtTerm :: (PEvalFloatingTerm a) => Term a -> Term a
+sqrtTerm = internTerm . USqrtTerm
+{-# INLINE sqrtTerm #-}
 
 -- Support for boolean type
 defaultValueForBool :: Bool

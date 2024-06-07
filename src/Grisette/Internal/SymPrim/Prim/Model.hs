@@ -60,7 +60,9 @@ import Grisette.Internal.Core.Data.Class.ModelOps
   )
 import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP (pevalFPTraitTerm)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+  ( pevalFPTraitTerm,
+  )
 import Grisette.Internal.SymPrim.Prim.ModelValue
   ( ModelValue,
     toModelValue,
@@ -86,6 +88,8 @@ import Grisette.Internal.SymPrim.Prim.Term
         pevalQuotIntegralTerm,
         pevalRemIntegralTerm
       ),
+    PEvalFloatingTerm (pevalSqrtTerm),
+    PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
@@ -116,6 +120,7 @@ import Grisette.Internal.SymPrim.Prim.Term
         DivIntegralTerm,
         EqTerm,
         FPTraitTerm,
+        FdivTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -126,12 +131,14 @@ import Grisette.Internal.SymPrim.Prim.Term
         OrBitsTerm,
         OrTerm,
         QuotIntegralTerm,
+        RecipTerm,
         RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
         ShiftLeftTerm,
         ShiftRightTerm,
         SignumNumTerm,
+        SqrtTerm,
         SymTerm,
         TernaryTerm,
         ToSignedTerm,
@@ -466,6 +473,9 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       goBinary pevalRemIntegralTerm arg1 arg2
     go (SomeTerm (FPTraitTerm _ trait arg)) =
       goUnary (pevalFPTraitTerm trait) arg
+    go (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary pevalFdivTerm arg1 arg2
+    go (SomeTerm (RecipTerm _ arg)) = goUnary pevalRecipTerm arg
+    go (SomeTerm (SqrtTerm _ arg)) = goUnary pevalSqrtTerm arg
     goUnary :: (SupportedPrim a, SupportedPrim b) => (Term a -> Term b) -> Term a -> SomeTerm
     goUnary f a = SomeTerm $ f (gotyped a)
     goBinary ::
