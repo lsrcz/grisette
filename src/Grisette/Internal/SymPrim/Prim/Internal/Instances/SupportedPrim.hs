@@ -30,7 +30,6 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
 import Data.Type.Bool (If)
 import Data.Type.Equality ((:~:) (Refl))
-import Debug.Trace (trace)
 import GHC.TypeNats (KnownNat, natVal, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP (FP), ValidFP)
@@ -53,6 +52,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalEqTerm,
         pevalITETerm,
         pformatCon,
+        sbvIte,
         symSBVName,
         symSBVTerm,
         withPrim
@@ -104,7 +104,7 @@ instance SupportedPrim Integer where
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> Integer
   parseSMTModelResult _ ([], SBVD.CV SBVD.KUnbounded (SBVD.CInteger i)) = i
   parseSMTModelResult _ ([([], SBVD.CV SBVD.KUnbounded (SBVD.CInteger i))], _) = i
-  parseSMTModelResult _ cv = trace (show cv) $ parseSMTModelResultError (typeRep @Integer) cv
+  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @Integer) cv
 
 instance NonFuncSBVRep Integer where
   type NonFuncSBVBaseType n Integer = If (IsZero n) Integer (SBV.IntN n)
@@ -195,7 +195,7 @@ instance (ValidFP eb sb) => SBVRep (FP eb sb) where
 instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm l@ConTerm {} r@ConTerm {} = conTerm $ l == r
+  pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   conSBVTerm _ (FP fp) = SBV.literal fp
@@ -219,6 +219,20 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
           -- constructor isn't exposed
           fromIntegral $ unsafeCoerce fp
   parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(FP eb sb)) cv
+
+  -- Workaround for sbv#702.
+  sbvIte p = withPrim @(FP eb sb) p $ \c a b ->
+    case (SBV.unliteral a, SBV.unliteral b) of
+      (Just a', Just b')
+        | isInfinite a' && isInfinite b' ->
+            let correspondingZero x = if x > 0 then 0 else -0
+             in 1
+                  / sbvIte @(FP eb sb)
+                    p
+                    c
+                    (conSBVTerm @(FP eb sb) p $ correspondingZero a')
+                    (conSBVTerm @(FP eb sb) p $ correspondingZero b')
+      _ -> SBV.ite c a b
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w

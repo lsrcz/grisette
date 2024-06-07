@@ -66,7 +66,8 @@ goodFpIsPositive ::
   (ValidFP eb sb) =>
   SBV.SFloatingPoint eb sb ->
   SBV.SBool
-goodFpIsPositive x = SBV.sNot (SBV.fpIsNaN x) SBV..&& SBV.fpIsPositive x
+goodFpIsPositive x =
+  SBV.sNot (SBV.fpIsNaN x) SBV..&& SBV.fpIsPositive x
 {-# INLINE goodFpIsPositive #-}
 
 goodFpIsNegative ::

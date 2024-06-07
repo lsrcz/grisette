@@ -124,13 +124,6 @@ packages:
   original:
     hackage: vector-0.12.1.2
 - completed:
-    hackage: sbv-8.11@sha256:f55902b77c31ec57ec2fd527e37ac736f9411868d37b3cf42fea58e06c2ba7fc,28997
-    pantry-tree:
-      sha256: 5e91ad6ea4568c2637959f156417a78e17d8ebf7e3cac7291a333defac9ad28d
-      size: 64097
-  original:
-    hackage: sbv-8.11
-- completed:
     hackage: doctest-0.18.2@sha256:489a6e8d3d687845798a73f7b53b43ebec1a8368d7cd6a959a91080ed253bcd7,7241
     pantry-tree:
       sha256: cacfd1af86ef3ec7531c528a2771451a47d218a0eca05db00141d29644aef80f
@@ -207,6 +200,13 @@ packages:
       size: 501
   original:
     hackage: async-2.2.2
+- completed:
+    hackage: sbv-8.17@sha256:3e36afa44ee597b213843495e666d88e604e429f0fcec1bbca05ae847bb752a2,29096
+    pantry-tree:
+      sha256: 569fce0cd577b91104a56bab058140978a3c35ab723a602d1b5370c151c95d9f
+      size: 64220
+  original:
+    hackage: sbv-8.17
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

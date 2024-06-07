@@ -6,7 +6,25 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        bitwuzla_overlay = (self: super: {
+          bitwuzla = super.bitwuzla.overrideAttrs (prev: {
+            version = "0.5.0";
+            src = pkgs.fetchFromGitHub {
+              owner = "bitwuzla";
+              repo = "bitwuzla";
+              rev = "0.5.0";
+              sha256 = "sha256-/izxmN+zlrXsY6g6TRC1QqsLqltvrmZquXRd6h8RLRc=";
+            };
+            patches = [];
+          });
+        });
+
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            bitwuzla_overlay
+          ];
+        };
 
         hPkgs = pkgs.haskell.packages."ghc902";
 
@@ -16,6 +34,7 @@
           stack-wrapped
           pkgs.zlib # External C library needed by some Haskell packages
           pkgs.z3_4_12
+          pkgs.bitwuzla
         ];
         # Wrap Stack to work with our Nix integration. We don't want to modify
         # stack.yaml so non-Nix users don't notice anything.

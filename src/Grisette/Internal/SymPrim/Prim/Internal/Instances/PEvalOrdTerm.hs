@@ -23,14 +23,23 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
 where
 
 import Control.Monad (msum)
+import qualified Data.SBV as SBV
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero (IsZeroCases (IsZeroEvidence, NonZeroEvidence), KnownIsZero (isZero))
+import Grisette.Internal.SymPrim.Prim.Internal.IsZero
+  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
+    KnownIsZero (isZero),
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalNumTerm (pevalNegNumTerm),
-    PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm, withSbvOrdTermConstraint),
+    PEvalOrdTerm
+      ( pevalLeOrdTerm,
+        pevalLtOrdTerm,
+        sbvLeOrdTerm,
+        withSbvOrdTermConstraint
+      ),
     SupportedPrim (withPrim),
     Term (AddNumTerm, ConTerm),
     conTerm,
@@ -116,3 +125,6 @@ instance (ValidFP eb sb) => PEvalOrdTerm (FP eb sb) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
   withSbvOrdTermConstraint p r = withPrim @(FP eb sb) p r
+  sbvLeOrdTerm _ x y =
+    (SBV.sNot (SBV.fpIsNaN x) SBV..&& SBV.sNot (SBV.fpIsNaN y))
+      SBV..&& (x SBV..<= y)
