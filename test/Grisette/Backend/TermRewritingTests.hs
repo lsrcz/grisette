@@ -9,7 +9,7 @@
 module Grisette.Backend.TermRewritingTests
   ( termRewritingTests,
     validateSpec,
-    bitwuzlaConfig
+    bitwuzlaConfig,
   )
 where
 
