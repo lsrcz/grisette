@@ -28,7 +28,15 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.SymBV
   ( SymWordN (..),
+    SymWordN8,
+    SymWordN16,
+    SymWordN32,
+    SymWordN64,
     SymIntN (..),
+    SymIntN8,
+    SymIntN16,
+    SymIntN32,
+    SymIntN64,
   )
 where
 
@@ -159,6 +167,14 @@ import Language.Haskell.TH.Syntax (Lift)
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
 
+type SymIntN8 = SymIntN 8
+
+type SymIntN16 = SymIntN 16
+
+type SymIntN32 = SymIntN 32
+
+type SymIntN64 = SymIntN 64
+
 -- | Symbolic unsigned bit vector type. Indexed with the bit width.
 -- Signedness affects the semantics of the operations, including
 -- comparison/extension, etc.
@@ -177,6 +193,14 @@ newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
 -- for the type class instances.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
+
+type SymWordN8 = SymWordN 8
+
+type SymWordN16 = SymWordN 16
+
+type SymWordN32 = SymWordN 32
+
+type SymWordN64 = SymWordN 64
 
 instance (KnownNat n, 1 <= n) => ConRep (SymIntN n) where
   type ConType (SymIntN n) = IntN n
