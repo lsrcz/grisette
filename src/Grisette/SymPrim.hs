@@ -16,7 +16,20 @@ module Grisette.SymPrim
 
     -- ** Extended types
     IntN,
+    IntN8,
+    IntN16,
+    IntN32,
+    IntN64,
     WordN,
+    WordN8,
+    WordN16,
+    WordN32,
+    WordN64,
+    FP,
+    FP16,
+    FP32,
+    FP64,
+    FPRoundingMode (..),
     SomeBV (..),
     BitwidthMismatch (..),
     pattern SomeIntN,
@@ -51,7 +64,20 @@ module Grisette.SymPrim
     SymBool (..),
     SymInteger (..),
     SymWordN (..),
+    SymWordN8,
+    SymWordN16,
+    SymWordN32,
+    SymWordN64,
     SymIntN (..),
+    SymIntN8,
+    SymIntN16,
+    SymIntN32,
+    SymIntN64,
+    SymFP (..),
+    SymFPRoundingMode (..),
+    SymFP16,
+    SymFP32,
+    SymFP64,
     SomeSymIntN,
     SomeSymWordN,
     pattern SomeSymIntN,
@@ -81,8 +107,17 @@ import Grisette.Internal.SymPrim.AllSyms
 import Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch (..),
     IntN,
+    IntN16,
+    IntN32,
+    IntN64,
+    IntN8,
     WordN,
+    WordN16,
+    WordN32,
+    WordN64,
+    WordN8,
   )
+import Grisette.Internal.SymPrim.FP (FP, FP16, FP32, FP64, FPRoundingMode (..))
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.ModelRep (ModelSymPair (..))
 import Grisette.Internal.SymPrim.Prim.Model
@@ -126,10 +161,25 @@ import Grisette.Internal.SymPrim.SomeBV
   )
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (..),
+    SymIntN16,
+    SymIntN32,
+    SymIntN64,
+    SymIntN8,
     SymWordN (..),
+    SymWordN16,
+    SymWordN32,
+    SymWordN64,
+    SymWordN8,
   )
 import Grisette.Internal.SymPrim.SymBool
   ( SymBool (..),
+  )
+import Grisette.Internal.SymPrim.SymFP
+  ( SymFP (..),
+    SymFP16,
+    SymFP32,
+    SymFP64,
+    SymFPRoundingMode (..),
   )
 import Grisette.Internal.SymPrim.SymGeneralFun ((-->), type (-~>) (..))
 import Grisette.Internal.SymPrim.SymInteger

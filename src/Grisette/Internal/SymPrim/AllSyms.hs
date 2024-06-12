@@ -52,11 +52,14 @@ import GHC.Generics
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving (Default (Default, unDefault))
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
@@ -160,7 +163,13 @@ instance (AllSyms' a, AllSyms' b) => AllSyms' (a :*: b) where
 
 #define CONCRETE_ALLSYMS(type) \
 instance AllSyms type where \
-  allSymsS _ = id
+  allSymsS _ = id; \
+  {-# INLINE allSymsS #-}
+
+#define CONCRETE_ALLSYMS_BV(type) \
+instance (KnownNat n, 1 <= n) => AllSyms (type n) where \
+  allSymsS _ = id; \
+  {-# INLINE allSymsS #-}
 
 #if 1
 CONCRETE_ALLSYMS(Bool)
@@ -176,9 +185,18 @@ CONCRETE_ALLSYMS(Word8)
 CONCRETE_ALLSYMS(Word16)
 CONCRETE_ALLSYMS(Word32)
 CONCRETE_ALLSYMS(Word64)
+CONCRETE_ALLSYMS(Float)
+CONCRETE_ALLSYMS(Double)
 CONCRETE_ALLSYMS(B.ByteString)
 CONCRETE_ALLSYMS(T.Text)
+CONCRETE_ALLSYMS(FPRoundingMode)
+CONCRETE_ALLSYMS_BV(WordN)
+CONCRETE_ALLSYMS_BV(IntN)
 #endif
+
+instance (ValidFP eb sb) => AllSyms (FP eb sb) where
+  allSymsS _ = id
+  {-# INLINE allSymsS #-}
 
 instance AllSyms () where
   allSymsS _ = id
