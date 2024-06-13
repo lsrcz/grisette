@@ -12,6 +12,7 @@ import Data.Kind (Constraint)
 import Data.Type.Bool (If)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import qualified Grisette.Internal.Core.Data.Class.PlainUnion
 import Grisette.Unified.Internal.EvaluationMode
   ( BaseMonad,
@@ -19,7 +20,6 @@ import Grisette.Unified.Internal.EvaluationMode
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 
 -- | A class that provides a unified symbolic ite operation for unified types.
 --
