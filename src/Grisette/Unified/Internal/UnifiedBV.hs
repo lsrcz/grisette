@@ -102,7 +102,6 @@ class
     UnifiedSimpleMergeable mode (GetIntN mode n),
     SizedBV wordn,
     SizedBV intn,
-    SomeBVPair mode (SomeBV wordn) (SomeBV intn),
     wordn ~ GetWordN mode,
     intn ~ GetIntN mode,
     word ~ wordn n,
@@ -171,11 +170,15 @@ instance
   UnifiedBV mode n
 
 class
-  (forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n) =>
+  ( forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ) =>
   AllUnifiedBV mode
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n) =>
+  ( forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ) =>
   AllUnifiedBV mode
 
 type SafeSomeBVPair mode word int m =
@@ -273,9 +276,13 @@ instance
   SafeUnifiedBV mode n m
 
 class
-  (forall n. (KnownNat n, 1 <= n) => SafeUnifiedBV mode n m) =>
+  ( forall n. (KnownNat n, 1 <= n) => SafeUnifiedBV mode n m,
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ) =>
   SafeAllUnifiedBV mode m
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => SafeUnifiedBV mode n m) =>
+  ( forall n. (KnownNat n, 1 <= n) => SafeUnifiedBV mode n m,
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ) =>
   SafeAllUnifiedBV mode m

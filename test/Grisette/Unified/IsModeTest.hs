@@ -36,6 +36,7 @@ import Grisette
   )
 import qualified Grisette
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
+import Grisette.Internal.SymPrim.SomeBV (SomeSymIntN, ssymBV)
 import Grisette.Lib.Control.Monad.Except (mrgModifyError)
 import Grisette.Unified
   ( EvaluationMode (Con),
@@ -43,6 +44,7 @@ import Grisette.Unified
     GetData,
     GetIntN,
     GetInteger,
+    GetSomeIntN,
     IsMode,
     MonadWithMode,
     UnifiedITEOp (symIte),
@@ -95,6 +97,18 @@ fbv ::
   GetIntN mode n
 fbv l r =
   mrgIte @mode
+    (l .== r)
+    (l + r)
+    (symIte @mode (l .< r) l r)
+
+fsomebv ::
+  forall mode.
+  (IsMode mode) =>
+  GetSomeIntN mode ->
+  GetSomeIntN mode ->
+  GetSomeIntN mode
+fsomebv l r =
+  symIte @mode
     (l .== r)
     (l + r)
     (symIte @mode (l .< r) l r)
@@ -174,6 +188,18 @@ isModeTest =
             let r = "r" :: SymIntN 8
             fbv l r
               @?= Grisette.mrgIte
+                (l Grisette..== r)
+                (l + r)
+                (Grisette.symIte (l Grisette..< r) l r)
+        ],
+      testGroup
+        "GetSomeIntN"
+        [ testCase "Con" $ fbv (1 :: IntN 8) 2 @?= 1,
+          testCase "Sym" $ do
+            let l = ssymBV 8 "l" :: SomeSymIntN
+            let r = ssymBV 8 "r" :: SomeSymIntN
+            fsomebv l r
+              @?= Grisette.symIte
                 (l Grisette..== r)
                 (l + r)
                 (Grisette.symIte (l Grisette..< r) l r)
