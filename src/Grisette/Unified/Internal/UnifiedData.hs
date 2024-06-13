@@ -65,7 +65,7 @@ class
   type GetData mode v
 
   -- | Wraps a value into the unified data type.
-  wrapData :: v -> u 
+  wrapData :: v -> u
 
   -- | Extracts a value from the unified data type.
   extractData :: (Monad m, UnifiedBranching mode m) => u -> m v
