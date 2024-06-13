@@ -19,6 +19,7 @@ import Control.Monad (join, replicateM, when, zipWithM)
 import Data.Bifunctor (Bifunctor (second))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.TH.Util (constructorInfoToType, occName)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
@@ -34,24 +35,16 @@ import Language.Haskell.TH
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo
-      ( constructorContext,
-        constructorFields,
-        constructorName,
-        constructorVars
+      ( constructorFields,
+        constructorName
       ),
-    DatatypeInfo (datatypeCons, datatypeVars),
-    datatypeType,
+    DatatypeInfo (datatypeCons),
     reifyDatatype,
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
   ( Specificity (SpecifiedSpec),
     TyVarBndrSpec,
-    mapTVFlag,
     plainTVFlag,
-  )
-import Language.Haskell.TH.Syntax
-  ( Name (Name),
-    OccName (OccName),
   )
 
 -- | Generate constructor wrappers that wraps the result in a container with `TryMerge` with provided names.
@@ -75,9 +68,6 @@ mkMergeConstructor' names typName = do
     fail "Number of names does not match the number of constructors"
   ds <- zipWithM (mkSingleWrapper d) names constructors
   return $ join ds
-
-occName :: Name -> String
-occName (Name (OccName name) _) = name
 
 -- | Generate constructor wrappers that wraps the result in a container with `TryMerge`.
 --
@@ -129,29 +119,18 @@ augmentFinalType t = do
       AppT mTy t
     )
 
-augmentNormalCType :: Type -> Q Type
-augmentNormalCType (ForallT tybinders ctx ty1) = do
+augmentConstructorType :: Type -> Q Type
+augmentConstructorType (ForallT tybinders ctx ty1) = do
   ((bndrs, preds), augmentedTyp) <- augmentFinalType ty1
   return $ ForallT (tybinders ++ bndrs) (preds ++ ctx) augmentedTyp
-augmentNormalCType t = do
+augmentConstructorType t = do
   ((bndrs, preds), augmentedTyp) <- augmentFinalType t
   return $ ForallT bndrs preds augmentedTyp
-
-constructorInfoToType :: DatatypeInfo -> ConstructorInfo -> Q Type
-constructorInfoToType dataType info = do
-  let binders =
-        mapTVFlag (const SpecifiedSpec)
-          <$> datatypeVars dataType ++ constructorVars info
-  let ctx = constructorContext info
-  let fields = constructorFields info
-  let tyBody =
-        foldr (AppT . AppT ArrowT) (datatypeType dataType) fields
-  if null binders then return tyBody else return $ ForallT binders ctx tyBody
 
 mkSingleWrapper :: DatatypeInfo -> String -> ConstructorInfo -> Q [Dec]
 mkSingleWrapper dataType name info = do
   constructorTyp <- constructorInfoToType dataType info
-  augmentedTyp <- augmentNormalCType constructorTyp
+  augmentedTyp <- augmentConstructorType constructorTyp
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentNormalCExpr (length $ constructorFields info) (ConE oriName)
