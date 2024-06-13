@@ -37,12 +37,14 @@ dependencies:
   - transformers >= 0.5.6 && < 0.7
   - generic-deriving >= 1.14.1 && < 1.15
   - bytestring >= 0.10.12 && < 0.13
+  - containers >= 0.4 && < 0.8
   - unordered-containers >= 0.2.11 && < 0.3
   - template-haskell >= 2.16 && < 2.23
   - deepseq >= 1.4.4 && < 1.6
   - hashtables >= 1.2.3.4 && < 1.4
   - loch-th >= 0.2.2 && < 0.3
   - th-compat >= 0.1.2 && < 0.2
+  - th-abstraction >= 0.4 && < 0.8
   - array >= 0.5.4 && < 0.6
   - sbv >= 8.17 && < 11
   - parallel >= 3.2.2.0 && < 3.3
