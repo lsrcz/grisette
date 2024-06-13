@@ -72,6 +72,7 @@ extra-deps:
   - stm-2.5.0.1
   - async-2.2.2
   - sbv-8.17
+  - th-abstraction-0.4.0.0
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

@@ -207,6 +207,13 @@ packages:
       size: 64220
   original:
     hackage: sbv-8.17
+- completed:
+    hackage: th-abstraction-0.4.0.0@sha256:91c980ebdd0310cec2fb27703c52ad6631ccf97c9d9e95056d90a5b2a3344e44,1913
+    pantry-tree:
+      sha256: c44f5e5df1f261d08993d60ecb0856080768146730ca365f8d2cca15431184d5
+      size: 670
+  original:
+    hackage: th-abstraction-0.4.0.0
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
