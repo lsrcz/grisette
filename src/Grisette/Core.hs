@@ -1060,6 +1060,19 @@ module Grisette.Core
     -- ** Template Haskell
     mkMergeConstructor,
     mkMergeConstructor',
+    deriveNewtype,
+    deriveAnyclass,
+    deriveStock,
+    deriveViaDefault,
+    deriveNewtypeWithMode,
+    deriveAnyclassWithMode,
+    deriveStockWithMode,
+    deriveViaDefaultWithMode,
+    deriveConversions,
+    deriveConversionsWithMode,
+    deriveGrisette,
+    deriveAllGrisette,
+    deriveAllGrisetteExcept,
   )
 where
 
@@ -1290,6 +1303,21 @@ import Grisette.Internal.Core.Data.Symbol
     uniqueIdentifier,
     withInfo,
     withLoc,
+  )
+import Grisette.Internal.Core.TH.Derivation
+  ( deriveAllGrisette,
+    deriveAllGrisetteExcept,
+    deriveAnyclass,
+    deriveAnyclassWithMode,
+    deriveConversions,
+    deriveConversionsWithMode,
+    deriveGrisette,
+    deriveNewtype,
+    deriveNewtypeWithMode,
+    deriveStock,
+    deriveStockWithMode,
+    deriveViaDefault,
+    deriveViaDefaultWithMode,
   )
 import Grisette.Internal.Core.TH.MergeConstructor
   ( mkMergeConstructor,

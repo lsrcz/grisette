@@ -37,6 +37,10 @@ module Grisette.Unified
     UnifiedData,
     extractData,
     wrapData,
+
+    -- ** TH
+    mkUnifiedConstructor,
+    mkUnifiedConstructor',
   )
 where
 
@@ -52,6 +56,10 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (..), IsConMode)
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.MonadWithMode (MonadWithMode)
+import Grisette.Unified.Internal.TH.UnifiedConstructor
+  ( mkUnifiedConstructor,
+    mkUnifiedConstructor',
+  )
 import Grisette.Unified.Internal.UnifiedBV
   ( GetIntN,
     GetSomeIntN,

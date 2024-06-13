@@ -15,7 +15,7 @@ where
 import Control.Exception (ArithException)
 import Control.Monad.Except (ExceptT)
 import Data.Kind (Type)
-import Grisette (SymInteger)
+import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,

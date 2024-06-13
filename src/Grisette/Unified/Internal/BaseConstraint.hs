@@ -17,20 +17,18 @@ where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
-import Grisette
-  ( AllSyms,
-    EvaluateSym,
-    ExtractSymbolics,
-    GPretty,
-    Mergeable,
-    SEq,
-    SOrd,
-    SafeDivision,
-    SafeLinearArith,
-    SubstituteSym,
-    ToCon,
-    ToSym,
-  )
+import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym)
+import Grisette.Internal.Core.Data.Class.ExtractSymbolics (ExtractSymbolics)
+import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.SEq (SEq)
+import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
+import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision)
+import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith)
+import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
+import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
+import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
+import Grisette.Internal.SymPrim.AllSyms (AllSyms)
 import Language.Haskell.TH.Syntax (Lift)
 
 -- | A type that is used as a constraint for all the types in Grisette.
