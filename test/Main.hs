@@ -67,6 +67,7 @@ import Grisette.SymPrim.SomeBVTests (someBVTests)
 import Grisette.SymPrim.SymPrimTests (symPrimTests)
 import qualified Grisette.SymPrim.TabularFunTests
 import Grisette.Unified.IsModeTest (isModeTest)
+import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()
@@ -187,4 +188,4 @@ sbvTests =
     ]
 
 unifiedTests :: Test
-unifiedTests = testGroup "Grisette.Unified" [isModeTest]
+unifiedTests = testGroup "Grisette.Unified" [isModeTest, unifiedConstructorTest]

@@ -96,6 +96,7 @@ library
       Grisette.Internal.Core.Data.Union
       Grisette.Internal.Core.TH.Derivation
       Grisette.Internal.Core.TH.MergeConstructor
+      Grisette.Internal.Core.TH.Util
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
       Grisette.Internal.SymPrim.FP
@@ -165,6 +166,7 @@ library
       Grisette.Unified.Internal.EvaluationMode
       Grisette.Unified.Internal.IsMode
       Grisette.Unified.Internal.MonadWithMode
+      Grisette.Unified.Internal.TH.UnifiedConstructor
       Grisette.Unified.Internal.UnifiedBool
       Grisette.Unified.Internal.UnifiedBV
       Grisette.Unified.Internal.UnifiedConstraint
@@ -309,6 +311,7 @@ test-suite spec
       Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
       Grisette.Unified.IsModeTest
+      Grisette.Unified.UnifiedConstructorTest
       Paths_grisette
   hs-source-dirs:
       test
