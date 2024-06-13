@@ -29,8 +29,8 @@ import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
+import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
-import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Language.Haskell.TH.Syntax (Lift)
@@ -73,11 +73,11 @@ class
 instance (Mergeable v) => UnifiedDataImpl 'Con v v where
   type GetData 'Con v = v
   wrapData = id
-  extractData = mrgReturn
+  extractData = mrgSingle
 
 instance (Mergeable v) => UnifiedDataImpl 'Sym v (UnionM v) where
   type GetData 'Sym v = UnionM v
-  wrapData = mrgReturn
+  wrapData = mrgSingle
   extractData = liftUnionM
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.

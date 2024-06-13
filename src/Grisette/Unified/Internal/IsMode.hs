@@ -15,11 +15,16 @@
 -- Portability :   GHC only
 module Grisette.Unified.Internal.IsMode (IsMode) where
 
-import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
+import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
+import Grisette.Unified.Internal.EvaluationMode (BaseMonad)
+import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV, SafeAllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedData (AllUnifiedData)
-import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
+import Grisette.Unified.Internal.UnifiedInteger
+  ( SafeUnifiedInteger,
+    UnifiedInteger,
+  )
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operaions for the types.
@@ -62,5 +67,9 @@ type IsMode mode =
     UnifiedPrimitive mode (GetBool mode),
     UnifiedInteger mode,
     AllUnifiedBV mode,
-    AllUnifiedData mode
+    AllUnifiedData mode,
+    Monad (BaseMonad mode),
+    UnifiedBranching mode (BaseMonad mode),
+    SafeUnifiedInteger mode (BaseMonad mode),
+    SafeAllUnifiedBV mode (BaseMonad mode)
   )

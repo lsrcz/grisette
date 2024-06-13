@@ -172,6 +172,10 @@ library
       Grisette.Unified.Internal.UnifiedConstraint
       Grisette.Unified.Internal.UnifiedData
       Grisette.Unified.Internal.UnifiedInteger
+      Grisette.Unified.Lib.Control.Applicative
+      Grisette.Unified.Lib.Control.Monad
+      Grisette.Unified.Lib.Data.Foldable
+      Grisette.Unified.Lib.Data.Functor
       Grisette.Utils
   other-modules:
       Paths_grisette

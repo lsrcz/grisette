@@ -2,16 +2,29 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-module Grisette.Unified.Internal.Class.UnifiedSOrd (UnifiedSOrd (..)) where
+module Grisette.Unified.Internal.Class.UnifiedSOrd
+  ( UnifiedSOrd (..),
+    symMax,
+    symMin,
+    mrgMax,
+    mrgMin,
+  )
+where
 
 import Data.Type.Bool (If)
 import Grisette.Internal.Core.Control.Monad.UnionM (liftUnionM)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import qualified Grisette.Internal.Core.Data.Class.SOrd
-import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
+import Grisette.Unified.Internal.Class.UnifiedBranching
+  ( UnifiedBranching (mrgIf),
+  )
+import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (symIte))
 import Grisette.Unified.Internal.EvaluationMode
   ( EvaluationMode (Con, Sym),
     IsConMode,
@@ -55,3 +68,26 @@ instance (SOrd a) => UnifiedSOrd 'Sym a where
   (.<) = (Grisette.Internal.Core.Data.Class.SOrd..<)
   symCompare x y =
     liftUnionM $ Grisette.Internal.Core.Data.Class.SOrd.symCompare x y
+
+symMax ::
+  forall mode a. (UnifiedSOrd mode a, UnifiedITEOp mode a) => a -> a -> a
+symMax x y = symIte @mode (x .>= y) x y
+
+symMin :: forall mode a. (UnifiedSOrd mode a, UnifiedITEOp mode a) => a -> a -> a
+symMin x y = symIte @mode (x .>= y) y x
+
+mrgMax ::
+  forall mode a m.
+  (UnifiedSOrd mode a, Mergeable a, UnifiedBranching mode m, Applicative m) =>
+  a ->
+  a ->
+  m a
+mrgMax x y = mrgIf @mode (x .>= y) (pure x) (pure y)
+
+mrgMin ::
+  forall mode a m.
+  (UnifiedSOrd mode a, Mergeable a, UnifiedBranching mode m, Applicative m) =>
+  a ->
+  a ->
+  m a
+mrgMin x y = mrgIf @mode (x .>= y) (pure y) (pure x)

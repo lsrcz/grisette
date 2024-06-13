@@ -19,14 +19,17 @@ module Grisette.Unified.Internal.Class.UnifiedBranching
   )
 where
 
+import Control.Monad.Identity (Identity (runIdentity))
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
+import Grisette.Internal.Core.Control.Monad.UnionM (liftUnionM)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (UnionMergeable1)
 import qualified Grisette.Internal.Core.Data.Class.SimpleMergeable
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle, tryMerge)
 import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Con, Sym),
+  ( BaseMonad,
+    EvaluationMode (Con, Sym),
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
@@ -54,10 +57,16 @@ class
   UnifiedBranching (mode :: EvaluationMode) m
   where
   mrgIf :: (Mergeable a) => GetBool mode -> m a -> m a -> m a
+  liftBaseMonad ::
+    (Applicative m, UnifiedBranching mode m, Mergeable a) =>
+    BaseMonad mode a ->
+    m a
 
 instance (TryMerge m) => UnifiedBranching 'Con m where
   mrgIf True t _ = tryMerge t
   mrgIf False _ e = tryMerge e
+  liftBaseMonad = mrgSingle . runIdentity
 
 instance (UnionMergeable1 m) => UnifiedBranching 'Sym m where
   mrgIf = Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIf
+  liftBaseMonad = liftUnionM

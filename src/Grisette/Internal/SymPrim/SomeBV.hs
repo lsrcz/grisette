@@ -59,7 +59,7 @@ where
 
 import Control.DeepSeq (NFData (rnf))
 import Control.Exception (throw)
-import Control.Monad.Except (ExceptT, MonadError)
+import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Bits
   ( Bits
@@ -161,11 +161,15 @@ import Grisette.Internal.Core.Data.Class.Solvable
 import Grisette.Internal.Core.Data.Class.SubstituteSym
   ( SubstituteSym (substituteSym),
   )
-import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (symRotate, symRotateNegated))
-import Grisette.Internal.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
+import Grisette.Internal.Core.Data.Class.SymRotate
+  ( SymRotate (symRotate, symRotateNegated),
+  )
+import Grisette.Internal.Core.Data.Class.SymShift
+  ( SymShift (symShift, symShiftNegated),
+  )
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSyms, allSymsS))
 import Grisette.Internal.SymPrim.BV
@@ -188,7 +192,6 @@ import Grisette.Internal.Utils.Parameterized
     unsafeKnownProof,
     unsafeLeqProof,
   )
-import Grisette.Lib.Control.Monad.Except (mrgModifyError, mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Test.QuickCheck (Arbitrary (arbitrary), Gen)
@@ -672,7 +675,12 @@ instance
   {-# INLINE safeAdd #-}
   safeSub = binSomeBVSafeR1 (safeSub @e)
   {-# INLINE safeSub #-}
-  safeNeg = unarySomeBV (mrgFmap SomeBV . mrgModifyError Right . safeNeg @e)
+  safeNeg =
+    unarySomeBV
+      ( \v ->
+          mrgFmap SomeBV $
+            runExceptT (safeNeg @e v) >>= either (throwError . Right) pure
+      )
   {-# INLINE safeNeg #-}
 
 instance
@@ -960,8 +968,9 @@ binSomeBVSafe ::
   m r
 binSomeBVSafe f (SomeBV (l :: bv l)) (SomeBV (r :: bv r)) =
   case sameNat (Proxy @l) (Proxy @r) of
-    Just Refl -> mrgModifyError Right $ f l r
-    Nothing -> mrgThrowError $ Left BitwidthMismatch
+    Just Refl ->
+      tryMerge $ runExceptT (f l r) >>= either (throwError . Right) pure
+    Nothing -> tryMerge $ throwError $ Left BitwidthMismatch
 {-# INLINE binSomeBVSafe #-}
 
 -- | Lift a binary operation on sized bitvectors that returns a bitvector

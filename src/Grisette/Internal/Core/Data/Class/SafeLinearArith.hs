@@ -43,6 +43,7 @@ import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
+    tryMerge,
   )
 import Grisette.Internal.SymPrim.BV
   ( IntN,
@@ -53,8 +54,6 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -103,17 +102,20 @@ instance
 #define SAFE_LINARITH_SIGNED_CONCRETE_BODY \
   safeAdd l r = let res = l + r in \
     if l > 0 && r > 0 && res < 0 \
-      then mrgThrowError Overflow \
+      then tryMerge $ throwError Overflow \
       else if l < 0 && r < 0 && res >= 0 \
-        then mrgThrowError Underflow \
-        else mrgReturn res;\
+        then tryMerge $ throwError Underflow \
+        else mrgSingle res;\
   safeSub l r = let res = l - r in \
     if l >= 0 && r < 0 && res < 0 \
-      then mrgThrowError Overflow \
+      then tryMerge $ throwError Overflow \
       else if l < 0 && r > 0 && res > 0 \
-        then mrgThrowError Underflow \
-        else mrgReturn res;\
-  safeNeg v = if v == minBound then mrgThrowError Overflow else mrgReturn $ -v
+        then tryMerge $ throwError Underflow \
+        else mrgSingle res;\
+  safeNeg v = \
+    if v == minBound \
+      then tryMerge $ throwError Overflow \
+      else mrgSingle $ -v
 
 #define SAFE_LINARITH_SIGNED_CONCRETE(type) \
 instance \
@@ -132,13 +134,13 @@ instance \
 #define SAFE_LINARITH_UNSIGNED_CONCRETE_BODY \
   safeAdd l r = let res = l + r in \
     if l > res || r > res \
-      then mrgThrowError Overflow \
-      else mrgReturn res;\
+      then tryMerge $ throwError Overflow \
+      else mrgSingle res;\
   safeSub l r = \
     if r > l \
-      then mrgThrowError Underflow \
-      else mrgReturn $ l - r;\
-  safeNeg v = if v /= 0 then mrgThrowError Underflow else mrgReturn $ -v
+      then tryMerge $ throwError Underflow \
+      else mrgSingle $ l - r;\
+  safeNeg v = if v /= 0 then tryMerge $ throwError Underflow else mrgSingle $ -v
 
 #define SAFE_LINARITH_UNSIGNED_CONCRETE(type) \
 instance \
