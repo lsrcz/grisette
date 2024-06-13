@@ -7,15 +7,19 @@
 
 module Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..)) where
 
+import Control.Monad.Identity (Identity (runIdentity))
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
+import qualified Grisette.Internal.Core.Data.Class.PlainUnion
 import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Con, Sym),
+  ( BaseMonad,
+    EvaluationMode (Con, Sym),
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 
 -- | A class that provides a unified symbolic ite operation for unified types.
 --
@@ -39,9 +43,14 @@ class
   where
   symIte :: GetBool mode -> v -> v -> v
 
+  -- | Merges GetData into a single value, using 'symIte'.
+  symIteMerge :: (UnifiedITEOp mode v, Mergeable v) => BaseMonad mode v -> v
+
 instance UnifiedITEOp 'Con a where
   symIte True t _ = t
   symIte False _ e = e
+  symIteMerge = runIdentity
 
 instance (ITEOp a) => UnifiedITEOp 'Sym a where
   symIte = Grisette.Internal.Core.Data.Class.ITEOp.symIte
+  symIteMerge = Grisette.Internal.Core.Data.Class.PlainUnion.symIteMerge

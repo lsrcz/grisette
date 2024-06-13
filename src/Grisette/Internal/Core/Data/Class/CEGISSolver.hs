@@ -65,7 +65,7 @@ module Grisette.Internal.Core.Data.Class.CEGISSolver
   )
 where
 
-import Data.List (partition)
+import Data.List (foldl', partition)
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette.Internal.Core.Control.Exception
@@ -101,7 +101,6 @@ import Grisette.Internal.Core.Data.Class.Solver
   )
 import Grisette.Internal.SymPrim.Prim.Model (Model)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Lib.Data.Foldable (symAll)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -351,7 +350,7 @@ solverCegisMultiInputs
     solverGenericCEGIS
       synthesizerSolver
       True
-      (symAll cexAssertFun conInputs)
+      (foldl' (\acc v -> acc .&& cexAssertFun v) (con True) conInputs)
       (return . cexAssertFun)
       $ getVerifier <$> symInputs
     where

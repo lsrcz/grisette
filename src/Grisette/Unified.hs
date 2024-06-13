@@ -4,6 +4,7 @@ module Grisette.Unified
   ( -- * Evaluation mode
     EvaluationMode (..),
     IsConMode,
+    BaseMonad,
 
     -- * Aggregated constraints
     IsMode,
@@ -15,6 +16,10 @@ module Grisette.Unified
     UnifiedSEq ((.==), (./=)),
     UnifiedSimpleMergeable (..),
     UnifiedSOrd (..),
+    symMax,
+    symMin,
+    mrgMax,
+    mrgMin,
 
     -- * Unified types
 
@@ -49,11 +54,21 @@ import Grisette.Unified.Internal.Class.UnifiedBranching
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..))
 import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (..))
-import Grisette.Unified.Internal.Class.UnifiedSOrd (UnifiedSOrd (..))
+import Grisette.Unified.Internal.Class.UnifiedSOrd
+  ( UnifiedSOrd (..),
+    mrgMax,
+    mrgMin,
+    symMax,
+    symMin,
+  )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedSimpleMergeable (..),
   )
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (..), IsConMode)
+import Grisette.Unified.Internal.EvaluationMode
+  ( BaseMonad,
+    EvaluationMode (..),
+    IsConMode,
+  )
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.MonadWithMode (MonadWithMode)
 import Grisette.Unified.Internal.TH.UnifiedConstructor

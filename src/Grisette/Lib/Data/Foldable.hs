@@ -1,6 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- |
 -- Module      :   Grisette.Lib.Control.Foldable
@@ -52,35 +54,24 @@ module Grisette.Lib.Data.Foldable
 where
 
 import Control.Monad (MonadPlus)
-import Data.Foldable (Foldable (foldl'))
 import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftUnionM)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
-import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.PlainUnion (symIteMerge)
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd, mrgMax, mrgMin)
-import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.SEq (SEq)
+import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge,
-    tryMerge,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
-import {-# SOURCE #-} Grisette.Lib.Control.Monad
-  ( mrgMplus,
-    mrgMzero,
-    mrgReturn,
-    (.>>),
-  )
-import Grisette.Lib.Data.Functor (mrgFmap, mrgVoid)
+import Grisette.Lib.Control.Applicative (mrgAsum)
+import Grisette.Unified (EvaluationMode (Sym))
+import qualified Grisette.Unified.Lib.Data.Foldable as Unified
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem :: (Foldable t, SEq a) => a -> t a -> SymBool
-symElem x = symAny ((.== x))
+symElem = Unified.symElem
 {-# INLINE symElem #-}
 
 -- | 'Data.Foldable.maximum' with 'MergingStrategy' knowledge propagation.
@@ -89,17 +80,8 @@ mrgMaximum ::
   (Foldable t, MonadUnion m, Mergeable a, SOrd a) =>
   t a ->
   m a
-mrgMaximum l = do
-  r <- mrgFoldlM symMax' (Nothing :: Maybe a) l
-  case r of
-    Nothing -> errorWithoutStackTrace "mrgMaximum: empty structure"
-    Just x -> mrgReturn x
-  where
-    symMax' :: Maybe a -> a -> m (Maybe a)
-    symMax' mx y =
-      case mx of
-        Nothing -> mrgReturn $ Just y
-        Just x -> mrgFmap Just $ mrgMax x y
+mrgMaximum = Unified.mrgMaximum @'Sym
+{-# INLINE mrgMaximum #-}
 
 -- | 'Data.Foldable.maximum' with result merged with 'ITEOp'.
 symMaximum ::
@@ -107,7 +89,7 @@ symMaximum ::
   (Foldable t, Mergeable a, SOrd a, ITEOp a) =>
   t a ->
   a
-symMaximum l = symIteMerge (mrgMaximum l :: UnionM a)
+symMaximum = Unified.symMaximum @'Sym
 {-# INLINE symMaximum #-}
 
 -- | 'Data.Foldable.minimum' with 'MergingStrategy' knowledge propagation.
@@ -116,17 +98,8 @@ mrgMinimum ::
   (Foldable t, MonadUnion m, Mergeable a, SOrd a) =>
   t a ->
   m a
-mrgMinimum l = do
-  r <- mrgFoldlM symMin' (Nothing :: Maybe a) l
-  case r of
-    Nothing -> errorWithoutStackTrace "mrgMinimum: empty structure"
-    Just x -> mrgReturn x
-  where
-    symMin' :: Maybe a -> a -> m (Maybe a)
-    symMin' mx y =
-      case mx of
-        Nothing -> mrgReturn $ Just y
-        Just x -> mrgFmap Just $ mrgMin x y
+mrgMinimum = Unified.mrgMinimum @'Sym
+{-# INLINE mrgMinimum #-}
 
 -- | 'Data.Foldable.minimum' with result merged with 'ITEOp'.
 symMinimum ::
@@ -134,7 +107,7 @@ symMinimum ::
   (Foldable t, Mergeable a, SOrd a, ITEOp a) =>
   t a ->
   a
-symMinimum l = symIteMerge (mrgMinimum l :: UnionM a)
+symMinimum = Unified.symMinimum @'Sym
 {-# INLINE symMinimum #-}
 
 -- | 'Data.Foldable.foldrM' with 'MergingStrategy' knowledge propagation.
@@ -144,9 +117,7 @@ mrgFoldrM ::
   b ->
   t a ->
   m b
-mrgFoldrM f z0 xs = foldl c mrgPure xs z0
-  where
-    c k x z = tryMerge (f x z) >>= k
+mrgFoldrM = Unified.mrgFoldrM
 {-# INLINE mrgFoldrM #-}
 
 -- | 'Data.Foldable.foldlM' with 'MergingStrategy' knowledge propagation.
@@ -156,71 +127,63 @@ mrgFoldlM ::
   b ->
   t a ->
   m b
-mrgFoldlM f z0 xs = foldr c mrgPure xs z0
-  where
-    c x k z = tryMerge (f z x) >>= k
+mrgFoldlM = Unified.mrgFoldlM
 {-# INLINE mrgFoldlM #-}
 
 -- | 'Data.Foldable.traverse_' with 'MergingStrategy' knowledge propagation.
 mrgTraverse_ ::
   (Applicative m, TryMerge m, Foldable t) => (a -> m b) -> t a -> m ()
-mrgTraverse_ f = foldr c (mrgPure ())
-  where
-    c x k = mrgVoid (f x) .*> k
+mrgTraverse_ = Unified.mrgTraverse_
 {-# INLINE mrgTraverse_ #-}
 
 -- | 'Data.Foldable.for_' with 'MergingStrategy' knowledge propagation.
 mrgFor_ ::
   (Applicative m, TryMerge m, Foldable t) => t a -> (a -> m b) -> m ()
-mrgFor_ = flip mrgTraverse_
+mrgFor_ = Unified.mrgFor_
 {-# INLINE mrgFor_ #-}
 
 -- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
 mrgSequenceA_ ::
   (Foldable t, TryMerge m, Applicative m) => t (m a) -> m ()
-mrgSequenceA_ = foldr c (mrgPure ())
-  where
-    c m k = mrgVoid m .*> k
+mrgSequenceA_ = Unified.mrgSequenceA_
 {-# INLINE mrgSequenceA_ #-}
 
 -- | 'Data.Foldable.mapM_' with 'MergingStrategy' knowledge propagation.
 mrgMapM_ :: (MonadTryMerge m, Foldable t) => (a -> m b) -> t a -> m ()
-mrgMapM_ = mrgTraverse_
+mrgMapM_ = Unified.mrgMapM_
 {-# INLINE mrgMapM_ #-}
 
 -- | 'Data.Foldable.forM_' with 'MergingStrategy' knowledge propagation.
 mrgForM_ :: (MonadTryMerge m, Foldable t) => t a -> (a -> m b) -> m ()
-mrgForM_ = flip mrgMapM_
+mrgForM_ = Unified.mrgForM_
 {-# INLINE mrgForM_ #-}
 
 -- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
 mrgSequence_ :: (Foldable t, MonadTryMerge m) => t (m a) -> m ()
-mrgSequence_ = foldr c (mrgPure ())
-  where
-    c m k = mrgVoid m .>> k
+mrgSequence_ = Unified.mrgSequence_
 {-# INLINE mrgSequence_ #-}
 
 -- | 'Data.Foldable.msum' with 'MergingStrategy' knowledge propagation.
 mrgMsum ::
   (MonadTryMerge m, Mergeable a, MonadPlus m, Foldable t) => t (m a) -> m a
-mrgMsum = foldr mrgMplus mrgMzero
+mrgMsum = Unified.mrgMsum
 {-# INLINE mrgMsum #-}
 
 -- | 'Data.Foldable.and' on symbolic boolean.
 symAnd :: (Foldable t) => t SymBool -> SymBool
-symAnd = foldl' (.&&) (con True)
+symAnd = Unified.symAnd
 
 -- | 'Data.Foldable.or' on symbolic boolean.
 symOr :: (Foldable t) => t SymBool -> SymBool
-symOr = foldl' (.||) (con False)
+symOr = Unified.symOr
 
 -- | 'Data.Foldable.any' on symbolic boolean.
 symAny :: (Foldable t) => (a -> SymBool) -> t a -> SymBool
-symAny f = foldl' (\acc v -> acc .|| f v) (con False)
+symAny = Unified.symAny
 
 -- | 'Data.Foldable.all' on symbolic boolean.
 symAll :: (Foldable t) => (a -> SymBool) -> t a -> SymBool
-symAll f = foldl' (\acc v -> acc .&& f v) (con True)
+symAll = Unified.symAll
 
 -- | 'Data.Foldable.maximumBy' with 'MergingStrategy' knowledge propagation.
 mrgMaximumBy ::
@@ -229,21 +192,8 @@ mrgMaximumBy ::
   (a -> a -> UnionM Ordering) ->
   t a ->
   m a
-mrgMaximumBy cmp l = do
-  r <- mrgFoldlM symMax' (Nothing :: Maybe a) l
-  case r of
-    Nothing -> errorWithoutStackTrace "mrgMaximumBy: empty structure"
-    Just x -> mrgReturn x
-  where
-    symMax' :: Maybe a -> a -> m (Maybe a)
-    symMax' mx y =
-      case mx of
-        Nothing -> mrgReturn $ Just y
-        Just x -> do
-          cmpRes <- liftUnionM $ cmp x y
-          case cmpRes of
-            GT -> mrgReturn $ Just x
-            _ -> mrgReturn $ Just y
+mrgMaximumBy = Unified.mrgMaximumBy
+{-# INLINE mrgMaximumBy #-}
 
 -- | 'Data.Foldable.maximumBy' with result merged with 'ITEOp'.
 symMaximumBy ::
@@ -252,7 +202,7 @@ symMaximumBy ::
   (a -> a -> UnionM Ordering) ->
   t a ->
   a
-symMaximumBy cmp l = symIteMerge (mrgMaximumBy cmp l :: UnionM a)
+symMaximumBy = Unified.symMaximumBy
 {-# INLINE symMaximumBy #-}
 
 -- | 'Data.Foldable.minimumBy' with 'MergingStrategy' knowledge propagation.
@@ -262,21 +212,8 @@ mrgMinimumBy ::
   (a -> a -> UnionM Ordering) ->
   t a ->
   m a
-mrgMinimumBy cmp l = do
-  r <- mrgFoldlM symMin' (Nothing :: Maybe a) l
-  case r of
-    Nothing -> errorWithoutStackTrace "mrgMinimumBy: empty structure"
-    Just x -> mrgReturn x
-  where
-    symMin' :: Maybe a -> a -> m (Maybe a)
-    symMin' mx y =
-      case mx of
-        Nothing -> mrgReturn $ Just y
-        Just x -> do
-          cmpRes <- liftUnionM $ cmp x y
-          case cmpRes of
-            GT -> mrgReturn $ Just y
-            _ -> mrgReturn $ Just x
+mrgMinimumBy = Unified.mrgMinimumBy
+{-# INLINE mrgMinimumBy #-}
 
 -- | 'Data.Foldable.minimumBy' with result merged with 'ITEOp'.
 symMinimumBy ::
@@ -285,12 +222,12 @@ symMinimumBy ::
   (a -> a -> UnionM Ordering) ->
   t a ->
   a
-symMinimumBy cmp l = symIteMerge (mrgMinimumBy cmp l :: UnionM a)
+symMinimumBy = Unified.symMinimumBy
 {-# INLINE symMinimumBy #-}
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symNotElem :: (Foldable t, SEq a) => a -> t a -> SymBool
-symNotElem x = symNot . symElem x
+symNotElem = Unified.symNotElem
 {-# INLINE symNotElem #-}
 
 -- | 'Data.Foldable.elem' with symbolic equality and 'MergingStrategy' knowledge
@@ -300,10 +237,5 @@ mrgFind ::
   (a -> SymBool) ->
   t a ->
   m (Maybe a)
-mrgFind f = mrgFoldlM fst (Nothing :: Maybe a)
-  where
-    fst acc v = do
-      case acc of
-        Just _ -> mrgPure acc
-        Nothing -> do
-          mrgIf (f v) (mrgPure $ Just v) (mrgPure Nothing)
+mrgFind = Unified.mrgFind
+{-# INLINE mrgFind #-}

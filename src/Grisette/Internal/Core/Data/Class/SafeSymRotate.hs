@@ -19,7 +19,7 @@
 module Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..)) where
 
 import Control.Exception (ArithException (Overflow))
-import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Error.Class (MonadError (throwError))
 import Data.Bits (Bits (rotateL, rotateR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -28,7 +28,11 @@ import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge
+  ( TryMerge,
+    mrgSingle,
+    tryMerge,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalRotateTerm
@@ -40,8 +44,6 @@ import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
   )
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe rotation operations. The operators will reject negative shift amounts.
 class (MonadError e m, TryMerge m, Mergeable a) => SafeSymRotate e a m where
@@ -60,9 +62,9 @@ safeSymRotateLConcreteNum ::
   a ->
   a ->
   m a
-safeSymRotateLConcreteNum _ s | s < 0 = mrgThrowError Overflow
+safeSymRotateLConcreteNum _ s | s < 0 = tryMerge $ throwError Overflow
 safeSymRotateLConcreteNum a s =
-  mrgReturn $ rotateL a (fromIntegral $ s `rem` fromIntegral (finiteBitSize s))
+  mrgSingle $ rotateL a (fromIntegral $ s `rem` fromIntegral (finiteBitSize s))
 
 -- | This function handles the case when the shift amount is out the range of
 -- `Int` correctly.
@@ -76,9 +78,9 @@ safeSymRotateRConcreteNum ::
   a ->
   a ->
   m a
-safeSymRotateRConcreteNum _ s | s < 0 = mrgThrowError Overflow
+safeSymRotateRConcreteNum _ s | s < 0 = tryMerge $ throwError Overflow
 safeSymRotateRConcreteNum a s =
-  mrgReturn $ rotateR a (fromIntegral $ s `rem` fromIntegral (finiteBitSize s))
+  mrgSingle $ rotateR a (fromIntegral $ s `rem` fromIntegral (finiteBitSize s))
 
 #define SAFE_SYM_ROTATE_CONCRETE(T) \
   instance (MonadError ArithException m, TryMerge m) => \
@@ -118,9 +120,9 @@ instance
   SafeSymRotate ArithException (SymWordN n) m
   where
   safeSymRotateL (SymWordN ta) (SymWordN tr) =
-    mrgReturn $ SymWordN $ pevalRotateLeftTerm ta tr
+    mrgSingle $ SymWordN $ pevalRotateLeftTerm ta tr
   safeSymRotateR (SymWordN ta) (SymWordN tr) =
-    mrgReturn $ SymWordN $ pevalRotateRightTerm ta tr
+    mrgSingle $ SymWordN $ pevalRotateRightTerm ta tr
 
 instance
   (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
@@ -129,10 +131,10 @@ instance
   safeSymRotateL (SymIntN ta) r@(SymIntN tr) =
     mrgIf
       (r .< 0)
-      (mrgThrowError Overflow)
-      (mrgReturn $ SymIntN $ pevalRotateLeftTerm ta tr)
+      (throwError Overflow)
+      (mrgSingle $ SymIntN $ pevalRotateLeftTerm ta tr)
   safeSymRotateR (SymIntN ta) r@(SymIntN tr) =
     mrgIf
       (r .< 0)
-      (mrgThrowError Overflow)
-      (mrgReturn $ SymIntN $ pevalRotateRightTerm ta tr)
+      (throwError Overflow)
+      (mrgSingle $ SymIntN $ pevalRotateRightTerm ta tr)

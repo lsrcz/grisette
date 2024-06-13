@@ -41,6 +41,7 @@ import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
+    tryMerge,
   )
 import Grisette.Internal.SymPrim.BV
   ( IntN,
@@ -59,8 +60,6 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN (SymWordN),
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Grisette.Lib.Data.Functor (mrgFmap)
 
 -- $setup
@@ -97,7 +96,7 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeDivision e a m where
   safeDivMod l r = do
     d <- safeDiv l r
     m <- safeMod l r
-    mrgReturn (d, m)
+    mrgSingle (d, m)
   {-# INLINE safeDivMod #-}
 
   -- | Safe signed 'quot' with monadic error handling in multi-path execution.
@@ -115,7 +114,7 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeDivision e a m where
   safeQuotRem l r = do
     q <- safeQuot l r
     m <- safeRem l r
-    mrgReturn (q, m)
+    mrgSingle (q, m)
   {-# INLINE safeQuotRem #-}
 
   {-# MINIMAL
@@ -130,8 +129,8 @@ concreteSafeDivisionHelper ::
   a ->
   m r
 concreteSafeDivisionHelper f l r
-  | r == 0 = mrgThrowError DivideByZero
-  | otherwise = mrgReturn $ f l r
+  | r == 0 = tryMerge $ throwError DivideByZero
+  | otherwise = mrgSingle $ f l r
 
 concreteSignedBoundedSafeDivisionHelper ::
   ( MonadError ArithException m,
@@ -145,9 +144,9 @@ concreteSignedBoundedSafeDivisionHelper ::
   a ->
   m r
 concreteSignedBoundedSafeDivisionHelper f l r
-  | r == 0 = mrgThrowError DivideByZero
-  | l == minBound && r == -1 = mrgThrowError Overflow
-  | otherwise = mrgReturn $ f l r
+  | r == 0 = tryMerge $ throwError DivideByZero
+  | l == minBound && r == -1 = tryMerge $ throwError Overflow
+  | otherwise = mrgSingle $ f l r
 
 #define QUOTE() '
 #define QID(a) a

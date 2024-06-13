@@ -17,7 +17,7 @@ module Grisette.Internal.Core.Data.Class.SafeSymShift
 where
 
 import Control.Exception (ArithException (Overflow))
-import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Error.Class (MonadError (throwError))
 import Data.Bits (Bits (shiftL, shiftR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -33,7 +33,11 @@ import Grisette.Internal.Core.Data.Class.SOrd
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge
+  ( TryMerge,
+    mrgSingle,
+    tryMerge,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalShiftTerm
@@ -42,8 +46,6 @@ import Grisette.Internal.SymPrim.Prim.Term
       ),
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 -- | Safe version for `shiftL` or `shiftR`.
 --
@@ -76,11 +78,13 @@ safeSymShiftLConcreteNum ::
   a ->
   a ->
   m a
-safeSymShiftLConcreteNum _ _ s | s < 0 = mrgThrowError Overflow
+safeSymShiftLConcreteNum _ _ s | s < 0 = tryMerge $ throwError Overflow
 safeSymShiftLConcreteNum allowLargeShiftAmount a s
   | (fromIntegral s :: Integer) >= fromIntegral (finiteBitSize a) =
-      if allowLargeShiftAmount then mrgReturn 0 else mrgThrowError Overflow
-safeSymShiftLConcreteNum _ a s = mrgReturn $ shiftL a (fromIntegral s)
+      if allowLargeShiftAmount
+        then mrgSingle 0
+        else tryMerge $ throwError Overflow
+safeSymShiftLConcreteNum _ a s = mrgSingle $ shiftL a (fromIntegral s)
 
 -- | This function handles the case when the shift amount is out the range of
 -- `Int` correctly.
@@ -95,11 +99,13 @@ safeSymShiftRConcreteNum ::
   a ->
   a ->
   m a
-safeSymShiftRConcreteNum _ _ s | s < 0 = mrgThrowError Overflow
+safeSymShiftRConcreteNum _ _ s | s < 0 = tryMerge $ throwError Overflow
 safeSymShiftRConcreteNum allowLargeShiftAmount a s
   | (fromIntegral s :: Integer) >= fromIntegral (finiteBitSize a) =
-      if allowLargeShiftAmount then mrgReturn 0 else mrgThrowError Overflow
-safeSymShiftRConcreteNum _ a s = mrgReturn $ shiftR a (fromIntegral s)
+      if allowLargeShiftAmount
+        then mrgSingle 0
+        else tryMerge $ throwError Overflow
+safeSymShiftRConcreteNum _ a s = mrgSingle $ shiftR a (fromIntegral s)
 
 #define SAFE_SYM_SHIFT_CONCRETE(T) \
   instance (MonadError ArithException m, TryMerge m) => \
@@ -151,12 +157,12 @@ instance
   safeSymStrictShiftL a@(SymWordN ta) s@(SymWordN ts) =
     mrgIf
       (s .>= fromIntegral (finiteBitSize a))
-      (mrgThrowError Overflow)
+      (throwError Overflow)
       (return $ SymWordN $ pevalShiftLeftTerm ta ts)
   safeSymStrictShiftR a@(SymWordN ta) s@(SymWordN ts) =
     mrgIf
       (s .>= fromIntegral (finiteBitSize a))
-      (mrgThrowError Overflow)
+      (throwError Overflow)
       (return $ SymWordN $ pevalShiftRightTerm ta ts)
 
 instance
@@ -166,24 +172,24 @@ instance
   safeSymShiftL (SymIntN a) ss@(SymIntN s) =
     mrgIf
       (ss .< 0)
-      (mrgThrowError Overflow)
+      (throwError Overflow)
       (return $ SymIntN $ pevalShiftLeftTerm a s)
   safeSymShiftR (SymIntN a) ss@(SymIntN s) =
     mrgIf
       (ss .< 0)
-      (mrgThrowError Overflow)
+      (throwError Overflow)
       (return $ SymIntN $ pevalShiftRightTerm a s)
   safeSymStrictShiftL a@(SymIntN ta) s@(SymIntN ts) =
     mrgIf
       (s .< 0 .|| (bs .>= 0 .&& s .>= bs))
-      (mrgThrowError Overflow)
+      (throwError Overflow)
       (return $ SymIntN $ pevalShiftLeftTerm ta ts)
     where
       bs = fromIntegral (finiteBitSize a)
   safeSymStrictShiftR a@(SymIntN ta) s@(SymIntN ts) =
     mrgIf
       (s .< 0 .|| (bs .>= 0 .&& s .>= bs))
-      (mrgThrowError Overflow)
+      (throwError Overflow)
       (return $ SymIntN $ pevalShiftRightTerm ta ts)
     where
       bs = fromIntegral (finiteBitSize a)

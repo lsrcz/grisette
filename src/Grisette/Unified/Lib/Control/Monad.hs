@@ -1,20 +1,22 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- |
--- Module      :   Grisette.Lib.Control.Monad
+-- Module      :   Grisette.Unified.Lib.Control.Monad
 -- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Lib.Control.Monad
+module Grisette.Unified.Lib.Control.Monad
   ( -- * Functor and Monad classes
     mrgFmap,
     (.<$),
@@ -81,37 +83,53 @@ module Grisette.Lib.Control.Monad
 where
 
 import Control.Applicative (Alternative)
-import Control.Monad (MonadPlus)
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Control.Monad (MonadPlus (mplus, mzero), join)
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
 import Grisette.Internal.Core.Data.Class.Mergeable
-  ( Mergeable,
+  ( Mergeable (rootStrategy),
     MergingStrategy,
   )
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (UnionMergeable1)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
-    TryMerge,
+    TryMerge (tryMergeWithStrategy),
+    tryMerge,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Lib.Data.Foldable
-  ( mrgForM_,
-    mrgMapM_,
-    mrgMsum,
-    mrgSequence_,
-  )
-import Grisette.Lib.Data.Functor (mrgFmap, mrgVoid, (.<$))
+import Grisette.Lib.Data.Functor (mrgFmap, mrgUnzip, mrgVoid, (.<$))
 import Grisette.Lib.Data.Traversable
   ( mrgForM,
     mrgMapM,
     mrgSequence,
+    mrgSequenceA,
+    mrgTraverse,
   )
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Sym))
-import qualified Grisette.Unified.Lib.Control.Monad as Unified
+import Grisette.Unified
+  ( GetBool,
+    MonadWithMode,
+    UnifiedBranching (mrgIf),
+    UnifiedSOrd ((.<=)),
+  )
+import Grisette.Unified.Lib.Control.Applicative
+  ( mrgEmpty,
+    mrgLiftA2,
+    mrgPure,
+    (.*>),
+    (.<$>),
+    (.<*>),
+  )
+import Grisette.Unified.Lib.Data.Foldable
+  ( mrgFoldlM,
+    mrgForM_,
+    mrgMapM_,
+    mrgMsum,
+    mrgSequenceA_,
+    mrgSequence_,
+  )
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.
 mrgReturnWithStrategy :: (MonadTryMerge u) => MergingStrategy a -> a -> u a
-mrgReturnWithStrategy = Unified.mrgReturnWithStrategy
+mrgReturnWithStrategy s = tryMergeWithStrategy s . return
 {-# INLINE mrgReturnWithStrategy #-}
 
 -- | '>>=' with 'MergingStrategy' knowledge propagation.
@@ -122,12 +140,13 @@ mrgBindWithStrategy ::
   u a ->
   (a -> u b) ->
   u b
-mrgBindWithStrategy = Unified.mrgBindWithStrategy
+mrgBindWithStrategy sa sb a f =
+  tryMergeWithStrategy sb $ tryMergeWithStrategy sa a >>= f
 {-# INLINE mrgBindWithStrategy #-}
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.
 mrgReturn :: (MonadTryMerge u, Mergeable a) => a -> u a
-mrgReturn = Unified.mrgReturn
+mrgReturn = mrgReturnWithStrategy rootStrategy
 {-# INLINE mrgReturn #-}
 
 infixl 1 .>>=
@@ -138,7 +157,7 @@ infixl 1 .>>=
   u a ->
   (a -> u b) ->
   u b
-(.>>=) = (Unified..>>=)
+(.>>=) = mrgBindWithStrategy rootStrategy rootStrategy
 {-# INLINE (.>>=) #-}
 
 infixl 1 .>>
@@ -148,23 +167,23 @@ infixl 1 .>>
 -- This is usually more efficient than calling the original '>>' and merge the
 -- results.
 (.>>) :: (MonadTryMerge m, Mergeable a, Mergeable b) => m a -> m b -> m b
-(.>>) = (Unified..>>)
+a .>> f = tryMerge $ mrgVoid a >> f
 {-# INLINE (.>>) #-}
 
 -- | 'fail' with 'MergingStrategy' knowledge propagation.
 mrgFail :: (MonadTryMerge m, Mergeable a, MonadFail m) => String -> m a
-mrgFail = Unified.mrgFail
+mrgFail = tryMerge . fail
 {-# INLINE mrgFail #-}
 
 -- | 'mzero' with 'MergingStrategy' knowledge propagation.
 mrgMzero :: forall m a. (MonadTryMerge m, Mergeable a, MonadPlus m) => m a
-mrgMzero = Unified.mrgMzero
+mrgMzero = tryMerge mzero
 {-# INLINE mrgMzero #-}
 
 -- | 'mplus' with 'MergingStrategy' knowledge propagation.
 mrgMplus ::
   forall m a. (MonadTryMerge m, Mergeable a, MonadPlus m) => m a -> m a -> m a
-mrgMplus = Unified.mrgMplus
+mrgMplus a b = tryMerge $ mplus (tryMerge a) (tryMerge b)
 {-# INLINE mrgMplus #-}
 
 infixr 1 .=<<
@@ -172,7 +191,7 @@ infixr 1 .=<<
 -- | '=<<' with 'MergingStrategy' knowledge propagation.
 (.=<<) ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> m b) -> m a -> m b
-(.=<<) = (Unified..=<<)
+f .=<< a = tryMerge $ f =<< tryMerge a
 {-# INLINE (.=<<) #-}
 
 infixr 1 .>=>
@@ -184,7 +203,7 @@ infixr 1 .>=>
   (b -> m c) ->
   a ->
   m c
-(.>=>) = (Unified..>=>)
+f .>=> g = \a -> tryMerge $ tryMerge (f a) >>= g
 {-# INLINE (.>=>) #-}
 
 infixr 1 .<=<
@@ -196,18 +215,18 @@ infixr 1 .<=<
   (a -> m b) ->
   a ->
   m c
-(.<=<) = (Unified..<=<)
+(.<=<) = flip (.>=>)
 {-# INLINE (.<=<) #-}
 
 -- | 'forever' with 'MergingStrategy' knowledge propagation.
 mrgForever ::
   (Applicative m, TryMerge m, Mergeable b, Mergeable a) => m a -> m b
-mrgForever = Unified.mrgForever
+mrgForever a = let a' = a .*> a' in a'
 {-# INLINE mrgForever #-}
 
 -- | 'join' with 'MergingStrategy' knowledge propagation.
 mrgJoin :: (MonadTryMerge m, Mergeable a) => m (m a) -> m a
-mrgJoin = Unified.mrgJoin
+mrgJoin a = tryMerge $ join a
 {-# INLINE mrgJoin #-}
 
 -- | 'mfilter' with 'MergingStrategy' knowledge propagation.
@@ -216,17 +235,22 @@ mrgMfilter ::
   (a -> Bool) ->
   m a ->
   m a
-mrgMfilter = Unified.mrgMfilter
+mrgMfilter p ma = do
+  a <- tryMerge ma
+  if p a then mrgReturn a else mrgMzero
 {-# INLINE mrgMfilter #-}
 
 -- | 'mfilter' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symMfilter ::
-  (MonadTryMerge m, MonadPlus m, MonadUnion m, Mergeable a) =>
-  (a -> SymBool) ->
+  forall mode m a.
+  (MonadTryMerge m, MonadPlus m, MonadWithMode mode m, Mergeable a) =>
+  (a -> GetBool mode) ->
   m a ->
   m a
-symMfilter = Unified.symMfilter
+symMfilter p ma = do
+  a <- tryMerge ma
+  mrgIf (p a) (mrgReturn a) mrgMzero
 {-# INLINE symMfilter #-}
 
 -- | 'filterM' with 'MergingStrategy' knowledge propagation.
@@ -235,17 +259,27 @@ mrgFilterM ::
   (a -> m Bool) ->
   t a ->
   m [a]
-mrgFilterM = Unified.mrgFilterM
+mrgFilterM p =
+  foldr
+    (\x lst -> (\flg -> if flg then (x :) else id) .<$> p x .<*> lst)
+    (mrgPure [])
 {-# INLINE mrgFilterM #-}
 
 -- | 'filterM' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symFilterM ::
-  (TryMerge m, MonadUnion m, Mergeable a, Foldable t) =>
-  (a -> m SymBool) ->
+  forall mode m t a.
+  (TryMerge m, MonadWithMode mode m, Mergeable a, Foldable t) =>
+  (a -> m (GetBool mode)) ->
   t a ->
   m [a]
-symFilterM = Unified.symFilterM
+symFilterM p =
+  foldr
+    ( \x lst -> do
+        flag <- tryMerge $ p x
+        mrgIf flag ((x :) <$> lst) lst
+    )
+    (mrgPure [])
 {-# INLINE symFilterM #-}
 
 -- | 'mapAndUnzipM' with 'MergingStrategy' knowledge propagation.
@@ -258,7 +292,7 @@ mrgMapAndUnzipM ::
   (a -> m (b, c)) ->
   [a] ->
   m ([b], [c])
-mrgMapAndUnzipM = Unified.mrgMapAndUnzipM
+mrgMapAndUnzipM f xs = mrgUnzip .<$> mrgTraverse f xs
 {-# INLINE mrgMapAndUnzipM #-}
 
 -- | 'zipWithM' with 'MergingStrategy' knowledge propagation.
@@ -268,7 +302,7 @@ mrgZipWithM ::
   [a] ->
   [b] ->
   m [c]
-mrgZipWithM = Unified.mrgZipWithM
+mrgZipWithM f xs ys = mrgSequenceA (zipWith f xs ys)
 {-# INLINE mrgZipWithM #-}
 
 -- | 'zipWithM_' with 'MergingStrategy' knowledge propagation.
@@ -278,7 +312,7 @@ mrgZipWithM_ ::
   [a] ->
   [b] ->
   m ()
-mrgZipWithM_ = Unified.mrgZipWithM_
+mrgZipWithM_ f xs ys = mrgSequenceA_ (zipWith f xs ys)
 {-# INLINE mrgZipWithM_ #-}
 
 -- | 'foldM' with 'MergingStrategy' knowledge propagation.
@@ -288,7 +322,7 @@ mrgFoldM ::
   b ->
   t a ->
   m b
-mrgFoldM = Unified.mrgFoldM
+mrgFoldM = mrgFoldlM
 {-# INLINE mrgFoldM #-}
 
 -- | 'foldM_' with 'MergingStrategy' knowledge propagation.
@@ -298,7 +332,7 @@ mrgFoldM_ ::
   b ->
   t a ->
   m ()
-mrgFoldM_ = Unified.mrgFoldM_
+mrgFoldM_ f a xs = mrgFoldlM f a xs .>> mrgPure ()
 {-# INLINE mrgFoldM_ #-}
 
 -- | 'replicateM' with 'MergingStrategy' knowledge propagation.
@@ -307,18 +341,32 @@ mrgReplicateM ::
   Int ->
   m a ->
   m [a]
-mrgReplicateM = Unified.mrgReplicateM
+mrgReplicateM n = mrgSequenceA . replicate n
 {-# INLINE mrgReplicateM #-}
 
 -- | 'replicateM' with 'MergingStrategy' knowledge propagation and symbolic
 -- number of elements.
 symReplicateM ::
-  (MonadUnion m, TryMerge m, Mergeable a, Num int, SOrd int) =>
+  forall mode m a int.
+  ( MonadWithMode mode m,
+    TryMerge m,
+    Mergeable a,
+    Num int,
+    UnifiedSOrd mode Int,
+    UnifiedSOrd mode int
+  ) =>
   Int ->
   int ->
   m a ->
   m [a]
-symReplicateM = Unified.symReplicateM @'Sym
+symReplicateM maxCnt cnt0 f =
+  loop maxCnt cnt0
+  where
+    loop concreteCnt cnt =
+      mrgIf @mode
+        (cnt .<= 0 .|| concreteCnt .<= 0)
+        (mrgPure [])
+        (mrgLiftA2 (:) f (loop (concreteCnt - 1) (cnt - 1)))
 {-# INLINE symReplicateM #-}
 
 -- | 'replicateM_' with 'MergingStrategy' knowledge propagation.
@@ -327,59 +375,75 @@ mrgReplicateM_ ::
   Int ->
   m a ->
   m ()
-mrgReplicateM_ = Unified.mrgReplicateM_
+mrgReplicateM_ n = mrgSequenceA_ . replicate n
 {-# INLINE mrgReplicateM_ #-}
 
 -- | 'replicateM_' with 'MergingStrategy' knowledge propagation and symbolic
 -- number of elements.
 symReplicateM_ ::
-  (MonadUnion m, TryMerge m, Mergeable a, Num int, SOrd int) =>
+  forall mode m a int.
+  ( MonadWithMode mode m,
+    TryMerge m,
+    Mergeable a,
+    Num int,
+    UnifiedSOrd mode Int,
+    UnifiedSOrd mode int
+  ) =>
   Int ->
   int ->
   m a ->
   m ()
-symReplicateM_ = Unified.symReplicateM_ @'Sym
+symReplicateM_ maxCnt cnt0 f =
+  loop maxCnt cnt0
+  where
+    loop concreteCnt cnt =
+      mrgIf @mode
+        (cnt .<= 0 .|| concreteCnt .<= 0)
+        (mrgPure ())
+        (f .*> (loop (concreteCnt - 1) (cnt - 1)))
 {-# INLINE symReplicateM_ #-}
 
 -- | 'guard' with 'MergingStrategy' knowledge propagation.
 mrgGuard :: (Alternative m, TryMerge m) => Bool -> m ()
-mrgGuard = Unified.mrgGuard
+mrgGuard True = mrgPure ()
+mrgGuard False = mrgEmpty
 {-# INLINE mrgGuard #-}
 
 -- | 'guard' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symGuard :: (UnionMergeable1 m, TryMerge m, Alternative m) => SymBool -> m ()
-symGuard = Unified.symGuard
+symGuard b = mrgIf b (mrgPure ()) mrgEmpty
 {-# INLINE symGuard #-}
 
 -- | 'when' with 'MergingStrategy' knowledge propagation.
 mrgWhen :: (Applicative m, TryMerge m) => Bool -> m () -> m ()
-mrgWhen = Unified.mrgWhen
+mrgWhen True a = tryMerge a
+mrgWhen False _ = mrgPure ()
 {-# INLINE mrgWhen #-}
 
 -- | 'when' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symWhen ::
   (Applicative m, TryMerge m, UnionMergeable1 m) => SymBool -> m () -> m ()
-symWhen = Unified.symWhen
+symWhen b a = mrgIf b a (mrgPure ())
 {-# INLINE symWhen #-}
 
 -- | 'unless' with 'MergingStrategy' knowledge propagation.
 mrgUnless :: (Applicative m, TryMerge m) => Bool -> m () -> m ()
-mrgUnless = Unified.mrgUnless
+mrgUnless b = mrgWhen (not b)
 {-# INLINE mrgUnless #-}
 
 -- | 'unless' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symUnless ::
   (Applicative m, TryMerge m, UnionMergeable1 m) => SymBool -> m () -> m ()
-symUnless = Unified.symUnless
+symUnless b = symWhen (symNot b)
 {-# INLINE symUnless #-}
 
 -- | 'liftM' with 'MergingStrategy' knowledge propagation.
 mrgLiftM ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> b) -> m a -> m b
-mrgLiftM = Unified.mrgLiftM
+mrgLiftM f a = f .<$> a
 {-# INLINE mrgLiftM #-}
 
 -- | 'liftM2' with 'MergingStrategy' knowledge propagation.
@@ -389,7 +453,7 @@ mrgLiftM2 ::
   m a ->
   m b ->
   m c
-mrgLiftM2 = Unified.mrgLiftM2
+mrgLiftM2 f a b = f .<$> a .<*> b
 {-# INLINE mrgLiftM2 #-}
 
 -- | 'liftM3' with 'MergingStrategy' knowledge propagation.
@@ -400,7 +464,7 @@ mrgLiftM3 ::
   m b ->
   m c ->
   m d
-mrgLiftM3 = Unified.mrgLiftM3
+mrgLiftM3 f a b c = f .<$> a .<*> b .<*> c
 {-# INLINE mrgLiftM3 #-}
 
 -- | 'liftM4' with 'MergingStrategy' knowledge propagation.
@@ -418,7 +482,7 @@ mrgLiftM4 ::
   m c ->
   m d ->
   m e
-mrgLiftM4 = Unified.mrgLiftM4
+mrgLiftM4 f a b c d = f .<$> a .<*> b .<*> c .<*> d
 {-# INLINE mrgLiftM4 #-}
 
 -- | 'liftM5' with 'MergingStrategy' knowledge propagation.
@@ -438,13 +502,13 @@ mrgLiftM5 ::
   m d ->
   m e ->
   m f
-mrgLiftM5 = Unified.mrgLiftM5
+mrgLiftM5 f a b c d e = f .<$> a .<*> b .<*> c .<*> d .<*> e
 {-# INLINE mrgLiftM5 #-}
 
 -- | '<*>' with 'MergingStrategy' knowledge propagation.
 mrgAp ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => m (a -> b) -> m a -> m b
-mrgAp = Unified.mrgAp
+mrgAp = (.<*>)
 {-# INLINE mrgAp #-}
 
 infixl 4 .<$!>
@@ -453,5 +517,5 @@ infixl 4 .<$!>
 -- strict so we can directly use '.<$>'.
 (.<$!>) ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> b) -> m a -> m b
-(.<$!>) = (Unified..<$!>)
+f .<$!> a = f .<$> a
 {-# INLINE (.<$!>) #-}
