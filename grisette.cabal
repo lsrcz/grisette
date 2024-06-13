@@ -154,6 +154,21 @@ library
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Data.Tuple
       Grisette.SymPrim
+      Grisette.Unified
+      Grisette.Unified.Internal.BaseConstraint
+      Grisette.Unified.Internal.Class.UnifiedBranching
+      Grisette.Unified.Internal.Class.UnifiedITEOp
+      Grisette.Unified.Internal.Class.UnifiedSEq
+      Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
+      Grisette.Unified.Internal.Class.UnifiedSOrd
+      Grisette.Unified.Internal.EvaluationMode
+      Grisette.Unified.Internal.IsMode
+      Grisette.Unified.Internal.MonadWithMode
+      Grisette.Unified.Internal.UnifiedBool
+      Grisette.Unified.Internal.UnifiedBV
+      Grisette.Unified.Internal.UnifiedConstraint
+      Grisette.Unified.Internal.UnifiedData
+      Grisette.Unified.Internal.UnifiedInteger
       Grisette.Utils
   other-modules:
       Paths_grisette
@@ -287,6 +302,7 @@ test-suite spec
       Grisette.TestUtil.NoMerge
       Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
+      Grisette.Unified.IsModeTest
       Paths_grisette
   hs-source-dirs:
       test
