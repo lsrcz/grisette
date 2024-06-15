@@ -17,7 +17,6 @@ module Grisette.Internal.Core.TH.Derivation
     deriveStockWithMode,
     deriveViaDefaultWithMode,
     deriveConversions,
-    deriveConversionsWithMode,
     deriveGrisette,
     deriveAllGrisette,
     deriveAllGrisetteExcept,
@@ -26,6 +25,7 @@ where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (when, zipWithM)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Hashable (Hashable)
 import qualified Data.Map as M
 import Data.Maybe (isNothing)
@@ -41,6 +41,15 @@ import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
+import Grisette.Unified
+  ( GetBool,
+    GetData,
+    GetIntN,
+    GetInteger,
+    GetSomeIntN,
+    GetSomeWordN,
+    GetWordN,
+  )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Language.Haskell.TH
@@ -58,7 +67,8 @@ import Language.Haskell.TH
     pprint,
   )
 import Language.Haskell.TH.Datatype
-  ( DatatypeInfo
+  ( ConstructorInfo (constructorFields),
+    DatatypeInfo
       ( datatypeCons,
         datatypeInstTypes,
         datatypeVariant,
@@ -199,11 +209,17 @@ deriveStockWithMode = deriveInstancesWithMode Stock
 deriveViaDefaultWithMode :: EvaluationMode -> Name -> [Name] -> Q [Dec]
 deriveViaDefaultWithMode = deriveInstancesWithMode Via
 
-#if MIN_VERSION_base(4,16,0)
-fixConversionInnerConstraints ::
-  DatatypeInfo -> DatatypeInfo -> Name -> Q [Pred]
-fixConversionInnerConstraints _ _ _ = return []
-#else
+needToFix :: [Name]
+needToFix =
+  [ ''GetData,
+    ''GetBool,
+    ''GetInteger,
+    ''GetWordN,
+    ''GetIntN,
+    ''GetSomeIntN,
+    ''GetSomeWordN
+  ]
+
 fixConversionInnerConstraints ::
   DatatypeInfo -> DatatypeInfo -> Name -> Q [Pred]
 fixConversionInnerConstraints dfrom dto cls = do
@@ -215,37 +231,40 @@ fixConversionInnerConstraints dfrom dto cls = do
   allFields <- nubOrd . concat <$> traverse (uncurry zipFields) cons
   traverse
     (\(fromty, toty) -> [t|$(return $ AppT (AppT (ConT cls) fromty) toty)|])
-    allFields
+    $ filter (\(a, b) -> typeNeedToFix a || typeNeedToFix b) allFields
   where
     zipFields from to = do
       let fromFields = constructorFields from
       let toFields = constructorFields to
       when (length fromFields /= length toFields) $
         fail "The number of fields must be the same."
-      return $ zip (sort fromFields) (sort toFields)
-#endif
+      return $ zip fromFields toFields
+    typeNeedToFix :: Type -> Bool
+    typeNeedToFix ty = case ty of
+      AppT a _ -> typeNeedToFix a
+      ConT nm -> nm `elem` needToFix
+      _ -> False
 
-deriveConversionWithMode ::
-  Maybe EvaluationMode -> Name -> Name -> Name -> Q [Dec]
-deriveConversionWithMode evmode from to cls = do
+deriveConversionWithMode :: Name -> Name -> Name -> Q [Dec]
+deriveConversionWithMode from to cls = do
   dfrom <- reifyDatatype from >>= datatypeToFreshNames
   dto <- reifyDatatype to >>= datatypeToFreshNames
   let fromTyVars = datatypeVars dfrom
   let toTyVars = datatypeVars dto
   when (length fromTyVars /= length toTyVars) $
     fail "The number of type arguments must be the same."
-  bndrConstraints <- concat <$> zipWithM genBndrConstraint fromTyVars toTyVars
-  let fromSubstMap = evModeSubstMap evmode fromTyVars
-  let toSubstMap = evModeSubstMap evmode toTyVars
+  let fromSubstMap = evModeSubstMap Nothing fromTyVars
+  let toSubstMap = evModeSubstMap Nothing toTyVars
   let fromSubstedDataType = substDataType dfrom fromSubstMap
   let toSubstedDataType = substDataType dto toSubstMap
+  bndrConstraints <- concat <$> zipWithM genBndrConstraint fromTyVars toTyVars
   let fromSubstTy = datatypeType fromSubstedDataType
   let toSubstTy = datatypeType toSubstedDataType
   innerConstraints <-
     fixConversionInnerConstraints fromSubstedDataType toSubstedDataType cls
   return
     [ StandaloneDerivD
-        (Just $ ViaStrategy toSubstTy)
+        (Just $ ViaStrategy (AppT (ConT ''Default) toSubstTy))
         (bndrConstraints ++ innerConstraints)
         (AppT (AppT (ConT cls) fromSubstTy) toSubstTy)
     ]
@@ -268,8 +287,9 @@ deriveConversionWithMode evmode from to cls = do
               [t|Mergeable $tvTo|]
             ]
         (ConT nm)
-          | nm == ''EvaluationMode && isNothing evmode ->
-              sequence [[t|(IsMode $tvFrom)|], [t|(IsMode $tvTo)|]]
+          | nm == ''EvaluationMode ->
+              sequence
+                [[t|IsMode $tvFrom|], [t|IsMode $tvTo {-, [t|$tvFrom ~ $tvTo|]-}|]]
         (ConT nm) | nm == ''EvaluationMode -> return []
         (ConT nm)
           | nm == ''Nat ->
@@ -284,12 +304,7 @@ deriveConversionWithMode evmode from to cls = do
 deriveConversions ::
   Name -> Name -> [Name] -> Q [Dec]
 deriveConversions from to =
-  fmap concat . traverse (deriveConversionWithMode Nothing from to)
-
-deriveConversionsWithMode ::
-  EvaluationMode -> Name -> Name -> [Name] -> Q [Dec]
-deriveConversionsWithMode mode from to =
-  fmap concat . traverse (deriveConversionWithMode (Just mode) from to)
+  fmap concat . traverse (deriveConversionWithMode from to)
 
 newtypeDefaultStrategy :: Name -> Q Strategy
 newtypeDefaultStrategy nm
@@ -330,12 +345,12 @@ deriveGrisette nm clss = do
   conversionDerivation <- deriveConversionWithDefaultStrategy' nm conversions
   nonConversionDerivation <-
     if
-        | datatypeVariant d == Datatype ->
-            deriveWithDefaultStrategy' dataDefaultStrategy nm nonConversions
-        | datatypeVariant d == Newtype ->
-            deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
-        | otherwise ->
-            fail "Currently only non-GADTs data or newtype are supported."
+      | datatypeVariant d == Datatype ->
+          deriveWithDefaultStrategy' dataDefaultStrategy nm nonConversions
+      | datatypeVariant d == Newtype ->
+          deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
+      | otherwise ->
+          fail "Currently only non-GADTs data or newtype are supported."
   return $ conversionDerivation <> nonConversionDerivation
   where
     deriveWithDefaultStrategy' ::
@@ -350,13 +365,8 @@ deriveGrisette nm clss = do
           )
         $ zip3 strategies modes clss
     deriveConversionWithDefaultStrategy' :: Name -> [Name] -> Q [Dec]
-    deriveConversionWithDefaultStrategy' nm clss = do
-      modes <- traverse validEvaluationMode clss
-      concat
-        <$> zipWithM
-          (\mode -> deriveConversionWithMode mode nm nm)
-          modes
-          clss
+    deriveConversionWithDefaultStrategy' nm =
+      deriveConversions nm nm
 
 allGrisette :: [Name]
 allGrisette =
