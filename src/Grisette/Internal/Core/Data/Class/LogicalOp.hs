@@ -3,6 +3,7 @@ module Grisette.Internal.Core.Data.Class.LogicalOp
   )
 where
 
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.Prim.Term
   ( pevalAndTerm,
     pevalImplyTerm,
@@ -23,8 +24,8 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 
 -- | Symbolic logical operators for symbolic booleans.
 --
--- >>> let t = con True :: SymBool
--- >>> let f = con False :: SymBool
+-- >>> let t = true :: SymBool
+-- >>> let f = false :: SymBool
 -- >>> let a = "a" :: SymBool
 -- >>> let b = "b" :: SymBool
 -- >>> t .|| f
@@ -60,6 +61,11 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- >>> a `symXor` b
 -- (|| (&& (! a) b) (&& a (! b)))
 class LogicalOp b where
+  true :: b
+  true = symNot false
+  false :: b
+  false = symNot true
+
   -- | Symbolic disjunction
   (.||) :: b -> b -> b
   a .|| b = symNot $ symNot a .&& symNot b
@@ -87,10 +93,12 @@ class LogicalOp b where
   a `symImplies` b = symNot a .|| b
   {-# INLINE symImplies #-}
 
-  {-# MINIMAL (.||), symNot | (.&&), symNot #-}
+  {-# MINIMAL (true | false), ((.||), symNot | (.&&), symNot) #-}
 
 -- LogicalOp instances
 instance LogicalOp Bool where
+  true = True
+  false = False
   (.||) = (||)
   {-# INLINE (.||) #-}
   (.&&) = (&&)
@@ -99,6 +107,8 @@ instance LogicalOp Bool where
   {-# INLINE symNot #-}
 
 instance LogicalOp SymBool where
+  true = con True
+  false = con False
   (SymBool l) .|| (SymBool r) = SymBool $ pevalOrTerm l r
   (SymBool l) .&& (SymBool r) = SymBool $ pevalAndTerm l r
   symNot (SymBool v) = SymBool $ pevalNotTerm v
