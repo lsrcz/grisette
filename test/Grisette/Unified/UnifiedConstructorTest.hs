@@ -18,7 +18,6 @@
 
 module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
 
-import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), mrgReturn)
 import Grisette.Internal.Core.TH.Derivation (deriveAllGrisette)
@@ -34,7 +33,6 @@ import Test.HUnit ((@?=))
 data T mode a
   = T (GetBool mode) a (GetData mode (T mode a))
   | T1
-  deriving (Generic)
 
 deriveAllGrisette ''T
 mkUnifiedConstructor "mk" ''T
