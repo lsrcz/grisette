@@ -68,6 +68,5 @@ deriveNewtype ''T1 [''Mergeable, ''SEq, ''SOrd, ''Show]
 data T2 mode a n
   = T2 (GetBool mode) (GetWordN mode n) a (GetData mode (T2 mode a n))
   | T2Nil
-  deriving (Generic)
 
 deriveAllGrisette ''T2

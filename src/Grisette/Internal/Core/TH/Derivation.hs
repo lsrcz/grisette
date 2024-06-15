@@ -98,7 +98,8 @@ import Language.Haskell.TH.Datatype (ConstructorInfo (constructorFields))
 tvIsMode :: TyVarBndr_ flag -> Bool
 tvIsMode = (== ConT ''EvaluationMode) . tvKind
 
-data Strategy = Stock | WithNewtype | Via | Anyclass
+data Strategy = Stock | WithNewtype | Via | Anyclass | SpecialForGeneric
+  deriving (Eq)
 
 evModeSubstMap :: Maybe EvaluationMode -> [TyVarBndrUnit] -> M.Map Name Type
 evModeSubstMap Nothing _ = M.empty
@@ -149,13 +150,17 @@ deriveWithMode evmode strategy name cls = do
   return
     [ StandaloneDerivD
         (Just deriveStrategy)
-        (bndrConstraints ++ innerConstraints)
+        ( if strategy == SpecialForGeneric
+            then []
+            else (bndrConstraints ++ innerConstraints)
+        )
         (AppT (ConT cls) substTy)
     ]
   where
     getStrategy substTy =
       case strategy of
         Stock -> return StockStrategy
+        SpecialForGeneric -> return StockStrategy
         WithNewtype -> return NewtypeStrategy
         Via ->
           ViaStrategy
@@ -308,14 +313,14 @@ deriveConversions from to =
 
 newtypeDefaultStrategy :: Name -> Q Strategy
 newtypeDefaultStrategy nm
-  | nm == ''Generic = return Stock
+  | nm == ''Generic = return SpecialForGeneric
   | nm == ''Show = return Stock
   | nm == ''Lift = return Stock
   | otherwise = return WithNewtype
 
 dataDefaultStrategy :: Name -> Q Strategy
 dataDefaultStrategy nm
-  | nm == ''Generic = return Stock
+  | nm == ''Generic = return SpecialForGeneric
   | nm == ''Show = return Stock
   | nm == ''Eq = return Stock
   | nm == ''Ord = return Stock
@@ -370,7 +375,8 @@ deriveGrisette nm clss = do
 
 allGrisette :: [Name]
 allGrisette =
-  [ ''Show,
+  [ ''Generic,
+    ''Show,
     ''Eq,
     ''Ord,
     ''Lift,
