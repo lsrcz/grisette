@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.1.0] -- 2024-06-12
+## [0.6.1.0]
 
 ### Fixed
 
@@ -14,6 +14,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#209](https://github.com/lsrcz/grisette/pull/209))
 - Exported the `FP` constructs in the `Grisette` module.
   ([#209](https://github.com/lsrcz/grisette/pull/209))
+- Added `true` and `false` in `LogicalOp`.
+  ([#211](https://github.com/lsrcz/grisette/pull/211))
 
 ## [0.6.0.0] -- 2024-06-07
 

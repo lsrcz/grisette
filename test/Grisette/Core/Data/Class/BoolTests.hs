@@ -1,30 +1,36 @@
 module Grisette.Core.Data.Class.BoolTests (boolTests) where
 
 import Grisette
-  ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
+  ( LogicalOp (false, symImplies, symNot, symXor, true, (.&&), (.||)),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
 data CustomAndBool
-  = CASBool String
+  = CACBool Bool
+  | CASBool String
   | CAAnd CustomAndBool CustomAndBool
   | CANot CustomAndBool
   deriving (Show, Eq)
 
 instance LogicalOp CustomAndBool where
+  true = CACBool True
+  symNot (CACBool b) = CACBool $ not b
   symNot (CANot x) = x
   symNot x = CANot x
   (.&&) = CAAnd
 
 data CustomOrBool
-  = COSBool String
+  = COCBool Bool
+  | COSBool String
   | COOr CustomOrBool CustomOrBool
   | CONot CustomOrBool
   deriving (Show, Eq)
 
 instance LogicalOp CustomOrBool where
+  false = COCBool False
+  symNot (COCBool b) = COCBool $ not b
   symNot (CONot x) = x
   symNot x = CONot x
   (.||) = COOr

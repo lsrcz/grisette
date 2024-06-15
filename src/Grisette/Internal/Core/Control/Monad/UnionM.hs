@@ -61,7 +61,7 @@ import Grisette.Internal.Core.Data.Class.GPretty
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
-  ( LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
+  ( LogicalOp (false, symImplies, symNot, symXor, true, (.&&), (.||)),
   )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -509,6 +509,8 @@ instance (ITEOp a, Mergeable a) => ITEOp (UnionM a) where
   symIte = mrgIf
 
 instance (LogicalOp a, Mergeable a) => LogicalOp (UnionM a) where
+  true = mrgSingle true
+  false = mrgSingle false
   (.||) = unionMBinOp (.||)
   (.&&) = unionMBinOp (.&&)
   symNot = unionMUnaryOp symNot
