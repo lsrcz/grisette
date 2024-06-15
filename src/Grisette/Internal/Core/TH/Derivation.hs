@@ -345,12 +345,12 @@ deriveGrisette nm clss = do
   conversionDerivation <- deriveConversionWithDefaultStrategy' nm conversions
   nonConversionDerivation <-
     if
-      | datatypeVariant d == Datatype ->
-          deriveWithDefaultStrategy' dataDefaultStrategy nm nonConversions
-      | datatypeVariant d == Newtype ->
-          deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
-      | otherwise ->
-          fail "Currently only non-GADTs data or newtype are supported."
+        | datatypeVariant d == Datatype ->
+            deriveWithDefaultStrategy' dataDefaultStrategy nm nonConversions
+        | datatypeVariant d == Newtype ->
+            deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
+        | otherwise ->
+            fail "Currently only non-GADTs data or newtype are supported."
   return $ conversionDerivation <> nonConversionDerivation
   where
     deriveWithDefaultStrategy' ::
