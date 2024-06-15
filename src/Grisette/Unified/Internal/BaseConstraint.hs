@@ -54,7 +54,9 @@ type ConSymConversion conType symType t =
   ( ToCon t conType,
     ToSym conType t,
     ToCon symType t,
-    ToSym t symType
+    ToSym t symType,
+    ToCon t t,
+    ToSym t t
   )
 
 -- | A type that is used as a constraint for all the types in Grisette that can
