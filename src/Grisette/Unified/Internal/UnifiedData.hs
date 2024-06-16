@@ -2,8 +2,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -17,7 +19,7 @@ where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftUnionM)
+import Grisette.Internal.Core.Control.Monad.UnionM (UnionM)
 import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym)
 import Grisette.Internal.Core.Data.Class.ExtractSymbolics (ExtractSymbolics)
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
@@ -31,7 +33,9 @@ import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
-import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
+import Grisette.Unified.Internal.Class.UnifiedBranching
+  ( UnifiedBranching (liftBaseMonad),
+  )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -78,7 +82,9 @@ instance (Mergeable v) => UnifiedDataImpl 'Con v v where
 instance (Mergeable v) => UnifiedDataImpl 'Sym v (UnionM v) where
   type GetData 'Sym v = UnionM v
   wrapData = mrgSingle
-  extractData = liftUnionM
+  extractData ::
+    forall m. (Mergeable v, Monad m, UnifiedBranching Sym m) => UnionM v -> m v
+  extractData = liftBaseMonad
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
 -- See the notes in 'Grisette.Unified.Internal.IsMode.IsMode'.
