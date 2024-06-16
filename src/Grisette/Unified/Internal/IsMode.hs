@@ -15,6 +15,7 @@
 -- Portability :   GHC only
 module Grisette.Unified.Internal.IsMode (IsMode) where
 
+import Data.Typeable (Typeable)
 import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
 import Grisette.Unified.Internal.EvaluationMode (BaseMonad)
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV, SafeAllUnifiedBV)
@@ -63,7 +64,8 @@ import Grisette.Unified.Internal.UnifiedInteger
 -- >     (l + r)
 -- >     (symIte @mode (l .< r) l r)
 type IsMode mode =
-  ( UnifiedBool mode,
+  ( Typeable mode,
+    UnifiedBool mode,
     UnifiedPrimitive mode (GetBool mode),
     UnifiedInteger mode,
     AllUnifiedBV mode,

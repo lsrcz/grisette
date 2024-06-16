@@ -1,6 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,12 +20,11 @@ module Grisette.Unified.Internal.Class.UnifiedSOrd
 where
 
 import Data.Type.Bool (If)
-import Grisette.Internal.Core.Control.Monad.UnionM (liftUnionM)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import qualified Grisette.Internal.Core.Data.Class.SOrd
 import Grisette.Unified.Internal.Class.UnifiedBranching
-  ( UnifiedBranching (mrgIf),
+  ( UnifiedBranching (liftBaseMonad, mrgIf),
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (symIte))
 import Grisette.Unified.Internal.EvaluationMode
@@ -66,8 +68,15 @@ instance (SOrd a) => UnifiedSOrd 'Sym a where
   (.>=) = (Grisette.Internal.Core.Data.Class.SOrd..>=)
   (.>) = (Grisette.Internal.Core.Data.Class.SOrd..>)
   (.<) = (Grisette.Internal.Core.Data.Class.SOrd..<)
+  symCompare ::
+    forall a ctx.
+    (SOrd a, Monad ctx, UnifiedBranching Sym ctx) =>
+    a ->
+    a ->
+    ctx Ordering
   symCompare x y =
-    liftUnionM $ Grisette.Internal.Core.Data.Class.SOrd.symCompare x y
+    liftBaseMonad $
+      Grisette.Internal.Core.Data.Class.SOrd.symCompare x y
 
 symMax ::
   forall mode a. (UnifiedSOrd mode a, UnifiedITEOp mode a) => a -> a -> a
