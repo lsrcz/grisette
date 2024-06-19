@@ -4,6 +4,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 -- |
 -- Module      :   Grisette.Unified.Internal.IsMode
@@ -17,7 +18,10 @@ module Grisette.Unified.Internal.IsMode (IsMode) where
 
 import Data.Typeable (Typeable)
 import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
-import Grisette.Unified.Internal.EvaluationMode (BaseMonad)
+import Grisette.Unified.Internal.EvaluationMode
+  ( BaseMonad,
+    EvaluationMode (Con, Sym),
+  )
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV, SafeAllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
@@ -63,7 +67,7 @@ import Grisette.Unified.Internal.UnifiedInteger
 -- >     (l .== r)
 -- >     (l + r)
 -- >     (symIte @mode (l .< r) l r)
-type IsMode mode =
+class
   ( Typeable mode,
     UnifiedBool mode,
     UnifiedPrimitive mode (GetBool mode),
@@ -74,4 +78,9 @@ type IsMode mode =
     UnifiedBranching mode (BaseMonad mode),
     SafeUnifiedInteger mode (BaseMonad mode),
     SafeAllUnifiedBV mode (BaseMonad mode)
-  )
+  ) =>
+  IsMode mode
+
+instance IsMode 'Con
+
+instance IsMode 'Sym
