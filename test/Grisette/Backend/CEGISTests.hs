@@ -129,7 +129,7 @@ cegisTests =
                         apply (symIte cond s1 s2) (symIte cond 1 2)
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
-                            .== 100
+                          .== 100
                 let s1e = evaluateSym False m1 s1
                 let s2e = evaluateSym False m1 s2
                 s1e # 1 @=? 10
@@ -146,7 +146,7 @@ cegisTests =
                         apply (symIte cond s1 s2) (symIte cond 1 2)
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
-                            .== 100
+                          .== 100
                 let s1e = evaluateSym False m1 s1
                 let s2e = evaluateSym False m1 s2
                 s1e # 1 @=? 10
