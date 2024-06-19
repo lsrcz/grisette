@@ -41,15 +41,6 @@ import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
-import Grisette.Unified
-  ( GetBool,
-    GetData,
-    GetIntN,
-    GetInteger,
-    GetSomeIntN,
-    GetSomeWordN,
-    GetWordN,
-  )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Language.Haskell.TH
@@ -251,9 +242,10 @@ deriveConversionWithMode from to cls = do
   let toSubstTy = datatypeType toSubstedDataType
   innerConstraints <-
     fixConversionInnerConstraints fromSubstedDataType toSubstedDataType cls
+  strategy <- ViaStrategy <$> [t|Default $(return toSubstTy)|]
   return
     [ StandaloneDerivD
-        (Just $ ViaStrategy (AppT (ConT ''Default) toSubstTy))
+        (Just strategy)
         (bndrConstraints ++ innerConstraints)
         (AppT (AppT (ConT cls) fromSubstTy) toSubstTy)
     ]
