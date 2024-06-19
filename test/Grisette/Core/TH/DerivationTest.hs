@@ -71,6 +71,6 @@ data T2 mode a n
 
 deriveAllGrisette ''T2
 
-data X mode = X [GetBool mode]
+newtype X mode = X [GetBool mode]
 
 deriveAllGrisette ''X
