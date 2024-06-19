@@ -214,17 +214,6 @@ deriveStockWithMode = deriveInstancesWithMode Stock
 deriveViaDefaultWithMode :: EvaluationMode -> Name -> [Name] -> Q [Dec]
 deriveViaDefaultWithMode = deriveInstancesWithMode Via
 
-needToFix :: [Name]
-needToFix =
-  [ ''GetData,
-    ''GetBool,
-    ''GetInteger,
-    ''GetWordN,
-    ''GetIntN,
-    ''GetSomeIntN,
-    ''GetSomeWordN
-  ]
-
 fixConversionInnerConstraints ::
   DatatypeInfo -> DatatypeInfo -> Name -> Q [Pred]
 fixConversionInnerConstraints dfrom dto cls = do
@@ -236,7 +225,7 @@ fixConversionInnerConstraints dfrom dto cls = do
   allFields <- nubOrd . concat <$> traverse (uncurry zipFields) cons
   traverse
     (\(fromty, toty) -> [t|$(return $ AppT (AppT (ConT cls) fromty) toty)|])
-    $ filter (\(a, b) -> typeNeedToFix a || typeNeedToFix b) allFields
+    allFields
   where
     zipFields from to = do
       let fromFields = constructorFields from
@@ -244,11 +233,6 @@ fixConversionInnerConstraints dfrom dto cls = do
       when (length fromFields /= length toFields) $
         fail "The number of fields must be the same."
       return $ zip fromFields toFields
-    typeNeedToFix :: Type -> Bool
-    typeNeedToFix ty = case ty of
-      AppT a _ -> typeNeedToFix a
-      ConT nm -> nm `elem` needToFix
-      _ -> False
 
 deriveConversionWithMode :: Name -> Name -> Name -> Q [Dec]
 deriveConversionWithMode from to cls = do
@@ -350,12 +334,12 @@ deriveGrisette nm clss = do
   conversionDerivation <- deriveConversionWithDefaultStrategy' nm conversions
   nonConversionDerivation <-
     if
-        | datatypeVariant d == Datatype ->
-            deriveWithDefaultStrategy' dataDefaultStrategy nm nonConversions
-        | datatypeVariant d == Newtype ->
-            deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
-        | otherwise ->
-            fail "Currently only non-GADTs data or newtype are supported."
+      | datatypeVariant d == Datatype ->
+          deriveWithDefaultStrategy' dataDefaultStrategy nm nonConversions
+      | datatypeVariant d == Newtype ->
+          deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
+      | otherwise ->
+          fail "Currently only non-GADTs data or newtype are supported."
   return $ conversionDerivation <> nonConversionDerivation
   where
     deriveWithDefaultStrategy' ::
