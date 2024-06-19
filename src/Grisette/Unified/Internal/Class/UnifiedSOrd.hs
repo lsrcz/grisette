@@ -24,7 +24,9 @@ import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import qualified Grisette.Internal.Core.Data.Class.SOrd
 import Grisette.Unified.Internal.Class.UnifiedBranching
-  ( UnifiedBranching (liftBaseMonad, mrgIf),
+  ( UnifiedBranching,
+    liftBaseMonad,
+    mrgIf,
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (symIte))
 import Grisette.Unified.Internal.EvaluationMode

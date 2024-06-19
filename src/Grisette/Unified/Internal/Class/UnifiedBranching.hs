@@ -22,7 +22,9 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedBranching
-  ( UnifiedBranching (..),
+  ( mrgIf,
+    liftBaseMonad,
+    UnifiedBranching (..),
   )
 where
 
@@ -39,7 +41,7 @@ import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Trans.Writer.Strict as WriterStrict
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable, eqT, type (:~:) (Refl))
+import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Control.Monad.UnionM (liftUnionM)
 import Grisette.Internal.Core.Data.Class.GenSym (FreshT)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
@@ -51,17 +53,43 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Unified.Internal.EvaluationMode
   ( BaseMonad,
-    EvaluationMode (Con, Sym),
+    EvaluationMode,
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
+import Grisette.Unified.Internal.Util (withMode)
+
+mrgIf ::
+  forall mode a m.
+  (Typeable mode, Mergeable a, UnifiedBranching mode m) =>
+  GetBool mode ->
+  m a ->
+  m a ->
+  m a
+mrgIf c t e =
+  withMode @mode
+    (withBaseBranching @mode @m $ if c then t else e)
+    (withBaseBranching @mode @m $ Grisette.mrgIf c t e)
+
+liftBaseMonad ::
+  forall mode a m.
+  ( Applicative m,
+    UnifiedBranching mode m,
+    Mergeable a
+  ) =>
+  BaseMonad mode a ->
+  m a
+liftBaseMonad b =
+  withMode @mode
+    (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
+    (withBaseBranching @mode @m $ liftUnionM b)
 
 -- | A class that provides a unified branching operation for unified types.
 --
--- On all monads with 'TryMerge' instance, the 'mrgIf' function could use
--- concrete Boolean variable for branching.
+-- On monads with 'TryMerge' instance, the 'mrgIf' function could use concrete
+-- Boolean variable for branching.
 --
--- On all monads with 'UnionMergeable1' instance, the 'mrgIf' function could use
+-- On monads with 'UnionMergeable1' instance, the 'mrgIf' function could use
 -- symbolic Boolean variable for branching.
 --
 -- Note that you may sometimes need to write visible type application for the
@@ -76,26 +104,6 @@ class
   (Typeable mode, TryMerge m) =>
   UnifiedBranching (mode :: EvaluationMode) m
   where
-  mrgIf :: (Mergeable a) => GetBool mode -> m a -> m a -> m a
-  mrgIf c t e = case (eqT @mode @'Con, eqT @mode @'Sym) of
-    (Just Refl, _) -> withBaseBranching @mode @m $ if c then t else e
-    (_, Just Refl) -> withBaseBranching @mode @m $ Grisette.mrgIf c t e
-    _ -> error "impossible"
-
-  liftBaseMonad ::
-    ( Applicative m,
-      UnifiedBranching mode m,
-      Mergeable a,
-      TryMerge (BaseMonad mode),
-      Functor (BaseMonad mode)
-    ) =>
-    BaseMonad mode a ->
-    m a
-  liftBaseMonad b = case (eqT @mode @'Con, eqT @mode @'Sym) of
-    (Just Refl, _) -> withBaseBranching @mode @m $ mrgSingle . runIdentity $ b
-    (_, Just Refl) -> withBaseBranching @mode @m $ liftUnionM b
-    _ -> error "impossible"
-
   withBaseBranching ::
     ((If (IsConMode mode) (() :: Constraint) (UnionMergeable1 m)) => r) -> r
 
@@ -108,10 +116,9 @@ withBaseBranchingTrans ::
   ((If (IsConMode mode) (() :: Constraint) (UnionMergeable1 m)) => r) ->
   r
 withBaseBranchingTrans r =
-  case (eqT @mode @'Con, eqT @mode @'Sym) of
-    (Just Refl, _) -> withBaseBranching @mode @m0 r
-    (_, Just Refl) -> withBaseBranching @mode @m0 r
-    _ -> error "impossible"
+  withMode @mode
+    (withBaseBranching @mode @m0 r)
+    (withBaseBranching @mode @m0 r)
 
 instance
   {-# INCOHERENT #-}

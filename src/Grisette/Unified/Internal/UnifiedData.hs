@@ -34,7 +34,8 @@ import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
 import Grisette.Unified.Internal.Class.UnifiedBranching
-  ( UnifiedBranching (liftBaseMonad),
+  ( UnifiedBranching,
+    liftBaseMonad,
   )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Language.Haskell.TH.Syntax (Lift)
