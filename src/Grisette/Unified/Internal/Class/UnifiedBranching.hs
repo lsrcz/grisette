@@ -70,6 +70,7 @@ mrgIf c t e =
   withMode @mode
     (withBaseBranching @mode @m $ if c then t else e)
     (withBaseBranching @mode @m $ Grisette.mrgIf c t e)
+{-# INLINE mrgIf #-}
 
 liftBaseMonad ::
   forall mode a m.
@@ -83,6 +84,7 @@ liftBaseMonad b =
   withMode @mode
     (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
     (withBaseBranching @mode @m $ liftUnionM b)
+{-# INLINE liftBaseMonad #-}
 
 -- | A class that provides a unified branching operation for unified types.
 --
@@ -119,6 +121,7 @@ withBaseBranchingTrans r =
   withMode @mode
     (withBaseBranching @mode @m0 r)
     (withBaseBranching @mode @m0 r)
+{-# INLINE withBaseBranchingTrans #-}
 
 instance
   {-# INCOHERENT #-}
@@ -129,37 +132,37 @@ instance
   UnifiedBranching mode m
   where
   withBaseBranching r = r
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   (Typeable mode, UnifiedBranching mode m, Applicative m) =>
   UnifiedBranching mode (FreshT m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(FreshT m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   (Typeable mode, UnifiedBranching mode m, Applicative m) =>
   UnifiedBranching mode (MaybeT m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(MaybeT m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   (Typeable mode, UnifiedBranching mode m, Applicative m) =>
   UnifiedBranching mode (IdentityT m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(IdentityT m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   (Typeable mode, UnifiedBranching mode m, Applicative m) =>
   UnifiedBranching mode (ReaderT r m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(ReaderT r m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   ( Typeable mode,
     UnifiedBranching mode m,
     Applicative m,
@@ -168,9 +171,9 @@ instance
   UnifiedBranching mode (StateLazy.StateT s m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(StateLazy.StateT s m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   ( Typeable mode,
     UnifiedBranching mode m,
     Applicative m,
@@ -180,9 +183,9 @@ instance
   UnifiedBranching mode (StateStrict.StateT w m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(StateStrict.StateT w m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   ( Typeable mode,
     UnifiedBranching mode m,
     Applicative m,
@@ -192,9 +195,9 @@ instance
   UnifiedBranching mode (WriterLazy.WriterT w m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(WriterLazy.WriterT w m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   ( Typeable mode,
     UnifiedBranching mode m,
     Applicative m,
@@ -204,23 +207,23 @@ instance
   UnifiedBranching mode (WriterStrict.WriterT w m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(WriterStrict.WriterT w m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   (Typeable mode, Mergeable e, UnifiedBranching mode m, Applicative m) =>
   UnifiedBranching mode (ExceptT e m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(ExceptT e m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   (Typeable mode, Mergeable e, UnifiedBranching mode m, Monad m) =>
   UnifiedBranching mode (ContT e m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(ContT e m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   ( Typeable mode,
     UnifiedBranching mode m,
     Applicative m,
@@ -231,9 +234,9 @@ instance
   UnifiedBranching mode (RWSLazy.RWST r w s m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(RWSLazy.RWST r w s m)
+  {-# INLINE withBaseBranching #-}
 
 instance
-  {-# INCOHERENT #-}
   ( Typeable mode,
     UnifiedBranching mode m,
     Applicative m,
@@ -244,3 +247,4 @@ instance
   UnifiedBranching mode (RWSStrict.RWST r w s m)
   where
   withBaseBranching = withBaseBranchingTrans @mode @(RWSStrict.RWST r w s m)
+  {-# INLINE withBaseBranching #-}
