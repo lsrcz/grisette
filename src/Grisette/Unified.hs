@@ -11,7 +11,9 @@ module Grisette.Unified
     MonadWithMode,
 
     -- * Unified type classes
-    UnifiedBranching (..),
+    UnifiedBranching,
+    mrgIf,
+    liftBaseMonad,
     UnifiedITEOp (..),
     UnifiedSEq ((.==), (./=)),
     UnifiedSimpleMergeable (..),
@@ -51,6 +53,8 @@ where
 
 import Grisette.Unified.Internal.Class.UnifiedBranching
   ( UnifiedBranching (..),
+    liftBaseMonad,
+    mrgIf,
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..))
 import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (..))

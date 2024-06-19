@@ -15,8 +15,8 @@ import Grisette.Unified
     GetInteger,
     IsMode,
     MonadWithMode,
-    UnifiedBranching (mrgIf),
     UnifiedSEq ((.==)),
+    mrgIf,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

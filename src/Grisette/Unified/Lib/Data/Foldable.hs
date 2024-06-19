@@ -61,9 +61,9 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Unified
   ( MonadWithMode,
-    UnifiedBranching (liftBaseMonad),
     UnifiedITEOp (symIteMerge),
     UnifiedSOrd,
+    liftBaseMonad,
     mrgIf,
   )
 import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq, (.==))
