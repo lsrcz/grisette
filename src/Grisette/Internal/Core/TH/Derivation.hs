@@ -30,7 +30,6 @@ import Data.Containers.ListUtils (nubOrd)
 import Data.Hashable (Hashable)
 import qualified Data.Map as M
 import Data.Maybe (isNothing)
-import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Generics.Deriving (Default, Generic)
 import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym)
@@ -42,11 +41,13 @@ import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
+import Grisette.Internal.Core.TH.DeriveUnifiedInterface
+  ( deriveUnifiedInterface,
+  )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
 import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (withBaseSEq))
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.IsMode (IsMode)
-import Grisette.Unified.Internal.Util (withMode)
 import Language.Haskell.TH
   ( Dec (StandaloneDerivD),
     DerivStrategy
@@ -55,18 +56,11 @@ import Language.Haskell.TH
         StockStrategy,
         ViaStrategy
       ),
-    Exp,
     Name,
     Pred,
     Q,
     Type (AppT, ConT, PromotedT, StarT, VarT),
-    instanceD,
-    lam1E,
-    normalB,
     pprint,
-    valD,
-    varE,
-    varP,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields),
@@ -419,40 +413,4 @@ deriveAllGrisetteExcept nm clss = do
   deriveGrisette nm $ filter (`notElem` clss) allGrisette
 
 deriveUnifiedSEq :: Name -> Q [Dec]
-deriveUnifiedSEq name = do
-  d <- reifyDatatype name
-  let tyVars = datatypeVars d
-  let categorizedTyVars = categorizeTyVars tyVars
-  mode <- case modeTyVars categorizedTyVars of
-    [var] -> return var
-    _ ->
-      fail "The number of mode type arguments must be 1."
-  bndrConstraints <-
-    concat <$> mapM (genBndrConstraint mode) tyVars
-  sequence
-    [ instanceD
-        (return bndrConstraints)
-        [t|UnifiedSEq $mode $(return $ datatypeType d)|]
-        [body mode $ starTyVars categorizedTyVars]
-    ]
-  where
-    genBndrConstraint :: Q Type -> TyVarBndr_ flag -> Q [Type]
-    genBndrConstraint mode bndr = do
-      let name = tvName bndr
-      let tv = return $ VarT name
-      let kind = tvKind bndr
-      case kind of
-        StarT -> sequence [[t|UnifiedSEq $mode $tv|], [t|Mergeable $tv|]]
-        (ConT nm) | nm == ''EvaluationMode -> (: []) <$> [t|Typeable $tv|]
-        (ConT nm)
-          | nm == ''Nat -> sequence [[t|KnownNat $tv|], [t|1 <= $tv|]]
-        _ -> fail $ "Unsupported kind in type arguments: " ++ pprint kind
-    applyWithBaseSEq :: Q Type -> Q Type -> Q Exp -> Q Exp
-    applyWithBaseSEq mode var exp = [|withBaseSEq @($mode) @($var) $exp|]
-    body :: Q Type -> [Q Type] -> Q Dec
-    body mode starVars = do
-      var <- newName "r"
-      let arg = varP var
-      let branch = foldr (applyWithBaseSEq mode) (varE var) starVars
-      let exp = lam1E arg [|withMode @($mode) $branch $branch|]
-      valD (varP 'withBaseSEq) (normalB exp) []
+deriveUnifiedSEq = deriveUnifiedInterface ''UnifiedSEq 'withBaseSEq
