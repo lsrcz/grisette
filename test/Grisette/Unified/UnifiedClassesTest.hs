@@ -1,22 +1,37 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 
 import Control.Monad.Except (ExceptT, MonadError (throwError))
 import qualified Data.Text as T
-import Grisette (SymInteger, UnionM)
+import GHC.TypeNats (KnownNat, type (<=))
+import Grisette (SymInteger, UnionM, WordN, SymWordN, mrgReturn, SymBool)
 import qualified Grisette
 import Grisette.Unified
   ( BaseMonad,
     GetBool,
+    GetData,
     GetInteger,
+    GetWordN,
     IsMode,
     MonadWithMode,
-    UnifiedSEq ((.==)),
     mrgIf,
+    (.==),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -36,6 +51,24 @@ testBranchingBase ::
   forall mode. (IsMode mode) => GetInteger mode -> M mode (GetInteger mode)
 testBranchingBase x =
   mrgIf (x .== 1 :: GetBool mode) (return x) (throwError "err")
+
+data X mode n
+  = X
+      (GetBool mode)
+      [GetWordN mode n]
+      (GetData mode (X mode n))
+      [GetData mode (X mode n)]
+  | XNil
+
+Grisette.deriveAllGrisette ''X
+
+testSEq ::
+  forall mode n.
+  (IsMode mode, 1 <= n, KnownNat n) =>
+  X mode n ->
+  X mode n ->
+  GetBool mode
+testSEq = (.==)
 
 unifiedClassesTest :: Test
 unifiedClassesTest =
@@ -57,5 +90,17 @@ unifiedClassesTest =
             testBranching 1 @?= (return 1 :: Either T.Text Integer),
           testCase "branching 'Sym" $
             testBranching 1 @?= (return 1 :: ExceptT T.Text UnionM SymInteger)
+        ],
+      testGroup
+        "UnifiedSEq"
+        [ testCase "testSEq 'Con" $ do
+            let x1 = X True [1 :: WordN 8] XNil [XNil]
+            let x2 = X False [1 :: WordN 8] XNil [XNil]
+            testSEq x1 x1 @?= True
+            testSEq x1 x2 @?= False,
+          testCase "testSEq 'Sym" $ do
+            let x1 = X "a" [1 :: SymWordN 8] (mrgReturn XNil) [mrgReturn XNil]
+            let x2 = X "b" [1 :: SymWordN 8] (mrgReturn XNil) [mrgReturn XNil]
+            testSEq x1 x2 @?= ("a" :: SymBool) .== "b"
         ]
     ]

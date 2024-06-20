@@ -15,7 +15,9 @@ module Grisette.Unified
     mrgIf,
     liftBaseMonad,
     UnifiedITEOp (..),
-    UnifiedSEq ((.==), (./=)),
+    UnifiedSEq,
+    (.==),
+    (./=),
     UnifiedSimpleMergeable (..),
     UnifiedSOrd (..),
     symMax,
@@ -57,7 +59,7 @@ import Grisette.Unified.Internal.Class.UnifiedBranching
     mrgIf,
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..))
-import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (..))
+import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (..), (./=), (.==))
 import Grisette.Unified.Internal.Class.UnifiedSOrd
   ( UnifiedSOrd (..),
     mrgMax,

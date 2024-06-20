@@ -11,6 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -66,7 +67,7 @@ newtype T1 mode = T1 (GetBool mode)
 deriveNewtype ''T1 [''Mergeable, ''SEq, ''SOrd, ''Show]
 
 data T2 mode a n
-  = T2 (GetBool mode) (GetWordN mode n) a (GetData mode (T2 mode a n))
+  = T2 (GetBool mode) [GetWordN mode n] [a] (GetData mode (T2 mode a n))
   | T2Nil
 
 deriveAllGrisette ''T2

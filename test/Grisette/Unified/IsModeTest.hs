@@ -48,10 +48,10 @@ import Grisette.Unified
     IsMode,
     MonadWithMode,
     UnifiedITEOp (symIte),
-    UnifiedSEq ((.==)),
     UnifiedSOrd ((.<)),
     UnifiedSimpleMergeable (mrgIte),
     extractData,
+    (.==),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

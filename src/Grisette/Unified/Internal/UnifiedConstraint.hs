@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE MonoLocalBinds #-}
 
 module Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive) where
 
