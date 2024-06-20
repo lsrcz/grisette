@@ -2,10 +2,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# HLINT ignore "Use fewer imports" #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use fewer imports" #-}
 
 module Grisette.Internal.Core.TH.Derivation
   ( deriveNewtype,
@@ -20,6 +20,7 @@ module Grisette.Internal.Core.TH.Derivation
     deriveGrisette,
     deriveAllGrisette,
     deriveAllGrisetteExcept,
+    deriveUnifiedSEq,
   )
 where
 
@@ -29,6 +30,7 @@ import Data.Containers.ListUtils (nubOrd)
 import Data.Hashable (Hashable)
 import qualified Data.Map as M
 import Data.Maybe (isNothing)
+import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Generics.Deriving (Default, Generic)
 import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym)
@@ -41,8 +43,10 @@ import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
+import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (withBaseSEq))
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.IsMode (IsMode)
+import Grisette.Unified.Internal.Util (withMode)
 import Language.Haskell.TH
   ( Dec (StandaloneDerivD),
     DerivStrategy
@@ -51,11 +55,18 @@ import Language.Haskell.TH
         StockStrategy,
         ViaStrategy
       ),
+    Exp,
     Name,
     Pred,
     Q,
     Type (AppT, ConT, PromotedT, StarT, VarT),
+    instanceD,
+    lam1E,
+    normalB,
     pprint,
+    valD,
+    varE,
+    varP,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields),
@@ -88,6 +99,36 @@ import Language.Haskell.TH.Datatype (ConstructorInfo (constructorFields))
 
 tvIsMode :: TyVarBndr_ flag -> Bool
 tvIsMode = (== ConT ''EvaluationMode) . tvKind
+
+tvIsNat :: TyVarBndr_ flag -> Bool
+tvIsNat = (== ConT ''Nat) . tvKind
+
+tvIsStar :: TyVarBndr_ flag -> Bool
+tvIsStar = (== StarT) . tvKind
+
+tvIsUnsupported :: TyVarBndr_ flag -> Bool
+tvIsUnsupported bndr = not $ tvIsMode bndr || tvIsNat bndr || tvIsStar bndr
+
+tvType :: TyVarBndr_ flag -> Type
+tvType = VarT . tvName
+
+data TyVarCategorized flag = TyVarCategorized
+  { modeTyVars :: [Q Type],
+    natTyVars :: [Q Type],
+    starTyVars :: [Q Type],
+    unsupportedTyVars :: [Q Type]
+  }
+
+categorizeTyVars :: [TyVarBndr_ flag] -> TyVarCategorized flag
+categorizeTyVars = foldr categorize (TyVarCategorized [] [] [] [])
+  where
+    categorize bndr acc
+      | tvIsMode bndr = acc {modeTyVars = return (tvType bndr) : modeTyVars acc}
+      | tvIsNat bndr = acc {natTyVars = return (tvType bndr) : natTyVars acc}
+      | tvIsStar bndr = acc {starTyVars = return (tvType bndr) : starTyVars acc}
+      | tvIsUnsupported bndr =
+          acc {unsupportedTyVars = return (tvType bndr) : unsupportedTyVars acc}
+      | otherwise = acc
 
 data Strategy = Stock | WithNewtype | Via | Anyclass | SpecialForGeneric
   deriving (Eq)
@@ -233,15 +274,11 @@ deriveConversionWithMode from to cls = do
   let toTyVars = datatypeVars dto
   when (length fromTyVars /= length toTyVars) $
     fail "The number of type arguments must be the same."
-  let fromSubstMap = evModeSubstMap Nothing fromTyVars
-  let toSubstMap = evModeSubstMap Nothing toTyVars
-  let fromSubstedDataType = substDataType dfrom fromSubstMap
-  let toSubstedDataType = substDataType dto toSubstMap
   bndrConstraints <- concat <$> zipWithM genBndrConstraint fromTyVars toTyVars
-  let fromSubstTy = datatypeType fromSubstedDataType
-  let toSubstTy = datatypeType toSubstedDataType
+  let fromSubstTy = datatypeType dfrom
+  let toSubstTy = datatypeType dto
   innerConstraints <-
-    fixConversionInnerConstraints fromSubstedDataType toSubstedDataType cls
+    fixConversionInnerConstraints dfrom dto cls
   strategy <- ViaStrategy <$> [t|Default $(return toSubstTy)|]
   return
     [ StandaloneDerivD
@@ -332,7 +369,11 @@ deriveGrisette nm clss = do
           deriveWithDefaultStrategy' newtypeDefaultStrategy nm nonConversions
       | otherwise ->
           fail "Currently only non-GADTs data or newtype are supported."
-  return $ conversionDerivation <> nonConversionDerivation
+  unifiedSEq <-
+    if (elem ''Eq clss && elem ''SEq clss)
+      then deriveUnifiedSEq nm
+      else return []
+  return $ conversionDerivation <> nonConversionDerivation <> unifiedSEq
   where
     deriveWithDefaultStrategy' ::
       (Name -> Q Strategy) -> Name -> [Name] -> Q [Dec]
@@ -376,3 +417,42 @@ deriveAllGrisette nm = deriveGrisette nm allGrisette
 deriveAllGrisetteExcept :: Name -> [Name] -> Q [Dec]
 deriveAllGrisetteExcept nm clss = do
   deriveGrisette nm $ filter (`notElem` clss) allGrisette
+
+deriveUnifiedSEq :: Name -> Q [Dec]
+deriveUnifiedSEq name = do
+  d <- reifyDatatype name
+  let tyVars = datatypeVars d
+  let categorizedTyVars = categorizeTyVars tyVars
+  mode <- case modeTyVars categorizedTyVars of
+    [var] -> return var
+    _ ->
+      fail "The number of mode type arguments must be 1."
+  bndrConstraints <-
+    concat <$> mapM (genBndrConstraint mode) tyVars
+  sequence
+    [ instanceD
+        (return bndrConstraints)
+        [t|UnifiedSEq $mode $(return $ datatypeType d)|]
+        [body mode $ starTyVars categorizedTyVars]
+    ]
+  where
+    genBndrConstraint :: Q Type -> TyVarBndr_ flag -> Q [Type]
+    genBndrConstraint mode bndr = do
+      let name = tvName bndr
+      let tv = return $ VarT name
+      let kind = tvKind bndr
+      case kind of
+        StarT -> sequence [[t|UnifiedSEq $mode $tv|], [t|Mergeable $tv|]]
+        (ConT nm) | nm == ''EvaluationMode -> (: []) <$> [t|Typeable $tv|]
+        (ConT nm)
+          | nm == ''Nat -> sequence [[t|KnownNat $tv|], [t|1 <= $tv|]]
+        _ -> fail $ "Unsupported kind in type arguments: " ++ pprint kind
+    applyWithBaseSEq :: Q Type -> Q Type -> Q Exp -> Q Exp
+    applyWithBaseSEq mode var exp = [|withBaseSEq @($mode) @($var) $exp|]
+    body :: Q Type -> [Q Type] -> Q Dec
+    body mode starVars = do
+      var <- newName "r"
+      let arg = varP var
+      let branch = foldr (applyWithBaseSEq mode) (varE var) starVars
+      let exp = lam1E arg [|withMode @($mode) $branch $branch|]
+      valD (varP 'withBaseSEq) (normalB exp) []
