@@ -20,7 +20,7 @@ module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 import Control.Monad.Except (ExceptT, MonadError (throwError))
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette (SymInteger, UnionM, WordN, SymWordN, mrgReturn, SymBool)
+import Grisette (SymBool, SymInteger, SymWordN, UnionM, WordN, mrgReturn)
 import qualified Grisette
 import Grisette.Unified
   ( BaseMonad,
