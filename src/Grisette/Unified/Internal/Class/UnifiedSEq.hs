@@ -1,11 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -24,9 +24,15 @@ import qualified Data.Text as T
 import Data.Type.Bool (If)
 import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.TypeNats (KnownNat, type (<=))
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.Core.Data.Class.SEq (SEq)
 import qualified Grisette.Internal.Core.Data.Class.SEq
+import Grisette.Internal.Core.TH.DeriveUnifiedInterface
+  ( deriveUnifiedInterfaces,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Unified.Internal.EvaluationMode
@@ -72,67 +78,44 @@ instance
   where
   withBaseSEq r = r
 
-#define CONCRETE_UNIFIED_SEQ(type) \
-instance (Typeable mode) => UnifiedSEq mode type where \
-  withBaseSEq r = withMode @mode r r; \
-  {-# INLINE withBaseSEq #-}
-
-#define CONCRETE_UNIFIED_SEQ_BV(type) \
-instance (Typeable mode, KnownNat n, 1 <= n) => UnifiedSEq mode (type n) where \
-  withBaseSEq r = withMode @mode r r; \
-  {-# INLINE withBaseSEq #-}
-
-#if 1
-CONCRETE_UNIFIED_SEQ(Bool)
-CONCRETE_UNIFIED_SEQ(Integer)
-CONCRETE_UNIFIED_SEQ(Char)
-CONCRETE_UNIFIED_SEQ(Int)
-CONCRETE_UNIFIED_SEQ(Int8)
-CONCRETE_UNIFIED_SEQ(Int16)
-CONCRETE_UNIFIED_SEQ(Int32)
-CONCRETE_UNIFIED_SEQ(Int64)
-CONCRETE_UNIFIED_SEQ(Word)
-CONCRETE_UNIFIED_SEQ(Word8)
-CONCRETE_UNIFIED_SEQ(Word16)
-CONCRETE_UNIFIED_SEQ(Word32)
-CONCRETE_UNIFIED_SEQ(Word64)
-CONCRETE_UNIFIED_SEQ(Float)
-CONCRETE_UNIFIED_SEQ(Double)
-CONCRETE_UNIFIED_SEQ(B.ByteString)
-CONCRETE_UNIFIED_SEQ(T.Text)
-CONCRETE_UNIFIED_SEQ(FPRoundingMode)
-CONCRETE_UNIFIED_SEQ_BV(WordN)
-CONCRETE_UNIFIED_SEQ_BV(IntN)
-#endif
-
 instance (Typeable mode, ValidFP eb sb) => UnifiedSEq mode (FP eb sb) where
   withBaseSEq r = withMode @mode r r
   {-# INLINE withBaseSEq #-}
 
-instance (Typeable mode, UnifiedSEq mode a) => UnifiedSEq mode [a] where
-  withBaseSEq r =
-    withMode @mode
-      (withBaseSEq @mode @a r)
-      (withBaseSEq @mode @a r)
-  {-# INLINE withBaseSEq #-}
-
-instance (Typeable mode, UnifiedSEq mode a) => UnifiedSEq mode (Maybe a) where
-  withBaseSEq r =
-    withMode @mode
-      (withBaseSEq @mode @a r)
-      (withBaseSEq @mode @a r)
-  {-# INLINE withBaseSEq #-}
-
-instance
-  (Typeable mode, UnifiedSEq mode a, UnifiedSEq mode b) =>
-  UnifiedSEq mode (Either a b)
-  where
-  withBaseSEq r =
-    withMode @mode
-      (withBaseSEq @mode @a $ withBaseSEq @mode @b r)
-      (withBaseSEq @mode @a $ withBaseSEq @mode @b r)
-  {-# INLINE withBaseSEq #-}
-
-instance (Typeable mode) => UnifiedSEq mode () where
-  withBaseSEq r = withMode @mode r r
-  {-# INLINE withBaseSEq #-}
+deriveUnifiedInterfaces
+  ''UnifiedSEq
+  'withBaseSEq
+  [ ''Bool,
+    ''Integer,
+    ''Char,
+    ''Int,
+    ''Int8,
+    ''Int16,
+    ''Int32,
+    ''Int64,
+    ''Word,
+    ''Word8,
+    ''Word16,
+    ''Word32,
+    ''Word64,
+    ''Float,
+    ''Double,
+    ''B.ByteString,
+    ''T.Text,
+    ''FPRoundingMode,
+    ''WordN,
+    ''IntN,
+    ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions
+  ]
