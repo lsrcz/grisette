@@ -53,6 +53,7 @@ module Grisette.Unified
   )
 where
 
+import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedBranching
   ( UnifiedBranching (..),
     liftBaseMonad,
@@ -71,8 +72,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedSimpleMergeable (..),
   )
 import Grisette.Unified.Internal.EvaluationMode
-  ( BaseMonad,
-    EvaluationMode (..),
+  ( EvaluationMode (..),
     IsConMode,
   )
 import Grisette.Unified.Internal.IsMode (IsMode)

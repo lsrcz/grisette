@@ -20,7 +20,7 @@ module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
 
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), mrgReturn)
-import Grisette.Internal.Core.TH.Derivation (deriveAllGrisette)
+import Grisette.Internal.Core.TH.DeriveGrisette (deriveAllGrisette)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.TH.UnifiedConstructor (mkUnifiedConstructor)

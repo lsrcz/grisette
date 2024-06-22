@@ -14,9 +14,9 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import qualified Grisette.Internal.Core.Data.Class.PlainUnion
+import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.EvaluationMode
-  ( BaseMonad,
-    EvaluationMode (Con, Sym),
+  ( EvaluationMode (Con, Sym),
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))

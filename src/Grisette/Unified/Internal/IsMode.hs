@@ -17,11 +17,9 @@
 module Grisette.Unified.Internal.IsMode (IsMode) where
 
 import Data.Typeable (Typeable)
+import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
-import Grisette.Unified.Internal.EvaluationMode
-  ( BaseMonad,
-    EvaluationMode (Con, Sym),
-  )
+import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV, SafeAllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)

@@ -95,6 +95,7 @@ library
       Grisette.Internal.Core.Data.Symbol
       Grisette.Internal.Core.Data.Union
       Grisette.Internal.Core.TH.Derivation
+      Grisette.Internal.Core.TH.DeriveGrisette
       Grisette.Internal.Core.TH.DeriveUnifiedInterface
       Grisette.Internal.Core.TH.MergeConstructor
       Grisette.Internal.Core.TH.Util
@@ -134,6 +135,9 @@ library
       Grisette.Internal.SymPrim.SymInteger
       Grisette.Internal.SymPrim.SymTabularFun
       Grisette.Internal.SymPrim.TabularFun
+      Grisette.Internal.TH.Derivation
+      Grisette.Internal.TH.Util
+      Grisette.Internal.Utils.Derive
       Grisette.Internal.Utils.Parameterized
       Grisette.Lib.Base
       Grisette.Lib.Control.Applicative
@@ -159,6 +163,7 @@ library
       Grisette.SymPrim
       Grisette.Unified
       Grisette.Unified.Internal.BaseConstraint
+      Grisette.Unified.Internal.BaseMonad
       Grisette.Unified.Internal.Class.UnifiedBranching
       Grisette.Unified.Internal.Class.UnifiedITEOp
       Grisette.Unified.Internal.Class.UnifiedSEq
