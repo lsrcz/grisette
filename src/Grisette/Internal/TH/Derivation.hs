@@ -10,6 +10,7 @@ module Grisette.Internal.TH.Derivation
     IsFPBits (..),
     StarShouldBeConstrained (..),
     SomeDeriveTypeParamHandler (..),
+    DeriveStrategyHandler (..),
     Strategy (..),
     deriveWithHandlers,
     simpleBuiltinInstanceHandlers,
@@ -201,6 +202,35 @@ instance DeriveTypeParamHandler SomeDeriveTypeParamHandler where
 data Strategy = Stock | WithNewtype | ViaDefault | ViaDefault1 | Anyclass
   deriving (Eq)
 
+class DeriveStrategyHandler strategy where
+  instanceDeclaration ::
+    strategy -> [TyVarBndrUnit] -> [Pred] -> Name -> Type -> Q [Dec]
+
+getStrategy :: Strategy -> Type -> Q DerivStrategy
+getStrategy strategy ty =
+  case strategy of
+    Stock -> return StockStrategy
+    WithNewtype -> return NewtypeStrategy
+    ViaDefault ->
+      ViaStrategy
+        <$> [t|Default $(return ty)|]
+    ViaDefault1 ->
+      ViaStrategy
+        <$> [t|Default1 $(return ty)|]
+    Anyclass -> return AnyclassStrategy
+
+standaloneDeriveByStrategy :: Strategy -> [Pred] -> Name -> Type -> Q [Dec]
+standaloneDeriveByStrategy strategy preds cls ty = do
+  s <- getStrategy strategy ty
+  (: [])
+    <$> standaloneDerivWithStrategyD
+      (Just s)
+      (return preds)
+      (appT (conT cls) $ return ty)
+
+instance DeriveStrategyHandler Strategy where
+  instanceDeclaration strategy _ = standaloneDeriveByStrategy strategy
+
 dropLastTypeParam :: Type -> Q Type
 dropLastTypeParam (AppT c _) = return c
 dropLastTypeParam v =
@@ -215,8 +245,9 @@ dropNTypeParam 0 t = return t
 dropNTypeParam n t = dropLastTypeParam t >>= dropNTypeParam (n - 1)
 
 deriveWithHandlers ::
+  (DeriveStrategyHandler strategy) =>
   [SomeDeriveTypeParamHandler] ->
-  Strategy ->
+  strategy ->
   Bool ->
   Int ->
   Name ->
@@ -267,25 +298,13 @@ deriveWithHandlers
         dropNTypeParam numDroppedTailTypes $
           datatypeType $
             substDataType d substMap
-      deriveStrategy <- getStrategy ty
-      deriv <-
-        standaloneDerivWithStrategyD
-          (Just deriveStrategy)
-          (return allConstraints)
-          (appT (conT cls) $ return ty)
-      return [deriv]
-    where
-      getStrategy ty =
-        case strategy of
-          Stock -> return StockStrategy
-          WithNewtype -> return NewtypeStrategy
-          ViaDefault ->
-            ViaStrategy
-              <$> [t|Default $(return ty)|]
-          ViaDefault1 ->
-            ViaStrategy
-              <$> [t|Default1 $(return ty)|]
-          Anyclass -> return AnyclassStrategy
+      let fst3 (a, _, _) = a
+      instanceDeclaration
+        strategy
+        (fst3 <$> tyVarsWithConstraints)
+        allConstraints
+        cls
+        ty
 
 simpleBuiltinInstanceHandlers :: Name -> [SomeDeriveTypeParamHandler]
 simpleBuiltinInstanceHandlers cls =
