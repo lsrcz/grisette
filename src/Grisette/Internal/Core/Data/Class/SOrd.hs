@@ -346,7 +346,7 @@ genericLiftSymCompare c l r = gsymCompare (SOrdArgs1 c) (from1 l) (from1 r)
 
 -- Instances
 deriveFunctorArgBuiltins
-  ViaDefault
+  (ViaDefault ''SOrd)
   ''SOrd
   ''SOrd1
   [ ''Maybe,
@@ -376,7 +376,7 @@ deriveFunctorArgBuiltins
   ]
 
 deriveSimpleBuiltin1s
-  ViaDefault1
+  (ViaDefault1 ''SOrd1)
   ''SOrd
   ''SOrd1
   [ ''Maybe,

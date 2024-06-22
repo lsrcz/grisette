@@ -5,8 +5,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Grisette.Internal.TH.Derivation
-  ( NatShouldBePositive (..),
-    DeriveTypeParamHandler (..),
+  ( DeriveTypeParamHandler (..),
+    getTypeWithMaybeSubst,
+    NatShouldBePositive (..),
     IsFPBits (..),
     StarShouldBeConstrained (..),
     SomeDeriveTypeParamHandler (..),
@@ -199,34 +200,48 @@ instance DeriveTypeParamHandler SomeDeriveTypeParamHandler where
   handleTypeParam (SomeDeriveTypeParamHandler h) = handleTypeParam h
   handleBody (SomeDeriveTypeParamHandler h) = handleBody h
 
-data Strategy = Stock | WithNewtype | ViaDefault | ViaDefault1 | Anyclass
+data Strategy
+  = Stock Name
+  | WithNewtype Name
+  | ViaDefault Name
+  | ViaDefault1 Name
+  | Anyclass Name
   deriving (Eq)
 
 class DeriveStrategyHandler strategy where
   instanceDeclaration ::
-    strategy -> [TyVarBndrUnit] -> [Pred] -> Name -> Type -> Q [Dec]
+    strategy -> [TyVarBndrUnit] -> [Pred] -> Type -> Q [Dec]
 
 getStrategy :: Strategy -> Type -> Q DerivStrategy
 getStrategy strategy ty =
   case strategy of
-    Stock -> return StockStrategy
-    WithNewtype -> return NewtypeStrategy
-    ViaDefault ->
+    Stock _ -> return StockStrategy
+    WithNewtype _ -> return NewtypeStrategy
+    ViaDefault _ ->
       ViaStrategy
         <$> [t|Default $(return ty)|]
-    ViaDefault1 ->
+    ViaDefault1 _ ->
       ViaStrategy
         <$> [t|Default1 $(return ty)|]
-    Anyclass -> return AnyclassStrategy
+    Anyclass _ -> return AnyclassStrategy
 
-standaloneDeriveByStrategy :: Strategy -> [Pred] -> Name -> Type -> Q [Dec]
-standaloneDeriveByStrategy strategy preds cls ty = do
+getClassName :: Strategy -> Name
+getClassName strategy =
+  case strategy of
+    Stock className -> className
+    WithNewtype className -> className
+    ViaDefault className -> className
+    ViaDefault1 className -> className
+    Anyclass className -> className
+
+standaloneDeriveByStrategy :: Strategy -> [Pred] -> Type -> Q [Dec]
+standaloneDeriveByStrategy strategy preds ty = do
   s <- getStrategy strategy ty
   (: [])
     <$> standaloneDerivWithStrategyD
       (Just s)
       (return preds)
-      (appT (conT cls) $ return ty)
+      (appT (conT $ getClassName strategy) $ return ty)
 
 instance DeriveStrategyHandler Strategy where
   instanceDeclaration strategy _ = standaloneDeriveByStrategy strategy
@@ -251,14 +266,12 @@ deriveWithHandlers ::
   Bool ->
   Int ->
   Name ->
-  Name ->
   Q [Dec]
 deriveWithHandlers
   handlers
   strategy
   ignoreBodyConstraints
   numDroppedTailTypes
-  cls
   name =
     do
       when (numDroppedTailTypes < 0) $
@@ -303,7 +316,6 @@ deriveWithHandlers
         strategy
         (fst3 <$> tyVarsWithConstraints)
         allConstraints
-        cls
         ty
 
 simpleBuiltinInstanceHandlers :: Name -> [SomeDeriveTypeParamHandler]
@@ -330,7 +342,6 @@ deriveSimpleBuiltin strategy cls =
     strategy
     True
     0
-    cls
 
 deriveSimpleBuiltins :: Strategy -> Name -> [Name] -> Q [Dec]
 deriveSimpleBuiltins strategy cls =
@@ -343,7 +354,6 @@ deriveSimpleBuiltin1 strategy cls cls1 =
     strategy
     True
     1
-    cls1
 
 deriveSimpleBuiltin1s :: Strategy -> Name -> Name -> [Name] -> Q [Dec]
 deriveSimpleBuiltin1s strategy cls cls1 =
@@ -356,7 +366,6 @@ deriveFunctorArgBuiltin strategy cls cls1 =
     strategy
     True
     0
-    cls
 
 deriveFunctorArgBuiltins :: Strategy -> Name -> Name -> [Name] -> Q [Dec]
 deriveFunctorArgBuiltins strategy cls cls1 =

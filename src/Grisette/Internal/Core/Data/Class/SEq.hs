@@ -256,7 +256,7 @@ genericLiftSEq f l r = gseq (SEqArgs1 f) (from1 l) (from1 r)
 
 -- Instances
 deriveFunctorArgBuiltins
-  ViaDefault
+  (ViaDefault ''SEq)
   ''SEq
   ''SEq1
   [ ''[],
@@ -287,7 +287,7 @@ deriveFunctorArgBuiltins
   ]
 
 deriveSimpleBuiltin1s
-  ViaDefault1
+  (ViaDefault1 ''SEq1)
   ''SEq
   ''SEq1
   [ ''[],
