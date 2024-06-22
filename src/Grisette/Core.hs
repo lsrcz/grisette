@@ -1304,18 +1304,20 @@ import Grisette.Internal.Core.Data.Symbol
     withLoc,
   )
 import Grisette.Internal.Core.TH.Derivation
-  ( deriveAllGrisette,
-    deriveAllGrisetteExcept,
-    deriveAnyclass,
+  ( deriveAnyclass,
     deriveAnyclassWithMode,
     deriveConversions,
-    deriveGrisette,
     deriveNewtype,
     deriveNewtypeWithMode,
     deriveStock,
     deriveStockWithMode,
     deriveViaDefault,
     deriveViaDefaultWithMode,
+  )
+import Grisette.Internal.Core.TH.DeriveGrisette
+  ( deriveAllGrisette,
+    deriveAllGrisetteExcept,
+    deriveGrisette,
   )
 import Grisette.Internal.Core.TH.MergeConstructor
   ( mkMergeConstructor,

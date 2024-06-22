@@ -31,14 +31,16 @@ import Grisette
     ToSym (toSym),
   )
 import Grisette.Internal.Core.TH.Derivation
-  ( deriveAllGrisette,
-    deriveAnyclass,
+  ( deriveAnyclass,
     deriveAnyclassWithMode,
     deriveConversions,
     deriveNewtype,
     deriveStock,
     deriveStockWithMode,
     deriveViaDefault,
+  )
+import Grisette.Internal.Core.TH.DeriveGrisette
+  ( deriveAllGrisette,
   )
 import Grisette.Unified (EvaluationMode (Con, Sym), GetBool, GetData, GetWordN)
 import Language.Haskell.TH.Syntax (Lift)

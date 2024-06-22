@@ -66,9 +66,9 @@ import Grisette.Unified
     liftBaseMonad,
     mrgIf,
   )
+import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq, (.==))
 import Grisette.Unified.Internal.Class.UnifiedSOrd (mrgMax, mrgMin)
-import Grisette.Unified.Internal.EvaluationMode (BaseMonad)
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.UnifiedBool (GetBool)
 import Grisette.Unified.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))

@@ -1257,16 +1257,16 @@ sordTests =
               testCase "Identity SymBool" $ do
                 (Identity $ ssymBool "a" :: Identity SymBool)
                   .<= Identity (ssymBool "b")
-                  @?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
+                  .@?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
                 (Identity $ ssymBool "a" :: Identity SymBool)
                   .< Identity (ssymBool "b")
-                  @?= (ssymBool "a" .< ssymBool "b" :: SymBool)
+                  .@?= (ssymBool "a" .< ssymBool "b" :: SymBool)
                 (Identity $ ssymBool "a" :: Identity SymBool)
                   .>= Identity (ssymBool "b")
-                  @?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
+                  .@?= (ssymBool "a" .>= ssymBool "b" :: SymBool)
                 (Identity $ ssymBool "a" :: Identity SymBool)
                   .> Identity (ssymBool "b")
-                  @?= (ssymBool "a" .> ssymBool "b" :: SymBool)
+                  .@?= (ssymBool "a" .> ssymBool "b" :: SymBool)
             ],
           testGroup
             "IdentityT"

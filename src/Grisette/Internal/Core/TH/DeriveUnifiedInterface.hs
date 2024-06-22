@@ -14,6 +14,10 @@ where
 import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.TH.Util
+  ( TyVarCategorized (modeTyVars, starTyVars),
+    categorizeTyVars,
+  )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
 import Grisette.Unified.Internal.Util (withMode)
 import Language.Haskell.TH
@@ -48,39 +52,6 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     tvName,
   )
 import Language.Haskell.TH.Syntax (newName)
-
-tvIsMode :: TyVarBndr_ flag -> Bool
-tvIsMode = (== ConT ''EvaluationMode) . tvKind
-
-tvIsNat :: TyVarBndr_ flag -> Bool
-tvIsNat = (== ConT ''Nat) . tvKind
-
-tvIsStar :: TyVarBndr_ flag -> Bool
-tvIsStar = (== StarT) . tvKind
-
-tvIsUnsupported :: TyVarBndr_ flag -> Bool
-tvIsUnsupported bndr = not $ tvIsMode bndr || tvIsNat bndr || tvIsStar bndr
-
-tvType :: TyVarBndr_ flag -> Type
-tvType = VarT . tvName
-
-data TyVarCategorized flag = TyVarCategorized
-  { modeTyVars :: [Q Type],
-    natTyVars :: [Q Type],
-    starTyVars :: [Q Type],
-    unsupportedTyVars :: [Q Type]
-  }
-
-categorizeTyVars :: [TyVarBndr_ flag] -> TyVarCategorized flag
-categorizeTyVars = foldr categorize (TyVarCategorized [] [] [] [])
-  where
-    categorize bndr acc
-      | tvIsMode bndr = acc {modeTyVars = return (tvType bndr) : modeTyVars acc}
-      | tvIsNat bndr = acc {natTyVars = return (tvType bndr) : natTyVars acc}
-      | tvIsStar bndr = acc {starTyVars = return (tvType bndr) : starTyVars acc}
-      | tvIsUnsupported bndr =
-          acc {unsupportedTyVars = return (tvType bndr) : unsupportedTyVars acc}
-      | otherwise = acc
 
 deriveUnifiedInterface :: Name -> Name -> Name -> Q [Dec]
 deriveUnifiedInterface cls withFunc name = do

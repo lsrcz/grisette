@@ -51,9 +51,9 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
+import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.EvaluationMode
-  ( BaseMonad,
-    EvaluationMode,
+  ( EvaluationMode,
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
