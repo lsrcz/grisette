@@ -14,8 +14,11 @@ module Grisette.Internal.TH.Derivation
     deriveWithHandlers,
     simpleBuiltinInstanceHandlers,
     deriveSimpleBuiltin,
+    deriveSimpleBuiltins,
     deriveSimpleBuiltin1,
+    deriveSimpleBuiltin1s,
     deriveFunctorArgBuiltin,
+    deriveFunctorArgBuiltins,
   )
 where
 
@@ -47,7 +50,8 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields),
     DatatypeInfo (datatypeCons, datatypeVars),
-    datatypeType, reifyDatatype,
+    datatypeType,
+    reifyDatatype,
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
   ( TyVarBndrUnit,
@@ -223,52 +227,53 @@ deriveWithHandlers
   strategy
   ignoreBodyConstraints
   numDroppedTailTypes
-  name
-  cls = do
-    when (numDroppedTailTypes < 0) $
-      fail "deriveWithHandlers: numDroppedTailTypes must be non-negative"
-    when (numDroppedTailTypes > 0 && not ignoreBodyConstraints) $
-      fail $
-        "deriveWithHandlers: ignoreBodyConstraints must be True if "
-          <> "numDroppedTailTypes > 0"
-    d <- reifyDatatype name
-    let tyVars = reverse $ drop numDroppedTailTypes $ reverse $ datatypeVars d
-    tyVarsWithConstraints <-
-      foldM
-        (flip handleTypeParam)
-        ((,Nothing,Nothing) <$> tyVars)
-        handlers
-    let snd3 (_, b, _) = b
-    let allTyVarsConstraints =
-          concatMap (fromMaybe [] . snd3) tyVarsWithConstraints
-    allConstraints <-
-      ( if ignoreBodyConstraints
-          then return allTyVarsConstraints
-          else do
-            let cons = datatypeCons d
-            let allFields = nubOrd $ concatMap constructorFields cons
-            bodyConstraints <- concat <$> mapM (`handleBody` allFields) handlers
-            return $ allTyVarsConstraints ++ bodyConstraints
-        )
-    let substMap =
-          M.fromList $
-            mapMaybe
-              ( \(tv, _, t) -> do
-                  substTy <- t
-                  return (tvName tv, substTy)
-              )
-              tyVarsWithConstraints
-    ty <-
-      dropNTypeParam numDroppedTailTypes $
-        datatypeType $
-          substDataType d substMap
-    deriveStrategy <- getStrategy ty
-    deriv <-
-      standaloneDerivWithStrategyD
-        (Just deriveStrategy)
-        (return allConstraints)
-        (appT (conT cls) $ return ty)
-    return [deriv]
+  cls
+  name =
+    do
+      when (numDroppedTailTypes < 0) $
+        fail "deriveWithHandlers: numDroppedTailTypes must be non-negative"
+      when (numDroppedTailTypes > 0 && not ignoreBodyConstraints) $
+        fail $
+          "deriveWithHandlers: ignoreBodyConstraints must be True if "
+            <> "numDroppedTailTypes > 0"
+      d <- reifyDatatype name
+      let tyVars = reverse $ drop numDroppedTailTypes $ reverse $ datatypeVars d
+      tyVarsWithConstraints <-
+        foldM
+          (flip handleTypeParam)
+          ((,Nothing,Nothing) <$> tyVars)
+          handlers
+      let snd3 (_, b, _) = b
+      let allTyVarsConstraints =
+            concatMap (fromMaybe [] . snd3) tyVarsWithConstraints
+      allConstraints <-
+        ( if ignoreBodyConstraints
+            then return allTyVarsConstraints
+            else do
+              let cons = datatypeCons d
+              let allFields = nubOrd $ concatMap constructorFields cons
+              bodyConstraints <- concat <$> mapM (`handleBody` allFields) handlers
+              return $ allTyVarsConstraints ++ bodyConstraints
+          )
+      let substMap =
+            M.fromList $
+              mapMaybe
+                ( \(tv, _, t) -> do
+                    substTy <- t
+                    return (tvName tv, substTy)
+                )
+                tyVarsWithConstraints
+      ty <-
+        dropNTypeParam numDroppedTailTypes $
+          datatypeType $
+            substDataType d substMap
+      deriveStrategy <- getStrategy ty
+      deriv <-
+        standaloneDerivWithStrategyD
+          (Just deriveStrategy)
+          (return allConstraints)
+          (appT (conT cls) $ return ty)
+      return [deriv]
     where
       getStrategy ty =
         case strategy of
@@ -300,31 +305,40 @@ functorArgBuiltinInstanceHandlers cls cls1 =
   ]
 
 deriveSimpleBuiltin :: Strategy -> Name -> Name -> Q [Dec]
-deriveSimpleBuiltin strategy name cls =
+deriveSimpleBuiltin strategy cls =
   deriveWithHandlers
     (simpleBuiltinInstanceHandlers cls)
     strategy
     True
     0
-    name
     cls
 
+deriveSimpleBuiltins :: Strategy -> Name -> [Name] -> Q [Dec]
+deriveSimpleBuiltins strategy cls =
+  fmap concat . traverse (deriveSimpleBuiltin strategy cls)
+
 deriveSimpleBuiltin1 :: Strategy -> Name -> Name -> Name -> Q [Dec]
-deriveSimpleBuiltin1 strategy name cls cls1 =
+deriveSimpleBuiltin1 strategy cls cls1 =
   deriveWithHandlers
     (simple1BuiltinInstanceHandlers cls cls1)
     strategy
     True
     1
-    name
     cls1
 
+deriveSimpleBuiltin1s :: Strategy -> Name -> Name -> [Name] -> Q [Dec]
+deriveSimpleBuiltin1s strategy cls cls1 =
+  fmap concat . traverse (deriveSimpleBuiltin1 strategy cls cls1)
+
 deriveFunctorArgBuiltin :: Strategy -> Name -> Name -> Name -> Q [Dec]
-deriveFunctorArgBuiltin strategy name cls cls1 =
+deriveFunctorArgBuiltin strategy cls cls1 =
   deriveWithHandlers
     (functorArgBuiltinInstanceHandlers cls cls1)
     strategy
     True
     0
-    name
     cls
+
+deriveFunctorArgBuiltins :: Strategy -> Name -> Name -> [Name] -> Q [Dec]
+deriveFunctorArgBuiltins strategy cls cls1 =
+  fmap concat . traverse (deriveFunctorArgBuiltin strategy cls cls1)

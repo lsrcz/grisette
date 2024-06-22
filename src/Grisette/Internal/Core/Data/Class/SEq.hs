@@ -29,7 +29,6 @@ module Grisette.Internal.Core.Data.Class.SEq
     seq1,
     SEq2 (..),
     seq2,
-
     -- Generic 'SEq'
     SEqArgs (..),
     GSEq (..),
@@ -89,9 +88,8 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.TH.Derivation
   ( Strategy (ViaDefault, ViaDefault1),
-    deriveFunctorArgBuiltin,
-    deriveSimpleBuiltin,
-    deriveSimpleBuiltin1,
+    deriveFunctorArgBuiltins,
+    deriveSimpleBuiltin1s,
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
@@ -257,90 +255,79 @@ genericLiftSEq f l r = gseq (SEqArgs1 f) (from1 l) (from1 r)
 {-# INLINE genericLiftSEq #-}
 
 -- Instances
-deriveSimpleBuiltin ViaDefault ''[] ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''[] ''SEq ''SEq1
-deriveSimpleBuiltin ViaDefault ''Maybe ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''Maybe ''SEq ''SEq1
-deriveSimpleBuiltin ViaDefault ''Either ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''Either ''SEq ''SEq1
+deriveFunctorArgBuiltins
+  ViaDefault
+  ''SEq
+  ''SEq1
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''ExceptT,
+    ''MaybeT,
+    ''WriterLazy.WriterT,
+    ''WriterStrict.WriterT,
+    ''Identity
+  ]
 
-instance SEq2 Either where
-  liftSEq2 f _ (Left l) (Left r) = f l r
-  liftSEq2 _ g (Right l) (Right r) = g l r
-  liftSEq2 _ _ _ _ = con False
-  {-# INLINE liftSEq2 #-}
-
-deriveSimpleBuiltin ViaDefault ''() ''SEq
-deriveSimpleBuiltin ViaDefault ''(,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,) ''SEq ''SEq1
-
-instance SEq2 (,) where
-  liftSEq2 f g (l1, l2) (r1, r2) = f l1 r1 .&& g l2 r2
-  {-# INLINE liftSEq2 #-}
-
-deriveSimpleBuiltin ViaDefault ''(,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,) ''SEq ''SEq1
-
-instance (SEq a) => SEq2 ((,,) a) where
-  liftSEq2 f g (l1, l2, l3) (r1, r2, r3) = l1 .== r1 .&& f l2 r2 .&& g l3 r3
-  {-# INLINE liftSEq2 #-}
-
-deriveSimpleBuiltin ViaDefault ''(,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,) ''SEq ''SEq1
-
-instance (SEq a, SEq b) => SEq2 ((,,,) a b) where
-  liftSEq2 f g (l1, l2, l3, l4) (r1, r2, r3, r4) =
-    l1 .== r1 .&& l2 .== r2 .&& f l3 r3 .&& g l4 r4
-  {-# INLINE liftSEq2 #-}
-
-deriveSimpleBuiltin ViaDefault ''(,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''(,,,,,,,,,,,,,,) ''SEq
-deriveSimpleBuiltin1 ViaDefault1 ''(,,,,,,,,,,,,,,) ''SEq ''SEq1
-
-deriveSimpleBuiltin ViaDefault ''AssertionError ''SEq
-deriveSimpleBuiltin ViaDefault ''VerificationConditions ''SEq
+deriveSimpleBuiltin1s
+  ViaDefault1
+  ''SEq
+  ''SEq1
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,)
+  ]
 
 -- ExceptT
-deriveFunctorArgBuiltin ViaDefault ''ExceptT ''SEq ''SEq1
-
 instance (SEq1 m, SEq e) => SEq1 (ExceptT e m) where
   liftSEq f (ExceptT l) (ExceptT r) = liftSEq (liftSEq f) l r
   {-# INLINE liftSEq #-}
 
 -- MaybeT
-deriveFunctorArgBuiltin ViaDefault ''MaybeT ''SEq ''SEq1
-
 instance (SEq1 m) => SEq1 (MaybeT m) where
   liftSEq f (MaybeT l) (MaybeT r) = liftSEq (liftSEq f) l r
+  {-# INLINE liftSEq #-}
+
+-- Writer
+instance (SEq1 m, SEq w) => SEq1 (WriterLazy.WriterT w m) where
+  liftSEq f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
+    liftSEq (liftSEq2 f (.==)) l r
+  {-# INLINE liftSEq #-}
+
+instance (SEq1 m, SEq w) => SEq1 (WriterStrict.WriterT w m) where
+  liftSEq f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
+    liftSEq (liftSEq2 f (.==)) l r
   {-# INLINE liftSEq #-}
 
 -- Sum
@@ -354,23 +341,6 @@ deriving via
   instance
     (SEq1 f, SEq1 g) => SEq1 (Sum f g)
 
--- Writer
-deriveFunctorArgBuiltin ViaDefault ''WriterLazy.WriterT ''SEq ''SEq1
-deriveFunctorArgBuiltin ViaDefault ''WriterStrict.WriterT ''SEq ''SEq1
-
-instance (SEq1 m, SEq w) => SEq1 (WriterLazy.WriterT w m) where
-  liftSEq f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
-    liftSEq (liftSEq2 f (.==)) l r
-  {-# INLINE liftSEq #-}
-
-instance (SEq1 m, SEq w) => SEq1 (WriterStrict.WriterT w m) where
-  liftSEq f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
-    liftSEq (liftSEq2 f (.==)) l r
-  {-# INLINE liftSEq #-}
-
--- Identity
-deriveSimpleBuiltin ViaDefault ''Identity ''SEq
-
 -- IdentityT
 instance (SEq1 m, SEq a) => SEq (IdentityT m a) where
   (.==) = seq1
@@ -379,6 +349,25 @@ instance (SEq1 m, SEq a) => SEq (IdentityT m a) where
 instance (SEq1 m) => SEq1 (IdentityT m) where
   liftSEq f (IdentityT l) (IdentityT r) = liftSEq f l r
   {-# INLINE liftSEq #-}
+
+instance SEq2 Either where
+  liftSEq2 f _ (Left l) (Left r) = f l r
+  liftSEq2 _ g (Right l) (Right r) = g l r
+  liftSEq2 _ _ _ _ = con False
+  {-# INLINE liftSEq2 #-}
+
+instance SEq2 (,) where
+  liftSEq2 f g (l1, l2) (r1, r2) = f l1 r1 .&& g l2 r2
+  {-# INLINE liftSEq2 #-}
+
+instance (SEq a) => SEq2 ((,,) a) where
+  liftSEq2 f g (l1, l2, l3) (r1, r2, r3) = l1 .== r1 .&& f l2 r2 .&& g l3 r3
+  {-# INLINE liftSEq2 #-}
+
+instance (SEq a, SEq b) => SEq2 ((,,,) a b) where
+  liftSEq2 f g (l1, l2, l3, l4) (r1, r2, r3, r4) =
+    l1 .== r1 .&& l2 .== r2 .&& f l3 r3 .&& g l4 r4
+  {-# INLINE liftSEq2 #-}
 
 #define CONCRETE_SEQ(type) \
 instance SEq type where \
