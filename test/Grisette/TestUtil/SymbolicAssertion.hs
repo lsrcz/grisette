@@ -32,6 +32,7 @@ actual @?=~ expected = do
             "  Actual value: " ++ show actual
           ]
 
+infix 1 .@?=
 (.@?=) :: (HasCallStack, Show a, SEq a, EvaluateSym a) => a -> a -> IO ()
 (.@?=) actual expected =
   symShouldEq

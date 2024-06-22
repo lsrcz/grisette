@@ -2464,6 +2464,10 @@ pevalOrTerm (AndTerm _ l1 l2) r
   | orEqFirst r l2 = r
   | orEqTrue l1 r = pevalOrTerm l2 r
   | orEqTrue l2 r = pevalOrTerm l1 r
+pevalOrTerm
+  (AndTerm _ nl1@(NotTerm _ l1) l2)
+  (EqTerm _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool)))
+    | l1 == e1 && l2 == e2 = pevalOrTerm nl1 l2
 pevalOrTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalAndTerm nl nr
 pevalOrTerm l r = orTerm l r
 {-# INLINEABLE pevalOrTerm #-}
@@ -2497,6 +2501,10 @@ pevalAndTerm (OrTerm _ l1 l2) r
   | andEqFirst r l2 = r
   | andEqFalse l1 r = pevalAndTerm l2 r
   | andEqFalse l2 r = pevalAndTerm l1 r
+pevalAndTerm
+  (OrTerm _ l1 nl2@(NotTerm _ l2))
+  (NotTerm _ (EqTerm _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool))))
+    | l1 == e1 && l2 == e2 = pevalAndTerm l1 nl2
 pevalAndTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalOrTerm nl nr
 pevalAndTerm l r = andTerm l r
 {-# INLINEABLE pevalAndTerm #-}

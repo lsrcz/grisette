@@ -5,9 +5,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -22,7 +24,12 @@
 module Grisette.Internal.Core.Data.Class.SEq
   ( -- * Symbolic equality
     SEq (..),
-    SEq' (..),
+    SEq1 (..),
+    seq1,
+    SEq2 (..),
+    seq2,
+    SEqArgs (..),
+    GSEq (..),
   )
 where
 
@@ -37,16 +44,22 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default),
+    Default1 (Default1),
     Generic (Rep, from),
+    Generic1 (Rep1, from1),
     K1 (K1),
     M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
     U1,
     V1,
+    (:.:) (Comp1),
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
@@ -69,6 +82,7 @@ import Grisette.Internal.SymPrim.SymFP
     SymFPRoundingMode (SymFPRoundingMode),
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -111,6 +125,23 @@ class SEq a where
   {-# INLINE (./=) #-}
   infix 4 ./=
   {-# MINIMAL (.==) | (./=) #-}
+
+class (forall a. (SEq a) => SEq (f a)) => SEq1 f where
+  liftSEq :: (a -> b -> SymBool) -> f a -> f b -> SymBool
+
+seq1 :: (SEq a, SEq1 f) => f a -> f a -> SymBool
+seq1 = liftSEq (.==)
+
+class (forall a. (SEq a) => SEq1 (f a)) => SEq2 f where
+  liftSEq2 ::
+    (a -> b -> SymBool) ->
+    (c -> d -> SymBool) ->
+    f a c ->
+    f b d ->
+    SymBool
+
+seq2 :: (SEq a, SEq b, SEq2 f) => f a b -> f a b -> SymBool
+seq2 = liftSEq2 (.==) (.==)
 
 -- SEq instances
 #define CONCRETE_SEQ(type) \
@@ -268,39 +299,63 @@ deriving via (Default AssertionError) instance SEq AssertionError
 
 deriving via (Default VerificationConditions) instance SEq VerificationConditions
 
+data family SEqArgs arity a b :: Type
+
+data instance SEqArgs Arity0 _ _ = SEqArgs0
+
+newtype instance SEqArgs Arity1 a b = SEqArgs1 (a -> b -> SymBool)
+
 -- | Auxiliary class for 'SEq' instance derivation
-class SEq' f where
+class GSEq arity f where
   -- | Auxiliary function for '(..==) derivation
-  (..==) :: f a -> f a -> SymBool
+  gseq :: SEqArgs arity a b -> f a -> f b -> SymBool
 
-  infix 4 ..==
+instance GSEq arity V1 where
+  gseq _ _ _ = con True
+  {-# INLINE gseq #-}
 
-instance SEq' U1 where
-  _ ..== _ = con True
-  {-# INLINE (..==) #-}
+instance GSEq arity U1 where
+  gseq _ _ _ = con True
+  {-# INLINE gseq #-}
 
-instance SEq' V1 where
-  _ ..== _ = con True
-  {-# INLINE (..==) #-}
+instance (GSEq arity a, GSEq arity b) => GSEq arity (a :*: b) where
+  gseq args (a1 :*: b1) (a2 :*: b2) = gseq args a1 a2 .&& gseq args b1 b2
+  {-# INLINE gseq #-}
 
-instance (SEq c) => SEq' (K1 i c) where
-  (K1 a) ..== (K1 b) = a .== b
-  {-# INLINE (..==) #-}
+instance (GSEq arity a, GSEq arity b) => GSEq arity (a :+: b) where
+  gseq args (L1 a1) (L1 a2) = gseq args a1 a2
+  gseq args (R1 b1) (R1 b2) = gseq args b1 b2
+  gseq _ _ _ = con False
+  {-# INLINE gseq #-}
 
-instance (SEq' a) => SEq' (M1 i c a) where
-  (M1 a) ..== (M1 b) = a ..== b
-  {-# INLINE (..==) #-}
+instance (GSEq arity a) => GSEq arity (M1 i c a) where
+  gseq args (M1 a1) (M1 a2) = gseq args a1 a2
+  {-# INLINE gseq #-}
 
-instance (SEq' a, SEq' b) => SEq' (a :+: b) where
-  (L1 a) ..== (L1 b) = a ..== b
-  (R1 a) ..== (R1 b) = a ..== b
-  _ ..== _ = con False
-  {-# INLINE (..==) #-}
+instance (SEq a) => GSEq arity (K1 i a) where
+  gseq _ (K1 a) (K1 b) = a .== b
+  {-# INLINE gseq #-}
 
-instance (SEq' a, SEq' b) => SEq' (a :*: b) where
-  (a1 :*: b1) ..== (a2 :*: b2) = (a1 ..== a2) .&& (b1 ..== b2)
-  {-# INLINE (..==) #-}
+instance GSEq Arity1 Par1 where
+  gseq (SEqArgs1 e) (Par1 a) (Par1 b) = e a b
+  {-# INLINE gseq #-}
 
-instance (Generic a, SEq' (Rep a)) => SEq (Default a) where
-  Default l .== Default r = from l ..== from r
+instance (SEq1 f) => GSEq Arity1 (Rec1 f) where
+  gseq (SEqArgs1 e) (Rec1 a) (Rec1 b) = liftSEq e a b
+  {-# INLINE gseq #-}
+
+instance (SEq1 f, GSEq Arity1 g) => GSEq Arity1 (f :.: g) where
+  gseq targs (Comp1 a) (Comp1 b) = liftSEq (gseq targs) a b
+  {-# INLINE gseq #-}
+
+instance (Generic a, GSEq Arity0 (Rep a)) => SEq (Default a) where
+  Default l .== Default r = gseq SEqArgs0 (from l) (from r)
   {-# INLINE (.==) #-}
+
+instance (Generic1 f, GSEq Arity1 (Rep1 f), SEq a) => SEq (Default1 f a) where
+  (.==) = seq1
+  {-# INLINE (.==) #-}
+
+instance (Generic1 f, GSEq Arity1 (Rep1 f)) => SEq1 (Default1 f) where
+  liftSEq f (Default1 l) (Default1 r) = gseq (SEqArgs1 f) (from1 l) (from1 r)
+  {-# INLINE liftSEq #-}

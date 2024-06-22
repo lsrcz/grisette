@@ -4,10 +4,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -22,7 +25,11 @@
 module Grisette.Internal.Core.Data.Class.SOrd
   ( -- * Symbolic total order relation
     SOrd (..),
-    SOrd' (..),
+    SOrd1 (..),
+    symCompare1,
+    SOrd2 (..),
+    symCompare2,
+    GSOrd (..),
     symMax,
     symMin,
     mrgMax,
@@ -41,28 +48,39 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default),
+    Default1 (Default1),
     Generic (Rep, from),
+    Generic1 (Rep1, from1),
     K1 (K1),
     M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
     U1,
     V1,
+    (:.:) (Comp1),
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftToMonadUnion)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp, symIte)
-import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Internal.Core.Data.Class.LogicalOp
+  ( LogicalOp (symNot, (.&&), (.||)),
+  )
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( simpleMerge,
   )
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)), SEq' ((..==)))
+import Grisette.Internal.Core.Data.Class.SEq (GSEq, SEq ((.==)), SEq1, SEq2)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( UnionMergeable1,
     mrgIf,
@@ -89,6 +107,7 @@ import Grisette.Internal.SymPrim.SymBV
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP), SymFPRoundingMode (SymFPRoundingMode))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -141,7 +160,13 @@ class (SEq a) => SOrd a where
   infix 4 .>
   (.>=) :: a -> a -> SymBool
   infix 4 .>=
-  x .< y = x .<= y .&& x ./= y
+  x .< y =
+    simpleMerge $
+      symCompare x y >>= \case
+        LT -> con True
+        EQ -> con False
+        GT -> con False
+  x .<= y = symNot (x .> y)
   x .> y = y .< x
   x .>= y = y .<= x
   symCompare :: a -> a -> UnionM Ordering
@@ -150,14 +175,44 @@ class (SEq a) => SOrd a where
       (l .< r)
       (mrgSingle LT)
       (mrgIf (l .== r) (mrgSingle EQ) (mrgSingle GT))
-  {-# MINIMAL (.<=) #-}
+  {-# MINIMAL (.<) | symCompare #-}
 
-instance (SEq a, Generic a, SOrd' (Rep a)) => SOrd (Default a) where
-  (Default l) .<= (Default r) = l `derivedSymLe` r
-  (Default l) .< (Default r) = l `derivedSymLt` r
-  (Default l) .>= (Default r) = l `derivedSymGe` r
-  (Default l) .> (Default r) = l `derivedSymGt` r
-  symCompare (Default l) (Default r) = derivedSymCompare l r
+class (SEq1 f, forall a. (SOrd a) => SOrd (f a)) => SOrd1 f where
+  liftSymCompare :: (a -> b -> UnionM Ordering) -> f a -> f b -> UnionM Ordering
+
+symCompare1 :: (SOrd1 f, SOrd a) => f a -> f a -> UnionM Ordering
+symCompare1 = liftSymCompare symCompare
+
+class (SEq2 f, forall a. (SOrd a) => SOrd1 (f a)) => SOrd2 f where
+  liftSymCompare2 ::
+    (a -> b -> UnionM Ordering) ->
+    (c -> d -> UnionM Ordering) ->
+    f a c ->
+    f b d ->
+    UnionM Ordering
+
+symCompare2 :: (SOrd2 f, SOrd a, SOrd b) => f a b -> f a b -> UnionM Ordering
+symCompare2 = liftSymCompare2 symCompare symCompare
+
+symMax :: (SOrd a, ITEOp a) => a -> a -> a
+symMax x y = symIte (x .>= y) x y
+
+symMin :: (SOrd a, ITEOp a) => a -> a -> a
+symMin x y = symIte (x .>= y) y x
+
+mrgMax ::
+  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
+  a ->
+  a ->
+  m a
+mrgMax x y = mrgIf (x .>= y) (pure x) (pure y)
+
+mrgMin ::
+  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
+  a ->
+  a ->
+  m a
+mrgMin x y = mrgIf (x .>= y) (pure y) (pure x)
 
 #define CONCRETE_SORD(type) \
 instance SOrd type where \
@@ -408,125 +463,76 @@ instance (SOrd a, Mergeable a) => SOrd (UnionM a) where
     y1 <- tryMerge y
     x1 `symCompare` y1
 
+data family SOrdArgs arity a b :: Type
+
+data instance SOrdArgs Arity0 _ _ = SOrdArgs0
+
+newtype instance SOrdArgs Arity1 a b
+  = SOrdArgs1 (a -> b -> UnionM Ordering)
+
 -- | Auxiliary class for 'SOrd' instance derivation
-class (SEq' f) => SOrd' f where
-  -- | Auxiliary function for '(..<) derivation
-  (..<) :: f a -> f a -> SymBool
-
-  infix 4 ..<
-
-  -- | Auxiliary function for '(..<=) derivation
-  (..<=) :: f a -> f a -> SymBool
-
-  infix 4 ..<=
-
-  -- | Auxiliary function for '(..>) derivation
-  (..>) :: f a -> f a -> SymBool
-
-  infix 4 ..>
-
-  -- | Auxiliary function for '(..>=) derivation
-  (..>=) :: f a -> f a -> SymBool
-
-  infix 4 ..>=
-
+class GSOrd arity f where
   -- | Auxiliary function for 'symCompare' derivation
-  symCompare' :: f a -> f a -> UnionM Ordering
+  gsymCompare :: SOrdArgs arity a b -> f a -> f b -> UnionM Ordering
 
-instance SOrd' U1 where
-  _ ..< _ = con False
-  _ ..<= _ = con True
-  _ ..> _ = con False
-  _ ..>= _ = con True
-  symCompare' _ _ = mrgSingle EQ
+instance GSOrd arity V1 where
+  gsymCompare _ _ _ = mrgSingle EQ
 
-instance SOrd' V1 where
-  _ ..< _ = con False
-  _ ..<= _ = con True
-  _ ..> _ = con False
-  _ ..>= _ = con True
-  symCompare' _ _ = mrgSingle EQ
+instance GSOrd arity U1 where
+  gsymCompare _ _ _ = mrgSingle EQ
 
-instance (SOrd c) => SOrd' (K1 i c) where
-  (K1 a) ..< (K1 b) = a .< b
-  (K1 a) ..<= (K1 b) = a .<= b
-  (K1 a) ..> (K1 b) = a .> b
-  (K1 a) ..>= (K1 b) = a .>= b
-  symCompare' (K1 a) (K1 b) = symCompare a b
-
-instance (SOrd' a) => SOrd' (M1 i c a) where
-  (M1 a) ..< (M1 b) = a ..< b
-  (M1 a) ..<= (M1 b) = a ..<= b
-  (M1 a) ..> (M1 b) = a ..> b
-  (M1 a) ..>= (M1 b) = a ..>= b
-  symCompare' (M1 a) (M1 b) = symCompare' a b
-
-instance (SOrd' a, SOrd' b) => SOrd' (a :+: b) where
-  (L1 _) ..< (R1 _) = con True
-  (L1 a) ..< (L1 b) = a ..< b
-  (R1 _) ..< (L1 _) = con False
-  (R1 a) ..< (R1 b) = a ..< b
-  (L1 _) ..<= (R1 _) = con True
-  (L1 a) ..<= (L1 b) = a ..<= b
-  (R1 _) ..<= (L1 _) = con False
-  (R1 a) ..<= (R1 b) = a ..<= b
-
-  (L1 _) ..> (R1 _) = con False
-  (L1 a) ..> (L1 b) = a ..> b
-  (R1 _) ..> (L1 _) = con True
-  (R1 a) ..> (R1 b) = a ..> b
-  (L1 _) ..>= (R1 _) = con False
-  (L1 a) ..>= (L1 b) = a ..>= b
-  (R1 _) ..>= (L1 _) = con True
-  (R1 a) ..>= (R1 b) = a ..>= b
-
-  symCompare' (L1 a) (L1 b) = symCompare' a b
-  symCompare' (L1 _) (R1 _) = mrgSingle LT
-  symCompare' (R1 a) (R1 b) = symCompare' a b
-  symCompare' (R1 _) (L1 _) = mrgSingle GT
-
-instance (SOrd' a, SOrd' b) => SOrd' (a :*: b) where
-  (a1 :*: b1) ..< (a2 :*: b2) = (a1 ..< a2) .|| ((a1 ..== a2) .&& (b1 ..< b2))
-  (a1 :*: b1) ..<= (a2 :*: b2) = (a1 ..< a2) .|| ((a1 ..== a2) .&& (b1 ..<= b2))
-  (a1 :*: b1) ..> (a2 :*: b2) = (a1 ..> a2) .|| ((a1 ..== a2) .&& (b1 ..> b2))
-  (a1 :*: b1) ..>= (a2 :*: b2) = (a1 ..> a2) .|| ((a1 ..== a2) .&& (b1 ..>= b2))
-  symCompare' (a1 :*: b1) (a2 :*: b2) = do
-    l <- symCompare' a1 a2
+instance
+  (GSOrd arity a, GSOrd arity b) =>
+  GSOrd arity (a :*: b)
+  where
+  gsymCompare args (a1 :*: b1) (a2 :*: b2) = do
+    l <- gsymCompare args a1 a2
     case l of
-      EQ -> symCompare' b1 b2
+      EQ -> gsymCompare args b1 b2
       _ -> mrgSingle l
 
-derivedSymLt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymLt x y = from x ..< from y
+instance
+  (GSOrd arity a, GSOrd arity b) =>
+  GSOrd arity (a :+: b)
+  where
+  gsymCompare args (L1 a) (L1 b) = gsymCompare args a b
+  gsymCompare _ (L1 _) (R1 _) = mrgSingle LT
+  gsymCompare args (R1 a) (R1 b) = gsymCompare args a b
+  gsymCompare _ (R1 _) (L1 _) = mrgSingle GT
 
-derivedSymLe :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymLe x y = from x ..<= from y
+instance (GSOrd arity a) => GSOrd arity (M1 i c a) where
+  gsymCompare args (M1 a) (M1 b) = gsymCompare args a b
 
-derivedSymGt :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymGt x y = from x ..> from y
+instance (SOrd a) => GSOrd arity (K1 i a) where
+  gsymCompare _ (K1 a) (K1 b) = a `symCompare` b
 
-derivedSymGe :: (Generic a, SOrd' (Rep a)) => a -> a -> SymBool
-derivedSymGe x y = from x ..>= from y
+instance GSOrd Arity1 Par1 where
+  gsymCompare (SOrdArgs1 c) (Par1 a) (Par1 b) = c a b
 
-derivedSymCompare :: (Generic a, SOrd' (Rep a)) => a -> a -> UnionM Ordering
-derivedSymCompare x y = symCompare' (from x) (from y)
+instance (SOrd1 f) => GSOrd Arity1 (Rec1 f) where
+  gsymCompare (SOrdArgs1 c) (Rec1 a) (Rec1 b) = liftSymCompare c a b
 
-symMax :: (SOrd a, ITEOp a) => a -> a -> a
-symMax x y = symIte (x .>= y) x y
+instance (SOrd1 f, GSOrd Arity1 g) => GSOrd Arity1 (f :.: g) where
+  gsymCompare targs (Comp1 a) (Comp1 b) = liftSymCompare (gsymCompare targs) a b
 
-symMin :: (SOrd a, ITEOp a) => a -> a -> a
-symMin x y = symIte (x .>= y) y x
+instance
+  (Generic a, GSOrd Arity0 (Rep a), GSEq Arity0 (Rep a)) =>
+  SOrd (Default a)
+  where
+  symCompare (Default l) (Default r) = genericSymCompare l r
 
-mrgMax ::
-  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
-  a ->
-  a ->
-  m a
-mrgMax x y = mrgIf (x .>= y) (pure x) (pure y)
+genericSymCompare :: (Generic a, GSOrd Arity0 (Rep a)) => a -> a -> UnionM Ordering
+genericSymCompare l r = gsymCompare SOrdArgs0 (from l) (from r)
 
-mrgMin ::
-  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
-  a ->
-  a ->
-  m a
-mrgMin x y = mrgIf (x .>= y) (pure y) (pure x)
+instance
+  (Generic1 f, GSOrd Arity1 (Rep1 f), GSEq Arity1 (Rep1 f), SOrd a) =>
+  SOrd (Default1 f a)
+  where
+  symCompare = symCompare1
+
+instance
+  (Generic1 f, GSOrd Arity1 (Rep1 f), GSEq Arity1 (Rep1 f)) =>
+  SOrd1 (Default1 f)
+  where
+  liftSymCompare c (Default1 l) (Default1 r) =
+    gsymCompare (SOrdArgs1 c) (from1 l) (from1 r)
