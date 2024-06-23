@@ -47,9 +47,9 @@ import Grisette.Unified
     GetSomeIntN,
     IsMode,
     MonadWithMode,
-    UnifiedITEOp (symIte),
     UnifiedSimpleMergeable (mrgIte),
     extractData,
+    symIte,
     (.<),
     (.==),
   )

@@ -14,7 +14,13 @@ module Grisette.Unified
     UnifiedBranching,
     mrgIf,
     liftBaseMonad,
+
+    -- ** Unified ITE operator
     UnifiedITEOp (..),
+    symIte,
+    symIteMerge,
+
+    -- ** Unified SEq
     UnifiedSEq,
     (.==),
     (./=),
@@ -23,6 +29,8 @@ module Grisette.Unified
     liftSEq2,
     seq2,
     UnifiedSimpleMergeable (..),
+
+    -- ** Unified SOrd
     UnifiedSOrd (..),
     (.<=),
     (.<),
@@ -72,7 +80,7 @@ import Grisette.Unified.Internal.Class.UnifiedBranching
     liftBaseMonad,
     mrgIf,
   )
-import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..))
+import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..), symIte, symIteMerge)
 import Grisette.Unified.Internal.Class.UnifiedSEq
   ( UnifiedSEq (..),
     liftSEq,

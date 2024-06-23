@@ -70,7 +70,7 @@ import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedBranching
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
+import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (withBaseITEOp))
 import Grisette.Unified.Internal.EvaluationMode
   ( IsConMode,
   )
@@ -232,7 +232,10 @@ symMax x y =
   withMode @mode
     (withBaseSOrd @mode @a $ max x y)
     ( withBaseSOrd @mode @a $
-        Grisette.Internal.Core.Data.Class.SOrd.symMax x y
+        withBaseITEOp @mode @a
+          Grisette.Internal.Core.Data.Class.SOrd.symMax
+          x
+          y
     )
 {-# INLINE symMax #-}
 
@@ -247,7 +250,10 @@ symMin x y =
   withMode @mode
     (withBaseSOrd @mode @a $ min x y)
     ( withBaseSOrd @mode @a $
-        Grisette.Internal.Core.Data.Class.SOrd.symMin x y
+        withBaseITEOp @mode @a
+          Grisette.Internal.Core.Data.Class.SOrd.symMin
+          x
+          y
     )
 {-# INLINE symMin #-}
 
