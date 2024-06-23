@@ -13,24 +13,29 @@
         stableHPkgs = pkgs.haskell.packages."ghc982";
         hPkgs = pkgs.haskell.packages."ghc965";
 
-        myDevTools = [
+        basicDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
-          # hPkgs.ghcid # Continuous terminal Haskell compile checker
-          # hPkgs.ormolu # Haskell formatter
-          hPkgs.hlint # Haskell codestyle checker
-          hPkgs.haskell-language-server # LSP server for editor
-          stableHPkgs.cabal-install
           stack-wrapped
-          (pkgs.ihaskell.override {
-            haskell = hPkgs.haskell;
-            ghcWithPackages = hPkgs.ghcWithPackages;
-          })
           pkgs.zlib # External C library needed by some Haskell packages
           pkgs.boolector
           pkgs.z3_4_12
           pkgs.nixpkgs-fmt
           pkgs.bitwuzla
         ];
+
+        additionalDevTools = [
+          # hPkgs.ghcid # Continuous terminal Haskell compile checker
+          # hPkgs.ormolu # Haskell formatter
+          hPkgs.hlint # Haskell codestyle checker
+          hPkgs.haskell-language-server # LSP server for editor
+          stableHPkgs.cabal-install
+          (pkgs.ihaskell.override {
+            haskell = hPkgs.haskell;
+            ghcWithPackages = hPkgs.ghcWithPackages;
+          })
+        ];
+
+        devTools = basicDevTools ++ additionalDevTools;
         # Wrap Stack to work with our Nix integration. We don't want to modify
         # stack.yaml so non-Nix users don't notice anything.
         # - no-nix: We don't want Stack's way of integrating Nix.
@@ -54,12 +59,12 @@
         formatter.x86_64-linux = pkgs.nixpkgs-fmt;
 
         devShells.default = pkgs.mkShell {
-          buildInputs = myDevTools;
+          buildInputs = devTools;
 
           # Make external Nix c libraries like zlib known to GHC, like
           # pkgs.haskell.lib.buildStackProject does
           # https://github.com/NixOS/nixpkgs/blob/d64780ea0e22b5f61cd6012a456869c702a72f20/pkgs/development/haskell-modules/generic-stack-builder.nix#L38
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath myDevTools;
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath devTools;
         };
       });
 }
