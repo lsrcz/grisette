@@ -102,7 +102,7 @@ import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)))
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<=), (.>=)))
-import Grisette.Internal.Core.Data.Class.SimpleMergeable (UnionMergeable1, mrgIf)
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (SymBranching, mrgIf)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgPure)
@@ -128,7 +128,7 @@ import Grisette.Lib.Data.Foldable
 import Grisette.Lib.Data.Functor (mrgFmap)
 
 symListOpOnSymInt ::
-  (Applicative u, UnionMergeable1 u, Mergeable b, Num int, SOrd int) =>
+  (Applicative u, SymBranching u, Mergeable b, Num int, SOrd int) =>
   Bool ->
   (Int -> [a] -> b) ->
   int ->
@@ -153,7 +153,7 @@ symListOpOnSymInt reversed f x vs = do
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgTake ::
-  (Applicative u, UnionMergeable1 u, Mergeable a, Num int, SOrd int) =>
+  (Applicative u, SymBranching u, Mergeable a, Num int, SOrd int) =>
   int ->
   [a] ->
   u [a]
@@ -164,7 +164,7 @@ mrgTake = symListOpOnSymInt False take
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgDrop ::
-  (Applicative u, UnionMergeable1 u, Mergeable a, Num int, SOrd int) =>
+  (Applicative u, SymBranching u, Mergeable a, Num int, SOrd int) =>
   int ->
   [a] ->
   u [a]
@@ -187,7 +187,7 @@ mrgSplitAt = symListOpOnSymInt False splitAt
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgTakeWhile ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
   u [a]
@@ -200,7 +200,7 @@ mrgTakeWhile p (x : xs) =
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgDropWhile ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
   u [a]
@@ -234,7 +234,7 @@ mrgDropWhileEnd p =
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgSpan ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
   u ([a], [a])
@@ -247,7 +247,7 @@ mrgSpan p xs@(x : xs') =
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgBreak ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
   u ([a], [a])
@@ -258,7 +258,7 @@ mrgBreak p = mrgSpan (symNot . p)
 --
 -- Generate O(1) cases and O(len(prefix)) sized branch constraints.
 mrgStripPrefix ::
-  (Applicative u, UnionMergeable1 u, Mergeable a, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable a, SEq a) =>
   [a] ->
   [a] ->
   u (Maybe [a])
@@ -313,7 +313,7 @@ symIsSubsequenceOf a@(x : a') (y : b) =
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgLookup ::
-  (Applicative u, UnionMergeable1 u, Mergeable b, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable b, SEq a) =>
   a ->
   [(a, b)] ->
   u (Maybe b)
@@ -333,7 +333,7 @@ mrgLookup key l =
 -- This function can be very inefficient on large symbolic lists and generate
 -- O(2^n) cases. Use with caution.
 mrgFilter ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
   u [a]
@@ -347,7 +347,7 @@ mrgFilter p (x : xs) =
 -- This function can be very inefficient on large symbolic lists and generate
 -- O(2^n) cases. Use with caution.
 mrgPartition ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
   u ([a], [a])
@@ -407,7 +407,7 @@ mrgElemIndices x = mrgFindIndices (x .==)
 -- Can generate O(n) cases (or O(1) if int is merged), and O(n^2) sized
 -- constraints, assuming the predicate only generates O(1) constraints.
 mrgFindIndex ::
-  (Applicative u, UnionMergeable1 u, Mergeable int, SEq a, Num int) =>
+  (Applicative u, SymBranching u, Mergeable int, SEq a, Num int) =>
   (a -> SymBool) ->
   [a] ->
   u (Maybe int)
@@ -419,7 +419,7 @@ mrgFindIndex p l = mrgFmap listToMaybe $ mrgFindIndices p l
 -- Can generate O(n) cases, and O(n^3) sized constraints, assuming the predicate
 -- only generates O(1) constraints.
 mrgFindIndices ::
-  (Applicative u, UnionMergeable1 u, Mergeable int, SEq a, Num int) =>
+  (Applicative u, SymBranching u, Mergeable int, SEq a, Num int) =>
   (a -> SymBool) ->
   [a] ->
   u [int]
@@ -433,7 +433,7 @@ mrgFindIndices p xs = go $ zip xs $ fromIntegral <$> [0 ..]
 --
 -- Can generate O(n) cases, and O(n^3) sized constraints.
 mrgNub ::
-  (Applicative u, UnionMergeable1 u, Mergeable a, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable a, SEq a) =>
   [a] ->
   u [a]
 mrgNub = mrgNubBy (.==)
@@ -443,7 +443,7 @@ mrgNub = mrgNubBy (.==)
 --
 -- Can generate O(n) cases, and O(n^2) sized constraints.
 mrgDelete ::
-  (Applicative u, UnionMergeable1 u, Mergeable a, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable a, SEq a) =>
   a ->
   [a] ->
   u [a]
@@ -488,7 +488,7 @@ mrgIntersect = mrgIntersectBy (.==)
 -- Can generate O(n) cases, and O(n^3) sized constraints, assuming the predicate
 -- only generates O(1) constraints.
 mrgNubBy ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> a -> SymBool) ->
   [a] ->
   u [a]
@@ -509,7 +509,7 @@ mrgNubBy eq l = mrgNubBy' l []
 -- Can generate O(n) cases, and O(n^2) sized constraints, assuming the predicate
 -- only generates O(1) constraints.
 mrgDeleteBy ::
-  (Applicative u, UnionMergeable1 u, Mergeable a) =>
+  (Applicative u, SymBranching u, Mergeable a) =>
   (a -> a -> SymBool) ->
   a ->
   [a] ->

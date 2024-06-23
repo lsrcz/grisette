@@ -4,12 +4,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -28,7 +30,15 @@ module Grisette.Internal.Core.Data.Class.SimpleMergeable
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
-    UnionMergeable1 (..),
+
+    -- * Generic 'SimpleMergeable'
+    SimpleMergeableArgs (..),
+    GSimpleMergeable (..),
+    genericMrgIte,
+    genericLiftMrgIte,
+
+    -- * Symbolic branching
+    SymBranching (..),
     mrgIf,
     mergeWithStrategy,
     merge,
@@ -52,19 +62,23 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Kind (Type)
 import GHC.Generics
   ( Generic (Rep, from, to),
+    Generic1 (Rep1, from1, to1),
     K1 (K1),
     M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
     U1,
     V1,
+    (:.:) (Comp1),
     type (:*:) ((:*:)),
   )
 import GHC.TypeNats (KnownNat, type (<=))
-import Generics.Deriving (Default (Default))
+import Generics.Deriving (Default (Default), Default1 (Default1))
 import Grisette.Internal.Core.Control.Exception (AssertionError)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.Mergeable
-  ( Mergeable (rootStrategy),
-    Mergeable',
+  ( GMergeable,
+    Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
     Mergeable2 (liftRootStrategy2),
     Mergeable3 (liftRootStrategy3),
@@ -89,35 +103,17 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.TH.Derivation
+  ( Strategy (ViaDefault, ViaDefault1),
+    deriveFunctorArgBuiltins,
+    deriveSimpleBuiltin1s,
+  )
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Control.Monad.Identity
-
--- | Auxiliary class for the generic derivation for the 'SimpleMergeable' class.
-class SimpleMergeable' f where
-  mrgIte' :: SymBool -> f a -> f a -> f a
-
-instance (SimpleMergeable' U1) where
-  mrgIte' _ t _ = t
-  {-# INLINE mrgIte' #-}
-
-instance (SimpleMergeable' V1) where
-  mrgIte' _ t _ = t
-  {-# INLINE mrgIte' #-}
-
-instance (SimpleMergeable c) => (SimpleMergeable' (K1 i c)) where
-  mrgIte' cond (K1 a) (K1 b) = K1 $ mrgIte cond a b
-  {-# INLINE mrgIte' #-}
-
-instance (SimpleMergeable' a) => (SimpleMergeable' (M1 i c a)) where
-  mrgIte' cond (M1 a) (M1 b) = M1 $ mrgIte' cond a b
-  {-# INLINE mrgIte' #-}
-
-instance (SimpleMergeable' a, SimpleMergeable' b) => (SimpleMergeable' (a :*: b)) where
-  mrgIte' cond (a1 :*: a2) (b1 :*: b2) = mrgIte' cond a1 b1 :*: mrgIte' cond a2 b2
-  {-# INLINE mrgIte' #-}
 
 -- | This class indicates that a type has a simple root merge strategy.
 --
@@ -134,12 +130,11 @@ class (Mergeable a) => SimpleMergeable a where
   -- (ite a b c)
   mrgIte :: SymBool -> a -> a -> a
 
-instance (Generic a, Mergeable' (Rep a), SimpleMergeable' (Rep a)) => SimpleMergeable (Default a) where
-  mrgIte cond (Default a) (Default b) = Default $ to $ mrgIte' cond (from a) (from b)
-  {-# INLINE mrgIte #-}
-
 -- | Lifting of the 'SimpleMergeable' class to unary type constructors.
-class (Mergeable1 u) => SimpleMergeable1 u where
+class
+  (Mergeable1 u, forall a. (SimpleMergeable a) => (SimpleMergeable (u a))) =>
+  SimpleMergeable1 u
+  where
   -- | Lift 'mrgIte' through the type constructor.
   --
   -- >>> liftMrgIte mrgIte "a" (Identity "b") (Identity "c") :: Identity SymInteger
@@ -150,25 +145,140 @@ class (Mergeable1 u) => SimpleMergeable1 u where
 --
 -- >>> mrgIte1 "a" (Identity "b") (Identity "c") :: Identity SymInteger
 -- Identity (ite a b c)
-mrgIte1 :: (SimpleMergeable1 u, SimpleMergeable a) => SymBool -> u a -> u a -> u a
+mrgIte1 ::
+  (SimpleMergeable1 u, SimpleMergeable a) => SymBool -> u a -> u a -> u a
 mrgIte1 = liftMrgIte mrgIte
 {-# INLINE mrgIte1 #-}
 
 -- | Lifting of the 'SimpleMergeable' class to binary type constructors.
-class (Mergeable2 u) => SimpleMergeable2 u where
+class
+  (Mergeable2 u, forall a. (SimpleMergeable a) => SimpleMergeable1 (u a)) =>
+  SimpleMergeable2 u
+  where
   -- | Lift 'mrgIte' through the type constructor.
   --
   -- >>> liftMrgIte2 mrgIte mrgIte "a" ("b", "c") ("d", "e") :: (SymInteger, SymBool)
   -- ((ite a b d),(ite a c e))
-  liftMrgIte2 :: (SymBool -> a -> a -> a) -> (SymBool -> b -> b -> b) -> SymBool -> u a b -> u a b -> u a b
+  liftMrgIte2 ::
+    (SymBool -> a -> a -> a) ->
+    (SymBool -> b -> b -> b) ->
+    SymBool ->
+    u a b ->
+    u a b ->
+    u a b
 
 -- | Lift the standard 'mrgIte' function through the type constructor.
 --
 -- >>> mrgIte2 "a" ("b", "c") ("d", "e") :: (SymInteger, SymBool)
 -- ((ite a b d),(ite a c e))
-mrgIte2 :: (SimpleMergeable2 u, SimpleMergeable a, SimpleMergeable b) => SymBool -> u a b -> u a b -> u a b
+mrgIte2 ::
+  (SimpleMergeable2 u, SimpleMergeable a, SimpleMergeable b) =>
+  SymBool ->
+  u a b ->
+  u a b ->
+  u a b
 mrgIte2 = liftMrgIte2 mrgIte mrgIte
 {-# INLINE mrgIte2 #-}
+
+-- | The arguments to the generic simple merging function.
+data family SimpleMergeableArgs arity a :: Type
+
+data instance SimpleMergeableArgs Arity0 _ = SimpleMergeableArgs0
+
+newtype instance SimpleMergeableArgs Arity1 a
+  = SimpleMergeableArgs1 (SymBool -> a -> a -> a)
+
+class GSimpleMergeable arity f where
+  gmrgIte :: SimpleMergeableArgs arity a -> SymBool -> f a -> f a -> f a
+
+instance GSimpleMergeable arity V1 where
+  gmrgIte _ _ t _ = t
+  {-# INLINE gmrgIte #-}
+
+instance (GSimpleMergeable arity U1) where
+  gmrgIte _ _ t _ = t
+  {-# INLINE gmrgIte #-}
+
+instance
+  (GSimpleMergeable arity a, GSimpleMergeable arity b) =>
+  (GSimpleMergeable arity (a :*: b))
+  where
+  gmrgIte args cond (a1 :*: a2) (b1 :*: b2) =
+    gmrgIte args cond a1 b1 :*: gmrgIte args cond a2 b2
+  {-# INLINE gmrgIte #-}
+
+instance (GSimpleMergeable arity a) => (GSimpleMergeable arity (M1 i c a)) where
+  gmrgIte args cond (M1 a) (M1 b) = M1 $ gmrgIte args cond a b
+  {-# INLINE gmrgIte #-}
+
+instance (SimpleMergeable c) => (GSimpleMergeable arity (K1 i c)) where
+  gmrgIte _ cond (K1 a) (K1 b) = K1 $ mrgIte cond a b
+  {-# INLINE gmrgIte #-}
+
+instance GSimpleMergeable Arity1 Par1 where
+  gmrgIte (SimpleMergeableArgs1 f) cond (Par1 l) (Par1 r) = Par1 $ f cond l r
+  {-# INLINE gmrgIte #-}
+
+instance (GSimpleMergeable arity f) => GSimpleMergeable arity (Rec1 f) where
+  gmrgIte args cond (Rec1 l) (Rec1 r) = Rec1 $ gmrgIte args cond l r
+  {-# INLINE gmrgIte #-}
+
+instance
+  (SimpleMergeable1 f, GSimpleMergeable Arity1 g) =>
+  GSimpleMergeable Arity1 (f :.: g)
+  where
+  gmrgIte targs cond (Comp1 l) (Comp1 r) =
+    Comp1 $ liftMrgIte (gmrgIte targs) cond l r
+  {-# INLINE gmrgIte #-}
+
+instance
+  (Generic a, GSimpleMergeable Arity0 (Rep a), GMergeable Arity0 (Rep a)) =>
+  SimpleMergeable (Default a)
+  where
+  mrgIte cond (Default a) (Default b) =
+    Default $ genericMrgIte cond a b
+  {-# INLINE mrgIte #-}
+
+genericMrgIte ::
+  (Generic a, GSimpleMergeable Arity0 (Rep a)) =>
+  SymBool ->
+  a ->
+  a ->
+  a
+genericMrgIte cond a b =
+  to $ gmrgIte SimpleMergeableArgs0 cond (from a) (from b)
+{-# INLINE genericMrgIte #-}
+
+instance
+  ( Generic1 f,
+    GSimpleMergeable Arity1 (Rep1 f),
+    GMergeable Arity1 (Rep1 f),
+    SimpleMergeable a
+  ) =>
+  SimpleMergeable (Default1 f a)
+  where
+  mrgIte = mrgIte1
+  {-# INLINE mrgIte #-}
+
+instance
+  (Generic1 f, GSimpleMergeable Arity1 (Rep1 f), GMergeable Arity1 (Rep1 f)) =>
+  SimpleMergeable1 (Default1 f)
+  where
+  liftMrgIte f c (Default1 l) (Default1 r) =
+    Default1 $ genericLiftMrgIte f c l r
+  {-# INLINE liftMrgIte #-}
+
+-- | Generic 'liftMrgIte' function.
+genericLiftMrgIte ::
+  (Generic1 f, GSimpleMergeable Arity1 (Rep1 f)) =>
+  (SymBool -> a -> a -> a) ->
+  SymBool ->
+  f a ->
+  f a ->
+  f a
+genericLiftMrgIte f c l r =
+  to1 $ gmrgIte (SimpleMergeableArgs1 f) c (from1 l) (from1 r)
+{-# INLINE genericLiftMrgIte #-}
 
 -- | Special case of the 'Mergeable1' and 'SimpleMergeable1' class for type
 -- constructors that are 'SimpleMergeable' when applied to any 'Mergeable'
@@ -176,149 +286,111 @@ mrgIte2 = liftMrgIte2 mrgIte mrgIte
 --
 -- This type class is used to generalize the 'mrgIf' function to other
 -- containers, for example, monad transformer transformed Unions.
-class (SimpleMergeable1 u, TryMerge u) => UnionMergeable1 (u :: Type -> Type) where
-  -- | Symbolic @if@ control flow with the result merged with some merge strategy.
+class
+  ( SimpleMergeable1 u,
+    forall a. (Mergeable a) => SimpleMergeable (u a),
+    TryMerge u
+  ) =>
+  SymBranching (u :: Type -> Type)
+  where
+  -- | Symbolic @if@ control flow with the result merged with some merge
+  -- strategy.
   --
   -- >>> mrgIfWithStrategy rootStrategy "a" (mrgSingle "b") (return "c") :: UnionM SymInteger
   -- {(ite a b c)}
   --
   -- __Note:__ Be careful to call this directly in your code.
-  -- The supplied merge strategy should be consistent with the type's root merge strategy,
-  -- or some internal invariants would be broken and the program can crash.
+  -- The supplied merge strategy should be consistent with the type's root merge
+  -- strategy, or some internal invariants would be broken and the program can
+  -- crash.
   --
-  -- This function is to be called when the 'Mergeable' constraint can not be resolved,
-  -- e.g., the merge strategy for the contained type is given with 'Mergeable1'.
-  -- In other cases, 'mrgIf' is usually a better alternative.
+  -- This function is to be called when the 'Mergeable' constraint can not be
+  -- resolved, e.g., the merge strategy for the contained type is given with
+  -- 'Mergeable1'. In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
 
   mrgIfPropagatedStrategy :: SymBool -> u a -> u a -> u a
 
-mergeWithStrategy :: (UnionMergeable1 m) => MergingStrategy a -> m a -> m a
+mergeWithStrategy :: (SymBranching m) => MergingStrategy a -> m a -> m a
 mergeWithStrategy = tryMergeWithStrategy
 {-# INLINE mergeWithStrategy #-}
 
 -- | Try to merge the container with the root strategy.
-merge :: (UnionMergeable1 m, Mergeable a) => m a -> m a
+merge :: (SymBranching m, Mergeable a) => m a -> m a
 merge = mergeWithStrategy rootStrategy
 {-# INLINE merge #-}
 
--- | Symbolic @if@ control flow with the result merged with the type's root merge strategy.
+-- | Symbolic @if@ control flow with the result merged with the type's root
+-- merge strategy.
 --
 -- Equivalent to @'mrgIfWithStrategy' 'rootStrategy'@.
 --
 -- >>> mrgIf "a" (return "b") (return "c") :: UnionM SymInteger
 -- {(ite a b c)}
-mrgIf :: (UnionMergeable1 u, Mergeable a) => SymBool -> u a -> u a -> u a
+mrgIf :: (SymBranching u, Mergeable a) => SymBool -> u a -> u a -> u a
 mrgIf = mrgIfWithStrategy rootStrategy
 {-# INLINE mrgIf #-}
 
-instance SimpleMergeable () where
-  mrgIte _ t _ = t
-  {-# INLINE mrgIte #-}
+deriveFunctorArgBuiltins
+  (ViaDefault ''SimpleMergeable)
+  ''SimpleMergeable
+  ''SimpleMergeable1
+  [ ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''Identity
+  ]
 
-instance (SimpleMergeable a, SimpleMergeable b) => SimpleMergeable (a, b) where
-  mrgIte cond (a1, b1) (a2, b2) = (mrgIte cond a1 a2, mrgIte cond b1 b2)
-  {-# INLINE mrgIte #-}
-
-instance (SimpleMergeable a) => SimpleMergeable1 ((,) a) where
-  liftMrgIte mb cond (a1, b1) (a2, b2) = (mrgIte cond a1 a2, mb cond b1 b2)
-  {-# INLINE liftMrgIte #-}
+deriveSimpleBuiltin1s
+  (ViaDefault1 ''SimpleMergeable1)
+  ''SimpleMergeable
+  ''SimpleMergeable1
+  [ ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Identity
+  ]
 
 instance SimpleMergeable2 (,) where
   liftMrgIte2 ma mb cond (a1, b1) (a2, b2) = (ma cond a1 a2, mb cond b1 b2)
   {-# INLINE liftMrgIte2 #-}
 
-instance
-  (SimpleMergeable a, SimpleMergeable b, SimpleMergeable c) =>
-  SimpleMergeable (a, b, c)
-  where
-  mrgIte cond (a1, b1, c1) (a2, b2, c2) = (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2)
-  {-# INLINE mrgIte #-}
+instance (SimpleMergeable a) => SimpleMergeable2 ((,,) a) where
+  liftMrgIte2 mb mc cond (a1, b1, c1) (a2, b2, c2) =
+    (mrgIte cond a1 a2, mb cond b1 b2, mc cond c1 c2)
+  {-# INLINE liftMrgIte2 #-}
 
 instance
-  ( SimpleMergeable a,
-    SimpleMergeable b,
-    SimpleMergeable c,
-    SimpleMergeable d
-  ) =>
-  SimpleMergeable (a, b, c, d)
+  (SimpleMergeable a, SimpleMergeable b) =>
+  SimpleMergeable2 ((,,,) a b)
   where
-  mrgIte cond (a1, b1, c1, d1) (a2, b2, c2, d2) =
-    (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2, mrgIte cond d1 d2)
-  {-# INLINE mrgIte #-}
-
-instance
-  ( SimpleMergeable a,
-    SimpleMergeable b,
-    SimpleMergeable c,
-    SimpleMergeable d,
-    SimpleMergeable e
-  ) =>
-  SimpleMergeable (a, b, c, d, e)
-  where
-  mrgIte cond (a1, b1, c1, d1, e1) (a2, b2, c2, d2, e2) =
-    (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2, mrgIte cond d1 d2, mrgIte cond e1 e2)
-  {-# INLINE mrgIte #-}
-
-instance
-  ( SimpleMergeable a,
-    SimpleMergeable b,
-    SimpleMergeable c,
-    SimpleMergeable d,
-    SimpleMergeable e,
-    SimpleMergeable f
-  ) =>
-  SimpleMergeable (a, b, c, d, e, f)
-  where
-  mrgIte cond (a1, b1, c1, d1, e1, f1) (a2, b2, c2, d2, e2, f2) =
-    (mrgIte cond a1 a2, mrgIte cond b1 b2, mrgIte cond c1 c2, mrgIte cond d1 d2, mrgIte cond e1 e2, mrgIte cond f1 f2)
-  {-# INLINE mrgIte #-}
-
-instance
-  ( SimpleMergeable a,
-    SimpleMergeable b,
-    SimpleMergeable c,
-    SimpleMergeable d,
-    SimpleMergeable e,
-    SimpleMergeable f,
-    SimpleMergeable g
-  ) =>
-  SimpleMergeable (a, b, c, d, e, f, g)
-  where
-  mrgIte cond (a1, b1, c1, d1, e1, f1, g1) (a2, b2, c2, d2, e2, f2, g2) =
-    ( mrgIte cond a1 a2,
-      mrgIte cond b1 b2,
-      mrgIte cond c1 c2,
-      mrgIte cond d1 d2,
-      mrgIte cond e1 e2,
-      mrgIte cond f1 f2,
-      mrgIte cond g1 g2
-    )
-  {-# INLINE mrgIte #-}
-
-instance
-  ( SimpleMergeable a,
-    SimpleMergeable b,
-    SimpleMergeable c,
-    SimpleMergeable d,
-    SimpleMergeable e,
-    SimpleMergeable f,
-    SimpleMergeable g,
-    SimpleMergeable h
-  ) =>
-  SimpleMergeable (a, b, c, d, e, f, g, h)
-  where
-  mrgIte cond (a1, b1, c1, d1, e1, f1, g1, h1) (a2, b2, c2, d2, e2, f2, g2, h2) =
-    ( mrgIte cond a1 a2,
-      mrgIte cond b1 b2,
-      mrgIte cond c1 c2,
-      mrgIte cond d1 d2,
-      mrgIte cond e1 e2,
-      mrgIte cond f1 f2,
-      mrgIte cond g1 g2,
-      mrgIte cond h1 h2
-    )
-  {-# INLINE mrgIte #-}
+  liftMrgIte2 mc md cond (a1, b1, c1, d1) (a2, b2, c2, d2) =
+    (mrgIte cond a1 a2, mrgIte cond b1 b2, mc cond c1 c2, md cond d1 d2)
+  {-# INLINE liftMrgIte2 #-}
 
 instance (SimpleMergeable b) => SimpleMergeable (a -> b) where
   mrgIte = mrgIte1
@@ -328,15 +400,20 @@ instance SimpleMergeable1 ((->) a) where
   liftMrgIte ms cond t f v = ms cond (t v) (f v)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionMergeable1 m, Mergeable a) => SimpleMergeable (MaybeT m a) where
+instance SimpleMergeable2 (->) where
+  liftMrgIte2 _ ms cond t f v = ms cond (t v) (f v)
+  {-# INLINE liftMrgIte2 #-}
+
+-- MaybeT
+instance (SymBranching m, Mergeable a) => SimpleMergeable (MaybeT m a) where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
-instance (UnionMergeable1 m) => SimpleMergeable1 (MaybeT m) where
+instance (SymBranching m) => SimpleMergeable1 (MaybeT m) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionMergeable1 m) => UnionMergeable1 (MaybeT m) where
+instance (SymBranching m) => SymBranching (MaybeT m) where
   mrgIfWithStrategy strategy cond (MaybeT l) (MaybeT r) =
     MaybeT $ mrgIfWithStrategy (liftRootStrategy strategy) cond l r
   {-# INLINE mrgIfWithStrategy #-}
@@ -344,23 +421,24 @@ instance (UnionMergeable1 m) => UnionMergeable1 (MaybeT m) where
     MaybeT $ mrgIfPropagatedStrategy cond l r
   {-# INLINE mrgIfPropagatedStrategy #-}
 
+-- ExceptT
 instance
-  (UnionMergeable1 m, Mergeable e, Mergeable a) =>
+  (SymBranching m, Mergeable e, Mergeable a) =>
   SimpleMergeable (ExceptT e m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (UnionMergeable1 m, Mergeable e) =>
+  (SymBranching m, Mergeable e) =>
   SimpleMergeable1 (ExceptT e m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (UnionMergeable1 m, Mergeable e) =>
-  UnionMergeable1 (ExceptT e m)
+  (SymBranching m, Mergeable e) =>
+  SymBranching (ExceptT e m)
   where
   mrgIfWithStrategy s cond (ExceptT t) (ExceptT f) =
     ExceptT $ mrgIfWithStrategy (liftRootStrategy s) cond t f
@@ -369,23 +447,24 @@ instance
     ExceptT $ mrgIfPropagatedStrategy cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
+-- StateT
 instance
-  (Mergeable s, Mergeable a, UnionMergeable1 m) =>
+  (Mergeable s, Mergeable a, SymBranching m) =>
   SimpleMergeable (StateLazy.StateT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m) =>
+  (Mergeable s, SymBranching m) =>
   SimpleMergeable1 (StateLazy.StateT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m) =>
-  UnionMergeable1 (StateLazy.StateT s m)
+  (Mergeable s, SymBranching m) =>
+  SymBranching (StateLazy.StateT s m)
   where
   mrgIfWithStrategy s cond (StateLazy.StateT t) (StateLazy.StateT f) =
     StateLazy.StateT $ \v ->
@@ -400,22 +479,22 @@ instance
   {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
-  (Mergeable s, Mergeable a, UnionMergeable1 m) =>
+  (Mergeable s, Mergeable a, SymBranching m) =>
   SimpleMergeable (StateStrict.StateT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m) =>
+  (Mergeable s, SymBranching m) =>
   SimpleMergeable1 (StateStrict.StateT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m) =>
-  UnionMergeable1 (StateStrict.StateT s m)
+  (Mergeable s, SymBranching m) =>
+  SymBranching (StateStrict.StateT s m)
   where
   mrgIfWithStrategy s cond (StateStrict.StateT t) (StateStrict.StateT f) =
     StateStrict.StateT $
@@ -426,23 +505,24 @@ instance
     StateStrict.StateT $ \v -> mrgIfPropagatedStrategy cond (t v) (f v)
   {-# INLINE mrgIfPropagatedStrategy #-}
 
+-- WriterT
 instance
-  (Mergeable s, Mergeable a, UnionMergeable1 m, Monoid s) =>
+  (Mergeable s, Mergeable a, SymBranching m, Monoid s) =>
   SimpleMergeable (WriterLazy.WriterT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m, Monoid s) =>
+  (Mergeable s, SymBranching m, Monoid s) =>
   SimpleMergeable1 (WriterLazy.WriterT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m, Monoid s) =>
-  UnionMergeable1 (WriterLazy.WriterT s m)
+  (Mergeable s, SymBranching m, Monoid s) =>
+  SymBranching (WriterLazy.WriterT s m)
   where
   mrgIfWithStrategy s cond (WriterLazy.WriterT t) (WriterLazy.WriterT f) =
     WriterLazy.WriterT $
@@ -453,48 +533,52 @@ instance
   {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
-  (Mergeable s, Mergeable a, UnionMergeable1 m, Monoid s) =>
+  (Mergeable s, Mergeable a, SymBranching m, Monoid s) =>
   SimpleMergeable (WriterStrict.WriterT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m, Monoid s) =>
+  (Mergeable s, SymBranching m, Monoid s) =>
   SimpleMergeable1 (WriterStrict.WriterT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, UnionMergeable1 m, Monoid s) =>
-  UnionMergeable1 (WriterStrict.WriterT s m)
+  (Mergeable s, SymBranching m, Monoid s) =>
+  SymBranching (WriterStrict.WriterT s m)
   where
   mrgIfWithStrategy s cond (WriterStrict.WriterT t) (WriterStrict.WriterT f) =
     WriterStrict.WriterT $
       mrgIfWithStrategy (liftRootStrategy2 s rootStrategy) cond t f
   {-# INLINE mrgIfWithStrategy #-}
-  mrgIfPropagatedStrategy cond (WriterStrict.WriterT t) (WriterStrict.WriterT f) =
-    WriterStrict.WriterT $ mrgIfPropagatedStrategy cond t f
+  mrgIfPropagatedStrategy
+    cond
+    (WriterStrict.WriterT t)
+    (WriterStrict.WriterT f) =
+      WriterStrict.WriterT $ mrgIfPropagatedStrategy cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
+-- ReaderT
 instance
-  (Mergeable a, UnionMergeable1 m) =>
+  (Mergeable a, SymBranching m) =>
   SimpleMergeable (ReaderT s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (UnionMergeable1 m) =>
+  (SymBranching m) =>
   SimpleMergeable1 (ReaderT s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (UnionMergeable1 m) =>
-  UnionMergeable1 (ReaderT s m)
+  (SymBranching m) =>
+  SymBranching (ReaderT s m)
   where
   mrgIfWithStrategy s cond (ReaderT t) (ReaderT f) =
     ReaderT $ \v -> mrgIfWithStrategy s cond (t v) (f v)
@@ -503,26 +587,19 @@ instance
     ReaderT $ \v -> mrgIfPropagatedStrategy cond (t v) (f v)
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance (SimpleMergeable a) => SimpleMergeable (Identity a) where
-  mrgIte = mrgIte1
-  {-# INLINE mrgIte #-}
-
-instance SimpleMergeable1 Identity where
-  liftMrgIte mite cond (Identity l) (Identity r) = Identity $ mite cond l r
-  {-# INLINE liftMrgIte #-}
-
+-- IdentityT
 instance
-  (UnionMergeable1 m, Mergeable a) =>
+  (SymBranching m, Mergeable a) =>
   SimpleMergeable (IdentityT m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
-instance (UnionMergeable1 m) => SimpleMergeable1 (IdentityT m) where
+instance (SymBranching m) => SimpleMergeable1 (IdentityT m) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionMergeable1 m) => UnionMergeable1 (IdentityT m) where
+instance (SymBranching m) => SymBranching (IdentityT m) where
   mrgIfWithStrategy s cond (IdentityT l) (IdentityT r) =
     IdentityT $ mrgIfWithStrategy s cond l r
   {-# INLINE mrgIfWithStrategy #-}
@@ -530,15 +607,16 @@ instance (UnionMergeable1 m) => UnionMergeable1 (IdentityT m) where
     IdentityT $ mrgIfPropagatedStrategy cond l r
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance (UnionMergeable1 m, Mergeable r) => SimpleMergeable (ContT r m a) where
+-- ContT
+instance (SymBranching m, Mergeable r) => SimpleMergeable (ContT r m a) where
   mrgIte cond (ContT l) (ContT r) = ContT $ \c -> mrgIf cond (l c) (r c)
   {-# INLINE mrgIte #-}
 
-instance (UnionMergeable1 m, Mergeable r) => SimpleMergeable1 (ContT r m) where
+instance (SymBranching m, Mergeable r) => SimpleMergeable1 (ContT r m) where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
-instance (UnionMergeable1 m, Mergeable r) => UnionMergeable1 (ContT r m) where
+instance (SymBranching m, Mergeable r) => SymBranching (ContT r m) where
   mrgIfWithStrategy _ cond (ContT l) (ContT r) =
     ContT $ \c -> mrgIf cond (l c) (r c)
   {-# INLINE mrgIfWithStrategy #-}
@@ -546,23 +624,24 @@ instance (UnionMergeable1 m, Mergeable r) => UnionMergeable1 (ContT r m) where
     ContT $ \c -> mrgIfPropagatedStrategy cond (l c) (r c)
   {-# INLINE mrgIfPropagatedStrategy #-}
 
+-- RWST
 instance
-  (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionMergeable1 m) =>
+  (Mergeable s, Mergeable w, Monoid w, Mergeable a, SymBranching m) =>
   SimpleMergeable (RWSLazy.RWST r w s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
+  (Mergeable s, Mergeable w, Monoid w, SymBranching m) =>
   SimpleMergeable1 (RWSLazy.RWST r w s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
-  UnionMergeable1 (RWSLazy.RWST r w s m)
+  (Mergeable s, Mergeable w, Monoid w, SymBranching m) =>
+  SymBranching (RWSLazy.RWST r w s m)
   where
   mrgIfWithStrategy ms cond (RWSLazy.RWST t) (RWSLazy.RWST f) =
     RWSLazy.RWST $ \r s ->
@@ -577,22 +656,22 @@ instance
   {-# INLINE mrgIfPropagatedStrategy #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, Mergeable a, UnionMergeable1 m) =>
+  (Mergeable s, Mergeable w, Monoid w, Mergeable a, SymBranching m) =>
   SimpleMergeable (RWSStrict.RWST r w s m a)
   where
   mrgIte = mrgIf
   {-# INLINE mrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
+  (Mergeable s, Mergeable w, Monoid w, SymBranching m) =>
   SimpleMergeable1 (RWSStrict.RWST r w s m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
   {-# INLINE liftMrgIte #-}
 
 instance
-  (Mergeable s, Mergeable w, Monoid w, UnionMergeable1 m) =>
-  UnionMergeable1 (RWSStrict.RWST r w s m)
+  (Mergeable s, Mergeable w, Monoid w, SymBranching m) =>
+  SymBranching (RWSStrict.RWST r w s m)
   where
   mrgIfWithStrategy ms cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
     RWSStrict.RWST $ \r s ->
@@ -635,6 +714,3 @@ SIMPLE_MERGEABLE_FUN((-->), (-~>))
 instance (ValidFP eb sb) => SimpleMergeable (SymFP eb sb) where
   mrgIte = symIte
   {-# INLINE mrgIte #-}
-
--- Exception
-deriving via (Default AssertionError) instance SimpleMergeable AssertionError

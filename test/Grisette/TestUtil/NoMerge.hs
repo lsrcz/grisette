@@ -12,8 +12,8 @@ import GHC.Generics (Generic)
 import Grisette
   ( Mergeable (rootStrategy),
     MergingStrategy (NoStrategy),
+    SymBranching (mrgIfPropagatedStrategy),
     UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
   )
 
 data NoMerge = NoMerge

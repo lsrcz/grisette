@@ -165,7 +165,6 @@ library
       Grisette.Unified
       Grisette.Unified.Internal.BaseConstraint
       Grisette.Unified.Internal.BaseMonad
-      Grisette.Unified.Internal.Class.UnifiedBranching
       Grisette.Unified.Internal.Class.UnifiedITEOp
       Grisette.Unified.Internal.Class.UnifiedSEq
       Grisette.Unified.Internal.Class.UnifiedSimpleMergeable

@@ -40,7 +40,7 @@ import Grisette.Internal.Core.Data.Class.LogicalOp
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
-    UnionMergeable1,
+    SymBranching,
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
@@ -56,7 +56,7 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 
 -- | Plain union containers that can be projected back into single value or
 -- if-guarded values.
-class (Applicative u, UnionMergeable1 u) => PlainUnion (u :: Type -> Type) where
+class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
   -- | Pattern match to extract single values.
   --
   -- >>> singleView (return 1 :: UnionM Integer)
@@ -171,7 +171,7 @@ infixl 9 .#
 -- (ite cond a (+ b c))
 onUnion ::
   forall u a r.
-  (SimpleMergeable r, UnionMergeable1 u, PlainUnion u, Mergeable a) =>
+  (SimpleMergeable r, SymBranching u, PlainUnion u, Mergeable a) =>
   (a -> r) ->
   (u a -> r)
 onUnion f = simpleMerge . fmap f . tryMerge
@@ -180,7 +180,7 @@ onUnion f = simpleMerge . fmap f . tryMerge
 onUnion2 ::
   forall u a b r.
   ( SimpleMergeable r,
-    UnionMergeable1 u,
+    SymBranching u,
     PlainUnion u,
     Mergeable a,
     Mergeable b
@@ -193,7 +193,7 @@ onUnion2 f ua ub = simpleMerge $ f <$> tryMerge ua <*> tryMerge ub
 onUnion3 ::
   forall u a b c r.
   ( SimpleMergeable r,
-    UnionMergeable1 u,
+    SymBranching u,
     PlainUnion u,
     Mergeable a,
     Mergeable b,
@@ -208,7 +208,7 @@ onUnion3 f ua ub uc =
 onUnion4 ::
   forall u a b c d r.
   ( SimpleMergeable r,
-    UnionMergeable1 u,
+    SymBranching u,
     PlainUnion u,
     Mergeable a,
     Mergeable b,

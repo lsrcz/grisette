@@ -116,7 +116,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (isym))
@@ -243,13 +243,13 @@ instance (Mergeable1 m) => Mergeable1 (FreshT m) where
       runFreshTFromIndex
 
 instance
-  (UnionMergeable1 m, Mergeable a) =>
+  (SymBranching m, Mergeable a) =>
   SimpleMergeable (FreshT m a)
   where
   mrgIte = mrgIf
 
 instance
-  (UnionMergeable1 m) =>
+  (SymBranching m) =>
   SimpleMergeable1 (FreshT m)
   where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
@@ -260,8 +260,8 @@ instance (TryMerge m) => TryMerge (FreshT m) where
       tryMergeWithStrategy (liftRootStrategy2 s rootStrategy) $ f ident index
 
 instance
-  (UnionMergeable1 m) =>
-  UnionMergeable1 (FreshT m)
+  (SymBranching m) =>
+  SymBranching (FreshT m)
   where
   mrgIfWithStrategy s cond (FreshT t) (FreshT f) =
     FreshT $ \ident index ->

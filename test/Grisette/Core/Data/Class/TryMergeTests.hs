@@ -19,8 +19,8 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import Grisette
   ( ITEOp (symIte),
     Mergeable (rootStrategy),
+    SymBranching (mrgIfPropagatedStrategy),
     TryMerge,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgSingle,
     tryMerge,
   )

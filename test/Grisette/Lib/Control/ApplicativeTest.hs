@@ -13,8 +13,8 @@ import Control.Monad.State
   )
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
-  ( UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
+  ( SymBranching (mrgIfPropagatedStrategy),
+    UnionM,
     mrgAsum,
     mrgEmpty,
     mrgPure,

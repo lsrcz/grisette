@@ -7,8 +7,8 @@ import Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
 import Grisette
   ( ITEOp (symIte),
     SEq ((.==)),
+    SymBranching (mrgIfPropagatedStrategy),
     UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
     mrgSingle,
   )

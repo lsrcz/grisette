@@ -58,7 +58,7 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (pattern Con)
@@ -169,7 +169,7 @@ instance TryMerge Union where
   tryMergeWithStrategy = fullReconstruct
   {-# INLINE tryMergeWithStrategy #-}
 
-instance UnionMergeable1 Union where
+instance SymBranching Union where
   mrgIfWithStrategy = ifWithStrategy
   {-# INLINE mrgIfWithStrategy #-}
 

@@ -13,7 +13,7 @@
 -- Portability :   GHC only
 module Grisette.Unified.Internal.MonadWithMode (MonadWithMode) where
 
-import Grisette.Unified.Internal.Class.UnifiedBranching (UnifiedBranching)
+import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.UnifiedBV (SafeAllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedInteger (SafeUnifiedInteger)

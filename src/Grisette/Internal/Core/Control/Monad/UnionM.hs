@@ -76,7 +76,7 @@ import Grisette.Internal.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
-    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable
@@ -376,7 +376,7 @@ instance TryMerge UnionM where
   tryMergeWithStrategy s (UAny u) = UMrg s $ tryMergeWithStrategy s u
   {-# INLINE tryMergeWithStrategy #-}
 
-instance UnionMergeable1 UnionM where
+instance SymBranching UnionM where
   mrgIfWithStrategy s (Con c) l r =
     if c then tryMergeWithStrategy s l else tryMergeWithStrategy s r
   mrgIfWithStrategy s cond l r =
@@ -391,8 +391,8 @@ instance (Mergeable a, SEq a) => SEq (UnionM a) where
   x .== y = simpleMerge $ unionMBinOp (.==) x y
   {-# INLINE (.==) #-}
 
--- | Lift the 'UnionM' to any Applicative 'UnionMergeable1'.
-liftUnionM :: (Mergeable a, UnionMergeable1 u, Applicative u) => UnionM a -> u a
+-- | Lift the 'UnionM' to any Applicative 'SymBranching'.
+liftUnionM :: (Mergeable a, SymBranching u, Applicative u) => UnionM a -> u a
 liftUnionM u = go (underlyingUnion u)
   where
     go (UnionSingle v) = mrgSingle v

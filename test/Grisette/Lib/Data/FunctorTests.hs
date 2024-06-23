@@ -4,9 +4,9 @@ module Grisette.Lib.Data.FunctorTests (functorFunctionTests) where
 
 import Grisette
   ( ITEOp (symIte),
+    SymBranching (mrgIfPropagatedStrategy),
     SymInteger,
     UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
     mrgSingle,
     mrgVoid,

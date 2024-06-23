@@ -90,7 +90,7 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
   )
 import Grisette.Internal.Core.Data.Class.SEq (GSEq, SEq ((.==)), SEq1, SEq2)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
-  ( UnionMergeable1,
+  ( SymBranching,
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
@@ -254,7 +254,7 @@ symMin x y = symIte (x .>= y) y x
 
 -- | Symbolic maximum, with a union-like monad.
 mrgMax ::
-  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
+  (SOrd a, Mergeable a, SymBranching m, Applicative m) =>
   a ->
   a ->
   m a
@@ -263,7 +263,7 @@ mrgMax x y = mrgIf (x .>= y) (pure x) (pure y)
 
 -- | Symbolic minimum, with a union-like monad.
 mrgMin ::
-  (SOrd a, Mergeable a, UnionMergeable1 m, Applicative m) =>
+  (SOrd a, Mergeable a, SymBranching m, Applicative m) =>
   a ->
   a ->
   m a

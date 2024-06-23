@@ -7,8 +7,8 @@ import Control.Monad.Except
     MonadError (throwError),
   )
 import Grisette
-  ( UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
+  ( SymBranching (mrgIfPropagatedStrategy),
+    UnionM,
     mrgIf,
     mrgSingle,
   )

@@ -88,7 +88,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     MergingStrategy,
   )
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
-import Grisette.Internal.Core.Data.Class.SimpleMergeable (UnionMergeable1)
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (SymBranching)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge,
@@ -348,7 +348,7 @@ mrgGuard = Unified.mrgGuard
 
 -- | 'guard' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
-symGuard :: (UnionMergeable1 m, TryMerge m, Alternative m) => SymBool -> m ()
+symGuard :: (SymBranching m, TryMerge m, Alternative m) => SymBool -> m ()
 symGuard = Unified.symGuard
 {-# INLINE symGuard #-}
 
@@ -360,7 +360,7 @@ mrgWhen = Unified.mrgWhen
 -- | 'when' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symWhen ::
-  (Applicative m, TryMerge m, UnionMergeable1 m) => SymBool -> m () -> m ()
+  (Applicative m, TryMerge m, SymBranching m) => SymBool -> m () -> m ()
 symWhen = Unified.symWhen
 {-# INLINE symWhen #-}
 
@@ -372,7 +372,7 @@ mrgUnless = Unified.mrgUnless
 -- | 'unless' with 'MergingStrategy' knowledge propagation and symbolic
 -- conditions.
 symUnless ::
-  (Applicative m, TryMerge m, UnionMergeable1 m) => SymBool -> m () -> m ()
+  (Applicative m, TryMerge m, SymBranching m) => SymBool -> m () -> m ()
 symUnless = Unified.symUnless
 {-# INLINE symUnless #-}
 
