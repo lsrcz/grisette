@@ -48,9 +48,9 @@ import Grisette.Unified
     IsMode,
     MonadWithMode,
     UnifiedITEOp (symIte),
-    (.<),
     UnifiedSimpleMergeable (mrgIte),
     extractData,
+    (.<),
     (.==),
   )
 import Test.Framework (Test, testGroup)
