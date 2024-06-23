@@ -6,23 +6,8 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        bitwuzla_overlay = (self: super: {
-          bitwuzla = super.bitwuzla.overrideAttrs (prev: {
-            version = "0.5.0";
-            src = pkgs.fetchFromGitHub {
-              owner = "bitwuzla";
-              repo = "bitwuzla";
-              rev = "0.5.0";
-              sha256 = "sha256-/izxmN+zlrXsY6g6TRC1QqsLqltvrmZquXRd6h8RLRc=";
-            };
-            patches = [ ];
-          });
-        });
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [
-            bitwuzla_overlay
-          ];
         };
 
         stableHPkgs = pkgs.haskell.packages."ghc982";

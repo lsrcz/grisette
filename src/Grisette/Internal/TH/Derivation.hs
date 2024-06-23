@@ -9,12 +9,11 @@ module Grisette.Internal.TH.Derivation
     getTypeWithMaybeSubst,
     NatShouldBePositive (..),
     IsFPBits (..),
-    StarShouldBeConstrained (..),
+    PrimaryConstraint (..),
     SomeDeriveTypeParamHandler (..),
     DeriveStrategyHandler (..),
     Strategy (..),
     deriveWithHandlers,
-    simpleBuiltinInstanceHandlers,
     deriveSimpleBuiltin,
     deriveSimpleBuiltins,
     deriveSimpleBuiltin1,
@@ -27,11 +26,11 @@ where
 import Control.Monad (foldM, when)
 import Data.Containers.ListUtils (nubOrd)
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Generics.Deriving (Default, Default1)
 import Grisette.Internal.SymPrim.FP (ValidFP)
-import Grisette.Internal.TH.Util (substDataType)
+import Grisette.Internal.TH.Util (singleParamClassParamKind, substDataType)
 import Language.Haskell.TH
   ( Dec,
     DerivStrategy
@@ -40,10 +39,11 @@ import Language.Haskell.TH
         StockStrategy,
         ViaStrategy
       ),
+    Kind,
     Name,
     Pred,
     Q,
-    Type (AppT, ArrowT, ConT, StarT),
+    Type (AppT, ConT),
     appT,
     conT,
     standaloneDerivWithStrategyD,
@@ -135,62 +135,38 @@ instance DeriveTypeParamHandler IsFPBits where
             tys
   handleBody _ _ = return []
 
-data StarShouldBeConstrained = StarShouldBeConstrained Name Bool
+data PrimaryConstraint = PrimaryConstraint Name Bool
 
-instance DeriveTypeParamHandler StarShouldBeConstrained where
-  handleTypeParam (StarShouldBeConstrained className ignoreIfAlreadyHandled) =
-    mapM
-      ( \(tv, preds, substTy) -> do
-          (newPreds, newSubstTy) <- handle tv preds substTy
-          return (tv, newPreds, newSubstTy)
-      )
-    where
-      handle ::
-        TyVarBndrUnit ->
-        Maybe [Pred] ->
-        Maybe Type ->
-        Q (Maybe [Pred], Maybe Type)
-      handle _ (Just preds) substTy
-        | ignoreIfAlreadyHandled =
-            return (Just preds, substTy)
-      handle tv preds substTy
-        | tvKind tv == StarT = do
-            let t = getTypeWithMaybeSubst tv substTy
-            cls <- [t|$(conT className) $t|]
-            case preds of
-              Nothing -> return (Just [cls], substTy)
-              Just ps -> return (Just $ cls : ps, substTy)
-      handle _ preds substTy = return (preds, substTy)
-  handleBody (StarShouldBeConstrained _ _) _ = return []
-
-data StarToStarShouldBeConstrained = StarToStarShouldBeConstrained Name Bool
-
-instance DeriveTypeParamHandler StarToStarShouldBeConstrained where
+instance DeriveTypeParamHandler PrimaryConstraint where
   handleTypeParam
-    (StarToStarShouldBeConstrained className ignoreIfAlreadyHandled) =
+    (PrimaryConstraint className ignoreIfAlreadyHandled)
+    tys = do
+      kind <- singleParamClassParamKind className
       mapM
         ( \(tv, preds, substTy) -> do
-            (newPreds, newSubstTy) <- handle tv preds substTy
+            (newPreds, newSubstTy) <- handle kind tv preds substTy
             return (tv, newPreds, newSubstTy)
         )
+        tys
       where
         handle ::
+          Kind ->
           TyVarBndrUnit ->
           Maybe [Pred] ->
           Maybe Type ->
           Q (Maybe [Pred], Maybe Type)
-        handle _ (Just preds) substTy
+        handle _ _ (Just preds) substTy
           | ignoreIfAlreadyHandled =
               return (Just preds, substTy)
-        handle tv preds substTy
-          | tvKind tv == AppT (AppT ArrowT StarT) StarT = do
+        handle kind tv preds substTy
+          | tvKind tv == kind = do
               let t = getTypeWithMaybeSubst tv substTy
               cls <- [t|$(conT className) $t|]
               case preds of
                 Nothing -> return (Just [cls], substTy)
                 Just ps -> return (Just $ cls : ps, substTy)
-        handle _ preds substTy = return (preds, substTy)
-  handleBody (StarToStarShouldBeConstrained _ _) _ = return []
+        handle _ _ preds substTy = return (preds, substTy)
+  handleBody (PrimaryConstraint _ _) _ = return []
 
 data SomeDeriveTypeParamHandler where
   SomeDeriveTypeParamHandler ::
@@ -312,33 +288,17 @@ deriveWithHandlers
           datatypeType $
             substDataType d substMap
       let fst3 (a, _, _) = a
+      let thd3 (_, _, a) = a
       instanceDeclaration
         strategy
-        (fst3 <$> tyVarsWithConstraints)
+        (fst3 <$> filter (isNothing . thd3) tyVarsWithConstraints)
         allConstraints
         ty
-
-simpleBuiltinInstanceHandlers :: Name -> [SomeDeriveTypeParamHandler]
-simpleBuiltinInstanceHandlers cls =
-  [SomeDeriveTypeParamHandler $ StarShouldBeConstrained cls False]
-
-simple1BuiltinInstanceHandlers :: Name -> Name -> [SomeDeriveTypeParamHandler]
-simple1BuiltinInstanceHandlers cls cls1 =
-  [ SomeDeriveTypeParamHandler $ StarShouldBeConstrained cls False,
-    SomeDeriveTypeParamHandler $ StarToStarShouldBeConstrained cls1 False
-  ]
-
-functorArgBuiltinInstanceHandlers ::
-  Name -> Name -> [SomeDeriveTypeParamHandler]
-functorArgBuiltinInstanceHandlers cls cls1 =
-  [ SomeDeriveTypeParamHandler $ StarShouldBeConstrained cls False,
-    SomeDeriveTypeParamHandler $ StarToStarShouldBeConstrained cls1 False
-  ]
 
 deriveSimpleBuiltin :: Strategy -> Name -> Name -> Q [Dec]
 deriveSimpleBuiltin strategy cls =
   deriveWithHandlers
-    (simpleBuiltinInstanceHandlers cls)
+    [SomeDeriveTypeParamHandler $ PrimaryConstraint cls False]
     strategy
     True
     0
@@ -350,7 +310,9 @@ deriveSimpleBuiltins strategy cls =
 deriveSimpleBuiltin1 :: Strategy -> Name -> Name -> Name -> Q [Dec]
 deriveSimpleBuiltin1 strategy cls cls1 =
   deriveWithHandlers
-    (simple1BuiltinInstanceHandlers cls cls1)
+    [ SomeDeriveTypeParamHandler $ PrimaryConstraint cls False,
+      SomeDeriveTypeParamHandler $ PrimaryConstraint cls1 False
+    ]
     strategy
     True
     1
@@ -362,7 +324,9 @@ deriveSimpleBuiltin1s strategy cls cls1 =
 deriveFunctorArgBuiltin :: Strategy -> Name -> Name -> Name -> Q [Dec]
 deriveFunctorArgBuiltin strategy cls cls1 =
   deriveWithHandlers
-    (functorArgBuiltinInstanceHandlers cls cls1)
+    [ SomeDeriveTypeParamHandler $ PrimaryConstraint cls False,
+      SomeDeriveTypeParamHandler $ PrimaryConstraint cls1 False
+    ]
     strategy
     True
     0

@@ -279,10 +279,6 @@ deriveFunctorArgBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''ExceptT,
-    ''MaybeT,
-    ''WriterLazy.WriterT,
-    ''WriterStrict.WriterT,
     ''Identity
   ]
 
@@ -306,24 +302,41 @@ deriveSimpleBuiltin1s
     ''(,,,,,,,,,,,),
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,)
+    ''(,,,,,,,,,,,,,,),
+    ''Identity
   ]
 
 -- ExceptT
+instance (SEq1 m, SEq e, SEq a) => SEq (ExceptT e m a) where
+  (.==) = seq1
+  {-# INLINE (.==) #-}
+
 instance (SEq1 m, SEq e) => SEq1 (ExceptT e m) where
   liftSEq f (ExceptT l) (ExceptT r) = liftSEq (liftSEq f) l r
   {-# INLINE liftSEq #-}
 
 -- MaybeT
+instance (SEq1 m, SEq a) => SEq (MaybeT m a) where
+  (.==) = seq1
+  {-# INLINE (.==) #-}
+
 instance (SEq1 m) => SEq1 (MaybeT m) where
   liftSEq f (MaybeT l) (MaybeT r) = liftSEq (liftSEq f) l r
   {-# INLINE liftSEq #-}
 
 -- Writer
+instance (SEq1 m, SEq w, SEq a) => SEq (WriterLazy.WriterT w m a) where
+  (.==) = seq1
+  {-# INLINE (.==) #-}
+
 instance (SEq1 m, SEq w) => SEq1 (WriterLazy.WriterT w m) where
   liftSEq f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
     liftSEq (liftSEq2 f (.==)) l r
   {-# INLINE liftSEq #-}
+
+instance (SEq1 m, SEq w, SEq a) => SEq (WriterStrict.WriterT w m a) where
+  (.==) = seq1
+  {-# INLINE (.==) #-}
 
 instance (SEq1 m, SEq w) => SEq1 (WriterStrict.WriterT w m) where
   liftSEq f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
