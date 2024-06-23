@@ -306,8 +306,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(FreshT m) r)
-      (withBaseBranching @mode @(FreshT m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -316,8 +316,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(FreshT m) r)
-      (withBaseBranching @mode @(FreshT m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -333,8 +333,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(MaybeT m) r)
-      (withBaseBranching @mode @(MaybeT m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -343,8 +343,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(MaybeT m) r)
-      (withBaseBranching @mode @(MaybeT m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -360,8 +360,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(IdentityT m) r)
-      (withBaseBranching @mode @(IdentityT m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -370,8 +370,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(IdentityT m) r)
-      (withBaseBranching @mode @(IdentityT m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -387,8 +387,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(ReaderT r m) r)
-      (withBaseBranching @mode @(ReaderT r m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -397,8 +397,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(ReaderT r m) r)
-      (withBaseBranching @mode @(ReaderT r m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -414,8 +414,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(StateLazy.StateT s m) r)
-      (withBaseBranching @mode @(StateLazy.StateT s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -424,8 +424,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(StateLazy.StateT s m) r)
-      (withBaseBranching @mode @(StateLazy.StateT s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -444,8 +444,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(StateStrict.StateT s m) r)
-      (withBaseBranching @mode @(StateStrict.StateT s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -454,8 +454,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(StateStrict.StateT s m) r)
-      (withBaseBranching @mode @(StateStrict.StateT s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -479,8 +479,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(WriterLazy.WriterT w m) r)
-      (withBaseBranching @mode @(WriterLazy.WriterT w m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -489,8 +489,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(WriterLazy.WriterT w m) r)
-      (withBaseBranching @mode @(WriterLazy.WriterT w m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -515,8 +515,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(WriterStrict.WriterT w m) r)
-      (withBaseBranching @mode @(WriterStrict.WriterT w m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -525,8 +525,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(WriterStrict.WriterT w m) r)
-      (withBaseBranching @mode @(WriterStrict.WriterT w m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -550,8 +550,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(ExceptT e m) r)
-      (withBaseBranching @mode @(ExceptT e m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -560,8 +560,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(ExceptT e m) r)
-      (withBaseBranching @mode @(ExceptT e m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -581,8 +581,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(ContT r m) r)
-      (withBaseBranching @mode @(ContT r m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -591,8 +591,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(ContT r m) r)
-      (withBaseBranching @mode @(ContT r m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -614,8 +614,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(RWSLazy.RWST r w s m) r)
-      (withBaseBranching @mode @(RWSLazy.RWST r w s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -629,8 +629,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(RWSLazy.RWST r w s m) r)
-      (withBaseBranching @mode @(RWSLazy.RWST r w s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
@@ -657,8 +657,8 @@ instance
   where
   withBaseSimpleMergeable r =
     withMode @mode
-      (withBaseBranching @mode @(RWSStrict.RWST r w s m) r)
-      (withBaseBranching @mode @(RWSStrict.RWST r w s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
@@ -672,8 +672,8 @@ instance
   where
   withBaseSimpleMergeable1 r =
     withMode @mode
-      (withBaseBranching @mode @(RWSStrict.RWST r w s m) r)
-      (withBaseBranching @mode @(RWSStrict.RWST r w s m) r)
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
