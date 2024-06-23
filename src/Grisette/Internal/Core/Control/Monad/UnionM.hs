@@ -392,9 +392,10 @@ instance (Mergeable a, SEq a) => SEq (UnionM a) where
   {-# INLINE (.==) #-}
 
 -- | Lift the 'UnionM' to any Applicative 'SymBranching'.
-liftUnionM :: (Mergeable a, SymBranching u, Applicative u) => UnionM a -> u a
+liftUnionM :: forall u a. (Mergeable a, SymBranching u, Applicative u) => UnionM a -> u a
 liftUnionM u = go (underlyingUnion u)
   where
+    go :: Union a -> u a
     go (UnionSingle v) = mrgSingle v
     go (UnionIf _ _ c t f) = mrgIf c (go t) (go f)
 
@@ -445,6 +446,7 @@ instance
   where
   toCon v = go $ underlyingUnion $ tryMerge v
     where
+      go :: Union a -> Maybe (UnionM b)
       go (UnionSingle x) = case toCon x of
         Nothing -> Nothing
         Just v -> Just $ mrgSingle v

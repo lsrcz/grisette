@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Grisette.Lib.Control.Monad.Trans.State.Common
@@ -88,7 +89,8 @@ mrgStateTest mrgState runStateT = do
         mrgState (\s -> (s .&& ssymBool "av", s .&& ssymBool "as"))
   let b =
         mrgState (\s -> (s .&& ssymBool "bv", s .&& ssymBool "bs"))
-  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
+  let actual =
+        runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
@@ -280,7 +282,8 @@ mrgGetsTest ::
 mrgGetsTest state runStateT mrgGets = do
   let a = do stateA state; mrgGets (.&& ssymBool "x")
   let b = do stateB state; mrgGets (.&& ssymBool "y")
-  let actual = runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
+  let actual =
+        runStateT (mrgIfPropagatedStrategy (ssymBool "c") a b) (ssymBool "d")
   let expected =
         mrgSingle
           ( mrgIte
