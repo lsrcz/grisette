@@ -19,7 +19,9 @@ module Grisette.Unified.Internal.Class.UnifiedSEq
     UnifiedSEq2 (..),
     (.==),
     (./=),
+    liftSEq,
     seq1,
+    liftSEq2,
     seq2,
   )
 where
@@ -30,7 +32,7 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Classes (Eq1, Eq2, eq1, eq2)
+import Data.Functor.Classes (Eq1 (liftEq), Eq2 (liftEq2), eq1, eq2)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -69,6 +71,20 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSEq @mode @a $ a /= b)
     (withBaseSEq @mode @a $ a Grisette.Internal.Core.Data.Class.SEq../= b)
 
+liftSEq ::
+  forall mode f a b.
+  (Typeable mode, UnifiedSEq1 mode f) =>
+  (a -> b -> GetBool mode) ->
+  f a ->
+  f b ->
+  GetBool mode
+liftSEq f a b =
+  withMode @mode
+    (withBaseSEq1 @mode @f $ liftEq f a b)
+    ( withBaseSEq1 @mode @f $
+        Grisette.Internal.Core.Data.Class.SEq.liftSEq f a b
+    )
+
 seq1 ::
   forall mode f a.
   (Typeable mode, UnifiedSEq mode a, UnifiedSEq1 mode f) =>
@@ -81,6 +97,21 @@ seq1 a b =
     ( withBaseSEq1 @mode @f $
         withBaseSEq @mode @a $
           Grisette.Internal.Core.Data.Class.SEq.seq1 a b
+    )
+
+liftSEq2 ::
+  forall mode f a b c d.
+  (Typeable mode, UnifiedSEq2 mode f) =>
+  (a -> b -> GetBool mode) ->
+  (c -> d -> GetBool mode) ->
+  f a c ->
+  f b d ->
+  GetBool mode
+liftSEq2 f a b =
+  withMode @mode
+    (withBaseSEq2 @mode @f $ liftEq2 f a b)
+    ( withBaseSEq2 @mode @f $
+        Grisette.Internal.Core.Data.Class.SEq.liftSEq2 f a b
     )
 
 seq2 ::
