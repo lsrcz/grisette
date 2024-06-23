@@ -364,7 +364,8 @@ simpleMergeableTests =
                   mrgIf
                     (ssymBool "p")
                     (mrgSingle (a, x))
-                    (mrgSingle (symNot a, x + 1))
+                    (mrgSingle (symNot a, x + 1)) ::
+                    UnionM (SymBool, Integer)
             runContT c3 f @?= r
             runContT c3u1 f @?= r,
           testGroup

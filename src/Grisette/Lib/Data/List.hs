@@ -313,6 +313,7 @@ symIsSubsequenceOf a@(x : a') (y : b) =
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgLookup ::
+  forall a b u.
   (Applicative u, SymBranching u, Mergeable b, SEq a) =>
   a ->
   [(a, b)] ->
@@ -322,6 +323,7 @@ mrgLookup key l =
   mrgIf (symAll (key ./=) (fst <$> l)) (mrgPure Nothing) $
     mrgLookup' l
   where
+    mrgLookup' :: [(a, b)] -> u (Maybe b)
     mrgLookup' [] = error "mrgLookup: impossible"
     mrgLookup' [(_, y)] = mrgPure $ Just y
     mrgLookup' ((x, y) : xys) =
@@ -347,6 +349,7 @@ mrgFilter p (x : xs) =
 -- This function can be very inefficient on large symbolic lists and generate
 -- O(2^n) cases. Use with caution.
 mrgPartition ::
+  forall u a.
   (Applicative u, SymBranching u, Mergeable a) =>
   (a -> SymBool) ->
   [a] ->
@@ -358,6 +361,7 @@ mrgPartition p (x : xs) =
     (mrgFmap (first (x :)) partitioned)
     (mrgFmap (second (x :)) partitioned)
   where
+    partitioned :: u ([a], [a])
     partitioned = mrgPartition p xs
 
 -- | Symbolic version of 'Data.List.!?', the result would be merged and
@@ -365,6 +369,7 @@ mrgPartition p (x : xs) =
 --
 -- Can generate O(1) cases and O(n) sized branch constraints.
 (.!?) ::
+  forall a uf int.
   ( MonadUnion uf,
     Mergeable a,
     Num int,
@@ -375,6 +380,7 @@ mrgPartition p (x : xs) =
   uf (Maybe a)
 l .!? p = go l p 0
   where
+    go :: [a] -> int -> int -> uf (Maybe a)
     go [] _ _ = mrgReturn Nothing
     go (x : xs) p1 i = mrgIf (p1 .== i) (mrgReturn $ Just x) (go xs p1 $ i + 1)
 
@@ -419,12 +425,14 @@ mrgFindIndex p l = mrgFmap listToMaybe $ mrgFindIndices p l
 -- Can generate O(n) cases, and O(n^3) sized constraints, assuming the predicate
 -- only generates O(1) constraints.
 mrgFindIndices ::
+  forall u a int.
   (Applicative u, SymBranching u, Mergeable int, SEq a, Num int) =>
   (a -> SymBool) ->
   [a] ->
   u [int]
 mrgFindIndices p xs = go $ zip xs $ fromIntegral <$> [0 ..]
   where
+    go :: [(a, int)] -> u [int]
     go [] = mrgPure []
     go ((x, y) : xys) = mrgIf (p x) (mrgFmap (y :) $ go xys) (go xys)
 
@@ -488,12 +496,14 @@ mrgIntersect = mrgIntersectBy (.==)
 -- Can generate O(n) cases, and O(n^3) sized constraints, assuming the predicate
 -- only generates O(1) constraints.
 mrgNubBy ::
+  forall a u.
   (Applicative u, SymBranching u, Mergeable a) =>
   (a -> a -> SymBool) ->
   [a] ->
   u [a]
 mrgNubBy eq l = mrgNubBy' l []
   where
+    mrgNubBy' :: [a] -> [a] -> u [a]
     mrgNubBy' [] _ = mrgPure []
     mrgNubBy' (y : ys) xs =
       mrgIf
