@@ -188,12 +188,34 @@ module Grisette.Core
     -- | #symop#
     LogicalOp (..),
     ITEOp (..),
+
+    -- **** Symbolic equality
     SEq (..),
+    SEq1 (..),
+    seq1,
+    SEq2 (..),
+    seq2,
+    SEqArgs (..),
+    GSEq (..),
+    genericSEq,
+    genericLiftSEq,
+
+    -- **** Symbolic comparison
     SOrd (..),
+    SOrd1 (..),
+    symCompare1,
+    SOrd2 (..),
+    symCompare2,
     symMax,
     symMin,
     mrgMax,
     mrgMin,
+    SOrdArgs (..),
+    GSOrd (..),
+    genericSymCompare,
+    genericLiftSymCompare,
+
+    -- **** Uncategorized
     BV (..),
     bvExtract,
     SizedBV (..),
@@ -1223,11 +1245,29 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
-import Grisette.Internal.Core.Data.Class.SEq (SEq (..))
+import Grisette.Internal.Core.Data.Class.SEq
+  ( GSEq (..),
+    SEq (..),
+    SEq1 (..),
+    SEq2 (..),
+    SEqArgs (..),
+    genericLiftSEq,
+    genericSEq,
+    seq1,
+    seq2,
+  )
 import Grisette.Internal.Core.Data.Class.SOrd
-  ( SOrd (..),
+  ( GSOrd (..),
+    SOrd (..),
+    SOrd1 (..),
+    SOrd2 (..),
+    SOrdArgs (..),
+    genericLiftSymCompare,
+    genericSymCompare,
     mrgMax,
     mrgMin,
+    symCompare1,
+    symCompare2,
     symMax,
     symMin,
   )
