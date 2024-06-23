@@ -57,7 +57,7 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
--- Unified symbolic equality comparison.
+-- | Unified equality comparison.
 --
 -- Note that you may sometimes need to write type annotations for the result
 -- when the mode isn't clear:
@@ -73,7 +73,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSEq @mode @a $ a == b)
     (withBaseSEq @mode @a $ a Grisette.Internal.Core.Data.Class.SEq..== b)
 
--- Unified symbolic inequality comparison.
+-- | Unified inequality comparison.
 (./=) ::
   forall mode a. (Typeable mode, UnifiedSEq mode a) => a -> a -> GetBool mode
 (./=) a b =
@@ -81,7 +81,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSEq @mode @a $ a /= b)
     (withBaseSEq @mode @a $ a Grisette.Internal.Core.Data.Class.SEq../= b)
 
--- Unified lifting of an equality test for unary type constructors.
+-- | Unified lifting of an equality test for unary type constructors.
 liftSEq ::
   forall mode f a b.
   (Typeable mode, UnifiedSEq1 mode f) =>
@@ -96,7 +96,7 @@ liftSEq f a b =
         Grisette.Internal.Core.Data.Class.SEq.liftSEq f a b
     )
 
--- Unified lifting of the default equality test for unary type constructors.
+-- | Unified lifting of the default equality test for unary type constructors.
 seq1 ::
   forall mode f a.
   (Typeable mode, UnifiedSEq mode a, UnifiedSEq1 mode f) =>
@@ -111,7 +111,7 @@ seq1 a b =
           Grisette.Internal.Core.Data.Class.SEq.seq1 a b
     )
 
--- Unified lifting of an equality test for binary type constructors.
+-- | Unified lifting of an equality test for binary type constructors.
 liftSEq2 ::
   forall mode f a b c d.
   (Typeable mode, UnifiedSEq2 mode f) =>
@@ -127,7 +127,7 @@ liftSEq2 f a b =
         Grisette.Internal.Core.Data.Class.SEq.liftSEq2 f a b
     )
 
--- Unified lifting of the default equality test for binary type constructors.
+-- | Unified lifting of the default equality test for binary type constructors.
 seq2 ::
   forall mode f a b.
   (Typeable mode, UnifiedSEq mode a, UnifiedSEq mode b, UnifiedSEq2 mode f) =>

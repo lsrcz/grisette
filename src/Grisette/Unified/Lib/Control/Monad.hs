@@ -107,7 +107,7 @@ import Grisette.Lib.Data.Traversable
 import Grisette.Unified
   ( GetBool,
     MonadWithMode,
-    UnifiedSOrd ((.<=)),
+    UnifiedSOrd, (.<=),
     mrgIf,
   )
 import Grisette.Unified.Lib.Control.Applicative

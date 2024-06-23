@@ -18,8 +18,21 @@ module Grisette.Unified
     UnifiedSEq,
     (.==),
     (./=),
+    liftSEq,
+    seq1,
+    liftSEq2,
+    seq2,
     UnifiedSimpleMergeable (..),
     UnifiedSOrd (..),
+    (.<=),
+    (.<),
+    (.>=),
+    (.>),
+    symCompare,
+    liftSymCompare,
+    symCompare1,
+    liftSymCompare2,
+    symCompare2,
     symMax,
     symMin,
     mrgMax,
@@ -60,13 +73,30 @@ import Grisette.Unified.Internal.Class.UnifiedBranching
     mrgIf,
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..))
-import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq (..), (./=), (.==))
+import Grisette.Unified.Internal.Class.UnifiedSEq
+  ( UnifiedSEq (..),
+    liftSEq,
+    liftSEq2,
+    seq1,
+    seq2,
+    (./=),
+    (.==),
+  )
 import Grisette.Unified.Internal.Class.UnifiedSOrd
   ( UnifiedSOrd (..),
+    liftSymCompare,
+    liftSymCompare2,
     mrgMax,
     mrgMin,
+    symCompare,
+    symCompare1,
+    symCompare2,
     symMax,
     symMin,
+    (.<),
+    (.<=),
+    (.>),
+    (.>=),
   )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedSimpleMergeable (..),
