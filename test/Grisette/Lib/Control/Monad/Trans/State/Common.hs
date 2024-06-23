@@ -19,8 +19,8 @@ import Grisette
     MonadUnion,
     SimpleMergeable (mrgIte),
     SymBool,
+    SymBranching (mrgIfPropagatedStrategy),
     UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgSingle,
     unionSize,
   )
@@ -73,7 +73,7 @@ stateB ::
 stateB state = state bodyB
 
 stateAB ::
-  (UnionMergeable1 (stateT SymBool UnionM)) =>
+  (SymBranching (stateT SymBool UnionM)) =>
   StateConstructor stateT SymBool SymBool ->
   stateT SymBool UnionM SymBool
 stateAB state = mrgIfPropagatedStrategy (ssymBool "c") (state bodyA) (state bodyB)

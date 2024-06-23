@@ -11,9 +11,15 @@ module Grisette.Unified
     MonadWithMode,
 
     -- * Unified type classes
-    UnifiedBranching,
-    mrgIf,
+
+    -- ** Unified simple mergeable
+    UnifiedBranching (..),
+    UnifiedSimpleMergeable (..),
+    UnifiedSimpleMergeable1 (..),
+    UnifiedSimpleMergeable2 (..),
     liftBaseMonad,
+    mrgIf,
+    mrgIte,
 
     -- ** Unified ITE operator
     UnifiedITEOp (..),
@@ -28,7 +34,6 @@ module Grisette.Unified
     seq1,
     liftSEq2,
     seq2,
-    UnifiedSimpleMergeable (..),
 
     -- ** Unified SOrd
     UnifiedSOrd (..),
@@ -75,12 +80,11 @@ module Grisette.Unified
 where
 
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.Class.UnifiedBranching
-  ( UnifiedBranching (..),
-    liftBaseMonad,
-    mrgIf,
+import Grisette.Unified.Internal.Class.UnifiedITEOp
+  ( UnifiedITEOp (..),
+    symIte,
+    symIteMerge,
   )
-import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (..), symIte, symIteMerge)
 import Grisette.Unified.Internal.Class.UnifiedSEq
   ( UnifiedSEq (..),
     liftSEq,
@@ -107,7 +111,13 @@ import Grisette.Unified.Internal.Class.UnifiedSOrd
     (.>=),
   )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
-  ( UnifiedSimpleMergeable (..),
+  ( UnifiedBranching (..),
+    UnifiedSimpleMergeable (..),
+    UnifiedSimpleMergeable1 (..),
+    UnifiedSimpleMergeable2 (..),
+    liftBaseMonad,
+    mrgIf,
+    mrgIte,
   )
 import Grisette.Unified.Internal.EvaluationMode
   ( EvaluationMode (..),

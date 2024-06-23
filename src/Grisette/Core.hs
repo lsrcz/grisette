@@ -612,10 +612,13 @@ module Grisette.Core
     rootStrategy2,
     Mergeable3 (..),
     rootStrategy3,
+    MergeableArgs (..),
+    GMergeable (..),
+    genericRootStrategy,
+    genericLiftRootStrategy,
 
     -- **** Merging strategy
     MergingStrategy (..),
-    derivedRootStrategy,
 
     -- **** Manual merging strategy construction
     wrapStrategy,
@@ -632,7 +635,13 @@ module Grisette.Core
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
-    UnionMergeable1 (..),
+    SimpleMergeableArgs (..),
+    GSimpleMergeable (..),
+    genericMrgIte,
+    genericLiftMrgIte,
+
+    -- **** Symbolic branching
+    SymBranching (..),
     mrgIf,
     mergeWithStrategy,
     merge,
@@ -1212,14 +1221,17 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (..))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (..))
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( DynamicSortedIdx (..),
+    GMergeable (..),
     Mergeable (..),
     Mergeable1 (..),
     Mergeable2 (..),
     Mergeable3 (..),
+    MergeableArgs (..),
     MergingStrategy (..),
     StrategyList (..),
     buildStrategyList,
-    derivedRootStrategy,
+    genericLiftRootStrategy,
+    genericRootStrategy,
     product2Strategy,
     resolveStrategy,
     resolveStrategy',
@@ -1277,10 +1289,14 @@ import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..))
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift (..))
 import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion (..))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
-  ( SimpleMergeable (..),
+  ( GSimpleMergeable (..),
+    SimpleMergeable (..),
     SimpleMergeable1 (..),
     SimpleMergeable2 (..),
-    UnionMergeable1 (..),
+    SimpleMergeableArgs (..),
+    SymBranching (..),
+    genericLiftMrgIte,
+    genericMrgIte,
     merge,
     mergeWithStrategy,
     mrgIf,

@@ -33,7 +33,7 @@ import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
-import Grisette.Unified.Internal.Class.UnifiedBranching
+import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching,
     liftBaseMonad,
   )

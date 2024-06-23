@@ -9,8 +9,8 @@ import Control.Monad.Except
   )
 import Grisette
   ( ITEOp (symIte),
+    SymBranching (mrgIfPropagatedStrategy),
     UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgIf,
     mrgSingle,
   )

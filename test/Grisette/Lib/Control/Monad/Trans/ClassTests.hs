@@ -8,8 +8,8 @@ where
 import Control.Monad.Except (ExceptT)
 import Grisette
   ( ITEOp (symIte),
+    SymBranching (mrgIfPropagatedStrategy),
     UnionM,
-    UnionMergeable1 (mrgIfPropagatedStrategy),
     mrgSingle,
   )
 import Grisette.Lib.Control.Monad.Trans (mrgLift)

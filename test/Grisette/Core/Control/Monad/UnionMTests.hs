@@ -26,13 +26,13 @@ import Grisette
     Solvable (con, conView, isym, ssym),
     SubstituteSym (substituteSym),
     SymBool,
+    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     SymInteger,
     SymbolSetRep (buildSymbolSet),
     ToCon (toCon),
     ToSym (toSym),
     TryMerge (tryMergeWithStrategy),
     TypedSymbol,
-    UnionMergeable1 (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
     mrgIte1,
     mrgSingle,
@@ -123,7 +123,7 @@ unionMTests =
         tryMergeWithStrategy rootStrategy unionM12 @?= unionM12Merged,
       testCase "SimpleMerge" $
         mrgIte "u12c" unionM1 unionM2 @?= unionM12Merged,
-      testCase "UnionMergeable1" $ do
+      testCase "SymBranching" $ do
         let actual = mrgIfWithStrategy rootStrategy "u12c" unionM1 unionM2
         actual @?= unionM12Merged,
       testCase "SimpleMergeable1" $
