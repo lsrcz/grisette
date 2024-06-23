@@ -216,11 +216,11 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- all the functions will merge the results, the whole program can be
 -- symbolically evaluated efficiently.
 --
--- >>> f x y = mrgIf "c" x y
+-- >>> f x y = mrgIf "c" x y :: UnionM Integer
 -- >>> :{
 --   do
 --     x <- mrgIfPropagatedStrategy (ssym "a") (return 1) (mrgIfPropagatedStrategy (ssym "b") (return 1) (return 2))
---     f x (x + 1) :: UnionM Integer
+--     f x (x + 1)
 -- :}
 -- {If (&& c (|| a b)) 1 (If (|| a (|| b c)) 2 3)}
 --

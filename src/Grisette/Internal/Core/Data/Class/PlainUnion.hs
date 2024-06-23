@@ -166,7 +166,7 @@ infixl 9 .#
 
 -- | Lift a function to work on union values.
 --
--- >>> sumU = onUnion sum
+-- >>> sumU = onUnion sum :: UnionM [SymInteger] -> SymInteger
 -- >>> sumU (mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b","c"]) :: UnionM [SymInteger])
 -- (ite cond a (+ b c))
 onUnion ::

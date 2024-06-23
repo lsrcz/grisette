@@ -321,8 +321,8 @@ module Grisette.Core
     -- Those functions that merges the results can also further propagate the
     -- cached merging strategy, note that the result is merged:
     --
-    -- >>> f x y = mrgIf "f" (return x) (return y)
-    -- >>> do; a <- mrgIf "a" (return 1) (return 2); f a (a + 1) :: UnionM Integer
+    -- >>> f x y = mrgIf "f" (return x) (return y) :: UnionM Integer
+    -- >>> do; a <- mrgIf "a" (return 1) (return 2); f a (a + 1)
     -- {If (&& a f) 1 (If (|| a f) 2 3)}
     --
     -- For more details of this, see the documentation for 'UnionMBase' and
@@ -963,7 +963,7 @@ module Grisette.Core
     --
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
-    -- >>> assert = symAssertWith Assert
+    -- >>> assert = symAssertWith Assert :: SymBool -> ExceptT Error UnionM ()
     -- >>> sdiv l r = mrgWithExceptT (\(_::ArithException) -> Arith) $ safeDiv l r
     -- >>> :{
     --   -- equivalent concrete program:
