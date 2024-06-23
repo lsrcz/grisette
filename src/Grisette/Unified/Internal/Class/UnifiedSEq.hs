@@ -57,6 +57,15 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
+-- Unified symbolic equality comparison.
+--
+-- Note that you may sometimes need to write type annotations for the result
+-- when the mode isn't clear:
+--
+-- > a .== b :: GetBool mode
+--
+-- One example when it isn't clear is when this is used in unified
+-- `Grisette.Unified.Internal.Class.UnifiedBranching.mrgIf`.
 (.==) ::
   forall mode a. (Typeable mode, UnifiedSEq mode a) => a -> a -> GetBool mode
 (.==) a b =
@@ -64,6 +73,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSEq @mode @a $ a == b)
     (withBaseSEq @mode @a $ a Grisette.Internal.Core.Data.Class.SEq..== b)
 
+-- Unified symbolic inequality comparison.
 (./=) ::
   forall mode a. (Typeable mode, UnifiedSEq mode a) => a -> a -> GetBool mode
 (./=) a b =
@@ -71,6 +81,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSEq @mode @a $ a /= b)
     (withBaseSEq @mode @a $ a Grisette.Internal.Core.Data.Class.SEq../= b)
 
+-- Unified lifting of an equality test for unary type constructors.
 liftSEq ::
   forall mode f a b.
   (Typeable mode, UnifiedSEq1 mode f) =>
@@ -85,6 +96,7 @@ liftSEq f a b =
         Grisette.Internal.Core.Data.Class.SEq.liftSEq f a b
     )
 
+-- Unified lifting of the default equality test for unary type constructors.
 seq1 ::
   forall mode f a.
   (Typeable mode, UnifiedSEq mode a, UnifiedSEq1 mode f) =>
@@ -99,6 +111,7 @@ seq1 a b =
           Grisette.Internal.Core.Data.Class.SEq.seq1 a b
     )
 
+-- Unified lifting of an equality test for binary type constructors.
 liftSEq2 ::
   forall mode f a b c d.
   (Typeable mode, UnifiedSEq2 mode f) =>
@@ -114,6 +127,7 @@ liftSEq2 f a b =
         Grisette.Internal.Core.Data.Class.SEq.liftSEq2 f a b
     )
 
+-- Unified lifting of the default equality test for binary type constructors.
 seq2 ::
   forall mode f a b.
   (Typeable mode, UnifiedSEq mode a, UnifiedSEq mode b, UnifiedSEq2 mode f) =>
@@ -132,28 +146,24 @@ seq2 a b =
             Grisette.Internal.Core.Data.Class.SEq.seq2 a b
     )
 
--- | A class that provides a unified symbolic equality comparison for unified
--- types.
+-- | A class that provides unified equality comparison.
 --
--- On all values with 'Eq' instance, the comparisons could return concrete
--- results.
---
--- On all values with 'Grisette.SEq' instance, the comparisons could return
--- symbolic results.
---
--- Note that you may sometimes need to write type annotations for the result
--- when the mode isn't clear:
---
--- > a .== b :: GetBool mode
+-- We use this type class to help resolve the constraints for `Eq` and `SEq`.
 class UnifiedSEq mode a where
   withBaseSEq :: ((If (IsConMode mode) (Eq a) (SEq a)) => r) -> r
 
+-- | A class that provides unified lifting of equality comparison.
+--
+-- We use this type class to help resolve the constraints for `Eq1` and `SEq1`.
 class
   (forall a. (UnifiedSEq mode a) => UnifiedSEq mode (f a)) =>
   UnifiedSEq1 mode f
   where
   withBaseSEq1 :: ((If (IsConMode mode) (Eq1 f) (SEq1 f)) => r) -> r
 
+-- | A class that provides unified lifting of equality comparison.
+--
+-- We use this type class to help resolve the constraints for `Eq2` and `SEq2`.
 class
   (forall a. (UnifiedSEq mode a) => UnifiedSEq1 mode (f a)) =>
   UnifiedSEq2 mode f
@@ -166,6 +176,7 @@ instance
   UnifiedSEq mode a
   where
   withBaseSEq r = r
+  {-# INLINE withBaseSEq #-}
 
 instance
   {-# INCOHERENT #-}
@@ -176,6 +187,18 @@ instance
   UnifiedSEq1 mode f
   where
   withBaseSEq1 r = r
+  {-# INLINE withBaseSEq1 #-}
+
+instance
+  {-# INCOHERENT #-}
+  ( Typeable mode,
+    If (IsConMode mode) (Eq2 f) (SEq2 f),
+    forall a. (UnifiedSEq mode a) => UnifiedSEq1 mode (f a)
+  ) =>
+  UnifiedSEq2 mode f
+  where
+  withBaseSEq2 r = r
+  {-# INLINE withBaseSEq2 #-}
 
 deriveFunctorArgUnifiedInterfaces
   ''UnifiedSEq
