@@ -101,8 +101,8 @@ symThrowTransformableError = tryMerge . throwError . transformError
 -- Terminate the current execution path with the specified error if the condition does not hold.
 -- Compatible error can be transformed.
 --
--- >>> let assert = symAssertTransformableError AssertionError
--- >>> assert "a" :: ExceptT AssertionError UnionM ()
+-- >>> let assert = symAssertTransformableError AssertionError :: SymBool -> ExceptT AssertionError UnionM ()
+-- >>> assert "a"
 -- ExceptT {If (! a) (Left AssertionError) (Right ())}
 symAssertTransformableError ::
   ( Mergeable to,
