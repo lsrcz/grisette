@@ -1053,34 +1053,34 @@ sordTests =
                       )
                       .<= WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .<= (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .<= (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
                       .< WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .< (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .< (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
                       .>= WriterLazy.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .>= (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .>= (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
                       .> WriterLazy.WriterT (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .> (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .> (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
@@ -1202,9 +1202,9 @@ sordTests =
                       .<= WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .<= (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .<= (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
@@ -1212,9 +1212,9 @@ sordTests =
                       .< WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .< (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .< (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
@@ -1222,9 +1222,9 @@ sordTests =
                       .>= WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .>= (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .>= (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
@@ -1232,9 +1232,9 @@ sordTests =
                       .> WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
                       .@?= ( (ssymBool "a", ssymBool "c")
-                              .> (ssymBool "b", ssymBool "d") ::
-                              SymBool
-                          )
+                               .> (ssymBool "b", ssymBool "d") ::
+                               SymBool
+                           )
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
