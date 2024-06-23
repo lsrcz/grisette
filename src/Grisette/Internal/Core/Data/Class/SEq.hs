@@ -29,6 +29,7 @@ module Grisette.Internal.Core.Data.Class.SEq
     seq1,
     SEq2 (..),
     seq2,
+
     -- * Generic 'SEq'
     SEqArgs (..),
     GSEq (..),
