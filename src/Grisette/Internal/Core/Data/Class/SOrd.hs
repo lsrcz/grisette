@@ -415,7 +415,8 @@ deriveSimpleBuiltin1s
     ''(,,,,,,,,,,,),
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,)
+    ''(,,,,,,,,,,,,,,),
+    ''Identity
   ]
 
 symCompareSingleList :: (SOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool
@@ -585,6 +586,8 @@ CONCRETE_SORD(Word8)
 CONCRETE_SORD(Word16)
 CONCRETE_SORD(Word32)
 CONCRETE_SORD(Word64)
+CONCRETE_SORD(Float)
+CONCRETE_SORD(Double)
 CONCRETE_SORD(B.ByteString)
 CONCRETE_SORD(T.Text)
 CONCRETE_SORD(FPRoundingMode)
