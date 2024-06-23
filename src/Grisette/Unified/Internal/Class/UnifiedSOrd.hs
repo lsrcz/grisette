@@ -67,10 +67,10 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterface1s,
   )
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
+import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (withBaseITEOp))
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp (withBaseITEOp))
 import Grisette.Unified.Internal.EvaluationMode
   ( IsConMode,
   )
