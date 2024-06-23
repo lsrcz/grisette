@@ -17,9 +17,13 @@ module Grisette.Unified
     UnifiedSimpleMergeable (..),
     UnifiedSimpleMergeable1 (..),
     UnifiedSimpleMergeable2 (..),
-    liftBaseMonad,
     mrgIf,
+    liftBaseMonad,
     mrgIte,
+    mrgIte1,
+    liftMrgIte,
+    mrgIte2,
+    liftMrgIte2,
 
     -- ** Unified ITE operator
     UnifiedITEOp (..),
@@ -116,8 +120,12 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable1 (..),
     UnifiedSimpleMergeable2 (..),
     liftBaseMonad,
+    liftMrgIte,
+    liftMrgIte2,
     mrgIf,
     mrgIte,
+    mrgIte1,
+    mrgIte2,
   )
 import Grisette.Unified.Internal.EvaluationMode
   ( EvaluationMode (..),

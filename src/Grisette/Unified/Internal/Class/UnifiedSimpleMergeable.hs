@@ -15,13 +15,17 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 module Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
-  ( mrgIf,
-    liftBaseMonad,
-    mrgIte,
-    UnifiedBranching (..),
+  ( UnifiedBranching (..),
     UnifiedSimpleMergeable (..),
     UnifiedSimpleMergeable1 (..),
     UnifiedSimpleMergeable2 (..),
+    mrgIf,
+    liftBaseMonad,
+    mrgIte,
+    mrgIte1,
+    liftMrgIte,
+    mrgIte2,
+    liftMrgIte2,
   )
 where
 
@@ -67,6 +71,14 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified branching operation.
+--
+-- This function isn't able to infer the mode of the boolean variable, so you
+-- need to provide the mode explicitly. For example:
+--
+-- > mrgIf @mode (a .== b) ...
+-- > mrgIf (a .== b :: SymBool) ...
+-- > mrgIf (a .== b :: GetBool mode) ...
 mrgIf ::
   forall mode a m.
   (Typeable mode, Mergeable a, UnifiedBranching mode m) =>
@@ -76,10 +88,11 @@ mrgIf ::
   m a
 mrgIf c t e =
   withMode @mode
-    (withBaseBranching @mode @m $ if c then t else e)
+    (if c then t else e)
     (withBaseBranching @mode @m $ Grisette.mrgIf c t e)
 {-# INLINE mrgIf #-}
 
+-- | Unified lifting of a base monad.
 liftBaseMonad ::
   forall mode a m.
   ( Applicative m,
@@ -90,10 +103,11 @@ liftBaseMonad ::
   m a
 liftBaseMonad b =
   withMode @mode
-    (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
+    (mrgSingle . runIdentity $ b)
     (withBaseBranching @mode @m $ liftUnionM b)
 {-# INLINE liftBaseMonad #-}
 
+-- | Unified simple merging operation.
 mrgIte ::
   forall mode a.
   (Typeable mode, UnifiedSimpleMergeable mode a) =>
@@ -103,9 +117,86 @@ mrgIte ::
   a
 mrgIte c t e =
   withMode @mode
-    (withBaseSimpleMergeable @mode @a $ if c then t else e)
+    (if c then t else e)
     ( withBaseSimpleMergeable @mode @a $
         Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIte c t e
+    )
+
+-- | Unified simple merging operation for unary type constructors.
+mrgIte1 ::
+  forall mode f a.
+  ( Typeable mode,
+    UnifiedSimpleMergeable1 mode f,
+    UnifiedSimpleMergeable mode a
+  ) =>
+  GetBool mode ->
+  f a ->
+  f a ->
+  f a
+mrgIte1 c t e =
+  withMode @mode
+    (if c then t else e)
+    ( withBaseSimpleMergeable @mode @a $
+        withBaseSimpleMergeable1 @mode @f $
+          Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIte1 c t e
+    )
+
+-- | Unified lifting of a simple merging operation for unary type constructors.
+liftMrgIte ::
+  forall mode f a.
+  ( Typeable mode,
+    UnifiedSimpleMergeable1 mode f
+  ) =>
+  (GetBool mode -> a -> a -> a) ->
+  GetBool mode ->
+  f a ->
+  f a ->
+  f a
+liftMrgIte f c t e =
+  withMode @mode
+    (if c then t else e)
+    ( withBaseSimpleMergeable1 @mode @f $
+        Grisette.Internal.Core.Data.Class.SimpleMergeable.liftMrgIte f c t e
+    )
+
+-- | Unified simple merging operation for binary type constructors.
+mrgIte2 ::
+  forall mode f a b.
+  ( Typeable mode,
+    UnifiedSimpleMergeable2 mode f,
+    UnifiedSimpleMergeable mode a,
+    UnifiedSimpleMergeable mode b
+  ) =>
+  GetBool mode ->
+  f a b ->
+  f a b ->
+  f a b
+mrgIte2 c t e =
+  withMode @mode
+    (if c then t else e)
+    ( withBaseSimpleMergeable @mode @a $
+        withBaseSimpleMergeable @mode @b $
+          withBaseSimpleMergeable2 @mode @f $
+            Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIte2 c t e
+    )
+
+-- | Unified lifting of a simple merging operation for binary type constructors.
+liftMrgIte2 ::
+  forall mode f a b.
+  ( Typeable mode,
+    UnifiedSimpleMergeable2 mode f
+  ) =>
+  (GetBool mode -> a -> a -> a) ->
+  (GetBool mode -> b -> b -> b) ->
+  GetBool mode ->
+  f a b ->
+  f a b ->
+  f a b
+liftMrgIte2 f g c t e =
+  withMode @mode
+    (if c then t else e)
+    ( withBaseSimpleMergeable2 @mode @f $
+        Grisette.Internal.Core.Data.Class.SimpleMergeable.liftMrgIte2 f g c t e
     )
 
 -- | A class that provides a unified simple merging.
@@ -131,22 +222,10 @@ class UnifiedSimpleMergeable2 mode f where
   withBaseSimpleMergeable2 ::
     ((If (IsConMode mode) (() :: Constraint) (SimpleMergeable2 f)) => r) -> r
 
--- | A class that provides a unified branching operation for unified types.
+-- | A class that provides a unified branching operation.
 --
--- On monads with 'TryMerge' instance, the 'mrgIf' function could use concrete
--- Boolean variable for branching.
---
--- On monads with 'SymBranching' instance, the 'mrgIf' function could use
--- symbolic Boolean variable for branching.
---
--- Note that you may sometimes need to write visible type application for the
--- mode parameter when the mode for the boolean variable isn't clear.
---
--- > mrgIf @mode (a .== b) ...
---
--- or
---
--- > mrgIf (a .== b :: GetBool mode) ...
+-- We use this type class to help resolve the constraints for
+-- `SymBranching`.
 class
   (Typeable mode, TryMerge m) =>
   UnifiedBranching (mode :: EvaluationMode) m
