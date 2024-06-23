@@ -1,14 +1,14 @@
-module Grisette.Internal.TH.Util (substDataType, reifyDatatypeWithFreshNames) where
+module Grisette.Internal.TH.Util (substDataType, reifyDatatypeWithFreshNames, singleParamClassParamKind) where
 
 import qualified Data.Map as M
-import Language.Haskell.TH (Name, Q, Type (VarT), newName)
+import Language.Haskell.TH (Dec (ClassD), Info (ClassI), Kind, Name, Q, Type (VarT), newName, reify)
 import Language.Haskell.TH.Datatype
   ( DatatypeInfo (datatypeCons, datatypeInstTypes, datatypeVars),
     TypeSubstitution (applySubstitution),
     reifyDatatype,
     tvName,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr (mapTVName)
+import Language.Haskell.TH.Datatype.TyVarBndr (mapTVName, tvKind)
 
 substDataType :: DatatypeInfo -> M.Map Name Type -> DatatypeInfo
 substDataType d substMap =
@@ -30,3 +30,21 @@ reifyDatatypeWithFreshNames :: Name -> Q DatatypeInfo
 reifyDatatypeWithFreshNames name = do
   d <- reifyDatatype name
   datatypeToFreshNames d
+
+singleParamClassParamKind :: Name -> Q Kind
+singleParamClassParamKind className = do
+  cls <- reify className
+  case cls of
+    ClassI (ClassD _ _ bndrs _ _) _ ->
+      case bndrs of
+        [x] -> return $ tvKind x
+        _ ->
+          fail $
+            "singleParamClassParamKind: only support classes with one type "
+              <> "parameter, but "
+              <> show className
+              <> " has "
+              <> show (length bndrs)
+    _ ->
+      fail $
+        "singleParamClassParamKind:" <> show className <> " is not a class"

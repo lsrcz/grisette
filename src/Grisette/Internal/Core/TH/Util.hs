@@ -1,4 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 module Grisette.Internal.Core.TH.Util
   ( occName,
@@ -10,6 +13,7 @@ module Grisette.Internal.Core.TH.Util
     tvType,
     TyVarCategorized (..),
     categorizeTyVars,
+    tvIsStarToStar,
   )
 where
 
@@ -56,6 +60,9 @@ tvIsNat = (== ConT ''Nat) . tvKind
 
 tvIsStar :: TyVarBndr_ flag -> Bool
 tvIsStar = (== StarT) . tvKind
+
+tvIsStarToStar :: TyVarBndr_ flag -> Bool
+tvIsStarToStar = (== (AppT (AppT ArrowT StarT) StarT)) . tvKind
 
 tvIsUnsupported :: TyVarBndr_ flag -> Bool
 tvIsUnsupported bndr = not $ tvIsMode bndr || tvIsNat bndr || tvIsStar bndr
