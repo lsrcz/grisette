@@ -28,7 +28,12 @@ import Grisette.Internal.Core.Data.Class.SafeDivision
 import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate)
 import qualified Grisette.Internal.Core.Data.Class.SafeSymRotate
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
-import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, SomeSymWordN, SomeWordN)
+import Grisette.Internal.SymPrim.SomeBV
+  ( SomeIntN,
+    SomeSymIntN,
+    SomeSymWordN,
+    SomeWordN,
+  )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
@@ -38,13 +43,27 @@ import Grisette.Unified.Internal.EvaluationMode
   )
 import Grisette.Unified.Internal.Util (withMode)
 
-safeSymRotateL :: forall mode e a m. (UnifiedSafeSymRotate mode e a m) => a -> a -> m a
+safeSymRotateL ::
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeSymRotate mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSymRotateL a b =
   withBaseSafeSymRotate @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateL a b
 {-# INLINE safeSymRotateL #-}
 
-safeSymRotateR :: forall mode e a m. (UnifiedSafeSymRotate mode e a m) => a -> a -> m a
+safeSymRotateR ::
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeSymRotate mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSymRotateR a b =
   withBaseSafeSymRotate @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateR a b
