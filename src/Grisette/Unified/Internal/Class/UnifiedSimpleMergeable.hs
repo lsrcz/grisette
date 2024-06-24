@@ -70,7 +70,7 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
--- | Unified branching operation.
+-- | Unified `Grisette.mrgIf`.
 --
 -- This function isn't able to infer the mode of the boolean variable, so you
 -- need to provide the mode explicitly. For example:
@@ -106,7 +106,7 @@ liftBaseMonad b =
     (withBaseBranching @mode @m $ liftUnionM b)
 {-# INLINE liftBaseMonad #-}
 
--- | Unified simple merging operation.
+-- | Unified `Grisette.mrgIte`.
 mrgIte ::
   forall mode a.
   (Typeable mode, UnifiedSimpleMergeable mode a) =>
@@ -121,7 +121,7 @@ mrgIte c t e =
         Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIte c t e
     )
 
--- | Unified simple merging operation for unary type constructors.
+-- | Unified `Grisette.mrgIte1`.
 mrgIte1 ::
   forall mode f a.
   ( Typeable mode,
@@ -140,7 +140,7 @@ mrgIte1 c t e =
           Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIte1 c t e
     )
 
--- | Unified lifting of a simple merging operation for unary type constructors.
+-- | Unified `Grisette.liftMrgIte`.
 liftMrgIte ::
   forall mode f a.
   ( Typeable mode,
@@ -158,7 +158,7 @@ liftMrgIte f c t e =
         Grisette.Internal.Core.Data.Class.SimpleMergeable.liftMrgIte f c t e
     )
 
--- | Unified simple merging operation for binary type constructors.
+-- | Unified `Grisette.mrgIte2`.
 mrgIte2 ::
   forall mode f a b.
   ( Typeable mode,
@@ -179,7 +179,7 @@ mrgIte2 c t e =
             Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIte2 c t e
     )
 
--- | Unified lifting of a simple merging operation for binary type constructors.
+-- | Unified `Grisette.liftMrgIte2`.
 liftMrgIte2 ::
   forall mode f a b.
   ( Typeable mode,

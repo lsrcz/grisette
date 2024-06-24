@@ -10,7 +10,7 @@ module Grisette.Unified
     IsMode,
     MonadWithMode,
 
-    -- * Unified type classes
+    -- * Unified operations
 
     -- ** Unified simple mergeable
     UnifiedBranching (..),
@@ -100,7 +100,7 @@ module Grisette.Unified
     extractData,
     wrapData,
 
-    -- ** TH
+    -- * TH
     mkUnifiedConstructor,
     mkUnifiedConstructor',
   )

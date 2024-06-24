@@ -43,6 +43,13 @@ import Grisette.Unified.Internal.EvaluationMode
   )
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateL`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSymRotateL @mode a b
 safeSymRotateL ::
   forall mode e a m.
   ( MonadError e m,
@@ -56,6 +63,13 @@ safeSymRotateL a b =
     Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateL a b
 {-# INLINE safeSymRotateL #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateR`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSymRotateR @mode a b
 safeSymRotateR ::
   forall mode e a m.
   ( MonadError e m,
@@ -69,6 +83,9 @@ safeSymRotateR a b =
     Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateR a b
 {-# INLINE safeSymRotateR #-}
 
+-- | A class that provides unified safe symbolic rotation operations.
+--
+-- We use this type class to help resolve the constraints for `SafeSymRotate`.
 class UnifiedSafeSymRotate (mode :: EvaluationMode) e a m where
   withBaseSafeSymRotate :: ((SafeSymRotate e a m) => r) -> r
 

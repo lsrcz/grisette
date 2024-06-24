@@ -46,6 +46,13 @@ import Grisette.Unified.Internal.EvaluationMode
   )
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeLinearArith.safeAdd`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeAdd @mode a b
 safeAdd ::
   forall mode e a m.
   ( MonadError e m,
@@ -59,6 +66,13 @@ safeAdd a b =
     Grisette.Internal.Core.Data.Class.SafeLinearArith.safeAdd a b
 {-# INLINE safeAdd #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeLinearArith.safeNeg`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeNeg @mode a
 safeNeg ::
   forall mode e a m.
   ( MonadError e m,
@@ -71,6 +85,13 @@ safeNeg a =
     Grisette.Internal.Core.Data.Class.SafeLinearArith.safeNeg a
 {-# INLINE safeNeg #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeLinearArith.safeSub`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSub @mode a b
 safeSub ::
   forall mode e a m.
   ( MonadError e m,
@@ -84,6 +105,9 @@ safeSub a b =
     Grisette.Internal.Core.Data.Class.SafeLinearArith.safeSub a b
 {-# INLINE safeSub #-}
 
+-- | A class that provides unified linear arithmetic operations.
+--
+-- We use this type class to help resolve the constraints for `SafeLinearArith`.
 class UnifiedSafeLinearArith (mode :: EvaluationMode) e a m where
   withBaseSafeLinearArith :: ((SafeLinearArith e a m) => r) -> r
 

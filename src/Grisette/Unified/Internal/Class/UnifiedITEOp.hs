@@ -31,7 +31,7 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
--- | Unified ite operation.
+-- | Unified `Grisette.Internal.Core.Data.Class.ITEOp.symIte` operation.
 --
 -- This function isn't able to infer the mode of the boolean variable, so you
 -- need to provide the mode explicitly. For example:
@@ -53,7 +53,14 @@ symIte c a b =
         Grisette.Internal.Core.Data.Class.ITEOp.symIte c a b
     )
 
--- | Merge values using symbolic ite operation.
+-- | Unified `Grisette.Internal.Core.Data.Class.PlainUnion.symIteMerge`
+-- operation.
+--
+-- This function isn't able to infer the mode of the base monad from the result,
+-- so you need to provide the mode explicitly. For example:
+--
+-- > symIteMerge @mode ...
+-- > symIteMerge (... :: BaseMonad mode v) ...
 symIteMerge ::
   forall mode v.
   (Typeable mode, UnifiedITEOp mode v, Mergeable v) =>

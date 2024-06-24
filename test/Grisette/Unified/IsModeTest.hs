@@ -22,6 +22,7 @@ module Grisette.Unified.IsModeTest (isModeTest) where
 import Control.Exception (ArithException (DivideByZero))
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (ExceptT (ExceptT))
+import Control.Monad.Identity (Identity (Identity))
 import GHC.Generics (Generic)
 import Grisette
   ( BV (bv),
@@ -57,7 +58,6 @@ import Grisette.Unified
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
-import Control.Monad.Identity (Identity(Identity))
 
 #if MIN_VERSION_base(4,16,0)
 import GHC.TypeLits (KnownNat, type (<=))

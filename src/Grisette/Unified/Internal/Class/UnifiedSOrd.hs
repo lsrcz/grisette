@@ -76,7 +76,7 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
--- | Unified less than or equal comparison.
+-- | Unified `(Grisette.Internal.Core.Data.Class.SOrd..<=)`.
 --
 -- Note that you may sometimes need to write type annotations for the result
 -- when the mode isn't clear:
@@ -93,7 +93,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSOrd @mode @a $ a Grisette.Internal.Core.Data.Class.SOrd..<= b)
 {-# INLINE (.<=) #-}
 
--- | Unified less than comparison.
+-- | Unified `(Grisette.Internal.Core.Data.Class.SOrd..<)`.
 (.<) ::
   forall mode a. (Typeable mode, UnifiedSOrd mode a) => a -> a -> GetBool mode
 (.<) a b =
@@ -102,7 +102,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSOrd @mode @a $ a Grisette.Internal.Core.Data.Class.SOrd..< b)
 {-# INLINE (.<) #-}
 
--- | Unified greater than or equal comparison.
+-- | Unified `(Grisette.Internal.Core.Data.Class.SOrd..>=)`.
 (.>=) ::
   forall mode a. (Typeable mode, UnifiedSOrd mode a) => a -> a -> GetBool mode
 (.>=) a b =
@@ -111,7 +111,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSOrd @mode @a $ a Grisette.Internal.Core.Data.Class.SOrd..>= b)
 {-# INLINE (.>=) #-}
 
--- | Unified greater than comparison.
+-- | Unified `(Grisette.Internal.Core.Data.Class.SOrd..>)`.
 (.>) ::
   forall mode a. (Typeable mode, UnifiedSOrd mode a) => a -> a -> GetBool mode
 (.>) a b =
@@ -120,7 +120,7 @@ import Grisette.Unified.Internal.Util (withMode)
     (withBaseSOrd @mode @a $ a Grisette.Internal.Core.Data.Class.SOrd..> b)
 {-# INLINE (.>) #-}
 
--- | Unified comparison.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.symCompare`.
 symCompare ::
   forall mode a ctx.
   (Typeable mode, UnifiedSOrd mode a, Monad ctx) =>
@@ -135,7 +135,7 @@ symCompare x y =
     )
 {-# INLINE symCompare #-}
 
--- | Unified lifting of a comparison for unary type constructors.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.liftSymCompare`.
 liftSymCompare ::
   forall mode f a b.
   (Typeable mode, UnifiedSOrd1 mode f) =>
@@ -154,7 +154,7 @@ liftSymCompare f a b =
     )
 {-# INLINE liftSymCompare #-}
 
--- | Unified lifting of the default comparison for unary type constructors.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.symCompare1`.
 symCompare1 ::
   forall mode f a.
   (Typeable mode, UnifiedSOrd mode a, UnifiedSOrd1 mode f) =>
@@ -170,7 +170,7 @@ symCompare1 a b =
     )
 {-# INLINE symCompare1 #-}
 
--- | Unified lifting of a comparison for binary type constructors.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.liftSymCompare2`.
 liftSymCompare2 ::
   forall mode f a b c d.
   (Typeable mode, UnifiedSOrd2 mode f) =>
@@ -194,7 +194,7 @@ liftSymCompare2 f g a b =
     )
 {-# INLINE liftSymCompare2 #-}
 
--- | Unified lifting of the default comparison for binary type constructors.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.symCompare2`.
 symCompare2 ::
   forall mode f a b.
   ( Typeable mode,
@@ -220,7 +220,7 @@ symCompare2 a b =
     )
 {-# INLINE symCompare2 #-}
 
--- | Unified maximum.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.symMax`.
 symMax ::
   forall mode a.
   (UnifiedSOrd mode a, UnifiedITEOp mode a, Typeable mode) =>
@@ -238,7 +238,7 @@ symMax x y =
     )
 {-# INLINE symMax #-}
 
--- | Unified minimum.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.symMin`.
 symMin ::
   forall mode a.
   (UnifiedSOrd mode a, UnifiedITEOp mode a, Typeable mode) =>
@@ -256,7 +256,7 @@ symMin x y =
     )
 {-# INLINE symMin #-}
 
--- | Unified maximum, merged in a monad.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.mrgMax`.
 mrgMax ::
   forall mode a m.
   ( UnifiedSOrd mode a,
@@ -282,7 +282,7 @@ mrgMax x y =
     )
 {-# INLINE mrgMax #-}
 
--- | Unified minimum, merged in a monad.
+-- | Unified `Grisette.Internal.Core.Data.Class.SOrd.mrgMin`.
 mrgMin ::
   forall mode a m.
   ( UnifiedSOrd mode a,
