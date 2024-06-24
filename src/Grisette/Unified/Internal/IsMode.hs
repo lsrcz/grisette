@@ -38,7 +38,8 @@ import Grisette.Unified.Internal.UnifiedInteger
 -- Note for users with GHC prior to 9.2.1: the GHC compiler isn't able to
 -- resolve the operations for sized bitvectors and data types. In this case,
 -- you may need to provide `Grisette.Unified.Internal.UnifiedBV.UnifiedBV`,
--- `Grisette.Unified.Internal.UnifiedBV.SafeUnifiedBV`, and
+-- `Grisette.Unified.Internal.UnifiedBV.SafeUnifiedBV`,
+-- `Grisette.Unified.Internal.UnifiedBV.SafeUnifiedSomeBV`, and
 -- `Grisette.Unified.Internal.UnifiedData.UnifiedData` constraints manually.
 --
 -- For example, the following code is valid for GHC 9.2.1 and later:

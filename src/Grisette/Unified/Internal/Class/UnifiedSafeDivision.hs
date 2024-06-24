@@ -48,6 +48,12 @@ import Grisette.Unified.Internal.EvaluationMode
   )
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeDivision.safeDiv` operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeDiv @mode a b
 safeDiv ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeDivision mode e a m) =>
@@ -59,6 +65,12 @@ safeDiv a b =
     Grisette.Internal.Core.Data.Class.SafeDivision.safeDiv a b
 {-# INLINE safeDiv #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeDivision.safeMod` operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeMod @mode a b
 safeMod ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeDivision mode e a m) =>
@@ -70,6 +82,13 @@ safeMod a b =
     Grisette.Internal.Core.Data.Class.SafeDivision.safeMod a b
 {-# INLINE safeMod #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeDivision.safeDivMod`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeDivMod @mode a b
 safeDivMod ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeDivision mode e a m) =>
@@ -81,6 +100,13 @@ safeDivMod a b =
     Grisette.Internal.Core.Data.Class.SafeDivision.safeDivMod a b
 {-# INLINE safeDivMod #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeDivision.safeQuot`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeQuot @mode a b
 safeQuot ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeDivision mode e a m) =>
@@ -92,6 +118,12 @@ safeQuot a b =
     Grisette.Internal.Core.Data.Class.SafeDivision.safeQuot a b
 {-# INLINE safeQuot #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeDivision.safeRem` operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeRem @mode a b
 safeRem ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeDivision mode e a m) =>
@@ -103,6 +135,13 @@ safeRem a b =
     Grisette.Internal.Core.Data.Class.SafeDivision.safeRem a b
 {-# INLINE safeRem #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeDivision.safeQuotRem`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeQuotRem @mode a b
 safeQuotRem ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeDivision mode e a m) =>
@@ -114,6 +153,9 @@ safeQuotRem a b =
     Grisette.Internal.Core.Data.Class.SafeDivision.safeQuotRem a b
 {-# INLINE safeQuotRem #-}
 
+-- | A class that provides unified division operations.
+--
+-- We use this type class to help resolve the constraints for `SafeDivision`.
 class UnifiedSafeDivision (mode :: EvaluationMode) e a m where
   withBaseSafeDivision :: ((SafeDivision e a m) => r) -> r
 

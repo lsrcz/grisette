@@ -45,6 +45,13 @@ import Grisette.Unified.Internal.EvaluationMode
   )
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymShiftL`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSymShiftL @mode a b
 safeSymShiftL ::
   forall mode e a m.
   ( MonadError e m,
@@ -58,6 +65,13 @@ safeSymShiftL a b =
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymShiftL a b
 {-# INLINE safeSymShiftL #-}
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymShiftR`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSymShiftR @mode a b
 safeSymShiftR ::
   forall mode e a m.
   ( MonadError e m,
@@ -71,6 +85,14 @@ safeSymShiftR a b =
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymShiftR a b
 {-# INLINE safeSymShiftR #-}
 
+-- | Unified
+-- `Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftL`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSymStrictShiftL @mode a b
 safeSymStrictShiftL ::
   forall mode e a m.
   ( MonadError e m,
@@ -84,6 +106,14 @@ safeSymStrictShiftL a b =
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftL a b
 {-# INLINE safeSymStrictShiftL #-}
 
+-- | Unified
+-- `Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftR`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeSymStrictShiftR @mode a b
 safeSymStrictShiftR ::
   forall mode e a m.
   ( MonadError e m,
