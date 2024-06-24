@@ -1,0 +1,137 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+module Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
+  ( safeSymRotateL,
+    safeSymRotateR,
+    UnifiedSafeSymRotate (..),
+  )
+where
+
+import Control.Monad.Error.Class (MonadError)
+import GHC.TypeLits (KnownNat, type (<=))
+import Grisette.Internal.Core.Data.Class.SafeDivision
+  ( ArithException,
+  )
+import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate)
+import qualified Grisette.Internal.Core.Data.Class.SafeSymRotate
+import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
+import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, SomeSymWordN, SomeWordN)
+import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
+import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
+  ( UnifiedBranching (withBaseBranching),
+  )
+import Grisette.Unified.Internal.EvaluationMode
+  ( EvaluationMode (Sym),
+  )
+import Grisette.Unified.Internal.Util (withMode)
+
+safeSymRotateL :: forall mode e a m. (UnifiedSafeSymRotate mode e a m) => a -> a -> m a
+safeSymRotateL a b =
+  withBaseSafeSymRotate @mode @e @a @m $
+    Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateL a b
+{-# INLINE safeSymRotateL #-}
+
+safeSymRotateR :: forall mode e a m. (UnifiedSafeSymRotate mode e a m) => a -> a -> m a
+safeSymRotateR a b =
+  withBaseSafeSymRotate @mode @e @a @m $
+    Grisette.Internal.Core.Data.Class.SafeSymRotate.safeSymRotateR a b
+{-# INLINE safeSymRotateR #-}
+
+class UnifiedSafeSymRotate (mode :: EvaluationMode) e a m where
+  withBaseSafeSymRotate :: ((SafeSymRotate e a m) => r) -> r
+
+instance
+  {-# INCOHERENT #-}
+  (UnifiedBranching mode m, SafeSymRotate e a m) =>
+  UnifiedSafeSymRotate mode e a m
+  where
+  withBaseSafeSymRotate r = r
+
+instance
+  (MonadError ArithException m, UnifiedBranching mode m, KnownNat n, 1 <= n) =>
+  UnifiedSafeSymRotate mode ArithException (IntN n) m
+  where
+  withBaseSafeSymRotate r =
+    withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
+
+instance
+  (MonadError ArithException m, UnifiedBranching 'Sym m, KnownNat n, 1 <= n) =>
+  UnifiedSafeSymRotate 'Sym ArithException (SymIntN n) m
+  where
+  withBaseSafeSymRotate r = withBaseBranching @'Sym @m r
+
+instance
+  (MonadError ArithException m, UnifiedBranching mode m, KnownNat n, 1 <= n) =>
+  UnifiedSafeSymRotate mode ArithException (WordN n) m
+  where
+  withBaseSafeSymRotate r =
+    withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
+
+instance
+  (MonadError ArithException m, UnifiedBranching 'Sym m, KnownNat n, 1 <= n) =>
+  UnifiedSafeSymRotate 'Sym ArithException (SymWordN n) m
+  where
+  withBaseSafeSymRotate r = withBaseBranching @'Sym @m r
+
+instance
+  ( MonadError (Either BitwidthMismatch ArithException) m,
+    UnifiedBranching mode m
+  ) =>
+  UnifiedSafeSymRotate
+    mode
+    (Either BitwidthMismatch ArithException)
+    SomeIntN
+    m
+  where
+  withBaseSafeSymRotate r =
+    withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
+
+instance
+  ( MonadError (Either BitwidthMismatch ArithException) m,
+    UnifiedBranching 'Sym m
+  ) =>
+  UnifiedSafeSymRotate
+    'Sym
+    (Either BitwidthMismatch ArithException)
+    SomeSymIntN
+    m
+  where
+  withBaseSafeSymRotate r = withBaseBranching @'Sym @m r
+
+instance
+  ( MonadError (Either BitwidthMismatch ArithException) m,
+    UnifiedBranching mode m
+  ) =>
+  UnifiedSafeSymRotate
+    mode
+    (Either BitwidthMismatch ArithException)
+    SomeWordN
+    m
+  where
+  withBaseSafeSymRotate r =
+    withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
+
+instance
+  ( MonadError (Either BitwidthMismatch ArithException) m,
+    UnifiedBranching 'Sym m
+  ) =>
+  UnifiedSafeSymRotate
+    'Sym
+    (Either BitwidthMismatch ArithException)
+    SomeSymWordN
+    m
+  where
+  withBaseSafeSymRotate r = withBaseBranching @'Sym @m r

@@ -11,7 +11,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Grisette.Unified.Internal.Class.UnifiedSEq
   ( UnifiedSEq (..),

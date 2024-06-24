@@ -17,16 +17,19 @@
 module Grisette.Unified.Internal.IsMode (IsMode) where
 
 import Data.Typeable (Typeable)
+-- SafeUnifiedInteger,
+-- SafeUnifiedInteger',
+
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
-import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV, SafeAllUnifiedBV)
+import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedData (AllUnifiedData)
 import Grisette.Unified.Internal.UnifiedInteger
-  ( SafeUnifiedInteger,
-    UnifiedInteger,
+  ( UnifiedInteger,
   )
 
 -- | A constraint that specifies that the mode is valid, and provide all the
@@ -73,9 +76,8 @@ class
     AllUnifiedBV mode,
     AllUnifiedData mode,
     Monad (BaseMonad mode),
-    UnifiedBranching mode (BaseMonad mode),
-    SafeUnifiedInteger mode (BaseMonad mode),
-    SafeAllUnifiedBV mode (BaseMonad mode)
+    TryMerge (BaseMonad mode),
+    UnifiedBranching mode (BaseMonad mode)
   ) =>
   IsMode mode
 

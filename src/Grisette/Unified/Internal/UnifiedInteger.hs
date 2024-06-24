@@ -1,26 +1,34 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 module Grisette.Unified.Internal.UnifiedInteger
-  ( UnifiedInteger (..),
-    SafeUnifiedInteger,
+  ( GetInteger,
+    UnifiedInteger,
+    -- SafeUnifiedInteger,
+    -- SafeUnifiedInteger',
   )
 where
 
 import Control.Exception (ArithException)
-import Control.Monad.Except (ExceptT)
-import Data.Kind (Type)
+import Control.Monad.Except (MonadError)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
-    SafeIntegral,
   )
+import Grisette.Unified.Internal.Class.UnifiedSafeDivision (UnifiedSafeDivision)
+import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith (UnifiedSafeLinearArith)
+import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 
@@ -28,32 +36,32 @@ class
   ( BasicGrisetteType (GetInteger mode),
     ConSymConversion Integer SymInteger (GetInteger mode),
     Num (GetInteger mode),
-    UnifiedPrimitive mode (GetInteger mode)
+    UnifiedPrimitive mode (GetInteger mode),
+    forall m.
+    (UnifiedBranching mode m, MonadError ArithException m) =>
+    UnifiedSafeDivision mode ArithException i m,
+    forall m.
+    (UnifiedBranching mode m, MonadError ArithException m) =>
+    UnifiedSafeLinearArith mode ArithException i m,
+    i ~ GetInteger mode
   ) =>
-  UnifiedInteger (mode :: EvaluationMode)
+  UnifiedIntegerImpl (mode :: EvaluationMode) i
+    | mode -> i
   where
   -- | Get a unified Integer type. Resolves to 'Integer' in 'Con' mode, and
   -- 'SymInteger' in 'Sym' mode.
-  type GetInteger mode = bool | bool -> mode
+  type GetInteger mode = int | int -> mode
 
-instance UnifiedInteger 'Con where
+instance UnifiedIntegerImpl 'Con Integer where
   type GetInteger 'Con = Integer
 
-instance UnifiedInteger 'Sym where
+instance UnifiedIntegerImpl 'Sym SymInteger where
   type GetInteger 'Sym = SymInteger
 
 class
-  ( UnifiedInteger mode,
-    SafeIntegral ArithException (GetInteger mode) (ExceptT ArithException m)
-  ) =>
-  SafeUnifiedInteger (mode :: EvaluationMode) (m :: Type -> Type)
+  (UnifiedIntegerImpl mode (GetInteger mode)) =>
+  UnifiedInteger (mode :: EvaluationMode)
 
-instance
-  ( SafeIntegral ArithException Integer (ExceptT ArithException m)
-  ) =>
-  SafeUnifiedInteger 'Con m
+instance UnifiedInteger 'Con
 
-instance
-  ( SafeIntegral ArithException SymInteger (ExceptT ArithException m)
-  ) =>
-  SafeUnifiedInteger 'Sym m
+instance UnifiedInteger 'Sym

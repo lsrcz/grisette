@@ -31,7 +31,7 @@ module Grisette.Unified
     symIteMerge,
 
     -- ** Unified SEq
-    UnifiedSEq,
+    UnifiedSEq (..),
     (.==),
     (./=),
     liftSEq,
@@ -55,6 +55,27 @@ module Grisette.Unified
     mrgMax,
     mrgMin,
 
+    -- ** Unified safe ops
+    UnifiedSafeDivision (..),
+    safeDiv,
+    safeMod,
+    safeDivMod,
+    safeQuot,
+    safeRem,
+    safeQuotRem,
+    UnifiedSafeLinearArith (..),
+    safeAdd,
+    safeNeg,
+    safeSub,
+    UnifiedSafeSymRotate (..),
+    safeSymRotateL,
+    safeSymRotateR,
+    UnifiedSafeSymShift (..),
+    safeSymShiftL,
+    safeSymShiftR,
+    safeSymStrictShiftL,
+    safeSymStrictShiftR,
+
     -- * Unified types
 
     -- ** Boolean
@@ -67,9 +88,11 @@ module Grisette.Unified
     GetSomeIntN,
     UnifiedBV,
     SafeUnifiedBV,
+    SafeUnifiedSomeBV,
 
     -- ** Integer
     GetInteger,
+    UnifiedInteger,
 
     -- ** Data
     GetData,
@@ -114,6 +137,33 @@ import Grisette.Unified.Internal.Class.UnifiedSOrd
     (.>),
     (.>=),
   )
+import Grisette.Unified.Internal.Class.UnifiedSafeDivision
+  ( UnifiedSafeDivision (..),
+    safeDiv,
+    safeDivMod,
+    safeMod,
+    safeQuot,
+    safeQuotRem,
+    safeRem,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
+  ( UnifiedSafeLinearArith (..),
+    safeAdd,
+    safeNeg,
+    safeSub,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
+  ( UnifiedSafeSymRotate (..),
+    safeSymRotateL,
+    safeSymRotateR,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeSymShift
+  ( UnifiedSafeSymShift (..),
+    safeSymShiftL,
+    safeSymShiftR,
+    safeSymStrictShiftL,
+    safeSymStrictShiftR,
+  )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (..),
     UnifiedSimpleMergeable (..),
@@ -143,6 +193,7 @@ import Grisette.Unified.Internal.UnifiedBV
     GetSomeWordN,
     GetWordN,
     SafeUnifiedBV,
+    SafeUnifiedSomeBV,
     UnifiedBV,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (..))
@@ -153,5 +204,6 @@ import Grisette.Unified.Internal.UnifiedData
     wrapData,
   )
 import Grisette.Unified.Internal.UnifiedInteger
-  ( UnifiedInteger (..),
+  ( GetInteger,
+    UnifiedInteger,
   )
