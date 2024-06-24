@@ -141,7 +141,10 @@ type SomeBVConstraint mode m =
   (MonadWithMode mode m, MonadError (Either BitwidthMismatch ArithException) m)
 #else
 type SomeBVConstraint mode m =
-  (MonadWithMode mode m, SafeUnifiedSomeBV mode m)
+  ( MonadWithMode mode m,
+    MonadError (Either BitwidthMismatch ArithException) m,
+    SafeUnifiedSomeBV mode m
+  )
 #endif
 
 fsomebv ::

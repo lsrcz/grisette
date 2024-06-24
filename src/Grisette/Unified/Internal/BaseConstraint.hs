@@ -11,7 +11,6 @@
 module Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
-    SafeIntegral,
   )
 where
 
@@ -23,8 +22,6 @@ import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SEq (SEq)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
-import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision)
-import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith)
 import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
@@ -58,7 +55,3 @@ type ConSymConversion conType symType t =
     ToCon t t,
     ToSym t t
   )
-
--- | A type that is used as a constraint for all the types in Grisette that can
--- be used in safe integral operations.
-type SafeIntegral e v m = (SafeDivision e v m, SafeLinearArith e v m)

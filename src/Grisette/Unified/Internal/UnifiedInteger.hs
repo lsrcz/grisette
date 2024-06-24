@@ -13,8 +13,6 @@
 module Grisette.Unified.Internal.UnifiedInteger
   ( GetInteger,
     UnifiedInteger,
-    -- SafeUnifiedInteger,
-    -- SafeUnifiedInteger',
   )
 where
 
@@ -26,7 +24,9 @@ import Grisette.Unified.Internal.BaseConstraint
     ConSymConversion,
   )
 import Grisette.Unified.Internal.Class.UnifiedSafeDivision (UnifiedSafeDivision)
-import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith (UnifiedSafeLinearArith)
+import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
+  ( UnifiedSafeLinearArith,
+  )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)

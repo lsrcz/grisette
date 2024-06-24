@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -202,8 +203,7 @@ instance
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
 -- See the notes in 'Grisette.Unified.Internal.IsMode.IsMode'.
 class
-  ( UnifiedBV mode n,
-    SafeUnifiedBVImpl
+  ( SafeUnifiedBVImpl
       mode
       (GetWordN mode)
       (GetIntN mode)
@@ -215,8 +215,7 @@ class
   SafeUnifiedBV mode n m
 
 instance
-  ( UnifiedBV mode n,
-    SafeUnifiedBVImpl
+  ( SafeUnifiedBVImpl
       mode
       (GetWordN mode)
       (GetIntN mode)

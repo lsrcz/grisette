@@ -232,21 +232,6 @@ class
   withBaseBranching ::
     ((If (IsConMode mode) (TryMerge m) (SymBranching m)) => r) -> r
 
-withBaseBranchingTrans ::
-  forall mode m t m0 r.
-  ( m ~ t m0,
-    UnifiedBranching mode m0,
-    (TryMerge m0) => TryMerge m,
-    (SymBranching m0) => SymBranching m
-  ) =>
-  ((If (IsConMode mode) (TryMerge m) (SymBranching m)) => r) ->
-  r
-withBaseBranchingTrans r =
-  withMode @mode
-    (withBaseBranching @mode @m0 r)
-    (withBaseBranching @mode @m0 r)
-{-# INLINE withBaseBranchingTrans #-}
-
 instance
   {-# INCOHERENT #-}
   ( Typeable mode,
@@ -402,7 +387,10 @@ instance
   (Typeable mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (FreshT m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(FreshT m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -429,7 +417,10 @@ instance
   (Typeable mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (MaybeT m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(MaybeT m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -456,7 +447,10 @@ instance
   (Typeable mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (IdentityT m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(IdentityT m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -483,7 +477,10 @@ instance
   (Typeable mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (ReaderT r m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(ReaderT r m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -513,7 +510,10 @@ instance
   ) =>
   UnifiedBranching mode (StateLazy.StateT s m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(StateLazy.StateT s m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -543,7 +543,10 @@ instance
   ) =>
   UnifiedBranching mode (StateStrict.StateT s m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(StateStrict.StateT s m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -579,7 +582,10 @@ instance
   ) =>
   UnifiedBranching mode (WriterLazy.WriterT w m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(WriterLazy.WriterT w m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -615,7 +621,10 @@ instance
   ) =>
   UnifiedBranching mode (WriterStrict.WriterT w m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(WriterStrict.WriterT w m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -646,7 +655,10 @@ instance
   (Typeable mode, Mergeable e, UnifiedBranching mode m) =>
   UnifiedBranching mode (ExceptT e m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(ExceptT e m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -677,7 +689,10 @@ instance
   (Typeable mode, Mergeable r, UnifiedBranching mode m) =>
   UnifiedBranching mode (ContT r m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(ContT r m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -720,7 +735,10 @@ instance
   ) =>
   UnifiedBranching mode (RWSLazy.RWST r w s m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(RWSLazy.RWST r w s m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
 
 instance
@@ -763,5 +781,8 @@ instance
   ) =>
   UnifiedBranching mode (RWSStrict.RWST r w s m)
   where
-  withBaseBranching = withBaseBranchingTrans @mode @(RWSStrict.RWST r w s m)
+  withBaseBranching r =
+    withMode @mode
+      (withBaseBranching @mode @m r)
+      (withBaseBranching @mode @m r)
   {-# INLINE withBaseBranching #-}
