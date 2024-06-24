@@ -195,10 +195,6 @@ module Grisette.Core
     seq1,
     SEq2 (..),
     seq2,
-    SEqArgs (..),
-    GSEq (..),
-    genericSEq,
-    genericLiftSEq,
 
     -- **** Symbolic comparison
     SOrd (..),
@@ -210,10 +206,6 @@ module Grisette.Core
     symMin,
     mrgMax,
     mrgMin,
-    SOrdArgs (..),
-    GSOrd (..),
-    genericSymCompare,
-    genericLiftSymCompare,
 
     -- **** Uncategorized
     BV (..),
@@ -612,10 +604,6 @@ module Grisette.Core
     rootStrategy2,
     Mergeable3 (..),
     rootStrategy3,
-    MergeableArgs (..),
-    GMergeable (..),
-    genericRootStrategy,
-    genericLiftRootStrategy,
 
     -- **** Merging strategy
     MergingStrategy (..),
@@ -635,10 +623,6 @@ module Grisette.Core
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
-    SimpleMergeableArgs (..),
-    GSimpleMergeable (..),
-    genericMrgIte,
-    genericLiftMrgIte,
 
     -- **** Symbolic branching
     SymBranching (..),
@@ -665,8 +649,12 @@ module Grisette.Core
     onUnion4,
     MonadUnion,
 
-    -- * Conversion between Concrete and Symbolic values
+    -- *** Conversion between Concrete and Symbolic values
     ToCon (..),
+    ToCon1 (..),
+    toCon1,
+    ToCon2 (..),
+    toCon2,
     ToSym (..),
 
     -- * Pretty printing
@@ -1070,14 +1058,16 @@ module Grisette.Core
     ModelRep (..),
     EvaluateSym (..),
     evaluateSymToCon,
+    EvaluateSym1 (..),
+    evaluateSym1,
+    evaluateSymToCon1,
+    EvaluateSym2 (..),
+    evaluateSym2,
+    evaluateSymToCon2,
 
     -- ** Substitution of a symbol
     SubstituteSym (..),
     SubstituteSym' (..),
-
-    -- * Type Class Derivation
-    Default (..),
-    Default1 (..),
 
     -- * Utilities
 
@@ -1103,6 +1093,48 @@ module Grisette.Core
     deriveGrisette,
     deriveAllGrisette,
     deriveAllGrisetteExcept,
+
+    -- ** Generic deriving of classes
+
+    -- *** Default wrappers
+    Default (..),
+    Default1 (..),
+
+    -- *** 'SEq'
+    SEqArgs (..),
+    GSEq (..),
+    genericSEq,
+    genericLiftSEq,
+
+    -- *** 'SOrd'
+    SOrdArgs (..),
+    GSOrd (..),
+    genericSymCompare,
+    genericLiftSymCompare,
+
+    -- *** 'Mergeable'
+    MergeableArgs (..),
+    GMergeable (..),
+    genericRootStrategy,
+    genericLiftRootStrategy,
+
+    -- *** 'SimpleMergeable'
+    SimpleMergeableArgs (..),
+    GSimpleMergeable (..),
+    genericMrgIte,
+    genericLiftMrgIte,
+
+    -- *** 'EvaluateSym'
+    EvaluateSymArgs (..),
+    GEvaluateSym (..),
+    genericEvaluateSym,
+    genericLiftEvaluateSym,
+
+    -- *** 'ToCon'
+    ToConArgs (..),
+    GToCon (..),
+    genericToCon,
+    genericLiftToCon,
   )
 where
 
@@ -1181,7 +1213,17 @@ import Grisette.Internal.Core.Data.Class.Error
   )
 import Grisette.Internal.Core.Data.Class.EvaluateSym
   ( EvaluateSym (..),
+    EvaluateSym1 (..),
+    EvaluateSym2 (..),
+    EvaluateSymArgs (..),
+    GEvaluateSym (..),
+    evaluateSym1,
+    evaluateSym2,
     evaluateSymToCon,
+    evaluateSymToCon1,
+    evaluateSymToCon2,
+    genericEvaluateSym,
+    genericLiftEvaluateSym,
   )
 import Grisette.Internal.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (..),
@@ -1333,7 +1375,17 @@ import Grisette.Internal.Core.Data.Class.SubstituteSym
   )
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (..))
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift (..))
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon (..))
+import Grisette.Internal.Core.Data.Class.ToCon
+  ( GToCon (..),
+    ToCon (..),
+    ToCon1 (..),
+    ToCon2 (..),
+    ToConArgs (..),
+    genericLiftToCon,
+    genericToCon,
+    toCon1,
+    toCon2,
+  )
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (..))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,

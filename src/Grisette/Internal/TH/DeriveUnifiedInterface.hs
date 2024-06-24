@@ -22,8 +22,8 @@ import Grisette.Internal.TH.Derivation
     NatShouldBePositive (NatShouldBePositive),
     SomeDeriveTypeParamHandler (SomeDeriveTypeParamHandler),
     deriveWithHandlers,
-    getTypeWithMaybeSubst,
   )
+import Grisette.Internal.TH.Util (getTypeWithMaybeSubst)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
 import Language.Haskell.TH
   ( Dec (ClassD),

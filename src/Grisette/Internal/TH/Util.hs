@@ -1,14 +1,35 @@
-module Grisette.Internal.TH.Util (substDataType, reifyDatatypeWithFreshNames, singleParamClassParamKind) where
+module Grisette.Internal.TH.Util
+  ( substDataType,
+    reifyDatatypeWithFreshNames,
+    singleParamClassParamKind,
+    binaryClassParamKind,
+    getTypeWithMaybeSubst,
+    dropLastTypeParam,
+    dropNTypeParam,
+  )
+where
 
+import Control.Monad (when)
 import qualified Data.Map as M
-import Language.Haskell.TH (Dec (ClassD), Info (ClassI), Kind, Name, Q, Type (VarT), newName, reify)
+import Language.Haskell.TH
+  ( Dec (ClassD),
+    Info (ClassI),
+    Kind,
+    Name,
+    Q,
+    Type (AppT, VarT),
+    newName,
+    pprint,
+    reify,
+    varT,
+  )
 import Language.Haskell.TH.Datatype
   ( DatatypeInfo (datatypeCons, datatypeInstTypes, datatypeVars),
     TypeSubstitution (applySubstitution),
     reifyDatatype,
     tvName,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr (mapTVName, tvKind)
+import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit, mapTVName, tvKind)
 
 substDataType :: DatatypeInfo -> M.Map Name Type -> DatatypeInfo
 substDataType d substMap =
@@ -48,3 +69,41 @@ singleParamClassParamKind className = do
     _ ->
       fail $
         "singleParamClassParamKind:" <> show className <> " is not a class"
+
+binaryClassParamKind :: Name -> Q Kind
+binaryClassParamKind className = do
+  cls <- reify className
+  case cls of
+    ClassI (ClassD _ _ bndrs _ _) _ ->
+      case bndrs of
+        [x, y] -> do
+          when (tvKind x /= tvKind y) $
+            fail "binaryClassParamKind: type parameters have different kinds"
+          return $ tvKind x
+        _ ->
+          fail $
+            "binaryClassParamKind: only support classes with two type "
+              <> "parameters, but "
+              <> show className
+              <> " has "
+              <> show (length bndrs)
+    _ ->
+      fail $
+        "binaryClassParamKind:" <> show className <> " is not a class"
+
+getTypeWithMaybeSubst :: TyVarBndrUnit -> Maybe Type -> Q Type
+getTypeWithMaybeSubst tv Nothing = varT $ tvName tv
+getTypeWithMaybeSubst _ (Just t) = return t
+
+dropLastTypeParam :: Type -> Q Type
+dropLastTypeParam (AppT c _) = return c
+dropLastTypeParam v =
+  fail $
+    "dropLastTypeParam: have no type parameters: "
+      <> pprint v
+      <> " / "
+      <> show v
+
+dropNTypeParam :: Int -> Type -> Q Type
+dropNTypeParam 0 t = return t
+dropNTypeParam n t = dropLastTypeParam t >>= dropNTypeParam (n - 1)

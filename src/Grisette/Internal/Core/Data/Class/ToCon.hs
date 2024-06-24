@@ -7,10 +7,12 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -25,6 +27,16 @@
 module Grisette.Internal.Core.Data.Class.ToCon
   ( -- * Converting to concrete values
     ToCon (..),
+    ToCon1 (..),
+    toCon1,
+    ToCon2 (..),
+    toCon2,
+
+    -- * Generic 'ToCon'
+    ToConArgs (..),
+    GToCon (..),
+    genericToCon,
+    genericLiftToCon,
   )
 where
 
@@ -39,15 +51,34 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
-import GHC.Generics (Generic (Rep, from, to), K1 (K1), M1 (M1), U1, V1, type (:*:) ((:*:)), type (:+:) (L1, R1))
+import GHC.Generics
+  ( Generic (Rep, from, to),
+    Generic1 (Rep1, from1, to1),
+    K1 (K1),
+    M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
+    U1 (U1),
+    V1,
+    (:.:) (Comp1),
+    type (:*:) ((:*:)),
+    type (:+:) (L1, R1),
+  )
 import GHC.TypeNats (KnownNat, type (<=))
-import Generics.Deriving (Default (Default))
+import Generics.Deriving (Default (Default), Default1 (Default1))
 import Generics.Deriving.Instances ()
-import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (conView), pattern Con)
+import Grisette.Internal.Core.Data.Class.Solvable
+  ( Solvable (conView),
+    pattern Con,
+  )
 import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
@@ -64,11 +95,22 @@ import Grisette.Internal.SymPrim.SymBV
     SymWordN,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
-import Grisette.Internal.SymPrim.SymFP (SymFP, SymFP32, SymFP64, SymFPRoundingMode)
+import Grisette.Internal.SymPrim.SymFP
+  ( SymFP,
+    SymFP32,
+    SymFP64,
+    SymFPRoundingMode,
+  )
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.TH.Derivation (Strategy (ViaDefault, ViaDefault1))
+import Grisette.Internal.TH.DeriveBinaryClass
+  ( deriveSimpleConversion1s,
+    deriveSimpleConversions,
+  )
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -93,6 +135,288 @@ class ToCon a b where
   -- >>> toCon ([con 1, ssym "a"] :: [SymInteger]) :: Maybe [Integer]
   -- Nothing
   toCon :: a -> Maybe b
+
+class (forall a b. (ToCon a b) => ToCon (f1 a) (f2 b)) => ToCon1 f1 f2 where
+  liftToCon :: (a -> Maybe b) -> f1 a -> Maybe (f2 b)
+
+toCon1 :: (ToCon1 f1 f2, ToCon a b) => f1 a -> Maybe (f2 b)
+toCon1 = liftToCon toCon
+{-# INLINE toCon1 #-}
+
+class (forall a b. (ToCon a b) => ToCon1 (f1 a) (f2 b)) => ToCon2 f1 f2 where
+  liftToCon2 :: (a -> Maybe b) -> (c -> Maybe d) -> f1 a c -> Maybe (f2 b d)
+
+toCon2 :: (ToCon2 f1 f2, ToCon a b, ToCon c d) => f1 a c -> Maybe (f2 b d)
+toCon2 = liftToCon2 toCon toCon
+{-# INLINE toCon2 #-}
+
+-- Derivations
+
+-- | The arguments to the generic 'toCon' function.
+data family ToConArgs arity a b :: Type
+
+data instance ToConArgs Arity0 _ _ = ToConArgs0
+
+newtype instance ToConArgs Arity1 a b
+  = ToConArgs1 (a -> Maybe b)
+
+class GToCon arity f1 f2 where
+  gtoCon :: ToConArgs arity a b -> f1 a -> Maybe (f2 b)
+
+instance GToCon arity V1 V1 where
+  gtoCon _ _ = error "Impossible"
+  {-# INLINE gtoCon #-}
+
+instance GToCon arity U1 U1 where
+  gtoCon _ _ = Just U1
+  {-# INLINE gtoCon #-}
+
+instance
+  (GToCon arity a b, GToCon arity c d) =>
+  GToCon arity (a :*: c) (b :*: d)
+  where
+  gtoCon args (a :*: c) = do
+    a' <- gtoCon args a
+    c' <- gtoCon args c
+    return $ a' :*: c'
+  {-# INLINE gtoCon #-}
+
+instance
+  (GToCon arity a b, GToCon arity c d) =>
+  GToCon arity (a :+: c) (b :+: d)
+  where
+  gtoCon args (L1 a) = L1 <$> gtoCon args a
+  gtoCon args (R1 a) = R1 <$> gtoCon args a
+  {-# INLINE gtoCon #-}
+
+instance (GToCon arity a b) => GToCon arity (M1 i c1 a) (M1 i c2 b) where
+  gtoCon args (M1 a) = M1 <$> gtoCon args a
+  {-# INLINE gtoCon #-}
+
+instance (ToCon a b) => GToCon arity (K1 i a) (K1 i b) where
+  gtoCon _ (K1 a) = K1 <$> toCon a
+  {-# INLINE gtoCon #-}
+
+instance GToCon Arity1 Par1 Par1 where
+  gtoCon (ToConArgs1 f) (Par1 a) = Par1 <$> f a
+  {-# INLINE gtoCon #-}
+
+instance (ToCon1 f1 f2) => GToCon Arity1 (Rec1 f1) (Rec1 f2) where
+  gtoCon (ToConArgs1 f) (Rec1 a) = Rec1 <$> liftToCon f a
+  {-# INLINE gtoCon #-}
+
+instance
+  (ToCon1 f1 f2, GToCon Arity1 g1 g2) =>
+  GToCon Arity1 (f1 :.: g1) (f2 :.: g2)
+  where
+  gtoCon targs (Comp1 a) = Comp1 <$> liftToCon (gtoCon targs) a
+  {-# INLINE gtoCon #-}
+
+genericToCon ::
+  (Generic a, Generic b, GToCon Arity0 (Rep a) (Rep b)) =>
+  a ->
+  Maybe b
+genericToCon = fmap to . gtoCon ToConArgs0 . from
+{-# INLINE genericToCon #-}
+
+genericLiftToCon ::
+  (Generic1 f1, Generic1 f2, GToCon Arity1 (Rep1 f1) (Rep1 f2)) =>
+  (a -> Maybe b) ->
+  f1 a ->
+  Maybe (f2 b)
+genericLiftToCon f = fmap to1 . gtoCon (ToConArgs1 f) . from1
+{-# INLINE genericLiftToCon #-}
+
+instance
+  (Generic a, Generic b, GToCon Arity0 (Rep a) (Rep b)) =>
+  ToCon a (Default b)
+  where
+  toCon = fmap Default . genericToCon
+  {-# INLINE toCon #-}
+
+instance
+  (Generic1 f1, Generic1 f2, GToCon Arity1 (Rep1 f1) (Rep1 f2), ToCon a b) =>
+  ToCon (f1 a) (Default1 f2 b)
+  where
+  toCon = toCon1
+
+instance
+  (Generic1 f1, Generic1 f2, GToCon Arity1 (Rep1 f1) (Rep1 f2)) =>
+  ToCon1 f1 (Default1 f2)
+  where
+  liftToCon f = fmap Default1 . genericLiftToCon f
+  {-# INLINE liftToCon #-}
+
+deriveSimpleConversions
+  (ViaDefault ''ToCon)
+  ''ToCon
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions
+  ]
+
+deriveSimpleConversion1s
+  (ViaDefault1 ''ToCon1)
+  ''ToCon
+  ''ToCon1
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,)
+  ]
+
+-- ExceptT
+instance
+  (ToCon1 m1 m2, ToCon e1 e2, ToCon a b) =>
+  ToCon (ExceptT e1 m1 a) (ExceptT e2 m2 b)
+  where
+  toCon = toCon1
+  {-# INLINE toCon #-}
+
+instance
+  (ToCon1 m1 m2, ToCon e1 e2) =>
+  ToCon1 (ExceptT e1 m1) (ExceptT e2 m2)
+  where
+  liftToCon f (ExceptT v) = ExceptT <$> liftToCon (liftToCon f) v
+  {-# INLINE liftToCon #-}
+
+-- MaybeT
+instance
+  (ToCon1 m1 m2, ToCon a b) =>
+  ToCon (MaybeT m1 a) (MaybeT m2 b)
+  where
+  toCon = toCon1
+  {-# INLINE toCon #-}
+
+instance
+  (ToCon1 m1 m2) =>
+  ToCon1 (MaybeT m1) (MaybeT m2)
+  where
+  liftToCon f (MaybeT v) = MaybeT <$> liftToCon (liftToCon f) v
+  {-# INLINE liftToCon #-}
+
+-- WriterT
+instance
+  (ToCon1 m1 m2, ToCon a b, ToCon s1 s2) =>
+  ToCon (WriterLazy.WriterT s1 m1 a) (WriterLazy.WriterT s2 m2 b)
+  where
+  toCon (WriterLazy.WriterT v) = WriterLazy.WriterT <$> toCon v
+
+instance
+  (ToCon1 m1 m2, ToCon s1 s2) =>
+  ToCon1 (WriterLazy.WriterT s1 m1) (WriterLazy.WriterT s2 m2)
+  where
+  liftToCon f (WriterLazy.WriterT v) =
+    WriterLazy.WriterT <$> liftToCon (liftToCon2 f toCon) v
+
+instance
+  (ToCon1 m1 m2, ToCon a b, ToCon s1 s2) =>
+  ToCon (WriterStrict.WriterT s1 m1 a) (WriterStrict.WriterT s2 m2 b)
+  where
+  toCon (WriterStrict.WriterT v) = WriterStrict.WriterT <$> toCon v
+
+instance
+  (ToCon1 m1 m2, ToCon s1 s2) =>
+  ToCon1 (WriterStrict.WriterT s1 m1) (WriterStrict.WriterT s2 m2)
+  where
+  liftToCon f (WriterStrict.WriterT v) =
+    WriterStrict.WriterT <$> liftToCon (liftToCon2 f toCon) v
+
+-- Sum
+deriving via
+  (Default (Sum f1 g1 a1))
+  instance
+    (ToCon (f a) (f1 a1), ToCon (g a) (g1 a1)) =>
+    ToCon (Sum f g a) (Sum f1 g1 a1)
+
+deriving via
+  (Default1 (Sum f1 g1))
+  instance
+    (ToCon1 f f1, ToCon1 g g1) =>
+    ToCon1 (Sum f g) (Sum f1 g1)
+
+-- IdentityT
+instance
+  (ToCon1 m m1, ToCon a b) =>
+  ToCon (IdentityT m a) (IdentityT m1 b)
+  where
+  toCon = toCon1
+  {-# INLINE toCon #-}
+
+instance
+  (ToCon1 m m1) =>
+  ToCon1 (IdentityT m) (IdentityT m1)
+  where
+  liftToCon f (IdentityT a) = IdentityT <$> liftToCon f a
+  {-# INLINE liftToCon #-}
+
+-- Identity
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon (Identity a) (Identity b) where
+  toCon = toCon1
+
+instance ToCon (Identity v) v where
+  toCon = Just . runIdentity
+
+instance ToCon v (Identity v) where
+  toCon = Just . Identity
+
+instance ToCon1 Identity Identity where
+  liftToCon f (Identity a) = Identity <$> f a
+
+-- Special
+instance
+  (ToCon (m1 (Either e1 a)) (Either e2 b)) =>
+  ToCon (ExceptT e1 m1 a) (Either e2 b)
+  where
+  toCon (ExceptT v) = toCon v
+
+-- ToCon2
+instance ToCon2 Either Either where
+  liftToCon2 f _ (Left a) = Left <$> f a
+  liftToCon2 _ g (Right b) = Right <$> g b
+  {-# INLINE liftToCon2 #-}
+
+instance ToCon2 (,) (,) where
+  liftToCon2 f g (a, b) = (,) <$> f a <*> g b
+  {-# INLINE liftToCon2 #-}
+
+instance (ToCon a b) => ToCon2 ((,,) a) ((,,) b) where
+  liftToCon2 f g (a, b, c) = (,,) <$> toCon a <*> f b <*> g c
+  {-# INLINE liftToCon2 #-}
+
+instance (ToCon a c, ToCon b d) => ToCon2 ((,,,) a b) ((,,,) c d) where
+  liftToCon2 f g (a, b, c, d) = (,,,) <$> toCon a <*> toCon b <*> f c <*> g d
+  {-# INLINE liftToCon2 #-}
 
 #define CONCRETE_TOCON(type) \
 instance ToCon type type where \
@@ -127,112 +451,6 @@ CONCRETE_TOCON(FPRoundingMode)
 
 instance (ValidFP eb sb) => ToCon (FP eb sb) (FP eb sb) where
   toCon = Just
-
--- Unit
-instance ToCon () () where
-  toCon = Just
-
--- Either
-deriving via (Default (Either e2 a2)) instance (ToCon e1 e2, ToCon a1 a2) => ToCon (Either e1 a1) (Either e2 a2)
-
--- Maybe
-deriving via (Default (Maybe a2)) instance (ToCon a1 a2) => ToCon (Maybe a1) (Maybe a2)
-
--- List
-deriving via (Default [b]) instance (ToCon a b) => ToCon [a] [b]
-
--- (,)
-deriving via (Default (a2, b2)) instance (ToCon a1 a2, ToCon b1 b2) => ToCon (a1, b1) (a2, b2)
-
--- (,,)
-deriving via (Default (a2, b2, c2)) instance (ToCon a1 a2, ToCon b1 b2, ToCon c1 c2) => ToCon (a1, b1, c1) (a2, b2, c2)
-
--- (,,,)
-deriving via
-  (Default (a2, b2, c2, d2))
-  instance
-    (ToCon a1 a2, ToCon b1 b2, ToCon c1 c2, ToCon d1 d2) => ToCon (a1, b1, c1, d1) (a2, b2, c2, d2)
-
--- (,,,,)
-deriving via
-  (Default (a2, b2, c2, d2, e2))
-  instance
-    (ToCon a1 a2, ToCon b1 b2, ToCon c1 c2, ToCon d1 d2, ToCon e1 e2) =>
-    ToCon (a1, b1, c1, d1, e1) (a2, b2, c2, d2, e2)
-
--- (,,,,,)
-deriving via
-  (Default (a2, b2, c2, d2, e2, f2))
-  instance
-    (ToCon a1 a2, ToCon b1 b2, ToCon c1 c2, ToCon d1 d2, ToCon e1 e2, ToCon f1 f2) =>
-    ToCon (a1, b1, c1, d1, e1, f1) (a2, b2, c2, d2, e2, f2)
-
--- (,,,,,,)
-deriving via
-  (Default (a2, b2, c2, d2, e2, f2, g2))
-  instance
-    (ToCon a1 a2, ToCon b1 b2, ToCon c1 c2, ToCon d1 d2, ToCon e1 e2, ToCon f1 f2, ToCon g1 g2) =>
-    ToCon (a1, b1, c1, d1, e1, f1, g1) (a2, b2, c2, d2, e2, f2, g2)
-
--- (,,,,,,,)
-deriving via
-  (Default (a2, b2, c2, d2, e2, f2, g2, h2))
-  instance
-    (ToCon a1 a2, ToCon b1 b2, ToCon c1 c2, ToCon d1 d2, ToCon e1 e2, ToCon f1 f2, ToCon g1 g2, ToCon h1 h2) =>
-    ToCon (a1, b1, c1, d1, e1, f1, g1, h1) (a2, b2, c2, d2, e2, f2, g2, h2)
-
--- MaybeT
-instance
-  (ToCon (m1 (Maybe a)) (m2 (Maybe b))) =>
-  ToCon (MaybeT m1 a) (MaybeT m2 b)
-  where
-  toCon (MaybeT v) = MaybeT <$> toCon v
-
--- ExceptT
-instance
-  (ToCon (m1 (Either e1 a)) (m2 (Either e2 b))) =>
-  ToCon (ExceptT e1 m1 a) (ExceptT e2 m2 b)
-  where
-  toCon (ExceptT v) = ExceptT <$> toCon v
-
-instance
-  (ToCon (m1 (Either e1 a)) (Either e2 b)) =>
-  ToCon (ExceptT e1 m1 a) (Either e2 b)
-  where
-  toCon (ExceptT v) = toCon v
-
--- Sum
-deriving via
-  (Default (Sum f1 g1 a1))
-  instance
-    (ToCon (f a) (f1 a1), ToCon (g a) (g1 a1)) => ToCon (Sum f g a) (Sum f1 g1 a1)
-
--- WriterT
-instance
-  (ToCon (m1 (a, s1)) (m2 (b, s2))) =>
-  ToCon (WriterLazy.WriterT s1 m1 a) (WriterLazy.WriterT s2 m2 b)
-  where
-  toCon (WriterLazy.WriterT v) = WriterLazy.WriterT <$> toCon v
-
-instance
-  (ToCon (m1 (a, s1)) (m2 (b, s2))) =>
-  ToCon (WriterStrict.WriterT s1 m1 a) (WriterStrict.WriterT s2 m2 b)
-  where
-  toCon (WriterStrict.WriterT v) = WriterStrict.WriterT <$> toCon v
-
--- Identity
-instance (ToCon a b) => ToCon (Identity a) (Identity b) where
-  toCon (Identity a) = Identity <$> toCon a
-
-instance ToCon (Identity v) v where
-  toCon = Just . runIdentity
-
-instance ToCon v (Identity v) where
-  toCon = Just . Identity
-
--- IdentityT
-instance (ToCon (m a) (m1 b)) => ToCon (IdentityT m a) (IdentityT m1 b) where
-  toCon (IdentityT a) = IdentityT <$> toCon a
 
 #define TO_CON_SYMID_SIMPLE(symtype) \
 instance ToCon symtype symtype where \
@@ -310,42 +528,3 @@ instance ToCon SymFP32 Float where
 instance ToCon SymFP64 Double where
   toCon (Con (fp :: FP64)) = Just $ bitCast fp
   toCon _ = Nothing
-
-deriving via
-  (Default AssertionError)
-  instance
-    ToCon AssertionError AssertionError
-
-deriving via
-  (Default VerificationConditions)
-  instance
-    ToCon VerificationConditions VerificationConditions
-
--- Derivation of ToCon for generic types
-instance (Generic a, Generic b, ToCon' (Rep a) (Rep b)) => ToCon a (Default b) where
-  toCon v = fmap (Default . to) $ toCon' $ from v
-
-class ToCon' a b where
-  toCon' :: a c -> Maybe (b c)
-
-instance ToCon' U1 U1 where
-  toCon' = Just
-
-instance ToCon' V1 V1 where
-  toCon' = Just
-
-instance (ToCon a b) => ToCon' (K1 i a) (K1 i b) where
-  toCon' (K1 a) = K1 <$> toCon a
-
-instance (ToCon' a b) => ToCon' (M1 i c1 a) (M1 i c2 b) where
-  toCon' (M1 a) = M1 <$> toCon' a
-
-instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :+: b1) (a2 :+: b2) where
-  toCon' (L1 a) = L1 <$> toCon' a
-  toCon' (R1 a) = R1 <$> toCon' a
-
-instance (ToCon' a1 a2, ToCon' b1 b2) => ToCon' (a1 :*: b1) (a2 :*: b2) where
-  toCon' (a :*: b) = do
-    ac <- toCon' a
-    bc <- toCon' b
-    return $ ac :*: bc

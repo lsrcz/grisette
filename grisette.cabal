@@ -136,6 +136,7 @@ library
       Grisette.Internal.SymPrim.SymTabularFun
       Grisette.Internal.SymPrim.TabularFun
       Grisette.Internal.TH.Derivation
+      Grisette.Internal.TH.DeriveBinaryClass
       Grisette.Internal.TH.DeriveUnifiedInterface
       Grisette.Internal.TH.Util
       Grisette.Internal.Utils.Derive
