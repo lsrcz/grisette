@@ -13,10 +13,9 @@
 -- Portability :   GHC only
 module Grisette.Unified.Internal.MonadWithMode (MonadWithMode) where
 
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.IsMode (IsMode)
-import Grisette.Unified.Internal.UnifiedBV (SafeAllUnifiedBV)
-import Grisette.Unified.Internal.UnifiedInteger (SafeUnifiedInteger)
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operations for the types.
@@ -29,7 +28,6 @@ import Grisette.Unified.Internal.UnifiedInteger (SafeUnifiedInteger)
 type MonadWithMode mode m =
   ( IsMode mode,
     Monad m,
-    UnifiedBranching mode m,
-    SafeUnifiedInteger mode m,
-    SafeAllUnifiedBV mode m
+    TryMerge m,
+    UnifiedBranching mode m
   )

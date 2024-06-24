@@ -21,13 +21,14 @@ module Grisette.Unified.IsModeTest (isModeTest) where
 
 import Control.Exception (ArithException (DivideByZero))
 import Control.Monad.Error.Class (MonadError)
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except (ExceptT (ExceptT))
 import GHC.Generics (Generic)
 import Grisette
-  ( Default (Default),
+  ( BV (bv),
+    BitwidthMismatch,
+    Default (Default),
     IntN,
     Mergeable,
-    SafeDivision (safeDiv),
     SymBool,
     SymIntN,
     SymInteger,
@@ -36,8 +37,7 @@ import Grisette
   )
 import qualified Grisette
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Internal.SymPrim.SomeBV (SomeSymIntN, ssymBV)
-import Grisette.Lib.Control.Monad.Except (mrgModifyError)
+import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, ssymBV)
 import Grisette.Unified
   ( EvaluationMode (Con),
     GetBool,
@@ -49,6 +49,7 @@ import Grisette.Unified
     MonadWithMode,
     extractData,
     mrgIte,
+    safeDiv,
     symIte,
     (.<),
     (.==),
@@ -56,11 +57,17 @@ import Grisette.Unified
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
+import Control.Monad.Identity (Identity(Identity))
 
 #if MIN_VERSION_base(4,16,0)
 import GHC.TypeLits (KnownNat, type (<=))
 #else
-import Grisette.Unified (UnifiedBV, UnifiedData, SafeUnifiedBV)
+import Grisette.Unified
+  ( SafeUnifiedBV,
+    SafeUnifiedSomeBV,
+    UnifiedBV,
+    UnifiedData,
+  )
 #endif
 
 fbool ::
@@ -84,34 +91,96 @@ finteger l r =
     (symIte (l .< r :: GetBool mode) l r)
 
 #if MIN_VERSION_base(4,16,0)
-type BVConstraint mode n = (IsMode mode, KnownNat n, 1 <= n)
+type BVConstraint mode m n =
+  (MonadWithMode mode m, MonadError ArithException m, KnownNat n, 1 <= n)
 #else
-type BVConstraint mode n = (IsMode mode, UnifiedBV mode n)
+type BVConstraint mode m n =
+  (MonadWithMode mode m, MonadError ArithException m, SafeUnifiedBV mode n m)
 #endif
 
 fbv ::
-  forall mode n.
-  (BVConstraint mode n) =>
+  forall mode n m.
+  (BVConstraint mode m n) =>
   GetIntN mode n ->
   GetIntN mode n ->
-  GetIntN mode n
-fbv l r =
-  mrgIte @mode
-    (l .== r)
-    (l + r)
-    (symIte @mode (l .< r) l r)
+  m (GetIntN mode n)
+fbv l r = do
+  v <- safeDiv @mode @ArithException l r
+  mrgReturn $
+    mrgIte @mode
+      (l .== r)
+      (v + r)
+      (symIte @mode (l .< r) l r)
+
+#if MIN_VERSION_base(4,16,0)
+type BVConstraint' mode m n =
+  (MonadWithMode mode m, KnownNat n, 1 <= n)
+#else
+type BVConstraint' mode m n =
+  ( MonadWithMode mode m,
+    SafeUnifiedBV mode n (ExceptT ArithException m)
+  )
+#endif
+
+fbv' ::
+  forall mode n m.
+  (BVConstraint' mode m n) =>
+  GetIntN mode n ->
+  GetIntN mode n ->
+  ExceptT ArithException m (GetIntN mode n)
+fbv' l r = do
+  v <- safeDiv @mode @ArithException l r
+  mrgReturn $
+    mrgIte @mode
+      (l .== r)
+      (v + r)
+      (symIte @mode (l .< r) l r)
+
+#if MIN_VERSION_base(4,16,0)
+type SomeBVConstraint mode m =
+  (MonadWithMode mode m, MonadError (Either BitwidthMismatch ArithException) m)
+#else
+type SomeBVConstraint mode m =
+  (MonadWithMode mode m, SafeUnifiedSomeBV mode m)
+#endif
 
 fsomebv ::
-  forall mode.
-  (IsMode mode) =>
+  forall mode m.
+  (SomeBVConstraint mode m) =>
   GetSomeIntN mode ->
   GetSomeIntN mode ->
-  GetSomeIntN mode
-fsomebv l r =
-  symIte @mode
-    (l .== r)
-    (l + r)
-    (symIte @mode (l .< r) l r)
+  m (GetSomeIntN mode)
+fsomebv l r = do
+  v <- safeDiv @mode @(Either BitwidthMismatch ArithException) l r
+  mrgReturn $
+    symIte @mode
+      (l .== r)
+      (v + r)
+      (symIte @mode (l .< r) l r)
+
+#if MIN_VERSION_base(4,16,0)
+type SomeBVConstraint' mode m =
+  (MonadWithMode mode m)
+#else
+type SomeBVConstraint' mode m =
+  ( MonadWithMode mode m,
+    SafeUnifiedSomeBV mode (ExceptT (Either BitwidthMismatch ArithException) m)
+  )
+#endif
+
+fsomebv' ::
+  forall mode m.
+  (SomeBVConstraint' mode m) =>
+  GetSomeIntN mode ->
+  GetSomeIntN mode ->
+  ExceptT (Either BitwidthMismatch ArithException) m (GetSomeIntN mode)
+fsomebv' l r = do
+  v <- safeDiv @mode @(Either BitwidthMismatch ArithException) l r
+  mrgReturn $
+    symIte @mode
+      (l .== r)
+      (v + r)
+      (symIte @mode (l .< r) l r)
 
 data A mode = A (GetIntN mode 8) | AT (GetData mode (A mode))
   deriving (Generic)
@@ -149,7 +218,7 @@ fdata ::
 fdata d = do
   a :: A mode <- extractData @mode d
   case a of
-    A v -> mrgModifyError id $ safeDiv v (v - 1)
+    A v -> safeDiv @mode @ArithException v (v - 1)
     AT v -> fdata v
 
 isModeTest :: Test
@@ -182,27 +251,48 @@ isModeTest =
         ],
       testGroup
         "GetIntN"
-        [ testCase "Con" $ fbv (1 :: IntN 8) 2 @?= 1,
+        [ testCase "Con" $ do
+            fbv (1 :: IntN 8) 2 @?= Right 1
+            fbv' (1 :: IntN 8) 2 @?= ExceptT (Identity (Right 1)),
           testCase "Sym" $ do
             let l = "l" :: SymIntN 8
             let r = "r" :: SymIntN 8
-            fbv l r
-              @?= Grisette.mrgIte
-                (l Grisette..== r)
-                (l + r)
-                (Grisette.symIte (l Grisette..< r) l r)
+            let expected = do
+                  v <- Grisette.safeDiv l r
+                  mrgReturn $
+                    Grisette.symIte
+                      (l Grisette..== r)
+                      (v + r)
+                      (Grisette.symIte (l Grisette..< r) l r) ::
+                    ExceptT
+                      ArithException
+                      UnionM
+                      (SymIntN 8)
+            fbv l r @?= expected
+            fbv' l r @?= expected
         ],
       testGroup
         "GetSomeIntN"
-        [ testCase "Con" $ fbv (1 :: IntN 8) 2 @?= 1,
+        [ testCase "Con" $ do
+            fsomebv (bv 8 1 :: SomeIntN) (bv 8 2) @?= Right (bv 8 1)
+            fsomebv' (bv 8 1 :: SomeIntN) (bv 8 2)
+              @?= ExceptT (Identity (Right (bv 8 1))),
           testCase "Sym" $ do
             let l = ssymBV 8 "l" :: SomeSymIntN
             let r = ssymBV 8 "r" :: SomeSymIntN
-            fsomebv l r
-              @?= Grisette.symIte
-                (l Grisette..== r)
-                (l + r)
-                (Grisette.symIte (l Grisette..< r) l r)
+            let expected = do
+                  v <- Grisette.safeDiv l r
+                  mrgReturn $
+                    Grisette.symIte
+                      (l Grisette..== r)
+                      (v + r)
+                      (Grisette.symIte (l Grisette..< r) l r) ::
+                    ExceptT
+                      (Either BitwidthMismatch ArithException)
+                      UnionM
+                      SomeSymIntN
+            fsomebv l r @?= expected
+            fsomebv' l r @?= expected
         ],
       testGroup
         "GetData"
@@ -212,7 +302,7 @@ isModeTest =
           testCase "Sym" $ do
             let a = "a" :: SymIntN 8
             fdata (mrgReturn $ A a)
-              @?= ( safeDiv a (a - 1) ::
+              @?= ( Grisette.safeDiv a (a - 1) ::
                       ExceptT ArithException UnionM (SymIntN 8)
                   )
         ]

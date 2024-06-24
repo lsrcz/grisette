@@ -12,7 +12,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (..),
@@ -103,7 +102,7 @@ liftBaseMonad ::
   m a
 liftBaseMonad b =
   withMode @mode
-    (mrgSingle . runIdentity $ b)
+    (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
     (withBaseBranching @mode @m $ liftUnionM b)
 {-# INLINE liftBaseMonad #-}
 
@@ -227,19 +226,20 @@ class UnifiedSimpleMergeable2 mode f where
 -- We use this type class to help resolve the constraints for
 -- `SymBranching`.
 class
-  (Typeable mode, TryMerge m) =>
+  (Typeable mode) =>
   UnifiedBranching (mode :: EvaluationMode) m
   where
   withBaseBranching ::
-    ((If (IsConMode mode) (() :: Constraint) (SymBranching m)) => r) -> r
+    ((If (IsConMode mode) (TryMerge m) (SymBranching m)) => r) -> r
 
 withBaseBranchingTrans ::
   forall mode m t m0 r.
   ( m ~ t m0,
     UnifiedBranching mode m0,
+    (TryMerge m0) => TryMerge m,
     (SymBranching m0) => SymBranching m
   ) =>
-  ((If (IsConMode mode) (() :: Constraint) (SymBranching m)) => r) ->
+  ((If (IsConMode mode) (TryMerge m) (SymBranching m)) => r) ->
   r
 withBaseBranchingTrans r =
   withMode @mode
@@ -250,8 +250,7 @@ withBaseBranchingTrans r =
 instance
   {-# INCOHERENT #-}
   ( Typeable mode,
-    TryMerge m,
-    If (IsConMode mode) (() :: Constraint) (SymBranching m)
+    If (IsConMode mode) ((TryMerge m) :: Constraint) (SymBranching m)
   ) =>
   UnifiedBranching mode m
   where

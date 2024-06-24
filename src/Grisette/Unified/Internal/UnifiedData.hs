@@ -6,6 +6,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -34,7 +35,7 @@ import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
-  ( UnifiedBranching,
+  ( UnifiedBranching (withBaseBranching),
     liftBaseMonad,
   )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
@@ -78,7 +79,9 @@ class
 instance (Mergeable v) => UnifiedDataImpl 'Con v v where
   type GetData 'Con v = v
   wrapData = id
-  extractData = mrgSingle
+  extractData ::
+    forall m. (Mergeable v, Monad m, UnifiedBranching Con m) => v -> m v
+  extractData = withBaseBranching @'Con @m mrgSingle
 
 instance (Mergeable v) => UnifiedDataImpl 'Sym v (UnionM v) where
   type GetData 'Sym v = UnionM v

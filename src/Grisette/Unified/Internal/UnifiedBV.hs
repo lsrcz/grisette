@@ -13,30 +13,25 @@
 module Grisette.Unified.Internal.UnifiedBV
   ( UnifiedBVImpl (..),
     UnifiedBV,
-    AllUnifiedBV,
     GetSomeWordN,
     GetSomeIntN,
     SafeUnifiedBVImpl,
     SafeUnifiedBV,
-    SafeAllUnifiedBV,
+    SafeUnifiedSomeBVImpl,
+    SafeUnifiedSomeBV,
+    AllUnifiedBV,
   )
 where
 
 import Control.Exception (ArithException)
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except (MonadError)
 import Data.Bits (Bits, FiniteBits)
 import Data.Kind (Constraint, Type)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.BitVector (BV, SizedBV)
-import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision)
-import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith)
-import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate)
-import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift)
 import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift)
-import Grisette.Internal.Core.Data.Class.TryMerge (MonadTryMerge)
 import Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch,
     IntN,
@@ -57,8 +52,17 @@ import Grisette.Unified.Internal.BaseConstraint
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
 import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq)
 import Grisette.Unified.Internal.Class.UnifiedSOrd (UnifiedSOrd)
+import Grisette.Unified.Internal.Class.UnifiedSafeDivision (UnifiedSafeDivision)
+import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
+  ( UnifiedSafeLinearArith,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
+  ( UnifiedSafeSymRotate,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeSymShift (UnifiedSafeSymShift)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
-  ( UnifiedSimpleMergeable,
+  ( UnifiedBranching,
+    UnifiedSimpleMergeable,
   )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 
@@ -170,82 +174,30 @@ instance
   UnifiedBV mode n
 
 class
-  ( forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
-    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ( UnifiedSafeDivision mode ArithException word m,
+    UnifiedSafeLinearArith mode ArithException word m,
+    UnifiedSafeSymShift mode ArithException word m,
+    UnifiedSafeSymRotate mode ArithException word m,
+    UnifiedSafeDivision mode ArithException int m,
+    UnifiedSafeLinearArith mode ArithException int m,
+    UnifiedSafeSymShift mode ArithException int m,
+    UnifiedSafeSymRotate mode ArithException int m,
+    UnifiedBVImpl mode wordn intn n word int
   ) =>
-  AllUnifiedBV mode
+  SafeUnifiedBVImpl (mode :: EvaluationMode) wordn intn n word int m
 
 instance
-  ( forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
-    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ( UnifiedSafeDivision mode ArithException word m,
+    UnifiedSafeLinearArith mode ArithException word m,
+    UnifiedSafeSymShift mode ArithException word m,
+    UnifiedSafeSymRotate mode ArithException word m,
+    UnifiedSafeDivision mode ArithException int m,
+    UnifiedSafeLinearArith mode ArithException int m,
+    UnifiedSafeSymShift mode ArithException int m,
+    UnifiedSafeSymRotate mode ArithException int m,
+    UnifiedBVImpl mode wordn intn n word int
   ) =>
-  AllUnifiedBV mode
-
-type SafeSomeBVPair mode word int m =
-  ( SomeBVPair mode word int,
-    SafeDivision
-      (Either BitwidthMismatch ArithException)
-      word
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeLinearArith
-      (Either BitwidthMismatch ArithException)
-      word
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeSymShift
-      (Either BitwidthMismatch ArithException)
-      word
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeSymRotate
-      (Either BitwidthMismatch ArithException)
-      word
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeDivision
-      (Either BitwidthMismatch ArithException)
-      int
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeLinearArith
-      (Either BitwidthMismatch ArithException)
-      int
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeSymShift
-      (Either BitwidthMismatch ArithException)
-      int
-      (ExceptT (Either BitwidthMismatch ArithException) m),
-    SafeSymRotate
-      (Either BitwidthMismatch ArithException)
-      int
-      (ExceptT (Either BitwidthMismatch ArithException) m)
-  ) ::
-    Constraint
-
-class
-  ( UnifiedBVImpl mode wordn intn n word int,
-    SafeDivision ArithException (wordn n) (ExceptT ArithException m),
-    SafeLinearArith ArithException (wordn n) (ExceptT ArithException m),
-    SafeSymShift ArithException (wordn n) (ExceptT ArithException m),
-    SafeSymRotate ArithException (wordn n) (ExceptT ArithException m),
-    SafeDivision ArithException (intn n) (ExceptT ArithException m),
-    SafeLinearArith ArithException (intn n) (ExceptT ArithException m),
-    SafeSymShift ArithException (intn n) (ExceptT ArithException m),
-    SafeSymRotate ArithException (intn n) (ExceptT ArithException m),
-    SafeSomeBVPair mode (SomeBV wordn) (SomeBV intn) m
-  ) =>
-  SafeUnifiedBVImpl
-    (mode :: EvaluationMode)
-    wordn
-    intn
-    n
-    word
-    int
-    (m :: Type -> Type)
-
-instance
-  (MonadTryMerge m, KnownNat n, 1 <= n) =>
-  SafeUnifiedBVImpl 'Con WordN IntN n (WordN n) (IntN n) m
-
-instance
-  (MonadUnion m, KnownNat n, 1 <= n) =>
-  SafeUnifiedBVImpl 'Sym SymWordN SymIntN n (SymWordN n) (SymIntN n) m
+  SafeUnifiedBVImpl mode wordn intn n word int m
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
 -- See the notes in 'Grisette.Unified.Internal.IsMode.IsMode'.
@@ -276,13 +228,81 @@ instance
   SafeUnifiedBV mode n m
 
 class
-  ( forall n. (KnownNat n, 1 <= n) => SafeUnifiedBV mode n m,
-    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ( SomeBVPair mode word int,
+    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) int m
   ) =>
-  SafeAllUnifiedBV mode m
+  SafeUnifiedSomeBVImpl (mode :: EvaluationMode) word int m
 
 instance
-  ( forall n. (KnownNat n, 1 <= n) => SafeUnifiedBV mode n m,
+  ( SomeBVPair mode word int,
+    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) int m
+  ) =>
+  SafeUnifiedSomeBVImpl (mode :: EvaluationMode) word int m
+
+class
+  ( SafeUnifiedSomeBVImpl
+      mode
+      (SomeBV (GetWordN mode))
+      (SomeBV (GetIntN mode))
+      m
+  ) =>
+  SafeUnifiedSomeBV mode m
+
+instance
+  ( SafeUnifiedSomeBVImpl
+      mode
+      (SomeBV (GetWordN mode))
+      (SomeBV (GetIntN mode))
+      m
+  ) =>
+  SafeUnifiedSomeBV mode m
+
+class
+  ( forall n m.
+    ( UnifiedBranching mode m,
+      MonadError ArithException m,
+      KnownNat n,
+      1 <= n
+    ) =>
+    SafeUnifiedBV mode n m,
+    forall m.
+    ( UnifiedBranching mode m,
+      MonadError (Either BitwidthMismatch ArithException) m
+    ) =>
+    SafeUnifiedSomeBV mode m,
+    forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
     SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
   ) =>
-  SafeAllUnifiedBV mode m
+  AllUnifiedBV mode
+
+instance
+  ( forall n m.
+    ( UnifiedBranching mode m,
+      MonadError ArithException m,
+      KnownNat n,
+      1 <= n
+    ) =>
+    SafeUnifiedBV mode n m,
+    forall m.
+    ( UnifiedBranching mode m,
+      MonadError (Either BitwidthMismatch ArithException) m
+    ) =>
+    SafeUnifiedSomeBV mode m,
+    forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+  ) =>
+  AllUnifiedBV mode

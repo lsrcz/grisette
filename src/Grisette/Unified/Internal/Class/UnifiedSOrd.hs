@@ -12,7 +12,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Grisette.Unified.Internal.Class.UnifiedSOrd
   ( UnifiedSOrd (..),
@@ -271,7 +270,12 @@ mrgMax ::
   m a
 mrgMax x y =
   withMode @mode
-    (withBaseSOrd @mode @a $ tryMerge $ pure $ max x y)
+    ( withBaseSOrd @mode @a $
+        withBaseBranching @mode @m $
+          tryMerge $
+            pure $
+              max x y
+    )
     ( withBaseSOrd @mode @a $
         withBaseBranching @mode @m $
           Grisette.Internal.Core.Data.Class.SOrd.mrgMax x y
@@ -292,7 +296,12 @@ mrgMin ::
   m a
 mrgMin x y =
   withMode @mode
-    (withBaseSOrd @mode @a $ tryMerge $ pure $ min x y)
+    ( withBaseSOrd @mode @a $
+        withBaseBranching @mode @m $
+          tryMerge $
+            pure $
+              min x y
+    )
     ( withBaseSOrd @mode @a $
         withBaseBranching @mode @m $
           Grisette.Internal.Core.Data.Class.SOrd.mrgMin x y
