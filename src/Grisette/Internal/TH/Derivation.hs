@@ -6,13 +6,14 @@
 
 module Grisette.Internal.TH.Derivation
   ( DeriveTypeParamHandler (..),
-    getTypeWithMaybeSubst,
     NatShouldBePositive (..),
     IsFPBits (..),
     PrimaryConstraint (..),
     SomeDeriveTypeParamHandler (..),
     DeriveStrategyHandler (..),
     Strategy (..),
+    getStrategy,
+    getClassName,
     deriveWithHandlers,
     deriveSimpleBuiltin,
     deriveSimpleBuiltins,
@@ -26,11 +27,16 @@ where
 import Control.Monad (foldM, when)
 import Data.Containers.ListUtils (nubOrd)
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe, isNothing, mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Generics.Deriving (Default, Default1)
 import Grisette.Internal.SymPrim.FP (ValidFP)
-import Grisette.Internal.TH.Util (singleParamClassParamKind, substDataType)
+import Grisette.Internal.TH.Util
+  ( dropNTypeParam,
+    getTypeWithMaybeSubst,
+    singleParamClassParamKind,
+    substDataType,
+  )
 import Language.Haskell.TH
   ( Dec,
     DerivStrategy
@@ -43,11 +49,10 @@ import Language.Haskell.TH
     Name,
     Pred,
     Q,
-    Type (AppT, ConT),
+    Type (ConT),
     appT,
     conT,
     standaloneDerivWithStrategyD,
-    varT,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields),
@@ -60,7 +65,6 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     tvKind,
     tvName,
   )
-import Language.Haskell.TH.Ppr (pprint)
 
 class DeriveTypeParamHandler handler where
   handleTypeParam ::
@@ -70,10 +74,6 @@ class DeriveTypeParamHandler handler where
   handleBody :: handler -> [Type] -> Q [Pred]
 
 data NatShouldBePositive = NatShouldBePositive
-
-getTypeWithMaybeSubst :: TyVarBndrUnit -> Maybe Type -> Q Type
-getTypeWithMaybeSubst tv Nothing = varT $ tvName tv
-getTypeWithMaybeSubst _ (Just t) = return t
 
 instance DeriveTypeParamHandler NatShouldBePositive where
   handleTypeParam _ =
@@ -93,7 +93,7 @@ instance DeriveTypeParamHandler NatShouldBePositive where
             let t = getTypeWithMaybeSubst tv substTy
             knownPred <- [t|KnownNat $t|]
             geq1Pred <- [t|1 <= $t|]
-            return (Just [knownPred, geq1Pred], Nothing)
+            return (Just [knownPred, geq1Pred], substTy)
       handle _ preds ty = return (preds, ty)
   handleBody _ _ = return []
 
@@ -222,19 +222,6 @@ standaloneDeriveByStrategy strategy preds ty = do
 instance DeriveStrategyHandler Strategy where
   instanceDeclaration strategy _ = standaloneDeriveByStrategy strategy
 
-dropLastTypeParam :: Type -> Q Type
-dropLastTypeParam (AppT c _) = return c
-dropLastTypeParam v =
-  fail $
-    "dropLastTypeParam: have no type parameters: "
-      <> pprint v
-      <> " / "
-      <> show v
-
-dropNTypeParam :: Int -> Type -> Q Type
-dropNTypeParam 0 t = return t
-dropNTypeParam n t = dropLastTypeParam t >>= dropNTypeParam (n - 1)
-
 deriveWithHandlers ::
   (DeriveStrategyHandler strategy) =>
   [SomeDeriveTypeParamHandler] ->
@@ -288,10 +275,9 @@ deriveWithHandlers
           datatypeType $
             substDataType d substMap
       let fst3 (a, _, _) = a
-      let thd3 (_, _, a) = a
       instanceDeclaration
         strategy
-        (fst3 <$> filter (isNothing . thd3) tyVarsWithConstraints)
+        (fst3 <$> tyVarsWithConstraints)
         allConstraints
         ty
 
