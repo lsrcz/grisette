@@ -8,14 +8,28 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.7.0.0]
 
-### Fixed
-
-- Added missing `AllSyms` instance for `WordN`, `IntN`, and `FP`.
-  ([#209](https://github.com/lsrcz/grisette/pull/209))
-- Exported the `FP` constructs in the `Grisette` module.
-  ([#209](https://github.com/lsrcz/grisette/pull/209))
+### Added
 - Added `true` and `false` in `LogicalOp`.
   ([#211](https://github.com/lsrcz/grisette/pull/211))
+- Exported the `FP` constructs in the `Grisette` module.
+  ([#209](https://github.com/lsrcz/grisette/pull/209))
+- Added missing `AllSyms` instance for `WordN`, `IntN`, and `FP`.
+  ([#209](https://github.com/lsrcz/grisette/pull/209))
+- Added unified interfaces.
+  ([#210](https://github.com/lsrcz/grisette/pull/210),
+   [#212](https://github.com/lsrcz/grisette/pull/212),
+   [#213](https://github.com/lsrcz/grisette/pull/213),
+   [#214](https://github.com/lsrcz/grisette/pull/214),
+   [#215](https://github.com/lsrcz/grisette/pull/215))
+
+### Changed
+- [Breaking] Relaxed constraints for type classes, according to
+  https://github.com/haskell/core-libraries-committee/issues/10.
+  ([#213](https://github.com/lsrcz/grisette/pull/213),
+   [#214](https://github.com/lsrcz/grisette/pull/214))
+- [Breaking] Rewritten the generic derivation mechanism.
+  ([#213](https://github.com/lsrcz/grisette/pull/213),
+   [#214](https://github.com/lsrcz/grisette/pull/214))
 
 ## [0.6.0.0] -- 2024-06-07
 
