@@ -30,7 +30,12 @@ import Grisette.Internal.Core.Data.Class.SafeDivision
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift)
 import qualified Grisette.Internal.Core.Data.Class.SafeSymShift
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
-import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, SomeSymWordN, SomeWordN)
+import Grisette.Internal.SymPrim.SomeBV
+  ( SomeIntN,
+    SomeSymIntN,
+    SomeSymWordN,
+    SomeWordN,
+  )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
@@ -41,28 +46,52 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.Util (withMode)
 
 safeSymShiftL ::
-  forall mode e a m. (UnifiedSafeSymShift mode e a m) => a -> a -> m a
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeSymShift mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSymShiftL a b =
   withBaseSafeSymShift @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymShiftL a b
 {-# INLINE safeSymShiftL #-}
 
 safeSymShiftR ::
-  forall mode e a m. (UnifiedSafeSymShift mode e a m) => a -> a -> m a
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeSymShift mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSymShiftR a b =
   withBaseSafeSymShift @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymShiftR a b
 {-# INLINE safeSymShiftR #-}
 
 safeSymStrictShiftL ::
-  forall mode e a m. (UnifiedSafeSymShift mode e a m) => a -> a -> m a
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeSymShift mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSymStrictShiftL a b =
   withBaseSafeSymShift @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftL a b
 {-# INLINE safeSymStrictShiftL #-}
 
 safeSymStrictShiftR ::
-  forall mode e a m. (UnifiedSafeSymShift mode e a m) => a -> a -> m a
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeSymShift mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSymStrictShiftR a b =
   withBaseSafeSymShift @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftR a b

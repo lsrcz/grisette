@@ -48,39 +48,67 @@ import Grisette.Unified.Internal.EvaluationMode
   )
 import Grisette.Unified.Internal.Util (withMode)
 
-safeDiv :: forall mode e a m. (UnifiedSafeDivision mode e a m) => a -> a -> m a
+safeDiv ::
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeDivision mode e a m) =>
+  a ->
+  a ->
+  m a
 safeDiv a b =
   withBaseSafeDivision @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeDivision.safeDiv a b
 {-# INLINE safeDiv #-}
 
-safeMod :: forall mode e a m. (UnifiedSafeDivision mode e a m) => a -> a -> m a
+safeMod ::
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeDivision mode e a m) =>
+  a ->
+  a ->
+  m a
 safeMod a b =
   withBaseSafeDivision @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeDivision.safeMod a b
 {-# INLINE safeMod #-}
 
 safeDivMod ::
-  forall mode e a m. (UnifiedSafeDivision mode e a m) => a -> a -> m (a, a)
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeDivision mode e a m) =>
+  a ->
+  a ->
+  m (a, a)
 safeDivMod a b =
   withBaseSafeDivision @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeDivision.safeDivMod a b
 {-# INLINE safeDivMod #-}
 
-safeQuot :: forall mode e a m. (UnifiedSafeDivision mode e a m) => a -> a -> m a
+safeQuot ::
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeDivision mode e a m) =>
+  a ->
+  a ->
+  m a
 safeQuot a b =
   withBaseSafeDivision @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeDivision.safeQuot a b
 {-# INLINE safeQuot #-}
 
-safeRem :: forall mode e a m. (UnifiedSafeDivision mode e a m) => a -> a -> m a
+safeRem ::
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeDivision mode e a m) =>
+  a ->
+  a ->
+  m a
 safeRem a b =
   withBaseSafeDivision @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeDivision.safeRem a b
 {-# INLINE safeRem #-}
 
 safeQuotRem ::
-  forall mode e a m. (UnifiedSafeDivision mode e a m) => a -> a -> m (a, a)
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeDivision mode e a m) =>
+  a ->
+  a ->
+  m (a, a)
 safeQuotRem a b =
   withBaseSafeDivision @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeDivision.safeQuotRem a b

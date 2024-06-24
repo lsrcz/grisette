@@ -30,7 +30,12 @@ import Grisette.Internal.Core.Data.Class.SafeLinearArith
   )
 import qualified Grisette.Internal.Core.Data.Class.SafeLinearArith
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
-import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, SomeSymWordN, SomeWordN)
+import Grisette.Internal.SymPrim.SomeBV
+  ( SomeIntN,
+    SomeSymIntN,
+    SomeSymWordN,
+    SomeWordN,
+  )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
@@ -42,20 +47,38 @@ import Grisette.Unified.Internal.EvaluationMode
 import Grisette.Unified.Internal.Util (withMode)
 
 safeAdd ::
-  forall mode e a m. (UnifiedSafeLinearArith mode e a m) => a -> a -> m a
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeLinearArith mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeAdd a b =
   withBaseSafeLinearArith @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeLinearArith.safeAdd a b
 {-# INLINE safeAdd #-}
 
-safeNeg :: forall mode e a m. (UnifiedSafeLinearArith mode e a m) => a -> m a
+safeNeg ::
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeLinearArith mode e a m
+  ) =>
+  a ->
+  m a
 safeNeg a =
   withBaseSafeLinearArith @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeLinearArith.safeNeg a
 {-# INLINE safeNeg #-}
 
 safeSub ::
-  forall mode e a m. (UnifiedSafeLinearArith mode e a m) => a -> a -> m a
+  forall mode e a m.
+  ( MonadError e m,
+    UnifiedSafeLinearArith mode e a m
+  ) =>
+  a ->
+  a ->
+  m a
 safeSub a b =
   withBaseSafeLinearArith @mode @e @a @m $
     Grisette.Internal.Core.Data.Class.SafeLinearArith.safeSub a b

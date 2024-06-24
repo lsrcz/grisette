@@ -129,7 +129,7 @@ fbv' ::
   GetIntN mode n ->
   ExceptT ArithException m (GetIntN mode n)
 fbv' l r = do
-  v <- safeDiv @mode @ArithException l r
+  v <- safeDiv @mode l r
   mrgReturn $
     mrgIte @mode
       (l .== r)
@@ -151,7 +151,7 @@ fsomebv ::
   GetSomeIntN mode ->
   m (GetSomeIntN mode)
 fsomebv l r = do
-  v <- safeDiv @mode @(Either BitwidthMismatch ArithException) l r
+  v <- safeDiv @mode l r
   mrgReturn $
     symIte @mode
       (l .== r)
@@ -175,7 +175,7 @@ fsomebv' ::
   GetSomeIntN mode ->
   ExceptT (Either BitwidthMismatch ArithException) m (GetSomeIntN mode)
 fsomebv' l r = do
-  v <- safeDiv @mode @(Either BitwidthMismatch ArithException) l r
+  v <- safeDiv @mode l r
   mrgReturn $
     symIte @mode
       (l .== r)
@@ -218,7 +218,7 @@ fdata ::
 fdata d = do
   a :: A mode <- extractData @mode d
   case a of
-    A v -> safeDiv @mode @ArithException v (v - 1)
+    A v -> safeDiv @mode v (v - 1)
     AT v -> fdata v
 
 isModeTest :: Test
