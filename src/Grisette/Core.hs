@@ -1050,6 +1050,10 @@ module Grisette.Core
     SymbolSetOps (..),
     SymbolSetRep (..),
     ExtractSymbolics (..),
+    ExtractSymbolics1 (..),
+    extractSymbolics1,
+    ExtractSymbolics2 (..),
+    extractSymbolics2,
 
     -- ** Evaluation with a model
 
@@ -1145,6 +1149,12 @@ module Grisette.Core
     GToSym (..),
     genericToSym,
     genericLiftToSym,
+
+    -- *** ExtractSymbolics
+    ExtractSymbolicsArgs (..),
+    GExtractSymbolics (..),
+    genericExtractSymbolics,
+    genericLiftExtractSymbolics,
   )
 where
 
@@ -1237,6 +1247,14 @@ import Grisette.Internal.Core.Data.Class.EvaluateSym
   )
 import Grisette.Internal.Core.Data.Class.ExtractSymbolics
   ( ExtractSymbolics (..),
+    ExtractSymbolics1 (..),
+    ExtractSymbolics2 (..),
+    ExtractSymbolicsArgs (..),
+    GExtractSymbolics (..),
+    extractSymbolics1,
+    extractSymbolics2,
+    genericExtractSymbolics,
+    genericLiftExtractSymbolics,
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty (..))
