@@ -105,10 +105,9 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.Derivation (Strategy (ViaDefault, ViaDefault1))
-import Grisette.Internal.TH.DeriveBinaryClass
-  ( deriveSimpleConversion1s,
-    deriveSimpleConversions,
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
+  ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
@@ -247,9 +246,9 @@ instance
   liftToCon f = fmap Default1 . genericLiftToCon f
   {-# INLINE liftToCon #-}
 
-deriveSimpleConversions
+deriveBuiltins
   (ViaDefault ''ToCon)
-  ''ToCon
+  [''ToCon]
   [ ''[],
     ''Maybe,
     ''Either,
@@ -272,10 +271,9 @@ deriveSimpleConversions
     ''VerificationConditions
   ]
 
-deriveSimpleConversion1s
+deriveBuiltins
   (ViaDefault1 ''ToCon1)
-  ''ToCon
-  ''ToCon1
+  [''ToCon, ''ToCon1]
   [ ''[],
     ''Maybe,
     ''Either,

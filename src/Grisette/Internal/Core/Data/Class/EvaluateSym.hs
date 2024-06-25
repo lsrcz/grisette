@@ -103,10 +103,9 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.Derivation
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
-    deriveFunctorArgBuiltins,
-    deriveSimpleBuiltin1s,
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
@@ -299,10 +298,9 @@ instance
   {-# INLINE liftEvaluateSym #-}
 
 -- Instances
-deriveFunctorArgBuiltins
+deriveBuiltins
   (ViaDefault ''EvaluateSym)
-  ''EvaluateSym
-  ''EvaluateSym1
+  [''EvaluateSym]
   [ ''[],
     ''Maybe,
     ''Either,
@@ -326,10 +324,9 @@ deriveFunctorArgBuiltins
     ''Identity
   ]
 
-deriveSimpleBuiltin1s
+deriveBuiltins
   (ViaDefault1 ''EvaluateSym1)
-  ''EvaluateSym
-  ''EvaluateSym1
+  [''EvaluateSym, ''EvaluateSym1]
   [ ''[],
     ''Maybe,
     ''Either,

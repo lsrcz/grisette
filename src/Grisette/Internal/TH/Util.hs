@@ -6,6 +6,11 @@ module Grisette.Internal.TH.Util
     getTypeWithMaybeSubst,
     dropLastTypeParam,
     dropNTypeParam,
+    classParamKinds,
+    allSameKind,
+    classNumParam,
+    kindNumParam,
+    concatPreds,
   )
 where
 
@@ -16,8 +21,9 @@ import Language.Haskell.TH
     Info (ClassI),
     Kind,
     Name,
+    Pred,
     Q,
-    Type (AppT, VarT),
+    Type (AppT, ArrowT, VarT),
     newName,
     pprint,
     reify,
@@ -51,6 +57,28 @@ reifyDatatypeWithFreshNames :: Name -> Q DatatypeInfo
 reifyDatatypeWithFreshNames name = do
   d <- reifyDatatype name
   datatypeToFreshNames d
+
+allSameKind :: [TyVarBndrUnit] -> Bool
+allSameKind [] = True
+allSameKind (x : xs) = all ((== tvKind x) . tvKind) xs
+
+classParamKinds :: Name -> Q [Kind]
+classParamKinds className = do
+  cls <- reify className
+  case cls of
+    ClassI (ClassD _ _ bndrs _ _) _ -> return $ tvKind <$> bndrs
+    _ ->
+      fail $
+        "symmetricClassParamKind:" <> show className <> " is not a class"
+
+classNumParam :: Name -> Q Int
+classNumParam className = do
+  cls <- reify className
+  case cls of
+    ClassI (ClassD _ _ bndrs _ _) _ -> return $ length bndrs
+    _ ->
+      fail $
+        "classNumParam:" <> show className <> " is not a class"
 
 singleParamClassParamKind :: Name -> Q Kind
 singleParamClassParamKind className = do
@@ -107,3 +135,13 @@ dropLastTypeParam v =
 dropNTypeParam :: Int -> Type -> Q Type
 dropNTypeParam 0 t = return t
 dropNTypeParam n t = dropLastTypeParam t >>= dropNTypeParam (n - 1)
+
+kindNumParam :: Kind -> Q Int
+kindNumParam (AppT (AppT ArrowT _) k) = (1 +) <$> kindNumParam k
+kindNumParam _ = return 0
+
+concatPreds :: Maybe [Pred] -> Maybe [Pred] -> Maybe [Pred]
+concatPreds Nothing Nothing = Nothing
+concatPreds (Just ps) Nothing = Just ps
+concatPreds Nothing (Just ps) = Just ps
+concatPreds (Just ps1) (Just ps2) = Just $ ps1 ++ ps2

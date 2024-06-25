@@ -115,7 +115,10 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.SymPrim.BV
@@ -141,10 +144,9 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.Derivation
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
-    deriveFunctorArgBuiltins,
-    deriveSimpleBuiltin1s,
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 import Unsafe.Coerce (unsafeCoerce)
@@ -536,10 +538,9 @@ resolveStrategy' x = go
 {-# INLINE resolveStrategy' #-}
 
 -- Instances
-deriveFunctorArgBuiltins
+deriveBuiltins
   (ViaDefault ''Mergeable)
-  ''Mergeable
-  ''Mergeable1
+  [''Mergeable]
   [ ''Maybe,
     ''Either,
     ''(),
@@ -565,10 +566,9 @@ deriveFunctorArgBuiltins
     ''Identity
   ]
 
-deriveSimpleBuiltin1s
+deriveBuiltins
   (ViaDefault1 ''Mergeable1)
-  ''Mergeable
-  ''Mergeable1
+  [''Mergeable, ''Mergeable1]
   [ ''Maybe,
     ''Either,
     -- The following three are implemented by hand because they need to be
