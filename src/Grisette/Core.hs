@@ -656,6 +656,10 @@ module Grisette.Core
     ToCon2 (..),
     toCon2,
     ToSym (..),
+    ToSym1 (..),
+    toSym1,
+    ToSym2 (..),
+    toSym2,
 
     -- * Pretty printing
     GPretty (..),
@@ -1135,6 +1139,12 @@ module Grisette.Core
     GToCon (..),
     genericToCon,
     genericLiftToCon,
+
+    -- *** 'ToSym'
+    ToSymArgs (..),
+    GToSym (..),
+    genericToSym,
+    genericLiftToSym,
   )
 where
 
@@ -1386,7 +1396,17 @@ import Grisette.Internal.Core.Data.Class.ToCon
     toCon1,
     toCon2,
   )
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym (..))
+import Grisette.Internal.Core.Data.Class.ToSym
+  ( GToSym (..),
+    ToSym (..),
+    ToSym1 (..),
+    ToSym2 (..),
+    ToSymArgs (..),
+    genericLiftToSym,
+    genericToSym,
+    toSym1,
+    toSym2,
+  )
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge (..),
