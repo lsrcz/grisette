@@ -135,9 +135,11 @@ library
       Grisette.Internal.SymPrim.SymInteger
       Grisette.Internal.SymPrim.SymTabularFun
       Grisette.Internal.SymPrim.TabularFun
-      Grisette.Internal.TH.Derivation
-      Grisette.Internal.TH.DeriveBinaryClass
+      Grisette.Internal.TH.DeriveBuiltin
+      Grisette.Internal.TH.DeriveInstanceProvider
+      Grisette.Internal.TH.DeriveTypeParamHandler
       Grisette.Internal.TH.DeriveUnifiedInterface
+      Grisette.Internal.TH.DeriveWithHandlers
       Grisette.Internal.TH.Util
       Grisette.Internal.Utils.Derive
       Grisette.Internal.Utils.Parameterized

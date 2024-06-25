@@ -118,10 +118,9 @@ import Grisette.Internal.SymPrim.SymFP
     SymFPRoundingMode (SymFPRoundingMode),
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
-import Grisette.Internal.TH.Derivation
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
-    deriveFunctorArgBuiltins,
-    deriveSimpleBuiltin1s,
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
@@ -370,10 +369,9 @@ genericLiftSymCompare c l r = gsymCompare (SOrdArgs1 c) (from1 l) (from1 r)
 {-# INLINE genericLiftSymCompare #-}
 
 -- Instances
-deriveFunctorArgBuiltins
+deriveBuiltins
   (ViaDefault ''SOrd)
-  ''SOrd
-  ''SOrd1
+  [''SOrd]
   [ ''Maybe,
     ''Either,
     ''(),
@@ -396,10 +394,9 @@ deriveFunctorArgBuiltins
     ''Identity
   ]
 
-deriveSimpleBuiltin1s
+deriveBuiltins
   (ViaDefault1 ''SOrd1)
-  ''SOrd
-  ''SOrd1
+  [''SOrd, ''SOrd1]
   [ ''Maybe,
     ''Either,
     ''(,),

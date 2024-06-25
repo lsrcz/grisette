@@ -103,10 +103,9 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.Derivation
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
-    deriveFunctorArgBuiltins,
-    deriveSimpleBuiltin1s,
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
@@ -331,10 +330,9 @@ mrgIf :: (SymBranching u, Mergeable a) => SymBool -> u a -> u a -> u a
 mrgIf = mrgIfWithStrategy rootStrategy
 {-# INLINE mrgIf #-}
 
-deriveFunctorArgBuiltins
+deriveBuiltins
   (ViaDefault ''SimpleMergeable)
-  ''SimpleMergeable
-  ''SimpleMergeable1
+  [''SimpleMergeable]
   [ ''(),
     ''(,),
     ''(,,),
@@ -354,10 +352,9 @@ deriveFunctorArgBuiltins
     ''Identity
   ]
 
-deriveSimpleBuiltin1s
+deriveBuiltins
   (ViaDefault1 ''SimpleMergeable1)
-  ''SimpleMergeable
-  ''SimpleMergeable1
+  [''SimpleMergeable, ''SimpleMergeable1]
   [ ''(,),
     ''(,,),
     ''(,,,),

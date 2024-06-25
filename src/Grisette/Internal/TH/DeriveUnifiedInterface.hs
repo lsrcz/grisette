@@ -1,8 +1,12 @@
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Grisette.Internal.TH.DeriveUnifiedInterface
   ( TypeableMode (..),
+    PrimaryUnifiedConstraint (..),
     UnifiedInstance (..),
     deriveUnifiedInterface,
     deriveUnifiedInterfaces,
@@ -13,83 +17,129 @@ module Grisette.Internal.TH.DeriveUnifiedInterface
   )
 where
 
-import Control.Monad (when)
+import Control.Monad (unless)
 import Data.Typeable (Typeable)
 import Grisette.Internal.Core.TH.Util (tvIsMode, tvIsStar, tvIsStarToStar)
-import Grisette.Internal.TH.Derivation
-  ( DeriveStrategyHandler (instanceDeclaration),
-    DeriveTypeParamHandler (handleBody, handleTypeParam),
+import Grisette.Internal.TH.DeriveInstanceProvider
+  ( DeriveInstanceProvider (instanceDeclaration),
+  )
+import Grisette.Internal.TH.DeriveTypeParamHandler
+  ( DeriveTypeParamHandler (handleBody, handleTypeParams),
     NatShouldBePositive (NatShouldBePositive),
     SomeDeriveTypeParamHandler (SomeDeriveTypeParamHandler),
-    deriveWithHandlers,
   )
-import Grisette.Internal.TH.Util (getTypeWithMaybeSubst)
+import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
+import Grisette.Internal.TH.Util
+  ( allSameKind,
+    classParamKinds,
+    concatPreds,
+    getTypeWithMaybeSubst,
+  )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
 import Language.Haskell.TH
-  ( Dec (ClassD),
+  ( Dec,
     Exp,
-    Info (ClassI),
     Inline (Inline),
+    Kind,
+    Name,
+    Phases (AllPhases),
     Pred,
     Q,
+    RuleMatch (FunLike),
     Type (ConT),
+    appT,
     conT,
     instanceD,
     lam1E,
     newName,
     normalB,
     pragInlD,
-    reify,
     valD,
     varE,
     varP,
-    varT,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr
-  ( TyVarBndrUnit,
-    kindedTV,
-    tvKind,
-    tvName,
-  )
-import Language.Haskell.TH.Syntax
-  ( Kind,
-    Name,
-    Phases (AllPhases),
-    RuleMatch (FunLike),
-  )
+import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit, kindedTV, tvKind)
 
 data TypeableMode = TypeableMode
 
 instance DeriveTypeParamHandler TypeableMode where
-  handleTypeParam _ tys = do
-    let fst3 (a, _, _) = a
-    let modes = filter tvIsMode $ fst3 <$> tys
-    newTys <- case modes of
-      [] -> do
-        nm <- newName "mode"
-        return $ (kindedTV nm (ConT ''EvaluationMode), Nothing, Nothing) : tys
-      [_] -> return tys
-      _ ->
-        fail "TypeableMode: multiple mode type variables found"
-    mapM
-      ( \(tv, preds, substTy) -> do
-          newPreds <- handleMode tv preds substTy
-          return (tv, newPreds, substTy)
-      )
-      newTys
+  handleTypeParams n _ tys = do
+    unless (n == 1) $
+      fail $
+        "TypeableMode: unified type class should have exactly one type "
+          <> "parameter"
+    let numModeParam = length $ (filter (tvIsMode . fst . head)) $ fst <$> tys
+    newTys <-
+      if numModeParam == 0
+        then do
+          nm <- newName "mode"
+          return $
+            ( [(kindedTV nm (ConT ''EvaluationMode), Nothing)],
+              Nothing
+            )
+              : tys
+        else
+          if numModeParam == 1
+            then return tys
+            else fail "TypeableMode: multiple mode type variables found"
+    mapM (uncurry handleMode) newTys
     where
       handleMode ::
-        TyVarBndrUnit ->
+        [(TyVarBndrUnit, Maybe Type)] ->
         Maybe [Pred] ->
-        Maybe Type ->
-        Q (Maybe [Pred])
-      handleMode tv preds substTy | tvIsMode tv = do
+        Q ([(TyVarBndrUnit, Maybe Type)], Maybe [Pred])
+      handleMode [(tv, substTy)] preds | tvIsMode tv = do
         typeable <- [t|Typeable $(getTypeWithMaybeSubst tv substTy)|]
-        case preds of
-          Nothing -> return (Just [typeable])
-          Just ps -> return (Just (typeable : ps))
-      handleMode _ preds _ = return preds
+        return ([(tv, substTy)], concatPreds (Just [typeable]) preds)
+      handleMode tys preds = return (tys, preds)
   handleBody _ _ = return []
+
+data PrimaryUnifiedConstraint = PrimaryUnifiedConstraint Name Bool
+
+instance DeriveTypeParamHandler PrimaryUnifiedConstraint where
+  handleTypeParams
+    n
+    (PrimaryUnifiedConstraint className ignoreIfAlreadyHandled)
+    tys = do
+      unless (n == 1) $
+        fail $
+          "TypeableMode: unified type class should have exactly one type "
+            <> "parameter"
+      kinds <- classParamKinds className
+      let modes = filter (tvIsMode . fst . head) $ fst <$> tys
+      case modes of
+        [] -> fail "PrimaryUnifiedConstraint: No mode type variable found"
+        [[md]] -> do
+          mdTy <- uncurry getTypeWithMaybeSubst md
+          mapM (uncurry $ handle kinds mdTy) tys
+        [_] ->
+          fail "PrimaryUnifiedConstraint: multiple mode type variables found"
+        _ ->
+          fail "PrimaryUnifiedConstraint: multiple mode type variables found"
+      where
+        handle ::
+          [Kind] ->
+          Type ->
+          [(TyVarBndrUnit, Maybe Type)] ->
+          Maybe [Pred] ->
+          Q ([(TyVarBndrUnit, Maybe Type)], Maybe [Pred])
+        handle _ _ [] preds = return ([], preds)
+        handle _ _ tys (Just preds)
+          | ignoreIfAlreadyHandled =
+              return (tys, Just preds)
+        handle _ _ tys _
+          | not (allSameKind (map fst tys)) =
+              fail
+                "PrimaryUnifiedConstraint: All type parameters must be aligned"
+        handle kinds modety tys preds
+          | ConT ''EvaluationMode : (tvKind . fst <$> tys) == kinds = do
+              ts <- mapM (uncurry getTypeWithMaybeSubst) tys
+              cls <-
+                foldl appT (appT (conT className) (return modety)) $
+                  return <$> ts
+              return (tys, concatPreds (Just [cls]) preds)
+        handle _ _ tys preds = return (tys, preds)
+  handleBody (PrimaryUnifiedConstraint _ _) _ = return []
 
 data UnifiedInstance = UnifiedInstance
   { _cls :: Name,
@@ -98,22 +148,31 @@ data UnifiedInstance = UnifiedInstance
     _withFunc1 :: Maybe Name
   }
 
-instance DeriveStrategyHandler UnifiedInstance where
+instance DeriveInstanceProvider UnifiedInstance where
   instanceDeclaration
     (UnifiedInstance cls clsWithFunc withFunc maybeWithFunc1)
-    tys
+    tys'
     ctx
-    ty = do
-      let modes = (varT . tvName) <$> filter tvIsMode tys
-      let stars = (varT . tvName) <$> filter tvIsStar tys
-      let starToStars = (varT . tvName) <$> filter tvIsStarToStar tys
+    ty' = do
+      unless (all ((== 1) . length) tys') $
+        fail "UnifiedInstance: only support classes with one type parameter"
+      unless (length ty' == 1) $
+        fail "UnifiedInstance: only support classes with one type parameter"
+      let tys = head <$> tys'
+      let modes =
+            map (uncurry getTypeWithMaybeSubst) $ filter (tvIsMode . fst) tys
+      let stars =
+            map (uncurry getTypeWithMaybeSubst) $ filter (tvIsStar . fst) tys
+      let starToStars =
+            map (uncurry getTypeWithMaybeSubst) $
+              filter (tvIsStarToStar . fst) tys
       case modes of
         [] -> fail "UnifiedInstance: no mode type variables found"
         [md] -> do
           sequence
             [ instanceD
                 (return ctx)
-                [t|$(conT cls) $md $(return ty)|]
+                [t|$(conT cls) $md $(return $ head ty')|]
                 [ body md clsWithFunc withFunc stars maybeWithFunc1 starToStars,
                   pragInlD clsWithFunc Inline FunLike AllPhases
                 ]
@@ -147,73 +206,8 @@ instance DeriveStrategyHandler UnifiedInstance where
                   "UnifiedInstance: withFunc1 is not provided, type have "
                     <> "functor type parameters"
 
-data PrimaryUnifiedConstraint = PrimaryUnifiedConstraint Name Bool
-
-unifiedClassParamKind :: Name -> Q Kind
-unifiedClassParamKind className = do
-  cls <- reify className
-  case cls of
-    ClassI (ClassD _ _ bndrs _ _) _ ->
-      case bndrs of
-        [mode, x] -> do
-          when (tvKind mode /= ConT ''EvaluationMode) $
-            fail $
-              "unifiedClassParamKind: first type parameter must be "
-                <> "EvaluationMode"
-          return $ tvKind x
-        _ ->
-          fail $
-            "unifiedClassParamKind: only support classes with two type "
-              <> "parameters, but "
-              <> show className
-              <> " has "
-              <> show (length bndrs)
-    _ ->
-      fail $
-        "unifiedClassParamKind:" <> show className <> " is not a class"
-
-instance DeriveTypeParamHandler PrimaryUnifiedConstraint where
-  handleTypeParam
-    (PrimaryUnifiedConstraint className ignoreIfAlreadyHandled)
-    tys = do
-      kind <- unifiedClassParamKind className
-      let fst3 (a, _, _) = a
-      let modes = filter (tvIsMode . fst3) tys
-      case modes of
-        [] -> fail "PrimaryUnifiedConstraint: no mode type variables found"
-        [(md, _, mdSubstTy)] -> do
-          mdTy <- getTypeWithMaybeSubst md mdSubstTy
-          mapM
-            ( \(tv, preds, substTy) -> do
-                (newPreds, newSubstTy) <- handle kind mdTy tv preds substTy
-                return (tv, newPreds, newSubstTy)
-            )
-            tys
-        _ ->
-          fail "PrimaryUnifiedConstraint: multiple mode type variables found"
-      where
-        handle ::
-          Kind ->
-          Type ->
-          TyVarBndrUnit ->
-          Maybe [Pred] ->
-          Maybe Type ->
-          Q (Maybe [Pred], Maybe Type)
-        handle _ _ _ (Just preds) substTy
-          | ignoreIfAlreadyHandled =
-              return (Just preds, substTy)
-        handle kind mdty tv preds substTy
-          | tvKind tv == kind = do
-              let t = getTypeWithMaybeSubst tv substTy
-              cls <- [t|$(conT className) $(return mdty) $t|]
-              case preds of
-                Nothing -> return (Just [cls], substTy)
-                Just ps -> return (Just $ cls : ps, substTy)
-        handle _ _ _ preds substTy = return (preds, substTy)
-  handleBody (PrimaryUnifiedConstraint _ _) _ = return []
-
 deriveUnifiedInterface :: Name -> Name -> Name -> Q [Dec]
-deriveUnifiedInterface cls withFunc =
+deriveUnifiedInterface cls withFunc name =
   deriveWithHandlers
     [ SomeDeriveTypeParamHandler TypeableMode,
       SomeDeriveTypeParamHandler NatShouldBePositive,
@@ -222,6 +216,7 @@ deriveUnifiedInterface cls withFunc =
     (UnifiedInstance cls withFunc withFunc Nothing)
     True
     0
+    [name]
 
 deriveUnifiedInterfaces :: Name -> Name -> [Name] -> Q [Dec]
 deriveUnifiedInterfaces cls withFunc =
@@ -229,7 +224,7 @@ deriveUnifiedInterfaces cls withFunc =
 
 deriveUnifiedInterface1 ::
   Name -> Name -> Name -> Name -> Name -> Q [Dec]
-deriveUnifiedInterface1 cls withFunc cls1 withFunc1 =
+deriveUnifiedInterface1 cls withFunc cls1 withFunc1 name =
   deriveWithHandlers
     [ SomeDeriveTypeParamHandler TypeableMode,
       SomeDeriveTypeParamHandler NatShouldBePositive,
@@ -239,6 +234,7 @@ deriveUnifiedInterface1 cls withFunc cls1 withFunc1 =
     (UnifiedInstance cls1 withFunc1 withFunc (Just withFunc1))
     True
     1
+    [name]
 
 deriveUnifiedInterface1s ::
   Name -> Name -> Name -> Name -> [Name] -> Q [Dec]
@@ -247,7 +243,7 @@ deriveUnifiedInterface1s cls withFunc cls1 withFunc1 =
 
 deriveFunctorArgUnifiedInterface ::
   Name -> Name -> Name -> Name -> Name -> Q [Dec]
-deriveFunctorArgUnifiedInterface cls withFunc cls1 withFunc1 =
+deriveFunctorArgUnifiedInterface cls withFunc cls1 withFunc1 name =
   deriveWithHandlers
     [ SomeDeriveTypeParamHandler TypeableMode,
       SomeDeriveTypeParamHandler NatShouldBePositive,
@@ -257,6 +253,7 @@ deriveFunctorArgUnifiedInterface cls withFunc cls1 withFunc1 =
     (UnifiedInstance cls withFunc withFunc (Just withFunc1))
     True
     0
+    [name]
 
 deriveFunctorArgUnifiedInterfaces ::
   Name -> Name -> Name -> Name -> [Name] -> Q [Dec]

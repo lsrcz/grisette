@@ -87,10 +87,9 @@ import Grisette.Internal.SymPrim.SymFP
     SymFPRoundingMode (SymFPRoundingMode),
   )
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
-import Grisette.Internal.TH.Derivation
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
-    deriveFunctorArgBuiltins,
-    deriveSimpleBuiltin1s,
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
@@ -256,10 +255,9 @@ genericLiftSEq f l r = gseq (SEqArgs1 f) (from1 l) (from1 r)
 {-# INLINE genericLiftSEq #-}
 
 -- Instances
-deriveFunctorArgBuiltins
+deriveBuiltins
   (ViaDefault ''SEq)
-  ''SEq
-  ''SEq1
+  [''SEq]
   [ ''[],
     ''Maybe,
     ''Either,
@@ -282,11 +280,9 @@ deriveFunctorArgBuiltins
     ''VerificationConditions,
     ''Identity
   ]
-
-deriveSimpleBuiltin1s
+deriveBuiltins
   (ViaDefault1 ''SEq1)
-  ''SEq
-  ''SEq1
+  [''SEq, ''SEq1]
   [ ''[],
     ''Maybe,
     ''Either,
