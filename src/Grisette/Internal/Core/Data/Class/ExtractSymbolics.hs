@@ -5,14 +5,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      :   Grisette.Internal.Core.Data.Class.ExtractSymbolics
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -21,6 +24,16 @@
 module Grisette.Internal.Core.Data.Class.ExtractSymbolics
   ( -- * Extracting symbolic constant set from a value
     ExtractSymbolics (..),
+    ExtractSymbolics1 (..),
+    extractSymbolics1,
+    ExtractSymbolics2 (..),
+    extractSymbolics2,
+
+    -- * Generic 'ExtractSymbolics'
+    ExtractSymbolicsArgs (..),
+    GExtractSymbolics (..),
+    genericExtractSymbolics,
+    genericLiftExtractSymbolics,
   )
 where
 
@@ -35,18 +48,24 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default, unDefault),
+    Default1 (Default1, unDefault1),
     Generic (Rep, from),
-    K1 (unK1),
-    M1 (unM1),
+    Generic1 (Rep1, from1),
+    K1 (K1),
+    M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
     U1,
     V1,
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
+    type (:.:) (Comp1),
   )
 import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
@@ -73,6 +92,11 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
+  ( Strategy (ViaDefault, ViaDefault1),
+  )
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -96,7 +120,284 @@ import Grisette.Internal.SymPrim.TabularFun (type (=->))
 class ExtractSymbolics a where
   extractSymbolics :: a -> SymbolSet
 
--- instances
+class
+  (forall a. (ExtractSymbolics a) => ExtractSymbolics (f a)) =>
+  ExtractSymbolics1 f
+  where
+  liftExtractSymbolics :: (a -> SymbolSet) -> f a -> SymbolSet
+
+extractSymbolics1 :: (ExtractSymbolics1 f, ExtractSymbolics a) => f a -> SymbolSet
+extractSymbolics1 = liftExtractSymbolics extractSymbolics
+{-# INLINE extractSymbolics1 #-}
+
+class
+  (forall a. (ExtractSymbolics a) => ExtractSymbolics1 (f a)) =>
+  ExtractSymbolics2 f
+  where
+  liftExtractSymbolics2 ::
+    (a -> SymbolSet) -> (b -> SymbolSet) -> f a b -> SymbolSet
+
+extractSymbolics2 ::
+  (ExtractSymbolics2 f, ExtractSymbolics a, ExtractSymbolics b) =>
+  f a b ->
+  SymbolSet
+extractSymbolics2 = liftExtractSymbolics2 extractSymbolics extractSymbolics
+{-# INLINE extractSymbolics2 #-}
+
+data family ExtractSymbolicsArgs arity a :: Type
+
+data instance ExtractSymbolicsArgs Arity0 _ = ExtractSymbolicsArgs0
+
+newtype instance ExtractSymbolicsArgs Arity1 a
+  = ExtractSymbolicsArgs1 (a -> SymbolSet)
+
+class GExtractSymbolics arity f where
+  gextractSymbolics :: ExtractSymbolicsArgs arity a -> f a -> SymbolSet
+
+instance GExtractSymbolics arity V1 where
+  gextractSymbolics _ _ = mempty
+  {-# INLINE gextractSymbolics #-}
+
+instance GExtractSymbolics arity U1 where
+  gextractSymbolics _ _ = mempty
+  {-# INLINE gextractSymbolics #-}
+
+instance (GExtractSymbolics arity a) => GExtractSymbolics arity (M1 i c a) where
+  gextractSymbolics args (M1 x) = gextractSymbolics args x
+  {-# INLINE gextractSymbolics #-}
+
+instance (ExtractSymbolics a) => GExtractSymbolics arity (K1 i a) where
+  gextractSymbolics _ (K1 x) = extractSymbolics x
+  {-# INLINE gextractSymbolics #-}
+
+instance
+  (GExtractSymbolics arity a, GExtractSymbolics arity b) =>
+  GExtractSymbolics arity (a :+: b)
+  where
+  gextractSymbolics args (L1 x) = gextractSymbolics args x
+  gextractSymbolics args (R1 x) = gextractSymbolics args x
+  {-# INLINE gextractSymbolics #-}
+
+instance
+  (GExtractSymbolics arity a, GExtractSymbolics arity b) =>
+  GExtractSymbolics arity (a :*: b)
+  where
+  gextractSymbolics args (x :*: y) =
+    gextractSymbolics args x <> gextractSymbolics args y
+  {-# INLINE gextractSymbolics #-}
+
+instance GExtractSymbolics Arity1 Par1 where
+  gextractSymbolics (ExtractSymbolicsArgs1 f) (Par1 x) = f x
+  {-# INLINE gextractSymbolics #-}
+
+instance (ExtractSymbolics1 a) => GExtractSymbolics Arity1 (Rec1 a) where
+  gextractSymbolics (ExtractSymbolicsArgs1 f) (Rec1 x) =
+    liftExtractSymbolics f x
+  {-# INLINE gextractSymbolics #-}
+
+instance
+  (ExtractSymbolics1 f, GExtractSymbolics Arity1 g) =>
+  GExtractSymbolics Arity1 (f :.: g)
+  where
+  gextractSymbolics targs (Comp1 x) =
+    liftExtractSymbolics (gextractSymbolics targs) x
+  {-# INLINE gextractSymbolics #-}
+
+genericExtractSymbolics ::
+  (Generic a, GExtractSymbolics Arity0 (Rep a)) =>
+  a ->
+  SymbolSet
+genericExtractSymbolics = gextractSymbolics ExtractSymbolicsArgs0 . from
+
+genericLiftExtractSymbolics ::
+  (Generic1 f, GExtractSymbolics Arity1 (Rep1 f)) =>
+  (a -> SymbolSet) ->
+  f a ->
+  SymbolSet
+genericLiftExtractSymbolics f =
+  gextractSymbolics (ExtractSymbolicsArgs1 f) . from1
+
+instance
+  (Generic a, GExtractSymbolics Arity0 (Rep a)) =>
+  ExtractSymbolics (Default a)
+  where
+  extractSymbolics = genericExtractSymbolics . unDefault
+  {-# INLINE extractSymbolics #-}
+
+instance
+  (Generic1 f, GExtractSymbolics Arity1 (Rep1 f), ExtractSymbolics a) =>
+  ExtractSymbolics (Default1 f a)
+  where
+  extractSymbolics = extractSymbolics1
+  {-# INLINE extractSymbolics #-}
+
+instance
+  (Generic1 f, GExtractSymbolics Arity1 (Rep1 f)) =>
+  ExtractSymbolics1 (Default1 f)
+  where
+  liftExtractSymbolics f = genericLiftExtractSymbolics f . unDefault1
+  {-# INLINE liftExtractSymbolics #-}
+
+-- Instances
+deriveBuiltins
+  (ViaDefault ''ExtractSymbolics)
+  [''ExtractSymbolics]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''Identity
+  ]
+
+deriveBuiltins
+  (ViaDefault1 ''ExtractSymbolics1)
+  [''ExtractSymbolics, ''ExtractSymbolics1]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Identity
+  ]
+
+-- ExceptT
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics e, ExtractSymbolics a) =>
+  ExtractSymbolics (ExceptT e m a)
+  where
+  extractSymbolics = extractSymbolics1
+  {-# INLINE extractSymbolics #-}
+
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics e) =>
+  ExtractSymbolics1 (ExceptT e m)
+  where
+  liftExtractSymbolics f (ExceptT v) =
+    liftExtractSymbolics (liftExtractSymbolics f) v
+  {-# INLINE liftExtractSymbolics #-}
+
+-- MaybeT
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics a) =>
+  ExtractSymbolics (MaybeT m a)
+  where
+  extractSymbolics = extractSymbolics1
+  {-# INLINE extractSymbolics #-}
+
+instance
+  (ExtractSymbolics1 m) =>
+  ExtractSymbolics1 (MaybeT m)
+  where
+  liftExtractSymbolics f (MaybeT v) =
+    liftExtractSymbolics (liftExtractSymbolics f) v
+  {-# INLINE liftExtractSymbolics #-}
+
+-- Sum
+deriving via
+  (Default (Sum f g a))
+  instance
+    (ExtractSymbolics (f a), ExtractSymbolics (g a)) =>
+    ExtractSymbolics (Sum f g a)
+
+deriving via
+  (Default1 (Sum f g))
+  instance
+    (ExtractSymbolics1 f, ExtractSymbolics1 g) =>
+    ExtractSymbolics1 (Sum f g)
+
+-- WriterT
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics w, ExtractSymbolics a) =>
+  ExtractSymbolics (WriterLazy.WriterT w m a)
+  where
+  extractSymbolics = extractSymbolics1
+  {-# INLINE extractSymbolics #-}
+
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics w) =>
+  ExtractSymbolics1 (WriterLazy.WriterT w m)
+  where
+  liftExtractSymbolics f (WriterLazy.WriterT v) =
+    liftExtractSymbolics (liftExtractSymbolics2 f extractSymbolics) v
+  {-# INLINE liftExtractSymbolics #-}
+
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics w, ExtractSymbolics a) =>
+  ExtractSymbolics (WriterStrict.WriterT w m a)
+  where
+  extractSymbolics = extractSymbolics1
+  {-# INLINE extractSymbolics #-}
+
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics w) =>
+  ExtractSymbolics1 (WriterStrict.WriterT w m)
+  where
+  liftExtractSymbolics f (WriterStrict.WriterT v) =
+    liftExtractSymbolics (liftExtractSymbolics2 f extractSymbolics) v
+  {-# INLINE liftExtractSymbolics #-}
+
+-- IdentityT
+instance
+  (ExtractSymbolics1 m, ExtractSymbolics a) =>
+  ExtractSymbolics (IdentityT m a)
+  where
+  extractSymbolics = extractSymbolics1
+  {-# INLINE extractSymbolics #-}
+
+instance (ExtractSymbolics1 m) => ExtractSymbolics1 (IdentityT m) where
+  liftExtractSymbolics f (IdentityT v) = liftExtractSymbolics f v
+  {-# INLINE liftExtractSymbolics #-}
+
+-- ExtractSymbolics2
+instance ExtractSymbolics2 Either where
+  liftExtractSymbolics2 f _ (Left x) = f x
+  liftExtractSymbolics2 _ g (Right y) = g y
+  {-# INLINE liftExtractSymbolics2 #-}
+
+instance ExtractSymbolics2 (,) where
+  liftExtractSymbolics2 f g (x, y) = f x <> g y
+  {-# INLINE liftExtractSymbolics2 #-}
+
+instance (ExtractSymbolics a) => ExtractSymbolics2 ((,,) a) where
+  liftExtractSymbolics2 f g (x, y, z) = extractSymbolics x <> f y <> g z
+  {-# INLINE liftExtractSymbolics2 #-}
+
+instance
+  (ExtractSymbolics a, ExtractSymbolics b) =>
+  ExtractSymbolics2 ((,,,) a b)
+  where
+  liftExtractSymbolics2 f g (x, y, z, w) =
+    extractSymbolics x <> extractSymbolics y <> f z <> g w
+  {-# INLINE liftExtractSymbolics2 #-}
+
 #define CONCRETE_EXTRACT_SYMBOLICS(type) \
 instance ExtractSymbolics type where \
   extractSymbolics _ = mempty
@@ -131,147 +432,6 @@ CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 instance (ValidFP eb sb) => ExtractSymbolics (FP eb sb) where
   extractSymbolics _ = mempty
 
--- ()
-instance ExtractSymbolics () where
-  extractSymbolics _ = mempty
-
--- Either
-deriving via
-  (Default (Either a b))
-  instance
-    (ExtractSymbolics a, ExtractSymbolics b) =>
-    ExtractSymbolics (Either a b)
-
--- Maybe
-deriving via
-  (Default (Maybe a))
-  instance
-    (ExtractSymbolics a) => ExtractSymbolics (Maybe a)
-
--- List
-deriving via
-  (Default [a])
-  instance
-    (ExtractSymbolics a) => ExtractSymbolics [a]
-
--- (,)
-deriving via
-  (Default (a, b))
-  instance
-    (ExtractSymbolics a, ExtractSymbolics b) =>
-    ExtractSymbolics (a, b)
-
--- (,,)
-deriving via
-  (Default (a, b, c))
-  instance
-    (ExtractSymbolics a, ExtractSymbolics b, ExtractSymbolics c) =>
-    ExtractSymbolics (a, b, c)
-
--- (,,,)
-deriving via
-  (Default (a, b, c, d))
-  instance
-    ( ExtractSymbolics a,
-      ExtractSymbolics b,
-      ExtractSymbolics c,
-      ExtractSymbolics d
-    ) =>
-    ExtractSymbolics (a, b, c, d)
-
--- (,,,,)
-deriving via
-  (Default (a, b, c, d, e))
-  instance
-    ( ExtractSymbolics a,
-      ExtractSymbolics b,
-      ExtractSymbolics c,
-      ExtractSymbolics d,
-      ExtractSymbolics e
-    ) =>
-    ExtractSymbolics (a, b, c, d, e)
-
--- (,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f))
-  instance
-    ( ExtractSymbolics a,
-      ExtractSymbolics b,
-      ExtractSymbolics c,
-      ExtractSymbolics d,
-      ExtractSymbolics e,
-      ExtractSymbolics f
-    ) =>
-    ExtractSymbolics (a, b, c, d, e, f)
-
--- (,,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f, g))
-  instance
-    ( ExtractSymbolics a,
-      ExtractSymbolics b,
-      ExtractSymbolics c,
-      ExtractSymbolics d,
-      ExtractSymbolics e,
-      ExtractSymbolics f,
-      ExtractSymbolics g
-    ) =>
-    ExtractSymbolics (a, b, c, d, e, f, g)
-
--- (,,,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f, g, h))
-  instance
-    ( ExtractSymbolics a,
-      ExtractSymbolics b,
-      ExtractSymbolics c,
-      ExtractSymbolics d,
-      ExtractSymbolics e,
-      ExtractSymbolics f,
-      ExtractSymbolics g,
-      ExtractSymbolics h
-    ) =>
-    ExtractSymbolics (a, b, c, d, e, f, g, h)
-
--- MaybeT
-instance (ExtractSymbolics (m (Maybe a))) => ExtractSymbolics (MaybeT m a) where
-  extractSymbolics (MaybeT v) = extractSymbolics v
-
--- ExceptT
-instance
-  (ExtractSymbolics (m (Either e a))) =>
-  ExtractSymbolics (ExceptT e m a)
-  where
-  extractSymbolics (ExceptT v) = extractSymbolics v
-
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (ExtractSymbolics (f a), ExtractSymbolics (g a)) =>
-    ExtractSymbolics (Sum f g a)
-
--- WriterT
-instance
-  (ExtractSymbolics (m (a, s))) =>
-  ExtractSymbolics (WriterLazy.WriterT s m a)
-  where
-  extractSymbolics (WriterLazy.WriterT f) = extractSymbolics f
-
-instance
-  (ExtractSymbolics (m (a, s))) =>
-  ExtractSymbolics (WriterStrict.WriterT s m a)
-  where
-  extractSymbolics (WriterStrict.WriterT f) = extractSymbolics f
-
--- Identity
-instance (ExtractSymbolics a) => ExtractSymbolics (Identity a) where
-  extractSymbolics (Identity a) = extractSymbolics a
-
--- IdentityT
-instance (ExtractSymbolics (m a)) => ExtractSymbolics (IdentityT m a) where
-  extractSymbolics (IdentityT a) = extractSymbolics a
-
 #define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
 instance ExtractSymbolics symtype where \
   extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
@@ -297,39 +457,3 @@ EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
 
 instance (ValidFP eb fb) => ExtractSymbolics (SymFP eb fb) where
   extractSymbolics (SymFP t) = SymbolSet $ extractSymbolicsTerm t
-
--- Exception
-deriving via (Default AssertionError) instance ExtractSymbolics AssertionError
-
-deriving via (Default VerificationConditions) instance ExtractSymbolics VerificationConditions
-
-instance (Generic a, ExtractSymbolics' (Rep a)) => ExtractSymbolics (Default a) where
-  extractSymbolics = extractSymbolics' . from . unDefault
-
-class ExtractSymbolics' a where
-  extractSymbolics' :: a c -> SymbolSet
-
-instance ExtractSymbolics' U1 where
-  extractSymbolics' _ = mempty
-
-instance ExtractSymbolics' V1 where
-  extractSymbolics' _ = mempty
-
-instance (ExtractSymbolics c) => ExtractSymbolics' (K1 i c) where
-  extractSymbolics' = extractSymbolics . unK1
-
-instance (ExtractSymbolics' a) => ExtractSymbolics' (M1 i c a) where
-  extractSymbolics' = extractSymbolics' . unM1
-
-instance
-  (ExtractSymbolics' a, ExtractSymbolics' b) =>
-  ExtractSymbolics' (a :+: b)
-  where
-  extractSymbolics' (L1 l) = extractSymbolics' l
-  extractSymbolics' (R1 r) = extractSymbolics' r
-
-instance
-  (ExtractSymbolics' a, ExtractSymbolics' b) =>
-  ExtractSymbolics' (a :*: b)
-  where
-  extractSymbolics' (l :*: r) = extractSymbolics' l <> extractSymbolics' r
