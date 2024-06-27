@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE Trustworthy #-}
 -- Disable this warning because we are re-exporting things.
@@ -663,6 +664,28 @@ module Grisette.Core
 
     -- * Pretty printing
     GPretty (..),
+    docToTextWith,
+    docToTextWithWidth,
+    docToText,
+    formatTextWith,
+    formatTextWithWidth,
+    formatText,
+    GPretty1 (..),
+    gprettyPrec1,
+    gprettyList1,
+    GPretty2 (..),
+    gprettyPrec2,
+    gprettyList2,
+
+    -- ** Helpers for pretty printing
+    groupedEnclose,
+    condEnclose,
+    prettyWithConstructor,
+    prettyWithConstructorNoAlign,
+    viaShowsPrec,
+
+    -- ** Re-export Prettyprinter for convenience
+    module Prettyprinter,
 
     -- * Symbolic Generation
 
@@ -1155,6 +1178,13 @@ module Grisette.Core
     GExtractSymbolics (..),
     genericExtractSymbolics,
     genericLiftExtractSymbolics,
+
+    -- * 'GPretty'
+    genericGPrettyPrec,
+    genericLiftGPrettyPrec,
+    GPrettyArgs (..),
+    GGPretty (..),
+    PrettyType (..),
   )
 where
 
@@ -1257,7 +1287,31 @@ import Grisette.Internal.Core.Data.Class.ExtractSymbolics
     genericLiftExtractSymbolics,
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
-import Grisette.Internal.Core.Data.Class.GPretty (GPretty (..))
+import Grisette.Internal.Core.Data.Class.GPretty
+  ( GGPretty (..),
+    GPretty (..),
+    GPretty1 (..),
+    GPretty2 (..),
+    GPrettyArgs (..),
+    PrettyType (..),
+    condEnclose,
+    docToText,
+    docToTextWith,
+    docToTextWithWidth,
+    formatText,
+    formatTextWith,
+    formatTextWithWidth,
+    genericGPrettyPrec,
+    genericLiftGPrettyPrec,
+    gprettyList1,
+    gprettyList2,
+    gprettyPrec1,
+    gprettyPrec2,
+    groupedEnclose,
+    prettyWithConstructor,
+    prettyWithConstructorNoAlign,
+    viaShowsPrec,
+  )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( EnumGenBound (..),
     EnumGenUpperBound (..),
@@ -1469,6 +1523,11 @@ import Grisette.Internal.Core.TH.MergeConstructor
   ( mkMergeConstructor,
     mkMergeConstructor',
   )
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+#else
+import Data.Text.Prettyprint.Doc as Prettyprinter
+#endif
 
 -- $setup
 -- >>> import Grisette.Core
