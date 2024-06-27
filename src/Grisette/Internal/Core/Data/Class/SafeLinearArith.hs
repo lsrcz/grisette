@@ -59,6 +59,7 @@ import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Control.Monad.Except
+-- >>> import Control.Exception
 
 -- | Safe division with monadic error handling in multi-path
 -- execution. These procedures throw an exception when overflow or underflow happens.
