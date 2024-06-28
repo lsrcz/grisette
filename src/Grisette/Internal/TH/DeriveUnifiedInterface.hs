@@ -66,6 +66,7 @@ import Language.Haskell.TH
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit, kindedTV, tvKind)
 
+-- | Add a 'Typeable' constraint to the modes.
 data TypeableMode = TypeableMode
 
 instance DeriveTypeParamHandler TypeableMode where
@@ -100,6 +101,8 @@ instance DeriveTypeParamHandler TypeableMode where
       handleMode tys preds = return (tys, preds)
   handleBody _ _ = return []
 
+-- | Add a primary unified constraint that applies to all the type parameters
+-- with the desired kind.
 data PrimaryUnifiedConstraint = PrimaryUnifiedConstraint Name Bool
 
 instance DeriveTypeParamHandler PrimaryUnifiedConstraint where
@@ -147,6 +150,7 @@ instance DeriveTypeParamHandler PrimaryUnifiedConstraint where
         handle _ _ tys preds = return (tys, preds)
   handleBody (PrimaryUnifiedConstraint _ _) _ = return []
 
+-- | Provide an instance for a unified interface.
 data UnifiedInstance = UnifiedInstance
   { _cls :: Name,
     _clsWithFunc :: Name,
@@ -221,6 +225,7 @@ instance DeriveInstanceProvider UnifiedInstance where
                   "UnifiedInstance: withFunc1 is not provided, type have "
                     <> "functor type parameters"
 
+-- | Derive an instance for a unified interface, with extra handlers.
 deriveUnifiedInterfaceExtra ::
   [SomeDeriveTypeParamHandler] ->
   Name ->
@@ -240,13 +245,17 @@ deriveUnifiedInterfaceExtra extraHandlers cls withFunc name =
     0
     [name]
 
+-- | Derive an instance for a unified interface.
 deriveUnifiedInterface :: Name -> Name -> Name -> Q [Dec]
 deriveUnifiedInterface = deriveUnifiedInterfaceExtra []
 
+-- | Derive instances for a list of types for a unified interface.
 deriveUnifiedInterfaces :: Name -> Name -> [Name] -> Q [Dec]
 deriveUnifiedInterfaces cls withFunc =
   fmap concat . mapM (deriveUnifiedInterface cls withFunc)
 
+-- | Derive an instance for a unified interface for functors, with extra
+-- handlers.
 deriveUnifiedInterface1Extra ::
   [SomeDeriveTypeParamHandler] ->
   Name ->
@@ -269,15 +278,19 @@ deriveUnifiedInterface1Extra extraHandlers cls withFunc cls1 withFunc1 name =
     1
     [name]
 
+-- | Derive an instance for a unified interface for functors.
 deriveUnifiedInterface1 ::
   Name -> Name -> Name -> Name -> Name -> Q [Dec]
 deriveUnifiedInterface1 = deriveUnifiedInterface1Extra []
 
+-- | Derive instances for a list of types for a unified interface for functors.
 deriveUnifiedInterface1s ::
   Name -> Name -> Name -> Name -> [Name] -> Q [Dec]
 deriveUnifiedInterface1s cls withFunc cls1 withFunc1 =
   fmap concat . mapM (deriveUnifiedInterface1 cls withFunc cls1 withFunc1)
 
+-- | Derive an instance for a unified interface, with extra handlers. The type
+-- being derived may have functor type parameters.
 deriveFunctorArgUnifiedInterfaceExtra ::
   [SomeDeriveTypeParamHandler] -> Name -> Name -> Name -> Name -> Name -> Q [Dec]
 deriveFunctorArgUnifiedInterfaceExtra
@@ -300,10 +313,14 @@ deriveFunctorArgUnifiedInterfaceExtra
       0
       [name]
 
+-- | Derive an instance for a unified interface. The type being derived may have
+-- functor type parameters.
 deriveFunctorArgUnifiedInterface ::
   Name -> Name -> Name -> Name -> Name -> Q [Dec]
 deriveFunctorArgUnifiedInterface = deriveFunctorArgUnifiedInterfaceExtra []
 
+-- | Derive instances for a list of types for a unified interface. The types
+-- being derived may have functor type parameters.
 deriveFunctorArgUnifiedInterfaces ::
   Name -> Name -> Name -> Name -> [Name] -> Q [Dec]
 deriveFunctorArgUnifiedInterfaces cls withFunc cls1 withFunc1 =

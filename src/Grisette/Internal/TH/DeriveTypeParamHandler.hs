@@ -23,6 +23,30 @@ import Grisette.Internal.TH.Util
 import Language.Haskell.TH (Kind, Name, Pred, Q, Type (ConT), appT, conT)
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit, tvKind)
 
+-- | A derive type param handler handles type parameters and provides
+-- constraints or instantiations for them.
+--
+-- The first argument is the number of types that are zipped together. For
+-- most classes, this is 1, but for some classes, like 'Grisette.ToCon', this is
+-- 2.
+--
+-- The second argument is the handler itself.
+--
+-- The third argument is a list of type parameters and their constraints. Each
+-- entry in the list corresponds to a type parameter of the datatype. The
+-- first element in the pair is a list of zipped type parameters with possibly
+-- concrete types. For example, if we are deriving 'Grisette.ToCon' for
+-- `Either`, the argument will be:
+--
+-- > [([(e0, Nothing), (e1, Nothing)], Nothing),
+-- >  ([(a0, Nothing), (a1, Nothing)], Nothing)]
+--
+-- We can see that the type parameters for the concrete and symbolic `Either`
+-- types are zipped together: the first element of the list are for the error
+-- types, and the second element of the list are for the value types.
+--
+-- The handler may concretize some types, or add constraints based on the type
+-- parameters.
 class DeriveTypeParamHandler handler where
   handleTypeParams ::
     Int ->
@@ -31,6 +55,7 @@ class DeriveTypeParamHandler handler where
     Q [([(TyVarBndrUnit, Maybe Type)], Maybe [Pred])]
   handleBody :: handler -> [[Type]] -> Q [Pred]
 
+-- | Ensures that type parameters with the kind 'Nat' are known and positive.
 data NatShouldBePositive = NatShouldBePositive
 
 instance DeriveTypeParamHandler NatShouldBePositive where
@@ -54,6 +79,7 @@ instance DeriveTypeParamHandler NatShouldBePositive where
       handle tys preds = return (tys, preds)
   handleBody _ _ = return []
 
+-- | Ensures that the type parameters are valid for floating point operations.
 data IsFPBits = IsFPBits {ebIdx :: Int, sbIdx :: Int}
 
 instance DeriveTypeParamHandler IsFPBits where
@@ -103,6 +129,21 @@ instance DeriveTypeParamHandler IsFPBits where
           _ -> fail "IsFPBits: This should never happen"
   handleBody _ _ = return []
 
+-- | Adds a primary constraint to the type parameters. It applies the class
+-- to each type parameter that are zipped into a list, with the desired kinds.
+--
+-- For example, if we are deriving 'Grisette.ToCon' for `Either`, and the input
+-- to this handler is as follows:
+--
+-- > [([(e0, Nothing), (e1, Nothing)], Nothing),
+-- >  ([(a0, Nothing), (a1, Nothing)], Nothing)]
+--
+-- Then this will generate constraints for the type parameters of `Either`:
+--
+-- > [([(e0, Nothing), (e1, Nothing)], Just [ToCon e0 e1]),
+-- >  ([(a0, Nothing), (a1, Nothing)], Just [ToCon a0 a1])]
+--
+-- Type parameters that are already handled by other handlers can be ignored.
 data PrimaryConstraint = PrimaryConstraint
   { className :: Name,
     ignoreIfAlreadyHandled :: Bool
@@ -136,6 +177,7 @@ instance DeriveTypeParamHandler PrimaryConstraint where
         handle _ tys preds = return (tys, preds)
   handleBody (PrimaryConstraint _ _) _ = return []
 
+-- | A type that can handle type parameters.
 data SomeDeriveTypeParamHandler where
   SomeDeriveTypeParamHandler ::
     (DeriveTypeParamHandler handler) =>

@@ -30,7 +30,6 @@ import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1)
 import Grisette.Internal.TH.DeriveBuiltin
   ( deriveBuiltinExtra,
-    deriveWithHandlers,
   )
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (Anyclass, Stock, ViaDefault, WithNewtype),
@@ -43,6 +42,7 @@ import Grisette.Internal.TH.DeriveTypeParamHandler
 import Grisette.Internal.TH.DeriveUnifiedInterface
   ( deriveFunctorArgUnifiedInterfaceExtra,
   )
+import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
 import Grisette.Internal.TH.Util (classParamKinds, concatPreds)
 import Grisette.Unified.Internal.Class.UnifiedSEq
   ( UnifiedSEq (withBaseSEq),
@@ -167,6 +167,8 @@ instance DeriveTypeParamHandler FixInnerConstraints where
             constr <- foldl appT (conT cls) $ return <$> tys
             return [constr]
 
+-- | Derive instances for a type with the given name, with the predefined
+-- strategy.
 derivePredefined :: Maybe EvaluationMode -> Name -> Name -> Q [Dec]
 derivePredefined _ cls name
   | cls == ''Generic =
@@ -210,6 +212,10 @@ derivePredefined evmode cls name = do
     (allNeededConstraints cls)
     name
 
+-- | Derive instances for a type with the given name, with the predefined
+-- strategy.
+--
+-- Multiple classes can be derived at once.
 derivePredefinedMultipleClasses ::
   Maybe EvaluationMode -> [Name] -> Name -> Q [Dec]
 derivePredefinedMultipleClasses evmode clss name =
@@ -238,9 +244,34 @@ allGrisetteClasses =
     ''UnifiedSOrd
   ]
 
+-- | Derive all classes related to Grisette for a type with the given name.
+--
+-- Classes that are be derived by this procedure are:
+--
+-- * 'Generic'
+-- * 'Show'
+-- * 'Eq'
+-- * 'Ord'
+-- * 'Lift'
+-- * 'NFData'
+-- * 'Hashable'
+-- * 'AllSyms'
+-- * 'EvaluateSym'
+-- * 'ExtractSymbolics'
+-- * 'GPretty'
+-- * 'Mergeable'
+-- * 'SEq'
+-- * 'SOrd'
+-- * 'SubstituteSym'
+-- * 'ToCon'
+-- * 'ToSym'
+-- * 'UnifiedSEq'
+-- * 'UnifiedSOrd'
 deriveAll :: Name -> Q [Dec]
 deriveAll = derivePredefinedMultipleClasses Nothing allGrisetteClasses
 
+-- | Derive all classes related to Grisette for a type with the given name,
+-- except for the given classes.
 deriveAllExcept :: Name -> [Name] -> Q [Dec]
 deriveAllExcept nm clss =
   derivePredefinedMultipleClasses
