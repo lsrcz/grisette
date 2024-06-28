@@ -94,11 +94,6 @@ library
       Grisette.Internal.Core.Data.MemoUtils
       Grisette.Internal.Core.Data.Symbol
       Grisette.Internal.Core.Data.Union
-      Grisette.Internal.Core.TH.Derivation
-      Grisette.Internal.Core.TH.DeriveGrisette
-      Grisette.Internal.Core.TH.DeriveUnifiedInterface
-      Grisette.Internal.Core.TH.MergeConstructor
-      Grisette.Internal.Core.TH.Util
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
       Grisette.Internal.SymPrim.FP
@@ -137,9 +132,12 @@ library
       Grisette.Internal.SymPrim.TabularFun
       Grisette.Internal.TH.DeriveBuiltin
       Grisette.Internal.TH.DeriveInstanceProvider
+      Grisette.Internal.TH.DerivePredefined
       Grisette.Internal.TH.DeriveTypeParamHandler
       Grisette.Internal.TH.DeriveUnifiedInterface
       Grisette.Internal.TH.DeriveWithHandlers
+      Grisette.Internal.TH.MergeConstructor
+      Grisette.Internal.TH.UnifiedConstructor
       Grisette.Internal.TH.Util
       Grisette.Internal.Utils.Derive
       Grisette.Internal.Utils.Parameterized
@@ -165,6 +163,7 @@ library
       Grisette.Lib.Data.Traversable
       Grisette.Lib.Data.Tuple
       Grisette.SymPrim
+      Grisette.TH
       Grisette.Unified
       Grisette.Unified.Internal.BaseConstraint
       Grisette.Unified.Internal.BaseMonad
@@ -179,7 +178,6 @@ library
       Grisette.Unified.Internal.EvaluationMode
       Grisette.Unified.Internal.IsMode
       Grisette.Unified.Internal.MonadWithMode
-      Grisette.Unified.Internal.TH.UnifiedConstructor
       Grisette.Unified.Internal.UnifiedBool
       Grisette.Unified.Internal.UnifiedBV
       Grisette.Unified.Internal.UnifiedConstraint

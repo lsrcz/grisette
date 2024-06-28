@@ -8,10 +8,13 @@ module Grisette.Internal.TH.DeriveUnifiedInterface
   ( TypeableMode (..),
     PrimaryUnifiedConstraint (..),
     UnifiedInstance (..),
+    deriveUnifiedInterfaceExtra,
     deriveUnifiedInterface,
     deriveUnifiedInterfaces,
+    deriveUnifiedInterface1Extra,
     deriveUnifiedInterface1,
     deriveUnifiedInterface1s,
+    deriveFunctorArgUnifiedInterfaceExtra,
     deriveFunctorArgUnifiedInterface,
     deriveFunctorArgUnifiedInterfaces,
   )
@@ -19,7 +22,6 @@ where
 
 import Control.Monad (unless)
 import Data.Typeable (Typeable)
-import Grisette.Internal.Core.TH.Util (tvIsMode, tvIsStar, tvIsStarToStar)
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( DeriveInstanceProvider (instanceDeclaration),
   )
@@ -34,8 +36,12 @@ import Grisette.Internal.TH.Util
     classParamKinds,
     concatPreds,
     getTypeWithMaybeSubst,
+    tvIsMode,
+    tvIsStar,
+    tvIsStarToStar,
   )
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
+import Grisette.Unified.Internal.Util (withMode)
 import Language.Haskell.TH
   ( Dec,
     Exp,
@@ -189,9 +195,13 @@ instance DeriveInstanceProvider UnifiedInstance where
             var <- newName "r"
             let arg = varP var
             let branch = foldr (applyWithFunc withFunc mode) (varE var) starVars
+            let withModeFunc = 'withMode
             case (maybeWithFunc1, starToStarVars) of
               (_, []) -> do
-                let exp = lam1E arg [|withMode @($mode) $branch $branch|]
+                let exp =
+                      lam1E
+                        arg
+                        [|$(varE withModeFunc) @($mode) $branch $branch|]
                 valD (varP clsWithFunc) (normalB exp) []
               (Just withFunc1, _) -> do
                 let branchWithFunc1 =
@@ -199,61 +209,100 @@ instance DeriveInstanceProvider UnifiedInstance where
                 let exp =
                       lam1E
                         arg
-                        [|withMode @($mode) $branchWithFunc1 $branchWithFunc1|]
+                        [|
+                          $(varE withModeFunc)
+                            @($mode)
+                            $branchWithFunc1
+                            $branchWithFunc1
+                          |]
                 valD (varP clsWithFunc) (normalB exp) []
               (Nothing, _) ->
                 fail $
                   "UnifiedInstance: withFunc1 is not provided, type have "
                     <> "functor type parameters"
 
-deriveUnifiedInterface :: Name -> Name -> Name -> Q [Dec]
-deriveUnifiedInterface cls withFunc name =
+deriveUnifiedInterfaceExtra ::
+  [SomeDeriveTypeParamHandler] ->
+  Name ->
+  Name ->
+  Name ->
+  Q [Dec]
+deriveUnifiedInterfaceExtra extraHandlers cls withFunc name =
   deriveWithHandlers
-    [ SomeDeriveTypeParamHandler TypeableMode,
-      SomeDeriveTypeParamHandler NatShouldBePositive,
-      SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls True
-    ]
+    ( extraHandlers
+        <> [ SomeDeriveTypeParamHandler TypeableMode,
+             SomeDeriveTypeParamHandler NatShouldBePositive,
+             SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls False
+           ]
+    )
     (UnifiedInstance cls withFunc withFunc Nothing)
     True
     0
     [name]
 
+deriveUnifiedInterface :: Name -> Name -> Name -> Q [Dec]
+deriveUnifiedInterface = deriveUnifiedInterfaceExtra []
+
 deriveUnifiedInterfaces :: Name -> Name -> [Name] -> Q [Dec]
 deriveUnifiedInterfaces cls withFunc =
   fmap concat . mapM (deriveUnifiedInterface cls withFunc)
 
-deriveUnifiedInterface1 ::
-  Name -> Name -> Name -> Name -> Name -> Q [Dec]
-deriveUnifiedInterface1 cls withFunc cls1 withFunc1 name =
+deriveUnifiedInterface1Extra ::
+  [SomeDeriveTypeParamHandler] ->
+  Name ->
+  Name ->
+  Name ->
+  Name ->
+  Name ->
+  Q [Dec]
+deriveUnifiedInterface1Extra extraHandlers cls withFunc cls1 withFunc1 name =
   deriveWithHandlers
-    [ SomeDeriveTypeParamHandler TypeableMode,
-      SomeDeriveTypeParamHandler NatShouldBePositive,
-      SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls True,
-      SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls1 True
-    ]
+    ( extraHandlers
+        <> [ SomeDeriveTypeParamHandler TypeableMode,
+             SomeDeriveTypeParamHandler NatShouldBePositive,
+             SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls False,
+             SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls1 False
+           ]
+    )
     (UnifiedInstance cls1 withFunc1 withFunc (Just withFunc1))
     True
     1
     [name]
+
+deriveUnifiedInterface1 ::
+  Name -> Name -> Name -> Name -> Name -> Q [Dec]
+deriveUnifiedInterface1 = deriveUnifiedInterface1Extra []
 
 deriveUnifiedInterface1s ::
   Name -> Name -> Name -> Name -> [Name] -> Q [Dec]
 deriveUnifiedInterface1s cls withFunc cls1 withFunc1 =
   fmap concat . mapM (deriveUnifiedInterface1 cls withFunc cls1 withFunc1)
 
+deriveFunctorArgUnifiedInterfaceExtra ::
+  [SomeDeriveTypeParamHandler] -> Name -> Name -> Name -> Name -> Name -> Q [Dec]
+deriveFunctorArgUnifiedInterfaceExtra
+  extraHandlers
+  cls
+  withFunc
+  cls1
+  withFunc1
+  name =
+    deriveWithHandlers
+      ( extraHandlers
+          <> [ SomeDeriveTypeParamHandler TypeableMode,
+               SomeDeriveTypeParamHandler NatShouldBePositive,
+               SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls False,
+               SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls1 False
+             ]
+      )
+      (UnifiedInstance cls withFunc withFunc (Just withFunc1))
+      True
+      0
+      [name]
+
 deriveFunctorArgUnifiedInterface ::
   Name -> Name -> Name -> Name -> Name -> Q [Dec]
-deriveFunctorArgUnifiedInterface cls withFunc cls1 withFunc1 name =
-  deriveWithHandlers
-    [ SomeDeriveTypeParamHandler TypeableMode,
-      SomeDeriveTypeParamHandler NatShouldBePositive,
-      SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls True,
-      SomeDeriveTypeParamHandler $ PrimaryUnifiedConstraint cls1 True
-    ]
-    (UnifiedInstance cls withFunc withFunc (Just withFunc1))
-    True
-    0
-    [name]
+deriveFunctorArgUnifiedInterface = deriveFunctorArgUnifiedInterfaceExtra []
 
 deriveFunctorArgUnifiedInterfaces ::
   Name -> Name -> Name -> Name -> [Name] -> Q [Dec]

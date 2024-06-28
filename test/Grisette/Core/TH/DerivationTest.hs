@@ -17,63 +17,28 @@
 
 module Grisette.Core.TH.DerivationTest (concreteT, symbolicT) where
 
-import Control.DeepSeq (NFData)
-import Data.Hashable (Hashable)
 import Data.Maybe (fromJust)
-import GHC.Generics (Generic)
 import Grisette
   ( Default (Default),
-    Mergeable,
-    SEq,
-    SOrd,
     SymInteger,
     ToCon (toCon),
     ToSym (toSym),
   )
-import Grisette.Internal.Core.TH.Derivation
-  ( deriveAnyclass,
-    deriveAnyclassWithMode,
-    deriveConversions,
-    deriveNewtype,
-    deriveStock,
-    deriveStockWithMode,
-    deriveViaDefault,
-  )
-import Grisette.Internal.Core.TH.DeriveGrisette
-  ( deriveAllGrisette,
-  )
+import Grisette.TH (deriveAll)
 import Grisette.Unified (EvaluationMode (Con, Sym), GetBool, GetData, GetWordN)
-import Language.Haskell.TH.Syntax (Lift)
 
-data T mode a n
-  = T (GetBool mode) (GetWordN mode n) a (GetData mode (T mode a n))
+data T mode n a
+  = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
   | TNil
-  deriving (Generic)
 
-deriveViaDefault ''T [''Mergeable, ''SEq, ''SOrd]
-deriveStock ''T [''Show, ''Eq, ''Lift]
-deriveAnyclass ''T [''NFData]
-deriveAnyclassWithMode Sym ''T [''Hashable]
-deriveStockWithMode Con ''T [''Ord]
-deriveConversions ''T ''T [''ToCon, ''ToSym]
+deriveAll ''T
 
-concreteT :: T 'Con Integer 10
-concreteT = toSym (T True 10 (10 :: Integer) TNil :: T 'Con Integer 10)
+concreteT :: T 'Con 10 Integer
+concreteT = toSym (T True [10] [10 :: Integer] TNil :: T 'Con 10 Integer)
 
-symbolicT :: T 'Sym SymInteger 10
-symbolicT = fromJust $ toCon (toSym concreteT :: T 'Sym SymInteger 10)
-
-newtype T1 mode = T1 (GetBool mode)
-  deriving (Generic)
-
-deriveNewtype ''T1 [''Mergeable, ''SEq, ''SOrd, ''Show]
-
-data T2 mode a n
-  = T2 (GetBool mode) [GetWordN mode n] [a] (GetData mode (T2 mode a n))
-  | T2Nil
-
-deriveAllGrisette ''T2
+symbolicT :: T 'Sym 10 SymInteger
+symbolicT = fromJust $ toCon (toSym concreteT :: T 'Sym 10 SymInteger)
 
 newtype X mode = X [GetBool mode]
 
-deriveAllGrisette ''X
+deriveAll ''X

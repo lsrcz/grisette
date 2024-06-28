@@ -2,14 +2,14 @@
 {-# LANGUAGE Trustworthy #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.TH.MergedConstructor
+-- Module      :   Grisette.Internal.TH.MergedConstructor
 -- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.TH.MergeConstructor
+module Grisette.Internal.TH.MergeConstructor
   ( mkMergeConstructor,
     mkMergeConstructor',
   )
@@ -19,7 +19,7 @@ import Control.Monad (join, replicateM, when, zipWithM)
 import Data.Bifunctor (Bifunctor (second))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
-import Grisette.Internal.Core.TH.Util (constructorInfoToType, occName)
+import Grisette.Internal.TH.Util (constructorInfoToType, occName)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),

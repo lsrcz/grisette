@@ -13,7 +13,7 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( DeriveInstanceProvider (instanceDeclaration),
   )
 import Grisette.Internal.TH.DeriveTypeParamHandler
-  ( DeriveTypeParamHandler (handleTypeParams),
+  ( DeriveTypeParamHandler (handleBody, handleTypeParams),
     SomeDeriveTypeParamHandler,
   )
 import Grisette.Internal.TH.Util
@@ -24,7 +24,8 @@ import Grisette.Internal.TH.Util
   )
 import Language.Haskell.TH (Dec, Name, Q)
 import Language.Haskell.TH.Datatype
-  ( DatatypeInfo (datatypeVars),
+  ( ConstructorInfo (constructorFields),
+    DatatypeInfo (datatypeCons, datatypeVars),
     datatypeType,
     reifyDatatype,
     tvName,
@@ -79,12 +80,6 @@ deriveWithHandlers
 
     let allTyVarsConstraints =
           concatMap (fromMaybe [] . snd) tyVarsWithConstraints
-    allConstraints <-
-      ( if ignoreBodyConstraints
-          then return allTyVarsConstraints
-          else undefined
-        )
-
     let tvWithSubst =
           transposeMatrix (length datatypes) $
             fst <$> tyVarsWithConstraints
@@ -99,15 +94,24 @@ deriveWithHandlers
                   )
             )
             tvWithSubst
+    let substedTypes = zipWith substDataType datatypes substMaps
     tys <-
-      mapM
-        ( dropNTypeParam numDroppedTailTypes
-            . datatypeType
-            . uncurry substDataType
+      mapM (dropNTypeParam numDroppedTailTypes . datatypeType) substedTypes
+    allConstraints <-
+      ( if ignoreBodyConstraints
+          then return allTyVarsConstraints
+          else do
+            bodyConstraints <- handleBodyWithHandlers substedTypes handlers
+            return $ allTyVarsConstraints ++ bodyConstraints
         )
-        (zip datatypes substMaps)
     instanceDeclaration
       provider
       (fst <$> tyVarsWithConstraints)
       allConstraints
       tys
+    where
+      handleBodyWithHandlers datatypes handlers = do
+        let cons = datatypeCons <$> datatypes
+        let zippedFields = zipFields cons
+        concat <$> traverse (`handleBody` zippedFields) handlers
+      zipFields cons = transpose $ concatMap constructorFields <$> cons

@@ -20,8 +20,17 @@ module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 import Control.Monad.Except (ExceptT, MonadError (throwError))
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette (SymBool, SymInteger, SymWordN, UnionM, WordN, mrgReturn)
+import Grisette
+  ( Default (Default),
+    SymBool,
+    SymInteger,
+    SymWordN,
+    UnionM,
+    WordN,
+    mrgReturn,
+  )
 import qualified Grisette
+import Grisette.TH (deriveAll)
 import Grisette.Unified
   ( BaseMonad,
     GetBool,
@@ -60,7 +69,7 @@ data X mode n
       [GetData mode (X mode n)]
   | XNil
 
-Grisette.deriveAllGrisette ''X
+deriveAll ''X
 
 testSEq ::
   forall mode n.
