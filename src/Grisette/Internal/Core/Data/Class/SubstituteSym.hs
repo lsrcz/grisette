@@ -4,15 +4,19 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      :   Grisette.Internal.Core.Data.Class.SubstituteSym
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -21,7 +25,16 @@
 module Grisette.Internal.Core.Data.Class.SubstituteSym
   ( -- * Substituting symbolic constants
     SubstituteSym (..),
-    SubstituteSym' (..),
+    SubstituteSym1 (..),
+    substituteSym1,
+    SubstituteSym2 (..),
+    substituteSym2,
+
+    -- * Generic 'SubstituteSym'
+    SubstituteSymArgs (..),
+    GSubstituteSym (..),
+    genericSubstituteSym,
+    genericLiftSubstituteSym,
   )
 where
 
@@ -36,20 +49,30 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default, unDefault),
+    Default1 (Default1, unDefault1),
     Generic (Rep, from, to),
+    Generic1 (Rep1, from1, to1),
     K1 (K1),
     M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
     U1,
     V1,
+    (:.:) (Comp1),
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
 import Generics.Deriving.Instances ()
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
@@ -71,6 +94,11 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
+  ( Strategy (ViaDefault, ViaDefault1),
+  )
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -93,6 +121,313 @@ class SubstituteSym a where
   -- >>> substituteSym "a" ("c" .&& "d" :: Sym Bool) ["a" .&& "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
   substituteSym :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a -> a
+
+class
+  (forall a. (SubstituteSym a) => SubstituteSym (f a)) =>
+  SubstituteSym1 f
+  where
+  liftSubstituteSym ::
+    (LinkedRep cb sb) =>
+    (TypedSymbol cb -> sb -> a -> a) ->
+    TypedSymbol cb ->
+    sb ->
+    f a ->
+    f a
+
+substituteSym1 ::
+  (SubstituteSym1 f, SubstituteSym a, LinkedRep cb sb) =>
+  TypedSymbol cb ->
+  sb ->
+  f a ->
+  f a
+substituteSym1 = liftSubstituteSym substituteSym
+
+class
+  (forall a. (SubstituteSym a) => SubstituteSym1 (f a)) =>
+  SubstituteSym2 f
+  where
+  liftSubstituteSym2 ::
+    (LinkedRep cb sb) =>
+    (TypedSymbol cb -> sb -> a -> a) ->
+    (TypedSymbol cb -> sb -> b -> b) ->
+    TypedSymbol cb ->
+    sb ->
+    f a b ->
+    f a b
+
+substituteSym2 ::
+  (SubstituteSym2 f, SubstituteSym a, SubstituteSym b, LinkedRep cb sb) =>
+  TypedSymbol cb ->
+  sb ->
+  f a b ->
+  f a b
+substituteSym2 = liftSubstituteSym2 substituteSym substituteSym
+
+-- Derivations
+
+-- | The arguments to the generic 'substituteSym' function.
+data family SubstituteSymArgs arity a cb sb :: Type
+
+data instance SubstituteSymArgs Arity0 _ _ _ = SubstituteSymArgs0
+
+newtype instance SubstituteSymArgs Arity1 a cb sb
+  = SubstituteSymArgs1 (TypedSymbol cb -> sb -> a -> a)
+
+class GSubstituteSym arity f where
+  gsubstituteSym ::
+    (LinkedRep cb sb) =>
+    SubstituteSymArgs arity a cb sb ->
+    TypedSymbol cb ->
+    sb ->
+    f a ->
+    f a
+
+instance GSubstituteSym arity V1 where
+  gsubstituteSym _ _ _ = id
+  {-# INLINE gsubstituteSym #-}
+
+instance GSubstituteSym arity U1 where
+  gsubstituteSym _ _ _ = id
+  {-# INLINE gsubstituteSym #-}
+
+instance (SubstituteSym a) => GSubstituteSym arity (K1 i a) where
+  gsubstituteSym _ sym val (K1 v) = K1 $ substituteSym sym val v
+  {-# INLINE gsubstituteSym #-}
+
+instance (GSubstituteSym arity a) => GSubstituteSym arity (M1 i c a) where
+  gsubstituteSym args sym val (M1 v) = M1 $ gsubstituteSym args sym val v
+  {-# INLINE gsubstituteSym #-}
+
+instance (GSubstituteSym arity a, GSubstituteSym arity b) => GSubstituteSym arity (a :*: b) where
+  gsubstituteSym args sym val (a :*: b) =
+    gsubstituteSym args sym val a :*: gsubstituteSym args sym val b
+  {-# INLINE gsubstituteSym #-}
+
+instance (GSubstituteSym arity a, GSubstituteSym arity b) => GSubstituteSym arity (a :+: b) where
+  gsubstituteSym args sym val (L1 l) = L1 $ gsubstituteSym args sym val l
+  gsubstituteSym args sym val (R1 r) = R1 $ gsubstituteSym args sym val r
+  {-# INLINE gsubstituteSym #-}
+
+instance (SubstituteSym1 a) => GSubstituteSym Arity1 (Rec1 a) where
+  gsubstituteSym (SubstituteSymArgs1 f) sym val (Rec1 v) =
+    Rec1 $ liftSubstituteSym f sym val v
+  {-# INLINE gsubstituteSym #-}
+
+instance GSubstituteSym Arity1 Par1 where
+  gsubstituteSym (SubstituteSymArgs1 f) sym val (Par1 v) = Par1 $ f sym val v
+  {-# INLINE gsubstituteSym #-}
+
+instance
+  (SubstituteSym1 f, GSubstituteSym Arity1 g) =>
+  GSubstituteSym Arity1 (f :.: g)
+  where
+  gsubstituteSym targs sym val (Comp1 x) =
+    Comp1 $ liftSubstituteSym (gsubstituteSym targs) sym val x
+  {-# INLINE gsubstituteSym #-}
+
+genericSubstituteSym ::
+  (Generic a, GSubstituteSym Arity0 (Rep a), LinkedRep cb sb) =>
+  TypedSymbol cb ->
+  sb ->
+  a ->
+  a
+genericSubstituteSym sym val =
+  to . gsubstituteSym SubstituteSymArgs0 sym val . from
+{-# INLINE genericSubstituteSym #-}
+
+genericLiftSubstituteSym ::
+  (Generic1 f, GSubstituteSym Arity1 (Rep1 f), LinkedRep cb sb) =>
+  (TypedSymbol cb -> sb -> a -> a) ->
+  TypedSymbol cb ->
+  sb ->
+  f a ->
+  f a
+genericLiftSubstituteSym f sym val =
+  to1 . gsubstituteSym (SubstituteSymArgs1 f) sym val . from1
+{-# INLINE genericLiftSubstituteSym #-}
+
+instance
+  (Generic a, GSubstituteSym Arity0 (Rep a)) =>
+  SubstituteSym (Default a)
+  where
+  substituteSym sym val = Default . genericSubstituteSym sym val . unDefault
+  {-# INLINE substituteSym #-}
+
+instance
+  (Generic1 f, GSubstituteSym Arity1 (Rep1 f), SubstituteSym a) =>
+  SubstituteSym (Default1 f a)
+  where
+  substituteSym = substituteSym1
+  {-# INLINE substituteSym #-}
+
+instance
+  (Generic1 f, GSubstituteSym Arity1 (Rep1 f)) =>
+  SubstituteSym1 (Default1 f)
+  where
+  liftSubstituteSym f sym val =
+    Default1 . genericLiftSubstituteSym f sym val . unDefault1
+  {-# INLINE liftSubstituteSym #-}
+
+-- Instances
+deriveBuiltins
+  (ViaDefault ''SubstituteSym)
+  [''SubstituteSym]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''Identity
+  ]
+
+deriveBuiltins
+  (ViaDefault1 ''SubstituteSym1)
+  [''SubstituteSym, ''SubstituteSym1]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Identity
+  ]
+
+-- ExceptT
+instance
+  (SubstituteSym1 m, SubstituteSym e, SubstituteSym a) =>
+  SubstituteSym (ExceptT e m a)
+  where
+  substituteSym = substituteSym1
+  {-# INLINE substituteSym #-}
+
+instance
+  (SubstituteSym1 m, SubstituteSym e) =>
+  SubstituteSym1 (ExceptT e m)
+  where
+  liftSubstituteSym f sym val (ExceptT v) =
+    ExceptT $ liftSubstituteSym (liftSubstituteSym f) sym val v
+  {-# INLINE liftSubstituteSym #-}
+
+-- MaybeT
+instance
+  (SubstituteSym1 m, SubstituteSym a) =>
+  SubstituteSym (MaybeT m a)
+  where
+  substituteSym = substituteSym1
+  {-# INLINE substituteSym #-}
+
+instance
+  (SubstituteSym1 m) =>
+  SubstituteSym1 (MaybeT m)
+  where
+  liftSubstituteSym f sym val (MaybeT v) =
+    MaybeT $ liftSubstituteSym (liftSubstituteSym f) sym val v
+  {-# INLINE liftSubstituteSym #-}
+
+-- WriterT
+instance
+  (SubstituteSym1 m, SubstituteSym a, SubstituteSym s) =>
+  SubstituteSym (WriterLazy.WriterT s m a)
+  where
+  substituteSym = substituteSym1
+  {-# INLINE substituteSym #-}
+
+instance
+  (SubstituteSym1 m, SubstituteSym s) =>
+  SubstituteSym1 (WriterLazy.WriterT s m)
+  where
+  liftSubstituteSym f sym val (WriterLazy.WriterT v) =
+    WriterLazy.WriterT $
+      liftSubstituteSym (liftSubstituteSym2 f substituteSym) sym val v
+  {-# INLINE liftSubstituteSym #-}
+
+instance
+  (SubstituteSym1 m, SubstituteSym a, SubstituteSym s) =>
+  SubstituteSym (WriterStrict.WriterT s m a)
+  where
+  substituteSym = substituteSym1
+  {-# INLINE substituteSym #-}
+
+instance
+  (SubstituteSym1 m, SubstituteSym s) =>
+  SubstituteSym1 (WriterStrict.WriterT s m)
+  where
+  liftSubstituteSym f sym val (WriterStrict.WriterT v) =
+    WriterStrict.WriterT $
+      liftSubstituteSym (liftSubstituteSym2 f substituteSym) sym val v
+  {-# INLINE liftSubstituteSym #-}
+
+-- Sum
+deriving via
+  (Default (Sum f g a))
+  instance
+    (SubstituteSym (f a), SubstituteSym (g a)) =>
+    SubstituteSym (Sum f g a)
+
+deriving via
+  (Default1 (Sum f g))
+  instance
+    (SubstituteSym1 f, SubstituteSym1 g) =>
+    SubstituteSym1 (Sum f g)
+
+-- IdentityT
+instance
+  (SubstituteSym1 m, SubstituteSym a) =>
+  SubstituteSym (IdentityT m a)
+  where
+  substituteSym = substituteSym1
+  {-# INLINE substituteSym #-}
+
+instance (SubstituteSym1 m) => SubstituteSym1 (IdentityT m) where
+  liftSubstituteSym f sym val (IdentityT a) =
+    IdentityT $ liftSubstituteSym f sym val a
+  {-# INLINE liftSubstituteSym #-}
+
+-- SubstituteSym2
+instance SubstituteSym2 Either where
+  liftSubstituteSym2 f _ sym val (Left x) = Left $ f sym val x
+  liftSubstituteSym2 _ g sym val (Right y) = Right $ g sym val y
+  {-# INLINE liftSubstituteSym2 #-}
+
+instance SubstituteSym2 (,) where
+  liftSubstituteSym2 f g sym val (x, y) = (f sym val x, g sym val y)
+  {-# INLINE liftSubstituteSym2 #-}
+
+instance (SubstituteSym a) => SubstituteSym2 ((,,) a) where
+  liftSubstituteSym2 f g sym val (x, y, z) =
+    (substituteSym sym val x, f sym val y, g sym val z)
+  {-# INLINE liftSubstituteSym2 #-}
+
+instance (SubstituteSym a, SubstituteSym b) => SubstituteSym2 ((,,,) a b) where
+  liftSubstituteSym2 f g sym val (x, y, z, w) =
+    (substituteSym sym val x, substituteSym sym val y, f sym val z, g sym val w)
+  {-# INLINE liftSubstituteSym2 #-}
 
 #define CONCRETE_SUBSTITUTESYM(type) \
 instance SubstituteSym type where \
@@ -128,148 +463,6 @@ CONCRETE_SUBSTITUTESYM(FPRoundingMode)
 instance (ValidFP eb sb) => SubstituteSym (FP eb sb) where
   substituteSym _ _ = id
 
-instance SubstituteSym () where
-  substituteSym _ _ = id
-
--- Either
-deriving via
-  (Default (Either a b))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b
-    ) =>
-    SubstituteSym (Either a b)
-
--- Maybe
-deriving via (Default (Maybe a)) instance (SubstituteSym a) => SubstituteSym (Maybe a)
-
--- List
-deriving via (Default [a]) instance (SubstituteSym a) => SubstituteSym [a]
-
--- (,)
-deriving via
-  (Default (a, b))
-  instance
-    (SubstituteSym a, SubstituteSym b) =>
-    SubstituteSym (a, b)
-
--- (,,)
-deriving via
-  (Default (a, b, c))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b,
-      SubstituteSym c
-    ) =>
-    SubstituteSym (a, b, c)
-
--- (,,,)
-deriving via
-  (Default (a, b, c, d))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b,
-      SubstituteSym c,
-      SubstituteSym d
-    ) =>
-    SubstituteSym (a, b, c, d)
-
--- (,,,,)
-deriving via
-  (Default (a, b, c, d, e))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b,
-      SubstituteSym c,
-      SubstituteSym d,
-      SubstituteSym e
-    ) =>
-    SubstituteSym (a, b, c, d, e)
-
--- (,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b,
-      SubstituteSym c,
-      SubstituteSym d,
-      SubstituteSym e,
-      SubstituteSym f
-    ) =>
-    SubstituteSym (a, b, c, d, e, f)
-
--- (,,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f, g))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b,
-      SubstituteSym c,
-      SubstituteSym d,
-      SubstituteSym e,
-      SubstituteSym f,
-      SubstituteSym g
-    ) =>
-    SubstituteSym (a, b, c, d, e, f, g)
-
--- (,,,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f, g, h))
-  instance
-    ( SubstituteSym a,
-      SubstituteSym b,
-      SubstituteSym c,
-      SubstituteSym d,
-      SubstituteSym e,
-      SubstituteSym f,
-      SubstituteSym g,
-      SubstituteSym h
-    ) =>
-    SubstituteSym ((,,,,,,,) a b c d e f g h)
-
--- MaybeT
-instance
-  (SubstituteSym (m (Maybe a))) =>
-  SubstituteSym (MaybeT m a)
-  where
-  substituteSym sym val (MaybeT v) = MaybeT $ substituteSym sym val v
-
--- ExceptT
-instance
-  (SubstituteSym (m (Either e a))) =>
-  SubstituteSym (ExceptT e m a)
-  where
-  substituteSym sym val (ExceptT v) = ExceptT $ substituteSym sym val v
-
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (SubstituteSym (f a), SubstituteSym (g a)) =>
-    SubstituteSym (Sum f g a)
-
--- WriterT
-instance
-  (SubstituteSym (m (a, s))) =>
-  SubstituteSym (WriterLazy.WriterT s m a)
-  where
-  substituteSym sym val (WriterLazy.WriterT v) = WriterLazy.WriterT $ substituteSym sym val v
-
-instance
-  (SubstituteSym (m (a, s))) =>
-  SubstituteSym (WriterStrict.WriterT s m a)
-  where
-  substituteSym sym val (WriterStrict.WriterT v) = WriterStrict.WriterT $ substituteSym sym val v
-
--- Identity
-instance (SubstituteSym a) => SubstituteSym (Identity a) where
-  substituteSym sym val (Identity a) = Identity $ substituteSym sym val a
-
--- IdentityT
-instance (SubstituteSym (m a)) => SubstituteSym (IdentityT m a) where
-  substituteSym sym val (IdentityT a) = IdentityT $ substituteSym sym val a
-
 #define SUBSTITUTE_SYM_SIMPLE(symtype) \
 instance SubstituteSym symtype where \
   substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
@@ -295,35 +488,3 @@ SUBSTITUTE_SYM_SIMPLE(SymFPRoundingMode)
 
 instance (ValidFP eb sb) => SubstituteSym (SymFP eb sb) where
   substituteSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) t
-
--- | Auxiliary class for 'SubstituteSym' instance derivation
-class SubstituteSym' a where
-  -- | Auxiliary function for 'substituteSym' derivation
-  substituteSym' :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a c -> a c
-
-instance
-  ( Generic a,
-    SubstituteSym' (Rep a)
-  ) =>
-  SubstituteSym (Default a)
-  where
-  substituteSym sym val = Default . to . substituteSym' sym val . from . unDefault
-
-instance SubstituteSym' U1 where
-  substituteSym' _ _ = id
-
-instance SubstituteSym' V1 where
-  substituteSym' _ _ = id
-
-instance (SubstituteSym c) => SubstituteSym' (K1 i c) where
-  substituteSym' sym val (K1 v) = K1 $ substituteSym sym val v
-
-instance (SubstituteSym' a) => SubstituteSym' (M1 i c a) where
-  substituteSym' sym val (M1 v) = M1 $ substituteSym' sym val v
-
-instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :+: b) where
-  substituteSym' sym val (L1 l) = L1 $ substituteSym' sym val l
-  substituteSym' sym val (R1 r) = R1 $ substituteSym' sym val r
-
-instance (SubstituteSym' a, SubstituteSym' b) => SubstituteSym' (a :*: b) where
-  substituteSym' sym val (a :*: b) = substituteSym' sym val a :*: substituteSym' sym val b
