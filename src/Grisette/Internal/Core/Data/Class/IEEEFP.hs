@@ -286,6 +286,7 @@ instance (ValidFP eb sb) => IEEEConstants (SymFP eb sb) where
   fpPositiveZero = con fpPositiveZero
   {-# INLINE fpPositiveZero #-}
 
+-- | Operations on IEEE floating-point numbers, without rounding mode.
 class IEEEFPOp a where
   symFpAbs :: a -> a
   symFpNeg :: a -> a
@@ -305,6 +306,7 @@ instance (ValidFP eb sb) => IEEEFPOp (SymFP eb sb) where
   symFpMax (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPMax l r
   {-# INLINE symFpMax #-}
 
+-- | Operations on IEEE floating-point numbers, with rounding mode.
 class IEEEFPRoundingOp a mode where
   symFpAdd :: mode -> a -> a -> a
   symFpSub :: mode -> a -> a -> a
