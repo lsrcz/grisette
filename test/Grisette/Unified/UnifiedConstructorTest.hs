@@ -20,10 +20,9 @@ module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
 
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), mrgReturn)
-import Grisette.Internal.Core.TH.DeriveGrisette (deriveAllGrisette)
+import Grisette.TH (deriveAll, mkUnifiedConstructor)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 import Grisette.Unified.Internal.IsMode (IsMode)
-import Grisette.Unified.Internal.TH.UnifiedConstructor (mkUnifiedConstructor)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
 import Test.Framework (Test, testGroup)
@@ -34,7 +33,7 @@ data T mode a
   = T (GetBool mode) a (GetData mode (T mode a))
   | T1
 
-deriveAllGrisette ''T
+deriveAll ''T
 mkUnifiedConstructor "mk" ''T
 
 unifiedConstructorTest :: Test

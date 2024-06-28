@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Grisette.Unified.Internal.TH.UnifiedConstructor
+module Grisette.Internal.TH.UnifiedConstructor
   ( mkUnifiedConstructor,
     mkUnifiedConstructor',
   )
@@ -8,7 +8,7 @@ where
 
 import Control.Monad (join, replicateM, when, zipWithM)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.TH.Util (constructorInfoToType, occName)
+import Grisette.Internal.TH.Util (constructorInfoToType, occName)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.UnifiedData

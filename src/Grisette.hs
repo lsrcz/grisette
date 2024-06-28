@@ -24,6 +24,9 @@ module Grisette
 
     -- * Utils
     module Grisette.Utils,
+
+    -- * Template Haskell
+    module Grisette.TH,
   )
 where
 
@@ -31,4 +34,5 @@ import Grisette.Backend
 import Grisette.Core
 import Grisette.Lib.Base
 import Grisette.SymPrim
+import Grisette.TH
 import Grisette.Utils

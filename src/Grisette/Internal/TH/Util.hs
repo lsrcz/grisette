@@ -1,5 +1,13 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Grisette.Internal.TH.Util
-  ( substDataType,
+  ( occName,
+    constructorInfoToType,
+    tvIsMode,
+    tvIsNat,
+    tvIsStar,
+    tvIsStarToStar,
+    substDataType,
     reifyDatatypeWithFreshNames,
     singleParamClassParamKind,
     binaryClassParamKind,
@@ -16,6 +24,8 @@ where
 
 import Control.Monad (when)
 import qualified Data.Map as M
+import GHC.TypeNats (Nat)
+import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
 import Language.Haskell.TH
   ( Dec (ClassD),
     Info (ClassI),
@@ -23,19 +33,55 @@ import Language.Haskell.TH
     Name,
     Pred,
     Q,
-    Type (AppT, ArrowT, VarT),
+    Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),
     newName,
     pprint,
     reify,
     varT,
   )
 import Language.Haskell.TH.Datatype
-  ( DatatypeInfo (datatypeCons, datatypeInstTypes, datatypeVars),
+  ( ConstructorInfo (constructorContext, constructorFields, constructorVars),
+    DatatypeInfo (datatypeCons, datatypeInstTypes, datatypeVars),
     TypeSubstitution (applySubstitution),
+    datatypeType,
     reifyDatatype,
     tvName,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit, mapTVName, tvKind)
+import Language.Haskell.TH.Datatype.TyVarBndr
+  ( Specificity (SpecifiedSpec),
+    TyVarBndrUnit,
+    TyVarBndr_,
+    mapTVFlag,
+    mapTVName,
+    tvKind,
+  )
+import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
+
+occName :: Name -> String
+occName (Name (OccName name) _) = name
+
+constructorInfoToType :: DatatypeInfo -> ConstructorInfo -> Q Type
+constructorInfoToType dataType info = do
+  let binders =
+        mapTVFlag (const SpecifiedSpec)
+          <$> datatypeVars dataType ++ constructorVars info
+  let ctx = constructorContext info
+  let fields = constructorFields info
+  let tyBody =
+        foldr (AppT . AppT ArrowT) (datatypeType dataType) fields
+  if null binders then return tyBody else return $ ForallT binders ctx tyBody
+
+tvIsMode :: TyVarBndr_ flag -> Bool
+tvIsMode = (== ConT ''EvaluationMode) . tvKind
+
+tvIsNat :: TyVarBndr_ flag -> Bool
+tvIsNat = (== ConT ''Nat) . tvKind
+
+tvIsStar :: TyVarBndr_ flag -> Bool
+tvIsStar = (== StarT) . tvKind
+
+tvIsStarToStar :: TyVarBndr_ flag -> Bool
+tvIsStarToStar = (== (AppT (AppT ArrowT StarT) StarT)) . tvKind
 
 substDataType :: DatatypeInfo -> M.Map Name Type -> DatatypeInfo
 substDataType d substMap =

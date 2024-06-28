@@ -1,5 +1,11 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
 -- Disable this warning because we are re-exporting things.
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
@@ -1112,22 +1118,6 @@ module Grisette.Core
     htmup,
     htmemoFix,
 
-    -- ** Template Haskell
-    mkMergeConstructor,
-    mkMergeConstructor',
-    deriveNewtype,
-    deriveAnyclass,
-    deriveStock,
-    deriveViaDefault,
-    deriveNewtypeWithMode,
-    deriveAnyclassWithMode,
-    deriveStockWithMode,
-    deriveViaDefaultWithMode,
-    deriveConversions,
-    deriveGrisette,
-    deriveAllGrisette,
-    deriveAllGrisetteExcept,
-
     -- ** Generic deriving of classes
 
     -- *** Default wrappers
@@ -1520,26 +1510,6 @@ import Grisette.Internal.Core.Data.Symbol
     uniqueIdentifier,
     withInfo,
     withLoc,
-  )
-import Grisette.Internal.Core.TH.Derivation
-  ( deriveAnyclass,
-    deriveAnyclassWithMode,
-    deriveConversions,
-    deriveNewtype,
-    deriveNewtypeWithMode,
-    deriveStock,
-    deriveStockWithMode,
-    deriveViaDefault,
-    deriveViaDefaultWithMode,
-  )
-import Grisette.Internal.Core.TH.DeriveGrisette
-  ( deriveAllGrisette,
-    deriveAllGrisetteExcept,
-    deriveGrisette,
-  )
-import Grisette.Internal.Core.TH.MergeConstructor
-  ( mkMergeConstructor,
-    mkMergeConstructor',
   )
 #if MIN_VERSION_prettyprinter(1,7,0)
 import Prettyprinter
