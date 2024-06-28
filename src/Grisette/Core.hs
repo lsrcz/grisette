@@ -1098,7 +1098,10 @@ module Grisette.Core
 
     -- ** Substitution of a symbol
     SubstituteSym (..),
-    SubstituteSym' (..),
+    SubstituteSym1 (..),
+    substituteSym1,
+    SubstituteSym2 (..),
+    substituteSym2,
 
     -- * Utilities
 
@@ -1179,12 +1182,18 @@ module Grisette.Core
     genericExtractSymbolics,
     genericLiftExtractSymbolics,
 
-    -- * 'GPretty'
+    -- *** 'GPretty'
     genericGPrettyPrec,
     genericLiftGPrettyPrec,
     GPrettyArgs (..),
     GGPretty (..),
     PrettyType (..),
+
+    -- *** 'SubstituteSym'
+    SubstituteSymArgs (..),
+    GSubstituteSym (..),
+    genericSubstituteSym,
+    genericLiftSubstituteSym,
   )
 where
 
@@ -1452,8 +1461,17 @@ import Grisette.Internal.Core.Data.Class.Solver
     withSolver,
   )
 import Grisette.Internal.Core.Data.Class.SubstituteSym
-  ( SubstituteSym (..),
-    SubstituteSym' (..),
+  ( -- \* Generic 'SubstituteSym'
+
+    GSubstituteSym (..),
+    SubstituteSym (..),
+    SubstituteSym1 (..),
+    SubstituteSym2 (..),
+    SubstituteSymArgs (..),
+    genericLiftSubstituteSym,
+    genericSubstituteSym,
+    substituteSym1,
+    substituteSym2,
   )
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (..))
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift (..))
