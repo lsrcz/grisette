@@ -13,6 +13,7 @@ import Data.Array.Unsafe (castSTUArray)
 import Data.Int (Int32, Int64)
 import Data.Word (Word32, Word64)
 
+-- | Type class for bit-casting between types.
 class BitCast from to where
   bitCast :: from -> to
 
