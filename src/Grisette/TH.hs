@@ -44,7 +44,6 @@ where
 
 import Grisette.Internal.TH.DeriveBuiltin
   ( deriveBuiltinExtra,
-    deriveWithHandlers,
   )
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( DeriveInstanceProvider (..),
@@ -71,6 +70,7 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterface1Extra,
     deriveUnifiedInterfaceExtra,
   )
+import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
 import Grisette.Internal.TH.MergeConstructor
   ( mkMergeConstructor,
     mkMergeConstructor',

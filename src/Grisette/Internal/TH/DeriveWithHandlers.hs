@@ -35,6 +35,8 @@ transposeMatrix :: Int -> [[a]] -> [[a]]
 transposeMatrix n [] = replicate n []
 transposeMatrix _ x = transpose x
 
+-- | Derive instances for a list of types with a list of handlers and a
+-- provider.
 deriveWithHandlers ::
   (DeriveInstanceProvider provider) =>
   [SomeDeriveTypeParamHandler] ->

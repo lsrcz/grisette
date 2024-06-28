@@ -25,10 +25,12 @@ import Language.Haskell.TH
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit)
 
+-- | A derive instance provider provides the instance declaration.
 class DeriveInstanceProvider provider where
   instanceDeclaration ::
     provider -> [[(TyVarBndrUnit, Maybe Type)]] -> [Pred] -> [Type] -> Q [Dec]
 
+-- | A strategy for deriving instances.
 data Strategy
   = Stock {strategyClassName :: Name}
   | WithNewtype {strategyClassName :: Name}

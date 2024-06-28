@@ -1,6 +1,5 @@
 module Grisette.Internal.TH.DeriveBuiltin
-  ( deriveWithHandlers,
-    deriveBuiltinExtra,
+  ( deriveBuiltinExtra,
     deriveBuiltin,
     deriveBuiltins,
   )
@@ -25,6 +24,7 @@ import Grisette.Internal.TH.Util
   )
 import Language.Haskell.TH (Dec, Name, Q)
 
+-- | Derive a builtin class for a type, with extra handlers.
 deriveBuiltinExtra ::
   [SomeDeriveTypeParamHandler] -> Bool -> Strategy -> [Name] -> Name -> Q [Dec]
 deriveBuiltinExtra
@@ -64,9 +64,11 @@ deriveBuiltinExtra
           numDrop
           (replicate numParam name)
 
+-- | Derive a builtin class for a type.
 deriveBuiltin :: Strategy -> [Name] -> Name -> Q [Dec]
 deriveBuiltin = deriveBuiltinExtra [] True
 
+-- | Derive builtin classes for a list of types.
 deriveBuiltins :: Strategy -> [Name] -> [Name] -> Q [Dec]
 deriveBuiltins strategy constraints =
   fmap concat . traverse (deriveBuiltin strategy constraints)
