@@ -13,11 +13,33 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Core
-  ( -- * Note for the examples
+  ( -- * Organization of the module
 
+    -- | The module is organized by first introducing symbolic values, which
+    -- includes solvable types and unsolvable types. Solvable types are those
+    -- directly supported by the underlying solver. Other types are unsolvable.
+    -- They need 'UnionM' monadic container and 'Mergeable' instances to be
+    -- merged.
     --
+    -- Various operations are provided for manipulating symbolic values.
+    --
+    -- We elaborated the internal details of the symbolic values in the
+    -- documentation, but it is likely that you can skip them and directly go
+    -- through the APIs and the operations to start using Grisette.
+    --
+    -- After the introduction of symbolic values, we introduce various
+    -- utilities, which includes pretty printing, symbolic generation
+    -- (generating fresh symbolic values), error handling, and the solver
+    -- backend interface (calling solver to get a model, and evaluate symbolic
+    -- values with a model).
+    --
+    -- Finally some helpers for deriving instances for the type classes are
+    -- provided.
 
-    -- | The examples may assume a [z3](https://github.com/Z3Prover/z3) solver available in @PATH@.
+    -- * Note for the examples
+
+    -- | The examples may assume a [z3](https://github.com/Z3Prover/z3) solver
+    -- available in @PATH@.
 
     -- * Symbolic values
 
@@ -131,8 +153,12 @@ module Grisette.Core
     --
     -- * 'Grisette.SymPrim.SymBool' (symbolic Booleans)
     -- * 'Grisette.SymPrim.SymInteger' (symbolic unbounded integers)
-    -- * @'Grisette.SymPrim.SymIntN' n@ (symbolic signed bit vectors of length @n@)
-    -- * @'Grisette.SymPrim.SymWordN' n@ (symbolic unsigned bit vectors of length @n@)
+    -- * @'Grisette.SymPrim.SymIntN' n@ (symbolic signed bit vectors of bit
+    --   width @n@)
+    -- * @'Grisette.SymPrim.SymWordN' n@ (symbolic unsigned bit vectors of
+    --   bit width @n@)
+    -- * @'Grisette.SymPrim.SymFP' eb sb@ (symbolic IEEE-754 floating point
+    --   numbers with @eb@ exponent bits and @sb@ significand bits)
     --
     -- The two bit vector types has their lengths checked at compile time.
     -- Grisette also provides runtime-checked versions of these types:
@@ -184,20 +210,18 @@ module Grisette.Core
     simple,
     indexed,
 
-    -- *** Symbolic operators
-
-    -- | #symop#
+    -- *** Basic logical operators
     LogicalOp (..),
     ITEOp (..),
 
-    -- **** Symbolic equality
+    -- *** Symbolic equality
     SEq (..),
     SEq1 (..),
     seq1,
     SEq2 (..),
     seq2,
 
-    -- **** Symbolic comparison
+    -- *** Symbolic comparison
     SOrd (..),
     SOrd1 (..),
     symCompare1,
@@ -208,22 +232,57 @@ module Grisette.Core
     mrgMax,
     mrgMin,
 
-    -- **** Uncategorized
+    -- *** Bit-vectors
     BV (..),
     bvExtract,
     SizedBV (..),
     sizedBVExtract,
-    SignConversion (..),
-    SafeDivision (..),
-    SafeLinearArith (..),
-    Function (..),
-    Apply (..),
     SymShift (..),
     SafeSymShift (..),
     SymRotate (..),
     SafeSymRotate (..),
+    SignConversion (..),
+    BitCast (..),
 
-    -- ** Unsolvable types
+    -- *** Safe operation for Numbers
+    SafeDivision (..),
+    SafeLinearArith (..),
+
+    -- *** Functions
+    Function (..),
+    Apply (..),
+
+    -- *** IEEE Floating points
+    fpIsNaN,
+    fpIsPositiveZero,
+    fpIsNegativeZero,
+    fpIsPositiveInfinite,
+    fpIsNegativeInfinite,
+    fpIsPositive,
+    fpIsNegative,
+    fpIsInfinite,
+    fpIsZero,
+    fpIsNormal,
+    fpIsSubnormal,
+    fpIsPoint,
+    SymIEEEFPTraits (..),
+    IEEEConstants (..),
+    IEEEFPOp (..),
+    IEEEFPRoundingOp (..),
+
+    -- *** Conversion between Concrete and Symbolic values
+    ToCon (..),
+    ToCon1 (..),
+    toCon1,
+    ToCon2 (..),
+    toCon2,
+    ToSym (..),
+    ToSym1 (..),
+    toSym1,
+    ToSym2 (..),
+    toSym2,
+
+    -- ** Unsolvable types and merging
 
     -- | There are types that cannot be directly represented as SMT formulas
     -- and therefore not supported by the SMT solvers. These types are referred
@@ -383,12 +442,12 @@ module Grisette.Core
     -- container: the list with length 1 is placed at the first place, the
     -- list with length 2 is placed at the second place, and so on.
     --
+    -- |
     -- \[
-    --   \left\{\begin{aligned}
-    --     &\texttt{[a]}&&\mathrm{if}&&\texttt{c1}\\
-    --     &\texttt{[b,b]}&&\mathrm{else~if}&&\texttt{c2}\\&
-    --     \texttt{[a,b,c]}&&\mathrm{otherwise}
-    --   \end{aligned}\right.
+    --   \left\{\begin{aligned}%
+    --   &\texttt{[a]}&&\mathrm{if}&&\texttt{c1}\\%
+    --   &\texttt{[b,b]}&&\mathrm{else~if}&&\texttt{c2}\\%
+    --   &\texttt{[a,b,c]}&&\mathrm{otherwise}\end{aligned}\right.
     -- \]
     --
     -- In Haskell syntax, the container is represented as the following nested
@@ -406,9 +465,9 @@ module Grisette.Core
     -- distribute the 'head' function through the three branches, and get
     --
     -- \[
-    --   \left\{\begin{aligned}
-    --     &\texttt{head [a]}&&\mathrm{if}&&\texttt{c1}\\
-    --     &\texttt{head [b,b]}&&\mathrm{else~if}&&\texttt{c2}\\
+    --   \left\{\begin{aligned}%
+    --     &\texttt{head [a]}&&\mathrm{if}&&\texttt{c1}\\%
+    --     &\texttt{head [b,b]}&&\mathrm{else~if}&&\texttt{c2}\\%
     --     &\texttt{head [a,b,c]}&&\mathrm{otherwise}
     --   \end{aligned}\right.
     -- \]
@@ -416,10 +475,10 @@ module Grisette.Core
     -- or, equivalently
     --
     -- \[
-    --   \left\{\begin{aligned}
-    --     &\texttt{a}&&\mathrm{if}&&\texttt{c1}\\
-    --     &\texttt{b}&&\mathrm{else~if}&&\texttt{c2}\\
-    --     &\texttt{a}&&\mathrm{otherwise}
+    --   \left\{\begin{aligned}%
+    --     &\texttt{a}&&\mathrm{if}&&\texttt{c1}\\%
+    --     &\texttt{b}&&\mathrm{else~if}&&\texttt{c2}\\%
+    --     &\texttt{a}&&\mathrm{otherwise}%
     --   \end{aligned}\right.
     -- \]
     --
@@ -429,9 +488,9 @@ module Grisette.Core
     -- the branches, and the previous result would become
     --
     -- \[
-    --   \left\{\begin{aligned}
-    --     &\texttt{a}&&\mathrm{if}&&\texttt{c1}\vee\neg\texttt{c2}\\
-    --     &\texttt{b}&&\mathrm{otherwise}\\
+    --   \left\{\begin{aligned}%
+    --     &\texttt{a}&&\mathrm{if}&&\texttt{c1}\vee\neg\texttt{c2}\\%
+    --     &\texttt{b}&&\mathrm{otherwise}\\%
     --   \end{aligned}\right.
     -- \]
     --
@@ -453,24 +512,24 @@ module Grisette.Core
     -- maintained.
     --
     -- \[
-    --   \texttt{mrgIf}\left[
-    --     \texttt{c},
-    --     \left\{\begin{aligned}
-    --       &\texttt{1}&&\mathrm{if}&&\texttt{c1}\\
-    --       &\texttt{3}&&\mathrm{else~if}&&\texttt{c2}\\
-    --       &\texttt{4}&&\mathrm{otherwise}
-    --     \end{aligned}\right.,
-    --     \left\{\begin{aligned}
-    --       &\texttt{1}&&\mathrm{if}&&\texttt{c3}\\
-    --       &\texttt{2}&&\mathrm{else~if}&&\texttt{c4}\\
-    --       &\texttt{4}&&\mathrm{otherwise}
-    --     \end{aligned}\right.
-    --   \right]
-    --   =\left\{\begin{aligned}
-    --     &\texttt{1}&&\mathrm{if}&&\texttt{(ite c c1 c3)}\\
-    --     &\texttt{2}&&\mathrm{else~if}&&\texttt{(&& (! c) c3)}\\
-    --     &\texttt{3}&&\mathrm{else~if}&&\texttt{(&& c c2)}\\
-    --     &\texttt{4}&&\mathrm{otherwise}
+    --   \texttt{mrgIf}\left[%
+    --     \texttt{c},%
+    --     \left\{\begin{aligned}%
+    --       &\texttt{1}&&\mathrm{if}&&\texttt{c1}\\%
+    --       &\texttt{3}&&\mathrm{else~if}&&\texttt{c2}\\%
+    --       &\texttt{4}&&\mathrm{otherwise}%
+    --     \end{aligned}\right.,%
+    --     \left\{\begin{aligned}%
+    --       &\texttt{1}&&\mathrm{if}&&\texttt{c3}\\%
+    --       &\texttt{2}&&\mathrm{else~if}&&\texttt{c4}\\%
+    --       &\texttt{4}&&\mathrm{otherwise}%
+    --     \end{aligned}\right.%
+    --   \right]%
+    --   =\left\{\begin{aligned}%
+    --     &\texttt{1}&&\mathrm{if}&&\texttt{(ite c c1 c3)}\\%
+    --     &\texttt{2}&&\mathrm{else~if}&&\texttt{(&& (! c) c3)}\\%
+    --     &\texttt{3}&&\mathrm{else~if}&&\texttt{(&& c c2)}\\%
+    --     &\texttt{4}&&\mathrm{otherwise}%
     --   \end{aligned}\right.
     -- \]
     --
@@ -498,16 +557,16 @@ module Grisette.Core
     -- > data X = A Integer SymInteger | B | C
     --
     -- \[
-    --   \left\{\begin{aligned}
-    --     &\texttt{t1}&&\mathrm{if}&&\texttt{c1}\\
-    --     &\texttt{B}&&\mathrm{else if}&&\texttt{c2}\\
-    --     &\texttt{C}&&\mathrm{otherwise}&&
-    --   \end{aligned}\right.
-    --   \hspace{2em}\mathrm{where}\hspace{2em}
-    --   \texttt{t1} = \left\{\begin{aligned}
-    --     &\texttt{A 1 a}&&\mathrm{if}&&\texttt{c11}\\
-    --     &\texttt{A 3 b}&&\mathrm{else if}&&\texttt{c12}\\
-    --     &\texttt{A 4 (&& x y)}&&\mathrm{otherwise}&&
+    --   \left\{\begin{aligned}%
+    --     &\texttt{t1}&&\mathrm{if}&&\texttt{c1}\\%
+    --     &\texttt{B}&&\mathrm{else if}&&\texttt{c2}\\%
+    --     &\texttt{C}&&\mathrm{otherwise}&&%
+    --   \end{aligned}\right.%
+    --   \hspace{2em}\mathrm{where}\hspace{2em}%
+    --   \texttt{t1} = \left\{\begin{aligned}%
+    --     &\texttt{A 1 a}&&\mathrm{if}&&\texttt{c11}\\%
+    --     &\texttt{A 3 b}&&\mathrm{else if}&&\texttt{c12}\\%
+    --     &\texttt{A 4 (&& x y)}&&\mathrm{otherwise}&&%
     --   \end{aligned}\right.
     -- \]
     --
@@ -546,39 +605,39 @@ module Grisette.Core
     -- for 'MergingStrategy' for details.
     --
     -- \[
-    --   \begin{aligned}
-    --       & \texttt{mrgIf}\left[
-    --        \texttt{c},
-    --        \left\{\begin{aligned}
-    --          &\texttt{t1}&&\mathrm{if}&&\texttt{c1}\\
-    --          &\texttt{v3}&&\mathrm{else~if}&&\texttt{c2}\\
-    --          &\texttt{v4}&&\mathrm{otherwise}
-    --        \end{aligned}\right.,
-    --        \left\{\begin{aligned}
-    --          &\texttt{t1'}&&\mathrm{if}&&\texttt{c3}\\
-    --          &\texttt{t2'}&&\mathrm{else~if}&&\texttt{c4}\\
-    --          &\texttt{v4'}&&\mathrm{otherwise}
-    --        \end{aligned}\right.
-    --      \right]\\
-    --     =~ & \texttt{mrgIf'}\left[
-    --        \texttt{s},
-    --        \texttt{c},
-    --        \left\{\begin{aligned}
-    --          &\texttt{t1}&&\mathrm{if}&&\texttt{c1}\\
-    --          &\texttt{v3}&&\mathrm{else~if}&&\texttt{c2}\\
-    --          &\texttt{v4}&&\mathrm{otherwise}
-    --        \end{aligned}\right.,
-    --        \left\{\begin{aligned}
-    --          &\texttt{t1'}&&\mathrm{if}&&\texttt{c3}\\
-    --          &\texttt{t2'}&&\mathrm{else~if}&&\texttt{c4}\\
-    --          &\texttt{v4'}&&\mathrm{otherwise}
-    --        \end{aligned}\right.
-    --      \right]\\
-    --     =~ & \left\{\begin{aligned}
-    --        &\texttt{mrgIf' s' c t1 t1'}&&\mathrm{if}&&\texttt{(ite c c1 c3)}\\
-    --        &\texttt{t2'}&&\mathrm{else~if}&&\texttt{(&& (! c) c4)}\\
-    --        &\texttt{v3}&&\mathrm{else~if}&&\texttt{(&& c c2)}\\
-    --        &\texttt{f' c v4 v4'}&&\mathrm{otherwise}
+    --   \begin{aligned}%
+    --       & \texttt{mrgIf}\left[%
+    --        \texttt{c},%
+    --        \left\{\begin{aligned}%
+    --          &\texttt{t1}&&\mathrm{if}&&\texttt{c1}\\%
+    --          &\texttt{v3}&&\mathrm{else~if}&&\texttt{c2}\\%
+    --          &\texttt{v4}&&\mathrm{otherwise}%
+    --        \end{aligned}\right.,%
+    --        \left\{\begin{aligned}%
+    --          &\texttt{t1'}&&\mathrm{if}&&\texttt{c3}\\%
+    --          &\texttt{t2'}&&\mathrm{else~if}&&\texttt{c4}\\%
+    --          &\texttt{v4'}&&\mathrm{otherwise}%
+    --        \end{aligned}\right.%
+    --      \right]\\%
+    --     =~ & \texttt{mrgIf'}\left[%
+    --        \texttt{s},%
+    --        \texttt{c},%
+    --        \left\{\begin{aligned}%
+    --          &\texttt{t1}&&\mathrm{if}&&\texttt{c1}\\%
+    --          &\texttt{v3}&&\mathrm{else~if}&&\texttt{c2}\\%
+    --          &\texttt{v4}&&\mathrm{otherwise}%
+    --        \end{aligned}\right.,%
+    --        \left\{\begin{aligned}%
+    --          &\texttt{t1'}&&\mathrm{if}&&\texttt{c3}\\%
+    --          &\texttt{t2'}&&\mathrm{else~if}&&\texttt{c4}\\%
+    --          &\texttt{v4'}&&\mathrm{otherwise}%
+    --        \end{aligned}\right.%
+    --      \right]\\%
+    --     =~ & \left\{\begin{aligned}%
+    --        &\texttt{mrgIf' s' c t1 t1'}&&\mathrm{if}&&\texttt{(ite c c1 c3)}\\%
+    --        &\texttt{t2'}&&\mathrm{else~if}&&\texttt{(&& (! c) c4)}\\%
+    --        &\texttt{v3}&&\mathrm{else~if}&&\texttt{(&& c c2)}\\%
+    --        &\texttt{f' c v4 v4'}&&\mathrm{otherwise}%
     --       \end{aligned}\right.
     --   \end{aligned}
     -- \]
@@ -595,9 +654,7 @@ module Grisette.Core
     liftToMonadUnion,
     unionSize,
 
-    -- *** Merging
-
-    -- **** Mergeable
+    -- *** Mergeable
     Mergeable (..),
     Mergeable1 (..),
     rootStrategy1,
@@ -606,10 +663,10 @@ module Grisette.Core
     Mergeable3 (..),
     rootStrategy3,
 
-    -- **** Merging strategy
+    -- *** Merging strategy
     MergingStrategy (..),
 
-    -- **** Manual merging strategy construction
+    -- *** Manual merging strategy construction
     wrapStrategy,
     product2Strategy,
     DynamicSortedIdx (..),
@@ -618,27 +675,27 @@ module Grisette.Core
     resolveStrategy,
     resolveStrategy',
 
-    -- **** Simple mergeable types
+    -- *** Simple mergeable types
     SimpleMergeable (..),
     SimpleMergeable1 (..),
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
 
-    -- **** Symbolic branching
+    -- *** Symbolic branching
     SymBranching (..),
     mrgIf,
     mergeWithStrategy,
     merge,
 
-    -- **** TryMerge operations
+    -- *** TryMerge operations
     MonadTryMerge,
     TryMerge (..),
     mrgSingle,
     mrgSingleWithStrategy,
     tryMerge,
 
-    -- **** PlainUnion operations
+    -- *** PlainUnion operations
     PlainUnion (..),
     pattern Single,
     pattern If,
@@ -649,18 +706,6 @@ module Grisette.Core
     onUnion3,
     onUnion4,
     MonadUnion,
-
-    -- *** Conversion between Concrete and Symbolic values
-    ToCon (..),
-    ToCon1 (..),
-    toCon1,
-    ToCon2 (..),
-    toCon2,
-    ToSym (..),
-    ToSym1 (..),
-    toSym1,
-    ToSym2 (..),
-    toSym2,
 
     -- * Pretty printing
     GPretty (..),
@@ -1203,6 +1248,7 @@ import Grisette.Internal.Core.Control.Monad.UnionM
     unionMUnaryOp,
     unionSize,
   )
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (..))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (..),
     SizedBV (..),
@@ -1334,6 +1380,24 @@ import Grisette.Internal.Core.Data.Class.GenSym
     runFresh,
     runFreshT,
   )
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEConstants (..),
+    IEEEFPOp (..),
+    IEEEFPRoundingOp (..),
+    SymIEEEFPTraits (..),
+    fpIsInfinite,
+    fpIsNaN,
+    fpIsNegative,
+    fpIsNegativeInfinite,
+    fpIsNegativeZero,
+    fpIsNormal,
+    fpIsPoint,
+    fpIsPositive,
+    fpIsPositiveInfinite,
+    fpIsPositiveZero,
+    fpIsSubnormal,
+    fpIsZero,
+  )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (..))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (..))
 import Grisette.Internal.Core.Data.Class.Mergeable
@@ -1445,9 +1509,7 @@ import Grisette.Internal.Core.Data.Class.Solver
     withSolver,
   )
 import Grisette.Internal.Core.Data.Class.SubstituteSym
-  ( -- \* Generic 'SubstituteSym'
-
-    GSubstituteSym (..),
+  ( GSubstituteSym (..),
     SubstituteSym (..),
     SubstituteSym1 (..),
     SubstituteSym2 (..),

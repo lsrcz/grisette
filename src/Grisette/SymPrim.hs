@@ -25,11 +25,14 @@ module Grisette.SymPrim
     WordN16,
     WordN32,
     WordN64,
+    ValidFP,
     FP,
     FP16,
     FP32,
     FP64,
+    withValidFPProofs,
     FPRoundingMode (..),
+    allFPRoundingMode,
     SomeBV (..),
     BitwidthMismatch (..),
     pattern SomeIntN,
@@ -139,7 +142,16 @@ import Grisette.Internal.SymPrim.BV
     WordN64,
     WordN8,
   )
-import Grisette.Internal.SymPrim.FP (FP, FP16, FP32, FP64, FPRoundingMode (..))
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FP16,
+    FP32,
+    FP64,
+    FPRoundingMode (..),
+    ValidFP,
+    allFPRoundingMode,
+    withValidFPProofs,
+  )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.ModelRep (ModelSymPair (..))
 import Grisette.Internal.SymPrim.Prim.Model
