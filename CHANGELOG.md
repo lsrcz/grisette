@@ -29,7 +29,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
    [#214](https://github.com/lsrcz/grisette/pull/214))
 - [Breaking] Rewritten the generic derivation mechanism.
   ([#213](https://github.com/lsrcz/grisette/pull/213),
-   [#214](https://github.com/lsrcz/grisette/pull/214))
+   [#214](https://github.com/lsrcz/grisette/pull/214),
+   [#216](https://github.com/lsrcz/grisette/pull/216))
+- [Breaking] Changed the type class hierarchy for operations for functors, e.g.
+  `SEq1`, as described in
+  https://github.com/haskell/core-libraries-committee/issues/10.
+  ([#216](https://github.com/lsrcz/grisette/pull/216))
 
 ## [0.6.0.0] -- 2024-06-07
 
