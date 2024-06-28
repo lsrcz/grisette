@@ -6,9 +6,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -23,11 +25,22 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.AllSyms
-  ( symSize,
-    symsSize,
+  ( -- * Get all symbolic primitive values in a value
     SomeSym (..),
     AllSyms (..),
+    AllSyms1 (..),
+    allSymsS1,
+    AllSyms2 (..),
+    allSymsS2,
     allSymsSize,
+    symSize,
+    symsSize,
+
+    -- * Generic 'AllSyms'
+    AllSymsArgs (..),
+    GAllSyms (..),
+    genericAllSymsS,
+    genericLiftAllSymsS,
   )
 where
 
@@ -42,18 +55,27 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Kind (Type)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
   ( Generic (Rep, from),
+    Generic1 (Rep1, from1),
     K1 (K1),
     M1 (M1),
+    Par1 (Par1),
+    Rec1 (Rec1),
     U1,
+    V1,
+    (:.:) (Comp1),
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
 import GHC.TypeNats (KnownNat, type (<=))
-import Generics.Deriving (Default (Default, unDefault))
+import Generics.Deriving
+  ( Default (Default, unDefault),
+    Default1 (Default1, unDefault1),
+  )
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
@@ -71,12 +93,39 @@ import Grisette.Internal.SymPrim.Prim.TermUtils
     termSize,
     termsSize,
   )
+import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
+import Grisette.Internal.TH.DeriveInstanceProvider
+  ( Strategy (ViaDefault, ViaDefault1),
+  )
+import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
 -- >>> import Data.Proxy
+
+-- | Some symbolic value with 'LinkedRep' constraint.
+data SomeSym where
+  SomeSym :: (LinkedRep con sym) => sym -> SomeSym
+
+-- | Extract all symbolic primitive values that are represented as SMT terms.
+--
+-- __Note:__ This type class can be derived for algebraic data types. You may
+-- need the @DerivingVia@ and @DerivingStrategies@ extenstions.
+--
+-- > data X = ... deriving Generic deriving AllSyms via (Default X)
+class AllSyms a where
+  -- | Convert a value to a list of symbolic primitive values. It should
+  -- prepend to an existing list of symbolic primitive values.
+  allSymsS :: a -> [SomeSym] -> [SomeSym]
+  allSymsS a l = allSyms a ++ l
+
+  -- | Specialized 'allSymsS' that prepends to an empty list.
+  allSyms :: a -> [SomeSym]
+  allSyms a = allSymsS a []
+
+  {-# MINIMAL allSymsS | allSyms #-}
 
 -- | Get the sum of the sizes of a list of symbolic terms.
 -- Duplicate sub-terms are counted for only once.
@@ -102,34 +151,12 @@ symSize :: forall con sym. (LinkedRep con sym) => sym -> Int
 symSize = termSize . underlyingTerm @con
 {-# INLINE symSize #-}
 
--- | Some symbolic value with 'LinkedRep' constraint.
-data SomeSym where
-  SomeSym :: (LinkedRep con sym) => sym -> SomeSym
-
 someUnderlyingTerm :: SomeSym -> SomeTerm
 someUnderlyingTerm (SomeSym s) = SomeTerm $ underlyingTerm s
 
 someSymsSize :: [SomeSym] -> Int
 someSymsSize = someTermsSize . fmap someUnderlyingTerm
 {-# INLINE someSymsSize #-}
-
--- | Extract all symbolic primitive values that are represented as SMT terms.
---
--- __Note:__ This type class can be derived for algebraic data types. You may
--- need the @DerivingVia@ and @DerivingStrategies@ extenstions.
---
--- > data X = ... deriving Generic deriving AllSyms via (Default X)
-class AllSyms a where
-  -- | Convert a value to a list of symbolic primitive values. It should
-  -- prepend to an existing list of symbolic primitive values.
-  allSymsS :: a -> [SomeSym] -> [SomeSym]
-  allSymsS a l = allSyms a ++ l
-
-  -- | Specialized 'allSymsS' that prepends to an empty list.
-  allSyms :: a -> [SomeSym]
-  allSyms a = allSymsS a []
-
-  {-# MINIMAL allSymsS | allSyms #-}
 
 -- | Get the total size of symbolic terms in a value.
 -- Duplicate sub-terms are counted for only once.
@@ -139,27 +166,244 @@ class AllSyms a where
 allSymsSize :: (AllSyms a) => a -> Int
 allSymsSize = someSymsSize . allSyms
 
-class AllSyms' a where
-  allSymsS' :: a c -> [SomeSym] -> [SomeSym]
+class (forall a. (AllSyms a) => AllSyms (f a)) => AllSyms1 f where
+  liftAllSymsS :: (a -> [SomeSym] -> [SomeSym]) -> f a -> [SomeSym] -> [SomeSym]
 
-instance (Generic a, AllSyms' (Rep a)) => AllSyms (Default a) where
-  allSymsS = allSymsS' . from . unDefault
+allSymsS1 :: (AllSyms1 f, AllSyms a) => f a -> [SomeSym] -> [SomeSym]
+allSymsS1 = liftAllSymsS allSymsS
+{-# INLINE allSymsS1 #-}
 
-instance AllSyms' U1 where
-  allSymsS' _ = id
+class (forall a. (AllSyms a) => AllSyms1 (f a)) => AllSyms2 f where
+  liftAllSymsS2 ::
+    (a -> [SomeSym] -> [SomeSym]) ->
+    (b -> [SomeSym] -> [SomeSym]) ->
+    f a b ->
+    [SomeSym] ->
+    [SomeSym]
 
-instance (AllSyms c) => AllSyms' (K1 i c) where
-  allSymsS' (K1 v) = allSymsS v
+allSymsS2 ::
+  (AllSyms2 f, AllSyms a, AllSyms b) => f a b -> [SomeSym] -> [SomeSym]
+allSymsS2 = liftAllSymsS2 allSymsS allSymsS
+{-# INLINE allSymsS2 #-}
 
-instance (AllSyms' a) => AllSyms' (M1 i c a) where
-  allSymsS' (M1 v) = allSymsS' v
+-- Derivation
+data family AllSymsArgs arity a :: Type
 
-instance (AllSyms' a, AllSyms' b) => AllSyms' (a :+: b) where
-  allSymsS' (L1 l) = allSymsS' l
-  allSymsS' (R1 r) = allSymsS' r
+data instance AllSymsArgs Arity0 _ = AllSymsArgs0
 
-instance (AllSyms' a, AllSyms' b) => AllSyms' (a :*: b) where
-  allSymsS' (a :*: b) = allSymsS' a . allSymsS' b
+newtype instance AllSymsArgs Arity1 a
+  = AllSymsArgs1 (a -> [SomeSym] -> [SomeSym])
+
+class GAllSyms arity f where
+  gallSymsS :: AllSymsArgs arity a -> f a -> [SomeSym] -> [SomeSym]
+
+instance GAllSyms arity V1 where
+  gallSymsS _ _ = id
+
+instance GAllSyms arity U1 where
+  gallSymsS _ _ = id
+
+instance (AllSyms c) => GAllSyms arity (K1 i c) where
+  gallSymsS _ (K1 x) = allSymsS x
+
+instance (GAllSyms arity a) => GAllSyms arity (M1 i c a) where
+  gallSymsS args (M1 x) = gallSymsS args x
+
+instance (GAllSyms arity a, GAllSyms arity b) => GAllSyms arity (a :+: b) where
+  gallSymsS args (L1 l) = gallSymsS args l
+  gallSymsS args (R1 r) = gallSymsS args r
+
+instance (GAllSyms arity a, GAllSyms arity b) => GAllSyms arity (a :*: b) where
+  gallSymsS args (a :*: b) = gallSymsS args a . gallSymsS args b
+
+instance GAllSyms Arity1 Par1 where
+  gallSymsS (AllSymsArgs1 f) (Par1 x) = f x
+
+instance (AllSyms1 f) => GAllSyms Arity1 (Rec1 f) where
+  gallSymsS (AllSymsArgs1 f) (Rec1 x) = liftAllSymsS f x
+
+instance (AllSyms1 f, GAllSyms Arity1 g) => GAllSyms Arity1 (f :.: g) where
+  gallSymsS targs (Comp1 x) = liftAllSymsS (gallSymsS targs) x
+
+genericAllSymsS ::
+  (Generic a, GAllSyms Arity0 (Rep a)) =>
+  a ->
+  [SomeSym] ->
+  [SomeSym]
+genericAllSymsS x = gallSymsS AllSymsArgs0 (from x)
+{-# INLINE genericAllSymsS #-}
+
+genericLiftAllSymsS ::
+  (Generic1 f, GAllSyms Arity1 (Rep1 f)) =>
+  (a -> [SomeSym] -> [SomeSym]) ->
+  f a ->
+  [SomeSym] ->
+  [SomeSym]
+genericLiftAllSymsS f x = gallSymsS (AllSymsArgs1 f) (from1 x)
+{-# INLINE genericLiftAllSymsS #-}
+
+instance (Generic a, GAllSyms Arity0 (Rep a)) => AllSyms (Default a) where
+  allSymsS = genericAllSymsS . unDefault
+  {-# INLINE allSymsS #-}
+
+instance
+  (Generic1 f, GAllSyms Arity1 (Rep1 f), AllSyms a) =>
+  AllSyms (Default1 f a)
+  where
+  allSymsS = allSymsS1
+  {-# INLINE allSymsS #-}
+
+instance (Generic1 f, GAllSyms Arity1 (Rep1 f)) => AllSyms1 (Default1 f) where
+  liftAllSymsS f = genericLiftAllSymsS f . unDefault1
+  {-# INLINE liftAllSymsS #-}
+
+-- Instances
+deriveBuiltins
+  (ViaDefault ''AllSyms)
+  [''AllSyms]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''Identity
+  ]
+
+deriveBuiltins
+  (ViaDefault1 ''AllSyms1)
+  [''AllSyms, ''AllSyms1]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Identity
+  ]
+
+-- ExceptT
+instance
+  (AllSyms1 m, AllSyms e, AllSyms a) =>
+  AllSyms (ExceptT e m a)
+  where
+  allSymsS = allSymsS1
+  {-# INLINE allSymsS #-}
+
+instance
+  (AllSyms1 m, AllSyms e) =>
+  AllSyms1 (ExceptT e m)
+  where
+  liftAllSymsS f (ExceptT v) = liftAllSymsS (liftAllSymsS f) v
+  {-# INLINE liftAllSymsS #-}
+
+-- MaybeT
+instance (AllSyms1 m, AllSyms a) => AllSyms (MaybeT m a) where
+  allSymsS = allSymsS1
+  {-# INLINE allSymsS #-}
+
+instance (AllSyms1 m) => AllSyms1 (MaybeT m) where
+  liftAllSymsS f (MaybeT v) = liftAllSymsS (liftAllSymsS f) v
+  {-# INLINE liftAllSymsS #-}
+
+-- WriterT
+instance
+  (AllSyms1 m, AllSyms a, AllSyms s) =>
+  AllSyms (WriterLazy.WriterT s m a)
+  where
+  allSymsS = allSymsS1
+  {-# INLINE allSymsS #-}
+
+instance
+  (AllSyms1 m, AllSyms s) =>
+  AllSyms1 (WriterLazy.WriterT s m)
+  where
+  liftAllSymsS f (WriterLazy.WriterT v) =
+    liftAllSymsS (liftAllSymsS2 f allSymsS) v
+  {-# INLINE liftAllSymsS #-}
+
+instance
+  (AllSyms1 m, AllSyms a, AllSyms s) =>
+  AllSyms (WriterStrict.WriterT s m a)
+  where
+  allSymsS = allSymsS1
+  {-# INLINE allSymsS #-}
+
+instance
+  (AllSyms1 m, AllSyms s) =>
+  AllSyms1 (WriterStrict.WriterT s m)
+  where
+  liftAllSymsS f (WriterStrict.WriterT v) =
+    liftAllSymsS (liftAllSymsS2 f allSymsS) v
+  {-# INLINE liftAllSymsS #-}
+
+-- Sum
+deriving via
+  (Default (Sum f g a))
+  instance
+    (AllSyms (f a), AllSyms (g a)) =>
+    AllSyms (Sum f g a)
+
+deriving via
+  (Default1 (Sum f g))
+  instance
+    (AllSyms1 f, AllSyms1 g) =>
+    AllSyms1 (Sum f g)
+
+-- IdentityT
+instance
+  (AllSyms1 m, AllSyms a) =>
+  AllSyms (IdentityT m a)
+  where
+  allSymsS = allSymsS1
+  {-# INLINE allSymsS #-}
+
+instance (AllSyms1 m) => AllSyms1 (IdentityT m) where
+  liftAllSymsS f (IdentityT a) = liftAllSymsS f a
+  {-# INLINE liftAllSymsS #-}
+
+-- AllSyms2
+instance AllSyms2 Either where
+  liftAllSymsS2 f _ (Left x) = f x
+  liftAllSymsS2 _ g (Right y) = g y
+  {-# INLINE liftAllSymsS2 #-}
+
+instance AllSyms2 (,) where
+  liftAllSymsS2 f g (x, y) = f x . g y
+  {-# INLINE liftAllSymsS2 #-}
+
+instance (AllSyms a) => AllSyms2 ((,,) a) where
+  liftAllSymsS2 f g (x, y, z) = allSymsS x . f y . g z
+  {-# INLINE liftAllSymsS2 #-}
+
+instance (AllSyms a, AllSyms b) => AllSyms2 ((,,,) a b) where
+  liftAllSymsS2 f g (x, y, z, w) = allSymsS x . allSymsS y . f z . g w
+  {-# INLINE liftAllSymsS2 #-}
 
 #define CONCRETE_ALLSYMS(type) \
 instance AllSyms type where \
@@ -197,151 +441,3 @@ CONCRETE_ALLSYMS_BV(IntN)
 instance (ValidFP eb sb) => AllSyms (FP eb sb) where
   allSymsS _ = id
   {-# INLINE allSymsS #-}
-
-instance AllSyms () where
-  allSymsS _ = id
-
--- Either
-deriving via
-  (Default (Either a b))
-  instance
-    ( AllSyms a,
-      AllSyms b
-    ) =>
-    AllSyms (Either a b)
-
--- Maybe
-deriving via (Default (Maybe a)) instance (AllSyms a) => AllSyms (Maybe a)
-
--- List
-deriving via (Default [a]) instance (AllSyms a) => AllSyms [a]
-
--- (,)
-deriving via
-  (Default (a, b))
-  instance
-    (AllSyms a, AllSyms b) =>
-    AllSyms (a, b)
-
--- (,,)
-deriving via
-  (Default (a, b, c))
-  instance
-    ( AllSyms a,
-      AllSyms b,
-      AllSyms c
-    ) =>
-    AllSyms (a, b, c)
-
--- (,,,)
-deriving via
-  (Default (a, b, c, d))
-  instance
-    ( AllSyms a,
-      AllSyms b,
-      AllSyms c,
-      AllSyms d
-    ) =>
-    AllSyms (a, b, c, d)
-
--- (,,,,)
-deriving via
-  (Default (a, b, c, d, e))
-  instance
-    ( AllSyms a,
-      AllSyms b,
-      AllSyms c,
-      AllSyms d,
-      AllSyms e
-    ) =>
-    AllSyms (a, b, c, d, e)
-
--- (,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f))
-  instance
-    ( AllSyms a,
-      AllSyms b,
-      AllSyms c,
-      AllSyms d,
-      AllSyms e,
-      AllSyms f
-    ) =>
-    AllSyms (a, b, c, d, e, f)
-
--- (,,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f, g))
-  instance
-    ( AllSyms a,
-      AllSyms b,
-      AllSyms c,
-      AllSyms d,
-      AllSyms e,
-      AllSyms f,
-      AllSyms g
-    ) =>
-    AllSyms (a, b, c, d, e, f, g)
-
--- (,,,,,,,)
-deriving via
-  (Default (a, b, c, d, e, f, g, h))
-  instance
-    ( AllSyms a,
-      AllSyms b,
-      AllSyms c,
-      AllSyms d,
-      AllSyms e,
-      AllSyms f,
-      AllSyms g,
-      AllSyms h
-    ) =>
-    AllSyms ((,,,,,,,) a b c d e f g h)
-
--- MaybeT
-instance
-  (AllSyms (m (Maybe a))) =>
-  AllSyms (MaybeT m a)
-  where
-  allSymsS (MaybeT v) = allSymsS v
-
--- ExceptT
-instance
-  (AllSyms (m (Either e a))) =>
-  AllSyms (ExceptT e m a)
-  where
-  allSymsS (ExceptT v) = allSymsS v
-
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (AllSyms (f a), AllSyms (g a)) =>
-    AllSyms (Sum f g a)
-
--- WriterT
-instance
-  (AllSyms (m (a, s))) =>
-  AllSyms (WriterLazy.WriterT s m a)
-  where
-  allSymsS (WriterLazy.WriterT v) = allSymsS v
-
-instance
-  (AllSyms (m (a, s))) =>
-  AllSyms (WriterStrict.WriterT s m a)
-  where
-  allSymsS (WriterStrict.WriterT v) = allSymsS v
-
--- Identity
-instance (AllSyms a) => AllSyms (Identity a) where
-  allSymsS (Identity a) = allSymsS a
-
--- IdentityT
-instance (AllSyms (m a)) => AllSyms (IdentityT m a) where
-  allSymsS (IdentityT a) = allSymsS a
-
--- VerificationConditions
-deriving via (Default VerificationConditions) instance AllSyms VerificationConditions
-
--- AssertionError
-deriving via (Default AssertionError) instance AllSyms AssertionError

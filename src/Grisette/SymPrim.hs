@@ -85,10 +85,23 @@ module Grisette.SymPrim
     type (=~>) (..),
     type (-~>) (..),
     TypedSymbol (..),
+
+    -- ** Extract symbolic values
+    SomeSym (..),
+    AllSyms (..),
+    AllSyms1 (..),
+    allSymsS1,
+    AllSyms2 (..),
+    allSymsS2,
+    allSymsSize,
     symSize,
     symsSize,
-    AllSyms (..),
-    allSymsSize,
+
+    -- *** Generic 'AllSyms'
+    AllSymsArgs (..),
+    GAllSyms (..),
+    genericAllSymsS,
+    genericLiftAllSymsS,
 
     -- ** Symbolic constant sets and models
     SymbolSet (..),
@@ -100,7 +113,16 @@ where
 
 import Grisette.Internal.SymPrim.AllSyms
   ( AllSyms (..),
+    AllSyms1 (..),
+    AllSyms2 (..),
+    AllSymsArgs (..),
+    GAllSyms (..),
+    SomeSym (..),
+    allSymsS1,
+    allSymsS2,
     allSymsSize,
+    genericAllSymsS,
+    genericLiftAllSymsS,
     symSize,
     symsSize,
   )
