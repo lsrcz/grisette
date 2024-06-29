@@ -9,8 +9,8 @@ where
 import Control.Monad (join, replicateM, when, zipWithM)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.TH.Util (constructorInfoToType, occName)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
-import Grisette.Unified.Internal.IsMode (IsMode)
+import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.UnifiedData
   ( GetData,
     UnifiedData,
@@ -59,14 +59,14 @@ mkUnifiedConstructor' names typName = do
   let constructors = datatypeCons d
   when (length names /= length constructors) $
     fail "Number of names does not match the number of constructors"
-  let modeVars = filter ((== ConT ''EvaluationMode) . tvKind) (datatypeVars d)
+  let modeVars = filter ((== ConT ''EvalModeTag) . tvKind) (datatypeVars d)
   when (length modeVars /= 1) $
-    fail "Expected exactly one EvaluationMode variable in the datatype."
+    fail "Expected exactly one EvalModeTag variable in the datatype."
   case modeVars of
     [mode] -> do
       ds <- zipWithM (mkSingleWrapper d $ VarT $ tvName mode) names constructors
       return $ join ds
-    _ -> fail "Expected exactly one EvaluationMode variable in the datatype."
+    _ -> fail "Expected exactly one EvalModeTag variable in the datatype."
 
 augmentFinalType :: Type -> Type -> Q ([Pred], Type)
 augmentFinalType mode (AppT a@(AppT ArrowT _) t) = do
@@ -81,7 +81,7 @@ augmentFinalType mode t = do
 augmentConstructorType :: Type -> Type -> Q Type
 augmentConstructorType mode (ForallT tybinders ctx ty1) = do
   (preds, augmentedTyp) <- augmentFinalType mode ty1
-  ismode <- [t|IsMode $(return mode)|]
+  ismode <- [t|EvalMode $(return mode)|]
   return $ ForallT tybinders (ismode : preds ++ ctx) augmentedTyp
 augmentConstructorType _ _ =
   fail

@@ -66,7 +66,7 @@ import qualified Grisette.SymPrim.Prim.TabularFunTests
 import Grisette.SymPrim.SomeBVTests (someBVTests)
 import Grisette.SymPrim.SymPrimTests (symPrimTests)
 import qualified Grisette.SymPrim.TabularFunTests
-import Grisette.Unified.IsModeTest (isModeTest)
+import Grisette.Unified.EvalModeTest (evalModeTest)
 import Grisette.Unified.UnifiedClassesTest (unifiedClassesTest)
 import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
@@ -192,7 +192,7 @@ unifiedTests :: Test
 unifiedTests =
   testGroup
     "Grisette.Unified"
-    [ isModeTest,
+    [ evalModeTest,
       unifiedConstructorTest,
       unifiedClassesTest
     ]

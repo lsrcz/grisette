@@ -40,7 +40,7 @@ import Grisette.Internal.TH.Util
     tvIsStar,
     tvIsStarToStar,
   )
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.Util (withMode)
 import Language.Haskell.TH
   ( Dec,
@@ -81,7 +81,7 @@ instance DeriveTypeParamHandler TypeableMode where
         then do
           nm <- newName "mode"
           return $
-            ( [(kindedTV nm (ConT ''EvaluationMode), Nothing)],
+            ( [(kindedTV nm (ConT ''EvalModeTag), Nothing)],
               Nothing
             )
               : tys
@@ -141,7 +141,7 @@ instance DeriveTypeParamHandler PrimaryUnifiedConstraint where
               fail
                 "PrimaryUnifiedConstraint: All type parameters must be aligned"
         handle kinds modety tys preds
-          | ConT ''EvaluationMode : (tvKind . fst <$> tys) == kinds = do
+          | ConT ''EvalModeTag : (tvKind . fst <$> tys) == kinds = do
               ts <- mapM (uncurry getTypeWithMaybeSubst) tys
               cls <-
                 foldl appT (appT (conT className) (return modety)) $

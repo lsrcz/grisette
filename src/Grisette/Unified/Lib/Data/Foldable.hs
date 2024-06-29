@@ -70,7 +70,7 @@ import Grisette.Unified
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq, (.==))
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (mrgMax, mrgMin)
-import Grisette.Unified.Internal.IsMode (IsMode)
+import Grisette.Unified.Internal.EvalMode (EvalMode)
 import Grisette.Unified.Internal.UnifiedBool (GetBool)
 import Grisette.Unified.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Unified.Lib.Control.Monad
@@ -83,7 +83,7 @@ import Grisette.Unified.Lib.Data.Functor (mrgFmap, mrgVoid)
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem ::
   forall mode t a.
-  (Foldable t, IsMode mode, UnifiedSymEq mode a) =>
+  (Foldable t, EvalMode mode, UnifiedSymEq mode a) =>
   a ->
   t a ->
   GetBool mode
@@ -116,7 +116,7 @@ symMaximum ::
     Mergeable a,
     UnifiedSymOrd mode a,
     UnifiedITEOp mode a,
-    IsMode mode
+    EvalMode mode
   ) =>
   t a ->
   a
@@ -148,7 +148,7 @@ symMinimum ::
     Mergeable a,
     UnifiedSymOrd mode a,
     UnifiedITEOp mode a,
-    IsMode mode
+    EvalMode mode
   ) =>
   t a ->
   a
@@ -225,24 +225,24 @@ mrgMsum = foldr mrgMplus mrgMzero
 {-# INLINE mrgMsum #-}
 
 -- | 'Data.Foldable.and' on unified boolean.
-symAnd :: (IsMode mode, Foldable t) => t (GetBool mode) -> GetBool mode
+symAnd :: (EvalMode mode, Foldable t) => t (GetBool mode) -> GetBool mode
 symAnd = foldl' (.&&) (toSym True)
 {-# INLINE symAnd #-}
 
 -- | 'Data.Foldable.or' on unified boolean.
-symOr :: (IsMode mode, Foldable t) => t (GetBool mode) -> GetBool mode
+symOr :: (EvalMode mode, Foldable t) => t (GetBool mode) -> GetBool mode
 symOr = foldl' (.||) (toSym False)
 {-# INLINE symOr #-}
 
 -- | 'Data.Foldable.any' on unified boolean.
 symAny ::
-  (IsMode mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
+  (EvalMode mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
 symAny f = foldl' (\acc v -> acc .|| f v) (toSym False)
 {-# INLINE symAny #-}
 
 -- | 'Data.Foldable.all' on unified boolean.
 symAll ::
-  (IsMode mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
+  (EvalMode mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
 symAll f = foldl' (\acc v -> acc .&& f v) (toSym True)
 {-# INLINE symAll #-}
 
@@ -272,7 +272,7 @@ mrgMaximumBy cmp l = do
 -- | 'Data.Foldable.maximumBy' with result merged with 'ITEOp'.
 symMaximumBy ::
   forall mode t a.
-  (Foldable t, Mergeable a, UnifiedITEOp mode a, IsMode mode) =>
+  (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalMode mode) =>
   (a -> a -> BaseMonad mode Ordering) ->
   t a ->
   a
@@ -305,7 +305,7 @@ mrgMinimumBy cmp l = do
 -- | 'Data.Foldable.minimumBy' with result merged with 'ITEOp'.
 symMinimumBy ::
   forall mode t a.
-  (Foldable t, Mergeable a, UnifiedITEOp mode a, IsMode mode) =>
+  (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalMode mode) =>
   (a -> a -> BaseMonad mode Ordering) ->
   t a ->
   a
@@ -314,7 +314,7 @@ symMinimumBy cmp l = symIteMerge (mrgMinimumBy cmp l :: BaseMonad mode a)
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symNotElem ::
-  (Foldable t, UnifiedSymEq mode a, IsMode mode) =>
+  (Foldable t, UnifiedSymEq mode a, EvalMode mode) =>
   a ->
   t a ->
   GetBool mode

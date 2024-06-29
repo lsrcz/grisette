@@ -17,7 +17,7 @@
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 {-# HLINT ignore "Use fewer imports" #-}
 
-module Grisette.Unified.IsModeTest (isModeTest) where
+module Grisette.Unified.EvalModeTest (evalModeTest) where
 
 import Control.Exception (ArithException (DivideByZero))
 import Control.Monad.Error.Class (MonadError)
@@ -40,13 +40,13 @@ import qualified Grisette
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, ssymBV)
 import Grisette.Unified
-  ( EvaluationMode (Con),
+  ( EvalMode,
+    EvalModeTag (Con),
     GetBool,
     GetData,
     GetIntN,
     GetInteger,
     GetSomeIntN,
-    IsMode,
     MonadWithMode,
     extractData,
     mrgIte,
@@ -71,7 +71,7 @@ import Grisette.Unified
 #endif
 
 fbool ::
-  forall mode. (IsMode mode) => GetBool mode -> GetBool mode -> GetBool mode
+  forall mode. (EvalMode mode) => GetBool mode -> GetBool mode -> GetBool mode
 fbool l r =
   mrgIte
     (l .== r :: GetBool mode)
@@ -80,7 +80,7 @@ fbool l r =
 
 finteger ::
   forall mode.
-  (IsMode mode) =>
+  (EvalMode mode) =>
   GetInteger mode ->
   GetInteger mode ->
   GetInteger mode
@@ -189,10 +189,10 @@ data A mode = A (GetIntN mode 8) | AT (GetData mode (A mode))
   deriving (Generic)
 
 #if MIN_VERSION_base(4,16,0)
-type DataConstraint mode = (IsMode mode)
+type DataConstraint mode = (EvalMode mode)
 #else
 type DataConstraint mode =
-  (IsMode mode, UnifiedData mode (A mode), UnifiedBV mode 8)
+  (EvalMode mode, UnifiedData mode (A mode), UnifiedBV mode 8)
 #endif
 
 deriving via
@@ -224,10 +224,10 @@ fdata d = do
     A v -> safeDiv @mode v (v - 1)
     AT v -> fdata v
 
-isModeTest :: Test
-isModeTest =
+evalModeTest :: Test
+evalModeTest =
   testGroup
-    "IsMode"
+    "EvalMode"
     [ testGroup
         "GetBool"
         [ testCase "Con" $ fbool True False @?= False,

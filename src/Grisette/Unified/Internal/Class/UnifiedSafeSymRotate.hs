@@ -38,8 +38,8 @@ import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Sym),
+import Grisette.Unified.Internal.EvalModeTag
+  ( EvalModeTag (Sym),
   )
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -86,7 +86,7 @@ safeSymRotateR a b =
 -- | A class that provides unified safe symbolic rotation operations.
 --
 -- We use this type class to help resolve the constraints for `SafeSymRotate`.
-class UnifiedSafeSymRotate (mode :: EvaluationMode) e a m where
+class UnifiedSafeSymRotate (mode :: EvalModeTag) e a m where
   withBaseSafeSymRotate :: ((SafeSymRotate e a m) => r) -> r
 
 instance

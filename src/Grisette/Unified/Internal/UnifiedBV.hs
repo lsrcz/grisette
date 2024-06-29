@@ -65,7 +65,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   )
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
 type BVConstraint mode word int =
   ( BasicGrisetteType word,
@@ -112,7 +112,7 @@ class
     word ~ wordn n,
     int ~ intn n
   ) =>
-  UnifiedBVImpl (mode :: EvaluationMode) wordn intn n word int
+  UnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int
     | wordn n -> word intn int,
       word -> wordn intn n int,
       intn n -> int wordn word,
@@ -185,7 +185,7 @@ class
     UnifiedSafeSymRotate mode ArithException int m,
     UnifiedBVImpl mode wordn intn n word int
   ) =>
-  SafeUnifiedBVImpl (mode :: EvaluationMode) wordn intn n word int m
+  SafeUnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int m
 
 instance
   ( UnifiedSafeDivision mode ArithException word m,
@@ -237,7 +237,7 @@ class
     UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) int m
   ) =>
-  SafeUnifiedSomeBVImpl (mode :: EvaluationMode) word int m
+  SafeUnifiedSomeBVImpl (mode :: EvalModeTag) word int m
 
 instance
   ( SomeBVPair mode word int,
@@ -250,7 +250,7 @@ instance
     UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) int m
   ) =>
-  SafeUnifiedSomeBVImpl (mode :: EvaluationMode) word int m
+  SafeUnifiedSomeBVImpl (mode :: EvalModeTag) word int m
 
 class
   ( SafeUnifiedSomeBVImpl

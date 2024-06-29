@@ -43,8 +43,8 @@ import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Sym),
+import Grisette.Unified.Internal.EvalModeTag
+  ( EvalModeTag (Sym),
   )
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -156,7 +156,7 @@ safeQuotRem a b =
 -- | A class that provides unified division operations.
 --
 -- We use this type class to help resolve the constraints for `SafeDivision`.
-class UnifiedSafeDivision (mode :: EvaluationMode) e a m where
+class UnifiedSafeDivision (mode :: EvalModeTag) e a m where
   withBaseSafeDivision :: ((SafeDivision e a m) => r) -> r
 
 instance

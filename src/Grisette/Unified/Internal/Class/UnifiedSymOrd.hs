@@ -72,7 +72,7 @@ import Grisette.Unified.Internal.Class.UnifiedITEOp
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvaluationMode
+import Grisette.Unified.Internal.EvalModeTag
   ( IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))

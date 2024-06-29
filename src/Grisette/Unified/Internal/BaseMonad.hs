@@ -18,13 +18,13 @@ where
 import Control.Monad.Identity (Identity)
 import Data.Kind (Type)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
 -- | A type family that specifies the base monad for the evaluation mode.
 --
 -- Resolves to 'Identity' for `Con` mode, and 'Union' for `Sym` mode.
 type family
-  BaseMonad (mode :: EvaluationMode) =
+  BaseMonad (mode :: EvalModeTag) =
     (r :: Type -> Type) | r -> mode
   where
   BaseMonad 'Con = Identity

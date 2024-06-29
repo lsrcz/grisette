@@ -9,9 +9,7 @@
 module Grisette.Unified.Internal.Util (withMode) where
 
 import Data.Typeable (Typeable, eqT, type (:~:) (Refl))
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Con, Sym),
-  )
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
 withMode ::
   forall mode r.

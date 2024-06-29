@@ -2,12 +2,12 @@
 
 module Grisette.Unified
   ( -- * Evaluation mode
-    EvaluationMode (..),
+    EvalModeTag (..),
     IsConMode,
     BaseMonad,
 
     -- * Aggregated constraints
-    IsMode,
+    EvalMode,
     MonadWithMode,
 
     -- * Unified operations
@@ -173,11 +173,11 @@ import Grisette.Unified.Internal.Class.UnifiedSymOrd
     (.>),
     (.>=),
   )
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (..),
+import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalModeTag
+  ( EvalModeTag (..),
     IsConMode,
   )
-import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.MonadWithMode (MonadWithMode)
 import Grisette.Unified.Internal.UnifiedBV
   ( GetIntN,

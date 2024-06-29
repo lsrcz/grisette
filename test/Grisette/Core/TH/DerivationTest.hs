@@ -25,7 +25,7 @@ import Grisette
     ToSym (toSym),
   )
 import Grisette.TH (deriveAll)
-import Grisette.Unified (EvaluationMode (Con, Sym), GetBool, GetData, GetWordN)
+import Grisette.Unified (EvalModeTag (Con, Sym), GetBool, GetData, GetWordN)
 
 data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))

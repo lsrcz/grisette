@@ -7,14 +7,14 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 -- |
--- Module      :   Grisette.Unified.Internal.IsMode
+-- Module      :   Grisette.Unified.Internal.EvalMode
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Unified.Internal.IsMode (IsMode) where
+module Grisette.Unified.Internal.EvalMode (EvalMode) where
 
 import Data.Typeable (Typeable)
 -- SafeUnifiedInteger,
@@ -23,7 +23,7 @@ import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
@@ -46,7 +46,7 @@ import Grisette.Unified.Internal.UnifiedInteger
 --
 -- > fbv ::
 -- >   forall mode n.
--- >   (IsMode mode, KnownNat n, 1 <= n) =>
+-- >   (EvalMode mode, KnownNat n, 1 <= n) =>
 -- >   GetIntN mode n ->
 -- >   GetIntN mode n ->
 -- >   GetIntN mode n
@@ -60,7 +60,7 @@ import Grisette.Unified.Internal.UnifiedInteger
 --
 -- > fbv ::
 -- >   forall mode n.
--- >   (IsMode mode, KnownNat n, 1 <= n, UnifiedBV mode n) =>
+-- >   (EvalMode mode, KnownNat n, 1 <= n, UnifiedBV mode n) =>
 -- >   GetIntN mode n ->
 -- >   GetIntN mode n ->
 -- >   GetIntN mode n
@@ -80,8 +80,8 @@ class
     TryMerge (BaseMonad mode),
     UnifiedBranching mode (BaseMonad mode)
   ) =>
-  IsMode mode
+  EvalMode mode
 
-instance IsMode 'Con
+instance EvalMode 'Con
 
-instance IsMode 'Sym
+instance EvalMode 'Sym

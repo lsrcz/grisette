@@ -53,10 +53,10 @@ import Grisette.Unified.Internal.Class.UnifiedSymOrd
   ( UnifiedSymOrd (withBaseSymOrd),
     UnifiedSymOrd1 (withBaseSymOrd1),
   )
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Con, Sym),
+import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalModeTag
+  ( EvalModeTag (Con, Sym),
   )
-import Grisette.Unified.Internal.IsMode (IsMode)
 import Language.Haskell.TH
   ( Dec,
     Kind,
@@ -130,7 +130,7 @@ allNeededConstraints nm
   | otherwise = []
 
 newtype ModeTypeParamHandler = ModeTypeParamHandler
-  { mode :: Maybe EvaluationMode
+  { mode :: Maybe EvalModeTag
   }
 
 instance DeriveTypeParamHandler ModeTypeParamHandler where
@@ -141,14 +141,14 @@ instance DeriveTypeParamHandler ModeTypeParamHandler where
         [(TyVarBndrUnit, Maybe Type)] ->
         Maybe [Pred] ->
         Q ([(TyVarBndrUnit, Maybe Type)], Maybe [Pred])
-      handle [(ty, substTy)] preds | tvKind ty == ConT ''EvaluationMode =
+      handle [(ty, substTy)] preds | tvKind ty == ConT ''EvalModeTag =
         case (mode, substTy) of
           (_, Just {}) -> return ([(ty, substTy)], preds)
           (Just Con, _) -> return ([(ty, Just $ PromotedT 'Con)], preds)
           (Just Sym, _) -> return ([(ty, Just $ PromotedT 'Sym)], preds)
           (Nothing, _) -> do
-            isMode <- [t|IsMode $(varT $ tvName ty)|]
-            return ([(ty, substTy)], concatPreds (Just [isMode]) preds)
+            evalMode <- [t|EvalMode $(varT $ tvName ty)|]
+            return ([(ty, substTy)], concatPreds (Just [evalMode]) preds)
       handle tys preds = return (tys, preds)
   handleBody _ _ = return []
 
@@ -170,7 +170,7 @@ instance DeriveTypeParamHandler FixInnerConstraints where
 
 -- | Derive instances for a type with the given name, with the predefined
 -- strategy.
-derivePredefined :: Maybe EvaluationMode -> Name -> Name -> Q [Dec]
+derivePredefined :: Maybe EvalModeTag -> Name -> Name -> Q [Dec]
 derivePredefined _ cls name
   | cls == ''Generic =
       deriveWithHandlers [] (Stock ''Generic) True 0 [name]
@@ -218,7 +218,7 @@ derivePredefined evmode cls name = do
 --
 -- Multiple classes can be derived at once.
 derivePredefinedMultipleClasses ::
-  Maybe EvaluationMode -> [Name] -> Name -> Q [Dec]
+  Maybe EvalModeTag -> [Name] -> Name -> Q [Dec]
 derivePredefinedMultipleClasses evmode clss name =
   concat <$> traverse (\cls -> derivePredefined evmode cls name) clss
 

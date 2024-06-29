@@ -33,11 +33,11 @@ import qualified Grisette
 import Grisette.TH (deriveAll)
 import Grisette.Unified
   ( BaseMonad,
+    EvalMode,
     GetBool,
     GetData,
     GetInteger,
     GetWordN,
-    IsMode,
     MonadWithMode,
     mrgIf,
     (.==),
@@ -57,7 +57,7 @@ testBranching x =
   mrgIf (x .== 1 :: GetBool mode) (return x) (throwError "err")
 
 testBranchingBase ::
-  forall mode. (IsMode mode) => GetInteger mode -> M mode (GetInteger mode)
+  forall mode. (EvalMode mode) => GetInteger mode -> M mode (GetInteger mode)
 testBranchingBase x =
   mrgIf (x .== 1 :: GetBool mode) (return x) (throwError "err")
 
@@ -73,7 +73,7 @@ deriveAll ''X
 
 testSEq ::
   forall mode n.
-  (IsMode mode, 1 <= n, KnownNat n) =>
+  (EvalMode mode, 1 <= n, KnownNat n) =>
   X mode n ->
   X mode n ->
   GetBool mode

@@ -176,8 +176,8 @@ library
       Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
       Grisette.Unified.Internal.Class.UnifiedSymEq
       Grisette.Unified.Internal.Class.UnifiedSymOrd
-      Grisette.Unified.Internal.EvaluationMode
-      Grisette.Unified.Internal.IsMode
+      Grisette.Unified.Internal.EvalMode
+      Grisette.Unified.Internal.EvalModeTag
       Grisette.Unified.Internal.MonadWithMode
       Grisette.Unified.Internal.UnifiedBool
       Grisette.Unified.Internal.UnifiedBV
@@ -327,7 +327,7 @@ test-suite spec
       Grisette.TestUtil.NoMerge
       Grisette.TestUtil.PrettyPrint
       Grisette.TestUtil.SymbolicAssertion
-      Grisette.Unified.IsModeTest
+      Grisette.Unified.EvalModeTest
       Grisette.Unified.UnifiedClassesTest
       Grisette.Unified.UnifiedConstructorTest
       Paths_grisette
