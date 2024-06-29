@@ -847,8 +847,8 @@ module Grisette.Core
     -- ** Helpers for pretty printing
     groupedEnclose,
     condEnclose,
-    prettyWithConstructor,
-    prettyWithConstructorNoAlign,
+    formatWithConstructor,
+    formatWithConstructorNoAlign,
     viaShowsPrec,
 
     -- ** Re-export Prettyprinter for convenience
@@ -1340,7 +1340,7 @@ module Grisette.Core
     genericLiftFormatPrec,
     FormatArgs (..),
     GFormat (..),
-    PrettyType (..),
+    FormatType (..),
 
     -- *** 'SubstSym'
     SubstSymArgs (..),
@@ -1454,8 +1454,8 @@ import Grisette.Internal.Core.Data.Class.Format
     Format1 (..),
     Format2 (..),
     FormatArgs (..),
+    FormatType (..),
     GFormat (..),
-    PrettyType (..),
     condEnclose,
     docToText,
     docToTextWith,
@@ -1467,11 +1467,11 @@ import Grisette.Internal.Core.Data.Class.Format
     formatText,
     formatTextWith,
     formatTextWithWidth,
+    formatWithConstructor,
+    formatWithConstructorNoAlign,
     genericFormatPrec,
     genericLiftFormatPrec,
     groupedEnclose,
-    prettyWithConstructor,
-    prettyWithConstructorNoAlign,
     viaShowsPrec,
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))

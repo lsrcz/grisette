@@ -15,6 +15,8 @@ module Grisette.SymPrim
   ( -- * Symbolic type implementation
 
     -- ** Extended types
+
+    -- *** Bit-vector types
     IntN,
     IntN8,
     IntN16,
@@ -25,23 +27,12 @@ module Grisette.SymPrim
     WordN16,
     WordN32,
     WordN64,
-    ValidFP,
-    FP,
-    FP16,
-    FP32,
-    FP64,
-    withValidFPProofs,
-    FPRoundingMode (..),
-    allFPRoundingMode,
     SomeBV (..),
     BitwidthMismatch (..),
     pattern SomeIntN,
     type SomeIntN,
     pattern SomeWordN,
     type SomeWordN,
-    type (=->) (..),
-    type (-->),
-    (-->),
     unsafeSomeBV,
     unarySomeBV,
     unarySomeBVR1,
@@ -59,13 +50,34 @@ module Grisette.SymPrim
     isymBV,
     arbitraryBV,
 
+    -- *** Floating point
+    ValidFP,
+    FP,
+    FP16,
+    FP32,
+    FP64,
+    withValidFPProofs,
+    FPRoundingMode (..),
+    allFPRoundingMode,
+
+    -- * Functions
+    type (=->) (..),
+    type (-->),
+    (-->),
+
     -- ** Symbolic types
+
+    -- *** Basic constraints
     SupportedPrim,
     SymRep (SymType),
     ConRep (ConType),
     LinkedRep,
+
+    -- *** Bool and integer types
     SymBool (..),
     SymInteger (..),
+
+    -- *** Bit-vector types
     SymWordN (..),
     SymWordN8,
     SymWordN16,
@@ -76,18 +88,21 @@ module Grisette.SymPrim
     SymIntN16,
     SymIntN32,
     SymIntN64,
+    SomeSymIntN,
+    SomeSymWordN,
+    pattern SomeSymIntN,
+    pattern SomeSymWordN,
+
+    -- *** Floating point types
     SymFP (..),
     SymFPRoundingMode (..),
     SymFP16,
     SymFP32,
     SymFP64,
-    SomeSymIntN,
-    SomeSymWordN,
-    pattern SomeSymIntN,
-    pattern SomeSymWordN,
+
+    -- *** Function types
     type (=~>) (..),
     type (-~>) (..),
-    TypedSymbol (..),
 
     -- ** Extract symbolic values
     SomeSym (..),
@@ -107,6 +122,7 @@ module Grisette.SymPrim
     genericLiftAllSymsS,
 
     -- ** Symbolic constant sets and models
+    TypedSymbol (..),
     SymbolSet (..),
     Model (..),
     ModelValuePair (..),
