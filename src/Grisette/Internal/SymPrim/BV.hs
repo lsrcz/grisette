@@ -130,6 +130,8 @@ import Text.ParserCombinators.ReadPrec
 import Text.Read (lift)
 import qualified Text.Read.Lex as L
 
+-- | An exception that would be thrown when operations are performed on
+-- incompatible bit widths.
 data BitwidthMismatch = BitwidthMismatch
   deriving (Show, Eq, Ord, Generic)
 
@@ -141,12 +143,16 @@ instance Exception BitwidthMismatch where
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
   deriving (Eq, Ord, Generic, Lift, Hashable, NFData)
 
+-- | 8-bit unsigned bit-vector
 type WordN8 = WordN 8
 
+-- | 16-bit unsigned bit-vector
 type WordN16 = WordN 16
 
+-- | 32-bit unsigned bit-vector
 type WordN32 = WordN 32
 
+-- | 64-bit unsigned bit-vector
 type WordN64 = WordN 64
 
 instance (KnownNat n, 1 <= n) => Show (WordN n) where
@@ -191,12 +197,16 @@ instance (KnownNat n, 1 <= n) => Read (WordN n) where
 newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
   deriving (Eq, Generic, Lift, Hashable, NFData)
 
+-- | 8-bit signed bit-vector
 type IntN8 = IntN 8
 
+-- | 16-bit signed bit-vector
 type IntN16 = IntN 16
 
+-- | 32-bit signed bit-vector
 type IntN32 = IntN 32
 
+-- | 64-bit signed bit-vector
 type IntN64 = IntN 64
 
 instance (KnownNat n, 1 <= n) => Show (IntN n) where

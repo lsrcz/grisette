@@ -16,7 +16,7 @@ module Grisette.SymPrim
 
     -- ** Extended types
 
-    -- *** Bit-vector types
+    -- *** Size-tagged bit-vector types
     IntN,
     IntN8,
     IntN16,
@@ -27,6 +27,8 @@ module Grisette.SymPrim
     WordN16,
     WordN32,
     WordN64,
+
+    -- *** Runtime size bit-vector types
     SomeBV (..),
     BitwidthMismatch (..),
     pattern SomeIntN,

@@ -257,10 +257,22 @@ instance (ValidFloat eb sb) => QC.Arbitrary (FP eb sb) where
           oneof [return 0, return $ 1 `shiftL` (sb - 1)] ::
           QC.Gen (WordN (eb + sb))
 
-data FPRoundingMode = RNE | RNA | RTP | RTN | RTZ
+-- | Rounding mode for floating-point operations.
+data FPRoundingMode
+  -- | Round to nearest, ties to even.
+  = RNE
+  -- | Round to nearest, ties to away from zero.
+  | RNA
+  -- | Round towards positive infinity.
+  | RTP
+  -- | Round towards negative infinity.
+  | RTN
+  -- | Round towards zero.
+  | RTZ
   deriving (Eq, Ord, Show, Generic, Lift)
   deriving anyclass (Hashable, NFData)
 
+-- | All IEEE 754 rounding modes.
 allFPRoundingMode :: [FPRoundingMode]
 allFPRoundingMode = [RNE, RNA, RTP, RTN, RTZ]
 

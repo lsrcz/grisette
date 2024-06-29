@@ -235,6 +235,12 @@ module Grisette.Core
     -- * @'Grisette.SymPrim.SymFP' eb sb@ (@'Grisette.SymPrim.FP' eb sb@,
     --   symbolic IEEE-754 floating point numbers with @eb@ exponent bits and
     --   @sb@ significand bits)
+    -- * @'Grisette.SymPrim.SymBool' t'Grisette.SymPrim.=~>' 'Grisette.SymPrim.SymBool'@
+    --   (@'Bool' t'Grisette.SymPrim.=->' 'Bool'@, symbolic uninterpreted functions)
+    -- * @'Grisette.SymPrim.SymBool' t'Grisette.SymPrim.-~>' 'Grisette.SymPrim.SymBool'@
+    --   (@'Bool' t'Grisette.SymPrim.-->' 'Bool'@, symbolic functions,
+    --   uninterpreted or represented as a formula over some variables to
+    --   substitute.
     --
     -- The bit-width of bit vector types and floating point types have their
     -- are checked at compile time.

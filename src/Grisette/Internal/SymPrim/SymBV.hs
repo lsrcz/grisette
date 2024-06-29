@@ -167,12 +167,16 @@ import Language.Haskell.TH.Syntax (Lift)
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
 
+-- | Symbolic 8-bit signed bit-vector.
 type SymIntN8 = SymIntN 8
 
+-- | Symbolic 16-bit signed bit-vector.
 type SymIntN16 = SymIntN 16
 
+-- | Symbolic 32-bit signed bit-vector.
 type SymIntN32 = SymIntN 32
 
+-- | Symbolic 64-bit signed bit-vector.
 type SymIntN64 = SymIntN 64
 
 -- | Symbolic unsigned bit vector type. Indexed with the bit width.
@@ -194,12 +198,16 @@ type SymIntN64 = SymIntN 64
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)
 
+-- | Symbolic 8-bit unsigned bit-vector.
 type SymWordN8 = SymWordN 8
 
+-- | Symbolic 16-bit unsigned bit-vector.
 type SymWordN16 = SymWordN 16
 
+-- | Symbolic 32-bit unsigned bit-vector.
 type SymWordN32 = SymWordN 32
 
+-- | Symbolic 64-bit unsigned bit-vector.
 type SymWordN64 = SymWordN 64
 
 instance (KnownNat n, 1 <= n) => ConRep (SymIntN n) where
