@@ -187,7 +187,13 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- | Symbolic constant set.
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
-  deriving (Eq, Generic, Hashable, Semigroup, Monoid)
+  deriving (Eq, Generic, Hashable)
+
+instance Semigroup SymbolSet where
+  SymbolSet s1 <> SymbolSet s2 = SymbolSet $ S.union s1 s2
+
+instance Monoid SymbolSet where
+  mempty = emptySet
 
 instance Show SymbolSet where
   showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x ->
@@ -201,7 +207,14 @@ instance Show SymbolSet where
       go0 (x : xs) = x ++ ", " ++ go0 xs
 
 -- | Model returned by the solver.
-newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue} deriving (Eq, Generic, Hashable, Semigroup, Monoid)
+newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue}
+  deriving (Eq, Generic, Hashable)
+
+instance Semigroup Model where
+  Model m1 <> Model m2 = Model $ M.union m1 m2
+
+instance Monoid Model where
+  mempty = emptyModel
 
 instance Show Model where
   showsPrec prec (Model m) = showParen (prec >= 10) $ \x ->
