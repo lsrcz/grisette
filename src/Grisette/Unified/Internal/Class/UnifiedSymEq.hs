@@ -19,9 +19,9 @@ module Grisette.Unified.Internal.Class.UnifiedSymEq
     (.==),
     (./=),
     liftSymEq,
-    seq1,
+    symEq1,
     liftSymEq2,
-    seq2,
+    symEq2,
   )
 where
 
@@ -103,19 +103,19 @@ liftSymEq f a b =
         Grisette.Internal.Core.Data.Class.SymEq.liftSymEq f a b
     )
 
--- | Unified `Grisette.Internal.Core.Data.Class.SymEq.seq1`.
-seq1 ::
+-- | Unified `Grisette.Internal.Core.Data.Class.SymEq.symEq1`.
+symEq1 ::
   forall mode f a.
   (Typeable mode, UnifiedSymEq mode a, UnifiedSymEq1 mode f) =>
   f a ->
   f a ->
   GetBool mode
-seq1 a b =
+symEq1 a b =
   withMode @mode
     (withBaseSymEq1 @mode @f $ withBaseSymEq @mode @a eq1 a b)
     ( withBaseSymEq1 @mode @f $
         withBaseSymEq @mode @a $
-          Grisette.Internal.Core.Data.Class.SymEq.seq1 a b
+          Grisette.Internal.Core.Data.Class.SymEq.symEq1 a b
     )
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.liftSymEq2`.
@@ -134,8 +134,8 @@ liftSymEq2 f a b =
         Grisette.Internal.Core.Data.Class.SymEq.liftSymEq2 f a b
     )
 
--- | Unified `Grisette.Internal.Core.Data.Class.SymEq.seq2`.
-seq2 ::
+-- | Unified `Grisette.Internal.Core.Data.Class.SymEq.symEq2`.
+symEq2 ::
   forall mode f a b.
   ( Typeable mode,
     UnifiedSymEq mode a,
@@ -145,7 +145,7 @@ seq2 ::
   f a b ->
   f a b ->
   GetBool mode
-seq2 a b =
+symEq2 a b =
   withMode @mode
     ( withBaseSymEq2 @mode @f $
         withBaseSymEq @mode @a $
@@ -154,7 +154,7 @@ seq2 a b =
     ( withBaseSymEq2 @mode @f $
         withBaseSymEq @mode @a $
           withBaseSymEq @mode @b $
-            Grisette.Internal.Core.Data.Class.SymEq.seq2 a b
+            Grisette.Internal.Core.Data.Class.SymEq.symEq2 a b
     )
 
 -- | A class that provides unified equality comparison.

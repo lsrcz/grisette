@@ -26,9 +26,9 @@ module Grisette.Internal.Core.Data.Class.SymEq
   ( -- * Symbolic equality
     SymEq (..),
     SymEq1 (..),
-    seq1,
+    symEq1,
     SymEq2 (..),
-    seq2,
+    symEq2,
 
     -- * Generic 'SymEq'
     SymEqArgs (..),
@@ -161,8 +161,8 @@ class (forall a. (SymEq a) => SymEq (f a)) => SymEq1 f where
   liftSymEq :: (a -> b -> SymBool) -> f a -> f b -> SymBool
 
 -- | Lift the standard @('.==')@ function through the type constructor.
-seq1 :: (SymEq a, SymEq1 f) => f a -> f a -> SymBool
-seq1 = liftSymEq (.==)
+symEq1 :: (SymEq a, SymEq1 f) => f a -> f a -> SymBool
+symEq1 = liftSymEq (.==)
 
 -- | Lifting of the 'SymEq' class to binary type constructors.
 class (forall a. (SymEq a) => SymEq1 (f a)) => SymEq2 f where
@@ -179,8 +179,8 @@ class (forall a. (SymEq a) => SymEq1 (f a)) => SymEq2 f where
     SymBool
 
 -- | Lift the standard @('.==')@ function through the type constructor.
-seq2 :: (SymEq a, SymEq b, SymEq2 f) => f a b -> f a b -> SymBool
-seq2 = liftSymEq2 (.==) (.==)
+symEq2 :: (SymEq a, SymEq b, SymEq2 f) => f a b -> f a b -> SymBool
+symEq2 = liftSymEq2 (.==) (.==)
 
 -- Derivations
 
@@ -193,45 +193,45 @@ newtype instance SymEqArgs Arity1 a b = SymEqArgs1 (a -> b -> SymBool)
 
 -- | The class of types that can be generically compared for symbolic equality.
 class GSymEq arity f where
-  gseq :: SymEqArgs arity a b -> f a -> f b -> SymBool
+  gsymEq :: SymEqArgs arity a b -> f a -> f b -> SymBool
 
 instance GSymEq arity V1 where
-  gseq _ _ _ = con True
-  {-# INLINE gseq #-}
+  gsymEq _ _ _ = con True
+  {-# INLINE gsymEq #-}
 
 instance GSymEq arity U1 where
-  gseq _ _ _ = con True
-  {-# INLINE gseq #-}
+  gsymEq _ _ _ = con True
+  {-# INLINE gsymEq #-}
 
 instance (GSymEq arity a, GSymEq arity b) => GSymEq arity (a :*: b) where
-  gseq args (a1 :*: b1) (a2 :*: b2) = gseq args a1 a2 .&& gseq args b1 b2
-  {-# INLINE gseq #-}
+  gsymEq args (a1 :*: b1) (a2 :*: b2) = gsymEq args a1 a2 .&& gsymEq args b1 b2
+  {-# INLINE gsymEq #-}
 
 instance (GSymEq arity a, GSymEq arity b) => GSymEq arity (a :+: b) where
-  gseq args (L1 a1) (L1 a2) = gseq args a1 a2
-  gseq args (R1 b1) (R1 b2) = gseq args b1 b2
-  gseq _ _ _ = con False
-  {-# INLINE gseq #-}
+  gsymEq args (L1 a1) (L1 a2) = gsymEq args a1 a2
+  gsymEq args (R1 b1) (R1 b2) = gsymEq args b1 b2
+  gsymEq _ _ _ = con False
+  {-# INLINE gsymEq #-}
 
 instance (GSymEq arity a) => GSymEq arity (M1 i c a) where
-  gseq args (M1 a1) (M1 a2) = gseq args a1 a2
-  {-# INLINE gseq #-}
+  gsymEq args (M1 a1) (M1 a2) = gsymEq args a1 a2
+  {-# INLINE gsymEq #-}
 
 instance (SymEq a) => GSymEq arity (K1 i a) where
-  gseq _ (K1 a) (K1 b) = a .== b
-  {-# INLINE gseq #-}
+  gsymEq _ (K1 a) (K1 b) = a .== b
+  {-# INLINE gsymEq #-}
 
 instance GSymEq Arity1 Par1 where
-  gseq (SymEqArgs1 e) (Par1 a) (Par1 b) = e a b
-  {-# INLINE gseq #-}
+  gsymEq (SymEqArgs1 e) (Par1 a) (Par1 b) = e a b
+  {-# INLINE gsymEq #-}
 
 instance (SymEq1 f) => GSymEq Arity1 (Rec1 f) where
-  gseq (SymEqArgs1 e) (Rec1 a) (Rec1 b) = liftSymEq e a b
-  {-# INLINE gseq #-}
+  gsymEq (SymEqArgs1 e) (Rec1 a) (Rec1 b) = liftSymEq e a b
+  {-# INLINE gsymEq #-}
 
 instance (SymEq1 f, GSymEq Arity1 g) => GSymEq Arity1 (f :.: g) where
-  gseq targs (Comp1 a) (Comp1 b) = liftSymEq (gseq targs) a b
-  {-# INLINE gseq #-}
+  gsymEq targs (Comp1 a) (Comp1 b) = liftSymEq (gsymEq targs) a b
+  {-# INLINE gsymEq #-}
 
 instance (Generic a, GSymEq Arity0 (Rep a)) => SymEq (Default a) where
   Default l .== Default r = genericSymEq l r
@@ -239,11 +239,11 @@ instance (Generic a, GSymEq Arity0 (Rep a)) => SymEq (Default a) where
 
 -- | Generic @('.==')@ function.
 genericSymEq :: (Generic a, GSymEq Arity0 (Rep a)) => a -> a -> SymBool
-genericSymEq l r = gseq SymEqArgs0 (from l) (from r)
+genericSymEq l r = gsymEq SymEqArgs0 (from l) (from r)
 {-# INLINE genericSymEq #-}
 
 instance (Generic1 f, GSymEq Arity1 (Rep1 f), SymEq a) => SymEq (Default1 f a) where
-  (.==) = seq1
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
 instance (Generic1 f, GSymEq Arity1 (Rep1 f)) => SymEq1 (Default1 f) where
@@ -257,7 +257,7 @@ genericLiftSymEq ::
   f a ->
   f b ->
   SymBool
-genericLiftSymEq f l r = gseq (SymEqArgs1 f) (from1 l) (from1 r)
+genericLiftSymEq f l r = gsymEq (SymEqArgs1 f) (from1 l) (from1 r)
 {-# INLINE genericLiftSymEq #-}
 
 #define CONCRETE_SEQ(type) \
@@ -386,7 +386,7 @@ deriveBuiltins
 
 -- ExceptT
 instance (SymEq1 m, SymEq e, SymEq a) => SymEq (ExceptT e m a) where
-  (.==) = seq1
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
 instance (SymEq1 m, SymEq e) => SymEq1 (ExceptT e m) where
@@ -395,7 +395,7 @@ instance (SymEq1 m, SymEq e) => SymEq1 (ExceptT e m) where
 
 -- MaybeT
 instance (SymEq1 m, SymEq a) => SymEq (MaybeT m a) where
-  (.==) = seq1
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
 instance (SymEq1 m) => SymEq1 (MaybeT m) where
@@ -404,7 +404,7 @@ instance (SymEq1 m) => SymEq1 (MaybeT m) where
 
 -- Writer
 instance (SymEq1 m, SymEq w, SymEq a) => SymEq (WriterLazy.WriterT w m a) where
-  (.==) = seq1
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
 instance (SymEq1 m, SymEq w) => SymEq1 (WriterLazy.WriterT w m) where
@@ -413,7 +413,7 @@ instance (SymEq1 m, SymEq w) => SymEq1 (WriterLazy.WriterT w m) where
   {-# INLINE liftSymEq #-}
 
 instance (SymEq1 m, SymEq w, SymEq a) => SymEq (WriterStrict.WriterT w m a) where
-  (.==) = seq1
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
 instance (SymEq1 m, SymEq w) => SymEq1 (WriterStrict.WriterT w m) where
@@ -423,7 +423,7 @@ instance (SymEq1 m, SymEq w) => SymEq1 (WriterStrict.WriterT w m) where
 
 -- IdentityT
 instance (SymEq1 m, SymEq a) => SymEq (IdentityT m a) where
-  (.==) = seq1
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
 instance (SymEq1 m) => SymEq1 (IdentityT m) where

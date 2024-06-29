@@ -35,9 +35,9 @@ module Grisette.Unified
     (.==),
     (./=),
     liftSymEq,
-    seq1,
+    symEq1,
     liftSymEq2,
-    seq2,
+    symEq2,
 
     -- ** Unified SymOrd
     UnifiedSymOrd (..),
@@ -152,8 +152,8 @@ import Grisette.Unified.Internal.Class.UnifiedSymEq
   ( UnifiedSymEq (..),
     liftSymEq,
     liftSymEq2,
-    seq1,
-    seq2,
+    symEq1,
+    symEq2,
     (./=),
     (.==),
   )
