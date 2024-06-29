@@ -2,7 +2,7 @@ module Grisette.TestUtil.SymbolicAssertion ((@?=~), (.@?=), symShouldEq) where
 
 import GHC.Stack (HasCallStack)
 import Grisette
-  ( EvaluateSym (evaluateSym),
+  ( EvalSym (evalSym),
     LogicalOp (symNot),
     Model,
     SEq ((./=), (.==)),
@@ -13,7 +13,7 @@ import Grisette
   )
 import Test.HUnit (Assertion)
 
-(@?=~) :: (HasCallStack, SEq a, Show a, EvaluateSym a) => a -> a -> Assertion
+(@?=~) :: (HasCallStack, SEq a, Show a, EvalSym a) => a -> a -> Assertion
 actual @?=~ expected = do
   cex <- solve (precise z3) (symNot $ actual .== expected)
   case cex of
@@ -25,16 +25,16 @@ actual @?=~ expected = do
           [ "Symbolic assertion failed:",
             "  Counterexample model: " ++ show model,
             "  Expected value under the model: "
-              ++ show (evaluateSym True model expected),
+              ++ show (evalSym True model expected),
             "  Actual value under the model: "
-              ++ show (evaluateSym True model actual),
+              ++ show (evalSym True model actual),
             "  Expected value: " ++ show expected,
             "  Actual value: " ++ show actual
           ]
 
 infix 1 .@?=
 
-(.@?=) :: (HasCallStack, Show a, SEq a, EvaluateSym a) => a -> a -> IO ()
+(.@?=) :: (HasCallStack, Show a, SEq a, EvalSym a) => a -> a -> IO ()
 (.@?=) actual expected =
   symShouldEq
     actual
@@ -43,13 +43,13 @@ infix 1 .@?=
         "Can be not equal, model: "
           <> show m
           <> ". Actual value: "
-          <> show (evaluateSym False m actual)
+          <> show (evalSym False m actual)
           <> ". Expected value: "
-          <> show (evaluateSym False m expected)
+          <> show (evalSym False m expected)
     )
 
 symShouldEq ::
-  (HasCallStack, Show a, SEq a, EvaluateSym a) =>
+  (HasCallStack, Show a, SEq a, EvalSym a) =>
   a ->
   a ->
   (Model -> String) ->

@@ -112,11 +112,11 @@ import Grisette.Internal.Core.Data.Class.BitVector
         sizedBVZext
       ),
   )
-import Grisette.Internal.Core.Data.Class.EvaluateSym
-  ( EvaluateSym (evaluateSym),
+import Grisette.Internal.Core.Data.Class.EvalSym
+  ( EvalSym (evalSym),
   )
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym (extractSym),
   )
 import Grisette.Internal.Core.Data.Class.GPretty
   ( GPretty (gpretty),
@@ -158,8 +158,8 @@ import Grisette.Internal.Core.Data.Class.SignConversion
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, isym, ssym, sym),
   )
-import Grisette.Internal.Core.Data.Class.SubstituteSym
-  ( SubstituteSym (substituteSym),
+import Grisette.Internal.Core.Data.Class.SubstSym
+  ( SubstSym (substSym),
   )
 import Grisette.Internal.Core.Data.Class.SymRotate
   ( SymRotate (symRotate, symRotateNegated),
@@ -458,18 +458,18 @@ instance (SizedBV bv) => BV (SomeBV bv) where
   {-# INLINE bv #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => EvaluateSym (bv n)) =>
-  EvaluateSym (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => EvalSym (bv n)) =>
+  EvalSym (SomeBV bv)
   where
-  evaluateSym fillDefault model = unarySomeBVR1 (evaluateSym fillDefault model)
-  {-# INLINE evaluateSym #-}
+  evalSym fillDefault model = unarySomeBVR1 (evalSym fillDefault model)
+  {-# INLINE evalSym #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => ExtractSymbolics (bv n)) =>
-  ExtractSymbolics (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => ExtractSym (bv n)) =>
+  ExtractSym (SomeBV bv)
   where
-  extractSymbolics = unarySomeBV extractSymbolics
-  {-# INLINE extractSymbolics #-}
+  extractSym = unarySomeBV extractSym
+  {-# INLINE extractSym #-}
 
 instance
   (forall n. (KnownNat n, 1 <= n) => GPretty (bv n)) =>
@@ -541,11 +541,11 @@ instance
   {-# INLINE symCompare #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => SubstituteSym (bv n)) =>
-  SubstituteSym (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => SubstSym (bv n)) =>
+  SubstSym (SomeBV bv)
   where
-  substituteSym c s = unarySomeBVR1 (substituteSym c s)
-  {-# INLINE substituteSym #-}
+  substSym c s = unarySomeBVR1 (substSym c s)
+  {-# INLINE substSym #-}
 
 instance
   ( KnownNat n,

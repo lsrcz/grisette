@@ -9,8 +9,8 @@ module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 import Control.Monad.Except (ExceptT)
 import qualified Data.Text as T
 import Grisette
-  ( EvaluateSym (evaluateSym),
-    ExtractSymbolics (extractSymbolics),
+  ( EvalSym (evalSym),
+    ExtractSym (extractSym),
     Function ((#)),
     GPretty (gpretty),
     ITEOp (symIte),
@@ -24,7 +24,7 @@ import Grisette
     SOrd ((.<=)),
     SimpleMergeable (mrgIte),
     Solvable (con, conView, isym, ssym),
-    SubstituteSym (substituteSym),
+    SubstSym (substSym),
     SymBool,
     SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     SymInteger,
@@ -273,23 +273,23 @@ unionTests =
             let expected = Nothing :: Maybe (Union Bool)
             toCon actual @?= expected
         ],
-      testGroup "EvaluateSym" $ do
+      testGroup "EvalSym" $ do
         let model = buildModel ("a" ::= True, "b" ::= False, "c" ::= True)
         [ testCase "EmptyModel with no fill default" $ do
-            let actual = evaluateSym False emptyModel (return "a")
+            let actual = evalSym False emptyModel (return "a")
             let expected = mrgSingle "a" :: Union SymBool
             actual @?= expected,
           testCase "EmptyModel with filling default" $ do
-            let actual = evaluateSym True emptyModel (return "a")
+            let actual = evalSym True emptyModel (return "a")
             let expected = mrgSingle $ con False :: Union SymBool
             actual @?= expected,
           testCase "non-empty model, simple test" $ do
-            let actual = evaluateSym False model (return "a")
+            let actual = evalSym False model (return "a")
             let expected = mrgSingle $ con True :: Union SymBool
             actual @?= expected,
           testCase "non-empty model, complex test" $ do
             let actual =
-                  evaluateSym
+                  evalSym
                     False
                     model
                     ( mrgIf
@@ -302,9 +302,9 @@ unionTests =
                   mrgIf "d" (mrgSingle $ Left (con False)) (mrgSingle $ Right "f")
             actual .@?= expected
           ],
-      testCase "SubstituteSym" $ do
+      testCase "SubstSym" $ do
         let actual =
-              substituteSym
+              substSym
                 ("a" :: TypedSymbol Bool)
                 "b"
                 ( mrgIf "a" (return $ Left "a") (return $ Right "c") ::
@@ -312,8 +312,8 @@ unionTests =
                 )
         let expected = mrgIf "b" (return $ Left "b") (return $ Right "c")
         actual @?= expected,
-      testCase "ExtractSymbolics" $ do
-        let actual = extractSymbolics union1
+      testCase "ExtractSym" $ do
+        let actual = extractSym union1
         let expected =
               buildSymbolSet
                 ( "u1c" :: TypedSymbol Bool,

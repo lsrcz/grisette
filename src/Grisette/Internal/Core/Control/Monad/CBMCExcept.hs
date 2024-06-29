@@ -65,9 +65,9 @@ import Data.Functor.Contravariant (Contravariant (contramap))
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
-import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
+import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym (evalSym))
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym (extractSym),
   )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
@@ -107,11 +107,11 @@ newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}
 
 deriving newtype instance (SEq e, SEq a) => SEq (CBMCEither e a)
 
-deriving newtype instance (EvaluateSym a, EvaluateSym b) => EvaluateSym (CBMCEither a b)
+deriving newtype instance (EvalSym a, EvalSym b) => EvalSym (CBMCEither a b)
 
 deriving newtype instance
-  (ExtractSymbolics a, ExtractSymbolics b) =>
-  ExtractSymbolics (CBMCEither a b)
+  (ExtractSym a, ExtractSym b) =>
+  ExtractSym (CBMCEither a b)
 
 instance
   ( GenSymSimple a a,
@@ -357,15 +357,15 @@ instance (SEq (m (CBMCEither e a))) => SEq (CBMCExceptT e m a) where
   (CBMCExceptT a) .== (CBMCExceptT b) = a .== b
   {-# INLINE (.==) #-}
 
-instance (EvaluateSym (m (CBMCEither e a))) => EvaluateSym (CBMCExceptT e m a) where
-  evaluateSym fillDefault model (CBMCExceptT v) = CBMCExceptT $ evaluateSym fillDefault model v
-  {-# INLINE evaluateSym #-}
+instance (EvalSym (m (CBMCEither e a))) => EvalSym (CBMCExceptT e m a) where
+  evalSym fillDefault model (CBMCExceptT v) = CBMCExceptT $ evalSym fillDefault model v
+  {-# INLINE evalSym #-}
 
 instance
-  (ExtractSymbolics (m (CBMCEither e a))) =>
-  ExtractSymbolics (CBMCExceptT e m a)
+  (ExtractSym (m (CBMCEither e a))) =>
+  ExtractSym (CBMCExceptT e m a)
   where
-  extractSymbolics (CBMCExceptT v) = extractSymbolics v
+  extractSym (CBMCExceptT v) = extractSym v
 
 instance
   (Mergeable1 m, Mergeable e, Mergeable a) =>

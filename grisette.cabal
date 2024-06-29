@@ -65,8 +65,8 @@ library
       Grisette.Internal.Core.Data.Class.BitVector
       Grisette.Internal.Core.Data.Class.CEGISSolver
       Grisette.Internal.Core.Data.Class.Error
-      Grisette.Internal.Core.Data.Class.EvaluateSym
-      Grisette.Internal.Core.Data.Class.ExtractSymbolics
+      Grisette.Internal.Core.Data.Class.EvalSym
+      Grisette.Internal.Core.Data.Class.ExtractSym
       Grisette.Internal.Core.Data.Class.Function
       Grisette.Internal.Core.Data.Class.GenSym
       Grisette.Internal.Core.Data.Class.GPretty
@@ -86,7 +86,7 @@ library
       Grisette.Internal.Core.Data.Class.Solvable
       Grisette.Internal.Core.Data.Class.Solver
       Grisette.Internal.Core.Data.Class.SOrd
-      Grisette.Internal.Core.Data.Class.SubstituteSym
+      Grisette.Internal.Core.Data.Class.SubstSym
       Grisette.Internal.Core.Data.Class.SymRotate
       Grisette.Internal.Core.Data.Class.SymShift
       Grisette.Internal.Core.Data.Class.ToCon
@@ -277,8 +277,8 @@ test-suite spec
       Grisette.Core.Control.ExceptionTests
       Grisette.Core.Control.Monad.UnionTests
       Grisette.Core.Data.Class.BoolTests
-      Grisette.Core.Data.Class.EvaluateSymTests
-      Grisette.Core.Data.Class.ExtractSymbolicsTests
+      Grisette.Core.Data.Class.EvalSymTests
+      Grisette.Core.Data.Class.ExtractSymTests
       Grisette.Core.Data.Class.GenSymTests
       Grisette.Core.Data.Class.GPrettyTests
       Grisette.Core.Data.Class.MergeableTests
@@ -290,7 +290,7 @@ test-suite spec
       Grisette.Core.Data.Class.SEqTests
       Grisette.Core.Data.Class.SimpleMergeableTests
       Grisette.Core.Data.Class.SOrdTests
-      Grisette.Core.Data.Class.SubstituteSymTests
+      Grisette.Core.Data.Class.SubstSymTests
       Grisette.Core.Data.Class.SymRotateTests
       Grisette.Core.Data.Class.SymShiftTests
       Grisette.Core.Data.Class.TestValues
