@@ -129,6 +129,7 @@ instance (ValidFP eb sb) => Floating (SymFP eb sb) where
   acosh = error "acosh isn't supported by the underlying sbv library"
   atanh = error "atanh isn't supported by the underlying sbv library"
 
+-- | Symbolic floating-point rounding mode.
 newtype SymFPRoundingMode = SymFPRoundingMode (Term FPRoundingMode)
   deriving (Lift, Generic)
   deriving anyclass (NFData)

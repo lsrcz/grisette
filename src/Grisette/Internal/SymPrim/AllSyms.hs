@@ -166,14 +166,19 @@ someSymsSize = someTermsSize . fmap someUnderlyingTerm
 allSymsSize :: (AllSyms a) => a -> Int
 allSymsSize = someSymsSize . allSyms
 
+-- | Lifting of the 'AllSyms' class to unary type constructors.
 class (forall a. (AllSyms a) => AllSyms (f a)) => AllSyms1 f where
+  -- | Lift the 'allSymsS' function to unary type constructors.
   liftAllSymsS :: (a -> [SomeSym] -> [SomeSym]) -> f a -> [SomeSym] -> [SomeSym]
 
+-- | Lift the standard 'allSymsS' function to unary type constructors.
 allSymsS1 :: (AllSyms1 f, AllSyms a) => f a -> [SomeSym] -> [SomeSym]
 allSymsS1 = liftAllSymsS allSymsS
 {-# INLINE allSymsS1 #-}
 
+-- | Lifting of the 'AllSyms' class to binary type constructors.
 class (forall a. (AllSyms a) => AllSyms1 (f a)) => AllSyms2 f where
+  -- | Lift the 'allSymsS' function to binary type constructors.
   liftAllSymsS2 ::
     (a -> [SomeSym] -> [SomeSym]) ->
     (b -> [SomeSym] -> [SomeSym]) ->
@@ -181,12 +186,15 @@ class (forall a. (AllSyms a) => AllSyms1 (f a)) => AllSyms2 f where
     [SomeSym] ->
     [SomeSym]
 
+-- | Lift the standard 'allSymsS' function to binary type constructors.
 allSymsS2 ::
   (AllSyms2 f, AllSyms a, AllSyms b) => f a b -> [SomeSym] -> [SomeSym]
 allSymsS2 = liftAllSymsS2 allSymsS allSymsS
 {-# INLINE allSymsS2 #-}
 
 -- Derivation
+
+-- | The arguments to the generic 'AllSyms' function.
 data family AllSymsArgs arity a :: Type
 
 data instance AllSymsArgs Arity0 _ = AllSymsArgs0
@@ -194,6 +202,7 @@ data instance AllSymsArgs Arity0 _ = AllSymsArgs0
 newtype instance AllSymsArgs Arity1 a
   = AllSymsArgs1 (a -> [SomeSym] -> [SomeSym])
 
+-- | The class of types that can generically extract all symbolic primitives.
 class GAllSyms arity f where
   gallSymsS :: AllSymsArgs arity a -> f a -> [SomeSym] -> [SomeSym]
 
@@ -225,6 +234,7 @@ instance (AllSyms1 f) => GAllSyms Arity1 (Rec1 f) where
 instance (AllSyms1 f, GAllSyms Arity1 g) => GAllSyms Arity1 (f :.: g) where
   gallSymsS targs (Comp1 x) = liftAllSymsS (gallSymsS targs) x
 
+-- | Generic 'allSymsS' function.
 genericAllSymsS ::
   (Generic a, GAllSyms Arity0 (Rep a)) =>
   a ->
@@ -233,6 +243,7 @@ genericAllSymsS ::
 genericAllSymsS x = gallSymsS AllSymsArgs0 (from x)
 {-# INLINE genericAllSymsS #-}
 
+-- | Generic 'liftAllSymsS' function.
 genericLiftAllSymsS ::
   (Generic1 f, GAllSyms Arity1 (Rep1 f)) =>
   (a -> [SomeSym] -> [SomeSym]) ->
