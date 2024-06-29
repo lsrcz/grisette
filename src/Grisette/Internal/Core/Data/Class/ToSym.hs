@@ -49,9 +49,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -229,6 +235,119 @@ instance
   liftToSym f = Default1 . genericLiftToSym f
   {-# INLINE liftToSym #-}
 
+#define CONCRETE_TOSYM(type) \
+instance ToSym type type where \
+  toSym = id
+
+#define CONCRETE_TOSYM_BV(type) \
+instance (KnownNat n, 1 <= n) => ToSym (type n) (type n) where \
+  toSym = id
+
+#if 1
+CONCRETE_TOSYM(Bool)
+CONCRETE_TOSYM(Integer)
+CONCRETE_TOSYM(Char)
+CONCRETE_TOSYM(Int)
+CONCRETE_TOSYM(Int8)
+CONCRETE_TOSYM(Int16)
+CONCRETE_TOSYM(Int32)
+CONCRETE_TOSYM(Int64)
+CONCRETE_TOSYM(Word)
+CONCRETE_TOSYM(Word8)
+CONCRETE_TOSYM(Word16)
+CONCRETE_TOSYM(Word32)
+CONCRETE_TOSYM(Word64)
+CONCRETE_TOSYM(Float)
+CONCRETE_TOSYM(Double)
+CONCRETE_TOSYM(B.ByteString)
+CONCRETE_TOSYM(T.Text)
+CONCRETE_TOSYM(FPRoundingMode)
+CONCRETE_TOSYM_BV(IntN)
+CONCRETE_TOSYM_BV(WordN)
+CONCRETE_TOSYM(Monoid.All)
+CONCRETE_TOSYM(Monoid.Any)
+CONCRETE_TOSYM(Ordering)
+#endif
+
+instance (ValidFP eb sb) => ToSym (FP eb sb) (FP eb sb) where
+  toSym = id
+
+#define TO_SYM_SYMID_SIMPLE(symtype) \
+instance ToSym symtype symtype where \
+  toSym = id
+
+#define TO_SYM_SYMID_BV(symtype) \
+instance (KnownNat n, 1 <= n) => ToSym (symtype n) (symtype n) where \
+  toSym = id
+
+#define TO_SYM_SYMID_FUN(op) \
+instance (SupportedPrim a, SupportedPrim b) => ToSym (a op b) (a op b) where \
+  toSym = id
+
+#if 1
+TO_SYM_SYMID_SIMPLE(SymBool)
+TO_SYM_SYMID_SIMPLE(SymInteger)
+TO_SYM_SYMID_BV(SymIntN)
+TO_SYM_SYMID_BV(SymWordN)
+TO_SYM_SYMID_FUN(=~>)
+TO_SYM_SYMID_FUN(-~>)
+TO_SYM_SYMID_SIMPLE(SymFPRoundingMode)
+#endif
+
+instance (ValidFP eb sb) => ToSym (SymFP eb sb) (SymFP eb sb) where
+  toSym = id
+
+#define TO_SYM_FROMCON_SIMPLE(contype, symtype) \
+instance ToSym contype symtype where \
+  toSym = con
+
+#define TO_SYM_FROMCON_BV(contype, symtype) \
+instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
+  toSym = con
+
+#define TO_SYM_FROMCON_FUN(conop, symop) \
+instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  ToSym (conop ca cb) (symop sa sb) where \
+  toSym = con
+
+#if 1
+TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
+TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
+TO_SYM_FROMCON_BV(IntN, SymIntN)
+TO_SYM_FROMCON_BV(WordN, SymWordN)
+TO_SYM_FROMCON_FUN((=->), (=~>))
+TO_SYM_FROMCON_FUN((-->), (-~>))
+TO_SYM_FROMCON_SIMPLE(FPRoundingMode, SymFPRoundingMode)
+#endif
+
+instance (ValidFP eb sb) => ToSym (FP eb sb) (SymFP eb sb) where
+  toSym = con
+
+#define TOSYM_MACHINE_INTEGER(int, bv) \
+instance ToSym int (bv) where \
+  toSym = fromIntegral
+
+#if 1
+TOSYM_MACHINE_INTEGER(Int8, SymIntN 8)
+TOSYM_MACHINE_INTEGER(Int16, SymIntN 16)
+TOSYM_MACHINE_INTEGER(Int32, SymIntN 32)
+TOSYM_MACHINE_INTEGER(Int64, SymIntN 64)
+TOSYM_MACHINE_INTEGER(Word8, SymWordN 8)
+TOSYM_MACHINE_INTEGER(Word16, SymWordN 16)
+TOSYM_MACHINE_INTEGER(Word32, SymWordN 32)
+TOSYM_MACHINE_INTEGER(Word64, SymWordN 64)
+TOSYM_MACHINE_INTEGER(Int, SymIntN $intBitwidthQ)
+TOSYM_MACHINE_INTEGER(Word, SymWordN $intBitwidthQ)
+#endif
+
+instance ToSym Float SymFP32 where
+  toSym = con . bitCast
+  {-# INLINE toSym #-}
+
+instance ToSym Double SymFP64 where
+  toSym = con . bitCast
+  {-# INLINE toSym #-}
+
 deriveBuiltins
   (ViaDefault ''ToSym)
   [''ToSym]
@@ -252,7 +371,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 deriveBuiltins
@@ -275,7 +400,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- ExceptT
@@ -403,18 +534,117 @@ instance (ToSym c a) => ToSym1 ((->) a) ((->) c) where
   liftToSym l f = l . f . toSym
   {-# INLINE liftToSym #-}
 
--- Sum
+-- Product
 deriving via
-  (Default (Sum f1 g1 a1))
+  (Default (Product l r a))
   instance
-    (ToSym (f a) (f1 a1), ToSym (g a) (g1 a1)) =>
-    ToSym (Sum f g a) (Sum f1 g1 a1)
+    (ToSym (l0 a0) (l a), ToSym (r0 a0) (r a)) =>
+    ToSym (Product l0 r0 a0) (Product l r a)
 
 deriving via
-  (Default1 (Sum f1 g1))
+  (Default1 (Product l r))
   instance
-    (ToSym1 f f1, ToSym1 g g1) =>
-    ToSym1 (Sum f g) (Sum f1 g1)
+    (ToSym1 l0 l, ToSym1 r0 r) => ToSym1 (Product l0 r0) (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (ToSym (l0 a0) (l a), ToSym (r0 a0) (r a)) =>
+    ToSym (Sum l0 r0 a0) (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (ToSym1 l0 l, ToSym1 r0 r) => ToSym1 (Sum l0 r0) (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (ToSym (f0 (g0 a0)) (f (g a))) => ToSym (Compose f0 g0 a0) (Compose f g a)
+
+instance
+  (ToSym1 f0 f, ToSym1 g0 g) =>
+  ToSym1 (Compose f0 g0) (Compose f g)
+  where
+  liftToSym f (Compose v) = Compose $ liftToSym (liftToSym f) v
+  {-# INLINE liftToSym #-}
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (ToSym a0 a) => ToSym (Const a0 b0) (Const a b)
+
+deriving via
+  (Default1 (Const a))
+  instance
+    (ToSym a0 a) => ToSym1 (Const a0) (Const a)
+
+-- Alt
+deriving via
+  (Default (Alt f a))
+  instance
+    (ToSym (f0 a0) (f a)) => ToSym (Alt f0 a0) (Alt f a)
+
+deriving via
+  (Default1 (Alt f))
+  instance
+    (ToSym1 f0 f) => ToSym1 (Alt f0) (Alt f)
+
+-- Ap
+deriving via
+  (Default (Ap f a))
+  instance
+    (ToSym (f0 a0) (f a)) => ToSym (Ap f0 a0) (Ap f a)
+
+deriving via
+  (Default1 (Ap f))
+  instance
+    (ToSym1 f0 f) => ToSym1 (Ap f0) (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance ToSym (U1 p0) (U1 p)
+
+deriving via (Default (V1 p)) instance ToSym (V1 p0) (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (ToSym c0 c) => ToSym (K1 i0 c0 p0) (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (ToSym (f0 p0) (f p)) => ToSym (M1 i0 c0 f0 p0) (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (ToSym (f0 p0) (f p), ToSym (g0 p0) (g p)) =>
+    ToSym ((f0 :+: g0) p0) ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (ToSym (f0 p0) (f p), ToSym (g0 p0) (g p)) =>
+    ToSym ((f0 :*: g0) p0) ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (ToSym p0 p) => ToSym (Par1 p0) (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (ToSym (f0 p0) (f p)) => ToSym (Rec1 f0 p0) (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (ToSym (f0 (g0 p0)) (f (g p))) => ToSym ((f0 :.: g0) p0) ((f :.: g) p)
 
 -- ToSym2
 instance ToSym2 Either Either where
@@ -433,113 +663,3 @@ instance (ToSym a b) => ToSym2 ((,,) a) ((,,) b) where
 instance (ToSym a c, ToSym b d) => ToSym2 ((,,,) a b) ((,,,) c d) where
   liftToSym2 f g (a, b, c, d) = (toSym a, toSym b, f c, g d)
   {-# INLINE liftToSym2 #-}
-
-#define CONCRETE_TOSYM(type) \
-instance ToSym type type where \
-  toSym = id
-
-#define CONCRETE_TOSYM_BV(type) \
-instance (KnownNat n, 1 <= n) => ToSym (type n) (type n) where \
-  toSym = id
-
-#if 1
-CONCRETE_TOSYM(Bool)
-CONCRETE_TOSYM(Integer)
-CONCRETE_TOSYM(Char)
-CONCRETE_TOSYM(Int)
-CONCRETE_TOSYM(Int8)
-CONCRETE_TOSYM(Int16)
-CONCRETE_TOSYM(Int32)
-CONCRETE_TOSYM(Int64)
-CONCRETE_TOSYM(Word)
-CONCRETE_TOSYM(Word8)
-CONCRETE_TOSYM(Word16)
-CONCRETE_TOSYM(Word32)
-CONCRETE_TOSYM(Word64)
-CONCRETE_TOSYM(Float)
-CONCRETE_TOSYM(Double)
-CONCRETE_TOSYM(B.ByteString)
-CONCRETE_TOSYM(T.Text)
-CONCRETE_TOSYM(FPRoundingMode)
-CONCRETE_TOSYM_BV(IntN)
-CONCRETE_TOSYM_BV(WordN)
-#endif
-
-instance (ValidFP eb sb) => ToSym (FP eb sb) (FP eb sb) where
-  toSym = id
-
-#define TO_SYM_SYMID_SIMPLE(symtype) \
-instance ToSym symtype symtype where \
-  toSym = id
-
-#define TO_SYM_SYMID_BV(symtype) \
-instance (KnownNat n, 1 <= n) => ToSym (symtype n) (symtype n) where \
-  toSym = id
-
-#define TO_SYM_SYMID_FUN(op) \
-instance (SupportedPrim a, SupportedPrim b) => ToSym (a op b) (a op b) where \
-  toSym = id
-
-#if 1
-TO_SYM_SYMID_SIMPLE(SymBool)
-TO_SYM_SYMID_SIMPLE(SymInteger)
-TO_SYM_SYMID_BV(SymIntN)
-TO_SYM_SYMID_BV(SymWordN)
-TO_SYM_SYMID_FUN(=~>)
-TO_SYM_SYMID_FUN(-~>)
-TO_SYM_SYMID_SIMPLE(SymFPRoundingMode)
-#endif
-
-instance (ValidFP eb sb) => ToSym (SymFP eb sb) (SymFP eb sb) where
-  toSym = id
-
-#define TO_SYM_FROMCON_SIMPLE(contype, symtype) \
-instance ToSym contype symtype where \
-  toSym = con
-
-#define TO_SYM_FROMCON_BV(contype, symtype) \
-instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
-  toSym = con
-
-#define TO_SYM_FROMCON_FUN(conop, symop) \
-instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  ToSym (conop ca cb) (symop sa sb) where \
-  toSym = con
-
-#if 1
-TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
-TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
-TO_SYM_FROMCON_BV(IntN, SymIntN)
-TO_SYM_FROMCON_BV(WordN, SymWordN)
-TO_SYM_FROMCON_FUN((=->), (=~>))
-TO_SYM_FROMCON_FUN((-->), (-~>))
-TO_SYM_FROMCON_SIMPLE(FPRoundingMode, SymFPRoundingMode)
-#endif
-
-instance (ValidFP eb sb) => ToSym (FP eb sb) (SymFP eb sb) where
-  toSym = con
-
-#define TOSYM_MACHINE_INTEGER(int, bv) \
-instance ToSym int (bv) where \
-  toSym = fromIntegral
-
-#if 1
-TOSYM_MACHINE_INTEGER(Int8, SymIntN 8)
-TOSYM_MACHINE_INTEGER(Int16, SymIntN 16)
-TOSYM_MACHINE_INTEGER(Int32, SymIntN 32)
-TOSYM_MACHINE_INTEGER(Int64, SymIntN 64)
-TOSYM_MACHINE_INTEGER(Word8, SymWordN 8)
-TOSYM_MACHINE_INTEGER(Word16, SymWordN 16)
-TOSYM_MACHINE_INTEGER(Word32, SymWordN 32)
-TOSYM_MACHINE_INTEGER(Word64, SymWordN 64)
-TOSYM_MACHINE_INTEGER(Int, SymIntN $intBitwidthQ)
-TOSYM_MACHINE_INTEGER(Word, SymWordN $intBitwidthQ)
-#endif
-
-instance ToSym Float SymFP32 where
-  toSym = con . bitCast
-  {-# INLINE toSym #-}
-
-instance ToSym Double SymFP64 where
-  toSym = con . bitCast
-  {-# INLINE toSym #-}

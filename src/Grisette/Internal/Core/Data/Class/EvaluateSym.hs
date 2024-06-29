@@ -51,10 +51,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
 import Data.Maybe (fromJust)
+import Data.Monoid (Alt, Ap)
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -74,6 +79,7 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Generics.Deriving.Instances ()
+import qualified Generics.Deriving.Monoid as Monoid
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
@@ -297,6 +303,74 @@ instance
     Default1 . genericLiftEvaluateSym f fillDefault model . unDefault1
   {-# INLINE liftEvaluateSym #-}
 
+#define CONCRETE_EVALUATESYM(type) \
+instance EvaluateSym type where \
+  evaluateSym _ _ = id
+
+#define CONCRETE_EVALUATESYM_BV(type) \
+instance (KnownNat n, 1 <= n) => EvaluateSym (type n) where \
+  evaluateSym _ _ = id
+
+#if 1
+CONCRETE_EVALUATESYM(Bool)
+CONCRETE_EVALUATESYM(Integer)
+CONCRETE_EVALUATESYM(Char)
+CONCRETE_EVALUATESYM(Int)
+CONCRETE_EVALUATESYM(Int8)
+CONCRETE_EVALUATESYM(Int16)
+CONCRETE_EVALUATESYM(Int32)
+CONCRETE_EVALUATESYM(Int64)
+CONCRETE_EVALUATESYM(Word)
+CONCRETE_EVALUATESYM(Word8)
+CONCRETE_EVALUATESYM(Word16)
+CONCRETE_EVALUATESYM(Word32)
+CONCRETE_EVALUATESYM(Word64)
+CONCRETE_EVALUATESYM(Float)
+CONCRETE_EVALUATESYM(Double)
+CONCRETE_EVALUATESYM(B.ByteString)
+CONCRETE_EVALUATESYM(T.Text)
+CONCRETE_EVALUATESYM(FPRoundingMode)
+CONCRETE_EVALUATESYM(Monoid.All)
+CONCRETE_EVALUATESYM(Monoid.Any)
+CONCRETE_EVALUATESYM(Ordering)
+CONCRETE_EVALUATESYM_BV(IntN)
+CONCRETE_EVALUATESYM_BV(WordN)
+#endif
+
+instance (ValidFP eb fb) => EvaluateSym (FP eb fb) where
+  evaluateSym _ _ = id
+
+-- Symbolic primitives
+#define EVALUATE_SYM_SIMPLE(symtype) \
+instance EvaluateSym symtype where \
+  evaluateSym fillDefault model (symtype t) = \
+    symtype $ evaluateTerm fillDefault model t
+
+#define EVALUATE_SYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => EvaluateSym (symtype n) where \
+  evaluateSym fillDefault model (symtype t) = \
+    symtype $ evaluateTerm fillDefault model t
+
+#define EVALUATE_SYM_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  EvaluateSym (op sa sb) where \
+  evaluateSym fillDefault model (cons t) = \
+    cons $ evaluateTerm fillDefault model t
+
+#if 1
+EVALUATE_SYM_SIMPLE(SymBool)
+EVALUATE_SYM_SIMPLE(SymInteger)
+EVALUATE_SYM_SIMPLE(SymFPRoundingMode)
+EVALUATE_SYM_BV(SymIntN)
+EVALUATE_SYM_BV(SymWordN)
+EVALUATE_SYM_FUN((=->), (=~>), SymTabularFun)
+EVALUATE_SYM_FUN((-->), (-~>), SymGeneralFun)
+#endif
+
+instance (ValidFP eb sb) => EvaluateSym (SymFP eb sb) where
+  evaluateSym fillDefault model (SymFP t) =
+    SymFP $ evaluateTerm fillDefault model t
+
 -- Instances
 deriveBuiltins
   (ViaDefault ''EvaluateSym)
@@ -321,7 +395,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 deriveBuiltins
@@ -344,7 +424,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- ExceptT
@@ -405,17 +491,6 @@ instance
       . WriterStrict.runWriterT
   {-# INLINE liftEvaluateSym #-}
 
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (EvaluateSym (f a), EvaluateSym (g a)) => EvaluateSym (Sum f g a)
-
-deriving via
-  (Default1 (Sum f g))
-  instance
-    (EvaluateSym1 f, EvaluateSym1 g) => EvaluateSym1 (Sum f g)
-
 -- IdentityT
 instance (EvaluateSym1 m, EvaluateSym a) => EvaluateSym (IdentityT m a) where
   evaluateSym = evaluateSym1
@@ -425,6 +500,94 @@ instance (EvaluateSym1 m) => EvaluateSym1 (IdentityT m) where
   liftEvaluateSym f fillDefault model (IdentityT a) =
     IdentityT $ liftEvaluateSym f fillDefault model a
   {-# INLINE liftEvaluateSym #-}
+
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (EvaluateSym (l a), EvaluateSym (r a)) => EvaluateSym (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (EvaluateSym1 l, EvaluateSym1 r) => EvaluateSym1 (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (EvaluateSym (l a), EvaluateSym (r a)) => EvaluateSym (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (EvaluateSym1 l, EvaluateSym1 r) => EvaluateSym1 (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (EvaluateSym (f (g a))) => EvaluateSym (Compose f g a)
+
+instance (EvaluateSym1 f, EvaluateSym1 g) => EvaluateSym1 (Compose f g) where
+  liftEvaluateSym f fillDefault m (Compose l) =
+    Compose $ liftEvaluateSym (liftEvaluateSym f) fillDefault m l
+  {-# INLINE liftEvaluateSym #-}
+
+-- Const
+deriving via (Default (Const a b)) instance (EvaluateSym a) => EvaluateSym (Const a b)
+
+deriving via (Default1 (Const a)) instance (EvaluateSym a) => EvaluateSym1 (Const a)
+
+-- Alt
+deriving via (Default (Alt f a)) instance (EvaluateSym (f a)) => EvaluateSym (Alt f a)
+
+deriving via (Default1 (Alt f)) instance (EvaluateSym1 f) => EvaluateSym1 (Alt f)
+
+-- Ap
+deriving via (Default (Ap f a)) instance (EvaluateSym (f a)) => EvaluateSym (Ap f a)
+
+deriving via (Default1 (Ap f)) instance (EvaluateSym1 f) => EvaluateSym1 (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance EvaluateSym (U1 p)
+
+deriving via (Default (V1 p)) instance EvaluateSym (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (EvaluateSym c) => EvaluateSym (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (EvaluateSym (f p)) => EvaluateSym (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (EvaluateSym (f p), EvaluateSym (g p)) => EvaluateSym ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (EvaluateSym (f p), EvaluateSym (g p)) => EvaluateSym ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (EvaluateSym p) => EvaluateSym (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (EvaluateSym (f p)) => EvaluateSym (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (EvaluateSym (f (g p))) => EvaluateSym ((f :.: g) p)
 
 instance EvaluateSym2 Either where
   liftEvaluateSym2 f _ fillDefault model (Left a) = Left $ f fillDefault model a
@@ -453,68 +616,3 @@ instance (EvaluateSym a, EvaluateSym b) => EvaluateSym2 ((,,,) a b) where
       g fillDefault model d
     )
   {-# INLINE liftEvaluateSym2 #-}
-
-#define CONCRETE_EVALUATESYM(type) \
-instance EvaluateSym type where \
-  evaluateSym _ _ = id
-
-#define CONCRETE_EVALUATESYM_BV(type) \
-instance (KnownNat n, 1 <= n) => EvaluateSym (type n) where \
-  evaluateSym _ _ = id
-
-#if 1
-CONCRETE_EVALUATESYM(Bool)
-CONCRETE_EVALUATESYM(Integer)
-CONCRETE_EVALUATESYM(Char)
-CONCRETE_EVALUATESYM(Int)
-CONCRETE_EVALUATESYM(Int8)
-CONCRETE_EVALUATESYM(Int16)
-CONCRETE_EVALUATESYM(Int32)
-CONCRETE_EVALUATESYM(Int64)
-CONCRETE_EVALUATESYM(Word)
-CONCRETE_EVALUATESYM(Word8)
-CONCRETE_EVALUATESYM(Word16)
-CONCRETE_EVALUATESYM(Word32)
-CONCRETE_EVALUATESYM(Word64)
-CONCRETE_EVALUATESYM(Float)
-CONCRETE_EVALUATESYM(Double)
-CONCRETE_EVALUATESYM(B.ByteString)
-CONCRETE_EVALUATESYM(T.Text)
-CONCRETE_EVALUATESYM(FPRoundingMode)
-CONCRETE_EVALUATESYM_BV(IntN)
-CONCRETE_EVALUATESYM_BV(WordN)
-#endif
-
-instance (ValidFP eb fb) => EvaluateSym (FP eb fb) where
-  evaluateSym _ _ = id
-
--- Symbolic primitives
-#define EVALUATE_SYM_SIMPLE(symtype) \
-instance EvaluateSym symtype where \
-  evaluateSym fillDefault model (symtype t) = \
-    symtype $ evaluateTerm fillDefault model t
-
-#define EVALUATE_SYM_BV(symtype) \
-instance (KnownNat n, 1 <= n) => EvaluateSym (symtype n) where \
-  evaluateSym fillDefault model (symtype t) = \
-    symtype $ evaluateTerm fillDefault model t
-
-#define EVALUATE_SYM_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  EvaluateSym (op sa sb) where \
-  evaluateSym fillDefault model (cons t) = \
-    cons $ evaluateTerm fillDefault model t
-
-#if 1
-EVALUATE_SYM_SIMPLE(SymBool)
-EVALUATE_SYM_SIMPLE(SymInteger)
-EVALUATE_SYM_SIMPLE(SymFPRoundingMode)
-EVALUATE_SYM_BV(SymIntN)
-EVALUATE_SYM_BV(SymWordN)
-EVALUATE_SYM_FUN((=->), (=~>), SymTabularFun)
-EVALUATE_SYM_FUN((-->), (-~>), SymGeneralFun)
-#endif
-
-instance (ValidFP eb sb) => EvaluateSym (SymFP eb sb) where
-  evaluateSym fillDefault model (SymFP t) =
-    SymFP $ evaluateTerm fillDefault model t

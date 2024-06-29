@@ -59,7 +59,13 @@ import Control.Monad.Trans.Cont (ContT (ContT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap, Endo (Endo))
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import GHC.Generics
   ( Generic (Rep, from, to),
     Generic1 (Rep1, from1, to1),
@@ -218,8 +224,9 @@ instance GSimpleMergeable Arity1 Par1 where
   gmrgIte (SimpleMergeableArgs1 f) cond (Par1 l) (Par1 r) = Par1 $ f cond l r
   {-# INLINE gmrgIte #-}
 
-instance (GSimpleMergeable arity f) => GSimpleMergeable arity (Rec1 f) where
-  gmrgIte args cond (Rec1 l) (Rec1 r) = Rec1 $ gmrgIte args cond l r
+instance (SimpleMergeable1 f) => GSimpleMergeable Arity1 (Rec1 f) where
+  gmrgIte (SimpleMergeableArgs1 f) cond (Rec1 l) (Rec1 r) =
+    Rec1 $ liftMrgIte f cond l r
   {-# INLINE gmrgIte #-}
 
 instance
@@ -349,7 +356,11 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Down
   ]
 
 deriveBuiltins
@@ -369,7 +380,11 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Down
   ]
 
 instance SimpleMergeable2 (,) where
@@ -681,6 +696,110 @@ instance
   mrgIfPropagatedStrategy cond (RWSStrict.RWST t) (RWSStrict.RWST f) =
     RWSStrict.RWST $ \r s -> mrgIfPropagatedStrategy cond (t r s) (f r s)
   {-# INLINE mrgIfPropagatedStrategy #-}
+
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (SimpleMergeable (l a), SimpleMergeable (r a)) =>
+    SimpleMergeable (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (SimpleMergeable1 l, SimpleMergeable1 r) => SimpleMergeable1 (Product l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (SimpleMergeable (f (g a))) =>
+    SimpleMergeable (Compose f g a)
+
+instance
+  (SimpleMergeable1 f, SimpleMergeable1 g) =>
+  SimpleMergeable1 (Compose f g)
+  where
+  liftMrgIte m cond (Compose l) (Compose r) =
+    Compose $ liftMrgIte (liftMrgIte m) cond l r
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (SimpleMergeable a) => SimpleMergeable (Const a b)
+
+deriving via
+  (Default1 (Const a))
+  instance
+    (SimpleMergeable a) => SimpleMergeable1 (Const a)
+
+-- Alt
+deriving via
+  (Default (Alt f a))
+  instance
+    (SimpleMergeable (f a)) => SimpleMergeable (Alt f a)
+
+deriving via
+  (Default1 (Alt f))
+  instance
+    (SimpleMergeable1 f) => SimpleMergeable1 (Alt f)
+
+-- Ap
+deriving via
+  (Default (Ap f a))
+  instance
+    (SimpleMergeable (f a)) => SimpleMergeable (Ap f a)
+
+deriving via
+  (Default1 (Ap f))
+  instance
+    (SimpleMergeable1 f) => SimpleMergeable1 (Ap f)
+
+-- Endo
+instance (SimpleMergeable a) => SimpleMergeable (Endo a) where
+  mrgIte = mrgIte1
+  {-# INLINE mrgIte #-}
+
+instance SimpleMergeable1 Endo where
+  liftMrgIte m cond (Endo l) (Endo r) = Endo $ liftMrgIte m cond l r
+  {-# INLINE liftMrgIte #-}
+
+-- Generic
+deriving via (Default (U1 p)) instance SimpleMergeable (U1 p)
+
+deriving via (Default (V1 p)) instance SimpleMergeable (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (SimpleMergeable c) => SimpleMergeable (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (SimpleMergeable (f p)) => SimpleMergeable (M1 i c f p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (SimpleMergeable (f p), SimpleMergeable (g p)) =>
+    SimpleMergeable ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (SimpleMergeable p) => SimpleMergeable (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (SimpleMergeable (f p)) => SimpleMergeable (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (SimpleMergeable (f (g p))) => SimpleMergeable ((f :.: g) p)
 
 #define SIMPLE_MERGEABLE_SIMPLE(symtype) \
 instance SimpleMergeable symtype where \

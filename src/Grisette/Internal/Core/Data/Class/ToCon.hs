@@ -49,9 +49,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
@@ -246,176 +252,6 @@ instance
   liftToCon f = fmap Default1 . genericLiftToCon f
   {-# INLINE liftToCon #-}
 
-deriveBuiltins
-  (ViaDefault ''ToCon)
-  [''ToCon]
-  [ ''[],
-    ''Maybe,
-    ''Either,
-    ''(),
-    ''(,),
-    ''(,,),
-    ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''AssertionError,
-    ''VerificationConditions
-  ]
-
-deriveBuiltins
-  (ViaDefault1 ''ToCon1)
-  [''ToCon, ''ToCon1]
-  [ ''[],
-    ''Maybe,
-    ''Either,
-    ''(,),
-    ''(,,),
-    ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,)
-  ]
-
--- ExceptT
-instance
-  (ToCon1 m1 m2, ToCon e1 e2, ToCon a b) =>
-  ToCon (ExceptT e1 m1 a) (ExceptT e2 m2 b)
-  where
-  toCon = toCon1
-  {-# INLINE toCon #-}
-
-instance
-  (ToCon1 m1 m2, ToCon e1 e2) =>
-  ToCon1 (ExceptT e1 m1) (ExceptT e2 m2)
-  where
-  liftToCon f (ExceptT v) = ExceptT <$> liftToCon (liftToCon f) v
-  {-# INLINE liftToCon #-}
-
--- MaybeT
-instance
-  (ToCon1 m1 m2, ToCon a b) =>
-  ToCon (MaybeT m1 a) (MaybeT m2 b)
-  where
-  toCon = toCon1
-  {-# INLINE toCon #-}
-
-instance
-  (ToCon1 m1 m2) =>
-  ToCon1 (MaybeT m1) (MaybeT m2)
-  where
-  liftToCon f (MaybeT v) = MaybeT <$> liftToCon (liftToCon f) v
-  {-# INLINE liftToCon #-}
-
--- WriterT
-instance
-  (ToCon1 m1 m2, ToCon a b, ToCon s1 s2) =>
-  ToCon (WriterLazy.WriterT s1 m1 a) (WriterLazy.WriterT s2 m2 b)
-  where
-  toCon (WriterLazy.WriterT v) = WriterLazy.WriterT <$> toCon v
-
-instance
-  (ToCon1 m1 m2, ToCon s1 s2) =>
-  ToCon1 (WriterLazy.WriterT s1 m1) (WriterLazy.WriterT s2 m2)
-  where
-  liftToCon f (WriterLazy.WriterT v) =
-    WriterLazy.WriterT <$> liftToCon (liftToCon2 f toCon) v
-
-instance
-  (ToCon1 m1 m2, ToCon a b, ToCon s1 s2) =>
-  ToCon (WriterStrict.WriterT s1 m1 a) (WriterStrict.WriterT s2 m2 b)
-  where
-  toCon (WriterStrict.WriterT v) = WriterStrict.WriterT <$> toCon v
-
-instance
-  (ToCon1 m1 m2, ToCon s1 s2) =>
-  ToCon1 (WriterStrict.WriterT s1 m1) (WriterStrict.WriterT s2 m2)
-  where
-  liftToCon f (WriterStrict.WriterT v) =
-    WriterStrict.WriterT <$> liftToCon (liftToCon2 f toCon) v
-
--- Sum
-deriving via
-  (Default (Sum f1 g1 a1))
-  instance
-    (ToCon (f a) (f1 a1), ToCon (g a) (g1 a1)) =>
-    ToCon (Sum f g a) (Sum f1 g1 a1)
-
-deriving via
-  (Default1 (Sum f1 g1))
-  instance
-    (ToCon1 f f1, ToCon1 g g1) =>
-    ToCon1 (Sum f g) (Sum f1 g1)
-
--- IdentityT
-instance
-  (ToCon1 m m1, ToCon a b) =>
-  ToCon (IdentityT m a) (IdentityT m1 b)
-  where
-  toCon = toCon1
-  {-# INLINE toCon #-}
-
-instance
-  (ToCon1 m m1) =>
-  ToCon1 (IdentityT m) (IdentityT m1)
-  where
-  liftToCon f (IdentityT a) = IdentityT <$> liftToCon f a
-  {-# INLINE liftToCon #-}
-
--- Identity
-instance {-# INCOHERENT #-} (ToCon a b) => ToCon (Identity a) (Identity b) where
-  toCon = toCon1
-
-instance ToCon (Identity v) v where
-  toCon = Just . runIdentity
-
-instance ToCon v (Identity v) where
-  toCon = Just . Identity
-
-instance ToCon1 Identity Identity where
-  liftToCon f (Identity a) = Identity <$> f a
-
--- Special
-instance
-  (ToCon (m1 (Either e1 a)) (Either e2 b)) =>
-  ToCon (ExceptT e1 m1 a) (Either e2 b)
-  where
-  toCon (ExceptT v) = toCon v
-
--- ToCon2
-instance ToCon2 Either Either where
-  liftToCon2 f _ (Left a) = Left <$> f a
-  liftToCon2 _ g (Right b) = Right <$> g b
-  {-# INLINE liftToCon2 #-}
-
-instance ToCon2 (,) (,) where
-  liftToCon2 f g (a, b) = (,) <$> f a <*> g b
-  {-# INLINE liftToCon2 #-}
-
-instance (ToCon a b) => ToCon2 ((,,) a) ((,,) b) where
-  liftToCon2 f g (a, b, c) = (,,) <$> toCon a <*> f b <*> g c
-  {-# INLINE liftToCon2 #-}
-
-instance (ToCon a c, ToCon b d) => ToCon2 ((,,,) a b) ((,,,) c d) where
-  liftToCon2 f g (a, b, c, d) = (,,,) <$> toCon a <*> toCon b <*> f c <*> g d
-  {-# INLINE liftToCon2 #-}
-
 #define CONCRETE_TOCON(type) \
 instance ToCon type type where \
   toCon = Just
@@ -445,6 +281,9 @@ CONCRETE_TOCON(T.Text)
 CONCRETE_TOCON_BV(WordN)
 CONCRETE_TOCON_BV(IntN)
 CONCRETE_TOCON(FPRoundingMode)
+CONCRETE_TOCON(Monoid.All)
+CONCRETE_TOCON(Monoid.Any)
+CONCRETE_TOCON(Ordering)
 #endif
 
 instance (ValidFP eb sb) => ToCon (FP eb sb) (FP eb sb) where
@@ -526,3 +365,284 @@ instance ToCon SymFP32 Float where
 instance ToCon SymFP64 Double where
   toCon (Con (fp :: FP64)) = Just $ bitCast fp
   toCon _ = Nothing
+
+deriveBuiltins
+  (ViaDefault ''ToCon)
+  [''ToCon]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
+  ]
+
+deriveBuiltins
+  (ViaDefault1 ''ToCon1)
+  [''ToCon, ''ToCon1]
+  [ ''[],
+    ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
+  ]
+
+-- ExceptT
+instance
+  (ToCon1 m1 m2, ToCon e1 e2, ToCon a b) =>
+  ToCon (ExceptT e1 m1 a) (ExceptT e2 m2 b)
+  where
+  toCon = toCon1
+  {-# INLINE toCon #-}
+
+instance
+  (ToCon1 m1 m2, ToCon e1 e2) =>
+  ToCon1 (ExceptT e1 m1) (ExceptT e2 m2)
+  where
+  liftToCon f (ExceptT v) = ExceptT <$> liftToCon (liftToCon f) v
+  {-# INLINE liftToCon #-}
+
+-- MaybeT
+instance
+  (ToCon1 m1 m2, ToCon a b) =>
+  ToCon (MaybeT m1 a) (MaybeT m2 b)
+  where
+  toCon = toCon1
+  {-# INLINE toCon #-}
+
+instance
+  (ToCon1 m1 m2) =>
+  ToCon1 (MaybeT m1) (MaybeT m2)
+  where
+  liftToCon f (MaybeT v) = MaybeT <$> liftToCon (liftToCon f) v
+  {-# INLINE liftToCon #-}
+
+-- WriterT
+instance
+  (ToCon1 m1 m2, ToCon a b, ToCon s1 s2) =>
+  ToCon (WriterLazy.WriterT s1 m1 a) (WriterLazy.WriterT s2 m2 b)
+  where
+  toCon (WriterLazy.WriterT v) = WriterLazy.WriterT <$> toCon v
+
+instance
+  (ToCon1 m1 m2, ToCon s1 s2) =>
+  ToCon1 (WriterLazy.WriterT s1 m1) (WriterLazy.WriterT s2 m2)
+  where
+  liftToCon f (WriterLazy.WriterT v) =
+    WriterLazy.WriterT <$> liftToCon (liftToCon2 f toCon) v
+
+instance
+  (ToCon1 m1 m2, ToCon a b, ToCon s1 s2) =>
+  ToCon (WriterStrict.WriterT s1 m1 a) (WriterStrict.WriterT s2 m2 b)
+  where
+  toCon (WriterStrict.WriterT v) = WriterStrict.WriterT <$> toCon v
+
+instance
+  (ToCon1 m1 m2, ToCon s1 s2) =>
+  ToCon1 (WriterStrict.WriterT s1 m1) (WriterStrict.WriterT s2 m2)
+  where
+  liftToCon f (WriterStrict.WriterT v) =
+    WriterStrict.WriterT <$> liftToCon (liftToCon2 f toCon) v
+
+-- IdentityT
+instance
+  (ToCon1 m m1, ToCon a b) =>
+  ToCon (IdentityT m a) (IdentityT m1 b)
+  where
+  toCon = toCon1
+  {-# INLINE toCon #-}
+
+instance
+  (ToCon1 m m1) =>
+  ToCon1 (IdentityT m) (IdentityT m1)
+  where
+  liftToCon f (IdentityT a) = IdentityT <$> liftToCon f a
+  {-# INLINE liftToCon #-}
+
+-- Identity
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon (Identity a) (Identity b) where
+  toCon = toCon1
+
+instance ToCon (Identity v) v where
+  toCon = Just . runIdentity
+
+instance ToCon v (Identity v) where
+  toCon = Just . Identity
+
+instance ToCon1 Identity Identity where
+  liftToCon f (Identity a) = Identity <$> f a
+
+-- Special
+instance
+  (ToCon (m1 (Either e1 a)) (Either e2 b)) =>
+  ToCon (ExceptT e1 m1 a) (Either e2 b)
+  where
+  toCon (ExceptT v) = toCon v
+
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (ToCon (l0 a0) (l a), ToCon (r0 a0) (r a)) =>
+    ToCon (Product l0 r0 a0) (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (ToCon1 l0 l, ToCon1 r0 r) => ToCon1 (Product l0 r0) (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (ToCon (l0 a0) (l a), ToCon (r0 a0) (r a)) =>
+    ToCon (Sum l0 r0 a0) (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (ToCon1 l0 l, ToCon1 r0 r) => ToCon1 (Sum l0 r0) (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (ToCon (f0 (g0 a0)) (f (g a))) => ToCon (Compose f0 g0 a0) (Compose f g a)
+
+instance
+  (ToCon1 f0 f, ToCon1 g0 g) =>
+  ToCon1 (Compose f0 g0) (Compose f g)
+  where
+  liftToCon f (Compose a) = Compose <$> liftToCon (liftToCon f) a
+  {-# INLINE liftToCon #-}
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (ToCon a0 a) => ToCon (Const a0 b0) (Const a b)
+
+deriving via
+  (Default1 (Const a))
+  instance
+    (ToCon a0 a) => ToCon1 (Const a0) (Const a)
+
+-- Alt
+deriving via
+  (Default (Alt f a))
+  instance
+    (ToCon (f0 a0) (f a)) => ToCon (Alt f0 a0) (Alt f a)
+
+deriving via
+  (Default1 (Alt f))
+  instance
+    (ToCon1 f0 f) => ToCon1 (Alt f0) (Alt f)
+
+-- Ap
+deriving via
+  (Default (Ap f a))
+  instance
+    (ToCon (f0 a0) (f a)) => ToCon (Ap f0 a0) (Ap f a)
+
+deriving via
+  (Default1 (Ap f))
+  instance
+    (ToCon1 f0 f) => ToCon1 (Ap f0) (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance ToCon (U1 p0) (U1 p)
+
+deriving via (Default (V1 p)) instance ToCon (V1 p0) (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (ToCon c0 c) => ToCon (K1 i0 c0 p0) (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (ToCon (f0 p0) (f p)) => ToCon (M1 i0 c0 f0 p0) (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (ToCon (f0 p0) (f p), ToCon (g0 p0) (g p)) =>
+    ToCon ((f0 :+: g0) p0) ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (ToCon (f0 p0) (f p), ToCon (g0 p0) (g p)) =>
+    ToCon ((f0 :*: g0) p0) ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (ToCon p0 p) => ToCon (Par1 p0) (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (ToCon (f0 p0) (f p)) => ToCon (Rec1 f0 p0) (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (ToCon (f0 (g0 p0)) (f (g p))) => ToCon ((f0 :.: g0) p0) ((f :.: g) p)
+
+-- ToCon2
+instance ToCon2 Either Either where
+  liftToCon2 f _ (Left a) = Left <$> f a
+  liftToCon2 _ g (Right b) = Right <$> g b
+  {-# INLINE liftToCon2 #-}
+
+instance ToCon2 (,) (,) where
+  liftToCon2 f g (a, b) = (,) <$> f a <*> g b
+  {-# INLINE liftToCon2 #-}
+
+instance (ToCon a b) => ToCon2 ((,,) a) ((,,) b) where
+  liftToCon2 f g (a, b, c) = (,,) <$> toCon a <*> f b <*> g c
+  {-# INLINE liftToCon2 #-}
+
+instance (ToCon a c, ToCon b d) => ToCon2 ((,,,) a b) ((,,,) c d) where
+  liftToCon2 f g (a, b, c, d) = (,,,) <$> toCon a <*> toCon b <*> f c <*> g d
+  {-# INLINE liftToCon2 #-}

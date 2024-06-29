@@ -54,9 +54,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down (Down))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
@@ -368,181 +374,6 @@ genericLiftSymCompare ::
 genericLiftSymCompare c l r = gsymCompare (SOrdArgs1 c) (from1 l) (from1 r)
 {-# INLINE genericLiftSymCompare #-}
 
--- Instances
-deriveBuiltins
-  (ViaDefault ''SOrd)
-  [''SOrd]
-  [ ''Maybe,
-    ''Either,
-    ''(),
-    ''(,),
-    ''(,,),
-    ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''AssertionError,
-    ''VerificationConditions,
-    ''Identity
-  ]
-
-deriveBuiltins
-  (ViaDefault1 ''SOrd1)
-  [''SOrd, ''SOrd1]
-  [ ''Maybe,
-    ''Either,
-    ''(,),
-    ''(,,),
-    ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''Identity
-  ]
-
-symCompareSingleList :: (SOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool
-symCompareSingleList isLess isStrict = go
-  where
-    go [] [] = con (not isStrict)
-    go (x : xs) (y : ys) =
-      (if isLess then x .< y else x .> y) .|| (x .== y .&& go xs ys)
-    go [] _ = if isLess then con True else con False
-    go _ [] = if isLess then con False else con True
-
-symLiftCompareList ::
-  (a -> b -> UnionM Ordering) -> [a] -> [b] -> UnionM Ordering
-symLiftCompareList _ [] [] = mrgSingle EQ
-symLiftCompareList f (x : xs) (y : ys) = do
-  oxy <- f x y
-  case oxy of
-    LT -> mrgSingle LT
-    EQ -> symLiftCompareList f xs ys
-    GT -> mrgSingle GT
-symLiftCompareList _ [] _ = mrgSingle LT
-symLiftCompareList _ _ [] = mrgSingle GT
-
--- []
-instance (SOrd a) => SOrd [a] where
-  {-# INLINE (.<=) #-}
-  {-# INLINE (.<) #-}
-  {-# INLINE symCompare #-}
-  {-# INLINE (.>=) #-}
-  {-# INLINE (.>) #-}
-  (.<=) = symCompareSingleList True False
-  (.<) = symCompareSingleList True True
-  (.>=) = symCompareSingleList False False
-  (.>) = symCompareSingleList False True
-  symCompare = symLiftCompareList symCompare
-
-instance SOrd1 [] where
-  liftSymCompare = symLiftCompareList
-  {-# INLINE liftSymCompare #-}
-
--- ExceptT
-instance (SOrd1 m, SOrd e, SOrd a) => SOrd (ExceptT e m a) where
-  symCompare = symCompare1
-  {-# INLINE symCompare #-}
-
-instance (SOrd1 m, SOrd e) => SOrd1 (ExceptT e m) where
-  liftSymCompare f (ExceptT l) (ExceptT r) =
-    liftSymCompare (liftSymCompare f) l r
-  {-# INLINE liftSymCompare #-}
-
--- MaybeT
-instance (SOrd1 m, SOrd a) => SOrd (MaybeT m a) where
-  symCompare = symCompare1
-  {-# INLINE symCompare #-}
-
-instance (SOrd1 m) => SOrd1 (MaybeT m) where
-  liftSymCompare f (MaybeT l) (MaybeT r) = liftSymCompare (liftSymCompare f) l r
-  {-# INLINE liftSymCompare #-}
-
--- Writer
-instance (SOrd1 m, SOrd w, SOrd a) => SOrd (WriterLazy.WriterT w m a) where
-  symCompare = symCompare1
-  {-# INLINE symCompare #-}
-
-instance (SOrd1 m, SOrd w) => SOrd1 (WriterLazy.WriterT w m) where
-  liftSymCompare f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
-    liftSymCompare (liftSymCompare2 f symCompare) l r
-  {-# INLINE liftSymCompare #-}
-
-instance (SOrd1 m, SOrd w, SOrd a) => SOrd (WriterStrict.WriterT w m a) where
-  symCompare = symCompare1
-  {-# INLINE symCompare #-}
-
-instance (SOrd1 m, SOrd w) => SOrd1 (WriterStrict.WriterT w m) where
-  liftSymCompare f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
-    liftSymCompare (liftSymCompare2 f symCompare) l r
-  {-# INLINE liftSymCompare #-}
-
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (SOrd (f a), SOrd (g a)) => SOrd (Sum f g a)
-
-deriving via
-  (Default1 (Sum f g))
-  instance
-    (SOrd1 f, SOrd1 g) => SOrd1 (Sum f g)
-
--- IdentityT
-instance (SOrd1 m, SOrd a) => SOrd (IdentityT m a) where
-  symCompare = symCompare1
-  {-# INLINE symCompare #-}
-
-instance (SOrd1 m) => SOrd1 (IdentityT m) where
-  liftSymCompare f (IdentityT l) (IdentityT r) = liftSymCompare f l r
-  {-# INLINE liftSymCompare #-}
-
-instance SOrd2 Either where
-  liftSymCompare2 f _ (Left l) (Left r) = f l r
-  liftSymCompare2 _ g (Right l) (Right r) = g l r
-  liftSymCompare2 _ _ (Left _) (Right _) = mrgSingle LT
-  liftSymCompare2 _ _ (Right _) (Left _) = mrgSingle GT
-  {-# INLINE liftSymCompare2 #-}
-
-instance SOrd2 (,) where
-  liftSymCompare2 f g (a1, b1) (a2, b2) = do
-    ma <- f a1 a2
-    mb <- g b1 b2
-    mrgSingle $ ma <> mb
-  {-# INLINE liftSymCompare2 #-}
-
-instance (SOrd a) => SOrd2 ((,,) a) where
-  liftSymCompare2 f g (a1, b1, c1) (a2, b2, c2) = do
-    ma <- symCompare a1 a2
-    mb <- f b1 b2
-    mc <- g c1 c2
-    mrgSingle $ ma <> mb <> mc
-  {-# INLINE liftSymCompare2 #-}
-
-instance (SOrd a, SOrd b) => SOrd2 ((,,,) a b) where
-  liftSymCompare2 f g (a1, b1, c1, d1) (a2, b2, c2, d2) = do
-    ma <- symCompare a1 a2
-    mb <- symCompare b1 b2
-    mc <- f c1 c2
-    md <- g d1 d2
-    mrgSingle $ ma <> mb <> mc <> md
-  {-# INLINE liftSymCompare2 #-}
-
 #define CONCRETE_SORD(type) \
 instance SOrd type where \
   l .<= r = con $ l <= r; \
@@ -588,6 +419,9 @@ CONCRETE_SORD(Double)
 CONCRETE_SORD(B.ByteString)
 CONCRETE_SORD(T.Text)
 CONCRETE_SORD(FPRoundingMode)
+CONCRETE_SORD(Monoid.All)
+CONCRETE_SORD(Monoid.Any)
+CONCRETE_SORD(Ordering)
 CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
 #endif
@@ -690,3 +524,278 @@ instance (SOrd a, Mergeable a) => SOrd (UnionM a) where
     x1 <- tryMerge x
     y1 <- tryMerge y
     x1 `symCompare` y1
+
+-- Instances
+deriveBuiltins
+  (ViaDefault ''SOrd)
+  [''SOrd]
+  [ ''Maybe,
+    ''Either,
+    ''(),
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last
+  ]
+
+deriveBuiltins
+  (ViaDefault1 ''SOrd1)
+  [''SOrd, ''SOrd1]
+  [ ''Maybe,
+    ''Either,
+    ''(,),
+    ''(,,),
+    ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last
+  ]
+
+symCompareSingleList :: (SOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool
+symCompareSingleList isLess isStrict = go
+  where
+    go [] [] = con (not isStrict)
+    go (x : xs) (y : ys) =
+      (if isLess then x .< y else x .> y) .|| (x .== y .&& go xs ys)
+    go [] _ = if isLess then con True else con False
+    go _ [] = if isLess then con False else con True
+
+symLiftCompareList ::
+  (a -> b -> UnionM Ordering) -> [a] -> [b] -> UnionM Ordering
+symLiftCompareList _ [] [] = mrgSingle EQ
+symLiftCompareList f (x : xs) (y : ys) = do
+  oxy <- f x y
+  case oxy of
+    LT -> mrgSingle LT
+    EQ -> symLiftCompareList f xs ys
+    GT -> mrgSingle GT
+symLiftCompareList _ [] _ = mrgSingle LT
+symLiftCompareList _ _ [] = mrgSingle GT
+
+-- []
+instance (SOrd a) => SOrd [a] where
+  {-# INLINE (.<=) #-}
+  {-# INLINE (.<) #-}
+  {-# INLINE symCompare #-}
+  {-# INLINE (.>=) #-}
+  {-# INLINE (.>) #-}
+  (.<=) = symCompareSingleList True False
+  (.<) = symCompareSingleList True True
+  (.>=) = symCompareSingleList False False
+  (.>) = symCompareSingleList False True
+  symCompare = symLiftCompareList symCompare
+
+instance SOrd1 [] where
+  liftSymCompare = symLiftCompareList
+  {-# INLINE liftSymCompare #-}
+
+-- ExceptT
+instance (SOrd1 m, SOrd e, SOrd a) => SOrd (ExceptT e m a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance (SOrd1 m, SOrd e) => SOrd1 (ExceptT e m) where
+  liftSymCompare f (ExceptT l) (ExceptT r) =
+    liftSymCompare (liftSymCompare f) l r
+  {-# INLINE liftSymCompare #-}
+
+-- MaybeT
+instance (SOrd1 m, SOrd a) => SOrd (MaybeT m a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance (SOrd1 m) => SOrd1 (MaybeT m) where
+  liftSymCompare f (MaybeT l) (MaybeT r) = liftSymCompare (liftSymCompare f) l r
+  {-# INLINE liftSymCompare #-}
+
+-- Writer
+instance (SOrd1 m, SOrd w, SOrd a) => SOrd (WriterLazy.WriterT w m a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance (SOrd1 m, SOrd w) => SOrd1 (WriterLazy.WriterT w m) where
+  liftSymCompare f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
+    liftSymCompare (liftSymCompare2 f symCompare) l r
+  {-# INLINE liftSymCompare #-}
+
+instance (SOrd1 m, SOrd w, SOrd a) => SOrd (WriterStrict.WriterT w m a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance (SOrd1 m, SOrd w) => SOrd1 (WriterStrict.WriterT w m) where
+  liftSymCompare f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
+    liftSymCompare (liftSymCompare2 f symCompare) l r
+  {-# INLINE liftSymCompare #-}
+
+-- IdentityT
+instance (SOrd1 m, SOrd a) => SOrd (IdentityT m a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance (SOrd1 m) => SOrd1 (IdentityT m) where
+  liftSymCompare f (IdentityT l) (IdentityT r) = liftSymCompare f l r
+  {-# INLINE liftSymCompare #-}
+
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (SOrd (l a), SOrd (r a)) => SOrd (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (SOrd1 l, SOrd1 r) => SOrd1 (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (SOrd (l a), SOrd (r a)) => SOrd (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (SOrd1 l, SOrd1 r) => SOrd1 (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (SOrd (f (g a))) => SOrd (Compose f g a)
+
+instance (SOrd1 f, SOrd1 g) => SOrd1 (Compose f g) where
+  liftSymCompare f (Compose l) (Compose r) =
+    liftSymCompare (liftSymCompare f) l r
+
+-- Const
+deriving via (Default (Const a b)) instance (SOrd a) => SOrd (Const a b)
+
+deriving via (Default1 (Const a)) instance (SOrd a) => SOrd1 (Const a)
+
+-- Alt
+deriving via (Default (Alt f a)) instance (SOrd (f a)) => SOrd (Alt f a)
+
+deriving via (Default1 (Alt f)) instance (SOrd1 f) => SOrd1 (Alt f)
+
+-- Ap
+deriving via (Default (Ap f a)) instance (SOrd (f a)) => SOrd (Ap f a)
+
+deriving via (Default1 (Ap f)) instance (SOrd1 f) => SOrd1 (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance SOrd (U1 p)
+
+deriving via (Default (V1 p)) instance SOrd (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (SOrd c) => SOrd (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (SOrd (f p)) => SOrd (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (SOrd (f p), SOrd (g p)) => SOrd ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (SOrd (f p), SOrd (g p)) => SOrd ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (SOrd p) => SOrd (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (SOrd (f p)) => SOrd (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (SOrd (f (g p))) => SOrd ((f :.: g) p)
+
+-- Down
+instance (SOrd a) => SOrd (Down a) where
+  symCompare = symCompare1
+  {-# INLINE symCompare #-}
+
+instance SOrd1 Down where
+  liftSymCompare comp (Down l) (Down r) = do
+    res <- comp l r
+    case res of
+      LT -> mrgSingle GT
+      EQ -> mrgSingle EQ
+      GT -> mrgSingle LT
+  {-# INLINE liftSymCompare #-}
+
+instance SOrd2 Either where
+  liftSymCompare2 f _ (Left l) (Left r) = f l r
+  liftSymCompare2 _ g (Right l) (Right r) = g l r
+  liftSymCompare2 _ _ (Left _) (Right _) = mrgSingle LT
+  liftSymCompare2 _ _ (Right _) (Left _) = mrgSingle GT
+  {-# INLINE liftSymCompare2 #-}
+
+instance SOrd2 (,) where
+  liftSymCompare2 f g (a1, b1) (a2, b2) = do
+    ma <- f a1 a2
+    mb <- g b1 b2
+    mrgSingle $ ma <> mb
+  {-# INLINE liftSymCompare2 #-}
+
+instance (SOrd a) => SOrd2 ((,,) a) where
+  liftSymCompare2 f g (a1, b1, c1) (a2, b2, c2) = do
+    ma <- symCompare a1 a2
+    mb <- f b1 b2
+    mc <- g c1 c2
+    mrgSingle $ ma <> mb <> mc
+  {-# INLINE liftSymCompare2 #-}
+
+instance (SOrd a, SOrd b) => SOrd2 ((,,,) a b) where
+  liftSymCompare2 f g (a1, b1, c1, d1) (a2, b2, c2, d2) = do
+    ma <- symCompare a1 a2
+    mb <- symCompare b1 b2
+    mc <- f c1 c2
+    md <- g d1 d2
+    mrgSingle $ ma <> mb <> mc <> md
+  {-# INLINE liftSymCompare2 #-}

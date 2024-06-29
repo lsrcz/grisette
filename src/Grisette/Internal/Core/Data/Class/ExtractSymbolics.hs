@@ -46,9 +46,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -238,6 +244,69 @@ instance
   liftExtractSymbolics f = genericLiftExtractSymbolics f . unDefault1
   {-# INLINE liftExtractSymbolics #-}
 
+#define CONCRETE_EXTRACT_SYMBOLICS(type) \
+instance ExtractSymbolics type where \
+  extractSymbolics _ = mempty
+
+#define CONCRETE_EXTRACT_SYMBOLICS_BV(type) \
+instance (KnownNat n, 1 <= n) => ExtractSymbolics (type n) where \
+  extractSymbolics _ = mempty
+
+#if 1
+CONCRETE_EXTRACT_SYMBOLICS(Bool)
+CONCRETE_EXTRACT_SYMBOLICS(Integer)
+CONCRETE_EXTRACT_SYMBOLICS(Char)
+CONCRETE_EXTRACT_SYMBOLICS(Int)
+CONCRETE_EXTRACT_SYMBOLICS(Int8)
+CONCRETE_EXTRACT_SYMBOLICS(Int16)
+CONCRETE_EXTRACT_SYMBOLICS(Int32)
+CONCRETE_EXTRACT_SYMBOLICS(Int64)
+CONCRETE_EXTRACT_SYMBOLICS(Word)
+CONCRETE_EXTRACT_SYMBOLICS(Word8)
+CONCRETE_EXTRACT_SYMBOLICS(Word16)
+CONCRETE_EXTRACT_SYMBOLICS(Word32)
+CONCRETE_EXTRACT_SYMBOLICS(Word64)
+CONCRETE_EXTRACT_SYMBOLICS(Float)
+CONCRETE_EXTRACT_SYMBOLICS(Double)
+CONCRETE_EXTRACT_SYMBOLICS(B.ByteString)
+CONCRETE_EXTRACT_SYMBOLICS(T.Text)
+CONCRETE_EXTRACT_SYMBOLICS(FPRoundingMode)
+CONCRETE_EXTRACT_SYMBOLICS(Monoid.All)
+CONCRETE_EXTRACT_SYMBOLICS(Monoid.Any)
+CONCRETE_EXTRACT_SYMBOLICS(Ordering)
+CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
+CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
+#endif
+
+instance (ValidFP eb sb) => ExtractSymbolics (FP eb sb) where
+  extractSymbolics _ = mempty
+
+#define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
+instance ExtractSymbolics symtype where \
+  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
+
+#define EXTRACT_SYMBOLICS_BV(symtype) \
+instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
+  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
+
+#define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  ExtractSymbolics (op sa sb) where \
+  extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
+
+#if 1
+EXTRACT_SYMBOLICS_SIMPLE(SymBool)
+EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
+EXTRACT_SYMBOLICS_SIMPLE(SymFPRoundingMode)
+EXTRACT_SYMBOLICS_BV(SymIntN)
+EXTRACT_SYMBOLICS_BV(SymWordN)
+EXTRACT_SYMBOLICS_FUN((=->), (=~>), SymTabularFun)
+EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
+#endif
+
+instance (ValidFP eb fb) => ExtractSymbolics (SymFP eb fb) where
+  extractSymbolics (SymFP t) = SymbolSet $ extractSymbolicsTerm t
+
 -- Instances
 deriveBuiltins
   (ViaDefault ''ExtractSymbolics)
@@ -262,7 +331,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 deriveBuiltins
@@ -285,7 +360,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- ExceptT
@@ -319,19 +400,6 @@ instance
   liftExtractSymbolics f (MaybeT v) =
     liftExtractSymbolics (liftExtractSymbolics f) v
   {-# INLINE liftExtractSymbolics #-}
-
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (ExtractSymbolics (f a), ExtractSymbolics (g a)) =>
-    ExtractSymbolics (Sum f g a)
-
-deriving via
-  (Default1 (Sum f g))
-  instance
-    (ExtractSymbolics1 f, ExtractSymbolics1 g) =>
-    ExtractSymbolics1 (Sum f g)
 
 -- WriterT
 instance
@@ -376,6 +444,120 @@ instance (ExtractSymbolics1 m) => ExtractSymbolics1 (IdentityT m) where
   liftExtractSymbolics f (IdentityT v) = liftExtractSymbolics f v
   {-# INLINE liftExtractSymbolics #-}
 
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (ExtractSymbolics (l a), ExtractSymbolics (r a)) =>
+    ExtractSymbolics (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (ExtractSymbolics1 l, ExtractSymbolics1 r) =>
+    ExtractSymbolics1 (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (ExtractSymbolics (l a), ExtractSymbolics (r a)) =>
+    ExtractSymbolics (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (ExtractSymbolics1 l, ExtractSymbolics1 r) => ExtractSymbolics1 (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (ExtractSymbolics (f (g a))) => ExtractSymbolics (Compose f g a)
+
+instance
+  (ExtractSymbolics1 f, ExtractSymbolics1 g) =>
+  ExtractSymbolics1 (Compose f g)
+  where
+  liftExtractSymbolics f (Compose l) =
+    liftExtractSymbolics (liftExtractSymbolics f) l
+  {-# INLINE liftExtractSymbolics #-}
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (ExtractSymbolics a) => ExtractSymbolics (Const a b)
+
+deriving via
+  (Default1 (Const a))
+  instance
+    (ExtractSymbolics a) => ExtractSymbolics1 (Const a)
+
+-- Alt
+deriving via
+  (Default (Alt f a))
+  instance
+    (ExtractSymbolics (f a)) => ExtractSymbolics (Alt f a)
+
+deriving via
+  (Default1 (Alt f))
+  instance
+    (ExtractSymbolics1 f) => ExtractSymbolics1 (Alt f)
+
+-- Ap
+deriving via
+  (Default (Ap f a))
+  instance
+    (ExtractSymbolics (f a)) => ExtractSymbolics (Ap f a)
+
+deriving via
+  (Default1 (Ap f))
+  instance
+    (ExtractSymbolics1 f) => ExtractSymbolics1 (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance ExtractSymbolics (U1 p)
+
+deriving via (Default (V1 p)) instance ExtractSymbolics (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (ExtractSymbolics c) => ExtractSymbolics (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (ExtractSymbolics (f p)) => ExtractSymbolics (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (ExtractSymbolics (f p), ExtractSymbolics (g p)) =>
+    ExtractSymbolics ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (ExtractSymbolics (f p), ExtractSymbolics (g p)) =>
+    ExtractSymbolics ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (ExtractSymbolics p) => ExtractSymbolics (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (ExtractSymbolics (f p)) => ExtractSymbolics (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (ExtractSymbolics (f (g p))) => ExtractSymbolics ((f :.: g) p)
+
 -- ExtractSymbolics2
 instance ExtractSymbolics2 Either where
   liftExtractSymbolics2 f _ (Left x) = f x
@@ -397,63 +579,3 @@ instance
   liftExtractSymbolics2 f g (x, y, z, w) =
     extractSymbolics x <> extractSymbolics y <> f z <> g w
   {-# INLINE liftExtractSymbolics2 #-}
-
-#define CONCRETE_EXTRACT_SYMBOLICS(type) \
-instance ExtractSymbolics type where \
-  extractSymbolics _ = mempty
-
-#define CONCRETE_EXTRACT_SYMBOLICS_BV(type) \
-instance (KnownNat n, 1 <= n) => ExtractSymbolics (type n) where \
-  extractSymbolics _ = mempty
-
-#if 1
-CONCRETE_EXTRACT_SYMBOLICS(Bool)
-CONCRETE_EXTRACT_SYMBOLICS(Integer)
-CONCRETE_EXTRACT_SYMBOLICS(Char)
-CONCRETE_EXTRACT_SYMBOLICS(Int)
-CONCRETE_EXTRACT_SYMBOLICS(Int8)
-CONCRETE_EXTRACT_SYMBOLICS(Int16)
-CONCRETE_EXTRACT_SYMBOLICS(Int32)
-CONCRETE_EXTRACT_SYMBOLICS(Int64)
-CONCRETE_EXTRACT_SYMBOLICS(Word)
-CONCRETE_EXTRACT_SYMBOLICS(Word8)
-CONCRETE_EXTRACT_SYMBOLICS(Word16)
-CONCRETE_EXTRACT_SYMBOLICS(Word32)
-CONCRETE_EXTRACT_SYMBOLICS(Word64)
-CONCRETE_EXTRACT_SYMBOLICS(Float)
-CONCRETE_EXTRACT_SYMBOLICS(Double)
-CONCRETE_EXTRACT_SYMBOLICS(B.ByteString)
-CONCRETE_EXTRACT_SYMBOLICS(T.Text)
-CONCRETE_EXTRACT_SYMBOLICS(FPRoundingMode)
-CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
-CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
-#endif
-
-instance (ValidFP eb sb) => ExtractSymbolics (FP eb sb) where
-  extractSymbolics _ = mempty
-
-#define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
-instance ExtractSymbolics symtype where \
-  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
-
-#define EXTRACT_SYMBOLICS_BV(symtype) \
-instance (KnownNat n, 1 <= n) => ExtractSymbolics (symtype n) where \
-  extractSymbolics (symtype t) = SymbolSet $ extractSymbolicsTerm t
-
-#define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  ExtractSymbolics (op sa sb) where \
-  extractSymbolics (cons t) = SymbolSet $ extractSymbolicsTerm t
-
-#if 1
-EXTRACT_SYMBOLICS_SIMPLE(SymBool)
-EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
-EXTRACT_SYMBOLICS_SIMPLE(SymFPRoundingMode)
-EXTRACT_SYMBOLICS_BV(SymIntN)
-EXTRACT_SYMBOLICS_BV(SymWordN)
-EXTRACT_SYMBOLICS_FUN((=->), (=~>), SymTabularFun)
-EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
-#endif
-
-instance (ValidFP eb fb) => ExtractSymbolics (SymFP eb fb) where
-  extractSymbolics (SymFP t) = SymbolSet $ extractSymbolicsTerm t
