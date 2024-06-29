@@ -21,28 +21,39 @@ module Grisette.Core
     -- They need 'Union' monadic container and 'Mergeable' instances to be
     -- merged.
     --
-    -- Various operations are provided for manipulating symbolic values,
-    -- including solvable and unsolvable types.
-    --
     -- We elaborated the internal details of the symbolic values in the
     -- documentation, but it is likely that you can skip them and directly go
     -- through the APIs and the operations to start using Grisette.
     --
-    -- After the introduction of symbolic values, we introduce various
-    -- utilities, which includes pretty printing, symbolic generation
-    -- (generating fresh symbolic values), error handling, and the solver
-    -- backend interface (calling solver to get a model, and evaluate symbolic
-    -- values with a model).
+    -- Various operations are provided for manipulating symbolic values,
+    -- including solvable and unsolvable types. Apart from the basic operations
+    -- for each type of symbolic values, we also provide generic operations for:
+    --
+    -- * Symbolic equality and comparison ('SymEq', 'SymOrd')
+    -- * Conversion between concrete and symbolic values ('ToCon', 'ToSym')
+    -- * Merging of symbolic values ('Mergeable', 'SimpleMergeable', 'TryMerge')
+    -- * Symbolic branching ('SymBranching')
+    --
+    -- Additional utilities for building symbolic evaluation based applications
+    -- are also provided:
+    --
+    -- * Pretty printing (e.g., 'Format')
+    -- * Symbolic generation, or generating fresh symbolic values (e.g.,
+    --   'GenSym')
+    -- * Error handling (e.g., 'symAssert')
+    -- * Solver backend interface (e.g., 'solve', 'cegis')
+    -- * Substitutions for symbolic values given the solving results (e.g.,
+    --  'ExtractSym', 'EvalSym', 'SubstSym').
     --
     -- Finally some helpers for deriving instances for the type classes are
     -- provided.
 
-    -- * Note for the examples
+    -- * Note for the examples in the documentation
 
     -- | The examples may assume a [z3](https://github.com/Z3Prover/z3) solver
     -- available in @PATH@.
 
-    -- * Introduction to symbolic values
+    -- * Introduction to symbolic values in Grisette
 
     -- ** Symbolic evaluation primer
 
@@ -268,9 +279,7 @@ module Grisette.Core
     -- >>> a .== b
     -- (= a b)
 
-    -- ** Creation of solvable type values
-
-    -- *** Identifiers and symbols
+    -- ** Identifiers and symbols
 
     -- A symbolic constant is created out of a 'Symbol'. Two symbolic constants
     -- with the same type and the same 'Symbol' are the same symbolic value.
@@ -290,11 +299,13 @@ module Grisette.Core
     simple,
     indexed,
 
-    -- *** Creation and extraction of solvable values
+    -- ** Creation and extraction of solvable values
     Solvable (..),
     pattern Con,
     slocsym,
     ilocsym,
+
+    -- * Basic symbolic operations
 
     -- ** Basic logical operators
     LogicalOp (..),
@@ -303,9 +314,9 @@ module Grisette.Core
     -- ** Symbolic equality
     SymEq (..),
     SymEq1 (..),
-    seq1,
+    symEq1,
     SymEq2 (..),
-    seq2,
+    symEq2,
 
     -- ** Symbolic comparison
     SymOrd (..),
@@ -1221,6 +1232,8 @@ module Grisette.Core
     cegisForAllExceptStdVC,
     cegisForAllExceptVC,
 
+    -- * Substitutions for symbolic values given solver models
+
     -- ** Symbolic constant extraction
 
     -- Grisette supports the extraction of the symbolic constant symbols from a
@@ -1612,8 +1625,8 @@ import Grisette.Internal.Core.Data.Class.SymEq
     SymEqArgs (..),
     genericLiftSymEq,
     genericSymEq,
-    seq1,
-    seq2,
+    symEq1,
+    symEq2,
   )
 import Grisette.Internal.Core.Data.Class.SymOrd
   ( GSymOrd (..),
