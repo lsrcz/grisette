@@ -40,8 +40,8 @@ import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode (Sym),
+import Grisette.Unified.Internal.EvalModeTag
+  ( EvalModeTag (Sym),
   )
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -127,7 +127,7 @@ safeSymStrictShiftR a b =
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftR a b
 {-# INLINE safeSymStrictShiftR #-}
 
-class UnifiedSafeSymShift (mode :: EvaluationMode) e a m where
+class UnifiedSafeSymShift (mode :: EvalModeTag) e a m where
   withBaseSafeSymShift :: ((SafeSymShift e a m) => r) -> r
 
 instance

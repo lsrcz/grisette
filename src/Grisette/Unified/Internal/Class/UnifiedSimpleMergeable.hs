@@ -63,8 +63,8 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterface1s,
   )
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.EvaluationMode
-  ( EvaluationMode,
+import Grisette.Unified.Internal.EvalModeTag
+  ( EvalModeTag,
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
@@ -227,7 +227,7 @@ class UnifiedSimpleMergeable2 mode f where
 -- `SymBranching`.
 class
   (Typeable mode) =>
-  UnifiedBranching (mode :: EvaluationMode) m
+  UnifiedBranching (mode :: EvalModeTag) m
   where
   withBaseBranching ::
     ((If (IsConMode mode) (TryMerge m) (SymBranching m)) => r) -> r

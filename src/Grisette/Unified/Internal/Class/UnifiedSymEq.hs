@@ -50,9 +50,7 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   ( deriveFunctorArgUnifiedInterfaces,
     deriveUnifiedInterface1s,
   )
-import Grisette.Unified.Internal.EvaluationMode
-  ( IsConMode,
-  )
+import Grisette.Unified.Internal.EvalModeTag (IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 

@@ -66,7 +66,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgAsum)
-import Grisette.Unified (EvaluationMode (Sym))
+import Grisette.Unified (EvalModeTag (Sym))
 import qualified Grisette.Unified.Lib.Data.Foldable as Unified
 
 -- | 'Data.Foldable.elem' with symbolic equality.

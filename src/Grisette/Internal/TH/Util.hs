@@ -28,7 +28,7 @@ where
 import Control.Monad (when)
 import qualified Data.Map as M
 import GHC.TypeNats (Nat)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH
   ( Dec (ClassD),
     Info (ClassI),
@@ -75,7 +75,7 @@ constructorInfoToType dataType info = do
   if null binders then return tyBody else return $ ForallT binders ctx tyBody
 
 tvIsMode :: TyVarBndr_ flag -> Bool
-tvIsMode = (== ConT ''EvaluationMode) . tvKind
+tvIsMode = (== ConT ''EvalModeTag) . tvKind
 
 tvIsNat :: TyVarBndr_ flag -> Bool
 tvIsNat = (== ConT ''Nat) . tvKind

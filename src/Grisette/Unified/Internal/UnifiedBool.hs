@@ -18,14 +18,14 @@ import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
   )
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
 class
   ( BasicGrisetteType (GetBool mode),
     ConSymConversion Bool SymBool (GetBool mode),
     LogicalOp (GetBool mode)
   ) =>
-  UnifiedBool (mode :: EvaluationMode)
+  UnifiedBool (mode :: EvalModeTag)
   where
   -- | Get a unified Boolean type. Resolves to 'Bool' in 'Con' mode, and
   -- 'SymBool' in 'Sym' mode.

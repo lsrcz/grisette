@@ -21,8 +21,8 @@ module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), mrgReturn)
 import Grisette.TH (deriveAll, mkUnifiedConstructor)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
-import Grisette.Unified.Internal.IsMode (IsMode)
+import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
 import Test.Framework (Test, testGroup)
@@ -43,7 +43,7 @@ unifiedConstructorTest =
     [ testCase "mkUnifiedConstructor" $ do
         let f ::
               forall mode.
-              (IsMode mode, UnifiedData mode (T mode SymInteger)) =>
+              (EvalMode mode, UnifiedData mode (T mode SymInteger)) =>
               GetData mode (T mode SymInteger)
             f =
               mkT @mode

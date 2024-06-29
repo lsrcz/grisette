@@ -28,7 +28,7 @@ import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
   )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 
 class
@@ -44,7 +44,7 @@ class
     UnifiedSafeLinearArith mode ArithException i m,
     i ~ GetInteger mode
   ) =>
-  UnifiedIntegerImpl (mode :: EvaluationMode) i
+  UnifiedIntegerImpl (mode :: EvalModeTag) i
     | mode -> i
   where
   -- | Get a unified Integer type. Resolves to 'Integer' in 'Con' mode, and
@@ -59,7 +59,7 @@ instance UnifiedIntegerImpl 'Sym SymInteger where
 
 class
   (UnifiedIntegerImpl mode (GetInteger mode)) =>
-  UnifiedInteger (mode :: EvaluationMode)
+  UnifiedInteger (mode :: EvalModeTag)
 
 instance UnifiedInteger 'Con
 

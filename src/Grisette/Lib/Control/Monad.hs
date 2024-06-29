@@ -106,7 +106,7 @@ import Grisette.Lib.Data.Traversable
     mrgMapM,
     mrgSequence,
   )
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import qualified Grisette.Unified.Lib.Control.Monad as Unified
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.

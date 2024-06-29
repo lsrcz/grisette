@@ -15,7 +15,7 @@ module Grisette.Unified.Internal.MonadWithMode (MonadWithMode) where
 
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.IsMode (IsMode)
+import Grisette.Unified.Internal.EvalMode (EvalMode)
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operations for the types.
@@ -24,9 +24,9 @@ import Grisette.Unified.Internal.IsMode (IsMode)
 -- operations: for example, 'SafeUnifiedInteger' provides 'safeDiv' for the
 -- integer type with in @ExceptT ArithException m@.
 --
--- For users with GHC prior to 9.2.1, see notes in 'IsMode'.
+-- For users with GHC prior to 9.2.1, see notes in 'EvalMode'.
 type MonadWithMode mode m =
-  ( IsMode mode,
+  ( EvalMode mode,
     Monad m,
     TryMerge m,
     UnifiedBranching mode m

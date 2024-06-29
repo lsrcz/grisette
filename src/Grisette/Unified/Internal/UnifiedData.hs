@@ -38,7 +38,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
     liftBaseMonad,
   )
-import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Language.Haskell.TH.Syntax (Lift)
 
 class
@@ -62,7 +62,7 @@ class
     forall b. (ToCon v b) => ToCon u b,
     forall a. (ToSym a v) => ToSym a u
   ) =>
-  UnifiedDataImpl (mode :: EvaluationMode) v u
+  UnifiedDataImpl (mode :: EvalModeTag) v u
     | u mode -> v,
       u v -> mode
   where
