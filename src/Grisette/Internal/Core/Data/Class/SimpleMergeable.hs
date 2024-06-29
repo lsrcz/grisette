@@ -302,7 +302,7 @@ class
   -- | Symbolic @if@ control flow with the result merged with some merge
   -- strategy.
   --
-  -- >>> mrgIfWithStrategy rootStrategy "a" (mrgSingle "b") (return "c") :: UnionM SymInteger
+  -- >>> mrgIfWithStrategy rootStrategy "a" (mrgSingle "b") (return "c") :: Union SymInteger
   -- {(ite a b c)}
   --
   -- __Note:__ Be careful to call this directly in your code.
@@ -331,7 +331,7 @@ merge = mergeWithStrategy rootStrategy
 --
 -- Equivalent to @'mrgIfWithStrategy' 'rootStrategy'@.
 --
--- >>> mrgIf "a" (return "b") (return "c") :: UnionM SymInteger
+-- >>> mrgIf "a" (return "b") (return "c") :: Union SymInteger
 -- {(ite a b c)}
 mrgIf :: (SymBranching u, Mergeable a) => SymBool -> u a -> u a -> u a
 mrgIf = mrgIfWithStrategy rootStrategy

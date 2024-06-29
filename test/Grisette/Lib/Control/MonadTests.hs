@@ -19,7 +19,7 @@ import Grisette
     Solvable (con),
     SymBranching (mrgIfPropagatedStrategy),
     SymInteger,
-    UnionM,
+    Union,
     mrgFilterM,
     mrgGuard,
     mrgIf,
@@ -84,56 +84,56 @@ monadFunctionTests :: Test
 monadFunctionTests =
   testGroup
     "Monad"
-    [ testCase "mrgReturn" $ (mrgReturn 1 :: UnionM Integer) @?= mrgSingle 1,
+    [ testCase "mrgReturn" $ (mrgReturn 1 :: Union Integer) @?= mrgSingle 1,
       testGroup
         ".>>="
         [ testCase "merge result" $ do
             let actual =
                   mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
                     .>>= (\x -> return $ x * x)
-            actual @?= (mrgSingle 1 :: UnionM Integer),
+            actual @?= (mrgSingle 1 :: Union Integer),
           testCase "merge argument" $ do
             let actual =
                   mrgIfPropagatedStrategy "a" (return (1 :: Int)) (return 1)
                     .>>= const (return NoMerge)
-            actual @?= (mrgSingle NoMerge :: UnionM NoMerge)
+            actual @?= (mrgSingle NoMerge :: Union NoMerge)
         ],
       testGroup
         ".>>"
         [ testCase "merge result" $ do
             let actual =
                   ( mrgIfPropagatedStrategy "a" (return $ -1) (return 1) ::
-                      UnionM Integer
+                      Union Integer
                   )
                     .>> mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
             let expected =
                   mrgIf "a" (mrgReturn $ -1) (mrgReturn 1) ::
-                    UnionM Integer
+                    Union Integer
             actual @?= expected,
           testCase "merge lhs" $ do
             let actual =
                   ( mrgIfPropagatedStrategy "a" (return 1) (return 1) ::
-                      UnionM Integer
+                      Union Integer
                   )
                     .>> return NoMerge
-            let expected = mrgReturn NoMerge :: UnionM NoMerge
+            let expected = mrgReturn NoMerge :: Union NoMerge
             actual @?= expected
         ],
       testCase "mrgFail" $ do
-        let actual = mrgFail "a" :: MaybeT UnionM Int
+        let actual = mrgFail "a" :: MaybeT Union Int
         actual @?= MaybeT (mrgSingle Nothing),
       testCase "mrgMzero" $ do
-        (mrgMzero :: MaybeT UnionM Integer) @?= MaybeT (mrgReturn Nothing),
+        (mrgMzero :: MaybeT Union Integer) @?= MaybeT (mrgReturn Nothing),
       testGroup
         "mrgMplus"
         [ testCase "merge result" $ do
-            let actual = (mzero `mrgMplus` return 1 :: MaybeT UnionM Integer)
+            let actual = (mzero `mrgMplus` return 1 :: MaybeT Union Integer)
             actual @?= mrgReturn 1,
           testCase "merge lhs" $ do
             let lhs =
                   MaybeT $
                     mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing) ::
-                    MaybeT UnionM NoMerge
+                    MaybeT Union NoMerge
             let rhs = return NoMerge
             lhs `mrgMplus` rhs @?= MaybeT (mrgReturn $ Just NoMerge)
         ],
@@ -143,12 +143,12 @@ monadFunctionTests =
             let actual =
                   (\x -> return $ x * x)
                     .=<< mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
-            actual @?= (mrgSingle 1 :: UnionM Integer),
+            actual @?= (mrgSingle 1 :: Union Integer),
           testCase "merge argument" $ do
             let actual =
                   const (return NoMerge)
                     .=<< mrgIfPropagatedStrategy "a" (return (1 :: Int)) (return 1)
-            actual @?= (mrgSingle NoMerge :: UnionM NoMerge)
+            actual @?= (mrgSingle NoMerge :: Union NoMerge)
         ],
       testGroup
         ".>=>"
@@ -159,10 +159,10 @@ monadFunctionTests =
                         "a"
                         (return $ -1)
                         (return 1) ::
-                        UnionM Integer
+                        Union Integer
                     )
             let actual = lhs .>=> (\x -> return $ x * x)
-            actual (0 :: Integer) @?= (mrgSingle 1 :: UnionM Integer),
+            actual (0 :: Integer) @?= (mrgSingle 1 :: Union Integer),
           testCase "merge lhs result" $ do
             let lhs =
                   const
@@ -170,7 +170,7 @@ monadFunctionTests =
                         "a"
                         (return 1)
                         (return 1) ::
-                        UnionM Integer
+                        Union Integer
                     )
             let actual = lhs .>=> const (return NoMerge)
             actual (0 :: Integer) @?= mrgSingle NoMerge
@@ -184,10 +184,10 @@ monadFunctionTests =
                         "a"
                         (return $ -1)
                         (return 1) ::
-                        UnionM Integer
+                        Union Integer
                     )
             let actual = (\x -> return $ x * x) .<=< rhs
-            actual (0 :: Integer) @?= (mrgSingle 1 :: UnionM Integer),
+            actual (0 :: Integer) @?= (mrgSingle 1 :: Union Integer),
           testCase "merge rhs result" $ do
             let rhs =
                   const
@@ -195,28 +195,28 @@ monadFunctionTests =
                         "a"
                         (return 1)
                         (return 1) ::
-                        UnionM Integer
+                        Union Integer
                     )
             let actual = const (return NoMerge) .<=< rhs
             actual (0 :: Integer) @?= mrgSingle NoMerge
         ],
       testCase "mrgForever" $ do
-        let f :: StateT Int (ExceptT NoMerge UnionM) ()
+        let f :: StateT Int (ExceptT NoMerge Union) ()
             f = do
               i <- get
               when (i == 0) $ throwError NoMerge
               put (i - 1)
               lift . lift $
                 mrgIfPropagatedStrategy "a" (return ()) (return ())
-        let actual = mrgForever f :: StateT Int (ExceptT NoMerge UnionM) NoMerge
+        let actual = mrgForever f :: StateT Int (ExceptT NoMerge Union) NoMerge
         runStateT actual 10 @?= ExceptT (mrgReturn $ Left NoMerge),
       testCase "mrgJoin" $
-        mrgJoin (return $ return 1) @?= (mrgSingle 1 :: UnionM Integer),
+        mrgJoin (return $ return 1) @?= (mrgSingle 1 :: Union Integer),
       testCase "mrgMfilter" $ do
-        let actual = mrgMfilter (const True) (return 1 :: MaybeT UnionM Int)
+        let actual = mrgMfilter (const True) (return 1 :: MaybeT Union Int)
         actual @?= (mrgSingle 1),
       testCase "symMfilter" $ do
-        let actual = symMfilter (.== 0) (return "a" :: MaybeT UnionM SymInteger)
+        let actual = symMfilter (.== 0) (return "a" :: MaybeT Union SymInteger)
         let expected =
               mrgIf ("a" .== (0 :: SymInteger)) (mrgReturn "a") mrgMzero
         actual @?= expected,
@@ -224,21 +224,21 @@ monadFunctionTests =
         "mrgFilterM"
         [ testCase "merge result" $ do
             let actual = mrgFilterM (return . odd) [1, 2, 3, 4]
-            let expected = mrgReturn [1, 3] :: UnionM [Int]
+            let expected = mrgReturn [1, 3] :: Union [Int]
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
                   mrgFilterM
                     (const $ mrgIfPropagatedStrategy "a" (return True) (return True))
                     [NoMerge, NoMerge]
-            let expected = mrgReturn [NoMerge, NoMerge] :: UnionM [NoMerge]
+            let expected = mrgReturn [NoMerge, NoMerge] :: Union [NoMerge]
             actual @?= expected
         ],
       testGroup
         "symFilterM"
         [ testCase "merge result" $ do
             let actual = symFilterM (return . con . odd) [1, 2, 3, 4]
-            let expected = mrgReturn [1, 3] :: UnionM [Int]
+            let expected = mrgReturn [1, 3] :: Union [Int]
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -250,7 +250,7 @@ monadFunctionTests =
                           (return $ con True)
                     )
                     [NoMerge, NoMerge]
-            let expected = mrgReturn [NoMerge, NoMerge] :: UnionM [NoMerge]
+            let expected = mrgReturn [NoMerge, NoMerge] :: Union [NoMerge]
             actual @?= expected,
           testCase "symbolic semantics" $ do
             let a = "a" :: SymInteger
@@ -262,7 +262,7 @@ monadFunctionTests =
                       (a .== 0 .|| b .== 0)
                       (return [symIte (a .== 0) b a])
                       (return [a, b]) ::
-                    UnionM [SymInteger]
+                    Union [SymInteger]
             actual @?= expected
             actual .@?= expected
         ],
@@ -277,7 +277,7 @@ monadFunctionTests =
                         (return (x, x + 1))
                   )
                   [1 .. 100] ::
-                  UnionM ([Int], [Int])
+                  Union ([Int], [Int])
           let expected = mrgReturn ([1 .. 100], [2 .. 101])
           actual @?= expected,
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -292,7 +292,7 @@ monadFunctionTests =
                   )
                   [1 .. 100]
                   [1 .. 100] ::
-                  UnionM ([Int])
+                  Union ([Int])
           let expected = mrgReturn ((* 2) <$> [1 .. 100])
           actual @?= expected,
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -307,7 +307,7 @@ monadFunctionTests =
                   )
                   [1 .. 100 :: Int]
                   [1 .. 100] ::
-                  UnionM ()
+                  Union ()
           let expected = mrgReturn ()
           actual @?= expected,
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -322,7 +322,7 @@ monadFunctionTests =
                   )
                   10
                   [1 .. 100] ::
-                  UnionM Integer
+                  Union Integer
           actual @?= mrgReturn 5060,
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testCase "mrgFoldM_" $ do
@@ -336,7 +336,7 @@ monadFunctionTests =
                   )
                   10
                   [1 .. 100 :: Int] ::
-                  UnionM ()
+                  Union ()
           actual @?= mrgReturn (),
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testCase "mrgReplicateM" $ do
@@ -344,7 +344,7 @@ monadFunctionTests =
                 mrgReplicateM
                   100
                   (mrgIfPropagatedStrategy "a" (return 1) (return 1)) ::
-                  UnionM [Int]
+                  Union [Int]
           actual @?= mrgReturn [1 | _ <- [1 .. 100]],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testGroup
@@ -355,7 +355,7 @@ monadFunctionTests =
                       200
                       (100 :: SymInteger)
                       (mrgIfPropagatedStrategy "a" (return 1) (return 1)) ::
-                      UnionM [Int]
+                      Union [Int]
               actual @?= mrgReturn [1 | _ <- [1 .. 100]],
             testCase "symbolic semantics" $ do
               let a = "a" :: SymInteger
@@ -364,18 +364,18 @@ monadFunctionTests =
                       2
                       a
                       (mrgIfPropagatedStrategy "a" (return 1) (return 1)) ::
-                      UnionM [Int]
+                      Union [Int]
               let expected =
                     mrgIf
                       (a .<= 0)
                       (return [])
                       (mrgIf (a .== 1) (return [1]) (return [1, 1])) ::
-                      UnionM [Int]
+                      Union [Int]
               actual .@?= expected
           ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testCase "mrgReplicateM_" $ do
-          let actual = mrgReplicateM_ 100 noMergeNotMerged :: UnionM ()
+          let actual = mrgReplicateM_ 100 noMergeNotMerged :: Union ()
           actual @?= mrgReturn (),
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testGroup
@@ -383,43 +383,43 @@ monadFunctionTests =
           [ testCase "merge result and intermediate" $ do
               let actual =
                     symReplicateM_ 200 (100 :: SymInteger) noMergeNotMerged ::
-                      UnionM ()
+                      Union ()
               actual @?= mrgReturn ()
           ],
       testCase "mrgGuard" $ do
-        mrgGuard True @?= (mrgReturn () :: MaybeT UnionM ())
-        mrgGuard False @?= (MaybeT $ mrgReturn Nothing :: MaybeT UnionM ()),
+        mrgGuard True @?= (mrgReturn () :: MaybeT Union ())
+        mrgGuard False @?= (MaybeT $ mrgReturn Nothing :: MaybeT Union ()),
       testCase "symGuard" $ do
         let expected =
               MaybeT $
                 mrgIf "a" (return $ Just ()) (return Nothing) ::
-                MaybeT UnionM ()
+                MaybeT Union ()
         symGuard "a" @?= expected,
       testCase "mrgWhen" $ do
         mrgWhen True (throwError "a")
-          @?= (mrgThrowError "a" :: ExceptT String UnionM ())
+          @?= (mrgThrowError "a" :: ExceptT String Union ())
         mrgWhen False (throwError "a")
-          @?= (mrgReturn () :: ExceptT String UnionM ()),
+          @?= (mrgReturn () :: ExceptT String Union ()),
       testCase "symWhen" $ do
         let expected =
               mrgIf "a" (mrgThrowError "x") (return ()) ::
-                ExceptT String UnionM ()
+                ExceptT String Union ()
         symWhen "a" (throwError "x") @?= expected,
       testCase "mrgUnless" $ do
         mrgUnless False (throwError "a")
-          @?= (mrgThrowError "a" :: ExceptT String UnionM ())
+          @?= (mrgThrowError "a" :: ExceptT String Union ())
         mrgUnless True (throwError "a")
-          @?= (mrgReturn () :: ExceptT String UnionM ()),
+          @?= (mrgReturn () :: ExceptT String Union ()),
       testCase "symUnless" $ do
         let expected =
               mrgIf "a" (return ()) (mrgThrowError "x") ::
-                ExceptT String UnionM ()
+                ExceptT String Union ()
         symUnless "a" (throwError "x") @?= expected,
       testGroup
         "mrgLiftM"
         [ testCase "merge result" $ do
             let actual = mrgLiftM (const 1) noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual = mrgLiftM (const NoMerge) oneNotMerged
@@ -431,7 +431,7 @@ monadFunctionTests =
         [ testCase "merge result" $ do
             let actual =
                   mrgLiftM2 (const $ const 1) noMergeNotMerged noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -448,7 +448,7 @@ monadFunctionTests =
                     noMergeNotMerged
                     noMergeNotMerged
                     noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -470,7 +470,7 @@ monadFunctionTests =
                     noMergeNotMerged
                     noMergeNotMerged
                     noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -494,7 +494,7 @@ monadFunctionTests =
                     noMergeNotMerged
                     noMergeNotMerged
                     noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -512,7 +512,7 @@ monadFunctionTests =
         "mrgAp"
         [ testCase "merge result" $ do
             let actual = mrgAp (return $ const 1) noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual = mrgAp (return $ const NoMerge) oneNotMerged
@@ -523,7 +523,7 @@ monadFunctionTests =
         ".<$!>"
         [ testCase "merge result" $ do
             let actual = const 1 .<$!> noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual = const NoMerge .<$!> oneNotMerged

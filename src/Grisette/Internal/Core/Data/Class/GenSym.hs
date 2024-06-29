@@ -104,7 +104,11 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, isMerged, underlyingUnion)
+import Grisette.Internal.Core.Control.Monad.Union
+  ( Union,
+    isMerged,
+    unionBase,
+  )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -126,7 +130,9 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.Core.Data.Symbol (Identifier)
-import Grisette.Internal.Core.Data.Union (Union (UnionIf, UnionSingle))
+import Grisette.Internal.Core.Data.UnionBase
+  ( UnionBase (UnionIf, UnionSingle),
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
@@ -414,51 +420,51 @@ class (Mergeable a) => GenSym spec a where
   -- The following example generates a symbolic boolean. No specification is
   -- needed.
   --
-  -- >>> runFresh (fresh ()) "a" :: UnionM SymBool
+  -- >>> runFresh (fresh ()) "a" :: Union SymBool
   -- {a@0}
   --
   -- The following example generates booleans, which cannot be merged into a
   -- single value with type 'Bool'. No specification is needed.
   --
-  -- >>> runFresh (fresh ()) "a" :: UnionM Bool
+  -- >>> runFresh (fresh ()) "a" :: Union Bool
   -- {If a@0 False True}
   --
   -- The following example generates @Maybe Bool@s.
   -- There are more than one symbolic constants introduced, and their uniqueness
   -- is ensured. No specification is needed.
   --
-  -- >>> runFresh (fresh ()) "a" :: UnionM (Maybe Bool)
+  -- >>> runFresh (fresh ()) "a" :: Union (Maybe Bool)
   -- {If a@0 Nothing (If a@1 (Just False) (Just True))}
   --
   -- The following example generates lists of symbolic booleans with length 1 to 2.
   --
-  -- >>> runFresh (fresh (ListSpec 1 2 ())) "a" :: UnionM [SymBool]
+  -- >>> runFresh (fresh (ListSpec 1 2 ())) "a" :: Union [SymBool]
   -- {If a@2 [a@1] [a@0,a@1]}
   --
   -- When multiple symbolic values are generated, there will not be any
   -- identifier collision
   --
-  -- >>> runFresh (do; a <- fresh (); b <- fresh (); return (a, b)) "a" :: (UnionM SymBool, UnionM SymBool)
+  -- >>> runFresh (do; a <- fresh (); b <- fresh (); return (a, b)) "a" :: (Union SymBool, Union SymBool)
   -- ({a@0},{a@1})
   fresh ::
     (MonadFresh m) =>
     spec ->
-    m (UnionM a)
+    m (Union a)
   default fresh ::
     (GenSymSimple spec a) =>
     ( MonadFresh m
     ) =>
     spec ->
-    m (UnionM a)
+    m (Union a)
   fresh spec = mrgSingle <$> simpleFresh spec
 
 -- | Generate a symbolic variable wrapped in a Union without the monadic context.
 -- A globally unique identifier should be supplied to ensure the uniqueness of
 -- symbolic constants in the generated symbolic values.
 --
--- >>> genSym (ListSpec 1 2 ()) "a" :: UnionM [SymBool]
+-- >>> genSym (ListSpec 1 2 ()) "a" :: Union [SymBool]
 -- {If a@2 [a@1] [a@0,a@1]}
-genSym :: (GenSym spec a) => spec -> Identifier -> UnionM a
+genSym :: (GenSym spec a) => spec -> Identifier -> Union a
 genSym = runFresh . fresh
 
 -- | Class of types in which symbolic values can be generated with respect to some specification.
@@ -499,7 +505,7 @@ class GenSymNoSpec a where
   freshNoSpec ::
     ( MonadFresh m
     ) =>
-    m (UnionM (a c))
+    m (Union (a c))
 
 instance GenSymNoSpec U1 where
   freshNoSpec = return $ mrgSingle U1
@@ -522,11 +528,11 @@ instance
     forall m c.
     ( MonadFresh m
     ) =>
-    m (UnionM ((a :+: b) c))
+    m (Union ((a :+: b) c))
   freshNoSpec = do
     cond :: bool <- simpleFresh ()
-    l :: UnionM (a c) <- freshNoSpec
-    r :: UnionM (b c) <- freshNoSpec
+    l :: Union (a c) <- freshNoSpec
+    r :: Union (b c) <- freshNoSpec
     return $ mrgIf cond (fmap L1 l) (fmap R1 r)
 
 instance
@@ -537,10 +543,10 @@ instance
     forall m c.
     ( MonadFresh m
     ) =>
-    m (UnionM ((a :*: b) c))
+    m (Union ((a :*: b) c))
   freshNoSpec = do
-    l :: UnionM (a c) <- freshNoSpec
-    r :: UnionM (b c) <- freshNoSpec
+    l :: Union (a c) <- freshNoSpec
+    r :: Union (b c) <- freshNoSpec
     return $ do
       l1 <- l
       r1 <- r
@@ -562,7 +568,7 @@ derivedNoSpecFresh ::
     MonadFresh m
   ) =>
   () ->
-  m (UnionM a)
+  m (Union a)
 derivedNoSpecFresh _ = tryMerge . fmap to <$> freshNoSpec
 
 class GenSymSimpleNoSpec a where
@@ -667,7 +673,7 @@ derivedSameShapeSimpleFresh a = to <$> genSymSameShapeFresh (from a)
 -- The result will be wrapped in a union-like monad, and also a monad
 -- maintaining the 'MonadFresh' context.
 --
--- >>> runFresh (chooseFresh [1,2,3]) "a" :: UnionM Integer
+-- >>> runFresh (chooseFresh [1,2,3]) "a" :: Union Integer
 -- {If a@0 1 (If a@1 2 3)}
 chooseFresh ::
   forall a m.
@@ -675,7 +681,7 @@ chooseFresh ::
     MonadFresh m
   ) =>
   [a] ->
-  m (UnionM a)
+  m (Union a)
 chooseFresh [x] = return $ mrgSingle x
 chooseFresh (r : rs) = do
   b <- simpleFresh ()
@@ -692,7 +698,7 @@ choose ::
   ) =>
   [a] ->
   Identifier ->
-  UnionM a
+  Union a
 choose = runFresh . chooseFresh
 
 -- | Symbolically chooses one of the provided values.
@@ -739,17 +745,17 @@ chooseSimple = runFresh . chooseSimpleFresh
 -- The result will be wrapped in a union-like monad, and also a monad
 -- maintaining the 'Fresh' context.
 --
--- >>> let a = runFresh (chooseFresh [1, 2]) "a" :: UnionM Integer
--- >>> let b = runFresh (chooseFresh [2, 3]) "b" :: UnionM Integer
--- >>> runFresh (chooseUnionFresh [a, b]) "c" :: UnionM Integer
+-- >>> let a = runFresh (chooseFresh [1, 2]) "a" :: Union Integer
+-- >>> let b = runFresh (chooseFresh [2, 3]) "b" :: Union Integer
+-- >>> runFresh (chooseUnionFresh [a, b]) "c" :: Union Integer
 -- {If (&& c@0 a@0) 1 (If (|| c@0 b@0) 2 3)}
 chooseUnionFresh ::
   forall a m.
   ( Mergeable a,
     MonadFresh m
   ) =>
-  [UnionM a] ->
-  m (UnionM a)
+  [Union a] ->
+  m (Union a)
 chooseUnionFresh [x] = return x
 chooseUnionFresh (r : rs) = do
   b <- simpleFresh ()
@@ -764,9 +770,9 @@ chooseUnion ::
   forall a.
   ( Mergeable a
   ) =>
-  [UnionM a] ->
+  [Union a] ->
   Identifier ->
-  UnionM a
+  Union a
 chooseUnion = runFresh . chooseUnionFresh
 
 #define CONCRETE_GENSYM_SAME_SHAPE(type) \
@@ -841,7 +847,7 @@ instance GenSym () Bool where
 
 -- | Specification for enum values with upper bound (exclusive). The result would chosen from [0 .. upperbound].
 --
--- >>> runFresh (fresh (EnumGenUpperBound @Integer 4)) "c" :: UnionM Integer
+-- >>> runFresh (fresh (EnumGenUpperBound @Integer 4)) "c" :: Union Integer
 -- {If c@0 0 (If c@1 1 (If c@2 2 3))}
 newtype EnumGenUpperBound a = EnumGenUpperBound a
 
@@ -850,7 +856,7 @@ instance (Enum v, Mergeable v) => GenSym (EnumGenUpperBound v) v where
 
 -- | Specification for numbers with lower bound (inclusive) and upper bound (exclusive)
 --
--- >>> runFresh (fresh (EnumGenBound @Integer 0 4)) "c" :: UnionM Integer
+-- >>> runFresh (fresh (EnumGenBound @Integer 0 4)) "c" :: Union Integer
 -- {If c@0 0 (If c@1 1 (If c@2 2 3))}
 data EnumGenBound a = EnumGenBound a a
 
@@ -893,8 +899,8 @@ instance
   GenSym (aspec, bspec) (Either a b)
   where
   fresh (aspec, bspec) = do
-    l :: UnionM a <- fresh aspec
-    r :: UnionM b <- fresh bspec
+    l :: Union a <- fresh aspec
+    r :: Union b <- fresh bspec
     chooseUnionFresh [Left <$> l, Right <$> r]
 
 -- Maybe
@@ -920,7 +926,7 @@ instance
   where
   fresh aspec = do
     cond <- simpleFresh ()
-    a :: UnionM a <- fresh aspec
+    a :: Union a <- fresh aspec
     return $ mrgIf cond (mrgSingle Nothing) (Just <$> a)
 
 -- List
@@ -933,7 +939,7 @@ instance
     let xs = reverse $ scanr (:) [] l
     chooseUnionFresh $ tryMerge . sequence <$> xs
     where
-      gl :: (MonadFresh m) => Integer -> m [UnionM a]
+      gl :: (MonadFresh m) => Integer -> m [Union a]
       gl v1
         | v1 <= 0 = return []
         | otherwise = do
@@ -943,10 +949,10 @@ instance
 
 -- | Specification for list generation.
 --
--- >>> runFresh (fresh (ListSpec 0 2 ())) "c" :: UnionM [SymBool]
+-- >>> runFresh (fresh (ListSpec 0 2 ())) "c" :: Union [SymBool]
 -- {If c@2 [] (If c@3 [c@1] [c@0,c@1])}
 --
--- >>> runFresh (fresh (ListSpec 0 2 (SimpleListSpec 1 ()))) "c" :: UnionM [[SymBool]]
+-- >>> runFresh (fresh (ListSpec 0 2 (SimpleListSpec 1 ()))) "c" :: Union [[SymBool]]
 -- {If c@2 [] (If c@3 [[c@1]] [[c@0],[c@1]])}
 data ListSpec spec = ListSpec
   { -- | The minimum length of the generated lists
@@ -970,7 +976,7 @@ instance
         let xs = drop minLen $ reverse $ scanr (:) [] l
         chooseUnionFresh $ tryMerge . sequence <$> xs
     where
-      gl :: (MonadFresh m) => Int -> m [UnionM a]
+      gl :: (MonadFresh m) => Int -> m [Union a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
@@ -983,7 +989,7 @@ instance
   GenSym [a] [a]
   where
   fresh l = do
-    r :: [UnionM a] <- traverse fresh l
+    r :: [Union a] <- traverse fresh l
     return $ tryMerge $ sequence r
 
 instance
@@ -1014,7 +1020,7 @@ instance
       else do
         tryMerge . sequence <$> gl len
     where
-      gl :: (MonadFresh m) => Int -> m [UnionM a]
+      gl :: (MonadFresh m) => Int -> m [Union a]
       gl currLen
         | currLen <= 0 = return []
         | otherwise = do
@@ -1725,18 +1731,18 @@ instance (ValidFP eb sb) => GenSymSimple () (SymFP eb sb) where
     FreshIndex index <- nextFreshIndex
     return $ isym ident index
 
-instance (GenSym spec a, Mergeable a) => GenSym spec (UnionM a)
+instance (GenSym spec a, Mergeable a) => GenSym spec (Union a)
 
-instance (GenSym spec a) => GenSymSimple spec (UnionM a) where
+instance (GenSym spec a) => GenSymSimple spec (Union a) where
   simpleFresh spec = do
     res <- fresh spec
     if not (isMerged res) then error "Not merged" else return res
 
 instance
   (GenSym a a, Mergeable a) =>
-  GenSym (UnionM a) a
+  GenSym (Union a) a
   where
-  fresh spec = go (underlyingUnion $ tryMerge spec)
+  fresh spec = go (unionBase $ tryMerge spec)
     where
       go (UnionSingle x) = fresh x
       go (UnionIf _ _ _ t f) = mrgIf <$> simpleFresh () <*> go t <*> go f

@@ -100,7 +100,7 @@ import GHC.TypeNats
     type (+),
     type (<=),
   )
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
     SizedBV
@@ -556,7 +556,7 @@ instance
   GenSym (Proxy n) (SomeBV bv)
   where
   fresh _ =
-    (\(i :: UnionM (bv n)) -> mrgFmap SomeBV i) <$> fresh ()
+    (\(i :: Union (bv n)) -> mrgFmap SomeBV i) <$> fresh ()
   {-# INLINE fresh #-}
 
 instance

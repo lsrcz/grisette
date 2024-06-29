@@ -2,6 +2,7 @@
 
 module Grisette.TH
   ( -- * Convenient derivation of all instances relating to Grisette
+    derive,
     deriveAll,
     deriveAllExcept,
 
@@ -50,7 +51,8 @@ import Grisette.Internal.TH.DeriveInstanceProvider
     Strategy (..),
   )
 import Grisette.Internal.TH.DerivePredefined
-  ( deriveAll,
+  ( derive,
+    deriveAll,
     deriveAllExcept,
     derivePredefined,
     derivePredefinedMultipleClasses,

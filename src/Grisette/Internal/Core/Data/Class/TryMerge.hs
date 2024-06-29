@@ -67,7 +67,7 @@ tryMerge = tryMergeWithStrategy rootStrategy
 -- | Wrap a value in the applicative functor and capture the 'Mergeable'
 -- knowledge.
 --
--- >>> mrgSingleWithStrategy rootStrategy "a" :: UnionM SymInteger
+-- >>> mrgSingleWithStrategy rootStrategy "a" :: Union SymInteger
 -- {a}
 --
 -- __Note:__ Be careful to call this directly from your code.
@@ -91,7 +91,7 @@ mrgSingleWithStrategy strategy = tryMergeWithStrategy strategy . pure
 --
 -- Equivalent to @'mrgSingleWithStrategy' 'rootStrategy'@.
 --
--- >>> mrgSingle "a" :: UnionM SymInteger
+-- >>> mrgSingle "a" :: Union SymInteger
 -- {a}
 mrgSingle :: (TryMerge m, Applicative m, Mergeable a) => a -> m a
 mrgSingle = mrgSingleWithStrategy rootStrategy

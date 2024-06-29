@@ -24,8 +24,8 @@ import Grisette
     mrgSingle,
     tryMerge,
   )
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM (UMrg))
-import Grisette.Internal.Core.Data.Union (Union (UnionSingle))
+import Grisette.Internal.Core.Control.Monad.Union (Union (UMrg))
+import Grisette.Internal.Core.Data.UnionBase (UnionBase (UnionSingle))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -41,7 +41,7 @@ data TryMergeInstanceTest where
     } ->
     TryMergeInstanceTest
 
-unmergedUnion :: UnionM SymInteger
+unmergedUnion :: Union SymInteger
 unmergedUnion =
   mrgIfPropagatedStrategy
     "a"
@@ -53,13 +53,13 @@ tryMergeTests =
   testGroup
     "TryMerge"
     [ testCase "mrgSingle" $ do
-        let actual = mrgSingle 1 :: UnionM Integer
+        let actual = mrgSingle 1 :: Union Integer
         actual @?= (UMrg rootStrategy (UnionSingle 1)),
       testCase "mrgSingle" $ do
-        let actual = mrgSingle 1 :: UnionM Integer
+        let actual = mrgSingle 1 :: Union Integer
         actual @?= (UMrg rootStrategy (UnionSingle 1)),
       testCase "tryMerge" $ do
-        let actual = tryMerge $ return 1 :: UnionM Integer
+        let actual = tryMerge $ return 1 :: Union Integer
         actual @?= (UMrg rootStrategy (UnionSingle 1)),
       testGroup "Instances" $ do
         test <-
@@ -72,7 +72,7 @@ tryMergeTests =
               { testName = "ExceptT",
                 testUnmerged =
                   ExceptT $ Right <$> unmergedUnion ::
-                    ExceptT SymInteger UnionM SymInteger,
+                    ExceptT SymInteger Union SymInteger,
                 testMerged = ExceptT (mrgSingle $ Right $ symIte "a" "b" "c")
               },
             TryMergeInstanceTest
@@ -87,7 +87,7 @@ tryMergeTests =
                   StateLazy.runStateT
                     (StateLazy.StateT $ \s -> (,s) <$> unmergedUnion)
                     "x" ::
-                    UnionM (SymInteger, SymInteger),
+                    Union (SymInteger, SymInteger),
                 testMerged = mrgSingle (symIte "a" "b" "c", "x")
               },
             TryMergeInstanceTest
@@ -96,7 +96,7 @@ tryMergeTests =
                   StateStrict.runStateT
                     (StateStrict.StateT $ \s -> (,s) <$> unmergedUnion)
                     "x" ::
-                    UnionM (SymInteger, SymInteger),
+                    Union (SymInteger, SymInteger),
                 testMerged = mrgSingle (symIte "a" "b" "c", "x")
               },
             TryMergeInstanceTest
@@ -106,7 +106,7 @@ tryMergeTests =
                     ( WriterLazy.WriterT $
                         (\x -> (x, x + 1)) <$> unmergedUnion
                     ) ::
-                    UnionM (SymInteger, SymInteger),
+                    Union (SymInteger, SymInteger),
                 testMerged =
                   mrgSingle (symIte "a" "b" "c", symIte "a" ("b" + 1) ("c" + 1))
               },
@@ -117,7 +117,7 @@ tryMergeTests =
                     ( WriterStrict.WriterT $
                         (\x -> (x, x + 1)) <$> unmergedUnion
                     ) ::
-                    UnionM (SymInteger, SymInteger),
+                    Union (SymInteger, SymInteger),
                 testMerged =
                   mrgSingle (symIte "a" "b" "c", symIte "a" ("b" + 1) ("c" + 1))
               },
@@ -130,7 +130,7 @@ tryMergeTests =
                     )
                     "r"
                     "s" ::
-                    UnionM (SymInteger, SymInteger, SymInteger),
+                    Union (SymInteger, SymInteger, SymInteger),
                 testMerged = mrgSingle (symIte "a" "b" "c", "s", "r")
               },
             TryMergeInstanceTest
@@ -142,7 +142,7 @@ tryMergeTests =
                     )
                     "r"
                     "s" ::
-                    UnionM (SymInteger, SymInteger, SymInteger),
+                    Union (SymInteger, SymInteger, SymInteger),
                 testMerged = mrgSingle (symIte "a" "b" "c", "s", "r")
               },
             TryMergeInstanceTest

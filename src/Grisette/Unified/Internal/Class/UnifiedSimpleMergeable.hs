@@ -43,7 +43,7 @@ import Data.Kind (Constraint)
 import Data.Type.Bool (If)
 import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Control.Exception (AssertionError)
-import Grisette.Internal.Core.Control.Monad.UnionM (liftUnionM)
+import Grisette.Internal.Core.Control.Monad.Union (liftUnion)
 import Grisette.Internal.Core.Data.Class.GenSym (FreshT)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
@@ -103,7 +103,7 @@ liftBaseMonad ::
 liftBaseMonad b =
   withMode @mode
     (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
-    (withBaseBranching @mode @m $ liftUnionM b)
+    (withBaseBranching @mode @m $ liftUnion b)
 {-# INLINE liftBaseMonad #-}
 
 -- | Unified `Grisette.mrgIte`.

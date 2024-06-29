@@ -30,7 +30,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError (AssertionError),
     VerificationConditions (AssertionViolation, AssumptionViolation),
   )
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.TryMerge (tryMerge)
@@ -82,7 +82,7 @@ instance {-# OVERLAPPING #-} TransformError () () where
 -- Terminate the current execution path with the specified error. Compatible
 -- errors can be transformed.
 --
--- >>> symThrowTransformableError Overflow :: ExceptT AssertionError UnionM ()
+-- >>> symThrowTransformableError Overflow :: ExceptT AssertionError Union ()
 -- ExceptT {Left AssertionError}
 symThrowTransformableError ::
   ( Mergeable to,
@@ -101,7 +101,7 @@ symThrowTransformableError = tryMerge . throwError . transformError
 -- Terminate the current execution path with the specified error if the condition does not hold.
 -- Compatible error can be transformed.
 --
--- >>> let assert = symAssertTransformableError AssertionError :: SymBool -> ExceptT AssertionError UnionM ()
+-- >>> let assert = symAssertTransformableError AssertionError :: SymBool -> ExceptT AssertionError Union ()
 -- >>> assert "a"
 -- ExceptT {If (! a) (Left AssertionError) (Right ())}
 symAssertTransformableError ::
@@ -162,28 +162,28 @@ instance TransformError AssertionError AssertionError where
 -- should not be a problem as all paths are terminated and no further evaluation
 -- would be performed.
 --
--- >>> symAssert (con False) :: ExceptT AssertionError UnionM ()
+-- >>> symAssert (con False) :: ExceptT AssertionError Union ()
 -- ExceptT {Left AssertionError}
--- >>> do; symAssert (con False); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
+-- >>> do; symAssert (con False); mrgReturn 1 :: ExceptT AssertionError Union Integer
 -- ExceptT <Left AssertionError>
 --
 -- No effect if the condition is true:
 --
--- >>> symAssert (con True) :: ExceptT AssertionError UnionM ()
+-- >>> symAssert (con True) :: ExceptT AssertionError Union ()
 -- ExceptT {Right ()}
--- >>> do; symAssert (con True); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
+-- >>> do; symAssert (con True); mrgReturn 1 :: ExceptT AssertionError Union Integer
 -- ExceptT {Right 1}
 --
 -- Splitting the path and terminate one of them when the condition is symbolic.
 --
--- >>> symAssert (ssym "a") :: ExceptT AssertionError UnionM ()
+-- >>> symAssert (ssym "a") :: ExceptT AssertionError Union ()
 -- ExceptT {If (! a) (Left AssertionError) (Right ())}
--- >>> do; symAssert (ssym "a"); mrgReturn 1 :: ExceptT AssertionError UnionM Integer
+-- >>> do; symAssert (ssym "a"); mrgReturn 1 :: ExceptT AssertionError Union Integer
 -- ExceptT {If (! a) (Left AssertionError) (Right 1)}
 --
 -- 'AssertionError' is compatible with 'VerificationConditions':
 --
--- >>> symAssert (ssym "a") :: ExceptT VerificationConditions UnionM ()
+-- >>> symAssert (ssym "a") :: ExceptT VerificationConditions Union ()
 -- ExceptT {If (! a) (Left AssertionViolation) (Right ())}
 symAssert ::
   (TransformError AssertionError to, Mergeable to, MonadError to erm, MonadUnion erm) =>
@@ -197,7 +197,7 @@ symAssert = symAssertTransformableError AssertionError
 --
 -- /Examples/:
 --
--- >>> symAssume (ssym "a") :: ExceptT VerificationConditions UnionM ()
+-- >>> symAssume (ssym "a") :: ExceptT VerificationConditions Union ()
 -- ExceptT {If (! a) (Left AssumptionViolation) (Right ())}
 symAssume ::
   (TransformError VerificationConditions to, Mergeable to, MonadError to erm, MonadUnion erm) =>

@@ -24,7 +24,7 @@ import Grisette
     SomeIntN,
     SomeWordN,
     TryMerge,
-    UnionM,
+    Union,
     WordN,
     mrgSingle,
     pattern SomeIntN,
@@ -81,7 +81,7 @@ unarySafeOp op l
 
 safeLinearArithTest ::
   forall a b e.
-  ( SafeLinearArith e b (ExceptT e UnionM),
+  ( SafeLinearArith e b (ExceptT e Union),
     Integral a,
     Bounded a,
     Arbitrary a,
@@ -103,20 +103,20 @@ safeLinearArithTest wrap transformError =
     [ testProperty "safeAdd" $ \(l :: a) (r :: a) -> ioProperty $ do
         let actual = safeAdd (wrap l) (wrap r)
         let expected = mrgModifyError transformError $ binSafeOp (+) l r
-        actual @?= (mrgFmap wrap expected :: ExceptT e UnionM b),
+        actual @?= (mrgFmap wrap expected :: ExceptT e Union b),
       testProperty "safeSub" $ \(l :: a) (r :: a) -> ioProperty $ do
         let actual = safeSub (wrap l) (wrap r)
         let expected = mrgModifyError transformError $ binSafeOp (-) l r
-        actual @?= (mrgFmap wrap expected :: ExceptT e UnionM b),
+        actual @?= (mrgFmap wrap expected :: ExceptT e Union b),
       testProperty "safeNeg" $ \(l :: a) -> ioProperty $ do
-        let actual = safeNeg (wrap l) :: ExceptT e UnionM b
+        let actual = safeNeg (wrap l) :: ExceptT e Union b
         let expected = mrgModifyError transformError $ unarySafeOp negate l
         actual @?= mrgFmap wrap expected
     ]
 
 safeLinearArithTestSimple ::
   forall a.
-  ( SafeLinearArith ArithException a (ExceptT ArithException UnionM),
+  ( SafeLinearArith ArithException a (ExceptT ArithException Union),
     Integral a,
     Bounded a,
     Arbitrary a,
@@ -155,7 +155,7 @@ safeLinearArithTests =
         let r = bv 3 1 :: SomeIntN
         let actual =
               safeAdd l r ::
-                ExceptT (Either BitwidthMismatch ArithException) UnionM SomeIntN
+                ExceptT (Either BitwidthMismatch ArithException) Union SomeIntN
         let expected = mrgThrowError $ Left BitwidthMismatch
         actual @?= expected,
       safeLinearArithTestSimple @Word,
@@ -184,7 +184,7 @@ safeLinearArithTests =
               safeAdd l r ::
                 ExceptT
                   (Either BitwidthMismatch ArithException)
-                  UnionM
+                  Union
                   SomeWordN
         let expected = mrgThrowError $ Left BitwidthMismatch
         actual @?= expected

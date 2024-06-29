@@ -10,7 +10,13 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette
-  ( -- | This module exports most of the Grisette core APIs. There are more
+  ( -- | Grisette is a tool for performing symbolic evaluation on programs. With
+    -- Grisette, you can construct your own symbolic DSL, and get the symbolic
+    -- evaluator for it without the need of manually implementing the symbolic
+    -- evaluation algorithms. A brief introduction to symbolic evaluation is
+    -- available in the "Grisette.Core" module.
+    --
+    -- This module exports most of the Grisette core APIs. There are more
     -- lifted library constructs in the submodules of @Grisette.Lib@.
     -- Those modules are not exported here and should be imported explicitly.
     -- For example, to use the lifted "Data.List" functions, you should import

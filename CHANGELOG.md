@@ -35,6 +35,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   `SEq1`, as described in
   https://github.com/haskell/core-libraries-committee/issues/10.
   ([#216](https://github.com/lsrcz/grisette/pull/216))
+- [Breaking] Renamed 'UnionMergeable1' to 'SymBranching'. Renamed 'Union' to
+  'UnionBase', and 'UnionM' to 'Union'.
+  ([#214](https://github.com/lsrcz/grisette/pull/214))
+  ([#217](https://github.com/lsrcz/grisette/pull/217))
 
 ## [0.6.0.0] -- 2024-06-07
 

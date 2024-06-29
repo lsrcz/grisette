@@ -59,8 +59,8 @@ library
       Grisette.Internal.Backend.SymBiMap
       Grisette.Internal.Core.Control.Exception
       Grisette.Internal.Core.Control.Monad.CBMCExcept
+      Grisette.Internal.Core.Control.Monad.Class.Union
       Grisette.Internal.Core.Control.Monad.Union
-      Grisette.Internal.Core.Control.Monad.UnionM
       Grisette.Internal.Core.Data.Class.BitCast
       Grisette.Internal.Core.Data.Class.BitVector
       Grisette.Internal.Core.Data.Class.CEGISSolver
@@ -94,7 +94,7 @@ library
       Grisette.Internal.Core.Data.Class.TryMerge
       Grisette.Internal.Core.Data.MemoUtils
       Grisette.Internal.Core.Data.Symbol
-      Grisette.Internal.Core.Data.Union
+      Grisette.Internal.Core.Data.UnionBase
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
       Grisette.Internal.SymPrim.FP
@@ -275,7 +275,6 @@ test-suite spec
       Grisette.Backend.TermRewritingGen
       Grisette.Backend.TermRewritingTests
       Grisette.Core.Control.ExceptionTests
-      Grisette.Core.Control.Monad.UnionMTests
       Grisette.Core.Control.Monad.UnionTests
       Grisette.Core.Data.Class.BoolTests
       Grisette.Core.Data.Class.EvaluateSymTests
@@ -298,6 +297,7 @@ test-suite spec
       Grisette.Core.Data.Class.ToConTests
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.TryMergeTests
+      Grisette.Core.Data.UnionBaseTests
       Grisette.Core.TH.DerivationTest
       Grisette.Lib.Control.ApplicativeTest
       Grisette.Lib.Control.Monad.ExceptTests

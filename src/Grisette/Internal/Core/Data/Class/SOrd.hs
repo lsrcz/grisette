@@ -85,7 +85,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftToMonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union (Union, liftToMonadUnion)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp, symIte)
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
@@ -163,10 +163,10 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 --
 -- For `symCompare`, `Ordering` is not a solvable type, and the result would
 -- be wrapped in a union-like monad. See
--- `Grisette.Core.Control.Monad.UnionMBase` and `PlainUnion` for more
+-- `Grisette.Core.Control.Monad.Union` and `PlainUnion` for more
 -- information.
 --
--- >>> a `symCompare` b :: UnionM Ordering -- UnionM is UnionMBase specialized with SymBool
+-- >>> a `symCompare` b :: Union Ordering
 -- {If (< a b) LT (If (= a b) EQ GT)}
 --
 -- __Note:__ This type class can be derived for algebraic data types.
@@ -195,7 +195,7 @@ class (SEq a) => SOrd a where
   {-# INLINE (.>) #-}
   x .>= y = y .<= x
   {-# INLINE (.>=) #-}
-  symCompare :: a -> a -> UnionM Ordering
+  symCompare :: a -> a -> Union Ordering
   symCompare l r =
     mrgIf
       (l .< r)
@@ -221,10 +221,10 @@ class (SEq1 f, forall a. (SOrd a) => SOrd (f a)) => SOrd1 f where
   -- The function will usually be applied to an symbolic comparison function,
   -- but the more general type ensures that the implementation uses it to
   -- compare elements of the first container with elements of the second.
-  liftSymCompare :: (a -> b -> UnionM Ordering) -> f a -> f b -> UnionM Ordering
+  liftSymCompare :: (a -> b -> Union Ordering) -> f a -> f b -> Union Ordering
 
 -- | Lift the standard 'symCompare' function to binary type constructors.
-symCompare1 :: (SOrd1 f, SOrd a) => f a -> f a -> UnionM Ordering
+symCompare1 :: (SOrd1 f, SOrd a) => f a -> f a -> Union Ordering
 symCompare1 = liftSymCompare symCompare
 {-# INLINE symCompare1 #-}
 
@@ -236,14 +236,14 @@ class (SEq2 f, forall a. (SOrd a) => SOrd1 (f a)) => SOrd2 f where
   -- but the more general type ensures that the implementation uses it to
   -- compare elements of the first container with elements of the second.
   liftSymCompare2 ::
-    (a -> b -> UnionM Ordering) ->
-    (c -> d -> UnionM Ordering) ->
+    (a -> b -> Union Ordering) ->
+    (c -> d -> Union Ordering) ->
     f a c ->
     f b d ->
-    UnionM Ordering
+    Union Ordering
 
 -- | Lift the standard 'symCompare' function through the type constructors.
-symCompare2 :: (SOrd2 f, SOrd a, SOrd b) => f a b -> f a b -> UnionM Ordering
+symCompare2 :: (SOrd2 f, SOrd a, SOrd b) => f a b -> f a b -> Union Ordering
 symCompare2 = liftSymCompare2 symCompare symCompare
 {-# INLINE symCompare2 #-}
 
@@ -283,11 +283,11 @@ data family SOrdArgs arity a b :: Type
 data instance SOrdArgs Arity0 _ _ = SOrdArgs0
 
 newtype instance SOrdArgs Arity1 a b
-  = SOrdArgs1 (a -> b -> UnionM Ordering)
+  = SOrdArgs1 (a -> b -> Union Ordering)
 
 -- | The class of types that can be generically symbolically compared.
 class GSOrd arity f where
-  gsymCompare :: SOrdArgs arity a b -> f a -> f b -> UnionM Ordering
+  gsymCompare :: SOrdArgs arity a b -> f a -> f b -> Union Ordering
 
 instance GSOrd arity V1 where
   gsymCompare _ _ _ = mrgSingle EQ
@@ -346,7 +346,7 @@ instance
   {-# INLINE symCompare #-}
 
 -- | Generic 'symCompare' function.
-genericSymCompare :: (Generic a, GSOrd Arity0 (Rep a)) => a -> a -> UnionM Ordering
+genericSymCompare :: (Generic a, GSOrd Arity0 (Rep a)) => a -> a -> Union Ordering
 genericSymCompare l r = gsymCompare SOrdArgs0 (from l) (from r)
 {-# INLINE genericSymCompare #-}
 
@@ -367,10 +367,10 @@ instance
 -- | Generic 'liftSymCompare' function.
 genericLiftSymCompare ::
   (Generic1 f, GSOrd Arity1 (Rep1 f)) =>
-  (a -> b -> UnionM Ordering) ->
+  (a -> b -> Union Ordering) ->
   f a ->
   f b ->
-  UnionM Ordering
+  Union Ordering
 genericLiftSymCompare c l r = gsymCompare (SOrdArgs1 c) (from1 l) (from1 r)
 {-# INLINE genericLiftSymCompare #-}
 
@@ -502,8 +502,8 @@ SORD_BV(SymIntN)
 SORD_BV(SymWordN)
 #endif
 
--- UnionM
-instance (SOrd a, Mergeable a) => SOrd (UnionM a) where
+-- Union
+instance (SOrd a, Mergeable a) => SOrd (Union a) where
   x .<= y = simpleMerge $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
@@ -593,7 +593,7 @@ symCompareSingleList isLess isStrict = go
     go _ [] = if isLess then con False else con True
 
 symLiftCompareList ::
-  (a -> b -> UnionM Ordering) -> [a] -> [b] -> UnionM Ordering
+  (a -> b -> Union Ordering) -> [a] -> [b] -> Union Ordering
 symLiftCompareList _ [] [] = mrgSingle EQ
 symLiftCompareList f (x : xs) (y : ys) = do
   oxy <- f x y

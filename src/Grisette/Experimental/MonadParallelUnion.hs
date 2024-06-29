@@ -25,12 +25,12 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import Control.Parallel.Strategies (rpar, rseq, runEval)
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, underlyingUnion)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union (Union, unionBase)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
-import Grisette.Internal.Core.Data.Union (Union (UnionIf, UnionSingle))
+import Grisette.Internal.Core.Data.UnionBase (UnionBase (UnionIf, UnionSingle))
 
 -- | Parallel union monad.
 --
@@ -41,7 +41,7 @@ import Grisette.Internal.Core.Data.Union (Union (UnionIf, UnionSingle))
 -- > import Grisette
 -- > import qualified Grisette.Qualified.ParallelUnionDo as P
 -- > P.do
--- >   x <- mrgIf "a" (return 1) (return 2) :: UnionM Int
+-- >   x <- mrgIf "a" (return 1) (return 2) :: Union Int
 -- >   return $ x + 1
 -- >
 -- > -- {If a 2 3}
@@ -125,11 +125,11 @@ instance
           ~(b, s'', w') -> return (b, s'', w <> w')
   {-# INLINE parBindUnion #-}
 
-parBindUnion'' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion'' :: (Mergeable b, NFData b) => UnionBase a -> (a -> Union b) -> Union b
 parBindUnion'' (UnionSingle a) f = tryMerge $ f a
 parBindUnion'' u f = parBindUnion' u f
 
-parBindUnion' :: (Mergeable b, NFData b) => Union a -> (a -> UnionM b) -> UnionM b
+parBindUnion' :: (Mergeable b, NFData b) => UnionBase a -> (a -> Union b) -> Union b
 parBindUnion' (UnionSingle a') f' = f' a'
 parBindUnion' (UnionIf _ _ cond ifTrue ifFalse) f' = runEval $ do
   l <- rpar $ force $ parBindUnion' ifTrue f'
@@ -139,6 +139,6 @@ parBindUnion' (UnionIf _ _ cond ifTrue ifFalse) f' = runEval $ do
   rseq $ mrgIf cond l' r'
 {-# INLINE parBindUnion' #-}
 
-instance MonadParallelUnion UnionM where
-  parBindUnion = parBindUnion'' . underlyingUnion
+instance MonadParallelUnion Union where
+  parBindUnion = parBindUnion'' . unionBase
   {-# INLINE parBindUnion #-}

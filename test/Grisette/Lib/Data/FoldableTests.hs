@@ -16,7 +16,7 @@ import Grisette
     SymBool,
     SymBranching (mrgIfPropagatedStrategy),
     SymInteger,
-    UnionM,
+    Union,
     mrgIf,
     symAll,
     symAny,
@@ -73,7 +73,7 @@ foldableFunctionTests =
                 (a .> b .&& a .> c)
                 (return [a])
                 (mrgIf (b .> c) (return [b, a]) (return [c, a, b])) ::
-                UnionM [SymInteger]
+                Union [SymInteger]
         actual .@?= expected,
       testCase "symMaximum" $ do
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
@@ -88,7 +88,7 @@ foldableFunctionTests =
                 (a .<= b .&& a .<= c)
                 (return [a])
                 (mrgIf (b .<= c) (return [b, a]) (return [c, a, b])) ::
-                UnionM [SymInteger]
+                Union [SymInteger]
         actual .@?= expected,
       testCase "symMinimum" $ do
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
@@ -109,7 +109,7 @@ foldableFunctionTests =
                       )
                       10
                       [("a", 2), ("b", 3)] ::
-                      UnionM Integer
+                      Union Integer
               let expected =
                     mrgIf
                       "b"
@@ -118,7 +118,7 @@ foldableFunctionTests =
               actual @?= expected,
             testCase "merge intermediate" $ do
               let actual = mrgFoldrM (const $ const oneNotMerged) 1 [1 .. 1000]
-              let expected = mrgReturn 1 :: UnionM Int
+              let expected = mrgReturn 1 :: Union Int
               actual @?= expected
           ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -135,7 +135,7 @@ foldableFunctionTests =
                       )
                       10
                       [("a", 2), ("b", 3)] ::
-                      UnionM Integer
+                      Union Integer
               let expected =
                     mrgIf
                       "a"
@@ -144,7 +144,7 @@ foldableFunctionTests =
               actual @?= expected,
             testCase "merge intermediate" $ do
               let actual = mrgFoldlM (const $ const oneNotMerged) 1 [1 .. 1000]
-              let expected = mrgReturn 1 :: UnionM Int
+              let expected = mrgReturn 1 :: Union Int
               actual @?= expected
           ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -169,7 +169,7 @@ foldableFunctionTests =
                                       (return $ Right c)
                               )
                               [("a", 3), ("b", 2)] ::
-                              ExceptT Integer UnionM ()
+                              ExceptT Integer Union ()
                           )
                   let expected = runExceptT $ do
                         _ <- mrgIf "a" (throwError 3) (return ())
@@ -178,7 +178,7 @@ foldableFunctionTests =
                   actual @?= expected,
                 testCase "discard and merge intermediate" $ do
                   let actual = func1 (const noMergeNotMerged) [1 .. 1000]
-                  let expected = mrgReturn () :: UnionM ()
+                  let expected = mrgReturn () :: Union ()
                   actual @?= expected
               ]
             ],
@@ -202,7 +202,7 @@ foldableFunctionTests =
                                       (return $ Right c)
                               )
                                 <$> [("a", 3), ("b", 2)] ::
-                              ExceptT Integer UnionM ()
+                              ExceptT Integer Union ()
                           )
                   let expected = runExceptT $ do
                         _ <- mrgIf "a" (throwError 3) (return ())
@@ -211,7 +211,7 @@ foldableFunctionTests =
                   actual @?= expected,
                 testCase "discard and merge intermediate" $ do
                   let actual = func1 (replicate 1000 noMergeNotMerged)
-                  let expected = mrgReturn () :: UnionM ()
+                  let expected = mrgReturn () :: Union ()
                   actual @?= expected
               ]
             ],
@@ -224,16 +224,16 @@ foldableFunctionTests =
                       mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
               let expected =
                     MaybeT (mrgReturn Nothing) ::
-                      MaybeT UnionM (Maybe Int)
+                      MaybeT Union (Maybe Int)
               mrgMsum (replicate 100 none) @?= expected,
             testCase "semantics" $ do
-              (mrgMsum [mrgMzero, mrgMzero] :: MaybeT UnionM Integer)
+              (mrgMsum [mrgMzero, mrgMzero] :: MaybeT Union Integer)
                 @?= mrgMzero
-              (mrgMsum [mrgReturn 1, mrgMzero] :: MaybeT UnionM Integer)
+              (mrgMsum [mrgReturn 1, mrgMzero] :: MaybeT Union Integer)
                 @?= mrgReturn 1
-              (mrgMsum [mrgMzero, mrgReturn 1] :: MaybeT UnionM Integer)
+              (mrgMsum [mrgMzero, mrgReturn 1] :: MaybeT Union Integer)
                 @?= mrgReturn 1
-              (mrgMsum [mrgReturn 2, mrgReturn 1] :: MaybeT UnionM Integer)
+              (mrgMsum [mrgReturn 2, mrgReturn 1] :: MaybeT Union Integer)
                 @?= mrgReturn 2
           ],
       testCase "symAnd" $ do
@@ -256,7 +256,7 @@ foldableFunctionTests =
                 (a .> b .&& a .> c)
                 (return [a])
                 (mrgIf (b .> c) (return [b, a]) (return [c, a, b])) ::
-                UnionM [SymInteger]
+                Union [SymInteger]
         actual .@?= expected,
       testCase "symMaximumBy" $ do
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
@@ -271,7 +271,7 @@ foldableFunctionTests =
                 (a .<= b .&& a .<= c)
                 (return [a])
                 (mrgIf (b .<= c) (return [b, a]) (return [c, a, b])) ::
-                UnionM [SymInteger]
+                Union [SymInteger]
         actual .@?= expected,
       testCase "symMinimumBy" $ do
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
@@ -284,7 +284,7 @@ foldableFunctionTests =
         actual .@?= (a ./= b .&& a ./= c),
       testCase "mrgFind" $ do
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
-        let actual = mrgFind (.== 0) [a, b, c] :: UnionM (Maybe SymInteger)
+        let actual = mrgFind (.== 0) [a, b, c] :: Union (Maybe SymInteger)
         actual
           .@?= mrgIf
             (a .== 0)

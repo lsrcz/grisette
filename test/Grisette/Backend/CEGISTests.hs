@@ -28,7 +28,7 @@ import Grisette
     SOrd ((.<), (.>=)),
     SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
     Solvable (con),
-    UnionM,
+    Union,
     VerificationConditions,
     cegis,
     cegisExceptVC,
@@ -96,7 +96,7 @@ testCegis config shouldSuccess inputs bs = do
       go l 0
       where
         go ::
-          [SymBool] -> SymInteger -> ExceptT VerificationConditions UnionM ()
+          [SymBool] -> SymInteger -> ExceptT VerificationConditions Union ()
         go [] _ = return ()
         go (x : xs) i =
           mrgIf

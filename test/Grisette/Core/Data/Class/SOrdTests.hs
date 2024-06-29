@@ -26,7 +26,7 @@ import Grisette
     LogicalOp (symNot, (.&&), (.||)),
     SEq ((.==)),
     SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
-    UnionM,
+    Union,
     mrgIf,
     mrgMax,
     mrgMin,
@@ -53,7 +53,7 @@ concreteOrdOkProp (i, j) = do
   i .< j @?= conBool (i < j)
   i .>= j @?= conBool (i >= j)
   i .> j @?= conBool (i > j)
-  symCompare i j @?= (mrgReturn $ compare i j :: UnionM Ordering)
+  symCompare i j @?= (mrgReturn $ compare i j :: Union Ordering)
 
 symbolicProdOrdOkProp ::
   (HasCallStack, Show v, Show vl, Show vr, SOrd v, SOrd vl, SOrd vr) =>
@@ -77,7 +77,7 @@ symbolicProdOrdOkProp l r ll lr rl rr = do
                 EQ -> symCompare lr rr
                 _ -> mrgReturn lc
           ) ::
-            UnionM Ordering
+            Union Ordering
         )
 
 sordTests :: Test
@@ -131,7 +131,7 @@ sordTests =
                               (mrgSingle EQ)
                               (mrgSingle GT)
                           ) ::
-                          UnionM Ordering
+                          Union Ordering
                       )
             ],
           testProperty "Bool" (ioProperty . concreteOrdOkProp @Bool),
@@ -160,21 +160,21 @@ sordTests =
                 ([] :: [SymBool]) .> [] @?= conBool False
                 ([] :: [SymBool])
                   `symCompare` []
-                  @?= (mrgSingle EQ :: UnionM Ordering)
+                  @?= (mrgSingle EQ :: Union Ordering)
                 [] .<= [ssymBool "a"] @?= conBool True
                 [] .< [ssymBool "a"] @?= conBool True
                 [] .>= [ssymBool "a"] @?= conBool False
                 [] .> [ssymBool "a"] @?= conBool False
                 []
                   `symCompare` [ssymBool "a"]
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 [ssymBool "a"] .<= [] @?= conBool False
                 [ssymBool "a"] .< [] @?= conBool False
                 [ssymBool "a"] .>= [] @?= conBool True
                 [ssymBool "a"] .> [] @?= conBool True
                 [ssymBool "a"]
                   `symCompare` []
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
 
                 [ssymBool "a", ssymBool "b"]
                   .<= [ssymBool "c"]
@@ -196,7 +196,7 @@ sordTests =
                       )
                 [ssymBool "a"]
                   `symCompare` [ssymBool "b"]
-                  @?= (ssymBool "a" `symCompare` ssymBool "b" :: UnionM Ordering)
+                  @?= (ssymBool "a" `symCompare` ssymBool "b" :: Union Ordering)
 
                 [ssymBool "a"]
                   .<= [ssymBool "b", ssymBool "c"]
@@ -226,7 +226,7 @@ sordTests =
                               (mrgSingle LT)
                               (mrgSingle GT)
                           ) ::
-                          UnionM Ordering
+                          Union Ordering
                       )
 
                 [ssymBool "a", ssymBool "b"]
@@ -279,7 +279,7 @@ sordTests =
                               (ssymBool "b" `symCompare` ssymBool "d")
                               (mrgSingle GT)
                           ) ::
-                          UnionM Ordering
+                          Union Ordering
                       )
             ],
           testGroup
@@ -293,21 +293,21 @@ sordTests =
                 (Nothing :: Maybe SymBool) .> Nothing .@?= conBool False
                 (Nothing :: Maybe SymBool)
                   `symCompare` Nothing
-                  @?= (mrgSingle EQ :: UnionM Ordering)
+                  @?= (mrgSingle EQ :: Union Ordering)
                 Nothing .<= Just (ssymBool "a") .@?= conBool True
                 Nothing .< Just (ssymBool "a") .@?= conBool True
                 Nothing .>= Just (ssymBool "a") .@?= conBool False
                 Nothing .> Just (ssymBool "a") .@?= conBool False
                 Nothing
                   `symCompare` Just (ssymBool "a")
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 Just (ssymBool "a") .<= Nothing .@?= conBool False
                 Just (ssymBool "a") .< Nothing .@?= conBool False
                 Just (ssymBool "a") .>= Nothing .@?= conBool True
                 Just (ssymBool "a") .> Nothing .@?= conBool True
                 Just (ssymBool "a")
                   `symCompare` Nothing
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
                 Just (ssymBool "a")
                   .<= Just (ssymBool "b")
                   .@?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
@@ -323,7 +323,7 @@ sordTests =
                 Just (ssymBool "a")
                   `symCompare` Just (ssymBool "b")
                   @?= ( ssymBool "a" `symCompare` ssymBool "b" ::
-                          UnionM Ordering
+                          Union Ordering
                       )
             ],
           testGroup
@@ -395,19 +395,19 @@ sordTests =
 
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
                   `symCompare` MaybeT Nothing
-                  @?= (mrgSingle EQ :: UnionM Ordering)
+                  @?= (mrgSingle EQ :: Union Ordering)
                 (MaybeT Nothing :: MaybeT Maybe SymBool)
                   `symCompare` MaybeT (Just (Just (ssymBool "a")))
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 MaybeT (Just (Just (ssymBool "a")))
                   `symCompare` (MaybeT Nothing :: MaybeT Maybe SymBool)
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
                 MaybeT (Just (Just (ssymBool "a")))
                   `symCompare` ( MaybeT (Just (Just (ssymBool "b"))) ::
                                    MaybeT Maybe SymBool
                                )
                   @?= ( ssymBool "a" `symCompare` ssymBool "b" ::
-                          UnionM Ordering
+                          Union Ordering
                       )
             ],
           testGroup
@@ -444,7 +444,7 @@ sordTests =
                   .@?= conBool False
                 (Left (ssymBool "a") :: Either SymBool SymBool)
                   `symCompare` Right (ssymBool "b")
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
                   .<= Left (ssymBool "b")
                   .@?= conBool False
@@ -459,7 +459,7 @@ sordTests =
                   .@?= conBool True
                 (Right (ssymBool "a") :: Either SymBool SymBool)
                   `symCompare` Left (ssymBool "b")
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
                 (Right (ssymBool "a") :: Either SymBool SymBool)
                   .<= Right (ssymBool "b")
                   .@?= (ssymBool "a" .<= ssymBool "b" :: SymBool)
@@ -630,44 +630,44 @@ sordTests =
 
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   `symCompare` ExceptT Nothing
-                  @?= (mrgSingle EQ :: UnionM Ordering)
+                  @?= (mrgSingle EQ :: Union Ordering)
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   `symCompare` ExceptT (Just (Left (ssymBool "a")))
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   `symCompare` ExceptT (Just (Right (ssymBool "a")))
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 ExceptT (Just (Left (ssymBool "a")))
                   `symCompare` ( ExceptT Nothing ::
                                    ExceptT SymBool Maybe SymBool
                                )
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
                 ExceptT (Just (Right (ssymBool "a")))
                   `symCompare` ( ExceptT Nothing ::
                                    ExceptT SymBool Maybe SymBool
                                )
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
                 ExceptT (Just (Left (ssymBool "a")))
                   `symCompare` ( ExceptT (Just (Left (ssymBool "b"))) ::
                                    ExceptT SymBool Maybe SymBool
                                )
-                  @?= (ssymBool "a" `symCompare` ssymBool "b" :: UnionM Ordering)
+                  @?= (ssymBool "a" `symCompare` ssymBool "b" :: Union Ordering)
                 ExceptT (Just (Right (ssymBool "a")))
                   `symCompare` ( ExceptT (Just (Left (ssymBool "b"))) ::
                                    ExceptT SymBool Maybe SymBool
                                )
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
                 ExceptT (Just (Left (ssymBool "a")))
                   `symCompare` ( ExceptT (Just (Right (ssymBool "b"))) ::
                                    ExceptT SymBool Maybe SymBool
                                )
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
                 ExceptT (Just (Right (ssymBool "a")))
                   `symCompare` ( ExceptT (Just (Right (ssymBool "b"))) ::
                                    ExceptT SymBool Maybe SymBool
                                )
                   @?= ( ssymBool "a" `symCompare` ssymBool "b" ::
-                          UnionM Ordering
+                          Union Ordering
                       )
             ],
           testProperty "()" (ioProperty . concreteOrdOkProp @()),
@@ -989,7 +989,7 @@ sordTests =
                       )
                       `symCompare` WriterLazy.WriterT (Left $ ssymBool "b")
                       @?= ( ssymBool "a" `symCompare` ssymBool "b" ::
-                              UnionM Ordering
+                              Union Ordering
                           )
 
                     ( WriterLazy.WriterT $ Left $ ssymBool "a" ::
@@ -1020,7 +1020,7 @@ sordTests =
                       )
                       `symCompare` WriterLazy.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
-                      @?= (mrgSingle LT :: UnionM Ordering)
+                      @?= (mrgSingle LT :: Union Ordering)
 
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
@@ -1046,7 +1046,7 @@ sordTests =
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
                       )
                       `symCompare` WriterLazy.WriterT (Left $ ssymBool "b")
-                      @?= (mrgSingle GT :: UnionM Ordering)
+                      @?= (mrgSingle GT :: Union Ordering)
 
                     ( WriterLazy.WriterT $ Right (ssymBool "a", ssymBool "c") ::
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
@@ -1088,7 +1088,7 @@ sordTests =
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
                               `symCompare` (ssymBool "b", ssymBool "d") ::
-                              UnionM Ordering
+                              Union Ordering
                           )
                 ],
               testGroup
@@ -1130,7 +1130,7 @@ sordTests =
                       )
                       `symCompare` WriterStrict.WriterT (Left $ ssymBool "b")
                       @?= ( ssymBool "a" `symCompare` ssymBool "b" ::
-                              UnionM Ordering
+                              Union Ordering
                           )
 
                     ( WriterStrict.WriterT $ Left $ ssymBool "a" ::
@@ -1162,7 +1162,7 @@ sordTests =
                       )
                       `symCompare` WriterStrict.WriterT
                         (Right (ssymBool "b", ssymBool "d"))
-                      @?= (mrgSingle LT :: UnionM Ordering)
+                      @?= (mrgSingle LT :: Union Ordering)
 
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
@@ -1193,7 +1193,7 @@ sordTests =
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
                       )
                       `symCompare` WriterStrict.WriterT (Left $ ssymBool "b")
-                      @?= (mrgSingle GT :: UnionM Ordering)
+                      @?= (mrgSingle GT :: Union Ordering)
 
                     ( WriterStrict.WriterT $
                         Right (ssymBool "a", ssymBool "c") ::
@@ -1243,7 +1243,7 @@ sordTests =
                         (Right (ssymBool "b", ssymBool "d"))
                       @?= ( (ssymBool "a", ssymBool "c")
                               `symCompare` (ssymBool "b", ssymBool "d") ::
-                              UnionM Ordering
+                              Union Ordering
                           )
                 ]
             ],
@@ -1326,7 +1326,7 @@ sordTests =
                     IdentityT (Either SymBool) SymBool
                   )
                   `symCompare` IdentityT (Right $ ssymBool "b")
-                  @?= (mrgSingle LT :: UnionM Ordering)
+                  @?= (mrgSingle LT :: Union Ordering)
 
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
@@ -1352,7 +1352,7 @@ sordTests =
                     IdentityT (Either SymBool) SymBool
                   )
                   `symCompare` IdentityT (Left $ ssymBool "b")
-                  @?= (mrgSingle GT :: UnionM Ordering)
+                  @?= (mrgSingle GT :: Union Ordering)
 
                 ( IdentityT $ Right $ ssymBool "a" ::
                     IdentityT (Either SymBool) SymBool
@@ -1396,13 +1396,13 @@ sordTests =
         let [a, b] = ["a", "b"] :: [SymInteger]
         symMin a b .@?= symIte (a .>= b) b a,
       testCase "mrgMax" $ do
-        mrgMax [1] [0, 3] @?= (mrgReturn [1] :: UnionM [SymInteger])
+        mrgMax [1] [0, 3] @?= (mrgReturn [1] :: Union [SymInteger])
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
-        (mrgMax [a] [b, c] :: UnionM [SymInteger])
+        (mrgMax [a] [b, c] :: Union [SymInteger])
           .@?= (mrgIf (a .<= b) (return [b, c]) (return [a])),
       testCase "mrgMin" $ do
-        mrgMin [1] [0, 3] @?= (mrgReturn [0, 3] :: UnionM [SymInteger])
+        mrgMin [1] [0, 3] @?= (mrgReturn [0, 3] :: Union [SymInteger])
         let [a, b, c] = ["a", "b", "c"] :: [SymInteger]
-        (mrgMin [a] [b, c] :: UnionM [SymInteger])
+        (mrgMin [a] [b, c] :: Union [SymInteger])
           .@?= (mrgIf (b .< a) (return [b, c]) (return [a]))
     ]

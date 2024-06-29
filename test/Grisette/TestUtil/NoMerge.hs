@@ -13,7 +13,7 @@ import Grisette
   ( Mergeable (rootStrategy),
     MergingStrategy (NoStrategy),
     SymBranching (mrgIfPropagatedStrategy),
-    UnionM,
+    Union,
   )
 
 data NoMerge = NoMerge
@@ -22,8 +22,8 @@ data NoMerge = NoMerge
 instance Mergeable NoMerge where
   rootStrategy = NoStrategy
 
-oneNotMerged :: UnionM Int
+oneNotMerged :: Union Int
 oneNotMerged = mrgIfPropagatedStrategy "a" (return 1) (return 1)
 
-noMergeNotMerged :: UnionM NoMerge
+noMergeNotMerged :: Union NoMerge
 noMergeNotMerged = mrgIfPropagatedStrategy "a" (return NoMerge) (return NoMerge)

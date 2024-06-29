@@ -5,6 +5,7 @@
 module Grisette.Internal.TH.DerivePredefined
   ( derivePredefined,
     derivePredefinedMultipleClasses,
+    derive,
     deriveAll,
     deriveAllExcept,
   )
@@ -244,6 +245,12 @@ allGrisetteClasses =
     ''UnifiedSOrd
   ]
 
+-- | Derive specified classes for a type with the given name.
+--
+-- Support the same set of classes as 'deriveAll'.
+derive :: Name -> [Name] -> Q [Dec]
+derive = flip (derivePredefinedMultipleClasses Nothing)
+
 -- | Derive all classes related to Grisette for a type with the given name.
 --
 -- Classes that are be derived by this procedure are:
@@ -267,14 +274,53 @@ allGrisetteClasses =
 -- * 'ToSym'
 -- * 'UnifiedSEq'
 -- * 'UnifiedSOrd'
+--
+-- 'Ord' isn't valid for all types (symbolic-only types), so it may be necessary
+-- to exclude it.
+--
+-- 'deriveAll' needs the following language extensions:
+--
+-- * DeriveAnyClass
+-- * DeriveGeneric
+-- * DeriveLift
+-- * DerivingVia
+-- * FlexibleContexts
+-- * FlexibleInstances
+-- * MonoLocalBinds
+-- * MultiParamTypeClasses
+-- * ScopedTypeVariables
+-- * StandaloneDeriving
+-- * TemplateHaskell
+-- * TypeApplications
+-- * UndecidableInstances
+--
+-- Deriving for a newtype may also need
+--
+-- * GeneralizedNewtypeDeriving
+--
+-- You may get warnings if you don't have the following extensions:
+--
+-- * TypeOperators
+--
+-- It also requires that the 'GHC.Generics.Default' data constructor is visible.
+-- You may get strange errors if you only import 'Default' type but not the
+-- data constructor.
 deriveAll :: Name -> Q [Dec]
 deriveAll = derivePredefinedMultipleClasses Nothing allGrisetteClasses
 
 -- | Derive all classes related to Grisette for a type with the given name,
 -- except for the given classes.
+--
+-- Excluding 'Ord' or 'SOrd' will also exclude 'UnifiedSOrd'.
+-- Excluding 'Eq' or 'SEq' will also exclude 'UnifiedSEq'.
 deriveAllExcept :: Name -> [Name] -> Q [Dec]
 deriveAllExcept nm clss =
   derivePredefinedMultipleClasses
     Nothing
-    (filter (`notElem` clss) allGrisetteClasses)
+    (filter (`notElem` allExcluded) allGrisetteClasses)
     nm
+  where
+    allExcluded =
+      ([''UnifiedSEq | ''Eq `elem` clss || ''SEq `elem` clss])
+        <> ([''UnifiedSOrd | ''Ord `elem` clss || ''SOrd `elem` clss])
+        <> clss
