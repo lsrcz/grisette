@@ -30,17 +30,17 @@ module Grisette.Unified
     symIte,
     symIteMerge,
 
-    -- ** Unified SEq
-    UnifiedSEq (..),
+    -- ** Unified SymEq
+    UnifiedSymEq (..),
     (.==),
     (./=),
-    liftSEq,
+    liftSymEq,
     seq1,
-    liftSEq2,
+    liftSymEq2,
     seq2,
 
-    -- ** Unified SOrd
-    UnifiedSOrd (..),
+    -- ** Unified SymOrd
+    UnifiedSymOrd (..),
     (.<=),
     (.<),
     (.>=),
@@ -108,31 +108,6 @@ import Grisette.Unified.Internal.Class.UnifiedITEOp
     symIte,
     symIteMerge,
   )
-import Grisette.Unified.Internal.Class.UnifiedSEq
-  ( UnifiedSEq (..),
-    liftSEq,
-    liftSEq2,
-    seq1,
-    seq2,
-    (./=),
-    (.==),
-  )
-import Grisette.Unified.Internal.Class.UnifiedSOrd
-  ( UnifiedSOrd (..),
-    liftSymCompare,
-    liftSymCompare2,
-    mrgMax,
-    mrgMin,
-    symCompare,
-    symCompare1,
-    symCompare2,
-    symMax,
-    symMin,
-    (.<),
-    (.<=),
-    (.>),
-    (.>=),
-  )
 import Grisette.Unified.Internal.Class.UnifiedSafeDivision
   ( UnifiedSafeDivision (..),
     safeDiv,
@@ -172,6 +147,31 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
     mrgIte,
     mrgIte1,
     mrgIte2,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSymEq
+  ( UnifiedSymEq (..),
+    liftSymEq,
+    liftSymEq2,
+    seq1,
+    seq2,
+    (./=),
+    (.==),
+  )
+import Grisette.Unified.Internal.Class.UnifiedSymOrd
+  ( UnifiedSymOrd (..),
+    liftSymCompare,
+    liftSymCompare2,
+    mrgMax,
+    mrgMin,
+    symCompare,
+    symCompare1,
+    symCompare2,
+    symMax,
+    symMin,
+    (.<),
+    (.<=),
+    (.>),
+    (.>=),
   )
 import Grisette.Unified.Internal.EvaluationMode
   ( EvaluationMode (..),

@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.Class.SEqTests (seqTests) where
+module Grisette.Core.Data.Class.SymEqTests (seqTests) where
 
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
@@ -25,9 +25,9 @@ import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default), Generic)
 import Grisette
   ( LogicalOp (symNot, (.&&)),
-    SEq ((./=), (.==)),
     Solvable (con),
     SymBool (SymBool),
+    SymEq ((./=), (.==)),
   )
 import Grisette.Core.Data.Class.TestValues
   ( conBool,
@@ -42,19 +42,19 @@ import Test.QuickCheck (ioProperty)
 
 data A = A1 | A2 SymBool | A3 SymBool SymBool
   deriving (Generic, Show, Eq)
-  deriving (SEq) via (Default A)
+  deriving (SymEq) via (Default A)
 
-concreteSEqOkProp :: (HasCallStack, SEq a, Eq a) => (a, a) -> Assertion
-concreteSEqOkProp (i, j) = do
+concreteSymEqOkProp :: (HasCallStack, SymEq a, Eq a) => (a, a) -> Assertion
+concreteSymEqOkProp (i, j) = do
   i .== j @=? con (i == j)
   i ./= j @=? con (i /= j)
 
 seqTests :: Test
 seqTests =
   testGroup
-    "SEq"
+    "SymEq"
     [ testGroup
-        "SEq for common types"
+        "SymEq for common types"
         [ testGroup
             "SymBool"
             [ testCase "conBool" $ do
@@ -83,23 +83,23 @@ seqTests =
                   .== ssymBool "b"
                   @=? SymBool (pevalEqTerm terma termb)
             ],
-          testProperty "Bool" (ioProperty . concreteSEqOkProp @Bool),
-          testProperty "Integer" (ioProperty . concreteSEqOkProp @Integer),
-          testProperty "Char" (ioProperty . concreteSEqOkProp @Char),
-          testProperty "Int" (ioProperty . concreteSEqOkProp @Int),
-          testProperty "Int8" (ioProperty . concreteSEqOkProp @Int8),
-          testProperty "Int16" (ioProperty . concreteSEqOkProp @Int16),
-          testProperty "Int32" (ioProperty . concreteSEqOkProp @Int32),
-          testProperty "Int64" (ioProperty . concreteSEqOkProp @Int64),
-          testProperty "Word" (ioProperty . concreteSEqOkProp @Word),
-          testProperty "Word8" (ioProperty . concreteSEqOkProp @Word8),
-          testProperty "Word16" (ioProperty . concreteSEqOkProp @Word16),
-          testProperty "Word32" (ioProperty . concreteSEqOkProp @Word32),
-          testProperty "Word64" (ioProperty . concreteSEqOkProp @Word64),
+          testProperty "Bool" (ioProperty . concreteSymEqOkProp @Bool),
+          testProperty "Integer" (ioProperty . concreteSymEqOkProp @Integer),
+          testProperty "Char" (ioProperty . concreteSymEqOkProp @Char),
+          testProperty "Int" (ioProperty . concreteSymEqOkProp @Int),
+          testProperty "Int8" (ioProperty . concreteSymEqOkProp @Int8),
+          testProperty "Int16" (ioProperty . concreteSymEqOkProp @Int16),
+          testProperty "Int32" (ioProperty . concreteSymEqOkProp @Int32),
+          testProperty "Int64" (ioProperty . concreteSymEqOkProp @Int64),
+          testProperty "Word" (ioProperty . concreteSymEqOkProp @Word),
+          testProperty "Word8" (ioProperty . concreteSymEqOkProp @Word8),
+          testProperty "Word16" (ioProperty . concreteSymEqOkProp @Word16),
+          testProperty "Word32" (ioProperty . concreteSymEqOkProp @Word32),
+          testProperty "Word64" (ioProperty . concreteSymEqOkProp @Word64),
           testGroup
             "List"
             [ testProperty "[Integer]" $
-                ioProperty . concreteSEqOkProp @[Integer],
+                ioProperty . concreteSymEqOkProp @[Integer],
               testGroup
                 "[SymBool]"
                 [ testCase "Same length 1" $
@@ -123,7 +123,7 @@ seqTests =
           testGroup
             "Maybe"
             [ testProperty "Maybe Integer" $
-                ioProperty . concreteSEqOkProp @(Maybe Integer),
+                ioProperty . concreteSymEqOkProp @(Maybe Integer),
               testGroup
                 "Maybe SymBool"
                 [ testCase "Nothing vs Nothing" $
@@ -142,7 +142,7 @@ seqTests =
           testGroup
             "Either"
             [ testProperty "Either" $
-                ioProperty . concreteSEqOkProp @(Either Integer Integer),
+                ioProperty . concreteSymEqOkProp @(Either Integer Integer),
               testGroup
                 "Either SymBool SymBool"
                 [ testCase "Left vs Left" $
@@ -169,7 +169,7 @@ seqTests =
             "MaybeT"
             [ testProperty "MaybeT" $
                 ioProperty
-                  . concreteSEqOkProp @(MaybeT Maybe Integer)
+                  . concreteSymEqOkProp @(MaybeT Maybe Integer)
                   . bimap MaybeT MaybeT,
               testGroup
                 "MaybeT Maybe SymBool"
@@ -220,7 +220,7 @@ seqTests =
             "ExceptT"
             [ testProperty "ExceptT Integer Maybe Itneger" $
                 ioProperty
-                  . concreteSEqOkProp @(ExceptT Integer Maybe Integer)
+                  . concreteSymEqOkProp @(ExceptT Integer Maybe Integer)
                   . bimap ExceptT ExceptT,
               testGroup
                 "ExceptT SymBool Maybe SymBool"
@@ -276,11 +276,11 @@ seqTests =
                       .== ssymBool "b"
                 ]
             ],
-          testProperty "()" (ioProperty . concreteSEqOkProp @()),
+          testProperty "()" (ioProperty . concreteSymEqOkProp @()),
           testGroup
             "(,)"
             [ testProperty "(Integer, Integer)" $
-                ioProperty . concreteSEqOkProp @(Integer, Integer),
+                ioProperty . concreteSymEqOkProp @(Integer, Integer),
               testCase "(SymBool, SymBool)" $ do
                 (ssymBool "a", ssymBool "c")
                   .== (ssymBool "b", ssymBool "d")
@@ -292,7 +292,7 @@ seqTests =
           testGroup
             "(,,)"
             [ testProperty "(Integer, Integer, Integer)" $
-                ioProperty . concreteSEqOkProp @(Integer, Integer, Integer),
+                ioProperty . concreteSymEqOkProp @(Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool)" $
                 (ssymBool "a", ssymBool "c", ssymBool "e")
                   .== (ssymBool "b", ssymBool "d", ssymBool "f")
@@ -306,7 +306,7 @@ seqTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteSEqOkProp @(Integer, Integer, Integer, Integer),
+                  . concreteSymEqOkProp @(Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool)" $ do
                 (ssymBool "a", ssymBool "c", ssymBool "e", ssymBool "g")
                   .== (ssymBool "b", ssymBool "d", ssymBool "f", ssymBool "h")
@@ -322,7 +322,7 @@ seqTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteSEqOkProp
+                  . concreteSymEqOkProp
                     @(Integer, Integer, Integer, Integer, Integer),
               testCase "(SymBool, SymBool, SymBool, SymBool, SymBool)" $ do
                 ( ssymBool "a",
@@ -351,7 +351,7 @@ seqTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteSEqOkProp
+                  . concreteSymEqOkProp
                     @( Integer,
                        Integer,
                        Integer,
@@ -391,7 +391,7 @@ seqTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteSEqOkProp
+                  . concreteSymEqOkProp
                     @( Integer,
                        Integer,
                        Integer,
@@ -437,7 +437,7 @@ seqTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteSEqOkProp
+                  . concreteSymEqOkProp
                     @( Integer,
                        Integer,
                        Integer,
@@ -497,7 +497,7 @@ seqTests =
                               Sum Maybe Maybe Integer
                             eitherToSum (Left x) = InL x
                             eitherToSum (Right x) = InR x
-                         in concreteSEqOkProp (bimap eitherToSum eitherToSum v)
+                         in concreteSymEqOkProp (bimap eitherToSum eitherToSum v)
                     ),
               testGroup
                 "Sum Maybe Maybe SymBool"
@@ -531,7 +531,7 @@ seqTests =
                         . \( v1 :: Either Integer (Integer, Integer),
                              v2 :: Either Integer (Integer, Integer)
                              ) ->
-                            concreteSEqOkProp
+                            concreteSymEqOkProp
                               ( WriterLazy.WriterT v1,
                                 WriterLazy.WriterT v2
                               )
@@ -578,7 +578,7 @@ seqTests =
                         . \( v1 :: Either Integer (Integer, Integer),
                              v2 :: Either Integer (Integer, Integer)
                              ) ->
-                            concreteSEqOkProp
+                            concreteSymEqOkProp
                               ( WriterStrict.WriterT v1,
                                 WriterStrict.WriterT v2
                               )
@@ -637,7 +637,7 @@ seqTests =
             [ testProperty
                 "Identity Integer"
                 ( ioProperty . \(v1 :: Integer, v2) ->
-                    concreteSEqOkProp (Identity v1, Identity v2)
+                    concreteSymEqOkProp (Identity v1, Identity v2)
                 ),
               testCase "Identity SymBool" $ do
                 (Identity $ ssymBool "a" :: Identity SymBool)
@@ -650,7 +650,7 @@ seqTests =
             [ testProperty
                 "IdentityT (Either Integer) Integer"
                 ( ioProperty . \(v1 :: Either Integer Integer, v2) ->
-                    concreteSEqOkProp (IdentityT v1, IdentityT v2)
+                    concreteSymEqOkProp (IdentityT v1, IdentityT v2)
                 ),
               testGroup
                 "IdentityT (Either SymBool) SymBool"
@@ -684,7 +684,7 @@ seqTests =
             ]
         ],
       testGroup
-        "deriving SEq for ADT"
+        "deriving SymEq for ADT"
         [ testGroup
             "Simple ADT"
             [ testCase "A1 vs A1" $

@@ -24,10 +24,10 @@ import Grisette
     LogicalOp (symNot, symXor, (.&&), (.||)),
     ModelRep (buildModel),
     ModelValuePair ((::=)),
-    SEq ((.==)),
-    SOrd ((.<), (.>=)),
     SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
     Solvable (con),
+    SymEq ((.==)),
+    SymOrd ((.<), (.>=)),
     Union,
     VerificationConditions,
     cegis,
@@ -55,7 +55,7 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
 
 testCegis ::
-  (HasCallStack, ExtractSym a, EvalSym a, Show a, SEq a) =>
+  (HasCallStack, ExtractSym a, EvalSym a, Show a, SymEq a) =>
   GrisetteSMTConfig i ->
   Bool ->
   a ->

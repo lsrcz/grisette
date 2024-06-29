@@ -257,7 +257,7 @@ module Grisette.Core
     -- a
     --
     -- Symbolic operations are provided through a set of type classes,
-    -- such as 'SEq', 'SOrd', and 'Num'. Please check out the documentation for
+    -- such as 'SymEq', 'SymOrd', and 'Num'. Please check out the documentation for
     -- more details.
     --
     -- __Examples:__
@@ -300,17 +300,17 @@ module Grisette.Core
     ITEOp (..),
 
     -- ** Symbolic equality
-    SEq (..),
-    SEq1 (..),
+    SymEq (..),
+    SymEq1 (..),
     seq1,
-    SEq2 (..),
+    SymEq2 (..),
     seq2,
 
     -- ** Symbolic comparison
-    SOrd (..),
-    SOrd1 (..),
+    SymOrd (..),
+    SymOrd1 (..),
     symCompare1,
-    SOrd2 (..),
+    SymOrd2 (..),
     symCompare2,
     symMax,
     symMin,
@@ -1123,7 +1123,7 @@ module Grisette.Core
     -- >>> :{
     -- data Error = Arith | Assert
     --   deriving (Show, Generic)
-    --   deriving (Mergeable, SEq) via (Default Error)
+    --   deriving (Mergeable, SymEq) via (Default Error)
     -- :}
     --
     -- Then we can perform the symbolic evaluation. The `divs` function throws
@@ -1273,15 +1273,15 @@ module Grisette.Core
     Default (..),
     Default1 (..),
 
-    -- *** 'SEq'
-    SEqArgs (..),
-    GSEq (..),
-    genericSEq,
-    genericLiftSEq,
+    -- *** 'SymEq'
+    SymEqArgs (..),
+    GSymEq (..),
+    genericSymEq,
+    genericLiftSymEq,
 
-    -- *** 'SOrd'
-    SOrdArgs (..),
-    GSOrd (..),
+    -- *** 'SymOrd'
+    SymOrdArgs (..),
+    GSymOrd (..),
     genericSymCompare,
     genericLiftSymCompare,
 
@@ -1548,32 +1548,6 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
-import Grisette.Internal.Core.Data.Class.SEq
-  ( GSEq (..),
-    SEq (..),
-    SEq1 (..),
-    SEq2 (..),
-    SEqArgs (..),
-    genericLiftSEq,
-    genericSEq,
-    seq1,
-    seq2,
-  )
-import Grisette.Internal.Core.Data.Class.SOrd
-  ( GSOrd (..),
-    SOrd (..),
-    SOrd1 (..),
-    SOrd2 (..),
-    SOrdArgs (..),
-    genericLiftSymCompare,
-    genericSymCompare,
-    mrgMax,
-    mrgMin,
-    symCompare1,
-    symCompare2,
-    symMax,
-    symMin,
-  )
 import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision (..))
 import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
 import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..))
@@ -1628,6 +1602,32 @@ import Grisette.Internal.Core.Data.Class.SubstSym
     genericSubstSym,
     substSym1,
     substSym2,
+  )
+import Grisette.Internal.Core.Data.Class.SymEq
+  ( GSymEq (..),
+    SymEq (..),
+    SymEq1 (..),
+    SymEq2 (..),
+    SymEqArgs (..),
+    genericLiftSymEq,
+    genericSymEq,
+    seq1,
+    seq2,
+  )
+import Grisette.Internal.Core.Data.Class.SymOrd
+  ( GSymOrd (..),
+    SymOrd (..),
+    SymOrd1 (..),
+    SymOrd2 (..),
+    SymOrdArgs (..),
+    genericLiftSymCompare,
+    genericSymCompare,
+    mrgMax,
+    mrgMin,
+    symCompare1,
+    symCompare2,
+    symMax,
+    symMin,
   )
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (..))
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift (..))

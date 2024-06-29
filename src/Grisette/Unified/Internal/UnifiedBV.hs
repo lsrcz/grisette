@@ -51,8 +51,6 @@ import Grisette.Unified.Internal.BaseConstraint
     ConSymConversion,
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
-import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq)
-import Grisette.Unified.Internal.Class.UnifiedSOrd (UnifiedSOrd)
 import Grisette.Unified.Internal.Class.UnifiedSafeDivision (UnifiedSafeDivision)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
@@ -65,6 +63,8 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching,
     UnifiedSimpleMergeable,
   )
+import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
+import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 import Grisette.Unified.Internal.EvaluationMode (EvaluationMode (Con, Sym))
 
 type BVConstraint mode word int =
@@ -80,10 +80,10 @@ type BVConstraint mode word int =
     SymShift int,
     SymRotate word,
     SymRotate int,
-    UnifiedSEq mode word,
-    UnifiedSEq mode int,
-    UnifiedSOrd mode word,
-    UnifiedSOrd mode int,
+    UnifiedSymEq mode word,
+    UnifiedSymEq mode int,
+    UnifiedSymOrd mode word,
+    UnifiedSymOrd mode int,
     UnifiedITEOp mode word,
     UnifiedITEOp mode int,
     SignConversion word int

@@ -15,26 +15,26 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.Data.Class.SEq
+-- Module      :   Grisette.Internal.Core.Data.Class.SymEq
 -- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.Data.Class.SEq
+module Grisette.Internal.Core.Data.Class.SymEq
   ( -- * Symbolic equality
-    SEq (..),
-    SEq1 (..),
+    SymEq (..),
+    SymEq1 (..),
     seq1,
-    SEq2 (..),
+    SymEq2 (..),
     seq2,
 
-    -- * Generic 'SEq'
-    SEqArgs (..),
-    GSEq (..),
-    genericSEq,
-    genericLiftSEq,
+    -- * Generic 'SymEq'
+    SymEqArgs (..),
+    GSymEq (..),
+    genericSymEq,
+    genericLiftSymEq,
   )
 where
 
@@ -128,8 +128,8 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- __Note:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving SEq via (Default X)
-class SEq a where
+-- > data X = ... deriving Generic deriving SymEq via (Default X)
+class SymEq a where
   (.==) :: a -> a -> SymBool
   a .== b = symNot $ a ./= b
   {-# INLINE (.==) #-}
@@ -141,37 +141,37 @@ class SEq a where
   infix 4 ./=
   {-# MINIMAL (.==) | (./=) #-}
 
--- | Lifting of the 'SEq' class to unary type constructors.
+-- | Lifting of the 'SymEq' class to unary type constructors.
 --
 -- Any instance should be subject to the following law that canonicity is
 -- preserved:
 --
--- @liftSEq (.==)@ should be equivalent to @(.==)@, under the symbolic
+-- @liftSymEq (.==)@ should be equivalent to @(.==)@, under the symbolic
 -- semantics.
 --
--- This class therefore represents the generalization of 'SEq' by decomposing
+-- This class therefore represents the generalization of 'SymEq' by decomposing
 -- its main method into a canonical lifting on a canonical inner method, so that
 -- the lifting can be reused for other arguments than the canonical one.
-class (forall a. (SEq a) => SEq (f a)) => SEq1 f where
+class (forall a. (SymEq a) => SymEq (f a)) => SymEq1 f where
   -- | Lift a symbolic equality test through the type constructor.
   --
   -- The function will usually be applied to an symbolic equality function, but
   -- the more general type ensures that the implementation uses it to compare
   -- elements of the first container with elements of the second.
-  liftSEq :: (a -> b -> SymBool) -> f a -> f b -> SymBool
+  liftSymEq :: (a -> b -> SymBool) -> f a -> f b -> SymBool
 
 -- | Lift the standard @('.==')@ function through the type constructor.
-seq1 :: (SEq a, SEq1 f) => f a -> f a -> SymBool
-seq1 = liftSEq (.==)
+seq1 :: (SymEq a, SymEq1 f) => f a -> f a -> SymBool
+seq1 = liftSymEq (.==)
 
--- | Lifting of the 'SEq' class to binary type constructors.
-class (forall a. (SEq a) => SEq1 (f a)) => SEq2 f where
+-- | Lifting of the 'SymEq' class to binary type constructors.
+class (forall a. (SymEq a) => SymEq1 (f a)) => SymEq2 f where
   -- | Lift symbolic equality tests through the type constructor.
   --
   -- The function will usually be applied to an symbolic equality function, but
   -- the more general type ensures that the implementation uses it to compare
   -- elements of the first container with elements of the second.
-  liftSEq2 ::
+  liftSymEq2 ::
     (a -> b -> SymBool) ->
     (c -> d -> SymBool) ->
     f a c ->
@@ -179,94 +179,94 @@ class (forall a. (SEq a) => SEq1 (f a)) => SEq2 f where
     SymBool
 
 -- | Lift the standard @('.==')@ function through the type constructor.
-seq2 :: (SEq a, SEq b, SEq2 f) => f a b -> f a b -> SymBool
-seq2 = liftSEq2 (.==) (.==)
+seq2 :: (SymEq a, SymEq b, SymEq2 f) => f a b -> f a b -> SymBool
+seq2 = liftSymEq2 (.==) (.==)
 
 -- Derivations
 
 -- | The arguments to the generic equality function.
-data family SEqArgs arity a b :: Type
+data family SymEqArgs arity a b :: Type
 
-data instance SEqArgs Arity0 _ _ = SEqArgs0
+data instance SymEqArgs Arity0 _ _ = SymEqArgs0
 
-newtype instance SEqArgs Arity1 a b = SEqArgs1 (a -> b -> SymBool)
+newtype instance SymEqArgs Arity1 a b = SymEqArgs1 (a -> b -> SymBool)
 
 -- | The class of types that can be generically compared for symbolic equality.
-class GSEq arity f where
-  gseq :: SEqArgs arity a b -> f a -> f b -> SymBool
+class GSymEq arity f where
+  gseq :: SymEqArgs arity a b -> f a -> f b -> SymBool
 
-instance GSEq arity V1 where
+instance GSymEq arity V1 where
   gseq _ _ _ = con True
   {-# INLINE gseq #-}
 
-instance GSEq arity U1 where
+instance GSymEq arity U1 where
   gseq _ _ _ = con True
   {-# INLINE gseq #-}
 
-instance (GSEq arity a, GSEq arity b) => GSEq arity (a :*: b) where
+instance (GSymEq arity a, GSymEq arity b) => GSymEq arity (a :*: b) where
   gseq args (a1 :*: b1) (a2 :*: b2) = gseq args a1 a2 .&& gseq args b1 b2
   {-# INLINE gseq #-}
 
-instance (GSEq arity a, GSEq arity b) => GSEq arity (a :+: b) where
+instance (GSymEq arity a, GSymEq arity b) => GSymEq arity (a :+: b) where
   gseq args (L1 a1) (L1 a2) = gseq args a1 a2
   gseq args (R1 b1) (R1 b2) = gseq args b1 b2
   gseq _ _ _ = con False
   {-# INLINE gseq #-}
 
-instance (GSEq arity a) => GSEq arity (M1 i c a) where
+instance (GSymEq arity a) => GSymEq arity (M1 i c a) where
   gseq args (M1 a1) (M1 a2) = gseq args a1 a2
   {-# INLINE gseq #-}
 
-instance (SEq a) => GSEq arity (K1 i a) where
+instance (SymEq a) => GSymEq arity (K1 i a) where
   gseq _ (K1 a) (K1 b) = a .== b
   {-# INLINE gseq #-}
 
-instance GSEq Arity1 Par1 where
-  gseq (SEqArgs1 e) (Par1 a) (Par1 b) = e a b
+instance GSymEq Arity1 Par1 where
+  gseq (SymEqArgs1 e) (Par1 a) (Par1 b) = e a b
   {-# INLINE gseq #-}
 
-instance (SEq1 f) => GSEq Arity1 (Rec1 f) where
-  gseq (SEqArgs1 e) (Rec1 a) (Rec1 b) = liftSEq e a b
+instance (SymEq1 f) => GSymEq Arity1 (Rec1 f) where
+  gseq (SymEqArgs1 e) (Rec1 a) (Rec1 b) = liftSymEq e a b
   {-# INLINE gseq #-}
 
-instance (SEq1 f, GSEq Arity1 g) => GSEq Arity1 (f :.: g) where
-  gseq targs (Comp1 a) (Comp1 b) = liftSEq (gseq targs) a b
+instance (SymEq1 f, GSymEq Arity1 g) => GSymEq Arity1 (f :.: g) where
+  gseq targs (Comp1 a) (Comp1 b) = liftSymEq (gseq targs) a b
   {-# INLINE gseq #-}
 
-instance (Generic a, GSEq Arity0 (Rep a)) => SEq (Default a) where
-  Default l .== Default r = genericSEq l r
+instance (Generic a, GSymEq Arity0 (Rep a)) => SymEq (Default a) where
+  Default l .== Default r = genericSymEq l r
   {-# INLINE (.==) #-}
 
 -- | Generic @('.==')@ function.
-genericSEq :: (Generic a, GSEq Arity0 (Rep a)) => a -> a -> SymBool
-genericSEq l r = gseq SEqArgs0 (from l) (from r)
-{-# INLINE genericSEq #-}
+genericSymEq :: (Generic a, GSymEq Arity0 (Rep a)) => a -> a -> SymBool
+genericSymEq l r = gseq SymEqArgs0 (from l) (from r)
+{-# INLINE genericSymEq #-}
 
-instance (Generic1 f, GSEq Arity1 (Rep1 f), SEq a) => SEq (Default1 f a) where
+instance (Generic1 f, GSymEq Arity1 (Rep1 f), SymEq a) => SymEq (Default1 f a) where
   (.==) = seq1
   {-# INLINE (.==) #-}
 
-instance (Generic1 f, GSEq Arity1 (Rep1 f)) => SEq1 (Default1 f) where
-  liftSEq f (Default1 l) (Default1 r) = genericLiftSEq f l r
-  {-# INLINE liftSEq #-}
+instance (Generic1 f, GSymEq Arity1 (Rep1 f)) => SymEq1 (Default1 f) where
+  liftSymEq f (Default1 l) (Default1 r) = genericLiftSymEq f l r
+  {-# INLINE liftSymEq #-}
 
--- | Generic 'liftSEq' function.
-genericLiftSEq ::
-  (Generic1 f, GSEq Arity1 (Rep1 f)) =>
+-- | Generic 'liftSymEq' function.
+genericLiftSymEq ::
+  (Generic1 f, GSymEq Arity1 (Rep1 f)) =>
   (a -> b -> SymBool) ->
   f a ->
   f b ->
   SymBool
-genericLiftSEq f l r = gseq (SEqArgs1 f) (from1 l) (from1 r)
-{-# INLINE genericLiftSEq #-}
+genericLiftSymEq f l r = gseq (SymEqArgs1 f) (from1 l) (from1 r)
+{-# INLINE genericLiftSymEq #-}
 
 #define CONCRETE_SEQ(type) \
-instance SEq type where \
+instance SymEq type where \
   l .== r = con $ l == r; \
   {-# INLINE (.==) #-}
 
 #define CONCRETE_SEQ_BV(type) \
-instance (KnownNat n, 1 <= n) => SEq (type n) where \
+instance (KnownNat n, 1 <= n) => SymEq (type n) where \
   l .== r = con $ l == r; \
   {-# INLINE (.==) #-}
 
@@ -296,18 +296,18 @@ CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
 #endif
 
-instance (ValidFP eb sb) => SEq (FP eb sb) where
+instance (ValidFP eb sb) => SymEq (FP eb sb) where
   l .== r = con $ l == r
   {-# INLINE (.==) #-}
 
 -- Symbolic types
 #define SEQ_SIMPLE(symtype) \
-instance SEq symtype where \
+instance SymEq symtype where \
   (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
   {-# INLINE (.==) #-}
 
 #define SEQ_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
+instance (KnownNat n, 1 <= n) => SymEq (symtype n) where \
   (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
   {-# INLINE (.==) #-}
 
@@ -319,14 +319,14 @@ SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
 #endif
 
-instance (ValidFP eb sb) => SEq (SymFP eb sb) where
+instance (ValidFP eb sb) => SymEq (SymFP eb sb) where
   (SymFP l) .== (SymFP r) = SymBool $ pevalEqTerm l r
   {-# INLINE (.==) #-}
 
 -- Instances
 deriveBuiltins
-  (ViaDefault ''SEq)
-  [''SEq]
+  (ViaDefault ''SymEq)
+  [''SymEq]
   [ ''[],
     ''Maybe,
     ''Either,
@@ -356,8 +356,8 @@ deriveBuiltins
     ''Down
   ]
 deriveBuiltins
-  (ViaDefault1 ''SEq1)
-  [''SEq, ''SEq1]
+  (ViaDefault1 ''SymEq1)
+  [''SymEq, ''SymEq1]
   [ ''[],
     ''Maybe,
     ''Either,
@@ -385,152 +385,152 @@ deriveBuiltins
   ]
 
 -- ExceptT
-instance (SEq1 m, SEq e, SEq a) => SEq (ExceptT e m a) where
+instance (SymEq1 m, SymEq e, SymEq a) => SymEq (ExceptT e m a) where
   (.==) = seq1
   {-# INLINE (.==) #-}
 
-instance (SEq1 m, SEq e) => SEq1 (ExceptT e m) where
-  liftSEq f (ExceptT l) (ExceptT r) = liftSEq (liftSEq f) l r
-  {-# INLINE liftSEq #-}
+instance (SymEq1 m, SymEq e) => SymEq1 (ExceptT e m) where
+  liftSymEq f (ExceptT l) (ExceptT r) = liftSymEq (liftSymEq f) l r
+  {-# INLINE liftSymEq #-}
 
 -- MaybeT
-instance (SEq1 m, SEq a) => SEq (MaybeT m a) where
+instance (SymEq1 m, SymEq a) => SymEq (MaybeT m a) where
   (.==) = seq1
   {-# INLINE (.==) #-}
 
-instance (SEq1 m) => SEq1 (MaybeT m) where
-  liftSEq f (MaybeT l) (MaybeT r) = liftSEq (liftSEq f) l r
-  {-# INLINE liftSEq #-}
+instance (SymEq1 m) => SymEq1 (MaybeT m) where
+  liftSymEq f (MaybeT l) (MaybeT r) = liftSymEq (liftSymEq f) l r
+  {-# INLINE liftSymEq #-}
 
 -- Writer
-instance (SEq1 m, SEq w, SEq a) => SEq (WriterLazy.WriterT w m a) where
+instance (SymEq1 m, SymEq w, SymEq a) => SymEq (WriterLazy.WriterT w m a) where
   (.==) = seq1
   {-# INLINE (.==) #-}
 
-instance (SEq1 m, SEq w) => SEq1 (WriterLazy.WriterT w m) where
-  liftSEq f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
-    liftSEq (liftSEq2 f (.==)) l r
-  {-# INLINE liftSEq #-}
+instance (SymEq1 m, SymEq w) => SymEq1 (WriterLazy.WriterT w m) where
+  liftSymEq f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
+    liftSymEq (liftSymEq2 f (.==)) l r
+  {-# INLINE liftSymEq #-}
 
-instance (SEq1 m, SEq w, SEq a) => SEq (WriterStrict.WriterT w m a) where
+instance (SymEq1 m, SymEq w, SymEq a) => SymEq (WriterStrict.WriterT w m a) where
   (.==) = seq1
   {-# INLINE (.==) #-}
 
-instance (SEq1 m, SEq w) => SEq1 (WriterStrict.WriterT w m) where
-  liftSEq f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
-    liftSEq (liftSEq2 f (.==)) l r
-  {-# INLINE liftSEq #-}
+instance (SymEq1 m, SymEq w) => SymEq1 (WriterStrict.WriterT w m) where
+  liftSymEq f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
+    liftSymEq (liftSymEq2 f (.==)) l r
+  {-# INLINE liftSymEq #-}
 
 -- IdentityT
-instance (SEq1 m, SEq a) => SEq (IdentityT m a) where
+instance (SymEq1 m, SymEq a) => SymEq (IdentityT m a) where
   (.==) = seq1
   {-# INLINE (.==) #-}
 
-instance (SEq1 m) => SEq1 (IdentityT m) where
-  liftSEq f (IdentityT l) (IdentityT r) = liftSEq f l r
-  {-# INLINE liftSEq #-}
+instance (SymEq1 m) => SymEq1 (IdentityT m) where
+  liftSymEq f (IdentityT l) (IdentityT r) = liftSymEq f l r
+  {-# INLINE liftSymEq #-}
 
 -- Product
 deriving via
   (Default (Product l r a))
   instance
-    (SEq (l a), SEq (r a)) => SEq (Product l r a)
+    (SymEq (l a), SymEq (r a)) => SymEq (Product l r a)
 
 deriving via
   (Default1 (Product l r))
   instance
-    (SEq1 l, SEq1 r) => SEq1 (Product l r)
+    (SymEq1 l, SymEq1 r) => SymEq1 (Product l r)
 
 -- Sum
 deriving via
   (Default (Sum l r a))
   instance
-    (SEq (l a), SEq (r a)) => SEq (Sum l r a)
+    (SymEq (l a), SymEq (r a)) => SymEq (Sum l r a)
 
 deriving via
   (Default1 (Sum l r))
   instance
-    (SEq1 l, SEq1 r) => SEq1 (Sum l r)
+    (SymEq1 l, SymEq1 r) => SymEq1 (Sum l r)
 
 -- Compose
 deriving via
   (Default (Compose f g a))
   instance
-    (SEq (f (g a))) => SEq (Compose f g a)
+    (SymEq (f (g a))) => SymEq (Compose f g a)
 
-instance (SEq1 f, SEq1 g) => SEq1 (Compose f g) where
-  liftSEq f (Compose l) (Compose r) = liftSEq (liftSEq f) l r
+instance (SymEq1 f, SymEq1 g) => SymEq1 (Compose f g) where
+  liftSymEq f (Compose l) (Compose r) = liftSymEq (liftSymEq f) l r
 
 -- Const
-deriving via (Default (Const a b)) instance (SEq a) => SEq (Const a b)
+deriving via (Default (Const a b)) instance (SymEq a) => SymEq (Const a b)
 
-deriving via (Default1 (Const a)) instance (SEq a) => SEq1 (Const a)
+deriving via (Default1 (Const a)) instance (SymEq a) => SymEq1 (Const a)
 
 -- Alt
-deriving via (Default (Alt f a)) instance (SEq (f a)) => SEq (Alt f a)
+deriving via (Default (Alt f a)) instance (SymEq (f a)) => SymEq (Alt f a)
 
-deriving via (Default1 (Alt f)) instance (SEq1 f) => SEq1 (Alt f)
+deriving via (Default1 (Alt f)) instance (SymEq1 f) => SymEq1 (Alt f)
 
 -- Ap
-deriving via (Default (Ap f a)) instance (SEq (f a)) => SEq (Ap f a)
+deriving via (Default (Ap f a)) instance (SymEq (f a)) => SymEq (Ap f a)
 
-deriving via (Default1 (Ap f)) instance (SEq1 f) => SEq1 (Ap f)
+deriving via (Default1 (Ap f)) instance (SymEq1 f) => SymEq1 (Ap f)
 
 -- Generic
-deriving via (Default (U1 p)) instance SEq (U1 p)
+deriving via (Default (U1 p)) instance SymEq (U1 p)
 
-deriving via (Default (V1 p)) instance SEq (V1 p)
+deriving via (Default (V1 p)) instance SymEq (V1 p)
 
 deriving via
   (Default (K1 i c p))
   instance
-    (SEq c) => SEq (K1 i c p)
+    (SymEq c) => SymEq (K1 i c p)
 
 deriving via
   (Default (M1 i c f p))
   instance
-    (SEq (f p)) => SEq (M1 i c f p)
+    (SymEq (f p)) => SymEq (M1 i c f p)
 
 deriving via
   (Default ((f :+: g) p))
   instance
-    (SEq (f p), SEq (g p)) => SEq ((f :+: g) p)
+    (SymEq (f p), SymEq (g p)) => SymEq ((f :+: g) p)
 
 deriving via
   (Default ((f :*: g) p))
   instance
-    (SEq (f p), SEq (g p)) => SEq ((f :*: g) p)
+    (SymEq (f p), SymEq (g p)) => SymEq ((f :*: g) p)
 
 deriving via
   (Default (Par1 p))
   instance
-    (SEq p) => SEq (Par1 p)
+    (SymEq p) => SymEq (Par1 p)
 
 deriving via
   (Default (Rec1 f p))
   instance
-    (SEq (f p)) => SEq (Rec1 f p)
+    (SymEq (f p)) => SymEq (Rec1 f p)
 
 deriving via
   (Default ((f :.: g) p))
   instance
-    (SEq (f (g p))) => SEq ((f :.: g) p)
+    (SymEq (f (g p))) => SymEq ((f :.: g) p)
 
-instance SEq2 Either where
-  liftSEq2 f _ (Left l) (Left r) = f l r
-  liftSEq2 _ g (Right l) (Right r) = g l r
-  liftSEq2 _ _ _ _ = con False
-  {-# INLINE liftSEq2 #-}
+instance SymEq2 Either where
+  liftSymEq2 f _ (Left l) (Left r) = f l r
+  liftSymEq2 _ g (Right l) (Right r) = g l r
+  liftSymEq2 _ _ _ _ = con False
+  {-# INLINE liftSymEq2 #-}
 
-instance SEq2 (,) where
-  liftSEq2 f g (l1, l2) (r1, r2) = f l1 r1 .&& g l2 r2
-  {-# INLINE liftSEq2 #-}
+instance SymEq2 (,) where
+  liftSymEq2 f g (l1, l2) (r1, r2) = f l1 r1 .&& g l2 r2
+  {-# INLINE liftSymEq2 #-}
 
-instance (SEq a) => SEq2 ((,,) a) where
-  liftSEq2 f g (l1, l2, l3) (r1, r2, r3) = l1 .== r1 .&& f l2 r2 .&& g l3 r3
-  {-# INLINE liftSEq2 #-}
+instance (SymEq a) => SymEq2 ((,,) a) where
+  liftSymEq2 f g (l1, l2, l3) (r1, r2, r3) = l1 .== r1 .&& f l2 r2 .&& g l3 r3
+  {-# INLINE liftSymEq2 #-}
 
-instance (SEq a, SEq b) => SEq2 ((,,,) a b) where
-  liftSEq2 f g (l1, l2, l3, l4) (r1, r2, r3, r4) =
+instance (SymEq a, SymEq b) => SymEq2 ((,,,) a b) where
+  liftSymEq2 f g (l1, l2, l3, l4) (r1, r2, r3, r4) =
     l1 .== r1 .&& l2 .== r2 .&& f l3 r3 .&& g l4 r4
-  {-# INLINE liftSEq2 #-}
+  {-# INLINE liftSymEq2 #-}

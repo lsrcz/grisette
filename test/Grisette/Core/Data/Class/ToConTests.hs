@@ -21,8 +21,8 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
-    SEq ((.==)),
     SymBool,
+    SymEq ((.==)),
     ToCon (toCon),
   )
 import Grisette.Core.Data.Class.TestValues

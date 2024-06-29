@@ -20,9 +20,9 @@ import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SEq (SEq)
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
@@ -39,9 +39,9 @@ type BasicGrisetteType t =
     Lift t,
     Mergeable t,
     NFData t,
-    SEq t,
+    SymEq t,
     Show t,
-    SOrd t,
+    SymOrd t,
     SubstSym t
   )
 

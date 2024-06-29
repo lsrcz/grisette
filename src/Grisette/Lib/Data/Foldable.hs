@@ -58,8 +58,8 @@ import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SEq (SEq)
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge,
@@ -70,14 +70,14 @@ import Grisette.Unified (EvaluationMode (Sym))
 import qualified Grisette.Unified.Lib.Data.Foldable as Unified
 
 -- | 'Data.Foldable.elem' with symbolic equality.
-symElem :: (Foldable t, SEq a) => a -> t a -> SymBool
+symElem :: (Foldable t, SymEq a) => a -> t a -> SymBool
 symElem = Unified.symElem
 {-# INLINE symElem #-}
 
 -- | 'Data.Foldable.maximum' with 'MergingStrategy' knowledge propagation.
 mrgMaximum ::
   forall a t m.
-  (Foldable t, MonadUnion m, Mergeable a, SOrd a) =>
+  (Foldable t, MonadUnion m, Mergeable a, SymOrd a) =>
   t a ->
   m a
 mrgMaximum = Unified.mrgMaximum @'Sym
@@ -86,7 +86,7 @@ mrgMaximum = Unified.mrgMaximum @'Sym
 -- | 'Data.Foldable.maximum' with result merged with 'ITEOp'.
 symMaximum ::
   forall a t.
-  (Foldable t, Mergeable a, SOrd a, ITEOp a) =>
+  (Foldable t, Mergeable a, SymOrd a, ITEOp a) =>
   t a ->
   a
 symMaximum = Unified.symMaximum @'Sym
@@ -95,7 +95,7 @@ symMaximum = Unified.symMaximum @'Sym
 -- | 'Data.Foldable.minimum' with 'MergingStrategy' knowledge propagation.
 mrgMinimum ::
   forall a t m.
-  (Foldable t, MonadUnion m, Mergeable a, SOrd a) =>
+  (Foldable t, MonadUnion m, Mergeable a, SymOrd a) =>
   t a ->
   m a
 mrgMinimum = Unified.mrgMinimum @'Sym
@@ -104,7 +104,7 @@ mrgMinimum = Unified.mrgMinimum @'Sym
 -- | 'Data.Foldable.minimum' with result merged with 'ITEOp'.
 symMinimum ::
   forall a t.
-  (Foldable t, Mergeable a, SOrd a, ITEOp a) =>
+  (Foldable t, Mergeable a, SymOrd a, ITEOp a) =>
   t a ->
   a
 symMinimum = Unified.symMinimum @'Sym
@@ -226,7 +226,7 @@ symMinimumBy = Unified.symMinimumBy
 {-# INLINE symMinimumBy #-}
 
 -- | 'Data.Foldable.elem' with symbolic equality.
-symNotElem :: (Foldable t, SEq a) => a -> t a -> SymBool
+symNotElem :: (Foldable t, SymEq a) => a -> t a -> SymBool
 symNotElem = Unified.symNotElem
 {-# INLINE symNotElem #-}
 

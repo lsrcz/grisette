@@ -24,9 +24,9 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
-    SEq ((.==)),
     Solvable (con, isym, ssym),
     SymBool,
+    SymEq ((.==)),
     ToSym (toSym),
   )
 import Test.Framework (Test, testGroup)

@@ -62,14 +62,14 @@ import Grisette.Internal.Core.Data.Class.TryMerge
 import Grisette.Unified
   ( MonadWithMode,
     UnifiedITEOp,
-    UnifiedSOrd,
+    UnifiedSymOrd,
     liftBaseMonad,
     mrgIf,
     symIteMerge,
   )
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.Class.UnifiedSEq (UnifiedSEq, (.==))
-import Grisette.Unified.Internal.Class.UnifiedSOrd (mrgMax, mrgMin)
+import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq, (.==))
+import Grisette.Unified.Internal.Class.UnifiedSymOrd (mrgMax, mrgMin)
 import Grisette.Unified.Internal.IsMode (IsMode)
 import Grisette.Unified.Internal.UnifiedBool (GetBool)
 import Grisette.Unified.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
@@ -83,7 +83,7 @@ import Grisette.Unified.Lib.Data.Functor (mrgFmap, mrgVoid)
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem ::
   forall mode t a.
-  (Foldable t, IsMode mode, UnifiedSEq mode a) =>
+  (Foldable t, IsMode mode, UnifiedSymEq mode a) =>
   a ->
   t a ->
   GetBool mode
@@ -93,7 +93,7 @@ symElem x = symAny ((.== x))
 -- | 'Data.Foldable.maximum' with unified comparison.
 mrgMaximum ::
   forall mode a t m.
-  (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSOrd mode a) =>
+  (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSymOrd mode a) =>
   t a ->
   m a
 mrgMaximum l = do
@@ -114,7 +114,7 @@ symMaximum ::
   forall mode a t.
   ( Foldable t,
     Mergeable a,
-    UnifiedSOrd mode a,
+    UnifiedSymOrd mode a,
     UnifiedITEOp mode a,
     IsMode mode
   ) =>
@@ -126,7 +126,7 @@ symMaximum l = symIteMerge (mrgMaximum @mode l :: BaseMonad mode a)
 -- | 'Data.Foldable.minimum' with 'MergingStrategy' knowledge propagation.
 mrgMinimum ::
   forall mode a t m.
-  (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSOrd mode a) =>
+  (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSymOrd mode a) =>
   t a ->
   m a
 mrgMinimum l = do
@@ -146,7 +146,7 @@ symMinimum ::
   forall mode a t.
   ( Foldable t,
     Mergeable a,
-    UnifiedSOrd mode a,
+    UnifiedSymOrd mode a,
     UnifiedITEOp mode a,
     IsMode mode
   ) =>
@@ -314,7 +314,7 @@ symMinimumBy cmp l = symIteMerge (mrgMinimumBy cmp l :: BaseMonad mode a)
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symNotElem ::
-  (Foldable t, UnifiedSEq mode a, IsMode mode) =>
+  (Foldable t, UnifiedSymEq mode a, IsMode mode) =>
   a ->
   t a ->
   GetBool mode

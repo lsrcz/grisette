@@ -16,19 +16,19 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.Data.Class.SOrd
+-- Module      :   Grisette.Internal.Core.Data.Class.SymOrd
 -- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.Data.Class.SOrd
+module Grisette.Internal.Core.Data.Class.SymOrd
   ( -- * Symbolic total order relation
-    SOrd (..),
-    SOrd1 (..),
+    SymOrd (..),
+    SymOrd1 (..),
     symCompare1,
-    SOrd2 (..),
+    SymOrd2 (..),
     symCompare2,
 
     -- * Min and max
@@ -37,9 +37,9 @@ module Grisette.Internal.Core.Data.Class.SOrd
     mrgMax,
     mrgMin,
 
-    -- * Generic 'SOrd'
-    SOrdArgs (..),
-    GSOrd (..),
+    -- * Generic 'SymOrd'
+    SymOrdArgs (..),
+    GSymOrd (..),
     genericSymCompare,
     genericLiftSymCompare,
   )
@@ -94,12 +94,12 @@ import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( simpleMerge,
   )
-import Grisette.Internal.Core.Data.Class.SEq (GSEq, SEq ((.==)), SEq1, SEq2)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SymBranching,
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.SymEq (GSymEq, SymEq ((.==)), SymEq1, SymEq2)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
@@ -172,8 +172,8 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- __Note:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
 --
--- > data X = ... deriving Generic deriving SOrd via (Default X)
-class (SEq a) => SOrd a where
+-- > data X = ... deriving Generic deriving SymOrd via (Default X)
+class (SymEq a) => SymOrd a where
   (.<) :: a -> a -> SymBool
   infix 4 .<
   (.<=) :: a -> a -> SymBool
@@ -204,7 +204,7 @@ class (SEq a) => SOrd a where
   {-# INLINE symCompare #-}
   {-# MINIMAL (.<) | symCompare #-}
 
--- | Lifting of the 'SOrd' class to unary type constructors.
+-- | Lifting of the 'SymOrd' class to unary type constructors.
 --
 -- Any instance should be subject to the following law that canonicity is
 -- preserved:
@@ -212,10 +212,10 @@ class (SEq a) => SOrd a where
 -- @liftSymCompare symCompare@ should be equivalent to @symCompare@, under the
 -- symbolic semantics.
 --
--- This class therefore represents the generalization of 'SOrd' by decomposing
+-- This class therefore represents the generalization of 'SymOrd' by decomposing
 -- its main method into a canonical lifting on a canonical inner method, so that
 -- the lifting can be reused for other arguments than the canonical one.
-class (SEq1 f, forall a. (SOrd a) => SOrd (f a)) => SOrd1 f where
+class (SymEq1 f, forall a. (SymOrd a) => SymOrd (f a)) => SymOrd1 f where
   -- | Lift a 'symCompare' function through the type constructor.
   --
   -- The function will usually be applied to an symbolic comparison function,
@@ -224,12 +224,12 @@ class (SEq1 f, forall a. (SOrd a) => SOrd (f a)) => SOrd1 f where
   liftSymCompare :: (a -> b -> Union Ordering) -> f a -> f b -> Union Ordering
 
 -- | Lift the standard 'symCompare' function to binary type constructors.
-symCompare1 :: (SOrd1 f, SOrd a) => f a -> f a -> Union Ordering
+symCompare1 :: (SymOrd1 f, SymOrd a) => f a -> f a -> Union Ordering
 symCompare1 = liftSymCompare symCompare
 {-# INLINE symCompare1 #-}
 
--- | Lifting of the 'SOrd' class to binary type constructors.
-class (SEq2 f, forall a. (SOrd a) => SOrd1 (f a)) => SOrd2 f where
+-- | Lifting of the 'SymOrd' class to binary type constructors.
+class (SymEq2 f, forall a. (SymOrd a) => SymOrd1 (f a)) => SymOrd2 f where
   -- | Lift a 'symCompare' function through the type constructor.
   --
   -- The function will usually be applied to an symbolic comparison function,
@@ -243,23 +243,23 @@ class (SEq2 f, forall a. (SOrd a) => SOrd1 (f a)) => SOrd2 f where
     Union Ordering
 
 -- | Lift the standard 'symCompare' function through the type constructors.
-symCompare2 :: (SOrd2 f, SOrd a, SOrd b) => f a b -> f a b -> Union Ordering
+symCompare2 :: (SymOrd2 f, SymOrd a, SymOrd b) => f a b -> f a b -> Union Ordering
 symCompare2 = liftSymCompare2 symCompare symCompare
 {-# INLINE symCompare2 #-}
 
 -- | Symbolic maximum.
-symMax :: (SOrd a, ITEOp a) => a -> a -> a
+symMax :: (SymOrd a, ITEOp a) => a -> a -> a
 symMax x y = symIte (x .>= y) x y
 {-# INLINE symMax #-}
 
 -- | Symbolic minimum.
-symMin :: (SOrd a, ITEOp a) => a -> a -> a
+symMin :: (SymOrd a, ITEOp a) => a -> a -> a
 symMin x y = symIte (x .>= y) y x
 {-# INLINE symMin #-}
 
 -- | Symbolic maximum, with a union-like monad.
 mrgMax ::
-  (SOrd a, Mergeable a, SymBranching m, Applicative m) =>
+  (SymOrd a, Mergeable a, SymBranching m, Applicative m) =>
   a ->
   a ->
   m a
@@ -268,7 +268,7 @@ mrgMax x y = mrgIf (x .>= y) (pure x) (pure y)
 
 -- | Symbolic minimum, with a union-like monad.
 mrgMin ::
-  (SOrd a, Mergeable a, SymBranching m, Applicative m) =>
+  (SymOrd a, Mergeable a, SymBranching m, Applicative m) =>
   a ->
   a ->
   m a
@@ -278,28 +278,28 @@ mrgMin x y = mrgIf (x .>= y) (pure y) (pure x)
 -- Derivations
 
 -- | The arguments to the generic comparison function.
-data family SOrdArgs arity a b :: Type
+data family SymOrdArgs arity a b :: Type
 
-data instance SOrdArgs Arity0 _ _ = SOrdArgs0
+data instance SymOrdArgs Arity0 _ _ = SymOrdArgs0
 
-newtype instance SOrdArgs Arity1 a b
-  = SOrdArgs1 (a -> b -> Union Ordering)
+newtype instance SymOrdArgs Arity1 a b
+  = SymOrdArgs1 (a -> b -> Union Ordering)
 
 -- | The class of types that can be generically symbolically compared.
-class GSOrd arity f where
-  gsymCompare :: SOrdArgs arity a b -> f a -> f b -> Union Ordering
+class GSymOrd arity f where
+  gsymCompare :: SymOrdArgs arity a b -> f a -> f b -> Union Ordering
 
-instance GSOrd arity V1 where
+instance GSymOrd arity V1 where
   gsymCompare _ _ _ = mrgSingle EQ
   {-# INLINE gsymCompare #-}
 
-instance GSOrd arity U1 where
+instance GSymOrd arity U1 where
   gsymCompare _ _ _ = mrgSingle EQ
   {-# INLINE gsymCompare #-}
 
 instance
-  (GSOrd arity a, GSOrd arity b) =>
-  GSOrd arity (a :*: b)
+  (GSymOrd arity a, GSymOrd arity b) =>
+  GSymOrd arity (a :*: b)
   where
   gsymCompare args (a1 :*: b1) (a2 :*: b2) = do
     l <- gsymCompare args a1 a2
@@ -309,8 +309,8 @@ instance
   {-# INLINE gsymCompare #-}
 
 instance
-  (GSOrd arity a, GSOrd arity b) =>
-  GSOrd arity (a :+: b)
+  (GSymOrd arity a, GSymOrd arity b) =>
+  GSymOrd arity (a :+: b)
   where
   gsymCompare args (L1 a) (L1 b) = gsymCompare args a b
   gsymCompare _ (L1 _) (R1 _) = mrgSingle LT
@@ -318,64 +318,64 @@ instance
   gsymCompare _ (R1 _) (L1 _) = mrgSingle GT
   {-# INLINE gsymCompare #-}
 
-instance (GSOrd arity a) => GSOrd arity (M1 i c a) where
+instance (GSymOrd arity a) => GSymOrd arity (M1 i c a) where
   gsymCompare args (M1 a) (M1 b) = gsymCompare args a b
   {-# INLINE gsymCompare #-}
 
-instance (SOrd a) => GSOrd arity (K1 i a) where
+instance (SymOrd a) => GSymOrd arity (K1 i a) where
   gsymCompare _ (K1 a) (K1 b) = a `symCompare` b
   {-# INLINE gsymCompare #-}
 
-instance GSOrd Arity1 Par1 where
-  gsymCompare (SOrdArgs1 c) (Par1 a) (Par1 b) = c a b
+instance GSymOrd Arity1 Par1 where
+  gsymCompare (SymOrdArgs1 c) (Par1 a) (Par1 b) = c a b
   {-# INLINE gsymCompare #-}
 
-instance (SOrd1 f) => GSOrd Arity1 (Rec1 f) where
-  gsymCompare (SOrdArgs1 c) (Rec1 a) (Rec1 b) = liftSymCompare c a b
+instance (SymOrd1 f) => GSymOrd Arity1 (Rec1 f) where
+  gsymCompare (SymOrdArgs1 c) (Rec1 a) (Rec1 b) = liftSymCompare c a b
   {-# INLINE gsymCompare #-}
 
-instance (SOrd1 f, GSOrd Arity1 g) => GSOrd Arity1 (f :.: g) where
+instance (SymOrd1 f, GSymOrd Arity1 g) => GSymOrd Arity1 (f :.: g) where
   gsymCompare targs (Comp1 a) (Comp1 b) = liftSymCompare (gsymCompare targs) a b
   {-# INLINE gsymCompare #-}
 
 instance
-  (Generic a, GSOrd Arity0 (Rep a), GSEq Arity0 (Rep a)) =>
-  SOrd (Default a)
+  (Generic a, GSymOrd Arity0 (Rep a), GSymEq Arity0 (Rep a)) =>
+  SymOrd (Default a)
   where
   symCompare (Default l) (Default r) = genericSymCompare l r
   {-# INLINE symCompare #-}
 
 -- | Generic 'symCompare' function.
-genericSymCompare :: (Generic a, GSOrd Arity0 (Rep a)) => a -> a -> Union Ordering
-genericSymCompare l r = gsymCompare SOrdArgs0 (from l) (from r)
+genericSymCompare :: (Generic a, GSymOrd Arity0 (Rep a)) => a -> a -> Union Ordering
+genericSymCompare l r = gsymCompare SymOrdArgs0 (from l) (from r)
 {-# INLINE genericSymCompare #-}
 
 instance
-  (Generic1 f, GSOrd Arity1 (Rep1 f), GSEq Arity1 (Rep1 f), SOrd a) =>
-  SOrd (Default1 f a)
+  (Generic1 f, GSymOrd Arity1 (Rep1 f), GSymEq Arity1 (Rep1 f), SymOrd a) =>
+  SymOrd (Default1 f a)
   where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
 instance
-  (Generic1 f, GSOrd Arity1 (Rep1 f), GSEq Arity1 (Rep1 f)) =>
-  SOrd1 (Default1 f)
+  (Generic1 f, GSymOrd Arity1 (Rep1 f), GSymEq Arity1 (Rep1 f)) =>
+  SymOrd1 (Default1 f)
   where
   liftSymCompare c (Default1 l) (Default1 r) = genericLiftSymCompare c l r
   {-# INLINE liftSymCompare #-}
 
 -- | Generic 'liftSymCompare' function.
 genericLiftSymCompare ::
-  (Generic1 f, GSOrd Arity1 (Rep1 f)) =>
+  (Generic1 f, GSymOrd Arity1 (Rep1 f)) =>
   (a -> b -> Union Ordering) ->
   f a ->
   f b ->
   Union Ordering
-genericLiftSymCompare c l r = gsymCompare (SOrdArgs1 c) (from1 l) (from1 r)
+genericLiftSymCompare c l r = gsymCompare (SymOrdArgs1 c) (from1 l) (from1 r)
 {-# INLINE genericLiftSymCompare #-}
 
 #define CONCRETE_SORD(type) \
-instance SOrd type where \
+instance SymOrd type where \
   l .<= r = con $ l <= r; \
   l .< r = con $ l < r; \
   l .>= r = con $ l >= r; \
@@ -388,7 +388,7 @@ instance SOrd type where \
   {-# INLINE symCompare #-}
 
 #define CONCRETE_SORD_BV(type) \
-instance (KnownNat n, 1 <= n) => SOrd (type n) where \
+instance (KnownNat n, 1 <= n) => SymOrd (type n) where \
   l .<= r = con $ l <= r; \
   l .< r = con $ l < r; \
   l .>= r = con $ l >= r; \
@@ -426,7 +426,7 @@ CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
 #endif
 
-instance (ValidFP eb sb) => SOrd (FP eb sb) where
+instance (ValidFP eb sb) => SymOrd (FP eb sb) where
   l .<= r = con $ l <= r
   {-# INLINE (.<=) #-}
   l .< r = con $ l < r
@@ -436,9 +436,9 @@ instance (ValidFP eb sb) => SOrd (FP eb sb) where
   l .> r = con $ l > r
   {-# INLINE (.>) #-}
 
--- SOrd
+-- SymOrd
 #define SORD_SIMPLE(symtype) \
-instance SOrd symtype where \
+instance SymOrd symtype where \
   (symtype a) .<= (symtype b) = SymBool $ pevalLeOrdTerm a b; \
   (symtype a) .< (symtype b) = SymBool $ pevalLtOrdTerm a b; \
   (symtype a) .>= (symtype b) = SymBool $ pevalGeOrdTerm a b; \
@@ -454,7 +454,7 @@ instance SOrd symtype where \
   {-# INLINE symCompare #-}
 
 #define SORD_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
+instance (KnownNat n, 1 <= n) => SymOrd (symtype n) where \
   (symtype a) .<= (symtype b) = SymBool $ pevalLeOrdTerm a b; \
   (symtype a) .< (symtype b) = SymBool $ pevalLtOrdTerm a b; \
   (symtype a) .>= (symtype b) = SymBool $ pevalGeOrdTerm a b; \
@@ -469,7 +469,7 @@ instance (KnownNat n, 1 <= n) => SOrd (symtype n) where \
   {-# INLINE (.>) #-}; \
   {-# INLINE symCompare #-}
 
-instance (ValidFP eb sb) => SOrd (SymFP eb sb) where
+instance (ValidFP eb sb) => SymOrd (SymFP eb sb) where
   (SymFP a) .<= (SymFP b) = SymBool $ pevalLeOrdTerm a b
   {-# INLINE (.<=) #-}
   (SymFP a) .< (SymFP b) = SymBool $ pevalLtOrdTerm a b
@@ -479,7 +479,7 @@ instance (ValidFP eb sb) => SOrd (SymFP eb sb) where
   (SymFP a) .> (SymFP b) = SymBool $ pevalGtOrdTerm a b
   {-# INLINE (.>) #-}
 
-instance SOrd SymBool where
+instance SymOrd SymBool where
   l .<= r = symNot l .|| r
   {-# INLINE (.<=) #-}
   l .< r = symNot l .&& r
@@ -503,7 +503,7 @@ SORD_BV(SymWordN)
 #endif
 
 -- Union
-instance (SOrd a, Mergeable a) => SOrd (Union a) where
+instance (SymOrd a, Mergeable a) => SymOrd (Union a) where
   x .<= y = simpleMerge $ do
     x1 <- tryMerge x
     y1 <- tryMerge y
@@ -527,8 +527,8 @@ instance (SOrd a, Mergeable a) => SOrd (Union a) where
 
 -- Instances
 deriveBuiltins
-  (ViaDefault ''SOrd)
-  [''SOrd]
+  (ViaDefault ''SymOrd)
+  [''SymOrd]
   [ ''Maybe,
     ''Either,
     ''(),
@@ -557,8 +557,8 @@ deriveBuiltins
   ]
 
 deriveBuiltins
-  (ViaDefault1 ''SOrd1)
-  [''SOrd, ''SOrd1]
+  (ViaDefault1 ''SymOrd1)
+  [''SymOrd, ''SymOrd1]
   [ ''Maybe,
     ''Either,
     ''(,),
@@ -583,7 +583,7 @@ deriveBuiltins
     ''Monoid.Last
   ]
 
-symCompareSingleList :: (SOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool
+symCompareSingleList :: (SymOrd a) => Bool -> Bool -> [a] -> [a] -> SymBool
 symCompareSingleList isLess isStrict = go
   where
     go [] [] = con (not isStrict)
@@ -605,7 +605,7 @@ symLiftCompareList _ [] _ = mrgSingle LT
 symLiftCompareList _ _ [] = mrgSingle GT
 
 -- []
-instance (SOrd a) => SOrd [a] where
+instance (SymOrd a) => SymOrd [a] where
   {-# INLINE (.<=) #-}
   {-# INLINE (.<) #-}
   {-# INLINE symCompare #-}
@@ -617,54 +617,54 @@ instance (SOrd a) => SOrd [a] where
   (.>) = symCompareSingleList False True
   symCompare = symLiftCompareList symCompare
 
-instance SOrd1 [] where
+instance SymOrd1 [] where
   liftSymCompare = symLiftCompareList
   {-# INLINE liftSymCompare #-}
 
 -- ExceptT
-instance (SOrd1 m, SOrd e, SOrd a) => SOrd (ExceptT e m a) where
+instance (SymOrd1 m, SymOrd e, SymOrd a) => SymOrd (ExceptT e m a) where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
-instance (SOrd1 m, SOrd e) => SOrd1 (ExceptT e m) where
+instance (SymOrd1 m, SymOrd e) => SymOrd1 (ExceptT e m) where
   liftSymCompare f (ExceptT l) (ExceptT r) =
     liftSymCompare (liftSymCompare f) l r
   {-# INLINE liftSymCompare #-}
 
 -- MaybeT
-instance (SOrd1 m, SOrd a) => SOrd (MaybeT m a) where
+instance (SymOrd1 m, SymOrd a) => SymOrd (MaybeT m a) where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
-instance (SOrd1 m) => SOrd1 (MaybeT m) where
+instance (SymOrd1 m) => SymOrd1 (MaybeT m) where
   liftSymCompare f (MaybeT l) (MaybeT r) = liftSymCompare (liftSymCompare f) l r
   {-# INLINE liftSymCompare #-}
 
 -- Writer
-instance (SOrd1 m, SOrd w, SOrd a) => SOrd (WriterLazy.WriterT w m a) where
+instance (SymOrd1 m, SymOrd w, SymOrd a) => SymOrd (WriterLazy.WriterT w m a) where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
-instance (SOrd1 m, SOrd w) => SOrd1 (WriterLazy.WriterT w m) where
+instance (SymOrd1 m, SymOrd w) => SymOrd1 (WriterLazy.WriterT w m) where
   liftSymCompare f (WriterLazy.WriterT l) (WriterLazy.WriterT r) =
     liftSymCompare (liftSymCompare2 f symCompare) l r
   {-# INLINE liftSymCompare #-}
 
-instance (SOrd1 m, SOrd w, SOrd a) => SOrd (WriterStrict.WriterT w m a) where
+instance (SymOrd1 m, SymOrd w, SymOrd a) => SymOrd (WriterStrict.WriterT w m a) where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
-instance (SOrd1 m, SOrd w) => SOrd1 (WriterStrict.WriterT w m) where
+instance (SymOrd1 m, SymOrd w) => SymOrd1 (WriterStrict.WriterT w m) where
   liftSymCompare f (WriterStrict.WriterT l) (WriterStrict.WriterT r) =
     liftSymCompare (liftSymCompare2 f symCompare) l r
   {-# INLINE liftSymCompare #-}
 
 -- IdentityT
-instance (SOrd1 m, SOrd a) => SOrd (IdentityT m a) where
+instance (SymOrd1 m, SymOrd a) => SymOrd (IdentityT m a) where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
-instance (SOrd1 m) => SOrd1 (IdentityT m) where
+instance (SymOrd1 m) => SymOrd1 (IdentityT m) where
   liftSymCompare f (IdentityT l) (IdentityT r) = liftSymCompare f l r
   {-# INLINE liftSymCompare #-}
 
@@ -672,95 +672,95 @@ instance (SOrd1 m) => SOrd1 (IdentityT m) where
 deriving via
   (Default (Product l r a))
   instance
-    (SOrd (l a), SOrd (r a)) => SOrd (Product l r a)
+    (SymOrd (l a), SymOrd (r a)) => SymOrd (Product l r a)
 
 deriving via
   (Default1 (Product l r))
   instance
-    (SOrd1 l, SOrd1 r) => SOrd1 (Product l r)
+    (SymOrd1 l, SymOrd1 r) => SymOrd1 (Product l r)
 
 -- Sum
 deriving via
   (Default (Sum l r a))
   instance
-    (SOrd (l a), SOrd (r a)) => SOrd (Sum l r a)
+    (SymOrd (l a), SymOrd (r a)) => SymOrd (Sum l r a)
 
 deriving via
   (Default1 (Sum l r))
   instance
-    (SOrd1 l, SOrd1 r) => SOrd1 (Sum l r)
+    (SymOrd1 l, SymOrd1 r) => SymOrd1 (Sum l r)
 
 -- Compose
 deriving via
   (Default (Compose f g a))
   instance
-    (SOrd (f (g a))) => SOrd (Compose f g a)
+    (SymOrd (f (g a))) => SymOrd (Compose f g a)
 
-instance (SOrd1 f, SOrd1 g) => SOrd1 (Compose f g) where
+instance (SymOrd1 f, SymOrd1 g) => SymOrd1 (Compose f g) where
   liftSymCompare f (Compose l) (Compose r) =
     liftSymCompare (liftSymCompare f) l r
 
 -- Const
-deriving via (Default (Const a b)) instance (SOrd a) => SOrd (Const a b)
+deriving via (Default (Const a b)) instance (SymOrd a) => SymOrd (Const a b)
 
-deriving via (Default1 (Const a)) instance (SOrd a) => SOrd1 (Const a)
+deriving via (Default1 (Const a)) instance (SymOrd a) => SymOrd1 (Const a)
 
 -- Alt
-deriving via (Default (Alt f a)) instance (SOrd (f a)) => SOrd (Alt f a)
+deriving via (Default (Alt f a)) instance (SymOrd (f a)) => SymOrd (Alt f a)
 
-deriving via (Default1 (Alt f)) instance (SOrd1 f) => SOrd1 (Alt f)
+deriving via (Default1 (Alt f)) instance (SymOrd1 f) => SymOrd1 (Alt f)
 
 -- Ap
-deriving via (Default (Ap f a)) instance (SOrd (f a)) => SOrd (Ap f a)
+deriving via (Default (Ap f a)) instance (SymOrd (f a)) => SymOrd (Ap f a)
 
-deriving via (Default1 (Ap f)) instance (SOrd1 f) => SOrd1 (Ap f)
+deriving via (Default1 (Ap f)) instance (SymOrd1 f) => SymOrd1 (Ap f)
 
 -- Generic
-deriving via (Default (U1 p)) instance SOrd (U1 p)
+deriving via (Default (U1 p)) instance SymOrd (U1 p)
 
-deriving via (Default (V1 p)) instance SOrd (V1 p)
+deriving via (Default (V1 p)) instance SymOrd (V1 p)
 
 deriving via
   (Default (K1 i c p))
   instance
-    (SOrd c) => SOrd (K1 i c p)
+    (SymOrd c) => SymOrd (K1 i c p)
 
 deriving via
   (Default (M1 i c f p))
   instance
-    (SOrd (f p)) => SOrd (M1 i c f p)
+    (SymOrd (f p)) => SymOrd (M1 i c f p)
 
 deriving via
   (Default ((f :+: g) p))
   instance
-    (SOrd (f p), SOrd (g p)) => SOrd ((f :+: g) p)
+    (SymOrd (f p), SymOrd (g p)) => SymOrd ((f :+: g) p)
 
 deriving via
   (Default ((f :*: g) p))
   instance
-    (SOrd (f p), SOrd (g p)) => SOrd ((f :*: g) p)
+    (SymOrd (f p), SymOrd (g p)) => SymOrd ((f :*: g) p)
 
 deriving via
   (Default (Par1 p))
   instance
-    (SOrd p) => SOrd (Par1 p)
+    (SymOrd p) => SymOrd (Par1 p)
 
 deriving via
   (Default (Rec1 f p))
   instance
-    (SOrd (f p)) => SOrd (Rec1 f p)
+    (SymOrd (f p)) => SymOrd (Rec1 f p)
 
 deriving via
   (Default ((f :.: g) p))
   instance
-    (SOrd (f (g p))) => SOrd ((f :.: g) p)
+    (SymOrd (f (g p))) => SymOrd ((f :.: g) p)
 
 -- Down
-instance (SOrd a) => SOrd (Down a) where
+instance (SymOrd a) => SymOrd (Down a) where
   symCompare = symCompare1
   {-# INLINE symCompare #-}
 
-instance SOrd1 Down where
+instance SymOrd1 Down where
   liftSymCompare comp (Down l) (Down r) = do
     res <- comp l r
     case res of
@@ -769,21 +769,21 @@ instance SOrd1 Down where
       GT -> mrgSingle LT
   {-# INLINE liftSymCompare #-}
 
-instance SOrd2 Either where
+instance SymOrd2 Either where
   liftSymCompare2 f _ (Left l) (Left r) = f l r
   liftSymCompare2 _ g (Right l) (Right r) = g l r
   liftSymCompare2 _ _ (Left _) (Right _) = mrgSingle LT
   liftSymCompare2 _ _ (Right _) (Left _) = mrgSingle GT
   {-# INLINE liftSymCompare2 #-}
 
-instance SOrd2 (,) where
+instance SymOrd2 (,) where
   liftSymCompare2 f g (a1, b1) (a2, b2) = do
     ma <- f a1 a2
     mb <- g b1 b2
     mrgSingle $ ma <> mb
   {-# INLINE liftSymCompare2 #-}
 
-instance (SOrd a) => SOrd2 ((,,) a) where
+instance (SymOrd a) => SymOrd2 ((,,) a) where
   liftSymCompare2 f g (a1, b1, c1) (a2, b2, c2) = do
     ma <- symCompare a1 a2
     mb <- f b1 b2
@@ -791,7 +791,7 @@ instance (SOrd a) => SOrd2 ((,,) a) where
     mrgSingle $ ma <> mb <> mc
   {-# INLINE liftSymCompare2 #-}
 
-instance (SOrd a, SOrd b) => SOrd2 ((,,,) a b) where
+instance (SymOrd a, SymOrd b) => SymOrd2 ((,,,) a b) where
   liftSymCompare2 f g (a1, b1, c1, d1) (a2, b2, c2, d2) = do
     ma <- symCompare a1 a2
     mb <- symCompare b1 b2

@@ -72,7 +72,6 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (ifView, singleView),
     simpleMerge,
   )
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((.==)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
@@ -89,6 +88,7 @@ import Grisette.Internal.Core.Data.Class.Solver
 import Grisette.Internal.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
   )
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Internal.Core.Data.Class.TryMerge
@@ -402,7 +402,7 @@ instance SymBranching Union where
   mrgIfPropagatedStrategy cond t f@(UMrg m _) = mrgIfWithStrategy m cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance (Mergeable a, SEq a) => SEq (Union a) where
+instance (Mergeable a, SymEq a) => SymEq (Union a) where
   x .== y = simpleMerge $ unionBinOp (.==) x y
   {-# INLINE (.==) #-}
 

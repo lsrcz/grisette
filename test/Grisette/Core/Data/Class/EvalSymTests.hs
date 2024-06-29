@@ -25,9 +25,9 @@ import Grisette
     ModelOps (emptyModel),
     ModelRep (buildModel),
     ModelValuePair ((::=)),
-    SEq ((.==)),
     Solvable (con, isym, ssym),
     SymBool,
+    SymEq ((.==)),
     Symbol (IndexedSymbol),
     TypedSymbol (TypedSymbol),
   )

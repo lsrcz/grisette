@@ -86,7 +86,6 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion,
     simpleMerge,
   )
-import Grisette.Internal.Core.Data.Class.SEq (SEq)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
   )
@@ -99,6 +98,7 @@ import Grisette.Internal.Core.Data.Class.Solver
     solverSolve,
     withSolver,
   )
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
 import Grisette.Internal.SymPrim.Prim.Model (Model)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 
@@ -385,7 +385,7 @@ solverCegis ::
   ( Solver handle,
     EvalSym inputs,
     ExtractSym inputs,
-    SEq inputs
+    SymEq inputs
   ) =>
   -- | The synthesizer solver handle
   handle ->
@@ -530,7 +530,7 @@ solverCegisExcept ::
     EvalSym inputs,
     ExtractSym inputs,
     Solver handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   handle ->
   handle ->
@@ -560,7 +560,7 @@ solverCegisExceptVC ::
     EvalSym inputs,
     ExtractSym inputs,
     Solver handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   handle ->
   handle ->
@@ -594,7 +594,7 @@ solverCegisExceptStdVC ::
     EvalSym inputs,
     ExtractSym inputs,
     Solver handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   handle ->
   handle ->
@@ -674,7 +674,7 @@ solverCegisForAllExcept ::
     EvalSym inputs,
     ExtractSym inputs,
     Solver handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   handle ->
   handle ->
@@ -704,7 +704,7 @@ solverCegisForAllExceptVC ::
     EvalSym inputs,
     ExtractSym inputs,
     Solver handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   handle ->
   handle ->
@@ -739,7 +739,7 @@ solverCegisForAllExceptStdVC ::
     EvalSym inputs,
     ExtractSym inputs,
     Solver handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   handle ->
   handle ->
@@ -803,7 +803,7 @@ cegis ::
   ( ConfigurableSolver config handle,
     EvalSym inputs,
     ExtractSym inputs,
-    SEq inputs
+    SymEq inputs
   ) =>
   -- | The configuration of the solver
   config ->
@@ -943,7 +943,7 @@ cegisExcept ::
     EvalSym inputs,
     ExtractSym inputs,
     ConfigurableSolver config handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   config ->
   inputs ->
@@ -967,7 +967,7 @@ cegisExceptVC ::
     EvalSym inputs,
     ExtractSym inputs,
     ConfigurableSolver config handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   config ->
   inputs ->
@@ -1013,7 +1013,7 @@ cegisExceptStdVC ::
     EvalSym inputs,
     ExtractSym inputs,
     ConfigurableSolver config handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   config ->
   inputs ->
@@ -1067,7 +1067,7 @@ cegisForAllExcept ::
     EvalSym inputs,
     ExtractSym inputs,
     ConfigurableSolver config handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   config ->
   inputs ->
@@ -1090,7 +1090,7 @@ cegisForAllExceptVC ::
     EvalSym inputs,
     ExtractSym inputs,
     ConfigurableSolver config handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   config ->
   inputs ->
@@ -1113,7 +1113,7 @@ cegisForAllExceptStdVC ::
     EvalSym inputs,
     ExtractSym inputs,
     ConfigurableSolver config handle,
-    SEq inputs
+    SymEq inputs
   ) =>
   config ->
   inputs ->

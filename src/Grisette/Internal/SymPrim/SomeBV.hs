@@ -131,10 +131,6 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     MergingStrategy (SortedStrategy),
     wrapStrategy,
   )
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Internal.Core.Data.Class.SOrd
-  ( SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
-  )
 import Grisette.Internal.Core.Data.Class.SafeDivision
   ( SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
   )
@@ -160,6 +156,10 @@ import Grisette.Internal.Core.Data.Class.Solvable
   )
 import Grisette.Internal.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
+  )
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
+import Grisette.Internal.Core.Data.Class.SymOrd
+  ( SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
   )
 import Grisette.Internal.Core.Data.Class.SymRotate
   ( SymRotate (symRotate, symRotateNegated),
@@ -224,7 +224,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- *** Exception: BitwidthMismatch
 --
 -- One exception is that the equality testing (both concrete and symbolic via
--- 'SEq') does not require the bitwidths to be the same. Different bitwidths
+-- 'SymEq') does not require the bitwidths to be the same. Different bitwidths
 -- means the values are not equal:
 --
 -- >>> (bv 4 0x3 :: SomeBV IntN) == (bv 8 0x3)
@@ -513,7 +513,7 @@ instance
             (\(SomeBV x) -> unsafeCoerce x)
       )
 
-instance (forall n. (KnownNat n, 1 <= n) => SEq (bv n)) => SEq (SomeBV bv) where
+instance (forall n. (KnownNat n, 1 <= n) => SymEq (bv n)) => SymEq (SomeBV bv) where
   SomeBV (l :: bv l) .== SomeBV (r :: bv r) =
     case sameNat (Proxy @l) (Proxy @r) of
       Just Refl -> l .== r
@@ -526,8 +526,8 @@ instance (forall n. (KnownNat n, 1 <= n) => SEq (bv n)) => SEq (SomeBV bv) where
   {-# INLINE (./=) #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => SOrd (bv n)) =>
-  SOrd (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => SymOrd (bv n)) =>
+  SymOrd (SomeBV bv)
   where
   (.<) = binSomeBV (.<)
   {-# INLINE (.<) #-}

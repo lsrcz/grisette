@@ -6,8 +6,8 @@ import Control.Monad.Error.Class (MonadError (throwError))
 import Control.Monad.Trans.Except (ExceptT (ExceptT), runExceptT)
 import Grisette
   ( ITEOp (symIte),
-    SEq ((.==)),
     SymBranching (mrgIfPropagatedStrategy),
+    SymEq ((.==)),
     Union,
     mrgIf,
     mrgSingle,

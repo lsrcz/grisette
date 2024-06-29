@@ -26,8 +26,8 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd ((.<)))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,

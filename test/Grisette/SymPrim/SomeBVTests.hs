@@ -22,9 +22,9 @@ import Grisette
     ITEOp (symIte),
     LogicalOp (symNot),
     Mergeable (rootStrategy),
-    SEq ((./=), (.==)),
     SafeLinearArith (safeAdd, safeSub),
     Solvable (con, isym, ssym),
+    SymEq ((./=), (.==)),
     genSym,
     genSymSimple,
     mrgIf,
@@ -414,7 +414,7 @@ someBVTests =
             assertBool "SomeBV with different bit width are not equal" $ a /= b
         ],
       testGroup
-        "SEq"
+        "SymEq"
         [ testCase "same bitwidth" $ do
             let a = ssymBV 4 "a" :: SomeSymIntN
             let b = ssymBV 4 "b" :: SomeSymIntN

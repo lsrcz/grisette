@@ -49,8 +49,6 @@ import Grisette
     MergingStrategy (SimpleStrategy),
     ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
-    SEq ((./=), (.==)),
-    SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
     SafeDivision
       ( safeDiv,
         safeDivMod,
@@ -75,6 +73,8 @@ import Grisette
     Solvable (con, conView, isym, ssym),
     SomeSymIntN,
     SomeSymWordN,
+    SymEq ((./=), (.==)),
+    SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
     ToCon (toCon),
     ToSym (toSym),
     TypedSymbol,
@@ -221,7 +221,7 @@ sameSafeDivMod i j f cf = do
 
 safeDivisionBoundedOnlyTests ::
   forall c s.
-  (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
@@ -245,7 +245,7 @@ safeDivisionBoundedOnlyTests f cf pf =
 
 safeDivisionUnboundedOnlyTests ::
   forall c s.
-  (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   (s -> s -> ExceptT ArithException Union s) ->
   (Term c -> Term c -> Term c) ->
   [Test]
@@ -262,7 +262,7 @@ safeDivisionUnboundedOnlyTests f pf =
 
 safeDivisionGeneralTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
@@ -284,7 +284,7 @@ safeDivisionGeneralTests transform f cf =
 
 safeDivisionBoundedTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Arbitrary c0, Show c0, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   TestName ->
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException Union s) ->
@@ -298,7 +298,7 @@ safeDivisionBoundedTests name transform f cf pf =
 
 safeDivisionUnboundedTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   TestName ->
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException Union s) ->
@@ -312,7 +312,7 @@ safeDivisionUnboundedTests name transform f cf pf =
 
 safeDivModBoundedOnlyTests ::
   forall c s.
-  (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   ( s ->
     s ->
     ExceptT ArithException Union (s, s)
@@ -344,7 +344,7 @@ safeDivModBoundedOnlyTests f cf pf1 pf2 =
 
 safeDivModUnboundedOnlyTests ::
   forall c s.
-  (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   ( s ->
     s ->
     ExceptT ArithException Union (s, s)
@@ -369,7 +369,7 @@ safeDivModUnboundedOnlyTests f pf1 pf2 =
 
 safeDivModGeneralTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   (c0 -> c) ->
   ( s ->
     s ->
@@ -394,7 +394,7 @@ safeDivModGeneralTests transform f cf =
 
 safeDivModBoundedTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Arbitrary c0, Show c0, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   TestName ->
   (c0 -> c) ->
   ( s ->
@@ -412,7 +412,7 @@ safeDivModBoundedTests name transform f cf pf1 pf2 =
 
 safeDivModUnboundedTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
+  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
   TestName ->
   (c0 -> c) ->
   ( s ->
@@ -494,7 +494,7 @@ symPrimTests =
             (genSymSimple () "a" :: SymBool) @=? isym "a" 0
             (genSym (ssym "a" :: SymBool) "a" :: Union SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple (ssym "a" :: SymBool) "a" :: SymBool) @=? isym "a" 0,
-          testCase "SEq" $ do
+          testCase "SymEq" $ do
             (ssym "a" :: SymBool) .== ssym "b" @=? SymBool (pevalEqTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
             (ssym "a" :: SymBool) ./= ssym "b" @=? SymBool (pevalNotTerm $ pevalEqTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
         ],
@@ -555,8 +555,8 @@ symPrimTests =
                   @=? (mrgSingle $ SymInteger $ pevalSubNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException Union SymInteger)
             ],
           testGroup
-            "SOrd"
-            [ testProperty "SOrd on concrete" $ \(i :: Integer, j :: Integer) -> ioProperty $ do
+            "SymOrd"
+            [ testProperty "SymOrd on concrete" $ \(i :: Integer, j :: Integer) -> ioProperty $ do
                 (con i :: SymInteger) .<= con j @=? (con (i <= j) :: SymBool)
                 (con i :: SymInteger) .< con j @=? (con (i < j) :: SymBool)
                 (con i :: SymInteger) .>= con j @=? (con (i >= j) :: SymBool)
@@ -564,7 +564,7 @@ symPrimTests =
                 (con i :: SymInteger)
                   `symCompare` con j
                   @=? (i `symCompare` j :: Union Ordering),
-              testCase "SOrd on symbolic" $ do
+              testCase "SymOrd on symbolic" $ do
                 let a :: SymInteger = ssym "a"
                 let b :: SymInteger = ssym "b"
                 let at :: Term Integer = ssymTerm "a"
@@ -718,8 +718,8 @@ symPrimTests =
                     ]
                 ],
               testGroup
-                "SOrd"
-                [ testProperty "SOrd on concrete" $ \(i :: Integer, j :: Integer) -> ioProperty $ do
+                "SymOrd"
+                [ testProperty "SymOrd on concrete" $ \(i :: Integer, j :: Integer) -> ioProperty $ do
                     let iu :: WordN 4 = fromInteger i
                     let ju :: WordN 4 = fromInteger j
                     let is :: IntN 4 = fromInteger i
@@ -740,7 +740,7 @@ symPrimTests =
                     (con is :: SymIntN 4)
                       `symCompare` con js
                       @=? (normalizes i `symCompare` normalizes j :: Union Ordering),
-                  testCase "SOrd on symbolic" $ do
+                  testCase "SymOrd on symbolic" $ do
                     au .<= bu @=? SymBool (pevalLeOrdTerm aut but)
                     au .< bu @=? SymBool (pevalLtOrdTerm aut but)
                     au .>= bu @=? SymBool (pevalGeOrdTerm aut but)

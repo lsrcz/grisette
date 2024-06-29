@@ -23,9 +23,9 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
   )
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty, GPretty1)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
-import Grisette.Internal.Core.Data.Class.SEq (SEq, SEq1)
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd, SOrd1)
 import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1)
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1)
@@ -45,13 +45,13 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   )
 import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
 import Grisette.Internal.TH.Util (classParamKinds, concatPreds)
-import Grisette.Unified.Internal.Class.UnifiedSEq
-  ( UnifiedSEq (withBaseSEq),
-    UnifiedSEq1 (withBaseSEq1),
+import Grisette.Unified.Internal.Class.UnifiedSymEq
+  ( UnifiedSymEq (withBaseSymEq),
+    UnifiedSymEq1 (withBaseSymEq1),
   )
-import Grisette.Unified.Internal.Class.UnifiedSOrd
-  ( UnifiedSOrd (withBaseSOrd),
-    UnifiedSOrd1 (withBaseSOrd1),
+import Grisette.Unified.Internal.Class.UnifiedSymOrd
+  ( UnifiedSymOrd (withBaseSymOrd),
+    UnifiedSymOrd1 (withBaseSymOrd1),
   )
 import Grisette.Unified.Internal.EvaluationMode
   ( EvaluationMode (Con, Sym),
@@ -102,8 +102,8 @@ dataDefaultStrategy nm
   | nm == ''ExtractSym = return $ ViaDefault nm
   | nm == ''GPretty = return $ ViaDefault nm
   | nm == ''Mergeable = return $ ViaDefault nm
-  | nm == ''SEq = return $ ViaDefault nm
-  | nm == ''SOrd = return $ ViaDefault nm
+  | nm == ''SymEq = return $ ViaDefault nm
+  | nm == ''SymOrd = return $ ViaDefault nm
   | nm == ''SubstSym = return $ ViaDefault nm
   | otherwise = fail $ "Unsupported class: " <> show nm
 
@@ -123,8 +123,8 @@ allNeededConstraints nm
   | nm == ''Mergeable = [''Mergeable1, ''Mergeable1]
   | nm == ''ToCon = [''ToCon, ''ToCon1]
   | nm == ''ToSym = [''ToSym, ''ToSym1]
-  | nm == ''SEq = [''SEq, ''SEq1, ''Mergeable, ''Mergeable1]
-  | nm == ''SOrd = [''SOrd, ''SOrd1, ''Mergeable, ''Mergeable1]
+  | nm == ''SymEq = [''SymEq, ''SymEq1, ''Mergeable, ''Mergeable1]
+  | nm == ''SymOrd = [''SymOrd, ''SymOrd1, ''Mergeable, ''Mergeable1]
   | nm == ''SubstSym =
       [''SubstSym, ''SubstSym, ''Mergeable, ''Mergeable1]
   | otherwise = []
@@ -175,26 +175,26 @@ derivePredefined _ cls name
   | cls == ''Generic =
       deriveWithHandlers [] (Stock ''Generic) True 0 [name]
 derivePredefined _ cls name
-  | cls == ''UnifiedSEq =
+  | cls == ''UnifiedSymEq =
       deriveFunctorArgUnifiedInterfaceExtra
         [ SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable False,
           SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable1 False
         ]
-        ''UnifiedSEq
-        'withBaseSEq
-        ''UnifiedSEq1
-        'withBaseSEq1
+        ''UnifiedSymEq
+        'withBaseSymEq
+        ''UnifiedSymEq1
+        'withBaseSymEq1
         name
 derivePredefined _ cls name
-  | cls == ''UnifiedSOrd =
+  | cls == ''UnifiedSymOrd =
       deriveFunctorArgUnifiedInterfaceExtra
         [ SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable False,
           SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable1 False
         ]
-        ''UnifiedSOrd
-        'withBaseSOrd
-        ''UnifiedSOrd1
-        'withBaseSOrd1
+        ''UnifiedSymOrd
+        'withBaseSymOrd
+        ''UnifiedSymOrd1
+        'withBaseSymOrd1
         name
 derivePredefined evmode cls name = do
   d <- reifyDatatype name
@@ -236,13 +236,13 @@ allGrisetteClasses =
     ''ExtractSym,
     ''GPretty,
     ''Mergeable,
-    ''SEq,
-    ''SOrd,
+    ''SymEq,
+    ''SymOrd,
     ''SubstSym,
     ''ToCon,
     ''ToSym,
-    ''UnifiedSEq,
-    ''UnifiedSOrd
+    ''UnifiedSymEq,
+    ''UnifiedSymOrd
   ]
 
 -- | Derive specified classes for a type with the given name.
@@ -267,13 +267,13 @@ derive = flip (derivePredefinedMultipleClasses Nothing)
 -- * 'ExtractSym'
 -- * 'GPretty'
 -- * 'Mergeable'
--- * 'SEq'
--- * 'SOrd'
+-- * 'SymEq'
+-- * 'SymOrd'
 -- * 'SubstSym'
 -- * 'ToCon'
 -- * 'ToSym'
--- * 'UnifiedSEq'
--- * 'UnifiedSOrd'
+-- * 'UnifiedSymEq'
+-- * 'UnifiedSymOrd'
 --
 -- 'Ord' isn't valid for all types (symbolic-only types), so it may be necessary
 -- to exclude it.
@@ -311,8 +311,8 @@ deriveAll = derivePredefinedMultipleClasses Nothing allGrisetteClasses
 -- | Derive all classes related to Grisette for a type with the given name,
 -- except for the given classes.
 --
--- Excluding 'Ord' or 'SOrd' will also exclude 'UnifiedSOrd'.
--- Excluding 'Eq' or 'SEq' will also exclude 'UnifiedSEq'.
+-- Excluding 'Ord' or 'SymOrd' will also exclude 'UnifiedSymOrd'.
+-- Excluding 'Eq' or 'SymEq' will also exclude 'UnifiedSymEq'.
 deriveAllExcept :: Name -> [Name] -> Q [Dec]
 deriveAllExcept nm clss =
   derivePredefinedMultipleClasses
@@ -321,6 +321,6 @@ deriveAllExcept nm clss =
     nm
   where
     allExcluded =
-      ([''UnifiedSEq | ''Eq `elem` clss || ''SEq `elem` clss])
-        <> ([''UnifiedSOrd | ''Ord `elem` clss || ''SOrd `elem` clss])
+      ([''UnifiedSymEq | ''Eq `elem` clss || ''SymEq `elem` clss])
+        <> ([''UnifiedSymOrd | ''Ord `elem` clss || ''SymOrd `elem` clss])
         <> clss

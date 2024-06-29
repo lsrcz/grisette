@@ -20,14 +20,14 @@ import Grisette
     ModelRep (buildModel),
     ModelValuePair ((::=)),
     PlainUnion (ifView, singleView),
-    SEq ((.==)),
-    SOrd ((.<=)),
     SimpleMergeable (mrgIte),
     Solvable (con, conView, isym, ssym),
     SubstSym (substSym),
     SymBool,
     SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+    SymEq ((.==)),
     SymInteger,
+    SymOrd ((.<=)),
     SymbolSetRep (buildSymbolSet),
     ToCon (toCon),
     ToSym (toSym),
@@ -217,7 +217,7 @@ unionTests =
             let expected = mrgSingle (symIte "u1c" ("u1a" + 1) ("u1b" + 1))
             actual @?= expected
         ],
-      testCase "SEq" $ do
+      testCase "SymEq" $ do
         let actual = union1 .== union2
         let expected =
               (("u1c" :: SymBool) .== "u2c")
@@ -227,7 +227,7 @@ unionTests =
                         (("u1b" :: SymInteger) .== "u2b")
                     )
         actual .@?= expected,
-      testCase "SOrd" $ do
+      testCase "SymOrd" $ do
         let actual = union1 .<= union2
         let expected =
               symIte

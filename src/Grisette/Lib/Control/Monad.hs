@@ -87,8 +87,8 @@ import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable,
     MergingStrategy,
   )
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (SymBranching)
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( MonadTryMerge,
     TryMerge,
@@ -313,7 +313,7 @@ mrgReplicateM = Unified.mrgReplicateM
 -- | 'replicateM' with 'MergingStrategy' knowledge propagation and symbolic
 -- number of elements.
 symReplicateM ::
-  (MonadUnion m, TryMerge m, Mergeable a, Num int, SOrd int) =>
+  (MonadUnion m, TryMerge m, Mergeable a, Num int, SymOrd int) =>
   Int ->
   int ->
   m a ->
@@ -333,7 +333,7 @@ mrgReplicateM_ = Unified.mrgReplicateM_
 -- | 'replicateM_' with 'MergingStrategy' knowledge propagation and symbolic
 -- number of elements.
 symReplicateM_ ::
-  (MonadUnion m, TryMerge m, Mergeable a, Num int, SOrd int) =>
+  (MonadUnion m, TryMerge m, Mergeable a, Num int, SymOrd int) =>
   Int ->
   int ->
   m a ->
