@@ -190,6 +190,7 @@ module Grisette.Core
     -- won't have to split into multiple paths:
     --
     -- >>> :set -Wno-unrecognised-warning-flags -Wno-x-partial
+    -- >>> x = mrgIf "a1" (return ["b"]) (mrgIf "a2" (return ["c", "d"]) (return ["f"])) :: Union [SymBool]
     -- >>> :{
     -- do
     --   v <- x             -- Path splitted with the (>>=)
@@ -818,19 +819,19 @@ module Grisette.Core
     MonadUnion,
 
     -- * Pretty printing
-    GPretty (..),
+    Format (..),
     docToTextWith,
     docToTextWithWidth,
     docToText,
     formatTextWith,
     formatTextWithWidth,
     formatText,
-    GPretty1 (..),
-    gprettyPrec1,
-    gprettyList1,
-    GPretty2 (..),
-    gprettyPrec2,
-    gprettyList2,
+    Format1 (..),
+    formatPrec1,
+    formatList1,
+    Format2 (..),
+    formatPrec2,
+    formatList2,
 
     -- ** Helpers for pretty printing
     groupedEnclose,
@@ -1321,11 +1322,11 @@ module Grisette.Core
     genericExtractSym,
     genericLiftExtractSym,
 
-    -- *** 'GPretty'
-    genericGPrettyPrec,
-    genericLiftGPrettyPrec,
-    GPrettyArgs (..),
-    GGPretty (..),
+    -- *** 'Format'
+    genericFormatPrec,
+    genericLiftFormatPrec,
+    FormatArgs (..),
+    GFormat (..),
     PrettyType (..),
 
     -- *** 'SubstSym'
@@ -1435,32 +1436,32 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     genericExtractSym,
     genericLiftExtractSym,
   )
-import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
-import Grisette.Internal.Core.Data.Class.GPretty
-  ( GGPretty (..),
-    GPretty (..),
-    GPretty1 (..),
-    GPretty2 (..),
-    GPrettyArgs (..),
+import Grisette.Internal.Core.Data.Class.Format
+  ( Format (..),
+    Format1 (..),
+    Format2 (..),
+    FormatArgs (..),
+    GFormat (..),
     PrettyType (..),
     condEnclose,
     docToText,
     docToTextWith,
     docToTextWithWidth,
+    formatList1,
+    formatList2,
+    formatPrec1,
+    formatPrec2,
     formatText,
     formatTextWith,
     formatTextWithWidth,
-    genericGPrettyPrec,
-    genericLiftGPrettyPrec,
-    gprettyList1,
-    gprettyList2,
-    gprettyPrec1,
-    gprettyPrec2,
+    genericFormatPrec,
+    genericLiftFormatPrec,
     groupedEnclose,
     prettyWithConstructor,
     prettyWithConstructorNoAlign,
     viaShowsPrec,
   )
+import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
 import Grisette.Internal.Core.Data.Class.GenSym
   ( EnumGenBound (..),
     EnumGenUpperBound (..),

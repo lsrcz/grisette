@@ -54,11 +54,11 @@ import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym (evalSym))
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
   )
-import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
-import Grisette.Internal.Core.Data.Class.GPretty
-  ( GPretty (gpretty),
+import Grisette.Internal.Core.Data.Class.Format
+  ( Format (format),
     groupedEnclose,
   )
+import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (false, symImplies, symNot, symXor, true, (.&&), (.||)),
@@ -293,10 +293,10 @@ instance Show1 Union where
       . liftShowsPrecUnion sp sl 0
       $ a
 
-instance (GPretty a) => GPretty (Union a) where
-  gpretty = \case
-    (UAny a) -> groupedEnclose "<" ">" $ gpretty a
-    (UMrg _ a) -> groupedEnclose "{" "}" $ gpretty a
+instance (Format a) => Format (Union a) where
+  format = \case
+    (UAny a) -> groupedEnclose "<" ">" $ format a
+    (UMrg _ a) -> groupedEnclose "{" "}" $ format a
 
 -- | Extract the underlying Union. May be unmerged.
 unionBase :: Union a -> UnionBase a

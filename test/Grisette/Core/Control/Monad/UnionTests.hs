@@ -11,8 +11,8 @@ import qualified Data.Text as T
 import Grisette
   ( EvalSym (evalSym),
     ExtractSym (extractSym),
+    Format (format),
     Function ((#)),
-    GPretty (gpretty),
     ITEOp (symIte),
     LogicalOp ((.&&)),
     Mergeable (rootStrategy),
@@ -171,13 +171,13 @@ unionTests =
             show unionSimple1 @?= expected
         ],
       testGroup
-        "GPretty"
+        "Format"
         [ testCase "Merged" $ do
-            gpretty union12Merged
+            format union12Merged
               `renderedAs` ( "{If (ite u12c u1c u2c) (Left (ite u12c u1a u2a)) "
                                <> "(Right (ite u12c u1b u2b))}"
                            )
-            gpretty union12Merged
+            format union12Merged
               `compactRenderedAs` ( T.intercalate
                                       "\n"
                                       [ "{ If",
@@ -192,7 +192,7 @@ unionTests =
                                       ]
                                   ),
           testCase "Not merged" $ do
-            gpretty union1 `renderedAs` "<If u1c (Left u1a) (Right u1b)>"
+            format union1 `renderedAs` "<If u1c (Left u1a) (Right u1b)>"
         ],
       testGroup
         "Functor"

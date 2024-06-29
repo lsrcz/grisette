@@ -12,7 +12,7 @@ import Grisette.Core.Control.Monad.UnionTests (unionTests)
 import qualified Grisette.Core.Data.Class.BoolTests
 import Grisette.Core.Data.Class.EvalSymTests (evalSymTests)
 import Grisette.Core.Data.Class.ExtractSymTests (extractSymTests)
-import Grisette.Core.Data.Class.GPrettyTests (gprettyTests)
+import Grisette.Core.Data.Class.FormatTests (formatTests)
 import Grisette.Core.Data.Class.GenSymTests (genSymTests)
 import Grisette.Core.Data.Class.MergeableTests (mergeableTests)
 import Grisette.Core.Data.Class.PlainUnionTests (plainUnionTests)
@@ -101,7 +101,7 @@ coreTests =
               evalSymTests,
               extractSymTests,
               genSymTests,
-              gprettyTests,
+              formatTests,
               mergeableTests,
               plainUnionTests,
               safeDivisionTests,

@@ -23,7 +23,7 @@ import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
-import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
+import Grisette.Internal.Core.Data.Class.Format (Format)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
@@ -49,7 +49,7 @@ class
     (EvalSym v) => EvalSym u,
     (ExtractSym v) => ExtractSym u,
     (ITEOp v) => ITEOp u,
-    (GPretty v) => GPretty u,
+    (Format v) => Format u,
     (Hashable v) => Hashable u,
     (Lift v) => Lift u,
     (LogicalOp v) => LogicalOp u,

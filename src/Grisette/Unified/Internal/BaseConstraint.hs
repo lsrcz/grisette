@@ -18,7 +18,7 @@ import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
-import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
+import Grisette.Internal.Core.Data.Class.Format (Format)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
@@ -34,7 +34,7 @@ type BasicGrisetteType t =
     Eq t,
     EvalSym t,
     ExtractSym t,
-    GPretty t,
+    Format t,
     Hashable t,
     Lift t,
     Mergeable t,

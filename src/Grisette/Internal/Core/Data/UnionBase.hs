@@ -42,8 +42,8 @@ import Data.Functor.Classes
   )
 import Data.Hashable (Hashable (hashWithSalt))
 import GHC.Generics (Generic, Generic1)
-import Grisette.Internal.Core.Data.Class.GPretty
-  ( GPretty (gprettyPrec),
+import Grisette.Internal.Core.Data.Class.Format
+  ( Format (formatPrec),
     condEnclose,
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
@@ -198,18 +198,18 @@ instance Show1 UnionBase where
 instance (Show a) => Show (UnionBase a) where
   showsPrec = showsPrec1
 
-instance (GPretty a) => GPretty (UnionBase a) where
-  gprettyPrec n (UnionSingle a) = gprettyPrec n a
-  gprettyPrec n (UnionIf _ _ cond t f) =
+instance (Format a) => Format (UnionBase a) where
+  formatPrec n (UnionSingle a) = formatPrec n a
+  formatPrec n (UnionIf _ _ cond t f) =
     group $
       condEnclose (n > 10) "(" ")" $
         align $
           nest 2 $
             vsep
               [ "If",
-                gprettyPrec 11 cond,
-                gprettyPrec 11 t,
-                gprettyPrec 11 f
+                formatPrec 11 cond,
+                formatPrec 11 t,
+                formatPrec 11 f
               ]
 
 instance (Hashable a) => Hashable (UnionBase a) where

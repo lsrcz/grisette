@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module Grisette.Core.Data.Class.GPrettyTests (gprettyTests) where
+module Grisette.Core.Data.Class.FormatTests (formatTests) where
 
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity (Identity, IdentityT (IdentityT))
@@ -23,7 +23,7 @@ import GHC.Generics (Generic, Generic1)
 import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default), Default1 (Default1))
 import Grisette
-  ( GPretty (gpretty),
+  ( Format (format),
     IntN,
     LogicalOp ((.&&)),
     SymBool,
@@ -31,13 +31,13 @@ import Grisette
     pattern SomeIntN,
     pattern SomeWordN,
   )
-import Grisette.Internal.Core.Data.Class.GPretty
-  ( GPretty1,
-    GPretty2,
+import Grisette.Internal.Core.Data.Class.Format
+  ( Format1,
+    Format2,
     docToTextWithWidth,
+    formatPrec1,
+    formatPrec2,
     formatTextWithWidth,
-    gprettyPrec1,
-    gprettyPrec2,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -61,57 +61,57 @@ import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 #endif
 
-testGPretty :: (HasCallStack, GPretty a) => String -> Int -> a -> T.Text -> Test
-testGPretty n i a s = testCase n $ formatTextWithWidth i a @?= s
+testFormat :: (HasCallStack, Format a) => String -> Int -> a -> T.Text -> Test
+testFormat n i a s = testCase n $ formatTextWithWidth i a @?= s
 
-testGPretty1 ::
-  (HasCallStack, GPretty1 f, GPretty a) =>
+testFormat1 ::
+  (HasCallStack, Format1 f, Format a) =>
   String ->
   Int ->
   f a ->
   T.Text ->
   Test
-testGPretty1 n i a s = testCase n $ do
+testFormat1 n i a s = testCase n $ do
   formatTextWithWidth i a @?= s
-  docToTextWithWidth i (gprettyPrec1 0 a) @?= s
+  docToTextWithWidth i (formatPrec1 0 a) @?= s
 
-testGPretty2 ::
-  (HasCallStack, GPretty2 f, GPretty a, GPretty b) =>
+testFormat2 ::
+  (HasCallStack, Format2 f, Format a, Format b) =>
   String ->
   Int ->
   f a b ->
   T.Text ->
   Test
-testGPretty2 n i a s = testCase n $ do
+testFormat2 n i a s = testCase n $ do
   formatTextWithWidth i a @?= s
-  docToTextWithWidth i (gprettyPrec1 0 a) @?= s
-  docToTextWithWidth i (gprettyPrec2 0 a) @?= s
+  docToTextWithWidth i (formatPrec1 0 a) @?= s
+  docToTextWithWidth i (formatPrec2 0 a) @?= s
 
-propertyGPrettyShow ::
+propertyFormatShow ::
   forall a.
-  (HasCallStack, GPretty a, Show a) =>
+  (HasCallStack, Format a, Show a) =>
   String ->
   Gen a ->
   Test
-propertyGPrettyShow n g =
+propertyFormatShow n g =
   testProperty n $ forAll g $ \(a :: a) -> do
-    renderStrict (layoutPretty (LayoutOptions Unbounded) (gpretty a))
+    renderStrict (layoutPretty (LayoutOptions Unbounded) (format a))
       == T.pack (show a)
 
-propertyGPrettyRead ::
+propertyFormatRead ::
   forall a.
-  (HasCallStack, GPretty a, Read a, Show a, Eq a) =>
+  (HasCallStack, Format a, Read a, Show a, Eq a) =>
   String ->
   Gen a ->
   Test
-propertyGPrettyRead n g =
+propertyFormatRead n g =
   testProperty n $ \i -> forAll g $ \(a :: a) -> do
     read
       ( T.unpack
           ( renderStrict
               ( layoutPretty
                   (LayoutOptions $ AvailablePerLine (abs i) 0.8)
-                  (gpretty a)
+                  (format a)
               )
           )
       )
@@ -119,13 +119,13 @@ propertyGPrettyRead n g =
 
 data I5 a = a :-: a
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default (I5 a))
+  deriving (Format) via (Default (I5 a))
 
 infixl 5 :-:
 
 data I6 a = a :--: a
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default (I6 a))
+  deriving (Format) via (Default (I6 a))
 
 infixl 6 :--:
 
@@ -149,7 +149,7 @@ instance
 
 data Record a b = Record {ra :: a, rb :: b}
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default (Record a b))
+  deriving (Format) via (Default (Record a b))
 
 instance
   (Arbitrary a, Arbitrary b) =>
@@ -161,32 +161,32 @@ instance
 
 data U1Test = U1Test
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default U1Test)
+  deriving (Format) via (Default U1Test)
 
 newtype K1TestInt = K1Test Int
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default K1TestInt)
+  deriving (Format) via (Default K1TestInt)
 
 newtype K1TestA a = K1TestA a
   deriving (Generic, Generic1, Show, Read, Eq, Functor)
-  deriving (GPretty) via (Default (K1TestA a))
-  deriving (GPretty1) via (Default1 K1TestA)
+  deriving (Format) via (Default (K1TestA a))
+  deriving (Format1) via (Default1 K1TestA)
 
 newtype RecordK1TestA a = RecordK1TestA {recordK1TestA :: a}
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default (RecordK1TestA a))
+  deriving (Format) via (Default (RecordK1TestA a))
 
 data SumTestAB a b = SumTestAB a b
   deriving (Generic, Generic1, Show, Read, Eq)
-  deriving (GPretty) via (Default (SumTestAB a b))
-  deriving (GPretty1) via (Default1 (SumTestAB a))
+  deriving (Format) via (Default (SumTestAB a b))
+  deriving (Format1) via (Default1 (SumTestAB a))
 
 data RecordSumTest a = RecordSumTest
   { recordSumTest1 :: a,
     recordSumTest2 :: a
   }
   deriving (Generic, Show, Read, Eq)
-  deriving (GPretty) via (Default (RecordSumTest a))
+  deriving (Format) via (Default (RecordSumTest a))
 
 newtype Rec1Test f b = Rec1Test (f b)
   deriving (Generic, Generic1, Show, Eq)
@@ -194,12 +194,12 @@ newtype Rec1Test f b = Rec1Test (f b)
 deriving via
   (Default (Rec1Test f a))
   instance
-    (GPretty1 f, GPretty a) => GPretty (Rec1Test f a)
+    (Format1 f, Format a) => Format (Rec1Test f a)
 
 deriving via
   (Default1 (Rec1Test f))
   instance
-    (GPretty1 f) => GPretty1 (Rec1Test f)
+    (Format1 f) => Format1 (Rec1Test f)
 
 newtype Comp1Test f g b = Comp1Test (f (g b))
   deriving (Generic, Generic1, Show, Eq)
@@ -207,31 +207,31 @@ newtype Comp1Test f g b = Comp1Test (f (g b))
 deriving via
   (Default (Comp1Test f g a))
   instance
-    (GPretty1 f, GPretty1 g, GPretty a) => GPretty (Comp1Test f g a)
+    (Format1 f, Format1 g, Format a) => Format (Comp1Test f g a)
 
 deriving via
   (Default1 (Comp1Test f g))
   instance
-    (GPretty1 f, GPretty1 g, Functor f) => GPretty1 (Comp1Test f g)
+    (Format1 f, Format1 g, Functor f) => Format1 (Comp1Test f g)
 
-gprettyTests :: Test
-gprettyTests =
+formatTests :: Test
+formatTests =
   testGroup
-    "GPretty"
+    "Format"
     [ testGroup
         "Derivation"
         [ testGroup
             "List"
-            [ testGPretty1 "List Compact 0" 1 ([] :: [U1Test]) "[]",
-              testGPretty1 "List Compact 1" 1 [U1Test] "[ U1Test\n]",
-              testGPretty1 "List Compact 2" 1 [U1Test, U1Test] $
+            [ testFormat1 "List Compact 0" 1 ([] :: [U1Test]) "[]",
+              testFormat1 "List Compact 1" 1 [U1Test] "[ U1Test\n]",
+              testFormat1 "List Compact 2" 1 [U1Test, U1Test] $
                 T.intercalate
                   "\n"
                   [ "[ U1Test,",
                     "  U1Test",
                     "]"
                   ],
-              testGPretty1
+              testFormat1
                 "List Compact nested in 1"
                 1
                 [ [ U1Test,
@@ -245,7 +245,7 @@ gprettyTests =
                     "  ]",
                     "]"
                   ],
-              testGPretty1
+              testFormat1
                 "List Compact nested in >= 2"
                 1
                 [ [],
@@ -264,7 +264,7 @@ gprettyTests =
                     "  ]",
                     "]"
                   ],
-              testGPretty1
+              testFormat1
                 "List unbounded nested"
                 0
                 [[], [U1Test], [U1Test, U1Test]]
@@ -272,9 +272,9 @@ gprettyTests =
             ],
           testGroup
             "U1"
-            [ testGPretty "Unbounded" 0 U1Test "U1Test",
-              testGPretty "Compact" 1 U1Test "U1Test",
-              testGPretty "List Compact" 1 [U1Test, U1Test] $
+            [ testFormat "Unbounded" 0 U1Test "U1Test",
+              testFormat "Compact" 1 U1Test "U1Test",
+              testFormat "List Compact" 1 [U1Test, U1Test] $
                 T.intercalate
                   "\n"
                   [ "[ U1Test,",
@@ -284,22 +284,22 @@ gprettyTests =
             ],
           testGroup
             "K1[Int]"
-            [ testGPretty "Unbounded" 0 (K1Test 1) "K1Test 1",
-              testGPretty "Compact" 1 (K1Test 1) "K1Test\n  1"
+            [ testFormat "Unbounded" 0 (K1Test 1) "K1Test 1",
+              testFormat "Compact" 1 (K1Test 1) "K1Test\n  1"
             ],
           testGroup
             "K1 U1"
-            [ testGPretty1 "Unbounded" 0 (K1TestA U1Test) "K1TestA U1Test",
-              testGPretty1 "Compact" 1 (K1TestA U1Test) "K1TestA\n  U1Test"
+            [ testFormat1 "Unbounded" 0 (K1TestA U1Test) "K1TestA U1Test",
+              testFormat1 "Compact" 1 (K1TestA U1Test) "K1TestA\n  U1Test"
             ],
           testGroup
             "K1 (K1 Int)"
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 (K1TestA (K1Test 1))
                 "K1TestA (K1Test 1)",
-              testGPretty1 "Compact" 1 (K1TestA (K1Test 1)) $
+              testFormat1 "Compact" 1 (K1TestA (K1Test 1)) $
                 T.intercalate
                   "\n"
                   [ "K1TestA",
@@ -316,12 +316,12 @@ gprettyTests =
                         :-: K1TestA
                           U1Test
                     )
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "K1TestA (K1TestA U1Test :-: K1TestA U1Test)",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "K1TestA",
@@ -340,12 +340,12 @@ gprettyTests =
                             U1Test
                         }
                     )
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "K1TestA (RecordK1TestA {recordK1TestA = U1Test})",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "K1TestA",
@@ -365,12 +365,12 @@ gprettyTests =
                               U1Test
                         }
                     )
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "K1TestA (RecordK1TestA {recordK1TestA = K1TestA U1Test})",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "K1TestA",
@@ -394,10 +394,10 @@ gprettyTests =
                               U1Test
                         }
                     )
-            [ testGPretty1 "Unbounded" 0 value $
+            [ testFormat1 "Unbounded" 0 value $
                 "K1TestA (RecordSumTest {recordSumTest1 = K1TestA U1Test, "
                   <> "recordSumTest2 = K1TestA U1Test})",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "K1TestA",
@@ -420,12 +420,12 @@ gprettyTests =
                       K1TestA
                         U1Test
                     )
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "K1TestA (K1TestA U1Test, K1TestA U1Test)",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "K1TestA",
@@ -438,12 +438,12 @@ gprettyTests =
               ],
           testGroup "Sum (K1 U1) (K1 U1)" $ do
             let value = SumTestAB (K1TestA U1Test) U1Test
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "SumTestAB (K1TestA U1Test) U1Test",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "SumTestAB",
@@ -461,12 +461,12 @@ gprettyTests =
                             U1Test
                         )
                     )
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "Rec1Test (K1TestA (K1TestA U1Test))",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "Rec1Test",
@@ -487,12 +487,12 @@ gprettyTests =
                             )
                         )
                     )
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "Comp1Test (K1TestA (K1TestA (K1TestA U1Test)))",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "Comp1Test",
@@ -514,12 +514,12 @@ gprettyTests =
                           U1Test
                       ]
                     ]
-            [ testGPretty1
+            [ testFormat1
                 "Unbounded"
                 0
                 value
                 "Comp1Test [[K1TestA U1Test, K1TestA U1Test]]",
-              testGPretty1 "Compact" 1 value $
+              testFormat1 "Compact" 1 value $
                 T.intercalate
                   "\n"
                   [ "Comp1Test",
@@ -533,25 +533,25 @@ gprettyTests =
               ]
         ],
       testGroup
-        "GPretty2"
+        "Format2"
         [ testGroup
             "Either"
-            [ testGPretty2
+            [ testFormat2
                 "Unbounded Left"
                 0
                 (Left (K1TestA U1Test) :: Either (K1TestA U1Test) ())
                 "Left (K1TestA U1Test)",
-              testGPretty2
+              testFormat2
                 "Unbounded Right"
                 0
                 (Right (K1TestA U1Test) :: Either () (K1TestA U1Test))
                 "Right (K1TestA U1Test)",
-              testGPretty2
+              testFormat2
                 "Compact Left"
                 1
                 (Left (K1TestA U1Test) :: Either (K1TestA U1Test) ())
                 "Left\n  ( K1TestA\n      U1Test\n  )",
-              testGPretty2
+              testFormat2
                 "Compact Right"
                 1
                 (Right (K1TestA U1Test) :: Either () (K1TestA U1Test))
@@ -561,12 +561,12 @@ gprettyTests =
             let value =
                   (K1TestA U1Test, K1TestA U1Test) ::
                     (K1TestA U1Test, K1TestA U1Test)
-            [ testGPretty2
+            [ testFormat2
                 "Unbounded"
                 0
                 value
                 "(K1TestA U1Test, K1TestA U1Test)",
-              testGPretty2
+              testFormat2
                 "Compact"
                 1
                 value
@@ -575,19 +575,19 @@ gprettyTests =
         ],
       testGroup
         "simple tests"
-        [ propertyGPrettyRead "Bool" (arbitrary :: Gen Bool),
-          propertyGPrettyRead "Integer" (arbitrary :: Gen Integer),
-          propertyGPrettyRead "Int" (arbitrary :: Gen Int),
-          propertyGPrettyRead "Int8" (arbitrary :: Gen Int8),
-          propertyGPrettyRead "Int16" (arbitrary :: Gen Int16),
-          propertyGPrettyRead "Int32" (arbitrary :: Gen Int32),
-          propertyGPrettyRead "Int64" (arbitrary :: Gen Int64),
-          propertyGPrettyRead "Word" (arbitrary :: Gen Word),
-          propertyGPrettyRead "Word8" (arbitrary :: Gen Word8),
-          propertyGPrettyRead "Word16" (arbitrary :: Gen Word16),
-          propertyGPrettyRead "Word32" (arbitrary :: Gen Word32),
-          propertyGPrettyRead "Word64" (arbitrary :: Gen Word64),
-          propertyGPrettyShow
+        [ propertyFormatRead "Bool" (arbitrary :: Gen Bool),
+          propertyFormatRead "Integer" (arbitrary :: Gen Integer),
+          propertyFormatRead "Int" (arbitrary :: Gen Int),
+          propertyFormatRead "Int8" (arbitrary :: Gen Int8),
+          propertyFormatRead "Int16" (arbitrary :: Gen Int16),
+          propertyFormatRead "Int32" (arbitrary :: Gen Int32),
+          propertyFormatRead "Int64" (arbitrary :: Gen Int64),
+          propertyFormatRead "Word" (arbitrary :: Gen Word),
+          propertyFormatRead "Word8" (arbitrary :: Gen Word8),
+          propertyFormatRead "Word16" (arbitrary :: Gen Word16),
+          propertyFormatRead "Word32" (arbitrary :: Gen Word32),
+          propertyFormatRead "Word64" (arbitrary :: Gen Word64),
+          propertyFormatShow
             "SomeWordN"
             ( oneof
                 [ SomeWordN <$> (arbitrary :: Gen (WordN 8)),
@@ -595,9 +595,9 @@ gprettyTests =
                   SomeWordN <$> (arbitrary :: Gen (WordN 10))
                 ]
             ),
-          propertyGPrettyRead "WordN 8" (arbitrary :: Gen (WordN 8)),
-          propertyGPrettyRead "WordN 9" (arbitrary :: Gen (WordN 9)),
-          propertyGPrettyShow
+          propertyFormatRead "WordN 8" (arbitrary :: Gen (WordN 8)),
+          propertyFormatRead "WordN 9" (arbitrary :: Gen (WordN 9)),
+          propertyFormatShow
             "SomeIntN"
             ( oneof
                 [ SomeIntN <$> (arbitrary :: Gen (IntN 8)),
@@ -605,134 +605,134 @@ gprettyTests =
                   SomeIntN <$> (arbitrary :: Gen (IntN 10))
                 ]
             ),
-          propertyGPrettyRead "IntN 8" (arbitrary :: Gen (IntN 8)),
-          propertyGPrettyRead "IntN 9" (arbitrary :: Gen (IntN 9))
+          propertyFormatRead "IntN 8" (arbitrary :: Gen (IntN 8)),
+          propertyFormatRead "IntN 9" (arbitrary :: Gen (IntN 9))
         ],
       testGroup
         "Combined types"
-        [ propertyGPrettyRead
+        [ propertyFormatRead
             "Maybe Maybe"
             (arbitrary :: Gen (Maybe (Maybe Int))),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe (,)"
             ( arbitrary :: Gen (Maybe (Int, Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe I5"
             ( arbitrary :: Gen (Maybe (I5 Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe []"
             ( arbitrary :: Gen (Maybe [Int])
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe Record"
             ( arbitrary :: Gen (Maybe (Record Int Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "(Maybe,Either)"
             ( arbitrary :: Gen (Maybe Int, Either Int Int)
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "((,),(,))"
             ( arbitrary :: Gen ((Int, Int), (Int, Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "(I5,I5)"
             ( arbitrary :: Gen (I5 Int, I5 Int)
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "([],[])"
             ( arbitrary :: Gen ([Int], [Int])
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "(Record,Record)"
             ( arbitrary :: Gen (Record Int Int, Record Int Int)
             ),
-          propertyGPrettyRead "I5 (,)" (arbitrary :: Gen (I5 (Int, Int))),
-          propertyGPrettyRead "I5 I6" (arbitrary :: Gen (I5 (I6 Int))),
-          propertyGPrettyRead "I5 I5" (arbitrary :: Gen (I5 (I5 Int))),
-          propertyGPrettyRead "I6 I5" (arbitrary :: Gen (I6 (I5 Int))),
-          propertyGPrettyRead "I6 I6" (arbitrary :: Gen (I6 (I6 Int))),
-          propertyGPrettyRead "I5 []" (arbitrary :: Gen (I5 [Int])),
-          propertyGPrettyRead
+          propertyFormatRead "I5 (,)" (arbitrary :: Gen (I5 (Int, Int))),
+          propertyFormatRead "I5 I6" (arbitrary :: Gen (I5 (I6 Int))),
+          propertyFormatRead "I5 I5" (arbitrary :: Gen (I5 (I5 Int))),
+          propertyFormatRead "I6 I5" (arbitrary :: Gen (I6 (I5 Int))),
+          propertyFormatRead "I6 I6" (arbitrary :: Gen (I6 (I6 Int))),
+          propertyFormatRead "I5 []" (arbitrary :: Gen (I5 [Int])),
+          propertyFormatRead
             "I5 Record"
             (arbitrary :: Gen (I5 (Record Int Int))),
-          propertyGPrettyRead
+          propertyFormatRead
             "[Maybe]"
             ( arbitrary :: Gen [Maybe Int]
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "[(,)]"
             ( arbitrary :: Gen [(Int, Int)]
             ),
-          propertyGPrettyRead "[I5]" (arbitrary :: Gen [I5 Int]),
-          propertyGPrettyRead
+          propertyFormatRead "[I5]" (arbitrary :: Gen [I5 Int]),
+          propertyFormatRead
             "[[]]"
             ( arbitrary :: Gen [[Int]]
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "[Record]"
             ( arbitrary :: Gen [Record Int Int]
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Record Maybe Either"
             ( arbitrary :: Gen (Record (Maybe Int) (Either Int Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Record (,) (,)"
             ( arbitrary :: Gen (Record (Int, Int) (Int, Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Record I5 I6"
             ( arbitrary :: Gen (Record (I5 Int) (I6 Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Record []"
             ( arbitrary :: Gen (Record [Int] [Int])
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Record Record"
             ( arbitrary :: Gen (Record (Record Int Int) (Record Int Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe (MaybeT Identity Int)"
             (Just . MaybeT <$> arbitrary :: Gen (Maybe (MaybeT Identity Int))),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe (ExceptT Int Identity Int)"
             ( Just . ExceptT <$> arbitrary ::
                 Gen (Maybe (ExceptT Int Identity Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe (LazyWriterT Int Identity Int)"
             ( Just . WriterLazy.WriterT <$> arbitrary ::
                 Gen (Maybe (WriterLazy.WriterT Int Identity Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe (StrictWriterT Int Identity Int)"
             ( Just . WriterLazy.WriterT <$> arbitrary ::
                 Gen (Maybe (WriterLazy.WriterT Int Identity Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "Maybe (IdentityT Identity Int)"
             ( Just . IdentityT <$> arbitrary ::
                 Gen (Maybe (IdentityT Identity Int))
             ),
-          propertyGPrettyRead
+          propertyFormatRead
             "HS.HashSet Int"
             (HS.fromList <$> arbitrary :: Gen (HS.HashSet Int)),
-          propertyGPrettyRead
+          propertyFormatRead
             "HM.HashMap Int Int"
             (HM.fromList <$> arbitrary :: Gen (HM.HashMap Int Int))
         ],
       testGroup
         "Symbolic types"
-        [ testGPretty
+        [ testFormat
             "enough space"
             80
             ("a" .&& "b" :: SymBool)
             "(&& a b)",
-          testGPretty
+          testFormat
             "not enough space"
             6
             ("a" .&& "b" :: SymBool)

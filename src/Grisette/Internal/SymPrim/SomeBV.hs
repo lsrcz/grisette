@@ -118,8 +118,8 @@ import Grisette.Internal.Core.Data.Class.EvalSym
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
   )
-import Grisette.Internal.Core.Data.Class.GPretty
-  ( GPretty (gpretty),
+import Grisette.Internal.Core.Data.Class.Format
+  ( Format (format),
   )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
@@ -472,11 +472,11 @@ instance
   {-# INLINE extractSym #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => GPretty (bv n)) =>
-  GPretty (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => Format (bv n)) =>
+  Format (SomeBV bv)
   where
-  gpretty (SomeBV bv) = gpretty bv
-  {-# INLINE gpretty #-}
+  format (SomeBV bv) = format bv
+  {-# INLINE format #-}
 
 data CompileTimeNat where
   CompileTimeNat :: (KnownNat n, 1 <= n) => Proxy n -> CompileTimeNat
