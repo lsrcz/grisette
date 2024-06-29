@@ -38,13 +38,13 @@ module Grisette.Internal.Core.Data.Class.Format
     genericLiftFormatPrec,
     FormatArgs (..),
     GFormat (..),
-    PrettyType (..),
+    FormatType (..),
 
     -- * Helpers
     groupedEnclose,
     condEnclose,
-    prettyWithConstructor,
-    prettyWithConstructorNoAlign,
+    formatWithConstructor,
+    formatWithConstructorNoAlign,
     viaShowsPrec,
 
     -- * Re-exports
@@ -285,7 +285,7 @@ data instance FormatArgs Arity1 a ann
       (([a] -> Doc ann))
 
 -- | Controls how to pretty-print a generic representation.
-data PrettyType = Rec | Tup | Pref | Inf String Int
+data FormatType = Rec | Tup | Pref | Inf String Int
   deriving (Show, Eq)
 
 -- | Enclose a document with left and right documents.
@@ -305,13 +305,13 @@ condEnclose b = if b then groupedEnclose else const $ const id
 -- | Pretty print a list of fields with a constructor.
 --
 -- Aligns the fields and nests them by 2 spaces.
-prettyWithConstructor :: Int -> Doc ann -> [Doc ann] -> Doc ann
-prettyWithConstructor n c l =
+formatWithConstructor :: Int -> Doc ann -> [Doc ann] -> Doc ann
+formatWithConstructor n c l =
   group $ condEnclose (n > 10) "(" ")" $ align $ nest 2 $ vsep (c : l)
 
 -- | Pretty print a list of fields with a constructor without alignment.
-prettyWithConstructorNoAlign :: Int -> Doc ann -> [Doc ann] -> Doc ann
-prettyWithConstructorNoAlign n c l =
+formatWithConstructorNoAlign :: Int -> Doc ann -> [Doc ann] -> Doc ann
+formatWithConstructorNoAlign n c l =
   group $ condEnclose (n > 10) "(" ")" $ nest 2 $ vsep (c : l)
 
 -- | Pretty print a value using 'showsPrec'.
@@ -320,7 +320,7 @@ viaShowsPrec f n a = pretty (f n a "")
 
 -- | Generic 'Format' class.
 class GFormat arity f where
-  gformatPrec :: FormatArgs arity a ann -> PrettyType -> Int -> f a -> Doc ann
+  gformatPrec :: FormatArgs arity a ann -> FormatType -> Int -> f a -> Doc ann
   gformatList :: (HasCallStack) => FormatArgs arity a ann -> [f a] -> Doc ann
   gformatList = error "generic format (gformatList): unnecessary case"
   gisNullary :: (HasCallStack) => FormatArgs arity a ann -> f a -> Bool
@@ -348,12 +348,12 @@ instance (GFormat arity a, Constructor c) => GFormat arity (C1 c a) where
         if gisNullary arg x
           then format (conName c)
           else
-            prettyWithConstructorNoAlign
+            formatWithConstructorNoAlign
               n
               (format (conName c))
               [prettyBraces t (gformatPrec arg t 11 x)]
     where
-      prettyBraces :: PrettyType -> Doc ann -> Doc ann
+      prettyBraces :: FormatType -> Doc ann -> Doc ann
       prettyBraces Rec = groupedEnclose "{" "}"
       prettyBraces Tup = groupedEnclose "(" ")"
       prettyBraces Pref = id
@@ -619,7 +619,7 @@ instance (Format a) => Format (Identity a) where
 
 instance Format1 Identity where
   liftFormatPrec f _ n (Identity a) =
-    prettyWithConstructor n "Identity" [f 11 a]
+    formatWithConstructor n "Identity" [f 11 a]
 
 -- MaybeT
 instance
@@ -633,7 +633,7 @@ instance
   Format1 (MaybeT m)
   where
   liftFormatPrec f l n (MaybeT a) =
-    prettyWithConstructor
+    formatWithConstructor
       n
       "MaybeT"
       [liftFormatPrec (liftFormatPrec f l) (liftFormatList f l) 11 a]
@@ -650,7 +650,7 @@ instance
   Format1 (ExceptT e m)
   where
   liftFormatPrec f l n (ExceptT a) =
-    prettyWithConstructor
+    formatWithConstructor
       n
       "ExceptT"
       [liftFormatPrec (liftFormatPrec f l) (liftFormatList f l) 11 a]
@@ -667,7 +667,7 @@ instance
   Format1 (WriterLazy.WriterT w m)
   where
   liftFormatPrec f l n (WriterLazy.WriterT a) =
-    prettyWithConstructor
+    formatWithConstructor
       n
       "WriterT"
       [ liftFormatPrec
@@ -688,7 +688,7 @@ instance
   Format1 (WriterStrict.WriterT w m)
   where
   liftFormatPrec f l n (WriterStrict.WriterT a) =
-    prettyWithConstructor
+    formatWithConstructor
       n
       "WriterT"
       [ liftFormatPrec
@@ -704,7 +704,7 @@ instance (Format1 m, Format a) => Format (IdentityT m a) where
 
 instance (Format1 m) => Format1 (IdentityT m) where
   liftFormatPrec f l n (IdentityT a) =
-    prettyWithConstructor n "IdentityT" [liftFormatPrec f l 11 a]
+    formatWithConstructor n "IdentityT" [liftFormatPrec f l 11 a]
 
 -- Product
 deriving via
@@ -731,11 +731,11 @@ deriving via
 -- Compose
 instance (Format (f (g a))) => Format (Compose f g a) where
   formatPrec n (Compose a) =
-    prettyWithConstructor n "Compose" [formatPrec 11 a]
+    formatWithConstructor n "Compose" [formatPrec 11 a]
 
 instance (Format1 f, Format1 g) => Format1 (Compose f g) where
   liftFormatPrec f l n (Compose a) =
-    prettyWithConstructor
+    formatWithConstructor
       n
       "Compose"
       [liftFormatPrec (liftFormatPrec f l) (liftFormatList f l) 11 a]
@@ -798,9 +798,9 @@ deriving via
 -- Format2
 instance Format2 Either where
   liftFormatPrec2 fe _ _ _ n (Left e) =
-    prettyWithConstructor n "Left" [fe 11 e]
+    formatWithConstructor n "Left" [fe 11 e]
   liftFormatPrec2 _ fa _ _ n (Right a) =
-    prettyWithConstructor n "Right" [fa 11 a]
+    formatWithConstructor n "Right" [fa 11 a]
 
 instance Format2 (,) where
   liftFormatPrec2 fa fb _ _ _ (a, b) =
@@ -816,8 +816,8 @@ instance (Format a, Format b) => Format2 ((,,,) a b) where
 
 instance (Format a) => Format (HS.HashSet a) where
   formatPrec n s =
-    prettyWithConstructor n "fromList" [formatPrec 11 $ HS.toList s]
+    formatWithConstructor n "fromList" [formatPrec 11 $ HS.toList s]
 
 instance (Format k, Format v) => Format (HM.HashMap k v) where
   formatPrec n s =
-    prettyWithConstructor n "fromList" [formatPrec 11 $ HM.toList s]
+    formatWithConstructor n "fromList" [formatPrec 11 $ HM.toList s]
