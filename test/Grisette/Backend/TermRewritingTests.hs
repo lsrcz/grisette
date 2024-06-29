@@ -70,7 +70,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     SymIEEEFPTraits (symFpIsPositiveInfinite),
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)))
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
 import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPTrait (FPIsPositive),

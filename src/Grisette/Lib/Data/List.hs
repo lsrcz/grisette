@@ -75,7 +75,7 @@ module Grisette.Lib.Data.List
 
     -- ** The "By" operations
 
-    -- *** User-supplied equality (replacing an 'SEq' context)
+    -- *** User-supplied equality (replacing an 'SymEq' context)
     mrgNubBy,
     mrgDeleteBy,
     mrgDeleteFirstsBy,
@@ -83,7 +83,7 @@ module Grisette.Lib.Data.List
     mrgIntersectBy,
     mrgGroupBy,
 
-    -- *** User-supplied comparison (replacing an 'SOrd' context)
+    -- *** User-supplied comparison (replacing an 'SymOrd' context)
     mrgInsertBy,
     mrgMaximumBy,
     symMaximumBy,
@@ -100,10 +100,10 @@ import Grisette.Internal.Core.Control.Monad.Union (Union, liftUnion)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((./=), (.==)))
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<=), (.>=)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (SymBranching, mrgIf)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd ((.<=), (.>=)))
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgPure)
 import Grisette.Lib.Control.Monad (mrgReturn)
@@ -128,7 +128,7 @@ import Grisette.Lib.Data.Foldable
 import Grisette.Lib.Data.Functor (mrgFmap)
 
 symListOpOnSymInt ::
-  (Applicative u, SymBranching u, Mergeable b, Num int, SOrd int) =>
+  (Applicative u, SymBranching u, Mergeable b, Num int, SymOrd int) =>
   Bool ->
   (Int -> [a] -> b) ->
   int ->
@@ -153,7 +153,7 @@ symListOpOnSymInt reversed f x vs = do
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgTake ::
-  (Applicative u, SymBranching u, Mergeable a, Num int, SOrd int) =>
+  (Applicative u, SymBranching u, Mergeable a, Num int, SymOrd int) =>
   int ->
   [a] ->
   u [a]
@@ -164,7 +164,7 @@ mrgTake = symListOpOnSymInt False take
 --
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgDrop ::
-  (Applicative u, SymBranching u, Mergeable a, Num int, SOrd int) =>
+  (Applicative u, SymBranching u, Mergeable a, Num int, SymOrd int) =>
   int ->
   [a] ->
   u [a]
@@ -176,7 +176,7 @@ mrgDrop = symListOpOnSymInt True drop
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgSplitAt ::
   forall a int u.
-  (MonadUnion u, Mergeable a, Num int, SOrd int) =>
+  (MonadUnion u, Mergeable a, Num int, SymOrd int) =>
   int ->
   [a] ->
   u ([a], [a])
@@ -258,7 +258,7 @@ mrgBreak p = mrgSpan (symNot . p)
 --
 -- Generate O(1) cases and O(len(prefix)) sized branch constraints.
 mrgStripPrefix ::
-  (Applicative u, SymBranching u, Mergeable a, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable a, SymEq a) =>
   [a] ->
   [a] ->
   u (Maybe [a])
@@ -273,7 +273,7 @@ mrgStripPrefix _ _ = mrgPure Nothing
 -- This function can be very inefficient on large symbolic lists and generate
 -- O(2^n) cases. Use with caution.
 mrgGroup ::
-  (MonadUnion u, Mergeable a, SEq a) =>
+  (MonadUnion u, Mergeable a, SymEq a) =>
   [a] ->
   u [[a]]
 mrgGroup = mrgGroupBy (.==)
@@ -281,7 +281,7 @@ mrgGroup = mrgGroupBy (.==)
 -- | Symbolic version of 'Data.List.isPrefixOf'.
 --
 -- Generate O(len(prefix)) sized constraints.
-symIsPrefixOf :: (SEq a) => [a] -> [a] -> SymBool
+symIsPrefixOf :: (SymEq a) => [a] -> [a] -> SymBool
 symIsPrefixOf [] _ = con True
 symIsPrefixOf _ [] = con False
 symIsPrefixOf (x : xs) (y : ys) =
@@ -290,19 +290,19 @@ symIsPrefixOf (x : xs) (y : ys) =
 -- | Symbolic version of 'Data.List.isSuffixOf'.
 --
 -- Generate O(len(suffix)) sized constraints.
-symIsSuffixOf :: (SEq a) => [a] -> [a] -> SymBool
+symIsSuffixOf :: (SymEq a) => [a] -> [a] -> SymBool
 symIsSuffixOf ns hs = symIsPrefixOf (reverse ns) (reverse hs)
 
 -- | Symbolic version of 'Data.List.isInfixOf'.
 --
 -- Generate O(len(haystack) * len(needle)) sized constraints.
-symIsInfixOf :: (SEq a) => [a] -> [a] -> SymBool
+symIsInfixOf :: (SymEq a) => [a] -> [a] -> SymBool
 symIsInfixOf needle haystack = symAny (symIsPrefixOf needle) (tails haystack)
 
 -- | Symbolic version of 'Data.List.isSubsequenceOf'.
 --
 -- Generate O(len(haystack) * len(needle)) sized constraints.
-symIsSubsequenceOf :: (SEq a) => [a] -> [a] -> SymBool
+symIsSubsequenceOf :: (SymEq a) => [a] -> [a] -> SymBool
 symIsSubsequenceOf [] _ = con True
 symIsSubsequenceOf _ [] = con False
 symIsSubsequenceOf a@(x : a') (y : b) =
@@ -314,7 +314,7 @@ symIsSubsequenceOf a@(x : a') (y : b) =
 -- Can generate O(n) cases and O(n) sized branch constraints.
 mrgLookup ::
   forall a b u.
-  (Applicative u, SymBranching u, Mergeable b, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable b, SymEq a) =>
   a ->
   [(a, b)] ->
   u (Maybe b)
@@ -373,7 +373,7 @@ mrgPartition p (x : xs) =
   ( MonadUnion uf,
     Mergeable a,
     Num int,
-    SEq int
+    SymEq int
   ) =>
   [a] ->
   int ->
@@ -390,7 +390,7 @@ l .!? p = go l p 0
 -- Can generate O(n) cases (or O(1) if int is merged), and O(n^2) sized
 -- constraints.
 mrgElemIndex ::
-  (MonadUnion u, Mergeable int, SEq a, Num int) =>
+  (MonadUnion u, Mergeable int, SymEq a, Num int) =>
   a ->
   [a] ->
   u (Maybe int)
@@ -401,7 +401,7 @@ mrgElemIndex x = mrgFindIndex (x .==)
 --
 -- Can generate O(n) cases, and O(n^3) sized constraints.
 mrgElemIndices ::
-  (MonadUnion u, Mergeable int, SEq a, Num int) =>
+  (MonadUnion u, Mergeable int, SymEq a, Num int) =>
   a ->
   [a] ->
   u [int]
@@ -413,7 +413,7 @@ mrgElemIndices x = mrgFindIndices (x .==)
 -- Can generate O(n) cases (or O(1) if int is merged), and O(n^2) sized
 -- constraints, assuming the predicate only generates O(1) constraints.
 mrgFindIndex ::
-  (Applicative u, SymBranching u, Mergeable int, SEq a, Num int) =>
+  (Applicative u, SymBranching u, Mergeable int, SymEq a, Num int) =>
   (a -> SymBool) ->
   [a] ->
   u (Maybe int)
@@ -426,7 +426,7 @@ mrgFindIndex p l = mrgFmap listToMaybe $ mrgFindIndices p l
 -- only generates O(1) constraints.
 mrgFindIndices ::
   forall u a int.
-  (Applicative u, SymBranching u, Mergeable int, SEq a, Num int) =>
+  (Applicative u, SymBranching u, Mergeable int, SymEq a, Num int) =>
   (a -> SymBool) ->
   [a] ->
   u [int]
@@ -441,7 +441,7 @@ mrgFindIndices p xs = go $ zip xs $ fromIntegral <$> [0 ..]
 --
 -- Can generate O(n) cases, and O(n^3) sized constraints.
 mrgNub ::
-  (Applicative u, SymBranching u, Mergeable a, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable a, SymEq a) =>
   [a] ->
   u [a]
 mrgNub = mrgNubBy (.==)
@@ -451,7 +451,7 @@ mrgNub = mrgNubBy (.==)
 --
 -- Can generate O(n) cases, and O(n^2) sized constraints.
 mrgDelete ::
-  (Applicative u, SymBranching u, Mergeable a, SEq a) =>
+  (Applicative u, SymBranching u, Mergeable a, SymEq a) =>
   a ->
   [a] ->
   u [a]
@@ -463,7 +463,7 @@ mrgDelete = mrgDeleteBy (.==)
 -- Can generate O(len(lhs)) cases, and O(len(lhs)^2 * len(rhs)) sized
 -- constraints.
 (.\\) ::
-  (MonadUnion u, Mergeable a, SEq a) =>
+  (MonadUnion u, Mergeable a, SymEq a) =>
   [a] ->
   [a] ->
   u [a]
@@ -477,14 +477,14 @@ mrgDelete = mrgDeleteBy (.==)
 --
 -- Should be improvable.
 mrgUnion ::
-  (MonadUnion u, Mergeable a, SEq a) =>
+  (MonadUnion u, Mergeable a, SymEq a) =>
   [a] ->
   [a] ->
   u [a]
 mrgUnion = mrgUnionBy (.==)
 
 mrgIntersect ::
-  (MonadUnion u, Mergeable a, SEq a) =>
+  (MonadUnion u, Mergeable a, SymEq a) =>
   [a] ->
   [a] ->
   u [a]
@@ -594,7 +594,7 @@ mrgGroupBy eq (x : xs) = do
 --
 -- Can generate 1 case, and O(n^2) sized constraints.
 mrgInsert ::
-  (MonadUnion m, Mergeable a, SOrd a) =>
+  (MonadUnion m, Mergeable a, SymOrd a) =>
   a ->
   [a] ->
   m [a]

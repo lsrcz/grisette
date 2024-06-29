@@ -14,11 +14,11 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
   ( ITEOp (symIte),
     LogicalOp ((.&&), (.||)),
-    SEq ((./=), (.==)),
-    SOrd ((.<=)),
     Solvable (con),
     SymBranching (mrgIfPropagatedStrategy),
+    SymEq ((./=), (.==)),
     SymInteger,
+    SymOrd ((.<=)),
     Union,
     mrgFilterM,
     mrgGuard,

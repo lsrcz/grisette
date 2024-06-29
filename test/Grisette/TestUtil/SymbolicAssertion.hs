@@ -5,15 +5,15 @@ import Grisette
   ( EvalSym (evalSym),
     LogicalOp (symNot),
     Model,
-    SEq ((./=), (.==)),
     SolvingFailure (Unsat),
+    SymEq ((./=), (.==)),
     precise,
     solve,
     z3,
   )
 import Test.HUnit (Assertion)
 
-(@?=~) :: (HasCallStack, SEq a, Show a, EvalSym a) => a -> a -> Assertion
+(@?=~) :: (HasCallStack, SymEq a, Show a, EvalSym a) => a -> a -> Assertion
 actual @?=~ expected = do
   cex <- solve (precise z3) (symNot $ actual .== expected)
   case cex of
@@ -34,7 +34,7 @@ actual @?=~ expected = do
 
 infix 1 .@?=
 
-(.@?=) :: (HasCallStack, Show a, SEq a, EvalSym a) => a -> a -> IO ()
+(.@?=) :: (HasCallStack, Show a, SymEq a, EvalSym a) => a -> a -> IO ()
 (.@?=) actual expected =
   symShouldEq
     actual
@@ -49,7 +49,7 @@ infix 1 .@?=
     )
 
 symShouldEq ::
-  (HasCallStack, Show a, SEq a, EvalSym a) =>
+  (HasCallStack, Show a, SymEq a, EvalSym a) =>
   a ->
   a ->
   (Model -> String) ->

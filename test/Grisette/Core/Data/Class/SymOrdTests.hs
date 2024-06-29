@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.Class.SOrdTests (sordTests) where
+module Grisette.Core.Data.Class.SymOrdTests (sordTests) where
 
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
@@ -24,8 +24,8 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
-    SEq ((.==)),
-    SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    SymEq ((.==)),
+    SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
     Union,
     mrgIf,
     mrgMax,
@@ -47,7 +47,7 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
 import Test.QuickCheck (ioProperty)
 
-concreteOrdOkProp :: (HasCallStack, SOrd a, Ord a) => (a, a) -> Assertion
+concreteOrdOkProp :: (HasCallStack, SymOrd a, Ord a) => (a, a) -> Assertion
 concreteOrdOkProp (i, j) = do
   i .<= j @?= conBool (i <= j)
   i .< j @?= conBool (i < j)
@@ -56,7 +56,7 @@ concreteOrdOkProp (i, j) = do
   symCompare i j @?= (mrgReturn $ compare i j :: Union Ordering)
 
 symbolicProdOrdOkProp ::
-  (HasCallStack, Show v, Show vl, Show vr, SOrd v, SOrd vl, SOrd vr) =>
+  (HasCallStack, Show v, Show vl, Show vr, SymOrd v, SymOrd vl, SymOrd vr) =>
   v ->
   v ->
   vl ->
@@ -83,9 +83,9 @@ symbolicProdOrdOkProp l r ll lr rl rr = do
 sordTests :: Test
 sordTests =
   testGroup
-    "SOrd"
+    "SymOrd"
     [ testGroup
-        "SOrd for common types"
+        "SymOrd for common types"
         [ testGroup
             "SymBool"
             [ testCase "Concrete SymBool" $ do

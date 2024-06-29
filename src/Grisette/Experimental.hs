@@ -19,18 +19,18 @@ module Grisette.Experimental
     derivedFreshConstrainedNoSpec,
 
     -- ** Some common GenSymConstrained specifications
-    SOrdUpperBound (..),
-    SOrdLowerBound (..),
-    SOrdBound (..),
+    SymOrdUpperBound (..),
+    SymOrdLowerBound (..),
+    SymOrdBound (..),
   )
 where
 
 import Grisette.Experimental.GenSymConstrained
   ( GenSymConstrained (..),
     GenSymSimpleConstrained (..),
-    SOrdBound (..),
-    SOrdLowerBound (..),
-    SOrdUpperBound (..),
+    SymOrdBound (..),
+    SymOrdLowerBound (..),
+    SymOrdUpperBound (..),
     derivedFreshConstrainedNoSpec,
     derivedSimpleFreshConstrainedNoSpec,
     derivedSimpleFreshConstrainedSameShape,

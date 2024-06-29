@@ -11,11 +11,11 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
   ( ITEOp (symIte),
     LogicalOp ((.&&), (.||)),
-    SEq ((./=), (.==)),
-    SOrd (symCompare, (.<=), (.>)),
     SymBool,
     SymBranching (mrgIfPropagatedStrategy),
+    SymEq ((./=), (.==)),
     SymInteger,
+    SymOrd (symCompare, (.<=), (.>)),
     Union,
     mrgIf,
     symAll,

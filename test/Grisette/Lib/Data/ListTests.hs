@@ -42,10 +42,10 @@ import Data.List
 import Grisette
   ( ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
-    SEq ((./=), (.==)),
-    SOrd (symCompare, (.<=), (.>=)),
     Solvable (con),
     SymBool,
+    SymEq ((./=), (.==)),
+    SymOrd (symCompare, (.<=), (.>=)),
     Union,
     mrgGroupBy,
     mrgIf,

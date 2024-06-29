@@ -30,9 +30,9 @@ module Grisette.Experimental.GenSymConstrained
     derivedSimpleFreshConstrainedSameShape,
 
     -- * Some common GenSymConstrained specifications
-    SOrdUpperBound (..),
-    SOrdLowerBound (..),
-    SOrdBound (..),
+    SymOrdUpperBound (..),
+    SymOrdLowerBound (..),
+    SymOrdBound (..),
   )
 where
 
@@ -63,10 +63,10 @@ import Grisette.Internal.Core.Data.Class.GenSym
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.||)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd ((.<), (.>=)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd ((.<), (.>=)))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
@@ -90,7 +90,7 @@ class (Mergeable a) => GenSymConstrained spec a where
   --
   -- Constraint violations will throw an error in the monadic environment.
   --
-  -- >>> runFreshT (freshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () Union (Union SymInteger)
+  -- >>> runFreshT (freshConstrained () (SymOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () Union (Union SymInteger)
   -- ExceptT <If (<= 1 a@0) (Left ()) (Right {a@0})>
   freshConstrained ::
     (MonadFresh m, MonadError e m, MonadUnion m) =>
@@ -121,7 +121,7 @@ class (Mergeable a) => GenSymSimpleConstrained spec a where
   --
   -- Constraint violations will throw an error in the monadic environment.
   --
-  -- >>> runFreshT (simpleFreshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () Union SymInteger
+  -- >>> runFreshT (simpleFreshConstrained () (SymOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () Union SymInteger
   -- ExceptT <If (<= 1 a@0) (Left ()) (Right a@0)>
   simpleFreshConstrained ::
     (MonadFresh m, MonadError e m, MonadUnion m) =>
@@ -140,57 +140,57 @@ instance {-# OVERLAPPABLE #-} (Mergeable a, GenSymSimple spec a) => GenSymSimple
 
 -- | Exclusive bound, generates the values with the specification, then filters
 -- out the ones that are greater than or equal to the bound
-data SOrdUpperBound a spec = SOrdUpperBound a spec
+data SymOrdUpperBound a spec = SymOrdUpperBound a spec
 
-instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SOrdUpperBound a spec) a where
-  freshConstrained e (SOrdUpperBound u spec) = do
+instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SymOrdUpperBound a spec) a where
+  freshConstrained e (SymOrdUpperBound u spec) = do
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .>= u) (throwError e) (return ())
     mrgSingle $ mrgSingle v
 
-instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdUpperBound a spec) a where
-  simpleFreshConstrained e (SOrdUpperBound u spec) = do
+instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SymOrdUpperBound a spec) a where
+  simpleFreshConstrained e (SymOrdUpperBound u spec) = do
     s <- simpleFresh spec
     mrgIf (s .>= u) (throwError e) (return ())
     mrgSingle s
 
 -- | Inclusive bound, generates the values with the specification, then filters
 -- out the ones that are less than the bound
-data SOrdLowerBound a spec = SOrdLowerBound a spec
+data SymOrdLowerBound a spec = SymOrdLowerBound a spec
 
-instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SOrdLowerBound a spec) a where
-  freshConstrained e (SOrdLowerBound l spec) = do
+instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SymOrdLowerBound a spec) a where
+  freshConstrained e (SymOrdLowerBound l spec) = do
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .< l) (throwError e) (return ())
     mrgSingle $ mrgSingle v
 
-instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdLowerBound a spec) a where
-  simpleFreshConstrained e (SOrdLowerBound l spec) = do
+instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SymOrdLowerBound a spec) a where
+  simpleFreshConstrained e (SymOrdLowerBound l spec) = do
     s <- simpleFresh spec
     mrgIf (s .< l) (throwError e) (return ())
     mrgSingle s
 
 -- | Left-inclusive, right-exclusive bound, generates the values with the
 -- specification, then filters out the ones that are out-of-bound
-data SOrdBound a spec = SOrdBound a a spec
+data SymOrdBound a spec = SymOrdBound a a spec
 
-instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SOrdBound a spec) a where
-  freshConstrained e (SOrdBound l u spec) = do
+instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSym spec a) => GenSymConstrained (SymOrdBound a spec) a where
+  freshConstrained e (SymOrdBound l u spec) = do
     s <- fresh spec
     v <- liftToMonadUnion s
     mrgIf (v .< l .|| v .>= u) (throwError e) (return ())
     mrgSingle $ mrgSingle v
 
-instance {-# OVERLAPPABLE #-} (SOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SOrdBound a spec) a where
-  simpleFreshConstrained e (SOrdBound l u spec) = do
+instance {-# OVERLAPPABLE #-} (SymOrd a, Mergeable a, GenSymSimple spec a) => GenSymSimpleConstrained (SymOrdBound a spec) a where
+  simpleFreshConstrained e (SymOrdBound l u spec) = do
     s <- simpleFresh spec
     mrgIf (s .< l .|| s .>= u) (throwError e) (return ())
     mrgSingle s
 
-instance GenSymConstrained (SOrdBound Integer ()) Integer where
-  freshConstrained _ (SOrdBound l r _) = chooseFresh [l .. r - 1]
+instance GenSymConstrained (SymOrdBound Integer ()) Integer where
+  freshConstrained _ (SymOrdBound l r _) = chooseFresh [l .. r - 1]
 
 -- Either
 instance

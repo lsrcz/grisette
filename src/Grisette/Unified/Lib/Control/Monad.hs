@@ -107,7 +107,7 @@ import Grisette.Lib.Data.Traversable
 import Grisette.Unified
   ( GetBool,
     MonadWithMode,
-    UnifiedSOrd,
+    UnifiedSymOrd,
     mrgIf,
     (.<=),
   )
@@ -353,8 +353,8 @@ symReplicateM ::
     TryMerge m,
     Mergeable a,
     Num int,
-    UnifiedSOrd mode Int,
-    UnifiedSOrd mode int
+    UnifiedSymOrd mode Int,
+    UnifiedSymOrd mode int
   ) =>
   Int ->
   int ->
@@ -387,8 +387,8 @@ symReplicateM_ ::
     TryMerge m,
     Mergeable a,
     Num int,
-    UnifiedSOrd mode Int,
-    UnifiedSOrd mode int
+    UnifiedSymOrd mode Int,
+    UnifiedSymOrd mode int
   ) =>
   Int ->
   int ->

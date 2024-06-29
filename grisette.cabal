@@ -80,13 +80,13 @@ library
       Grisette.Internal.Core.Data.Class.SafeLinearArith
       Grisette.Internal.Core.Data.Class.SafeSymRotate
       Grisette.Internal.Core.Data.Class.SafeSymShift
-      Grisette.Internal.Core.Data.Class.SEq
       Grisette.Internal.Core.Data.Class.SignConversion
       Grisette.Internal.Core.Data.Class.SimpleMergeable
       Grisette.Internal.Core.Data.Class.Solvable
       Grisette.Internal.Core.Data.Class.Solver
-      Grisette.Internal.Core.Data.Class.SOrd
       Grisette.Internal.Core.Data.Class.SubstSym
+      Grisette.Internal.Core.Data.Class.SymEq
+      Grisette.Internal.Core.Data.Class.SymOrd
       Grisette.Internal.Core.Data.Class.SymRotate
       Grisette.Internal.Core.Data.Class.SymShift
       Grisette.Internal.Core.Data.Class.ToCon
@@ -173,9 +173,9 @@ library
       Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
       Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
       Grisette.Unified.Internal.Class.UnifiedSafeSymShift
-      Grisette.Unified.Internal.Class.UnifiedSEq
       Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
-      Grisette.Unified.Internal.Class.UnifiedSOrd
+      Grisette.Unified.Internal.Class.UnifiedSymEq
+      Grisette.Unified.Internal.Class.UnifiedSymOrd
       Grisette.Unified.Internal.EvaluationMode
       Grisette.Unified.Internal.IsMode
       Grisette.Unified.Internal.MonadWithMode
@@ -287,10 +287,10 @@ test-suite spec
       Grisette.Core.Data.Class.SafeLinearArithTests
       Grisette.Core.Data.Class.SafeSymRotateTests
       Grisette.Core.Data.Class.SafeSymShiftTests
-      Grisette.Core.Data.Class.SEqTests
       Grisette.Core.Data.Class.SimpleMergeableTests
-      Grisette.Core.Data.Class.SOrdTests
       Grisette.Core.Data.Class.SubstSymTests
+      Grisette.Core.Data.Class.SymEqTests
+      Grisette.Core.Data.Class.SymOrdTests
       Grisette.Core.Data.Class.SymRotateTests
       Grisette.Core.Data.Class.SymShiftTests
       Grisette.Core.Data.Class.TestValues

@@ -15,10 +15,10 @@ import Grisette
     Mergeable (rootStrategy),
     MergingStrategy (SimpleStrategy),
     ModelOps (emptyModel),
-    SEq ((.==)),
-    SOrd (symCompare, (.<), (.<=), (.>), (.>=)),
     SimpleMergeable (mrgIte),
     Solvable (con),
+    SymEq ((.==)),
+    SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
     SymbolSetOps (emptySet),
     ToCon (toCon),
     ToSym (toSym),
@@ -43,9 +43,9 @@ exceptionTests =
             toCon AssertionError @?= Just AssertionError,
           testCase "ToSym" $ do
             toSym AssertionError @?= AssertionError,
-          testCase "SEq" $ do
+          testCase "SymEq" $ do
             AssertionError .== AssertionError @?= con True,
-          testCase "SOrd" $ do
+          testCase "SymOrd" $ do
             AssertionError .<= AssertionError @?= con True
             AssertionError .< AssertionError @?= con False
             AssertionError .>= AssertionError @?= con True
@@ -81,12 +81,12 @@ exceptionTests =
           testCase "ToSym" $ do
             toSym AssertionViolation @?= AssertionViolation
             toSym AssumptionViolation @?= AssumptionViolation,
-          testCase "SEq" $ do
+          testCase "SymEq" $ do
             AssertionViolation .== AssertionViolation @?= con True
             AssertionViolation .== AssumptionViolation @?= con False
             AssumptionViolation .== AssertionViolation @?= con False
             AssumptionViolation .== AssumptionViolation @?= con True,
-          testCase "SOrd" $ do
+          testCase "SymOrd" $ do
             AssertionViolation .<= AssertionViolation @?= con True
             AssertionViolation .< AssertionViolation @?= con False
             AssertionViolation .>= AssertionViolation @?= con True

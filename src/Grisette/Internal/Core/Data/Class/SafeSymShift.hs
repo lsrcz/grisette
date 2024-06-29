@@ -27,11 +27,11 @@ import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp ((.&&), (.||)),
   )
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SOrd
-  ( SOrd ((.<), (.>=)),
-  )
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( mrgIf,
+  )
+import Grisette.Internal.Core.Data.Class.SymOrd
+  ( SymOrd ((.<), (.>=)),
   )
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,

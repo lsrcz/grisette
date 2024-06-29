@@ -82,8 +82,6 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     rootStrategy1,
     wrapStrategy,
   )
-import Grisette.Internal.Core.Data.Class.SEq (SEq ((.==)))
-import Grisette.Internal.Core.Data.Class.SOrd (SOrd (symCompare, (.<), (.<=), (.>), (.>=)))
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
@@ -91,6 +89,8 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd (symCompare, (.<), (.<=), (.>), (.>=)))
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Internal.Core.Data.Class.TryMerge
@@ -105,7 +105,7 @@ newtype CBMCEither a b = CBMCEither {runCBMCEither :: Either a b}
   deriving newtype (Eq, Eq1, Ord, Ord1, Read, Read1, Show, Show1, Functor, Applicative, Monad, Hashable, NFData)
   deriving stock (Generic, Lift)
 
-deriving newtype instance (SEq e, SEq a) => SEq (CBMCEither e a)
+deriving newtype instance (SymEq e, SymEq a) => SymEq (CBMCEither e a)
 
 deriving newtype instance (EvalSym a, EvalSym b) => EvalSym (CBMCEither a b)
 
@@ -135,7 +135,7 @@ instance
   where
   fresh = derivedNoSpecFresh
 
-deriving newtype instance (SOrd a, SOrd b) => SOrd (CBMCEither a b)
+deriving newtype instance (SymOrd a, SymOrd b) => SymOrd (CBMCEither a b)
 
 deriving newtype instance (ToCon e1 e2, ToCon a1 a2) => ToCon (Either e1 a1) (CBMCEither e2 a2)
 
@@ -353,7 +353,7 @@ instance (Monad m) => OrigExcept.MonadError e (CBMCExceptT e m) where
   catchError = catchE
   {-# INLINE catchError #-}
 
-instance (SEq (m (CBMCEither e a))) => SEq (CBMCExceptT e m a) where
+instance (SymEq (m (CBMCEither e a))) => SymEq (CBMCExceptT e m a) where
   (CBMCExceptT a) .== (CBMCExceptT b) = a .== b
   {-# INLINE (.==) #-}
 
@@ -446,7 +446,7 @@ instance
   mrgIfPropagatedStrategy cond (CBMCExceptT t) (CBMCExceptT f) = CBMCExceptT $ mrgIfPropagatedStrategy cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance (SOrd (m (CBMCEither e a))) => SOrd (CBMCExceptT e m a) where
+instance (SymOrd (m (CBMCEither e a))) => SymOrd (CBMCExceptT e m a) where
   (CBMCExceptT l) .<= (CBMCExceptT r) = l .<= r
   (CBMCExceptT l) .< (CBMCExceptT r) = l .< r
   (CBMCExceptT l) .>= (CBMCExceptT r) = l .>= r

@@ -27,8 +27,8 @@ import Grisette
   ( ExtractSym (extractSym),
     ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
-    SEq ((.==)),
     SymBool,
+    SymEq ((.==)),
     SymbolSetOps (emptySet),
     SymbolSetRep (buildSymbolSet),
   )
