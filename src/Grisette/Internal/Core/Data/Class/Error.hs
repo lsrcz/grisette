@@ -116,6 +116,7 @@ symAssertTransformableError ::
 symAssertTransformableError err cond = mrgIf cond (return ()) (symThrowTransformableError err)
 {-# INLINE symAssertTransformableError #-}
 
+-- | Symbolic assertion with a custom error.
 symAssertWith ::
   ( Mergeable e,
     MonadError e erm,

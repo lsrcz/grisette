@@ -128,16 +128,22 @@ class ToSym a b where
   -- [false,true]
   toSym :: a -> b
 
+-- | Lifting of 'ToSym' to unary type constructors.
 class (forall a b. (ToSym a b) => ToSym (f1 a) (f2 b)) => ToSym1 f1 f2 where
+  -- | Lift a conversion to symbolic function to unary type constructors.
   liftToSym :: (a -> b) -> f1 a -> f2 b
 
+-- | Lift the standard 'toSym' to unary type constructors.
 toSym1 :: (ToSym1 f1 f2, ToSym a b) => f1 a -> f2 b
 toSym1 = liftToSym toSym
 {-# INLINE toSym1 #-}
 
+-- | Lifting of 'ToSym' to binary type constructors.
 class (forall a b. (ToSym a b) => ToSym1 (f1 a) (f2 b)) => ToSym2 f1 f2 where
+  -- | Lift conversion to symbolic functions to binary type constructors.
   liftToSym2 :: (a -> b) -> (c -> d) -> f1 a c -> f2 b d
 
+-- | Lift the standard 'toSym' to binary type constructors.
 toSym2 :: (ToSym2 f1 f2, ToSym a b, ToSym c d) => f1 a c -> f2 b d
 toSym2 = liftToSym2 toSym toSym
 {-# INLINE toSym2 #-}
@@ -151,6 +157,7 @@ data instance ToSymArgs Arity0 _ _ = ToSymArgs0
 
 newtype instance ToSymArgs Arity1 a b = ToSymArgs1 (a -> b)
 
+-- | The class of types that can be generically converted to symbolic values.
 class GToSym arity f1 f2 where
   gtoSym :: ToSymArgs arity a b -> f1 a -> f2 b
 
@@ -200,6 +207,7 @@ instance
   gtoSym targs (Comp1 a) = Comp1 $ liftToSym (gtoSym targs) a
   {-# INLINE gtoSym #-}
 
+-- | Generic 'toSym' function.
 genericToSym ::
   (Generic a, Generic b, GToSym Arity0 (Rep a) (Rep b)) =>
   a ->
@@ -207,6 +215,7 @@ genericToSym ::
 genericToSym = to . gtoSym ToSymArgs0 . from
 {-# INLINE genericToSym #-}
 
+-- | Generic 'liftToSym' function.
 genericLiftToSym ::
   (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2)) =>
   (a -> b) ->

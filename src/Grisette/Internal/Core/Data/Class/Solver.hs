@@ -116,6 +116,8 @@ class (Monad m) => MonadicSolver m where
   monadicSolverAssert :: SymBool -> m ()
   monadicSolverCheckSat :: m (Either SolvingFailure Model)
 
+-- | Solve a single formula with a monadic solver. Find an assignment to it to
+-- make it true.
 monadicSolverSolve ::
   (MonadicSolver m) => SymBool -> m (Either SolvingFailure Model)
 monadicSolverSolve formula = do
@@ -184,6 +186,7 @@ class Solver handle where
   -- | Force terminate the solver, do not wait for the last command to finish.
   solverForceTerminate :: handle -> IO ()
 
+-- | Solve a single formula. Find an assignment to it to make it true.
 solverSolve ::
   (Solver handle) => handle -> SymBool -> IO (Either SolvingFailure Model)
 solverSolve solver formula = do

@@ -36,6 +36,8 @@ module Grisette.Internal.Core.Data.Class.Format
     -- * Generic 'Format'
     genericFormatPrec,
     genericLiftFormatPrec,
+    genericFormatList,
+    genericLiftFormatList,
     FormatArgs (..),
     GFormat (..),
     FormatType (..),
@@ -109,7 +111,10 @@ import Generics.Deriving
   ( Default (Default, unDefault),
     Default1 (Default1, unDefault1),
   )
-import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -151,6 +156,17 @@ prettyPrintTuple l
   | otherwise = error "Tuple must have at least 2 elements"
 
 -- | Pretty printing of values.
+--
+-- This class is similar to the 'Pretty' class from the "Prettyprinter" package,
+-- but it also provides pretty printing with a given precedence level.
+--
+-- We are able to derive instances of this class for algebraic data types.
+-- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
+--
+-- > data X = ... deriving Generic deriving Format via (Default X)
+--
+-- The derived instance will pretty print the value with a format similar to the
+-- one used by ormolu.
 class Format a where
   format :: a -> Doc ann
   formatPrec :: Int -> a -> Doc ann
@@ -168,10 +184,6 @@ instance Format Char where
 
 instance (Format a) => Format [a] where
   format = formatList
-
-instance Format1 [] where
-  liftFormatPrec _ l _ = l
-  liftFormatList _ l = prettyPrintList . fmap l
 
 -- | Convenience function to layout and render a 'Doc' to 'T.Text'.
 --
@@ -221,6 +233,10 @@ class (forall a. (Format a) => Format (f a)) => Format1 f where
   liftFormatList ::
     (Int -> a -> Doc ann) -> ([a] -> Doc ann) -> [f a] -> Doc ann
   liftFormatList f l = align . prettyPrintList . map (liftFormatPrec f l 0)
+
+instance Format1 [] where
+  liftFormatPrec _ l _ = l
+  liftFormatList _ l = prettyPrintList . fmap l
 
 -- | Lift the standard pretty-printer ('formatPrec', 'formatList') to unary
 -- type constructors.
@@ -434,6 +450,7 @@ instance
   gformatList arg l =
     liftFormatList (gformatPrec arg Pref) (gformatList arg) $ unComp1 <$> l
 
+-- | Generic 'formatPrec' function.
 genericFormatPrec ::
   (Generic a, GFormat Arity0 (Rep a)) =>
   Int ->
@@ -442,6 +459,7 @@ genericFormatPrec ::
 genericFormatPrec n = gformatPrec FormatArgs0 Pref n . from
 {-# INLINE genericFormatPrec #-}
 
+-- | Generic 'formatList' function.
 genericFormatList ::
   (Generic a, GFormat Arity0 (Rep a)) =>
   [a] ->
@@ -449,6 +467,7 @@ genericFormatList ::
 genericFormatList = gformatList FormatArgs0 . fmap from
 {-# INLINE genericFormatList #-}
 
+-- | Generic 'liftFormatPrec' function.
 genericLiftFormatPrec ::
   (Generic1 f, GFormat Arity1 (Rep1 f)) =>
   (Int -> a -> Doc ann) ->
@@ -459,6 +478,7 @@ genericLiftFormatPrec ::
 genericLiftFormatPrec p l n = gformatPrec (FormatArgs1 p l) Pref n . from1
 {-# INLINE genericLiftFormatPrec #-}
 
+-- | Generic 'liftFormatList' function.
 genericLiftFormatList ::
   (Generic1 f, GFormat Arity1 (Rep1 f)) =>
   (Int -> a -> Doc ann) ->

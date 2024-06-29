@@ -472,6 +472,7 @@ instance (Generic a, GMergeable Arity0 (Rep a)) => Mergeable (Default a) where
   rootStrategy = unsafeCoerce (genericRootStrategy :: MergingStrategy a)
   {-# INLINE rootStrategy #-}
 
+-- | Generic 'rootStrategy'.
 genericRootStrategy ::
   (Generic a, GMergeable Arity0 (Rep a)) => MergingStrategy a
 genericRootStrategy = wrapStrategy (grootStrategy MergeableArgs0) to from
@@ -489,6 +490,7 @@ instance (Generic1 f, GMergeable Arity1 (Rep1 f)) => Mergeable1 (Default1 f) whe
     unsafeCoerce (genericLiftRootStrategy m :: MergingStrategy (f a))
   {-# INLINE liftRootStrategy #-}
 
+-- | Generic 'liftRootStrategy'.
 genericLiftRootStrategy ::
   (Generic1 f, GMergeable Arity1 (Rep1 f)) =>
   MergingStrategy a ->
