@@ -189,6 +189,7 @@ module Grisette.Core
     -- result is then merged into a single formula, and further operation on it
     -- won't have to split into multiple paths:
     --
+    -- >>> :set -Wno-unrecognised-warning-flags -Wno-x-partial
     -- >>> :{
     -- do
     --   v <- x             -- Path splitted with the (>>=)
@@ -1083,10 +1084,10 @@ module Grisette.Core
     -- x and y under the solution of the equation system.
     --
     -- >>> Right m <- solve (precise z3) (x + y .== 6 .&& x - y .== 20)
-    -- >>> evaluateSym False m (x * y)
+    -- >>> evalSym False m (x * y)
     -- -91
     --
-    -- You may notice that the first argument to the 'evaluateSym' function is
+    -- You may notice that the first argument to the 'evalSym' function is
     -- a Boolean value 'False'. This argument controls whether the evaluation
     -- should assign a default value to the symbolic constants that does not
     -- appear in the model. When the argument is 'False', the evaluation would
@@ -1097,9 +1098,9 @@ module Grisette.Core
     -- result would become a concrete value -91.
     --
     -- >>> let z = "z" :: SymInteger
-    -- >>> evaluateSym False m (x * y + z)
+    -- >>> evalSym False m (x * y + z)
     -- (+ -91 z)
-    -- >>> evaluateSym True m (x * y + z)
+    -- >>> evalSym True m (x * y + z)
     -- -91
     --
     -- Grisette also provides convenient functions to solve problems with error
@@ -1226,11 +1227,11 @@ module Grisette.Core
     -- the solver. The builtin CEGIS procedure relies on this.
     SymbolSetOps (..),
     SymbolSetRep (..),
-    ExtractSymbolics (..),
-    ExtractSymbolics1 (..),
-    extractSymbolics1,
-    ExtractSymbolics2 (..),
-    extractSymbolics2,
+    ExtractSym (..),
+    ExtractSym1 (..),
+    extractSym1,
+    ExtractSym2 (..),
+    extractSym2,
 
     -- ** Evaluation with a model
 
@@ -1241,21 +1242,21 @@ module Grisette.Core
     -- the symbolic constants with the concrete assignments.
     ModelOps (..),
     ModelRep (..),
-    EvaluateSym (..),
-    evaluateSymToCon,
-    EvaluateSym1 (..),
-    evaluateSym1,
-    evaluateSymToCon1,
-    EvaluateSym2 (..),
-    evaluateSym2,
-    evaluateSymToCon2,
+    EvalSym (..),
+    evalSymToCon,
+    EvalSym1 (..),
+    evalSym1,
+    evalSymToCon1,
+    EvalSym2 (..),
+    evalSym2,
+    evalSymToCon2,
 
     -- ** Substitution of a symbol
-    SubstituteSym (..),
-    SubstituteSym1 (..),
-    substituteSym1,
-    SubstituteSym2 (..),
-    substituteSym2,
+    SubstSym (..),
+    SubstSym1 (..),
+    substSym1,
+    SubstSym2 (..),
+    substSym2,
 
     -- * Utilities
 
@@ -1296,11 +1297,11 @@ module Grisette.Core
     genericMrgIte,
     genericLiftMrgIte,
 
-    -- *** 'EvaluateSym'
-    EvaluateSymArgs (..),
-    GEvaluateSym (..),
-    genericEvaluateSym,
-    genericLiftEvaluateSym,
+    -- *** 'EvalSym'
+    EvalSymArgs (..),
+    GEvalSym (..),
+    genericEvalSym,
+    genericLiftEvalSym,
 
     -- *** 'ToCon'
     ToConArgs (..),
@@ -1314,11 +1315,11 @@ module Grisette.Core
     genericToSym,
     genericLiftToSym,
 
-    -- *** ExtractSymbolics
-    ExtractSymbolicsArgs (..),
-    GExtractSymbolics (..),
-    genericExtractSymbolics,
-    genericLiftExtractSymbolics,
+    -- *** ExtractSym
+    ExtractSymArgs (..),
+    GExtractSym (..),
+    genericExtractSym,
+    genericLiftExtractSym,
 
     -- *** 'GPretty'
     genericGPrettyPrec,
@@ -1327,11 +1328,11 @@ module Grisette.Core
     GGPretty (..),
     PrettyType (..),
 
-    -- *** 'SubstituteSym'
-    SubstituteSymArgs (..),
-    GSubstituteSym (..),
-    genericSubstituteSym,
-    genericLiftSubstituteSym,
+    -- *** 'SubstSym'
+    SubstSymArgs (..),
+    GSubstSym (..),
+    genericSubstSym,
+    genericLiftSubstSym,
   )
 where
 
@@ -1409,30 +1410,30 @@ import Grisette.Internal.Core.Data.Class.Error
     symAssume,
     symThrowTransformableError,
   )
-import Grisette.Internal.Core.Data.Class.EvaluateSym
-  ( EvaluateSym (..),
-    EvaluateSym1 (..),
-    EvaluateSym2 (..),
-    EvaluateSymArgs (..),
-    GEvaluateSym (..),
-    evaluateSym1,
-    evaluateSym2,
-    evaluateSymToCon,
-    evaluateSymToCon1,
-    evaluateSymToCon2,
-    genericEvaluateSym,
-    genericLiftEvaluateSym,
+import Grisette.Internal.Core.Data.Class.EvalSym
+  ( EvalSym (..),
+    EvalSym1 (..),
+    EvalSym2 (..),
+    EvalSymArgs (..),
+    GEvalSym (..),
+    evalSym1,
+    evalSym2,
+    evalSymToCon,
+    evalSymToCon1,
+    evalSymToCon2,
+    genericEvalSym,
+    genericLiftEvalSym,
   )
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (..),
-    ExtractSymbolics1 (..),
-    ExtractSymbolics2 (..),
-    ExtractSymbolicsArgs (..),
-    GExtractSymbolics (..),
-    extractSymbolics1,
-    extractSymbolics2,
-    genericExtractSymbolics,
-    genericLiftExtractSymbolics,
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym (..),
+    ExtractSym1 (..),
+    ExtractSym2 (..),
+    ExtractSymArgs (..),
+    GExtractSym (..),
+    extractSym1,
+    extractSym2,
+    genericExtractSym,
+    genericLiftExtractSym,
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
 import Grisette.Internal.Core.Data.Class.GPretty
@@ -1617,16 +1618,16 @@ import Grisette.Internal.Core.Data.Class.Solver
     solverSolveMultiExcept,
     withSolver,
   )
-import Grisette.Internal.Core.Data.Class.SubstituteSym
-  ( GSubstituteSym (..),
-    SubstituteSym (..),
-    SubstituteSym1 (..),
-    SubstituteSym2 (..),
-    SubstituteSymArgs (..),
-    genericLiftSubstituteSym,
-    genericSubstituteSym,
-    substituteSym1,
-    substituteSym2,
+import Grisette.Internal.Core.Data.Class.SubstSym
+  ( GSubstSym (..),
+    SubstSym (..),
+    SubstSym1 (..),
+    SubstSym2 (..),
+    SubstSymArgs (..),
+    genericLiftSubstSym,
+    genericSubstSym,
+    substSym1,
+    substSym2,
   )
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (..))
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift (..))

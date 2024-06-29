@@ -16,8 +16,8 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( Apply (apply),
     CEGISResult (CEGISSolverFailure, CEGISSuccess, CEGISVerifierFailure),
-    EvaluateSym (evaluateSym),
-    ExtractSymbolics,
+    EvalSym (evalSym),
+    ExtractSym,
     Function ((#)),
     GrisetteSMTConfig,
     ITEOp (symIte),
@@ -55,7 +55,7 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
 
 testCegis ::
-  (HasCallStack, ExtractSymbolics a, EvaluateSym a, Show a, SEq a) =>
+  (HasCallStack, ExtractSym a, EvalSym a, Show a, SEq a) =>
   GrisetteSMTConfig i ->
   Bool ->
   a ->
@@ -81,7 +81,7 @@ testCegis config shouldSuccess inputs bs = do
   where
     verify _ _ [] = return ()
     verify funName m (v : vs) = do
-      y <- solve config (evaluateSym False m $ symNot v)
+      y <- solve config (evalSym False m $ symNot v)
       case y of
         Left _ -> verify funName m vs
         Right _ ->
@@ -130,8 +130,8 @@ cegisTests =
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
                           .== 100
-                let s1e = evaluateSym False m1 s1
-                let s2e = evaluateSym False m1 s2
+                let s1e = evalSym False m1 s1
+                let s2e = evalSym False m1 s2
                 s1e # 1 @=? 10
                 s1e # 3 @=? 100
                 s2e # 2 @=? 10
@@ -147,8 +147,8 @@ cegisTests =
                           .== 10
                           .&& apply (symIte cond s1 s2) (symIte cond 3 4)
                           .== 100
-                let s1e = evaluateSym False m1 s1
-                let s2e = evaluateSym False m1 s2
+                let s1e = evalSym False m1 s1
+                let s2e = evalSym False m1 s2
                 s1e # 1 @=? 10
                 s1e # 3 @=? 100
                 s2e # 2 @=? 10

@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.Class.EvaluateSymTests (evaluateSymTests) where
+module Grisette.Core.Data.Class.EvalSymTests (evalSymTests) where
 
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
@@ -19,7 +19,7 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Stack (HasCallStack)
 import Grisette
-  ( EvaluateSym (evaluateSym),
+  ( EvalSym (evalSym),
     ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
     ModelOps (emptyModel),
@@ -37,21 +37,21 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
 import Test.QuickCheck (ioProperty)
 
-concreteEvaluateSymOkProp ::
-  (HasCallStack, EvaluateSym a, Show a, Eq a) => a -> Assertion
-concreteEvaluateSymOkProp x = evaluateSym True emptyModel x @?= x
+concreteEvalSymOkProp ::
+  (HasCallStack, EvalSym a, Show a, Eq a) => a -> Assertion
+concreteEvalSymOkProp x = evalSym True emptyModel x @?= x
 
-evaluateSymTests :: Test
-evaluateSymTests =
+evalSymTests :: Test
+evalSymTests =
   testGroup
-    "EvaluateSym"
+    "EvalSym"
     [ testGroup
-        "EvaluateSym for common types"
+        "EvalSym for common types"
         [ testGroup
             "SymBool"
             [ let model = emptyModel
                   eval :: SymBool -> SymBool
-                  eval = evaluateSym False model
+                  eval = evalSym False model
                in testGroup
                     "Empty model / no fill default"
                     [ testCase "con" $
@@ -81,7 +81,7 @@ evaluateSymTests =
                     ],
               let model = emptyModel
                   eval :: SymBool -> SymBool
-                  eval = evaluateSym True model
+                  eval = evalSym True model
                in testGroup
                     "Empty model / with fill default"
                     [ testCase "con" $
@@ -110,7 +110,7 @@ evaluateSymTests =
                         "c" ::= True
                       )
                   eval :: SymBool -> SymBool
-                  eval = evaluateSym True model
+                  eval = evalSym True model
                in testGroup
                     "Some model"
                     [ testCase "con" $
@@ -132,31 +132,31 @@ evaluateSymTests =
                           @?= con False
                     ]
             ],
-          testProperty "Bool" $ ioProperty . concreteEvaluateSymOkProp @Bool,
+          testProperty "Bool" $ ioProperty . concreteEvalSymOkProp @Bool,
           testProperty "Integer" $
-            ioProperty . concreteEvaluateSymOkProp @Integer,
-          testProperty "Char" $ ioProperty . concreteEvaluateSymOkProp @Char,
-          testProperty "Int" $ ioProperty . concreteEvaluateSymOkProp @Int,
-          testProperty "Int8" $ ioProperty . concreteEvaluateSymOkProp @Int8,
-          testProperty "Int16" $ ioProperty . concreteEvaluateSymOkProp @Int16,
-          testProperty "Int32" $ ioProperty . concreteEvaluateSymOkProp @Int32,
-          testProperty "Int64" $ ioProperty . concreteEvaluateSymOkProp @Int64,
-          testProperty "Word" $ ioProperty . concreteEvaluateSymOkProp @Word,
-          testProperty "Word8" $ ioProperty . concreteEvaluateSymOkProp @Word8,
+            ioProperty . concreteEvalSymOkProp @Integer,
+          testProperty "Char" $ ioProperty . concreteEvalSymOkProp @Char,
+          testProperty "Int" $ ioProperty . concreteEvalSymOkProp @Int,
+          testProperty "Int8" $ ioProperty . concreteEvalSymOkProp @Int8,
+          testProperty "Int16" $ ioProperty . concreteEvalSymOkProp @Int16,
+          testProperty "Int32" $ ioProperty . concreteEvalSymOkProp @Int32,
+          testProperty "Int64" $ ioProperty . concreteEvalSymOkProp @Int64,
+          testProperty "Word" $ ioProperty . concreteEvalSymOkProp @Word,
+          testProperty "Word8" $ ioProperty . concreteEvalSymOkProp @Word8,
           testProperty "Word16" $
-            ioProperty . concreteEvaluateSymOkProp @Word16,
+            ioProperty . concreteEvalSymOkProp @Word16,
           testProperty "Word32" $
-            ioProperty . concreteEvaluateSymOkProp @Word32,
+            ioProperty . concreteEvalSymOkProp @Word32,
           testProperty "Word64" $
-            ioProperty . concreteEvaluateSymOkProp @Word64,
+            ioProperty . concreteEvalSymOkProp @Word64,
           testGroup
             "List"
             [ testProperty "[Integer]" $
-                ioProperty . concreteEvaluateSymOkProp @[Integer],
+                ioProperty . concreteEvalSymOkProp @[Integer],
               let model =
                     buildModel ("a" ::= True, "b" ::= False)
                   eval :: Bool -> [SymBool] -> [SymBool]
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "[SymBool]"
                     [ testGroup
@@ -180,10 +180,10 @@ evaluateSymTests =
           testGroup
             "Maybe"
             [ testProperty "Maybe Integer" $
-                ioProperty . concreteEvaluateSymOkProp @(Maybe Integer),
+                ioProperty . concreteEvalSymOkProp @(Maybe Integer),
               let model = buildModel ("a" ::= True)
                   eval :: Bool -> Maybe SymBool -> Maybe SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "Maybe SymBool"
                     [ testGroup
@@ -210,13 +210,13 @@ evaluateSymTests =
             "Either"
             [ testProperty "Either Integer Integer" $
                 ioProperty
-                  . concreteEvaluateSymOkProp @(Either Integer Integer),
+                  . concreteEvalSymOkProp @(Either Integer Integer),
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     Either SymBool SymBool ->
                     Either SymBool SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "Either SymBool SymBool"
                     [ testGroup
@@ -247,14 +247,14 @@ evaluateSymTests =
             "MaybeT"
             [ testProperty "MaybeT Maybe Integer" $
                 ioProperty
-                  . concreteEvaluateSymOkProp @(MaybeT Maybe Integer)
+                  . concreteEvalSymOkProp @(MaybeT Maybe Integer)
                   . MaybeT,
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     MaybeT Maybe SymBool ->
                     MaybeT Maybe SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "MaybeT should work"
                     [ testGroup
@@ -291,14 +291,14 @@ evaluateSymTests =
             "ExceptT"
             [ testProperty "ExceptT Integer Maybe Integer" $
                 ioProperty
-                  . concreteEvaluateSymOkProp @(ExceptT Integer Maybe Integer)
+                  . concreteEvalSymOkProp @(ExceptT Integer Maybe Integer)
                   . ExceptT,
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     ExceptT SymBool Maybe SymBool ->
                     ExceptT SymBool Maybe SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "ExceptT SymBool Maybe SymBool"
                     [ testGroup
@@ -337,17 +337,17 @@ evaluateSymTests =
                         ]
                     ]
             ],
-          testProperty "()" (ioProperty . concreteEvaluateSymOkProp @()),
+          testProperty "()" (ioProperty . concreteEvalSymOkProp @()),
           testGroup
             "(,)"
             [ testProperty "(Integer, Integer)" $
-                ioProperty . concreteEvaluateSymOkProp @(Integer, Integer),
+                ioProperty . concreteEvalSymOkProp @(Integer, Integer),
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     (SymBool, SymBool) ->
                     (SymBool, SymBool)
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -362,13 +362,13 @@ evaluateSymTests =
             "(,,)"
             [ testProperty "(Integer, Integer, Integer)" $
                 ioProperty
-                  . concreteEvaluateSymOkProp @(Integer, Integer, Integer),
+                  . concreteEvalSymOkProp @(Integer, Integer, Integer),
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     (SymBool, SymBool, SymBool) ->
                     (SymBool, SymBool, SymBool)
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -383,14 +383,14 @@ evaluateSymTests =
             "(,,,)"
             [ testProperty "(Integer, Integer, Integer, Integer)" $
                 ioProperty
-                  . concreteEvaluateSymOkProp
+                  . concreteEvalSymOkProp
                     @(Integer, Integer, Integer, Integer),
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     (SymBool, SymBool, SymBool, SymBool) ->
                     (SymBool, SymBool, SymBool, SymBool)
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -405,14 +405,14 @@ evaluateSymTests =
             "(,,,,)"
             [ testProperty "(Integer, Integer, Integer, Integer, Integer)" $
                 ioProperty
-                  . concreteEvaluateSymOkProp
+                  . concreteEvalSymOkProp
                     @(Integer, Integer, Integer, Integer, Integer),
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     (SymBool, SymBool, SymBool, SymBool, SymBool) ->
                     (SymBool, SymBool, SymBool, SymBool, SymBool)
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -442,14 +442,14 @@ evaluateSymTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteEvaluateSymOkProp
+                  . concreteEvalSymOkProp
                     @(Integer, Integer, Integer, Integer, Integer, Integer),
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     (SymBool, SymBool, SymBool, SymBool, SymBool, SymBool) ->
                     (SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -493,7 +493,7 @@ evaluateSymTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteEvaluateSymOkProp
+                  . concreteEvalSymOkProp
                     @( Integer,
                        Integer,
                        Integer,
@@ -521,7 +521,7 @@ evaluateSymTests =
                       SymBool,
                       SymBool
                     )
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -569,7 +569,7 @@ evaluateSymTests =
             [ testProperty
                 "(Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer)"
                 $ ioProperty
-                  . concreteEvaluateSymOkProp
+                  . concreteEvalSymOkProp
                     @( Integer,
                        Integer,
                        Integer,
@@ -600,7 +600,7 @@ evaluateSymTests =
                       SymBool,
                       SymBool
                     )
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "(SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool, SymBool)"
                     [ testCase "No fill default" $
@@ -649,7 +649,7 @@ evaluateSymTests =
             ],
           let model = buildModel ("a" ::= True)
               eval :: Bool -> B.ByteString -> B.ByteString
-              eval = flip evaluateSym model
+              eval = flip evalSym model
            in testGroup
                 "ByteString should work"
                 [ testGroup
@@ -674,11 +674,11 @@ evaluateSymTests =
                 ( ioProperty . \(x :: Either (Maybe Integer) (Maybe Integer)) ->
                     case x of
                       Left val ->
-                        concreteEvaluateSymOkProp
+                        concreteEvalSymOkProp
                           @(Sum Maybe Maybe Integer)
                           $ InL val
                       Right val ->
-                        concreteEvaluateSymOkProp
+                        concreteEvalSymOkProp
                           @(Sum Maybe Maybe Integer)
                           $ InR val
                 ),
@@ -687,7 +687,7 @@ evaluateSymTests =
                     Bool ->
                     Sum Maybe Maybe SymBool ->
                     Sum Maybe Maybe SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "Sum Maybe Maybe SymBool"
                     [ testGroup
@@ -737,13 +737,13 @@ evaluateSymTests =
                 [ testProperty
                     "WriterT Integer (Either Integer) Integer"
                     $ ioProperty . \(x :: Either Integer (Integer, Integer)) ->
-                      concreteEvaluateSymOkProp (WriterLazy.WriterT x),
+                      concreteEvalSymOkProp (WriterLazy.WriterT x),
                   let model = buildModel ("a" ::= True)
                       eval ::
                         Bool ->
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool ->
                         WriterLazy.WriterT SymBool (Either SymBool) SymBool
-                      eval = flip evaluateSym model
+                      eval = flip evalSym model
                    in testGroup
                         "WriterT SymBool (Either SymBool) SymBool"
                         [ testGroup
@@ -792,13 +792,13 @@ evaluateSymTests =
                     "WriterT Integer (Either Integer) Integer"
                     $ ioProperty
                       . \(x :: Either Integer (Integer, Integer)) ->
-                        concreteEvaluateSymOkProp (WriterStrict.WriterT x),
+                        concreteEvalSymOkProp (WriterStrict.WriterT x),
                   let model = buildModel ("a" ::= True)
                       eval ::
                         Bool ->
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool ->
                         WriterStrict.WriterT SymBool (Either SymBool) SymBool
-                      eval = flip evaluateSym model
+                      eval = flip evalSym model
                    in testGroup
                         "WriterT SymBool (Either SymBool) SymBool"
                         [ testGroup
@@ -851,10 +851,10 @@ evaluateSymTests =
             [ testProperty
                 "Identity Integer"
                 $ ioProperty
-                  . \(x :: Integer) -> concreteEvaluateSymOkProp $ Identity x,
+                  . \(x :: Integer) -> concreteEvalSymOkProp $ Identity x,
               let model = buildModel ("a" ::= True)
                   eval :: Bool -> Identity SymBool -> Identity SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "Identity SymBool"
                     [ testGroup
@@ -883,13 +883,13 @@ evaluateSymTests =
                 "IdentityT (Either Integer) Integer"
                 $ ioProperty
                   . \(x :: Either Integer Integer) ->
-                    concreteEvaluateSymOkProp $ IdentityT x,
+                    concreteEvalSymOkProp $ IdentityT x,
               let model = buildModel ("a" ::= True)
                   eval ::
                     Bool ->
                     IdentityT (Either SymBool) SymBool ->
                     IdentityT (Either SymBool) SymBool
-                  eval = flip evaluateSym model
+                  eval = flip evalSym model
                in testGroup
                     "IdentityT (Either SymBool) SymBool"
                     [ testGroup

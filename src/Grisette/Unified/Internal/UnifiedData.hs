@@ -21,15 +21,15 @@ where
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
-import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym)
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics (ExtractSymbolics)
+import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
+import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SEq (SEq)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd)
-import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
+import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
@@ -46,8 +46,8 @@ class
     Mergeable u,
     (AllSyms v) => AllSyms u,
     (Eq v) => Eq u,
-    (EvaluateSym v) => EvaluateSym u,
-    (ExtractSymbolics v) => ExtractSymbolics u,
+    (EvalSym v) => EvalSym u,
+    (ExtractSym v) => ExtractSym u,
     (ITEOp v) => ITEOp u,
     (GPretty v) => GPretty u,
     (Hashable v) => Hashable u,
@@ -58,7 +58,7 @@ class
     (SEq v) => SEq u,
     (Show v) => Show u,
     (SOrd v) => SOrd u,
-    (SubstituteSym v) => SubstituteSym u,
+    (SubstSym v) => SubstSym u,
     forall b. (ToCon v b) => ToCon u b,
     forall a. (ToSym a v) => ToSym a u
   ) =>

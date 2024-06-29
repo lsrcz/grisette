@@ -60,8 +60,8 @@ import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
 import Data.Maybe (fromJust)
 import GHC.Generics (Generic)
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym (extractSym),
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
 import Grisette.Internal.Core.Data.Class.PlainUnion
@@ -211,7 +211,7 @@ solverSolveMulti solver numOfModelRequested formula = do
       (models, err) <- go solver model numOfModelRequested
       return (model : models, err)
   where
-    allSymbols = extractSymbolics formula :: SymbolSet
+    allSymbols = extractSym formula :: SymbolSet
     go solver prevModel n
       | n <= 1 = return ([], ResultNumLimitReached)
       | otherwise = do

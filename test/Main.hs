@@ -10,8 +10,8 @@ import Grisette.Backend.TermRewritingTests
 import Grisette.Core.Control.ExceptionTests (exceptionTests)
 import Grisette.Core.Control.Monad.UnionTests (unionTests)
 import qualified Grisette.Core.Data.Class.BoolTests
-import Grisette.Core.Data.Class.EvaluateSymTests (evaluateSymTests)
-import Grisette.Core.Data.Class.ExtractSymbolicsTests (extractSymbolicsTests)
+import Grisette.Core.Data.Class.EvalSymTests (evalSymTests)
+import Grisette.Core.Data.Class.ExtractSymTests (extractSymTests)
 import Grisette.Core.Data.Class.GPrettyTests (gprettyTests)
 import Grisette.Core.Data.Class.GenSymTests (genSymTests)
 import Grisette.Core.Data.Class.MergeableTests (mergeableTests)
@@ -23,7 +23,7 @@ import Grisette.Core.Data.Class.SafeLinearArithTests (safeLinearArithTests)
 import Grisette.Core.Data.Class.SafeSymRotateTests (safeSymRotateTests)
 import Grisette.Core.Data.Class.SafeSymShiftTests (safeSymShiftTests)
 import Grisette.Core.Data.Class.SimpleMergeableTests (simpleMergeableTests)
-import Grisette.Core.Data.Class.SubstituteSymTests (substituteSymTests)
+import Grisette.Core.Data.Class.SubstSymTests (substSymTests)
 import Grisette.Core.Data.Class.SymRotateTests (symRotateTests)
 import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
@@ -98,8 +98,8 @@ coreTests =
         [ testGroup
             "Class"
             [ Grisette.Core.Data.Class.BoolTests.boolTests,
-              evaluateSymTests,
-              extractSymbolicsTests,
+              evalSymTests,
+              extractSymTests,
               genSymTests,
               gprettyTests,
               mergeableTests,
@@ -111,7 +111,7 @@ coreTests =
               seqTests,
               sordTests,
               simpleMergeableTests,
-              substituteSymTests,
+              substSymTests,
               symRotateTests,
               symShiftTests,
               toConTests,

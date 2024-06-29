@@ -71,10 +71,10 @@ import Generics.Deriving (Default (Default))
 import Grisette.Internal.Core.Control.Exception
   ( VerificationConditions (AssertionViolation, AssumptionViolation),
   )
-import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym, evaluateSym)
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics,
-    extractSymbolics,
+import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym, evalSym)
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym,
+    extractSym,
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
@@ -297,7 +297,7 @@ genericCEGISWithRefinement
 -- behaviors.
 data CEGISCondition = CEGISCondition SymBool SymBool
   deriving (Generic)
-  deriving (EvaluateSym) via (Default CEGISCondition)
+  deriving (EvalSym) via (Default CEGISCondition)
 
 -- | Construct a CEGIS condition with only a post-condition. The pre-condition
 -- would be set to true, meaning that all programs in the program space are
@@ -322,8 +322,8 @@ deriving via (Default CEGISCondition) instance SimpleMergeable CEGISCondition
 -- The synthesizer solver will **not** be reset, while the verifier solver will
 -- be reset after each iteration.
 solverCegisMultiInputs ::
-  ( EvaluateSym input,
-    ExtractSymbolics input,
+  ( EvalSym input,
+    ExtractSym input,
     Solver handle
   ) =>
   -- The synthesizer solver handle
@@ -360,7 +360,7 @@ solverCegisMultiInputs
       getVerifier input md = do
         let CEGISCondition pre post = toCEGISCondition input
         let evaluated =
-              evaluateSym False (exceptFor (extractSymbolics input) md) $
+              evalSym False (exceptFor (extractSym input) md) $
                 pre .&& symNot post
         solverResetAssertions verifierSolver
         r <- solverSolve verifierSolver evaluated
@@ -369,9 +369,9 @@ solverCegisMultiInputs
           Left err -> return $ CEGISVerifierException err
           Right model -> do
             let newCexInput =
-                  evaluateSym True (exact (extractSymbolics input) model) input
+                  evalSym True (exact (extractSym input) model) input
             return $ CEGISVerifierFoundCex newCexInput
-      (conInputs, symInputs) = partition (isEmptySet . extractSymbolics) inputs
+      (conInputs, symInputs) = partition (isEmptySet . extractSym) inputs
 
 -- | CEGIS with a single symbolic input to represent a set of inputs. See
 -- 'cegis' for more details.
@@ -383,8 +383,8 @@ solverCegisMultiInputs
 -- be reset after each iteration.
 solverCegis ::
   ( Solver handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     SEq inputs
   ) =>
   -- | The synthesizer solver handle
@@ -417,8 +417,8 @@ solverCegis synthesizerSolver verifierSolver inputs =
 -- be reset after each iteration.
 solverCegisExceptMultiInputs ::
   ( Solver handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     UnionWithExcept t u e v,
     PlainUnion u,
     Monad u
@@ -454,8 +454,8 @@ solverCegisExceptMultiInputs
 -- be reset after each iteration.
 solverCegisExceptVCMultiInputs ::
   ( Solver handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     UnionWithExcept t u e v,
     PlainUnion u,
     Monad u
@@ -500,8 +500,8 @@ solverCegisExceptVCMultiInputs
 -- be reset after each iteration.
 solverCegisExceptStdVCMultiInputs ::
   ( Solver handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     UnionWithExcept t u VerificationConditions (),
     PlainUnion u,
     Monad u
@@ -527,8 +527,8 @@ solverCegisExcept ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Functor u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     Solver handle,
     SEq inputs
   ) =>
@@ -557,8 +557,8 @@ solverCegisExceptVC ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     Solver handle,
     SEq inputs
   ) =>
@@ -591,8 +591,8 @@ solverCegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     Solver handle,
     SEq inputs
   ) =>
@@ -614,7 +614,7 @@ solverCegisExceptStdVC synthesizerSolver verifierSolver inputs =
 -- The synthesizer solver will **not** be reset, while the verifier solver will
 -- be reset after each iteration.
 solverCegisForAll ::
-  ( ExtractSymbolics forallInput,
+  ( ExtractSym forallInput,
     Solver handle
   ) =>
   handle ->
@@ -636,7 +636,7 @@ solverCegisForAll
         synthesizerSolver
         False
         phi
-        (\md -> return $ evaluateSym False md phi)
+        (\md -> return $ evalSym False md phi)
         [verifier]
     let exactResult = case result of
           CEGISSuccess model -> CEGISSuccess $ exceptFor forallSymbols model
@@ -645,10 +645,10 @@ solverCegisForAll
     where
       phi = pre .&& post
       negphi = pre .&& symNot post
-      forallSymbols = extractSymbolics input
+      forallSymbols = extractSym input
       verifier candidate = do
         let evaluated =
-              evaluateSym False (exceptFor forallSymbols candidate) negphi
+              evalSym False (exceptFor forallSymbols candidate) negphi
         solverResetAssertions verifierSolver
         r <- solverSolve verifierSolver evaluated
         case r of
@@ -671,8 +671,8 @@ solverCegisForAllExcept ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Functor u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     Solver handle,
     SEq inputs
   ) =>
@@ -701,8 +701,8 @@ solverCegisForAllExceptVC ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     Solver handle,
     SEq inputs
   ) =>
@@ -736,8 +736,8 @@ solverCegisForAllExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     Solver handle,
     SEq inputs
   ) =>
@@ -761,8 +761,8 @@ solverCegisForAllExceptStdVC synthesizerSolver verifierSolver inputs =
 -- symbolic value, you may want to use 'cegis' or 'cegisExcept' instead.
 -- We have an example for the 'cegis' call.
 cegisMultiInputs ::
-  ( EvaluateSym input,
-    ExtractSymbolics input,
+  ( EvalSym input,
+    ExtractSym input,
     ConfigurableSolver config handle
   ) =>
   -- | The configuration of the solver
@@ -801,8 +801,8 @@ cegisMultiInputs config inputs toCEGISCondition =
 -- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
 cegis ::
   ( ConfigurableSolver config handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     SEq inputs
   ) =>
   -- | The configuration of the solver
@@ -829,8 +829,8 @@ cegis config inputs condition =
 -- symbolic) inputs to represent a set of inputs.
 cegisExceptMultiInputs ::
   ( ConfigurableSolver config handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     UnionWithExcept t u e v,
     PlainUnion u,
     Monad u
@@ -857,8 +857,8 @@ cegisExceptMultiInputs config cexes interpretFun f =
 -- The errors should be translated to assertion or assumption violations.
 cegisExceptVCMultiInputs ::
   ( ConfigurableSolver config handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     UnionWithExcept t u e v,
     PlainUnion u,
     Monad u
@@ -889,8 +889,8 @@ cegisExceptVCMultiInputs config cexes interpretFun f =
 -- The '()' result will not fail any conditions.
 cegisExceptStdVCMultiInputs ::
   ( ConfigurableSolver config handle,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     UnionWithExcept t u VerificationConditions (),
     PlainUnion u,
     Monad u
@@ -940,8 +940,8 @@ cegisExcept ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Functor u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     ConfigurableSolver config handle,
     SEq inputs
   ) =>
@@ -964,8 +964,8 @@ cegisExceptVC ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     ConfigurableSolver config handle,
     SEq inputs
   ) =>
@@ -1010,8 +1010,8 @@ cegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     ConfigurableSolver config handle,
     SEq inputs
   ) =>
@@ -1036,7 +1036,7 @@ cegisExceptStdVC config inputs f =
 -- >>> cegisForAll (precise z3) x $ cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2)
 -- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisForAll ::
-  ( ExtractSymbolics forallInput,
+  ( ExtractSym forallInput,
     ConfigurableSolver config handle
   ) =>
   config ->
@@ -1064,8 +1064,8 @@ cegisForAllExcept ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Functor u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     ConfigurableSolver config handle,
     SEq inputs
   ) =>
@@ -1087,8 +1087,8 @@ cegisForAllExceptVC ::
   ( UnionWithExcept t u e v,
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     ConfigurableSolver config handle,
     SEq inputs
   ) =>
@@ -1110,8 +1110,8 @@ cegisForAllExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
     PlainUnion u,
     Monad u,
-    EvaluateSym inputs,
-    ExtractSymbolics inputs,
+    EvalSym inputs,
+    ExtractSym inputs,
     ConfigurableSolver config handle,
     SEq inputs
   ) =>

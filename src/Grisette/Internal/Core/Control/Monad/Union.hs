@@ -50,9 +50,9 @@ import Data.Hashable (Hashable (hashWithSalt))
 import Data.String (IsString (fromString))
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
-import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym (evaluateSym))
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics (extractSymbolics),
+import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym (evalSym))
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym (extractSym),
   )
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.Class.GPretty
@@ -86,8 +86,8 @@ import Grisette.Internal.Core.Data.Class.Solvable
 import Grisette.Internal.Core.Data.Class.Solver
   ( UnionWithExcept (extractUnionExcept),
   )
-import Grisette.Internal.Core.Data.Class.SubstituteSym
-  ( SubstituteSym (substituteSym),
+import Grisette.Internal.Core.Data.Class.SubstSym
+  ( SubstSym (substSym),
   )
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
@@ -470,36 +470,36 @@ instance
         f' <- go f
         return $ mrgIf c t' f'
 
-instance (Mergeable a, EvaluateSym a) => EvaluateSym (Union a) where
-  evaluateSym fillDefault model x = go $ unionBase x
+instance (Mergeable a, EvalSym a) => EvalSym (Union a) where
+  evalSym fillDefault model x = go $ unionBase x
     where
       go :: UnionBase a -> Union a
-      go (UnionSingle v) = mrgSingle $ evaluateSym fillDefault model v
+      go (UnionSingle v) = mrgSingle $ evalSym fillDefault model v
       go (UnionIf _ _ cond t f) =
         mrgIf
-          (evaluateSym fillDefault model cond)
+          (evalSym fillDefault model cond)
           (go t)
           (go f)
 
-instance (Mergeable a, SubstituteSym a) => SubstituteSym (Union a) where
-  substituteSym sym val x = go $ unionBase x
+instance (Mergeable a, SubstSym a) => SubstSym (Union a) where
+  substSym sym val x = go $ unionBase x
     where
       go :: UnionBase a -> Union a
-      go (UnionSingle v) = mrgSingle $ substituteSym sym val v
+      go (UnionSingle v) = mrgSingle $ substSym sym val v
       go (UnionIf _ _ cond t f) =
         mrgIf
-          (substituteSym sym val cond)
+          (substSym sym val cond)
           (go t)
           (go f)
 
 instance
-  (ExtractSymbolics a) =>
-  ExtractSymbolics (Union a)
+  (ExtractSym a) =>
+  ExtractSym (Union a)
   where
-  extractSymbolics v = go $ unionBase v
+  extractSym v = go $ unionBase v
     where
-      go (UnionSingle x) = extractSymbolics x
-      go (UnionIf _ _ cond t f) = extractSymbolics cond <> go t <> go f
+      go (UnionSingle x) = extractSym x
+      go (UnionIf _ _ cond t f) = extractSym cond <> go t <> go f
 
 instance (Hashable a) => Hashable (Union a) where
   s `hashWithSalt` (UAny u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u

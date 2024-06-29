@@ -13,7 +13,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.TermUtils
-  ( extractSymbolicsTerm,
+  ( extractTerm,
     castTerm,
     someTermsSize,
     someTermSize,
@@ -93,8 +93,8 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   )
 import qualified Type.Reflection as R
 
-extractSymbolicsSomeTerm :: SomeTerm -> S.HashSet SomeTypedSymbol
-extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
+extractSymSomeTerm :: SomeTerm -> S.HashSet SomeTypedSymbol
+extractSymSomeTerm t1 = evalState (gocached t1) M.empty
   where
     gocached :: SomeTerm -> State (M.HashMap SomeTerm (S.HashSet SomeTypedSymbol)) (S.HashSet SomeTypedSymbol)
     gocached t = do
@@ -166,11 +166,11 @@ extractSymbolicsSomeTerm t1 = evalState (gocached t1) M.empty
       r2 <- gocached (SomeTerm arg2)
       r3 <- gocached (SomeTerm arg3)
       return $ r1 <> r2 <> r3
-{-# INLINEABLE extractSymbolicsSomeTerm #-}
+{-# INLINEABLE extractSymSomeTerm #-}
 
-extractSymbolicsTerm :: (SupportedPrim a) => Term a -> S.HashSet SomeTypedSymbol
-extractSymbolicsTerm t = extractSymbolicsSomeTerm (SomeTerm t)
-{-# INLINE extractSymbolicsTerm #-}
+extractTerm :: (SupportedPrim a) => Term a -> S.HashSet SomeTypedSymbol
+extractTerm t = extractSymSomeTerm (SomeTerm t)
+{-# INLINE extractTerm #-}
 
 castTerm :: forall a b. (Typeable b) => Term a -> Maybe (Term b)
 castTerm t@ConTerm {} = cast t

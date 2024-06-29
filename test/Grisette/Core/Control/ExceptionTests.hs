@@ -9,8 +9,8 @@ import Control.Exception
 import Control.Monad.Except (ExceptT (ExceptT))
 import Grisette
   ( AssertionError (AssertionError),
-    EvaluateSym (evaluateSym),
-    ExtractSymbolics (extractSymbolics),
+    EvalSym (evalSym),
+    ExtractSym (extractSym),
     LogicalOp (symNot),
     Mergeable (rootStrategy),
     MergingStrategy (SimpleStrategy),
@@ -53,10 +53,10 @@ exceptionTests =
             AssertionError
               `symCompare` AssertionError
               @?= (mrgSingle EQ :: Union Ordering),
-          testCase "GEvaluateSym" $ do
-            evaluateSym False emptyModel AssertionError @?= AssertionError,
-          testCase "GExtractSymbolics" $ do
-            extractSymbolics AssertionError @?= emptySet,
+          testCase "GEvalSym" $ do
+            evalSym False emptyModel AssertionError @?= AssertionError,
+          testCase "GExtractSym" $ do
+            extractSym AssertionError @?= emptySet,
           testCase "SimpleMergeable" $ do
             mrgIte "a" AssertionError AssertionError @?= AssertionError,
           testCase "Mergeable" $ do
@@ -118,14 +118,14 @@ exceptionTests =
             AssumptionViolation
               `symCompare` AssumptionViolation
               @?= (mrgSingle EQ :: Union Ordering),
-          testCase "GEvaluateSym" $ do
-            evaluateSym False emptyModel AssertionViolation
+          testCase "GEvalSym" $ do
+            evalSym False emptyModel AssertionViolation
               @?= AssertionViolation
-            evaluateSym False emptyModel AssumptionViolation
+            evalSym False emptyModel AssumptionViolation
               @?= AssumptionViolation,
-          testCase "GExtractSymbolics" $ do
-            extractSymbolics AssertionViolation @?= emptySet
-            extractSymbolics AssumptionViolation @?= emptySet,
+          testCase "GExtractSym" $ do
+            extractSym AssertionViolation @?= emptySet
+            extractSym AssumptionViolation @?= emptySet,
           testCase "Mergeable" $ do
             mrgIf
               "a"

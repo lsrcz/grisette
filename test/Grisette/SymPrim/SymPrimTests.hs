@@ -40,8 +40,8 @@ import Data.Word (Word8)
 import Grisette
   ( Apply (apply),
     BV (bv),
-    EvaluateSym (evaluateSym),
-    ExtractSymbolics (extractSymbolics),
+    EvalSym (evalSym),
+    ExtractSym (extractSym),
     Function ((#)),
     ITEOp (symIte),
     LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
@@ -473,15 +473,15 @@ symPrimTests =
             [ testCase "To self" $ toCon (ssym "a" :: SymBool) @=? (Nothing :: Maybe Bool),
               testCase "To concrete" $ toCon True @=? Just True
             ],
-          testCase "EvaluateSym" $ do
+          testCase "EvalSym" $ do
             let m1 = emptyModel :: Model
             let m2 = insertValue "a" (1 :: Integer) m1
             let m3 = insertValue "b" True m2
-            evaluateSym False m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger))
+            evalSym False m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger))
               @=? symIte ("c" :: SymBool) 1 2
-            evaluateSym True m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger)) @=? 2,
-          testCase "ExtractSymbolics" $
-            extractSymbolics (symIte ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
+            evalSym True m3 (symIte ("c" :: SymBool) "a" ("a" + "a" :: SymInteger)) @=? 2,
+          testCase "ExtractSym" $
+            extractSym (symIte ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
               @=? SymbolSet
                 ( S.fromList
                     [ someTypedSymbol ("c" :: TypedSymbol Bool),
@@ -888,12 +888,12 @@ symPrimTests =
       testGroup
         "GeneralFun"
         [ testCase "evaluate" $ do
-            evaluateSym
+            evalSym
               False
               (buildModel ("a" := (1 :: Integer), "b" := (2 :: Integer)))
               (con ("a" --> "a" + "b") :: SymInteger -~> SymInteger)
               @=? (con ("a" --> "a" + 2) :: SymInteger -~> SymInteger)
-            evaluateSym
+            evalSym
               False
               (buildModel ("a" := (1 :: Integer), "b" := (2 :: Integer), "c" := (3 :: Integer)))
               (con ("a" --> con ("b" --> "a" + "b" + "c")) :: SymInteger -~> SymInteger -~> SymInteger)

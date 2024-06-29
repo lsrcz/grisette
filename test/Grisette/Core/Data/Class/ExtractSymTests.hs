@@ -4,8 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.Class.ExtractSymbolicsTests
-  ( extractSymbolicsTests,
+module Grisette.Core.Data.Class.ExtractSymTests
+  ( extractSymTests,
   )
 where
 
@@ -24,7 +24,7 @@ import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Generics.Deriving (Default (Default))
 import Grisette
-  ( ExtractSymbolics (extractSymbolics),
+  ( ExtractSym (extractSym),
     ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
     SEq ((.==)),
@@ -47,39 +47,39 @@ import Test.QuickCheck (ioProperty)
 
 data A = A1 | A2 SymBool | A3 SymBool SymBool
   deriving (Generic, Show, Eq)
-  deriving (ExtractSymbolics) via (Default A)
+  deriving (ExtractSym) via (Default A)
 
-concreteExtractSymbolicsOkProp ::
-  (HasCallStack, ExtractSymbolics a) => (a, a) -> Assertion
-concreteExtractSymbolicsOkProp x = extractSymbolics x @?= emptySet
+concreteExtractSymOkProp ::
+  (HasCallStack, ExtractSym a) => (a, a) -> Assertion
+concreteExtractSymOkProp x = extractSym x @?= emptySet
 
-extractSymbolicsTests :: Test
-extractSymbolicsTests =
+extractSymTests :: Test
+extractSymTests =
   testGroup
-    "ExtractSymbolics"
+    "ExtractSym"
     [ testGroup
         "Common types"
         [ testGroup
             "SymBool"
             [ testCase "con" $
-                extractSymbolics symTrue @?= emptySet,
+                extractSym symTrue @?= emptySet,
               testCase "ssym" $
-                extractSymbolics (ssymBool "a")
+                extractSym (ssymBool "a")
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "isym" $
-                extractSymbolics (isymBool "a" 1)
+                extractSym (isymBool "a" 1)
                   @?= buildSymbolSet (isymbolBool "a" 1),
               testCase "And" $
-                extractSymbolics (ssymBool "a" .&& isymBool "b" 1)
+                extractSym (ssymBool "a" .&& isymBool "b" 1)
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "Or" $
-                extractSymbolics (ssymBool "a" .|| isymBool "b" 1)
+                extractSym (ssymBool "a" .|| isymBool "b" 1)
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "Equal" $
-                extractSymbolics (ssymBool "a" .== isymBool "b" 1)
+                extractSym (ssymBool "a" .== isymBool "b" 1)
                   @?= buildSymbolSet (ssymbolBool "a", isymbolBool "b" 1),
               testCase "ITE" $
-                extractSymbolics
+                extractSym
                   (symIte (ssymBool "a") (isymBool "b" 1) (ssymBool "c"))
                   @?= buildSymbolSet
                     ( ssymbolBool "a",
@@ -87,90 +87,90 @@ extractSymbolicsTests =
                       ssymbolBool "c"
                     ),
               testCase "Not" $
-                extractSymbolics (symNot $ isymBool "a" 1)
+                extractSym (symNot $ isymBool "a" 1)
                   @?= buildSymbolSet (isymbolBool "a" 1)
             ],
           testProperty "Bool" $
-            ioProperty . concreteExtractSymbolicsOkProp @Bool,
+            ioProperty . concreteExtractSymOkProp @Bool,
           testProperty "Integer" $
-            ioProperty . concreteExtractSymbolicsOkProp @Integer,
+            ioProperty . concreteExtractSymOkProp @Integer,
           testProperty "Char" $
-            ioProperty . concreteExtractSymbolicsOkProp @Char,
-          testProperty "Int" $ ioProperty . concreteExtractSymbolicsOkProp @Int,
+            ioProperty . concreteExtractSymOkProp @Char,
+          testProperty "Int" $ ioProperty . concreteExtractSymOkProp @Int,
           testProperty "Int8" $
-            ioProperty . concreteExtractSymbolicsOkProp @Int8,
+            ioProperty . concreteExtractSymOkProp @Int8,
           testProperty "Int16" $
-            ioProperty . concreteExtractSymbolicsOkProp @Int16,
+            ioProperty . concreteExtractSymOkProp @Int16,
           testProperty "Int32" $
-            ioProperty . concreteExtractSymbolicsOkProp @Int32,
+            ioProperty . concreteExtractSymOkProp @Int32,
           testProperty "Int64" $
-            ioProperty . concreteExtractSymbolicsOkProp @Int64,
+            ioProperty . concreteExtractSymOkProp @Int64,
           testProperty "Word" $
-            ioProperty . concreteExtractSymbolicsOkProp @Word,
+            ioProperty . concreteExtractSymOkProp @Word,
           testProperty "Word8" $
-            ioProperty . concreteExtractSymbolicsOkProp @Word8,
+            ioProperty . concreteExtractSymOkProp @Word8,
           testProperty "Word16" $
-            ioProperty . concreteExtractSymbolicsOkProp @Word16,
+            ioProperty . concreteExtractSymOkProp @Word16,
           testProperty "Word32" $
-            ioProperty . concreteExtractSymbolicsOkProp @Word32,
+            ioProperty . concreteExtractSymOkProp @Word32,
           testProperty "Word64" $
-            ioProperty . concreteExtractSymbolicsOkProp @Word64,
+            ioProperty . concreteExtractSymOkProp @Word64,
           testGroup
             "[SymBool]"
             [ testCase "[]" $
-                extractSymbolics ([] :: [SymBool]) @?= emptySet,
+                extractSym ([] :: [SymBool]) @?= emptySet,
               testCase "[v]" $
-                extractSymbolics [ssymBool "a"]
+                extractSym [ssymBool "a"]
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "[v1, v2]" $
-                extractSymbolics [ssymBool "a", ssymBool "b"]
+                extractSym [ssymBool "a", ssymBool "b"]
                   @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b")
             ],
           testGroup
             "Maybe SymBool"
             [ testCase "Nothing" $
-                extractSymbolics (Nothing :: Maybe SymBool) @?= emptySet,
+                extractSym (Nothing :: Maybe SymBool) @?= emptySet,
               testCase "Just v" $
-                extractSymbolics (Just (ssymBool "a"))
+                extractSym (Just (ssymBool "a"))
                   @?= buildSymbolSet (ssymbolBool "a")
             ],
           testGroup
             "Either SymBool SymBool"
             [ testCase "Left v" $
-                extractSymbolics
+                extractSym
                   (Left (ssymBool "a") :: Either SymBool SymBool)
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "Right v" $
-                extractSymbolics
+                extractSym
                   (Right (ssymBool "a") :: Either SymBool SymBool)
                   @?= buildSymbolSet (ssymbolBool "a")
             ],
           testGroup
             "MaybeT Maybe SymBool"
             [ testCase "MaybeT Nothing" $
-                extractSymbolics (MaybeT Nothing :: MaybeT Maybe SymBool)
+                extractSym (MaybeT Nothing :: MaybeT Maybe SymBool)
                   @?= emptySet,
               testCase "MaybeT (Just Nothing)" $
-                extractSymbolics (MaybeT (Just Nothing) :: MaybeT Maybe SymBool)
+                extractSym (MaybeT (Just Nothing) :: MaybeT Maybe SymBool)
                   @?= emptySet,
               testCase "MaybeT (Just (Just v))" $
-                extractSymbolics (MaybeT (Just (Just (ssymBool "a"))))
+                extractSym (MaybeT (Just (Just (ssymBool "a"))))
                   @?= buildSymbolSet (ssymbolBool "a")
             ],
           testGroup
             "ExceptT SymBool Maybe SymBool"
             [ testCase "ExceptT Nothing" $
-                extractSymbolics
+                extractSym
                   (ExceptT Nothing :: ExceptT SymBool Maybe SymBool)
                   @?= emptySet,
               testCase "ExceptT (Just (Left v))" $
-                extractSymbolics
+                extractSym
                   ( ExceptT (Just (Left (ssymBool "a"))) ::
                       ExceptT SymBool Maybe SymBool
                   )
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "ExceptT (Just (Right v))" $
-                extractSymbolics
+                extractSym
                   ( ExceptT (Just (Right (ssymBool "a"))) ::
                       ExceptT SymBool Maybe SymBool
                   )
@@ -181,13 +181,13 @@ extractSymbolicsTests =
             [ testGroup
                 "Lazy"
                 [ testCase "WriterT Nothing" $
-                    extractSymbolics
+                    extractSym
                       ( WriterLazy.WriterT Nothing ::
                           WriterLazy.WriterT SymBool Maybe SymBool
                       )
                       @?= emptySet,
                   testCase "WriterT (Just (v1, v2))" $
-                    extractSymbolics
+                    extractSym
                       ( WriterLazy.WriterT
                           (Just (ssymBool "a", ssymBool "b")) ::
                           WriterLazy.WriterT SymBool Maybe SymBool
@@ -197,13 +197,13 @@ extractSymbolicsTests =
               testGroup
                 "Strict"
                 [ testCase "WriterT Nothing" $
-                    extractSymbolics
+                    extractSym
                       ( WriterStrict.WriterT Nothing ::
                           WriterStrict.WriterT SymBool Maybe SymBool
                       )
                       @?= emptySet,
                   testCase "WriterT (Just (v1, v2))" $
-                    extractSymbolics
+                    extractSym
                       ( WriterStrict.WriterT
                           (Just (ssymBool "a", ssymBool "b")) ::
                           WriterStrict.WriterT SymBool Maybe SymBool
@@ -211,34 +211,34 @@ extractSymbolicsTests =
                       @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b")
                 ]
             ],
-          testProperty "()" (ioProperty . concreteExtractSymbolicsOkProp @()),
+          testProperty "()" (ioProperty . concreteExtractSymOkProp @()),
           testCase "(,)" $
-            extractSymbolics (ssymBool "a", ssymBool "b")
+            extractSym (ssymBool "a", ssymBool "b")
               @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b"),
           testCase "(,,)" $
-            extractSymbolics (ssymBool "a", ssymBool "b", ssymBool "c")
+            extractSym (ssymBool "a", ssymBool "b", ssymBool "c")
               @?= buildSymbolSet
                 (ssymbolBool "a", ssymbolBool "b", ssymbolBool "c"),
           testGroup
             "ByteString"
             [ testCase "\"\"" $
-                extractSymbolics ("" :: B.ByteString) @?= emptySet,
+                extractSym ("" :: B.ByteString) @?= emptySet,
               testCase "\"a\"" $
-                extractSymbolics ("a" :: B.ByteString) @?= emptySet
+                extractSym ("a" :: B.ByteString) @?= emptySet
             ],
           testCase "Identity SymBool" $
-            extractSymbolics (Identity (ssymBool "a"))
+            extractSym (Identity (ssymBool "a"))
               @?= buildSymbolSet (ssymbolBool "a"),
           testGroup
             "IdentityT (Either SymBool) SymBool"
             [ testCase "Identity (Left v)" $
-                extractSymbolics
+                extractSym
                   ( IdentityT $ Left (ssymBool "a") ::
                       IdentityT (Either SymBool) SymBool
                   )
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "Identity (Right v)" $
-                extractSymbolics
+                extractSym
                   ( IdentityT $ Right (ssymBool "a") ::
                       IdentityT (Either SymBool) SymBool
                   )
@@ -246,16 +246,16 @@ extractSymbolicsTests =
             ]
         ],
       testGroup
-        "deriving ExtractSymbolics for ADT"
+        "deriving ExtractSym for ADT"
         [ testGroup
             "Simple ADT"
             [ testCase "A1" $
-                extractSymbolics A1 @?= emptySet,
+                extractSym A1 @?= emptySet,
               testCase "A2" $
-                extractSymbolics (A2 (ssymBool "a"))
+                extractSym (A2 (ssymBool "a"))
                   @?= buildSymbolSet (ssymbolBool "a"),
               testCase "A3" $
-                extractSymbolics (A3 (ssymBool "a") (ssymBool "b"))
+                extractSym (A3 (ssymBool "a") (ssymBool "b"))
                   @?= buildSymbolSet (ssymbolBool "a", ssymbolBool "b")
             ]
         ]

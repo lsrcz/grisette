@@ -16,16 +16,16 @@ import Data.Functor.Classes (Eq1, Ord1, Show1)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1)
 import GHC.Generics (Generic)
-import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym, EvaluateSym1)
-import Grisette.Internal.Core.Data.Class.ExtractSymbolics
-  ( ExtractSymbolics,
-    ExtractSymbolics1,
+import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym, EvalSym1)
+import Grisette.Internal.Core.Data.Class.ExtractSym
+  ( ExtractSym,
+    ExtractSym1,
   )
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty, GPretty1)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
 import Grisette.Internal.Core.Data.Class.SEq (SEq, SEq1)
 import Grisette.Internal.Core.Data.Class.SOrd (SOrd, SOrd1)
-import Grisette.Internal.Core.Data.Class.SubstituteSym (SubstituteSym)
+import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1)
@@ -98,13 +98,13 @@ dataDefaultStrategy nm
   | nm == ''ToCon = return $ ViaDefault nm
   | nm == ''ToSym = return $ ViaDefault nm
   | nm == ''AllSyms = return $ ViaDefault nm
-  | nm == ''EvaluateSym = return $ ViaDefault nm
-  | nm == ''ExtractSymbolics = return $ ViaDefault nm
+  | nm == ''EvalSym = return $ ViaDefault nm
+  | nm == ''ExtractSym = return $ ViaDefault nm
   | nm == ''GPretty = return $ ViaDefault nm
   | nm == ''Mergeable = return $ ViaDefault nm
   | nm == ''SEq = return $ ViaDefault nm
   | nm == ''SOrd = return $ ViaDefault nm
-  | nm == ''SubstituteSym = return $ ViaDefault nm
+  | nm == ''SubstSym = return $ ViaDefault nm
   | otherwise = fail $ "Unsupported class: " <> show nm
 
 allNeededConstraints :: Name -> [Name]
@@ -116,17 +116,17 @@ allNeededConstraints nm
   | nm == ''NFData = [''NFData, ''NFData1]
   | nm == ''Hashable = [''Hashable, ''Hashable1]
   | nm == ''AllSyms = [''AllSyms, ''AllSyms1]
-  | nm == ''EvaluateSym =
-      [''EvaluateSym, ''EvaluateSym1, ''Mergeable, ''Mergeable1]
-  | nm == ''ExtractSymbolics = [''ExtractSymbolics, ''ExtractSymbolics1]
+  | nm == ''EvalSym =
+      [''EvalSym, ''EvalSym1, ''Mergeable, ''Mergeable1]
+  | nm == ''ExtractSym = [''ExtractSym, ''ExtractSym1]
   | nm == ''GPretty = [''GPretty, ''GPretty1]
   | nm == ''Mergeable = [''Mergeable1, ''Mergeable1]
   | nm == ''ToCon = [''ToCon, ''ToCon1]
   | nm == ''ToSym = [''ToSym, ''ToSym1]
   | nm == ''SEq = [''SEq, ''SEq1, ''Mergeable, ''Mergeable1]
   | nm == ''SOrd = [''SOrd, ''SOrd1, ''Mergeable, ''Mergeable1]
-  | nm == ''SubstituteSym =
-      [''SubstituteSym, ''SubstituteSym, ''Mergeable, ''Mergeable1]
+  | nm == ''SubstSym =
+      [''SubstSym, ''SubstSym, ''Mergeable, ''Mergeable1]
   | otherwise = []
 
 newtype ModeTypeParamHandler = ModeTypeParamHandler
@@ -232,13 +232,13 @@ allGrisetteClasses =
     ''NFData,
     ''Hashable,
     ''AllSyms,
-    ''EvaluateSym,
-    ''ExtractSymbolics,
+    ''EvalSym,
+    ''ExtractSym,
     ''GPretty,
     ''Mergeable,
     ''SEq,
     ''SOrd,
-    ''SubstituteSym,
+    ''SubstSym,
     ''ToCon,
     ''ToSym,
     ''UnifiedSEq,
@@ -263,13 +263,13 @@ derive = flip (derivePredefinedMultipleClasses Nothing)
 -- * 'NFData'
 -- * 'Hashable'
 -- * 'AllSyms'
--- * 'EvaluateSym'
--- * 'ExtractSymbolics'
+-- * 'EvalSym'
+-- * 'ExtractSym'
 -- * 'GPretty'
 -- * 'Mergeable'
 -- * 'SEq'
 -- * 'SOrd'
--- * 'SubstituteSym'
+-- * 'SubstSym'
 -- * 'ToCon'
 -- * 'ToSym'
 -- * 'UnifiedSEq'

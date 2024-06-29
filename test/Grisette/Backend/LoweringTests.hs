@@ -22,7 +22,7 @@ import qualified Data.SBV.Control as SBV
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
 import Grisette
-  ( EvaluateSym (evaluateSym),
+  ( EvalSym (evalSym),
     Function ((#)),
     IntN,
     LogicalOp ((.&&)),
@@ -818,9 +818,9 @@ loweringTests =
                 (f # a # b .== a + b .&& a .== 10 .&& b .== 20)
                   .&& (f # a # c .== a + c .&& a .== 10 .&& c .== 30)
                   .&& (f # a # d .== a + d .&& a .== 10 .&& d .== 40)
-            evaluateSym False m (f # a # b .== a + b) @?= con True
-            evaluateSym False m (f # a # c .== a + c) @?= con True
-            evaluateSym False m (f # a # d .== a + d) @?= con True,
+            evalSym False m (f # a # b .== a + b) @?= con True
+            evalSym False m (f # a # c .== a + c) @?= con True
+            evalSym False m (f # a # d .== a + d) @?= con True,
           testCase "GeneralFun" $ do
             let f = "f" :: SymInteger -~> SymInteger -~> SymInteger
             let a = "a" :: SymInteger
@@ -832,7 +832,7 @@ loweringTests =
                 (f # a # b .== a + b .&& a .== 10 .&& b .== 20)
                   .&& (f # a # c .== a + c .&& a .== 10 .&& c .== 30)
                   .&& (f # a # d .== a + d .&& a .== 10 .&& d .== 40)
-            evaluateSym False m (f # a # b .== a + b) @?= con True
-            evaluateSym False m (f # a # c .== a + c) @?= con True
-            evaluateSym False m (f # a # d .== a + d) @?= con True
+            evalSym False m (f # a # b .== a + b) @?= con True
+            evalSym False m (f # a # c .== a + c) @?= con True
+            evalSym False m (f # a # d .== a + d) @?= con True
         ]
