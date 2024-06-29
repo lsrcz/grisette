@@ -88,10 +88,15 @@ import Data.Functor.Classes
     eq1,
     showsPrec1,
   )
-import Data.Functor.Sum (Sum (InL, InR))
+import Data.Functor.Compose (Compose (Compose, getCompose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
+import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap, Endo (Endo, appEndo))
 import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Typeable
   ( Typeable,
@@ -537,6 +542,97 @@ resolveStrategy' x = go
     go s = ([], s)
 {-# INLINE resolveStrategy' #-}
 
+#define CONCRETE_ORD_MERGEABLE(type) \
+instance Mergeable type where \
+  rootStrategy = \
+    let sub = SimpleStrategy $ \_ t _ -> t \
+     in SortedStrategy id $ const sub
+
+#define CONCRETE_ORD_MERGEABLE_BV(type) \
+instance (KnownNat n, 1 <= n) => Mergeable (type n) where \
+  rootStrategy = \
+    let sub = SimpleStrategy $ \_ t _ -> t \
+     in SortedStrategy id $ const sub
+
+#if 1
+CONCRETE_ORD_MERGEABLE(Bool)
+CONCRETE_ORD_MERGEABLE(Integer)
+CONCRETE_ORD_MERGEABLE(Char)
+CONCRETE_ORD_MERGEABLE(Int)
+CONCRETE_ORD_MERGEABLE(Int8)
+CONCRETE_ORD_MERGEABLE(Int16)
+CONCRETE_ORD_MERGEABLE(Int32)
+CONCRETE_ORD_MERGEABLE(Int64)
+CONCRETE_ORD_MERGEABLE(Word)
+CONCRETE_ORD_MERGEABLE(Word8)
+CONCRETE_ORD_MERGEABLE(Word16)
+CONCRETE_ORD_MERGEABLE(Word32)
+CONCRETE_ORD_MERGEABLE(Word64)
+CONCRETE_ORD_MERGEABLE(Float)
+CONCRETE_ORD_MERGEABLE(Double)
+CONCRETE_ORD_MERGEABLE(B.ByteString)
+CONCRETE_ORD_MERGEABLE(T.Text)
+CONCRETE_ORD_MERGEABLE(FPRoundingMode)
+CONCRETE_ORD_MERGEABLE(Monoid.All)
+CONCRETE_ORD_MERGEABLE(Monoid.Any)
+CONCRETE_ORD_MERGEABLE(Ordering)
+CONCRETE_ORD_MERGEABLE_BV(WordN)
+CONCRETE_ORD_MERGEABLE_BV(IntN)
+#endif
+
+instance (ValidFP eb sb) => Mergeable (FP eb sb) where
+  rootStrategy =
+    let sub = SimpleStrategy $ \_ t _ -> t
+     in withValidFPProofs @eb @sb
+          $ SortedStrategy
+            (\fp -> (bitCast fp :: WordN (eb + sb)))
+          $ const sub
+
+#define MERGEABLE_SIMPLE(symtype) \
+instance Mergeable symtype where \
+  rootStrategy = SimpleStrategy symIte
+
+#define MERGEABLE_BV(symtype) \
+instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
+  rootStrategy = SimpleStrategy symIte
+
+#define MERGEABLE_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  Mergeable (op sa sb) where \
+  rootStrategy = SimpleStrategy symIte
+
+#if 1
+MERGEABLE_SIMPLE(SymBool)
+MERGEABLE_SIMPLE(SymInteger)
+MERGEABLE_SIMPLE(SymFPRoundingMode)
+MERGEABLE_BV(SymIntN)
+MERGEABLE_BV(SymWordN)
+MERGEABLE_FUN((=->), (=~>))
+MERGEABLE_FUN((-->), (-~>))
+#endif
+
+instance (ValidFP eb sb) => Mergeable (SymFP eb sb) where
+  rootStrategy = SimpleStrategy symIte
+
+-- function
+instance (Mergeable b) => Mergeable (a -> b) where
+  rootStrategy = case rootStrategy @b of
+    SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
+    _ -> NoStrategy
+  {-# INLINE rootStrategy #-}
+
+instance Mergeable1 ((->) a) where
+  liftRootStrategy ms = case ms of
+    SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
+    _ -> NoStrategy
+  {-# INLINE liftRootStrategy #-}
+
+instance Mergeable2 ((->)) where
+  liftRootStrategy2 _ ms = case ms of
+    SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
+    _ -> NoStrategy
+  {-# INLINE liftRootStrategy2 #-}
+
 -- Instances
 deriveBuiltins
   (ViaDefault ''Mergeable)
@@ -563,7 +659,13 @@ deriveBuiltins
     ''AssertionError,
     ''VerificationConditions,
     ''BitwidthMismatch,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 deriveBuiltins
@@ -587,7 +689,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- List
@@ -847,98 +955,120 @@ instance
       (\(RWSStrict.RWST rws) -> rws)
   {-# INLINE liftRootStrategy #-}
 
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (Mergeable (l a), Mergeable (r a)) => Mergeable (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (Mergeable1 l, Mergeable1 r) => Mergeable1 (Product l r)
+
 -- Sum
-instance
-  (Mergeable1 l, Mergeable1 r, Mergeable x) =>
-  Mergeable (Sum l r x)
-  where
+deriving via
+  (Default (Sum l r a))
+  instance
+    (Mergeable (l a), Mergeable (r a)) => Mergeable (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (Mergeable1 l, Mergeable1 r) => Mergeable1 (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (Mergeable (f (g a))) => Mergeable (Compose f g a)
+
+instance (Mergeable1 f, Mergeable1 g) => Mergeable1 (Compose f g) where
+  liftRootStrategy s =
+    wrapStrategy (liftRootStrategy (liftRootStrategy s)) Compose getCompose
+  {-# INLINE liftRootStrategy #-}
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (Mergeable a) => Mergeable (Const a b)
+
+deriving via
+  (Default1 (Const a))
+  instance
+    (Mergeable a) => Mergeable1 (Const a)
+
+-- Alt
+deriving via
+  (Default (Alt f a))
+  instance
+    (Mergeable (f a)) => Mergeable (Alt f a)
+
+deriving via
+  (Default1 (Alt f))
+  instance
+    (Mergeable1 f) => Mergeable1 (Alt f)
+
+-- Ap
+deriving via
+  (Default (Ap f a))
+  instance
+    (Mergeable (f a)) => Mergeable (Ap f a)
+
+deriving via
+  (Default1 (Ap f))
+  instance
+    (Mergeable1 f) => Mergeable1 (Ap f)
+
+-- Endo
+instance (Mergeable a) => Mergeable (Endo a) where
   rootStrategy = rootStrategy1
   {-# INLINE rootStrategy #-}
 
-instance (Mergeable1 l, Mergeable1 r) => Mergeable1 (Sum l r) where
-  liftRootStrategy m =
-    SortedStrategy
-      ( \case
-          InL _ -> False
-          InR _ -> True
-      )
-      ( \case
-          False ->
-            wrapStrategy
-              (liftRootStrategy m)
-              InL
-              (\case (InL v) -> v; _ -> error "impossible")
-          True ->
-            wrapStrategy
-              (liftRootStrategy m)
-              InR
-              (\case (InR v) -> v; _ -> error "impossible")
-      )
-  {-# INLINE liftRootStrategy #-}
-
--- function
-instance (Mergeable b) => Mergeable (a -> b) where
-  rootStrategy = case rootStrategy @b of
-    SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
-    _ -> NoStrategy
-  {-# INLINE rootStrategy #-}
-
-instance Mergeable1 ((->) a) where
-  liftRootStrategy ms = case ms of
-    SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
-    _ -> NoStrategy
-  {-# INLINE liftRootStrategy #-}
-
-instance Mergeable2 ((->)) where
-  liftRootStrategy2 _ ms = case ms of
-    SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
-    _ -> NoStrategy
-  {-# INLINE liftRootStrategy2 #-}
-
--- Ordering
-deriving via
-  (Default Ordering)
-  instance
-    Mergeable Ordering
+instance Mergeable1 Endo where
+  liftRootStrategy strategy =
+    wrapStrategy (liftRootStrategy strategy) Endo appEndo
 
 -- Generic
-deriving via
-  (Default (U1 x))
-  instance
-    Mergeable (U1 x)
+deriving via (Default (U1 p)) instance Mergeable (U1 p)
+
+deriving via (Default (V1 p)) instance Mergeable (V1 p)
 
 deriving via
-  (Default (V1 x))
+  (Default (K1 i c p))
   instance
-    Mergeable (V1 x)
+    (Mergeable c) => Mergeable (K1 i c p)
 
 deriving via
-  (Default (K1 i c x))
+  (Default (M1 i c f p))
   instance
-    (Mergeable c) => Mergeable (K1 i c x)
+    (Mergeable (f p)) => Mergeable (M1 i c f p)
 
 deriving via
-  (Default (M1 i c a x))
+  (Default ((f :+: g) p))
   instance
-    (Mergeable (a x)) => Mergeable (M1 i c a x)
+    (Mergeable (f p), Mergeable (g p)) => Mergeable ((f :+: g) p)
 
 deriving via
-  (Default ((a :+: b) x))
+  (Default ((f :*: g) p))
   instance
-    (Mergeable (a x), Mergeable (b x)) => Mergeable ((a :+: b) x)
+    (Mergeable (f p), Mergeable (g p)) => Mergeable ((f :*: g) p)
 
 deriving via
-  (Default ((a :*: b) x))
+  (Default (Par1 p))
   instance
-    (Mergeable (a x), Mergeable (b x)) => Mergeable ((a :*: b) x)
+    (Mergeable p) => Mergeable (Par1 p)
 
--- Data.Monoid module
 deriving via
-  (Default (Monoid.Sum a))
+  (Default (Rec1 f p))
   instance
-    (Mergeable a) => Mergeable (Monoid.Sum a)
+    (Mergeable (f p)) => Mergeable (Rec1 f p)
 
-deriving via (Default1 Monoid.Sum) instance Mergeable1 Monoid.Sum
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (Mergeable (f (g p))) => Mergeable ((f :.: g) p)
 
 -- Exceptions
 instance Mergeable ArithException where
@@ -1029,72 +1159,3 @@ instance (Mergeable a) => Mergeable3 ((,,,) a) where
       (liftRootStrategy m1)
       (liftRootStrategy2 m2 m3)
   {-# INLINE liftRootStrategy3 #-}
-
-#define CONCRETE_ORD_MERGEABLE(type) \
-instance Mergeable type where \
-  rootStrategy = \
-    let sub = SimpleStrategy $ \_ t _ -> t \
-     in SortedStrategy id $ const sub
-
-#define CONCRETE_ORD_MERGEABLE_BV(type) \
-instance (KnownNat n, 1 <= n) => Mergeable (type n) where \
-  rootStrategy = \
-    let sub = SimpleStrategy $ \_ t _ -> t \
-     in SortedStrategy id $ const sub
-
-#if 1
-CONCRETE_ORD_MERGEABLE(Bool)
-CONCRETE_ORD_MERGEABLE(Integer)
-CONCRETE_ORD_MERGEABLE(Char)
-CONCRETE_ORD_MERGEABLE(Int)
-CONCRETE_ORD_MERGEABLE(Int8)
-CONCRETE_ORD_MERGEABLE(Int16)
-CONCRETE_ORD_MERGEABLE(Int32)
-CONCRETE_ORD_MERGEABLE(Int64)
-CONCRETE_ORD_MERGEABLE(Word)
-CONCRETE_ORD_MERGEABLE(Word8)
-CONCRETE_ORD_MERGEABLE(Word16)
-CONCRETE_ORD_MERGEABLE(Word32)
-CONCRETE_ORD_MERGEABLE(Word64)
-CONCRETE_ORD_MERGEABLE(Float)
-CONCRETE_ORD_MERGEABLE(Double)
-CONCRETE_ORD_MERGEABLE(B.ByteString)
-CONCRETE_ORD_MERGEABLE(T.Text)
-CONCRETE_ORD_MERGEABLE(FPRoundingMode)
-CONCRETE_ORD_MERGEABLE_BV(WordN)
-CONCRETE_ORD_MERGEABLE_BV(IntN)
-#endif
-
-instance (ValidFP eb sb) => Mergeable (FP eb sb) where
-  rootStrategy =
-    let sub = SimpleStrategy $ \_ t _ -> t
-     in withValidFPProofs @eb @sb
-          $ SortedStrategy
-            (\fp -> (bitCast fp :: WordN (eb + sb)))
-          $ const sub
-
-#define MERGEABLE_SIMPLE(symtype) \
-instance Mergeable symtype where \
-  rootStrategy = SimpleStrategy symIte
-
-#define MERGEABLE_BV(symtype) \
-instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
-  rootStrategy = SimpleStrategy symIte
-
-#define MERGEABLE_FUN(cop, op) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  Mergeable (op sa sb) where \
-  rootStrategy = SimpleStrategy symIte
-
-#if 1
-MERGEABLE_SIMPLE(SymBool)
-MERGEABLE_SIMPLE(SymInteger)
-MERGEABLE_SIMPLE(SymFPRoundingMode)
-MERGEABLE_BV(SymIntN)
-MERGEABLE_BV(SymWordN)
-MERGEABLE_FUN((=->), (=~>))
-MERGEABLE_FUN((-->), (-~>))
-#endif
-
-instance (ValidFP eb sb) => Mergeable (SymFP eb sb) where
-  rootStrategy = SimpleStrategy symIte

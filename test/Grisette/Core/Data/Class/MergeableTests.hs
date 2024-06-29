@@ -1064,17 +1064,17 @@ mergeableTests =
             [ testCase "LT" $
                 testMergeableSimpleEquivClass
                   LT
-                  [DynamicSortedIdx False]
+                  [DynamicSortedIdx LT]
                   [(ssym "a", LT, LT, LT)],
               testCase "EQ" $
                 testMergeableSimpleEquivClass
                   EQ
-                  [DynamicSortedIdx True, DynamicSortedIdx False]
+                  [DynamicSortedIdx EQ]
                   [(ssym "a", EQ, EQ, EQ)],
               testCase "GT" $
                 testMergeableSimpleEquivClass
                   GT
-                  [DynamicSortedIdx True, DynamicSortedIdx True]
+                  [DynamicSortedIdx GT]
                   [(ssym "a", GT, GT, GT)]
             ]
         ]

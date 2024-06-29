@@ -52,6 +52,14 @@ module Grisette.Internal.Core.Data.Class.GPretty
   )
 where
 
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+import Prettyprinter.Render.Text (renderStrict)
+#else
+import Data.Text.Prettyprint.Doc as Prettyprinter
+import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+#endif
+
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity
   ( Identity (Identity),
@@ -62,11 +70,17 @@ import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -120,14 +134,6 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
-
-#if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter
-import Prettyprinter.Render.Text (renderStrict)
-#else
-import Data.Text.Prettyprint.Doc as Prettyprinter
-import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
-#endif
 
 prettyPrintList :: [Doc ann] -> Doc ann
 prettyPrintList l
@@ -483,6 +489,72 @@ instance
   liftGPrettyPrec p l n = genericLiftGPrettyPrec p l n . unDefault1
   liftGPrettyList p l = genericLiftGPrettyList p l . fmap unDefault1
 
+#define GPRETTY_SIMPLE(type) \
+instance GPretty type where gprettyPrec = viaShowsPrec showsPrec
+
+#if 1
+GPRETTY_SIMPLE(Bool)
+GPRETTY_SIMPLE(Integer)
+GPRETTY_SIMPLE(Int)
+GPRETTY_SIMPLE(Int8)
+GPRETTY_SIMPLE(Int16)
+GPRETTY_SIMPLE(Int32)
+GPRETTY_SIMPLE(Int64)
+GPRETTY_SIMPLE(Word)
+GPRETTY_SIMPLE(Word8)
+GPRETTY_SIMPLE(Word16)
+GPRETTY_SIMPLE(Word32)
+GPRETTY_SIMPLE(Word64)
+GPRETTY_SIMPLE(Float)
+GPRETTY_SIMPLE(Double)
+GPRETTY_SIMPLE(FPRoundingMode)
+GPRETTY_SIMPLE(Monoid.All)
+GPRETTY_SIMPLE(Monoid.Any)
+GPRETTY_SIMPLE(Ordering)
+#endif
+
+instance GPretty B.ByteString where
+  gpretty = pretty . C.unpack
+
+instance GPretty T.Text where
+  gpretty = pretty
+
+instance (KnownNat n, 1 <= n) => GPretty (IntN n) where
+  gpretty = viaShow
+
+instance (KnownNat n, 1 <= n) => GPretty (WordN n) where
+  gpretty = viaShow
+
+instance (ValidFP eb sb) => GPretty (FP eb sb) where
+  gpretty = viaShow
+
+-- Prettyprint
+#define GPRETTY_SYM_SIMPLE(symtype) \
+instance GPretty symtype where \
+  gpretty (symtype t) = prettyPrintTerm t
+
+#define GPRETTY_SYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => GPretty (symtype n) where \
+  gpretty (symtype t) = prettyPrintTerm t
+
+#define GPRETTY_SYM_FUN(op, cons) \
+instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
+  => GPretty (sa op sb) where \
+  gpretty (cons t) = prettyPrintTerm t
+
+#if 1
+GPRETTY_SYM_SIMPLE(SymBool)
+GPRETTY_SYM_SIMPLE(SymInteger)
+GPRETTY_SYM_SIMPLE(SymFPRoundingMode)
+GPRETTY_SYM_BV(SymIntN)
+GPRETTY_SYM_BV(SymWordN)
+GPRETTY_SYM_FUN(=~>, SymTabularFun)
+GPRETTY_SYM_FUN(-~>, SymGeneralFun)
+#endif
+
+instance (ValidFP eb sb) => GPretty (SymFP eb sb) where
+  gpretty (SymFP t) = prettyPrintTerm t
+
 -- Instance
 deriveBuiltins
   (ViaDefault ''GPretty)
@@ -505,7 +577,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
-    ''VerificationConditions
+    ''VerificationConditions,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 deriveBuiltins
@@ -526,7 +604,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,),
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,)
+    ''(,,,,,,,,,,,,,,),
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- Identity
@@ -536,19 +620,6 @@ instance (GPretty a) => GPretty (Identity a) where
 instance GPretty1 Identity where
   liftGPrettyPrec f _ n (Identity a) =
     prettyWithConstructor n "Identity" [f 11 a]
-
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (GPretty (f a), GPretty (g a)) =>
-    GPretty (Sum f g a)
-
-deriving via
-  (Default1 (Sum f g))
-  instance
-    (GPretty1 f, GPretty1 g) =>
-    GPretty1 (Sum f g)
 
 -- MaybeT
 instance
@@ -635,6 +706,95 @@ instance (GPretty1 m) => GPretty1 (IdentityT m) where
   liftGPrettyPrec f l n (IdentityT a) =
     prettyWithConstructor n "IdentityT" [liftGPrettyPrec f l 11 a]
 
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (GPretty (l a), GPretty (r a)) => GPretty (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (GPretty1 l, GPretty1 r) => GPretty1 (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (GPretty (l a), GPretty (r a)) => GPretty (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (GPretty1 l, GPretty1 r) => GPretty1 (Sum l r)
+
+-- Compose
+instance (GPretty (f (g a))) => GPretty (Compose f g a) where
+  gprettyPrec n (Compose a) =
+    prettyWithConstructor n "Compose" [gprettyPrec 11 a]
+
+instance (GPretty1 f, GPretty1 g) => GPretty1 (Compose f g) where
+  liftGPrettyPrec f l n (Compose a) =
+    prettyWithConstructor
+      n
+      "Compose"
+      [liftGPrettyPrec (liftGPrettyPrec f l) (liftGPrettyList f l) 11 a]
+
+-- Const
+deriving via (Default (Const a b)) instance (GPretty a) => GPretty (Const a b)
+
+deriving via (Default1 (Const a)) instance (GPretty a) => GPretty1 (Const a)
+
+-- Alt
+deriving via (Default (Alt f a)) instance (GPretty (f a)) => GPretty (Alt f a)
+
+deriving via (Default1 (Alt f)) instance (GPretty1 f) => GPretty1 (Alt f)
+
+-- Ap
+deriving via (Default (Ap f a)) instance (GPretty (f a)) => GPretty (Ap f a)
+
+deriving via (Default1 (Ap f)) instance (GPretty1 f) => GPretty1 (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance GPretty (U1 p)
+
+deriving via (Default (V1 p)) instance GPretty (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (GPretty c) => GPretty (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (GPretty (f p)) => GPretty (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (GPretty (f p), GPretty (g p)) => GPretty ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (GPretty (f p), GPretty (g p)) => GPretty ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (GPretty p) => GPretty (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (GPretty (f p)) => GPretty (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (GPretty (f (g p))) => GPretty ((f :.: g) p)
+
 -- GPretty2
 instance GPretty2 Either where
   liftGPrettyPrec2 fe _ _ _ n (Left e) =
@@ -653,69 +813,6 @@ instance (GPretty a) => GPretty2 ((,,) a) where
 instance (GPretty a, GPretty b) => GPretty2 ((,,,) a b) where
   liftGPrettyPrec2 fc fd _ _ _ (a, b, c, d) =
     prettyPrintTuple [gpretty a, gpretty b, fc 0 c, fd 0 d]
-
-#define GPRETTY_SIMPLE(type) \
-instance GPretty type where gprettyPrec = viaShowsPrec showsPrec
-
-#if 1
-GPRETTY_SIMPLE(Bool)
-GPRETTY_SIMPLE(Integer)
-GPRETTY_SIMPLE(Int)
-GPRETTY_SIMPLE(Int8)
-GPRETTY_SIMPLE(Int16)
-GPRETTY_SIMPLE(Int32)
-GPRETTY_SIMPLE(Int64)
-GPRETTY_SIMPLE(Word)
-GPRETTY_SIMPLE(Word8)
-GPRETTY_SIMPLE(Word16)
-GPRETTY_SIMPLE(Word32)
-GPRETTY_SIMPLE(Word64)
-GPRETTY_SIMPLE(Float)
-GPRETTY_SIMPLE(Double)
-GPRETTY_SIMPLE(FPRoundingMode)
-#endif
-
-instance GPretty B.ByteString where
-  gpretty = pretty . C.unpack
-
-instance GPretty T.Text where
-  gpretty = pretty
-
-instance (KnownNat n, 1 <= n) => GPretty (IntN n) where
-  gpretty = viaShow
-
-instance (KnownNat n, 1 <= n) => GPretty (WordN n) where
-  gpretty = viaShow
-
-instance (ValidFP eb sb) => GPretty (FP eb sb) where
-  gpretty = viaShow
-
--- Prettyprint
-#define GPRETTY_SYM_SIMPLE(symtype) \
-instance GPretty symtype where \
-  gpretty (symtype t) = prettyPrintTerm t
-
-#define GPRETTY_SYM_BV(symtype) \
-instance (KnownNat n, 1 <= n) => GPretty (symtype n) where \
-  gpretty (symtype t) = prettyPrintTerm t
-
-#define GPRETTY_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
-  => GPretty (sa op sb) where \
-  gpretty (cons t) = prettyPrintTerm t
-
-#if 1
-GPRETTY_SYM_SIMPLE(SymBool)
-GPRETTY_SYM_SIMPLE(SymInteger)
-GPRETTY_SYM_SIMPLE(SymFPRoundingMode)
-GPRETTY_SYM_BV(SymIntN)
-GPRETTY_SYM_BV(SymWordN)
-GPRETTY_SYM_FUN(=~>, SymTabularFun)
-GPRETTY_SYM_FUN(-~>, SymGeneralFun)
-#endif
-
-instance (ValidFP eb sb) => GPretty (SymFP eb sb) where
-  gpretty (SymFP t) = prettyPrintTerm t
 
 instance (GPretty a) => GPretty (HS.HashSet a) where
   gprettyPrec n s =

@@ -47,9 +47,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -254,6 +260,69 @@ genericLiftSEq ::
 genericLiftSEq f l r = gseq (SEqArgs1 f) (from1 l) (from1 r)
 {-# INLINE genericLiftSEq #-}
 
+#define CONCRETE_SEQ(type) \
+instance SEq type where \
+  l .== r = con $ l == r; \
+  {-# INLINE (.==) #-}
+
+#define CONCRETE_SEQ_BV(type) \
+instance (KnownNat n, 1 <= n) => SEq (type n) where \
+  l .== r = con $ l == r; \
+  {-# INLINE (.==) #-}
+
+#if 1
+CONCRETE_SEQ(Bool)
+CONCRETE_SEQ(Integer)
+CONCRETE_SEQ(Char)
+CONCRETE_SEQ(Int)
+CONCRETE_SEQ(Int8)
+CONCRETE_SEQ(Int16)
+CONCRETE_SEQ(Int32)
+CONCRETE_SEQ(Int64)
+CONCRETE_SEQ(Word)
+CONCRETE_SEQ(Word8)
+CONCRETE_SEQ(Word16)
+CONCRETE_SEQ(Word32)
+CONCRETE_SEQ(Word64)
+CONCRETE_SEQ(Float)
+CONCRETE_SEQ(Double)
+CONCRETE_SEQ(B.ByteString)
+CONCRETE_SEQ(T.Text)
+CONCRETE_SEQ(FPRoundingMode)
+CONCRETE_SEQ(Monoid.All)
+CONCRETE_SEQ(Monoid.Any)
+CONCRETE_SEQ(Ordering)
+CONCRETE_SEQ_BV(WordN)
+CONCRETE_SEQ_BV(IntN)
+#endif
+
+instance (ValidFP eb sb) => SEq (FP eb sb) where
+  l .== r = con $ l == r
+  {-# INLINE (.==) #-}
+
+-- Symbolic types
+#define SEQ_SIMPLE(symtype) \
+instance SEq symtype where \
+  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
+  {-# INLINE (.==) #-}
+
+#define SEQ_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
+  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
+  {-# INLINE (.==) #-}
+
+#if 1
+SEQ_SIMPLE(SymBool)
+SEQ_SIMPLE(SymInteger)
+SEQ_SIMPLE(SymFPRoundingMode)
+SEQ_BV(SymIntN)
+SEQ_BV(SymWordN)
+#endif
+
+instance (ValidFP eb sb) => SEq (SymFP eb sb) where
+  (SymFP l) .== (SymFP r) = SymBool $ pevalEqTerm l r
+  {-# INLINE (.==) #-}
+
 -- Instances
 deriveBuiltins
   (ViaDefault ''SEq)
@@ -278,7 +347,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 deriveBuiltins
   (ViaDefault1 ''SEq1)
@@ -300,7 +375,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- ExceptT
@@ -340,17 +421,6 @@ instance (SEq1 m, SEq w) => SEq1 (WriterStrict.WriterT w m) where
     liftSEq (liftSEq2 f (.==)) l r
   {-# INLINE liftSEq #-}
 
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (SEq (f a), SEq (g a)) => SEq (Sum f g a)
-
-deriving via
-  (Default1 (Sum f g))
-  instance
-    (SEq1 f, SEq1 g) => SEq1 (Sum f g)
-
 -- IdentityT
 instance (SEq1 m, SEq a) => SEq (IdentityT m a) where
   (.==) = seq1
@@ -359,6 +429,92 @@ instance (SEq1 m, SEq a) => SEq (IdentityT m a) where
 instance (SEq1 m) => SEq1 (IdentityT m) where
   liftSEq f (IdentityT l) (IdentityT r) = liftSEq f l r
   {-# INLINE liftSEq #-}
+
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (SEq (l a), SEq (r a)) => SEq (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (SEq1 l, SEq1 r) => SEq1 (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (SEq (l a), SEq (r a)) => SEq (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (SEq1 l, SEq1 r) => SEq1 (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (SEq (f (g a))) => SEq (Compose f g a)
+
+instance (SEq1 f, SEq1 g) => SEq1 (Compose f g) where
+  liftSEq f (Compose l) (Compose r) = liftSEq (liftSEq f) l r
+
+-- Const
+deriving via (Default (Const a b)) instance (SEq a) => SEq (Const a b)
+
+deriving via (Default1 (Const a)) instance (SEq a) => SEq1 (Const a)
+
+-- Alt
+deriving via (Default (Alt f a)) instance (SEq (f a)) => SEq (Alt f a)
+
+deriving via (Default1 (Alt f)) instance (SEq1 f) => SEq1 (Alt f)
+
+-- Ap
+deriving via (Default (Ap f a)) instance (SEq (f a)) => SEq (Ap f a)
+
+deriving via (Default1 (Ap f)) instance (SEq1 f) => SEq1 (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance SEq (U1 p)
+
+deriving via (Default (V1 p)) instance SEq (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (SEq c) => SEq (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (SEq (f p)) => SEq (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (SEq (f p), SEq (g p)) => SEq ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (SEq (f p), SEq (g p)) => SEq ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (SEq p) => SEq (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (SEq (f p)) => SEq (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (SEq (f (g p))) => SEq ((f :.: g) p)
 
 instance SEq2 Either where
   liftSEq2 f _ (Left l) (Left r) = f l r
@@ -378,63 +534,3 @@ instance (SEq a, SEq b) => SEq2 ((,,,) a b) where
   liftSEq2 f g (l1, l2, l3, l4) (r1, r2, r3, r4) =
     l1 .== r1 .&& l2 .== r2 .&& f l3 r3 .&& g l4 r4
   {-# INLINE liftSEq2 #-}
-
-#define CONCRETE_SEQ(type) \
-instance SEq type where \
-  l .== r = con $ l == r; \
-  {-# INLINE (.==) #-}
-
-#define CONCRETE_SEQ_BV(type) \
-instance (KnownNat n, 1 <= n) => SEq (type n) where \
-  l .== r = con $ l == r; \
-  {-# INLINE (.==) #-}
-
-#if 1
-CONCRETE_SEQ(Bool)
-CONCRETE_SEQ(Integer)
-CONCRETE_SEQ(Char)
-CONCRETE_SEQ(Int)
-CONCRETE_SEQ(Int8)
-CONCRETE_SEQ(Int16)
-CONCRETE_SEQ(Int32)
-CONCRETE_SEQ(Int64)
-CONCRETE_SEQ(Word)
-CONCRETE_SEQ(Word8)
-CONCRETE_SEQ(Word16)
-CONCRETE_SEQ(Word32)
-CONCRETE_SEQ(Word64)
-CONCRETE_SEQ(Float)
-CONCRETE_SEQ(Double)
-CONCRETE_SEQ(B.ByteString)
-CONCRETE_SEQ(T.Text)
-CONCRETE_SEQ(FPRoundingMode)
-CONCRETE_SEQ_BV(WordN)
-CONCRETE_SEQ_BV(IntN)
-#endif
-
-instance (ValidFP eb sb) => SEq (FP eb sb) where
-  l .== r = con $ l == r
-  {-# INLINE (.==) #-}
-
--- Symbolic types
-#define SEQ_SIMPLE(symtype) \
-instance SEq symtype where \
-  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
-  {-# INLINE (.==) #-}
-
-#define SEQ_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SEq (symtype n) where \
-  (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
-  {-# INLINE (.==) #-}
-
-#if 1
-SEQ_SIMPLE(SymBool)
-SEQ_SIMPLE(SymInteger)
-SEQ_SIMPLE(SymFPRoundingMode)
-SEQ_BV(SymIntN)
-SEQ_BV(SymWordN)
-#endif
-
-instance (ValidFP eb sb) => SEq (SymFP eb sb) where
-  (SymFP l) .== (SymFP r) = SymBool $ pevalEqTerm l r
-  {-# INLINE (.==) #-}

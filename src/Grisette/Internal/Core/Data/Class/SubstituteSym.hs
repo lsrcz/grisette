@@ -47,9 +47,15 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
+import Data.Functor.Compose (Compose (Compose))
+import Data.Functor.Const (Const)
+import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Monoid (Alt, Ap)
+import qualified Data.Monoid as Monoid
+import Data.Ord (Down)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -268,6 +274,69 @@ instance
     Default1 . genericLiftSubstituteSym f sym val . unDefault1
   {-# INLINE liftSubstituteSym #-}
 
+#define CONCRETE_SUBSTITUTESYM(type) \
+instance SubstituteSym type where \
+  substituteSym _ _ = id
+
+#define CONCRETE_SUBSTITUTESYM_BV(type) \
+instance (KnownNat n, 1 <= n) => SubstituteSym (type n) where \
+  substituteSym _ _ = id
+
+#if 1
+CONCRETE_SUBSTITUTESYM(Bool)
+CONCRETE_SUBSTITUTESYM(Integer)
+CONCRETE_SUBSTITUTESYM(Char)
+CONCRETE_SUBSTITUTESYM(Int)
+CONCRETE_SUBSTITUTESYM(Int8)
+CONCRETE_SUBSTITUTESYM(Int16)
+CONCRETE_SUBSTITUTESYM(Int32)
+CONCRETE_SUBSTITUTESYM(Int64)
+CONCRETE_SUBSTITUTESYM(Word)
+CONCRETE_SUBSTITUTESYM(Word8)
+CONCRETE_SUBSTITUTESYM(Word16)
+CONCRETE_SUBSTITUTESYM(Word32)
+CONCRETE_SUBSTITUTESYM(Word64)
+CONCRETE_SUBSTITUTESYM(Float)
+CONCRETE_SUBSTITUTESYM(Double)
+CONCRETE_SUBSTITUTESYM(B.ByteString)
+CONCRETE_SUBSTITUTESYM(T.Text)
+CONCRETE_SUBSTITUTESYM(Monoid.All)
+CONCRETE_SUBSTITUTESYM(Monoid.Any)
+CONCRETE_SUBSTITUTESYM(Ordering)
+CONCRETE_SUBSTITUTESYM_BV(WordN)
+CONCRETE_SUBSTITUTESYM_BV(IntN)
+CONCRETE_SUBSTITUTESYM(FPRoundingMode)
+#endif
+
+instance (ValidFP eb sb) => SubstituteSym (FP eb sb) where
+  substituteSym _ _ = id
+
+#define SUBSTITUTE_SYM_SIMPLE(symtype) \
+instance SubstituteSym symtype where \
+  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
+
+#define SUBSTITUTE_SYM_BV(symtype) \
+instance (KnownNat n, 1 <= n) => SubstituteSym (symtype n) where \
+  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
+
+#define SUBSTITUTE_SYM_FUN(cop, op, cons) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  SubstituteSym (op sa sb) where \
+  substituteSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
+
+#if 1
+SUBSTITUTE_SYM_SIMPLE(SymBool)
+SUBSTITUTE_SYM_SIMPLE(SymInteger)
+SUBSTITUTE_SYM_BV(SymIntN)
+SUBSTITUTE_SYM_BV(SymWordN)
+SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
+SUBSTITUTE_SYM_FUN((-->), (-~>), SymGeneralFun)
+SUBSTITUTE_SYM_SIMPLE(SymFPRoundingMode)
+#endif
+
+instance (ValidFP eb sb) => SubstituteSym (SymFP eb sb) where
+  substituteSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) t
+
 -- Instances
 deriveBuiltins
   (ViaDefault ''SubstituteSym)
@@ -292,7 +361,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 deriveBuiltins
@@ -315,7 +390,13 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
   ]
 
 -- ExceptT
@@ -383,19 +464,6 @@ instance
       liftSubstituteSym (liftSubstituteSym2 f substituteSym) sym val v
   {-# INLINE liftSubstituteSym #-}
 
--- Sum
-deriving via
-  (Default (Sum f g a))
-  instance
-    (SubstituteSym (f a), SubstituteSym (g a)) =>
-    SubstituteSym (Sum f g a)
-
-deriving via
-  (Default1 (Sum f g))
-  instance
-    (SubstituteSym1 f, SubstituteSym1 g) =>
-    SubstituteSym1 (Sum f g)
-
 -- IdentityT
 instance
   (SubstituteSym1 m, SubstituteSym a) =>
@@ -408,6 +476,115 @@ instance (SubstituteSym1 m) => SubstituteSym1 (IdentityT m) where
   liftSubstituteSym f sym val (IdentityT a) =
     IdentityT $ liftSubstituteSym f sym val a
   {-# INLINE liftSubstituteSym #-}
+
+-- Product
+deriving via
+  (Default (Product l r a))
+  instance
+    (SubstituteSym (l a), SubstituteSym (r a)) => SubstituteSym (Product l r a)
+
+deriving via
+  (Default1 (Product l r))
+  instance
+    (SubstituteSym1 l, SubstituteSym1 r) => SubstituteSym1 (Product l r)
+
+-- Sum
+deriving via
+  (Default (Sum l r a))
+  instance
+    (SubstituteSym (l a), SubstituteSym (r a)) => SubstituteSym (Sum l r a)
+
+deriving via
+  (Default1 (Sum l r))
+  instance
+    (SubstituteSym1 l, SubstituteSym1 r) => SubstituteSym1 (Sum l r)
+
+-- Compose
+deriving via
+  (Default (Compose f g a))
+  instance
+    (SubstituteSym (f (g a))) => SubstituteSym (Compose f g a)
+
+instance
+  (SubstituteSym1 f, SubstituteSym1 g) =>
+  SubstituteSym1 (Compose f g)
+  where
+  liftSubstituteSym f sym val (Compose x) =
+    Compose $ liftSubstituteSym (liftSubstituteSym f) sym val x
+  {-# INLINE liftSubstituteSym #-}
+
+-- Const
+deriving via
+  (Default (Const a b))
+  instance
+    (SubstituteSym a) => SubstituteSym (Const a b)
+
+deriving via
+  (Default1 (Const a))
+  instance
+    (SubstituteSym a) => SubstituteSym1 (Const a)
+
+-- Alt
+deriving via
+  (Default (Alt f a))
+  instance
+    (SubstituteSym (f a)) => SubstituteSym (Alt f a)
+
+deriving via
+  (Default1 (Alt f))
+  instance
+    (SubstituteSym1 f) => SubstituteSym1 (Alt f)
+
+-- Ap
+deriving via
+  (Default (Ap f a))
+  instance
+    (SubstituteSym (f a)) => SubstituteSym (Ap f a)
+
+deriving via
+  (Default1 (Ap f))
+  instance
+    (SubstituteSym1 f) => SubstituteSym1 (Ap f)
+
+-- Generic
+deriving via (Default (U1 p)) instance SubstituteSym (U1 p)
+
+deriving via (Default (V1 p)) instance SubstituteSym (V1 p)
+
+deriving via
+  (Default (K1 i c p))
+  instance
+    (SubstituteSym c) => SubstituteSym (K1 i c p)
+
+deriving via
+  (Default (M1 i c f p))
+  instance
+    (SubstituteSym (f p)) => SubstituteSym (M1 i c f p)
+
+deriving via
+  (Default ((f :+: g) p))
+  instance
+    (SubstituteSym (f p), SubstituteSym (g p)) => SubstituteSym ((f :+: g) p)
+
+deriving via
+  (Default ((f :*: g) p))
+  instance
+    (SubstituteSym (f p), SubstituteSym (g p)) => SubstituteSym ((f :*: g) p)
+
+deriving via
+  (Default (Par1 p))
+  instance
+    (SubstituteSym p) => SubstituteSym (Par1 p)
+
+deriving via
+  (Default (Rec1 f p))
+  instance
+    (SubstituteSym (f p)) => SubstituteSym (Rec1 f p)
+
+deriving via
+  (Default ((f :.: g) p))
+  instance
+    (SubstituteSym (f (g p))) => SubstituteSym ((f :.: g) p)
 
 -- SubstituteSym2
 instance SubstituteSym2 Either where
@@ -428,63 +605,3 @@ instance (SubstituteSym a, SubstituteSym b) => SubstituteSym2 ((,,,) a b) where
   liftSubstituteSym2 f g sym val (x, y, z, w) =
     (substituteSym sym val x, substituteSym sym val y, f sym val z, g sym val w)
   {-# INLINE liftSubstituteSym2 #-}
-
-#define CONCRETE_SUBSTITUTESYM(type) \
-instance SubstituteSym type where \
-  substituteSym _ _ = id
-
-#define CONCRETE_SUBSTITUTESYM_BV(type) \
-instance (KnownNat n, 1 <= n) => SubstituteSym (type n) where \
-  substituteSym _ _ = id
-
-#if 1
-CONCRETE_SUBSTITUTESYM(Bool)
-CONCRETE_SUBSTITUTESYM(Integer)
-CONCRETE_SUBSTITUTESYM(Char)
-CONCRETE_SUBSTITUTESYM(Int)
-CONCRETE_SUBSTITUTESYM(Int8)
-CONCRETE_SUBSTITUTESYM(Int16)
-CONCRETE_SUBSTITUTESYM(Int32)
-CONCRETE_SUBSTITUTESYM(Int64)
-CONCRETE_SUBSTITUTESYM(Word)
-CONCRETE_SUBSTITUTESYM(Word8)
-CONCRETE_SUBSTITUTESYM(Word16)
-CONCRETE_SUBSTITUTESYM(Word32)
-CONCRETE_SUBSTITUTESYM(Word64)
-CONCRETE_SUBSTITUTESYM(Float)
-CONCRETE_SUBSTITUTESYM(Double)
-CONCRETE_SUBSTITUTESYM(B.ByteString)
-CONCRETE_SUBSTITUTESYM(T.Text)
-CONCRETE_SUBSTITUTESYM_BV(WordN)
-CONCRETE_SUBSTITUTESYM_BV(IntN)
-CONCRETE_SUBSTITUTESYM(FPRoundingMode)
-#endif
-
-instance (ValidFP eb sb) => SubstituteSym (FP eb sb) where
-  substituteSym _ _ = id
-
-#define SUBSTITUTE_SYM_SIMPLE(symtype) \
-instance SubstituteSym symtype where \
-  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
-
-#define SUBSTITUTE_SYM_BV(symtype) \
-instance (KnownNat n, 1 <= n) => SubstituteSym (symtype n) where \
-  substituteSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
-
-#define SUBSTITUTE_SYM_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  SubstituteSym (op sa sb) where \
-  substituteSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
-
-#if 1
-SUBSTITUTE_SYM_SIMPLE(SymBool)
-SUBSTITUTE_SYM_SIMPLE(SymInteger)
-SUBSTITUTE_SYM_BV(SymIntN)
-SUBSTITUTE_SYM_BV(SymWordN)
-SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
-SUBSTITUTE_SYM_FUN((-->), (-~>), SymGeneralFun)
-SUBSTITUTE_SYM_SIMPLE(SymFPRoundingMode)
-#endif
-
-instance (ValidFP eb sb) => SubstituteSym (SymFP eb sb) where
-  substituteSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) t
