@@ -121,13 +121,14 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Data.Proxy
 -- >>> :set -XTypeApplications
 
--- | Evaluating symbolic values with some model.
+-- | Evaluating symbolic values with some model. This would substitute the
+-- symbols (symbolic constants) with the values in the model.
 --
 -- >>> let model = insertValue "a" (1 :: Integer) emptyModel :: Model
 -- >>> evalSym False model ([ssym "a", ssym "b"] :: [SymInteger])
 -- [1,b]
 --
--- If we set the first argument true, the missing variables will be filled in
+-- If we set the first argument true, the missing symbols will be filled in
 -- with some default values:
 --
 -- >>> evalSym True model ([ssym "a", ssym "b"] :: [SymInteger])
@@ -138,12 +139,12 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 --
 -- > data X = ... deriving Generic deriving EvalSym via (Default X)
 class EvalSym a where
-  -- | Evaluate a symbolic variable with some model, possibly fill in values for
-  -- the missing variables.
+  -- | Evaluate a symbolic value with some model, possibly fill in values for
+  -- the missing symbols.
   evalSym :: Bool -> Model -> a -> a
 
--- | Evaluate a symbolic variable with some model, fill in values for the
--- missing variables, and transform to concrete ones
+-- | Evaluate a symbolic value with some model, fill in values for the missing
+-- symbols, and convert the result to a concrete value.
 --
 -- >>> let model = insertValue "a" (1 :: Integer) emptyModel :: Model
 -- >>> evalSymToCon model ([ssym "a", ssym "b"] :: [SymInteger]) :: [Integer]
@@ -151,13 +152,18 @@ class EvalSym a where
 evalSymToCon :: (ToCon a b, EvalSym a) => Model -> a -> b
 evalSymToCon model a = fromJust $ toCon $ evalSym True model a
 
+-- | Lifting of 'EvalSym' to unary type constructors.
 class (forall a. (EvalSym a) => EvalSym (f a)) => EvalSym1 f where
+  -- | Lift the 'evalSym' function to unary type constructors.
   liftEvalSym :: (Bool -> Model -> a -> a) -> (Bool -> Model -> f a -> f a)
 
+-- | Lifting the standard 'evalSym' to unary type constructors.
 evalSym1 :: (EvalSym1 f, EvalSym a) => Bool -> Model -> f a -> f a
 evalSym1 = liftEvalSym evalSym
 {-# INLINE evalSym1 #-}
 
+-- | Evaluate and convert to concrete values with lifted standard 'evalSym' for
+-- unary type constructors. See 'evalSymToCon'.
 evalSymToCon1 ::
   (EvalSym1 f, EvalSym a, ToCon1 f g, ToCon a b) =>
   Model ->
@@ -166,12 +172,15 @@ evalSymToCon1 ::
 evalSymToCon1 model a = fromJust $ toCon1 $ evalSym1 True model a
 {-# INLINE evalSymToCon1 #-}
 
+-- | Lifting of 'EvalSym1' to binary type constructors.
 class (forall a. (EvalSym a) => EvalSym1 (f a)) => EvalSym2 f where
+  -- | Lift the 'evalSym' function to binary type constructors.
   liftEvalSym2 ::
     (Bool -> Model -> a -> a) ->
     (Bool -> Model -> b -> b) ->
     (Bool -> Model -> f a b -> f a b)
 
+-- | Lifting the standard 'evalSym' to binary type constructors.
 evalSym2 ::
   (EvalSym2 f, EvalSym a, EvalSym b) =>
   Bool ->
@@ -181,6 +190,8 @@ evalSym2 ::
 evalSym2 = liftEvalSym2 evalSym evalSym
 {-# INLINE evalSym2 #-}
 
+-- | Evaluate and convert to concrete values with lifted standard 'evalSym' for
+-- binary type constructors. See 'evalSymToCon'.
 evalSymToCon2 ::
   ( EvalSym2 f,
     EvalSym a,
@@ -263,12 +274,14 @@ instance
     Comp1 $ liftEvalSym (gevalSym targs) fillDefault model x
   {-# INLINE gevalSym #-}
 
+-- | Generic 'evalSym' function.
 genericEvalSym ::
   (Generic a, GEvalSym Arity0 (Rep a)) => Bool -> Model -> a -> a
 genericEvalSym fillDefault model =
   to . gevalSym EvalSymArgs0 fillDefault model . from
 {-# INLINE genericEvalSym #-}
 
+-- | Generic 'liftEvalSym' function.
 genericLiftEvalSym ::
   (Generic1 f, GEvalSym Arity1 (Rep1 f)) =>
   (Bool -> Model -> a -> a) ->

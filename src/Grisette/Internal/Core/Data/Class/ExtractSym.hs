@@ -111,7 +111,8 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Data.HashSet as HashSet
 -- >>> import Data.List (sort)
 
--- | Extracts all the symbolic variables that are transitively contained in the given value.
+-- | Extracts all the symbols (symbolic constants) that are transitively
+-- contained in the given value.
 --
 -- >>> extractSym ("a" :: SymBool) :: SymbolSet
 -- SymbolSet {a :: Bool}
@@ -126,23 +127,29 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 class ExtractSym a where
   extractSym :: a -> SymbolSet
 
+-- | Lifting of 'ExtractSym' to unary type constructors.
 class
   (forall a. (ExtractSym a) => ExtractSym (f a)) =>
   ExtractSym1 f
   where
+  -- | Lifts the 'extractSym' function to unary type constructors.
   liftExtractSym :: (a -> SymbolSet) -> f a -> SymbolSet
 
+-- | Lift the standard 'extractSym' to unary type constructors.
 extractSym1 :: (ExtractSym1 f, ExtractSym a) => f a -> SymbolSet
 extractSym1 = liftExtractSym extractSym
 {-# INLINE extractSym1 #-}
 
+-- | Lifting of 'ExtractSym' to binary type constructors.
 class
   (forall a. (ExtractSym a) => ExtractSym1 (f a)) =>
   ExtractSym2 f
   where
+  -- | Lifts the 'extractSym' function to binary type constructors.
   liftExtractSym2 ::
     (a -> SymbolSet) -> (b -> SymbolSet) -> f a b -> SymbolSet
 
+-- | Lift the standard 'extractSym' to binary type constructors.
 extractSym2 ::
   (ExtractSym2 f, ExtractSym a, ExtractSym b) =>
   f a b ->
@@ -150,6 +157,9 @@ extractSym2 ::
 extractSym2 = liftExtractSym2 extractSym extractSym
 {-# INLINE extractSym2 #-}
 
+-- Derivations
+
+-- | The arguments to the generic 'extractSym' function.
 data family ExtractSymArgs arity a :: Type
 
 data instance ExtractSymArgs Arity0 _ = ExtractSymArgs0
@@ -157,6 +167,7 @@ data instance ExtractSymArgs Arity0 _ = ExtractSymArgs0
 newtype instance ExtractSymArgs Arity1 a
   = ExtractSymArgs1 (a -> SymbolSet)
 
+-- | The class of types that can generically extract the symbols.
 class GExtractSym arity f where
   gextractSym :: ExtractSymArgs arity a -> f a -> SymbolSet
 
@@ -209,12 +220,14 @@ instance
     liftExtractSym (gextractSym targs) x
   {-# INLINE gextractSym #-}
 
+-- | Generic 'extractSym' function.
 genericExtractSym ::
   (Generic a, GExtractSym Arity0 (Rep a)) =>
   a ->
   SymbolSet
 genericExtractSym = gextractSym ExtractSymArgs0 . from
 
+-- | Generic 'liftExtractSym' function.
 genericLiftExtractSym ::
   (Generic1 f, GExtractSym Arity1 (Rep1 f)) =>
   (a -> SymbolSet) ->

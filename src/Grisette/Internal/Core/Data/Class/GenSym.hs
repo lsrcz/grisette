@@ -285,6 +285,8 @@ instance
 runFreshT :: (Monad m) => FreshT m a -> Identifier -> m a
 runFreshT m ident = fst <$> runFreshTFromIndex m ident (FreshIndex 0)
 
+-- | Run the symbolic generation with the given identifier and 0 as the initial
+-- index, and try to merge the result.
 mrgRunFreshT ::
   (Monad m, TryMerge m, Mergeable a) =>
   FreshT m a ->

@@ -193,6 +193,7 @@ data instance SimpleMergeableArgs Arity0 _ = SimpleMergeableArgs0
 newtype instance SimpleMergeableArgs Arity1 a
   = SimpleMergeableArgs1 (SymBool -> a -> a -> a)
 
+-- | Generic 'SimpleMergeable' class.
 class GSimpleMergeable arity f where
   gmrgIte :: SimpleMergeableArgs arity a -> SymBool -> f a -> f a -> f a
 
@@ -245,6 +246,7 @@ instance
     Default $ genericMrgIte cond a b
   {-# INLINE mrgIte #-}
 
+-- | Generic 'mrgIte' function.
 genericMrgIte ::
   (Generic a, GSimpleMergeable Arity0 (Rep a)) =>
   SymBool ->
@@ -315,8 +317,13 @@ class
   -- 'Mergeable1'. In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
 
+  -- | Symbolic @if@ control flow with the result. 
+  --
+  -- This function does not need a merging strategy, and it will merge the
+  -- result only if any of the branches is merged.
   mrgIfPropagatedStrategy :: SymBool -> u a -> u a -> u a
 
+-- | Try to merge the container with a given merge strategy.
 mergeWithStrategy :: (SymBranching m) => MergingStrategy a -> m a -> m a
 mergeWithStrategy = tryMergeWithStrategy
 {-# INLINE mergeWithStrategy #-}

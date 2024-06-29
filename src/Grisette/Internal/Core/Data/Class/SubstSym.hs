@@ -110,7 +110,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 
--- | Substitution of symbolic constants.
+-- | Substitution of symbols (symbolic constants) to a symbolic value.
 --
 -- >>> a = "a" :: TypedSymbol Bool
 -- >>> v = "x" .&& "y" :: SymBool
@@ -128,10 +128,12 @@ class SubstSym a where
   -- [(&& (&& c d) b),(&& c d)]
   substSym :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a -> a
 
+-- | Lifting of 'SubstSym' to unary type constructors.
 class
   (forall a. (SubstSym a) => SubstSym (f a)) =>
   SubstSym1 f
   where
+  -- | Lift a symbol substitution function to unary type constructors.
   liftSubstSym ::
     (LinkedRep cb sb) =>
     (TypedSymbol cb -> sb -> a -> a) ->
@@ -140,6 +142,7 @@ class
     f a ->
     f a
 
+-- | Lifting the standard 'substSym' to unary type constructors.
 substSym1 ::
   (SubstSym1 f, SubstSym a, LinkedRep cb sb) =>
   TypedSymbol cb ->
@@ -148,10 +151,12 @@ substSym1 ::
   f a
 substSym1 = liftSubstSym substSym
 
+-- | Lifting of 'SubstSym' to binary type constructors.
 class
   (forall a. (SubstSym a) => SubstSym1 (f a)) =>
   SubstSym2 f
   where
+  -- | Lift a symbol substitution function to binary type constructors.
   liftSubstSym2 ::
     (LinkedRep cb sb) =>
     (TypedSymbol cb -> sb -> a -> a) ->
@@ -161,6 +166,7 @@ class
     f a b ->
     f a b
 
+-- | Lifting the standard 'substSym' to binary type constructors.
 substSym2 ::
   (SubstSym2 f, SubstSym a, SubstSym b, LinkedRep cb sb) =>
   TypedSymbol cb ->
@@ -179,6 +185,8 @@ data instance SubstSymArgs Arity0 _ _ _ = SubstSymArgs0
 newtype instance SubstSymArgs Arity1 a cb sb
   = SubstSymArgs1 (TypedSymbol cb -> sb -> a -> a)
 
+-- | The class of types where we can generically substitute the symbols in a
+-- value.
 class GSubstSym arity f where
   gsubstSym ::
     (LinkedRep cb sb) =>
@@ -231,6 +239,7 @@ instance
     Comp1 $ liftSubstSym (gsubstSym targs) sym val x
   {-# INLINE gsubstSym #-}
 
+-- | Generic 'substSym' function.
 genericSubstSym ::
   (Generic a, GSubstSym Arity0 (Rep a), LinkedRep cb sb) =>
   TypedSymbol cb ->
@@ -241,6 +250,7 @@ genericSubstSym sym val =
   to . gsubstSym SubstSymArgs0 sym val . from
 {-# INLINE genericSubstSym #-}
 
+-- | Generic 'liftSubstSym' function.
 genericLiftSubstSym ::
   (Generic1 f, GSubstSym Arity1 (Rep1 f), LinkedRep cb sb) =>
   (TypedSymbol cb -> sb -> a -> a) ->

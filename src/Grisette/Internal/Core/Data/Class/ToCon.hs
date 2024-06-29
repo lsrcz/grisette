@@ -141,16 +141,22 @@ class ToCon a b where
   -- Nothing
   toCon :: a -> Maybe b
 
+-- | Lifting of 'ToCon' to unary type constructors.
 class (forall a b. (ToCon a b) => ToCon (f1 a) (f2 b)) => ToCon1 f1 f2 where
+  -- | Lift a conversion to concrete function to unary type constructors.
   liftToCon :: (a -> Maybe b) -> f1 a -> Maybe (f2 b)
 
+-- | Lift the standard 'toCon' to unary type constructors.
 toCon1 :: (ToCon1 f1 f2, ToCon a b) => f1 a -> Maybe (f2 b)
 toCon1 = liftToCon toCon
 {-# INLINE toCon1 #-}
 
+-- | Lifting of 'ToCon' to binary type constructors.
 class (forall a b. (ToCon a b) => ToCon1 (f1 a) (f2 b)) => ToCon2 f1 f2 where
+  -- | Lift conversion to concrete functions to binary type constructors.
   liftToCon2 :: (a -> Maybe b) -> (c -> Maybe d) -> f1 a c -> Maybe (f2 b d)
 
+-- | Lift the standard 'toCon' to binary type constructors.
 toCon2 :: (ToCon2 f1 f2, ToCon a b, ToCon c d) => f1 a c -> Maybe (f2 b d)
 toCon2 = liftToCon2 toCon toCon
 {-# INLINE toCon2 #-}
@@ -165,6 +171,7 @@ data instance ToConArgs Arity0 _ _ = ToConArgs0
 newtype instance ToConArgs Arity1 a b
   = ToConArgs1 (a -> Maybe b)
 
+-- | The class of types that can be generically converted to concrete values.
 class GToCon arity f1 f2 where
   gtoCon :: ToConArgs arity a b -> f1 a -> Maybe (f2 b)
 
@@ -217,6 +224,7 @@ instance
   gtoCon targs (Comp1 a) = Comp1 <$> liftToCon (gtoCon targs) a
   {-# INLINE gtoCon #-}
 
+-- | Generic 'toCon' function.
 genericToCon ::
   (Generic a, Generic b, GToCon Arity0 (Rep a) (Rep b)) =>
   a ->
@@ -224,6 +232,7 @@ genericToCon ::
 genericToCon = fmap to . gtoCon ToConArgs0 . from
 {-# INLINE genericToCon #-}
 
+-- | Generic 'liftToCon' function.
 genericLiftToCon ::
   (Generic1 f1, Generic1 f2, GToCon Arity1 (Rep1 f1) (Rep1 f2)) =>
   (a -> Maybe b) ->

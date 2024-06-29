@@ -472,8 +472,9 @@ module Grisette.Core
     -- In the first example, using 'return' instead of
     -- 'Grisette.Lib.Control.Monad.mrgReturn' results in a unmerged container
     -- (printed as @<@@...@@>@), which means that no merging strategy is cached.
-    -- In the second and third example, using 'mrgReturn' or 'mrgIf' results in
-    -- a merged container (printed as @{...}@) with a cached merging strategy.
+    -- In the second and third example, using
+    -- 'Grisette.Lib.Control.Monad.mrgReturn' or 'mrgIf' results in a merged
+    -- container (printed as @{...}@) with a cached merging strategy.
     --
     -- When working with 'Union', it is important to always use the @mrg@
     -- prefixed combinators to ensure that the merging strategy is properly
@@ -629,8 +630,9 @@ module Grisette.Core
     --   \left\{\begin{aligned}&\texttt{(ite c1 a (ite c2 b a))}&&\mathrm{unconditional}\end{aligned}\right.
     -- \]
     --
-    -- In Grisette, such merging happens in the `mrgIf` or `unionIf` functions,
-    -- which model the symbolic conditional branching semantics.
+    -- In Grisette, such merging happens in the `mrgIf` or
+    -- `Grisette.Internal.Core.SimpleMergeable.mrgIfPropagatedStrategy`
+    -- functions, which model the symbolic conditional branching semantics.
     -- To keep the merging efficient and generate small constraints, we enforce
     -- that the symbolic union maintains the values in a sorted way, and merge
     -- the unions with a mergesort-style merging algorithm. In the following
@@ -1344,6 +1346,8 @@ module Grisette.Core
     -- *** 'Format'
     genericFormatPrec,
     genericLiftFormatPrec,
+    genericFormatList,
+    genericLiftFormatList,
     FormatArgs (..),
     GFormat (..),
     FormatType (..),
@@ -1475,7 +1479,9 @@ import Grisette.Internal.Core.Data.Class.Format
     formatTextWithWidth,
     formatWithConstructor,
     formatWithConstructorNoAlign,
+    genericFormatList,
     genericFormatPrec,
+    genericLiftFormatList,
     genericLiftFormatPrec,
     groupedEnclose,
     viaShowsPrec,
