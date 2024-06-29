@@ -25,7 +25,7 @@ import Grisette
     SymBool,
     SymInteger,
     SymWordN,
-    UnionM,
+    Union,
     WordN,
     mrgReturn,
   )
@@ -98,7 +98,7 @@ unifiedClassesTest =
           testCase "branching 'Con" $
             testBranching 1 @?= (return 1 :: Either T.Text Integer),
           testCase "branching 'Sym" $
-            testBranching 1 @?= (return 1 :: ExceptT T.Text UnionM SymInteger)
+            testBranching 1 @?= (return 1 :: ExceptT T.Text Union SymInteger)
         ],
       testGroup
         "UnifiedSEq"

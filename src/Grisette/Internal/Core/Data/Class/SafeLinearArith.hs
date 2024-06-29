@@ -29,7 +29,7 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp ((.&&), (.||)),
   )
@@ -68,27 +68,27 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeLinearArith e a m where
   -- | Safe '+' with monadic error handling in multi-path execution.
   -- Overflows or underflows are treated as errors.
   --
-  -- >>> safeAdd (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
+  -- >>> safeAdd (ssym "a") (ssym "b") :: ExceptT ArithException Union SymInteger
   -- ExceptT {Right (+ a b)}
-  -- >>> safeAdd (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymIntN 4)
+  -- >>> safeAdd (ssym "a") (ssym "b") :: ExceptT ArithException Union (SymIntN 4)
   -- ExceptT {If (ite (< 0x0 a) (&& (< 0x0 b) (< (+ a b) 0x0)) (&& (< a 0x0) (&& (< b 0x0) (<= 0x0 (+ a b))))) (If (< 0x0 a) (Left arithmetic overflow) (Left arithmetic underflow)) (Right (+ a b))}
   safeAdd :: a -> a -> m a
 
   -- | Safe 'negate' with monadic error handling in multi-path execution.
   -- Overflows or underflows are treated as errors.
   --
-  -- >>> safeNeg (ssym "a") :: ExceptT ArithException UnionM SymInteger
+  -- >>> safeNeg (ssym "a") :: ExceptT ArithException Union SymInteger
   -- ExceptT {Right (- a)}
-  -- >>> safeNeg (ssym "a") :: ExceptT ArithException UnionM (SymIntN 4)
+  -- >>> safeNeg (ssym "a") :: ExceptT ArithException Union (SymIntN 4)
   -- ExceptT {If (= a 0x8) (Left arithmetic overflow) (Right (- a))}
   safeNeg :: a -> m a
 
   -- | Safe '-' with monadic error handling in multi-path execution.
   -- Overflows or underflows are treated as errors.
   --
-  -- >>> safeSub (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
+  -- >>> safeSub (ssym "a") (ssym "b") :: ExceptT ArithException Union SymInteger
   -- ExceptT {Right (+ a (- b))}
-  -- >>> safeSub (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymIntN 4)
+  -- >>> safeSub (ssym "a") (ssym "b") :: ExceptT ArithException Union (SymIntN 4)
   -- ExceptT {If (ite (<= 0x0 a) (&& (< b 0x0) (< (+ a (- b)) 0x0)) (&& (< a 0x0) (&& (< 0x0 b) (< 0x0 (+ a (- b)))))) (If (<= 0x0 a) (Left arithmetic overflow) (Left arithmetic underflow)) (Right (+ a (- b)))}
   safeSub :: a -> a -> m a
 

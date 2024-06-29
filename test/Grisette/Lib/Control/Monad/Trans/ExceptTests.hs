@@ -10,7 +10,7 @@ import Control.Monad.Except
 import Grisette
   ( ITEOp (symIte),
     SymBranching (mrgIfPropagatedStrategy),
-    UnionM,
+    Union,
     mrgIf,
     mrgSingle,
   )
@@ -26,19 +26,19 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
-unmergedExceptT :: ExceptT SymInteger UnionM SymBool
+unmergedExceptT :: ExceptT SymInteger Union SymBool
 unmergedExceptT =
   mrgIfPropagatedStrategy
     "e"
     (mrgIfPropagatedStrategy "c" (throwError "a") (throwError "b"))
     (return "d")
 
-mergedExceptT :: ExceptT SymInteger UnionM SymBool
+mergedExceptT :: ExceptT SymInteger Union SymBool
 mergedExceptT =
   ExceptT $
     mrgIf "e" (mrgSingle (Left (symIte "c" "a" "b"))) (mrgSingle (Right "d"))
 
-mergedExceptTPlus1 :: ExceptT SymInteger UnionM SymBool
+mergedExceptTPlus1 :: ExceptT SymInteger Union SymBool
 mergedExceptTPlus1 =
   ExceptT $
     mrgIf "e" (mrgSingle (Left (symIte "c" "a" "b" + 1))) (mrgSingle (Right "d"))
@@ -48,7 +48,7 @@ exceptTests =
   testGroup
     "Except"
     [ testCase "mrgExcept" $ do
-        let actual = mrgExcept (Left "a") :: ExceptT SymInteger UnionM SymBool
+        let actual = mrgExcept (Left "a") :: ExceptT SymInteger Union SymBool
         let expected = ExceptT (mrgSingle (Left "a"))
         actual @?= expected,
       testCase "mrgRunExceptT" $ do
@@ -56,7 +56,7 @@ exceptTests =
       testCase "mrgWithExceptT" $ do
         mrgWithExceptT (+ 1) unmergedExceptT @?= mergedExceptTPlus1,
       testCase "mrgThrowE" $ do
-        let actual = mrgThrowE "a" :: ExceptT SymInteger UnionM SymBool
+        let actual = mrgThrowE "a" :: ExceptT SymInteger Union SymBool
         actual @?= ExceptT (mrgSingle (Left "a")),
       testCase "mrgCatchE" $ do
         let actual = mrgCatchE unmergedExceptT (throwError . (+ 1))

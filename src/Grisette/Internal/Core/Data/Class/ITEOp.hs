@@ -48,7 +48,8 @@ import Grisette.Internal.SymPrim.TabularFun (type (=->))
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
 
--- | ITE operator for solvable (see "Grisette.Core#solvable")s, including symbolic boolean, integer, etc.
+-- | ITE operator for solvable (see "Grisette.Core#solvable")s, including
+-- symbolic boolean, integer, etc.
 --
 -- >>> let a = "a" :: SymBool
 -- >>> let b = "b" :: SymBool
@@ -56,6 +57,7 @@ import Grisette.Internal.SymPrim.TabularFun (type (=->))
 -- >>> symIte a b c
 -- (ite a b c)
 class ITEOp v where
+  -- | Symbolic if-then-else.
   symIte :: SymBool -> v -> v -> v
 
 -- ITEOp instances

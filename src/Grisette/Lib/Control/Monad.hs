@@ -82,7 +82,7 @@ where
 
 import Control.Applicative (Alternative)
 import Control.Monad (MonadPlus)
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable,
     MergingStrategy,

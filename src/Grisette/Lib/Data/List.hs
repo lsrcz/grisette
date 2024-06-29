@@ -95,8 +95,8 @@ where
 import Data.Bifunctor (Bifunctor (first, second))
 import Data.List (tails)
 import Data.Maybe (listToMaybe)
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM, liftUnionM)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union (Union, liftUnion)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
@@ -609,13 +609,13 @@ mrgInsert x ys@(y : ys') =
 -- function only generates O(1) constraints.
 mrgInsertBy ::
   (MonadUnion m, Mergeable a) =>
-  (a -> a -> UnionM Ordering) ->
+  (a -> a -> Union Ordering) ->
   a ->
   [a] ->
   m [a]
 mrgInsertBy _ x [] = mrgPure [x]
 mrgInsertBy cmp x ys@(y : ys') = do
-  r <- liftUnionM $ cmp x y
+  r <- liftUnion $ cmp x y
   case r of
     GT -> mrgFmap (y :) $ mrgInsertBy cmp x ys'
     _ -> mrgReturn $ x : ys

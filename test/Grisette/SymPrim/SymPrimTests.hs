@@ -78,7 +78,7 @@ import Grisette
     ToCon (toCon),
     ToSym (toSym),
     TypedSymbol,
-    UnionM,
+    Union,
     genSym,
     genSymSimple,
     mrgIf,
@@ -189,7 +189,7 @@ sameSafeDiv ::
   ) =>
   c ->
   c ->
-  (s -> s -> ExceptT ArithException UnionM s) ->
+  (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
   Assertion
 sameSafeDiv i j f cf = do
@@ -210,7 +210,7 @@ sameSafeDivMod ::
   ) =>
   c ->
   c ->
-  (s -> s -> ExceptT ArithException UnionM (s, s)) ->
+  (s -> s -> ExceptT ArithException Union (s, s)) ->
   (c -> c -> (c, c)) ->
   Assertion
 sameSafeDivMod i j f cf = do
@@ -222,7 +222,7 @@ sameSafeDivMod i j f cf = do
 safeDivisionBoundedOnlyTests ::
   forall c s.
   (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
-  (s -> s -> ExceptT ArithException UnionM s) ->
+  (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   [Test]
@@ -239,14 +239,14 @@ safeDivisionBoundedOnlyTests f cf pf =
                     (throwError Overflow)
                     (mrgSingle $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b"))
                 ) ::
-                ExceptT ArithException UnionM s
+                ExceptT ArithException Union s
             )
   ]
 
 safeDivisionUnboundedOnlyTests ::
   forall c s.
   (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
-  (s -> s -> ExceptT ArithException UnionM s) ->
+  (s -> s -> ExceptT ArithException Union s) ->
   (Term c -> Term c -> Term c) ->
   [Test]
 safeDivisionUnboundedOnlyTests f pf =
@@ -256,7 +256,7 @@ safeDivisionUnboundedOnlyTests f pf =
                 ((ssym "b" :: s) .== con (0 :: c) :: SymBool)
                 (throwError DivideByZero)
                 (mrgSingle $ wrapTerm $ pf (ssymTerm "a") (ssymTerm "b")) ::
-                ExceptT ArithException UnionM s
+                ExceptT ArithException Union s
             )
   ]
 
@@ -264,7 +264,7 @@ safeDivisionGeneralTests ::
   forall c c0 s.
   (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   (c0 -> c) ->
-  (s -> s -> ExceptT ArithException UnionM s) ->
+  (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
   [Test]
 safeDivisionGeneralTests transform f cf =
@@ -279,7 +279,7 @@ safeDivisionGeneralTests transform f cf =
         sameSafeDiv i 0 f cf,
     testCase "when divided by zero" $ do
       f (ssym "a" :: s) (con 0)
-        @=? (tryMerge $ throwError DivideByZero :: ExceptT ArithException UnionM s)
+        @=? (tryMerge $ throwError DivideByZero :: ExceptT ArithException Union s)
   ]
 
 safeDivisionBoundedTests ::
@@ -287,7 +287,7 @@ safeDivisionBoundedTests ::
   (LinkedRep c s, Arbitrary c0, Show c0, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   TestName ->
   (c0 -> c) ->
-  (s -> s -> ExceptT ArithException UnionM s) ->
+  (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   Test
@@ -301,7 +301,7 @@ safeDivisionUnboundedTests ::
   (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   TestName ->
   (c0 -> c) ->
-  (s -> s -> ExceptT ArithException UnionM s) ->
+  (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
   (Term c -> Term c -> Term c) ->
   Test
@@ -315,7 +315,7 @@ safeDivModBoundedOnlyTests ::
   (LinkedRep c s, Bounded c, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   ( s ->
     s ->
-    ExceptT ArithException UnionM (s, s)
+    ExceptT ArithException Union (s, s)
   ) ->
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
@@ -338,7 +338,7 @@ safeDivModBoundedOnlyTests f cf pf1 pf2 =
                         )
                     )
                 ) ::
-                ExceptT ArithException UnionM (s, s)
+                ExceptT ArithException Union (s, s)
             )
   ]
 
@@ -347,7 +347,7 @@ safeDivModUnboundedOnlyTests ::
   (LinkedRep c s, Solvable c s, Eq s, Num c, Show s, Mergeable s, SEq s) =>
   ( s ->
     s ->
-    ExceptT ArithException UnionM (s, s)
+    ExceptT ArithException Union (s, s)
   ) ->
   (Term c -> Term c -> Term c) ->
   (Term c -> Term c -> Term c) ->
@@ -363,7 +363,7 @@ safeDivModUnboundedOnlyTests f pf1 pf2 =
                       wrapTerm $ pf2 (ssymTerm "a") (ssymTerm "b")
                     )
                 ) ::
-                ExceptT ArithException UnionM (s, s)
+                ExceptT ArithException Union (s, s)
             )
   ]
 
@@ -373,7 +373,7 @@ safeDivModGeneralTests ::
   (c0 -> c) ->
   ( s ->
     s ->
-    ExceptT ArithException UnionM (s, s)
+    ExceptT ArithException Union (s, s)
   ) ->
   (c -> c -> (c, c)) ->
   [Test]
@@ -389,7 +389,7 @@ safeDivModGeneralTests transform f cf =
         sameSafeDivMod i 0 f cf,
     testCase "when divided by zero" $ do
       f (ssym "a" :: s) (con 0)
-        @=? (tryMerge $ throwError DivideByZero :: ExceptT ArithException UnionM (s, s))
+        @=? (tryMerge $ throwError DivideByZero :: ExceptT ArithException Union (s, s))
   ]
 
 safeDivModBoundedTests ::
@@ -399,7 +399,7 @@ safeDivModBoundedTests ::
   (c0 -> c) ->
   ( s ->
     s ->
-    ExceptT ArithException UnionM (s, s)
+    ExceptT ArithException Union (s, s)
   ) ->
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
@@ -417,7 +417,7 @@ safeDivModUnboundedTests ::
   (c0 -> c) ->
   ( s ->
     s ->
-    ExceptT ArithException UnionM (s, s)
+    ExceptT ArithException Union (s, s)
   ) ->
   (c -> c -> (c, c)) ->
   (Term c -> Term c -> Term c) ->
@@ -490,9 +490,9 @@ symPrimTests =
                     ]
                 ),
           testCase "GenSym" $ do
-            (genSym () "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
+            (genSym () "a" :: Union SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple () "a" :: SymBool) @=? isym "a" 0
-            (genSym (ssym "a" :: SymBool) "a" :: UnionM SymBool) @=? mrgSingle (isym "a" 0)
+            (genSym (ssym "a" :: SymBool) "a" :: Union SymBool) @=? mrgSingle (isym "a" 0)
             (genSymSimple (ssym "a" :: SymBool) "a" :: SymBool) @=? isym "a" 0,
           testCase "SEq" $ do
             (ssym "a" :: SymBool) .== ssym "b" @=? SymBool (pevalEqTerm (ssymTerm "a" :: Term Bool) (ssymTerm "b"))
@@ -535,24 +535,24 @@ symPrimTests =
             [ testProperty "safeAdd on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $ do
                   safeAdd (con i :: SymInteger) (con j)
-                    @=? (mrgSingle $ con $ i + j :: ExceptT ArithException UnionM SymInteger),
+                    @=? (mrgSingle $ con $ i + j :: ExceptT ArithException Union SymInteger),
               testCase "safeAdd on symbolic" $ do
                 safeAdd (ssym "a" :: SymInteger) (ssym "b")
-                  @=? (mrgSingle $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger),
+                  @=? (mrgSingle $ SymInteger $ pevalAddNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException Union SymInteger),
               testProperty "safeNeg on concrete" $ \(i :: Integer) ->
                 ioProperty $ do
                   safeNeg (con i :: SymInteger)
-                    @=? (mrgSingle $ con $ -i :: ExceptT ArithException UnionM SymInteger),
+                    @=? (mrgSingle $ con $ -i :: ExceptT ArithException Union SymInteger),
               testCase "safeNeg on symbolic" $ do
                 safeNeg (ssym "a" :: SymInteger)
-                  @=? (mrgSingle $ SymInteger $ pevalNegNumTerm (ssymTerm "a") :: ExceptT ArithException UnionM SymInteger),
+                  @=? (mrgSingle $ SymInteger $ pevalNegNumTerm (ssymTerm "a") :: ExceptT ArithException Union SymInteger),
               testProperty "safeSub on concrete" $ \(i :: Integer, j :: Integer) ->
                 ioProperty $ do
                   safeSub (con i :: SymInteger) (con j)
-                    @=? (mrgSingle $ con $ i - j :: ExceptT ArithException UnionM SymInteger),
+                    @=? (mrgSingle $ con $ i - j :: ExceptT ArithException Union SymInteger),
               testCase "safeSub on symbolic" $ do
                 safeSub (ssym "a" :: SymInteger) (ssym "b")
-                  @=? (mrgSingle $ SymInteger $ pevalSubNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException UnionM SymInteger)
+                  @=? (mrgSingle $ SymInteger $ pevalSubNumTerm (ssymTerm "a") (ssymTerm "b") :: ExceptT ArithException Union SymInteger)
             ],
           testGroup
             "SOrd"
@@ -563,7 +563,7 @@ symPrimTests =
                 (con i :: SymInteger) .> con j @=? (con (i > j) :: SymBool)
                 (con i :: SymInteger)
                   `symCompare` con j
-                  @=? (i `symCompare` j :: UnionM Ordering),
+                  @=? (i `symCompare` j :: Union Ordering),
               testCase "SOrd on symbolic" $ do
                 let a :: SymInteger = ssym "a"
                 let b :: SymInteger = ssym "b"
@@ -573,7 +573,7 @@ symPrimTests =
                 a .< b @=? SymBool (pevalLtOrdTerm at bt)
                 a .>= b @=? SymBool (pevalGeOrdTerm at bt)
                 a .> b @=? SymBool (pevalGtOrdTerm at bt)
-                (a `symCompare` ssym "b" :: UnionM Ordering)
+                (a `symCompare` ssym "b" :: Union Ordering)
                   @=? mrgIf (a .< b) (mrgSingle LT) (mrgIf (a .== b) (mrgSingle EQ) (mrgSingle GT))
             ]
         ],
@@ -647,7 +647,7 @@ symPrimTests =
                                   ( mrgIf
                                       (iint + jint .> fromIntegral (i + j))
                                       (throwError Overflow)
-                                      (mrgSingle $ toSym $ i + j :: ExceptT ArithException UnionM (SymIntN 8))
+                                      (mrgSingle $ toSym $ i + j :: ExceptT ArithException Union (SymIntN 8))
                                   ),
                       testProperty "safeSub on concrete" $ \(i :: Int8, j :: Int8) ->
                         ioProperty $
@@ -660,7 +660,7 @@ symPrimTests =
                                   ( mrgIf
                                       (iint - jint .> fromIntegral (i - j))
                                       (throwError Overflow)
-                                      (mrgSingle $ toSym $ i - j :: ExceptT ArithException UnionM (SymIntN 8))
+                                      (mrgSingle $ toSym $ i - j :: ExceptT ArithException Union (SymIntN 8))
                                   ),
                       testProperty "safeNeg on concrete" $ \(i :: Int8) ->
                         ioProperty $
@@ -672,7 +672,7 @@ symPrimTests =
                                   ( mrgIf
                                       (-iint .> fromIntegral (-i))
                                       (throwError Overflow)
-                                      (mrgSingle $ toSym $ -i :: ExceptT ArithException UnionM (SymIntN 8))
+                                      (mrgSingle $ toSym $ -i :: ExceptT ArithException Union (SymIntN 8))
                                   )
                     ],
                   testGroup
@@ -688,7 +688,7 @@ symPrimTests =
                                   ( mrgIf
                                       (iint + jint .> fromIntegral (i + j))
                                       (throwError Overflow)
-                                      (mrgSingle $ toSym $ i + j :: ExceptT ArithException UnionM (SymWordN 8))
+                                      (mrgSingle $ toSym $ i + j :: ExceptT ArithException Union (SymWordN 8))
                                   ),
                       testProperty "safeSub on concrete" $ \(i :: Word8, j :: Word8) ->
                         ioProperty $
@@ -701,7 +701,7 @@ symPrimTests =
                                   ( mrgIf
                                       (iint - jint .> fromIntegral (i - j))
                                       (throwError Overflow)
-                                      (mrgSingle $ toSym $ i - j :: ExceptT ArithException UnionM (SymWordN 8))
+                                      (mrgSingle $ toSym $ i - j :: ExceptT ArithException Union (SymWordN 8))
                                   ),
                       testProperty "safeNeg on concrete" $ \(i :: Word8) ->
                         ioProperty $
@@ -713,7 +713,7 @@ symPrimTests =
                                   ( mrgIf
                                       (-iint .> fromIntegral (-i))
                                       (throwError Overflow)
-                                      (mrgSingle $ toSym $ -i :: ExceptT ArithException UnionM (SymWordN 8))
+                                      (mrgSingle $ toSym $ -i :: ExceptT ArithException Union (SymWordN 8))
                                   )
                     ]
                 ],
@@ -732,27 +732,27 @@ symPrimTests =
                     (con iu :: SymWordN 4) .> con ju @=? (con (normalizeu i > normalizeu j) :: SymBool)
                     (con iu :: SymWordN 4)
                       `symCompare` con ju
-                      @=? (normalizeu i `symCompare` normalizeu j :: UnionM Ordering)
+                      @=? (normalizeu i `symCompare` normalizeu j :: Union Ordering)
                     (con is :: SymIntN 4) .<= con js @=? (con (normalizes i <= normalizes j) :: SymBool)
                     (con is :: SymIntN 4) .< con js @=? (con (normalizes i < normalizes j) :: SymBool)
                     (con is :: SymIntN 4) .>= con js @=? (con (normalizes i >= normalizes j) :: SymBool)
                     (con is :: SymIntN 4) .> con js @=? (con (normalizes i > normalizes j) :: SymBool)
                     (con is :: SymIntN 4)
                       `symCompare` con js
-                      @=? (normalizes i `symCompare` normalizes j :: UnionM Ordering),
+                      @=? (normalizes i `symCompare` normalizes j :: Union Ordering),
                   testCase "SOrd on symbolic" $ do
                     au .<= bu @=? SymBool (pevalLeOrdTerm aut but)
                     au .< bu @=? SymBool (pevalLtOrdTerm aut but)
                     au .>= bu @=? SymBool (pevalGeOrdTerm aut but)
                     au .> bu @=? SymBool (pevalGtOrdTerm aut but)
-                    (au `symCompare` bu :: UnionM Ordering)
+                    (au `symCompare` bu :: Union Ordering)
                       @=? mrgIf (au .< bu) (mrgSingle LT) (mrgIf (au .== bu) (mrgSingle EQ) (mrgSingle GT))
 
                     as .<= bs @=? SymBool (pevalLeOrdTerm ast bst)
                     as .< bs @=? SymBool (pevalLtOrdTerm ast bst)
                     as .>= bs @=? SymBool (pevalGeOrdTerm ast bst)
                     as .> bs @=? SymBool (pevalGtOrdTerm ast bst)
-                    (as `symCompare` bs :: UnionM Ordering)
+                    (as `symCompare` bs :: Union Ordering)
                       @=? mrgIf (as .< bs) (mrgSingle LT) (mrgIf (as .== bs) (mrgSingle EQ) (mrgSingle GT))
                 ],
               testGroup

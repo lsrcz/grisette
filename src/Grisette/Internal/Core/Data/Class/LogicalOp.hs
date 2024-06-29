@@ -61,8 +61,11 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- >>> a `symXor` b
 -- (|| (&& (! a) b) (&& a (! b)))
 class LogicalOp b where
+  -- | Constant true
   true :: b
   true = symNot false
+
+  -- | Constant false
   false :: b
   false = symNot true
 

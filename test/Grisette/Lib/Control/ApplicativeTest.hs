@@ -14,7 +14,7 @@ import Control.Monad.State
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import Grisette
   ( SymBranching (mrgIfPropagatedStrategy),
-    UnionM,
+    Union,
     mrgAsum,
     mrgEmpty,
     mrgPure,
@@ -52,24 +52,24 @@ applicativeFunctionTests :: Test
 applicativeFunctionTests =
   testGroup
     "Applicative"
-    [ testCase "mrgPure" $ (mrgPure 1 :: UnionM Integer) @?= mrgSingle 1,
+    [ testCase "mrgPure" $ (mrgPure 1 :: Union Integer) @?= mrgSingle 1,
       testGroup
         ".<*>"
         [ testCase "merge result" $ do
             let actual =
                   (return (\x -> x * x))
                     .<*> mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
-            actual @?= (mrgSingle 1 :: UnionM Integer),
+            actual @?= (mrgSingle 1 :: Union Integer),
           testCase "merge arguments" $ do
             let actual = (return (const NoMerge)) .<*> oneNotMerged
-            actual @?= (mrgSingle NoMerge :: UnionM NoMerge)
+            actual @?= (mrgSingle NoMerge :: Union NoMerge)
         ],
       testGroup
         "mrgLiftA2"
         [ testCase "merge result" $ do
             let actual =
                   mrgLiftA2 (const $ const 1) noMergeNotMerged noMergeNotMerged
-            let expected = mrgPure 1 :: UnionM Int
+            let expected = mrgPure 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -92,16 +92,16 @@ applicativeFunctionTests =
             return NoMerge .<* oneNotMerged @?= mrgSingle NoMerge
         ],
       testCase "mrgEmpty" $
-        (mrgEmpty :: MaybeT UnionM Integer) @?= MaybeT (mrgReturn Nothing),
+        (mrgEmpty :: MaybeT Union Integer) @?= MaybeT (mrgReturn Nothing),
       testGroup
         ".<|>"
         [ testCase "merge result" $
-            return 1 .<|> return 2 @?= (mrgSingle 1 :: MaybeT UnionM Integer),
+            return 1 .<|> return 2 @?= (mrgSingle 1 :: MaybeT Union Integer),
           testCase "merge lhs" $ do
             let lhs =
                   MaybeT $
                     mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
-            let expected = mrgSingle NoMerge :: MaybeT UnionM NoMerge
+            let expected = mrgSingle NoMerge :: MaybeT Union NoMerge
             lhs .<|> return NoMerge @?= expected
         ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -130,16 +130,16 @@ applicativeFunctionTests =
             let actual =
                   mrgIfPropagatedStrategy "a" (return $ -1) (return 1)
                     .<**> (return (\x -> x * x))
-            actual @?= (mrgSingle 1 :: UnionM Integer),
+            actual @?= (mrgSingle 1 :: Union Integer),
           testCase "merge arguments" $ do
             let actual = oneNotMerged .<**> (return (const NoMerge))
-            actual @?= (mrgSingle NoMerge :: UnionM NoMerge)
+            actual @?= (mrgSingle NoMerge :: Union NoMerge)
         ],
       testGroup
         "mrgLiftA"
         [ testCase "merge result" $ do
             let actual = mrgLiftA (const 1) noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual = mrgLiftA (const NoMerge) oneNotMerged
@@ -155,7 +155,7 @@ applicativeFunctionTests =
                     noMergeNotMerged
                     noMergeNotMerged
                     noMergeNotMerged
-            let expected = mrgReturn 1 :: UnionM Int
+            let expected = mrgReturn 1 :: Union Int
             actual @?= expected,
           testCase "merge argument" $ do
             let actual =
@@ -178,7 +178,7 @@ applicativeFunctionTests =
                           (return $ Just 1)
                           (return $ Just 1)
                     )
-            let expected = mrgSingle (Just 1) :: MaybeT UnionM (Maybe Int)
+            let expected = mrgSingle (Just 1) :: MaybeT Union (Maybe Int)
             actual @?= expected,
           testCase "none" $ do
             let actual =
@@ -186,7 +186,7 @@ applicativeFunctionTests =
                     ( MaybeT $
                         mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
                     )
-            let expected = mrgSingle Nothing :: MaybeT UnionM (Maybe Int)
+            let expected = mrgSingle Nothing :: MaybeT Union (Maybe Int)
             actual @?= expected
         ],
       plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
@@ -198,21 +198,21 @@ applicativeFunctionTests =
                       mrgIfPropagatedStrategy "a" (return Nothing) (return Nothing)
               let expected =
                     MaybeT (mrgSingle Nothing) ::
-                      MaybeT UnionM (Maybe Int)
+                      MaybeT Union (Maybe Int)
               mrgAsum (replicate 100 none) @?= expected,
             testCase "semantics" $ do
-              (mrgAsum [mrgEmpty, mrgEmpty] :: MaybeT UnionM Integer)
+              (mrgAsum [mrgEmpty, mrgEmpty] :: MaybeT Union Integer)
                 @?= mrgEmpty
-              (mrgAsum [mrgPure 1, mrgEmpty] :: MaybeT UnionM Integer)
+              (mrgAsum [mrgPure 1, mrgEmpty] :: MaybeT Union Integer)
                 @?= mrgPure 1
-              (mrgAsum [mrgEmpty, mrgPure 1] :: MaybeT UnionM Integer)
+              (mrgAsum [mrgEmpty, mrgPure 1] :: MaybeT Union Integer)
                 @?= mrgPure 1
-              (mrgAsum [mrgPure 2, mrgPure 1] :: MaybeT UnionM Integer)
+              (mrgAsum [mrgPure 2, mrgPure 1] :: MaybeT Union Integer)
                 @?= mrgPure 2
           ]
     ]
 
-f :: StateT Int (MaybeT UnionM) ()
+f :: StateT Int (MaybeT Union) ()
 f = do
   i <- get
   if (i == 0)

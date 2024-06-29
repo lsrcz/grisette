@@ -18,10 +18,11 @@ module Grisette.Core
     -- | The module is organized by first introducing symbolic values, which
     -- includes solvable types and unsolvable types. Solvable types are those
     -- directly supported by the underlying solver. Other types are unsolvable.
-    -- They need 'UnionM' monadic container and 'Mergeable' instances to be
+    -- They need 'Union' monadic container and 'Mergeable' instances to be
     -- merged.
     --
-    -- Various operations are provided for manipulating symbolic values.
+    -- Various operations are provided for manipulating symbolic values,
+    -- including solvable and unsolvable types.
     --
     -- We elaborated the internal details of the symbolic values in the
     -- documentation, but it is likely that you can skip them and directly go
@@ -41,9 +42,15 @@ module Grisette.Core
     -- | The examples may assume a [z3](https://github.com/Z3Prover/z3) solver
     -- available in @PATH@.
 
-    -- * Symbolic values
+    -- * Introduction to symbolic values
 
-    -- | Grisette is a tool for performing symbolic evaluation on programs.
+    -- ** Symbolic evaluation primer
+
+    -- | Grisette is a tool for performing symbolic evaluation on programs. With
+    -- Grisette, you can construct your own symbolic DSL, and get the symbolic
+    -- evaluator for it without the need of manually implementing the symbolic
+    -- evaluation algorithms.
+    --
     -- Symbolic evaluation is a technique that allows us to analyze all
     -- possible runs of a program by representing inputs (or the program
     -- itself) as symbolic values and evaluating the program to produce
@@ -52,23 +59,50 @@ module Grisette.Core
     -- symbolic values that meet certain criteria, such as triggering a bug in
     -- a verification task or satisfying a specification in a synthesis task.
     --
-    -- One of the challenges of symbolic evaluation is the well-known path
-    -- explosion problem, which occurs when traditions symbolic evaluation
+    -- For example, in the following pseudo code, suppose that we want to know
+    -- whether the assertion at the end of the code will hold for all possible
+    -- inputs:
+    --
+    -- > a = input()
+    -- > b = 4
+    -- > if (a < 5) {
+    -- >   b -= a
+    -- > }
+    -- > assert (b > 0)
+    --
+    -- We can represent the input @a@ as a symbolic integer, and do symbolic
+    -- evaluation for it. By exploring __all__ possible program paths, we will
+    -- know that the result for the condition in the assertion would then be a
+    -- symbolic formula:
+    --
+    -- > (ite (< a 5) (> (- 4 a) 0) (> 4 0)).
+    --
+    -- The original program violates the assertion when this formula is false.
+    -- We can use a solver to ask whether this could happen, and solver will
+    -- tell us that when @a@ is 4, the assertion will not hold.
+    --
+    -- Our resulting formula captures the information about all possible program
+    -- runs. One of the challenges of symbolic evaluation is the well-known path
+    -- explosion problem, which occurs when traditional symbolic evaluation
     -- techniques evaluate and reason about the possible paths one-by-one.
     -- This can lead to exponential growth in the number of paths that need to
     -- be analyzed, making the process impractical for many tasks.
+    --
     -- To address this issue, Grisette uses a technique called "path merging".
     -- In path merging, symbolic values are merged together in order to reduce
     -- the number of paths that need to be explored simultaneously. This can
     -- significantly improve the performance of symbolic evaluation, especially
     -- for tasks such as program synthesis that are prone to the path explosion
-    -- problem.
+    -- problem. This path merging is done automatically by Grisette, with a set
+    -- of symbolic values.
     --
     -- In Grisette, we make a distinction between two kinds of symbolic values:
     -- __/solvable types/__ and __/unsolvable types/__. These two types of
     -- values are merged differently.
-    --
-    -- __/Solvable types/__ are types that are directly supported by the
+
+    -- ** Solvable types (solver-primitive types) #solvable#
+
+    -- | __/Solvable types/__ are types that are directly supported by the
     -- underlying solver and are represented as symbolic formulas. Examples
     -- include symbolic Booleans, integers and bit vectors. The values of
     -- solvable types can be __/fully/__ merged into a single value, which
@@ -80,22 +114,26 @@ module Grisette.Core
     --
     -- > x = if a then b else c -- pseudo code, not real Grisette code
     --
-    -- The result would be a single symbolic Boolean formula:
+    -- The result would be a single symbolic integer formula:
     --
-    -- > -- result: x is (ite a b c)
+    -- >>> x = symIte "a" "b" "c" :: SymInteger -- real Grisette code
+    -- >>> x
+    -- (ite a b c)
     --
     -- If we further add 1 to @x@, we will not have to split to two paths,
-    -- but we can directly construct a formula with the merged state:
+    -- but we can directly construct a formula with the merged value:
     --
-    -- > x + 1
-    -- > -- result (+ 1 (ite a b c))
-    --
-    -- __/Unsolvable types/__, on the other hand, are types that are not
+    -- >>> x + 1
+    -- (+ 1 (ite a b c))
+
+    -- ** Unsolvable types (non-solver-primitive types)
+
+    -- | __/Unsolvable types/__, on the other hand, are types that are not
     -- directly supported by the solver and cannot be fully merged into a
     -- single formula. Examples include lists, algebraic data types, and
-    -- concrete Haskell integer types. To symbolically evaluate values in
-    -- unsolvable types, Grisette provides a symbolic union container, which is
-    -- a set of values guarded by their path conditions.
+    -- concrete Haskell integer types. To symbolically evaluate values with
+    -- unsolvable types, Grisette provides a symbolic union container ('Union'),
+    -- which is a set of values guarded by their path conditions.
     -- The values of unsolvable types are __/partially/__ merged in a symbolic
     -- union, which is essentially an if-then-else tree.
     --
@@ -106,13 +144,23 @@ module Grisette.Core
     -- length:
     --
     -- > x = if a then [b] else [c] -- pseudo code, not real Grisette code
-    -- > -- result: Single [(ite a b c)]
+    --
+    -- Or, in real Grisette code:
+    --
+    -- >>> mrgIf "a" (return ["b"]) (return ["c"]) :: Union [SymBool]
+    -- {[(ite a b c)]}
+    --
+    -- Note that we are using 'mrgIf' instead of 'symIte' for 'Union's.
     --
     -- The second example shows that @[b]@ and @[c,d]@ cannot be merged
     -- together because they have different lengths:
     --
     -- > if a then [b] else [c, d] -- pseudo code, not real Grisette code
-    -- > -- result: If a (Single [b]) (Single [c,d])
+    --
+    -- In real Grisette code:
+    --
+    -- >>> mrgIf "a" (return ["b"]) (return ["c", "d"]) :: Union [SymBool]
+    -- {If a [b] [c,d]}
     --
     -- The following example is more complicated. To make the merging
     -- efficient, Grisette would maintain a representation invariant of the
@@ -120,20 +168,33 @@ module Grisette.Core
     -- at the then branch, and the lists with length 2 should be placed at the
     -- else branch.
     --
-    -- > if a1 then [b] else if a2 then [c, d] else [f] -- pseudo code, not real Grisette code
-    -- > -- result: If (|| a1 (! a2)) (Single [(ite a1 b f)]) (Single [c,d])
+    -- > x = if a1 then [b] else if a2 then [c, d] else [f] -- pseudo code, not real Grisette code
+    --
+    -- In real Grisette code:
+    --
+    -- >>> x = mrgIf "a1" (return ["b"]) (mrgIf "a2" (return ["c", "d"]) (return ["f"])) :: Union [SymBool]
+    -- >>> x
+    -- {If (|| a1 (! a2)) [(ite a1 b f)] [c,d]}
     --
     -- When we further operate on this partially merged values,
-    -- we will need to split into multiple paths. For example, when we apply 'head'
-    -- onto the last result, we will distribute 'head' among the branches:
+    -- we will need to split into multiple paths. For example, when we apply
+    -- 'head' onto the last result, and we will distribute 'head' among the
+    -- branches:
     --
-    -- > head (if a1 then [b] else if a2 then [c, d] else [f]) -- pseudo code, not real Grisette code
+    -- > head x -- pseudo code, not real Grisette code
     -- > -- intermediate result: If (|| a1 (! a2)) (Single (head [(ite a1 b f)])) (Single (head [c,d]))
     -- > -- intermediate result: If (|| a1 (! a2)) (Single (ite a1 b f)) (Single c)
     --
-    -- Then the result would be further merged into a single value:
+    -- This \"path splitting\" is done with the monad instance of 'Union'. The
+    -- result is then merged into a single formula, and further operation on it
+    -- won't have to split into multiple paths:
     --
-    -- > -- final result: Single (ite (|| a1 (! a2)) (ite a1 b f) c)
+    -- >>> :{
+    -- do
+    --   v <- x             -- Path splitted with the (>>=)
+    --   mrgReturn $ head v -- mrgReturn helps with the merging
+    -- :}
+    -- {(ite (|| a1 (! a2)) (ite a1 b f) c)}
     --
     -- Generally, merging the possible branches in a symbolic union can reduce
     -- the number of paths to be explored in the future, but can make the path
@@ -141,27 +202,32 @@ module Grisette.Core
     -- this, Grisette has built a hierarchical merging algorithm, which is
     -- configurable via 'MergingStrategy'. For algebraic data types, we have
     -- prebuilt merging strategies via the derivation of the 'Mergeable' type
-    -- class. You only need to know the details of the merging algorithm if you
-    -- are going to work with non-algebraic data types.
+    -- class (Also see 'GMergeable' for detail of derivation). You only need to
+    -- know the details of the merging algorithm if you are going to work with
+    -- complex non-algebraic data types, or you'd like to configure the merging
+    -- based on your domain knowledge to tweak the performance.
 
-    -- ** Solvable types
+    -- * Solvable types
 
-    -- | A solvable type is a type that can be represented as a formula and is
-    -- directly supported by the underlying constraint solvers.
-    -- Grisette
-    -- currently provides an implementation for the following solvable types:
+    -- |
+    -- Grisette currently provides an implementation for the following solvable
+    -- types:
     --
-    -- * 'Grisette.SymPrim.SymBool' (symbolic Booleans)
-    -- * 'Grisette.SymPrim.SymInteger' (symbolic unbounded integers)
-    -- * @'Grisette.SymPrim.SymIntN' n@ (symbolic signed bit vectors of bit
-    --   width @n@)
-    -- * @'Grisette.SymPrim.SymWordN' n@ (symbolic unsigned bit vectors of
-    --   bit width @n@)
-    -- * @'Grisette.SymPrim.SymFP' eb sb@ (symbolic IEEE-754 floating point
-    --   numbers with @eb@ exponent bits and @sb@ significand bits)
+    -- * 'Grisette.SymPrim.SymBool' ('Bool', symbolic Booleans)
+    -- * 'Grisette.SymPrim.SymInteger' ('Integer', symbolic unbounded integers)
+    -- * @'Grisette.SymPrim.SymIntN' n@ (@'Grisette.SymPrim.IntN' n@, symbolic
+    --   signed bit vectors of bit width @n@)
+    -- * @'Grisette.SymPrim.SymWordN' n@ (@'Grisette.SymPrim.WordN' n@, symbolic
+    --   unsigned bit vectors of bit width @n@)
+    -- * @'Grisette.SymPrim.SymFP' eb sb@ (@'Grisette.SymPrim.FP' eb sb@,
+    --   symbolic IEEE-754 floating point numbers with @eb@ exponent bits and
+    --   @sb@ significand bits)
     --
-    -- The two bit vector types has their lengths checked at compile time.
-    -- Grisette also provides runtime-checked versions of these types:
+    -- The bit-width of bit vector types and floating point types have their
+    -- are checked at compile time.
+    --
+    -- Grisette also provides runtime-checked versions of bit-vectors, which
+    -- might be more convenient in many scenarios:
     -- 'Grisette.SymPrim.SomeSymIntN' and 'Grisette.SymPrim.SomeSymWordN'.
     --
     -- Values of a solvable type can consist of concrete values, symbolic
@@ -175,6 +241,10 @@ module Grisette.Core
     -- >>> import Grisette
     -- >>> con True :: SymBool -- a concrete value
     -- true
+    -- >>> true :: SymBool -- via the LogicalOp instance
+    -- true
+    -- >>> 1 :: SymInteger -- via the Num instance
+    -- 1
     -- >>> ssym "a" :: SymBool -- a symbolic constant
     -- a
     --
@@ -196,32 +266,46 @@ module Grisette.Core
     -- >>> a .== b
     -- (= a b)
 
-    -- *** Creation of solvable type values
-    Solvable (..),
-    pattern Con,
+    -- ** Creation of solvable type values
+
+    -- *** Identifiers and symbols
+
+    -- A symbolic constant is created out of a 'Symbol'. Two symbolic constants
+    -- with the same type and the same 'Symbol' are the same symbolic value.
+    --
+    -- A symbolic value is an 'Identifier' with a possible index.
+    --
+    -- A simple symbol can be created out of a string literal:
+    --
+    -- >>> "a" :: Symbol
+    -- a
     Identifier (..),
     Symbol (..),
     identifier,
     withInfo,
     withLoc,
     uniqueIdentifier,
-    slocsym,
-    ilocsym,
     simple,
     indexed,
 
-    -- *** Basic logical operators
+    -- *** Creation and extraction of solvable values
+    Solvable (..),
+    pattern Con,
+    slocsym,
+    ilocsym,
+
+    -- ** Basic logical operators
     LogicalOp (..),
     ITEOp (..),
 
-    -- *** Symbolic equality
+    -- ** Symbolic equality
     SEq (..),
     SEq1 (..),
     seq1,
     SEq2 (..),
     seq2,
 
-    -- *** Symbolic comparison
+    -- ** Symbolic comparison
     SOrd (..),
     SOrd1 (..),
     symCompare1,
@@ -232,7 +316,7 @@ module Grisette.Core
     mrgMax,
     mrgMin,
 
-    -- *** Bit-vectors
+    -- ** Bit-vectors
     BV (..),
     bvExtract,
     SizedBV (..),
@@ -244,15 +328,15 @@ module Grisette.Core
     SignConversion (..),
     BitCast (..),
 
-    -- *** Safe operation for Numbers
+    -- ** Safe operation for Numbers
     SafeDivision (..),
     SafeLinearArith (..),
 
-    -- *** Functions
+    -- ** Functions
     Function (..),
     Apply (..),
 
-    -- *** IEEE Floating points
+    -- ** IEEE Floating points
     fpIsNaN,
     fpIsPositiveZero,
     fpIsNegativeZero,
@@ -270,7 +354,7 @@ module Grisette.Core
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
 
-    -- *** Conversion between Concrete and Symbolic values
+    -- ** Conversion between Concrete and Symbolic values
     ToCon (..),
     ToCon1 (..),
     toCon1,
@@ -282,19 +366,22 @@ module Grisette.Core
     ToSym2 (..),
     toSym2,
 
-    -- ** Unsolvable types and merging
+    -- * Unsolvable types and merging
 
-    -- | There are types that cannot be directly represented as SMT formulas
-    -- and therefore not supported by the SMT solvers. These types are referred
-    -- to as __/unsolvable types/__.
+    -- | There are types that be directly represented as SMT formulas and
+    -- therefore not directly supported by the SMT solvers. These types are
+    -- referred to as __/unsolvable types/__.
     -- To symbolically evaluate such types, we represent them with
     -- __/symbolic unions/__.
     -- A symbolic union is a set of multiple values from different execution
     -- paths, each guarded with a corresponding path condition.
     -- The value of a union can be determined by an SMT solver based on the
     -- truth value of the path conditions.
-    --
-    -- In Grisette, the symbolic union type is 'UnionM'.
+
+    -- ** 'Union' basics
+
+    -- |
+    -- In Grisette, the symbolic union type is 'Union'.
     -- Two constructs are useful in constructing symbolic union values: 'mrgIf'
     -- and 'mrgSingle'.
     -- 'mrgSingle' unconditionally wraps a value in a symbolic union container,
@@ -302,12 +389,12 @@ module Grisette.Core
     -- conditions.
     -- Here are some examples of using 'mrgSingle' and 'mrgIf':
     --
-    -- >>> mrgSingle ["a"] :: UnionM [SymInteger]
+    -- >>> mrgSingle ["a"] :: Union [SymInteger]
     -- {[a]}
-    -- >>> mrgIf "a" (mrgSingle ["b"]) (mrgSingle ["c", "d"]) :: UnionM [SymInteger]
+    -- >>> mrgIf "a" (mrgSingle ["b"]) (mrgSingle ["c", "d"]) :: Union [SymInteger]
     -- {If a [b] [c,d]}
     --
-    -- 'UnionM' is a monad, and its bind operation is similar to tree
+    -- 'Union' is a monad, and its bind operation is similar to tree
     -- substitution.
     -- This means you can then use monadic constructs to model sequential programs.
     -- For example, the following pseudo code can be
@@ -318,10 +405,13 @@ module Grisette.Core
     -- > return (x ++ y :: [SymInteger])
     --
     -- >>> :{
-    --   ret :: UnionM [SymInteger]
+    --   ret :: Union [SymInteger]
     --   ret = do x <- mrgIf "a" (return ["b"]) (return ["b","c"])
     --            y <- mrgIf "d" (return ["e"]) (return ["e","f"])
-    --            mrgReturn $ x ++ y -- we will explain mrgReturn later
+    --            -- we will explain mrgReturn later, but rule of thumb is to
+    --            -- always use mrg* functions if provided by Grisette and if
+    --            -- you don't understand what will happen with ordinary return.
+    --            mrgReturn $ x ++ y
     -- :}
     --
     -- When this code is evaluated, the result would be as follows:
@@ -334,10 +424,11 @@ module Grisette.Core
     -- This is important for scaling symbolic evaluation to real-world
     -- problems.
     --
-    -- The 'mrgReturn' function is crucial for ensuring that the results
-    -- are merged. It resolves the 'Mergeable' constraint, and retrieves a
-    -- merging strategy for the contained type from the constraint.
-    -- The merging strategy is then cached in the 'UnionMBase' container to
+    -- The 'Grisette.Lib.Control.Monad.mrgReturn' function is crucial for
+    -- ensuring that the results are merged. It resolves the 'Mergeable'
+    -- constraint, and retrieves a merging strategy for the contained type from
+    -- the constraint.
+    -- The merging strategy is then cached in the 'Union' container to
     -- help merge the result of the entire do-block.
     -- This is necessary due to
     -- [the constrained-monad problem](https://dl.acm.org/doi/10.1145/2500365.2500602),
@@ -347,48 +438,46 @@ module Grisette.Core
     -- by the knowledge propagation technique introduced in the
     -- [blog post](https://okmij.org/ftp/Haskell/set-monad.html#PE) by Oleg Kiselyov.
     --
-    -- In addition to 'mrgReturn',
+    -- In addition to 'Grisette.Lib.Control.Monad.mrgReturn',
     -- Grisette provides many combinators with the @mrg@ prefix.
     -- You should use these combinators and always have the result cache the merging strategy.
     -- Consider the following code:
     --
-    -- >>> return 1 :: UnionM Integer
+    -- >>> return 1 :: Union Integer
     -- <1>
-    -- >>> mrgReturn 1 :: UnionM Integer
+    -- >>> mrgReturn 1 :: Union Integer
     -- {1}
-    -- >>> mrgIf "a" (return 1) (return 2) :: UnionM Integer
+    -- >>> mrgIf "a" (return 1) (return 2) :: Union Integer
     -- {If a 1 2}
     --
-    -- In the first example, using 'return' instead of 'mrgReturn' results in a
-    -- 'UAny' container (printed as @<@@...@@>@), which means that no merging
-    -- strategy is cached.
+    -- In the first example, using 'return' instead of
+    -- 'Grisette.Lib.Control.Monad.mrgReturn' results in a unmerged container
+    -- (printed as @<@@...@@>@), which means that no merging strategy is cached.
     -- In the second and third example, using 'mrgReturn' or 'mrgIf' results in
-    -- a 'UMrg' container (printed as @{...}@),
-    -- which means that the merging strategy is cached.
+    -- a merged container (printed as @{...}@) with a cached merging strategy.
     --
-    -- When working with 'UnionM', it is important to always use the @mrg@ prefixed
-    -- combinators to ensure that the merging strategy is properly cached.
-    -- This will enable Grisette to properly merge the results of the entire do-block
-    -- and scale symbolic evaluation to real-world problems.
+    -- When working with 'Union', it is important to always use the @mrg@
+    -- prefixed combinators to ensure that the merging strategy is properly
+    -- cached. This will enable Grisette to properly merge the results of the
+    -- entire do-block and scale symbolic evaluation to real-world problems.
     -- Those functions that merges the results can also further propagate the
-    -- cached merging strategy, note that the result is merged:
+    -- cached merging strategy, see how the result is merged:
     --
-    -- >>> f x y = mrgIf "f" (return x) (return y) :: UnionM Integer
+    -- >>> f x y = mrgIf "f" (return x) (return y) :: Union Integer
     -- >>> do; a <- mrgIf "a" (return 1) (return 2); f a (a + 1)
     -- {If (&& a f) 1 (If (|| a f) 2 3)}
     --
-    -- For more details of this, see the documentation for 'UnionMBase' and
-    -- 'MergingStrategy'.
-    --
-    -- To make a type compatible with the symbolic evaluation and merging in
+    -- For more details on this, see the documentation for 'Union',
+    -- 'MergingStrategy', and "Grisette.Core#merging"
+
+    -- ** Working with user-defined types
+
+    -- | To make a type compatible with the symbolic evaluation and merging in
     -- Grisette, you need to implement the 'Mergeable' type class.
     -- If you are only working with algebraic
     -- data types, you can derive the 'Mergeable' instance automatically
     -- For example:
     --
-    -- >>> :set -XDerivingStrategies
-    -- >>> :set -XDerivingVia
-    -- >>> :set -XDeriveGeneric
     -- >>> import GHC.Generics
     -- >>> :{
     --   data X = X SymInteger Integer
@@ -396,20 +485,39 @@ module Grisette.Core
     --     deriving (Mergeable) via (Default X)
     -- :}
     --
-    -- This allows you to use the @UnionM@ type to represent values of type @X@,
-    -- and have them merged with the 'mrgIf' combinator:
+    -- Grisette also provide 'Grisette.deriveAll' template haskell procedure to
+    -- derive all the instances for the classes that are relevant. This include
+    -- 'GHC.Generics.Generic', 'Show', 'Mergeable', etc. If you only want to
+    -- derive some of them, you can also use 'Grisette.deriveAllExcept' or
+    -- 'Grisette.derive'.
     --
-    -- >>> mrgIf "c1" (mrgSingle $ X "b" 1) (mrgIf "c2" (mrgSingle $ X "c" 2) (mrgSingle $ X "d" 1)) :: UnionM X
+    -- >>> :{
+    -- data X = X SymInteger Integer
+    -- deriveAllExcept ''X [''Ord]
+    -- -- Ord is excluded because it is a symbolic type
+    -- :}
+    --
+    -- Having the 'Mergeable' instance allows you to use the 'Union' type to
+    -- represent values of type @X@, and have them merged with the 'mrgIf'
+    -- combinator:
+    --
+    -- >>> mrgIf "c1" (mrgSingle $ X "b" 1) (mrgIf "c2" (mrgSingle $ X "c" 2) (mrgSingle $ X "d" 1)) :: Union X
     -- {If (|| c1 (! c2)) (X (ite c1 b d) 1) (X c 2)}
     --
-    -- It is also possible to apply monad transformers onto @UnionM@ to extend
+    -- __Note that deriving all instances may need to enable many__
+    -- __extensions, see 'Grisette.deriveAll' for details.__
+
+    -- ** Using monad transformers
+
+    -- | It is also possible to apply monad transformers onto 'Union' to extend
     -- it with various mechanisms.
     -- For example, by applying 'Control.Monad.Except.ExceptT',
     -- you can symbolically evaluate a program with error handling.
     -- To do this, you will need to define an error type and derive the 'Mergeable'
-    -- instance for it. Then, you can use the combinators provided by 'MonadError'
-    -- (and the @mrg*@ variants of them) for error handling, and the 'mrgIf'
-    -- combinator will also work with transformed @UnionM@ containers.
+    -- instance for it. Then, you can use the combinators provided by
+    -- 'Control.Monad.Except.MonadError' (and the @mrg*@ variants of them in
+    -- "Grisette.Lib.Control.Monad.Except") for error handling, and the 'mrgIf'
+    -- combinator will also work with transformed 'Union' containers.
     --
     -- Here's an example using the 'Control.Monad.Except.ExceptT' transformer
     -- to model error handling in Grisette:
@@ -417,18 +525,19 @@ module Grisette.Core
     -- >>> import Control.Monad.Except
     -- >>> :{
     --   data Error = Fail
-    --     deriving (Show, Generic)
-    --     deriving (Mergeable) via (Default Error)
+    --   deriveAll ''Error
     -- :}
     --
-    -- >>> mrgIf "a" (throwError Fail) (return "x") :: ExceptT Error UnionM SymInteger
+    -- >>> mrgIf "a" (throwError Fail) (return "x") :: ExceptT Error Union SymInteger
     -- ExceptT {If a (Left Fail) (Right x)}
     --
     -- This will return a symbolic union value representing a program that
     -- throws an error in the @then@ branch and returns a value in the @else@
     -- branch.
-    --
-    -- __The following is the details of the merging algorithm.__
+
+    -- ** Details of the merging algorithm #merging#
+
+    -- | __The following is the details of the merging algorithm.__
     -- __If you are not going to manually configure the system by writing a__
     -- __`MergingStrategy` and will only use the derived strategies,__
     -- __you can safely ignore the following contents in this section.__
@@ -441,7 +550,7 @@ module Grisette.Core
     -- symbolic integers with length 1, 2 or 3. The values are kept sorted in the
     -- container: the list with length 1 is placed at the first place, the
     -- list with length 2 is placed at the second place, and so on.
-    --
+
     -- |
     -- \[
     --   \left\{\begin{aligned}%
@@ -645,16 +754,16 @@ module Grisette.Core
     -- For more details of the algorithm, please refer to
     -- [Grisette's paper](https://lsrcz.github.io/files/POPL23.pdf).
 
-    -- *** UnionM Monad
-    UnionM,
+    -- ** Union Monad
+    Union,
     IsConcrete,
-    unionMUnaryOp,
-    unionMBinOp,
-    liftUnionM,
+    unionUnaryOp,
+    unionBinOp,
+    liftUnion,
     liftToMonadUnion,
     unionSize,
 
-    -- *** Mergeable
+    -- ** Mergeable
     Mergeable (..),
     Mergeable1 (..),
     rootStrategy1,
@@ -663,10 +772,10 @@ module Grisette.Core
     Mergeable3 (..),
     rootStrategy3,
 
-    -- *** Merging strategy
+    -- ** Merging strategy
     MergingStrategy (..),
 
-    -- *** Manual merging strategy construction
+    -- ** Manual merging strategy construction
     wrapStrategy,
     product2Strategy,
     DynamicSortedIdx (..),
@@ -675,27 +784,27 @@ module Grisette.Core
     resolveStrategy,
     resolveStrategy',
 
-    -- *** Simple mergeable types
+    -- ** Simple mergeable types
     SimpleMergeable (..),
     SimpleMergeable1 (..),
     mrgIte1,
     SimpleMergeable2 (..),
     mrgIte2,
 
-    -- *** Symbolic branching
+    -- ** Symbolic branching
     SymBranching (..),
     mrgIf,
     mergeWithStrategy,
     merge,
 
-    -- *** TryMerge operations
+    -- ** TryMerge operations
     MonadTryMerge,
     TryMerge (..),
     mrgSingle,
     mrgSingleWithStrategy,
     tryMerge,
 
-    -- *** PlainUnion operations
+    -- ** PlainUnion operations
     PlainUnion (..),
     pattern Single,
     pattern If,
@@ -776,7 +885,7 @@ module Grisette.Core
     -- We can generate a list of length 0, 1, or 2 by specifying the minimum
     -- and maximum lengths, and the specification for the elements:
     --
-    -- >>> runFresh (fresh (ListSpec 0 2 ())) "x" :: UnionM [SymBool]
+    -- >>> runFresh (fresh (ListSpec 0 2 ())) "x" :: Union [SymBool]
     -- {If x@2 [] (If x@3 [x@1] [x@0,x@1])}
     --
     -- We can generate many symbolic values at once with the 'Fresh' monad.
@@ -786,7 +895,7 @@ module Grisette.Core
     -- >>> :{
     --   flip runFresh "x" $ do
     --     a :: SymBool <- simpleFresh ()
-    --     b :: UnionM [SymBool] <- fresh (ListSpec 0 2 ())
+    --     b :: Union [SymBool] <- fresh (ListSpec 0 2 ())
     --     return (a, b)
     -- :}
     -- (x@0,{If x@3 [] (If x@4 [x@2] [x@1,x@2])})
@@ -797,7 +906,7 @@ module Grisette.Core
     --
     -- >>> genSymSimple (SimpleListSpec 2 ()) "x" :: [SymBool]
     -- [x@0,x@1]
-    -- >>> genSym (ListSpec 0 2 ()) "x" :: UnionM [SymBool]
+    -- >>> genSym (ListSpec 0 2 ()) "x" :: Union [SymBool]
     -- {If x@2 [] (If x@3 [x@1] [x@0,x@1])}
     --
     -- Symbolic choices from a list of symbolic values is very useful.
@@ -811,7 +920,7 @@ module Grisette.Core
     --   (flip runFresh "x" $ do
     --     a <- simpleFresh ()
     --     b <- simpleFresh ()
-    --     chooseFresh [[a],[a,b],[a,a,b]]) :: UnionM [SymBool]
+    --     chooseFresh [[a],[a,b],[a,a,b]]) :: Union [SymBool]
     -- :}
     -- {If x@2 [x@0] (If x@3 [x@0,x@1] [x@0,x@0,x@1])}
 
@@ -863,7 +972,7 @@ module Grisette.Core
     --
     -- >>> import Control.Monad.Except
     -- >>> import Grisette.Lib.Control.Monad.Except
-    -- >>> mrgThrowError AssertionError :: ExceptT AssertionError UnionM ()
+    -- >>> mrgThrowError AssertionError :: ExceptT AssertionError Union ()
     -- ExceptT {Left AssertionError}
     --
     -- You can define your own error types, and reason about them with the
@@ -879,7 +988,7 @@ module Grisette.Core
     -- :}
     --
     -- >>> let [a,b,c] = ["a","b","c"] :: [SymBool]
-    -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error UnionM SymBool
+    -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error Union SymBool
     -- >>> res
     -- ExceptT {If (|| a (! b)) (If a (Left Error1) (Left Error2)) (Right c)}
     -- >>> solveExcept (precise z3) (\case Left _ -> con False; Right x -> x) res
@@ -1023,13 +1132,13 @@ module Grisette.Core
     --
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
-    -- >>> assert = symAssertWith Assert :: SymBool -> ExceptT Error UnionM ()
+    -- >>> assert = symAssertWith Assert :: SymBool -> ExceptT Error Union ()
     -- >>> sdiv l r = mrgWithExceptT (\(_::ArithException) -> Arith) $ safeDiv l r
     -- >>> :{
     --   -- equivalent concrete program:
     --   -- let x = x `div` y
     --   -- if z > 0 then assert (x >= y) else return ()
-    --   res :: ExceptT Error UnionM ()
+    --   res :: ExceptT Error Union ()
     --   res = do
     --     z <- x `sdiv` y
     --     mrgIf (z .> 0) (assert (x .>= y)) (return ())
@@ -1238,15 +1347,15 @@ import Grisette.Internal.Core.Control.Monad.CBMCExcept
     mapCBMCExceptT,
     withCBMCExceptT,
   )
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Internal.Core.Control.Monad.UnionM
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union
   ( IsConcrete,
-    UnionM,
+    Union,
     liftToMonadUnion,
-    liftUnionM,
-    unionMBinOp,
-    unionMUnaryOp,
+    liftUnion,
+    unionBinOp,
     unionSize,
+    unionUnaryOp,
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (..))
 import Grisette.Internal.Core.Data.Class.BitVector
@@ -1577,9 +1686,25 @@ import Data.Text.Prettyprint.Doc as Prettyprinter
 -- >>> import Grisette.Core
 -- >>> import Grisette.Lib.Base
 -- >>> import Grisette.SymPrim
+-- >>> import Grisette.TH
 -- >>> :set -XDataKinds
 -- >>> :set -XBinaryLiterals
 -- >>> :set -XFlexibleContexts
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
 -- >>> :set -XOverloadedStrings
+-- >>> :set -XTemplateHaskell
+-- >>> :set -XScopedTypeVariables
+-- >>> :set -XDerivingVia
+-- >>> :set -XStandaloneDeriving
+-- >>> :set -XTypeApplications
+-- >>> :set -XFlexibleInstances
+-- >>> :set -XMultiParamTypeClasses
+-- >>> :set -XFlexibleContexts
+-- >>> :set -XDeriveLift
+-- >>> :set -XUndecidableInstances
+-- >>> :set -XDeriveAnyClass
+-- >>> :set -XMonoLocalBinds
+-- >>> :set -XDerivingStrategies
+-- >>> :set -XDerivingVia
+-- >>> :set -XDeriveGeneric

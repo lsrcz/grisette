@@ -116,7 +116,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> extractSymbolics ("a" :: SymBool) :: SymbolSet
 -- SymbolSet {a :: Bool}
 --
--- >>> extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: UnionM [SymBool]) :: SymbolSet
+-- >>> extractSymbolics (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: Union [SymBool]) :: SymbolSet
 -- SymbolSet {a :: Bool, b :: Bool, c :: Bool, d :: Bool}
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.

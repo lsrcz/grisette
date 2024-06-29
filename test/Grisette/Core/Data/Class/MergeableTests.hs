@@ -36,7 +36,7 @@ import Grisette
     Solvable (con, ssym),
     StrategyList (StrategyList),
     SymBool,
-    UnionM,
+    Union,
     buildStrategyList,
     mrgIf,
     mrgSingle,
@@ -679,11 +679,11 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (StateLazy.StateT Integer UnionM SymBool)
-                let st1 :: StateLazy.StateT Integer UnionM SymBool =
+                          (StateLazy.StateT Integer Union SymBool)
+                let st1 :: StateLazy.StateT Integer Union SymBool =
                       StateLazy.StateT $ \(x :: Integer) ->
                         mrgSingle (ssym "a", x + 2)
-                let st2 :: StateLazy.StateT Integer UnionM SymBool =
+                let st2 :: StateLazy.StateT Integer Union SymBool =
                       StateLazy.StateT $ \(x :: Integer) ->
                         mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
@@ -698,11 +698,11 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (StateStrict.StateT Integer UnionM SymBool)
-                let st1 :: StateStrict.StateT Integer UnionM SymBool =
+                          (StateStrict.StateT Integer Union SymBool)
+                let st1 :: StateStrict.StateT Integer Union SymBool =
                       StateStrict.StateT $
                         \(x :: Integer) -> mrgSingle (ssym "a", x + 2)
-                let st2 :: StateStrict.StateT Integer UnionM SymBool =
+                let st2 :: StateStrict.StateT Integer Union SymBool =
                       StateStrict.StateT $
                         \(x :: Integer) -> mrgSingle (ssym "b", x * 2)
                 let st3 = s (ssym "c") st1 st2
@@ -718,10 +718,10 @@ mergeableTests =
             let SimpleStrategy s =
                   rootStrategy ::
                     MergingStrategy
-                      (ContT (SymBool, Integer) UnionM (SymBool, Integer))
-            let c1 :: ContT (SymBool, Integer) UnionM (SymBool, Integer) =
+                      (ContT (SymBool, Integer) Union (SymBool, Integer))
+            let c1 :: ContT (SymBool, Integer) Union (SymBool, Integer) =
                   ContT $ \f -> f (ssym "a", 2)
-            let c2 :: ContT (SymBool, Integer) UnionM (SymBool, Integer) =
+            let c2 :: ContT (SymBool, Integer) Union (SymBool, Integer) =
                   ContT $ \f -> f (ssym "b", 3)
             let c3 = s (ssym "c") c1 c2
             runContT
@@ -754,7 +754,7 @@ mergeableTests =
                               (Integer, SymBool)
                               (Integer, SymBool)
                               (Integer, SymBool)
-                              UnionM
+                              Union
                               (Integer, SymBool)
                           )
                 let rws1 ::
@@ -762,7 +762,7 @@ mergeableTests =
                         (Integer, SymBool)
                         (Integer, SymBool)
                         (Integer, SymBool)
-                        UnionM
+                        Union
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -775,7 +775,7 @@ mergeableTests =
                         (Integer, SymBool)
                         (Integer, SymBool)
                         (Integer, SymBool)
-                        UnionM
+                        Union
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -786,7 +786,7 @@ mergeableTests =
                 let rws3 = s (ssym "c") rws1 rws2
 
                 let res1 ::
-                      UnionM
+                      Union
                         ( (Integer, SymBool),
                           (Integer, SymBool),
                           (Integer, SymBool)
@@ -814,7 +814,7 @@ mergeableTests =
                               (Integer, SymBool)
                               (Integer, SymBool)
                               (Integer, SymBool)
-                              UnionM
+                              Union
                               (Integer, SymBool)
                           )
                 let rws1 ::
@@ -822,7 +822,7 @@ mergeableTests =
                         (Integer, SymBool)
                         (Integer, SymBool)
                         (Integer, SymBool)
-                        UnionM
+                        Union
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -835,7 +835,7 @@ mergeableTests =
                         (Integer, SymBool)
                         (Integer, SymBool)
                         (Integer, SymBool)
-                        UnionM
+                        Union
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -846,7 +846,7 @@ mergeableTests =
                 let rws3 = s (ssym "c") rws1 rws2
 
                 let res1 ::
-                      UnionM
+                      Union
                         ( (Integer, SymBool),
                           (Integer, SymBool),
                           (Integer, SymBool)
@@ -873,12 +873,12 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (WriterLazy.WriterT Integer UnionM SymBool)
-                let w1 :: WriterLazy.WriterT Integer UnionM SymBool =
+                          (WriterLazy.WriterT Integer Union SymBool)
+                let w1 :: WriterLazy.WriterT Integer Union SymBool =
                       WriterLazy.WriterT $ mrgSingle (ssym "a", 1)
-                let w2 :: WriterLazy.WriterT Integer UnionM SymBool =
+                let w2 :: WriterLazy.WriterT Integer Union SymBool =
                       WriterLazy.WriterT $ mrgSingle (ssym "b", 2)
-                let w3 :: WriterLazy.WriterT Integer UnionM SymBool =
+                let w3 :: WriterLazy.WriterT Integer Union SymBool =
                       WriterLazy.WriterT $ mrgSingle (ssym "c", 1)
                 let w4 = s (ssym "d") w1 w2
                 let w5 = s (ssym "d") w1 w3
@@ -893,12 +893,12 @@ mergeableTests =
                 let SimpleStrategy s =
                       rootStrategy ::
                         MergingStrategy
-                          (WriterStrict.WriterT Integer UnionM SymBool)
-                let w1 :: WriterStrict.WriterT Integer UnionM SymBool =
+                          (WriterStrict.WriterT Integer Union SymBool)
+                let w1 :: WriterStrict.WriterT Integer Union SymBool =
                       WriterStrict.WriterT $ mrgSingle (ssym "a", 1)
-                let w2 :: WriterStrict.WriterT Integer UnionM SymBool =
+                let w2 :: WriterStrict.WriterT Integer Union SymBool =
                       WriterStrict.WriterT $ mrgSingle (ssym "b", 2)
-                let w3 :: WriterStrict.WriterT Integer UnionM SymBool =
+                let w3 :: WriterStrict.WriterT Integer Union SymBool =
                       WriterStrict.WriterT $ mrgSingle (ssym "c", 1)
                 let w4 = s (ssym "d") w1 w2
                 let w5 = s (ssym "d") w1 w3
@@ -913,10 +913,10 @@ mergeableTests =
           testCase "ReaderT" $ do
             let SimpleStrategy s =
                   rootStrategy ::
-                    MergingStrategy (ReaderT Integer UnionM Integer)
-            let r1 :: ReaderT Integer UnionM Integer =
+                    MergingStrategy (ReaderT Integer Union Integer)
+            let r1 :: ReaderT Integer Union Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x + 2
-            let r2 :: ReaderT Integer UnionM Integer =
+            let r2 :: ReaderT Integer Union Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x * 2
             let r3 = s (ssym "c") r1 r2
             runReaderT r3 2 @?= mrgSingle 4

@@ -8,7 +8,7 @@ import Control.Monad.Except
   )
 import Grisette
   ( SymBranching (mrgIfPropagatedStrategy),
-    UnionM,
+    Union,
     mrgIf,
     mrgSingle,
   )
@@ -63,7 +63,7 @@ traversableFunctionTests =
                                   )
                           )
                           [("a", "c", 3, 4, 5), ("b", "d", 2, 3, 6)] ::
-                          ExceptT Integer UnionM [Integer]
+                          ExceptT Integer Union [Integer]
                   let expected = do
                         a <-
                           mrgIf
@@ -113,7 +113,7 @@ traversableFunctionTests =
                                     (return $ Right 6)
                                 )
                           ] ::
-                          ExceptT Integer UnionM [Integer]
+                          ExceptT Integer Union [Integer]
                   let expected = do
                         a <-
                           mrgIf
@@ -152,7 +152,7 @@ traversableFunctionTests =
                           ( 500500,
                             [(i - 1) * i `div` 2 - i | i <- [1 .. 1000]]
                           ) ::
-                          UnionM (Integer, [Integer])
+                          Union (Integer, [Integer])
                   actual @?= expected,
                 testCase "merge intermediate" $ do
                   let actual =
@@ -167,7 +167,7 @@ traversableFunctionTests =
                           [1 .. 1000]
                   let expected =
                         mrgReturn (1, replicate 1000 1) ::
-                          UnionM (Integer, [Integer])
+                          Union (Integer, [Integer])
                   actual @?= expected
               ]
     ]

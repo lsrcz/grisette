@@ -131,7 +131,7 @@ slocsym :: (Solvable c s) => Identifier -> SpliceQ s
 slocsym nm = [||ssym $$(withLoc nm)||]
 
 -- | Generate indexed symbolic variables. The file location will be attached to
--- identifier.
+-- the identifier.
 --
 -- >>> $$(ilocsym "a" 1) :: SymBool
 -- a:<interactive>:...@1

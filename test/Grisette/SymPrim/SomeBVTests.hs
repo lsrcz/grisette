@@ -30,8 +30,11 @@ import Grisette
     mrgIf,
     mrgSingle,
   )
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM (UMrg))
-import Grisette.Internal.Core.Data.Union (Union (UnionSingle), ifWithLeftMost)
+import Grisette.Internal.Core.Control.Monad.Union (Union (UMrg))
+import Grisette.Internal.Core.Data.UnionBase
+  ( UnionBase (UnionSingle),
+    ifWithLeftMost,
+  )
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch (BitwidthMismatch), IntN)
 import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (SomeBV),
@@ -92,7 +95,7 @@ testSafeFuncMatchException ::
   (Eq r, Show r, Mergeable r) =>
   ( SomeIntN ->
     SomeIntN ->
-    ExceptT (Either BitwidthMismatch ArithException) UnionM r
+    ExceptT (Either BitwidthMismatch ArithException) Union r
   ) ->
   SomeIntN ->
   SomeIntN ->
@@ -107,7 +110,7 @@ testSafeFuncMatch ::
   (Eq r, Show r, Mergeable r) =>
   ( SomeIntN ->
     SomeIntN ->
-    ExceptT (Either BitwidthMismatch ArithException) UnionM r
+    ExceptT (Either BitwidthMismatch ArithException) Union r
   ) ->
   SomeIntN ->
   SomeIntN ->
@@ -122,7 +125,7 @@ testSafeFuncMisMatch ::
   (Eq r, Show r, Mergeable r) =>
   ( SomeIntN ->
     SomeIntN ->
-    ExceptT (Either BitwidthMismatch ArithException) UnionM r
+    ExceptT (Either BitwidthMismatch ArithException) Union r
   ) ->
   SomeIntN ->
   SomeIntN ->
@@ -313,7 +316,7 @@ someBVTests =
                 ]
             return $ testCase name $ do
               let actual =
-                    mrgIf "cond" (return l) (return r) :: UnionM SomeIntN
+                    mrgIf "cond" (return l) (return r) :: Union SomeIntN
               let expected = UMrg rootStrategy merged
               actual @?= expected,
           testGroup "SomeSymIntN" $ do
@@ -344,24 +347,24 @@ someBVTests =
                 ]
             return $ testCase name $ do
               let actual =
-                    mrgIf "cond" (return l) (return r) :: UnionM SomeSymIntN
+                    mrgIf "cond" (return l) (return r) :: Union SomeSymIntN
               let expected = UMrg rootStrategy merged
               actual @?= expected
         ],
       testGroup
         "GenSym"
         [ testCase "Proxy n" $ do
-            let actual = genSym (Proxy :: Proxy 4) "a" :: UnionM SomeSymIntN
+            let actual = genSym (Proxy :: Proxy 4) "a" :: Union SomeSymIntN
             let expected = mrgSingle $ isymBV 4 "a" 0
             actual @?= expected,
           testCase "SomeBV" $ do
             let actual =
-                  genSym (bv 4 1 :: SomeSymIntN) "a" :: UnionM SomeSymIntN
+                  genSym (bv 4 1 :: SomeSymIntN) "a" :: Union SomeSymIntN
             let expected = mrgSingle $ isymBV 4 "a" 0
             actual @?= expected,
           testCase "Int" $ do
             let actual =
-                  genSym (4 :: Int) "a" :: UnionM SomeSymIntN
+                  genSym (4 :: Int) "a" :: Union SomeSymIntN
             let expected = mrgSingle $ isymBV 4 "a" 0
             actual @?= expected
         ],

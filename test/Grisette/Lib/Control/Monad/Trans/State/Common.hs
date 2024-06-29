@@ -21,7 +21,7 @@ import Grisette
     SimpleMergeable (mrgIte),
     SymBool,
     SymBranching (mrgIfPropagatedStrategy),
-    UnionM,
+    Union,
     mrgSingle,
     unionSize,
   )
@@ -31,56 +31,56 @@ import Grisette.Core.Data.Class.TestValues
 import Grisette.TestUtil.SymbolicAssertion ((@?=~))
 import Test.HUnit (Assertion, (@?=))
 
-type StateConstructor stateT s a = (s -> UnionM (a, s)) -> stateT s UnionM a
+type StateConstructor stateT s a = (s -> Union (a, s)) -> stateT s Union a
 
-type StateFunc stateT s a = (s -> (a, s)) -> stateT s UnionM a
+type StateFunc stateT s a = (s -> (a, s)) -> stateT s Union a
 
-type RunStateFunc stateT s a = stateT s UnionM a -> s -> UnionM (a, s)
+type RunStateFunc stateT s a = stateT s Union a -> s -> Union (a, s)
 
-type EvalStateFunc stateT s a = stateT s UnionM a -> s -> UnionM a
+type EvalStateFunc stateT s a = stateT s Union a -> s -> Union a
 
-type ExecStateFunc stateT s a = stateT s UnionM a -> s -> UnionM s
+type ExecStateFunc stateT s a = stateT s Union a -> s -> Union s
 
 type MapStateFunc stateT s a =
-  (UnionM (a, s) -> UnionM (a, s)) ->
-  stateT s UnionM a ->
-  stateT s UnionM a
+  (Union (a, s) -> Union (a, s)) ->
+  stateT s Union a ->
+  stateT s Union a
 
 type WithStateFunc stateT s a =
   (s -> s) ->
-  stateT s UnionM a ->
-  stateT s UnionM a
+  stateT s Union a ->
+  stateT s Union a
 
-type GetFunc stateT s a = stateT s UnionM s
+type GetFunc stateT s a = stateT s Union s
 
-type PutFunc stateT s a = s -> stateT s UnionM ()
+type PutFunc stateT s a = s -> stateT s Union ()
 
-type ModifyFunc stateT s a = (s -> s) -> stateT s UnionM ()
+type ModifyFunc stateT s a = (s -> s) -> stateT s Union ()
 
-type GetsFunc stateT s a = (s -> a) -> stateT s UnionM a
+type GetsFunc stateT s a = (s -> a) -> stateT s Union a
 
-bodyA :: SymBool -> UnionM (SymBool, SymBool)
+bodyA :: SymBool -> Union (SymBool, SymBool)
 bodyA s = return (s .&& ssymBool "av", s .&& ssymBool "as")
 
 stateA ::
-  StateConstructor stateT SymBool SymBool -> stateT SymBool UnionM SymBool
+  StateConstructor stateT SymBool SymBool -> stateT SymBool Union SymBool
 stateA state = state bodyA
 
-bodyB :: SymBool -> UnionM (SymBool, SymBool)
+bodyB :: SymBool -> Union (SymBool, SymBool)
 bodyB s = return (s .&& ssymBool "bv", s .&& ssymBool "bs")
 
 stateB ::
-  StateConstructor stateT SymBool SymBool -> stateT SymBool UnionM SymBool
+  StateConstructor stateT SymBool SymBool -> stateT SymBool Union SymBool
 stateB state = state bodyB
 
 stateAB ::
-  (SymBranching (stateT SymBool UnionM)) =>
+  (SymBranching (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
-  stateT SymBool UnionM SymBool
+  stateT SymBool Union SymBool
 stateAB state = mrgIfPropagatedStrategy (ssymBool "c") (state bodyA) (state bodyB)
 
 mrgStateTest ::
-  (MonadUnion (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateFunc stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   Assertion
@@ -106,7 +106,7 @@ mrgStateTest mrgState runStateT = do
   actual @?=~ expected
 
 mrgRunStateTTest ::
-  (MonadUnion (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   Assertion
@@ -127,7 +127,7 @@ mrgRunStateTTest state mrgRunStateT = do
   actual @?=~ expected
 
 mrgEvalStateTTest ::
-  (MonadUnion (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   EvalStateFunc stateT SymBool SymBool ->
   Assertion
@@ -144,7 +144,7 @@ mrgEvalStateTTest state mrgEvalStateT = do
   actual @?=~ expected
 
 mrgExecStateTTest ::
-  (MonadUnion (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   ExecStateFunc stateT SymBool SymBool ->
   Assertion
@@ -161,7 +161,7 @@ mrgExecStateTTest state mrgExecStateT = do
   actual @?=~ expected
 
 mrgMapStateTTest ::
-  (MonadUnion (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   MapStateFunc stateT SymBool SymBool ->
@@ -185,7 +185,7 @@ mrgMapStateTTest state runStateT mrgMapStateT = do
   actual @?=~ expected
 
 mrgWithStateTTest ::
-  (MonadUnion (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   WithStateFunc stateT SymBool SymBool ->
@@ -209,7 +209,7 @@ mrgWithStateTTest state runStateT mrgWithStateT = do
   actual @?=~ expected
 
 mrgGetTest ::
-  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   GetFunc stateT SymBool SymBool ->
@@ -233,7 +233,7 @@ mrgGetTest state runStateT mrgGet = do
   actual @?=~ expected
 
 mrgPutTest ::
-  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool () ->
   PutFunc stateT SymBool SymBool ->
@@ -250,7 +250,7 @@ mrgPutTest state runStateT mrgPut = do
   actual @?=~ expected
 
 mrgModifyTest ::
-  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool () ->
   ModifyFunc stateT SymBool SymBool ->
@@ -274,7 +274,7 @@ mrgModifyTest state runStateT mrgModify = do
   actual @?=~ expected
 
 mrgGetsTest ::
-  (MonadUnion (stateT SymBool UnionM), Monad (stateT SymBool UnionM)) =>
+  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   GetsFunc stateT SymBool SymBool ->

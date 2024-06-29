@@ -46,9 +46,9 @@ import GHC.Generics
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Internal.Core.Control.Monad.UnionM
-  ( UnionM,
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union
+  ( Union,
     liftToMonadUnion,
   )
 import Grisette.Internal.Core.Data.Class.GenSym
@@ -90,13 +90,13 @@ class (Mergeable a) => GenSymConstrained spec a where
   --
   -- Constraint violations will throw an error in the monadic environment.
   --
-  -- >>> runFreshT (freshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () UnionM (UnionM SymInteger)
+  -- >>> runFreshT (freshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () Union (Union SymInteger)
   -- ExceptT <If (<= 1 a@0) (Left ()) (Right {a@0})>
   freshConstrained ::
     (MonadFresh m, MonadError e m, MonadUnion m) =>
     e ->
     spec ->
-    m (UnionM a)
+    m (Union a)
   default freshConstrained ::
     (GenSymSimpleConstrained spec a) =>
     ( MonadFresh m,
@@ -105,10 +105,10 @@ class (Mergeable a) => GenSymConstrained spec a where
     ) =>
     e ->
     spec ->
-    m (UnionM a)
+    m (Union a)
   freshConstrained e spec = mrgSingle <$> simpleFreshConstrained e spec
 
-genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e UnionM (UnionM a)
+genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e Union (Union a)
 genSymConstrained e spec = tryMerge . runFreshT (freshConstrained e spec)
 
 -- | Class of types in which symbolic values can be generated with some
@@ -121,7 +121,7 @@ class (Mergeable a) => GenSymSimpleConstrained spec a where
   --
   -- Constraint violations will throw an error in the monadic environment.
   --
-  -- >>> runFreshT (simpleFreshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () UnionM SymInteger
+  -- >>> runFreshT (simpleFreshConstrained () (SOrdUpperBound (1 :: SymInteger) ())) "a" :: ExceptT () Union SymInteger
   -- ExceptT <If (<= 1 a@0) (Left ()) (Right a@0)>
   simpleFreshConstrained ::
     (MonadFresh m, MonadError e m, MonadUnion m) =>
@@ -129,7 +129,7 @@ class (Mergeable a) => GenSymSimpleConstrained spec a where
     spec ->
     m a
 
-genSymSimpleConstrained :: forall spec a e. (GenSymSimpleConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e UnionM a
+genSymSimpleConstrained :: forall spec a e. (GenSymSimpleConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e Union a
 genSymSimpleConstrained e spec = tryMerge . runFreshT (simpleFreshConstrained e spec)
 
 instance {-# OVERLAPPABLE #-} (Mergeable a, GenSym spec a) => GenSymConstrained spec a where
@@ -235,7 +235,7 @@ instance
 
 instance (GenSymConstrained aspec a, Mergeable a) => GenSymConstrained aspec (Maybe a) where
   freshConstrained e aspec = do
-    a :: UnionM a <- freshConstrained e aspec
+    a :: Union a <- freshConstrained e aspec
     tryMerge $ chooseUnionFresh [return Nothing, Just <$> a]
 
 -- List
@@ -248,7 +248,7 @@ instance
     let xs = reverse $ scanr (:) [] l
     tryMerge $ chooseUnionFresh $ tryMerge . sequence <$> xs
     where
-      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Integer -> m [UnionM a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Integer -> m [Union a]
       gl e1 v1
         | v1 <= 0 = mrgSingle []
         | otherwise = do
@@ -268,7 +268,7 @@ instance
         let xs = drop minLen $ reverse $ scanr (:) [] l
         tryMerge $ chooseUnionFresh $ tryMerge . sequence <$> xs
     where
-      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [UnionM a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [Union a]
       gl e1 currLen
         | currLen <= 0 = return []
         | otherwise = do
@@ -281,7 +281,7 @@ instance
   GenSymConstrained [a] [a]
   where
   freshConstrained e l = do
-    r :: [UnionM a] <- traverse (freshConstrained e) l
+    r :: [Union a] <- traverse (freshConstrained e) l
     mrgSingle $ tryMerge $ sequence r
 
 instance
@@ -300,7 +300,7 @@ instance
       else do
         tryMerge $ tryMerge . sequence <$> gl e len
     where
-      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [UnionM a]
+      gl :: (MonadFresh m, MonadError e m, MonadUnion m) => e -> Int -> m [Union a]
       gl e1 currLen
         | currLen <= 0 = mrgSingle []
         | otherwise = do
@@ -750,7 +750,7 @@ class GenSymConstrainedNoSpec a where
       MonadUnion m
     ) =>
     e ->
-    m (UnionM (a c))
+    m (Union (a c))
 
 instance GenSymConstrainedNoSpec U1 where
   freshConstrainedNoSpec _ = return $ mrgSingle U1
@@ -776,11 +776,11 @@ instance
       MonadUnion m
     ) =>
     e ->
-    m (UnionM ((a :+: b) c))
+    m (Union ((a :+: b) c))
   freshConstrainedNoSpec e = do
     cond :: bool <- simpleFresh ()
-    l :: UnionM (a c) <- freshConstrainedNoSpec e
-    r :: UnionM (b c) <- freshConstrainedNoSpec e
+    l :: Union (a c) <- freshConstrainedNoSpec e
+    r :: Union (b c) <- freshConstrainedNoSpec e
     return $ mrgIf cond (fmap L1 l) (fmap R1 r)
 
 instance
@@ -794,10 +794,10 @@ instance
       MonadUnion m
     ) =>
     e ->
-    m (UnionM ((a :*: b) c))
+    m (Union ((a :*: b) c))
   freshConstrainedNoSpec e = do
-    l :: UnionM (a c) <- freshConstrainedNoSpec e
-    r :: UnionM (b c) <- freshConstrainedNoSpec e
+    l :: Union (a c) <- freshConstrainedNoSpec e
+    r :: Union (b c) <- freshConstrainedNoSpec e
     return $ do
       l1 <- l
       r1 <- r
@@ -822,7 +822,7 @@ derivedFreshConstrainedNoSpec ::
   ) =>
   e ->
   () ->
-  m (UnionM a)
+  m (Union a)
 derivedFreshConstrainedNoSpec e _ = tryMerge $ (tryMerge . fmap to) <$> freshConstrainedNoSpec e
 
 class GenSymSimpleConstrainedNoSpec a where

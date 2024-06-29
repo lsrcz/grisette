@@ -354,7 +354,7 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- >>> import Control.Monad.Except
 -- >>> let x = "x" :: SymInteger
 -- >>> :{
---   res :: ExceptT AssertionError UnionM ()
+--   res :: ExceptT AssertionError Union ()
 --   res = do
 --     symAssert $ x .> 0       -- constrain that x is positive
 --     symAssert $ x .< 2       -- constrain that x is less than 2

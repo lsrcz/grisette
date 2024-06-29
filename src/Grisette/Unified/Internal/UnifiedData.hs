@@ -20,7 +20,7 @@ where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable)
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.EvaluateSym (EvaluateSym)
 import Grisette.Internal.Core.Data.Class.ExtractSymbolics (ExtractSymbolics)
 import Grisette.Internal.Core.Data.Class.GPretty (GPretty)
@@ -66,7 +66,7 @@ class
     | u mode -> v,
       u v -> mode
   where
-  -- | Get a unified data type. Resolves to @v@ in 'Con' mode, and @'UnionM' v@
+  -- | Get a unified data type. Resolves to @v@ in 'Con' mode, and @'Union' v@
   -- in 'Sym' mode.
   type GetData mode v
 
@@ -83,11 +83,11 @@ instance (Mergeable v) => UnifiedDataImpl 'Con v v where
     forall m. (Mergeable v, Monad m, UnifiedBranching Con m) => v -> m v
   extractData = withBaseBranching @'Con @m mrgSingle
 
-instance (Mergeable v) => UnifiedDataImpl 'Sym v (UnionM v) where
-  type GetData 'Sym v = UnionM v
+instance (Mergeable v) => UnifiedDataImpl 'Sym v (Union v) where
+  type GetData 'Sym v = Union v
   wrapData = mrgSingle
   extractData ::
-    forall m. (Mergeable v, Monad m, UnifiedBranching Sym m) => UnionM v -> m v
+    forall m. (Mergeable v, Monad m, UnifiedBranching Sym m) => Union v -> m v
   extractData = liftBaseMonad
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.

@@ -32,7 +32,7 @@ import Grisette
     Mergeable,
     SimpleMergeable (mrgIte),
     SymBool,
-    UnionM,
+    Union,
     mrgIf,
     mrgIte1,
     mrgSingle,
@@ -203,22 +203,22 @@ simpleMergeableTests =
                 (ssymBool "a")
                 (symNot $ ssymBool "c")
                 ((ssymBool "b") .&& (ssymBool "c")),
-          testCase "MaybeT (UnionM) SymBool" $ do
-            let l :: MaybeT (UnionM) SymBool =
+          testCase "MaybeT (Union) SymBool" $ do
+            let l :: MaybeT (Union) SymBool =
                   MaybeT
                     ( mrgIf
                         (ssymBool "b")
                         (mrgSingle Nothing)
                         (mrgSingle $ Just $ ssymBool "c")
                     )
-            let r :: MaybeT (UnionM) SymBool =
+            let r :: MaybeT (Union) SymBool =
                   MaybeT
                     ( mrgIf
                         (ssymBool "d")
                         (mrgSingle Nothing)
                         (mrgSingle $ Just $ ssymBool "e")
                     )
-            let res :: MaybeT (UnionM) SymBool =
+            let res :: MaybeT (Union) SymBool =
                   MaybeT
                     ( mrgIf
                         (ssymBool "a")
@@ -236,8 +236,8 @@ simpleMergeableTests =
             mrgIte (ssymBool "a") l r @?= res
             mrgIte1 (ssymBool "a") l r @?= res
             mrgIf (ssymBool "a") l r @?= res,
-          testCase "ExceptT SymBool (UnionM) SymBool" $ do
-            let l :: ExceptT SymBool (UnionM) SymBool =
+          testCase "ExceptT SymBool (Union) SymBool" $ do
+            let l :: ExceptT SymBool (Union) SymBool =
                   ExceptT
                     ( mrgIf
                         (ssymBool "b")
@@ -270,12 +270,12 @@ simpleMergeableTests =
             mrgIte1 (ssymBool "a") l r @?= res
             mrgIf (ssymBool "a") l r @?= res,
           testGroup
-            "StateT Integer (UnionM) SymBool"
+            "StateT Integer (Union) SymBool"
             [ testCase "Lazy" $ do
-                let st1 :: StateLazy.StateT Integer (UnionM) SymBool =
+                let st1 :: StateLazy.StateT Integer (Union) SymBool =
                       StateLazy.StateT $ \(x :: Integer) ->
                         mrgSingle (ssymBool "a", x + 2)
-                let st2 :: StateLazy.StateT Integer (UnionM) SymBool =
+                let st2 :: StateLazy.StateT Integer (Union) SymBool =
                       StateLazy.StateT $ \(x :: Integer) ->
                         mrgSingle (ssymBool "b", x * 2)
                 let st3 = mrgIte (ssymBool "c") st1 st2
@@ -306,10 +306,10 @@ simpleMergeableTests =
                     (mrgSingle (ssymBool "a", 5))
                     (mrgSingle (ssymBool "b", 6)),
               testCase "Strict" $ do
-                let st1 :: StateStrict.StateT Integer (UnionM) SymBool =
+                let st1 :: StateStrict.StateT Integer (Union) SymBool =
                       StateStrict.StateT $ \(x :: Integer) ->
                         mrgSingle (ssymBool "a", x + 2)
-                let st2 :: StateStrict.StateT Integer (UnionM) SymBool =
+                let st2 :: StateStrict.StateT Integer (Union) SymBool =
                       StateStrict.StateT $ \(x :: Integer) ->
                         mrgSingle (ssymBool "b", x * 2)
                 let st3 = mrgIte (ssymBool "c") st1 st2
@@ -340,10 +340,10 @@ simpleMergeableTests =
                     (mrgSingle (ssymBool "a", 5))
                     (mrgSingle (ssymBool "b", 6))
             ],
-          testCase "ContT (SymBool, Integer) (UnionM) (SymBool, Integer)" $ do
-            let c1 :: ContT (SymBool, Integer) (UnionM) (SymBool, Integer) =
+          testCase "ContT (SymBool, Integer) (Union) (SymBool, Integer)" $ do
+            let c1 :: ContT (SymBool, Integer) (Union) (SymBool, Integer) =
                   ContT $ \f -> f (ssymBool "a", 2)
-            let c2 :: ContT (SymBool, Integer) (UnionM) (SymBool, Integer) =
+            let c2 :: ContT (SymBool, Integer) (Union) (SymBool, Integer) =
                   ContT $ \f -> f (ssymBool "b", 3)
             let c3 = mrgIte (ssymBool "c") c1 c2
             let c3u1 = mrgIf (ssymBool "c") c1 c2
@@ -365,18 +365,18 @@ simpleMergeableTests =
                     (ssymBool "p")
                     (mrgSingle (a, x))
                     (mrgSingle (symNot a, x + 1)) ::
-                    UnionM (SymBool, Integer)
+                    Union (SymBool, Integer)
             runContT c3 f @?= r
             runContT c3u1 f @?= r,
           testGroup
-            "RWST (Integer, SymBool) (Monoid.Sum Integer, AndMonoidSymBool) (Integer, SymBool) (UnionM) (Integer, SymBool)"
+            "RWST (Integer, SymBool) (Monoid.Sum Integer, AndMonoidSymBool) (Integer, SymBool) (Union) (Integer, SymBool)"
             [ testCase "Lazy" $ do
                 let rws1 ::
                       RWSTLazy.RWST
                         (Integer, SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
                         (Integer, SymBool)
-                        (UnionM)
+                        (Union)
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -391,7 +391,7 @@ simpleMergeableTests =
                         (Integer, SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
                         (Integer, SymBool)
-                        (UnionM)
+                        (Union)
                         (Integer, SymBool) =
                         RWSTLazy.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -405,7 +405,7 @@ simpleMergeableTests =
                 let rws3u1 = mrgIf (ssymBool "c") rws1 rws2
 
                 let res1 ::
-                      UnionM
+                      Union
                         ( (Integer, SymBool),
                           (Integer, SymBool),
                           (Monoid.Sum Integer, AndMonoidSymBool)
@@ -440,7 +440,7 @@ simpleMergeableTests =
                         (Integer, SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
                         (Integer, SymBool)
-                        (UnionM)
+                        (Union)
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -455,7 +455,7 @@ simpleMergeableTests =
                         (Integer, SymBool)
                         (Monoid.Sum Integer, AndMonoidSymBool)
                         (Integer, SymBool)
-                        (UnionM)
+                        (Union)
                         (Integer, SymBool) =
                         RWSTStrict.RWST $ \(ir, br) (is, bs) ->
                           mrgSingle
@@ -469,7 +469,7 @@ simpleMergeableTests =
                 let rws3u1 = mrgIf (ssymBool "c") rws1 rws2
 
                 let res1 ::
-                      UnionM
+                      Union
                         ( (Integer, SymBool),
                           (Integer, SymBool),
                           (Monoid.Sum Integer, AndMonoidSymBool)
@@ -500,24 +500,24 @@ simpleMergeableTests =
                   @?= res1
             ],
           testGroup
-            "WriterT (Monoid.Sum Integer) (UnionM) SymBool"
+            "WriterT (Monoid.Sum Integer) (Union) SymBool"
             [ testCase "Lazy" $ do
                 let st1 ::
                       WriterLazy.WriterT
                         (Monoid.Sum Integer)
-                        (UnionM)
+                        (Union)
                         SymBool =
                         WriterLazy.WriterT $ mrgSingle (ssymBool "a", 1)
                 let st2 ::
                       WriterLazy.WriterT
                         (Monoid.Sum Integer)
-                        (UnionM)
+                        (Union)
                         SymBool =
                         WriterLazy.WriterT $ mrgSingle (ssymBool "b", 2)
                 let st3 ::
                       WriterLazy.WriterT
                         (Monoid.Sum Integer)
-                        (UnionM)
+                        (Union)
                         SymBool =
                         WriterLazy.WriterT $ mrgSingle (ssymBool "c", 1)
                 let st4 = mrgIte (ssymBool "d") st1 st2
@@ -554,19 +554,19 @@ simpleMergeableTests =
                 let st1 ::
                       WriterStrict.WriterT
                         (Monoid.Sum Integer)
-                        (UnionM)
+                        (Union)
                         SymBool =
                         WriterStrict.WriterT $ mrgSingle (ssymBool "a", 1)
                 let st2 ::
                       WriterStrict.WriterT
                         (Monoid.Sum Integer)
-                        (UnionM)
+                        (Union)
                         SymBool =
                         WriterStrict.WriterT $ mrgSingle (ssymBool "b", 2)
                 let st3 ::
                       WriterStrict.WriterT
                         (Monoid.Sum Integer)
-                        (UnionM)
+                        (Union)
                         SymBool =
                         WriterStrict.WriterT $ mrgSingle (ssymBool "c", 1)
                 let st4 = mrgIte (ssymBool "d") st1 st2
@@ -600,10 +600,10 @@ simpleMergeableTests =
                   @?= mrgSingle
                     (symIte (ssymBool "d") (ssymBool "a") (ssymBool "c"), 1)
             ],
-          testCase "ReaderT Integer (UnionM) Integer" $ do
-            let r1 :: ReaderT Integer (UnionM) Integer =
+          testCase "ReaderT Integer (Union) Integer" $ do
+            let r1 :: ReaderT Integer (Union) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x + 2
-            let r2 :: ReaderT Integer (UnionM) Integer =
+            let r2 :: ReaderT Integer (Union) Integer =
                   ReaderT $ \(x :: Integer) -> mrgSingle $ x * 2
             let r3 = mrgIte (ssymBool "c") r1 r2
             let r3u1 = mrgIf (ssymBool "c") r1 r2
@@ -616,9 +616,9 @@ simpleMergeableTests =
                 (mrgSingle 5)
                 (mrgSingle 6)
 
-            let r4 :: ReaderT SymBool (UnionM) SymBool =
+            let r4 :: ReaderT SymBool (Union) SymBool =
                   ReaderT $ \x -> mrgSingle $ x .&& ssymBool "x"
-            let r5 :: ReaderT SymBool (UnionM) SymBool =
+            let r5 :: ReaderT SymBool (Union) SymBool =
                   ReaderT $ \x -> mrgSingle $ x .|| ssymBool "y"
             let r61 = mrgIte1 (ssymBool "c") r4 r5
             runReaderT r61 (ssymBool "a")
@@ -636,10 +636,10 @@ simpleMergeableTests =
             runIdentity i3 @?= symIte (ssymBool "c") (ssymBool "a") (ssymBool "b")
             runIdentity i31
               @?= symIte (ssymBool "c") (ssymBool "a") (ssymBool "b"),
-          testCase "IdentityT (UnionM) SymBool" $ do
-            let i1 :: IdentityT (UnionM) SymBool =
+          testCase "IdentityT (Union) SymBool" $ do
+            let i1 :: IdentityT (Union) SymBool =
                   IdentityT $ mrgSingle $ ssymBool "a"
-            let i2 :: IdentityT (UnionM) SymBool =
+            let i2 :: IdentityT (Union) SymBool =
                   IdentityT $ mrgSingle $ ssymBool "b"
             let i3 = mrgIte (ssymBool "c") i1 i2
             let i31 = mrgIte1 (ssymBool "c") i1 i2

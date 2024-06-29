@@ -24,13 +24,13 @@ import Grisette
     SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
     SomeIntN,
     SomeWordN,
-    UnionM,
+    Union,
     WordN,
     mrgPure,
     pattern SomeIntN,
     pattern SomeWordN,
   )
-import Grisette.Internal.Core.Control.Monad.UnionM (isMerged)
+import Grisette.Internal.Core.Control.Monad.Union (isMerged)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -43,7 +43,7 @@ matches ::
   (t -> t') ->
   (r -> r') ->
   (ArithException -> e) ->
-  (t' -> t' -> ExceptT e UnionM r') ->
+  (t' -> t' -> ExceptT e Union r') ->
   (t -> t -> r) ->
   t ->
   t ->
@@ -73,7 +73,7 @@ generalOpTestBase ::
   (r -> r') ->
   (ArithException -> e) ->
   String ->
-  (t' -> t' -> ExceptT e UnionM r') ->
+  (t' -> t' -> ExceptT e Union r') ->
   (t -> t -> r) ->
   Test
 generalOpTestBase wrapInput wrapOutput wrapError name f fref =
@@ -88,7 +88,7 @@ generalOpTestBase wrapInput wrapOutput wrapError name f fref =
 generalOpTest ::
   (NFData r, Arbitrary t, Show t, Eq r, Show r, Eq r, Num t, Mergeable r) =>
   String ->
-  (t -> t -> ExceptT ArithException UnionM r) ->
+  (t -> t -> ExceptT ArithException Union r) ->
   (t -> t -> r) ->
   Test
 generalOpTest = generalOpTestBase id id id
@@ -110,7 +110,7 @@ opBoundedTestBase ::
   (r -> r') ->
   (ArithException -> e) ->
   String ->
-  (t' -> t' -> ExceptT e UnionM r') ->
+  (t' -> t' -> ExceptT e Union r') ->
   (t -> t -> r) ->
   Test
 opBoundedTestBase wrapInput wrapOutput wrapError name f fref =
@@ -135,7 +135,7 @@ opBoundedTest ::
     Mergeable r
   ) =>
   String ->
-  (t -> t -> ExceptT ArithException UnionM r) ->
+  (t -> t -> ExceptT ArithException Union r) ->
   (t -> t -> r) ->
   Test
 opBoundedTest = opBoundedTestBase id id id
@@ -144,7 +144,7 @@ type OpTestFunc t =
   forall r.
   (Eq r, Show r, Eq r, NFData r, Mergeable r) =>
   String ->
-  (t -> t -> ExceptT ArithException UnionM r) ->
+  (t -> t -> ExceptT ArithException Union r) ->
   (t -> t -> r) ->
   Test
 
@@ -152,7 +152,7 @@ testType ::
   forall t.
   ( NFData t,
     Show t,
-    SafeDivision ArithException t (ExceptT ArithException UnionM),
+    SafeDivision ArithException t (ExceptT ArithException Union),
     Mergeable t,
     Integral t,
     Typeable t
@@ -175,7 +175,7 @@ testType testFunc p =
 --   forall r r'.
 --   (Eq r, Show r, Eq r, NFData r, Mergeable r) =>
 --   String ->
---   (t' -> t' -> ExceptT ArithException UnionM r') ->
+--   (t' -> t' -> ExceptT ArithException Union r') ->
 --   (t -> t -> r) ->
 --   Test
 --
@@ -183,7 +183,7 @@ testType testFunc p =
 --   forall t t'.
 --   ( NFData t,
 --     Show t,
---     SafeDivision ArithException t' (ExceptT ArithException UnionM),
+--     SafeDivision ArithException t' (ExceptT ArithException Union),
 --     Mergeable t,
 --     Integral t,
 --     Typeable t'
@@ -243,7 +243,7 @@ safeDivisionTests =
                   safeDiv (bv 10 2) (bv 11 3) ::
                     ExceptT
                       (Either BitwidthMismatch ArithException)
-                      UnionM
+                      Union
                       SomeWordN
             let expected = mrgThrowError $ Left BitwidthMismatch
             actual @?= expected
@@ -270,7 +270,7 @@ safeDivisionTests =
                   safeDiv (bv 10 2) (bv 11 3) ::
                     ExceptT
                       (Either BitwidthMismatch ArithException)
-                      UnionM
+                      Union
                       SomeIntN
             let expected = mrgThrowError $ Left BitwidthMismatch
             actual @?= expected

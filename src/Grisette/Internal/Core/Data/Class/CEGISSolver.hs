@@ -921,7 +921,7 @@ cegisExceptStdVCMultiInputs config cexes f =
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> import Control.Monad.Except
 -- >>> :{
---   res :: SymInteger -> ExceptT VerificationConditions UnionM ()
+--   res :: SymInteger -> ExceptT VerificationConditions Union ()
 --   res x = do
 --     symAssume $ x .> 0
 --     symAssert $ x * c .< 0
@@ -997,7 +997,7 @@ cegisExceptVC config inputs f v =
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> import Control.Monad.Except
 -- >>> :{
---   res :: SymInteger -> ExceptT VerificationConditions UnionM ()
+--   res :: SymInteger -> ExceptT VerificationConditions Union ()
 --   res x = do
 --     symAssume $ x .> 0
 --     symAssert $ x * c .< 0

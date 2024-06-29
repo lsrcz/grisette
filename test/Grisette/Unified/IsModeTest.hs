@@ -33,7 +33,7 @@ import Grisette
     SymBool,
     SymIntN,
     SymInteger,
-    UnionM,
+    Union,
     mrgReturn,
   )
 import qualified Grisette
@@ -269,7 +269,7 @@ isModeTest =
                       (Grisette.symIte (l Grisette..< r) l r) ::
                     ExceptT
                       ArithException
-                      UnionM
+                      Union
                       (SymIntN 8)
             fbv l r @?= expected
             fbv' l r @?= expected
@@ -292,7 +292,7 @@ isModeTest =
                       (Grisette.symIte (l Grisette..< r) l r) ::
                     ExceptT
                       (Either BitwidthMismatch ArithException)
-                      UnionM
+                      Union
                       SomeSymIntN
             fsomebv l r @?= expected
             fsomebv' l r @?= expected
@@ -306,7 +306,7 @@ isModeTest =
             let a = "a" :: SymIntN 8
             fdata (mrgReturn $ A a)
               @?= ( Grisette.safeDiv a (a - 1) ::
-                      ExceptT ArithException UnionM (SymIntN 8)
+                      ExceptT ArithException Union (SymIntN 8)
                   )
         ]
     ]

@@ -22,7 +22,7 @@ import Grisette
     Solvable (con),
     SymIntN,
     SymWordN,
-    UnionM,
+    Union,
     WordN,
   )
 import Grisette.Internal.SymPrim.Prim.Term (LinkedRep)
@@ -36,7 +36,7 @@ import Test.QuickCheck (Arbitrary, ioProperty)
 import Test.QuickCheck.Gen (chooseInt)
 import Test.QuickCheck.Property (forAll)
 
-type EM = ExceptT ArithException UnionM
+type EM = ExceptT ArithException Union
 
 overflowError :: (Mergeable a) => EM a
 overflowError = mrgThrowError Overflow

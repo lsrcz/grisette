@@ -13,18 +13,19 @@
 {-# LANGUAGE TypeFamilies #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.Data.Union
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Module      :   Grisette.Internal.Core.Data.UnionBase
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.Data.Union
+module Grisette.Internal.Core.Data.UnionBase
   ( -- * The union data structure.
 
-    -- | Please consider using 'Grisette.Internal.Core.Control.Monad.UnionM' instead.
-    Union (..),
+    -- | Please consider using 'Grisette.Internal.Core.Control.Monad.Union'
+    -- instead.
+    UnionBase (..),
     ifWithLeftMost,
     ifWithStrategy,
     fullReconstruct,
@@ -46,7 +47,9 @@ import Grisette.Internal.Core.Data.Class.GPretty
     condEnclose,
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&), (.||)))
+import Grisette.Internal.Core.Data.Class.LogicalOp
+  ( LogicalOp (symNot, (.&&), (.||)),
+  )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
@@ -62,7 +65,9 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (pattern Con)
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy))
+import Grisette.Internal.Core.Data.Class.TryMerge
+  ( TryMerge (tryMergeWithStrategy),
+  )
 import Grisette.Internal.SymPrim.AllSyms
   ( AllSyms (allSymsS),
     SomeSym (SomeSym),
@@ -76,10 +81,10 @@ import Prettyprinter (align, group, nest, vsep)
 import Data.Text.Prettyprint.Doc (align, group, nest, vsep)
 #endif
 
--- | The default union implementation.
-data Union a where
+-- | The base union implementation, which is an if-then-else tree structure.
+data UnionBase a where
   -- | A single value
-  UnionSingle :: a -> Union a
+  UnionSingle :: a -> UnionBase a
   -- | A if value
   UnionIf ::
     -- | Cached leftmost value
@@ -89,36 +94,36 @@ data Union a where
     -- | If condition
     !SymBool ->
     -- | True branch
-    Union a ->
+    UnionBase a ->
     -- | False branch
-    Union a ->
-    Union a
+    UnionBase a ->
+    UnionBase a
   deriving (Generic, Eq, Lift, Generic1)
   deriving (Functor)
 
-instance Applicative Union where
+instance Applicative UnionBase where
   pure = UnionSingle
   {-# INLINE pure #-}
   (<*>) = ap
   {-# INLINE (<*>) #-}
 
-instance Monad Union where
+instance Monad UnionBase where
   return = pure
   {-# INLINE return #-}
   UnionSingle a >>= f = f a
   UnionIf _ _ c t f >>= f' = ifWithLeftMost False c (t >>= f') (f >>= f')
   {-# INLINE (>>=) #-}
 
-instance Eq1 Union where
+instance Eq1 UnionBase where
   liftEq e (UnionSingle a) (UnionSingle b) = e a b
   liftEq e (UnionIf l1 i1 c1 t1 f1) (UnionIf l2 i2 c2 t2 f2) =
     e l1 l2 && i1 == i2 && c1 == c2 && liftEq e t1 t2 && liftEq e f1 f2
   liftEq _ _ _ = False
 
-instance (NFData a) => NFData (Union a) where
+instance (NFData a) => NFData (UnionBase a) where
   rnf = rnf1
 
-instance NFData1 Union where
+instance NFData1 UnionBase where
   liftRnf _a (UnionSingle a) = _a a
   liftRnf _a (UnionIf a bo b l r) =
     _a a `seq`
@@ -131,14 +136,14 @@ instance NFData1 Union where
 --
 -- Usually you should never directly try to build a 'UnionIf' with its
 -- constructor.
-ifWithLeftMost :: Bool -> SymBool -> Union a -> Union a -> Union a
+ifWithLeftMost :: Bool -> SymBool -> UnionBase a -> UnionBase a -> UnionBase a
 ifWithLeftMost _ (Con c) t f
   | c = t
   | otherwise = f
 ifWithLeftMost inv cond t f = UnionIf (leftMost t) inv cond t f
 {-# INLINE ifWithLeftMost #-}
 
-instance PlainUnion Union where
+instance PlainUnion UnionBase where
   singleView (UnionSingle a) = Just a
   singleView _ = Nothing
   {-# INLINE singleView #-}
@@ -146,37 +151,37 @@ instance PlainUnion Union where
   ifView _ = Nothing
   {-# INLINE ifView #-}
 
-leftMost :: Union a -> a
+leftMost :: UnionBase a -> a
 leftMost (UnionSingle a) = a
 leftMost (UnionIf a _ _ _ _) = a
 {-# INLINE leftMost #-}
 
-instance (Mergeable a) => Mergeable (Union a) where
+instance (Mergeable a) => Mergeable (UnionBase a) where
   rootStrategy = SimpleStrategy $ ifWithStrategy rootStrategy
   {-# INLINE rootStrategy #-}
 
-instance Mergeable1 Union where
+instance Mergeable1 UnionBase where
   liftRootStrategy ms = SimpleStrategy $ ifWithStrategy ms
   {-# INLINE liftRootStrategy #-}
 
-instance (Mergeable a) => SimpleMergeable (Union a) where
+instance (Mergeable a) => SimpleMergeable (UnionBase a) where
   mrgIte = mrgIf
 
-instance SimpleMergeable1 Union where
+instance SimpleMergeable1 UnionBase where
   liftMrgIte m = mrgIfWithStrategy (SimpleStrategy m)
 
-instance TryMerge Union where
+instance TryMerge UnionBase where
   tryMergeWithStrategy = fullReconstruct
   {-# INLINE tryMergeWithStrategy #-}
 
-instance SymBranching Union where
+instance SymBranching UnionBase where
   mrgIfWithStrategy = ifWithStrategy
   {-# INLINE mrgIfWithStrategy #-}
 
   mrgIfPropagatedStrategy = ifWithLeftMost False
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance Show1 Union where
+instance Show1 UnionBase where
   liftShowsPrec sp _ i (UnionSingle a) = showsUnaryWith sp "Single" i a
   liftShowsPrec sp sl i (UnionIf _ _ cond t f) =
     showParen (i > 10) $
@@ -190,10 +195,10 @@ instance Show1 Union where
     where
       sp1 = liftShowsPrec sp sl
 
-instance (Show a) => Show (Union a) where
+instance (Show a) => Show (UnionBase a) where
   showsPrec = showsPrec1
 
-instance (GPretty a) => GPretty (Union a) where
+instance (GPretty a) => GPretty (UnionBase a) where
   gprettyPrec n (UnionSingle a) = gprettyPrec n a
   gprettyPrec n (UnionIf _ _ cond t f) =
     group $
@@ -207,7 +212,7 @@ instance (GPretty a) => GPretty (Union a) where
                 gprettyPrec 11 f
               ]
 
-instance (Hashable a) => Hashable (Union a) where
+instance (Hashable a) => Hashable (UnionBase a) where
   s `hashWithSalt` (UnionSingle a) =
     s `hashWithSalt` (0 :: Int) `hashWithSalt` a
   s `hashWithSalt` (UnionIf _ _ c l r) =
@@ -217,12 +222,12 @@ instance (Hashable a) => Hashable (Union a) where
       `hashWithSalt` l
       `hashWithSalt` r
 
-instance (AllSyms a) => AllSyms (Union a) where
+instance (AllSyms a) => AllSyms (UnionBase a) where
   allSymsS (UnionSingle v) = allSymsS v
   allSymsS (UnionIf _ _ c t f) = \l -> SomeSym c : (allSymsS t . allSymsS f $ l)
 
 -- | Fully reconstruct a 'Union' to maintain the merged invariant.
-fullReconstruct :: MergingStrategy a -> Union a -> Union a
+fullReconstruct :: MergingStrategy a -> UnionBase a -> UnionBase a
 fullReconstruct strategy (UnionIf _ False cond t f) =
   ifWithStrategyInv
     strategy
@@ -238,9 +243,9 @@ fullReconstruct _ u = u
 ifWithStrategy ::
   MergingStrategy a ->
   SymBool ->
-  Union a ->
-  Union a ->
-  Union a
+  UnionBase a ->
+  UnionBase a ->
+  UnionBase a
 ifWithStrategy strategy cond t@(UnionIf _ False _ _ _) f =
   ifWithStrategy strategy cond (fullReconstruct strategy t) f
 ifWithStrategy strategy cond t f@(UnionIf _ False _ _ _) =
@@ -251,9 +256,9 @@ ifWithStrategy strategy cond t f = ifWithStrategyInv strategy cond t f
 ifWithStrategyInv ::
   MergingStrategy a ->
   SymBool ->
-  Union a ->
-  Union a ->
-  Union a
+  UnionBase a ->
+  UnionBase a ->
+  UnionBase a
 ifWithStrategyInv _ (Con v) t f
   | v = t
   | otherwise = f
@@ -263,60 +268,92 @@ ifWithStrategyInv strategy cond (UnionIf _ True condTrue tt _) f
 ifWithStrategyInv strategy cond t (UnionIf _ True condFalse _ ff)
   | cond == condFalse = ifWithStrategyInv strategy cond t ff
 -- {| symNot cond == condTrue || cond == symNot condTrue = ifWithStrategyInv strategy cond t tf -- buggy here condTrue
-ifWithStrategyInv (SimpleStrategy m) cond (UnionSingle l) (UnionSingle r) = UnionSingle $ m cond l r
-ifWithStrategyInv strategy@(SortedStrategy idxFun substrategy) cond ifTrue ifFalse = case (ifTrue, ifFalse) of
-  (UnionSingle _, UnionSingle _) -> ssUnionIf cond ifTrue ifFalse
-  (UnionSingle _, UnionIf {}) -> sgUnionIf cond ifTrue ifFalse
-  (UnionIf {}, UnionSingle _) -> gsUnionIf cond ifTrue ifFalse
-  _ -> ggUnionIf cond ifTrue ifFalse
-  where
-    ssUnionIf cond' ifTrue' ifFalse'
-      | idxt < idxf = ifWithLeftMost True cond' ifTrue' ifFalse'
-      | idxt == idxf = ifWithStrategyInv (substrategy idxt) cond' ifTrue' ifFalse'
-      | otherwise = ifWithLeftMost True (symNot cond') ifFalse' ifTrue'
-      where
-        idxt = idxFun $ leftMost ifTrue'
-        idxf = idxFun $ leftMost ifFalse'
-    {-# INLINE ssUnionIf #-}
-    sgUnionIf cond' ifTrue' ifFalse'@(UnionIf _ True condf ft ff)
-      | idxft == idxff = ssUnionIf cond' ifTrue' ifFalse'
-      | idxt < idxft = ifWithLeftMost True cond' ifTrue' ifFalse'
-      | idxt == idxft = ifWithLeftMost True (cond' .|| condf) (ifWithStrategyInv (substrategy idxt) cond' ifTrue' ft) ff
-      | otherwise = ifWithLeftMost True (symNot cond' .&& condf) ft (ifWithStrategyInv strategy cond' ifTrue' ff)
-      where
-        idxft = idxFun $ leftMost ft
-        idxff = idxFun $ leftMost ff
-        idxt = idxFun $ leftMost ifTrue'
-    sgUnionIf _ _ _ = undefined
-    {-# INLINE sgUnionIf #-}
-    gsUnionIf cond' ifTrue'@(UnionIf _ True condt tt tf) ifFalse'
-      | idxtt == idxtf = ssUnionIf cond' ifTrue' ifFalse'
-      | idxtt < idxf = ifWithLeftMost True (cond' .&& condt) tt $ ifWithStrategyInv strategy cond' tf ifFalse'
-      | idxtt == idxf = ifWithLeftMost True (symNot cond' .|| condt) (ifWithStrategyInv (substrategy idxf) cond' tt ifFalse') tf
-      | otherwise = ifWithLeftMost True (symNot cond') ifFalse' ifTrue'
-      where
-        idxtt = idxFun $ leftMost tt
-        idxtf = idxFun $ leftMost tf
-        idxf = idxFun $ leftMost ifFalse'
-    gsUnionIf _ _ _ = undefined
-    {-# INLINE gsUnionIf #-}
-    ggUnionIf cond' ifTrue'@(UnionIf _ True condt tt tf) ifFalse'@(UnionIf _ True condf ft ff)
-      | idxtt == idxtf = sgUnionIf cond' ifTrue' ifFalse'
-      | idxft == idxff = gsUnionIf cond' ifTrue' ifFalse'
-      | idxtt < idxft = ifWithLeftMost True (cond' .&& condt) tt $ ifWithStrategyInv strategy cond' tf ifFalse'
-      | idxtt == idxft =
-          let newCond = symIte cond' condt condf
-              newUnionIfTrue = ifWithStrategyInv (substrategy idxtt) cond' tt ft
-              newUnionIfFalse = ifWithStrategyInv strategy cond' tf ff
-           in ifWithLeftMost True newCond newUnionIfTrue newUnionIfFalse
-      | otherwise = ifWithLeftMost True (symNot cond' .&& condf) ft $ ifWithStrategyInv strategy cond' ifTrue' ff
-      where
-        idxtt = idxFun $ leftMost tt
-        idxtf = idxFun $ leftMost tf
-        idxft = idxFun $ leftMost ft
-        idxff = idxFun $ leftMost ff
-    ggUnionIf _ _ _ = undefined
-    {-# INLINE ggUnionIf #-}
-ifWithStrategyInv NoStrategy cond ifTrue ifFalse = ifWithLeftMost True cond ifTrue ifFalse
+ifWithStrategyInv (SimpleStrategy m) cond (UnionSingle l) (UnionSingle r) =
+  UnionSingle $ m cond l r
+ifWithStrategyInv
+  strategy@(SortedStrategy idxFun substrategy)
+  cond
+  ifTrue
+  ifFalse = case (ifTrue, ifFalse) of
+    (UnionSingle _, UnionSingle _) -> ssUnionIf cond ifTrue ifFalse
+    (UnionSingle _, UnionIf {}) -> sgUnionIf cond ifTrue ifFalse
+    (UnionIf {}, UnionSingle _) -> gsUnionIf cond ifTrue ifFalse
+    _ -> ggUnionIf cond ifTrue ifFalse
+    where
+      ssUnionIf cond' ifTrue' ifFalse'
+        | idxt < idxf = ifWithLeftMost True cond' ifTrue' ifFalse'
+        | idxt == idxf =
+            ifWithStrategyInv (substrategy idxt) cond' ifTrue' ifFalse'
+        | otherwise = ifWithLeftMost True (symNot cond') ifFalse' ifTrue'
+        where
+          idxt = idxFun $ leftMost ifTrue'
+          idxf = idxFun $ leftMost ifFalse'
+      {-# INLINE ssUnionIf #-}
+      sgUnionIf cond' ifTrue' ifFalse'@(UnionIf _ True condf ft ff)
+        | idxft == idxff = ssUnionIf cond' ifTrue' ifFalse'
+        | idxt < idxft = ifWithLeftMost True cond' ifTrue' ifFalse'
+        | idxt == idxft =
+            ifWithLeftMost
+              True
+              (cond' .|| condf)
+              (ifWithStrategyInv (substrategy idxt) cond' ifTrue' ft)
+              ff
+        | otherwise =
+            ifWithLeftMost
+              True
+              (symNot cond' .&& condf)
+              ft
+              (ifWithStrategyInv strategy cond' ifTrue' ff)
+        where
+          idxft = idxFun $ leftMost ft
+          idxff = idxFun $ leftMost ff
+          idxt = idxFun $ leftMost ifTrue'
+      sgUnionIf _ _ _ = undefined
+      {-# INLINE sgUnionIf #-}
+      gsUnionIf cond' ifTrue'@(UnionIf _ True condt tt tf) ifFalse'
+        | idxtt == idxtf = ssUnionIf cond' ifTrue' ifFalse'
+        | idxtt < idxf =
+            ifWithLeftMost True (cond' .&& condt) tt $
+              ifWithStrategyInv strategy cond' tf ifFalse'
+        | idxtt == idxf =
+            ifWithLeftMost
+              True
+              (symNot cond' .|| condt)
+              (ifWithStrategyInv (substrategy idxf) cond' tt ifFalse')
+              tf
+        | otherwise = ifWithLeftMost True (symNot cond') ifFalse' ifTrue'
+        where
+          idxtt = idxFun $ leftMost tt
+          idxtf = idxFun $ leftMost tf
+          idxf = idxFun $ leftMost ifFalse'
+      gsUnionIf _ _ _ = undefined
+      {-# INLINE gsUnionIf #-}
+      ggUnionIf
+        cond'
+        ifTrue'@(UnionIf _ True condt tt tf)
+        ifFalse'@(UnionIf _ True condf ft ff)
+          | idxtt == idxtf = sgUnionIf cond' ifTrue' ifFalse'
+          | idxft == idxff = gsUnionIf cond' ifTrue' ifFalse'
+          | idxtt < idxft =
+              ifWithLeftMost True (cond' .&& condt) tt $
+                ifWithStrategyInv strategy cond' tf ifFalse'
+          | idxtt == idxft =
+              let newCond = symIte cond' condt condf
+                  newUnionIfTrue =
+                    ifWithStrategyInv (substrategy idxtt) cond' tt ft
+                  newUnionIfFalse = ifWithStrategyInv strategy cond' tf ff
+               in ifWithLeftMost True newCond newUnionIfTrue newUnionIfFalse
+          | otherwise =
+              ifWithLeftMost True (symNot cond' .&& condf) ft $
+                ifWithStrategyInv strategy cond' ifTrue' ff
+          where
+            idxtt = idxFun $ leftMost tt
+            idxtf = idxFun $ leftMost tf
+            idxft = idxFun $ leftMost ft
+            idxff = idxFun $ leftMost ff
+      ggUnionIf _ _ _ = undefined
+      {-# INLINE ggUnionIf #-}
+ifWithStrategyInv NoStrategy cond ifTrue ifFalse =
+  ifWithLeftMost True cond ifTrue ifFalse
 ifWithStrategyInv _ _ _ _ = error "Invariant violated"
 {-# INLINE ifWithStrategyInv #-}

@@ -209,6 +209,7 @@ newtype UniqueCount = UniqueCount Int
 instance Show UniqueCount where
   show (UniqueCount i) = "unique<" <> show i <> ">"
 
+-- | Get a globally unique identifier within the 'IO' monad.
 uniqueIdentifier :: T.Text -> IO Identifier
 uniqueIdentifier ident = do
   i <- atomicModifyIORef' identifierCount (\x -> (x + 1, x))

@@ -8,7 +8,6 @@ import Grisette.Backend.TermRewritingTests
   ( termRewritingTests,
   )
 import Grisette.Core.Control.ExceptionTests (exceptionTests)
-import Grisette.Core.Control.Monad.UnionMTests (unionMTests)
 import Grisette.Core.Control.Monad.UnionTests (unionTests)
 import qualified Grisette.Core.Data.Class.BoolTests
 import Grisette.Core.Data.Class.EvaluateSymTests (evaluateSymTests)
@@ -30,6 +29,7 @@ import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
 import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
+import Grisette.Core.Data.UnionBaseTests (unionBaseTests)
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
@@ -89,8 +89,7 @@ coreTests =
         "Control"
         [ testGroup
             "Monad"
-            [ unionMTests,
-              unionTests
+            [ unionTests
             ],
           exceptionTests
         ],
@@ -118,7 +117,8 @@ coreTests =
               toConTests,
               toSymTests,
               tryMergeTests
-            ]
+            ],
+          unionBaseTests
         ]
     ]
 

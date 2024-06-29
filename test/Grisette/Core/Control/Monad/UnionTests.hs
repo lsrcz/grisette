@@ -1,839 +1,346 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use <$>" #-}
 
 module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 
-import GHC.Generics (Generic)
+import Control.Monad.Except (ExceptT)
+import qualified Data.Text as T
 import Grisette
-  ( ITEOp (symIte),
-    LogicalOp (symNot, (.&&), (.||)),
+  ( EvaluateSym (evaluateSym),
+    ExtractSymbolics (extractSymbolics),
+    Function ((#)),
+    GPretty (gpretty),
+    ITEOp (symIte),
+    LogicalOp ((.&&)),
     Mergeable (rootStrategy),
-    MergingStrategy (SortedStrategy),
-    Solvable (con),
+    ModelOps (emptyModel),
+    ModelRep (buildModel),
+    ModelValuePair ((::=)),
+    PlainUnion (ifView, singleView),
+    SEq ((.==)),
+    SOrd ((.<=)),
+    SimpleMergeable (mrgIte),
+    Solvable (con, conView, isym, ssym),
+    SubstituteSym (substituteSym),
+    SymBool,
+    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     SymInteger,
-    wrapStrategy,
+    SymbolSetRep (buildSymbolSet),
+    ToCon (toCon),
+    ToSym (toSym),
+    TryMerge (tryMergeWithStrategy),
+    TypedSymbol,
+    mrgIf,
+    mrgIte1,
+    mrgSingle,
+    tryMerge,
   )
-import Grisette.Internal.Core.Data.Union
-  ( Union (UnionIf, UnionSingle),
-    fullReconstruct,
+import Grisette.Internal.Core.Control.Monad.Union
+  ( Union (UAny, UMrg),
+    isMerged,
+    liftToMonadUnion,
+    liftUnion,
+    unionBase,
+    unionBinOp,
+    unionSize,
+    unionUnaryOp,
+  )
+import Grisette.Internal.Core.Data.UnionBase
+  ( UnionBase (UnionSingle),
     ifWithLeftMost,
-    ifWithStrategy,
   )
+import Grisette.TestUtil.PrettyPrint (compactRenderedAs, renderedAs)
+import Grisette.TestUtil.SymbolicAssertion ((.@?=))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
-data TripleSum a b c = TS1 a | TS2 b | TS3 c deriving (Show, Eq, Generic)
+union1 :: Union (Either SymBool SymInteger)
+union1 = mrgIfPropagatedStrategy "u1c" (return $ Left "u1a") (return $ Right "u1b")
 
-instance
-  (Mergeable a, Mergeable b, Mergeable c) =>
-  Mergeable (TripleSum a b c)
-  where
-  rootStrategy =
-    SortedStrategy
-      (\case TS1 _ -> (0 :: Int); TS2 _ -> (1 :: Int); TS3 _ -> (2 :: Int))
-      ( \case
-          0 -> wrapStrategy rootStrategy TS1 (\(TS1 x) -> x)
-          1 -> wrapStrategy rootStrategy TS2 (\(TS2 x) -> x)
-          2 -> wrapStrategy rootStrategy TS3 (\(TS3 x) -> x)
-          _ -> error "Bad"
-      )
+union2 :: Union (Either SymBool SymInteger)
+union2 = mrgIfPropagatedStrategy "u2c" (return $ Left "u2a") (return $ Right "u2b")
+
+union12 :: Union (Either SymBool SymInteger)
+union12 = mrgIfPropagatedStrategy "u12c" union1 union2
+
+unionBase12Merged :: UnionBase (Either SymBool SymInteger)
+unionBase12Merged =
+  ifWithLeftMost
+    True
+    (symIte "u12c" "u1c" "u2c")
+    (UnionSingle (Left (symIte "u12c" "u1a" "u2a")))
+    (UnionSingle (Right (symIte "u12c" "u1b" "u2b")))
+
+union12Merged :: Union (Either SymBool SymInteger)
+union12Merged = UMrg rootStrategy unionBase12Merged
+
+unionSimple1 :: Union SymInteger
+unionSimple1 = mrgIfPropagatedStrategy "u1c" (return "u1a") (return "u1b")
+
+unionSimple1Plus1 :: Union SymInteger
+unionSimple1Plus1 =
+  mrgIfPropagatedStrategy
+    "u1c"
+    (return $ "u1a" + 1)
+    (return $ "u1b" + 1)
+
+unionSimple2 :: Union SymInteger
+unionSimple2 = mrgIfPropagatedStrategy "u2c" (return "u2a") (return "u2b")
+
+unionSimple12Merged :: Union SymInteger
+unionSimple12Merged =
+  UMrg
+    rootStrategy
+    ( UnionSingle
+        (symIte "u12c" (symIte "u1c" "u1a" "u1b") (symIte "u2c" "u2a" "u2b"))
+    )
 
 unionTests :: Test
 unionTests =
   testGroup
     "Union"
-    [ testGroup
-        "ifWithLeftMost"
-        [ testCase
-            "ifWithLeftMost should maintain left most info on Singles"
-            $ do
-              ifWithLeftMost
-                False
-                "a"
-                (UnionSingle (1 :: Integer))
-                (UnionSingle 2)
-                @?= UnionIf 1 False "a" (UnionSingle 1) (UnionSingle 2),
-          testCase "ifWithLeftMost should maintain left most info on Ifs" $ do
-            ifWithLeftMost
-              True
-              "a"
-              (UnionIf 1 True "b" (UnionSingle (1 :: Integer)) (UnionSingle 2))
-              (UnionIf 3 True "c" (UnionSingle 3) (UnionSingle 4))
-              @?= UnionIf
-                1
-                True
-                "a"
-                ( UnionIf
-                    1
-                    True
-                    "b"
-                    (UnionSingle (1 :: Integer))
-                    (UnionSingle 2)
-                )
-                (UnionIf 3 True "c" (UnionSingle 3) (UnionSingle 4))
-        ],
+    [ testCase "unionBase" $
+        unionBase union12Merged @?= unionBase12Merged,
+      testCase "isMerged" $ do
+        isMerged union12 @?= False
+        isMerged union12Merged @?= True,
+      testCase "liftUnion & liftToMonadUnion" $ do
+        let expected =
+              mrgSingle (symIte "u1c" "u1a" "u1b") :: ExceptT () Union SymInteger
+        liftUnion unionSimple1 @?= expected
+        liftToMonadUnion unionSimple1 @?= expected,
+      testCase "unionSize" $
+        unionSize union12Merged @?= 2,
+      testCase "unaryOp" $
+        unionUnaryOp (+ 1) unionSimple1 .@?= unionSimple1Plus1,
+      testCase "binOp" $ do
+        let actual = unionBinOp (+) unionSimple1 unionSimple2
+        let expected =
+              mrgSingle (symIte "u1c" "u1a" "u1b" + symIte "u2c" "u2a" "u2b")
+        actual .@?= expected,
+      testCase "Mergeable & TryMerge" $
+        tryMergeWithStrategy rootStrategy union12 @?= union12Merged,
+      testCase "SimpleMerge" $
+        mrgIte "u12c" union1 union2 @?= union12Merged,
+      testCase "SymBranching" $ do
+        let actual = mrgIfWithStrategy rootStrategy "u12c" union1 union2
+        actual @?= union12Merged,
+      testCase "SimpleMergeable1" $
+        mrgIte1 "u12c" unionSimple1 unionSimple2 @?= unionSimple12Merged,
       testGroup
-        "ifWithStrategy"
+        "PlainUnion"
         [ testGroup
-            "ifWithStrategy with concrete condition"
-            [ testCase "true" $ do
-                ifWithStrategy
-                  rootStrategy
-                  (con True)
-                  (UnionSingle (1 :: Integer))
-                  (UnionSingle 2)
-                  @?= UnionSingle 1,
-              testCase "false" $ do
-                ifWithStrategy
-                  rootStrategy
-                  (con False)
-                  (UnionSingle (1 :: Integer))
-                  (UnionSingle 2)
-                  @?= UnionSingle 2
+            "SingleView"
+            [ testCase "is single" $ do
+                let actual = singleView (tryMerge unionSimple1)
+                let expected = Just (symIte "u1c" "u1a" "u1b")
+                actual @?= expected,
+              testCase "is not single" $
+                singleView unionSimple1 @?= Nothing
             ],
-          let a =
-                ifWithStrategy
-                  rootStrategy
-                  "a"
-                  (UnionSingle (1 :: Integer))
-                  (UnionSingle 2)
-           in testGroup
-                "ifWithStrategy with condition equal to sub conditions"
-                [ testCase "ifTrue" $ do
-                    ifWithStrategy rootStrategy "a" a (UnionSingle 3)
-                      @?= UnionIf 1 True "a" (UnionSingle 1) (UnionSingle 3),
-                  testCase "ifFalse" $ do
-                    ifWithStrategy rootStrategy "a" (UnionSingle 0) a
-                      @?= UnionIf 0 True "a" (UnionSingle 0) (UnionSingle 2)
-                ],
-          testCase "ifWithStrategy with simple mergeables" $ do
-            ifWithStrategy
-              rootStrategy
-              "a"
-              (UnionSingle ("b" :: SymInteger))
-              (UnionSingle "c")
-              @?= UnionSingle (symIte "a" "b" "c"),
           testGroup
-            "ifWithStrategy with ordered mergeables"
-            [ testGroup
-                "ifWithStrategy on Single/Single"
-                [ testGroup
-                    "idxt < idxf"
-                    [ testCase "Integer" $
-                        ifWithStrategy
-                          rootStrategy
-                          "a"
-                          (UnionSingle (1 :: Integer))
-                          (UnionSingle 2)
-                          @?= UnionIf
-                            1
-                            True
-                            "a"
-                            (UnionSingle 1)
-                            (UnionSingle 2),
-                      testCase "Maybe Integer" $
-                        ifWithStrategy
-                          rootStrategy
-                          "a"
-                          (UnionSingle Nothing)
-                          (UnionSingle (Just (2 :: Integer)))
-                          @?= UnionIf
-                            Nothing
-                            True
-                            "a"
-                            (UnionSingle Nothing)
-                            (UnionSingle (Just 2))
-                    ],
-                  testGroup
-                    "idxt == idxf"
-                    [ testGroup
-                        "idxt == idxf as terminal"
-                        [ testCase "Integer" $
-                            ifWithStrategy
-                              rootStrategy
-                              "a"
-                              (UnionSingle (1 :: Integer))
-                              (UnionSingle 1)
-                              @?= UnionSingle 1,
-                          testCase "Maybe Integer" $
-                            ifWithStrategy
-                              rootStrategy
-                              "a"
-                              (UnionSingle (Just ("b" :: SymInteger)))
-                              (UnionSingle (Just "c"))
-                              @?= UnionSingle (Just (symIte "a" "b" "c"))
-                        ],
-                      testGroup
-                        "idxt == idxf but not terminal"
-                        [ testCase "Maybe Integer" $
-                            ifWithStrategy
-                              rootStrategy
-                              "a"
-                              (UnionSingle (Just (1 :: Integer)))
-                              (UnionSingle (Just (2 :: Integer)))
-                              @?= UnionIf
-                                (Just 1)
-                                True
-                                "a"
-                                (UnionSingle $ Just 1)
-                                (UnionSingle (Just 2)),
-                          testCase "Maybe (Maybe Integer)" $
-                            ifWithStrategy
-                              rootStrategy
-                              "a"
-                              (UnionSingle $ Just $ Just ("b" :: SymInteger))
-                              (UnionSingle $ Just $ Just "c")
-                              @?= UnionSingle (Just (Just (symIte "a" "b" "c")))
-                        ]
-                    ],
-                  testGroup
-                    "idxt > idxf"
-                    [ testCase "Integer" $
-                        ifWithStrategy
-                          rootStrategy
-                          "a"
-                          (UnionSingle (2 :: Integer))
-                          (UnionSingle 1)
-                          @?= UnionIf
-                            1
-                            True
-                            (symNot "a")
-                            (UnionSingle 1)
-                            (UnionSingle 2),
-                      testCase "Maybe Integer" $
-                        ifWithStrategy
-                          rootStrategy
-                          "a"
-                          (UnionSingle (Just (2 :: Integer)))
-                          (UnionSingle Nothing)
-                          @?= UnionIf
-                            Nothing
-                            True
-                            (symNot "a")
-                            (UnionSingle Nothing)
-                            (UnionSingle (Just 2))
-                    ]
-                ],
-              testGroup
-                "ifWithStrategy on Single/If"
-                [ testGroup
-                    "Degenerate to Single/Single when idxft == idxff"
-                    [ testCase "Degenerated case with idxt < idxf" $ do
-                        let x =
-                              ifWithStrategy
-                                rootStrategy
-                                "a"
-                                (UnionSingle (Just (1 :: Integer)))
-                                (UnionSingle (Just (2 :: Integer)))
-                        ifWithStrategy rootStrategy "b" (UnionSingle Nothing) x
-                          @?= UnionIf
-                            Nothing
-                            True
-                            "b"
-                            (UnionSingle Nothing)
-                            ( UnionIf
-                                (Just 1)
-                                True
-                                "a"
-                                (UnionSingle $ Just 1)
-                                (UnionSingle (Just 2))
-                            ),
-                      let x =
-                            ifWithStrategy
-                              rootStrategy
-                              "a"
-                              (UnionSingle (Just (1 :: Integer)))
-                              (UnionSingle (Just (3 :: Integer)))
-                       in testGroup
-                            "Degenerated case with idxt == idxf"
-                            [ testCase "sub-idxt < sub-idxft" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  (UnionSingle $ Just 0)
-                                  x
-                                  @?= UnionIf
-                                    (Just 0)
-                                    True
-                                    "b"
-                                    (UnionSingle $ Just 0)
-                                    ( UnionIf
-                                        (Just 1)
-                                        True
-                                        "a"
-                                        (UnionSingle $ Just 1)
-                                        (UnionSingle (Just 3))
-                                    ),
-                              testCase "sub-idxt == sub-idxft" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  (UnionSingle $ Just 1)
-                                  x
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ("b" .|| "a")
-                                    (UnionSingle $ Just 1)
-                                    (UnionSingle (Just 3)),
-                              testCase "subidxft < sub-idxt < sub-idxff" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  (UnionSingle $ Just 2)
-                                  x
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ((symNot "b") .&& "a")
-                                    (UnionSingle $ Just 1)
-                                    ( UnionIf
-                                        (Just 2)
-                                        True
-                                        "b"
-                                        (UnionSingle $ Just 2)
-                                        (UnionSingle $ Just 3)
-                                    ),
-                              testCase "sub-idxt == sub-idxff" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  (UnionSingle $ Just 3)
-                                  x
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ((symNot "b") .&& "a")
-                                    (UnionSingle $ Just 1)
-                                    (UnionSingle (Just 3)),
-                              testCase "sub-idxff < sub-idxt" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  (UnionSingle $ Just 4)
-                                  x
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ((symNot "b") .&& "a")
-                                    (UnionSingle $ Just 1)
-                                    ( UnionIf
-                                        (Just 3)
-                                        True
-                                        (symNot "b")
-                                        (UnionSingle $ Just 3)
-                                        (UnionSingle $ Just 4)
-                                    )
-                            ],
-                      testCase "Degenerated case with idxt > idxf" $ do
-                        let x =
-                              ifWithStrategy
-                                rootStrategy
-                                "a"
-                                (UnionSingle (Left (1 :: Integer)))
-                                (UnionSingle (Left (2 :: Integer)))
-                        ifWithStrategy
-                          rootStrategy
-                          "b"
-                          (UnionSingle $ Right (1 :: Integer))
-                          x
-                          @?= UnionIf
-                            (Left 1)
-                            True
-                            (symNot "b")
-                            ( UnionIf
-                                (Left 1)
-                                True
-                                "a"
-                                (UnionSingle $ Left 1)
-                                (UnionSingle (Left 2))
-                            )
-                            (UnionSingle $ Right 1)
-                    ],
-                  testCase "idxt < idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle (1 :: Integer))
-                            (UnionSingle (3 :: Integer))
-                    ifWithStrategy rootStrategy "b" (UnionSingle 0) x
-                      @?= UnionIf
-                        0
-                        True
-                        "b"
-                        (UnionSingle 0)
-                        ( UnionIf
-                            1
-                            True
-                            "a"
-                            (UnionSingle 1)
-                            (UnionSingle 3)
-                        ),
-                  testCase "idxt == idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Right (3 :: Integer))
-                    ifWithStrategy rootStrategy "b" (UnionSingle $ Left 0) x
-                      @?= UnionIf
-                        (Left 0)
-                        True
-                        ("b" .|| "a")
-                        ( UnionIf
-                            (Left 0)
-                            True
-                            "b"
-                            (UnionSingle $ Left 0)
-                            (UnionSingle $ Left 1)
-                        )
-                        (UnionSingle $ Right 3),
-                  testCase "idxt > idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Right (3 :: Integer))
-                    ifWithStrategy rootStrategy "b" (UnionSingle $ Right 0) x
-                      @?= UnionIf
-                        (Left 1)
-                        True
-                        ((symNot "b") .&& "a")
-                        (UnionSingle $ Left 1)
-                        ( UnionIf
-                            (Right 0)
-                            True
-                            "b"
-                            (UnionSingle $ Right 0)
-                            (UnionSingle $ Right 3)
-                        )
-                ],
-              testGroup
-                "ifWithStrategy on If/Single"
-                [ testGroup
-                    "Degenerate to Single/Single when idxtt == idxtf"
-                    [ testCase "Degenerated case with idxt < idxf" $ do
-                        let x =
-                              ifWithStrategy
-                                rootStrategy
-                                "a"
-                                (UnionSingle (Left (1 :: Integer)))
-                                (UnionSingle (Left (2 :: Integer)))
-                        ifWithStrategy
-                          rootStrategy
-                          "b"
-                          x
-                          (UnionSingle $ Right (2 :: Integer))
-                          @?= UnionIf
-                            (Left 1)
-                            True
-                            "b"
-                            ( UnionIf
-                                (Left 1)
-                                True
-                                "a"
-                                (UnionSingle $ Left 1)
-                                (UnionSingle (Left 2))
-                            )
-                            (UnionSingle $ Right 2),
-                      let x =
-                            ifWithStrategy
-                              rootStrategy
-                              "a"
-                              (UnionSingle (Just (1 :: Integer)))
-                              (UnionSingle (Just (3 :: Integer)))
-                       in testGroup
-                            "Degenerated case with idxt == idxf"
-                            [ testCase "sub-idxf < sub-idxtt" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  x
-                                  (UnionSingle $ Just 0)
-                                  @?= UnionIf
-                                    (Just 0)
-                                    True
-                                    (symNot "b")
-                                    (UnionSingle $ Just 0)
-                                    ( UnionIf
-                                        (Just 1)
-                                        True
-                                        "a"
-                                        (UnionSingle $ Just 1)
-                                        (UnionSingle (Just 3))
-                                    ),
-                              testCase "sub-idxf == sub-idxtt" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  x
-                                  (UnionSingle $ Just 1)
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ((symNot "b") .|| "a")
-                                    (UnionSingle $ Just 1)
-                                    (UnionSingle (Just 3)),
-                              testCase "sub-idxtt < sub-idxf < sub-idxtf" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  x
-                                  (UnionSingle $ Just 2)
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ("b" .&& "a")
-                                    (UnionSingle $ Just 1)
-                                    ( UnionIf
-                                        (Just 2)
-                                        True
-                                        (symNot "b")
-                                        (UnionSingle $ Just 2)
-                                        (UnionSingle $ Just 3)
-                                    ),
-                              testCase "sub-idxf == sub-idxtf" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  x
-                                  (UnionSingle $ Just 3)
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ("b" .&& "a")
-                                    (UnionSingle $ Just 1)
-                                    (UnionSingle (Just 3)),
-                              testCase "sub-idxtf < sub-idxf" $
-                                ifWithStrategy
-                                  rootStrategy
-                                  "b"
-                                  x
-                                  (UnionSingle $ Just 4)
-                                  @?= UnionIf
-                                    (Just 1)
-                                    True
-                                    ("b" .&& "a")
-                                    (UnionSingle $ Just 1)
-                                    ( UnionIf
-                                        (Just 3)
-                                        True
-                                        "b"
-                                        (UnionSingle $ Just 3)
-                                        (UnionSingle $ Just 4)
-                                    )
-                            ],
-                      testCase "Degenerated case with idxt > idxf" $ do
-                        let x =
-                              ifWithStrategy
-                                rootStrategy
-                                "a"
-                                (UnionSingle (Right (1 :: Integer)))
-                                (UnionSingle (Right (2 :: Integer)))
-                        ifWithStrategy
-                          rootStrategy
-                          "b"
-                          x
-                          (UnionSingle $ Left (1 :: Integer))
-                          @?= UnionIf
-                            (Left 1)
-                            True
-                            (symNot "b")
-                            (UnionSingle $ Left 1)
-                            ( UnionIf
-                                (Right 1)
-                                True
-                                "a"
-                                (UnionSingle $ Right 1)
-                                (UnionSingle (Right 2))
-                            )
-                    ],
-                  testCase "idxtt < idxf" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Right (3 :: Integer))
-                    ifWithStrategy rootStrategy "b" x (UnionSingle $ Right 0)
-                      @?= UnionIf
-                        (Left 1)
-                        True
-                        ("b" .&& "a")
-                        (UnionSingle $ Left 1)
-                        ( UnionIf
-                            (Right 0)
-                            True
-                            (symNot "b")
-                            (UnionSingle $ Right 0)
-                            (UnionSingle $ Right 3)
-                        ),
-                  testCase "idxtt == idxf" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Right (3 :: Integer))
-                    ifWithStrategy rootStrategy "b" x (UnionSingle $ Left 0)
-                      @?= UnionIf
-                        (Left 0)
-                        True
-                        ((symNot "b") .|| "a")
-                        ( UnionIf
-                            (Left 0)
-                            True
-                            (symNot "b")
-                            (UnionSingle $ Left 0)
-                            (UnionSingle $ Left 1)
-                        )
-                        (UnionSingle $ Right 3),
-                  testCase "idxtt > idxf" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle (1 :: Integer))
-                            (UnionSingle (3 :: Integer))
-                    ifWithStrategy rootStrategy "b" x (UnionSingle 0)
-                      @?= UnionIf
-                        0
-                        True
-                        (symNot "b")
-                        (UnionSingle 0)
-                        (UnionIf 1 True "a" (UnionSingle 1) (UnionSingle 3))
-                ],
-              testGroup
-                "ifWithStrategy on If/If"
-                [ testCase "Degenerate to Single/If when idxtt == idxtf" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Left (2 :: Integer))
-                    let y =
-                          ifWithStrategy
-                            rootStrategy
-                            "b"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Right (2 :: Integer))
-                    ifWithStrategy rootStrategy "c" x y
-                      @?= UnionIf
-                        (Left 1)
-                        True
-                        ("c" .|| "b")
-                        ( UnionIf
-                            (Left 1)
-                            True
-                            ((symNot "c") .|| "a")
-                            (UnionSingle $ Left 1)
-                            (UnionSingle $ Left 2)
-                        )
-                        (UnionSingle $ Right 2),
-                  testCase "Degenerate to Single/If when idxff == idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Left (2 :: Integer))
-                    let y =
-                          ifWithStrategy
-                            rootStrategy
-                            "b"
-                            (UnionSingle $ Left (1 :: Integer))
-                            (UnionSingle $ Right (2 :: Integer))
-                    ifWithStrategy rootStrategy "c" y x
-                      @?= UnionIf
-                        (Left 1)
-                        True
-                        ((symNot "c") .|| "b")
-                        ( UnionIf
-                            (Left 1)
-                            True
-                            ("c" .|| "a")
-                            (UnionSingle $ Left 1)
-                            (UnionSingle $ Left 2)
-                        )
-                        (UnionSingle $ Right 2),
-                  testCase "Non-degenerated case when idxtt < idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ TS1 (1 :: Integer))
-                            (UnionSingle $ TS2 (2 :: Integer))
-                    let y =
-                          ifWithStrategy
-                            rootStrategy
-                            "b"
-                            (UnionSingle $ TS2 (1 :: Integer))
-                            (UnionSingle $ TS3 (2 :: Integer))
-                    ifWithStrategy rootStrategy "c" x y
-                      @?= UnionIf
-                        (TS1 1)
-                        True
-                        ("c" .&& "a")
-                        (UnionSingle $ TS1 1)
-                        ( UnionIf
-                            (TS2 1)
-                            True
-                            ("c" .|| "b")
-                            ( UnionIf
-                                (TS2 1)
-                                True
-                                (symNot "c")
-                                (UnionSingle $ TS2 1)
-                                (UnionSingle $ TS2 2)
-                            )
-                            (UnionSingle $ TS3 2)
-                        ),
-                  testCase "Non-degenerated case when idxtt == idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ TS1 (1 :: Integer))
-                            (UnionSingle $ TS2 (2 :: Integer))
-                    let y =
-                          ifWithStrategy
-                            rootStrategy
-                            "b"
-                            (UnionSingle $ TS1 (2 :: Integer))
-                            (UnionSingle $ TS3 (2 :: Integer))
-                    ifWithStrategy rootStrategy "c" x y
-                      @?= UnionIf
-                        (TS1 1)
-                        True
-                        (symIte "c" "a" "b")
-                        ( UnionIf
-                            (TS1 1)
-                            True
-                            "c"
-                            (UnionSingle $ TS1 1)
-                            (UnionSingle $ TS1 2)
-                        )
-                        ( UnionIf
-                            (TS2 2)
-                            True
-                            "c"
-                            (UnionSingle $ TS2 2)
-                            (UnionSingle $ TS3 2)
-                        ),
-                  testCase "Non-degenerated case when idxtt > idxft" $ do
-                    let x =
-                          ifWithStrategy
-                            rootStrategy
-                            "a"
-                            (UnionSingle $ TS2 (1 :: Integer))
-                            (UnionSingle $ TS3 (2 :: Integer))
-                    let y =
-                          ifWithStrategy
-                            rootStrategy
-                            "b"
-                            (UnionSingle $ TS1 (1 :: Integer))
-                            (UnionSingle $ TS2 (2 :: Integer))
-                    ifWithStrategy rootStrategy "c" x y
-                      @?= UnionIf
-                        (TS1 1)
-                        True
-                        ((symNot "c") .&& "b")
-                        (UnionSingle $ TS1 1)
-                        ( UnionIf
-                            (TS2 1)
-                            True
-                            ((symNot "c") .|| "a")
-                            ( UnionIf
-                                (TS2 1)
-                                True
-                                "c"
-                                (UnionSingle $ TS2 1)
-                                (UnionSingle $ TS2 2)
-                            )
-                            (UnionSingle $ TS3 2)
-                        )
-                ],
-              testCase "ifWithStrategy should tolerate non-merged Ifs" $ do
-                let x =
-                      UnionIf
-                        (Right 2)
-                        False
-                        "a"
-                        (UnionSingle $ Right (2 :: Integer))
-                        (UnionSingle $ Left (2 :: Integer))
-                let y =
-                      UnionIf
-                        (Right 3)
-                        False
-                        "b"
-                        (UnionSingle $ Right 3)
-                        (UnionSingle $ Left 1)
-                ifWithStrategy rootStrategy "c" x y
-                  @?= UnionIf
-                    (Left 1)
-                    True
-                    (symIte "c" (symNot "a") (symNot "b"))
-                    ( UnionIf
-                        (Left 1)
-                        True
-                        (symNot "c")
-                        (UnionSingle $ Left 1)
-                        (UnionSingle $ Left 2)
-                    )
-                    ( UnionIf
-                        (Right 2)
-                        True
-                        "c"
-                        (UnionSingle $ Right 2)
-                        (UnionSingle $ Right 3)
-                    )
+            "IfView"
+            [ testCase "is single" $ do
+                let actual = ifView (tryMerge unionSimple1)
+                let expected = Nothing
+                actual @?= expected,
+              testCase "is not single (unmerged)" $ do
+                let actual = ifView unionSimple1
+                let expected = Just ("u1c", return "u1a", return "u1b")
+                actual @?= expected,
+              testCase "is not single (merged)" $ do
+                let actual = ifView (tryMerge union1)
+                let expected =
+                      Just ("u1c", mrgSingle $ Left "u1a", mrgSingle $ Right "u1b")
+                actual @?= expected
             ]
         ],
       testGroup
-        "fullReconstruct"
-        [ testCase "fullReconstruct should work" $ do
-            let x =
-                  UnionIf
-                    (Right 2)
-                    False
-                    "a"
-                    (UnionSingle $ Right (2 :: Integer))
-                    (UnionSingle $ Left (2 :: Integer))
-            let y =
-                  UnionIf
-                    (Right 3)
-                    False
-                    "b"
-                    (UnionSingle $ Right 3)
-                    (UnionSingle $ Left 1)
-            let z = UnionIf (Right 2) False "c" x y
-            fullReconstruct rootStrategy z
-              @?= UnionIf
-                (Left 1)
-                True
-                (symIte "c" (symNot "a") (symNot "b"))
-                ( UnionIf
-                    (Left 1)
-                    True
-                    (symNot "c")
-                    (UnionSingle $ Left 1)
-                    (UnionSingle $ Left 2)
+        "Show"
+        [ testCase "Merged" $ do
+            let expected =
+                  "{If (ite u12c u1c u2c) (Left (ite u12c u1a u2a)) "
+                    ++ "(Right (ite u12c u1b u2b))}"
+            show union12Merged @?= expected,
+          testCase "Not merged" $ do
+            let expected = "<If u1c u1a u1b>"
+            show unionSimple1 @?= expected
+        ],
+      testGroup
+        "GPretty"
+        [ testCase "Merged" $ do
+            gpretty union12Merged
+              `renderedAs` ( "{If (ite u12c u1c u2c) (Left (ite u12c u1a u2a)) "
+                               <> "(Right (ite u12c u1b u2b))}"
+                           )
+            gpretty union12Merged
+              `compactRenderedAs` ( T.intercalate
+                                      "\n"
+                                      [ "{ If",
+                                        "    ...",
+                                        "    ( Left",
+                                        "        ...",
+                                        "    )",
+                                        "    ( Right",
+                                        "        ...",
+                                        "    )",
+                                        "}"
+                                      ]
+                                  ),
+          testCase "Not merged" $ do
+            gpretty union1 `renderedAs` "<If u1c (Left u1a) (Right u1b)>"
+        ],
+      testGroup
+        "Functor"
+        [ testCase "fmap should work" $ do
+            (+ 1) <$> unionSimple1 @?= unionSimple1Plus1
+        ],
+      testGroup
+        "Applicative"
+        [ testCase "pure should work" $
+            (pure 1 :: Union Int) @?= UAny (UnionSingle 1),
+          testCase "<*> should work" $
+            pure (+ 1) <*> unionSimple1 @?= unionSimple1Plus1
+        ],
+      testGroup
+        "Monad"
+        [ testCase "return should work" $
+            (return 1 :: Union Int) @?= UAny (UnionSingle 1),
+          testCase ">>= should work" $
+            (unionSimple1 >>= (\i -> return (i + 1))) @?= unionSimple1Plus1,
+          testCase ">>= should propagate merge strategy" $ do
+            let actual = unionSimple1 >>= (\i -> mrgSingle (i + 1))
+            let expected = mrgSingle (symIte "u1c" ("u1a" + 1) ("u1b" + 1))
+            actual @?= expected
+        ],
+      testCase "SEq" $ do
+        let actual = union1 .== union2
+        let expected =
+              (("u1c" :: SymBool) .== "u2c")
+                .&& ( symIte
+                        "u1c"
+                        (("u1a" :: SymBool) .== "u2a")
+                        (("u1b" :: SymInteger) .== "u2b")
+                    )
+        actual .@?= expected,
+      testCase "SOrd" $ do
+        let actual = union1 .<= union2
+        let expected =
+              symIte
+                (("u1c" :: SymBool) .== "u2c")
+                ( symIte
+                    "u1c"
+                    (("u1a" :: SymBool) .<= "u2a")
+                    (("u1b" :: SymInteger) .<= "u2b")
                 )
-                ( UnionIf
-                    (Right 2)
-                    True
-                    "c"
-                    (UnionSingle $ Right 2)
-                    (UnionSingle $ Right 3)
+                "u1c"
+        actual .@?= expected,
+      testCase "ToSym a (Union b)" $ do
+        let actual = toSym True :: Union SymBool
+        let expected = mrgSingle (con True)
+        actual @?= expected,
+      testCase "ToSym (Union a) (Union b)" $ do
+        let actual = toSym (mrgSingle True :: Union Bool) :: Union SymBool
+        let expected = mrgSingle (con True)
+        actual @?= expected,
+      testCase "ToSym (Union Integer) SymInteger" $ do
+        let actual = toSym (mrgIf "a" 1 2 :: Union Integer)
+        let expected = symIte "a" 1 2 :: SymInteger
+        actual @?= expected,
+      testGroup
+        "ToCon (Union a) b"
+        [ testCase "Const" $ do
+            let actual = mrgSingle (con True) :: Union SymBool
+            let expected = Just True :: Maybe Bool
+            toCon actual @?= expected,
+          testCase "Not const" $ do
+            let actual = mrgSingle "a" :: Union SymBool
+            let expected = Nothing :: Maybe Bool
+            toCon actual @?= expected
+        ],
+      testGroup
+        "ToCon (Union a) (Union b)"
+        [ testCase "Const" $ do
+            let actual = mrgSingle (con True) :: Union SymBool
+            let expected = Just (mrgSingle True) :: Maybe (Union Bool)
+            toCon actual @?= expected,
+          testCase "Not const" $ do
+            let actual = mrgSingle "a" :: Union SymBool
+            let expected = Nothing :: Maybe (Union Bool)
+            toCon actual @?= expected
+        ],
+      testGroup "EvaluateSym" $ do
+        let model = buildModel ("a" ::= True, "b" ::= False, "c" ::= True)
+        [ testCase "EmptyModel with no fill default" $ do
+            let actual = evaluateSym False emptyModel (return "a")
+            let expected = mrgSingle "a" :: Union SymBool
+            actual @?= expected,
+          testCase "EmptyModel with filling default" $ do
+            let actual = evaluateSym True emptyModel (return "a")
+            let expected = mrgSingle $ con False :: Union SymBool
+            actual @?= expected,
+          testCase "non-empty model, simple test" $ do
+            let actual = evaluateSym False model (return "a")
+            let expected = mrgSingle $ con True :: Union SymBool
+            actual @?= expected,
+          testCase "non-empty model, complex test" $ do
+            let actual =
+                  evaluateSym
+                    False
+                    model
+                    ( mrgIf
+                        "d"
+                        (mrgIf "a" (mrgSingle $ Left "b") (mrgSingle $ Right "e"))
+                        (mrgSingle $ Right "f")
+                    ) ::
+                    Union (Either SymBool SymBool)
+            let expected =
+                  mrgIf "d" (mrgSingle $ Left (con False)) (mrgSingle $ Right "f")
+            actual .@?= expected
+          ],
+      testCase "SubstituteSym" $ do
+        let actual =
+              substituteSym
+                ("a" :: TypedSymbol Bool)
+                "b"
+                ( mrgIf "a" (return $ Left "a") (return $ Right "c") ::
+                    Union (Either SymBool SymBool)
                 )
-        ]
+        let expected = mrgIf "b" (return $ Left "b") (return $ Right "c")
+        actual @?= expected,
+      testCase "ExtractSymbolics" $ do
+        let actual = extractSymbolics union1
+        let expected =
+              buildSymbolSet
+                ( "u1c" :: TypedSymbol Bool,
+                  "u1a" :: TypedSymbol Bool,
+                  "u1b" :: TypedSymbol Integer
+                )
+        actual @?= expected,
+      testGroup
+        "Solvable"
+        [ testCase "con" $ (con True :: Union SymBool) @?= mrgSingle (con True),
+          testCase "sym" $ (ssym "a" :: Union SymBool) @?= mrgSingle (ssym "a"),
+          testCase "isym" $
+            (isym "a" 1 :: Union SymBool) @?= mrgSingle (isym "a" 1),
+          testGroup
+            "conView"
+            [ testCase "is concrete" $ do
+                let value =
+                      mrgIfPropagatedStrategy
+                        "a"
+                        (return $ con True)
+                        (return $ con True)
+                conView (value :: Union SymBool) @?= Just True,
+              testCase "not concrete" $
+                conView (ssym "a" :: Union SymBool) @?= Nothing
+            ]
+        ],
+      testCase "Function" $ do
+        let f = mrgSingle (+ 1) :: Union (SymInteger -> SymInteger)
+        f # 1 @?= 2
     ]

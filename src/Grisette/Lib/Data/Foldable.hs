@@ -54,8 +54,8 @@ module Grisette.Lib.Data.Foldable
 where
 
 import Control.Monad (MonadPlus)
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
-import Grisette.Internal.Core.Control.Monad.UnionM (UnionM)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SEq (SEq)
@@ -189,7 +189,7 @@ symAll = Unified.symAll
 mrgMaximumBy ::
   forall t a m.
   (Foldable t, Mergeable a, MonadUnion m) =>
-  (a -> a -> UnionM Ordering) ->
+  (a -> a -> Union Ordering) ->
   t a ->
   m a
 mrgMaximumBy = Unified.mrgMaximumBy
@@ -199,7 +199,7 @@ mrgMaximumBy = Unified.mrgMaximumBy
 symMaximumBy ::
   forall t a.
   (Foldable t, Mergeable a, ITEOp a) =>
-  (a -> a -> UnionM Ordering) ->
+  (a -> a -> Union Ordering) ->
   t a ->
   a
 symMaximumBy = Unified.symMaximumBy
@@ -209,7 +209,7 @@ symMaximumBy = Unified.symMaximumBy
 mrgMinimumBy ::
   forall t a m.
   (Foldable t, Mergeable a, MonadUnion m) =>
-  (a -> a -> UnionM Ordering) ->
+  (a -> a -> Union Ordering) ->
   t a ->
   m a
 mrgMinimumBy = Unified.mrgMinimumBy
@@ -219,7 +219,7 @@ mrgMinimumBy = Unified.mrgMinimumBy
 symMinimumBy ::
   forall t a.
   (Foldable t, Mergeable a, ITEOp a) =>
-  (a -> a -> UnionM Ordering) ->
+  (a -> a -> Union Ordering) ->
   t a ->
   a
 symMinimumBy = Unified.symMinimumBy

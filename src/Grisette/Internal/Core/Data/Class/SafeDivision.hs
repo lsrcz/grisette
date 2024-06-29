@@ -30,7 +30,7 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
-import Grisette.Internal.Core.Control.Monad.Union (MonadUnion)
+import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SEq (SEq ((.==)))
@@ -75,7 +75,7 @@ import Grisette.Lib.Data.Functor (mrgFmap)
 class (MonadError e m, TryMerge m, Mergeable a) => SafeDivision e a m where
   -- | Safe signed 'div' with monadic error handling in multi-path execution.
   --
-  -- >>> safeDiv (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
+  -- >>> safeDiv (ssym "a") (ssym "b") :: ExceptT ArithException Union SymInteger
   -- ExceptT {If (= b 0) (Left divide by zero) (Right (div a b))}
   safeDiv :: a -> a -> m a
   safeDiv l r = mrgFmap fst $ safeDivMod l r
@@ -83,7 +83,7 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeDivision e a m where
 
   -- | Safe signed 'mod' with monadic error handling in multi-path execution.
   --
-  -- >>> safeMod (ssym "a") (ssym "b") :: ExceptT ArithException UnionM SymInteger
+  -- >>> safeMod (ssym "a") (ssym "b") :: ExceptT ArithException Union SymInteger
   -- ExceptT {If (= b 0) (Left divide by zero) (Right (mod a b))}
   safeMod :: a -> a -> m a
   safeMod l r = mrgFmap snd $ safeDivMod l r
@@ -91,7 +91,7 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeDivision e a m where
 
   -- | Safe signed 'divMod' with monadic error handling in multi-path execution.
   --
-  -- >>> safeDivMod (ssym "a") (ssym "b") :: ExceptT ArithException UnionM (SymInteger, SymInteger)
+  -- >>> safeDivMod (ssym "a") (ssym "b") :: ExceptT ArithException Union (SymInteger, SymInteger)
   -- ExceptT {If (= b 0) (Left divide by zero) (Right ((div a b),(mod a b)))}
   safeDivMod :: a -> a -> m (a, a)
   safeDivMod l r = do

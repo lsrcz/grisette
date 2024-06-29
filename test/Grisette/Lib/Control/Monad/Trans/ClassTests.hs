@@ -9,7 +9,7 @@ import Control.Monad.Except (ExceptT)
 import Grisette
   ( ITEOp (symIte),
     SymBranching (mrgIfPropagatedStrategy),
-    UnionM,
+    Union,
     mrgSingle,
   )
 import Grisette.Lib.Control.Monad.Trans (mrgLift)
@@ -25,9 +25,9 @@ monadTransClassTests =
     [ testCase "mrgLift" $ do
         ( mrgLift
             ( mrgIfPropagatedStrategy "a" (return "b") (return "c") ::
-                UnionM SymBool
+                Union SymBool
             ) ::
-            ExceptT SymBool UnionM SymBool
+            ExceptT SymBool Union SymBool
           )
           @?= mrgSingle (symIte "a" "b" "c")
     ]

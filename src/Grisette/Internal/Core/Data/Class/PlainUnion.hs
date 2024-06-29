@@ -59,25 +59,25 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
   -- | Pattern match to extract single values.
   --
-  -- >>> singleView (return 1 :: UnionM Integer)
+  -- >>> singleView (return 1 :: Union Integer)
   -- Just 1
-  -- >>> singleView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: UnionM Integer)
+  -- >>> singleView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
   -- Nothing
   singleView :: u a -> Maybe a
 
   -- | Pattern match to extract if values.
   --
-  -- >>> ifView (return 1 :: UnionM Integer)
+  -- >>> ifView (return 1 :: Union Integer)
   -- Nothing
-  -- >>> ifView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: UnionM Integer)
+  -- >>> ifView (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer)
   -- Just (a,<1>,<2>)
-  -- >>> ifView (mrgIf "a" (return 1) (return 2) :: UnionM Integer)
+  -- >>> ifView (mrgIf "a" (return 1) (return 2) :: Union Integer)
   -- Just (a,{1},{2})
   ifView :: u a -> Maybe (SymBool, u a, u a)
 
   -- | Convert the union to a guarded list.
   --
-  -- >>> toGuardedList (mrgIf "a" (return 1) (mrgIf "b" (return 2) (return 3)) :: UnionM Integer)
+  -- >>> toGuardedList (mrgIf "a" (return 1) (mrgIf "b" (return 2) (return 3)) :: Union Integer)
   -- [(a,1),((&& b (! a)),2),((! (|| b a)),3)]
   toGuardedList :: u a -> [(SymBool, a)]
   toGuardedList u =
@@ -90,10 +90,10 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
 
   -- | Return all possible values in the union. Drop the path conditions.
   --
-  -- >>> overestimateUnionValues (return 1 :: UnionM Integer)
+  -- >>> overestimateUnionValues (return 1 :: Union Integer)
   -- [1]
   --
-  -- >>> overestimateUnionValues (mrgIf "a" (return 1) (return 2) :: UnionM Integer)
+  -- >>> overestimateUnionValues (mrgIf "a" (return 1) (return 2) :: Union Integer)
   -- [1,2]
   overestimateUnionValues :: (Mergeable a) => u a -> [a]
   overestimateUnionValues (Single v) = [v]
@@ -102,7 +102,7 @@ class (Applicative u, SymBranching u) => PlainUnion (u :: Type -> Type) where
 
 -- | Pattern match to extract single values with 'singleView'.
 --
--- >>> case (return 1 :: UnionM Integer) of Single v -> v
+-- >>> case (return 1 :: Union Integer) of Single v -> v
 -- 1
 pattern Single :: (PlainUnion u, Mergeable a) => a -> u a
 pattern Single x <-
@@ -111,7 +111,7 @@ pattern Single x <-
     Single x = mrgSingle x
 
 -- | Pattern match to extract guard values with 'ifView'
--- >>> case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: UnionM Integer) of If c t f -> (c,t,f)
+-- >>> case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer) of If c t f -> (c,t,f)
 -- (a,<1>,<2>)
 pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
 pattern If c t f <-
@@ -128,9 +128,9 @@ pattern If c t f <-
 -- In the following example, 'mrgIfPropagatedStrategy' will not merge the results, and
 -- 'simpleMerge' will merge it and extract the single merged value.
 --
--- >>> mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool
+-- >>> mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: Union SymBool
 -- <If a b c>
--- >>> simpleMerge $ (mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: UnionM SymBool)
+-- >>> simpleMerge $ (mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: Union SymBool)
 -- (ite a b c)
 simpleMerge :: forall u a. (SimpleMergeable a, PlainUnion u) => u a -> a
 simpleMerge u = case tryMerge u of
@@ -151,8 +151,8 @@ symIteMerge (If cond l r) = symIte cond (symIteMerge l) (symIteMerge r)
 
 -- | Helper for applying functions on 'UnionLike' and 'SimpleMergeable'.
 --
--- >>> let f :: Integer -> UnionM Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
--- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: UnionM Integer)
+-- >>> let f :: Integer -> Union Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
+-- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: Union Integer)
 -- {If (&& b a) 1 (If b 2 (If a 3 4))}
 (.#) ::
   (Function f a r, SimpleMergeable r, PlainUnion u) =>
@@ -166,8 +166,8 @@ infixl 9 .#
 
 -- | Lift a function to work on union values.
 --
--- >>> sumU = onUnion sum :: UnionM [SymInteger] -> SymInteger
--- >>> sumU (mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b","c"]) :: UnionM [SymInteger])
+-- >>> sumU = onUnion sum :: Union [SymInteger] -> SymInteger
+-- >>> sumU (mrgIfPropagatedStrategy "cond" (return ["a"]) (return ["b","c"]) :: Union [SymInteger])
 -- (ite cond a (+ b c))
 onUnion ::
   forall u a r.
