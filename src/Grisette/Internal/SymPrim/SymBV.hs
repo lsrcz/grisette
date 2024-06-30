@@ -27,12 +27,12 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.SymBV
-  ( SymWordN (..),
+  ( SymWordN (SymWordN),
     SymWordN8,
     SymWordN16,
     SymWordN32,
     SymWordN64,
-    SymIntN (..),
+    SymIntN (SymIntN),
     SymIntN8,
     SymIntN16,
     SymIntN32,

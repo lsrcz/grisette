@@ -22,7 +22,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.SymGeneralFun
-  ( type (-~>) (..),
+  ( type (-~>) (SymGeneralFun),
     (-->),
   )
 where
