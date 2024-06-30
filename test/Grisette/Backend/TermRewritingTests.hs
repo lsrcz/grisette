@@ -108,8 +108,8 @@ bitwuzlaConfig = do
         .&& symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32))
         .&& ( symIte
                 "bool"
-                (con $ fpPositiveInfinite :: SymFP32)
-                (con $ fpNegativeInfinite)
+                (con fpPositiveInfinite :: SymFP32)
+                (con fpNegativeInfinite)
                 .== "m"
             )
   case v of
