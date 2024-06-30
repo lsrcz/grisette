@@ -882,11 +882,11 @@ cegisExceptVCMultiInputs config cexes interpretFun f =
 -- CEGIS for symbolic programs with error handling, using multiple (possibly
 -- symbolic) inputs to represent a set of inputs. This function saves the
 -- efforts to implement the translation function for the standard error type
--- 'VerificationConditions', and the standard result type '()'.
+-- 'VerificationConditions', and the standard result type @()@.
 --
 -- This function translates assumption violations to failed pre-conditions,
 -- and translates assertion violations to failed post-conditions.
--- The '()' result will not fail any conditions.
+-- The @()@ result will not fail any conditions.
 cegisExceptStdVCMultiInputs ::
   ( ConfigurableSolver config handle,
     EvalSym inputs,
@@ -983,11 +983,11 @@ cegisExceptVC config inputs f v =
 -- CEGIS for symbolic programs with error handling, using a single symbolic
 -- input to represent a set of inputs. This function saves the efforts to
 -- implement the translation function for the standard error type
--- 'VerificationConditions', and the standard result type '()'.
+-- 'VerificationConditions', and the standard result type @()@.
 --
 -- This function translates assumption violations to failed pre-conditions,
 -- and translates assertion violations to failed post-conditions.
--- The '()' result will not fail any conditions.
+-- The @()@ result will not fail any conditions.
 --
 -- The following example tries to find the value of @c@ such that for all
 -- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ assertion is used to make

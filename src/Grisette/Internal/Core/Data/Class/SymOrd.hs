@@ -163,7 +163,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 --
 -- For `symCompare`, `Ordering` is not a solvable type, and the result would
 -- be wrapped in a union-like monad. See
--- `Grisette.Core.Control.Monad.Union` and `PlainUnion` for more
+-- `Grisette.Core.Control.Monad.Union` and `Grisette.Core.PlainUnion` for more
 -- information.
 --
 -- >>> a `symCompare` b :: Union Ordering

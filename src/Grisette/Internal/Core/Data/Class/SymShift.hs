@@ -6,6 +6,14 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Internal.Core.Data.Class.SymShift
+-- Copyright   :   (c) Sirui Lu 2021-2023
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Core.Data.Class.SymShift
   ( SymShift (..),
     DefaultFiniteBitsSymShift (..),
@@ -40,6 +48,8 @@ instance SymShift Int where
     | s <= -finiteBitSize a = 0
     | otherwise = symShift a (-s)
 
+-- | A newtype wrapper. Use this to derive `SymShift` for types that have
+-- `FiniteBits` instances.
 newtype DefaultFiniteBitsSymShift a = DefaultFiniteBitsSymShift
   { unDefaultFiniteBitsSymShift :: a
   }

@@ -21,8 +21,8 @@ import Grisette.Unified.Internal.EvalMode (EvalMode)
 -- corresponding constraints for the operations for the types.
 --
 -- This also provide the branching constraints for the monad, and the safe
--- operations: for example, 'SafeUnifiedInteger' provides 'safeDiv' for the
--- integer type with in @ExceptT ArithException m@.
+-- operations: for example, 'Grisette.Unified.SafeUnifiedInteger' provides
+-- 'Grisette.safeDiv' for the integer type with in @ExceptT ArithException m@.
 --
 -- For users with GHC prior to 9.2.1, see notes in 'EvalMode'.
 type MonadWithMode mode m =

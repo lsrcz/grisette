@@ -28,6 +28,7 @@ import Type.Reflection
     type (:~~:) (HRefl),
   )
 
+-- | A value with its type information.
 data ModelValue where
   ModelValue :: forall v. (Show v, Eq v, Hashable v) => TypeRep v -> v -> ModelValue
 
@@ -43,10 +44,12 @@ instance Eq ModelValue where
 instance Hashable ModelValue where
   s `hashWithSalt` (ModelValue t v) = s `hashWithSalt` t `hashWithSalt` v
 
+-- | Convert from a model value. Crashes if the types does not match.
 unsafeFromModelValue :: forall a. (Typeable a) => ModelValue -> a
 unsafeFromModelValue (ModelValue t v) = case eqTypeRep t (typeRep @a) of
   Just HRefl -> v
   _ -> error $ "Bad model value type, expected type: " ++ show (typeRep @a) ++ ", but got: " ++ show t
 
+-- | Convert to a model value.
 toModelValue :: forall a. (Show a, Eq a, Hashable a, Typeable a) => a -> ModelValue
 toModelValue = ModelValue (typeRep @a)

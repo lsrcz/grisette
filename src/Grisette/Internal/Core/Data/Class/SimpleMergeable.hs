@@ -317,7 +317,7 @@ class
   -- 'Mergeable1'. In other cases, 'mrgIf' is usually a better alternative.
   mrgIfWithStrategy :: MergingStrategy a -> SymBool -> u a -> u a -> u a
 
-  -- | Symbolic @if@ control flow with the result. 
+  -- | Symbolic @if@ control flow with the result.
   --
   -- This function does not need a merging strategy, and it will merge the
   -- result only if any of the branches is merged.

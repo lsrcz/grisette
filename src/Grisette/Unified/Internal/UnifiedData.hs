@@ -11,8 +11,18 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.UnifiedData
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.UnifiedData
-  ( UnifiedDataImpl (..),
+  ( GetData,
+    wrapData,
+    extractData,
     UnifiedData,
     AllUnifiedData,
   )
@@ -96,6 +106,7 @@ class (UnifiedDataImpl mode v (GetData mode v)) => UnifiedData mode v
 
 instance (UnifiedDataImpl bool v (GetData bool v)) => UnifiedData bool v
 
+-- | Evaluation mode with unified data types.
 class (forall v. (Mergeable v) => UnifiedData bool v) => AllUnifiedData bool
 
 instance (forall v. (Mergeable v) => UnifiedData bool v) => AllUnifiedData bool

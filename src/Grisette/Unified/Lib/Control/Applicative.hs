@@ -51,7 +51,7 @@ mrgPureWithStrategy ::
 mrgPureWithStrategy = mrgSingleWithStrategy
 {-# INLINE mrgPureWithStrategy #-}
 
--- | Alias for 'mrgSingle'.
+-- | Alias for 'Grisette.Core.mrgSingle'.
 mrgPure :: (TryMerge m, Applicative m, Mergeable a) => a -> m a
 mrgPure = mrgPureWithStrategy rootStrategy
 {-# INLINE mrgPure #-}
@@ -105,7 +105,7 @@ infixl 3 .<|>
 a .<|> b = tryMerge $ tryMerge a <|> tryMerge b
 {-# INLINE (.<|>) #-}
 
--- | 'some' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.some' with 'MergingStrategy' knowledge propagation.
 mrgSome :: (Alternative f, TryMerge f, Mergeable a) => f a -> f [a]
 mrgSome v = some_v
   where
@@ -113,7 +113,7 @@ mrgSome v = some_v
     some_v = mrgLiftA2 (:) v many_v
 {-# INLINE mrgSome #-}
 
--- | 'many' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.many' with 'MergingStrategy' knowledge propagation.
 mrgMany :: (Alternative f, TryMerge f, Mergeable a) => f a -> f [a]
 mrgMany v = many_v
   where
@@ -123,7 +123,7 @@ mrgMany v = many_v
 
 infixl 4 .<**>
 
--- | '<**>' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.<**>' with 'MergingStrategy' knowledge propagation.
 (.<**>) ::
   (Applicative f, TryMerge f, Mergeable a, Mergeable b) =>
   f a ->
@@ -132,7 +132,7 @@ infixl 4 .<**>
 a .<**> f = tryMerge $ tryMerge a <**> tryMerge f
 {-# INLINE (.<**>) #-}
 
--- | 'liftA' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.liftA' with 'MergingStrategy' knowledge propagation.
 mrgLiftA ::
   (Applicative f, TryMerge f, Mergeable a, Mergeable b) =>
   (a -> b) ->
@@ -141,7 +141,7 @@ mrgLiftA ::
 mrgLiftA f a = mrgPure f .<*> a
 {-# INLINE mrgLiftA #-}
 
--- | 'liftA3' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.liftA3' with 'MergingStrategy' knowledge propagation.
 mrgLiftA3 ::
   ( Applicative f,
     TryMerge f,
@@ -158,7 +158,7 @@ mrgLiftA3 ::
 mrgLiftA3 f a b c = mrgPure f .<*> a .<*> b .<*> c
 {-# INLINE mrgLiftA3 #-}
 
--- | 'optional' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.optional' with 'MergingStrategy' knowledge propagation.
 mrgOptional ::
   (Alternative f, TryMerge f, Mergeable a) =>
   f a ->
@@ -166,7 +166,7 @@ mrgOptional ::
 mrgOptional v = Just .<$> v .<|> pure Nothing
 {-# INLINE mrgOptional #-}
 
--- | 'asum' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.asum' with 'MergingStrategy' knowledge propagation.
 mrgAsum ::
   (Alternative f, TryMerge f, Mergeable a, Foldable t) => t (f a) -> f a
 mrgAsum = foldr (.<|>) mrgEmpty

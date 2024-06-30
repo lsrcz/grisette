@@ -6,6 +6,14 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Internal.Core.Data.Class.SymRotate
+-- Copyright   :   (c) Sirui Lu 2021-2023
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Core.Data.Class.SymRotate
   ( SymRotate (..),
     DefaultFiniteBitsSymRotate (..),
@@ -33,6 +41,8 @@ instance SymRotate Int where
     | s /= minBound = rotate a (-s)
     | otherwise = rotate a (-(s + finiteBitSize s))
 
+-- | A newtype wrapper. Use this to derive `SymRotate` for types that have
+-- `FiniteBits` instances.
 newtype DefaultFiniteBitsSymRotate a = DefaultFiniteBitsSymRotate
   { unDefaultFiniteBitsSymRotate :: a
   }

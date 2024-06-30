@@ -24,20 +24,20 @@ import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 
--- | 'Control.Monad.State.Class.get' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.State.Class.get' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgGet :: (MonadState s m, TryMerge m, Mergeable s) => m s
 mrgGet = tryMerge get
 {-# INLINE mrgGet #-}
 
--- | 'Control.Monad.State.Class.put' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.State.Class.put' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgPut :: (MonadState s m, TryMerge m) => s -> m ()
 mrgPut = tryMerge . put
 {-# INLINE mrgPut #-}
 
--- | 'Control.Monad.State.Class.state' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.State.Class.state' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgState ::
   (MonadState s m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> (a, s)) ->
@@ -48,22 +48,22 @@ mrgState f = tryMerge $ do
   mrgPut s'
   mrgReturn a
 
--- | 'Control.Monad.State.Class.modify' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.State.Class.modify' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgModify :: (MonadState s m, TryMerge m, Mergeable s) => (s -> s) -> m ()
 mrgModify f = mrgState (\s -> ((), f s))
 {-# INLINE mrgModify #-}
 
--- | 'Control.Monad.State.Class.modify'' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.State.Class.modify'' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgModify' :: (MonadState s m, TryMerge m, Mergeable s) => (s -> s) -> m ()
 mrgModify' f = do
   s' <- mrgGet
   mrgPut $! f s'
 {-# INLINE mrgModify' #-}
 
--- | 'Control.Monad.State.Class.gets' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.State.Class.gets' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgGets ::
   (MonadState s m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> a) ->

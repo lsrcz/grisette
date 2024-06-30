@@ -74,7 +74,8 @@ symElem :: (Foldable t, SymEq a) => a -> t a -> SymBool
 symElem = Unified.symElem
 {-# INLINE symElem #-}
 
--- | 'Data.Foldable.maximum' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.maximum' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMaximum ::
   forall a t m.
   (Foldable t, MonadUnion m, Mergeable a, SymOrd a) =>
@@ -92,7 +93,8 @@ symMaximum ::
 symMaximum = Unified.symMaximum @'Sym
 {-# INLINE symMaximum #-}
 
--- | 'Data.Foldable.minimum' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.minimum' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMinimum ::
   forall a t m.
   (Foldable t, MonadUnion m, Mergeable a, SymOrd a) =>
@@ -110,7 +112,8 @@ symMinimum ::
 symMinimum = Unified.symMinimum @'Sym
 {-# INLINE symMinimum #-}
 
--- | 'Data.Foldable.foldrM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.foldrM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFoldrM ::
   (MonadTryMerge m, Mergeable b, Foldable t) =>
   (a -> b -> m b) ->
@@ -120,7 +123,8 @@ mrgFoldrM ::
 mrgFoldrM = Unified.mrgFoldrM
 {-# INLINE mrgFoldrM #-}
 
--- | 'Data.Foldable.foldlM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.foldlM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFoldlM ::
   (MonadTryMerge m, Mergeable b, Foldable t) =>
   (b -> a -> m b) ->
@@ -130,40 +134,47 @@ mrgFoldlM ::
 mrgFoldlM = Unified.mrgFoldlM
 {-# INLINE mrgFoldlM #-}
 
--- | 'Data.Foldable.traverse_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.traverse_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgTraverse_ ::
   (Applicative m, TryMerge m, Foldable t) => (a -> m b) -> t a -> m ()
 mrgTraverse_ = Unified.mrgTraverse_
 {-# INLINE mrgTraverse_ #-}
 
--- | 'Data.Foldable.for_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.for_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFor_ ::
   (Applicative m, TryMerge m, Foldable t) => t a -> (a -> m b) -> m ()
 mrgFor_ = Unified.mrgFor_
 {-# INLINE mrgFor_ #-}
 
--- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.sequence_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgSequenceA_ ::
   (Foldable t, TryMerge m, Applicative m) => t (m a) -> m ()
 mrgSequenceA_ = Unified.mrgSequenceA_
 {-# INLINE mrgSequenceA_ #-}
 
--- | 'Data.Foldable.mapM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.mapM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMapM_ :: (MonadTryMerge m, Foldable t) => (a -> m b) -> t a -> m ()
 mrgMapM_ = Unified.mrgMapM_
 {-# INLINE mrgMapM_ #-}
 
--- | 'Data.Foldable.forM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.forM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgForM_ :: (MonadTryMerge m, Foldable t) => t a -> (a -> m b) -> m ()
 mrgForM_ = Unified.mrgForM_
 {-# INLINE mrgForM_ #-}
 
--- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.sequence_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgSequence_ :: (Foldable t, MonadTryMerge m) => t (m a) -> m ()
 mrgSequence_ = Unified.mrgSequence_
 {-# INLINE mrgSequence_ #-}
 
--- | 'Data.Foldable.msum' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.msum' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMsum ::
   (MonadTryMerge m, Mergeable a, MonadPlus m, Foldable t) => t (m a) -> m a
 mrgMsum = Unified.mrgMsum
@@ -185,7 +196,8 @@ symAny = Unified.symAny
 symAll :: (Foldable t) => (a -> SymBool) -> t a -> SymBool
 symAll = Unified.symAll
 
--- | 'Data.Foldable.maximumBy' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.maximumBy' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMaximumBy ::
   forall t a m.
   (Foldable t, Mergeable a, MonadUnion m) =>
@@ -205,7 +217,8 @@ symMaximumBy ::
 symMaximumBy = Unified.symMaximumBy
 {-# INLINE symMaximumBy #-}
 
--- | 'Data.Foldable.minimumBy' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.minimumBy' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMinimumBy ::
   forall t a m.
   (Foldable t, Mergeable a, MonadUnion m) =>
@@ -230,8 +243,8 @@ symNotElem :: (Foldable t, SymEq a) => a -> t a -> SymBool
 symNotElem = Unified.symNotElem
 {-# INLINE symNotElem #-}
 
--- | 'Data.Foldable.elem' with symbolic equality and 'MergingStrategy' knowledge
--- propagation.
+-- | 'Data.Foldable.elem' with symbolic equality and
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgFind ::
   (Foldable t, MonadUnion m, Mergeable a) =>
   (a -> SymBool) ->

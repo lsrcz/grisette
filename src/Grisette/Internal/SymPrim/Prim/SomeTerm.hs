@@ -21,6 +21,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     identityWithTypeRep,
   )
 
+-- | Existential wrapper for symbolic Grisette terms.
 data SomeTerm where
   SomeTerm :: forall a. (SupportedPrim a) => Term a -> SomeTerm
 

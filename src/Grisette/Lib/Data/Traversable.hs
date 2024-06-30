@@ -39,7 +39,8 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Lib.Control.Applicative (mrgPure)
 
--- | 'Data.Traversable.traverse' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.traverse' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgTraverse ::
   forall a b t f.
   ( Mergeable b,
@@ -54,7 +55,8 @@ mrgTraverse ::
 mrgTraverse f = tryMergeWithStrategy rootStrategy1 . traverse (tryMerge . f)
 {-# INLINE mrgTraverse #-}
 
--- | 'Data.Traversable.sequenceA' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.sequenceA' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgSequenceA ::
   forall a t f.
   ( Mergeable a,
@@ -68,7 +70,8 @@ mrgSequenceA ::
 mrgSequenceA = mrgTraverse id
 {-# INLINE mrgSequenceA #-}
 
--- | 'Data.Traversable.mapM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.mapM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMapM ::
   forall a b t f.
   ( Mergeable b,
@@ -82,7 +85,8 @@ mrgMapM ::
 mrgMapM = mrgTraverse
 {-# INLINE mrgMapM #-}
 
--- | 'Data.Traversable.sequence' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.sequence' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgSequence ::
   forall a t f.
   ( Mergeable a,
@@ -95,7 +99,8 @@ mrgSequence ::
 mrgSequence = mrgSequenceA
 {-# INLINE mrgSequence #-}
 
--- | 'Data.Traversable.for' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.for' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFor ::
   ( Mergeable b,
     Mergeable1 t,
@@ -109,7 +114,8 @@ mrgFor ::
 mrgFor = flip mrgTraverse
 {-# INLINE mrgFor #-}
 
--- | 'Data.Traversable.forM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.forM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgForM ::
   ( Mergeable b,
     Mergeable1 t,
@@ -122,7 +128,8 @@ mrgForM ::
 mrgForM = flip mrgMapM
 {-# INLINE mrgForM #-}
 
--- | 'Data.Traversable.mapAccumM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.mapAccumM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMapAccumM ::
   (MonadTryMerge m, Traversable t, Mergeable s, Mergeable b, Mergeable1 t) =>
   (s -> a -> m (s, b)) ->
@@ -141,7 +148,8 @@ mrgMapAccumM f s t =
     return (s, tb)
 {-# INLINE mrgMapAccumM #-}
 
--- | 'Data.Traversable.forAccumM' and 'MergingStrategy' knowledge propagation.
+-- | 'Data.Traversable.forAccumM' and 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgForAccumM ::
   (MonadTryMerge m, Traversable t, Mergeable s, Mergeable b, Mergeable1 t) =>
   s ->

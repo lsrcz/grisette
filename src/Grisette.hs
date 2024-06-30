@@ -46,13 +46,12 @@ module Grisette
 
     -- * Symbolic primitives
 
-    -- | This module provides the support for symbolic evaluating primitive
-    -- types.
+    -- | This module provides primitive types for symbolic evaluation.
     module Grisette.SymPrim,
 
     -- * Solver backend
 
-    -- | This module provides the interaction with the solver backends.
+    -- | This module provides the configuration of the solver backends.
     module Grisette.Backend,
 
     -- * Core libraries
@@ -68,8 +67,8 @@ module Grisette
 
     -- * Template Haskell
 
-    -- | This module helps with type class derivation and provides some smart
-    -- constructors.
+    -- | This module provides template haskell procedures that help with type
+    -- class derivation and constructing some smart constructors.
     module Grisette.TH,
   )
 where

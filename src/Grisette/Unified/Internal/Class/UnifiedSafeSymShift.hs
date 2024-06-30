@@ -13,6 +13,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.Class.UnifiedSafeSymShift
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedSafeSymShift
   ( safeSymShiftL,
     safeSymShiftR,
@@ -127,6 +135,9 @@ safeSymStrictShiftR a b =
     Grisette.Internal.Core.Data.Class.SafeSymShift.safeSymStrictShiftR a b
 {-# INLINE safeSymStrictShiftR #-}
 
+-- | A class that provides unified safe symbolic rotation operations.
+--
+-- We use this type class to help resolve the constraints for `SafeSymShift`.
 class UnifiedSafeSymShift (mode :: EvalModeTag) e a m where
   withBaseSafeSymShift :: ((SafeSymShift e a m) => r) -> r
 

@@ -38,13 +38,13 @@ import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Lib.Data.Functor ((.<$), (.<$>))
 import qualified Grisette.Unified.Lib.Control.Applicative as Unified
 
--- | Alias for 'mrgSingleWithStrategy'.
+-- | Alias for 'Grisette.Core.mrgSingleWithStrategy'.
 mrgPureWithStrategy ::
   (TryMerge m, Applicative m) => MergingStrategy a -> a -> m a
 mrgPureWithStrategy = Unified.mrgPureWithStrategy
 {-# INLINE mrgPureWithStrategy #-}
 
--- | Alias for 'mrgSingle'.
+-- | Alias for 'Grisette.Core.mrgSingle'.
 mrgPure :: (TryMerge m, Applicative m, Mergeable a) => a -> m a
 mrgPure = Unified.mrgPure
 {-# INLINE mrgPure #-}
@@ -86,31 +86,31 @@ infixl 4 .<*
 (.<*) = (Unified..<*)
 {-# INLINE (.<*) #-}
 
--- | 'empty' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.empty' with 'MergingStrategy' knowledge propagation.
 mrgEmpty :: (Alternative f, TryMerge f, Mergeable a) => f a
 mrgEmpty = Unified.mrgEmpty
 {-# INLINE mrgEmpty #-}
 
 infixl 3 .<|>
 
--- | '<|>' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.<|>' with 'MergingStrategy' knowledge propagation.
 (.<|>) :: (Alternative f, TryMerge f, Mergeable a) => f a -> f a -> f a
 (.<|>) = (Unified..<|>)
 {-# INLINE (.<|>) #-}
 
--- | 'some' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.some' with 'MergingStrategy' knowledge propagation.
 mrgSome :: (Alternative f, TryMerge f, Mergeable a) => f a -> f [a]
 mrgSome = Unified.mrgSome
 {-# INLINE mrgSome #-}
 
--- | 'many' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.many' with 'MergingStrategy' knowledge propagation.
 mrgMany :: (Alternative f, TryMerge f, Mergeable a) => f a -> f [a]
 mrgMany = Unified.mrgMany
 {-# INLINE mrgMany #-}
 
 infixl 4 .<**>
 
--- | '<**>' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.<**>' with 'MergingStrategy' knowledge propagation.
 (.<**>) ::
   (Applicative f, TryMerge f, Mergeable a, Mergeable b) =>
   f a ->
@@ -119,7 +119,7 @@ infixl 4 .<**>
 (.<**>) = (Unified..<**>)
 {-# INLINE (.<**>) #-}
 
--- | 'liftA' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.liftA' with 'MergingStrategy' knowledge propagation.
 mrgLiftA ::
   (Applicative f, TryMerge f, Mergeable a, Mergeable b) =>
   (a -> b) ->
@@ -128,7 +128,7 @@ mrgLiftA ::
 mrgLiftA = Unified.mrgLiftA
 {-# INLINE mrgLiftA #-}
 
--- | 'liftA3' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.liftA3' with 'MergingStrategy' knowledge propagation.
 mrgLiftA3 ::
   ( Applicative f,
     TryMerge f,
@@ -145,7 +145,8 @@ mrgLiftA3 ::
 mrgLiftA3 = Unified.mrgLiftA3
 {-# INLINE mrgLiftA3 #-}
 
--- | 'optional' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.optional' with 'MergingStrategy' knowledge
+-- propagation.
 mrgOptional ::
   (Alternative f, TryMerge f, Mergeable a) =>
   f a ->
@@ -153,7 +154,7 @@ mrgOptional ::
 mrgOptional = Unified.mrgOptional
 {-# INLINE mrgOptional #-}
 
--- | 'asum' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Applicative.asum' with 'MergingStrategy' knowledge propagation.
 mrgAsum ::
   (Alternative f, TryMerge f, Mergeable a, Foldable t) => t (f a) -> f a
 mrgAsum = Unified.mrgAsum

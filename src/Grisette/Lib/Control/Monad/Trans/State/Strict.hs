@@ -32,8 +32,8 @@ import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Lib.Control.Monad (mrgReturn)
 
--- | 'Control.Monad.Trans.State.Strict.state' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Trans.State.Strict.state' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgState ::
   (Monad m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> (a, s)) ->
@@ -41,8 +41,8 @@ mrgState ::
 mrgState f = StateT (mrgReturn . f)
 {-# INLINE mrgState #-}
 
--- | 'Control.Monad.Trans.State.Strict.runStateT' with 'MergingStrategy'
--- knowledge propagation.
+-- | 'Control.Monad.Trans.State.Strict.runStateT' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgRunStateT ::
   (Monad m, TryMerge m, Mergeable s, Mergeable a) =>
   StateT s m a ->
@@ -51,8 +51,8 @@ mrgRunStateT ::
 mrgRunStateT m s = tryMerge $ runStateT m s
 {-# INLINE mrgRunStateT #-}
 
--- | 'Control.Monad.Trans.State.Strict.evalStateT' with 'MergingStrategy'
--- knowledge propagation.
+-- | 'Control.Monad.Trans.State.Strict.evalStateT' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgEvalStateT ::
   (Monad m, TryMerge m, Mergeable a) =>
   StateT s m a ->
@@ -63,8 +63,8 @@ mrgEvalStateT m s = tryMerge $ do
   return a
 {-# INLINE mrgEvalStateT #-}
 
--- | 'Control.Monad.Trans.State.Strict.execStateT' with 'MergingStrategy'
--- knowledge propagation.
+-- | 'Control.Monad.Trans.State.Strict.execStateT' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgExecStateT ::
   (Monad m, TryMerge m, Mergeable s) =>
   StateT s m a ->
@@ -75,8 +75,8 @@ mrgExecStateT m s = tryMerge $ do
   return s'
 {-# INLINE mrgExecStateT #-}
 
--- | 'Control.Monad.Trans.State.Strict.mapStateT' with 'MergingStrategy'
--- knowledge propagation.
+-- | 'Control.Monad.Trans.State.Strict.mapStateT' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgMapStateT ::
   (TryMerge n, Mergeable b, Mergeable s) =>
   (m (a, s) -> n (b, s)) ->
@@ -85,8 +85,8 @@ mrgMapStateT ::
 mrgMapStateT f m = StateT $ tryMerge . f . runStateT m
 {-# INLINE mrgMapStateT #-}
 
--- | 'Control.Monad.Trans.State.Strict.withStateT' with 'MergingStrategy'
--- knowledge propagation.
+-- | 'Control.Monad.Trans.State.Strict.withStateT' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgWithStateT ::
   (TryMerge m, Mergeable s, Mergeable a) =>
   (s -> s) ->
@@ -95,34 +95,34 @@ mrgWithStateT ::
 mrgWithStateT f m = StateT $ tryMerge . runStateT m . f
 {-# INLINE mrgWithStateT #-}
 
--- | 'Control.Monad.Trans.State.Strict.get' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Trans.State.Strict.get' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgGet :: (Monad m, TryMerge m, Mergeable s) => StateT s m s
 mrgGet = mrgState (\s -> (s, s))
 {-# INLINE mrgGet #-}
 
--- | 'Control.Monad.Trans.State.Strict.put' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Trans.State.Strict.put' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgPut :: (Monad m, TryMerge m, Mergeable s) => s -> StateT s m ()
 mrgPut s = mrgState (const ((), s))
 {-# INLINE mrgPut #-}
 
--- | 'Control.Monad.Trans.State.Strict.modify' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Trans.State.Strict.modify' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgModify :: (Monad m, TryMerge m, Mergeable s) => (s -> s) -> StateT s m ()
 mrgModify f = mrgState (\s -> ((), f s))
 {-# INLINE mrgModify #-}
 
--- | 'Control.Monad.Trans.State.Strict.modify'' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Trans.State.Strict.modify'' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgModify' :: (Monad m, TryMerge m, Mergeable s) => (s -> s) -> StateT s m ()
 mrgModify' f = do
   s <- mrgGet
   mrgPut $! f s
 {-# INLINE mrgModify' #-}
 
--- | 'Control.Monad.Trans.State.Strict.gets' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Trans.State.Strict.gets' with
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgGets ::
   (Monad m, TryMerge m, Mergeable s, Mergeable a) =>
   (s -> a) ->

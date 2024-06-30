@@ -42,6 +42,9 @@ termCacheCell :: IO (IORef (M.HashMap TypeRep Any))
 termCacheCell = unsafePerformIO $ mkOnceIO $ newIORef M.empty
 {-# NOINLINE termCacheCell #-}
 
+-- | Internal cache for memoization of term construction. Different types have
+-- different caches and they may share names, ids, or representations, but they
+-- are not the same term.
 typeMemoizedCache :: forall a. (Interned a, Typeable a) => Cache a
 typeMemoizedCache = unsafeDupablePerformIO $ do
   c <- termCacheCell

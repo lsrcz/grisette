@@ -168,10 +168,12 @@ extractSymSomeTerm t1 = evalState (gocached t1) M.empty
       return $ r1 <> r2 <> r3
 {-# INLINEABLE extractSymSomeTerm #-}
 
+-- | Extract all the symbols in a term.
 extractTerm :: (SupportedPrim a) => Term a -> S.HashSet SomeTypedSymbol
 extractTerm t = extractSymSomeTerm (SomeTerm t)
 {-# INLINE extractTerm #-}
 
+-- | Cast a term to another type.
 castTerm :: forall a b. (Typeable b) => Term a -> Maybe (Term b)
 castTerm t@ConTerm {} = cast t
 castTerm t@SymTerm {} = cast t
@@ -219,6 +221,7 @@ castTerm t@FPRoundingBinaryTerm {} = cast t
 castTerm t@FPFMATerm {} = cast t
 {-# INLINE castTerm #-}
 
+-- | Compute the size of a list of terms. Do not count the same term twice.
 someTermsSize :: [SomeTerm] -> Int
 someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
   where
@@ -313,14 +316,17 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
           go arg3
 {-# INLINEABLE someTermsSize #-}
 
+-- | Compute the size of a list of terms. Do not count the same term twice.
 someTermSize :: SomeTerm -> Int
 someTermSize term = someTermsSize [term]
 {-# INLINE someTermSize #-}
 
+-- | Compute the size of a list of terms. Do not count the same term twice.
 termsSize :: [Term a] -> Int
 termsSize terms = someTermsSize $ (\x -> introSupportedPrimConstraint x $ SomeTerm x) <$> terms
 {-# INLINEABLE termsSize #-}
 
+-- | Compute the size of a term.
 termSize :: Term a -> Int
 termSize term = termsSize [term]
 {-# INLINE termSize #-}

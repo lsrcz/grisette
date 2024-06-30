@@ -11,5 +11,7 @@ module Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ) where
 import Data.Bits (FiniteBits (finiteBitSize))
 import Language.Haskell.TH (TyLit (NumTyLit), Type (LitT), TypeQ)
 
+-- | Get the bitwidth of 'Int'.
 intBitwidthQ :: TypeQ
-intBitwidthQ = return $ LitT (NumTyLit $ toInteger $ finiteBitSize (undefined :: Int))
+intBitwidthQ =
+  return $ LitT (NumTyLit $ toInteger $ finiteBitSize (undefined :: Int))

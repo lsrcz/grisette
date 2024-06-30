@@ -25,17 +25,20 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Lib.Control.Monad (mrgReturn)
 
--- | 'Control.Monad.Cont.runContT' with 'MergingStrategy' knowledge propagation
+-- | 'Control.Monad.Cont.runContT' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgRunContT :: (TryMerge m, Mergeable r) => ContT r m a -> (a -> m r) -> m r
 mrgRunContT c = tryMerge . runContT c
 {-# INLINE mrgRunContT #-}
 
--- | 'Control.Monad.Cont.evalContT' with 'MergingStrategy' knowledge propagation
+-- | 'Control.Monad.Cont.evalContT' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgEvalContT :: (TryMerge m, Mergeable r, Monad m) => ContT r m r -> m r
 mrgEvalContT c = runContT c mrgReturn
 {-# INLINE mrgEvalContT #-}
 
--- | 'Control.Monad.Cont.resetT' with 'MergingStrategy' knowledge propagation
+-- | 'Control.Monad.Cont.resetT' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgResetT ::
   (TryMerge m, Mergeable r, Monad m) =>
   ContT r m r ->

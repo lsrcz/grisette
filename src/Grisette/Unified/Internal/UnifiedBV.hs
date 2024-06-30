@@ -11,14 +11,21 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.UnifiedBV
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.UnifiedBV
-  ( UnifiedBVImpl (..),
+  ( GetWordN,
+    GetIntN,
     UnifiedBV,
     GetSomeWordN,
     GetSomeIntN,
-    SafeUnifiedBVImpl,
     SafeUnifiedBV,
-    SafeUnifiedSomeBVImpl,
     SafeUnifiedSomeBV,
     AllUnifiedBV,
   )
@@ -151,7 +158,7 @@ type family GetSomeIntN mode = sw | sw -> mode where
   GetSomeIntN mode = SomeBV (GetIntN mode)
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
--- See the notes in 'Grisette.Unified.Internal.IsMode.IsMode'.
+-- See the notes in 'Grisette.Unified.Internal.EvalMode.EvalMode'.
 class
   ( UnifiedBVImpl
       mode
@@ -201,7 +208,7 @@ instance
   SafeUnifiedBVImpl mode wordn intn n word int m
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
--- See the notes in 'Grisette.Unified.Internal.IsMode.IsMode'.
+-- See the notes in 'Grisette.Unified.Internal.EvalMode.EvalMode'.
 class
   ( SafeUnifiedBVImpl
       mode
@@ -252,6 +259,8 @@ instance
   ) =>
   SafeUnifiedSomeBVImpl (mode :: EvalModeTag) word int m
 
+-- | This class is needed as constraint in user code prior to GHC 9.2.1.
+-- See the notes in 'Grisette.Unified.Internal.EvalMode.EvalMode'.
 class
   ( SafeUnifiedSomeBVImpl
       mode
@@ -270,6 +279,7 @@ instance
   ) =>
   SafeUnifiedSomeBV mode m
 
+-- | Evaluation mode with unified bit vector types.
 class
   ( forall n m.
     ( UnifiedBranching mode m,

@@ -17,6 +17,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
+-- |
+-- Module      :   Grisette.Internal.Core.Data.Class.Format
+-- Copyright   :   (c) Sirui Lu 2021-2023
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Core.Data.Class.Format
   ( -- * Pretty printing
     Format (..),

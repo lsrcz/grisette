@@ -24,6 +24,7 @@ import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
     Dec (FunD, SigD),
+    DocLoc (DeclDoc),
     Exp (AppE, ConE, LamE, VarE),
     Name,
     Pat (VarP),
@@ -32,6 +33,7 @@ import Language.Haskell.TH
     Type (AppT, ArrowT, ForallT, VarT),
     mkName,
     newName,
+    putDoc,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo
@@ -46,8 +48,10 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     TyVarBndrSpec,
     plainTVFlag,
   )
+import Language.Haskell.TH.Syntax (addModFinalizer)
 
--- | Generate constructor wrappers that wraps the result in a container with `TryMerge` with provided names.
+-- | Generate constructor wrappers that wraps the result in a container with
+-- `TryMerge` with provided names.
 --
 -- > mkMergeConstructor' ["mrgTuple2"] ''(,)
 --
@@ -69,7 +73,8 @@ mkMergeConstructor' names typName = do
   ds <- zipWithM (mkSingleWrapper d) names constructors
   return $ join ds
 
--- | Generate constructor wrappers that wraps the result in a container with `TryMerge`.
+-- | Generate constructor wrappers that wraps the result in a container with
+-- `TryMerge`.
 --
 -- > mkMergeConstructor "mrg" ''Maybe
 --
@@ -134,6 +139,11 @@ mkSingleWrapper dataType name info = do
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentNormalCExpr (length $ constructorFields info) (ConE oriName)
+  addModFinalizer $
+    putDoc (DeclDoc retName) $
+      "Smart constructor for v'"
+        <> show oriName
+        <> "' to construct values wrapped and possibly merged in a container."
   return
     [ SigD retName augmentedTyp,
       FunD retName [Clause [] (NormalB expr) []]

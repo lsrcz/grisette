@@ -196,6 +196,7 @@ instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
 
 infixr 0 -->
 
+-- | Build a general symbolic function with a bounded symbol and a term.
 buildGeneralFun ::
   (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
 buildGeneralFun arg v =
@@ -640,6 +641,7 @@ instance
   sbvApplyTerm p f a =
     withPrim @(a --> b) p $ withNonFuncPrim @a p $ f a
 
+-- | Substitute a term for a symbol in a term.
 substTerm :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
 substTerm sym term = gov
   where

@@ -20,7 +20,7 @@ import Control.Monad.Trans (MonadTrans (lift))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
--- | 'lift' with 'MergingStrategy' knowledge propagation.
+-- | 'lift' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgLift ::
   forall t m a.
   (TryMerge (t m), MonadTrans t, Monad m, Mergeable a) =>
