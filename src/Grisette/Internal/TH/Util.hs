@@ -238,5 +238,5 @@ putHaddock name = addModFinalizer . putDoc (DeclDoc name)
 -- | Put a haddock comment on a declaration.
 -- (No-op because compiling with GHC < 9.2)
 putHaddock :: Name -> String -> Q ()
-putHaddock name _ = return ()
+putHaddock _ _ = return ()
 #endif
