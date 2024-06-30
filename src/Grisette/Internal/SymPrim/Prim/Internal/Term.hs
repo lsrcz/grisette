@@ -879,7 +879,7 @@ class
 -- same symbol bodies with different types are considered different symbols
 -- and can coexist in a term.
 --
--- Simple symbols can be created with the 'OverloadedStrings' extension:
+-- Simple symbols can be created with the @OverloadedStrings@ extension:
 --
 -- >>> :set -XOverloadedStrings
 -- >>> "a" :: TypedSymbol Bool

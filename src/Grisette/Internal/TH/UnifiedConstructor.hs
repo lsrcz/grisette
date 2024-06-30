@@ -1,5 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.UnifiedConstructor
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.UnifiedConstructor
   ( mkUnifiedConstructor,
     mkUnifiedConstructor',
@@ -14,7 +22,7 @@ import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.UnifiedData
   ( GetData,
     UnifiedData,
-    UnifiedDataImpl (wrapData),
+    wrapData,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName),
@@ -28,15 +36,26 @@ import Language.Haskell.TH.Syntax
   ( Body (NormalB),
     Clause (Clause),
     Dec (FunD, SigD),
+    DocLoc (DeclDoc),
     Exp (ConE),
     Name,
     Pred,
     Q,
     Type (AppT, ArrowT, ConT, ForallT, VarT),
+    addModFinalizer,
     mkName,
     newName,
+    putDoc,
   )
 
+-- | Generate smart constructors to create unified values.
+--
+-- For a type @T mode a b c@ with constructors @T1@, @T2@, etc., this function
+-- will generate smart constructors with the given prefix, e.g., @mkT1@, @mkT2@,
+-- etc.
+--
+-- The generated smart constructors will contruct values of type
+-- @GetData mode (T mode a b c)@.
 mkUnifiedConstructor ::
   -- | Prefix for generated wrappers
   String ->
@@ -48,6 +67,13 @@ mkUnifiedConstructor prefix typName = do
   let constructorNames = occName . constructorName <$> datatypeCons d
   mkUnifiedConstructor' ((prefix ++) <$> constructorNames) typName
 
+-- | Generate smart constructors to create unified values.
+--
+-- For a type @T mode a b c@ with constructors @T1@, @T2@, etc., this function
+-- will generate smart constructors with the given names.
+--
+-- The generated smart constructors will contruct values of type
+-- @GetData mode (T mode a b c)@.
 mkUnifiedConstructor' ::
   -- | Names for generated wrappers
   [String] ->
@@ -106,6 +132,11 @@ mkSingleWrapper dataType mode name info = do
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentExpr mode (length $ constructorFields info) (ConE oriName)
+  addModFinalizer $
+    putDoc (DeclDoc retName) $
+      "Smart constructor for v'"
+        <> show oriName
+        <> "' to construct unified value."
   return
     [ SigD retName augmentedTyp,
       FunD retName [Clause [] (NormalB expr) []]

@@ -11,11 +11,18 @@ description:    Grisette is a reusable symbolic evaluation library for Haskell. 
                 translating programs into constraints, Grisette can help the development of
                 program reasoning tools, including verification, synthesis, and more.
                 .
-                This "Grisette" module exports all the core APIs for building a symbolic
-                evaluation tool. More lifted libraries are provided in @Grisette.Lib.*@
-                modules.
+                The "Grisette" module exports all the core APIs for building a symbolic
+                evaluation tool. A high-level overview of the module structures are available
+                there.
                 .
-                For more details, please checkout the README.
+                A detailed introduction to Grisette is available at "Grisette.Core". More
+                lifted libraries are provided in @Grisette.Lib.*@ modules.
+                .
+                The "Grisette.Unified" module offers an experimental unified interface for
+                symbolic and concrete evaluation. This module should be imported qualified.
+                .
+                For more details, please checkout the README and 
+                [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials).
 category:       Formal Methods, Theorem Provers, Symbolic Computation, SMT
 homepage:       https://github.com/lsrcz/grisette#readme
 bug-reports:    https://github.com/lsrcz/grisette/issues

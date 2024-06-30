@@ -20,6 +20,7 @@ import Grisette.Unified.Internal.BaseConstraint
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
+-- | Evaluation mode with unified 'Bool' type.
 class
   ( BasicGrisetteType (GetBool mode),
     ConSymConversion Bool SymBool (GetBool mode),

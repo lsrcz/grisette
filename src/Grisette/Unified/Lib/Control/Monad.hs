@@ -128,12 +128,12 @@ import Grisette.Unified.Lib.Data.Foldable
     mrgSequence_,
   )
 
--- | 'return' with 'MergingStrategy' knowledge propagation.
+-- | 'return' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgReturnWithStrategy :: (MonadTryMerge u) => MergingStrategy a -> a -> u a
 mrgReturnWithStrategy s = tryMergeWithStrategy s . return
 {-# INLINE mrgReturnWithStrategy #-}
 
--- | '>>=' with 'MergingStrategy' knowledge propagation.
+-- | '>>=' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgBindWithStrategy ::
   (MonadTryMerge u) =>
   MergingStrategy a ->
@@ -145,14 +145,14 @@ mrgBindWithStrategy sa sb a f =
   tryMergeWithStrategy sb $ tryMergeWithStrategy sa a >>= f
 {-# INLINE mrgBindWithStrategy #-}
 
--- | 'return' with 'MergingStrategy' knowledge propagation.
+-- | 'return' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgReturn :: (MonadTryMerge u, Mergeable a) => a -> u a
 mrgReturn = mrgReturnWithStrategy rootStrategy
 {-# INLINE mrgReturn #-}
 
 infixl 1 .>>=
 
--- | '>>=' with 'MergingStrategy' knowledge propagation.
+-- | '>>=' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 (.>>=) ::
   (MonadTryMerge u, Mergeable a, Mergeable b) =>
   u a ->
@@ -163,7 +163,7 @@ infixl 1 .>>=
 
 infixl 1 .>>
 
--- | '>>' with 'MergingStrategy' knowledge propagation.
+-- | '>>' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 --
 -- This is usually more efficient than calling the original '>>' and merge the
 -- results.
@@ -171,17 +171,19 @@ infixl 1 .>>
 a .>> f = tryMerge $ mrgVoid a >> f
 {-# INLINE (.>>) #-}
 
--- | 'fail' with 'MergingStrategy' knowledge propagation.
+-- | 'fail' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgFail :: (MonadTryMerge m, Mergeable a, MonadFail m) => String -> m a
 mrgFail = tryMerge . fail
 {-# INLINE mrgFail #-}
 
--- | 'mzero' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.mzero' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMzero :: forall m a. (MonadTryMerge m, Mergeable a, MonadPlus m) => m a
 mrgMzero = tryMerge mzero
 {-# INLINE mrgMzero #-}
 
--- | 'mplus' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.mplus' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMplus ::
   forall m a. (MonadTryMerge m, Mergeable a, MonadPlus m) => m a -> m a -> m a
 mrgMplus a b = tryMerge $ mplus (tryMerge a) (tryMerge b)
@@ -189,7 +191,7 @@ mrgMplus a b = tryMerge $ mplus (tryMerge a) (tryMerge b)
 
 infixr 1 .=<<
 
--- | '=<<' with 'MergingStrategy' knowledge propagation.
+-- | '=<<' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 (.=<<) ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> m b) -> m a -> m b
 f .=<< a = tryMerge $ f =<< tryMerge a
@@ -197,7 +199,8 @@ f .=<< a = tryMerge $ f =<< tryMerge a
 
 infixr 1 .>=>
 
--- | '>=>' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.>=>' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 (.>=>) ::
   (MonadTryMerge m, Mergeable a, Mergeable b, Mergeable c) =>
   (a -> m b) ->
@@ -209,7 +212,8 @@ f .>=> g = \a -> tryMerge $ tryMerge (f a) >>= g
 
 infixr 1 .<=<
 
--- | '<=<' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.<=<' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 (.<=<) ::
   (MonadTryMerge m, Mergeable a, Mergeable b, Mergeable c) =>
   (b -> m c) ->
@@ -219,18 +223,21 @@ infixr 1 .<=<
 (.<=<) = flip (.>=>)
 {-# INLINE (.<=<) #-}
 
--- | 'forever' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.forever' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgForever ::
   (Applicative m, TryMerge m, Mergeable b, Mergeable a) => m a -> m b
 mrgForever a = let a' = a .*> a' in a'
 {-# INLINE mrgForever #-}
 
--- | 'join' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.join' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgJoin :: (MonadTryMerge m, Mergeable a) => m (m a) -> m a
 mrgJoin a = tryMerge $ join a
 {-# INLINE mrgJoin #-}
 
--- | 'mfilter' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.mfilter' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMfilter ::
   (MonadTryMerge m, MonadPlus m, Mergeable a) =>
   (a -> Bool) ->
@@ -241,8 +248,8 @@ mrgMfilter p ma = do
   if p a then mrgReturn a else mrgMzero
 {-# INLINE mrgMfilter #-}
 
--- | 'mfilter' with 'MergingStrategy' knowledge propagation and symbolic
--- conditions.
+-- | 'Control.Monad.mfilter' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic conditions.
 symMfilter ::
   forall mode m a.
   (MonadTryMerge m, MonadPlus m, MonadWithMode mode m, Mergeable a) =>
@@ -254,7 +261,8 @@ symMfilter p ma = do
   mrgIf (p a) (mrgReturn a) mrgMzero
 {-# INLINE symMfilter #-}
 
--- | 'filterM' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.filterM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFilterM ::
   (TryMerge m, Applicative m, Mergeable a, Foldable t) =>
   (a -> m Bool) ->
@@ -266,8 +274,8 @@ mrgFilterM p =
     (mrgPure [])
 {-# INLINE mrgFilterM #-}
 
--- | 'filterM' with 'MergingStrategy' knowledge propagation and symbolic
--- conditions.
+-- | 'Control.Monad.filterM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic conditions.
 symFilterM ::
   forall mode m t a.
   (TryMerge m, MonadWithMode mode m, Mergeable a, Foldable t) =>
@@ -283,7 +291,8 @@ symFilterM p =
     (mrgPure [])
 {-# INLINE symFilterM #-}
 
--- | 'mapAndUnzipM' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.mapAndUnzipM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMapAndUnzipM ::
   ( Applicative m,
     TryMerge m,
@@ -296,7 +305,8 @@ mrgMapAndUnzipM ::
 mrgMapAndUnzipM f xs = mrgUnzip .<$> mrgTraverse f xs
 {-# INLINE mrgMapAndUnzipM #-}
 
--- | 'zipWithM' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.zipWithM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgZipWithM ::
   (Applicative m, TryMerge m, Mergeable c) =>
   (a -> b -> m c) ->
@@ -306,7 +316,8 @@ mrgZipWithM ::
 mrgZipWithM f xs ys = mrgSequenceA (zipWith f xs ys)
 {-# INLINE mrgZipWithM #-}
 
--- | 'zipWithM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.zipWithM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgZipWithM_ ::
   (Applicative m, TryMerge m, Mergeable c) =>
   (a -> b -> m c) ->
@@ -316,7 +327,8 @@ mrgZipWithM_ ::
 mrgZipWithM_ f xs ys = mrgSequenceA_ (zipWith f xs ys)
 {-# INLINE mrgZipWithM_ #-}
 
--- | 'foldM' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.foldM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFoldM ::
   (MonadTryMerge m, Mergeable b, Foldable t) =>
   (b -> a -> m b) ->
@@ -326,7 +338,8 @@ mrgFoldM ::
 mrgFoldM = mrgFoldlM
 {-# INLINE mrgFoldM #-}
 
--- | 'foldM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.foldM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFoldM_ ::
   (MonadTryMerge m, Foldable t, Mergeable b) =>
   (b -> a -> m b) ->
@@ -336,7 +349,8 @@ mrgFoldM_ ::
 mrgFoldM_ f a xs = mrgFoldlM f a xs .>> mrgPure ()
 {-# INLINE mrgFoldM_ #-}
 
--- | 'replicateM' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.replicateM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgReplicateM ::
   (Applicative m, TryMerge m, Mergeable a) =>
   Int ->
@@ -345,8 +359,8 @@ mrgReplicateM ::
 mrgReplicateM n = mrgSequenceA . replicate n
 {-# INLINE mrgReplicateM #-}
 
--- | 'replicateM' with 'MergingStrategy' knowledge propagation and symbolic
--- number of elements.
+-- | 'Control.Monad.replicateM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic number of elements.
 symReplicateM ::
   forall mode m a int.
   ( MonadWithMode mode m,
@@ -370,7 +384,8 @@ symReplicateM maxCnt cnt0 f =
         (mrgLiftA2 (:) f (loop (concreteCnt - 1) (cnt - 1)))
 {-# INLINE symReplicateM #-}
 
--- | 'replicateM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.replicateM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgReplicateM_ ::
   (Applicative m, TryMerge m, Mergeable a) =>
   Int ->
@@ -379,8 +394,8 @@ mrgReplicateM_ ::
 mrgReplicateM_ n = mrgSequenceA_ . replicate n
 {-# INLINE mrgReplicateM_ #-}
 
--- | 'replicateM_' with 'MergingStrategy' knowledge propagation and symbolic
--- number of elements.
+-- | 'Control.Monad.replicateM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic number of elements.
 symReplicateM_ ::
   forall mode m a int.
   ( MonadWithMode mode m,
@@ -404,50 +419,55 @@ symReplicateM_ maxCnt cnt0 f =
         (f .*> (loop (concreteCnt - 1) (cnt - 1)))
 {-# INLINE symReplicateM_ #-}
 
--- | 'guard' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.guard' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgGuard :: (Alternative m, TryMerge m) => Bool -> m ()
 mrgGuard True = mrgPure ()
 mrgGuard False = mrgEmpty
 {-# INLINE mrgGuard #-}
 
--- | 'guard' with 'MergingStrategy' knowledge propagation and symbolic
--- conditions.
+-- | 'Control.Monad.guard' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic conditions.
 symGuard :: (SymBranching m, TryMerge m, Alternative m) => SymBool -> m ()
 symGuard b = mrgIf b (mrgPure ()) mrgEmpty
 {-# INLINE symGuard #-}
 
--- | 'when' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.when' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgWhen :: (Applicative m, TryMerge m) => Bool -> m () -> m ()
 mrgWhen True a = tryMerge a
 mrgWhen False _ = mrgPure ()
 {-# INLINE mrgWhen #-}
 
--- | 'when' with 'MergingStrategy' knowledge propagation and symbolic
--- conditions.
+-- | 'Control.Monad.when' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic conditions.
 symWhen ::
   (Applicative m, TryMerge m, SymBranching m) => SymBool -> m () -> m ()
 symWhen b a = mrgIf b a (mrgPure ())
 {-# INLINE symWhen #-}
 
--- | 'unless' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.unless' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgUnless :: (Applicative m, TryMerge m) => Bool -> m () -> m ()
 mrgUnless b = mrgWhen (not b)
 {-# INLINE mrgUnless #-}
 
--- | 'unless' with 'MergingStrategy' knowledge propagation and symbolic
--- conditions.
+-- | 'Control.Monad.unless' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation and symbolic conditions.
 symUnless ::
   (Applicative m, TryMerge m, SymBranching m) => SymBool -> m () -> m ()
 symUnless b = symWhen (symNot b)
 {-# INLINE symUnless #-}
 
--- | 'liftM' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.liftM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgLiftM ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> b) -> m a -> m b
 mrgLiftM f a = f .<$> a
 {-# INLINE mrgLiftM #-}
 
--- | 'liftM2' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.liftM2' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgLiftM2 ::
   (MonadTryMerge m, Mergeable a, Mergeable b, Mergeable c) =>
   (a -> b -> c) ->
@@ -457,7 +477,8 @@ mrgLiftM2 ::
 mrgLiftM2 f a b = f .<$> a .<*> b
 {-# INLINE mrgLiftM2 #-}
 
--- | 'liftM3' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.liftM3' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgLiftM3 ::
   (MonadTryMerge m, Mergeable a, Mergeable b, Mergeable c, Mergeable d) =>
   (a -> b -> c -> d) ->
@@ -468,7 +489,8 @@ mrgLiftM3 ::
 mrgLiftM3 f a b c = f .<$> a .<*> b .<*> c
 {-# INLINE mrgLiftM3 #-}
 
--- | 'liftM4' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.liftM4' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgLiftM4 ::
   ( MonadTryMerge m,
     Mergeable a,
@@ -486,7 +508,8 @@ mrgLiftM4 ::
 mrgLiftM4 f a b c d = f .<$> a .<*> b .<*> c .<*> d
 {-# INLINE mrgLiftM4 #-}
 
--- | 'liftM5' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.liftM5' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgLiftM5 ::
   ( MonadTryMerge m,
     Mergeable a,
@@ -506,7 +529,8 @@ mrgLiftM5 ::
 mrgLiftM5 f a b c d e = f .<$> a .<*> b .<*> c .<*> d .<*> e
 {-# INLINE mrgLiftM5 #-}
 
--- | '<*>' with 'MergingStrategy' knowledge propagation.
+-- | 'Control.Monad.<*>' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgAp ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => m (a -> b) -> m a -> m b
 mrgAp = (.<*>)
@@ -514,8 +538,9 @@ mrgAp = (.<*>)
 
 infixl 4 .<$!>
 
--- | '<$!>' with 'MergingStrategy' knowledge propagation. Merging is always
--- strict so we can directly use '.<$>'.
+-- | 'Control.Monad.<$!>' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation. Merging is always strict so we can directly use
+-- 'Grisette.Unified.Lib.Data.Functor..<$>'.
 (.<$!>) ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> b) -> m a -> m b
 f .<$!> a = f .<$> a

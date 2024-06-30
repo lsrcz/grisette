@@ -10,6 +10,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.UnifiedInteger
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.UnifiedInteger
   ( GetInteger,
     UnifiedInteger,
@@ -57,6 +65,7 @@ instance UnifiedIntegerImpl 'Con Integer where
 instance UnifiedIntegerImpl 'Sym SymInteger where
   type GetInteger 'Sym = SymInteger
 
+-- | Evaluation mode with unified 'Integer' type.
 class
   (UnifiedIntegerImpl mode (GetInteger mode)) =>
   UnifiedInteger (mode :: EvalModeTag)

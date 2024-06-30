@@ -5,6 +5,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      :   Grisette.Unified.Lib.Data.Foldable
+-- Copyright   :   (c) Sirui Lu 2021-2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Lib.Data.Foldable
   ( symElem,
     symMaximum,
@@ -109,7 +117,7 @@ mrgMaximum l = do
         Just x -> mrgFmap Just $ mrgMax @mode x y
 {-# INLINE mrgMaximum #-}
 
--- | 'Data.Foldable.maximum' with result merged with 'ITEOp'.
+-- | 'Data.Foldable.maximum' with result merged with 'Grisette.Core.ITEOp'.
 symMaximum ::
   forall mode a t.
   ( Foldable t,
@@ -123,7 +131,8 @@ symMaximum ::
 symMaximum l = symIteMerge (mrgMaximum @mode l :: BaseMonad mode a)
 {-# INLINE symMaximum #-}
 
--- | 'Data.Foldable.minimum' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.minimum' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMinimum ::
   forall mode a t m.
   (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSymOrd mode a) =>
@@ -141,7 +150,7 @@ mrgMinimum l = do
         Nothing -> mrgPure $ Just y
         Just x -> mrgFmap Just $ mrgMin @mode x y
 
--- | 'Data.Foldable.maximum' with result merged with 'ITEOp'.
+-- | 'Data.Foldable.maximum' with result merged with 'Grisette.Core.ITEOp'.
 symMinimum ::
   forall mode a t.
   ( Foldable t,
@@ -155,7 +164,8 @@ symMinimum ::
 symMinimum l = symIteMerge (mrgMinimum @mode l :: BaseMonad mode a)
 {-# INLINE symMinimum #-}
 
--- | 'Data.Foldable.foldrM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.foldrM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFoldrM ::
   (MonadTryMerge m, Mergeable b, Foldable t) =>
   (a -> b -> m b) ->
@@ -167,7 +177,8 @@ mrgFoldrM f z0 xs = foldl c mrgPure xs z0
     c k x z = tryMerge (f x z) >>= k
 {-# INLINE mrgFoldrM #-}
 
--- | 'Data.Foldable.foldlM' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.foldlM' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFoldlM ::
   (MonadTryMerge m, Mergeable b, Foldable t) =>
   (b -> a -> m b) ->
@@ -179,7 +190,8 @@ mrgFoldlM f z0 xs = foldr c mrgPure xs z0
     c x k z = tryMerge (f z x) >>= k
 {-# INLINE mrgFoldlM #-}
 
--- | 'Data.Foldable.traverse_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.traverse_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgTraverse_ ::
   (Applicative m, TryMerge m, Foldable t) => (a -> m b) -> t a -> m ()
 mrgTraverse_ f = foldr c (mrgPure ())
@@ -187,13 +199,15 @@ mrgTraverse_ f = foldr c (mrgPure ())
     c x k = mrgVoid (f x) .*> k
 {-# INLINE mrgTraverse_ #-}
 
--- | 'Data.Foldable.for_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.for_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgFor_ ::
   (Applicative m, TryMerge m, Foldable t) => t a -> (a -> m b) -> m ()
 mrgFor_ = flip mrgTraverse_
 {-# INLINE mrgFor_ #-}
 
--- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.sequence_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgSequenceA_ ::
   (Foldable t, TryMerge m, Applicative m) => t (m a) -> m ()
 mrgSequenceA_ = foldr c (mrgPure ())
@@ -201,24 +215,28 @@ mrgSequenceA_ = foldr c (mrgPure ())
     c m k = mrgVoid m .*> k
 {-# INLINE mrgSequenceA_ #-}
 
--- | 'Data.Foldable.mapM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.mapM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMapM_ :: (MonadTryMerge m, Foldable t) => (a -> m b) -> t a -> m ()
 mrgMapM_ = mrgTraverse_
 {-# INLINE mrgMapM_ #-}
 
--- | 'Data.Foldable.forM_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.forM_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgForM_ :: (MonadTryMerge m, Foldable t) => t a -> (a -> m b) -> m ()
 mrgForM_ = flip mrgMapM_
 {-# INLINE mrgForM_ #-}
 
--- | 'Data.Foldable.sequence_' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.sequence_' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgSequence_ :: (Foldable t, MonadTryMerge m) => t (m a) -> m ()
 mrgSequence_ = foldr c (mrgPure ())
   where
     c m k = mrgVoid m .>> k
 {-# INLINE mrgSequence_ #-}
 
--- | 'Data.Foldable.msum' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.msum' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMsum ::
   (MonadTryMerge m, Mergeable a, MonadPlus m, Foldable t) => t (m a) -> m a
 mrgMsum = foldr mrgMplus mrgMzero
@@ -246,7 +264,8 @@ symAll ::
 symAll f = foldl' (\acc v -> acc .&& f v) (toSym True)
 {-# INLINE symAll #-}
 
--- | 'Data.Foldable.maximumBy' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.maximumBy' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMaximumBy ::
   forall mode t a m.
   (Foldable t, Mergeable a, MonadWithMode mode m) =>
@@ -269,7 +288,7 @@ mrgMaximumBy cmp l = do
             GT -> mrgSingle $ Just x
             _ -> mrgSingle $ Just y
 
--- | 'Data.Foldable.maximumBy' with result merged with 'ITEOp'.
+-- | 'Data.Foldable.maximumBy' with result merged with 'Grisette.Core.ITEOp'.
 symMaximumBy ::
   forall mode t a.
   (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalMode mode) =>
@@ -279,7 +298,8 @@ symMaximumBy ::
 symMaximumBy cmp l = symIteMerge (mrgMaximumBy cmp l :: BaseMonad mode a)
 {-# INLINE symMaximumBy #-}
 
--- | 'Data.Foldable.minimumBy' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Foldable.minimumBy' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 mrgMinimumBy ::
   forall mode t a m.
   (Foldable t, Mergeable a, MonadWithMode mode m) =>
@@ -302,7 +322,7 @@ mrgMinimumBy cmp l = do
             GT -> mrgSingle $ Just y
             _ -> mrgSingle $ Just x
 
--- | 'Data.Foldable.minimumBy' with result merged with 'ITEOp'.
+-- | 'Data.Foldable.minimumBy' with result merged with 'Grisette.Core.ITEOp'.
 symMinimumBy ::
   forall mode t a.
   (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalMode mode) =>
@@ -321,8 +341,8 @@ symNotElem ::
 symNotElem x = symNot . symElem x
 {-# INLINE symNotElem #-}
 
--- | 'Data.Foldable.elem' with symbolic equality and 'MergingStrategy' knowledge
--- propagation.
+-- | 'Data.Foldable.elem' with symbolic equality and
+-- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgFind ::
   (Foldable t, MonadWithMode mode m, Mergeable a) =>
   (a -> GetBool mode) ->

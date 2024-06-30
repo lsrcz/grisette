@@ -209,7 +209,8 @@ mapCBMCExceptT f m = CBMCExceptT $ (unsafeCoerce . f . unsafeCoerce) (runCBMCExc
 withCBMCExceptT :: (Functor m) => (e -> e') -> CBMCExceptT e m a -> CBMCExceptT e' m a
 withCBMCExceptT f = mapCBMCExceptT $ fmap $ either (Left . f) Right
 
--- | Similar to 'ExceptT', but with different error handling mechanism.
+-- | Similar to 'Control.Monad.Except.ExceptT', but with different error
+-- handling mechanism.
 newtype CBMCExceptT e m a = CBMCExceptT {runCBMCExceptT :: m (CBMCEither e a)} deriving stock (Generic, Generic1)
 
 instance (Eq e, Eq1 m) => Eq1 (CBMCExceptT e m) where

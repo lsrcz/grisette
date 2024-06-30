@@ -44,7 +44,7 @@ import GHC.IO (unsafePerformIO)
 import Language.Haskell.TH.Syntax (Lift (liftTyped), unsafeTExpCoerce)
 import Language.Haskell.TH.Syntax.Compat (SpliceQ, liftSplice)
 
--- | Identifier type used for 'GenSym'
+-- | Identifier type used for 'Grisette.Core.GenSym'
 --
 -- The constructor is hidden intentionally.
 -- You can construct an identifier by:

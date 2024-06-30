@@ -483,6 +483,10 @@ mrgUnion ::
   u [a]
 mrgUnion = mrgUnionBy (.==)
 
+-- | Symbolic version of 'Data.List.intersect', the result would be merged and
+-- propagate the mergeable knowledge.
+--
+-- Can generate O(len(rhs)) cases, and O(len(lhs) * len(rhs)) constraints.
 mrgIntersect ::
   (MonadUnion u, Mergeable a, SymEq a) =>
   [a] ->

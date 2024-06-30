@@ -236,7 +236,7 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- > (bvadd a #x9)
 --
 -- Here the value 9 will be approximated to a 4-bit bit vector, and the
--- operation `bvadd` will be used instead of `+`.
+-- operation @bvadd@ will be used instead of @+@.
 --
 -- Note that this approximation may not be sound. See 'GrisetteSMTConfig' for
 -- more details.
@@ -291,9 +291,9 @@ approximateExtraConfig p =
 -- infinite precision during the symbolic evaluation, but when solving the
 -- queries, they are translated to bit vectors for better performance.
 --
--- For example, the Grisette term @5 * "a" :: 'SymInteger'@ should be translated
--- to the following SMT with the unbounded reasoning configuration (the term
--- is @t1@):
+-- For example, the Grisette term @5 * "a" :: 'Grisette.SymPrim.SymInteger'@
+-- should be translated to the following SMT with the unbounded reasoning
+-- configuration (the term is @t1@):
 --
 -- > (declare-fun a () Int)           ; declare symbolic constant a
 -- > (define-fun c1 () Int 5)         ; define the concrete value 5
@@ -522,6 +522,8 @@ configIntroKnownIsZero :: GrisetteSMTConfig n -> ((KnownIsZero n) => r) -> r
 configIntroKnownIsZero (GrisetteSMTConfig _ (ExtraConfig _ (Approx _))) r = r
 configIntroKnownIsZero (GrisetteSMTConfig _ (ExtraConfig _ NoApprox)) r = r
 
+-- | Lower a single primitive term to SBV. With an explicitly provided
+-- 'SymBiMap' cache.
 lowerSinglePrimCached ::
   forall integerBitWidth a m.
   (HasCallStack, SBVFreshMonad m) =>
@@ -540,6 +542,7 @@ lowerSinglePrimCached config t m =
             )
         Nothing -> lowerSinglePrimImpl config t m
 
+-- | Lower a single primitive term to SBV.
 lowerSinglePrim ::
   forall integerBitWidth a m.
   (HasCallStack, SBVFreshMonad m) =>
@@ -758,6 +761,7 @@ preprocessUIFuncs ::
 preprocessUIFuncs = Just . fmap (\(a, (_, c)) -> (a, c))
 #endif
 
+-- | Parse an SBV model to a Grisette model.
 parseModel ::
   forall integerBitWidth.
   GrisetteSMTConfig integerBitWidth ->

@@ -599,7 +599,7 @@ instance
 -- your own types.
 --
 -- This 'simpleFresh' implementation is for the types that does not need any specification.
--- It will generate product types by generating each fields with '()' as specification.
+-- It will generate product types by generating each fields with @()@ as specification.
 -- It will not work on sum types.
 --
 -- __Note:__ __Never__ use on recursive types.

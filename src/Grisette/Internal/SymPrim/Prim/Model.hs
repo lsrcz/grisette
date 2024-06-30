@@ -227,6 +227,8 @@ instance Show Model where
       go0 [(SomeTypedSymbol _ s, v)] = showUntyped s ++ " -> " ++ show v
       go0 ((SomeTypedSymbol _ s, v) : xs) = showUntyped s ++ " -> " ++ show v ++ ", " ++ go0 xs
 
+-- | Given a typed symbol and a model, return the equation (symbol = value)
+-- encoded in the model.
 equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
 equation tsym@(TypedSymbol {}) m = withSymbolSupported tsym $
   case valueOf tsym m of
@@ -526,6 +528,7 @@ evaluateSomeTerm fillDefault m@(Model ma) = gomemo
       SomeTerm
     goTernary f a b c = SomeTerm $ f (gotyped a) (gotyped b) (gotyped c)
 
+-- | Evaluate a term in the given model.
 evaluateTerm :: forall a. (SupportedPrim a) => Bool -> Model -> Term a -> Term a
 evaluateTerm fillDefault m t = case evaluateSomeTerm fillDefault m $ SomeTerm t of
   SomeTerm (t1 :: Term b) -> unsafeCoerce @(Term b) @(Term a) t1

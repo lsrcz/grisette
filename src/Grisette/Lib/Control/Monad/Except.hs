@@ -28,14 +28,14 @@ import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Trans.Except (mrgRunExceptT)
 import Grisette.Lib.Data.Functor (mrgFmap)
 
--- | 'Control.Monad.Except.throwError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.throwError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgThrowError :: (MonadError e m, TryMerge m, Mergeable a) => e -> m a
 mrgThrowError = tryMerge . throwError
 {-# INLINE mrgThrowError #-}
 
--- | 'Control.Monad.Except.catchError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.catchError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgCatchError ::
   (MonadError e m, TryMerge m, Mergeable a) =>
   m a ->
@@ -44,15 +44,15 @@ mrgCatchError ::
 mrgCatchError v handler = tryMerge $ v `catchError` (tryMerge . handler)
 {-# INLINE mrgCatchError #-}
 
--- | 'Control.Monad.Except.liftEither' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.liftEither' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgLiftEither ::
   (MonadError e m, TryMerge m, Mergeable a, Mergeable e) => Either e a -> m a
 mrgLiftEither = either mrgThrowError mrgReturn
 {-# INLINE mrgLiftEither #-}
 
--- | 'Control.Monad.Except.tryError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.tryError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgTryError ::
   (MonadError e m, TryMerge m, Mergeable a, Mergeable e) =>
   m a ->
@@ -60,8 +60,8 @@ mrgTryError ::
 mrgTryError action = (mrgFmap Right action) `mrgCatchError` (mrgReturn . Left)
 {-# INLINE mrgTryError #-}
 
--- | 'Control.Monad.Except.withError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.withError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgWithError ::
   (MonadError e m, TryMerge m, Mergeable a, Mergeable e) =>
   (e -> e) ->
@@ -71,8 +71,8 @@ mrgWithError f action =
   tryMerge $ mrgTryError action >>= either (mrgThrowError . f) mrgReturn
 {-# INLINE mrgWithError #-}
 
--- | 'Control.Monad.Except.handleError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.handleError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgHandleError ::
   (MonadError e m, TryMerge m, Mergeable a, Mergeable e) =>
   (e -> m a) ->
@@ -81,8 +81,8 @@ mrgHandleError ::
 mrgHandleError = flip mrgCatchError
 {-# INLINE mrgHandleError #-}
 
--- | 'Control.Monad.Except.mapError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.mapError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgMapError ::
   ( MonadError e m,
     TryMerge m,
@@ -99,8 +99,8 @@ mrgMapError ::
 mrgMapError f action = tryMerge (f (mrgTryError action)) >>= mrgLiftEither
 {-# INLINE mrgMapError #-}
 
--- | 'Control.Monad.Except.modifyError' with 'MergingStrategy' knowledge
--- propagation.
+-- | 'Control.Monad.Except.modifyError' with 'Grisette.Core.MergingStrategy'
+-- knowledge propagation.
 mrgModifyError ::
   ( MonadError e' m,
     TryMerge m,

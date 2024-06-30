@@ -23,8 +23,7 @@
 module Grisette.Internal.Core.Data.UnionBase
   ( -- * The union data structure.
 
-    -- | Please consider using 'Grisette.Internal.Core.Control.Monad.Union'
-    -- instead.
+    -- | Please consider using 'Grisette.Core.Union' instead.
     UnionBase (..),
     ifWithLeftMost,
     ifWithStrategy,
@@ -226,7 +225,7 @@ instance (AllSyms a) => AllSyms (UnionBase a) where
   allSymsS (UnionSingle v) = allSymsS v
   allSymsS (UnionIf _ _ c t f) = \l -> SomeSym c : (allSymsS t . allSymsS f $ l)
 
--- | Fully reconstruct a 'Union' to maintain the merged invariant.
+-- | Fully reconstruct a 'Grisette.Core.Union' to maintain the merged invariant.
 fullReconstruct :: MergingStrategy a -> UnionBase a -> UnionBase a
 fullReconstruct strategy (UnionIf _ False cond t f) =
   ifWithStrategyInv

@@ -21,7 +21,7 @@ import Control.Monad (void)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 
--- | 'fmap' with 'MergingStrategy' knowledge propagation.
+-- | 'fmap' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgFmap ::
   (TryMerge f, Mergeable a, Mergeable b, Functor f) =>
   (a -> b) ->
@@ -32,7 +32,7 @@ mrgFmap f a = tryMerge $ fmap f (tryMerge a)
 
 infixl 4 .<$>
 
--- | '<$>' with 'MergingStrategy' knowledge propagation.
+-- | '<$>' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 (.<$>) ::
   (TryMerge f, Mergeable a, Mergeable b, Functor f) => (a -> b) -> f a -> f b
 (.<$>) = mrgFmap
@@ -40,21 +40,23 @@ infixl 4 .<$>
 
 infixl 4 .<$
 
--- | '<$' with 'MergingStrategy' knowledge propagation.
+-- | '<$' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 (.<$) :: (TryMerge f, Mergeable a, Mergeable b, Functor f) => b -> f a -> f b
 (.<$) v f = tryMerge $ v <$ tryMerge f
 {-# INLINE (.<$) #-}
 
 infixl 4 .$>
 
--- | '$>' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Functor.$>' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 (.$>) :: (TryMerge f, Mergeable a, Mergeable b, Functor f) => f a -> b -> f b
 (.$>) = flip (.<$)
 {-# INLINE (.$>) #-}
 
 infixl 1 .<&>
 
--- | '<&>' with 'MergingStrategy' knowledge propagation.
+-- | 'Data.Functor.<&>' with 'Grisette.Core.MergingStrategy' knowledge
+-- propagation.
 (.<&>) ::
   (TryMerge f, Mergeable a, Mergeable b, Functor f) =>
   f a ->
@@ -63,7 +65,7 @@ infixl 1 .<&>
 (.<&>) = flip mrgFmap
 {-# INLINE (.<&>) #-}
 
--- | 'unzip' with 'MergingStrategy' knowledge propagation.
+-- | 'unzip' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgUnzip ::
   (TryMerge f, Mergeable a, Mergeable b, Functor f) =>
   f (a, b) ->
@@ -73,7 +75,7 @@ mrgUnzip ab =
    in (fst .<$> mergedAb, snd .<$> mergedAb)
 {-# INLINE mrgUnzip #-}
 
--- | 'void' with 'MergingStrategy' knowledge propagation.
+-- | 'void' with 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgVoid :: (TryMerge f, Functor f) => f a -> f ()
 mrgVoid x = tryMerge $ void x
 {-# INLINE mrgVoid #-}

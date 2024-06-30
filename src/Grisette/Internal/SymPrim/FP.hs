@@ -18,11 +18,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {- HLINT ignore "Unused LANGUAGE pragma" -}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.FP
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.FP
   ( ValidFP,
     FP (..),
@@ -259,16 +266,16 @@ instance (ValidFloat eb sb) => QC.Arbitrary (FP eb sb) where
 
 -- | Rounding mode for floating-point operations.
 data FPRoundingMode
-  -- | Round to nearest, ties to even.
-  = RNE
-  -- | Round to nearest, ties to away from zero.
-  | RNA
-  -- | Round towards positive infinity.
-  | RTP
-  -- | Round towards negative infinity.
-  | RTN
-  -- | Round towards zero.
-  | RTZ
+  = -- | Round to nearest, ties to even.
+    RNE
+  | -- | Round to nearest, ties to away from zero.
+    RNA
+  | -- | Round towards positive infinity.
+    RTP
+  | -- | Round towards negative infinity.
+    RTN
+  | -- | Round towards zero.
+    RTZ
   deriving (Eq, Ord, Show, Generic, Lift)
   deriving anyclass (Hashable, NFData)
 

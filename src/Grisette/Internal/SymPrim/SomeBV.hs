@@ -828,7 +828,7 @@ conBVView (SomeBV (bv :: bv n)) = case conView @(cbv n) bv of
   Nothing -> Nothing
 
 -- | Pattern synonym for symbolic 'SomeBV' to see if it contains a concrete
--- value and extract it. Similar to 'Con' but for 'SomeBV'.
+-- value and extract it. Similar to 'Grisette.Core.Con' but for 'SomeBV'.
 --
 -- >>> case (bv 8 0x12 :: SomeSymIntN) of { ConBV c -> c; _ -> error "impossible" }
 -- 0x12

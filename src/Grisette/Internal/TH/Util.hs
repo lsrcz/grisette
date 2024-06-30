@@ -3,6 +3,14 @@
 
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.Util
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.Util
   ( occName,
     constructorInfoToType,
@@ -60,9 +68,11 @@ import Language.Haskell.TH.Datatype.TyVarBndr
   )
 import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
 
+-- | Get the unqualified name of a 'Name'.
 occName :: Name -> String
 occName (Name (OccName name) _) = name
 
+-- | Convert a 'ConstructorInfo' to a 'Type' of the constructor.
 constructorInfoToType :: DatatypeInfo -> ConstructorInfo -> Q Type
 constructorInfoToType dataType info = do
   let binders =
@@ -74,18 +84,24 @@ constructorInfoToType dataType info = do
         foldr (AppT . AppT ArrowT) (datatypeType dataType) fields
   if null binders then return tyBody else return $ ForallT binders ctx tyBody
 
+-- | Check if a type variable is of kind 'EvalModeTag'.
 tvIsMode :: TyVarBndr_ flag -> Bool
 tvIsMode = (== ConT ''EvalModeTag) . tvKind
 
+-- | Check if a type variable is of kind 'Nat'.
 tvIsNat :: TyVarBndr_ flag -> Bool
 tvIsNat = (== ConT ''Nat) . tvKind
 
+-- | Check if a type variable is of kind 'Data.Kind.Type'.
 tvIsStar :: TyVarBndr_ flag -> Bool
 tvIsStar = (== StarT) . tvKind
 
+-- | Check if a type variable is of kind 'Data.Kind.Type -> Data.Kind.Type'.
 tvIsStarToStar :: TyVarBndr_ flag -> Bool
 tvIsStarToStar = (== (AppT (AppT ArrowT StarT) StarT)) . tvKind
 
+-- | Substitute the type variables in a 'DatatypeInfo' with the given
+-- substitution map.
 substDataType :: DatatypeInfo -> M.Map Name Type -> DatatypeInfo
 substDataType d substMap =
   d
@@ -93,6 +109,8 @@ substDataType d substMap =
       datatypeCons = applySubstitution substMap <$> datatypeCons d
     }
 
+-- | Convert a 'DatatypeInfo' to a 'DatatypeInfo' with fresh type variable
+-- names.
 datatypeToFreshNames :: DatatypeInfo -> Q DatatypeInfo
 datatypeToFreshNames d = do
   let vars = datatypeVars d
@@ -102,15 +120,18 @@ datatypeToFreshNames d = do
   let substMap = M.fromList $ zip names (VarT <$> freshNames)
   return $ substDataType d {datatypeVars = newDTVars} substMap
 
+-- | Reify a datatype with fresh type variable names.
 reifyDatatypeWithFreshNames :: Name -> Q DatatypeInfo
 reifyDatatypeWithFreshNames name = do
   d <- reifyDatatype name
   datatypeToFreshNames d
 
+-- | Check if all type variables have the same kind.
 allSameKind :: [TyVarBndrUnit] -> Bool
 allSameKind [] = True
 allSameKind (x : xs) = all ((== tvKind x) . tvKind) xs
 
+-- | Get the kinds of the type parameters of a class.
 classParamKinds :: Name -> Q [Kind]
 classParamKinds className = do
   cls <- reify className
@@ -120,6 +141,7 @@ classParamKinds className = do
       fail $
         "symmetricClassParamKind:" <> show className <> " is not a class"
 
+-- | Get the number of type parameters of a class.
 classNumParam :: Name -> Q Int
 classNumParam className = do
   cls <- reify className
@@ -129,6 +151,7 @@ classNumParam className = do
       fail $
         "classNumParam:" <> show className <> " is not a class"
 
+-- | Get the kind of the single type parameter of a class.
 singleParamClassParamKind :: Name -> Q Kind
 singleParamClassParamKind className = do
   cls <- reify className
@@ -147,6 +170,7 @@ singleParamClassParamKind className = do
       fail $
         "singleParamClassParamKind:" <> show className <> " is not a class"
 
+-- | Get the kind of the binary type parameter of a class.
 binaryClassParamKind :: Name -> Q Kind
 binaryClassParamKind className = do
   cls <- reify className
@@ -168,10 +192,12 @@ binaryClassParamKind className = do
       fail $
         "binaryClassParamKind:" <> show className <> " is not a class"
 
+-- | Get a type with a possible substitution.
 getTypeWithMaybeSubst :: TyVarBndrUnit -> Maybe Type -> Q Type
 getTypeWithMaybeSubst tv Nothing = varT $ tvName tv
 getTypeWithMaybeSubst _ (Just t) = return t
 
+-- | Drop the last instantiated type parameter of a type.
 dropLastTypeParam :: Type -> Q Type
 dropLastTypeParam (AppT c _) = return c
 dropLastTypeParam v =
@@ -181,14 +207,17 @@ dropLastTypeParam v =
       <> " / "
       <> show v
 
+-- | Drop the last N instantiated type parameters of a type.
 dropNTypeParam :: Int -> Type -> Q Type
 dropNTypeParam 0 t = return t
 dropNTypeParam n t = dropLastTypeParam t >>= dropNTypeParam (n - 1)
 
+-- | Get the number of type parameters of a kind.
 kindNumParam :: Kind -> Q Int
 kindNumParam (AppT (AppT ArrowT _) k) = (1 +) <$> kindNumParam k
 kindNumParam _ = return 0
 
+-- | Concatenate two 'Maybe [Pred]'.
 concatPreds :: Maybe [Pred] -> Maybe [Pred] -> Maybe [Pred]
 concatPreds Nothing Nothing = Nothing
 concatPreds (Just ps) Nothing = Just ps

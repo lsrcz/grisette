@@ -2,6 +2,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.DerivePredefined
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.DerivePredefined
   ( derivePredefined,
     derivePredefinedMultipleClasses,
@@ -302,9 +310,10 @@ derive = flip (derivePredefinedMultipleClasses Nothing)
 --
 -- * TypeOperators
 --
--- It also requires that the 'GHC.Generics.Default' data constructor is visible.
--- You may get strange errors if you only import 'Default' type but not the
--- data constructor.
+-- It also requires that the v'Generics.Deriving.Default.Default' data
+-- constructor is visible.
+-- You may get strange errors if you only import
+-- v'Generics.Deriving.Default.Default' type but not the data constructor.
 deriveAll :: Name -> Q [Dec]
 deriveAll = derivePredefinedMultipleClasses Nothing allGrisetteClasses
 

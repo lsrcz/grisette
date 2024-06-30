@@ -114,6 +114,7 @@ import Unsafe.Coerce (unsafeCoerce)
 unsafeAxiom :: forall a b. a :~: b
 unsafeAxiom = unsafeCoerce (Refl @a)
 
+-- | Construct the 'KnownNat' constraint when the runtime value is known.
 withKnownNat :: forall n r. NatRepr n -> ((KnownNat n) => r) -> r
 withKnownNat (NatRepr nVal) v =
   case someNatVal nVal of
@@ -132,6 +133,7 @@ natValue (NatRepr n) = n
 data SomeNatReprHelper where
   SomeNatReprHelper :: NatRepr n -> SomeNatReprHelper
 
+-- | Existential wrapper for 'NatRepr'.
 data SomeNatRepr where
   SomeNatRepr :: (KnownNat n) => NatRepr n -> SomeNatRepr
 
@@ -141,6 +143,8 @@ mkNatRepr :: Natural -> SomeNatRepr
 mkNatRepr n = case SomeNatReprHelper (NatRepr n) of
   SomeNatReprHelper natRepr -> withKnownNat natRepr $ SomeNatRepr natRepr
 
+-- | Existential wrapper for 'NatRepr' with the constraint that the natural
+-- number is greater than 0.
 data SomePositiveNatRepr where
   SomePositiveNatRepr ::
     (KnownNat n, 1 <= n) => NatRepr n -> SomePositiveNatRepr

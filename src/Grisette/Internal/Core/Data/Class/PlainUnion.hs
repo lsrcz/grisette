@@ -125,8 +125,10 @@ pattern If c t f <-
 
 -- | Merge the simply mergeable values in a union, and extract the merged value.
 --
--- In the following example, 'mrgIfPropagatedStrategy' will not merge the results, and
--- 'simpleMerge' will merge it and extract the single merged value.
+-- In the following example,
+-- 'Grisette.Internal.Core.Data.Class.SimpleMergeable.mrgIfPropagatedStrategy'
+-- will not merge the results, and 'simpleMerge' will merge it and extract the
+-- single merged value.
 --
 -- >>> mrgIfPropagatedStrategy (ssym "a") (return $ ssym "b") (return $ ssym "c") :: Union SymBool
 -- <If a b c>
@@ -149,7 +151,7 @@ symIteMerge (Single x) = x
 symIteMerge (If cond l r) = symIte cond (symIteMerge l) (symIteMerge r)
 {-# INLINE symIteMerge #-}
 
--- | Helper for applying functions on 'UnionLike' and 'SimpleMergeable'.
+-- | Helper for applying functions on 'PlainUnion' and 'SimpleMergeable'.
 --
 -- >>> let f :: Integer -> Union Integer = \x -> mrgIf (ssym "a") (mrgSingle $ x + 1) (mrgSingle $ x + 2)
 -- >>> f .# (mrgIf (ssym "b" :: SymBool) (mrgSingle 0) (mrgSingle 2) :: Union Integer)
