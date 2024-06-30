@@ -24,6 +24,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
    [#217](https://github.com/lsrcz/grisette/pull/217))
 - Added `IEEEFPRoundingMode`.
   ([#219](https://github.com/lsrcz/grisette/pull/219))
+- Added `Show` instance for `SomeSym`.
+  ([#219](https://github.com/lsrcz/grisette/pull/219))
 
 ### Fixed
 - Fixed the printing of FP terms.
