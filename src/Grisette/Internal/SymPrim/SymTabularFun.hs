@@ -18,7 +18,10 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (..)) where
+module Grisette.Internal.SymPrim.SymTabularFun
+  ( type (=~>) (SymTabularFun),
+  )
+where
 
 import Control.DeepSeq (NFData (rnf))
 import Data.Hashable (Hashable (hashWithSalt))

@@ -20,7 +20,7 @@ module Grisette.Internal.SymPrim.SymFP
     SymFP16,
     SymFP32,
     SymFP64,
-    SymFPRoundingMode (..),
+    SymFPRoundingMode (SymFPRoundingMode),
   )
 where
 
