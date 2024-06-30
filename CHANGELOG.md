@@ -22,6 +22,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
    [#214](https://github.com/lsrcz/grisette/pull/214),
    [#215](https://github.com/lsrcz/grisette/pull/215),
    [#217](https://github.com/lsrcz/grisette/pull/217))
+- Added `IEEEFPRoundingMode`.
+  ([#219](https://github.com/lsrcz/grisette/pull/219))
+
+### Fixed
+- Fixed the printing of FP terms.
+  ([#219](https://github.com/lsrcz/grisette/pull/219))
 
 ### Changed
 - [Breaking] Relaxed constraints for type classes, according to
