@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -30,8 +31,13 @@ module Grisette.Internal.TH.Util
     classNumParam,
     kindNumParam,
     concatPreds,
+    putHaddock,
   )
 where
+
+#if MIN_VERSION_template_haskell(2,18,0)
+import Language.Haskell.TH.Syntax (addModFinalizer, putDoc, DocLoc(DeclDoc))
+#endif
 
 import Control.Monad (when)
 import qualified Data.Map as M
@@ -223,3 +229,14 @@ concatPreds Nothing Nothing = Nothing
 concatPreds (Just ps) Nothing = Just ps
 concatPreds Nothing (Just ps) = Just ps
 concatPreds (Just ps1) (Just ps2) = Just $ ps1 ++ ps2
+
+#if MIN_VERSION_template_haskell(2,18,0)
+-- | Put a haddock comment on a declaration.
+putHaddock :: Name -> String -> Q ()
+putHaddock name = addModFinalizer . putDoc (DeclDoc name) 
+#else
+-- | Put a haddock comment on a declaration.
+-- (No-op because compiling with GHC < 9.2)
+putHaddock :: Name -> String -> Q ()
+putHaddock name _ = return ()
+#endif
