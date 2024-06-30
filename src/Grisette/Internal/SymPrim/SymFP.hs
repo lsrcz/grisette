@@ -70,7 +70,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> symFpAdd rne "a" 2.0 :: SymFP 11 53
 -- (fp.add rne a 2.0)
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype SymFP eb sb = SymFP {underlyingFPTerm :: Term (FP eb sb)}
   deriving (Lift, Generic)

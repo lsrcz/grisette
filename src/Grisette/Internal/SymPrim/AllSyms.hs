@@ -86,7 +86,8 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep (underlyingTerm), pformat,
+  ( LinkedRep (underlyingTerm),
+    pformat,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils
   ( someTermsSize,

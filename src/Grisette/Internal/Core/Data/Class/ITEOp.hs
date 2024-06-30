@@ -48,7 +48,7 @@ import Grisette.Internal.SymPrim.TabularFun (type (=->))
 -- >>> :set -XFlexibleInstances
 -- >>> :set -XFunctionalDependencies
 
--- | ITE operator for solvable (see "Grisette.Core#solvable")s, including
+-- | ITE operator for solvable (see "Grisette.Core#g:solvable")s, including
 -- symbolic boolean, integer, etc.
 --
 -- >>> let a = "a" :: SymBool

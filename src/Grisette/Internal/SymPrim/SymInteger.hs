@@ -51,7 +51,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> "a" + 1 :: SymInteger
 -- (+ 1 a)
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)

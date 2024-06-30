@@ -158,7 +158,7 @@ instance Exception BitwidthMismatch where
 -- >>> (8 :: WordN 4) < (7 :: WordN 4)
 -- False
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
   deriving (Eq, Ord, Generic, Lift, Hashable, NFData)
@@ -226,7 +226,7 @@ instance (KnownNat n, 1 <= n) => Read (WordN n) where
 -- >>> (8 :: IntN 4) < (7 :: IntN 4)
 -- True
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
   deriving (Eq, Generic, Lift, Hashable, NFData)
