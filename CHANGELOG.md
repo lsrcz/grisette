@@ -20,7 +20,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
    [#212](https://github.com/lsrcz/grisette/pull/212),
    [#213](https://github.com/lsrcz/grisette/pull/213),
    [#214](https://github.com/lsrcz/grisette/pull/214),
-   [#215](https://github.com/lsrcz/grisette/pull/215))
+   [#215](https://github.com/lsrcz/grisette/pull/215),
+   [#217](https://github.com/lsrcz/grisette/pull/217))
 
 ### Changed
 - [Breaking] Relaxed constraints for type classes, according to
@@ -35,9 +36,16 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   `SEq1`, as described in
   https://github.com/haskell/core-libraries-committee/issues/10.
   ([#216](https://github.com/lsrcz/grisette/pull/216))
-- [Breaking] Renamed 'UnionMergeable1' to 'SymBranching'. Renamed 'Union' to
-  'UnionBase', and 'UnionM' to 'Union'.
-  ([#214](https://github.com/lsrcz/grisette/pull/214))
+- [Breaking] Renamed `UnionMergeable1` to `SymBranching`. Renamed `Union` to
+  `UnionBase`, and `UnionM` to `Union`.
+  ([#214](https://github.com/lsrcz/grisette/pull/214),
+   [#217](https://github.com/lsrcz/grisette/pull/217))
+- [Breaking] Renamed `EvaluateSym` to `EvalSym`. Renamed `SubstituteSym` to
+  `SubstSym`. Renamed `ExtractSymbolics` to `ExtractSym`.
+  ([#217](https://github.com/lsrcz/grisette/pull/217))
+- [Breaking] Renamed `SEq` to `SymEq`. Renamed `SOrd` to `SymOrd`.
+  ([#217](https://github.com/lsrcz/grisette/pull/217))
+- [Breaking] Renamed `GPretty` to `Format`.
   ([#217](https://github.com/lsrcz/grisette/pull/217))
 
 ## [0.6.0.0] -- 2024-06-07
