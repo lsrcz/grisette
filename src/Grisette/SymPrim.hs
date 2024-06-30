@@ -12,11 +12,46 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.SymPrim
-  ( -- * Symbolic type implementation
+  ( -- | Grisette introduces new primitive types:
+    --
+    -- * @'IntN' n@: signed bit vectors of bit width @n@.
+    -- * @'WordN' n@: unsigned bit vectors of bit width @n@.
+    -- * @'FP' eb sb@: IEEE-754 floating point numbers with @eb@ exponent bits
+    --   and @sb@ significand bits.
+    -- * @'Bool' t'=->' 'Bool'@: functions represented as a table for the
+    --   input-output relations.
+    -- * @'Bool' t'-->' 'Bool'@: functions represented as a formula over some
+    --   bound variables.
+    --
+    -- We also provide symbolic counterparts for these types, along with the
+    -- basic types 'Bool' and 'Integer'. These symbolic types can be directly
+    -- translated to constraints in the SMT solver.
+    --
+    -- * 'SymBool' ('Bool', symbolic Booleans)
+    -- * 'SymInteger' ('Integer', symbolic unbounded integers)
+    -- * @'SymIntN' n@ (@'IntN' n@, symbolic signed bit vectors of bit width
+    --   @n@)
+    -- * @'SymWordN' n@ (@'WordN' n@, symbolic unsigned bit vectors of bit width
+    --   @n@)
+    -- * @'SymFP' eb sb@ (@'FP' eb sb@, symbolic IEEE-754 floating point numbers
+    --   with @eb@ exponent bits and @sb@ significand bits)
+    -- * @'SymBool' t'=~>' 'SymBool'@ (@'Bool' t'=->' 'Bool'@, symbolic
+    --   functions, uninterpreted or represented as a table for the
+    --   input-output relations).
+    -- * @'SymBool' t'-~>' 'SymBool'@ (@'Bool' t'-->' 'Bool'@, symbolic
+    --   functions, uninterpreted or represented as a formula over some
+    --   bound variables.
+    --
+    -- This module provides an operations to extract all primitive values from a
+    -- symbolic value, with 'AllSyms'. The module also provides the
+    -- representation for symbols ('TypedSymbol'), symbol sets ('SymbolSet'),
+    -- and models ('Model'). They are useful when working with
+    -- t'Grisette.Core.EvalSym', t'Grisette.Core.ExtractSym', and
+    -- t'Grisette.Core.SubstSym'.
 
-    -- ** Extended types
+    -- * Extended types
 
-    -- *** Size-tagged bit-vector types
+    -- ** Size-tagged bit-vector types
     IntN,
     IntN8,
     IntN16,
@@ -28,13 +63,25 @@ module Grisette.SymPrim
     WordN32,
     WordN64,
 
-    -- *** Runtime size bit-vector types
+    -- ** Runtime-sized bit-vector types
     SomeBV (..),
     BitwidthMismatch (..),
     pattern SomeIntN,
     type SomeIntN,
     pattern SomeWordN,
     type SomeWordN,
+    conBV,
+    conBVView,
+    pattern ConBV,
+    symBV,
+    ssymBV,
+    isymBV,
+    arbitraryBV,
+
+    -- *** Some low-level helpers for writing instances for 'SomeBV'
+
+    -- | The functions here will check the bitwidths of the input bit-vectors
+    -- and raise 'BitwidthMismatch' if they do not match.
     unsafeSomeBV,
     unarySomeBV,
     unarySomeBVR1,
@@ -44,15 +91,8 @@ module Grisette.SymPrim
     binSomeBVSafe,
     binSomeBVSafeR1,
     binSomeBVSafeR2,
-    conBV,
-    conBVView,
-    pattern ConBV,
-    symBV,
-    ssymBV,
-    isymBV,
-    arbitraryBV,
 
-    -- *** Floating point
+    -- ** Floating point
     ValidFP,
     FP,
     FP16,
@@ -62,24 +102,18 @@ module Grisette.SymPrim
     FPRoundingMode (..),
     allFPRoundingMode,
 
-    -- * Functions
+    -- ** Functions
     type (=->) (..),
     type (-->),
     (-->),
 
-    -- ** Symbolic types
+    -- * Symbolic types
 
-    -- *** Basic constraints
-    SupportedPrim,
-    SymRep (SymType),
-    ConRep (ConType),
-    LinkedRep,
-
-    -- *** Bool and integer types
+    -- ** Symbolic bool and integer types
     SymBool (..),
     SymInteger (..),
 
-    -- *** Bit-vector types
+    -- ** Symbolic bit-vector types
     SymWordN (..),
     SymWordN8,
     SymWordN16,
@@ -95,18 +129,23 @@ module Grisette.SymPrim
     pattern SomeSymIntN,
     pattern SomeSymWordN,
 
-    -- *** Floating point types
+    -- ** Symbolic floating point
     SymFP (..),
     SymFPRoundingMode (..),
     SymFP16,
     SymFP32,
     SymFP64,
 
-    -- *** Function types
+    -- ** Symbolic function, possibly uninterpreted
     type (=~>) (..),
     type (-~>) (..),
 
-    -- ** Extract symbolic values
+    -- ** Basic constraints
+    SymRep (SymType),
+    ConRep (ConType),
+    LinkedRep,
+
+    -- * Extract symbolic values
     SomeSym (..),
     AllSyms (..),
     AllSyms1 (..),
@@ -117,16 +156,16 @@ module Grisette.SymPrim
     symSize,
     symsSize,
 
-    -- *** Generic 'AllSyms'
+    -- ** Generic 'AllSyms'
     AllSymsArgs (..),
     GAllSyms (..),
     genericAllSymsS,
     genericLiftAllSymsS,
 
-    -- ** Symbolic constant sets and models
+    -- * Symbolic constant sets and models
     TypedSymbol (..),
-    SymbolSet (..),
-    Model (..),
+    SymbolSet,
+    Model,
     ModelValuePair (..),
     ModelSymPair (..),
   )
@@ -180,7 +219,6 @@ import Grisette.Internal.SymPrim.Prim.Model
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (..),
     LinkedRep,
-    SupportedPrim,
     SymRep (..),
     TypedSymbol (..),
   )

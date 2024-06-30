@@ -80,6 +80,12 @@ import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Test.QuickCheck (frequency, oneof)
 import qualified Test.QuickCheck as QC
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.SymPrim
+-- >>> import Grisette.Backend
+-- >>> import Data.Proxy
+
 bvIsNonZeroFromGEq1 ::
   forall w r proxy.
   (1 <= w) =>
@@ -95,6 +101,13 @@ type ValidFP (eb :: Nat) (sb :: Nat) = ValidFloat eb sb
 
 -- | IEEE 754 floating-point number with @eb@ exponent bits and @sb@ significand
 -- bits.
+--
+-- >>> :set -XDataKinds
+-- >>> 1.0 + 2.0 :: FP 11 53
+-- 3.0
+--
+-- More operations are available. Please refer to "Grisette.Core#symops" for
+-- more information.
 newtype FP (eb :: Nat) (sb :: Nat) = FP {unFP :: FloatingPoint eb sb}
   deriving newtype (Eq, Show)
 
@@ -276,8 +289,15 @@ data FPRoundingMode
     RTN
   | -- | Round towards zero.
     RTZ
-  deriving (Eq, Ord, Show, Generic, Lift)
+  deriving (Eq, Ord, Generic, Lift)
   deriving anyclass (Hashable, NFData)
+
+instance Show FPRoundingMode where
+  show RNE = "rne"
+  show RNA = "rna"
+  show RTP = "rtp"
+  show RTN = "rtn"
+  show RTZ = "rtz"
 
 -- | All IEEE 754 rounding modes.
 allFPRoundingMode :: [FPRoundingMode]

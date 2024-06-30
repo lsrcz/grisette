@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -27,6 +28,7 @@ module Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPoint,
     SymIEEEFPTraits (..),
     IEEEConstants (..),
+    IEEEFPRoundingMode (..),
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
   )
@@ -34,7 +36,7 @@ where
 
 import Data.SBV (infinity, nan)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Internal.SymPrim.FP (FP (FP), ValidFP)
+import Grisette.Internal.SymPrim.FP (FP (FP), FPRoundingMode (RNA, RNE, RTN, RTP, RTZ), ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   ( pevalFPBinaryTerm,
     pevalFPFMATerm,
@@ -314,8 +316,49 @@ instance (ValidFP eb sb) => IEEEFPOp (SymFP eb sb) where
   symFpMax (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPMax l r
   {-# INLINE symFpMax #-}
 
+-- | Rounding modes for floating-point operations.
+class IEEEFPRoundingMode mode where
+  -- | Round to nearest, ties to even.
+  rne :: mode
+
+  -- | Round to nearest, ties to away from zero.
+  rna :: mode
+
+  -- | Round towards positive infinity.
+  rtp :: mode
+
+  -- | Round towards negative infinity.
+  rtn :: mode
+
+  -- | Round towards zero.
+  rtz :: mode
+
+instance IEEEFPRoundingMode FPRoundingMode where
+  rne = RNE
+  {-# INLINE rne #-}
+  rna = RNA
+  {-# INLINE rna #-}
+  rtp = RTP
+  {-# INLINE rtp #-}
+  rtn = RTN
+  {-# INLINE rtn #-}
+  rtz = RTZ
+  {-# INLINE rtz #-}
+
+instance IEEEFPRoundingMode SymFPRoundingMode where
+  rne = con RNE
+  {-# INLINE rne #-}
+  rna = con RNA
+  {-# INLINE rna #-}
+  rtp = con RTP
+  {-# INLINE rtp #-}
+  rtn = con RTN
+  {-# INLINE rtn #-}
+  rtz = con RTZ
+  {-# INLINE rtz #-}
+
 -- | Operations on IEEE floating-point numbers, with rounding mode.
-class IEEEFPRoundingOp a mode where
+class (IEEEFPRoundingMode mode) => IEEEFPRoundingOp a mode | a -> mode where
   symFpAdd :: mode -> a -> a -> a
   symFpSub :: mode -> a -> a -> a
   symFpMul :: mode -> a -> a -> a

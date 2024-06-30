@@ -130,6 +130,12 @@ import Text.ParserCombinators.ReadPrec
 import Text.Read (lift)
 import qualified Text.Read.Lex as L
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.SymPrim
+-- >>> import Grisette.Backend
+-- >>> import Data.Proxy
+
 -- | An exception that would be thrown when operations are performed on
 -- incompatible bit widths.
 data BitwidthMismatch = BitwidthMismatch
@@ -139,7 +145,21 @@ instance Exception BitwidthMismatch where
   displayException BitwidthMismatch = "Bit width does not match"
 
 -- |
--- Symbolic unsigned bit vectors.
+-- Unsigned bit vector type. Indexed with the bit width. Signedness affect the
+-- semantics of the operations, including comparison/extension, etc.
+--
+-- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
+-- >>> 3 + 5 :: WordN 5
+-- 0b01000
+-- >>> sizedBVConcat (0b101 :: WordN 3) (0b110 :: WordN 3)
+-- 0b101110
+-- >>> sizedBVExt (Proxy @6) (0b101 :: WordN 3)
+-- 0b000101
+-- >>> (8 :: WordN 4) < (7 :: WordN 4)
+-- False
+--
+-- More operations are available. Please refer to "Grisette.Core#symops" for
+-- more information.
 newtype WordN (n :: Nat) = WordN {unWordN :: Integer}
   deriving (Eq, Ord, Generic, Lift, Hashable, NFData)
 
@@ -193,7 +213,21 @@ instance (KnownNat n, 1 <= n) => Read (WordN n) where
   readList = readListDefault
 
 -- |
--- Symbolic signed bit vectors.
+-- Signed bit vector type. Indexed with the bit width. Signedness affects the
+-- semantics of the operations, including comparison/extension, etc.
+--
+-- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
+-- >>> 3 + 5 :: IntN 5
+-- 0b01000
+-- >>> sizedBVConcat (0b101 :: IntN 3) (0b110 :: IntN 3)
+-- 0b101110
+-- >>> sizedBVExt (Proxy @6) (0b101 :: IntN 3)
+-- 0b111101
+-- >>> (8 :: IntN 4) < (7 :: IntN 4)
+-- True
+--
+-- More operations are available. Please refer to "Grisette.Core#symops" for
+-- more information.
 newtype IntN (n :: Nat) = IntN {unIntN :: Integer}
   deriving (Eq, Generic, Lift, Hashable, NFData)
 

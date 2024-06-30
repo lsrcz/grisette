@@ -752,31 +752,31 @@ instance
 
 -- Synonyms
 
--- | Type synonym for 'SomeBV' with concrete signed bitvectors.
+-- | Type synonym for 'SomeBV' for concrete signed bitvectors.
 type SomeIntN = SomeBV IntN
 
--- | Pattern synonym for 'SomeBV' with concrete signed bitvectors.
+-- | Pattern synonym for 'SomeBV' for concrete signed bitvectors.
 pattern SomeIntN :: () => (KnownNat n, 1 <= n) => IntN n -> SomeIntN
 pattern SomeIntN a = SomeBV a
 
--- | Type synonym for 'SomeBV' with concrete unsigned bitvectors.
+-- | Type synonym for 'SomeBV' for concrete unsigned bitvectors.
 type SomeWordN = SomeBV WordN
 
--- | Pattern synonym for 'SomeBV' with concrete unsigned bitvectors.
+-- | Pattern synonym for 'SomeBV' for concrete unsigned bitvectors.
 pattern SomeWordN :: () => (KnownNat n, 1 <= n) => WordN n -> SomeWordN
 pattern SomeWordN a = SomeBV a
 
--- | Type synonym for 'SomeBV' with symbolic signed bitvectors.
+-- | Type synonym for 'SomeBV' for symbolic signed bitvectors.
 type SomeSymIntN = SomeBV SymIntN
 
--- | Pattern synonym for 'SomeBV' with symbolic signed bitvectors.
+-- | Pattern synonym for 'SomeBV' for symbolic signed bitvectors.
 pattern SomeSymIntN :: () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
 pattern SomeSymIntN a = SomeBV a
 
--- | Type synonym for 'SomeBV' with symbolic unsigned bitvectors.
+-- | Type synonym for 'SomeBV' for symbolic unsigned bitvectors.
 type SomeSymWordN = SomeBV SymWordN
 
--- | Pattern synonym for 'SomeBV' with symbolic unsigned bitvectors.
+-- | Pattern synonym for 'SomeBV' for symbolic unsigned bitvectors.
 pattern SomeSymWordN :: () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
 pattern SomeSymWordN a = SomeBV a
 
