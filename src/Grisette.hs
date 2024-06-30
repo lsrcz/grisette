@@ -11,20 +11,20 @@
 -- Portability :   GHC only
 module Grisette
   ( -- | Grisette is a tool for performing symbolic evaluation on programs. With
-    -- Grisette, you can construct your own symbolic DSL, and get the symbolic
-    -- evaluator for it without the need of manually implementing the symbolic
-    -- evaluation algorithms. A brief introduction to symbolic evaluation is
-    -- available in the "Grisette.Core" module.
+    -- Grisette, you can construct your own symbolic DSL and obtain the symbolic
+    -- evaluator for it without manually implementing the symbolic evaluation
+    -- algorithms. A brief introduction to symbolic evaluation is available in
+    -- the "Grisette.Core" module.
     --
-    -- This module exports most of the Grisette core APIs. There are more
-    -- lifted library constructs in the submodules of @Grisette.Lib@.
-    -- Those modules are not exported here and should be imported explicitly.
-    -- For example, to use the lifted "Data.List" functions, you should import
+    -- This module exports most of the Grisette APIs. Additional lifted library
+    -- constructs are in the submodules of @Grisette.Lib@, which are not
+    -- exported here and should be imported explicitly. For example, to use
+    -- the lifted "Data.List" functions, you should import
     -- "Grisette.Lib.Data.List" explicitly.
     --
     -- Grisette also provides an experimental API for unifying symbolic and
     -- concrete code to avoid code duplication. This API is exported in the
-    -- "Grisette.Unified" module. This module should be imported qualified as
+    -- "Grisette.Unified" module. The module should be imported qualified, as
     -- it intentionally uses the same names as the "Grisette" module.
     --
     -- The following shows a typical import list:
@@ -34,9 +34,9 @@ module Grisette
     -- > import qualified Grisette.Unified as U
     -- > import qualified Grisette.Unified.Lib.Data.List as U
     --
-    -- Other highly experimental APIs are exported in the
-    -- "Grisette.Experimental" and its submodules. These APIs are not stable,
-    -- may be buggy, and does not follow the PVP rules.
+    -- Other highly experimental APIs are exported in "Grisette.Experimental"
+    -- and its submodules. These APIs are not stable, may be buggy and poorly
+    -- maintained, and do not follow the PVP rules.
 
     -- * Core modules
 
