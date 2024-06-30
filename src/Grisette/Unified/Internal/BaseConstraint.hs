@@ -51,7 +51,5 @@ type ConSymConversion conType symType t =
   ( ToCon t conType,
     ToSym conType t,
     ToCon symType t,
-    ToSym t symType,
-    ToCon t t,
-    ToSym t t
+    ToSym t symType
   )

@@ -141,6 +141,9 @@ class ToCon a b where
   -- Nothing
   toCon :: a -> Maybe b
 
+instance {-# INCOHERENT #-} ToCon v v where
+  toCon = Just
+
 -- | Lifting of 'ToCon' to unary type constructors.
 class (forall a b. (ToCon a b) => ToCon (f1 a) (f2 b)) => ToCon1 f1 f2 where
   -- | Lift a conversion to concrete function to unary type constructors.
@@ -510,11 +513,11 @@ instance
 instance {-# INCOHERENT #-} (ToCon a b) => ToCon (Identity a) (Identity b) where
   toCon = toCon1
 
-instance ToCon (Identity v) v where
-  toCon = Just . runIdentity
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon (Identity a) b where
+  toCon = toCon . runIdentity
 
-instance ToCon v (Identity v) where
-  toCon = Just . Identity
+instance {-# INCOHERENT #-} (ToCon a b) => ToCon a (Identity b) where
+  toCon = fmap Identity . toCon
 
 instance ToCon1 Identity Identity where
   liftToCon f (Identity a) = Identity <$> f a

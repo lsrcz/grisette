@@ -35,8 +35,7 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
 import Test.QuickCheck (ioProperty)
 
-toSymForConcreteOkProp ::
-  (HasCallStack, ToSym v v, Show v, Eq v) => v -> Assertion
+toSymForConcreteOkProp :: (HasCallStack, Show v, Eq v) => v -> Assertion
 toSymForConcreteOkProp v = toSym v @?= v
 
 toSymTests :: Test
