@@ -10,7 +10,6 @@ module Grisette.Backend.CEGISTests (cegisTests) where
 
 import Control.Monad.Except (ExceptT)
 import Data.Proxy (Proxy (Proxy))
-import qualified Data.SBV as SBV
 import Data.String (IsString (fromString))
 import GHC.Stack (HasCallStack)
 import Grisette
@@ -37,7 +36,6 @@ import Grisette
     cegisMultiInputs,
     cegisPostCond,
     mrgIf,
-    precise,
     solve,
     symAssert,
     symAssume,
@@ -106,7 +104,7 @@ testCegis config shouldSuccess inputs bs = do
 
 cegisTests :: Test
 cegisTests =
-  let unboundedConfig = precise SBV.z3
+  let unboundedConfig = z3
    in testGroup
         "CEGIS"
         [ testGroup
@@ -114,10 +112,10 @@ cegisTests =
             [ testCase "Empty symbolic inputs makes cegis work like solve" $ do
                 (_, CEGISSuccess m1) <-
                   cegisMultiInputs
-                    (precise z3)
+                    z3
                     [1 :: Integer, 2]
                     (\idx -> cegisPostCond $ fromString $ "a" ++ show idx)
-                Right m2 <- solve (precise z3) ("a1" .&& "a2")
+                Right m2 <- solve z3 ("a1" .&& "a2")
                 m1 @=? m2,
               testCase "Lowering of TabularFun" $ do
                 let s1 = "s1" :: SymInteger =~> SymInteger

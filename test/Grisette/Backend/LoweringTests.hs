@@ -36,10 +36,10 @@ import Grisette
   )
 import Grisette.Internal.Backend.Solving
   ( GrisetteSMTConfig (sbvConfig),
-    approx,
+    approximate,
     lowerSinglePrim,
     lowerSinglePrimCached,
-    precise,
+    z3,
   )
 import Grisette.Internal.Backend.SymBiMap
   ( SymBiMap (biMapToSBV),
@@ -49,7 +49,20 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( FPTrait (FPIsInfinite, FPIsNaN, FPIsNegative, FPIsNegativeInfinite, FPIsNegativeZero, FPIsNormal, FPIsPoint, FPIsPositive, FPIsPositiveInfinite, FPIsPositiveZero, FPIsSubnormal, FPIsZero),
+  ( FPTrait
+      ( FPIsInfinite,
+        FPIsNaN,
+        FPIsNegative,
+        FPIsNegativeInfinite,
+        FPIsNegativeZero,
+        FPIsNormal,
+        FPIsPoint,
+        FPIsPositive,
+        FPIsPositiveInfinite,
+        FPIsPositiveZero,
+        FPIsSubnormal,
+        FPIsZero
+      ),
     SBVRep (SBVType),
     SupportedPrim,
     Term,
@@ -260,8 +273,8 @@ testTernaryOpLowering config precond f name sbvfun = do
 
 loweringTests :: Test
 loweringTests =
-  let unboundedConfig = precise SBV.z3
-      boundedConfig = approx (Proxy @5) SBV.z3
+  let unboundedConfig = z3
+      boundedConfig = approximate (Proxy @5) z3
    in testGroup
         "Lowering"
         [ testGroup

@@ -1012,7 +1012,7 @@ module Grisette.Core
     -- >>> res = mrgIf a (throwError Error1) (mrgIf b (return c) (throwError Error2)) :: ExceptT Error Union SymBool
     -- >>> res
     -- ExceptT {If (|| a (! b)) (If a (Left Error1) (Left Error2)) (Right c)}
-    -- >>> solveExcept (precise z3) (\case Left _ -> con False; Right x -> x) res
+    -- >>> solveExcept z3 (\case Left _ -> con False; Right x -> x) res
     -- Right (Model {a -> False :: Bool, b -> True :: Bool, c -> True :: Bool})
     --
     -- The solver call in the above example means that we want the solver to
@@ -1082,16 +1082,16 @@ module Grisette.Core
     -- >>> import Grisette.Backend
     -- >>> let x = "x" :: SymInteger
     -- >>> let y = "y" :: SymInteger
-    -- >>> solve (precise z3) (x + y .== 6 .&& x - y .== 20)
+    -- >>> solve z3 (x + y .== 6 .&& x - y .== 20)
     -- Right (Model {x -> 13 :: Integer, y -> -7 :: Integer})
-    -- >>> solve (precise z3) (x + y .== 6 .&& x - y .== 19)
+    -- >>> solve z3 (x + y .== 6 .&& x - y .== 19)
     -- Left Unsat
     --
-    -- The first parameter of 'solve' is the solver configuration.
-    -- Here it means that we should not perform any approximation, and should
-    -- use the Z3 solver.
+    -- The first parameter of 'solve' is the solver configuration. Here we are
+    -- using the configuration for the Z3 solver.
     --
-    -- The second parameter is the formula to be solved. It have the type 'SymBool'.
+    -- The second parameter is the formula to be solved. It has the type
+    -- 'SymBool'.
     --
     -- The 'solve' function would return a model if the formula is satisfiable.
     -- The model is a mapping from symbolic variables to concrete values,
@@ -1103,7 +1103,7 @@ module Grisette.Core
     -- evaluate symbolic values. The following code evaluates the product of
     -- x and y under the solution of the equation system.
     --
-    -- >>> Right m <- solve (precise z3) (x + y .== 6 .&& x - y .== 20)
+    -- >>> Right m <- solve z3 (x + y .== 6 .&& x - y .== 20)
     -- >>> evalSym False m (x * y)
     -- -91
     --
