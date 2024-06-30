@@ -14,10 +14,6 @@ module Grisette.Backend.TermRewritingTests
 where
 
 import Data.Foldable (traverse_)
-#if MIN_VERSION_sbv(8,17,0)
-import Data.SBV (bitwuzla)
-#endif
-import qualified Data.SBV as SBV
 import Grisette
   ( GrisetteSMTConfig,
     ITEOp (symIte),
@@ -26,8 +22,9 @@ import Grisette
     Solvable (con),
     SymBool (SymBool),
     WordN,
-    precise,
+    bitwuzla,
     solve,
+    z3,
   )
 import Grisette.Backend.TermRewritingGen
   ( BoolOnlySpec,
@@ -105,19 +102,19 @@ validateSpec config a = do
 
 bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
 bitwuzlaConfig = do
-#if MIN_VERSION_sbv(8,17,0)
-  v <- solve (precise bitwuzla) $
-         ("x" :: SymFP32) ./= "x" .&&
-         symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32)) .&&
-         (symIte "bool"
-            (con $ fpPositiveInfinite :: SymFP32)
-            (con $ fpNegativeInfinite) .== "m")
+  v <-
+    solve bitwuzla $
+      (("x" :: SymFP32) ./= "x")
+        .&& symNot (symFpIsPositiveInfinite (con $ -4.7e-38 :: SymFP32))
+        .&& ( symIte
+                "bool"
+                (con $ fpPositiveInfinite :: SymFP32)
+                (con $ fpNegativeInfinite)
+                .== "m"
+            )
   case v of
     Left _ -> return Nothing
-    Right _ -> return $ Just $ precise bitwuzla
-#else
-  return Nothing
-#endif
+    Right _ -> return $ Just bitwuzla
 
 onlyWhenBitwuzlaIsAvailable :: (GrisetteSMTConfig 0 -> IO ()) -> IO ()
 onlyWhenBitwuzlaIsAvailable action = do
@@ -130,7 +127,7 @@ onlyWhenBitwuzlaIsAvailable action = do
           <> " library does not work well with it. This test is marked as "
           <> " success."
 
-unboundedConfig = precise SBV.z3
+unboundedConfig = z3
 
 divisionTest ::
   forall a b.

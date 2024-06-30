@@ -10,29 +10,30 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Backend
-  ( -- * Grisette.Internal.SBV backend configuration
+  ( -- * SMT backend configuration
+    GrisetteSMTConfig (..),
+    boolector,
+    bitwuzla,
+    cvc4,
+    cvc5,
+    yices,
+    dReal,
+    z3,
+    mathSAT,
+    abc,
+
+    -- * Changing the extra configurations
     ApproximationConfig (..),
     ExtraConfig (..),
     precise,
-    approx,
+    approximate,
     withTimeout,
     clearTimeout,
-    withApprox,
-    clearApprox,
-    GrisetteSMTConfig (..),
 
     -- * SBV backend solver configuration
     SBV.SMTConfig (..),
-    SBV.boolector,
-    SBV.bitwuzla,
-    SBV.cvc4,
-    SBV.cvc5,
-    SBV.yices,
-    SBV.dReal,
-    SBV.z3,
-    SBV.mathSAT,
-    SBV.abc,
     SBV.Timing (..),
+    SBV.SMTSolver (..),
   )
 where
 
@@ -41,10 +42,17 @@ import Grisette.Internal.Backend.Solving
   ( ApproximationConfig (..),
     ExtraConfig (..),
     GrisetteSMTConfig (..),
-    approx,
-    clearApprox,
+    abc,
+    approximate,
+    bitwuzla,
+    boolector,
     clearTimeout,
+    cvc4,
+    cvc5,
+    dReal,
+    mathSAT,
     precise,
-    withApprox,
     withTimeout,
+    yices,
+    z3,
   )

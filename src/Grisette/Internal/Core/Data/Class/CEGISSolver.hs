@@ -797,7 +797,7 @@ cegisMultiInputs config inputs toCEGISCondition =
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
--- >>> cegis (precise z3) x (\x -> cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
+-- >>> cegis z3 x (\x -> cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
 -- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
 cegis ::
   ( ConfigurableSolver config handle,
@@ -934,7 +934,7 @@ cegisExceptStdVCMultiInputs config cexes f =
 --   translation _ = cegisPostCond (con True)
 -- :}
 --
--- >>> cegisExcept (precise z3) x translation res
+-- >>> cegisExcept z3 x translation res
 -- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExcept ::
   ( UnionWithExcept t u e v,
@@ -1004,7 +1004,7 @@ cegisExceptVC config inputs f v =
 --     symAssert $ c .> -2
 -- :}
 --
--- >>> cegisExceptStdVC (precise z3) x res
+-- >>> cegisExceptStdVC z3 x res
 -- ([...],CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisExceptStdVC ::
   ( UnionWithExcept t u VerificationConditions (),
@@ -1033,7 +1033,7 @@ cegisExceptStdVC config inputs f =
 --
 -- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
--- >>> cegisForAll (precise z3) x $ cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2)
+-- >>> cegisForAll z3 x $ cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2)
 -- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
 cegisForAll ::
   ( ExtractSym forallInput,

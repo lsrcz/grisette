@@ -164,7 +164,7 @@ class Solver handle where
   --
   -- The solver keeps all the assertions used in the previous commands:
   --
-  -- >>> solver <- newSolver (precise z3)
+  -- >>> solver <- newSolver z3
   -- >>> solverSolve solver "a"
   -- Right (Model {a -> True :: Bool})
   -- >>> solverSolve solver $ symNot "a"
@@ -311,9 +311,9 @@ withSolver config action =
 
 -- | Solve a single formula. Find an assignment to it to make it true.
 --
--- >>> solve (precise z3) ("a" .&& ("b" :: SymInteger) .== 1)
+-- >>> solve z3 ("a" .&& ("b" :: SymInteger) .== 1)
 -- Right (Model {a -> True :: Bool, b -> 1 :: Integer})
--- >>> solve (precise z3) ("a" .&& symNot "a")
+-- >>> solve z3 ("a" .&& symNot "a")
 -- Left Unsat
 solve ::
   (ConfigurableSolver config handle) =>
@@ -327,7 +327,7 @@ solve config formula = withSolver config (`solverSolve` formula)
 -- | Solve a single formula while returning multiple models to make it true.
 -- The maximum number of desired models are given.
 --
--- > >>> solveMulti (precise z3) 4 ("a" .|| "b")
+-- > >>> solveMulti z3 4 ("a" .|| "b")
 -- > [Model {a -> True :: Bool, b -> False :: Bool},Model {a -> False :: Bool, b -> True :: Bool},Model {a -> True :: Bool, b -> True :: Bool}]
 solveMulti ::
   (ConfigurableSolver config handle) =>
@@ -368,7 +368,7 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 --   translate _ = con True         -- non-errors are desirable
 -- :}
 --
--- >>> solveExcept (precise z3) translate res
+-- >>> solveExcept z3 translate res
 -- Right (Model {x -> 1 :: Integer})
 solveExcept ::
   ( UnionWithExcept t u e v,

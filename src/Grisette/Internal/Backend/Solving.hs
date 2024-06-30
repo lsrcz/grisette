@@ -14,7 +14,7 @@
 
 -- |
 -- Module      :   Grisette.Internal.Backend.Solving
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -22,15 +22,24 @@
 -- Portability :   GHC only
 module Grisette.Internal.Backend.Solving
   ( -- * SBV backend configuration
+    GrisetteSMTConfig (..),
+    boolector,
+    bitwuzla,
+    cvc4,
+    cvc5,
+    yices,
+    dReal,
+    z3,
+    mathSAT,
+    abc,
+
+    -- * Changing the extra configurations
     ApproximationConfig (..),
     ExtraConfig (..),
     precise,
-    approx,
+    approximate,
     withTimeout,
     clearTimeout,
-    withApprox,
-    clearApprox,
-    GrisetteSMTConfig (..),
 
     -- * SBV monadic solver interface
     SBVIncrementalT,
@@ -238,8 +247,8 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- Here the value 9 will be approximated to a 4-bit bit vector, and the
 -- operation @bvadd@ will be used instead of @+@.
 --
--- Note that this approximation may not be sound. See 'GrisetteSMTConfig' for
--- more details.
+-- Note that this approximation may not be sound, and usually you should not use
+-- this feature. See 'approximate' for more details.
 data ApproximationConfig (n :: Nat) where
   NoApprox :: ApproximationConfig 0
   Approx ::
@@ -256,6 +265,17 @@ data ExtraConfig (i :: Nat) = ExtraConfig
     integerApprox :: ApproximationConfig i
   }
 
+-- | Solver configuration for the Grisette SBV backend.
+--
+-- A Grisette solver configuration consists of a SBV solver configuration and
+-- some extra configurations.
+--
+-- You should start with the predefined configurations.
+data GrisetteSMTConfig (i :: Nat) = GrisetteSMTConfig
+  { sbvConfig :: SBV.SMTConfig,
+    extraConfig :: ExtraConfig i
+  }
+
 preciseExtraConfig :: ExtraConfig 0
 preciseExtraConfig =
   ExtraConfig
@@ -263,19 +283,60 @@ preciseExtraConfig =
       integerApprox = NoApprox
     }
 
-approximateExtraConfig ::
-  (KnownNat n, SBV.BVIsNonZero n, KnownIsZero n) =>
-  p n ->
-  ExtraConfig n
-approximateExtraConfig p =
-  ExtraConfig
-    { timeout = Nothing,
-      integerApprox = Approx p
-    }
+-- | Solver configuration for Boolector. <https://boolector.github.io/>
+boolector :: GrisetteSMTConfig 0
+boolector = GrisetteSMTConfig SBV.boolector preciseExtraConfig
 
--- | Solver configuration for the Grisette SBV backend.
--- A Grisette solver configuration consists of a SBV solver configuration and
--- the reasoning precision.
+-- | Solver configuration for Bitwuzla. <https://bitwuzla.github.io/>
+bitwuzla :: GrisetteSMTConfig 0
+bitwuzla = GrisetteSMTConfig SBV.bitwuzla preciseExtraConfig
+
+-- | Solver configuration for CVC4. <https://cvc4.github.io/>
+cvc4 :: GrisetteSMTConfig 0
+cvc4 = GrisetteSMTConfig SBV.cvc4 preciseExtraConfig
+
+-- | Solver configuration for CVC5. <https://cvc5.github.io/>
+cvc5 :: GrisetteSMTConfig 0
+cvc5 = GrisetteSMTConfig SBV.cvc5 preciseExtraConfig
+
+-- | Solver configuration for Yices. <https://yices.csl.sri.com/>
+yices :: GrisetteSMTConfig 0
+yices = GrisetteSMTConfig SBV.yices preciseExtraConfig
+
+-- | Solver configuration for DReal. <http://dreal.github.io/>
+dReal :: GrisetteSMTConfig 0
+dReal = GrisetteSMTConfig SBV.dReal preciseExtraConfig
+
+-- | Solver configuration for Z3. <https://github.com/Z3Prover/z3/>
+z3 :: GrisetteSMTConfig 0
+z3 = GrisetteSMTConfig SBV.z3 preciseExtraConfig
+
+-- | Solver configuration for MathSAT. <http://mathsat.fbk.eu/>
+mathSAT :: GrisetteSMTConfig 0
+mathSAT = GrisetteSMTConfig SBV.mathSAT preciseExtraConfig
+
+-- | Solver configuration for ABC. <http://www.eecs.berkeley.edu/~alanmi/abc/>
+abc :: GrisetteSMTConfig 0
+abc = GrisetteSMTConfig SBV.abc preciseExtraConfig
+
+-- | Set to perform precise reasoning with the solver configuration.
+precise :: GrisetteSMTConfig n -> GrisetteSMTConfig 0
+precise config =
+  config {extraConfig = (extraConfig config) {integerApprox = NoApprox}}
+
+-- | Set to perform approximate reasoning with the solver configuration.
+--
+-- __Note:__ This isn't the preferred way to control the reasoning precision.
+-- A better way is to write your symbolic evaluation code in a generic way, and
+-- control the evaluation with the types.
+--
+-- >>> f :: (Num a) => a -> a -> a; f x y = x + y
+-- >>> solve z3 $ f "a" 5 .== (2 :: SymInteger)
+-- Right (Model {a -> -3 :: Integer})
+-- >>> solve z3 $ f "a" 5 .== (2 :: SymWordN 4)
+-- Right (Model {a -> 0xd :: WordN 4})
+--
+-- __Description:__
 --
 -- Integers can be unbounded (mathematical integer) or bounded (machine
 -- integer/bit vector). The two types of integers have their own use cases,
@@ -325,31 +386,21 @@ approximateExtraConfig p =
 --
 -- >>> :set -XTypeApplications -XOverloadedStrings -XDataKinds
 -- >>> let a = "a" :: SymInteger
--- >>> solve (precise z3) $ a .> 7 .&& a .< 9
+-- >>> solve z3 $ a .> 7 .&& a .< 9
 -- Right (Model {a -> 8 :: Integer})
--- >>> solve (approx (Proxy @4) z3) $ a .> 7 .&& a .< 9
+-- >>> solve (approximate (Proxy @4) z3) $ a .> 7 .&& a .< 9
 -- Left Unsat
 --
 -- This may be avoided by setting an large enough reasoning precision to prevent
 -- overflows.
-data GrisetteSMTConfig (i :: Nat) = GrisetteSMTConfig
-  { sbvConfig :: SBV.SMTConfig,
-    extraConfig :: ExtraConfig i
-  }
-
--- | A precise reasoning configuration with the given SBV solver configuration.
-precise :: SBV.SMTConfig -> GrisetteSMTConfig 0
-precise config = GrisetteSMTConfig config preciseExtraConfig
-
--- | An approximate reasoning configuration with the given SBV solver
--- configuration.
-approx ::
-  forall p n.
+approximate ::
+  forall p m n.
   (KnownNat n, SBV.BVIsNonZero n, KnownIsZero n) =>
   p n ->
-  SBV.SMTConfig ->
+  GrisetteSMTConfig m ->
   GrisetteSMTConfig n
-approx p config = GrisetteSMTConfig config (approximateExtraConfig p)
+approximate p config =
+  config {extraConfig = (extraConfig config) {integerApprox = Approx p}}
 
 -- | Set the timeout for the solver configuration.
 withTimeout :: Int -> GrisetteSMTConfig i -> GrisetteSMTConfig i
@@ -360,21 +411,6 @@ withTimeout t config =
 clearTimeout :: GrisetteSMTConfig i -> GrisetteSMTConfig i
 clearTimeout config =
   config {extraConfig = (extraConfig config) {timeout = Nothing}}
-
--- | Set the reasoning precision for the solver configuration.
-withApprox ::
-  (KnownNat n, SBV.BVIsNonZero n, KnownIsZero n) =>
-  p n ->
-  GrisetteSMTConfig i ->
-  GrisetteSMTConfig n
-withApprox p config =
-  config {extraConfig = (extraConfig config) {integerApprox = Approx p}}
-
--- | Clear the reasoning precision and perform precise reasoning with the
--- solver configuration.
-clearApprox :: GrisetteSMTConfig i -> GrisetteSMTConfig 0
-clearApprox config =
-  config {extraConfig = (extraConfig config) {integerApprox = NoApprox}}
 
 sbvCheckSatResult :: SBVC.CheckSatResult -> SolvingFailure
 sbvCheckSatResult SBVC.Sat = error "Should not happen"
