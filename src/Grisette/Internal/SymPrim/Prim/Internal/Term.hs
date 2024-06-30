@@ -348,8 +348,8 @@ class SupportedPrimConstraint t where
   type PrimConstraint (n :: Nat) t :: Constraint
   type PrimConstraint _ _ = ()
 
--- | Indicates that a type is supported and can be represented as a symbolic
--- term.
+-- | Indicates that a type is supported, can be represented as a symbolic term,
+-- and can be lowered to an SBV term.
 class
   ( Lift t,
     Typeable t,
@@ -914,6 +914,7 @@ instance (SupportedPrim t) => IsString (TypedSymbol t) where
 withSymbolSupported :: TypedSymbol t -> ((SupportedPrim t) => a) -> a
 withSymbolSupported (TypedSymbol _) a = a
 
+-- | A non-index symbol. Type information are checked at runtime.
 data SomeTypedSymbol where
   SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
 
@@ -1229,14 +1230,14 @@ data Term t where
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FPRoundingUnaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     {-# UNPACK #-} !Id ->
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FPRoundingBinaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     {-# UNPACK #-} !Id ->
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
@@ -1393,11 +1394,11 @@ pformat (RecipTerm _ arg) = "(recip " ++ pformat arg ++ ")"
 pformat (SqrtTerm _ arg) = "(sqrt " ++ pformat arg ++ ")"
 pformat (FPUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformat arg ++ ")"
 pformat (FPBinaryTerm _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ show mode ++ " " ++ pformat arg ++ ")"
+pformat (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ pformat mode ++ " " ++ pformat arg ++ ")"
 pformat (FPRoundingBinaryTerm _ op mode arg1 arg2) =
-  "(" ++ show op ++ " " ++ show mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+  "(" ++ show op ++ " " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (FPFMATerm _ mode arg1 arg2 arg3) =
-  "(fp.fma " ++ show mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ " " ++ pformat arg3 ++ ")"
+  "(fp.fma " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ " " ++ pformat arg3 ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -1705,13 +1706,13 @@ data UTerm t where
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
   UFPRoundingUnaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
   UFPRoundingBinaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
@@ -2313,7 +2314,7 @@ fpBinaryTerm ::
 fpBinaryTerm op l r = internTerm $ UFPBinaryTerm op l r
 
 fpRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -2321,7 +2322,7 @@ fpRoundingUnaryTerm ::
 fpRoundingUnaryTerm op mode v = internTerm $ UFPRoundingUnaryTerm op mode v
 
 fpRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->

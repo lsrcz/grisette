@@ -94,8 +94,11 @@ infixr 0 -~>
 -- \(a:ARG :: Integer) -> (+ 1 a:ARG)
 --
 -- This general symbolic function needs to be applied to symbolic values:
+--
 -- >>> f # ("a" :: SymInteger)
 -- (+ 1 a)
+-- >>> f # (2 :: SymInteger)
+-- 3
 (-->) ::
   (SupportedPrim ca, SupportedPrim cb, LinkedRep cb sb) =>
   TypedSymbol ca ->

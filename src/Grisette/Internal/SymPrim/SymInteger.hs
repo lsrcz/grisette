@@ -51,8 +51,8 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> "a" + 1 :: SymInteger
 -- (+ 1 a)
 --
--- More symbolic operations are available. Please refer to the documentation
--- for the type class instances.
+-- More operations are available. Please refer to "Grisette.Core#symops" for
+-- more information.
 newtype SymInteger = SymInteger {underlyingIntegerTerm :: Term Integer}
   deriving (Lift, NFData, Generic)
 

@@ -156,7 +156,7 @@ sbvFPBinaryTerm FPMax = SBV.fpMax
 {-# INLINE sbvFPBinaryTerm #-}
 
 pevalFPRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -175,7 +175,7 @@ sbvFPRoundingUnaryTerm FPRoundToIntegral = SBV.fpRoundToIntegral
 {-# INLINE sbvFPRoundingUnaryTerm #-}
 
 pevalFPRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->

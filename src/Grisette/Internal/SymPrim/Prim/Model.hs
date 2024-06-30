@@ -185,7 +185,10 @@ import Unsafe.Coerce (unsafeCoerce)
 -- >>> import Grisette.SymPrim
 -- >>> :set -XFlexibleContexts
 
--- | Symbolic constant set.
+-- | Set of symbols.
+--
+-- Check 'Grisette.Core.SymbolSetOps' for operations, and
+-- 'Grisette.Core.SymbolSetRep' for manual constructions.
 newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
   deriving (Eq, Generic, Hashable)
 
@@ -207,6 +210,9 @@ instance Show SymbolSet where
       go0 (x : xs) = x ++ ", " ++ go0 xs
 
 -- | Model returned by the solver.
+--
+-- Check 'Grisette.Core.ModelOps' for operations, and 'Grisette.Core.ModelRep'
+-- for manual constructions.
 newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue}
   deriving (Eq, Generic, Hashable)
 

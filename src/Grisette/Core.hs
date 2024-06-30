@@ -236,11 +236,12 @@ module Grisette.Core
     --   symbolic IEEE-754 floating point numbers with @eb@ exponent bits and
     --   @sb@ significand bits)
     -- * @'Grisette.SymPrim.SymBool' t'Grisette.SymPrim.=~>' 'Grisette.SymPrim.SymBool'@
-    --   (@'Bool' t'Grisette.SymPrim.=->' 'Bool'@, symbolic uninterpreted functions)
+    --   (@'Bool' t'Grisette.SymPrim.=->' 'Bool'@, symbolic functions,
+    --   uninterpreted or represented as a table for the input-outputs
+    --   relations).
     -- * @'Grisette.SymPrim.SymBool' t'Grisette.SymPrim.-~>' 'Grisette.SymPrim.SymBool'@
     --   (@'Bool' t'Grisette.SymPrim.-->' 'Bool'@, symbolic functions,
-    --   uninterpreted or represented as a formula over some variables to
-    --   substitute.
+    --   uninterpreted or represented as a formula over some bound variables.
     --
     -- The bit-width of bit vector types and floating point types have their
     -- are checked at compile time.
@@ -311,7 +312,7 @@ module Grisette.Core
     slocsym,
     ilocsym,
 
-    -- * Basic symbolic operations
+    -- * Basic symbolic operations #symops#
 
     -- ** Basic logical operators
     LogicalOp (..),
@@ -370,6 +371,7 @@ module Grisette.Core
     fpIsPoint,
     SymIEEEFPTraits (..),
     IEEEConstants (..),
+    IEEEFPRoundingMode (..),
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
 
@@ -1519,6 +1521,7 @@ import Grisette.Internal.Core.Data.Class.GenSym
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEConstants (..),
     IEEEFPOp (..),
+    IEEEFPRoundingMode (..),
     IEEEFPRoundingOp (..),
     SymIEEEFPTraits (..),
     fpIsInfinite,

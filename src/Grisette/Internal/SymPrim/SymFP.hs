@@ -55,8 +55,23 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Language.Haskell.TH.Syntax (Lift)
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.SymPrim
+-- >>> import Grisette.Backend
+-- >>> import Data.Proxy
+
 -- | Symbolic IEEE 754 floating-point number with @eb@ exponent bits and @sb@
 -- significand bits.
+--
+-- >>> :set -XOverloadedStrings -XDataKinds
+-- >>> "a" + 2.0 :: SymFP 11 53
+-- (+ a 2.0)
+-- >>> symFpAdd rne "a" 2.0 :: SymFP 11 53
+-- (fp.add rne a 2.0)
+--
+-- More operations are available. Please refer to "Grisette.Core#symops" for
+-- more information.
 newtype SymFP eb sb = SymFP {underlyingFPTerm :: Term (FP eb sb)}
   deriving (Lift, Generic)
   deriving anyclass (NFData)
