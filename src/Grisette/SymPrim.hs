@@ -40,9 +40,9 @@ module Grisette.SymPrim
     --   input-output relations).
     -- * @'SymBool' t'-~>' 'SymBool'@ (@'Bool' t'-->' 'Bool'@, symbolic
     --   functions, uninterpreted or represented as a formula over some
-    --   bound variables.
+    --   bound variables).
     --
-    -- This module provides an operations to extract all primitive values from a
+    -- This module provides an operation to extract all primitive values from a
     -- symbolic value, with 'AllSyms'. The module also provides the
     -- representation for symbols ('TypedSymbol'), symbol sets ('SymbolSet'),
     -- and models ('Model'). They are useful when working with
