@@ -86,7 +86,7 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep (underlyingTerm),
+  ( LinkedRep (underlyingTerm), pformat,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils
   ( someTermsSize,
@@ -104,12 +104,22 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
 -- >>> import Data.Proxy
+-- >>> :set -XOverloadedStrings
 
 -- | Some symbolic value with 'LinkedRep' constraint.
 data SomeSym where
   SomeSym :: (LinkedRep con sym) => sym -> SomeSym
 
+instance Show SomeSym where
+  show (SomeSym s) = pformat $ underlyingTerm s
+
 -- | Extract all symbolic primitive values that are represented as SMT terms.
+--
+-- >>> allSyms (["a" + 1 :: SymInteger, -"b"], "c" :: SymBool)
+-- [(+ 1 a),(- b),c]
+--
+-- This is usually used for getting a statistical summary of the size of
+-- a symbolic value with 'allSymsSize'.
 --
 -- __Note:__ This type class can be derived for algebraic data types. You may
 -- need the @DerivingVia@ and @DerivingStrategies@ extenstions.
@@ -163,6 +173,8 @@ someSymsSize = someTermsSize . fmap someUnderlyingTerm
 --
 -- >>> allSymsSize ("a" :: SymInteger, "a" + "b" :: SymInteger, ("a" + "b") * "c" :: SymInteger)
 -- 5
+--
+-- The 5 terms are @a@, @b@, @(+ a b)@, @c@, and @(* (+ a b) c)@.
 allSymsSize :: (AllSyms a) => a -> Int
 allSymsSize = someSymsSize . allSyms
 
