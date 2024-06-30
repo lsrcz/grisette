@@ -46,7 +46,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> "a" .&& "b" :: SymBool
 -- (&& a b)
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype SymBool = SymBool {underlyingBoolTerm :: Term Bool}
   deriving (Lift, NFData, Generic)

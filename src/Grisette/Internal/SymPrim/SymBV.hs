@@ -162,7 +162,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> (8 :: SymIntN 4) .< (7 :: SymIntN 4)
 -- true
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype SymIntN (n :: Nat) = SymIntN {underlyingIntNTerm :: Term (IntN n)}
   deriving (Lift, NFData, Generic)
@@ -193,7 +193,7 @@ type SymIntN64 = SymIntN 64
 -- >>> (8 :: SymWordN 4) .< (7 :: SymWordN 4)
 -- false
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype SymWordN (n :: Nat) = SymWordN {underlyingWordNTerm :: Term (WordN n)}
   deriving (Lift, NFData, Generic)

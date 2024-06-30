@@ -16,26 +16,30 @@ module Grisette.Core
   ( -- * Organization of the module
 
     -- | The module is organized by first introducing symbolic values, which
-    -- includes solvable types and unsolvable types. Solvable types are those
-    -- directly supported by the underlying solver. Other types are unsolvable.
-    -- They need 'Union' monadic container and 'Mergeable' instances to be
-    -- merged.
+    -- includes [solvable (primitive)](#g:solvable) types and
+    -- [unsolvable (non-primitive)](#g:unsolvable) types.
+    -- Solvable types are those directly supported by the underlying solver.
+    -- Examples include symbolic Booleans ('Grisette.SymPrim.SymBool'), integers
+    -- ('Grisette.SymPrim.SymInteger'), and bit vectors
+    -- (@'Grisette.SymPrim.SymWordN' n@). Other types are unsolvable. They need
+    -- 'Union' monadic container and 'Mergeable' instances to be merged.
     --
-    -- We elaborated the internal details of the symbolic values in the
+    -- We will elaborate the internal details of the symbolic values in the
     -- documentation, but it is likely that you can skip them and directly go
     -- through the APIs and the operations to start using Grisette.
     --
-    -- Various operations are provided for manipulating symbolic values,
-    -- including solvable and unsolvable types. Apart from the basic operations
-    -- for each type of symbolic values, we also provide generic operations for:
+    -- [Various operations](#g:symops) are provided for
+    -- manipulating symbolic values, including solvable and unsolvable types.
+    -- Apart from the basic operations for each type of symbolic values, we also
+    -- provide generic operations for:
     --
     -- * Symbolic equality and comparison ('SymEq', 'SymOrd')
     -- * Conversion between concrete and symbolic values ('ToCon', 'ToSym')
     -- * Merging of symbolic values ('Mergeable', 'SimpleMergeable', 'TryMerge')
     -- * Symbolic branching ('SymBranching')
     --
-    -- Additional utilities for building symbolic evaluation based applications
-    -- are also provided:
+    -- Additional tools for building symbolic evaluation based applications are
+    -- also provided:
     --
     -- * Pretty printing (e.g., 'Format')
     -- * Symbolic generation, or generating fresh symbolic values (e.g.,
@@ -45,8 +49,8 @@ module Grisette.Core
     -- * Substitutions for symbolic values given the solving results (e.g.,
     --  'ExtractSym', 'EvalSym', 'SubstSym').
     --
-    -- Finally some helpers for deriving instances for the type classes are
-    -- provided.
+    -- Finally [some utilities](#g:utils), including helpers for
+    -- deriving instances for the type classes are provided in this module.
 
     -- * Note for the examples in the documentation
 
@@ -137,7 +141,7 @@ module Grisette.Core
     -- >>> x + 1
     -- (+ 1 (ite a b c))
 
-    -- ** Unsolvable types (non-solver-primitive types)
+    -- ** Unsolvable types (non-solver-primitive types) #unsolvable#
 
     -- | __/Unsolvable types/__, on the other hand, are types that are not
     -- directly supported by the solver and cannot be fully merged into a
@@ -490,7 +494,8 @@ module Grisette.Core
     -- {If (&& a f) 1 (If (|| a f) 2 3)}
     --
     -- For more details on this, see the documentation for 'Union',
-    -- 'MergingStrategy', and "Grisette.Core#merging"
+    -- 'MergingStrategy', and the [merging section](#g:merging) in
+    -- this module.
 
     -- ** Working with user-defined types
 
@@ -986,7 +991,7 @@ module Grisette.Core
     ListSpec (..),
     SimpleListSpec (..),
 
-    -- * Error Handling
+    -- * Error Handling #errors#
 
     -- |
     -- Grisette supports using 'Control.Monad.Except.ExceptT' to handle errors,
@@ -1020,15 +1025,13 @@ module Grisette.Core
     -- The solver call in the above example means that we want the solver to
     -- find the conditions under which no error is thrown, and the result is
     -- true. For more details, please refer to the
-    -- [documentation of the solver APIs](#solver).
+    -- [documentation of the solver APIs](#g:solver).
     --
     -- For those who prefer to encode errors as assertions and assumptions,
     -- we provide the 'symAssert' and 'symAssume' functions. These functions
     -- relies on the 'TransformError' type class to transform the assertions
     -- and assumptions to the user-defined error type.
     -- See their documentation for details.
-
-    -- | #errors#
 
     -- ** Predefined errors
     AssertionError (..),
@@ -1049,9 +1052,7 @@ module Grisette.Core
     mapCBMCExceptT,
     withCBMCExceptT,
 
-    -- * Solver backend
-
-    -- | #solver#
+    -- * Solver backend #solver#
 
     -- | Grisette abstracts the solver backend with the 'Solver' type class,
     -- and the most basic solver call is the 'solve' function.
@@ -1282,7 +1283,7 @@ module Grisette.Core
     SubstSym2 (..),
     substSym2,
 
-    -- * Utilities
+    -- * Utilities #utils#
 
     -- ** Memoization
     htmemo,

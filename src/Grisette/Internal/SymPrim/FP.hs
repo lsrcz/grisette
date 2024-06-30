@@ -106,7 +106,7 @@ type ValidFP (eb :: Nat) (sb :: Nat) = ValidFloat eb sb
 -- >>> 1.0 + 2.0 :: FP 11 53
 -- 3.0
 --
--- More operations are available. Please refer to "Grisette.Core#symops" for
+-- More operations are available. Please refer to "Grisette.Core#g:symops" for
 -- more information.
 newtype FP (eb :: Nat) (sb :: Nat) = FP {unFP :: FloatingPoint eb sb}
   deriving newtype (Eq, Show)
