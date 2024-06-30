@@ -85,7 +85,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Control.Monad.Union (Union, liftToMonadUnion)
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp, symIte)
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
@@ -503,27 +503,33 @@ SORD_BV(SymWordN)
 #endif
 
 -- Union
-instance (SymOrd a, Mergeable a) => SymOrd (Union a) where
+instance (SymOrd a) => SymOrd (Union a) where
   x .<= y = simpleMerge $ do
-    x1 <- tryMerge x
-    y1 <- tryMerge y
+    x1 <- x
+    y1 <- y
     mrgSingle $ x1 .<= y1
   x .< y = simpleMerge $ do
-    x1 <- tryMerge x
-    y1 <- tryMerge y
+    x1 <- x
+    y1 <- y
     mrgSingle $ x1 .< y1
   x .>= y = simpleMerge $ do
-    x1 <- tryMerge x
-    y1 <- tryMerge y
+    x1 <- x
+    y1 <- y
     mrgSingle $ x1 .>= y1
   x .> y = simpleMerge $ do
-    x1 <- tryMerge x
-    y1 <- tryMerge y
+    x1 <- x
+    y1 <- y
     mrgSingle $ x1 .> y1
-  x `symCompare` y = liftToMonadUnion $ do
-    x1 <- tryMerge x
-    y1 <- tryMerge y
+  x `symCompare` y = tryMerge $ do
+    x1 <- x
+    y1 <- y
     x1 `symCompare` y1
+
+instance SymOrd1 Union where
+  liftSymCompare f x y = tryMerge $ do
+    x1 <- x
+    y1 <- y
+    f x1 y1
 
 -- Instances
 deriveBuiltins

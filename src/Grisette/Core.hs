@@ -788,6 +788,7 @@ module Grisette.Core
     unionUnaryOp,
     unionBinOp,
     liftUnion,
+    unionMergingStrategy,
     liftToMonadUnion,
     unionSize,
 
@@ -1322,12 +1323,6 @@ module Grisette.Core
     genericMrgIte,
     genericLiftMrgIte,
 
-    -- *** 'EvalSym'
-    EvalSymArgs (..),
-    GEvalSym (..),
-    genericEvalSym,
-    genericLiftEvalSym,
-
     -- *** 'ToCon'
     ToConArgs (..),
     GToCon (..),
@@ -1340,11 +1335,23 @@ module Grisette.Core
     genericToSym,
     genericLiftToSym,
 
-    -- *** ExtractSym
+    -- *** 'EvalSym'
+    EvalSymArgs (..),
+    GEvalSym (..),
+    genericEvalSym,
+    genericLiftEvalSym,
+
+    -- *** 'ExtractSym'
     ExtractSymArgs (..),
     GExtractSym (..),
     genericExtractSym,
     genericLiftExtractSym,
+
+    -- *** 'SubstSym'
+    SubstSymArgs (..),
+    GSubstSym (..),
+    genericSubstSym,
+    genericLiftSubstSym,
 
     -- *** 'Format'
     genericFormatPrec,
@@ -1354,12 +1361,6 @@ module Grisette.Core
     FormatArgs (..),
     GFormat (..),
     FormatType (..),
-
-    -- *** 'SubstSym'
-    SubstSymArgs (..),
-    GSubstSym (..),
-    genericSubstSym,
-    genericLiftSubstSym,
   )
 where
 
@@ -1382,6 +1383,7 @@ import Grisette.Internal.Core.Control.Monad.Union
     liftToMonadUnion,
     liftUnion,
     unionBinOp,
+    unionMergingStrategy,
     unionSize,
     unionUnaryOp,
   )

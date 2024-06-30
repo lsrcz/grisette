@@ -7,6 +7,7 @@
 module Grisette.Core.Control.Monad.UnionTests (unionTests) where
 
 import Control.Monad.Except (ExceptT)
+import Control.Monad.Identity (Identity (Identity))
 import qualified Data.Text as T
 import Grisette
   ( EvalSym (evalSym),
@@ -243,9 +244,13 @@ unionTests =
         let actual = toSym True :: Union SymBool
         let expected = mrgSingle (con True)
         actual @?= expected,
+      testCase "ToSym (Identity a) (Union b)" $ do
+        let actual = toSym $ Identity True :: Union SymBool
+        let expected = mrgSingle (con True)
+        actual @?= expected,
       testCase "ToSym (Union a) (Union b)" $ do
         let actual = toSym (mrgSingle True :: Union Bool) :: Union SymBool
-        let expected = mrgSingle (con True)
+        let expected = return (con True)
         actual @?= expected,
       testCase "ToSym (Union Integer) SymInteger" $ do
         let actual = toSym (mrgIf "a" 1 2 :: Union Integer)
@@ -263,10 +268,21 @@ unionTests =
             toCon actual @?= expected
         ],
       testGroup
+        "ToCon (Union a) (Identity b)"
+        [ testCase "Const" $ do
+            let actual = mrgSingle (con True) :: Union SymBool
+            let expected = Just (Identity True) :: Maybe (Identity Bool)
+            toCon actual @?= expected,
+          testCase "Not const" $ do
+            let actual = mrgSingle "a" :: Union SymBool
+            let expected = Nothing :: Maybe (Identity Bool)
+            toCon actual @?= expected
+        ],
+      testGroup
         "ToCon (Union a) (Union b)"
         [ testCase "Const" $ do
             let actual = mrgSingle (con True) :: Union SymBool
-            let expected = Just (mrgSingle True) :: Maybe (Union Bool)
+            let expected = Just (return True) :: Maybe (Union Bool)
             toCon actual @?= expected,
           testCase "Not const" $ do
             let actual = mrgSingle "a" :: Union SymBool
@@ -276,15 +292,15 @@ unionTests =
       testGroup "EvalSym" $ do
         let model = buildModel ("a" ::= True, "b" ::= False, "c" ::= True)
         [ testCase "EmptyModel with no fill default" $ do
-            let actual = evalSym False emptyModel (return "a")
+            let actual = evalSym False emptyModel (mrgSingle "a")
             let expected = mrgSingle "a" :: Union SymBool
             actual @?= expected,
           testCase "EmptyModel with filling default" $ do
-            let actual = evalSym True emptyModel (return "a")
+            let actual = evalSym True emptyModel (mrgSingle "a")
             let expected = mrgSingle $ con False :: Union SymBool
             actual @?= expected,
           testCase "non-empty model, simple test" $ do
-            let actual = evalSym False model (return "a")
+            let actual = evalSym False model (mrgSingle "a")
             let expected = mrgSingle $ con True :: Union SymBool
             actual @?= expected,
           testCase "non-empty model, complex test" $ do

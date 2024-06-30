@@ -38,7 +38,7 @@ module Grisette.Internal.Core.Data.Class.ToSym
 where
 
 import Control.Monad.Identity
-  ( Identity (Identity),
+  ( Identity (Identity, runIdentity),
     IdentityT (IdentityT),
   )
 import Control.Monad.Reader (ReaderT (ReaderT))
@@ -127,6 +127,10 @@ class ToSym a b where
   -- >>> toSym [False, True] :: [SymBool]
   -- [false,true]
   toSym :: a -> b
+
+instance {-# INCOHERENT #-} ToSym a a where
+  toSym = id
+  {-# INLINE toSym #-}
 
 -- | Lifting of 'ToSym' to unary type constructors.
 class (forall a b. (ToSym a b) => ToSym (f1 a) (f2 b)) => ToSym1 f1 f2 where
@@ -380,7 +384,6 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,
     ''Monoid.Product,
@@ -409,7 +412,6 @@ deriveBuiltins
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
-    ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,
     ''Monoid.Product,
@@ -532,6 +534,23 @@ instance (ToSym1 m m1, ToSym a b) => ToSym (IdentityT m a) (IdentityT m1 b) wher
 
 instance (ToSym1 m m1) => ToSym1 (IdentityT m) (IdentityT m1) where
   liftToSym f (IdentityT v) = IdentityT $ liftToSym f v
+  {-# INLINE liftToSym #-}
+
+-- Identity
+instance {-# INCOHERENT #-} (ToSym a b) => ToSym (Identity a) (Identity b) where
+  toSym = toSym1
+  {-# INLINE toSym #-}
+
+instance {-# INCOHERENT #-} (ToSym a b) => ToSym a (Identity b) where
+  toSym = Identity . toSym
+  {-# INLINE toSym #-}
+
+instance {-# INCOHERENT #-} (ToSym a b) => ToSym (Identity a) b where
+  toSym = toSym . runIdentity
+  {-# INLINE toSym #-}
+
+instance ToSym1 Identity Identity where
+  liftToSym f (Identity v) = Identity $ f v
   {-# INLINE liftToSym #-}
 
 -- Function

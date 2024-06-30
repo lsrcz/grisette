@@ -38,8 +38,7 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
 import Test.QuickCheck (ioProperty)
 
-toConForConcreteOkProp ::
-  (HasCallStack, ToCon v v, Show v, Eq v) => v -> Assertion
+toConForConcreteOkProp :: (HasCallStack, Show v, Eq v) => v -> Assertion
 toConForConcreteOkProp v = toCon v @?= Just v
 
 toConTests :: Test

@@ -33,12 +33,14 @@ module Grisette.Internal.Core.Control.Monad.Union
     liftUnion,
     liftToMonadUnion,
     unionBase,
+    unionMergingStrategy,
     isMerged,
     unionSize,
     IsConcrete,
   )
 where
 
+import Control.Applicative (Alternative ((<|>)))
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
 import Data.Functor.Classes
   ( Eq1 (liftEq),
@@ -50,12 +52,20 @@ import Data.Hashable (Hashable (hashWithSalt))
 import Data.String (IsString (fromString))
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
-import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym (evalSym))
+import Grisette.Internal.Core.Data.Class.EvalSym
+  ( EvalSym (evalSym),
+    EvalSym1 (liftEvalSym),
+    evalSym1,
+  )
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
+    ExtractSym1 (liftExtractSym),
+    extractSym1,
   )
 import Grisette.Internal.Core.Data.Class.Format
-  ( Format (format),
+  ( Format (formatPrec),
+    Format1 (liftFormatPrec),
+    formatPrec1,
     groupedEnclose,
   )
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
@@ -67,6 +77,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
     MergingStrategy (SimpleStrategy),
+    rootStrategy1,
   )
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (ifView, singleView),
@@ -87,13 +98,28 @@ import Grisette.Internal.Core.Data.Class.Solver
   )
 import Grisette.Internal.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
+    SubstSym1 (liftSubstSym),
+    substSym1,
   )
-import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
+import Grisette.Internal.Core.Data.Class.SymEq
+  ( SymEq ((.==)),
+    SymEq1 (liftSymEq),
+    symEq1,
+  )
+import Grisette.Internal.Core.Data.Class.ToCon
+  ( ToCon (toCon),
+    ToCon1 (liftToCon),
+    toCon1,
+  )
+import Grisette.Internal.Core.Data.Class.ToSym
+  ( ToSym (toSym),
+    ToSym1 (liftToSym),
+    toSym1,
+  )
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
     mrgSingle,
+    mrgSingleWithStrategy,
     tryMerge,
   )
 import Grisette.Internal.Core.Data.UnionBase
@@ -102,6 +128,8 @@ import Grisette.Internal.Core.Data.UnionBase
   )
 import Grisette.Internal.SymPrim.AllSyms
   ( AllSyms (allSymsS),
+    AllSyms1 (liftAllSymsS),
+    allSymsS1,
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.GeneralFun
@@ -245,6 +273,10 @@ data Union a where
     UnionBase a ->
     Union a
 
+unionMergingStrategy :: Union a -> Maybe (MergingStrategy a)
+unionMergingStrategy (UMrg s _) = Just s
+unionMergingStrategy _ = Nothing
+
 instance (NFData a) => NFData (Union a) where
   rnf = rnf1
 
@@ -294,9 +326,12 @@ instance Show1 Union where
       $ a
 
 instance (Format a) => Format (Union a) where
-  format = \case
-    (UAny a) -> groupedEnclose "<" ">" $ format a
-    (UMrg _ a) -> groupedEnclose "{" "}" $ format a
+  formatPrec = formatPrec1
+
+instance Format1 Union where
+  liftFormatPrec fa fl _ = \case
+    (UAny a) -> groupedEnclose "<" ">" $ liftFormatPrec fa fl 0 a
+    (UMrg _ a) -> groupedEnclose "{" "}" $ liftFormatPrec fa fl 0 a
 
 -- | Extract the underlying Union. May be unmerged.
 unionBase :: Union a -> UnionBase a
@@ -345,27 +380,30 @@ instance Monad Union where
   {-# INLINE (>>=) #-}
 
 -- | Lift a unary operation to 'Union'.
-unionUnaryOp :: (Mergeable a, Mergeable b) => (a -> b) -> Union a -> Union b
+unionUnaryOp :: (a -> a) -> Union a -> Union a
 unionUnaryOp f a = do
-  a1 <- tryMerge a
-  mrgSingle $ f a1
+  a1 <- a
+  maybe return mrgSingleWithStrategy (unionMergingStrategy a) $ f a1
 {-# INLINE unionUnaryOp #-}
 
 -- | Lift a binary operation to 'Union'.
 unionBinOp ::
-  (Mergeable a, Mergeable b, Mergeable c) =>
-  (a -> b -> c) ->
+  (a -> a -> a) ->
   Union a ->
-  Union b ->
-  Union c
+  Union a ->
+  Union a
 unionBinOp f a b = do
-  a1 <- tryMerge a
-  b1 <- tryMerge b
-  mrgSingle $ f a1 b1
+  a1 <- a
+  b1 <- b
+  maybe
+    return
+    mrgSingleWithStrategy
+    (unionMergingStrategy a <|> unionMergingStrategy b)
+    $ f a1 b1
 {-# INLINE unionBinOp #-}
 
 instance (Mergeable a) => Mergeable (Union a) where
-  rootStrategy = SimpleStrategy mrgIf
+  rootStrategy = rootStrategy1
   {-# INLINE rootStrategy #-}
 
 instance (Mergeable a) => SimpleMergeable (Union a) where
@@ -402,12 +440,17 @@ instance SymBranching Union where
   mrgIfPropagatedStrategy cond t f@(UMrg m _) = mrgIfWithStrategy m cond t f
   {-# INLINE mrgIfPropagatedStrategy #-}
 
-instance (Mergeable a, SymEq a) => SymEq (Union a) where
-  x .== y = simpleMerge $ unionBinOp (.==) x y
+instance (SymEq a) => SymEq (Union a) where
+  (.==) = symEq1
   {-# INLINE (.==) #-}
 
+instance SymEq1 Union where
+  liftSymEq f x y = simpleMerge $ f <$> x <*> y
+  {-# INLINE liftSymEq #-}
+
 -- | Lift the 'Union' to any Applicative 'SymBranching'.
-liftUnion :: forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a -> u a
+liftUnion ::
+  forall u a. (Mergeable a, SymBranching u, Applicative u) => Union a -> u a
 liftUnion u = go (unionBase u)
   where
     go :: UnionBase a -> u a
@@ -421,33 +464,35 @@ liftToMonadUnion = liftUnion
 instance {-# INCOHERENT #-} (ToSym a b, Mergeable b) => ToSym a (Union b) where
   toSym = mrgSingle . toSym
 
-instance (ToSym a b, Mergeable b) => ToSym (Union a) (Union b) where
-  toSym = tryMerge . fmap toSym
+instance (ToSym a b) => ToSym (Union a) (Union b) where
+  toSym = toSym1
 
-#define TO_SYM_FROM_UNION_CON_SIMPLE(contype, symtype) \
-instance ToSym (Union contype) symtype where \
+instance ToSym1 Union Union where
+  liftToSym = fmap
+
+instance ToSym (Union Bool) SymBool where
   toSym = simpleMerge . fmap con
 
-#define TO_SYM_FROM_UNION_CON_BV(contype, symtype) \
-instance (KnownNat n, 1 <= n) => ToSym (Union (contype n)) (symtype n) where \
+instance ToSym (Union Integer) SymInteger where
   toSym = simpleMerge . fmap con
 
-#define TO_SYM_FROM_UNION_CON_FUN(conop, symop) \
-instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => ToSym (Union (conop ca cb)) (symop sa sb) where \
+instance (KnownNat n, 1 <= n) => ToSym (Union (IntN n)) (SymIntN n) where
   toSym = simpleMerge . fmap con
 
-#define TO_SYM_FROM_UNION_CON_BV_SOME(contype, symtype) \
-instance ToSym (Union contype) symtype where \
-  toSym = simpleMerge . fmap (toSym :: contype -> symtype)
+instance (KnownNat n, 1 <= n) => ToSym (Union (WordN n)) (SymWordN n) where
+  toSym = simpleMerge . fmap con
 
-#if 1
-TO_SYM_FROM_UNION_CON_SIMPLE(Bool, SymBool)
-TO_SYM_FROM_UNION_CON_SIMPLE(Integer, SymInteger)
-TO_SYM_FROM_UNION_CON_BV(IntN, SymIntN)
-TO_SYM_FROM_UNION_CON_BV(WordN, SymWordN)
-TO_SYM_FROM_UNION_CON_FUN((=->), (=~>))
-TO_SYM_FROM_UNION_CON_FUN((-->), (-~>))
-#endif
+instance
+  (SupportedPrim ((=->) ca cb), LinkedRep ca sa, LinkedRep cb sb) =>
+  ToSym (Union ((=->) ca cb)) ((=~>) sa sb)
+  where
+  toSym = simpleMerge . fmap con
+
+instance
+  (SupportedPrim ((-->) ca cb), LinkedRep ca sa, LinkedRep cb sb) =>
+  ToSym (Union ((-->) ca cb)) ((-~>) sa sb)
+  where
+  toSym = simpleMerge . fmap con
 
 instance {-# INCOHERENT #-} (ToCon a b, Mergeable a) => ToCon (Union a) b where
   toCon v = go $ unionBase $ tryMerge v
@@ -455,50 +500,56 @@ instance {-# INCOHERENT #-} (ToCon a b, Mergeable a) => ToCon (Union a) b where
       go (UnionSingle x) = toCon x
       go _ = Nothing
 
-instance
-  (ToCon a b, Mergeable a, Mergeable b) =>
-  ToCon (Union a) (Union b)
-  where
-  toCon v = go $ unionBase $ tryMerge v
+instance (ToCon a b) => ToCon (Union a) (Union b) where
+  toCon = toCon1
+
+instance ToCon1 Union Union where
+  liftToCon f v = go $ unionBase v
     where
-      go :: UnionBase a -> Maybe (Union b)
-      go (UnionSingle x) = case toCon x of
+      go (UnionSingle x) = case f x of
         Nothing -> Nothing
-        Just v -> Just $ mrgSingle v
+        Just v -> Just $ return v
       go (UnionIf _ _ c t f) = do
         t' <- go t
         f' <- go f
-        return $ mrgIf c t' f'
+        return $ mrgIfPropagatedStrategy c t' f'
 
-instance (Mergeable a, EvalSym a) => EvalSym (Union a) where
-  evalSym fillDefault model x = go $ unionBase x
-    where
-      go :: UnionBase a -> Union a
-      go (UnionSingle v) = mrgSingle $ evalSym fillDefault model v
-      go (UnionIf _ _ cond t f) =
-        mrgIf
-          (evalSym fillDefault model cond)
-          (go t)
-          (go f)
+instance (EvalSym a) => EvalSym (Union a) where
+  evalSym = evalSym1
 
-instance (Mergeable a, SubstSym a) => SubstSym (Union a) where
-  substSym sym val x = go $ unionBase x
+instance EvalSym1 Union where
+  liftEvalSym f fillDefault model x = go $ unionBase x
     where
-      go :: UnionBase a -> Union a
-      go (UnionSingle v) = mrgSingle $ substSym sym val v
+      go (UnionSingle v) = single $ f fillDefault model v
       go (UnionIf _ _ cond t f) =
-        mrgIf
+        unionIf (evalSym fillDefault model cond) (go t) (go f)
+      strategy = unionMergingStrategy x
+      single = maybe return mrgSingleWithStrategy strategy
+      unionIf = maybe mrgIfPropagatedStrategy mrgIfWithStrategy strategy
+
+instance (SubstSym a) => SubstSym (Union a) where
+  substSym = substSym1
+
+instance SubstSym1 Union where
+  liftSubstSym f sym val x = go $ unionBase x
+    where
+      go (UnionSingle v) = single $ f sym val v
+      go (UnionIf _ _ cond t f) =
+        unionIf
           (substSym sym val cond)
           (go t)
           (go f)
+      strategy = unionMergingStrategy x
+      single = maybe return mrgSingleWithStrategy strategy
+      unionIf = maybe mrgIfPropagatedStrategy mrgIfWithStrategy strategy
 
-instance
-  (ExtractSym a) =>
-  ExtractSym (Union a)
-  where
-  extractSym v = go $ unionBase v
+instance (ExtractSym a) => ExtractSym (Union a) where
+  extractSym = extractSym1
+
+instance ExtractSym1 Union where
+  liftExtractSym e v = go $ unionBase v
     where
-      go (UnionSingle x) = extractSym x
+      go (UnionSingle x) = e x
       go (UnionIf _ _ cond t f) = extractSym cond <> go t <> go f
 
 instance (Hashable a) => Hashable (Union a) where
@@ -557,7 +608,10 @@ instance (IsString a, Mergeable a) => IsString (Union a) where
 
 -- AllSyms
 instance (AllSyms a) => AllSyms (Union a) where
-  allSymsS = allSymsS . unionBase
+  allSymsS = allSymsS1
+
+instance AllSyms1 Union where
+  liftAllSymsS f = liftAllSymsS f . unionBase
 
 -- Concrete Key HashMaps
 

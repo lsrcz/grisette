@@ -43,7 +43,9 @@ import Data.Hashable (Hashable (hashWithSalt))
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Data.Class.Format
   ( Format (formatPrec),
+    Format1 (liftFormatPrec),
     condEnclose,
+    formatPrec1,
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
@@ -69,6 +71,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Internal.SymPrim.AllSyms
   ( AllSyms (allSymsS),
+    AllSyms1 (liftAllSymsS),
     SomeSym (SomeSym),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
@@ -198,8 +201,11 @@ instance (Show a) => Show (UnionBase a) where
   showsPrec = showsPrec1
 
 instance (Format a) => Format (UnionBase a) where
-  formatPrec n (UnionSingle a) = formatPrec n a
-  formatPrec n (UnionIf _ _ cond t f) =
+  formatPrec = formatPrec1
+
+instance Format1 UnionBase where
+  liftFormatPrec fa _ n (UnionSingle a) = fa n a
+  liftFormatPrec fa fl n (UnionIf _ _ cond t f) =
     group $
       condEnclose (n > 10) "(" ")" $
         align $
@@ -207,8 +213,8 @@ instance (Format a) => Format (UnionBase a) where
             vsep
               [ "If",
                 formatPrec 11 cond,
-                formatPrec 11 t,
-                formatPrec 11 f
+                liftFormatPrec fa fl 11 t,
+                liftFormatPrec fa fl 11 f
               ]
 
 instance (Hashable a) => Hashable (UnionBase a) where
@@ -224,6 +230,11 @@ instance (Hashable a) => Hashable (UnionBase a) where
 instance (AllSyms a) => AllSyms (UnionBase a) where
   allSymsS (UnionSingle v) = allSymsS v
   allSymsS (UnionIf _ _ c t f) = \l -> SomeSym c : (allSymsS t . allSymsS f $ l)
+
+instance AllSyms1 UnionBase where
+  liftAllSymsS fa (UnionSingle v) = fa v
+  liftAllSymsS fa (UnionIf _ _ c t f) =
+    \l -> SomeSym c : (liftAllSymsS fa t . liftAllSymsS fa f $ l)
 
 -- | Fully reconstruct a 'Grisette.Core.Union' to maintain the merged invariant.
 fullReconstruct :: MergingStrategy a -> UnionBase a -> UnionBase a

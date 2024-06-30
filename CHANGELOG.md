@@ -26,6 +26,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#219](https://github.com/lsrcz/grisette/pull/219))
 - Added `Show` instance for `SomeSym`.
   ([#219](https://github.com/lsrcz/grisette/pull/219))
+- Added incoherent conversions (`ToSym`, `ToCon`) from/to `Identity a` and `a`.
+  ([#221](https://github.com/lsrcz/grisette/pull/221))
 
 ### Fixed
 - Fixed the printing of FP terms.
@@ -33,9 +35,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - [Breaking] Relaxed constraints for type classes, according to
-  https://github.com/haskell/core-libraries-committee/issues/10.
+  https://github.com/haskell/core-libraries-committee/issues/10. One problem
+  this causes is that the instances for `Union` will no longer be able to always
+  merge the results. This is unfortunate, but should not be critical.
   ([#213](https://github.com/lsrcz/grisette/pull/213),
-   [#214](https://github.com/lsrcz/grisette/pull/214))
+   [#214](https://github.com/lsrcz/grisette/pull/214),
+   [#221](https://github.com/lsrcz/grisette/pull/221))
 - [Breaking] Rewritten the generic derivation mechanism.
   ([#213](https://github.com/lsrcz/grisette/pull/213),
    [#214](https://github.com/lsrcz/grisette/pull/214),
