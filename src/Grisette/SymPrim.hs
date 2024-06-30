@@ -141,6 +141,7 @@ module Grisette.SymPrim
     type (-~>) (..),
 
     -- ** Basic constraints
+    SupportedPrim,
     SymRep (SymType),
     ConRep (ConType),
     LinkedRep,
@@ -219,6 +220,7 @@ import Grisette.Internal.SymPrim.Prim.Model
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (..),
     LinkedRep,
+    SupportedPrim,
     SymRep (..),
     TypedSymbol (..),
   )
