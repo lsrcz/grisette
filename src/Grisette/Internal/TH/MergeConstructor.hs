@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE Trustworthy #-}
 
@@ -19,12 +20,11 @@ import Control.Monad (join, replicateM, when, zipWithM)
 import Data.Bifunctor (Bifunctor (second))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
-import Grisette.Internal.TH.Util (constructorInfoToType, occName)
+import Grisette.Internal.TH.Util (constructorInfoToType, occName, putHaddock)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
     Dec (FunD, SigD),
-    DocLoc (DeclDoc),
     Exp (AppE, ConE, LamE, VarE),
     Name,
     Pat (VarP),
@@ -33,7 +33,6 @@ import Language.Haskell.TH
     Type (AppT, ArrowT, ForallT, VarT),
     mkName,
     newName,
-    putDoc,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo
@@ -48,7 +47,6 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     TyVarBndrSpec,
     plainTVFlag,
   )
-import Language.Haskell.TH.Syntax (addModFinalizer)
 
 -- | Generate constructor wrappers that wraps the result in a container with
 -- `TryMerge` with provided names.
@@ -139,11 +137,10 @@ mkSingleWrapper dataType name info = do
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentNormalCExpr (length $ constructorFields info) (ConE oriName)
-  addModFinalizer $
-    putDoc (DeclDoc retName) $
-      "Smart constructor for v'"
-        <> show oriName
-        <> "' to construct values wrapped and possibly merged in a container."
+  putHaddock retName $
+    "Smart constructor for v'"
+      <> show oriName
+      <> "' to construct values wrapped and possibly merged in a container."
   return
     [ SigD retName augmentedTyp,
       FunD retName [Clause [] (NormalB expr) []]

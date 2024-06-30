@@ -16,7 +16,7 @@ where
 
 import Control.Monad (join, replicateM, when, zipWithM)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.TH.Util (constructorInfoToType, occName)
+import Grisette.Internal.TH.Util (constructorInfoToType, occName, putHaddock)
 import Grisette.Unified.Internal.EvalMode (EvalMode)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.UnifiedData
@@ -36,16 +36,13 @@ import Language.Haskell.TH.Syntax
   ( Body (NormalB),
     Clause (Clause),
     Dec (FunD, SigD),
-    DocLoc (DeclDoc),
     Exp (ConE),
     Name,
     Pred,
     Q,
     Type (AppT, ArrowT, ConT, ForallT, VarT),
-    addModFinalizer,
     mkName,
     newName,
-    putDoc,
   )
 
 -- | Generate smart constructors to create unified values.
@@ -132,11 +129,10 @@ mkSingleWrapper dataType mode name info = do
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentExpr mode (length $ constructorFields info) (ConE oriName)
-  addModFinalizer $
-    putDoc (DeclDoc retName) $
-      "Smart constructor for v'"
-        <> show oriName
-        <> "' to construct unified value."
+  putHaddock retName $
+    "Smart constructor for v'"
+      <> show oriName
+      <> "' to construct unified value."
   return
     [ SigD retName augmentedTyp,
       FunD retName [Clause [] (NormalB expr) []]
