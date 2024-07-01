@@ -111,6 +111,7 @@ pattern Single x <-
     Single x = mrgSingle x
 
 -- | Pattern match to extract guard values with 'ifView'
+--
 -- >>> case (mrgIfPropagatedStrategy "a" (return 1) (return 2) :: Union Integer) of If c t f -> (c,t,f)
 -- (a,<1>,<2>)
 pattern If :: (PlainUnion u, Mergeable a) => SymBool -> u a -> u a -> u a
