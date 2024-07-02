@@ -126,11 +126,20 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.Prim.Internal.Term ()
+import Grisette.Internal.SymPrim.Prim.Model
+  ( Model (Model),
+    SymbolSet (SymbolSet),
+  )
+import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue)
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
+    SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim,
+    TypedSymbol (unTypedSymbol),
     prettyPrintTerm,
   )
 import Grisette.Internal.SymPrim.SymBV
@@ -174,13 +183,17 @@ class PPrint a where
 
   {-# MINIMAL pformat | pformatPrec #-}
 
-prettyPrintList :: [Doc ann] -> Doc ann
-prettyPrintList l
-  | null l = "[]"
-  | length l == 1 = align $ group $ vcat ["[" <> flatAlt " " "" <> head l, "]"]
+pformatListLike :: Doc ann -> Doc ann -> [Doc ann] -> Doc ann
+pformatListLike ldelim rdelim l
+  | null l = ldelim <> rdelim
+  | length l == 1 =
+      align $ group $ vcat [ldelim <> flatAlt " " "" <> head l, rdelim]
   | otherwise =
-      groupedEnclose "[" "]" . align . vcat $
+      groupedEnclose ldelim rdelim . align . vcat $
         ((\v -> v <> flatAlt "," ", ") <$> init l) ++ [last l]
+
+prettyPrintList :: [Doc ann] -> Doc ann
+prettyPrintList = pformatListLike "[" "]"
 
 prettyPrintTuple :: [Doc ann] -> Doc ann
 prettyPrintTuple l
@@ -850,9 +863,58 @@ instance (PPrint a, PPrint b) => PPrint2 ((,,,) a b) where
     prettyPrintTuple [pformat a, pformat b, fc 0 c, fd 0 d]
 
 instance (PPrint a) => PPrint (HS.HashSet a) where
-  pformatPrec n s =
-    pformatWithConstructor n "fromList" [pformatPrec 11 $ HS.toList s]
+  pformatPrec = pformatPrec1
+
+instance PPrint1 HS.HashSet where
+  liftPFormatPrec p l n s =
+    pformatWithConstructor n "HashSet" [liftPFormatPrec p l 11 $ HS.toList s]
 
 instance (PPrint k, PPrint v) => PPrint (HM.HashMap k v) where
-  pformatPrec n s =
-    pformatWithConstructor n "fromList" [pformatPrec 11 $ HM.toList s]
+  pformatPrec = pformatPrec1
+
+instance (PPrint k) => PPrint1 (HM.HashMap k) where
+  liftPFormatPrec = liftPFormatPrec2 pformatPrec pformatList
+
+instance PPrint2 HM.HashMap where
+  liftPFormatPrec2 pk lk pv lv n s =
+    pformatWithConstructor
+      n
+      "HashMap"
+      [ liftPFormatPrec
+          (liftPFormatPrec2 pk lk pv lv)
+          (liftPFormatList2 pk lk pv lv)
+          11
+          $ HM.toList s
+      ]
+
+instance PPrint Identifier where
+  pformat = viaShow
+
+instance PPrint Symbol where
+  pformat = viaShow
+
+instance PPrint (TypedSymbol t) where
+  pformat = viaShow
+
+instance PPrint SomeTypedSymbol where
+  pformat = viaShow
+
+instance PPrint ModelValue where
+  pformat = viaShow
+
+instance PPrint Model where
+  pformatPrec n (Model m) =
+    pformatWithConstructor n "Model" [bodyFormatted]
+    where
+      pformatSymbolWithoutType :: SomeTypedSymbol -> Doc ann
+      pformatSymbolWithoutType (SomeTypedSymbol _ s) = pformat $ unTypedSymbol s
+      pformatPair :: (SomeTypedSymbol, ModelValue) -> Doc ann
+      pformatPair (s, v) = pformatSymbolWithoutType s <> " -> " <> pformat v
+      bodyFormatted = pformatListLike "{" "}" $ pformatPair <$> HM.toList m
+
+instance PPrint SymbolSet where
+  pformatPrec n (SymbolSet s) =
+    pformatWithConstructor
+      n
+      "SymbolSet"
+      [pformatListLike "{" "}" $ pformat <$> HS.toList s]
