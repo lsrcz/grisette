@@ -41,12 +41,6 @@ import Data.Functor.Classes
   )
 import Data.Hashable (Hashable (hashWithSalt))
 import GHC.Generics (Generic, Generic1)
-import Grisette.Internal.Core.Data.Class.Format
-  ( Format (formatPrec),
-    Format1 (liftFormatPrec),
-    condEnclose,
-    formatPrec1,
-  )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
@@ -55,6 +49,12 @@ import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
     MergingStrategy (NoStrategy, SimpleStrategy, SortedStrategy),
+  )
+import Grisette.Internal.Core.Data.Class.PPrint
+  ( PPrint (pformatPrec),
+    PPrint1 (liftPFormatPrec),
+    condEnclose,
+    pformatPrec1,
   )
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (ifView, singleView),
@@ -200,21 +200,21 @@ instance Show1 UnionBase where
 instance (Show a) => Show (UnionBase a) where
   showsPrec = showsPrec1
 
-instance (Format a) => Format (UnionBase a) where
-  formatPrec = formatPrec1
+instance (PPrint a) => PPrint (UnionBase a) where
+  pformatPrec = pformatPrec1
 
-instance Format1 UnionBase where
-  liftFormatPrec fa _ n (UnionSingle a) = fa n a
-  liftFormatPrec fa fl n (UnionIf _ _ cond t f) =
+instance PPrint1 UnionBase where
+  liftPFormatPrec fa _ n (UnionSingle a) = fa n a
+  liftPFormatPrec fa fl n (UnionIf _ _ cond t f) =
     group $
       condEnclose (n > 10) "(" ")" $
         align $
           nest 2 $
             vsep
               [ "If",
-                formatPrec 11 cond,
-                liftFormatPrec fa fl 11 t,
-                liftFormatPrec fa fl 11 f
+                pformatPrec 11 cond,
+                liftPFormatPrec fa fl 11 t,
+                liftPFormatPrec fa fl 11 f
               ]
 
 instance (Hashable a) => Hashable (UnionBase a) where

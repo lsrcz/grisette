@@ -33,10 +33,10 @@ import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
-import Grisette.Internal.Core.Data.Class.Format (Format)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.PPrint (PPrint)
 import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd)
@@ -59,7 +59,7 @@ class
     (EvalSym v) => EvalSym u,
     (ExtractSym v) => ExtractSym u,
     (ITEOp v) => ITEOp u,
-    (Format v) => Format u,
+    (PPrint v) => PPrint u,
     (Hashable v) => Hashable u,
     (Lift v) => Lift u,
     (LogicalOp v) => LogicalOp u,

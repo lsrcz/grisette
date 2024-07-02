@@ -62,12 +62,6 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     ExtractSym1 (liftExtractSym),
     extractSym1,
   )
-import Grisette.Internal.Core.Data.Class.Format
-  ( Format (formatPrec),
-    Format1 (liftFormatPrec),
-    formatPrec1,
-    groupedEnclose,
-  )
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
@@ -78,6 +72,12 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable1 (liftRootStrategy),
     MergingStrategy (SimpleStrategy),
     rootStrategy1,
+  )
+import Grisette.Internal.Core.Data.Class.PPrint
+  ( PPrint (pformatPrec),
+    PPrint1 (liftPFormatPrec),
+    groupedEnclose,
+    pformatPrec1,
   )
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion (ifView, singleView),
@@ -325,13 +325,13 @@ instance Show1 Union where
       . liftShowsPrecUnion sp sl 0
       $ a
 
-instance (Format a) => Format (Union a) where
-  formatPrec = formatPrec1
+instance (PPrint a) => PPrint (Union a) where
+  pformatPrec = pformatPrec1
 
-instance Format1 Union where
-  liftFormatPrec fa fl _ = \case
-    (UAny a) -> groupedEnclose "<" ">" $ liftFormatPrec fa fl 0 a
-    (UMrg _ a) -> groupedEnclose "{" "}" $ liftFormatPrec fa fl 0 a
+instance PPrint1 Union where
+  liftPFormatPrec fa fl _ = \case
+    (UAny a) -> groupedEnclose "<" ">" $ liftPFormatPrec fa fl 0 a
+    (UMrg _ a) -> groupedEnclose "{" "}" $ liftPFormatPrec fa fl 0 a
 
 -- | Extract the underlying Union. May be unmerged.
 unionBase :: Union a -> UnionBase a

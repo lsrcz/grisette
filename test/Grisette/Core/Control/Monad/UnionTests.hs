@@ -12,7 +12,6 @@ import qualified Data.Text as T
 import Grisette
   ( EvalSym (evalSym),
     ExtractSym (extractSym),
-    Format (format),
     Function ((#)),
     ITEOp (symIte),
     LogicalOp ((.&&)),
@@ -20,6 +19,7 @@ import Grisette
     ModelOps (emptyModel),
     ModelRep (buildModel),
     ModelValuePair ((::=)),
+    PPrint (pformat),
     PlainUnion (ifView, singleView),
     SimpleMergeable (mrgIte),
     Solvable (con, conView, isym, ssym),
@@ -172,13 +172,13 @@ unionTests =
             show unionSimple1 @?= expected
         ],
       testGroup
-        "Format"
+        "PPrint"
         [ testCase "Merged" $ do
-            format union12Merged
+            pformat union12Merged
               `renderedAs` ( "{If (ite u12c u1c u2c) (Left (ite u12c u1a u2a)) "
                                <> "(Right (ite u12c u1b u2b))}"
                            )
-            format union12Merged
+            pformat union12Merged
               `compactRenderedAs` ( T.intercalate
                                       "\n"
                                       [ "{ If",
@@ -193,7 +193,7 @@ unionTests =
                                       ]
                                   ),
           testCase "Not merged" $ do
-            format union1 `renderedAs` "<If u1c (Left u1a) (Right u1b)>"
+            pformat union1 `renderedAs` "<If u1c (Left u1a) (Right u1b)>"
         ],
       testGroup
         "Functor"

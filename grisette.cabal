@@ -74,7 +74,6 @@ library
       Grisette.Internal.Core.Data.Class.Error
       Grisette.Internal.Core.Data.Class.EvalSym
       Grisette.Internal.Core.Data.Class.ExtractSym
-      Grisette.Internal.Core.Data.Class.Format
       Grisette.Internal.Core.Data.Class.Function
       Grisette.Internal.Core.Data.Class.GenSym
       Grisette.Internal.Core.Data.Class.IEEEFP
@@ -83,6 +82,7 @@ library
       Grisette.Internal.Core.Data.Class.Mergeable
       Grisette.Internal.Core.Data.Class.ModelOps
       Grisette.Internal.Core.Data.Class.PlainUnion
+      Grisette.Internal.Core.Data.Class.PPrint
       Grisette.Internal.Core.Data.Class.SafeDivision
       Grisette.Internal.Core.Data.Class.SafeLinearArith
       Grisette.Internal.Core.Data.Class.SafeSymRotate
@@ -286,10 +286,10 @@ test-suite spec
       Grisette.Core.Data.Class.BoolTests
       Grisette.Core.Data.Class.EvalSymTests
       Grisette.Core.Data.Class.ExtractSymTests
-      Grisette.Core.Data.Class.FormatTests
       Grisette.Core.Data.Class.GenSymTests
       Grisette.Core.Data.Class.MergeableTests
       Grisette.Core.Data.Class.PlainUnionTests
+      Grisette.Core.Data.Class.PPrintTests
       Grisette.Core.Data.Class.SafeDivisionTests
       Grisette.Core.Data.Class.SafeLinearArithTests
       Grisette.Core.Data.Class.SafeSymRotateTests

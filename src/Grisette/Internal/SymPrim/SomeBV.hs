@@ -118,9 +118,6 @@ import Grisette.Internal.Core.Data.Class.EvalSym
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
   )
-import Grisette.Internal.Core.Data.Class.Format
-  ( Format (format),
-  )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
     GenSymSimple (simpleFresh),
@@ -130,6 +127,9 @@ import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy (SortedStrategy),
     wrapStrategy,
+  )
+import Grisette.Internal.Core.Data.Class.PPrint
+  ( PPrint (pformat),
   )
 import Grisette.Internal.Core.Data.Class.SafeDivision
   ( SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
@@ -472,11 +472,11 @@ instance
   {-# INLINE extractSym #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => Format (bv n)) =>
-  Format (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => PPrint (bv n)) =>
+  PPrint (SomeBV bv)
   where
-  format (SomeBV bv) = format bv
-  {-# INLINE format #-}
+  pformat (SomeBV bv) = pformat bv
+  {-# INLINE pformat #-}
 
 data CompileTimeNat where
   CompileTimeNat :: (KnownNat n, 1 <= n) => Proxy n -> CompileTimeNat
