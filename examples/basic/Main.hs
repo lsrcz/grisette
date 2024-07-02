@@ -40,7 +40,6 @@ interpret (SymInput x) = x
 interpret (SymAdd x y) = interpretSpace x + interpretSpace y
 interpret (SymMul x y) = interpretSpace x * interpretSpace y
 
--- interpet a program space
 interpretSpace :: Union SymExpr -> SymInteger
 interpretSpace = onUnion interpret
 
