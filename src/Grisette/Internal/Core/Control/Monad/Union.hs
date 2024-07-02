@@ -273,6 +273,7 @@ data Union a where
     UnionBase a ->
     Union a
 
+-- | Get the (possibly empty) cached merging strategy.
 unionMergingStrategy :: Union a -> Maybe (MergingStrategy a)
 unionMergingStrategy (UMrg s _) = Just s
 unionMergingStrategy _ = Nothing
