@@ -117,8 +117,9 @@ instructions.
 ## Example
 
 The following example uses Grisette to build a synthesizer of arithmetic
-programs. Given the input-output pair (2,5), the synthesizer may output the
-program (\x -> x+3). The example is adapted from [this blog
+programs. Given the input-output pair (2,5), the synthesizer can tell us that
+the program `\x -> x+3` has the desired behavior. The example is adapted from
+[this blog
 post](https://www.cs.utexas.edu/~bornholt/post/building-synthesizer.html) by
 James Bornholt.
 
@@ -127,14 +128,14 @@ The example has three parts:
 - We define the arithmetic language. The language is _symbolic_:
   - its syntax tree represents a set of concrete syntax trees (i.e.,
     representing a program space), and
-  - its interpreter accepts such symbolic syntax trees, and interpret all
-    represented concrete syntax trees.
+  - its interpreter accepts such symbolic syntax trees (program spaces), and
+    interpret all represented concrete syntax trees to symbolic formulas.
 - We define the candidate program space of the synthesizer by creating a
   particular symbolic syntax tree. The synthesizer will search the space of
   concrete trees for a solution.
 - We interpret the symbolic syntax tree and pass the resulting constraints to
   the solver. If a solution exists, the solver returns a concrete tree that
-  agrees with the input-out example.
+  agrees with the input-output example.
 
 ### Defining the Arithmetic Language
 
@@ -250,7 +251,7 @@ model.
 ```haskell
 example :: IO ()
 example = do
-  Right model <- solve (precise z3) $ executableSpace 2 .== 5
+  Right model <- solve z3 $ executableSpace 2 .== 5
   -- result: SymPlus {SymInput x} {SymConst 3}
   print $ evalSym False model (progSpace "x")
   let synthesizedProgram :: Integer -> Integer =

@@ -49,7 +49,7 @@ executableSpace = interpret . progSpace . toSym
 
 main :: IO ()
 main = do
-  Right model <- solve (precise z3) $ executableSpace 2 .== 5
+  Right model <- solve z3 $ executableSpace 2 .== 5
   -- result: SymPlus {SymInput x} {SymConst 3}
   print $ evalSym False model (progSpace "x")
   let synthesizedProgram :: Integer -> Integer =
