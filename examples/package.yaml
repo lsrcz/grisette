@@ -1,0 +1,23 @@
+name: grisette-examples
+version: 0.7.0.0
+synopsis: Examples for Grisette
+description: |
+  More examples are available in the
+  [tutorials](https://github.com/lsrcz/grisette/tree/main/tutorials) of
+  Grisette.
+category: Formal Methods, Theorem Provers, Symbolic Computation, SMT
+author: "Sirui Lu, Rastislav Bodík"
+maintainer: Sirui Lu (siruilu@cs.washington.edu)
+github: lsrcz/grisette
+copyright: "2021-2024 Sirui Lu"
+extra-source-files:
+  - README.md
+
+dependencies:
+  - base >= 4.14 && < 5
+  - grisette
+
+executables:
+  basic:
+    source-dirs: basic
+    main: Main.hs
