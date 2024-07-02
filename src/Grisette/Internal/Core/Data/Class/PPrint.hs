@@ -275,8 +275,8 @@ class
   -- | Lift two pretty-printers to a binary type constructor.
   liftPFormatPrec2 ::
     (Int -> a -> Doc ann) ->
-    (Int -> b -> Doc ann) ->
     ([a] -> Doc ann) ->
+    (Int -> b -> Doc ann) ->
     ([b] -> Doc ann) ->
     Int ->
     f a b ->
@@ -285,8 +285,8 @@ class
   -- | Lift two pretty-printers to list of values with binary type constructors.
   liftPFormatList2 ::
     (Int -> a -> Doc ann) ->
-    (Int -> b -> Doc ann) ->
     ([a] -> Doc ann) ->
+    (Int -> b -> Doc ann) ->
     ([b] -> Doc ann) ->
     [f a b] ->
     Doc ann
@@ -296,13 +296,13 @@ class
 -- | Lift the standard pretty-printer ('pformatPrec', 'pformatList') to binary
 -- type constructors.
 pformatPrec2 :: (PPrint2 f, PPrint a, PPrint b) => Int -> f a b -> Doc ann
-pformatPrec2 = liftPFormatPrec2 pformatPrec pformatPrec pformatList pformatList
+pformatPrec2 = liftPFormatPrec2 pformatPrec pformatList pformatPrec pformatList
 {-# INLINE pformatPrec2 #-}
 
 -- | Lift the standard pretty-printer ('pformatPrec', 'pformatList') to list of
 -- values with binary type constructors.
 pformatList2 :: (PPrint2 f, PPrint a, PPrint b) => [f a b] -> Doc ann
-pformatList2 = liftPFormatList2 pformatPrec pformatPrec pformatList pformatList
+pformatList2 = liftPFormatList2 pformatPrec pformatList pformatPrec pformatList
 {-# INLINE pformatList2 #-}
 
 -- | The arguments to the generic 'PPrint' class.
@@ -706,8 +706,8 @@ instance
       n
       "WriterT"
       [ liftPFormatPrec
-          (liftPFormatPrec2 f pformatPrec l pformatList)
-          (liftPFormatList2 f pformatPrec l pformatList)
+          (liftPFormatPrec2 f l pformatPrec pformatList)
+          (liftPFormatList2 f l pformatPrec pformatList)
           11
           a
       ]
@@ -727,8 +727,8 @@ instance
       n
       "WriterT"
       [ liftPFormatPrec
-          (liftPFormatPrec2 f pformatPrec l pformatList)
-          (liftPFormatList2 f pformatPrec l pformatList)
+          (liftPFormatPrec2 f l pformatPrec pformatList)
+          (liftPFormatList2 f l pformatPrec pformatList)
           11
           a
       ]
@@ -834,19 +834,19 @@ deriving via
 instance PPrint2 Either where
   liftPFormatPrec2 fe _ _ _ n (Left e) =
     pformatWithConstructor n "Left" [fe 11 e]
-  liftPFormatPrec2 _ fa _ _ n (Right a) =
+  liftPFormatPrec2 _ _ fa _ n (Right a) =
     pformatWithConstructor n "Right" [fa 11 a]
 
 instance PPrint2 (,) where
-  liftPFormatPrec2 fa fb _ _ _ (a, b) =
+  liftPFormatPrec2 fa _ fb _ _ (a, b) =
     prettyPrintTuple [fa 0 a, fb 0 b]
 
 instance (PPrint a) => PPrint2 ((,,) a) where
-  liftPFormatPrec2 fb fc _ _ _ (a, b, c) =
+  liftPFormatPrec2 fb _ fc _ _ (a, b, c) =
     prettyPrintTuple [pformat a, fb 0 b, fc 0 c]
 
 instance (PPrint a, PPrint b) => PPrint2 ((,,,) a b) where
-  liftPFormatPrec2 fc fd _ _ _ (a, b, c, d) =
+  liftPFormatPrec2 fc _ fd _ _ (a, b, c, d) =
     prettyPrintTuple [pformat a, pformat b, fc 0 c, fd 0 d]
 
 instance (PPrint a) => PPrint (HS.HashSet a) where
