@@ -718,12 +718,91 @@ pprintTests =
             ( Just . IdentityT <$> arbitrary ::
                 Gen (Maybe (IdentityT Identity Int))
             ),
-          propertyPFormatRead
-            "HS.HashSet Int"
-            (HS.fromList <$> arbitrary :: Gen (HS.HashSet Int)),
-          propertyPFormatRead
-            "HM.HashMap Int Int"
-            (HM.fromList <$> arbitrary :: Gen (HM.HashMap Int Int))
+          testGroup
+            "HashSet"
+            [ testPPrint1
+                "Unbounded empty"
+                0
+                (HS.fromList [] :: HS.HashSet Int)
+                "HashSet []",
+              testPPrint1
+                "Unbounded singleton"
+                0
+                (HS.fromList [1] :: HS.HashSet Int)
+                "HashSet [1]",
+              testPPrint1
+                "Unbounded two elem"
+                0
+                (HS.fromList [1, 2] :: HS.HashSet Int)
+                "HashSet [1, 2]",
+              testPPrint1
+                "Compact empty"
+                1
+                (HS.fromList [] :: HS.HashSet Int)
+                "HashSet\n  []",
+              testPPrint1
+                "Compact singleton"
+                1
+                (HS.fromList [1] :: HS.HashSet Int)
+                "HashSet\n  [ 1\n  ]",
+              testPPrint1
+                "Unbounded two elem"
+                1
+                (HS.fromList [1, 2] :: HS.HashSet Int)
+                "HashSet\n  [ 1,\n    2\n  ]"
+            ],
+          testGroup
+            "HashMap"
+            [ testPPrint1
+                "Unbounded empty"
+                0
+                (HM.fromList [] :: HM.HashMap Int Int)
+                "HashMap []",
+              testPPrint1
+                "Unbounded singleton"
+                0
+                (HM.fromList [(1, 2)] :: HM.HashMap Int Int)
+                "HashMap [(1, 2)]",
+              testPPrint1
+                "Unbounded two elem"
+                0
+                (HM.fromList [(1, 2), (3, 4)] :: HM.HashMap Int Int)
+                "HashMap [(1, 2), (3, 4)]",
+              testPPrint1
+                "Compact empty"
+                1
+                (HM.fromList [] :: HM.HashMap Int Int)
+                "HashMap\n  []",
+              testPPrint1
+                "Compact singleton"
+                1
+                (HM.fromList [(1, 2)] :: HM.HashMap Int Int)
+                ( T.intercalate
+                    "\n"
+                    [ "HashMap",
+                      "  [ ( 1,",
+                      "      2",
+                      "    )",
+                      "  ]"
+                    ]
+                ),
+              testPPrint1
+                "Unbounded two elem"
+                1
+                (HM.fromList [(1, 2), (3, 4)] :: HM.HashMap Int Int)
+                ( T.intercalate
+                    "\n"
+                    [ "HashMap",
+                      "  [ ( 1,",
+                      "      2",
+                      "    ),",
+                      "    ( 3,",
+                      "      4",
+                      "    )",
+                      "  ]"
+                    ]
+                )
+            ]
         ],
       testGroup
         "Symbolic types"
