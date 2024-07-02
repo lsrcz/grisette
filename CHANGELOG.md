@@ -58,8 +58,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#217](https://github.com/lsrcz/grisette/pull/217))
 - [Breaking] Renamed `SEq` to `SymEq`. Renamed `SOrd` to `SymOrd`.
   ([#217](https://github.com/lsrcz/grisette/pull/217))
-- [Breaking] Renamed `GPretty` to `Format`.
-  ([#217](https://github.com/lsrcz/grisette/pull/217))
+- [Breaking] Renamed `GPretty` to `PPrint`.
+  ([#217](https://github.com/lsrcz/grisette/pull/217),
+   [#224](https://github.com/lsrcz/grisette/pull/224))
 - [Breaking] Discourage the use of approximation with `approx`. `precise` is now
   the default and we do not require `precise` to be used everytime we call a
   solver.

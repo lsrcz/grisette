@@ -29,8 +29,8 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym,
     ExtractSym1,
   )
-import Grisette.Internal.Core.Data.Class.Format (Format, Format1)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1)
+import Grisette.Internal.Core.Data.Class.PPrint (PPrint, PPrint1)
 import Grisette.Internal.Core.Data.Class.SubstSym (SubstSym)
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1)
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1)
@@ -89,7 +89,7 @@ import Language.Haskell.TH.Syntax (Lift)
 newtypeDefaultStrategy :: Name -> Q Strategy
 newtypeDefaultStrategy nm
   | nm == ''Show = return $ Stock nm
-  | nm == ''Format = return $ ViaDefault nm
+  | nm == ''PPrint = return $ ViaDefault nm
   | nm == ''Lift = return $ Stock nm
   | nm == ''ToCon = return $ ViaDefault nm
   | nm == ''ToSym = return $ ViaDefault nm
@@ -108,7 +108,7 @@ dataDefaultStrategy nm
   | nm == ''AllSyms = return $ ViaDefault nm
   | nm == ''EvalSym = return $ ViaDefault nm
   | nm == ''ExtractSym = return $ ViaDefault nm
-  | nm == ''Format = return $ ViaDefault nm
+  | nm == ''PPrint = return $ ViaDefault nm
   | nm == ''Mergeable = return $ ViaDefault nm
   | nm == ''SymEq = return $ ViaDefault nm
   | nm == ''SymOrd = return $ ViaDefault nm
@@ -127,7 +127,7 @@ allNeededConstraints nm
   | nm == ''EvalSym =
       [''EvalSym, ''EvalSym1, ''Mergeable, ''Mergeable1]
   | nm == ''ExtractSym = [''ExtractSym, ''ExtractSym1]
-  | nm == ''Format = [''Format, ''Format1]
+  | nm == ''PPrint = [''PPrint, ''PPrint1]
   | nm == ''Mergeable = [''Mergeable1, ''Mergeable1]
   | nm == ''ToCon = [''ToCon, ''ToCon1]
   | nm == ''ToSym = [''ToSym, ''ToSym1]
@@ -242,7 +242,7 @@ allGrisetteClasses =
     ''AllSyms,
     ''EvalSym,
     ''ExtractSym,
-    ''Format,
+    ''PPrint,
     ''Mergeable,
     ''SymEq,
     ''SymOrd,
@@ -273,7 +273,7 @@ derive = flip (derivePredefinedMultipleClasses Nothing)
 -- * 'AllSyms'
 -- * 'EvalSym'
 -- * 'ExtractSym'
--- * 'Format'
+-- * 'PPrint'
 -- * 'Mergeable'
 -- * 'SymEq'
 -- * 'SymOrd'
