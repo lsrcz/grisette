@@ -32,12 +32,15 @@ module Grisette.Backend
 
     -- * SBV backend solver configuration
     SBV.SMTConfig (..),
+    SBV.Logic (..),
+    SBVC.SMTOption (..),
     SBV.Timing (..),
     SBV.SMTSolver (..),
   )
 where
 
 import qualified Data.SBV as SBV
+import qualified Data.SBV.Control as SBVC
 import Grisette.Internal.Backend.Solving
   ( ApproximationConfig (..),
     ExtraConfig (..),
