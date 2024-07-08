@@ -41,7 +41,7 @@ module Grisette.Core
     -- Additional tools for building symbolic evaluation based applications are
     -- also provided:
     --
-    -- * Pretty printing (e.g., 'Format')
+    -- * Pretty printing (e.g., 'PPrint')
     -- * Symbolic generation, or generating fresh symbolic values (e.g.,
     --   'GenSym')
     -- * Error handling (e.g., 'symAssert')
