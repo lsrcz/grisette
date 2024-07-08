@@ -84,6 +84,7 @@ library
       Grisette.Internal.Core.Data.Class.PlainUnion
       Grisette.Internal.Core.Data.Class.PPrint
       Grisette.Internal.Core.Data.Class.SafeDivision
+      Grisette.Internal.Core.Data.Class.SafeFractional
       Grisette.Internal.Core.Data.Class.SafeLinearArith
       Grisette.Internal.Core.Data.Class.SafeSymRotate
       Grisette.Internal.Core.Data.Class.SafeSymShift
@@ -321,6 +322,7 @@ test-suite spec
       Grisette.Lib.Data.FunctorTests
       Grisette.Lib.Data.ListTests
       Grisette.Lib.Data.TraversableTests
+      Grisette.SymPrim.AlgRealTests
       Grisette.SymPrim.BVTests
       Grisette.SymPrim.FPTests
       Grisette.SymPrim.Prim.BitsTests

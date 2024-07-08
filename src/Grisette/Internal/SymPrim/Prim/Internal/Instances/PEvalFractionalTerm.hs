@@ -7,20 +7,55 @@
 
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm () where
 
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm, withSbvFractionalTermConstraint),
+  ( PEvalFractionalTerm
+      ( pevalFdivTerm,
+        pevalRecipTerm,
+        withSbvFractionalTermConstraint
+      ),
     SupportedPrim (withPrim),
+    Term (ConTerm),
+    conTerm,
     fdivTerm,
     recipTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
-  ( generalBinaryUnfolded,
+  ( binaryUnfoldOnce,
+    generalBinaryUnfolded,
     generalUnaryUnfolded,
+    unaryUnfoldOnce,
   )
 
 instance (ValidFP eb sb) => PEvalFractionalTerm (FP eb sb) where
   pevalFdivTerm = generalBinaryUnfolded (/) fdivTerm
   pevalRecipTerm = generalUnaryUnfolded recip recipTerm
   withSbvFractionalTermConstraint p r = withPrim @(FP eb sb) p r
+
+pevalDefaultFdivTerm ::
+  (PEvalFractionalTerm a) => Term a -> Term a -> Term a
+pevalDefaultFdivTerm =
+  binaryUnfoldOnce doPevalDefaultFdivTerm fdivTerm
+
+doPevalDefaultFdivTerm ::
+  (PEvalFractionalTerm a) => Term a -> Term a -> Maybe (Term a)
+doPevalDefaultFdivTerm (ConTerm _ a) (ConTerm _ b)
+  | b /= 0 = Just $ conTerm $ a / b
+doPevalDefaultFdivTerm a (ConTerm _ 1) = Just a
+doPevalDefaultFdivTerm _ _ = Nothing
+
+pevalDefaultRecipTerm ::
+  (PEvalFractionalTerm a) => Term a -> Term a
+pevalDefaultRecipTerm = unaryUnfoldOnce doPevalDefaultRecipTerm recipTerm
+
+doPevalDefaultRecipTerm ::
+  (PEvalFractionalTerm a) => Term a -> Maybe (Term a)
+doPevalDefaultRecipTerm (ConTerm _ n) | n /= 0 = Just $ conTerm $ recip n
+doPevalDefaultRecipTerm _ = Nothing
+
+instance PEvalFractionalTerm AlgReal where
+  pevalFdivTerm = pevalDefaultFdivTerm
+  pevalRecipTerm = pevalDefaultRecipTerm
+  withSbvFractionalTermConstraint p r = withPrim @AlgReal p r

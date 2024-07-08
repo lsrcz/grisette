@@ -355,6 +355,7 @@ module Grisette.Core
     -- ** Safe operation for Numbers
     SafeDivision (..),
     SafeLinearArith (..),
+    SafeFractional (..),
 
     -- ** Functions
     Function (..),
@@ -1583,6 +1584,9 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     pattern Single,
   )
 import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision (..))
+import Grisette.Internal.Core.Data.Class.SafeFractional
+  ( SafeFractional (..),
+  )
 import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
 import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..))
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift (..))

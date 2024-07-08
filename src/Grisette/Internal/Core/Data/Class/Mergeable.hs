@@ -126,6 +126,7 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Internal.SymPrim.AlgReal (AlgReal, AlgRealPoly, RealPoint)
 import Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch,
     IntN,
@@ -142,6 +143,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
@@ -155,7 +157,6 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 import Unsafe.Coerce (unsafeCoerce)
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- | Merging strategies.
 --
@@ -573,6 +574,7 @@ CONCRETE_ORD_MERGEABLE(Word32)
 CONCRETE_ORD_MERGEABLE(Word64)
 CONCRETE_ORD_MERGEABLE(Float)
 CONCRETE_ORD_MERGEABLE(Double)
+CONCRETE_ORD_MERGEABLE(Rational)
 CONCRETE_ORD_MERGEABLE(B.ByteString)
 CONCRETE_ORD_MERGEABLE(T.Text)
 CONCRETE_ORD_MERGEABLE(FPRoundingMode)
@@ -636,71 +638,6 @@ instance Mergeable2 ((->)) where
     SimpleStrategy m -> SimpleStrategy $ \cond t f v -> m cond (t v) (f v)
     _ -> NoStrategy
   {-# INLINE liftRootStrategy2 #-}
-
--- Instances
-deriveBuiltins
-  (ViaDefault ''Mergeable)
-  [''Mergeable]
-  [ ''Maybe,
-    ''Either,
-    ''(),
-    -- The following three are implemented by hand because they need to be
-    -- consistent with Mergeable2 instances.
-    -- ''(,),
-    -- ''(,,),
-    -- ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''AssertionError,
-    ''VerificationConditions,
-    ''BitwidthMismatch,
-    ''Identity,
-    ''Monoid.Dual,
-    ''Monoid.Sum,
-    ''Monoid.Product,
-    ''Monoid.First,
-    ''Monoid.Last,
-    ''Down
-  ]
-
-deriveBuiltins
-  (ViaDefault1 ''Mergeable1)
-  [''Mergeable, ''Mergeable1]
-  [ ''Maybe,
-    ''Either,
-    -- The following three are implemented by hand because they need to be
-    -- consistent with Mergeable2 instances.
-    -- ''(,),
-    -- ''(,,),
-    -- ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''Identity,
-    ''Monoid.Dual,
-    ''Monoid.Sum,
-    ''Monoid.Product,
-    ''Monoid.First,
-    ''Monoid.Last,
-    ''Down
-  ]
 
 -- List
 
@@ -781,6 +718,137 @@ instance Mergeable1 [] where
                   <$> zip3 s l r
               else NoStrategy
   {-# INLINE liftRootStrategy #-}
+
+-- (,)
+instance (Mergeable a, Mergeable b) => Mergeable (a, b) where
+  rootStrategy = rootStrategy1
+  {-# INLINE rootStrategy #-}
+
+instance (Mergeable a) => Mergeable1 ((,) a) where
+  liftRootStrategy = liftRootStrategy2 rootStrategy
+  {-# INLINE liftRootStrategy #-}
+
+instance Mergeable2 (,) where
+  liftRootStrategy2 = product2Strategy (,) id
+  {-# INLINE liftRootStrategy2 #-}
+
+-- (,,)
+instance (Mergeable a, Mergeable b, Mergeable c) => Mergeable ((,,) a b c) where
+  rootStrategy = rootStrategy1
+  {-# INLINE rootStrategy #-}
+
+instance (Mergeable a, Mergeable b) => Mergeable1 ((,,) a b) where
+  liftRootStrategy = liftRootStrategy2 rootStrategy
+  {-# INLINE liftRootStrategy #-}
+
+instance (Mergeable a) => Mergeable2 ((,,) a) where
+  liftRootStrategy2 = liftRootStrategy3 rootStrategy
+  {-# INLINE liftRootStrategy2 #-}
+
+instance Mergeable3 (,,) where
+  liftRootStrategy3 m1 m2 m3 =
+    product2Strategy
+      (\a (b, c) -> (a, b, c))
+      (\(a, b, c) -> (a, (b, c)))
+      m1
+      (liftRootStrategy2 m2 m3)
+  {-# INLINE liftRootStrategy3 #-}
+
+-- (,,,)
+instance
+  (Mergeable a, Mergeable b, Mergeable c, Mergeable d) =>
+  Mergeable ((,,,) a b c d)
+  where
+  rootStrategy = rootStrategy1
+  {-# INLINE rootStrategy #-}
+
+instance
+  (Mergeable a, Mergeable b, Mergeable c) =>
+  Mergeable1 ((,,,) a b c)
+  where
+  liftRootStrategy = liftRootStrategy2 rootStrategy
+  {-# INLINE liftRootStrategy #-}
+
+instance (Mergeable a, Mergeable b) => Mergeable2 ((,,,) a b) where
+  liftRootStrategy2 = liftRootStrategy3 rootStrategy
+  {-# INLINE liftRootStrategy2 #-}
+
+instance (Mergeable a) => Mergeable3 ((,,,) a) where
+  liftRootStrategy3 m1 m2 m3 =
+    product2Strategy
+      (\(a, b) (c, d) -> (a, b, c, d))
+      (\(a, b, c, d) -> ((a, b), (c, d)))
+      (liftRootStrategy m1)
+      (liftRootStrategy2 m2 m3)
+  {-# INLINE liftRootStrategy3 #-}
+
+-- Instances
+deriveBuiltins
+  (ViaDefault ''Mergeable)
+  [''Mergeable]
+  [ ''Maybe,
+    ''Either,
+    ''AlgRealPoly,
+    ''RealPoint,
+    ''AlgReal,
+    ''(),
+    -- The following three are implemented by hand because they need to be
+    -- consistent with Mergeable2 instances.
+    -- ''(,),
+    -- ''(,,),
+    -- ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''AssertionError,
+    ''VerificationConditions,
+    ''BitwidthMismatch,
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
+  ]
+
+deriveBuiltins
+  (ViaDefault1 ''Mergeable1)
+  [''Mergeable, ''Mergeable1]
+  [ ''Maybe,
+    ''Either,
+    -- The following three are implemented by hand because they need to be
+    -- consistent with Mergeable2 instances.
+    -- ''(,),
+    -- ''(,,),
+    -- ''(,,,),
+    ''(,,,,),
+    ''(,,,,,),
+    ''(,,,,,,),
+    ''(,,,,,,,),
+    ''(,,,,,,,,),
+    ''(,,,,,,,,,),
+    ''(,,,,,,,,,,),
+    ''(,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,),
+    ''Identity,
+    ''Monoid.Dual,
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Monoid.First,
+    ''Monoid.Last,
+    ''Down
+  ]
 
 -- MaybeT
 instance (Mergeable1 m, Mergeable a) => Mergeable (MaybeT m a) where
@@ -1100,66 +1168,3 @@ instance Mergeable2 Either where
           True -> wrapStrategy m2 Right (\case (Right v) -> v; _ -> undefined)
       )
   {-# INLINE liftRootStrategy2 #-}
-
--- (,)
-instance (Mergeable a, Mergeable b) => Mergeable (a, b) where
-  rootStrategy = rootStrategy1
-  {-# INLINE rootStrategy #-}
-
-instance (Mergeable a) => Mergeable1 ((,) a) where
-  liftRootStrategy = liftRootStrategy2 rootStrategy
-  {-# INLINE liftRootStrategy #-}
-
-instance Mergeable2 (,) where
-  liftRootStrategy2 = product2Strategy (,) id
-  {-# INLINE liftRootStrategy2 #-}
-
--- (,,)
-instance (Mergeable a, Mergeable b, Mergeable c) => Mergeable ((,,) a b c) where
-  rootStrategy = rootStrategy1
-  {-# INLINE rootStrategy #-}
-
-instance (Mergeable a, Mergeable b) => Mergeable1 ((,,) a b) where
-  liftRootStrategy = liftRootStrategy2 rootStrategy
-  {-# INLINE liftRootStrategy #-}
-
-instance (Mergeable a) => Mergeable2 ((,,) a) where
-  liftRootStrategy2 = liftRootStrategy3 rootStrategy
-  {-# INLINE liftRootStrategy2 #-}
-
-instance Mergeable3 (,,) where
-  liftRootStrategy3 m1 m2 m3 =
-    product2Strategy
-      (\a (b, c) -> (a, b, c))
-      (\(a, b, c) -> (a, (b, c)))
-      m1
-      (liftRootStrategy2 m2 m3)
-  {-# INLINE liftRootStrategy3 #-}
-
--- (,,,)
-instance
-  (Mergeable a, Mergeable b, Mergeable c, Mergeable d) =>
-  Mergeable ((,,,) a b c d)
-  where
-  rootStrategy = rootStrategy1
-  {-# INLINE rootStrategy #-}
-
-instance
-  (Mergeable a, Mergeable b, Mergeable c) =>
-  Mergeable1 ((,,,) a b c)
-  where
-  liftRootStrategy = liftRootStrategy2 rootStrategy
-  {-# INLINE liftRootStrategy #-}
-
-instance (Mergeable a, Mergeable b) => Mergeable2 ((,,,) a b) where
-  liftRootStrategy2 = liftRootStrategy3 rootStrategy
-  {-# INLINE liftRootStrategy2 #-}
-
-instance (Mergeable a) => Mergeable3 ((,,,) a) where
-  liftRootStrategy3 m1 m2 m3 =
-    product2Strategy
-      (\(a, b) (c, d) -> (a, b, c, d))
-      (\(a, b, c, d) -> ((a, b), (c, d)))
-      (liftRootStrategy m1)
-      (liftRootStrategy2 m2 m3)
-  {-# INLINE liftRootStrategy3 #-}

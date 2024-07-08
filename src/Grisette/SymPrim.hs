@@ -102,6 +102,12 @@ module Grisette.SymPrim
     FPRoundingMode (..),
     allFPRoundingMode,
 
+    -- ** Algebraic real numbers
+    AlgReal (..),
+    AlgRealPoly (..),
+    RealPoint (..),
+    UnsupportedAlgRealOperation (..),
+
     -- ** Functions
     type (=->) (..),
     type (-->),
@@ -135,6 +141,9 @@ module Grisette.SymPrim
     SymFP16,
     SymFP32,
     SymFP64,
+
+    -- ** Symbolic algebraic real numbers
+    SymAlgReal (..),
 
     -- ** Symbolic function, possibly uninterpreted
     type (=~>) (..),
@@ -172,6 +181,12 @@ module Grisette.SymPrim
   )
 where
 
+import Grisette.Internal.SymPrim.AlgReal
+  ( AlgReal (..),
+    AlgRealPoly (..),
+    RealPoint (..),
+    UnsupportedAlgRealOperation (..),
+  )
 import Grisette.Internal.SymPrim.AllSyms
   ( AllSyms (..),
     AllSyms1 (..),
@@ -251,6 +266,7 @@ import Grisette.Internal.SymPrim.SomeBV
     type SomeSymWordN,
     type SomeWordN,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (..))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (..),
     SymIntN16,
