@@ -88,7 +88,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPUnaryOp (FPAbs, FPNeg),
-    FloatingUnaryOp (FloatingAcos, FloatingAsin, FloatingAtan, FloatingCos, FloatingCosh, FloatingSin, FloatingSinh, FloatingTan, FloatingTanh),
+    FloatingUnaryOp (FloatingAcos, FloatingAsin, FloatingAtan, FloatingCos, FloatingCosh, FloatingExp, FloatingLog, FloatingSin, FloatingSinh, FloatingSqrt, FloatingTan, FloatingTanh),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalRecipTerm),
     fdivTerm,
@@ -1027,19 +1027,7 @@ instance Arbitrary IEEEFP32Spec where
             signumNumSpec a,
             fdivSpec a b,
             recipSpec a,
-            -- powerSpec a b,
-            -- floatingUnarySpec FloatingExp a,
-            -- floatingUnarySpec FloatingLog a,
-            -- floatingUnarySpec FloatingSqrt a,
-            floatingUnarySpec FloatingSin a,
-            floatingUnarySpec FloatingCos a,
-            floatingUnarySpec FloatingTan a,
-            floatingUnarySpec FloatingSinh a,
-            floatingUnarySpec FloatingCosh a,
-            floatingUnarySpec FloatingTanh a,
-            floatingUnarySpec FloatingAsin a,
-            floatingUnarySpec FloatingAcos a,
-            floatingUnarySpec FloatingAtan a
+            floatingUnarySpec FloatingSqrt a
           ]
     let uop = fpUnaryOpSpec <$> [FPAbs, FPNeg] <*> return a
     let bop = fpBinaryOpSpec <$> [FPRem, FPMin, FPMax] <*> [a] <*> [b]
