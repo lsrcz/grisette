@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Eta reduce" #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -24,13 +23,13 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   )
 where
 
+import Data.Coerce (coerce)
 import Data.Proxy (Proxy (Proxy))
-import Data.SBV (BVIsNonZero, FiniteBits (finiteBitSize))
+import Data.SBV (BVIsNonZero)
 import qualified Data.SBV as SBV
-import qualified Data.SBV.Dynamic as SBVD
 import Data.Type.Bool (If)
 import Data.Type.Equality ((:~:) (Refl))
-import GHC.TypeNats (KnownNat, natVal, type (<=))
+import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP (FP),
@@ -67,15 +66,13 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term (ConTerm),
     conTerm,
     eqTerm,
-    parseSMTModelResultError,
+    parseScalarSMTModelResult,
     pevalDefaultEqTerm,
     pevalITEBasicTerm,
     sbvFresh,
   )
 import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue, toModelValue)
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
-import Type.Reflection (typeRep)
-import Unsafe.Coerce (unsafeCoerce)
 
 defaultValueForInteger :: Integer
 defaultValueForInteger = 0
@@ -105,10 +102,7 @@ instance SupportedPrim Integer where
   withPrim p r = case isZero p of
     IsZeroEvidence -> r
     NonZeroEvidence -> r
-  parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> Integer
-  parseSMTModelResult _ ([], SBVD.CV SBVD.KUnbounded (SBVD.CInteger i)) = i
-  parseSMTModelResult _ ([([], SBVD.CV SBVD.KUnbounded (SBVD.CInteger i))], _) = i
-  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @Integer) cv
+  parseSMTModelResult _ = parseScalarSMTModelResult id
 
 instance NonFuncSBVRep Integer where
   type NonFuncSBVBaseType n Integer = If (IsZero n) Integer (SBV.IntN n)
@@ -136,16 +130,9 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   symSBVName symbol _ = show symbol
   symSBVTerm _ name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim _ r = bvIsNonZeroFromGEq1 (Proxy @w) r
-  parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> IntN w
-  parseSMTModelResult
-    _
-    ([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))
-      | bitWidth == finiteBitSize (undefined :: IntN w) = fromIntegral i
-  parseSMTModelResult
-    _
-    ([([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))], _)
-      | bitWidth == finiteBitSize (undefined :: IntN w) = fromIntegral i
-  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(IntN w)) cv
+  parseSMTModelResult _ cv =
+    withPrim @(IntN w) (Proxy @0) $
+      parseScalarSMTModelResult (\(x :: SBV.IntN w) -> fromIntegral x) cv
 
 bvIsNonZeroFromGEq1 ::
   forall w r proxy.
@@ -180,15 +167,9 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   symSBVName symbol _ = show symbol
   symSBVTerm _ name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim _ r = bvIsNonZeroFromGEq1 (Proxy @w) r
-  parseSMTModelResult
-    _
-    ([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))
-      | bitWidth == finiteBitSize (undefined :: WordN w) = fromIntegral i
-  parseSMTModelResult
-    _
-    ([([], SBVD.CV (SBVD.KBounded _ bitWidth) (SBVD.CInteger i))], _)
-      | bitWidth == finiteBitSize (undefined :: WordN w) = fromIntegral i
-  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(WordN w)) cv
+  parseSMTModelResult _ cv =
+    withPrim @(IntN w) (Proxy @0) $
+      parseScalarSMTModelResult (\(x :: SBV.WordN w) -> fromIntegral x) cv
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w
@@ -215,23 +196,9 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   symSBVName symbol _ = show symbol
   symSBVTerm _ name = sbvFresh name
   withPrim _ r = r
-  parseSMTModelResult
-    _
-    ([], SBVD.CV (SBVD.KFP eb sb) (SBVD.CFP fp))
-      | eb == fromIntegral (natVal (Proxy @eb))
-          && sb == fromIntegral (natVal (Proxy @sb)) =
-          -- Assumes that in SBV, FloatingPoint is a newtype of FP as the
-          -- constructor isn't exposed
-          fromIntegral $ unsafeCoerce fp
-  parseSMTModelResult
-    _
-    ([([], SBVD.CV (SBVD.KFP eb sb) (SBVD.CFP fp))], _)
-      | eb == fromIntegral (natVal (Proxy @eb))
-          && sb == fromIntegral (natVal (Proxy @sb)) =
-          -- Assumes that in SBV, FloatingPoint is a newtype of FP as the
-          -- constructor isn't exposed
-          fromIntegral $ unsafeCoerce fp
-  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @(FP eb sb)) cv
+  parseSMTModelResult _ cv =
+    withPrim @(FP eb sb) (Proxy @0) $
+      parseScalarSMTModelResult (\(x :: SBV.FloatingPoint eb sb) -> coerce x) cv
 
   -- Workaround for sbv#702.
   sbvIte p = withPrim @(FP eb sb) p $ \c a b ->
@@ -276,7 +243,16 @@ instance SupportedPrim FPRoundingMode where
   symSBVTerm _ name = sbvFresh name
   withPrim _ r = r
   parseSMTModelResult _ cv =
-    parseSMTModelResultError (typeRep @FPRoundingMode) cv
+    withPrim @(FPRoundingMode) (Proxy @0) $
+      parseScalarSMTModelResult
+        ( \(x :: SBV.RoundingMode) -> case x of
+            SBV.RoundNearestTiesToEven -> RNE
+            SBV.RoundNearestTiesToAway -> RNA
+            SBV.RoundTowardPositive -> RTP
+            SBV.RoundTowardNegative -> RTN
+            SBV.RoundTowardZero -> RTZ
+        )
+        cv
 
 instance NonFuncSBVRep FPRoundingMode where
   type NonFuncSBVBaseType _ FPRoundingMode = SBV.RoundingMode

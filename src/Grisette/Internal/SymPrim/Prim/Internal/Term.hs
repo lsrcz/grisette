@@ -155,6 +155,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     translateTypeError,
     parseSMTModelResultError,
     partitionCVArg,
+    parseScalarSMTModelResult,
   )
 where
 
@@ -324,7 +325,7 @@ partitionCVArg cv =
       fmap
         ( \case
             (x : xs, v) ->
-              (parseSMTModelResult 0 ([([], x)], x), [(xs, v)])
+              (parseSMTModelResult 0 ([], x), [(xs, v)])
             _ -> error "impossible"
         )
     partitionOrdCVArg ::
@@ -340,6 +341,17 @@ partitionCVArg cv =
             then go $ (fst x, snd x ++ snd x1) : xs
             else x : go (x1 : xs)
         go x = x
+
+parseScalarSMTModelResult ::
+  forall v r.
+  (SBV.SatModel r, Typeable v) =>
+  (r -> v) ->
+  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
+  v
+parseScalarSMTModelResult convert cvs@([], v) = case SBV.parseCVs [v] of
+  Just (x, _) -> convert x
+  Nothing -> parseSMTModelResultError (typeRep @v) cvs
+parseScalarSMTModelResult _ cv = parseSMTModelResultError (typeRep @v) cv
 
 class SBVRep t where
   type SBVType (n :: Nat) t
@@ -2751,9 +2763,7 @@ instance SupportedPrim Bool where
   symSBVName symbol _ = show symbol
   symSBVTerm _ = sbvFresh
   withPrim _ r = r
-  parseSMTModelResult _ ([], SBVD.CV SBVD.KBool (SBVD.CInteger n)) = n /= 0
-  parseSMTModelResult _ ([([], SBVD.CV SBVD.KBool (SBVD.CInteger n))], _) = n /= 0
-  parseSMTModelResult _ cv = parseSMTModelResultError (typeRep @Bool) cv
+  parseSMTModelResult _ = parseScalarSMTModelResult id
 
 instance NonFuncSBVRep Bool where
   type NonFuncSBVBaseType _ Bool = Bool
