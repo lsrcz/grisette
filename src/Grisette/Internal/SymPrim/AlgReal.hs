@@ -1,3 +1,9 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- |
 -- Module      :   Grisette.Internal.SymPrim.AlgReal
 -- Copyright   :   (c) Sirui Lu 2024
@@ -8,19 +14,26 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.AlgReal
   ( AlgRealPoly (..),
+    toSBVAlgReal,
     RealPoint (..),
     AlgReal (..),
   )
 where
 
+import Control.DeepSeq (NFData)
+import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBV
+import GHC.Generics (Generic)
+import Language.Haskell.TH.Syntax (Lift)
 
 -- | A univariate polynomial with integer coefficients.
 --
 -- For instance, @5x^3+2x-5@ is represented as
 -- @'AlgRealPoly' [(5, 3), (2, 1), (-5, 0)]@.
 newtype AlgRealPoly = AlgRealPoly [(Integer, Integer)]
+  deriving (Eq, Generic, Lift)
+  deriving newtype (Hashable, NFData)
 
 -- | Boundary point for real intervals.
 data RealPoint
@@ -28,6 +41,8 @@ data RealPoint
     OpenPoint Rational
   | -- | Closed point.
     ClosedPoint Rational
+  deriving (Eq, Generic, Lift)
+  deriving anyclass (Hashable, NFData)
 
 toSBVRealPoint :: RealPoint -> SBV.RealPoint Rational
 toSBVRealPoint (OpenPoint r) = SBV.OpenPoint r
@@ -54,14 +69,19 @@ data AlgReal
       RealPoint
       -- | Upper bound.
       RealPoint
+  deriving (Generic, Lift)
+  deriving anyclass (Hashable, NFData)
+
+toSBVAlgReal :: AlgReal -> SBV.AlgReal
+toSBVAlgReal (AlgExactRational r) = SBV.AlgRational True r
+toSBVAlgReal (AlgInexactRational r) = SBV.AlgRational False r
+toSBVAlgReal (AlgPolyRoot i (AlgRealPoly ps) approx) =
+  SBV.AlgPolyRoot (i, SBV.AlgRealPoly ps) approx
+toSBVAlgReal (AlgInterval l u) =
+  SBV.AlgInterval (toSBVRealPoint l) (toSBVRealPoint u)
 
 instance Show AlgReal where
-  show (AlgExactRational r) = show $ SBV.AlgRational True r
-  show (AlgInexactRational r) = show $ SBV.AlgRational False r
-  show (AlgPolyRoot i (AlgRealPoly ps) approx) =
-    show $ SBV.AlgPolyRoot (i, SBV.AlgRealPoly ps) approx
-  show (AlgInterval l u) =
-    show $ SBV.AlgInterval (toSBVRealPoint l) (toSBVRealPoint u)
+  show r = show $ toSBVAlgReal r
 
 op1 :: String -> (Rational -> Rational) -> AlgReal -> AlgReal
 op1 _ f (AlgExactRational r) = AlgExactRational $ f r
