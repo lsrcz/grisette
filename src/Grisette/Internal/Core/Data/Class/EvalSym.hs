@@ -96,6 +96,7 @@ import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Model (Model, evaluateTerm)
 import Grisette.Internal.SymPrim.Prim.Term (LinkedRep, SupportedPrim)
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -114,7 +115,6 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 
 -- $setup
 -- >>> import Grisette.Core

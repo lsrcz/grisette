@@ -140,6 +140,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
@@ -150,7 +151,6 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- $setup
 -- >>> import Grisette.Core
