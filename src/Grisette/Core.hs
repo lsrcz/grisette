@@ -356,6 +356,7 @@ module Grisette.Core
     SafeDivision (..),
     SafeLinearArith (..),
     SafeFractional (..),
+    SafeLogBase (..),
 
     -- ** Functions
     Function (..),
@@ -1366,6 +1367,12 @@ module Grisette.Core
   )
 where
 
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+#else
+import Data.Text.Prettyprint.Doc as Prettyprinter
+#endif
+
 import Generics.Deriving (Default (..), Default1 (..))
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError (..),
@@ -1588,6 +1595,7 @@ import Grisette.Internal.Core.Data.Class.SafeFractional
   ( SafeFractional (..),
   )
 import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
+import Grisette.Internal.Core.Data.Class.SafeLogBase (SafeLogBase (..))
 import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..))
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift (..))
 import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion (..))
@@ -1715,11 +1723,6 @@ import Grisette.Internal.Core.Data.Symbol
     withInfo,
     withLoc,
   )
-#if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter
-#else
-import Data.Text.Prettyprint.Doc as Prettyprinter
-#endif
 
 -- $setup
 -- >>> import Grisette.Core
