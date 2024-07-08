@@ -6,20 +6,41 @@
 
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm () where
 
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalFloatingTerm
-      ( pevalSqrtTerm,
+  ( FloatingUnaryOp (FloatingAcosh, FloatingAsinh, FloatingAtanh, FloatingSqrt),
+    PEvalFloatingTerm
+      ( pevalFloatingUnaryTerm,
+        pevalPowerTerm,
         withSbvFloatingTermConstraint
       ),
     SupportedPrim (withPrim),
-    sqrtTerm,
+    floatingUnaryTerm,
+    powerTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
   ( generalUnaryUnfolded,
   )
 
 instance (ValidFP eb sb) => PEvalFloatingTerm (FP eb sb) where
-  pevalSqrtTerm = generalUnaryUnfolded sqrt sqrtTerm
+  pevalFloatingUnaryTerm op =
+    case op of
+      FloatingSqrt -> generalUnaryUnfolded sqrt $ floatingUnaryTerm op
+      _ -> error $ "operation " <> show op <> " not supported for FP"
+  pevalPowerTerm = error "power operation not supported for FP"
   withSbvFloatingTermConstraint p r = withPrim @(FP eb sb) p r
+
+instance PEvalFloatingTerm AlgReal where
+  pevalFloatingUnaryTerm op =
+    case op of
+      FloatingAsinh ->
+        error "operation asinh not supported by sbv for AlgReal"
+      FloatingAcosh ->
+        error "operation acosh not supported by sbv for AlgReal"
+      FloatingAtanh ->
+        error "operation atanh not supported by sbv for AlgReal"
+      _ -> floatingUnaryTerm op
+  pevalPowerTerm = powerTerm
+  withSbvFloatingTermConstraint p r = withPrim @AlgReal p r

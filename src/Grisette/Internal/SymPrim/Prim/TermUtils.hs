@@ -60,6 +60,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FPTraitTerm,
         FPUnaryTerm,
         FdivTerm,
+        FloatingUnaryTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -69,6 +70,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         NotTerm,
         OrBitsTerm,
         OrTerm,
+        PowerTerm,
         QuotIntegralTerm,
         RecipTerm,
         RemIntegralTerm,
@@ -77,7 +79,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ShiftLeftTerm,
         ShiftRightTerm,
         SignumNumTerm,
-        SqrtTerm,
         SymTerm,
         TernaryTerm,
         ToSignedTerm,
@@ -145,7 +146,8 @@ extractSymSomeTerm t1 = evalState (gocached t1) M.empty
     go (SomeTerm (FPTraitTerm _ _ arg)) = goUnary arg
     go (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (RecipTerm _ arg)) = goUnary arg
-    go (SomeTerm (SqrtTerm _ arg)) = goUnary arg
+    go (SomeTerm (FloatingUnaryTerm _ _ arg)) = goUnary arg
+    go (SomeTerm (PowerTerm _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (FPUnaryTerm _ _ arg)) = goUnary arg
     go (SomeTerm (FPBinaryTerm _ _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (FPRoundingUnaryTerm _ _ _ arg)) = goUnary arg
@@ -213,7 +215,8 @@ castTerm t@RemIntegralTerm {} = cast t
 castTerm t@FPTraitTerm {} = cast t
 castTerm t@FdivTerm {} = cast t
 castTerm t@RecipTerm {} = cast t
-castTerm t@SqrtTerm {} = cast t
+castTerm t@FloatingUnaryTerm {} = cast t
+castTerm t@PowerTerm {} = cast t
 castTerm t@FPUnaryTerm {} = cast t
 castTerm t@FPBinaryTerm {} = cast t
 castTerm t@FPRoundingUnaryTerm {} = cast t
@@ -268,7 +271,8 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(FPTraitTerm _ _ arg) = goUnary t arg
     go t@(FdivTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(RecipTerm _ arg) = goUnary t arg
-    go t@(SqrtTerm _ arg) = goUnary t arg
+    go t@(FloatingUnaryTerm _ _ arg) = goUnary t arg
+    go t@(PowerTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(FPUnaryTerm _ _ arg) = goUnary t arg
     go t@(FPBinaryTerm _ _ arg1 arg2) = goBinary t arg1 arg2
     go t@(FPRoundingUnaryTerm _ _ _ arg) = goUnary t arg

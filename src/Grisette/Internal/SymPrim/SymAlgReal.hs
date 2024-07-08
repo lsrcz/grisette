@@ -18,7 +18,22 @@ import Grisette.Internal.Core.Data.Class.Solvable
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalNumTerm
+  ( FloatingUnaryOp
+      ( FloatingAcos,
+        FloatingAsin,
+        FloatingAtan,
+        FloatingCos,
+        FloatingCosh,
+        FloatingExp,
+        FloatingLog,
+        FloatingSin,
+        FloatingSinh,
+        FloatingSqrt,
+        FloatingTan,
+        FloatingTanh
+      ),
+    PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
+    PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalMulNumTerm,
         pevalNegNumTerm,
@@ -86,3 +101,28 @@ instance Num SymAlgReal where
   abs (SymAlgReal v) = SymAlgReal $ pevalAbsNumTerm v
   signum (SymAlgReal v) = SymAlgReal $ pevalSignumNumTerm v
   fromInteger = con . fromInteger
+
+instance Fractional SymAlgReal where
+  fromRational = con . fromRational
+  (/) = error "consider using safeFdiv instead of (/) for SymAlgReal"
+  recip = error "consider using safeRecip instead of recip for SymAlgReal"
+
+instance Floating SymAlgReal where
+  pi = fromRational $ toRational pi
+  exp (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingExp v
+  log (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingLog v
+  sqrt (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingSqrt v
+  sin (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingSin v
+  cos (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingCos v
+  tan (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingTan v
+  sinh (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingSinh v
+  cosh (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingCosh v
+  tanh (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingTanh v
+  asin (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingAsin v
+  acos (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingAcos v
+  atan (SymAlgReal v) = SymAlgReal $ pevalFloatingUnaryTerm FloatingAtan v
+  asinh = error "asinh isn't supported by the underlying sbv library"
+  acosh = error "acosh isn't supported by the underlying sbv library"
+  atanh = error "atanh isn't supported by the underlying sbv library"
+  SymAlgReal l ** SymAlgReal r = SymAlgReal $ pevalPowerTerm l r
+  logBase = error "consider using safeLogBase instead of logBase for AlgReal"
