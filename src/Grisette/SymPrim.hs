@@ -18,6 +18,9 @@ module Grisette.SymPrim
     -- * @'WordN' n@: unsigned bit vectors of bit width @n@.
     -- * @'FP' eb sb@: IEEE-754 floating point numbers with @eb@ exponent bits
     --   and @sb@ significand bits.
+    -- * 'AlgReal': algebraic real numbers. Can represent rational numbers.
+    --   If come from solver's response, it may also represented by roots of
+    --   polynomials or intervals.
     -- * @'Bool' t'=->' 'Bool'@: functions represented as a table for the
     --   input-output relations.
     -- * @'Bool' t'-->' 'Bool'@: functions represented as a formula over some
@@ -35,6 +38,7 @@ module Grisette.SymPrim
     --   @n@)
     -- * @'SymFP' eb sb@ (@'FP' eb sb@, symbolic IEEE-754 floating point numbers
     --   with @eb@ exponent bits and @sb@ significand bits)
+    -- * 'SymAlgReal': symbolic algebraic real numbers.
     -- * @'SymBool' t'=~>' 'SymBool'@ (@'Bool' t'=->' 'Bool'@, symbolic
     --   functions, uninterpreted or represented as a table for the
     --   input-output relations).
