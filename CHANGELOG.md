@@ -11,6 +11,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Added pretty printer for models.
   ([#225](https://github.com/lsrcz/grisette/pull/225))
+- Added support for algebraic reals (`AlgReal` and `SymAlgReal`).
+  ([#228](https://github.com/lsrcz/grisette/pull/228))
+
+### Fixed
+- Fixed model parsing for floating points.
+  ([#227](https://github.com/lsrcz/grisette/pull/227))
 
 ### Changed
 - [Breaking] Changed the operand order for `liftPFormatPrec2` and
