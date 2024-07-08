@@ -27,6 +27,7 @@ import Data.Foldable (Foldable (foldl'))
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import GHC.TypeNats (KnownNat, type (<=))
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP, allFPRoundingMode)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
@@ -170,3 +171,8 @@ instance PEvalOrdTerm FPRoundingMode where
   withSbvOrdTermConstraint p r = withPrim @FPRoundingMode p r
   sbvLtOrdTerm _ = sbvTableLookup fpRoundingModeLtTable
   sbvLeOrdTerm _ = sbvTableLookup fpRoundingModeLeTable
+
+instance PEvalOrdTerm AlgReal where
+  pevalLtOrdTerm = pevalGeneralLtOrdTerm
+  pevalLeOrdTerm = pevalGeneralLeOrdTerm
+  withSbvOrdTermConstraint p r = withPrim @AlgReal p r

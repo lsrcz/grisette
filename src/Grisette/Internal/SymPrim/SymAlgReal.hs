@@ -17,9 +17,19 @@ import Grisette.Internal.Core.Data.Class.Solvable
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
+import Grisette.Internal.SymPrim.Prim.Internal.Term
+  ( PEvalNumTerm
+      ( pevalAbsNumTerm,
+        pevalMulNumTerm,
+        pevalNegNumTerm,
+        pevalSignumNumTerm
+      ),
+    pevalSubNumTerm,
+  )
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
+    PEvalNumTerm (pevalAddNumTerm),
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
@@ -28,6 +38,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   )
 import Language.Haskell.TH.Syntax (Lift)
 
+-- | Symbolic representation of algebraic real numbers.
 newtype SymAlgReal = SymAlgReal {underlyingAlgRealTerm :: Term AlgReal}
   deriving (Lift, Generic)
   deriving anyclass (NFData)
@@ -66,3 +77,12 @@ instance Show SymAlgReal where
 
 instance AllSyms SymAlgReal where
   allSymsS v = (SomeSym v :)
+
+instance Num SymAlgReal where
+  (SymAlgReal l) + (SymAlgReal r) = SymAlgReal $ pevalAddNumTerm l r
+  (SymAlgReal l) - (SymAlgReal r) = SymAlgReal $ pevalSubNumTerm l r
+  (SymAlgReal l) * (SymAlgReal r) = SymAlgReal $ pevalMulNumTerm l r
+  negate (SymAlgReal v) = SymAlgReal $ pevalNegNumTerm v
+  abs (SymAlgReal v) = SymAlgReal $ pevalAbsNumTerm v
+  signum (SymAlgReal v) = SymAlgReal $ pevalSignumNumTerm v
+  fromInteger = con . fromInteger

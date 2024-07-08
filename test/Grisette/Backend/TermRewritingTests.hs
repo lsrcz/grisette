@@ -36,6 +36,7 @@ import Grisette.Backend.TermRewritingGen
     IEEEFP32BoolOpSpec (IEEEFP32BoolOpSpec),
     IEEEFP32Spec,
     LIAWithBoolSpec,
+    NRAWithBoolSpec,
     TermRewritingSpec
       ( conSpec,
         counterExample,
@@ -207,6 +208,13 @@ termRewritingTests =
                       (symSpec "d")
                   )
               )
+        ],
+      testGroup
+        "NRA"
+        [ testProperty "NRA random test" $
+            mapSize (`min` 5) $
+              ioProperty . \(x :: NRAWithBoolSpec) ->
+                validateSpec unboundedConfig x
         ],
       testGroup
         "Different sized signed BV"

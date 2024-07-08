@@ -52,6 +52,7 @@ import Grisette.Lib.Data.FoldableTests (foldableFunctionTests)
 import Grisette.Lib.Data.FunctorTests (functorFunctionTests)
 import Grisette.Lib.Data.ListTests (listTests)
 import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
+import Grisette.SymPrim.AlgRealTests (algRealTests)
 import qualified Grisette.SymPrim.BVTests
 import Grisette.SymPrim.FPTests (fpTests)
 import qualified Grisette.SymPrim.Prim.BVTests
@@ -175,6 +176,7 @@ irTests =
       symPrimTests,
       Grisette.SymPrim.TabularFunTests.tabularFunTests,
       Grisette.SymPrim.BVTests.bvTests,
+      algRealTests,
       someBVTests,
       fpTests
     ]

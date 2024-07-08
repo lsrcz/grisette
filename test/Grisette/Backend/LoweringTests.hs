@@ -880,7 +880,46 @@ loweringTests =
                   truePrecond
                   iteTerm
                   "ite"
-                  SBV.ite
+                  SBV.ite,
+              testCase "Add" $ do
+                testBinaryOpLowering @AlgReal @AlgReal @AlgReal unboundedConfig addNumTerm "(+)" (+)
+                testBinaryOpLowering @AlgReal @AlgReal @AlgReal
+                  unboundedConfig
+                  addNumTerm
+                  "(+)"
+                  (\x y -> (x + 1) * (y + 1) - x * y - 1),
+              testCase "Uminus" $ do
+                testUnaryOpLowering @AlgReal @AlgReal unboundedConfig negNumTerm "negate" negate
+                testUnaryOpLowering @AlgReal @AlgReal
+                  unboundedConfig
+                  negNumTerm
+                  "negate"
+                  (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1),
+              testCase "Abs" $
+                testUnaryOpLowering @AlgReal @AlgReal unboundedConfig absNumTerm "abs" abs,
+              testCase "Signum" $
+                testUnaryOpLowering @AlgReal @AlgReal unboundedConfig signumNumTerm "signum" signum,
+              testCase "Times" $ do
+                testBinaryOpLowering @AlgReal @AlgReal @AlgReal unboundedConfig mulNumTerm "(*)" (*)
+                testBinaryOpLowering @AlgReal @AlgReal @AlgReal
+                  unboundedConfig
+                  mulNumTerm
+                  "(*)"
+                  (\x y -> (x + 1) * (y + 1) - x - y - 1),
+              testCase "Lt" $ do
+                testBinaryOpLowering @Integer @Integer @Bool unboundedConfig ltOrdTerm "(<)" (SBV..<)
+                testBinaryOpLowering @Integer @Integer @Bool
+                  unboundedConfig
+                  ltOrdTerm
+                  "(<)"
+                  (\x y -> x * 2 - x SBV..< y * 2 - y),
+              testCase "Le" $ do
+                testBinaryOpLowering @Integer @Integer @Bool unboundedConfig leOrdTerm "(<=)" (SBV..<=)
+                testBinaryOpLowering @Integer @Integer @Bool
+                  unboundedConfig
+                  leOrdTerm
+                  "(<=)"
+                  (\x y -> x * 2 - x SBV..<= y * 2 - y)
             ],
           testCase "TabularFun" $ do
             let f = "f" :: SymInteger =~> SymInteger =~> SymInteger

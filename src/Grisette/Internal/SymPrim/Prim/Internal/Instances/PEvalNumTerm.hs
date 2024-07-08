@@ -26,6 +26,7 @@ import Control.Monad (msum)
 import Data.Bits (Bits)
 import Data.SBV (Bits (isSigned))
 import GHC.TypeLits (KnownNat, type (<=))
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
@@ -186,6 +187,16 @@ doPevalBitsAbsNumTerm t =
       doPevalGeneralAbsNumTerm t
     ]
 
+doPevalNoOverflowAbsNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
+doPevalNoOverflowAbsNumTerm t =
+  msum
+    [ doPevalGeneralAbsNumTerm t,
+      case t of
+        MulNumTerm _ l r ->
+          Just $ pevalMulNumTerm (pevalAbsNumTerm l) $ pevalAbsNumTerm r
+        _ -> Nothing
+    ]
+
 -- Signum
 
 pevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Term a
@@ -196,33 +207,26 @@ doPevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalGeneralSignumNumTerm (ConTerm _ a) = Just $ conTerm $ signum a
 doPevalGeneralSignumNumTerm _ = Nothing
 
+doPevalNoOverflowSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
+doPevalNoOverflowSignumNumTerm t =
+  msum
+    [ doPevalGeneralSignumNumTerm t,
+      case t of
+        NegNumTerm _ v -> Just $ pevalNegNumTerm $ pevalSignumNumTerm v
+        MulNumTerm _ l r ->
+          Just $
+            pevalMulNumTerm (pevalSignumNumTerm l) $
+              pevalSignumNumTerm r
+        _ -> Nothing
+    ]
+
 instance PEvalNumTerm Integer where
   pevalAddNumTerm = pevalDefaultAddNumTerm
   pevalNegNumTerm = pevalDefaultNegNumTerm
   pevalMulNumTerm = pevalDefaultMulNumTerm
-  pevalAbsNumTerm = unaryUnfoldOnce doPevalIntegerAbsNumTerm absNumTerm
-    where
-      doPevalIntegerAbsNumTerm t =
-        msum
-          [ doPevalGeneralAbsNumTerm t,
-            case t of
-              MulNumTerm _ l r ->
-                Just $ pevalMulNumTerm (pevalAbsNumTerm l) $ pevalAbsNumTerm r
-              _ -> Nothing
-          ]
-  pevalSignumNumTerm = unaryUnfoldOnce doPevalIntegerSignumNumTerm signumNumTerm
-    where
-      doPevalIntegerSignumNumTerm t =
-        msum
-          [ doPevalGeneralSignumNumTerm t,
-            case t of
-              NegNumTerm _ v -> Just $ pevalNegNumTerm $ pevalSignumNumTerm v
-              MulNumTerm _ l r ->
-                Just $
-                  pevalMulNumTerm (pevalSignumNumTerm l) $
-                    pevalSignumNumTerm r
-              _ -> Nothing
-          ]
+  pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
+  pevalSignumNumTerm =
+    unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
   withSbvNumTermConstraint p r = case isZero p of
     IsZeroEvidence -> r
     NonZeroEvidence -> r
@@ -250,3 +254,12 @@ instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalAbsNumTerm = generalUnaryUnfolded abs absNumTerm
   pevalSignumNumTerm = generalUnaryUnfolded signum signumNumTerm
   withSbvNumTermConstraint p r = withPrim @(FP eb sb) p r
+
+instance PEvalNumTerm AlgReal where
+  pevalAddNumTerm = generalBinaryUnfolded (+) addNumTerm
+  pevalNegNumTerm = generalUnaryUnfolded negate negNumTerm
+  pevalMulNumTerm = generalBinaryUnfolded (*) mulNumTerm
+  pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
+  pevalSignumNumTerm =
+    unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
+  withSbvNumTermConstraint p r = withPrim @AlgReal p r

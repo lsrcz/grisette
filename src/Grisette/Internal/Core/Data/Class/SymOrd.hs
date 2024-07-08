@@ -99,7 +99,12 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Internal.Core.Data.Class.SymEq (GSymEq, SymEq ((.==)), SymEq1, SymEq2)
+import Grisette.Internal.Core.Data.Class.SymEq
+  ( GSymEq,
+    SymEq ((.==)),
+    SymEq1,
+    SymEq2,
+  )
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
@@ -114,6 +119,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalGeOrdTerm,
     pevalGtOrdTerm,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -497,6 +503,7 @@ instance SymOrd SymBool where
 
 #if 1
 SORD_SIMPLE(SymInteger)
+SORD_SIMPLE(SymAlgReal)
 SORD_SIMPLE(SymFPRoundingMode)
 SORD_BV(SymIntN)
 SORD_BV(SymWordN)

@@ -22,6 +22,8 @@ module Grisette.Backend.TermRewritingGen
     FixedSizedBVWithBoolSpec (..),
     BoolWithLIASpec (..),
     LIAWithBoolSpec (..),
+    BoolWithNRASpec (..),
+    NRAWithBoolSpec (..),
     BoolOnlySpec (..),
     constructUnarySpec,
     constructUnarySpec',
@@ -73,6 +75,7 @@ import Data.Kind (Type)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP
   ( FP,
     FP32,
@@ -1116,3 +1119,83 @@ instance Arbitrary FPRoundingModeBoolOpSpec where
     l :: FPRoundingModeSpec <- arbitrary
     r <- arbitrary
     elements [eqvSpec l r, ltOrdSpec l r, leOrdSpec l r]
+
+data BoolWithNRASpec = BoolWithNRASpec (Term Bool) (Term Bool)
+
+instance Show BoolWithNRASpec where
+  show (BoolWithNRASpec n r) =
+    "BoolWithNRASpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec BoolWithNRASpec Bool where
+  norewriteVer (BoolWithNRASpec n _) = n
+  rewriteVer (BoolWithNRASpec _ r) = r
+  wrap = BoolWithNRASpec
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+data NRAWithBoolSpec = NRAWithBoolSpec (Term AlgReal) (Term AlgReal)
+
+instance Show NRAWithBoolSpec where
+  show (NRAWithBoolSpec n r) =
+    "NRAWithBoolSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+
+instance TermRewritingSpec NRAWithBoolSpec AlgReal where
+  norewriteVer (NRAWithBoolSpec n _) = n
+  rewriteVer (NRAWithBoolSpec _ r) = r
+  wrap = NRAWithBoolSpec
+  same s = eqTerm (norewriteVer s) (rewriteVer s)
+
+boolWithNRA :: Int -> Gen BoolWithNRASpec
+boolWithNRA 0 =
+  let s =
+        oneof $
+          return . symSpec . (`withInfo` ("bool" :: T.Text))
+            <$> ["a", "b", "c", "d", "e", "f", "g"]
+      r = oneof $ return . conSpec <$> [True, False]
+   in oneof [r, s]
+boolWithNRA n | n > 0 = do
+  v1 <- boolWithNRA (n - 1)
+  v2 <- boolWithNRA (n - 1)
+  v3 <- boolWithNRA (n - 1)
+  v1i <- nraWithBool (n - 1)
+  v2i <- nraWithBool (n - 1)
+  frequency
+    [ (1, return $ notSpec v1),
+      (1, return $ andSpec v1 v2),
+      (1, return $ orSpec v1 v2),
+      (1, return $ eqvSpec v1 v2),
+      (5, return $ eqvSpec v1i v2i),
+      (5, return $ ltOrdSpec v1i v2i),
+      (5, return $ leOrdSpec v1i v2i),
+      (1, return $ iteSpec v1 v2 v3)
+    ]
+boolWithNRA _ = error "Should never be called"
+
+nraWithBool :: Int -> Gen NRAWithBoolSpec
+nraWithBool 0 =
+  let s =
+        oneof $
+          return . symSpec . (`withInfo` ("real" :: T.Text))
+            <$> ["a", "b", "c", "d", "e", "f", "g"]
+      r = conSpec <$> arbitrary
+   in oneof [r, s]
+nraWithBool n | n > 0 = do
+  v1b <- boolWithNRA (n - 1)
+  v1i <- nraWithBool (n - 1)
+  v2i <- nraWithBool (n - 1)
+  oneof
+    [ return $ negNumSpec v1i,
+      return $ absNumSpec v1i,
+      return $ signumNumSpec v1i,
+      return $ addNumSpec v1i v2i,
+      return $ mulNumSpec v1i v2i,
+      return $ fdivSpec v1i v2i,
+      return $ recipSpec v1i,
+      return $ iteSpec v1b v1i v2i
+    ]
+nraWithBool _ = error "Should never be called"
+
+instance Arbitrary BoolWithNRASpec where
+  arbitrary = sized boolWithNRA
+
+instance Arbitrary NRAWithBoolSpec where
+  arbitrary = sized nraWithBool
