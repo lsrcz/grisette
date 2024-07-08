@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
@@ -59,25 +60,27 @@ fromSBVRealPoint (SBV.ClosedPoint r) = ClosedPoint r
 
 -- | Algebraic real numbers. The representation can be abstract for
 -- roots-of-polynomials or intervals.
-data AlgReal
-  = -- | Exact rational number.
-    AlgExactRational Rational
-  | -- | Inexact rational numbers. SMT-solver return it with ? at the end.
-    AlgInexactRational Rational
-  | -- | Algebraic real number as a root of a polynomial.
-    AlgPolyRoot
-      -- | Which root is it?
-      Integer
-      -- | Polynomial defining equation.
-      AlgRealPoly
-      -- | Approximate decimal representation.
-      (Maybe String)
-  | -- | Interval with low and high bounds.
-    AlgInterval
-      -- | Lower bound.
-      RealPoint
-      -- | Upper bound.
-      RealPoint
+data AlgReal where
+  -- | Exact rational number.
+  AlgExactRational :: Rational -> AlgReal
+  -- | Inexact rational numbers. SMT-solver return it with ? at the end.
+  AlgInexactRational :: Rational -> AlgReal
+  -- | Algebraic real number as a root of a polynomial.
+  AlgPolyRoot ::
+    -- | Which root is it?
+    Integer ->
+    -- | Polynomial defining equation.
+    AlgRealPoly ->
+    -- | Approximate decimal representation.
+    Maybe String ->
+    AlgReal
+  -- | Interval with low and high bounds.
+  AlgInterval ::
+    -- | Lower bound.
+    RealPoint ->
+    -- | Upper bound.
+    RealPoint ->
+    AlgReal
   deriving (Generic, Lift)
   deriving anyclass (Hashable, NFData)
 
