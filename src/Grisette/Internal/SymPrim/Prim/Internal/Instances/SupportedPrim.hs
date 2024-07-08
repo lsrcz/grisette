@@ -30,6 +30,7 @@ import qualified Data.SBV as SBV
 import Data.Type.Bool (If)
 import Data.Type.Equality ((:~:) (Refl))
 import GHC.TypeNats (KnownNat, type (<=))
+import Grisette.Internal.SymPrim.AlgReal (AlgReal, fromSBVAlgReal, toSBVAlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP (FP),
@@ -260,4 +261,33 @@ instance NonFuncSBVRep FPRoundingMode where
 instance SupportedNonFuncPrim FPRoundingMode where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @FPRoundingMode
+  withNonFuncPrim _ r = r
+
+-- AlgReal
+
+instance SupportedPrimConstraint AlgReal
+
+instance SBVRep AlgReal where
+  type SBVType _ AlgReal = SBV.SBV SBV.AlgReal
+
+instance SupportedPrim AlgReal where
+  defaultValue = 0
+  pevalITETerm = pevalITEBasicTerm
+  pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
+  pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
+  pevalEqTerm l r = eqTerm l r
+  conSBVTerm _ = SBV.literal . toSBVAlgReal
+  symSBVName symbol _ = show symbol
+  symSBVTerm _ name = sbvFresh name
+  withPrim _ r = r
+  parseSMTModelResult _ cv =
+    withPrim @(AlgReal) (Proxy @0) $
+      parseScalarSMTModelResult fromSBVAlgReal cv
+
+instance NonFuncSBVRep AlgReal where
+  type NonFuncSBVBaseType _ AlgReal = SBV.AlgReal
+
+instance SupportedNonFuncPrim AlgReal where
+  conNonFuncSBVTerm = conSBVTerm
+  symNonFuncSBVTerm = symSBVTerm @AlgReal
   withNonFuncPrim _ r = r

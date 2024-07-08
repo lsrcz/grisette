@@ -114,6 +114,7 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -374,6 +375,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 EVALUATE_SYM_SIMPLE(SymBool)
 EVALUATE_SYM_SIMPLE(SymInteger)
 EVALUATE_SYM_SIMPLE(SymFPRoundingMode)
+EVALUATE_SYM_SIMPLE(SymAlgReal)
 EVALUATE_SYM_BV(SymIntN)
 EVALUATE_SYM_BV(SymWordN)
 EVALUATE_SYM_FUN((=->), (=~>), SymTabularFun)

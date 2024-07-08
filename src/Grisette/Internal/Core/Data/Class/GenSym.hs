@@ -150,6 +150,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -1699,6 +1700,10 @@ GENSYM_SIMPLE(SymFPRoundingMode)
 GENSYM_SIMPLE_SIMPLE(SymFPRoundingMode)
 GENSYM_UNIT_SIMPLE(SymFPRoundingMode)
 GENSYM_UNIT_SIMPLE_SIMPLE(SymFPRoundingMode)
+GENSYM_SIMPLE(SymAlgReal)
+GENSYM_SIMPLE_SIMPLE(SymAlgReal)
+GENSYM_UNIT_SIMPLE(SymAlgReal)
+GENSYM_UNIT_SIMPLE_SIMPLE(SymAlgReal)
 
 GENSYM_BV(SymIntN)
 GENSYM_SIMPLE_BV(SymIntN)

@@ -132,6 +132,7 @@ library
       Grisette.Internal.SymPrim.Prim.Term
       Grisette.Internal.SymPrim.Prim.TermUtils
       Grisette.Internal.SymPrim.SomeBV
+      Grisette.Internal.SymPrim.SymAlgReal
       Grisette.Internal.SymPrim.SymBool
       Grisette.Internal.SymPrim.SymBV
       Grisette.Internal.SymPrim.SymFP

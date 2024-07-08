@@ -142,6 +142,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     TypedSymbol (unTypedSymbol),
     prettyPrintTerm,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -594,6 +595,7 @@ instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
 FORMAT_SYM_SIMPLE(SymBool)
 FORMAT_SYM_SIMPLE(SymInteger)
 FORMAT_SYM_SIMPLE(SymFPRoundingMode)
+FORMAT_SYM_SIMPLE(SymAlgReal)
 FORMAT_SYM_BV(SymIntN)
 FORMAT_SYM_BV(SymWordN)
 FORMAT_SYM_FUN(=~>, SymTabularFun)

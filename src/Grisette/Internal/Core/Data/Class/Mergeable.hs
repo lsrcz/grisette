@@ -155,6 +155,7 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 import Unsafe.Coerce (unsafeCoerce)
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 
 -- | Merging strategies.
 --
@@ -607,6 +608,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 MERGEABLE_SIMPLE(SymBool)
 MERGEABLE_SIMPLE(SymInteger)
 MERGEABLE_SIMPLE(SymFPRoundingMode)
+MERGEABLE_SIMPLE(SymAlgReal)
 MERGEABLE_BV(SymIntN)
 MERGEABLE_BV(SymWordN)
 MERGEABLE_FUN((=->), (=~>))

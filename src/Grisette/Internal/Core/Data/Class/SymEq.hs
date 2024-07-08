@@ -83,6 +83,7 @@ import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term (pevalEqTerm)
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -315,6 +316,7 @@ instance (KnownNat n, 1 <= n) => SymEq (symtype n) where \
 SEQ_SIMPLE(SymBool)
 SEQ_SIMPLE(SymInteger)
 SEQ_SIMPLE(SymFPRoundingMode)
+SEQ_SIMPLE(SymAlgReal)
 SEQ_BV(SymIntN)
 SEQ_BV(SymWordN)
 #endif

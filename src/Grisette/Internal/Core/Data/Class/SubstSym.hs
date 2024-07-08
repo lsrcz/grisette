@@ -87,6 +87,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedPrim,
     TypedSymbol,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -337,6 +338,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 #if 1
 SUBSTITUTE_SYM_SIMPLE(SymBool)
 SUBSTITUTE_SYM_SIMPLE(SymInteger)
+SUBSTITUTE_SYM_SIMPLE(SymAlgReal)
 SUBSTITUTE_SYM_BV(SymIntN)
 SUBSTITUTE_SYM_BV(SymWordN)
 SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
