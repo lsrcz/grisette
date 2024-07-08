@@ -102,6 +102,7 @@ library
       Grisette.Internal.Core.Data.MemoUtils
       Grisette.Internal.Core.Data.Symbol
       Grisette.Internal.Core.Data.UnionBase
+      Grisette.Internal.SymPrim.AlgReal
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
       Grisette.Internal.SymPrim.FP
