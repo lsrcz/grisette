@@ -239,6 +239,8 @@ module Grisette.Core
     -- * @'Grisette.SymPrim.SymFP' eb sb@ (@'Grisette.SymPrim.FP' eb sb@,
     --   symbolic IEEE-754 floating point numbers with @eb@ exponent bits and
     --   @sb@ significand bits)
+    -- * 'Grisette.SymPrim.SymAlgReal' ('Grisette.SymPrim.AlgReal'), symbolic
+    --   algebraic real numbers.
     -- * @'Grisette.SymPrim.SymBool' t'Grisette.SymPrim.=~>' 'Grisette.SymPrim.SymBool'@
     --   (@'Bool' t'Grisette.SymPrim.=->' 'Bool'@, symbolic functions,
     --   uninterpreted or represented as a table for the input-outputs
