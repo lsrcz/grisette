@@ -25,6 +25,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim (pevalITETerm),
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -80,6 +81,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => ITEOp 
 ITEOP_SIMPLE(SymBool)
 ITEOP_SIMPLE(SymInteger)
 ITEOP_SIMPLE(SymFPRoundingMode)
+ITEOP_SIMPLE(SymAlgReal)
 ITEOP_BV(SymIntN)
 ITEOP_BV(SymWordN)
 ITEOP_FUN((=->), (=~>), SymTabularFun)

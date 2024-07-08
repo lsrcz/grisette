@@ -99,6 +99,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
@@ -828,6 +829,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 SIMPLE_MERGEABLE_SIMPLE(SymBool)
 SIMPLE_MERGEABLE_SIMPLE(SymInteger)
 SIMPLE_MERGEABLE_SIMPLE(SymFPRoundingMode)
+SIMPLE_MERGEABLE_SIMPLE(SymAlgReal)
 SIMPLE_MERGEABLE_BV(SymIntN)
 SIMPLE_MERGEABLE_BV(SymWordN)
 SIMPLE_MERGEABLE_FUN((=->), (=~>))

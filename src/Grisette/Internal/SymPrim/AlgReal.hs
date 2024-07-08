@@ -15,6 +15,7 @@
 module Grisette.Internal.SymPrim.AlgReal
   ( AlgRealPoly (..),
     toSBVAlgReal,
+    fromSBVAlgReal,
     RealPoint (..),
     AlgReal (..),
   )
@@ -26,6 +27,8 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBV
 import GHC.Generics (Generic)
 import Language.Haskell.TH.Syntax (Lift)
+import Test.QuickCheck (Arbitrary)
+import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
 -- | A univariate polynomial with integer coefficients.
 --
@@ -47,6 +50,10 @@ data RealPoint
 toSBVRealPoint :: RealPoint -> SBV.RealPoint Rational
 toSBVRealPoint (OpenPoint r) = SBV.OpenPoint r
 toSBVRealPoint (ClosedPoint r) = SBV.ClosedPoint r
+
+fromSBVRealPoint :: SBV.RealPoint Rational -> RealPoint
+fromSBVRealPoint (SBV.OpenPoint r) = OpenPoint r
+fromSBVRealPoint (SBV.ClosedPoint r) = ClosedPoint r
 
 -- | Algebraic real numbers. The representation can be abstract for
 -- roots-of-polynomials or intervals.
@@ -79,6 +86,14 @@ toSBVAlgReal (AlgPolyRoot i (AlgRealPoly ps) approx) =
   SBV.AlgPolyRoot (i, SBV.AlgRealPoly ps) approx
 toSBVAlgReal (AlgInterval l u) =
   SBV.AlgInterval (toSBVRealPoint l) (toSBVRealPoint u)
+
+fromSBVAlgReal :: SBV.AlgReal -> AlgReal
+fromSBVAlgReal (SBV.AlgRational True r) = AlgExactRational r
+fromSBVAlgReal (SBV.AlgRational False r) = AlgInexactRational r
+fromSBVAlgReal (SBV.AlgPolyRoot (i, SBV.AlgRealPoly ps) approx) =
+  AlgPolyRoot i (AlgRealPoly ps) approx
+fromSBVAlgReal (SBV.AlgInterval l u) =
+  AlgInterval (fromSBVRealPoint l) (fromSBVRealPoint u)
 
 instance Show AlgReal where
   show r = show $ toSBVAlgReal r
@@ -147,3 +162,6 @@ instance Real AlgReal where
     error $
       "AlgReal.toRational: only support exact algebraic rationals, but got: "
         ++ show r
+
+instance Arbitrary AlgReal where
+  arbitrary = AlgExactRational <$> arbitrary

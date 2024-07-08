@@ -46,6 +46,7 @@ import Grisette.Internal.Backend.Solving
 import Grisette.Internal.Backend.SymBiMap
   ( SymBiMap (biMapToSBV),
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP (FP32)
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -862,6 +863,24 @@ loweringTests =
                     (fpTraitTerm trait)
                     "isNaN"
                     op
+            ],
+          testGroup
+            "AlgReal"
+            [ testModelParse @AlgReal,
+              testCase "Eqv" $
+                testBinaryOpLowering @AlgReal @AlgReal @Bool
+                  unboundedConfig
+                  eqTerm
+                  "eqv"
+                  (SBV..==),
+              testCase "ITE" $ do
+                let truePrecond _ _ _ = conTerm True
+                testTernaryOpLowering @Bool @AlgReal @AlgReal @AlgReal
+                  unboundedConfig
+                  truePrecond
+                  iteTerm
+                  "ite"
+                  SBV.ite
             ],
           testCase "TabularFun" $ do
             let f = "f" :: SymInteger =~> SymInteger =~> SymInteger

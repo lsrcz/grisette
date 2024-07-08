@@ -82,6 +82,7 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV
   ( IntN,
     WordN,
@@ -93,6 +94,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
@@ -300,6 +302,7 @@ instance (SupportedPrim a, SupportedPrim b) => ToSym (a op b) (a op b) where \
 #if 1
 TO_SYM_SYMID_SIMPLE(SymBool)
 TO_SYM_SYMID_SIMPLE(SymInteger)
+TO_SYM_SYMID_SIMPLE(SymAlgReal)
 TO_SYM_SYMID_BV(SymIntN)
 TO_SYM_SYMID_BV(SymWordN)
 TO_SYM_SYMID_FUN(=~>)
@@ -326,6 +329,7 @@ instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 #if 1
 TO_SYM_FROMCON_SIMPLE(Bool, SymBool)
 TO_SYM_FROMCON_SIMPLE(Integer, SymInteger)
+TO_SYM_FROMCON_SIMPLE(AlgReal, SymAlgReal)
 TO_SYM_FROMCON_BV(IntN, SymIntN)
 TO_SYM_FROMCON_BV(WordN, SymWordN)
 TO_SYM_FROMCON_FUN((=->), (=~>))

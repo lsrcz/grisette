@@ -85,6 +85,7 @@ import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (conView),
     pattern Con,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
@@ -96,6 +97,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN,
     SymWordN,
@@ -316,6 +318,7 @@ instance (SupportedPrim a, SupportedPrim b) => ToCon (a op b) (a op b) where \
 #if 1
 TO_CON_SYMID_SIMPLE(SymBool)
 TO_CON_SYMID_SIMPLE(SymInteger)
+TO_CON_SYMID_SIMPLE(SymAlgReal)
 TO_CON_SYMID_BV(SymIntN)
 TO_CON_SYMID_BV(SymWordN)
 TO_CON_SYMID_FUN(=~>)
@@ -342,6 +345,7 @@ instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 #if 1
 TO_CON_FROMSYM_SIMPLE(Bool, SymBool)
 TO_CON_FROMSYM_SIMPLE(Integer, SymInteger)
+TO_CON_FROMSYM_SIMPLE(AlgReal, SymAlgReal)
 TO_CON_FROMSYM_BV(IntN, SymIntN)
 TO_CON_FROMSYM_BV(WordN, SymWordN)
 TO_CON_FROMSYM_FUN((=->), (=~>))

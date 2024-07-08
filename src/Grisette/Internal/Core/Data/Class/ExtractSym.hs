@@ -73,7 +73,10 @@ import Generics.Deriving
     type (:+:) (L1, R1),
     type (:.:) (Comp1),
   )
-import Grisette.Internal.Core.Control.Exception (AssertionError, VerificationConditions)
+import Grisette.Internal.Core.Control.Exception
+  ( AssertionError,
+    VerificationConditions,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
@@ -85,6 +88,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedPrim,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils (extractTerm)
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
     SymWordN (SymWordN),
@@ -311,6 +315,7 @@ instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
 EXTRACT_SYMBOLICS_SIMPLE(SymBool)
 EXTRACT_SYMBOLICS_SIMPLE(SymInteger)
 EXTRACT_SYMBOLICS_SIMPLE(SymFPRoundingMode)
+EXTRACT_SYMBOLICS_SIMPLE(SymAlgReal)
 EXTRACT_SYMBOLICS_BV(SymIntN)
 EXTRACT_SYMBOLICS_BV(SymWordN)
 EXTRACT_SYMBOLICS_FUN((=->), (=~>), SymTabularFun)
