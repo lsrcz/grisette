@@ -23,12 +23,14 @@ import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
 import Grisette
   ( EvalSym (evalSym),
+    FPRoundingMode,
     Function ((#)),
     IntN,
     LogicalOp ((.&&)),
     Solvable (con),
     SymEq ((.==)),
     SymInteger,
+    SymRep (SymType),
     WordN,
     solve,
     type (-~>),
@@ -105,7 +107,10 @@ import Grisette.Internal.SymPrim.Prim.Term
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure, (@?=))
+import Test.QuickCheck (Arbitrary, ioProperty)
+import Type.Reflection (typeRep)
 
 testUnaryOpLowering ::
   forall a b as n.
@@ -271,6 +276,38 @@ testTernaryOpLowering config precond f name sbvfun = do
           _ -> lift $ assertFailure $ T.unpack $ "Lowering for " <> name <> " generated unknown formula"
       _ -> lift $ assertFailure "Failed to extract the term"
 
+modelParseTestBody ::
+  forall t.
+  ( Solvable t (SymType t),
+    SymEq (SymType t),
+    EvalSym (SymType t),
+    Eq (SymType t),
+    Show (SymType t)
+  ) =>
+  t ->
+  Assertion
+modelParseTestBody v = do
+  let a = "a" :: SymType t
+  r <- solve z3 $ a .== con v
+  case r of
+    Left err -> assertFailure $ "Failed to solve: " ++ show err
+    Right m -> evalSym False m a @?= con v
+
+testModelParse ::
+  forall t.
+  ( Show t,
+    Arbitrary t,
+    Solvable t (SymType t),
+    SymEq (SymType t),
+    EvalSym (SymType t),
+    Eq (SymType t),
+    Show (SymType t),
+    Typeable t
+  ) =>
+  Test
+testModelParse = testProperty ("Model parse(" ++ show (typeRep @t) ++ ")") $
+  \(v :: t) -> ioProperty $ modelParseTestBody v
+
 loweringTests :: Test
 loweringTests =
   let unboundedConfig = z3
@@ -279,7 +316,8 @@ loweringTests =
         "Lowering"
         [ testGroup
             "Bool Lowering"
-            [ testCase "Not" $ do
+            [ testModelParse @Bool,
+              testCase "Not" $ do
                 testUnaryOpLowering @Bool @Bool unboundedConfig notTerm "not" SBV.sNot,
               testCase "And" $ do
                 testBinaryOpLowering @Bool @Bool @Bool unboundedConfig andTerm "and" (SBV..&&)
@@ -319,7 +357,8 @@ loweringTests =
             ],
           testGroup
             "Integer Lowering"
-            [ testCase "Add" $ do
+            [ testModelParse @Integer,
+              testCase "Add" $ do
                 testBinaryOpLowering @Integer @Integer @Integer unboundedConfig addNumTerm "(+)" (+)
                 testBinaryOpLowering @Integer @Integer @Integer
                   unboundedConfig
@@ -405,7 +444,8 @@ loweringTests =
             ],
           testGroup
             "IntN Lowering"
-            [ testCase "Add" $ do
+            [ testModelParse @(IntN 4),
+              testCase "Add" $ do
                 testBinaryOpLowering @(IntN 5) @(IntN 5) unboundedConfig addNumTerm "(+)" (+)
                 testBinaryOpLowering @(IntN 5) @(IntN 5)
                   unboundedConfig
@@ -599,7 +639,8 @@ loweringTests =
             ],
           testGroup
             "WordN"
-            [ testCase "Add" $ do
+            [ testModelParse @(WordN 4),
+              testCase "Add" $ do
                 testBinaryOpLowering @(WordN 5) @(WordN 5) unboundedConfig addNumTerm "(+)" (+)
                 testBinaryOpLowering @(WordN 5) @(WordN 5)
                   unboundedConfig
@@ -775,7 +816,9 @@ loweringTests =
             ],
           testGroup
             "FP"
-            [ testCase "Eqv" $
+            [ testCase "Model parse (float)" $ modelParseTestBody (10.012 :: FP32),
+              testModelParse @FPRoundingMode,
+              testCase "Eqv" $
                 testBinaryOpLowering @FP32 @FP32 @Bool unboundedConfig eqTerm "eqv" (SBV..==),
               testCase "ITE" $ do
                 let precond _ l r =
@@ -828,12 +871,15 @@ loweringTests =
             let d = "d" :: SymInteger
             Right m <-
               solve unboundedConfig $
-                (f # a # b .== a + b .&& a .== 10 .&& b .== 20)
-                  .&& (f # a # c .== a + c .&& a .== 10 .&& c .== 30)
-                  .&& (f # a # d .== a + d .&& a .== 10 .&& d .== 40)
+                (f # a # b .== a + b)
+                  .&& (f # a # c .== a + c)
+                  .&& (f # a # d .== a + d)
+                  .&& (f # b # d .== b + d)
+                  .&& (a .== 10 .&& b .== 20 .&& c .== 30 .&& d .== 40)
             evalSym False m (f # a # b .== a + b) @?= con True
             evalSym False m (f # a # c .== a + c) @?= con True
-            evalSym False m (f # a # d .== a + d) @?= con True,
+            evalSym False m (f # a # d .== a + d) @?= con True
+            evalSym False m (f # b # d .== b + d) @?= con True,
           testCase "GeneralFun" $ do
             let f = "f" :: SymInteger -~> SymInteger -~> SymInteger
             let a = "a" :: SymInteger
@@ -842,10 +888,13 @@ loweringTests =
             let d = "d" :: SymInteger
             Right m <-
               solve unboundedConfig $
-                (f # a # b .== a + b .&& a .== 10 .&& b .== 20)
-                  .&& (f # a # c .== a + c .&& a .== 10 .&& c .== 30)
-                  .&& (f # a # d .== a + d .&& a .== 10 .&& d .== 40)
+                (f # a # b .== a + b)
+                  .&& (f # a # c .== a + c)
+                  .&& (f # a # d .== a + d)
+                  .&& (f # b # d .== b + d)
+                  .&& (a .== 10 .&& b .== 20 .&& c .== 30 .&& d .== 40)
             evalSym False m (f # a # b .== a + b) @?= con True
             evalSym False m (f # a # c .== a + c) @?= con True
             evalSym False m (f # a # d .== a + d) @?= con True
+            evalSym False m (f # b # d .== b + d) @?= con True
         ]

@@ -809,7 +809,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc origFuncs) mp =
     Just funcs -> foldr goSingle emptyModel $ funcs ++ assocFuncs
     _ -> error "SBV Failed to parse model"
   where
-    assocFuncs = (\(s, v) -> (s, ([([], v)], v))) <$> assoc
+    assocFuncs = (\(s, v) -> (s, ([], v))) <$> assoc
     goSingle :: (String, ([([SBVD.CV], SBVD.CV)], SBVD.CV)) -> PM.Model -> PM.Model
     goSingle (name, cv) m = case findStringToSymbol name mp of
       Just (SomeTypedSymbol (_ :: p r) s) ->

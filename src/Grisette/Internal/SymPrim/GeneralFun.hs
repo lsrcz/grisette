@@ -263,7 +263,11 @@ parseGeneralFunSMTModelResult level (l, s) =
   let sym = IndexedSymbol "arg" level
       funs =
         second
-          (\r -> parseSMTModelResult (level + 1) (r, s))
+          ( \r ->
+              case r of
+                [([], v)] -> parseSMTModelResult (level + 1) ([], v)
+                _ -> parseSMTModelResult (level + 1) (r, s)
+          )
           <$> partitionCVArg @a l
       def = parseSMTModelResult (level + 1) ([], s)
       body =
