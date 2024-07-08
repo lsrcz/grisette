@@ -88,7 +88,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPUnaryOp (FPAbs, FPNeg),
-    FloatingUnaryOp (FloatingAcos, FloatingAsin, FloatingAtan, FloatingCos, FloatingCosh, FloatingExp, FloatingLog, FloatingSin, FloatingSinh, FloatingSqrt, FloatingTan, FloatingTanh),
+    FloatingUnaryOp (FloatingSqrt),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalRecipTerm),
     fdivTerm,
