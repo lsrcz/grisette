@@ -86,6 +86,7 @@ library
       Grisette.Internal.Core.Data.Class.SafeDivision
       Grisette.Internal.Core.Data.Class.SafeFractional
       Grisette.Internal.Core.Data.Class.SafeLinearArith
+      Grisette.Internal.Core.Data.Class.SafeLogBase
       Grisette.Internal.Core.Data.Class.SafeSymRotate
       Grisette.Internal.Core.Data.Class.SafeSymShift
       Grisette.Internal.Core.Data.Class.SignConversion

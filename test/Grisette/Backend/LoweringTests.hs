@@ -66,6 +66,7 @@ import Grisette.Internal.SymPrim.Prim.Term
         FPIsSubnormal,
         FPIsZero
       ),
+    FloatingUnaryOp (FloatingAcos, FloatingAsin, FloatingAtan, FloatingCos, FloatingCosh, FloatingSin, FloatingSinh, FloatingTan, FloatingTanh),
     SBVRep (SBVType),
     SupportedPrim,
     Term,
@@ -81,6 +82,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     conTerm,
     divIntegralTerm,
     eqTerm,
+    fdivTerm,
+    floatingUnaryTerm,
     fpTraitTerm,
     iteTerm,
     leOrdTerm,
@@ -95,6 +98,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalFPTraitTerm,
     pevalNotTerm,
     quotIntegralTerm,
+    recipTerm,
     remIntegralTerm,
     rotateLeftTerm,
     rotateRightTerm,
@@ -919,7 +923,48 @@ loweringTests =
                   unboundedConfig
                   leOrdTerm
                   "(<=)"
-                  (\x y -> x * 2 - x SBV..<= y * 2 - y)
+                  (\x y -> x * 2 - x SBV..<= y * 2 - y),
+              testCase "fdiv" $ do
+                testBinaryOpLowering @AlgReal @AlgReal @AlgReal
+                  unboundedConfig
+                  fdivTerm
+                  "fdiv"
+                  (/),
+              testCase "recip" $ do
+                testUnaryOpLowering @AlgReal @AlgReal
+                  unboundedConfig
+                  recipTerm
+                  "recip"
+                  recip,
+              testGroup "Floating unary" $ do
+                (name, f, op) <-
+                  -- Those unsupported by z3 are commented out
+                  [ -- ("exp", exp, FloatingExp),
+                    -- ("log", log, FloatingLog),
+                    -- ("sqrt", sqrt, FloatingSqrt),
+                    ("sin", sin, FloatingSin),
+                    ("cos", cos, FloatingCos),
+                    ("tan", tan, FloatingTan),
+                    ("asin", asin, FloatingAsin),
+                    ("acos", acos, FloatingAcos),
+                    ("atan", atan, FloatingAtan),
+                    ("sinh", sinh, FloatingSinh),
+                    ("cosh", cosh, FloatingCosh),
+                    ("tanh", tanh, FloatingTanh)
+                    ]
+                return $
+                  testCase name $
+                    testUnaryOpLowering @AlgReal @AlgReal
+                      unboundedConfig
+                      (floatingUnaryTerm op)
+                      name
+                      f {-,
+                        testCase "**" $ do
+                          testBinaryOpLowering @AlgReal @AlgReal @AlgReal
+                            unboundedConfig
+                            powerTerm
+                            "(**)"
+                            (**)-}
             ],
           testCase "TabularFun" $ do
             let f = "f" :: SymInteger =~> SymInteger =~> SymInteger

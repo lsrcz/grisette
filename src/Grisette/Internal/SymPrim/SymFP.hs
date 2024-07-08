@@ -36,8 +36,9 @@ import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
+    FloatingUnaryOp (FloatingSqrt),
     LinkedRep (underlyingTerm, wrapTerm),
-    PEvalFloatingTerm (pevalSqrtTerm),
+    PEvalFloatingTerm (pevalFloatingUnaryTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
@@ -138,7 +139,7 @@ instance (ValidFP eb sb) => Floating (SymFP eb sb) where
   pi = error "pi isn't supported by the underlying sbv library"
   exp = error "exp isn't supported by the underlying sbv library"
   log = error "log isn't supported by the underlying sbv library"
-  sqrt (SymFP v) = SymFP $ pevalSqrtTerm v
+  sqrt (SymFP v) = SymFP $ pevalFloatingUnaryTerm FloatingSqrt v
   (**) = error "(**) isn't supported by the underlying sbv library"
   logBase = error "logBase isn't supported by the underlying sbv library"
   sin = error "sin isn't supported by the underlying sbv library"

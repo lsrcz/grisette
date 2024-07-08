@@ -47,11 +47,21 @@ import Grisette.Internal.Core.Data.Symbol
   )
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalFloatingTerm (pevalSqrtTerm),
+  ( PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     SBVRep (SBVType),
     SupportedPrim (parseSMTModelResult, sbvEq),
-    Term (FPBinaryTerm, FPFMATerm, FPRoundingBinaryTerm, FPRoundingUnaryTerm, FPTraitTerm, FdivTerm, RecipTerm, SqrtTerm),
+    Term
+      ( FPBinaryTerm,
+        FPFMATerm,
+        FPRoundingBinaryTerm,
+        FPRoundingUnaryTerm,
+        FPTraitTerm,
+        FdivTerm,
+        FloatingUnaryTerm,
+        PowerTerm,
+        RecipTerm
+      ),
     partitionCVArg,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
@@ -702,7 +712,8 @@ substTerm sym term = gov
         FPTraitTerm _ trait op -> SomeTerm $ pevalFPTraitTerm trait (gov op)
         FdivTerm _ op1 op2 -> SomeTerm $ pevalFdivTerm (gov op1) (gov op2)
         RecipTerm _ op -> SomeTerm $ pevalRecipTerm (gov op)
-        SqrtTerm _ op -> SomeTerm $ pevalSqrtTerm (gov op)
+        FloatingUnaryTerm _ fop op -> SomeTerm $ pevalFloatingUnaryTerm fop (gov op)
+        PowerTerm _ op1 op2 -> SomeTerm $ pevalPowerTerm (gov op1) (gov op2)
         FPUnaryTerm _ uop op -> SomeTerm $ pevalFPUnaryTerm uop (gov op)
         FPBinaryTerm _ bop op1 op2 -> SomeTerm $ pevalFPBinaryTerm bop (gov op1) (gov op2)
         FPRoundingUnaryTerm _ uop mode op -> SomeTerm $ pevalFPRoundingUnaryTerm uop mode (gov op)

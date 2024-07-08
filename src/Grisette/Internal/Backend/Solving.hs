@@ -150,7 +150,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         sbvQuotIntegralTerm,
         sbvRemIntegralTerm
       ),
-    PEvalFloatingTerm (sbvSqrtTerm),
+    PEvalFloatingTerm (sbvFloatingUnaryTerm, sbvPowerTerm),
     PEvalFractionalTerm (sbvFdivTerm, sbvRecipTerm),
     PEvalNumTerm
       ( sbvAbsNumTerm,
@@ -194,6 +194,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FPTraitTerm,
         FPUnaryTerm,
         FdivTerm,
+        FloatingUnaryTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -203,6 +204,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         NotTerm,
         OrBitsTerm,
         OrTerm,
+        PowerTerm,
         QuotIntegralTerm,
         RecipTerm,
         RemIntegralTerm,
@@ -211,7 +213,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ShiftLeftTerm,
         ShiftRightTerm,
         SignumNumTerm,
-        SqrtTerm,
         SymTerm,
         ToSignedTerm,
         ToUnsignedTerm,
@@ -745,9 +746,13 @@ lowerSinglePrimIntermediate config (FdivTerm _ a b) m = do
 lowerSinglePrimIntermediate config (RecipTerm _ a) m = do
   (m, a) <- lowerSinglePrimCached config a m
   return (m, sbvRecipTerm @a config a)
-lowerSinglePrimIntermediate config (SqrtTerm _ a) m = do
+lowerSinglePrimIntermediate config (FloatingUnaryTerm _ op a) m = do
   (m, a) <- lowerSinglePrimCached config a m
-  return (m, sbvSqrtTerm @a config a)
+  return (m, sbvFloatingUnaryTerm @a config op a)
+lowerSinglePrimIntermediate config (PowerTerm _ a b) m = do
+  (m, a) <- lowerSinglePrimCached config a m
+  (m, b) <- lowerSinglePrimCached config b m
+  return (m, sbvPowerTerm @a config a b)
 lowerSinglePrimIntermediate config (FPUnaryTerm _ op a) m = do
   (m, a) <- lowerSinglePrimCached config a m
   return (m, sbvFPUnaryTerm op a)

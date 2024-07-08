@@ -21,6 +21,14 @@
           pkgs.z3_4_12
           pkgs.nixpkgs-fmt
           pkgs.bitwuzla
+          (pkgs.cvc5.overrideAttrs (oldAttrs: rec {
+            cmakeFlags = oldAttrs.cmakeFlags ++ [
+              "-DUSE_POLY=ON"
+            ];
+            buildInputs = oldAttrs.buildInputs ++ [
+              pkgs.libpoly
+            ];
+          }))
         ];
 
         additionalDevTools = [

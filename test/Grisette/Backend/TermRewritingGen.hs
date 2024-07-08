@@ -55,7 +55,8 @@ module Grisette.Backend.TermRewritingGen
     fpTraitSpec,
     fdivSpec,
     recipSpec,
-    sqrtSpec,
+    floatingUnarySpec,
+    powerSpec,
     fpUnaryOpSpec,
     fpBinaryOpSpec,
     fpRoundingUnaryOpSpec,
@@ -87,15 +88,17 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPUnaryOp (FPAbs, FPNeg),
-    PEvalFloatingTerm (pevalSqrtTerm),
+    FloatingUnaryOp (FloatingAcos, FloatingAsin, FloatingAtan, FloatingCos, FloatingCosh, FloatingSin, FloatingSinh, FloatingTan, FloatingTanh),
+    PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalRecipTerm),
     fdivTerm,
+    floatingUnaryTerm,
     fpBinaryTerm,
     fpFMATerm,
     fpRoundingBinaryTerm,
     fpRoundingUnaryTerm,
     fpUnaryTerm,
-    sqrtTerm,
+    powerTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
@@ -448,8 +451,16 @@ fdivSpec = constructBinarySpec fdivTerm pevalFdivTerm
 recipSpec :: (TermRewritingSpec a av, PEvalFractionalTerm av) => a -> a
 recipSpec = constructUnarySpec recipTerm pevalRecipTerm
 
-sqrtSpec :: (TermRewritingSpec a av, PEvalFloatingTerm av) => a -> a
-sqrtSpec = constructUnarySpec sqrtTerm pevalSqrtTerm
+floatingUnarySpec ::
+  (TermRewritingSpec a av, PEvalFloatingTerm av) => FloatingUnaryOp -> a -> a
+floatingUnarySpec op =
+  constructUnarySpec
+    (floatingUnaryTerm op)
+    (pevalFloatingUnaryTerm op)
+
+powerSpec ::
+  (TermRewritingSpec a av, PEvalFloatingTerm av) => a -> a -> a
+powerSpec = constructBinarySpec powerTerm pevalPowerTerm
 
 fpUnaryOpSpec ::
   ( ValidFP eb fb,
@@ -1016,7 +1027,19 @@ instance Arbitrary IEEEFP32Spec where
             signumNumSpec a,
             fdivSpec a b,
             recipSpec a,
-            sqrtSpec a
+            -- powerSpec a b,
+            -- floatingUnarySpec FloatingExp a,
+            -- floatingUnarySpec FloatingLog a,
+            -- floatingUnarySpec FloatingSqrt a,
+            floatingUnarySpec FloatingSin a,
+            floatingUnarySpec FloatingCos a,
+            floatingUnarySpec FloatingTan a,
+            floatingUnarySpec FloatingSinh a,
+            floatingUnarySpec FloatingCosh a,
+            floatingUnarySpec FloatingTanh a,
+            floatingUnarySpec FloatingAsin a,
+            floatingUnarySpec FloatingAcos a,
+            floatingUnarySpec FloatingAtan a
           ]
     let uop = fpUnaryOpSpec <$> [FPAbs, FPNeg] <*> return a
     let bop = fpBinaryOpSpec <$> [FPRem, FPMin, FPMax] <*> [a] <*> [b]

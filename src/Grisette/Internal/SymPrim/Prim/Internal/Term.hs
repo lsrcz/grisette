@@ -74,6 +74,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     FPBinaryOp (..),
     FPRoundingUnaryOp (..),
     FPRoundingBinaryOp (..),
+    FloatingUnaryOp (..),
     Term (..),
     identity,
     identityWithTypeRep,
@@ -125,7 +126,8 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     fpTraitTerm,
     fdivTerm,
     recipTerm,
-    sqrtTerm,
+    floatingUnaryTerm,
+    powerTerm,
     fpUnaryTerm,
     fpBinaryTerm,
     fpRoundingUnaryTerm,
@@ -828,19 +830,80 @@ class (SupportedPrim t, Fractional t) => PEvalFractionalTerm t where
     SBVType n t
   sbvRecipTerm p l = withSbvFractionalTermConstraint @t p $ recip l
 
-class (SupportedPrim t, Floating t) => PEvalFloatingTerm t where
-  pevalSqrtTerm :: Term t -> Term t
+data FloatingUnaryOp
+  = FloatingExp
+  | FloatingLog
+  | FloatingSqrt
+  | FloatingSin
+  | FloatingCos
+  | FloatingTan
+  | FloatingAsin
+  | FloatingAcos
+  | FloatingAtan
+  | FloatingSinh
+  | FloatingCosh
+  | FloatingTanh
+  | FloatingAsinh
+  | FloatingAcosh
+  | FloatingAtanh
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+
+instance Show FloatingUnaryOp where
+  show FloatingExp = "exp"
+  show FloatingLog = "log"
+  show FloatingSqrt = "sqrt"
+  show FloatingSin = "sin"
+  show FloatingCos = "cos"
+  show FloatingTan = "tan"
+  show FloatingAsin = "asin"
+  show FloatingAcos = "acos"
+  show FloatingAtan = "atan"
+  show FloatingSinh = "sinh"
+  show FloatingCosh = "cosh"
+  show FloatingTanh = "tanh"
+  show FloatingAsinh = "asinh"
+  show FloatingAcosh = "acosh"
+  show FloatingAtanh = "atanh"
+
+class (SupportedPrim t) => PEvalFloatingTerm t where
+  pevalFloatingUnaryTerm :: FloatingUnaryOp -> Term t -> Term t
+  pevalPowerTerm :: Term t -> Term t -> Term t
   withSbvFloatingTermConstraint ::
     (KnownIsZero n) =>
     proxy n ->
     (((Floating (SBVType n t)) => r)) ->
     r
-  sbvSqrtTerm ::
+  sbvPowerTerm ::
     (KnownIsZero n) =>
     proxy n ->
     SBVType n t ->
+    SBVType n t ->
     SBVType n t
-  sbvSqrtTerm p l = withSbvFloatingTermConstraint @t p $ sqrt l
+  sbvPowerTerm p = withSbvFloatingTermConstraint @t p (**)
+  sbvFloatingUnaryTerm ::
+    (KnownIsZero n) =>
+    proxy n ->
+    FloatingUnaryOp ->
+    SBVType n t ->
+    SBVType n t
+  sbvFloatingUnaryTerm p op l =
+    withSbvFloatingTermConstraint @t p $
+      case op of
+        FloatingExp -> exp l
+        FloatingLog -> log l
+        FloatingSqrt -> sqrt l
+        FloatingSin -> sin l
+        FloatingCos -> cos l
+        FloatingTan -> tan l
+        FloatingAsin -> asin l
+        FloatingAcos -> acos l
+        FloatingAtan -> atan l
+        FloatingSinh -> sinh l
+        FloatingCosh -> cosh l
+        FloatingTanh -> tanh l
+        FloatingAsinh -> asinh l
+        FloatingAcosh -> acosh l
+        FloatingAtanh -> atanh l
 
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
@@ -1223,9 +1286,16 @@ data Term t where
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     Term t
-  SqrtTerm ::
+  FloatingUnaryTerm ::
     (PEvalFloatingTerm t) =>
     {-# UNPACK #-} !Id ->
+    !FloatingUnaryOp ->
+    !(Term t) ->
+    Term t
+  PowerTerm ::
+    (PEvalFloatingTerm t) =>
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
     !(Term t) ->
     Term t
   FPUnaryTerm ::
@@ -1308,7 +1378,8 @@ identityWithTypeRep (RemIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPTraitTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FdivTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RecipTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (SqrtTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FloatingUnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (PowerTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPUnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPBinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPRoundingUnaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
@@ -1355,7 +1426,8 @@ introSupportedPrimConstraint RemIntegralTerm {} x = x
 introSupportedPrimConstraint FPTraitTerm {} x = x
 introSupportedPrimConstraint FdivTerm {} x = x
 introSupportedPrimConstraint RecipTerm {} x = x
-introSupportedPrimConstraint SqrtTerm {} x = x
+introSupportedPrimConstraint FloatingUnaryTerm {} x = x
+introSupportedPrimConstraint PowerTerm {} x = x
 introSupportedPrimConstraint FPUnaryTerm {} x = x
 introSupportedPrimConstraint FPBinaryTerm {} x = x
 introSupportedPrimConstraint FPRoundingUnaryTerm {} x = x
@@ -1403,7 +1475,8 @@ pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pforma
 pformat (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformat arg ++ ")"
 pformat (FdivTerm _ arg1 arg2) = "(fdiv " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (RecipTerm _ arg) = "(recip " ++ pformat arg ++ ")"
-pformat (SqrtTerm _ arg) = "(sqrt " ++ pformat arg ++ ")"
+pformat (FloatingUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformat arg ++ ")"
+pformat (PowerTerm _ arg1 arg2) = "(** " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (FPUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformat arg ++ ")"
 pformat (FPBinaryTerm _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ pformat mode ++ " " ++ pformat arg ++ ")"
@@ -1455,7 +1528,8 @@ instance Lift (Term t) where
   liftTyped (FPTraitTerm _ trait arg) = [||fpTraitTerm trait arg||]
   liftTyped (FdivTerm _ arg1 arg2) = [||fdivTerm arg1 arg2||]
   liftTyped (RecipTerm _ arg) = [||recipTerm arg||]
-  liftTyped (SqrtTerm _ arg) = [||sqrtTerm arg||]
+  liftTyped (FloatingUnaryTerm _ op arg) = [||floatingUnaryTerm op arg||]
+  liftTyped (PowerTerm _ arg1 arg2) = [||powerTerm arg1 arg2||]
   liftTyped (FPUnaryTerm _ op arg) = [||fpUnaryTerm op arg||]
   liftTyped (FPBinaryTerm _ op arg1 arg2) = [||fpBinaryTerm op arg1 arg2||]
   liftTyped (FPRoundingUnaryTerm _ op mode arg) = [||fpRoundingUnaryTerm op mode arg||]
@@ -1545,7 +1619,8 @@ instance Show (Term ty) where
     "FPTrait{id=" ++ show i ++ ", trait=" ++ show trait ++ ", arg=" ++ show arg ++ "}"
   show (FdivTerm i arg1 arg2) = "Fdiv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (RecipTerm i arg) = "Recip{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (SqrtTerm i arg) = "Sqrt{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (FloatingUnaryTerm i op arg) = "FloatingUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
+  show (PowerTerm i arg1 arg2) = "Power{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (FPUnaryTerm i op arg) = "FPUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
   show (FPBinaryTerm i op arg1 arg2) =
     "FPBinary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
@@ -1705,7 +1780,8 @@ data UTerm t where
     UTerm Bool
   UFdivTerm :: (PEvalFractionalTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URecipTerm :: (PEvalFractionalTerm t) => !(Term t) -> UTerm t
-  USqrtTerm :: (PEvalFloatingTerm t) => !(Term t) -> UTerm t
+  UFloatingUnaryTerm :: (PEvalFloatingTerm t) => !FloatingUnaryOp -> !(Term t) -> UTerm t
+  UPowerTerm :: (PEvalFloatingTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UFPUnaryTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     !FPUnaryOp ->
@@ -1820,7 +1896,8 @@ instance (SupportedPrim t) => Interned (Term t) where
     DFPTraitTerm :: FPTrait -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DFdivTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRecipTerm :: {-# UNPACK #-} !Id -> Description (Term a)
-    DSqrtTerm :: {-# UNPACK #-} !Id -> Description (Term a)
+    DFloatingUnaryTerm :: FloatingUnaryOp -> {-# UNPACK #-} !Id -> Description (Term a)
+    DPowerTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DFPUnaryTerm :: FPUnaryOp -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
     DFPBinaryTerm :: FPBinaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
     DFPRoundingUnaryTerm :: FPRoundingUnaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
@@ -1876,7 +1953,8 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UFPTraitTerm trait arg) = DFPTraitTerm trait (identity arg)
   describe (UFdivTerm arg1 arg2) = DFdivTerm (identity arg1) (identity arg2)
   describe (URecipTerm arg) = DRecipTerm (identity arg)
-  describe (USqrtTerm arg) = DSqrtTerm (identity arg)
+  describe (UFloatingUnaryTerm op arg) = DFloatingUnaryTerm op (identity arg)
+  describe (UPowerTerm arg1 arg2) = DPowerTerm (identity arg1) (identity arg2)
   describe (UFPUnaryTerm op arg) = DFPUnaryTerm op (identity arg)
   describe (UFPBinaryTerm op arg1 arg2) = DFPBinaryTerm op (identity arg1) (identity arg2)
   describe (UFPRoundingUnaryTerm op mode arg) = DFPRoundingUnaryTerm op (identity mode) (identity arg)
@@ -1923,7 +2001,8 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFPTraitTerm trait arg) = FPTraitTerm i trait arg
       go (UFdivTerm arg1 arg2) = FdivTerm i arg1 arg2
       go (URecipTerm arg) = RecipTerm i arg
-      go (USqrtTerm arg) = SqrtTerm i arg
+      go (UFloatingUnaryTerm op arg) = FloatingUnaryTerm i op arg
+      go (UPowerTerm arg1 arg2) = PowerTerm i arg1 arg2
       go (UFPUnaryTerm op arg) = FPUnaryTerm i op arg
       go (UFPBinaryTerm op arg1 arg2) = FPBinaryTerm i op arg1 arg2
       go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm i op mode arg
@@ -1977,7 +2056,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DFPTraitTerm lt li == DFPTraitTerm rt ri = lt == rt && li == ri
   DFdivTerm li1 li2 == DFdivTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRecipTerm li == DRecipTerm ri = li == ri
-  DSqrtTerm li == DSqrtTerm ri = li == ri
+  DFloatingUnaryTerm lop li == DFloatingUnaryTerm rop ri = lop == rop && li == ri
+  DPowerTerm li1 li2 == DPowerTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DFPUnaryTerm lop li == DFPUnaryTerm rop ri = lop == rop && li == ri
   DFPBinaryTerm lop li1 li2 == DFPBinaryTerm rop ri1 ri2 = lop == rop && li1 == ri1 && li2 == ri2
   DFPRoundingUnaryTerm lop lmode li == DFPRoundingUnaryTerm rop rmode ri =
@@ -2047,7 +2127,8 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DFPTraitTerm trait id1) = s `hashWithSalt` (39 :: Int) `hashWithSalt` trait `hashWithSalt` id1
   hashWithSalt s (DFdivTerm id1 id2) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DRecipTerm id1) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DSqrtTerm id1) = s `hashWithSalt` (42 :: Int) `hashWithSalt` id1
+  hashWithSalt s (DFloatingUnaryTerm op id1) = s `hashWithSalt` (42 :: Int) `hashWithSalt` op `hashWithSalt` id1
+  hashWithSalt s (DPowerTerm id1 id2) = s `hashWithSalt` (48 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DFPUnaryTerm op id1) = s `hashWithSalt` (43 :: Int) `hashWithSalt` op `hashWithSalt` id1
   hashWithSalt s (DFPBinaryTerm op id1 id2) = s `hashWithSalt` (44 :: Int) `hashWithSalt` op `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DFPRoundingUnaryTerm op mode id1) =
@@ -2306,9 +2387,13 @@ recipTerm :: (PEvalFractionalTerm a) => Term a -> Term a
 recipTerm = internTerm . URecipTerm
 {-# INLINE recipTerm #-}
 
-sqrtTerm :: (PEvalFloatingTerm a) => Term a -> Term a
-sqrtTerm = internTerm . USqrtTerm
-{-# INLINE sqrtTerm #-}
+floatingUnaryTerm :: (PEvalFloatingTerm a) => FloatingUnaryOp -> Term a -> Term a
+floatingUnaryTerm op = internTerm . UFloatingUnaryTerm op
+{-# INLINE floatingUnaryTerm #-}
+
+powerTerm :: (PEvalFloatingTerm a) => Term a -> Term a -> Term a
+powerTerm l r = internTerm $ UPowerTerm l r
+{-# INLINE powerTerm #-}
 
 fpUnaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
