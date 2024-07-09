@@ -22,9 +22,16 @@ packages:
       size: 794
   original:
     hackage: libBF-0.6.8
+- completed:
+    hackage: hashable-1.5.0.0@sha256:fc68b07d957ade5a0a0beadd560a8d093ceac30b2f35c85eed3bcf7889a25975,5833
+    pantry-tree:
+      sha256: 603df10b52dd1130def3afeb518395eb0e40de2b6c33b649561fea24941e9c14
+      size: 1578
+  original:
+    hackage: hashable-1.5.0.0
 snapshots:
 - completed:
-    sha256: 7c064ccb3871352bd90723c7e972bd1126f20b3e1ef215c4e121e75370ca0897
-    size: 644320
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/6/4.yaml
-  original: nightly-2024-06-04
+    sha256: bb93febdb9f085b5d3d5a841891ae5d13376dfd1034ff2ab026cb9d93cc67b05
+    size: 652323
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/7/8.yaml
+  original: nightly-2024-07-08
