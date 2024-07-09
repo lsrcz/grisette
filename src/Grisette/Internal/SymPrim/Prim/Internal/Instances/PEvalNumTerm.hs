@@ -256,9 +256,9 @@ instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   withSbvNumTermConstraint p r = withPrim @(FP eb sb) p r
 
 instance PEvalNumTerm AlgReal where
-  pevalAddNumTerm = generalBinaryUnfolded (+) addNumTerm
-  pevalNegNumTerm = generalUnaryUnfolded negate negNumTerm
-  pevalMulNumTerm = generalBinaryUnfolded (*) mulNumTerm
+  pevalAddNumTerm = pevalDefaultAddNumTerm
+  pevalNegNumTerm = pevalDefaultNegNumTerm
+  pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
   pevalSignumNumTerm =
     unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
