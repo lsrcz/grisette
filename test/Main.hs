@@ -65,6 +65,7 @@ import Grisette.SymPrim.Prim.IntegralTests
 import Grisette.SymPrim.Prim.ModelTests (modelTests)
 import Grisette.SymPrim.Prim.NumTests (numTests)
 import qualified Grisette.SymPrim.Prim.TabularFunTests
+import Grisette.SymPrim.QuantifierTests (quantifierTests)
 import Grisette.SymPrim.SomeBVTests (someBVTests)
 import Grisette.SymPrim.SymPrimTests (symPrimTests)
 import qualified Grisette.SymPrim.TabularFunTests
@@ -180,7 +181,8 @@ irTests =
       Grisette.SymPrim.BVTests.bvTests,
       algRealTests,
       someBVTests,
-      fpTests
+      fpTests,
+      quantifierTests
     ]
 
 sbvTests :: Test

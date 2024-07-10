@@ -4,11 +4,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -25,15 +28,17 @@ module Grisette.Internal.Core.Data.Class.ExtractSym
   ( -- * Extracting symbolic constant set from a value
     ExtractSym (..),
     ExtractSym1 (..),
+    extractSymMaybe1,
     extractSym1,
     ExtractSym2 (..),
+    extractSymMaybe2,
     extractSym2,
 
     -- * Generic 'ExtractSym'
     ExtractSymArgs (..),
     GExtractSym (..),
-    genericExtractSym,
-    genericLiftExtractSym,
+    genericExtractSymMaybe,
+    genericLiftExtractSymMaybe,
   )
 where
 
@@ -58,6 +63,7 @@ import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
 import qualified Data.Text as T
+import Data.Typeable (type (:~~:) (HRefl))
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
@@ -86,7 +92,8 @@ import Grisette.Internal.SymPrim.Prim.Model
   ( SymbolSet (SymbolSet),
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep,
+  ( IsSymbolKind (decideSymbolKind),
+    LinkedRep,
     SupportedPrim,
     SymRep (SymType),
     SymbolKind (AnySymbol),
@@ -135,147 +142,176 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- > data X = ... deriving Generic deriving ExtractSym via (Default X)
 class ExtractSym a where
   extractSym :: a -> SymbolSet 'AnySymbol
+  extractSym = fromJust . extractSymMaybe
+  {-# INLINE extractSym #-}
+  extractSymMaybe :: (IsSymbolKind knd) => a -> Maybe (SymbolSet knd)
 
 -- | Lifting of 'ExtractSym' to unary type constructors.
 class
   (forall a. (ExtractSym a) => ExtractSym (f a)) =>
   ExtractSym1 f
   where
-  -- | Lifts the 'extractSym' function to unary type constructors.
-  liftExtractSym :: (a -> SymbolSet 'AnySymbol) -> f a -> SymbolSet 'AnySymbol
+  -- | Lifts the 'extractSymMaybe' function to unary type constructors.
+  liftExtractSymMaybe ::
+    (IsSymbolKind knd) =>
+    (a -> Maybe (SymbolSet knd)) ->
+    f a ->
+    Maybe (SymbolSet knd)
 
 -- | Lift the standard 'extractSym' to unary type constructors.
-extractSym1 :: (ExtractSym1 f, ExtractSym a) => f a -> SymbolSet 'AnySymbol
-extractSym1 = liftExtractSym extractSym
+extractSym1 ::
+  (ExtractSym1 f, ExtractSym a, IsSymbolKind knd) =>
+  f a ->
+  SymbolSet knd
+extractSym1 = fromJust . liftExtractSymMaybe extractSymMaybe
 {-# INLINE extractSym1 #-}
+
+-- | Lift the standard 'extractSymMaybe' to unary type constructors.
+extractSymMaybe1 ::
+  (ExtractSym1 f, ExtractSym a, IsSymbolKind knd) =>
+  f a ->
+  Maybe (SymbolSet knd)
+extractSymMaybe1 = liftExtractSymMaybe extractSymMaybe
+{-# INLINE extractSymMaybe1 #-}
 
 -- | Lifting of 'ExtractSym' to binary type constructors.
 class
   (forall a. (ExtractSym a) => ExtractSym1 (f a)) =>
   ExtractSym2 f
   where
-  -- | Lifts the 'extractSym' function to binary type constructors.
-  liftExtractSym2 ::
-    (a -> SymbolSet 'AnySymbol) ->
-    (b -> SymbolSet 'AnySymbol) ->
+  -- | Lifts the 'extractSymMaybe' function to binary type constructors.
+  liftExtractSymMaybe2 ::
+    (IsSymbolKind knd) =>
+    (a -> Maybe (SymbolSet knd)) ->
+    (b -> Maybe (SymbolSet knd)) ->
     f a b ->
-    SymbolSet 'AnySymbol
+    Maybe (SymbolSet knd)
 
--- | Lift the standard 'extractSym' to binary type constructors.
 extractSym2 ::
-  (ExtractSym2 f, ExtractSym a, ExtractSym b) =>
+  (ExtractSym2 f, ExtractSym a, ExtractSym b, IsSymbolKind knd) =>
   f a b ->
-  SymbolSet 'AnySymbol
-extractSym2 = liftExtractSym2 extractSym extractSym
-{-# INLINE extractSym2 #-}
+  SymbolSet knd
+extractSym2 = fromJust . liftExtractSymMaybe2 extractSymMaybe extractSymMaybe
+
+-- | Lift the standard 'extractSymMaybe' to binary type constructors.
+extractSymMaybe2 ::
+  (ExtractSym2 f, ExtractSym a, ExtractSym b, IsSymbolKind knd) =>
+  f a b ->
+  Maybe (SymbolSet knd)
+extractSymMaybe2 = liftExtractSymMaybe2 extractSymMaybe extractSymMaybe
+{-# INLINE extractSymMaybe2 #-}
 
 -- Derivations
 
 -- | The arguments to the generic 'extractSym' function.
-data family ExtractSymArgs arity a :: Type
+data family ExtractSymArgs arity (knd :: SymbolKind) a :: Type
 
-data instance ExtractSymArgs Arity0 _ = ExtractSymArgs0
+data instance ExtractSymArgs Arity0 _ _ = ExtractSymArgs0
 
-newtype instance ExtractSymArgs Arity1 a
-  = ExtractSymArgs1 (a -> SymbolSet 'AnySymbol)
+newtype instance ExtractSymArgs Arity1 knd a
+  = ExtractSymArgs1 (a -> Maybe (SymbolSet knd))
 
 -- | The class of types that can generically extract the symbols.
 class GExtractSym arity f where
-  gextractSym :: ExtractSymArgs arity a -> f a -> SymbolSet 'AnySymbol
+  gextractSymMaybe ::
+    (IsSymbolKind knd) =>
+    ExtractSymArgs arity knd a ->
+    f a ->
+    Maybe (SymbolSet knd)
 
 instance GExtractSym arity V1 where
-  gextractSym _ _ = mempty
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe _ _ = Just mempty
+  {-# INLINE gextractSymMaybe #-}
 
 instance GExtractSym arity U1 where
-  gextractSym _ _ = mempty
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe _ _ = Just mempty
+  {-# INLINE gextractSymMaybe #-}
 
 instance (GExtractSym arity a) => GExtractSym arity (M1 i c a) where
-  gextractSym args (M1 x) = gextractSym args x
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe args (M1 x) = gextractSymMaybe args x
+  {-# INLINE gextractSymMaybe #-}
 
 instance (ExtractSym a) => GExtractSym arity (K1 i a) where
-  gextractSym _ (K1 x) = extractSym x
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe _ (K1 x) = extractSymMaybe x
+  {-# INLINE gextractSymMaybe #-}
 
 instance
   (GExtractSym arity a, GExtractSym arity b) =>
   GExtractSym arity (a :+: b)
   where
-  gextractSym args (L1 x) = gextractSym args x
-  gextractSym args (R1 x) = gextractSym args x
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe args (L1 x) = gextractSymMaybe args x
+  gextractSymMaybe args (R1 x) = gextractSymMaybe args x
+  {-# INLINE gextractSymMaybe #-}
 
 instance
   (GExtractSym arity a, GExtractSym arity b) =>
   GExtractSym arity (a :*: b)
   where
-  gextractSym args (x :*: y) =
-    gextractSym args x <> gextractSym args y
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe args (x :*: y) =
+    gextractSymMaybe args x <> gextractSymMaybe args y
+  {-# INLINE gextractSymMaybe #-}
 
 instance GExtractSym Arity1 Par1 where
-  gextractSym (ExtractSymArgs1 f) (Par1 x) = f x
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe (ExtractSymArgs1 f) (Par1 x) = f x
+  {-# INLINE gextractSymMaybe #-}
 
 instance (ExtractSym1 a) => GExtractSym Arity1 (Rec1 a) where
-  gextractSym (ExtractSymArgs1 f) (Rec1 x) =
-    liftExtractSym f x
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe (ExtractSymArgs1 f) (Rec1 x) =
+    liftExtractSymMaybe f x
+  {-# INLINE gextractSymMaybe #-}
 
 instance
   (ExtractSym1 f, GExtractSym Arity1 g) =>
   GExtractSym Arity1 (f :.: g)
   where
-  gextractSym targs (Comp1 x) =
-    liftExtractSym (gextractSym targs) x
-  {-# INLINE gextractSym #-}
+  gextractSymMaybe targs (Comp1 x) =
+    liftExtractSymMaybe (gextractSymMaybe targs) x
+  {-# INLINE gextractSymMaybe #-}
 
 -- | Generic 'extractSym' function.
-genericExtractSym ::
-  (Generic a, GExtractSym Arity0 (Rep a)) =>
+genericExtractSymMaybe ::
+  (Generic a, GExtractSym Arity0 (Rep a), IsSymbolKind knd) =>
   a ->
-  SymbolSet 'AnySymbol
-genericExtractSym = gextractSym ExtractSymArgs0 . from
+  Maybe (SymbolSet knd)
+genericExtractSymMaybe = gextractSymMaybe ExtractSymArgs0 . from
 
--- | Generic 'liftExtractSym' function.
-genericLiftExtractSym ::
-  (Generic1 f, GExtractSym Arity1 (Rep1 f)) =>
-  (a -> SymbolSet 'AnySymbol) ->
+-- | Generic 'liftExtractSymMaybe' function.
+genericLiftExtractSymMaybe ::
+  (Generic1 f, GExtractSym Arity1 (Rep1 f), IsSymbolKind knd) =>
+  (a -> Maybe (SymbolSet knd)) ->
   f a ->
-  SymbolSet 'AnySymbol
-genericLiftExtractSym f =
-  gextractSym (ExtractSymArgs1 f) . from1
+  Maybe (SymbolSet knd)
+genericLiftExtractSymMaybe f =
+  gextractSymMaybe (ExtractSymArgs1 f) . from1
 
 instance
   (Generic a, GExtractSym Arity0 (Rep a)) =>
   ExtractSym (Default a)
   where
-  extractSym = genericExtractSym . unDefault
-  {-# INLINE extractSym #-}
+  extractSymMaybe = genericExtractSymMaybe . unDefault
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (Generic1 f, GExtractSym Arity1 (Rep1 f), ExtractSym a) =>
   ExtractSym (Default1 f a)
   where
-  extractSym = extractSym1
-  {-# INLINE extractSym #-}
+  extractSymMaybe = extractSymMaybe1
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (Generic1 f, GExtractSym Arity1 (Rep1 f)) =>
   ExtractSym1 (Default1 f)
   where
-  liftExtractSym f = genericLiftExtractSym f . unDefault1
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f = genericLiftExtractSymMaybe f . unDefault1
+  {-# INLINE liftExtractSymMaybe #-}
 
 #define CONCRETE_EXTRACT_SYMBOLICS(type) \
 instance ExtractSym type where \
-  extractSym _ = mempty
+  extractSymMaybe _ = return mempty
 
 #define CONCRETE_EXTRACT_SYMBOLICS_BV(type) \
 instance (KnownNat n, 1 <= n) => ExtractSym (type n) where \
-  extractSym _ = mempty
+  extractSymMaybe _ = return mempty
 
 #if 1
 CONCRETE_EXTRACT_SYMBOLICS(Bool)
@@ -304,20 +340,35 @@ CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 #endif
 
 instance (ValidFP eb sb) => ExtractSym (FP eb sb) where
-  extractSym _ = mempty
+  extractSymMaybe _ = return mempty
 
 #define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
 instance ExtractSym symtype where \
-  extractSym (symtype t) = SymbolSet $ fromJust $ extractTerm HS.empty t
+  extractSymMaybe :: \
+    forall knd. (IsSymbolKind knd) => symtype -> Maybe (SymbolSet knd); \
+  extractSymMaybe (symtype t) = \
+    case decideSymbolKind @knd of\
+      Left HRefl -> SymbolSet <$> extractTerm HS.empty t; \
+      Right HRefl -> SymbolSet <$> extractTerm HS.empty t
 
 #define EXTRACT_SYMBOLICS_BV(symtype) \
 instance (KnownNat n, 1 <= n) => ExtractSym (symtype n) where \
-  extractSym (symtype t) = SymbolSet $ fromJust $ extractTerm HS.empty t
+  extractSymMaybe :: \
+    forall knd. (IsSymbolKind knd) => symtype n -> Maybe (SymbolSet knd); \
+  extractSymMaybe (symtype t) = \
+    case decideSymbolKind @knd of\
+      Left HRefl -> SymbolSet <$> extractTerm HS.empty t; \
+      Right HRefl -> SymbolSet <$> extractTerm HS.empty t
 
 #define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
 instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
   ExtractSym (op sa sb) where \
-  extractSym (cons t) = SymbolSet $ fromJust $ extractTerm HS.empty t
+  extractSymMaybe :: \
+    forall knd. (IsSymbolKind knd) => op sa sb -> Maybe (SymbolSet knd); \
+  extractSymMaybe (cons t) = \
+    case decideSymbolKind @knd of \
+      Left HRefl -> Nothing; \
+      Right HRefl -> SymbolSet <$> extractTerm HS.empty t
 
 #if 1
 EXTRACT_SYMBOLICS_SIMPLE(SymBool)
@@ -331,7 +382,12 @@ EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 instance (ValidFP eb fb) => ExtractSym (SymFP eb fb) where
-  extractSym (SymFP t) = SymbolSet $ fromJust $ extractTerm HS.empty t
+  extractSymMaybe ::
+    forall knd. (IsSymbolKind knd) => SymFP eb fb -> Maybe (SymbolSet knd)
+  extractSymMaybe (SymFP t) =
+    case decideSymbolKind @knd of
+      Left HRefl -> SymbolSet <$> extractTerm HS.empty t
+      Right HRefl -> SymbolSet <$> extractTerm HS.empty t
 
 -- Instances
 deriveBuiltins
@@ -400,75 +456,75 @@ instance
   (ExtractSym1 m, ExtractSym e, ExtractSym a) =>
   ExtractSym (ExceptT e m a)
   where
-  extractSym = extractSym1
-  {-# INLINE extractSym #-}
+  extractSymMaybe = extractSymMaybe1
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (ExtractSym1 m, ExtractSym e) =>
   ExtractSym1 (ExceptT e m)
   where
-  liftExtractSym f (ExceptT v) =
-    liftExtractSym (liftExtractSym f) v
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f (ExceptT v) =
+    liftExtractSymMaybe (liftExtractSymMaybe f) v
+  {-# INLINE liftExtractSymMaybe #-}
 
 -- MaybeT
 instance
   (ExtractSym1 m, ExtractSym a) =>
   ExtractSym (MaybeT m a)
   where
-  extractSym = extractSym1
-  {-# INLINE extractSym #-}
+  extractSymMaybe = extractSymMaybe1
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (ExtractSym1 m) =>
   ExtractSym1 (MaybeT m)
   where
-  liftExtractSym f (MaybeT v) =
-    liftExtractSym (liftExtractSym f) v
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f (MaybeT v) =
+    liftExtractSymMaybe (liftExtractSymMaybe f) v
+  {-# INLINE liftExtractSymMaybe #-}
 
 -- WriterT
 instance
   (ExtractSym1 m, ExtractSym w, ExtractSym a) =>
   ExtractSym (WriterLazy.WriterT w m a)
   where
-  extractSym = extractSym1
-  {-# INLINE extractSym #-}
+  extractSymMaybe = extractSymMaybe1
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (ExtractSym1 m, ExtractSym w) =>
   ExtractSym1 (WriterLazy.WriterT w m)
   where
-  liftExtractSym f (WriterLazy.WriterT v) =
-    liftExtractSym (liftExtractSym2 f extractSym) v
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f (WriterLazy.WriterT v) =
+    liftExtractSymMaybe (liftExtractSymMaybe2 f extractSymMaybe) v
+  {-# INLINE liftExtractSymMaybe #-}
 
 instance
   (ExtractSym1 m, ExtractSym w, ExtractSym a) =>
   ExtractSym (WriterStrict.WriterT w m a)
   where
-  extractSym = extractSym1
-  {-# INLINE extractSym #-}
+  extractSymMaybe = extractSymMaybe1
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (ExtractSym1 m, ExtractSym w) =>
   ExtractSym1 (WriterStrict.WriterT w m)
   where
-  liftExtractSym f (WriterStrict.WriterT v) =
-    liftExtractSym (liftExtractSym2 f extractSym) v
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f (WriterStrict.WriterT v) =
+    liftExtractSymMaybe (liftExtractSymMaybe2 f extractSymMaybe) v
+  {-# INLINE liftExtractSymMaybe #-}
 
 -- IdentityT
 instance
   (ExtractSym1 m, ExtractSym a) =>
   ExtractSym (IdentityT m a)
   where
-  extractSym = extractSym1
-  {-# INLINE extractSym #-}
+  extractSymMaybe = extractSymMaybe1
+  {-# INLINE extractSymMaybe #-}
 
 instance (ExtractSym1 m) => ExtractSym1 (IdentityT m) where
-  liftExtractSym f (IdentityT v) = liftExtractSym f v
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f (IdentityT v) = liftExtractSymMaybe f v
+  {-# INLINE liftExtractSymMaybe #-}
 
 -- Product
 deriving via
@@ -505,9 +561,9 @@ instance
   (ExtractSym1 f, ExtractSym1 g) =>
   ExtractSym1 (Compose f g)
   where
-  liftExtractSym f (Compose l) =
-    liftExtractSym (liftExtractSym f) l
-  {-# INLINE liftExtractSym #-}
+  liftExtractSymMaybe f (Compose l) =
+    liftExtractSymMaybe (liftExtractSymMaybe f) l
+  {-# INLINE liftExtractSymMaybe #-}
 
 -- Const
 deriving via
@@ -586,29 +642,33 @@ deriving via
 
 -- ExtractSym2
 instance ExtractSym2 Either where
-  liftExtractSym2 f _ (Left x) = f x
-  liftExtractSym2 _ g (Right y) = g y
-  {-# INLINE liftExtractSym2 #-}
+  liftExtractSymMaybe2 f _ (Left x) = f x
+  liftExtractSymMaybe2 _ g (Right y) = g y
+  {-# INLINE liftExtractSymMaybe2 #-}
 
 instance ExtractSym2 (,) where
-  liftExtractSym2 f g (x, y) = f x <> g y
-  {-# INLINE liftExtractSym2 #-}
+  liftExtractSymMaybe2 f g (x, y) = f x <> g y
+  {-# INLINE liftExtractSymMaybe2 #-}
 
 instance (ExtractSym a) => ExtractSym2 ((,,) a) where
-  liftExtractSym2 f g (x, y, z) = extractSym x <> f y <> g z
-  {-# INLINE liftExtractSym2 #-}
+  liftExtractSymMaybe2 f g (x, y, z) = extractSymMaybe x <> f y <> g z
+  {-# INLINE liftExtractSymMaybe2 #-}
 
 instance
   (ExtractSym a, ExtractSym b) =>
   ExtractSym2 ((,,,) a b)
   where
-  liftExtractSym2 f g (x, y, z, w) =
-    extractSym x <> extractSym y <> f z <> g w
-  {-# INLINE liftExtractSym2 #-}
+  liftExtractSymMaybe2 f g (x, y, z, w) =
+    extractSymMaybe x <> extractSymMaybe y <> f z <> g w
+  {-# INLINE liftExtractSymMaybe2 #-}
 
 instance (ExtractSym a, ExtractSym b) => ExtractSym (a =-> b) where
-  extractSym (TabularFun s t) = extractSym s <> extractSym t
+  extractSymMaybe (TabularFun s t) =
+    extractSymMaybe s <> extractSymMaybe t
 
 instance (ExtractSym (SymType b)) => ExtractSym (a --> b) where
-  extractSym (GeneralFun t f) =
-    SymbolSet $ fromJust $ extractTerm (HS.singleton $ someTypedSymbol t) f
+  extractSymMaybe :: forall knd. (IsSymbolKind knd) => (a --> b) -> Maybe (SymbolSet knd)
+  extractSymMaybe (GeneralFun t f) =
+    case decideSymbolKind @knd of
+      Left HRefl -> Nothing
+      Right HRefl -> SymbolSet <$> extractTerm (HS.singleton $ someTypedSymbol t) f

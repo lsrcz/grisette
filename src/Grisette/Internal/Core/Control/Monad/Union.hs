@@ -58,9 +58,9 @@ import Grisette.Internal.Core.Data.Class.EvalSym
     evalSym1,
   )
 import Grisette.Internal.Core.Data.Class.ExtractSym
-  ( ExtractSym (extractSym),
-    ExtractSym1 (liftExtractSym),
-    extractSym1,
+  ( ExtractSym (extractSymMaybe),
+    ExtractSym1 (liftExtractSymMaybe),
+    extractSymMaybe1,
   )
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
@@ -545,13 +545,13 @@ instance SubstSym1 Union where
       unionIf = maybe mrgIfPropagatedStrategy mrgIfWithStrategy strategy
 
 instance (ExtractSym a) => ExtractSym (Union a) where
-  extractSym = extractSym1
+  extractSymMaybe = extractSymMaybe1
 
 instance ExtractSym1 Union where
-  liftExtractSym e v = go $ unionBase v
+  liftExtractSymMaybe e v = go $ unionBase v
     where
       go (UnionSingle x) = e x
-      go (UnionIf _ _ cond t f) = extractSym cond <> go t <> go f
+      go (UnionIf _ _ cond t f) = extractSymMaybe cond <> go t <> go f
 
 instance (Hashable a) => Hashable (Union a) where
   s `hashWithSalt` (UAny u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
