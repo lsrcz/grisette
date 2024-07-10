@@ -121,7 +121,6 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Data.Proxy
--- >>> :set -XTypeApplications
 
 -- | Evaluating symbolic values with some model. This would substitute the
 -- symbols (symbolic constants) with the values in the model.

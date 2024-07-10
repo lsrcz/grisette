@@ -56,7 +56,6 @@ import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
 -- | Symbolic tabular function type.
 --
--- >>> :set -XTypeOperators -XOverloadedStrings
 -- >>> f' = "f" :: SymInteger =~> SymInteger
 -- >>> f = (f' #)
 -- >>> f 1

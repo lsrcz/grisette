@@ -152,7 +152,6 @@ import Language.Haskell.TH.Syntax (Lift)
 -- Signedness affects the semantics of the operations, including
 -- comparison/extension, etc.
 --
--- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
 -- >>> "a" + 5 :: SymIntN 5
 -- (+ 0b00101 a)
 -- >>> sizedBVConcat (con 0b101 :: SymIntN 3) (con 0b110 :: SymIntN 3)
@@ -183,7 +182,6 @@ type SymIntN64 = SymIntN 64
 -- Signedness affects the semantics of the operations, including
 -- comparison/extension, etc.
 --
--- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
 -- >>> "a" + 5 :: SymWordN 5
 -- (+ 0b00101 a)
 -- >>> sizedBVConcat (con 0b101 :: SymWordN 3) (con 0b110 :: SymWordN 3)

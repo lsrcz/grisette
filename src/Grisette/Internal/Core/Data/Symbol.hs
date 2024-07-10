@@ -161,7 +161,6 @@ withInfo = IdentifierWithInfo
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XTemplateHaskell
 
 -- File location type.
 data FileLocation = FileLocation

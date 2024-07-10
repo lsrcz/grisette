@@ -990,7 +990,6 @@ instance IsSymbolKind 'AnyKind where
 --
 -- Simple symbols can be created with the @OverloadedStrings@ extension:
 --
--- >>> :set -XOverloadedStrings
 -- >>> "a" :: TypedSymbol 'AnyKind Bool
 -- a :: Bool
 data TypedSymbol (knd :: SymbolKind) t where

@@ -148,7 +148,6 @@ instance Exception BitwidthMismatch where
 -- Unsigned bit vector type. Indexed with the bit width. Signedness affect the
 -- semantics of the operations, including comparison/extension, etc.
 --
--- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
 -- >>> 3 + 5 :: WordN 5
 -- 0b01000
 -- >>> sizedBVConcat (0b101 :: WordN 3) (0b110 :: WordN 3)
@@ -216,7 +215,6 @@ instance (KnownNat n, 1 <= n) => Read (WordN n) where
 -- Signed bit vector type. Indexed with the bit width. Signedness affects the
 -- semantics of the operations, including comparison/extension, etc.
 --
--- >>> :set -XOverloadedStrings -XDataKinds -XBinaryLiterals
 -- >>> 3 + 5 :: IntN 5
 -- 0b01000
 -- >>> sizedBVConcat (0b101 :: IntN 3) (0b110 :: IntN 3)

@@ -795,7 +795,6 @@ cegisMultiInputs config inputs toCEGISCondition =
 -- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ clause is used to make
 -- the solution unique.
 --
--- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> cegis z3 x (\x -> cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2))
 -- (...,CEGISSuccess (Model {c -> -1 :: Integer}))
@@ -917,7 +916,6 @@ cegisExceptStdVCMultiInputs config cexes f =
 -- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ assertion is used to make
 -- the solution unique.
 --
--- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> import Control.Monad.Except
 -- >>> :{
@@ -993,7 +991,6 @@ cegisExceptVC config inputs f v =
 -- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ assertion is used to make
 -- the solution unique.
 --
--- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> import Control.Monad.Except
 -- >>> :{
@@ -1031,7 +1028,6 @@ cegisExceptStdVC config inputs f =
 -- positive @x@, @x * c < 0 && c > -2@. The @c .> -2@ clause is used to make
 -- the solution unique.
 --
--- >>> :set -XOverloadedStrings
 -- >>> let [x,c] = ["x","c"] :: [SymInteger]
 -- >>> cegisForAll z3 x $ cegisPrePost (x .> 0) (x * c .< 0 .&& c .> -2)
 -- (...,CEGISSuccess (Model {c -> -1 :: Integer}))

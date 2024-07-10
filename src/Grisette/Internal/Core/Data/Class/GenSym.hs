@@ -155,8 +155,6 @@ import Grisette.Internal.SymPrim.TabularFun (type (=->))
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XOverloadedStrings
--- >>> :set -XTypeApplications
 
 -- | Index type used for 'GenSym'.
 --

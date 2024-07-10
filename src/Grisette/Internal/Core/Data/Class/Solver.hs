@@ -89,7 +89,6 @@ data SolveInternal = SolveInternal
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
--- >>> :set -XOverloadedStrings
 
 -- | The current failures that can be returned by the solver.
 data SolvingFailure
@@ -355,7 +354,6 @@ instance UnionWithExcept (ExceptT e u v) u e v where
 -- |
 -- Solver procedure for programs with error handling.
 --
--- >>> :set -XLambdaCase
 -- >>> import Control.Monad.Except
 -- >>> let x = "x" :: SymInteger
 -- >>> :{

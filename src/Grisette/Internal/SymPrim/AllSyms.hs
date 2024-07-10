@@ -105,7 +105,6 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
 -- >>> import Data.Proxy
--- >>> :set -XOverloadedStrings
 
 -- | Some symbolic value with 'LinkedRep' constraint.
 data SomeSym where

@@ -65,7 +65,6 @@ import Language.Haskell.TH.Syntax (Lift)
 -- | Symbolic IEEE 754 floating-point number with @eb@ exponent bits and @sb@
 -- significand bits.
 --
--- >>> :set -XOverloadedStrings -XDataKinds
 -- >>> "a" + 2.0 :: SymFP 11 53
 -- (+ a 2.0)
 -- >>> symFpAdd rne "a" 2.0 :: SymFP 11 53

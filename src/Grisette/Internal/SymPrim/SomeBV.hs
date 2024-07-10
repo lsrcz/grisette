@@ -200,11 +200,6 @@ import Unsafe.Coerce (unsafeCoerce)
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
 
 -- | Non-indexed bitvectors.
 --
