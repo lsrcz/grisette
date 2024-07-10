@@ -89,14 +89,15 @@ import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model
-  ( SymbolSet (SymbolSet),
+  ( AnySymbolSet,
+    SymbolSet (SymbolSet),
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( IsSymbolKind (decideSymbolKind),
     LinkedRep,
     SupportedPrim,
     SymRep (SymType),
-    SymbolKind (AnySymbol),
+    SymbolKind,
     someTypedSymbol,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils (extractTerm)
@@ -130,10 +131,10 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- | Extracts all the symbols (symbolic constants) that are transitively
 -- contained in the given value.
 --
--- >>> extractSym ("a" :: SymBool) :: SymbolSet
+-- >>> extractSym ("a" :: SymBool)
 -- SymbolSet {a :: Bool}
 --
--- >>> extractSym (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: Union [SymBool]) :: SymbolSet
+-- >>> extractSym (mrgIf "a" (mrgReturn ["b"]) (mrgReturn ["c", "d"]) :: Union [SymBool])
 -- SymbolSet {a :: Bool, b :: Bool, c :: Bool, d :: Bool}
 --
 -- __Note 1:__ This type class can be derived for algebraic data types.
@@ -141,7 +142,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 --
 -- > data X = ... deriving Generic deriving ExtractSym via (Default X)
 class ExtractSym a where
-  extractSym :: a -> SymbolSet 'AnySymbol
+  extractSym :: a -> AnySymbolSet
   extractSym = fromJust . extractSymMaybe
   {-# INLINE extractSym #-}
   extractSymMaybe :: (IsSymbolKind knd) => a -> Maybe (SymbolSet knd)

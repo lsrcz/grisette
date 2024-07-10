@@ -22,6 +22,8 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Model
   ( SymbolSet (..),
+    ConstantSymbolSet,
+    AnySymbolSet,
     Model (..),
     ModelValuePair (..),
     equation,
@@ -70,9 +72,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
     pevalFPUnaryTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( SupportedPrim (castTypedSymbol),
-    SymbolKind (AnySymbol, NonFuncSymbol),
+  ( SomeTypedAnySymbol,
+    SomeTypedConstantSymbol,
+    SupportedPrim (castTypedSymbol),
+    SymbolKind (AnyKind, ConstantKind),
     Term (ExistsTerm, FPFMATerm),
+    TypedAnySymbol,
     existsTerm,
     forallTerm,
   )
@@ -201,6 +206,10 @@ newtype SymbolSet knd = SymbolSet
   }
   deriving (Eq, Generic, Hashable)
 
+type ConstantSymbolSet = SymbolSet 'ConstantKind
+
+type AnySymbolSet = SymbolSet 'AnyKind
+
 instance Semigroup (SymbolSet knd) where
   SymbolSet s1 <> SymbolSet s2 = SymbolSet $ S.union s1 s2
 
@@ -223,7 +232,7 @@ instance Show (SymbolSet knd) where
 -- Check 'Grisette.Core.ModelOps' for operations, and 'Grisette.Core.ModelRep'
 -- for manual constructions.
 newtype Model = Model
-  { unModel :: M.HashMap (SomeTypedSymbol 'AnySymbol) ModelValue
+  { unModel :: M.HashMap SomeTypedAnySymbol ModelValue
   }
   deriving (Eq, Generic, Hashable)
 
@@ -246,7 +255,7 @@ instance Show Model where
 
 -- | Given a typed symbol and a model, return the equation (symbol = value)
 -- encoded in the model.
-equation :: TypedSymbol 'AnySymbol a -> Model -> Maybe (Term Bool)
+equation :: TypedAnySymbol a -> Model -> Maybe (Term Bool)
 equation tsym@(TypedSymbol {}) m = withSymbolSupported tsym $
   case valueOf tsym m of
     Just v -> Just $ pevalEqTerm (symTerm $ unTypedSymbol tsym) (conTerm v)
@@ -398,10 +407,10 @@ instance
       . insertSymbol sym1
       $ emptySet
 
-instance ModelOps Model (SymbolSet 'AnySymbol) (TypedSymbol 'AnySymbol) where
+instance ModelOps Model AnySymbolSet TypedAnySymbol where
   emptyModel = Model M.empty
   isEmptyModel (Model m) = M.null m
-  valueOf :: forall t. TypedSymbol 'AnySymbol t -> Model -> Maybe t
+  valueOf :: forall t. TypedAnySymbol t -> Model -> Maybe t
   valueOf sym (Model m) =
     withSymbolSupported sym $
       (unsafeFromModelValue @t)
@@ -421,7 +430,7 @@ instance ModelOps Model (SymbolSet 'AnySymbol) (TypedSymbol 'AnySymbol) where
   extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
-        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedSymbol 'AnySymbol t)) -> case M.lookup sym acc of
+        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedAnySymbol t)) -> case M.lookup sym acc of
             Just _ -> acc
             Nothing -> withSymbolSupported tsym $ M.insert sym (defaultValueDynamic (Proxy @t)) acc
         )
@@ -433,19 +442,19 @@ instance ModelOps Model (SymbolSet 'AnySymbol) (TypedSymbol 'AnySymbol) where
         M.insert (someTypedSymbol sym) (toModelValue v) m
 
 evaluateSomeTerm ::
-  Bool -> S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> Model -> SomeTerm -> SomeTerm
+  Bool -> S.HashSet SomeTypedConstantSymbol -> Model -> SomeTerm -> SomeTerm
 evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
   go initialMemo initialBoundedSymbols
   where
     gotyped ::
       (SupportedPrim a) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      S.HashSet SomeTypedConstantSymbol ->
       Term a ->
       Term a
     gotyped memo boundedSymbols a = case memo boundedSymbols (SomeTerm a) of
       SomeTerm v -> unsafeCoerce v
-    initialMemo :: S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm
+    initialMemo :: S.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm
     initialMemo = htmemo2 (go initialMemo)
     {-# NOINLINE initialMemo #-}
     go _ bs c@(SomeTerm (ConTerm _ cv :: Term v)) =
@@ -576,16 +585,16 @@ evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
           (gotyped memo bs arg3)
     goUnary ::
       (SupportedPrim a, SupportedPrim b) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      S.HashSet SomeTypedConstantSymbol ->
       (Term a -> Term b) ->
       Term a ->
       SomeTerm
     goUnary memo bs f a = SomeTerm $ f (gotyped memo bs a)
     goBinary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      S.HashSet SomeTypedConstantSymbol ->
       (Term a -> Term b -> Term c) ->
       Term a ->
       Term b ->
@@ -593,8 +602,8 @@ evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
     goBinary memo bs f a b = SomeTerm $ f (gotyped memo bs a) (gotyped memo bs b)
     goTernary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c, SupportedPrim d) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      S.HashSet SomeTypedConstantSymbol ->
       (Term a -> Term b -> Term c -> Term d) ->
       Term a ->
       Term b ->
@@ -608,7 +617,7 @@ evaluateTerm ::
   forall a.
   (SupportedPrim a) =>
   Bool ->
-  S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+  S.HashSet SomeTypedConstantSymbol ->
   Model ->
   Term a ->
   Term a
@@ -621,7 +630,7 @@ evaluateTerm fillDefault boundedSymbols m t =
 --
 -- >>> buildModel ("x" ::= (1 :: Integer), "y" ::= True) :: Model
 -- Model {x -> 1 :: Integer, y -> True :: Bool}
-data ModelValuePair t = (TypedSymbol 'AnySymbol t) ::= t deriving (Show)
+data ModelValuePair t = (TypedAnySymbol t) ::= t deriving (Show)
 
 instance ModelRep (ModelValuePair t) Model where
   buildModel (sym ::= val) = insertValue sym val emptyModel

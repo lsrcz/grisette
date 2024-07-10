@@ -75,10 +75,9 @@ import Grisette
     SomeSymWordN,
     SymEq ((./=), (.==)),
     SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
-    SymbolKind (AnySymbol),
     ToCon (toCon),
     ToSym (toSym),
-    TypedSymbol,
+    TypedAnySymbol,
     Union,
     genSym,
     genSymSimple,
@@ -485,9 +484,9 @@ symPrimTests =
             extractSym (symIte ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
               @=? SymbolSet
                 ( S.fromList
-                    [ someTypedSymbol ("c" :: TypedSymbol 'AnySymbol Bool),
-                      someTypedSymbol ("a" :: TypedSymbol 'AnySymbol Integer),
-                      someTypedSymbol ("b" :: TypedSymbol 'AnySymbol Integer)
+                    [ someTypedSymbol ("c" :: TypedAnySymbol Bool),
+                      someTypedSymbol ("a" :: TypedAnySymbol Integer),
+                      someTypedSymbol ("b" :: TypedAnySymbol Integer)
                     ]
                 ),
           testCase "GenSym" $ do
@@ -919,14 +918,14 @@ symPrimTests =
             symSize (symIte (ssym "a" :: SymBool) (ssym "b") (ssym "c") :: SymInteger) @=? 4,
           testCase "symsSize" $ symsSize [ssym "a" :: SymInteger, ssym "a" + ssym "a"] @=? 2
         ],
-      let asymbol :: TypedSymbol 'AnySymbol Integer = "a"
-          bsymbol :: TypedSymbol 'AnySymbol Bool = "b"
-          csymbol :: TypedSymbol 'AnySymbol Integer = "c"
-          dsymbol :: TypedSymbol 'AnySymbol Bool = "d"
-          esymbol :: TypedSymbol 'AnySymbol (WordN 4) = "e"
-          fsymbol :: TypedSymbol 'AnySymbol (IntN 4) = "f"
-          gsymbol :: TypedSymbol 'AnySymbol (WordN 16) = "g"
-          hsymbol :: TypedSymbol 'AnySymbol (IntN 16) = "h"
+      let asymbol :: TypedAnySymbol Integer = "a"
+          bsymbol :: TypedAnySymbol Bool = "b"
+          csymbol :: TypedAnySymbol Integer = "c"
+          dsymbol :: TypedAnySymbol Bool = "d"
+          esymbol :: TypedAnySymbol (WordN 4) = "e"
+          fsymbol :: TypedAnySymbol (IntN 4) = "f"
+          gsymbol :: TypedAnySymbol (WordN 16) = "g"
+          hsymbol :: TypedAnySymbol (IntN 16) = "h"
           va :: Integer = 1
           vc :: Integer = 2
           ve :: WordN 4 = 3

@@ -18,16 +18,17 @@ import qualified Data.HashSet as S
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind,
+    SomeTypedConstantSymbol,
     SomeTypedSymbol,
     SupportedPrim (castTypedSymbol),
-    SymbolKind (NonFuncSymbol),
+    TypedConstantSymbol,
     TypedSymbol,
     castSomeTypedSymbol,
     someTypedSymbol,
   )
 
 newtype QuantifiedSymbols = QuantifiedSymbols
-  { _symbols :: S.HashSet (SomeTypedSymbol 'NonFuncSymbol)
+  { _symbols :: S.HashSet SomeTypedConstantSymbol
   }
   deriving (Show)
 
@@ -35,7 +36,7 @@ emptyQuantifiedSymbols :: QuantifiedSymbols
 emptyQuantifiedSymbols = QuantifiedSymbols S.empty
 
 addQuantifiedSymbol ::
-  TypedSymbol 'NonFuncSymbol a -> QuantifiedSymbols -> QuantifiedSymbols
+  TypedConstantSymbol a -> QuantifiedSymbols -> QuantifiedSymbols
 addQuantifiedSymbol s (QuantifiedSymbols t) =
   QuantifiedSymbols (S.insert (someTypedSymbol s) t)
 
@@ -50,12 +51,12 @@ isQuantifiedSymbol s (QuantifiedSymbols t) =
     _ -> False
 
 newtype QuantifiedStack = QuantifiedStack
-  {_stack :: M.HashMap (SomeTypedSymbol 'NonFuncSymbol) Dynamic}
+  {_stack :: M.HashMap SomeTypedConstantSymbol Dynamic}
 
 emptyQuantifiedStack :: QuantifiedStack
 emptyQuantifiedStack = QuantifiedStack M.empty
 
-addQuantified :: TypedSymbol 'NonFuncSymbol a -> Dynamic -> QuantifiedStack -> QuantifiedStack
+addQuantified :: TypedConstantSymbol a -> Dynamic -> QuantifiedStack -> QuantifiedStack
 addQuantified s d (QuantifiedStack t) =
   QuantifiedStack (M.insert (someTypedSymbol s) d t)
 

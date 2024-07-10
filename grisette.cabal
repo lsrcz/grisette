@@ -247,8 +247,7 @@ test-suite doctest
       doctest
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      Glob
-    , QuickCheck >=2.14 && <2.16
+      QuickCheck >=2.14 && <2.16
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
     , base >=4.14 && <5

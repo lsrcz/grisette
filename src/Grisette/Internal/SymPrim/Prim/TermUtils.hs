@@ -38,9 +38,9 @@ import Grisette.Internal.Core.Data.MemoUtils (htmemo2)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (SymbolKindConstraint),
+    SomeTypedConstantSymbol,
     SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim (castTypedSymbol),
-    SymbolKind (AnySymbol, NonFuncSymbol),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -90,7 +90,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         UnaryTerm,
         XorBitsTerm
       ),
-    TypedSymbol,
+    TypedAnySymbol,
     introSupportedPrimConstraint,
     someTypedSymbol,
   )
@@ -110,28 +110,28 @@ import qualified Type.Reflection as R
 extractSymSomeTerm ::
   forall knd.
   (IsSymbolKind knd) =>
-  S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+  S.HashSet (SomeTypedConstantSymbol) ->
   SomeTerm ->
   Maybe (S.HashSet (SomeTypedSymbol knd))
 extractSymSomeTerm = go initialMemo
   where
     gotyped ::
       (SupportedPrim a) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
+      S.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Maybe (S.HashSet (SomeTypedSymbol knd))
     gotyped memo boundedSymbols a = memo boundedSymbols (SomeTerm a)
-    initialMemo :: S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))
+    initialMemo :: S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))
     initialMemo = htmemo2 (go initialMemo)
     {-# NOINLINE initialMemo #-}
 
     go ::
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
+      S.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
       Maybe (S.HashSet (SomeTypedSymbol knd))
-    go _ bs (SomeTerm (SymTerm _ (sym :: TypedSymbol 'AnySymbol a))) =
+    go _ bs (SomeTerm (SymTerm _ (sym :: TypedAnySymbol a))) =
       case (castTypedSymbol sym, castTypedSymbol sym) of
         (Just sym', _) | S.member (someTypedSymbol sym') bs -> return S.empty
         (_, Just sym') -> return $ S.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
@@ -210,23 +210,23 @@ extractSymSomeTerm = go initialMemo
         <> gotyped memo bs arg3
     goUnary ::
       (SupportedPrim a) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
+      S.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Maybe (S.HashSet (SomeTypedSymbol knd))
     goUnary = gotyped
     goBinary ::
       (SupportedPrim a, SupportedPrim b) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
+      S.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Term b ->
       Maybe (S.HashSet (SomeTypedSymbol knd))
     goBinary memo bs arg1 arg2 = gotyped memo bs arg1 <> gotyped memo bs arg2
     goTernary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
-      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
+      S.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Term b ->
       Term c ->
@@ -238,7 +238,7 @@ extractSymSomeTerm = go initialMemo
 -- | Extract all the symbols in a term.
 extractTerm ::
   (IsSymbolKind knd, SymbolKindConstraint knd a, SupportedPrim a) =>
-  S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+  S.HashSet (SomeTypedConstantSymbol) ->
   Term a ->
   Maybe (S.HashSet (SomeTypedSymbol knd))
 extractTerm initialBoundedSymbols t =
