@@ -50,6 +50,7 @@ import Data.Functor.Compose (Compose (Compose))
 import Data.Functor.Const (Const)
 import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
+import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
@@ -79,13 +80,15 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
-import Grisette.Internal.SymPrim.GeneralFun (type (-->))
+import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model
   ( SymbolSet (SymbolSet),
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
+    SymRep (SymType),
+    someTypedSymbol,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils (extractTerm)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
@@ -101,7 +104,7 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
-import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.SymPrim.TabularFun (type (=->) (TabularFun))
 import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
@@ -300,16 +303,16 @@ instance (ValidFP eb sb) => ExtractSym (FP eb sb) where
 
 #define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
 instance ExtractSym symtype where \
-  extractSym (symtype t) = SymbolSet $ extractTerm t
+  extractSym (symtype t) = SymbolSet $ extractTerm HS.empty t
 
 #define EXTRACT_SYMBOLICS_BV(symtype) \
 instance (KnownNat n, 1 <= n) => ExtractSym (symtype n) where \
-  extractSym (symtype t) = SymbolSet $ extractTerm t
+  extractSym (symtype t) = SymbolSet $ extractTerm HS.empty t
 
 #define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
 instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
   ExtractSym (op sa sb) where \
-  extractSym (cons t) = SymbolSet $ extractTerm t
+  extractSym (cons t) = SymbolSet $ extractTerm HS.empty t
 
 #if 1
 EXTRACT_SYMBOLICS_SIMPLE(SymBool)
@@ -323,7 +326,7 @@ EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 instance (ValidFP eb fb) => ExtractSym (SymFP eb fb) where
-  extractSym (SymFP t) = SymbolSet $ extractTerm t
+  extractSym (SymFP t) = SymbolSet $ extractTerm HS.empty t
 
 -- Instances
 deriveBuiltins
@@ -597,3 +600,10 @@ instance
   liftExtractSym2 f g (x, y, z, w) =
     extractSym x <> extractSym y <> f z <> g w
   {-# INLINE liftExtractSym2 #-}
+
+instance (ExtractSym a, ExtractSym b) => ExtractSym (a =-> b) where
+  extractSym (TabularFun s t) = extractSym s <> extractSym t
+
+instance (ExtractSym (SymType b)) => ExtractSym (a --> b) where
+  extractSym (GeneralFun t f) =
+    SymbolSet $ extractTerm (HS.singleton $ someTypedSymbol t) f

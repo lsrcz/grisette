@@ -57,7 +57,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     applyTerm,
     conTerm,
     partitionCVArg,
-    pevalDefaultEqTerm,
     pevalEqTerm,
     pevalITEBasicTerm,
     translateTypeError,
@@ -133,7 +132,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b))
   conSBVTerm p f =
     withNonFuncPrim @b p $
       lowerTFunCon p f
@@ -167,7 +172,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b =-> c))
   conSBVTerm p f =
     withNonFuncPrim @c p $
       lowerTFunCon p f
@@ -207,7 +218,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b =-> c =-> d))
   conSBVTerm p f =
     withNonFuncPrim @d p $
       lowerTFunCon p f
@@ -251,7 +268,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b =-> c =-> d =-> e))
   conSBVTerm p f =
     withNonFuncPrim @e p $
       lowerTFunCon p f
@@ -299,7 +322,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b =-> c =-> d =-> e =-> f))
   conSBVTerm p f =
     withNonFuncPrim @f p $
       lowerTFunCon p f
@@ -352,7 +381,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g))
   conSBVTerm p f =
     withNonFuncPrim @g p $
       lowerTFunCon p f
@@ -409,7 +444,13 @@ instance
   where
   defaultValue = TabularFun [] defaultValue
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. TabularFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
   conSBVTerm p f =
     withNonFuncPrim @h p $
       lowerTFunCon p f

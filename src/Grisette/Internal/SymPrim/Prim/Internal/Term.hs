@@ -84,6 +84,8 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     -- * Interning
     UTerm (..),
     prettyPrintTerm,
+    forallTerm,
+    existsTerm,
     constructUnary,
     constructBinary,
     constructTernary,
@@ -487,7 +489,7 @@ class
   sbvApplyTerm ::
     (KnownIsZero n) => proxy n -> SBVType n f -> SBVType n a -> SBVType n b
 
-class (SupportedPrim t, Bits t) => PEvalBitwiseTerm t where
+class (SupportedNonFuncPrim t, Bits t) => PEvalBitwiseTerm t where
   pevalAndBitsTerm :: Term t -> Term t -> Term t
   pevalOrBitsTerm :: Term t -> Term t -> Term t
   pevalXorBitsTerm :: Term t -> Term t -> Term t
@@ -572,7 +574,7 @@ class (SupportedNonFuncPrim t, SymRotate t) => PEvalRotateTerm t where
       withSbvRotateTermConstraint @t p $
         SBV.sRotateRight l r
 
-class (SupportedPrim t, Num t) => PEvalNumTerm t where
+class (SupportedNonFuncPrim t, Num t) => PEvalNumTerm t where
   pevalAddNumTerm :: Term t -> Term t -> Term t
   pevalNegNumTerm :: Term t -> Term t
   pevalMulNumTerm :: Term t -> Term t -> Term t
@@ -624,7 +626,7 @@ class (SupportedPrim t, Num t) => PEvalNumTerm t where
 pevalSubNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
 
-class (SupportedPrim t, Ord t) => PEvalOrdTerm t where
+class (SupportedNonFuncPrim t, Ord t) => PEvalOrdTerm t where
   pevalLtOrdTerm :: Term t -> Term t -> Term Bool
   pevalLeOrdTerm :: Term t -> Term t -> Term Bool
   withSbvOrdTermConstraint ::
@@ -653,7 +655,7 @@ pevalGtOrdTerm = flip pevalLtOrdTerm
 pevalGeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGeOrdTerm = flip pevalLeOrdTerm
 
-class (SupportedPrim t, Integral t) => PEvalDivModIntegralTerm t where
+class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
   pevalDivIntegralTerm :: Term t -> Term t -> Term t
   pevalModIntegralTerm :: Term t -> Term t -> Term t
   pevalQuotIntegralTerm :: Term t -> Term t -> Term t
@@ -753,7 +755,7 @@ class
           SBV.sFromIntegral u
 
 class
-  ( forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n),
+  ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
     SizedBV bv,
     Typeable bv
   ) =>
@@ -808,7 +810,7 @@ class
     SBVType int (bv n) ->
     SBVType int (bv w)
 
-class (SupportedPrim t, Fractional t) => PEvalFractionalTerm t where
+class (SupportedNonFuncPrim t, Fractional t) => PEvalFractionalTerm t where
   pevalFdivTerm :: Term t -> Term t -> Term t
   pevalRecipTerm :: Term t -> Term t
   withSbvFractionalTermConstraint ::
@@ -865,7 +867,7 @@ instance Show FloatingUnaryOp where
   show FloatingAcosh = "acosh"
   show FloatingAtanh = "atanh"
 
-class (SupportedPrim t) => PEvalFloatingTerm t where
+class (SupportedNonFuncPrim t) => PEvalFloatingTerm t where
   pevalFloatingUnaryTerm :: FloatingUnaryOp -> Term t -> Term t
   pevalPowerTerm :: Term t -> Term t -> Term t
   withSbvFloatingTermConstraint ::
@@ -1083,6 +1085,8 @@ instance Show FPRoundingBinaryOp where
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
   SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
+  ForallTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> !(Term Bool) -> Term Bool
+  ExistsTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> !(Term Bool) -> Term Bool
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -1108,7 +1112,7 @@ data Term t where
   OrTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
   AndTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
   EqTerm ::
-    (SupportedPrim t) =>
+    (SupportedNonFuncPrim t) =>
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
@@ -1342,6 +1346,8 @@ identity = snd . identityWithTypeRep
 identityWithTypeRep :: forall t. Term t -> (SomeTypeRep, Id)
 identityWithTypeRep (ConTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (SymTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ForallTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ExistsTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (UnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (TernaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
@@ -1390,6 +1396,8 @@ identityWithTypeRep (FPFMATerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
 introSupportedPrimConstraint ConTerm {} x = x
 introSupportedPrimConstraint SymTerm {} x = x
+introSupportedPrimConstraint ForallTerm {} x = x
+introSupportedPrimConstraint ExistsTerm {} x = x
 introSupportedPrimConstraint UnaryTerm {} x = x
 introSupportedPrimConstraint BinaryTerm {} x = x
 introSupportedPrimConstraint TernaryTerm {} x = x
@@ -1438,6 +1446,8 @@ introSupportedPrimConstraint FPFMATerm {} x = x
 pformat :: forall t. (SupportedPrim t) => Term t -> String
 pformat (ConTerm _ t) = pformatCon t
 pformat (SymTerm _ sym) = pformatSym sym
+pformat (ForallTerm _ sym arg) = "(forall " ++ show sym ++ " " ++ pformat arg ++ ")"
+pformat (ExistsTerm _ sym arg) = "(exists " ++ show sym ++ " " ++ pformat arg ++ ")"
 pformat (UnaryTerm _ tag arg1) = pformatUnary tag arg1
 pformat (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
 pformat (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
@@ -1492,6 +1502,8 @@ instance NFData (Term a) where
 instance Lift (Term t) where
   liftTyped (ConTerm _ i) = [||conTerm i||]
   liftTyped (SymTerm _ sym) = [||symTerm (unTypedSymbol sym)||]
+  liftTyped (ForallTerm _ sym arg) = [||forallTerm sym arg||]
+  liftTyped (ExistsTerm _ sym arg) = [||existsTerm sym arg||]
   liftTyped (UnaryTerm _ tag arg) = [||constructUnary tag arg||]
   liftTyped (BinaryTerm _ tag arg1 arg2) = [||constructBinary tag arg1 arg2||]
   liftTyped (TernaryTerm _ tag arg1 arg2 arg3) = [||constructTernary tag arg1 arg2 arg3||]
@@ -1546,6 +1558,8 @@ instance Show (Term ty) where
       ++ ", type="
       ++ show (typeRep @ty)
       ++ "}"
+  show (ForallTerm i sym arg) = "Forall{id=" ++ show i ++ ", sym=" ++ show sym ++ ", arg=" ++ show arg ++ "}"
+  show (ExistsTerm i sym arg) = "Exists{id=" ++ show i ++ ", sym=" ++ show sym ++ ", arg=" ++ show arg ++ "}"
   show (UnaryTerm i tag arg) = "Unary{id=" ++ show i ++ ", tag=" ++ show tag ++ ", arg=" ++ show arg ++ "}"
   show (BinaryTerm i tag arg1 arg2) =
     "Binary{id="
@@ -1678,6 +1692,8 @@ instance (SupportedPrim t) => Hashable (Term t) where
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
   USymTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
+  UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol t) -> !(Term Bool) -> UTerm Bool
+  UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol t) -> !(Term Bool) -> UTerm Bool
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -1695,7 +1711,7 @@ data UTerm t where
   UNotTerm :: !(Term Bool) -> UTerm Bool
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
-  UEqTerm :: (SupportedPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
+  UEqTerm :: (SupportedNonFuncPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
   UITETerm ::
     (SupportedPrim t) =>
     !(Term Bool) ->
@@ -1822,11 +1838,19 @@ eqHeteroTag :: (Eq a) => (TypeRep a, a) -> (TypeRep b, b) -> Bool
 eqHeteroTag (tpa, taga) (tpb, tagb) = eqHeteroRep tpa tpb taga tagb
 {-# INLINE eqHeteroTag #-}
 
+eqHeteroSymbol :: (TypeRep a, TypedSymbol a) -> (TypeRep b, TypedSymbol b) -> Bool
+eqHeteroSymbol (tpa, taga) (tpb, tagb) = case eqTypeRep tpb tpa of
+  Just HRefl -> taga == tagb
+  Nothing -> False
+{-# INLINE eqHeteroSymbol #-}
+
 instance (SupportedPrim t) => Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
     DConTerm :: t -> Description (Term t)
     DSymTerm :: TypedSymbol t -> Description (Term t)
+    DForallTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DExistsTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DUnaryTerm ::
       (Eq tag, Hashable tag) =>
       {-# UNPACK #-} !(TypeRep tag, tag) ->
@@ -1906,6 +1930,10 @@ instance (SupportedPrim t) => Interned (Term t) where
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
+  describe (UForallTerm (sym :: TypedSymbol arg) arg) =
+    DForallTerm (typeRep :: TypeRep arg, sym) (identity arg)
+  describe (UExistsTerm (sym :: TypedSymbol arg) arg) =
+    DExistsTerm (typeRep :: TypeRep arg, sym) (identity arg)
   describe ((UUnaryTerm (tag :: tagt) (tm :: Term arg)) :: UTerm t) =
     DUnaryTerm (typeRep, tag) (typeRep :: TypeRep arg, identity tm)
   describe ((UBinaryTerm (tag :: tagt) (tm1 :: Term arg1) (tm2 :: Term arg2)) :: UTerm t) =
@@ -1965,6 +1993,8 @@ instance (SupportedPrim t) => Interned (Term t) where
     where
       go (UConTerm v) = ConTerm i v
       go (USymTerm v) = SymTerm i v
+      go (UForallTerm sym arg) = ForallTerm i sym arg
+      go (UExistsTerm sym arg) = ExistsTerm i sym arg
       go (UUnaryTerm tag tm) = UnaryTerm i tag tm
       go (UBinaryTerm tag tm1 tm2) = BinaryTerm i tag tm1 tm2
       go (UTernaryTerm tag tm1 tm2 tm3) = TernaryTerm i tag tm1 tm2 tm3
@@ -2013,6 +2043,8 @@ instance (SupportedPrim t) => Interned (Term t) where
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm (l :: tyl) == DConTerm (r :: tyr) = cast @tyl @tyr l == Just r
   DSymTerm ls == DSymTerm rs = ls == rs
+  DForallTerm ls li == DForallTerm rs ri = eqHeteroSymbol ls rs && li == ri
+  DExistsTerm ls li == DExistsTerm rs ri = eqHeteroSymbol ls rs && li == ri
   DUnaryTerm (tagl :: tagl) li == DUnaryTerm (tagr :: tagr) ri = eqHeteroTag tagl tagr && eqTypedId li ri
   DBinaryTerm (tagl :: tagl) li1 li2 == DBinaryTerm (tagr :: tagr) ri1 ri2 =
     eqHeteroTag tagl tagr && eqTypedId li1 ri1 && eqTypedId li2 ri2
@@ -2071,6 +2103,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DConTerm c) = s `hashWithSalt` (0 :: Int) `hashWithSalt` c
   hashWithSalt s (DSymTerm name) = s `hashWithSalt` (1 :: Int) `hashWithSalt` name
+  hashWithSalt s (DForallTerm sym id) = s `hashWithSalt` (48 :: Int) `hashWithSalt` sym `hashWithSalt` id
+  hashWithSalt s (DExistsTerm sym id) = s `hashWithSalt` (49 :: Int) `hashWithSalt` sym `hashWithSalt` id
   hashWithSalt s (DUnaryTerm tag id1) = s `hashWithSalt` (2 :: Int) `hashWithSalt` tag `hashWithSalt` id1
   hashWithSalt s (DBinaryTerm tag id1 id2) =
     s `hashWithSalt` (3 :: Int) `hashWithSalt` tag `hashWithSalt` id1 `hashWithSalt` id2
@@ -2188,6 +2222,14 @@ symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
 symTerm t = internTerm $ USymTerm $ TypedSymbol t
 {-# INLINE symTerm #-}
 
+forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol t -> Term Bool -> Term Bool
+forallTerm sym arg = internTerm $ UForallTerm sym arg
+{-# INLINE forallTerm #-}
+
+existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol t -> Term Bool -> Term Bool
+existsTerm sym arg = internTerm $ UExistsTerm sym arg
+{-# INLINE existsTerm #-}
+
 ssymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Term t
 ssymTerm = symTerm . SimpleSymbol
 {-# INLINE ssymTerm #-}
@@ -2208,7 +2250,7 @@ andTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm l r = internTerm $ UAndTerm l r
 {-# INLINE andTerm #-}
 
-eqTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
+eqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
 eqTerm l r = internTerm $ UEqTerm l r
 {-# INLINE eqTerm #-}
 
@@ -2806,7 +2848,7 @@ pevalITEBasicTerm cond ifTrue ifFalse =
   fromMaybe (iteTerm cond ifTrue ifFalse) $
     pevalITEBasic cond ifTrue ifFalse
 
-pevalDefaultEqTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
+pevalDefaultEqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
 pevalDefaultEqTerm l@ConTerm {} r@ConTerm {} = conTerm $ l == r
 pevalDefaultEqTerm l@ConTerm {} r = pevalDefaultEqTerm r l
 pevalDefaultEqTerm l (BoolConTerm rv) =

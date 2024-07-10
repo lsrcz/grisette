@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- |
@@ -16,29 +18,64 @@ module Grisette.Internal.Backend.SymBiMap
     addBiMapIntermediate,
     findStringToSymbol,
     lookupTerm,
+    QuantifiedSymbolInfo (..),
+    attachNextQuantifiedSymbolInfo,
   )
 where
 
+import Control.DeepSeq (NFData)
 import Data.Dynamic (Dynamic)
 import qualified Data.HashMap.Strict as M
+import Data.Hashable (Hashable)
 import GHC.Stack (HasCallStack)
+import Grisette.Internal.Backend.QuantifiedStack (QuantifiedStack)
+import Grisette.Internal.Core.Data.Symbol
+  ( Symbol (IndexedSymbol, SimpleSymbol),
+    withInfo,
+  )
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( SomeTypedSymbol,
+    TypedSymbol (TypedSymbol),
   )
+import Language.Haskell.TH.Syntax (Lift)
 
 -- | A bidirectional map between symbolic Grisette terms and sbv terms.
 data SymBiMap = SymBiMap
-  { biMapToSBV :: M.HashMap SomeTerm Dynamic,
-    biMapFromSBV :: M.HashMap String SomeTypedSymbol
+  { biMapToSBV :: M.HashMap SomeTerm (QuantifiedStack -> Dynamic),
+    biMapFromSBV :: M.HashMap String SomeTypedSymbol,
+    quantifiedSymbolNum :: Int
   }
-  deriving (Show)
+
+newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
+  deriving (Ord, Eq, Show, Hashable, Lift, NFData)
+
+nextQuantifiedSymbolInfo :: SymBiMap -> (SymBiMap, QuantifiedSymbolInfo)
+nextQuantifiedSymbolInfo (SymBiMap t f num) =
+  (SymBiMap t f (num + 1), QuantifiedSymbolInfo num)
+
+attachQuantifiedSymbolInfo ::
+  QuantifiedSymbolInfo -> TypedSymbol a -> TypedSymbol a
+attachQuantifiedSymbolInfo
+  info
+  (TypedSymbol (SimpleSymbol ident)) =
+    TypedSymbol $ SimpleSymbol $ withInfo ident info
+attachQuantifiedSymbolInfo
+  info
+  (TypedSymbol (IndexedSymbol ident idx)) =
+    TypedSymbol $ IndexedSymbol (withInfo ident info) idx
+
+attachNextQuantifiedSymbolInfo ::
+  SymBiMap -> TypedSymbol a -> (SymBiMap, TypedSymbol a)
+attachNextQuantifiedSymbolInfo m s =
+  let (m', info) = nextQuantifiedSymbolInfo m
+   in (m', attachQuantifiedSymbolInfo info s)
 
 -- | An empty bidirectional map.
 emptySymBiMap :: SymBiMap
-emptySymBiMap = SymBiMap M.empty M.empty
+emptySymBiMap = SymBiMap M.empty M.empty 0
 
 -- | The size of the bidirectional map.
 sizeBiMap :: SymBiMap -> Int
@@ -46,17 +83,18 @@ sizeBiMap = M.size . biMapToSBV
 
 -- | Add a new entry to the bidirectional map.
 addBiMap :: (HasCallStack) => SomeTerm -> Dynamic -> String -> SomeTypedSymbol -> SymBiMap -> SymBiMap
-addBiMap s d n sb (SymBiMap t f) = SymBiMap (M.insert s d t) (M.insert n sb f)
+addBiMap s d n sb (SymBiMap t f num) = SymBiMap (M.insert s (const d) t) (M.insert n sb f) num
 
 -- | Add a new entry to the bidirectional map for intermediate values.
-addBiMapIntermediate :: (HasCallStack) => SomeTerm -> Dynamic -> SymBiMap -> SymBiMap
-addBiMapIntermediate s d (SymBiMap t f) = SymBiMap (M.insert s d t) f
+addBiMapIntermediate ::
+  (HasCallStack) => SomeTerm -> (QuantifiedStack -> Dynamic) -> SymBiMap -> SymBiMap
+addBiMapIntermediate s d (SymBiMap t f num) = SymBiMap (M.insert s d t) f num
 
 -- | Find a symbolic Grisette term from a string.
 findStringToSymbol :: String -> SymBiMap -> Maybe SomeTypedSymbol
-findStringToSymbol s (SymBiMap _ f) = M.lookup s f
+findStringToSymbol s (SymBiMap _ f _) = M.lookup s f
 
 -- | Look up an sbv value with a symbolic Grisette term in the bidirectional
 -- map.
-lookupTerm :: (HasCallStack) => SomeTerm -> SymBiMap -> Maybe Dynamic
+lookupTerm :: (HasCallStack) => SomeTerm -> SymBiMap -> Maybe (QuantifiedStack -> Dynamic)
 lookupTerm t m = M.lookup t (biMapToSBV m)

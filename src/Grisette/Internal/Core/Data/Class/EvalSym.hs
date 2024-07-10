@@ -55,6 +55,7 @@ import Data.Functor.Compose (Compose (Compose))
 import Data.Functor.Const (Const)
 import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
+import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
 import Data.Maybe (fromJust)
@@ -93,9 +94,9 @@ import Grisette.Internal.Core.Data.Class.ToCon
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
-import Grisette.Internal.SymPrim.GeneralFun (type (-->))
+import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model (Model, evaluateTerm)
-import Grisette.Internal.SymPrim.Prim.Term (LinkedRep, SupportedPrim)
+import Grisette.Internal.SymPrim.Prim.Term (LinkedRep, SupportedPrim, SymRep (SymType), someTypedSymbol)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
@@ -109,7 +110,7 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
-import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.SymPrim.TabularFun (type (=->) (TabularFun))
 import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
@@ -358,18 +359,18 @@ instance (ValidFP eb fb) => EvalSym (FP eb fb) where
 #define EVALUATE_SYM_SIMPLE(symtype) \
 instance EvalSym symtype where \
   evalSym fillDefault model (symtype t) = \
-    symtype $ evaluateTerm fillDefault model t
+    symtype $ evaluateTerm fillDefault HS.empty model t
 
 #define EVALUATE_SYM_BV(symtype) \
 instance (KnownNat n, 1 <= n) => EvalSym (symtype n) where \
   evalSym fillDefault model (symtype t) = \
-    symtype $ evaluateTerm fillDefault model t
+    symtype $ evaluateTerm fillDefault HS.empty model t
 
 #define EVALUATE_SYM_FUN(cop, op, cons) \
 instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
   EvalSym (op sa sb) where \
   evalSym fillDefault model (cons t) = \
-    cons $ evaluateTerm fillDefault model t
+    cons $ evaluateTerm fillDefault HS.empty model t
 
 #if 1
 EVALUATE_SYM_SIMPLE(SymBool)
@@ -384,7 +385,7 @@ EVALUATE_SYM_FUN((-->), (-~>), SymGeneralFun)
 
 instance (ValidFP eb sb) => EvalSym (SymFP eb sb) where
   evalSym fillDefault model (SymFP t) =
-    SymFP $ evaluateTerm fillDefault model t
+    SymFP $ evaluateTerm fillDefault HS.empty model t
 
 -- Instances
 deriveBuiltins
@@ -631,3 +632,14 @@ instance (EvalSym a, EvalSym b) => EvalSym2 ((,,,) a b) where
       g fillDefault model d
     )
   {-# INLINE liftEvalSym2 #-}
+
+instance (EvalSym a, EvalSym b) => EvalSym (a =-> b) where
+  evalSym fillDefault model (TabularFun s t) =
+    TabularFun
+      (evalSym fillDefault model s)
+      (evalSym fillDefault model t)
+
+instance (EvalSym (SymType b)) => EvalSym (a --> b) where
+  evalSym fillDefault model (GeneralFun s t) =
+    GeneralFun s $
+      evaluateTerm fillDefault (HS.singleton $ someTypedSymbol s) model t
