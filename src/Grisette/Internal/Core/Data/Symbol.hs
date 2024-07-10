@@ -29,6 +29,8 @@ module Grisette.Internal.Core.Data.Symbol
     Symbol (..),
     simple,
     indexed,
+    symbolIdentifier,
+    modifyIdentifier,
   )
 where
 
@@ -222,6 +224,16 @@ data Symbol where
   SimpleSymbol :: Identifier -> Symbol
   IndexedSymbol :: Identifier -> Int -> Symbol
   deriving (Eq, Ord, Generic, Lift, NFData, Hashable)
+
+-- | Get the identifier of a symbol.
+symbolIdentifier :: Symbol -> Identifier
+symbolIdentifier (SimpleSymbol i) = i
+symbolIdentifier (IndexedSymbol i _) = i
+
+-- | Modify the identifier of a symbol.
+modifyIdentifier :: (Identifier -> Identifier) -> Symbol -> Symbol
+modifyIdentifier f (SimpleSymbol i) = SimpleSymbol (f i)
+modifyIdentifier f (IndexedSymbol i idx) = IndexedSymbol (f i) idx
 
 instance Show Symbol where
   show (SimpleSymbol i) = show i
