@@ -58,6 +58,7 @@ import Grisette.SymPrim.FPTests (fpTests)
 import qualified Grisette.SymPrim.Prim.BVTests
 import Grisette.SymPrim.Prim.BitsTests (bitsTests)
 import qualified Grisette.SymPrim.Prim.BoolTests
+import Grisette.SymPrim.Prim.GeneralFunTests (generalFunTests)
 import Grisette.SymPrim.Prim.IntegralTests
   ( integralTests,
   )
@@ -171,7 +172,8 @@ irTests =
           integralTests,
           modelTests,
           numTests,
-          Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests
+          Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests,
+          generalFunTests
         ],
       symPrimTests,
       Grisette.SymPrim.TabularFunTests.tabularFunTests,

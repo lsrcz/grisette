@@ -45,27 +45,9 @@ import Grisette.Internal.Core.Data.Symbol
   ( Symbol (IndexedSymbol, SimpleSymbol),
     withInfo,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP (pevalFPBinaryTerm, pevalFPFMATerm, pevalFPRoundingBinaryTerm, pevalFPRoundingUnaryTerm, pevalFPTraitTerm, pevalFPUnaryTerm)
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
-    PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
-    SBVRep (SBVType),
-    SupportedPrim (parseSMTModelResult, sbvEq),
-    Term
-      ( FPBinaryTerm,
-        FPFMATerm,
-        FPRoundingBinaryTerm,
-        FPRoundingUnaryTerm,
-        FPTraitTerm,
-        FdivTerm,
-        FloatingUnaryTerm,
-        PowerTerm,
-        RecipTerm
-      ),
-    partitionCVArg,
-  )
-import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
-import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
     LinkedRep (underlyingTerm, wrapTerm),
     NonFuncSBVBaseType,
@@ -82,6 +64,8 @@ import Grisette.Internal.SymPrim.Prim.Term
       ( pevalDivIntegralTerm,
         pevalModIntegralTerm
       ),
+    PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
+    PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
@@ -92,11 +76,14 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalOrdTerm (pevalLeOrdTerm, pevalLtOrdTerm),
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
+    SBVRep (SBVType),
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim
       ( conSBVTerm,
         defaultValue,
+        parseSMTModelResult,
         pevalITETerm,
+        sbvEq,
         symSBVName,
         symSBVTerm,
         withPrim
@@ -116,7 +103,16 @@ import Grisette.Internal.SymPrim.Prim.Term
         ConTerm,
         DivIntegralTerm,
         EqTerm,
+        ExistsTerm,
+        FPBinaryTerm,
+        FPFMATerm,
+        FPRoundingBinaryTerm,
+        FPRoundingUnaryTerm,
+        FPTraitTerm,
         FPUnaryTerm,
+        FdivTerm,
+        FloatingUnaryTerm,
+        ForallTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -126,7 +122,9 @@ import Grisette.Internal.SymPrim.Prim.Term
         NotTerm,
         OrBitsTerm,
         OrTerm,
+        PowerTerm,
         QuotIntegralTerm,
+        RecipTerm,
         RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
@@ -145,15 +143,11 @@ import Grisette.Internal.SymPrim.Prim.Term
     UnaryOp (pevalUnary),
     applyTerm,
     conTerm,
+    existsTerm,
+    forallTerm,
+    partitionCVArg,
     pevalAndTerm,
-    pevalDefaultEqTerm,
     pevalEqTerm,
-    pevalFPBinaryTerm,
-    pevalFPFMATerm,
-    pevalFPRoundingBinaryTerm,
-    pevalFPRoundingUnaryTerm,
-    pevalFPTraitTerm,
-    pevalFPUnaryTerm,
     pevalITEBasicTerm,
     pevalNotTerm,
     pevalOrTerm,
@@ -165,6 +159,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     symTerm,
     translateTypeError,
   )
+import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection
   ( TypeRep,
@@ -298,7 +293,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -335,7 +336,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -378,7 +385,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -425,7 +438,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -476,7 +495,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -531,7 +556,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f --> g))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -590,7 +621,13 @@ instance
   where
   defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm = pevalDefaultEqTerm
+  pevalEqTerm =
+    translateTypeError
+      ( Just $
+          "BUG. Please send a bug report. GeneralFun is not supported for "
+            <> "equality comparison."
+      )
+      (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
   conSBVTerm _ _ =
     translateTypeError
       ( Just $
@@ -676,6 +713,14 @@ substTerm sym term = gov
               Nothing -> stm
           _ -> stm
         SymTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
+        ForallTerm _ ts a ->
+          if someTypedSymbol ts == someTypedSymbol sym
+            then stm
+            else SomeTerm $ forallTerm ts (gov a)
+        ExistsTerm _ ts a ->
+          if someTypedSymbol ts == someTypedSymbol sym
+            then stm
+            else SomeTerm $ existsTerm ts (gov a)
         UnaryTerm _ tag te -> SomeTerm $ pevalUnary tag (gov te)
         BinaryTerm _ tag te te' -> SomeTerm $ pevalBinary tag (gov te) (gov te')
         TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ pevalTernary tag (gov op1) (gov op2) (gov op3)

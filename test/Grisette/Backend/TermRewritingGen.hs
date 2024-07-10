@@ -150,6 +150,7 @@ import Grisette.Internal.SymPrim.Prim.Term
       ( pevalShiftLeftTerm,
         pevalShiftRightTerm
       ),
+    SupportedNonFuncPrim,
     SupportedPrim (pevalITETerm),
     Term,
     TernaryOp (pevalTernary),
@@ -204,7 +205,7 @@ import Test.QuickCheck (Arbitrary (arbitrary), Gen, elements, frequency, oneof, 
 
 -- import Grisette.Internal.SymPrim.FP (FPRoundingMode(RNE))
 
-class (SupportedPrim b) => TermRewritingSpec a b | a -> b where
+class (SupportedNonFuncPrim b) => TermRewritingSpec a b | a -> b where
   norewriteVer :: a -> Term b
   rewriteVer :: a -> Term b
   wrap :: Term b -> Term b -> a
@@ -634,10 +635,10 @@ instance Arbitrary LIAWithBoolSpec where
 
 data FixedSizedBVWithBoolSpec (bv :: Nat -> Type) (n :: Nat) = FixedSizedBVWithBoolSpec (Term (bv n)) (Term (bv n))
 
-instance (SupportedPrim (bv n)) => Show (FixedSizedBVWithBoolSpec bv n) where
+instance (SupportedNonFuncPrim (bv n)) => Show (FixedSizedBVWithBoolSpec bv n) where
   show (FixedSizedBVWithBoolSpec n r) = "FixedSizedBVWithBoolSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance (SupportedPrim (bv n)) => TermRewritingSpec (FixedSizedBVWithBoolSpec bv n) (bv n) where
+instance (SupportedNonFuncPrim (bv n)) => TermRewritingSpec (FixedSizedBVWithBoolSpec bv n) (bv n) where
   norewriteVer (FixedSizedBVWithBoolSpec n _) = n
   rewriteVer (FixedSizedBVWithBoolSpec _ r) = r
   wrap = FixedSizedBVWithBoolSpec
@@ -737,10 +738,10 @@ instance (SupportedBV bv n) => Arbitrary (FixedSizedBVWithBoolSpec bv n) where
 
 data DifferentSizeBVSpec bv (n :: Nat) = DifferentSizeBVSpec (Term (bv n)) (Term (bv n))
 
-instance (SupportedPrim (bv n)) => Show (DifferentSizeBVSpec bv n) where
+instance (SupportedNonFuncPrim (bv n)) => Show (DifferentSizeBVSpec bv n) where
   show (DifferentSizeBVSpec n r) = "DSizeBVSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance (SupportedPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec bv n) (bv n) where
+instance (SupportedNonFuncPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec bv n) (bv n) where
   norewriteVer (DifferentSizeBVSpec n _) = n
   rewriteVer (DifferentSizeBVSpec _ r) = r
   wrap = DifferentSizeBVSpec
@@ -988,7 +989,7 @@ data GeneralSpec s = GeneralSpec (Term s) (Term s)
 instance (SupportedPrim s) => Show (GeneralSpec s) where
   show (GeneralSpec n r) = "GeneralSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance (SupportedPrim s) => TermRewritingSpec (GeneralSpec s) s where
+instance (SupportedNonFuncPrim s) => TermRewritingSpec (GeneralSpec s) s where
   norewriteVer (GeneralSpec n _) = n
   rewriteVer (GeneralSpec _ r) = r
   wrap = GeneralSpec

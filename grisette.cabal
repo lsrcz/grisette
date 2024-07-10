@@ -62,6 +62,7 @@ library
       Grisette.Experimental.GenSymConstrained
       Grisette.Experimental.MonadParallelUnion
       Grisette.Experimental.Qualified.ParallelUnionDo
+      Grisette.Internal.Backend.QuantifiedStack
       Grisette.Internal.Backend.Solving
       Grisette.Internal.Backend.SymBiMap
       Grisette.Internal.Core.Control.Exception
@@ -329,6 +330,7 @@ test-suite spec
       Grisette.SymPrim.Prim.BitsTests
       Grisette.SymPrim.Prim.BoolTests
       Grisette.SymPrim.Prim.BVTests
+      Grisette.SymPrim.Prim.GeneralFunTests
       Grisette.SymPrim.Prim.IntegralTests
       Grisette.SymPrim.Prim.ModelTests
       Grisette.SymPrim.Prim.NumTests

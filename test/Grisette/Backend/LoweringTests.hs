@@ -10,7 +10,7 @@
 
 module Grisette.Backend.LoweringTests (loweringTests) where
 
-import Control.Monad.Trans (MonadTrans (lift))
+import Control.Monad.Trans (MonadIO (liftIO), MonadTrans (lift))
 import Data.Bits
   ( Bits (complement, xor, (.&.), (.|.)),
   )
@@ -35,6 +35,10 @@ import Grisette
     solve,
     type (-~>),
     type (=~>),
+  )
+import Grisette.Internal.Backend.QuantifiedStack
+  ( emptyQuantifiedStack,
+    emptyQuantifiedSymbols,
   )
 import Grisette.Internal.Backend.Solving
   ( GrisetteSMTConfig (sbvConfig),
@@ -66,10 +70,21 @@ import Grisette.Internal.SymPrim.Prim.Term
         FPIsSubnormal,
         FPIsZero
       ),
-    FloatingUnaryOp (FloatingAcos, FloatingAsin, FloatingAtan, FloatingCos, FloatingCosh, FloatingSin, FloatingSinh, FloatingTan, FloatingTanh),
+    FloatingUnaryOp
+      ( FloatingAcos,
+        FloatingAsin,
+        FloatingAtan,
+        FloatingCos,
+        FloatingCosh,
+        FloatingSin,
+        FloatingSinh,
+        FloatingTan,
+        FloatingTanh
+      ),
     SBVRep (SBVType),
     SupportedPrim,
     Term,
+    TypedSymbol,
     absNumTerm,
     addNumTerm,
     andBitsTerm,
@@ -82,8 +97,10 @@ import Grisette.Internal.SymPrim.Prim.Term
     conTerm,
     divIntegralTerm,
     eqTerm,
+    existsTerm,
     fdivTerm,
     floatingUnaryTerm,
+    forallTerm,
     fpTraitTerm,
     iteTerm,
     leOrdTerm,
@@ -137,22 +154,26 @@ testUnaryOpLowering config f name sbvfun = do
   let fa :: Term b = f a
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fa
-    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) =
+          M.lookup (SomeTerm a) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case sbva of
       Nothing -> lift $ assertFailure "Failed to extract the term"
       Just sbvav -> SBV.query $ do
-        SBV.constrain $ lt SBV..== sbvfun sbvav
+        SBV.constrain $ lt emptyQuantifiedStack SBV..== sbvfun sbvav
         satres <- SBV.checkSat
         case satres of
           SBV.Sat -> return ()
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unsolvable formula"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fa
-    let sbvv :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
+    let sbvv :: Maybe (SBVType n a) =
+          M.lookup (SomeTerm a) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case sbvv of
       Nothing -> lift $ assertFailure "Failed to extract the term"
       Just sbvvv -> SBV.query $ do
-        SBV.constrain $ lt SBV../= sbvfun sbvvv
+        SBV.constrain $ lt emptyQuantifiedStack SBV../= sbvfun sbvvv
         r <- SBV.checkSat
         case r of
           SBV.Sat -> do
@@ -187,11 +208,15 @@ testBinaryOpLowering config f name sbvfun = do
   let fab :: Term c = f a b
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fab
-    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) =
+          M.lookup (SomeTerm a) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+    let sbvb :: Maybe (SBVType n b) =
+          M.lookup (SomeTerm b) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb) of
       (Just sbvav, Just sbvbv) -> SBV.query $ do
-        SBV.constrain $ lt SBV..== sbvfun sbvav sbvbv
+        SBV.constrain $ lt emptyQuantifiedStack SBV..== sbvfun sbvav sbvbv
         satres <- SBV.checkSat
         case satres of
           SBV.Sat -> return ()
@@ -199,11 +224,15 @@ testBinaryOpLowering config f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fab
-    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) =
+          M.lookup (SomeTerm a) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+    let sbvb :: Maybe (SBVType n b) =
+          M.lookup (SomeTerm b) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb) of
       (Just sbvav, Just sbvbv) -> SBV.query $ do
-        SBV.constrain $ lt SBV../= sbvfun sbvav sbvbv
+        SBV.constrain $ lt emptyQuantifiedStack SBV../= sbvfun sbvav sbvbv
         r <- SBV.checkSat
         case r of
           SBV.Sat -> do
@@ -247,12 +276,18 @@ testTernaryOpLowering config precond f name sbvfun = do
   let fabc :: Term d = f a b c
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc
-    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m) >>= fromDynamic
-    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m) >>= fromDynamic
-    let sbvc :: Maybe (SBVType n c) = M.lookup (SomeTerm c) (biMapToSBV m) >>= fromDynamic
+    let sbva :: Maybe (SBVType n a) =
+          M.lookup (SomeTerm a) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+    let sbvb :: Maybe (SBVType n b) =
+          M.lookup (SomeTerm b) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+    let sbvc :: Maybe (SBVType n c) =
+          M.lookup (SomeTerm c) (biMapToSBV m)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb, sbvc) of
       (Just sbvav, Just sbvbv, Just sbvcv) -> SBV.query $ do
-        SBV.constrain $ lt SBV..== sbvfun sbvav sbvbv sbvcv
+        SBV.constrain $ lt emptyQuantifiedStack SBV..== sbvfun sbvav sbvbv sbvcv
         satres <- SBV.checkSat
         case satres of
           SBV.Sat -> return ()
@@ -260,13 +295,21 @@ testTernaryOpLowering config precond f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt) <- lowerSinglePrim config fabc
-    (m2, p) <- lowerSinglePrimCached config (precond a b c) m
-    let sbva :: Maybe (SBVType n a) = M.lookup (SomeTerm a) (biMapToSBV m2) >>= fromDynamic
-    let sbvb :: Maybe (SBVType n b) = M.lookup (SomeTerm b) (biMapToSBV m2) >>= fromDynamic
-    let sbvc :: Maybe (SBVType n c) = M.lookup (SomeTerm c) (biMapToSBV m2) >>= fromDynamic
+    (m2, p) <- lowerSinglePrimCached config (precond a b c) emptyQuantifiedSymbols m
+    let sbva :: Maybe (SBVType n a) =
+          M.lookup (SomeTerm a) (biMapToSBV m2)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+    let sbvb :: Maybe (SBVType n b) =
+          M.lookup (SomeTerm b) (biMapToSBV m2)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+    let sbvc :: Maybe (SBVType n c) =
+          M.lookup (SomeTerm c) (biMapToSBV m2)
+            >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb, sbvc) of
       (Just sbvav, Just sbvbv, Just sbvcv) -> SBV.query $ do
-        SBV.constrain $ (lt SBV../= sbvfun sbvav sbvbv sbvcv) SBV..&& p
+        SBV.constrain $
+          (lt emptyQuantifiedStack SBV../= sbvfun sbvav sbvbv sbvcv)
+            SBV..&& p emptyQuantifiedStack
         r <- SBV.checkSat
         case r of
           SBV.Sat -> do
@@ -999,5 +1042,81 @@ loweringTests =
             evalSym False m (f # a # b .== a + b) @?= con True
             evalSym False m (f # a # c .== a + c) @?= con True
             evalSym False m (f # a # d .== a + d) @?= con True
-            evalSym False m (f # b # d .== b + d) @?= con True
+            evalSym False m (f # b # d .== b + d) @?= con True,
+          testCase "Forall" $ do
+            let asym :: TypedSymbol Integer = "a"
+            let a :: Term Integer = ssymTerm "a"
+            let xsym :: TypedSymbol Integer = "x"
+            let x :: Term Integer = ssymTerm "x"
+            let xterm =
+                  forallTerm
+                    xsym
+                    (eqTerm (addNumTerm a x) (addNumTerm x $ conTerm 10))
+            let yterm =
+                  forallTerm
+                    asym
+                    (eqTerm (addNumTerm a x) (addNumTerm a $ conTerm 20))
+            SBV.runSMTWith SBV.z3 $ do
+              (m, v) <- lowerSinglePrim z3 (andTerm xterm yterm)
+              let sbva =
+                    M.lookup (SomeTerm a) (biMapToSBV m)
+                      >>= \f -> fromDynamic (f emptyQuantifiedStack)
+              let sbvx =
+                    M.lookup (SomeTerm x) (biMapToSBV m)
+                      >>= \f -> fromDynamic (f emptyQuantifiedStack)
+              case (sbva, sbvx) of
+                (Just (sbvav :: SBV.SInteger), Just (sbvxv :: SBV.SInteger)) ->
+                  SBV.query $ do
+                    SBV.constrain $ v emptyQuantifiedStack
+                    satres <- SBV.checkSat
+                    case satres of
+                      SBV.Sat -> do
+                        av <- SBV.getValue sbvav
+                        liftIO $ av @?= 10
+                        xv <- SBV.getValue sbvxv
+                        liftIO $ xv @?= 20
+                      _ -> liftIO $ assertFailure "Unsat"
+                _ -> liftIO $ assertFailure "Failed to find a",
+          testCase "Forall failed" $ do
+            let xsym :: TypedSymbol Integer = "x"
+            let x :: Term Integer = ssymTerm "x"
+            let xterm = forallTerm xsym (eqTerm x (conTerm 10))
+            SBV.runSMTWith SBV.z3 $ do
+              (_, v) <- lowerSinglePrim z3 xterm
+              SBV.query $ do
+                SBV.constrain $ v emptyQuantifiedStack
+                satres <- SBV.checkSat
+                case satres of
+                  SBV.Unsat -> return ()
+                  _ -> liftIO $ assertFailure "Should be unsat",
+          testCase "Forall-Exists" $ do
+            let asym :: TypedSymbol Integer = "a"
+            let a :: Term Integer = ssymTerm "a"
+            let xsym :: TypedSymbol Integer = "x"
+            let x :: Term Integer = ssymTerm "x"
+            let xterm =
+                  forallTerm xsym $ existsTerm asym (ltOrdTerm x a)
+            SBV.runSMTWith SBV.z3 $ do
+              (_, v) <- lowerSinglePrim z3 xterm
+              SBV.query $ do
+                SBV.constrain $ v emptyQuantifiedStack
+                satres <- SBV.checkSat
+                case satres of
+                  SBV.Sat -> return ()
+                  _ -> liftIO $ assertFailure "Unsat",
+          testCase "Exists-Forall" $ do
+            let asym :: TypedSymbol Integer = "a"
+            let a :: Term Integer = ssymTerm "a"
+            let xsym :: TypedSymbol Integer = "x"
+            let x :: Term Integer = ssymTerm "x"
+            let xterm =
+                  existsTerm asym $ forallTerm xsym (ltOrdTerm x a)
+            SBV.runSMTWith SBV.z3 $ do
+              (_, v) <- lowerSinglePrim z3 xterm
+              SBV.query $ do
+                SBV.constrain $ v emptyQuantifiedStack
+                satres <- SBV.checkSat
+                case satres of
+                  SBV.Unsat -> return ()
+                  _ -> liftIO $ assertFailure "should be unsat"
         ]
