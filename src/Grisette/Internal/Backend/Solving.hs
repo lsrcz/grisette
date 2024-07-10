@@ -641,6 +641,7 @@ lowerSinglePrimImpl config t@(SymTerm _ ts) _ m = withPrim @a config $
     g <- symSBVTerm @a config name
     return
       (addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m, const g)
+#if MIN_VERSION_sbv(10,1,0)
 lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedSymbol 'NonFuncSymbol t1) v) qs m =
   withNonFuncPrim @t1 config $ do
     do
@@ -671,6 +672,12 @@ lowerSinglePrimImpl config t@(ExistsTerm _ (ts :: TypedSymbol 'NonFuncSymbol t1)
             \(SBV.Exists (a :: SBVType integerBitWidth t1)) ->
               r $ addQuantified sb (toDyn a) qst
       return (addBiMapIntermediate (SomeTerm t) (toDyn . ret) nextm, ret)
+#else
+lowerSinglePrimImpl _ ForallTerm {} _ _ =
+  error "Quantifiers are only available when you build with SBV 10.1.0 or later"
+lowerSinglePrimImpl _ ExistsTerm {} _ _ =
+  error "Quantifiers are only available when you build with SBV 10.1.0 or later"
+#endif
 lowerSinglePrimImpl config t qs m =
   introSupportedPrimConstraint t $
     withPrim @a config $ do

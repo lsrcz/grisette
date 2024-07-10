@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -1044,80 +1045,92 @@ loweringTests =
             evalSym False m (f # a # c .== a + c) @?= con True
             evalSym False m (f # a # d .== a + d) @?= con True
             evalSym False m (f # b # d .== b + d) @?= con True,
-          testCase "Forall" $ do
-            let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
-            let a :: Term Integer = ssymTerm "a"
-            let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
-            let x :: Term Integer = ssymTerm "x"
-            let xterm =
-                  forallTerm
-                    xsym
-                    (eqTerm (addNumTerm a x) (addNumTerm x $ conTerm 10))
-            let yterm =
-                  forallTerm
-                    asym
-                    (eqTerm (addNumTerm a x) (addNumTerm a $ conTerm 20))
-            SBV.runSMTWith SBV.z3 $ do
-              (m, v) <- lowerSinglePrim z3 (andTerm xterm yterm)
-              let sbva =
-                    M.lookup (SomeTerm a) (biMapToSBV m)
-                      >>= \f -> fromDynamic (f emptyQuantifiedStack)
-              let sbvx =
-                    M.lookup (SomeTerm x) (biMapToSBV m)
-                      >>= \f -> fromDynamic (f emptyQuantifiedStack)
-              case (sbva, sbvx) of
-                (Just (sbvav :: SBV.SInteger), Just (sbvxv :: SBV.SInteger)) ->
-                  SBV.query $ do
-                    SBV.constrain $ v emptyQuantifiedStack
-                    satres <- SBV.checkSat
-                    case satres of
-                      SBV.Sat -> do
-                        av <- SBV.getValue sbvav
-                        liftIO $ av @?= 10
-                        xv <- SBV.getValue sbvxv
-                        liftIO $ xv @?= 20
-                      _ -> liftIO $ assertFailure "Unsat"
-                _ -> liftIO $ assertFailure "Failed to find a",
-          testCase "Forall failed" $ do
-            let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
-            let x :: Term Integer = ssymTerm "x"
-            let xterm = forallTerm xsym (eqTerm x (conTerm 10))
-            SBV.runSMTWith SBV.z3 $ do
-              (_, v) <- lowerSinglePrim z3 xterm
-              SBV.query $ do
-                SBV.constrain $ v emptyQuantifiedStack
-                satres <- SBV.checkSat
-                case satres of
-                  SBV.Unsat -> return ()
-                  _ -> liftIO $ assertFailure "Should be unsat",
-          testCase "Forall-Exists" $ do
-            let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
-            let a :: Term Integer = ssymTerm "a"
-            let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
-            let x :: Term Integer = ssymTerm "x"
-            let xterm =
-                  forallTerm xsym $ existsTerm asym (ltOrdTerm x a)
-            SBV.runSMTWith SBV.z3 $ do
-              (_, v) <- lowerSinglePrim z3 xterm
-              SBV.query $ do
-                SBV.constrain $ v emptyQuantifiedStack
-                satres <- SBV.checkSat
-                case satres of
-                  SBV.Sat -> return ()
-                  _ -> liftIO $ assertFailure "Unsat",
-          testCase "Exists-Forall" $ do
-            let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
-            let a :: Term Integer = ssymTerm "a"
-            let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
-            let x :: Term Integer = ssymTerm "x"
-            let xterm =
-                  existsTerm asym $ forallTerm xsym (ltOrdTerm x a)
-            SBV.runSMTWith SBV.z3 $ do
-              (_, v) <- lowerSinglePrim z3 xterm
-              SBV.query $ do
-                SBV.constrain $ v emptyQuantifiedStack
-                satres <- SBV.checkSat
-                case satres of
-                  SBV.Unsat -> return ()
-                  _ -> liftIO $ assertFailure "should be unsat"
+          sbvVersionCheck $
+            testGroup
+              "Quantifiers"
+              [ testCase "Forall" $ do
+                  let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
+                  let a :: Term Integer = ssymTerm "a"
+                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let x :: Term Integer = ssymTerm "x"
+                  let xterm =
+                        forallTerm
+                          xsym
+                          (eqTerm (addNumTerm a x) (addNumTerm x $ conTerm 10))
+                  let yterm =
+                        forallTerm
+                          asym
+                          (eqTerm (addNumTerm a x) (addNumTerm a $ conTerm 20))
+                  SBV.runSMTWith SBV.z3 $ do
+                    (m, v) <- lowerSinglePrim z3 (andTerm xterm yterm)
+                    let sbva =
+                          M.lookup (SomeTerm a) (biMapToSBV m)
+                            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+                    let sbvx =
+                          M.lookup (SomeTerm x) (biMapToSBV m)
+                            >>= \f -> fromDynamic (f emptyQuantifiedStack)
+                    case (sbva, sbvx) of
+                      (Just (sbvav :: SBV.SInteger), Just (sbvxv :: SBV.SInteger)) ->
+                        SBV.query $ do
+                          SBV.constrain $ v emptyQuantifiedStack
+                          satres <- SBV.checkSat
+                          case satres of
+                            SBV.Sat -> do
+                              av <- SBV.getValue sbvav
+                              liftIO $ av @?= 10
+                              xv <- SBV.getValue sbvxv
+                              liftIO $ xv @?= 20
+                            _ -> liftIO $ assertFailure "Unsat"
+                      _ -> liftIO $ assertFailure "Failed to find a",
+                testCase "Forall failed" $ do
+                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let x :: Term Integer = ssymTerm "x"
+                  let xterm = forallTerm xsym (eqTerm x (conTerm 10))
+                  SBV.runSMTWith SBV.z3 $ do
+                    (_, v) <- lowerSinglePrim z3 xterm
+                    SBV.query $ do
+                      SBV.constrain $ v emptyQuantifiedStack
+                      satres <- SBV.checkSat
+                      case satres of
+                        SBV.Unsat -> return ()
+                        _ -> liftIO $ assertFailure "Should be unsat",
+                testCase "Forall-Exists" $ do
+                  let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
+                  let a :: Term Integer = ssymTerm "a"
+                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let x :: Term Integer = ssymTerm "x"
+                  let xterm =
+                        forallTerm xsym $ existsTerm asym (ltOrdTerm x a)
+                  SBV.runSMTWith SBV.z3 $ do
+                    (_, v) <- lowerSinglePrim z3 xterm
+                    SBV.query $ do
+                      SBV.constrain $ v emptyQuantifiedStack
+                      satres <- SBV.checkSat
+                      case satres of
+                        SBV.Sat -> return ()
+                        _ -> liftIO $ assertFailure "Unsat",
+                testCase "Exists-Forall" $ do
+                  let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
+                  let a :: Term Integer = ssymTerm "a"
+                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let x :: Term Integer = ssymTerm "x"
+                  let xterm =
+                        existsTerm asym $ forallTerm xsym (ltOrdTerm x a)
+                  SBV.runSMTWith SBV.z3 $ do
+                    (_, v) <- lowerSinglePrim z3 xterm
+                    SBV.query $ do
+                      SBV.constrain $ v emptyQuantifiedStack
+                      satres <- SBV.checkSat
+                      case satres of
+                        SBV.Unsat -> return ()
+                        _ -> liftIO $ assertFailure "should be unsat"
+              ]
         ]
+
+#if MIN_VERSION_sbv(10,1,0)
+sbvVersionCheck :: Test -> Test
+sbvVersionCheck = id
+#else
+sbvVersionCheck :: Test -> Test
+sbvVersionCheck _ = testGroup "Quantifiers" []
+#endif

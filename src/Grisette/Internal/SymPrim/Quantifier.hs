@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 
 module Grisette.Internal.SymPrim.Quantifier
@@ -23,32 +24,48 @@ import Grisette.Internal.SymPrim.Prim.Term
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 
+#if MIN_VERSION_sbv(10,1,0)
+sbvVersionCheck :: HasCallStack => ()
+sbvVersionCheck = ()
+#else
+sbvVersionCheck :: HasCallStack => ()
+sbvVersionCheck =
+  error 
+    "Quantifiers are only available when you build with SBV 10.1.0 or later."
+#endif
+
 forallSet :: SymbolSet 'NonFuncSymbol -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
-  HS.foldr
-    ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
-        SymBool $ forallTerm s b'
-    )
-    b
-    set
+  sbvVersionCheck `seq`
+    HS.foldr
+      ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
+          SymBool $ forallTerm s b'
+      )
+      b
+      set
 
 forallSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
-forallSym s b = case extractSymMaybe s of
-  Just s' -> forallSet s' b
-  Nothing ->
-    error "Cannot use forall here. Only non-function symbols can be quantified."
+forallSym s b =
+  sbvVersionCheck `seq` case extractSymMaybe s of
+    Just s' -> forallSet s' b
+    Nothing ->
+      error
+        "Cannot use forall here. Only non-function symbols can be quantified."
 
 existsSet :: SymbolSet 'NonFuncSymbol -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
-  HS.foldr
-    ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
-        SymBool $ existsTerm s b'
-    )
-    b
-    set
+  sbvVersionCheck `seq`
+    HS.foldr
+      ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
+          SymBool $ existsTerm s b'
+      )
+      b
+      set
 
 existsSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
-existsSym s b = case extractSymMaybe s of
-  Just s' -> existsSet s' b
-  Nothing ->
-    error "Cannot use exists here. Only non-function symbols can be quantified."
+existsSym s b =
+  sbvVersionCheck `seq` case extractSymMaybe s of
+    Just s' -> existsSet s' b
+    Nothing ->
+      error
+        "Cannot use exists here. Only non-function symbols can be quantified."
