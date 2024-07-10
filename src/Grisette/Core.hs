@@ -311,6 +311,8 @@ module Grisette.Core
     uniqueIdentifier,
     simple,
     indexed,
+    symbolIdentifier,
+    modifyIdentifier,
 
     -- ** Creation and extraction of solvable values
     Solvable (..),
@@ -1727,7 +1729,7 @@ import Grisette.Internal.Core.Data.Symbol
     simple,
     uniqueIdentifier,
     withInfo,
-    withLoc,
+    withLoc, symbolIdentifier, modifyIdentifier,
   )
 
 -- $setup
