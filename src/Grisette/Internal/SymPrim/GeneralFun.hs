@@ -1,3 +1,5 @@
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -14,8 +16,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.GeneralFun
@@ -49,6 +49,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP (pevalFPBinaryT
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( BinaryOp (pevalBinary),
+    IsSymbolKind (decideSymbolKind),
     LinkedRep (underlyingTerm, wrapTerm),
     NonFuncSBVBaseType,
     PEvalApplyTerm (pevalApplyTerm, sbvApplyTerm),
@@ -79,7 +80,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SBVRep (SBVType),
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim
-      ( conSBVTerm,
+      ( castTypedSymbol,
+        conSBVTerm,
         defaultValue,
         parseSMTModelResult,
         pevalITETerm,
@@ -89,6 +91,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
+    SymbolKind (NonFuncSymbol),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -143,6 +146,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     UnaryOp (pevalUnary),
     applyTerm,
     conTerm,
+    eqHeteroSymbol,
     existsTerm,
     forallTerm,
     partitionCVArg,
@@ -155,7 +159,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalRemIntegralTerm,
     pevalRotateLeftTerm,
     pformat,
-    someTypedSymbol,
     symTerm,
     translateTypeError,
   )
@@ -192,7 +195,7 @@ import Unsafe.Coerce (unsafeCoerce)
 data (-->) a b where
   GeneralFun ::
     (SupportedPrim a, SupportedPrim b) =>
-    TypedSymbol a ->
+    TypedSymbol 'NonFuncSymbol a ->
     Term b ->
     a --> b
 
@@ -203,7 +206,7 @@ infixr 0 -->
 
 -- | Build a general symbolic function with a bounded symbol and a term.
 buildGeneralFun ::
-  (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term b -> a --> b
+  (SupportedNonFuncPrim a, SupportedPrim b) => TypedSymbol 'NonFuncSymbol a -> Term b -> a --> b
 buildGeneralFun arg v =
   GeneralFun
     (TypedSymbol newarg)
@@ -322,6 +325,14 @@ instance
       )
       (typeRep @(a --> b))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b) ->
+    Maybe (TypedSymbol knd' (a --> b))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -369,6 +380,14 @@ instance
       )
       (typeRep @(a --> b --> c))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b --> c) ->
+    Maybe (TypedSymbol knd' (a --> b --> c))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -420,6 +439,14 @@ instance
       )
       (typeRep @(a --> b --> c --> d))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b --> c --> d) ->
+    Maybe (TypedSymbol knd' (a --> b --> c --> d))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -475,6 +502,14 @@ instance
       )
       (typeRep @(a --> b --> c --> d --> e))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b --> c --> d --> e) ->
+    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -534,6 +569,14 @@ instance
       )
       (typeRep @(a --> b --> c --> d --> e --> f))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b --> c --> d --> e --> f) ->
+    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e --> f))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -597,6 +640,14 @@ instance
       )
       (typeRep @(a --> b --> c --> d --> e --> f --> g))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b --> c --> d --> e --> f --> g) ->
+    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e --> f --> g))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -664,6 +715,14 @@ instance
       )
       (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
   parseSMTModelResult = parseGeneralFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a --> b --> c --> d --> e --> f --> g --> h) ->
+    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e --> f --> g --> h))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 pevalGeneralFunApplyTerm ::
   ( SupportedNonFuncPrim a,
@@ -693,7 +752,13 @@ instance
     withPrim @(a --> b) p $ withNonFuncPrim @a p $ f a
 
 -- | Substitute a term for a symbol in a term.
-substTerm :: forall a b. (SupportedPrim a, SupportedPrim b) => TypedSymbol a -> Term a -> Term b -> Term b
+substTerm ::
+  forall knd a b.
+  (SupportedPrim a, SupportedPrim b, IsSymbolKind knd) =>
+  TypedSymbol knd a ->
+  Term a ->
+  Term b ->
+  Term b
 substTerm sym term = gov
   where
     gov :: (SupportedPrim x) => Term x -> Term x
@@ -707,18 +772,18 @@ substTerm sym term = gov
             case eqTypeRep gf (typeRep @(-->)) of
               Just HRefl -> case cv of
                 GeneralFun sym1 tm1 ->
-                  if someTypedSymbol sym1 == someTypedSymbol sym
+                  if eqHeteroSymbol sym1 sym
                     then stm
                     else SomeTerm $ conTerm $ GeneralFun sym1 (gov tm1)
               Nothing -> stm
           _ -> stm
-        SymTerm _ ts -> SomeTerm $ if someTypedSymbol ts == someTypedSymbol sym then unsafeCoerce term else tm
+        SymTerm _ ts -> SomeTerm $ if eqHeteroSymbol ts sym then unsafeCoerce term else tm
         ForallTerm _ ts a ->
-          if someTypedSymbol ts == someTypedSymbol sym
+          if eqHeteroSymbol ts sym
             then stm
             else SomeTerm $ forallTerm ts (gov a)
         ExistsTerm _ ts a ->
-          if someTypedSymbol ts == someTypedSymbol sym
+          if eqHeteroSymbol ts sym
             then stm
             else SomeTerm $ existsTerm ts (gov a)
         UnaryTerm _ tag te -> SomeTerm $ pevalUnary tag (gov te)

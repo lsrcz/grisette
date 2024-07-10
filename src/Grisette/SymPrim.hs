@@ -177,6 +177,8 @@ module Grisette.SymPrim
     genericLiftAllSymsS,
 
     -- * Symbolic constant sets and models
+    SymbolKind (..),
+    IsSymbolKind (..),
     TypedSymbol (..),
     SymbolSet,
     Model,
@@ -238,9 +240,11 @@ import Grisette.Internal.SymPrim.Prim.Model
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (..),
+    IsSymbolKind (..),
     LinkedRep,
     SupportedPrim,
     SymRep (..),
+    SymbolKind (..),
     TypedSymbol (..),
   )
 import Grisette.Internal.SymPrim.SomeBV

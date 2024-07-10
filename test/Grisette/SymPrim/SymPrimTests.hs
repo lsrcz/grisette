@@ -75,6 +75,7 @@ import Grisette
     SomeSymWordN,
     SymEq ((./=), (.==)),
     SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    SymbolKind (AnySymbol),
     ToCon (toCon),
     ToSym (toSym),
     TypedSymbol,
@@ -484,9 +485,9 @@ symPrimTests =
             extractSym (symIte ("c" :: SymBool) ("a" :: SymInteger) ("b" :: SymInteger))
               @=? SymbolSet
                 ( S.fromList
-                    [ someTypedSymbol ("c" :: TypedSymbol Bool),
-                      someTypedSymbol ("a" :: TypedSymbol Integer),
-                      someTypedSymbol ("b" :: TypedSymbol Integer)
+                    [ someTypedSymbol ("c" :: TypedSymbol 'AnySymbol Bool),
+                      someTypedSymbol ("a" :: TypedSymbol 'AnySymbol Integer),
+                      someTypedSymbol ("b" :: TypedSymbol 'AnySymbol Integer)
                     ]
                 ),
           testCase "GenSym" $ do
@@ -918,14 +919,14 @@ symPrimTests =
             symSize (symIte (ssym "a" :: SymBool) (ssym "b") (ssym "c") :: SymInteger) @=? 4,
           testCase "symsSize" $ symsSize [ssym "a" :: SymInteger, ssym "a" + ssym "a"] @=? 2
         ],
-      let asymbol :: TypedSymbol Integer = "a"
-          bsymbol :: TypedSymbol Bool = "b"
-          csymbol :: TypedSymbol Integer = "c"
-          dsymbol :: TypedSymbol Bool = "d"
-          esymbol :: TypedSymbol (WordN 4) = "e"
-          fsymbol :: TypedSymbol (IntN 4) = "f"
-          gsymbol :: TypedSymbol (WordN 16) = "g"
-          hsymbol :: TypedSymbol (IntN 16) = "h"
+      let asymbol :: TypedSymbol 'AnySymbol Integer = "a"
+          bsymbol :: TypedSymbol 'AnySymbol Bool = "b"
+          csymbol :: TypedSymbol 'AnySymbol Integer = "c"
+          dsymbol :: TypedSymbol 'AnySymbol Bool = "d"
+          esymbol :: TypedSymbol 'AnySymbol (WordN 4) = "e"
+          fsymbol :: TypedSymbol 'AnySymbol (IntN 4) = "f"
+          gsymbol :: TypedSymbol 'AnySymbol (WordN 16) = "g"
+          hsymbol :: TypedSymbol 'AnySymbol (IntN 16) = "h"
           va :: Integer = 1
           vc :: Integer = 2
           ve :: WordN 4 = 3

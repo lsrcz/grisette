@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 module Grisette.Core.Data.Class.TestValues
   ( conBool,
     symTrue,
@@ -14,6 +16,7 @@ import Grisette
     Solvable (con, isym, ssym),
     SymBool,
     Symbol (IndexedSymbol, SimpleSymbol),
+    SymbolKind (AnySymbol),
     TypedSymbol (TypedSymbol),
   )
 
@@ -32,8 +35,8 @@ ssymBool = ssym
 isymBool :: Identifier -> Int -> SymBool
 isymBool = isym
 
-ssymbolBool :: Identifier -> TypedSymbol Bool
+ssymbolBool :: Identifier -> TypedSymbol 'AnySymbol Bool
 ssymbolBool = TypedSymbol . SimpleSymbol
 
-isymbolBool :: Identifier -> Int -> TypedSymbol Bool
+isymbolBool :: Identifier -> Int -> TypedSymbol 'AnySymbol Bool
 isymbolBool i idx = TypedSymbol $ IndexedSymbol i idx

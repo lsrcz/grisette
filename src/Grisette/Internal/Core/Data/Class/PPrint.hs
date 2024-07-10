@@ -895,10 +895,10 @@ instance PPrint Identifier where
 instance PPrint Symbol where
   pformat = viaShow
 
-instance PPrint (TypedSymbol t) where
+instance PPrint (TypedSymbol knd t) where
   pformat = viaShow
 
-instance PPrint SomeTypedSymbol where
+instance PPrint (SomeTypedSymbol knd) where
   pformat = viaShow
 
 instance PPrint ModelValue where
@@ -908,13 +908,13 @@ instance PPrint Model where
   pformatPrec n (Model m) =
     pformatWithConstructor n "Model" [bodyFormatted]
     where
-      pformatSymbolWithoutType :: SomeTypedSymbol -> Doc ann
+      pformatSymbolWithoutType :: SomeTypedSymbol knd -> Doc ann
       pformatSymbolWithoutType (SomeTypedSymbol _ s) = pformat $ unTypedSymbol s
-      pformatPair :: (SomeTypedSymbol, ModelValue) -> Doc ann
+      pformatPair :: (SomeTypedSymbol knd, ModelValue) -> Doc ann
       pformatPair (s, v) = pformatSymbolWithoutType s <> " -> " <> pformat v
       bodyFormatted = pformatListLike "{" "}" $ pformatPair <$> HM.toList m
 
-instance PPrint SymbolSet where
+instance PPrint (SymbolSet knd) where
   pformatPrec n (SymbolSet s) =
     pformatWithConstructor
       n

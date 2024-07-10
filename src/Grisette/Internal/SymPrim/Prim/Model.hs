@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -69,7 +70,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
     pevalFPUnaryTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( Term (ExistsTerm, FPFMATerm),
+  ( SupportedPrim (castTypedSymbol),
+    SymbolKind (AnySymbol, NonFuncSymbol),
+    Term (ExistsTerm, FPFMATerm),
     existsTerm,
     forallTerm,
   )
@@ -193,16 +196,18 @@ import Unsafe.Coerce (unsafeCoerce)
 --
 -- Check 'Grisette.Core.SymbolSetOps' for operations, and
 -- 'Grisette.Core.SymbolSetRep' for manual constructions.
-newtype SymbolSet = SymbolSet {unSymbolSet :: S.HashSet SomeTypedSymbol}
+newtype SymbolSet knd = SymbolSet
+  { unSymbolSet :: S.HashSet (SomeTypedSymbol knd)
+  }
   deriving (Eq, Generic, Hashable)
 
-instance Semigroup SymbolSet where
+instance Semigroup (SymbolSet knd) where
   SymbolSet s1 <> SymbolSet s2 = SymbolSet $ S.union s1 s2
 
-instance Monoid SymbolSet where
+instance Monoid (SymbolSet knd) where
   mempty = emptySet
 
-instance Show SymbolSet where
+instance Show (SymbolSet knd) where
   showsPrec prec (SymbolSet s) = showParen (prec >= 10) $ \x ->
     "SymbolSet {"
       ++ go0 (sort $ show <$> S.toList s)
@@ -217,7 +222,9 @@ instance Show SymbolSet where
 --
 -- Check 'Grisette.Core.ModelOps' for operations, and 'Grisette.Core.ModelRep'
 -- for manual constructions.
-newtype Model = Model {unModel :: M.HashMap SomeTypedSymbol ModelValue}
+newtype Model = Model
+  { unModel :: M.HashMap (SomeTypedSymbol 'AnySymbol) ModelValue
+  }
   deriving (Eq, Generic, Hashable)
 
 instance Semigroup Model where
@@ -239,13 +246,13 @@ instance Show Model where
 
 -- | Given a typed symbol and a model, return the equation (symbol = value)
 -- encoded in the model.
-equation :: TypedSymbol a -> Model -> Maybe (Term Bool)
+equation :: TypedSymbol 'AnySymbol a -> Model -> Maybe (Term Bool)
 equation tsym@(TypedSymbol {}) m = withSymbolSupported tsym $
   case valueOf tsym m of
     Just v -> Just $ pevalEqTerm (symTerm $ unTypedSymbol tsym) (conTerm v)
     Nothing -> Nothing
 
-instance SymbolSetOps SymbolSet TypedSymbol where
+instance SymbolSetOps (SymbolSet knd) (TypedSymbol knd) where
   emptySet = SymbolSet S.empty
   isEmptySet (SymbolSet s) = S.null s
   containsSymbol s =
@@ -255,16 +262,16 @@ instance SymbolSetOps SymbolSet TypedSymbol where
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
 
-instance SymbolSetRep (TypedSymbol t) SymbolSet TypedSymbol where
+instance SymbolSetRep (TypedSymbol knd t) (SymbolSet knd) (TypedSymbol knd) where
   buildSymbolSet sym = insertSymbol sym emptySet
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b
+    ( TypedSymbol knd a,
+      TypedSymbol knd b
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2) =
     insertSymbol sym2
@@ -273,12 +280,12 @@ instance
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b,
-      TypedSymbol c
+    ( TypedSymbol knd a,
+      TypedSymbol knd b,
+      TypedSymbol knd c
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2, sym3) =
     insertSymbol sym3
@@ -288,13 +295,13 @@ instance
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b,
-      TypedSymbol c,
-      TypedSymbol d
+    ( TypedSymbol knd a,
+      TypedSymbol knd b,
+      TypedSymbol knd c,
+      TypedSymbol knd d
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2, sym3, sym4) =
     insertSymbol sym4
@@ -305,14 +312,14 @@ instance
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b,
-      TypedSymbol c,
-      TypedSymbol d,
-      TypedSymbol e
+    ( TypedSymbol knd a,
+      TypedSymbol knd b,
+      TypedSymbol knd c,
+      TypedSymbol knd d,
+      TypedSymbol knd e
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2, sym3, sym4, sym5) =
     insertSymbol sym5
@@ -324,15 +331,15 @@ instance
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b,
-      TypedSymbol c,
-      TypedSymbol d,
-      TypedSymbol e,
-      TypedSymbol f
+    ( TypedSymbol knd a,
+      TypedSymbol knd b,
+      TypedSymbol knd c,
+      TypedSymbol knd d,
+      TypedSymbol knd e,
+      TypedSymbol knd f
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6) =
     insertSymbol sym6
@@ -345,16 +352,16 @@ instance
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b,
-      TypedSymbol c,
-      TypedSymbol d,
-      TypedSymbol e,
-      TypedSymbol f,
-      TypedSymbol g
+    ( TypedSymbol knd a,
+      TypedSymbol knd b,
+      TypedSymbol knd c,
+      TypedSymbol knd d,
+      TypedSymbol knd e,
+      TypedSymbol knd f,
+      TypedSymbol knd g
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7) =
     insertSymbol sym7
@@ -368,17 +375,17 @@ instance
 
 instance
   SymbolSetRep
-    ( TypedSymbol a,
-      TypedSymbol b,
-      TypedSymbol c,
-      TypedSymbol d,
-      TypedSymbol e,
-      TypedSymbol f,
-      TypedSymbol g,
-      TypedSymbol h
+    ( TypedSymbol knd a,
+      TypedSymbol knd b,
+      TypedSymbol knd c,
+      TypedSymbol knd d,
+      TypedSymbol knd e,
+      TypedSymbol knd f,
+      TypedSymbol knd g,
+      TypedSymbol knd h
     )
-    SymbolSet
-    TypedSymbol
+    (SymbolSet knd)
+    (TypedSymbol knd)
   where
   buildSymbolSet (sym1, sym2, sym3, sym4, sym5, sym6, sym7, sym8) =
     insertSymbol sym8
@@ -391,10 +398,10 @@ instance
       . insertSymbol sym1
       $ emptySet
 
-instance ModelOps Model SymbolSet TypedSymbol where
+instance ModelOps Model (SymbolSet 'AnySymbol) (TypedSymbol 'AnySymbol) where
   emptyModel = Model M.empty
   isEmptyModel (Model m) = M.null m
-  valueOf :: forall t. TypedSymbol t -> Model -> Maybe t
+  valueOf :: forall t. TypedSymbol 'AnySymbol t -> Model -> Maybe t
   valueOf sym (Model m) =
     withSymbolSupported sym $
       (unsafeFromModelValue @t)
@@ -414,7 +421,7 @@ instance ModelOps Model SymbolSet TypedSymbol where
   extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
-        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedSymbol t)) -> case M.lookup sym acc of
+        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedSymbol 'AnySymbol t)) -> case M.lookup sym acc of
             Just _ -> acc
             Nothing -> withSymbolSupported tsym $ M.insert sym (defaultValueDynamic (Proxy @t)) acc
         )
@@ -425,19 +432,20 @@ instance ModelOps Model SymbolSet TypedSymbol where
       Model $
         M.insert (someTypedSymbol sym) (toModelValue v) m
 
-evaluateSomeTerm :: Bool -> S.HashSet SomeTypedSymbol -> Model -> SomeTerm -> SomeTerm
+evaluateSomeTerm ::
+  Bool -> S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> Model -> SomeTerm -> SomeTerm
 evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
   go initialMemo initialBoundedSymbols
   where
     gotyped ::
       (SupportedPrim a) =>
-      (S.HashSet SomeTypedSymbol -> SomeTerm -> SomeTerm) ->
-      S.HashSet SomeTypedSymbol ->
+      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
+      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
       Term a ->
       Term a
     gotyped memo boundedSymbols a = case memo boundedSymbols (SomeTerm a) of
       SomeTerm v -> unsafeCoerce v
-    initialMemo :: S.HashSet SomeTypedSymbol -> SomeTerm -> SomeTerm
+    initialMemo :: S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm
     initialMemo = htmemo2 (go initialMemo)
     {-# NOINLINE initialMemo #-}
     go _ bs c@(SomeTerm (ConTerm _ cv :: Term v)) =
@@ -452,12 +460,17 @@ evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
                   conTerm $
                     GeneralFun
                       sym
-                      (gotyped newmemo (S.insert (someTypedSymbol sym) bs) tm)
+                      ( gotyped
+                          newmemo
+                          (S.union (S.singleton (someTypedSymbol sym)) bs)
+                          tm
+                      )
             Nothing -> c
         _ -> c
-    go _ bs c@(SomeTerm ((SymTerm _ sym) :: Term a))
-      | S.member (someTypedSymbol sym) bs = c
-      | otherwise =
+    go _ bs c@(SomeTerm ((SymTerm _ sym) :: Term a)) =
+      case castTypedSymbol sym of
+        Just sym' | S.member (someTypedSymbol sym') bs -> c
+        _ ->
           case (M.lookup (someTypedSymbol sym) ma) of
             Nothing -> if fillDefault then SomeTerm $ conTerm (defaultValue @a) else c
             Just dy -> SomeTerm $ conTerm (unsafeFromModelValue @a dy)
@@ -563,16 +576,16 @@ evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
           (gotyped memo bs arg3)
     goUnary ::
       (SupportedPrim a, SupportedPrim b) =>
-      (S.HashSet SomeTypedSymbol -> SomeTerm -> SomeTerm) ->
-      S.HashSet SomeTypedSymbol ->
+      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
+      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
       (Term a -> Term b) ->
       Term a ->
       SomeTerm
     goUnary memo bs f a = SomeTerm $ f (gotyped memo bs a)
     goBinary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
-      (S.HashSet SomeTypedSymbol -> SomeTerm -> SomeTerm) ->
-      S.HashSet SomeTypedSymbol ->
+      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
+      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
       (Term a -> Term b -> Term c) ->
       Term a ->
       Term b ->
@@ -580,8 +593,8 @@ evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
     goBinary memo bs f a b = SomeTerm $ f (gotyped memo bs a) (gotyped memo bs b)
     goTernary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c, SupportedPrim d) =>
-      (S.HashSet SomeTypedSymbol -> SomeTerm -> SomeTerm) ->
-      S.HashSet SomeTypedSymbol ->
+      (S.HashSet (SomeTypedSymbol 'NonFuncSymbol) -> SomeTerm -> SomeTerm) ->
+      S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
       (Term a -> Term b -> Term c -> Term d) ->
       Term a ->
       Term b ->
@@ -591,7 +604,14 @@ evaluateSomeTerm fillDefault initialBoundedSymbols (Model ma) =
       SomeTerm $ f (gotyped memo bs a) (gotyped memo bs b) (gotyped memo bs c)
 
 -- | Evaluate a term in the given model.
-evaluateTerm :: forall a. (SupportedPrim a) => Bool -> S.HashSet SomeTypedSymbol -> Model -> Term a -> Term a
+evaluateTerm ::
+  forall a.
+  (SupportedPrim a) =>
+  Bool ->
+  S.HashSet (SomeTypedSymbol 'NonFuncSymbol) ->
+  Model ->
+  Term a ->
+  Term a
 evaluateTerm fillDefault boundedSymbols m t =
   case evaluateSomeTerm fillDefault boundedSymbols m $ SomeTerm t of
     SomeTerm (t1 :: Term b) -> unsafeCoerce @(Term b) @(Term a) t1
@@ -601,7 +621,7 @@ evaluateTerm fillDefault boundedSymbols m t =
 --
 -- >>> buildModel ("x" ::= (1 :: Integer), "y" ::= True) :: Model
 -- Model {x -> 1 :: Integer, y -> True :: Bool}
-data ModelValuePair t = (TypedSymbol t) ::= t deriving (Show)
+data ModelValuePair t = (TypedSymbol 'AnySymbol t) ::= t deriving (Show)
 
 instance ModelRep (ModelValuePair t) Model where
   buildModel (sym ::= val) = insertValue sym val emptyModel

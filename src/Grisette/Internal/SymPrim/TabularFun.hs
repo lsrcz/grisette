@@ -3,6 +3,8 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,8 +13,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.TabularFun
@@ -37,7 +37,8 @@ import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( NonFuncSBVRep (NonFuncSBVBaseType),
+  ( IsSymbolKind (decideSymbolKind),
+    NonFuncSBVRep (NonFuncSBVBaseType),
     PEvalApplyTerm (pevalApplyTerm, sbvApplyTerm),
     SBVRep (SBVType),
     SupportedNonFuncPrim (conNonFuncSBVTerm, withNonFuncPrim),
@@ -54,6 +55,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     SupportedPrimConstraint (PrimConstraint),
     Term (ConTerm),
+    TypedSymbol (TypedSymbol),
     applyTerm,
     conTerm,
     partitionCVArg,
@@ -61,8 +63,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalITEBasicTerm,
     translateTypeError,
   )
+import Grisette.Internal.SymPrim.Prim.Term (SupportedPrim (castTypedSymbol))
 import Language.Haskell.TH.Syntax (Lift)
-import Type.Reflection (typeRep)
+import Type.Reflection (typeRep, type (:~~:) (HRefl))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -158,6 +161,14 @@ instance
       )
       (typeRep @(a =-> b))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b) ->
+    Maybe (TypedSymbol knd' (a =-> b))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -202,6 +213,14 @@ instance
       )
       (typeRep @(a =-> b =-> c))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b =-> c) ->
+    Maybe (TypedSymbol knd' (a =-> b =-> c))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -250,6 +269,14 @@ instance
       )
       (typeRep @(a =-> b =-> c =-> d))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b =-> c =-> d) ->
+    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -302,6 +329,14 @@ instance
       )
       (typeRep @(a =-> b =-> c =-> d =-> e))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b =-> c =-> d =-> e) ->
+    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   {-# OVERLAPPING #-}
@@ -358,6 +393,14 @@ instance
       )
       (typeRep @(a =-> b =-> c =-> d =-> e =-> f))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b =-> c =-> d =-> e =-> f) ->
+    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e =-> f))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 -- 7 arguments
 instance
@@ -419,6 +462,14 @@ instance
       )
       (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b =-> c =-> d =-> e =-> f =-> g) ->
+    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e =-> f =-> g))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 -- 8 arguments
 instance
@@ -484,6 +535,14 @@ instance
       )
       (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
   parseSMTModelResult = parseTabularFunSMTModelResult
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (a =-> b =-> c =-> d =-> e =-> f =-> g =-> h) ->
+    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
+  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
+    Left HRefl -> Nothing
+    Right HRefl -> Just $ TypedSymbol sym
 
 instance
   (SupportedPrim a, SupportedPrim b, SupportedPrim (a =-> b)) =>

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,7 +29,7 @@ import Data.Proxy (Proxy (Proxy))
 import Data.SBV (BVIsNonZero)
 import qualified Data.SBV as SBV
 import Data.Type.Bool (If)
-import Data.Type.Equality ((:~:) (Refl))
+import Data.Type.Equality ((:~:) (Refl), type (:~~:) (HRefl))
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, fromSBVAlgReal, toSBVAlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
@@ -43,13 +44,15 @@ import Grisette.Internal.SymPrim.Prim.Internal.IsZero
     KnownIsZero (isZero),
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( NonFuncSBVRep (NonFuncSBVBaseType),
+  ( IsSymbolKind (decideSymbolKind),
+    NonFuncSBVRep (NonFuncSBVBaseType),
     SBVRep
       ( SBVType
       ),
     SupportedNonFuncPrim (conNonFuncSBVTerm, symNonFuncSBVTerm, withNonFuncPrim),
     SupportedPrim
-      ( conSBVTerm,
+      ( castTypedSymbol,
+        conSBVTerm,
         defaultValue,
         defaultValueDynamic,
         parseSMTModelResult,
@@ -65,6 +68,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ( PrimConstraint
       ),
     Term (ConTerm),
+    TypedSymbol (TypedSymbol),
     conTerm,
     eqTerm,
     parseScalarSMTModelResult,
@@ -104,6 +108,15 @@ instance SupportedPrim Integer where
     IsZeroEvidence -> r
     NonZeroEvidence -> r
   parseSMTModelResult _ = parseScalarSMTModelResult id
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd Integer ->
+    Maybe (TypedSymbol knd' Integer)
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 instance NonFuncSBVRep Integer where
   type NonFuncSBVBaseType n Integer = If (IsZero n) Integer (SBV.IntN n)
@@ -134,6 +147,15 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   parseSMTModelResult _ cv =
     withPrim @(IntN w) (Proxy @0) $
       parseScalarSMTModelResult (\(x :: SBV.IntN w) -> fromIntegral x) cv
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (IntN w) ->
+    Maybe (TypedSymbol knd' (IntN w))
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 bvIsNonZeroFromGEq1 ::
   forall w r proxy.
@@ -171,6 +193,15 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   parseSMTModelResult _ cv =
     withPrim @(IntN w) (Proxy @0) $
       parseScalarSMTModelResult (\(x :: SBV.WordN w) -> fromIntegral x) cv
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (WordN w) ->
+    Maybe (TypedSymbol knd' (WordN w))
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w
@@ -214,6 +245,15 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
                     (conSBVTerm @(FP eb sb) p $ correspondingZero a')
                     (conSBVTerm @(FP eb sb) p $ correspondingZero b')
       _ -> SBV.ite c a b
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd (FP eb sb) ->
+    Maybe (TypedSymbol knd' (FP eb sb))
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 instance (ValidFP eb sb) => NonFuncSBVRep (FP eb sb) where
   type NonFuncSBVBaseType _ (FP eb sb) = SBV.FloatingPoint eb sb
@@ -254,6 +294,15 @@ instance SupportedPrim FPRoundingMode where
             SBV.RoundTowardZero -> RTZ
         )
         cv
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd FPRoundingMode ->
+    Maybe (TypedSymbol knd' FPRoundingMode)
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 instance NonFuncSBVRep FPRoundingMode where
   type NonFuncSBVBaseType _ FPRoundingMode = SBV.RoundingMode
@@ -283,6 +332,15 @@ instance SupportedPrim AlgReal where
   parseSMTModelResult _ cv =
     withPrim @(AlgReal) (Proxy @0) $
       parseScalarSMTModelResult fromSBVAlgReal cv
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd AlgReal ->
+    Maybe (TypedSymbol knd' AlgReal)
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 instance NonFuncSBVRep AlgReal where
   type NonFuncSBVBaseType _ AlgReal = SBV.AlgReal

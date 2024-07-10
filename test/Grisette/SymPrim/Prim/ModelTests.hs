@@ -18,6 +18,7 @@ import Grisette
         valueOf
       ),
     ModelRep (buildModel),
+    SymbolKind (AnySymbol, NonFuncSymbol),
     TypedSymbol,
     WordN,
   )
@@ -44,14 +45,14 @@ import Test.HUnit ((@=?))
 
 modelTests :: Test
 modelTests =
-  let asymbol :: TypedSymbol Integer = "a"
-      bsymbol :: TypedSymbol Bool = "b"
-      csymbol :: TypedSymbol Integer = "c"
-      dsymbol :: TypedSymbol Bool = "d"
-      esymbol :: TypedSymbol (WordN 4) = "e"
-      fsymbol :: TypedSymbol (IntN 4) = "f"
-      gsymbol :: TypedSymbol (WordN 16) = "g"
-      hsymbol :: TypedSymbol (IntN 16) = "h"
+  let asymbol :: TypedSymbol 'AnySymbol Integer = "a"
+      bsymbol :: TypedSymbol 'AnySymbol Bool = "b"
+      csymbol :: TypedSymbol 'AnySymbol Integer = "c"
+      dsymbol :: TypedSymbol 'AnySymbol Bool = "d"
+      esymbol :: TypedSymbol 'AnySymbol (WordN 4) = "e"
+      fsymbol :: TypedSymbol 'AnySymbol (IntN 4) = "f"
+      gsymbol :: TypedSymbol 'AnySymbol (WordN 16) = "g"
+      hsymbol :: TypedSymbol 'AnySymbol (IntN 16) = "h"
       m1 = emptyModel
       m2 = insertValue asymbol 1 m1
       m3 = insertValue bsymbol True m2
@@ -134,13 +135,13 @@ modelTests =
             evaluateTerm True S.empty m3 (ssymTerm "x" :: Term Integer) @=? conTerm 0
             evaluateTerm
               False
-              (S.singleton (someTypedSymbol ("x" :: TypedSymbol Integer)))
+              (S.singleton (someTypedSymbol ("x" :: TypedSymbol 'NonFuncSymbol Integer)))
               m3
               (ssymTerm "x" :: Term Integer)
               @=? ssymTerm "x"
             evaluateTerm
               True
-              (S.singleton (someTypedSymbol ("x" :: TypedSymbol Integer)))
+              (S.singleton (someTypedSymbol ("x" :: TypedSymbol 'NonFuncSymbol Integer)))
               m3
               (ssymTerm "x" :: Term Integer)
               @=? ssymTerm "x"
