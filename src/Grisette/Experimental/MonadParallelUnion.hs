@@ -37,7 +37,6 @@ import Grisette.Internal.Core.Data.UnionBase (UnionBase (UnionIf, UnionSingle))
 -- With the @QualifiedDo@ extension and the "Grisette.Qualified.ParallelUnionDo"
 -- module, one can execute the paths in parallel and merge the results with:
 --
--- > :set -XQualifiedDo -XOverloadedStrings
 -- > import Grisette
 -- > import qualified Grisette.Qualified.ParallelUnionDo as P
 -- > P.do

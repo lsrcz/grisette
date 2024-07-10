@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,6 +29,7 @@ import Control.DeepSeq (NFData)
 import Data.Dynamic (Dynamic)
 import qualified Data.HashMap.Strict as M
 import Data.Hashable (Hashable)
+import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.Backend.QuantifiedStack (QuantifiedStack)
 import Grisette.Internal.Core.Data.Symbol
@@ -55,7 +57,7 @@ data SymBiMap = SymBiMap
   }
 
 newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
-  deriving (Ord, Eq, Show, Hashable, Lift, NFData)
+  deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)
 
 nextQuantifiedSymbolInfo :: SymBiMap -> (SymBiMap, QuantifiedSymbolInfo)
 nextQuantifiedSymbolInfo (SymBiMap t f num) =

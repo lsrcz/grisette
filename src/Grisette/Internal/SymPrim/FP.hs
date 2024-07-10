@@ -102,7 +102,6 @@ type ValidFP (eb :: Nat) (sb :: Nat) = ValidFloat eb sb
 -- | IEEE 754 floating-point number with @eb@ exponent bits and @sb@ significand
 -- bits.
 --
--- >>> :set -XDataKinds
 -- >>> 1.0 + 2.0 :: FP 11 53
 -- 3.0
 --

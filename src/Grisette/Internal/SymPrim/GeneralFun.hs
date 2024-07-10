@@ -185,8 +185,6 @@ import Unsafe.Coerce (unsafeCoerce)
 --
 -- The result would be partially evaluated.
 --
--- >>> :set -XOverloadedStrings
--- >>> :set -XTypeOperators
 -- >>> let f = ("x" :: TypedConstantSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
 -- >>> f # 1    -- 1 has the type SymInteger
 -- (+ 2 y)

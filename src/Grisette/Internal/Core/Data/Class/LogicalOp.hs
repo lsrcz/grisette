@@ -24,11 +24,6 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
 
 -- | Symbolic logical operators for symbolic booleans.
 --

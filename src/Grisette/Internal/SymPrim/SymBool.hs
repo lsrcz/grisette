@@ -40,7 +40,6 @@ import Language.Haskell.TH.Syntax (Lift)
 
 -- | Symbolic Boolean type.
 --
--- >>> :set -XOverloadedStrings
 -- >>> "a" :: SymBool
 -- a
 -- >>> "a" .&& "b" :: SymBool

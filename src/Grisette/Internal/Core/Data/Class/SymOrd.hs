@@ -139,11 +139,6 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
 
 -- | Symbolic total order. Note that we can't use Haskell's 'Ord' class since
 -- symbolic comparison won't necessarily return a concrete 'Bool' or 'Ordering'

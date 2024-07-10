@@ -21,13 +21,6 @@ where
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
--- >>> :set -XOverloadedStrings
--- >>> :set -XTypeOperators
 
 -- | Abstraction for function-like types.
 class Function f arg ret | f -> arg ret where

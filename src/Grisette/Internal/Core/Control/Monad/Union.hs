@@ -154,7 +154,6 @@ import Language.Haskell.TH.Syntax.Compat (unTypeSplice)
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XScopedTypeVariables
 
 -- | 'Union' is the 'UnionBase' container (hidden) enhanced with
 -- 'MergingStrategy'

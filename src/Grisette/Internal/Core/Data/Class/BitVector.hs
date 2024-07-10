@@ -43,11 +43,6 @@ import Grisette.Internal.Utils.Parameterized
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Utils
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
 
 -- | Bit vector operations. Including concatenation ('bvConcat'),
 -- extension ('bvZext', 'bvSext', 'bvExt'), and selection

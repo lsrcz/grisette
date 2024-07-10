@@ -74,7 +74,6 @@ import Type.Reflection (typeRep, type (:~~:) (HRefl))
 -- |
 -- Functions as a table. Use the `#` operator to apply the function.
 --
--- >>> :set -XTypeOperators
 -- >>> let f = TabularFun [(1, 2), (3, 4)] 0 :: Int =-> Int
 -- >>> f # 1
 -- 2

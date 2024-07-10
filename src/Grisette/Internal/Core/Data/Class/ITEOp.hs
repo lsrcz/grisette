@@ -43,11 +43,6 @@ import Grisette.Internal.SymPrim.TabularFun (type (=->))
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
 
 -- | ITE operator for solvable (see "Grisette.Core#g:solvable")s, including
 -- symbolic boolean, integer, etc.

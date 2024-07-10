@@ -42,8 +42,6 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Lib.Control.Monad
 -- >>> import Control.Monad.Except
--- >>> :set -XOverloadedStrings
--- >>> :set -XFlexibleContexts
 
 -- | This class indicates that the error type @to@ can always represent the
 -- error type @from@.

@@ -403,7 +403,6 @@ precise config =
 -- The following is an example that is correct under bounded semantics, while is
 -- incorrect under the unbounded semantics:
 --
--- >>> :set -XTypeApplications -XOverloadedStrings -XDataKinds
 -- >>> let a = "a" :: SymInteger
 -- >>> solve z3 $ a .> 7 .&& a .< 9
 -- Right (Model {a -> 8 :: Integer})

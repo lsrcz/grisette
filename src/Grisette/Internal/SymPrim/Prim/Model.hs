@@ -195,7 +195,6 @@ import Unsafe.Coerce (unsafeCoerce)
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
--- >>> :set -XFlexibleContexts
 
 -- | Set of symbols.
 --

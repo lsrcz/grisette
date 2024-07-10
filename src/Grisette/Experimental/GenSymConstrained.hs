@@ -77,8 +77,6 @@ import Grisette.Internal.Core.Data.Symbol (Identifier)
 -- >>> import Grisette.Core
 -- >>> import Grisette.Experimental
 -- >>> import Grisette.SymPrim
--- >>> :set -XOverloadedStrings
--- >>> :set -XTypeApplications
 
 -- | Class of types in which symbolic values can be generated with some
 -- specification.
