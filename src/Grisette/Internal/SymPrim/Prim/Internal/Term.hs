@@ -62,11 +62,16 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalFloatingTerm (..),
 
     -- * Typed symbols
+    SymbolKind (..),
     TypedSymbol (..),
     SomeTypedSymbol (..),
+    IsSymbolKind (..),
     showUntyped,
     withSymbolSupported,
     someTypedSymbol,
+    eqHeteroSymbol,
+    castSomeTypedSymbol,
+    withSymbolKind,
 
     -- * Terms
     FPTrait (..),
@@ -183,7 +188,7 @@ import Data.Interned.Internal
   ( Cache (getCache),
     CacheState (CacheState),
   )
-import Data.Kind (Constraint)
+import Data.Kind (Constraint, Type)
 import Data.Maybe (fromMaybe)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
@@ -383,7 +388,7 @@ class
   pformatCon :: t -> String
   default pformatCon :: (Show t) => t -> String
   pformatCon = show
-  pformatSym :: TypedSymbol t -> String
+  pformatSym :: TypedSymbol 'AnySymbol t -> String
   pformatSym = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
@@ -391,7 +396,7 @@ class
   pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
   pevalEqTerm :: Term t -> Term t -> Term Bool
   conSBVTerm :: (KnownIsZero n) => proxy n -> t -> SBVType n t
-  symSBVName :: TypedSymbol t -> Int -> String
+  symSBVName :: TypedSymbol 'AnySymbol t -> Int -> String
   symSBVTerm ::
     (SBVFreshMonad m, KnownIsZero n) =>
     proxy n ->
@@ -447,6 +452,15 @@ class
     SBV.SBV Bool
   sbvEq _ = (SBV..==)
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
+  castTypedSymbol ::
+    (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
+
+castSomeTypedSymbol ::
+  (IsSymbolKind knd') =>
+  SomeTypedSymbol knd ->
+  Maybe (SomeTypedSymbol knd')
+castSomeTypedSymbol (SomeTypedSymbol ty s@TypedSymbol {}) = do
+  SomeTypedSymbol ty <$> castTypedSymbol s
 
 parseSMTModelResultError ::
   (HasCallStack) => TypeRep a -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> a
@@ -952,6 +966,26 @@ class
 
 -- Typed Symbols
 
+data SymbolKind = NonFuncSymbol | AnySymbol
+
+class IsSymbolKind (ty :: SymbolKind) where
+  -- type IsNonFuncSymbol ty :: Bool
+  type SymbolKindConstraint ty :: Type -> Constraint
+  isNonFuncSymbolKind :: Bool
+  decideSymbolKind :: Either (ty :~~: 'NonFuncSymbol) (ty :~~: 'AnySymbol)
+
+instance IsSymbolKind 'NonFuncSymbol where
+  -- type IsNonFunc 'NonFuncSymbol = 'True
+  type SymbolKindConstraint 'NonFuncSymbol = SupportedNonFuncPrim
+  isNonFuncSymbolKind = True
+  decideSymbolKind = Left HRefl
+
+instance IsSymbolKind 'AnySymbol where
+  -- type IsNonFunc 'AnySymbol = 'False
+  type SymbolKindConstraint 'AnySymbol = SupportedPrim
+  isNonFuncSymbolKind = False
+  decideSymbolKind = Right HRefl
+
 -- | A typed symbol is a symbol that is associated with a type. Note that the
 -- same symbol bodies with different types are considered different symbols
 -- and can coexist in a term.
@@ -961,49 +995,68 @@ class
 -- >>> :set -XOverloadedStrings
 -- >>> "a" :: TypedSymbol Bool
 -- a :: Bool
-data TypedSymbol t where
-  TypedSymbol :: (SupportedPrim t) => {unTypedSymbol :: Symbol} -> TypedSymbol t
+data TypedSymbol (knd :: SymbolKind) t where
+  TypedSymbol ::
+    ( SupportedPrim t,
+      SymbolKindConstraint knd t,
+      IsSymbolKind knd
+    ) =>
+    {unTypedSymbol :: Symbol} ->
+    TypedSymbol knd t
 
-instance Eq (TypedSymbol t) where
+instance Eq (TypedSymbol knd t) where
   TypedSymbol x == TypedSymbol y = x == y
 
-instance Ord (TypedSymbol t) where
+instance Ord (TypedSymbol knd t) where
   TypedSymbol x <= TypedSymbol y = x <= y
 
-instance Lift (TypedSymbol t) where
+instance Lift (TypedSymbol knd t) where
   liftTyped (TypedSymbol x) = [||TypedSymbol x||]
 
-instance Show (TypedSymbol t) where
+instance Show (TypedSymbol knd t) where
   show (TypedSymbol symbol) = show symbol ++ " :: " ++ show (typeRep @t)
 
-showUntyped :: TypedSymbol t -> String
+showUntyped :: TypedSymbol knd t -> String
 showUntyped (TypedSymbol symbol) = show symbol
 
-instance Hashable (TypedSymbol t) where
+instance Hashable (TypedSymbol knd t) where
   s `hashWithSalt` TypedSymbol x = s `hashWithSalt` x
 
-instance NFData (TypedSymbol t) where
+instance NFData (TypedSymbol knd t) where
   rnf (TypedSymbol str) = rnf str
 
-instance (SupportedPrim t) => IsString (TypedSymbol t) where
+instance
+  ( SupportedPrim t,
+    SymbolKindConstraint knd t,
+    IsSymbolKind knd
+  ) =>
+  IsString (TypedSymbol knd t)
+  where
   fromString = TypedSymbol . fromString
 
-withSymbolSupported :: TypedSymbol t -> ((SupportedPrim t) => a) -> a
+withSymbolSupported :: TypedSymbol knd t -> ((SupportedPrim t) => a) -> a
 withSymbolSupported (TypedSymbol _) a = a
 
--- | A non-index symbol. Type information are checked at runtime.
-data SomeTypedSymbol where
-  SomeTypedSymbol :: forall t. TypeRep t -> TypedSymbol t -> SomeTypedSymbol
+withSymbolKind :: TypedSymbol knd t -> ((IsSymbolKind knd) => a) -> a
+withSymbolKind (TypedSymbol _) a = a
 
-instance NFData SomeTypedSymbol where
+-- | A non-index symbol. Type information are checked at runtime.
+data SomeTypedSymbol knd where
+  SomeTypedSymbol ::
+    forall knd t.
+    TypeRep t ->
+    TypedSymbol knd t ->
+    SomeTypedSymbol knd
+
+instance NFData (SomeTypedSymbol knd) where
   rnf (SomeTypedSymbol p s) = rnf (SomeTypeRep p) `seq` rnf s
 
-instance Eq SomeTypedSymbol where
+instance Eq (SomeTypedSymbol knd) where
   (SomeTypedSymbol t1 s1) == (SomeTypedSymbol t2 s2) = case eqTypeRep t1 t2 of
     Just HRefl -> s1 == s2
     _ -> False
 
-instance Ord SomeTypedSymbol where
+instance Ord (SomeTypedSymbol knd) where
   (SomeTypedSymbol t1 s1) <= (SomeTypedSymbol t2 s2) =
     SomeTypeRep t1 < SomeTypeRep t2
       || ( case eqTypeRep t1 t2 of
@@ -1011,13 +1064,13 @@ instance Ord SomeTypedSymbol where
              _ -> False
          )
 
-instance Hashable SomeTypedSymbol where
+instance Hashable (SomeTypedSymbol knd) where
   hashWithSalt s (SomeTypedSymbol t1 s1) = s `hashWithSalt` s1 `hashWithSalt` t1
 
-instance Show SomeTypedSymbol where
+instance Show (SomeTypedSymbol knd) where
   show (SomeTypedSymbol _ s) = show s
 
-someTypedSymbol :: forall t. TypedSymbol t -> SomeTypedSymbol
+someTypedSymbol :: forall knd t. TypedSymbol knd t -> SomeTypedSymbol knd
 someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
 
 -- Terms
@@ -1084,9 +1137,9 @@ instance Show FPRoundingBinaryOp where
 
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> Term t
-  ForallTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> !(Term Bool) -> Term Bool
-  ExistsTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol t) -> !(Term Bool) -> Term Bool
+  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'AnySymbol t) -> Term t
+  ForallTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> Term Bool
+  ExistsTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> Term Bool
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -1691,9 +1744,9 @@ instance (SupportedPrim t) => Hashable (Term t) where
 
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymTerm :: (SupportedPrim t) => !(TypedSymbol t) -> UTerm t
-  UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol t) -> !(Term Bool) -> UTerm Bool
-  UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol t) -> !(Term Bool) -> UTerm Bool
+  USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnySymbol t) -> UTerm t
+  UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> UTerm Bool
+  UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> UTerm Bool
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -1838,19 +1891,26 @@ eqHeteroTag :: (Eq a) => (TypeRep a, a) -> (TypeRep b, b) -> Bool
 eqHeteroTag (tpa, taga) (tpb, tagb) = eqHeteroRep tpa tpb taga tagb
 {-# INLINE eqHeteroTag #-}
 
-eqHeteroSymbol :: (TypeRep a, TypedSymbol a) -> (TypeRep b, TypedSymbol b) -> Bool
-eqHeteroSymbol (tpa, taga) (tpb, tagb) = case eqTypeRep tpb tpa of
-  Just HRefl -> taga == tagb
-  Nothing -> False
+eqHeteroSymbol :: forall ta a tb b. TypedSymbol ta a -> TypedSymbol tb b -> Bool
+eqHeteroSymbol (TypedSymbol taga) (TypedSymbol tagb) =
+  case eqTypeRep (typeRep @a) (typeRep @b) of
+    Just HRefl -> taga == tagb
+    Nothing -> False
 {-# INLINE eqHeteroSymbol #-}
+
+eqHeteroSymbol0 :: (TypeRep a, TypedSymbol ta a) -> (TypeRep b, TypedSymbol tb b) -> Bool
+eqHeteroSymbol0 (tpa, taga) (tpb, tagb) = case eqTypeRep tpb tpa of
+  Just HRefl -> unTypedSymbol taga == unTypedSymbol tagb
+  Nothing -> False
+{-# INLINE eqHeteroSymbol0 #-}
 
 instance (SupportedPrim t) => Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
     DConTerm :: t -> Description (Term t)
-    DSymTerm :: TypedSymbol t -> Description (Term t)
-    DForallTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
-    DExistsTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DSymTerm :: TypedSymbol 'AnySymbol t -> Description (Term t)
+    DForallTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'NonFuncSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DExistsTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'NonFuncSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DUnaryTerm ::
       (Eq tag, Hashable tag) =>
       {-# UNPACK #-} !(TypeRep tag, tag) ->
@@ -1930,9 +1990,9 @@ instance (SupportedPrim t) => Interned (Term t) where
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
-  describe (UForallTerm (sym :: TypedSymbol arg) arg) =
+  describe (UForallTerm (sym :: TypedSymbol 'NonFuncSymbol arg) arg) =
     DForallTerm (typeRep :: TypeRep arg, sym) (identity arg)
-  describe (UExistsTerm (sym :: TypedSymbol arg) arg) =
+  describe (UExistsTerm (sym :: TypedSymbol 'NonFuncSymbol arg) arg) =
     DExistsTerm (typeRep :: TypeRep arg, sym) (identity arg)
   describe ((UUnaryTerm (tag :: tagt) (tm :: Term arg)) :: UTerm t) =
     DUnaryTerm (typeRep, tag) (typeRep :: TypeRep arg, identity tm)
@@ -2043,8 +2103,8 @@ instance (SupportedPrim t) => Interned (Term t) where
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm (l :: tyl) == DConTerm (r :: tyr) = cast @tyl @tyr l == Just r
   DSymTerm ls == DSymTerm rs = ls == rs
-  DForallTerm ls li == DForallTerm rs ri = eqHeteroSymbol ls rs && li == ri
-  DExistsTerm ls li == DExistsTerm rs ri = eqHeteroSymbol ls rs && li == ri
+  DForallTerm ls li == DForallTerm rs ri = eqHeteroSymbol0 ls rs && li == ri
+  DExistsTerm ls li == DExistsTerm rs ri = eqHeteroSymbol0 ls rs && li == ri
   DUnaryTerm (tagl :: tagl) li == DUnaryTerm (tagr :: tagr) ri = eqHeteroTag tagl tagr && eqTypedId li ri
   DBinaryTerm (tagl :: tagl) li1 li2 == DBinaryTerm (tagr :: tagr) ri1 ri2 =
     eqHeteroTag tagl tagr && eqTypedId li1 ri1 && eqTypedId li2 ri2
@@ -2222,11 +2282,11 @@ symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
 symTerm t = internTerm $ USymTerm $ TypedSymbol t
 {-# INLINE symTerm #-}
 
-forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol t -> Term Bool -> Term Bool
+forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'NonFuncSymbol t -> Term Bool -> Term Bool
 forallTerm sym arg = internTerm $ UForallTerm sym arg
 {-# INLINE forallTerm #-}
 
-existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol t -> Term Bool -> Term Bool
+existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'NonFuncSymbol t -> Term Bool -> Term Bool
 existsTerm sym arg = internTerm $ UExistsTerm sym arg
 {-# INLINE existsTerm #-}
 
@@ -2891,6 +2951,15 @@ instance SupportedPrim Bool where
   symSBVTerm _ = sbvFresh
   withPrim _ r = r
   parseSMTModelResult _ = parseScalarSMTModelResult id
+  castTypedSymbol ::
+    forall knd knd'.
+    (IsSymbolKind knd') =>
+    TypedSymbol knd Bool ->
+    Maybe (TypedSymbol knd' Bool)
+  castTypedSymbol (TypedSymbol s) =
+    case decideSymbolKind @knd' of
+      Left HRefl -> Just $ TypedSymbol s
+      Right HRefl -> Just $ TypedSymbol s
 
 instance NonFuncSBVRep Bool where
   type NonFuncSBVBaseType _ Bool = Bool

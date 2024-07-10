@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -29,6 +30,7 @@ import Grisette
     SymEq ((.==)),
     SymInteger,
     SymOrd ((.<=)),
+    SymbolKind (AnySymbol, NonFuncSymbol),
     SymbolSetRep (buildSymbolSet),
     ToCon (toCon),
     ToSym (toSym),
@@ -321,7 +323,7 @@ unionTests =
       testCase "SubstSym" $ do
         let actual =
               substSym
-                ("a" :: TypedSymbol Bool)
+                ("a" :: TypedSymbol 'NonFuncSymbol Bool)
                 "b"
                 ( mrgIf "a" (return $ Left "a") (return $ Right "c") ::
                     Union (Either SymBool SymBool)
@@ -332,9 +334,9 @@ unionTests =
         let actual = extractSym union1
         let expected =
               buildSymbolSet
-                ( "u1c" :: TypedSymbol Bool,
-                  "u1a" :: TypedSymbol Bool,
-                  "u1b" :: TypedSymbol Integer
+                ( "u1c" :: TypedSymbol 'AnySymbol Bool,
+                  "u1a" :: TypedSymbol 'AnySymbol Bool,
+                  "u1b" :: TypedSymbol 'AnySymbol Integer
                 )
         actual @?= expected,
       testGroup

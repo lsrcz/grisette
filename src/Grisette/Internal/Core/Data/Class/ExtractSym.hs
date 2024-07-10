@@ -53,6 +53,7 @@ import Data.Functor.Sum (Sum)
 import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Maybe (fromJust)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
@@ -88,6 +89,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
     SupportedPrim,
     SymRep (SymType),
+    SymbolKind (AnySymbol),
     someTypedSymbol,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils (extractTerm)
@@ -132,7 +134,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 --
 -- > data X = ... deriving Generic deriving ExtractSym via (Default X)
 class ExtractSym a where
-  extractSym :: a -> SymbolSet
+  extractSym :: a -> SymbolSet 'AnySymbol
 
 -- | Lifting of 'ExtractSym' to unary type constructors.
 class
@@ -140,10 +142,10 @@ class
   ExtractSym1 f
   where
   -- | Lifts the 'extractSym' function to unary type constructors.
-  liftExtractSym :: (a -> SymbolSet) -> f a -> SymbolSet
+  liftExtractSym :: (a -> SymbolSet 'AnySymbol) -> f a -> SymbolSet 'AnySymbol
 
 -- | Lift the standard 'extractSym' to unary type constructors.
-extractSym1 :: (ExtractSym1 f, ExtractSym a) => f a -> SymbolSet
+extractSym1 :: (ExtractSym1 f, ExtractSym a) => f a -> SymbolSet 'AnySymbol
 extractSym1 = liftExtractSym extractSym
 {-# INLINE extractSym1 #-}
 
@@ -154,13 +156,16 @@ class
   where
   -- | Lifts the 'extractSym' function to binary type constructors.
   liftExtractSym2 ::
-    (a -> SymbolSet) -> (b -> SymbolSet) -> f a b -> SymbolSet
+    (a -> SymbolSet 'AnySymbol) ->
+    (b -> SymbolSet 'AnySymbol) ->
+    f a b ->
+    SymbolSet 'AnySymbol
 
 -- | Lift the standard 'extractSym' to binary type constructors.
 extractSym2 ::
   (ExtractSym2 f, ExtractSym a, ExtractSym b) =>
   f a b ->
-  SymbolSet
+  SymbolSet 'AnySymbol
 extractSym2 = liftExtractSym2 extractSym extractSym
 {-# INLINE extractSym2 #-}
 
@@ -172,11 +177,11 @@ data family ExtractSymArgs arity a :: Type
 data instance ExtractSymArgs Arity0 _ = ExtractSymArgs0
 
 newtype instance ExtractSymArgs Arity1 a
-  = ExtractSymArgs1 (a -> SymbolSet)
+  = ExtractSymArgs1 (a -> SymbolSet 'AnySymbol)
 
 -- | The class of types that can generically extract the symbols.
 class GExtractSym arity f where
-  gextractSym :: ExtractSymArgs arity a -> f a -> SymbolSet
+  gextractSym :: ExtractSymArgs arity a -> f a -> SymbolSet 'AnySymbol
 
 instance GExtractSym arity V1 where
   gextractSym _ _ = mempty
@@ -231,15 +236,15 @@ instance
 genericExtractSym ::
   (Generic a, GExtractSym Arity0 (Rep a)) =>
   a ->
-  SymbolSet
+  SymbolSet 'AnySymbol
 genericExtractSym = gextractSym ExtractSymArgs0 . from
 
 -- | Generic 'liftExtractSym' function.
 genericLiftExtractSym ::
   (Generic1 f, GExtractSym Arity1 (Rep1 f)) =>
-  (a -> SymbolSet) ->
+  (a -> SymbolSet 'AnySymbol) ->
   f a ->
-  SymbolSet
+  SymbolSet 'AnySymbol
 genericLiftExtractSym f =
   gextractSym (ExtractSymArgs1 f) . from1
 
@@ -303,16 +308,16 @@ instance (ValidFP eb sb) => ExtractSym (FP eb sb) where
 
 #define EXTRACT_SYMBOLICS_SIMPLE(symtype) \
 instance ExtractSym symtype where \
-  extractSym (symtype t) = SymbolSet $ extractTerm HS.empty t
+  extractSym (symtype t) = SymbolSet $ fromJust $ extractTerm HS.empty t
 
 #define EXTRACT_SYMBOLICS_BV(symtype) \
 instance (KnownNat n, 1 <= n) => ExtractSym (symtype n) where \
-  extractSym (symtype t) = SymbolSet $ extractTerm HS.empty t
+  extractSym (symtype t) = SymbolSet $ fromJust $ extractTerm HS.empty t
 
 #define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
 instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
   ExtractSym (op sa sb) where \
-  extractSym (cons t) = SymbolSet $ extractTerm HS.empty t
+  extractSym (cons t) = SymbolSet $ fromJust $ extractTerm HS.empty t
 
 #if 1
 EXTRACT_SYMBOLICS_SIMPLE(SymBool)
@@ -326,7 +331,7 @@ EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 instance (ValidFP eb fb) => ExtractSym (SymFP eb fb) where
-  extractSym (SymFP t) = SymbolSet $ extractTerm HS.empty t
+  extractSym (SymFP t) = SymbolSet $ fromJust $ extractTerm HS.empty t
 
 -- Instances
 deriveBuiltins
@@ -606,4 +611,4 @@ instance (ExtractSym a, ExtractSym b) => ExtractSym (a =-> b) where
 
 instance (ExtractSym (SymType b)) => ExtractSym (a --> b) where
   extractSym (GeneralFun t f) =
-    SymbolSet $ extractTerm (HS.singleton $ someTypedSymbol t) f
+    SymbolSet $ fromJust $ extractTerm (HS.singleton $ someTypedSymbol t) f

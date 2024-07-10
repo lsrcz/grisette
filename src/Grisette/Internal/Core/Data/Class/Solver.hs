@@ -76,6 +76,7 @@ import Grisette.Internal.SymPrim.Prim.Model
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
+    SymbolKind (AnySymbol),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Language.Haskell.TH.Syntax (Lift)
@@ -214,7 +215,7 @@ solverSolveMulti solver numOfModelRequested formula = do
       (models, err) <- go solver model numOfModelRequested
       return (model : models, err)
   where
-    allSymbols = extractSym formula :: SymbolSet
+    allSymbols = extractSym formula :: SymbolSet 'AnySymbol
     go solver prevModel n
       | n <= 1 = return ([], ResultNumLimitReached)
       | otherwise = do

@@ -83,8 +83,10 @@ import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep (underlyingTerm),
+  ( IsSymbolKind,
+    LinkedRep (underlyingTerm),
     SupportedPrim,
+    SymbolKind,
     TypedSymbol,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
@@ -127,7 +129,12 @@ class SubstSym a where
   --
   -- >>> substSym "a" ("c" .&& "d" :: Sym Bool) ["a" .&& "b" :: Sym Bool, "a"]
   -- [(&& (&& c d) b),(&& c d)]
-  substSym :: (LinkedRep cb sb) => TypedSymbol cb -> sb -> a -> a
+  substSym ::
+    (LinkedRep cb sb, IsSymbolKind knd) =>
+    TypedSymbol knd cb ->
+    sb ->
+    a ->
+    a
 
 -- | Lifting of 'SubstSym' to unary type constructors.
 class
@@ -136,17 +143,17 @@ class
   where
   -- | Lift a symbol substitution function to unary type constructors.
   liftSubstSym ::
-    (LinkedRep cb sb) =>
-    (TypedSymbol cb -> sb -> a -> a) ->
-    TypedSymbol cb ->
+    (LinkedRep cb sb, IsSymbolKind knd) =>
+    (TypedSymbol knd cb -> sb -> a -> a) ->
+    TypedSymbol knd cb ->
     sb ->
     f a ->
     f a
 
 -- | Lifting the standard 'substSym' to unary type constructors.
 substSym1 ::
-  (SubstSym1 f, SubstSym a, LinkedRep cb sb) =>
-  TypedSymbol cb ->
+  (SubstSym1 f, SubstSym a, LinkedRep cb sb, IsSymbolKind knd) =>
+  TypedSymbol knd cb ->
   sb ->
   f a ->
   f a
@@ -159,18 +166,18 @@ class
   where
   -- | Lift a symbol substitution function to binary type constructors.
   liftSubstSym2 ::
-    (LinkedRep cb sb) =>
-    (TypedSymbol cb -> sb -> a -> a) ->
-    (TypedSymbol cb -> sb -> b -> b) ->
-    TypedSymbol cb ->
+    (LinkedRep cb sb, IsSymbolKind knd) =>
+    (TypedSymbol knd cb -> sb -> a -> a) ->
+    (TypedSymbol knd cb -> sb -> b -> b) ->
+    TypedSymbol knd cb ->
     sb ->
     f a b ->
     f a b
 
 -- | Lifting the standard 'substSym' to binary type constructors.
 substSym2 ::
-  (SubstSym2 f, SubstSym a, SubstSym b, LinkedRep cb sb) =>
-  TypedSymbol cb ->
+  (SubstSym2 f, SubstSym a, SubstSym b, LinkedRep cb sb, IsSymbolKind knd) =>
+  TypedSymbol knd cb ->
   sb ->
   f a b ->
   f a b
@@ -179,20 +186,20 @@ substSym2 = liftSubstSym2 substSym substSym
 -- Derivations
 
 -- | The arguments to the generic 'substSym' function.
-data family SubstSymArgs arity a cb sb :: Type
+data family SubstSymArgs arity (knd :: SymbolKind) a cb sb :: Type
 
-data instance SubstSymArgs Arity0 _ _ _ = SubstSymArgs0
+data instance SubstSymArgs Arity0 _ _ _ _ = SubstSymArgs0
 
-newtype instance SubstSymArgs Arity1 a cb sb
-  = SubstSymArgs1 (TypedSymbol cb -> sb -> a -> a)
+newtype instance SubstSymArgs Arity1 knd a cb sb
+  = SubstSymArgs1 (TypedSymbol knd cb -> sb -> a -> a)
 
 -- | The class of types where we can generically substitute the symbols in a
 -- value.
 class GSubstSym arity f where
   gsubstSym ::
-    (LinkedRep cb sb) =>
-    SubstSymArgs arity a cb sb ->
-    TypedSymbol cb ->
+    (LinkedRep cb sb, IsSymbolKind knd) =>
+    SubstSymArgs arity knd a cb sb ->
+    TypedSymbol knd cb ->
     sb ->
     f a ->
     f a
@@ -242,8 +249,8 @@ instance
 
 -- | Generic 'substSym' function.
 genericSubstSym ::
-  (Generic a, GSubstSym Arity0 (Rep a), LinkedRep cb sb) =>
-  TypedSymbol cb ->
+  (Generic a, GSubstSym Arity0 (Rep a), LinkedRep cb sb, IsSymbolKind knd) =>
+  TypedSymbol knd cb ->
   sb ->
   a ->
   a
@@ -253,9 +260,9 @@ genericSubstSym sym val =
 
 -- | Generic 'liftSubstSym' function.
 genericLiftSubstSym ::
-  (Generic1 f, GSubstSym Arity1 (Rep1 f), LinkedRep cb sb) =>
-  (TypedSymbol cb -> sb -> a -> a) ->
-  TypedSymbol cb ->
+  (Generic1 f, GSubstSym Arity1 (Rep1 f), LinkedRep cb sb, IsSymbolKind knd) =>
+  (TypedSymbol knd cb -> sb -> a -> a) ->
+  TypedSymbol knd cb ->
   sb ->
   f a ->
   f a

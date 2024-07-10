@@ -1,3 +1,5 @@
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -10,8 +12,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.SymGeneralFun
@@ -47,6 +47,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     SupportedPrim,
     SymRep (SymType),
+    SymbolKind (NonFuncSymbol),
     Term (ConTerm),
     TypedSymbol,
     conTerm,
@@ -100,8 +101,8 @@ infixr 0 -~>
 -- >>> f # (2 :: SymInteger)
 -- 3
 (-->) ::
-  (SupportedPrim ca, SupportedPrim cb, LinkedRep cb sb) =>
-  TypedSymbol ca ->
+  (SupportedNonFuncPrim ca, SupportedPrim cb, LinkedRep cb sb) =>
+  TypedSymbol 'NonFuncSymbol ca ->
   sb ->
   ca --> cb
 (-->) arg = buildGeneralFun arg . underlyingTerm

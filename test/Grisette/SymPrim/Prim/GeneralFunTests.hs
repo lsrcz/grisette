@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -11,6 +12,7 @@ import Grisette
     ModelValuePair ((::=)),
     Solvable (con),
     SymInteger,
+    SymbolKind (AnySymbol),
     SymbolSetRep (buildSymbolSet),
     TypedSymbol,
     (-->),
@@ -48,6 +50,6 @@ generalFunTests =
         let x0 :: Integer --> Integer = "a" --> "a" + "c"
         let x :: Integer --> Integer --> Integer =
               "a" --> (con $ "b" --> "a" + "b" + "c" :: SymInteger -~> SymInteger)
-        extractSym x0 @?= buildSymbolSet ("c" :: TypedSymbol Integer)
-        extractSym x @?= buildSymbolSet ("c" :: TypedSymbol Integer)
+        extractSym x0 @?= buildSymbolSet ("c" :: TypedSymbol 'AnySymbol Integer)
+        extractSym x @?= buildSymbolSet ("c" :: TypedSymbol 'AnySymbol Integer)
     ]
