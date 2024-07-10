@@ -1726,10 +1726,12 @@ import Grisette.Internal.Core.Data.Symbol
     Symbol (..),
     identifier,
     indexed,
+    modifyIdentifier,
     simple,
+    symbolIdentifier,
     uniqueIdentifier,
     withInfo,
-    withLoc, symbolIdentifier, modifyIdentifier,
+    withLoc,
   )
 
 -- $setup
