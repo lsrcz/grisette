@@ -14,10 +14,12 @@ import GHC.Stack (HasCallStack)
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSymMaybe),
   )
-import Grisette.Internal.SymPrim.Prim.Model (SymbolSet (SymbolSet))
+import Grisette.Internal.SymPrim.Prim.Model
+  ( ConstantSymbolSet,
+    SymbolSet (SymbolSet),
+  )
 import Grisette.Internal.SymPrim.Prim.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
-    SymbolKind (NonFuncSymbol),
     TypedSymbol (TypedSymbol),
     existsTerm,
     forallTerm,
@@ -34,7 +36,7 @@ sbvVersionCheck =
     "Quantifiers are only available when you build with SBV 10.1.0 or later."
 #endif
 
-forallSet :: SymbolSet 'NonFuncSymbol -> SymBool -> SymBool
+forallSet :: ConstantSymbolSet -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
   sbvVersionCheck `seq`
     HS.foldr
@@ -52,7 +54,7 @@ forallSym s b =
       error
         "Cannot use forall here. Only non-function symbols can be quantified."
 
-existsSet :: SymbolSet 'NonFuncSymbol -> SymBool -> SymBool
+existsSet :: ConstantSymbolSet -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
   sbvVersionCheck `seq`
     HS.foldr

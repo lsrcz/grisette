@@ -70,13 +70,13 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.Prim.Model
-  ( Model,
+  ( AnySymbolSet,
+    Model,
     SymbolSet (unSymbolSet),
     equation,
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
-    SymbolKind (AnySymbol),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Language.Haskell.TH.Syntax (Lift)
@@ -85,6 +85,7 @@ data SolveInternal = SolveInternal
   deriving (Eq, Show, Ord, Generic, Hashable, Lift, NFData)
 
 -- $setup
+-- >>> import Grisette
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
@@ -215,7 +216,7 @@ solverSolveMulti solver numOfModelRequested formula = do
       (models, err) <- go solver model numOfModelRequested
       return (model : models, err)
   where
-    allSymbols = extractSym formula :: SymbolSet 'AnySymbol
+    allSymbols = extractSym formula :: AnySymbolSet
     go solver prevModel n
       | n <= 1 = return ([], ResultNumLimitReached)
       | otherwise = do

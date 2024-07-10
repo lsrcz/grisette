@@ -204,7 +204,7 @@ module Grisette.Core
     -- result is then merged into a single formula, and further operation on it
     -- won't have to split into multiple paths:
     --
-    -- >>> :set -Wno-unrecognised-warning-flags -Wno-x-partial
+    -- >>> :seti -Wno-unrecognised-warning-flags -Wno-x-partial
     -- >>> x = mrgIf "a1" (return ["b"]) (mrgIf "a2" (return ["c", "d"]) (return ["f"])) :: Union [SymBool]
     -- >>> :{
     -- do
@@ -264,7 +264,6 @@ module Grisette.Core
     --
     -- __Examples:__
     --
-    -- >>> import Grisette
     -- >>> con True :: SymBool -- a concrete value
     -- true
     -- >>> true :: SymBool -- via the LogicalOp instance
@@ -277,7 +276,7 @@ module Grisette.Core
     -- With the @OverloadedStrings@ GHC extension enabled, symbolic constants
     -- can also be constructed from strings.
     --
-    -- >>> :set -XOverloadedStrings
+    -- >>> :seti -XOverloadedStrings
     -- >>> "a" :: SymBool
     -- a
     --
@@ -927,7 +926,7 @@ module Grisette.Core
     -- We can generate many symbolic values at once with the 'Fresh' monad.
     -- The symbolic constants are ensured to be unique:
     --
-    -- >>> :set -XScopedTypeVariables
+    -- >>> :seti -XScopedTypeVariables
     -- >>> :{
     --   flip runFresh "x" $ do
     --     a :: SymBool <- simpleFresh ()
@@ -1014,9 +1013,8 @@ module Grisette.Core
     -- You can define your own error types, and reason about them with the
     -- solver APIs.
     --
-    -- >>> :set -XDerivingVia -XDeriveGeneric -XDerivingStrategies -XLambdaCase
+    -- >>> :seti -XDerivingVia -XDeriveGeneric -XDerivingStrategies -XLambdaCase
     -- >>> import GHC.Generics
-    -- >>> import Grisette.Backend
     -- >>> :{
     --   data Error = Error1 | Error2 | Error3
     --     deriving (Show, Generic)
@@ -1146,7 +1144,7 @@ module Grisette.Core
     --
     -- We can first define the error type used in the program.
     --
-    -- >>> :set -XLambdaCase -XDeriveGeneric -XDerivingStrategies -XDerivingVia
+    -- >>> :seti -XLambdaCase -XDeriveGeneric -XDerivingStrategies -XDerivingVia
     -- >>> import Control.Monad.Except
     -- >>> import Grisette.Lib.Control.Monad.Trans.Except
     -- >>> import Control.Exception
@@ -1735,28 +1733,29 @@ import Grisette.Internal.Core.Data.Symbol
   )
 
 -- $setup
+-- >>> import Grisette
 -- >>> import Grisette.Core
 -- >>> import Grisette.Lib.Base
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.TH
--- >>> :set -XDataKinds
--- >>> :set -XBinaryLiterals
--- >>> :set -XFlexibleContexts
--- >>> :set -XFlexibleInstances
--- >>> :set -XFunctionalDependencies
--- >>> :set -XOverloadedStrings
--- >>> :set -XTemplateHaskell
--- >>> :set -XScopedTypeVariables
--- >>> :set -XDerivingVia
--- >>> :set -XStandaloneDeriving
--- >>> :set -XTypeApplications
--- >>> :set -XFlexibleInstances
--- >>> :set -XMultiParamTypeClasses
--- >>> :set -XFlexibleContexts
--- >>> :set -XDeriveLift
--- >>> :set -XUndecidableInstances
--- >>> :set -XDeriveAnyClass
--- >>> :set -XMonoLocalBinds
--- >>> :set -XDerivingStrategies
--- >>> :set -XDerivingVia
--- >>> :set -XDeriveGeneric
+-- >>> :seti -XDataKinds
+-- >>> :seti -XBinaryLiterals
+-- >>> :seti -XFlexibleContexts
+-- >>> :seti -XFlexibleInstances
+-- >>> :seti -XFunctionalDependencies
+-- >>> :seti -XOverloadedStrings
+-- >>> :seti -XTemplateHaskell
+-- >>> :seti -XScopedTypeVariables
+-- >>> :seti -XDerivingVia
+-- >>> :seti -XStandaloneDeriving
+-- >>> :seti -XTypeApplications
+-- >>> :seti -XFlexibleInstances
+-- >>> :seti -XMultiParamTypeClasses
+-- >>> :seti -XFlexibleContexts
+-- >>> :seti -XDeriveLift
+-- >>> :seti -XUndecidableInstances
+-- >>> :seti -XDeriveAnyClass
+-- >>> :seti -XMonoLocalBinds
+-- >>> :seti -XDerivingStrategies
+-- >>> :seti -XDerivingVia
+-- >>> :seti -XDeriveGeneric

@@ -91,7 +91,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
-    SymbolKind (NonFuncSymbol),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -142,6 +141,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         XorBitsTerm
       ),
     TernaryOp (pevalTernary),
+    TypedConstantSymbol,
     TypedSymbol (TypedSymbol, unTypedSymbol),
     UnaryOp (pevalUnary),
     applyTerm,
@@ -187,7 +187,7 @@ import Unsafe.Coerce (unsafeCoerce)
 --
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XTypeOperators
--- >>> let f = ("x" :: TypedSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
+-- >>> let f = ("x" :: TypedConstantSymbol Integer) --> ("x" + 1 + "y" :: SymInteger) :: Integer --> Integer
 -- >>> f # 1    -- 1 has the type SymInteger
 -- (+ 2 y)
 -- >>> f # "a"  -- "a" has the type SymInteger
@@ -195,7 +195,7 @@ import Unsafe.Coerce (unsafeCoerce)
 data (-->) a b where
   GeneralFun ::
     (SupportedPrim a, SupportedPrim b) =>
-    TypedSymbol 'NonFuncSymbol a ->
+    TypedConstantSymbol a ->
     Term b ->
     a --> b
 
@@ -206,7 +206,10 @@ infixr 0 -->
 
 -- | Build a general symbolic function with a bounded symbol and a term.
 buildGeneralFun ::
-  (SupportedNonFuncPrim a, SupportedPrim b) => TypedSymbol 'NonFuncSymbol a -> Term b -> a --> b
+  (SupportedNonFuncPrim a, SupportedPrim b) =>
+  TypedConstantSymbol a ->
+  Term b ->
+  a --> b
 buildGeneralFun arg v =
   GeneralFun
     (TypedSymbol newarg)

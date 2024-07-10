@@ -276,6 +276,11 @@ The Grisette library is distributed under the terms of the BSD3 license. The
 
 ## Note
 
+### Quantifiers
+
+Grisette currently supports universal and existential quantifiers $\forall$ and $\exists$, but only when building with sbv >= 10.1.
+This also means that you need to use GHC >= 9.2.
+
 ### Floating-points
 
 Grisette currently supports boolean, uninterpreted functions, bitvector,

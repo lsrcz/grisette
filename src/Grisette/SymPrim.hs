@@ -180,7 +180,11 @@ module Grisette.SymPrim
     SymbolKind (..),
     IsSymbolKind (..),
     TypedSymbol (..),
+    TypedAnySymbol,
+    TypedConstantSymbol,
     SymbolSet,
+    AnySymbolSet,
+    ConstantSymbolSet,
     Model,
     ModelValuePair (..),
     ModelSymPair (..),
@@ -234,7 +238,9 @@ import Grisette.Internal.SymPrim.FP
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.ModelRep (ModelSymPair (..))
 import Grisette.Internal.SymPrim.Prim.Model
-  ( Model (..),
+  ( AnySymbolSet,
+    ConstantSymbolSet,
+    Model (..),
     ModelValuePair (..),
     SymbolSet (..),
   )
@@ -245,6 +251,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedPrim,
     SymRep (..),
     SymbolKind (..),
+    TypedAnySymbol,
+    TypedConstantSymbol,
     TypedSymbol (..),
   )
 import Grisette.Internal.SymPrim.SomeBV

@@ -39,8 +39,9 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( IsSymbolKind,
+    SomeTypedAnySymbol,
     SomeTypedSymbol,
-    SymbolKind (AnySymbol, NonFuncSymbol),
+    TypedConstantSymbol,
     TypedSymbol (TypedSymbol),
     castSomeTypedSymbol,
   )
@@ -49,7 +50,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- | A bidirectional map between symbolic Grisette terms and sbv terms.
 data SymBiMap = SymBiMap
   { biMapToSBV :: M.HashMap SomeTerm (QuantifiedStack -> Dynamic),
-    biMapFromSBV :: M.HashMap String (SomeTypedSymbol 'AnySymbol),
+    biMapFromSBV :: M.HashMap String SomeTypedAnySymbol,
     quantifiedSymbolNum :: Int
   }
 
@@ -61,7 +62,7 @@ nextQuantifiedSymbolInfo (SymBiMap t f num) =
   (SymBiMap t f (num + 1), QuantifiedSymbolInfo num)
 
 attachQuantifiedSymbolInfo ::
-  QuantifiedSymbolInfo -> TypedSymbol 'NonFuncSymbol a -> TypedSymbol 'NonFuncSymbol a
+  QuantifiedSymbolInfo -> TypedConstantSymbol a -> TypedConstantSymbol a
 attachQuantifiedSymbolInfo
   info
   (TypedSymbol (SimpleSymbol ident)) =
@@ -72,7 +73,7 @@ attachQuantifiedSymbolInfo
     TypedSymbol $ IndexedSymbol (withInfo ident info) idx
 
 attachNextQuantifiedSymbolInfo ::
-  SymBiMap -> TypedSymbol 'NonFuncSymbol a -> (SymBiMap, TypedSymbol 'NonFuncSymbol a)
+  SymBiMap -> TypedConstantSymbol a -> (SymBiMap, TypedConstantSymbol a)
 attachNextQuantifiedSymbolInfo m s =
   let (m', info) = nextQuantifiedSymbolInfo m
    in (m', attachQuantifiedSymbolInfo info s)

@@ -47,9 +47,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     SupportedPrim,
     SymRep (SymType),
-    SymbolKind (NonFuncSymbol),
     Term (ConTerm),
-    TypedSymbol,
+    TypedConstantSymbol,
     conTerm,
     pformat,
     symTerm,
@@ -102,7 +101,7 @@ infixr 0 -~>
 -- 3
 (-->) ::
   (SupportedNonFuncPrim ca, SupportedPrim cb, LinkedRep cb sb) =>
-  TypedSymbol 'NonFuncSymbol ca ->
+  TypedConstantSymbol ca ->
   sb ->
   ca --> cb
 (-->) arg = buildGeneralFun arg . underlyingTerm

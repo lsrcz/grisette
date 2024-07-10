@@ -187,7 +187,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         symSBVTerm,
         withPrim
       ),
-    SymbolKind (NonFuncSymbol),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -234,6 +233,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ToUnsignedTerm,
         XorBitsTerm
       ),
+    TypedConstantSymbol,
     TypedSymbol (TypedSymbol),
     introSupportedPrimConstraint,
     someTypedSymbol,
@@ -642,7 +642,7 @@ lowerSinglePrimImpl config t@(SymTerm _ ts) _ m = withPrim @a config $
     return
       (addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m, const g)
 #if MIN_VERSION_sbv(10,1,0)
-lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedSymbol 'NonFuncSymbol t1) v) qs m =
+lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedConstantSymbol t1) v) qs m =
   withNonFuncPrim @t1 config $ do
     do
       let (newm, sb@(TypedSymbol sbs)) = attachNextQuantifiedSymbolInfo m ts
@@ -657,7 +657,7 @@ lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedSymbol 'NonFuncSymbol t1)
             \(SBV.Forall (a :: SBVType integerBitWidth t1)) ->
               r $ addQuantified sb (toDyn a) qst
       return (addBiMapIntermediate (SomeTerm t) (toDyn . ret) nextm, ret)
-lowerSinglePrimImpl config t@(ExistsTerm _ (ts :: TypedSymbol 'NonFuncSymbol t1) v) qs m =
+lowerSinglePrimImpl config t@(ExistsTerm _ (ts :: TypedConstantSymbol t1) v) qs m =
   withNonFuncPrim @t1 config $ do
     do
       let (newm, sb@(TypedSymbol sbs)) = attachNextQuantifiedSymbolInfo m ts

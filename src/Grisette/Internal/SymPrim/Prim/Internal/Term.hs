@@ -64,7 +64,11 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     -- * Typed symbols
     SymbolKind (..),
     TypedSymbol (..),
+    TypedConstantSymbol,
+    TypedAnySymbol,
     SomeTypedSymbol (..),
+    SomeTypedConstantSymbol,
+    SomeTypedAnySymbol,
     IsSymbolKind (..),
     showUntyped,
     withSymbolSupported,
@@ -388,7 +392,7 @@ class
   pformatCon :: t -> String
   default pformatCon :: (Show t) => t -> String
   pformatCon = show
-  pformatSym :: TypedSymbol 'AnySymbol t -> String
+  pformatSym :: TypedSymbol 'AnyKind t -> String
   pformatSym = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
@@ -396,7 +400,7 @@ class
   pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
   pevalEqTerm :: Term t -> Term t -> Term Bool
   conSBVTerm :: (KnownIsZero n) => proxy n -> t -> SBVType n t
-  symSBVName :: TypedSymbol 'AnySymbol t -> Int -> String
+  symSBVName :: TypedSymbol 'AnyKind t -> Int -> String
   symSBVTerm ::
     (SBVFreshMonad m, KnownIsZero n) =>
     proxy n ->
@@ -966,24 +970,18 @@ class
 
 -- Typed Symbols
 
-data SymbolKind = NonFuncSymbol | AnySymbol
+data SymbolKind = ConstantKind | AnyKind
 
 class IsSymbolKind (ty :: SymbolKind) where
-  -- type IsNonFuncSymbol ty :: Bool
   type SymbolKindConstraint ty :: Type -> Constraint
-  isNonFuncSymbolKind :: Bool
-  decideSymbolKind :: Either (ty :~~: 'NonFuncSymbol) (ty :~~: 'AnySymbol)
+  decideSymbolKind :: Either (ty :~~: 'ConstantKind) (ty :~~: 'AnyKind)
 
-instance IsSymbolKind 'NonFuncSymbol where
-  -- type IsNonFunc 'NonFuncSymbol = 'True
-  type SymbolKindConstraint 'NonFuncSymbol = SupportedNonFuncPrim
-  isNonFuncSymbolKind = True
+instance IsSymbolKind 'ConstantKind where
+  type SymbolKindConstraint 'ConstantKind = SupportedNonFuncPrim
   decideSymbolKind = Left HRefl
 
-instance IsSymbolKind 'AnySymbol where
-  -- type IsNonFunc 'AnySymbol = 'False
-  type SymbolKindConstraint 'AnySymbol = SupportedPrim
-  isNonFuncSymbolKind = False
+instance IsSymbolKind 'AnyKind where
+  type SymbolKindConstraint 'AnyKind = SupportedPrim
   decideSymbolKind = Right HRefl
 
 -- | A typed symbol is a symbol that is associated with a type. Note that the
@@ -993,7 +991,7 @@ instance IsSymbolKind 'AnySymbol where
 -- Simple symbols can be created with the @OverloadedStrings@ extension:
 --
 -- >>> :set -XOverloadedStrings
--- >>> "a" :: TypedSymbol Bool
+-- >>> "a" :: TypedSymbol 'AnyKind Bool
 -- a :: Bool
 data TypedSymbol (knd :: SymbolKind) t where
   TypedSymbol ::
@@ -1003,6 +1001,10 @@ data TypedSymbol (knd :: SymbolKind) t where
     ) =>
     {unTypedSymbol :: Symbol} ->
     TypedSymbol knd t
+
+type TypedConstantSymbol = TypedSymbol 'ConstantKind
+
+type TypedAnySymbol = TypedSymbol 'AnyKind
 
 instance Eq (TypedSymbol knd t) where
   TypedSymbol x == TypedSymbol y = x == y
@@ -1047,6 +1049,10 @@ data SomeTypedSymbol knd where
     TypeRep t ->
     TypedSymbol knd t ->
     SomeTypedSymbol knd
+
+type SomeTypedConstantSymbol = SomeTypedSymbol 'ConstantKind
+
+type SomeTypedAnySymbol = SomeTypedSymbol 'AnyKind
 
 instance NFData (SomeTypedSymbol knd) where
   rnf (SomeTypedSymbol p s) = rnf (SomeTypeRep p) `seq` rnf s
@@ -1137,9 +1143,9 @@ instance Show FPRoundingBinaryOp where
 
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'AnySymbol t) -> Term t
-  ForallTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> Term Bool
-  ExistsTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> Term Bool
+  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'AnyKind t) -> Term t
+  ForallTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> Term Bool
+  ExistsTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> Term Bool
   UnaryTerm ::
     (UnaryOp tag arg t) =>
     {-# UNPACK #-} !Id ->
@@ -1744,9 +1750,9 @@ instance (SupportedPrim t) => Hashable (Term t) where
 
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnySymbol t) -> UTerm t
-  UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> UTerm Bool
-  UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'NonFuncSymbol t) -> !(Term Bool) -> UTerm Bool
+  USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnyKind t) -> UTerm t
+  UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> UTerm Bool
+  UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> UTerm Bool
   UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
   UBinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
@@ -1908,9 +1914,9 @@ instance (SupportedPrim t) => Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
     DConTerm :: t -> Description (Term t)
-    DSymTerm :: TypedSymbol 'AnySymbol t -> Description (Term t)
-    DForallTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'NonFuncSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
-    DExistsTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'NonFuncSymbol t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DSymTerm :: TypedSymbol 'AnyKind t -> Description (Term t)
+    DForallTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DExistsTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DUnaryTerm ::
       (Eq tag, Hashable tag) =>
       {-# UNPACK #-} !(TypeRep tag, tag) ->
@@ -1990,9 +1996,9 @@ instance (SupportedPrim t) => Interned (Term t) where
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
-  describe (UForallTerm (sym :: TypedSymbol 'NonFuncSymbol arg) arg) =
+  describe (UForallTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
     DForallTerm (typeRep :: TypeRep arg, sym) (identity arg)
-  describe (UExistsTerm (sym :: TypedSymbol 'NonFuncSymbol arg) arg) =
+  describe (UExistsTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
     DExistsTerm (typeRep :: TypeRep arg, sym) (identity arg)
   describe ((UUnaryTerm (tag :: tagt) (tm :: Term arg)) :: UTerm t) =
     DUnaryTerm (typeRep, tag) (typeRep :: TypeRep arg, identity tm)
@@ -2282,11 +2288,11 @@ symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
 symTerm t = internTerm $ USymTerm $ TypedSymbol t
 {-# INLINE symTerm #-}
 
-forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'NonFuncSymbol t -> Term Bool -> Term Bool
+forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
 forallTerm sym arg = internTerm $ UForallTerm sym arg
 {-# INLINE forallTerm #-}
 
-existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'NonFuncSymbol t -> Term Bool -> Term Bool
+existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
 existsTerm sym arg = internTerm $ UExistsTerm sym arg
 {-# INLINE existsTerm #-}
 

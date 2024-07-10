@@ -31,22 +31,22 @@ import Data.Kind (Type)
 --
 -- Note that symbolic constants with different types are considered different.
 --
--- >>> let aBool = "a" :: TypedSymbol Bool
--- >>> let bBool = "b" :: TypedSymbol Bool
--- >>> let cBool = "c" :: TypedSymbol Bool
--- >>> let aInteger = "a" :: TypedSymbol Integer
--- >>> emptySet :: SymbolSet
+-- >>> let aBool = "a" :: TypedAnySymbol Bool
+-- >>> let bBool = "b" :: TypedAnySymbol Bool
+-- >>> let cBool = "c" :: TypedAnySymbol Bool
+-- >>> let aInteger = "a" :: TypedAnySymbol Integer
+-- >>> emptySet :: AnySymbolSet
 -- SymbolSet {}
--- >>> containsSymbol aBool (buildSymbolSet aBool :: SymbolSet)
+-- >>> containsSymbol aBool (buildSymbolSet aBool :: AnySymbolSet)
 -- True
--- >>> containsSymbol bBool (buildSymbolSet aBool :: SymbolSet)
+-- >>> containsSymbol bBool (buildSymbolSet aBool :: AnySymbolSet)
 -- False
--- >>> insertSymbol aBool (buildSymbolSet aBool :: SymbolSet)
+-- >>> insertSymbol aBool (buildSymbolSet aBool :: AnySymbolSet)
 -- SymbolSet {a :: Bool}
--- >>> insertSymbol aInteger (buildSymbolSet aBool :: SymbolSet)
+-- >>> insertSymbol aInteger (buildSymbolSet aBool :: AnySymbolSet)
 -- SymbolSet {a :: Bool, a :: Integer}
--- >>> let abSet = buildSymbolSet (aBool, bBool) :: SymbolSet
--- >>> let acSet = buildSymbolSet (aBool, cBool) :: SymbolSet
+-- >>> let abSet = buildSymbolSet (aBool, bBool) :: AnySymbolSet
+-- >>> let acSet = buildSymbolSet (aBool, cBool) :: AnySymbolSet
 -- >>> intersectionSet abSet acSet
 -- SymbolSet {a :: Bool}
 -- >>> unionSet abSet acSet
@@ -82,7 +82,7 @@ class
 -- | A type class for building a symbolic constant set manually from a symbolic
 -- constant set representation
 --
--- >>> buildSymbolSet ("a" :: TypedSymbol Bool, "b" :: TypedSymbol Bool) :: SymbolSet
+-- >>> buildSymbolSet ("a" :: TypedAnySymbol Bool, "b" :: TypedAnySymbol Bool) :: AnySymbolSet
 -- SymbolSet {a :: Bool, b :: Bool}
 class
   (SymbolSetOps symbolSet typedSymbol) =>
@@ -95,10 +95,10 @@ class
 --
 -- Note that symbolic constants with different types are considered different.
 --
--- >>> let aBool = "a" :: TypedSymbol Bool
--- >>> let bBool = "b" :: TypedSymbol Bool
--- >>> let cBool = "c" :: TypedSymbol Bool
--- >>> let aInteger = "a" :: TypedSymbol Integer
+-- >>> let aBool = "a" :: TypedAnySymbol Bool
+-- >>> let bBool = "b" :: TypedAnySymbol Bool
+-- >>> let cBool = "c" :: TypedAnySymbol Bool
+-- >>> let aInteger = "a" :: TypedAnySymbol Integer
 -- >>> emptyModel :: Model
 -- Model {}
 -- >>> valueOf aBool (buildModel (aBool ::= True) :: Model)
@@ -108,7 +108,7 @@ class
 -- >>> insertValue bBool False (buildModel (aBool ::= True) :: Model)
 -- Model {a -> True :: Bool, b -> False :: Bool}
 -- >>> let abModel = buildModel (aBool ::= True, bBool ::= False) :: Model
--- >>> let acSet = buildSymbolSet (aBool, cBool) :: SymbolSet
+-- >>> let acSet = buildSymbolSet (aBool, cBool) :: AnySymbolSet
 -- >>> exceptFor acSet abModel
 -- Model {b -> False :: Bool}
 -- >>> restrictTo acSet abModel
@@ -163,8 +163,8 @@ class
 class ModelRep rep model | rep -> model where
   -- | Build a model
   --
-  -- >>> let aBool = "a" :: TypedSymbol Bool
-  -- >>> let bBool = "b" :: TypedSymbol Bool
+  -- >>> let aBool = "a" :: TypedAnySymbol Bool
+  -- >>> let bBool = "b" :: TypedAnySymbol Bool
   -- >>> buildModel (aBool ::= True, bBool ::= False) :: Model
   -- Model {a -> True :: Bool, b -> False :: Bool}
   buildModel :: rep -> model

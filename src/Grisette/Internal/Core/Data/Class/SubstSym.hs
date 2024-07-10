@@ -115,7 +115,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
 -- | Substitution of symbols (symbolic constants) to a symbolic value.
 --
--- >>> a = "a" :: TypedSymbol Bool
+-- >>> a = "a" :: TypedAnySymbol Bool
 -- >>> v = "x" .&& "y" :: SymBool
 -- >>> substSym a v (["a" .&& "b", "a"] :: [SymBool])
 -- [(&& (&& x y) b),(&& x y)]

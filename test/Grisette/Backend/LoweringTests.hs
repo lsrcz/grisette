@@ -84,9 +84,8 @@ import Grisette.Internal.SymPrim.Prim.Term
       ),
     SBVRep (SBVType),
     SupportedPrim,
-    SymbolKind (NonFuncSymbol),
     Term,
-    TypedSymbol,
+    TypedConstantSymbol,
     absNumTerm,
     addNumTerm,
     andBitsTerm,
@@ -1049,9 +1048,9 @@ loweringTests =
             testGroup
               "Quantifiers"
               [ testCase "Forall" $ do
-                  let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
+                  let asym :: TypedConstantSymbol Integer = "a"
                   let a :: Term Integer = ssymTerm "a"
-                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let xsym :: TypedConstantSymbol Integer = "x"
                   let x :: Term Integer = ssymTerm "x"
                   let xterm =
                         forallTerm
@@ -1083,7 +1082,7 @@ loweringTests =
                             _ -> liftIO $ assertFailure "Unsat"
                       _ -> liftIO $ assertFailure "Failed to find a",
                 testCase "Forall failed" $ do
-                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let xsym :: TypedConstantSymbol Integer = "x"
                   let x :: Term Integer = ssymTerm "x"
                   let xterm = forallTerm xsym (eqTerm x (conTerm 10))
                   SBV.runSMTWith SBV.z3 $ do
@@ -1095,9 +1094,9 @@ loweringTests =
                         SBV.Unsat -> return ()
                         _ -> liftIO $ assertFailure "Should be unsat",
                 testCase "Forall-Exists" $ do
-                  let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
+                  let asym :: TypedConstantSymbol Integer = "a"
                   let a :: Term Integer = ssymTerm "a"
-                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let xsym :: TypedConstantSymbol Integer = "x"
                   let x :: Term Integer = ssymTerm "x"
                   let xterm =
                         forallTerm xsym $ existsTerm asym (ltOrdTerm x a)
@@ -1110,9 +1109,9 @@ loweringTests =
                         SBV.Sat -> return ()
                         _ -> liftIO $ assertFailure "Unsat",
                 testCase "Exists-Forall" $ do
-                  let asym :: TypedSymbol 'NonFuncSymbol Integer = "a"
+                  let asym :: TypedConstantSymbol Integer = "a"
                   let a :: Term Integer = ssymTerm "a"
-                  let xsym :: TypedSymbol 'NonFuncSymbol Integer = "x"
+                  let xsym :: TypedConstantSymbol Integer = "x"
                   let x :: Term Integer = ssymTerm "x"
                   let xterm =
                         existsTerm asym $ forallTerm xsym (ltOrdTerm x a)

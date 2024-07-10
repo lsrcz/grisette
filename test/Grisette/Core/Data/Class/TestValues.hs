@@ -16,7 +16,7 @@ import Grisette
     Solvable (con, isym, ssym),
     SymBool,
     Symbol (IndexedSymbol, SimpleSymbol),
-    SymbolKind (AnySymbol),
+    TypedAnySymbol,
     TypedSymbol (TypedSymbol),
   )
 
@@ -35,8 +35,8 @@ ssymBool = ssym
 isymBool :: Identifier -> Int -> SymBool
 isymBool = isym
 
-ssymbolBool :: Identifier -> TypedSymbol 'AnySymbol Bool
+ssymbolBool :: Identifier -> TypedAnySymbol Bool
 ssymbolBool = TypedSymbol . SimpleSymbol
 
-isymbolBool :: Identifier -> Int -> TypedSymbol 'AnySymbol Bool
+isymbolBool :: Identifier -> Int -> TypedAnySymbol Bool
 isymbolBool i idx = TypedSymbol $ IndexedSymbol i idx
