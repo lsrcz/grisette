@@ -134,6 +134,7 @@ library
       Grisette.Internal.SymPrim.Prim.SomeTerm
       Grisette.Internal.SymPrim.Prim.Term
       Grisette.Internal.SymPrim.Prim.TermUtils
+      Grisette.Internal.SymPrim.Quantifier
       Grisette.Internal.SymPrim.SomeBV
       Grisette.Internal.SymPrim.SymAlgReal
       Grisette.Internal.SymPrim.SymBool
@@ -335,6 +336,7 @@ test-suite spec
       Grisette.SymPrim.Prim.ModelTests
       Grisette.SymPrim.Prim.NumTests
       Grisette.SymPrim.Prim.TabularFunTests
+      Grisette.SymPrim.QuantifierTests
       Grisette.SymPrim.SomeBVTests
       Grisette.SymPrim.SymPrimTests
       Grisette.SymPrim.TabularFunTests

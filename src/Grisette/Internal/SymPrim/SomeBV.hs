@@ -116,7 +116,7 @@ import Grisette.Internal.Core.Data.Class.EvalSym
   ( EvalSym (evalSym),
   )
 import Grisette.Internal.Core.Data.Class.ExtractSym
-  ( ExtractSym (extractSym),
+  ( ExtractSym (extractSymMaybe),
   )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
@@ -468,8 +468,8 @@ instance
   (forall n. (KnownNat n, 1 <= n) => ExtractSym (bv n)) =>
   ExtractSym (SomeBV bv)
   where
-  extractSym = unarySomeBV extractSym
-  {-# INLINE extractSym #-}
+  extractSymMaybe = unarySomeBV extractSymMaybe
+  {-# INLINE extractSymMaybe #-}
 
 instance
   (forall n. (KnownNat n, 1 <= n) => PPrint (bv n)) =>

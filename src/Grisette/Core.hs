@@ -1261,8 +1261,10 @@ module Grisette.Core
     ExtractSym (..),
     ExtractSym1 (..),
     extractSym1,
+    extractSymMaybe1,
     ExtractSym2 (..),
     extractSym2,
+    extractSymMaybe2,
 
     -- ** Evaluation with a model
 
@@ -1349,8 +1351,8 @@ module Grisette.Core
     -- *** 'ExtractSym'
     ExtractSymArgs (..),
     GExtractSym (..),
-    genericExtractSym,
-    genericLiftExtractSym,
+    genericExtractSymMaybe,
+    genericLiftExtractSymMaybe,
 
     -- *** 'SubstSym'
     SubstSymArgs (..),
@@ -1472,8 +1474,10 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     GExtractSym (..),
     extractSym1,
     extractSym2,
-    genericExtractSym,
-    genericLiftExtractSym,
+    extractSymMaybe1,
+    extractSymMaybe2,
+    genericExtractSymMaybe,
+    genericLiftExtractSymMaybe,
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (..), Function (..))
 import Grisette.Internal.Core.Data.Class.GenSym

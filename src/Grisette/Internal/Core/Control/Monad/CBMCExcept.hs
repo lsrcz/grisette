@@ -67,7 +67,7 @@ import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym (evalSym))
 import Grisette.Internal.Core.Data.Class.ExtractSym
-  ( ExtractSym (extractSym),
+  ( ExtractSym (extractSymMaybe),
   )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( GenSym (fresh),
@@ -366,7 +366,7 @@ instance
   (ExtractSym (m (CBMCEither e a))) =>
   ExtractSym (CBMCExceptT e m a)
   where
-  extractSym (CBMCExceptT v) = extractSym v
+  extractSymMaybe (CBMCExceptT v) = extractSymMaybe v
 
 instance
   (Mergeable1 m, Mergeable e, Mergeable a) =>
