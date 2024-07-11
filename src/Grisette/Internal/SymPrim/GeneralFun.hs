@@ -83,6 +83,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ( castTypedSymbol,
         conSBVTerm,
         defaultValue,
+        funcDummyConstraint,
+        isFuncType,
         parseSMTModelResult,
         pevalITETerm,
         sbvEq,
@@ -334,6 +336,10 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+  funcDummyConstraint p f = withNonFuncPrim @a p $ withNonFuncPrim @b p $ do
+    f (conSBVTerm p (defaultValue :: a))
+      SBV..== f (conSBVTerm p (defaultValue :: a))
 
 instance
   {-# OVERLAPPING #-}
@@ -389,6 +395,16 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+
+  funcDummyConstraint p f =
+    withNonFuncPrim @a p $ withNonFuncPrim @b p $ withNonFuncPrim @c p $ do
+      f
+        (conSBVTerm p (defaultValue :: a))
+        (conSBVTerm p (defaultValue :: b))
+        SBV..== f
+          (conSBVTerm p (defaultValue :: a))
+          (conSBVTerm p (defaultValue :: b))
 
 instance
   {-# OVERLAPPING #-}
@@ -448,6 +464,20 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+  funcDummyConstraint p f =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $ do
+            f
+              (conSBVTerm p (defaultValue :: a))
+              (conSBVTerm p (defaultValue :: b))
+              (conSBVTerm p (defaultValue :: c))
+              SBV..== f
+                (conSBVTerm p (defaultValue :: a))
+                (conSBVTerm p (defaultValue :: b))
+                (conSBVTerm p (defaultValue :: c))
 
 instance
   {-# OVERLAPPING #-}
@@ -511,6 +541,23 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+  funcDummyConstraint p f =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $ do
+              f
+                (conSBVTerm p (defaultValue :: a))
+                (conSBVTerm p (defaultValue :: b))
+                (conSBVTerm p (defaultValue :: c))
+                (conSBVTerm p (defaultValue :: d))
+                SBV..== f
+                  (conSBVTerm p (defaultValue :: a))
+                  (conSBVTerm p (defaultValue :: b))
+                  (conSBVTerm p (defaultValue :: c))
+                  (conSBVTerm p (defaultValue :: d))
 
 instance
   {-# OVERLAPPING #-}
@@ -578,6 +625,26 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+  funcDummyConstraint p f =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $ do
+                f
+                  (conSBVTerm p (defaultValue :: a))
+                  (conSBVTerm p (defaultValue :: b))
+                  (conSBVTerm p (defaultValue :: c))
+                  (conSBVTerm p (defaultValue :: d))
+                  (conSBVTerm p (defaultValue :: e))
+                  SBV..== f
+                    (conSBVTerm p (defaultValue :: a))
+                    (conSBVTerm p (defaultValue :: b))
+                    (conSBVTerm p (defaultValue :: c))
+                    (conSBVTerm p (defaultValue :: d))
+                    (conSBVTerm p (defaultValue :: e))
 
 instance
   {-# OVERLAPPING #-}
@@ -649,6 +716,29 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+  funcDummyConstraint p f =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                withNonFuncPrim @g p $ do
+                  f
+                    (conSBVTerm p (defaultValue :: a))
+                    (conSBVTerm p (defaultValue :: b))
+                    (conSBVTerm p (defaultValue :: c))
+                    (conSBVTerm p (defaultValue :: d))
+                    (conSBVTerm p (defaultValue :: e))
+                    (conSBVTerm p (defaultValue :: f))
+                    SBV..== f
+                      (conSBVTerm p (defaultValue :: a))
+                      (conSBVTerm p (defaultValue :: b))
+                      (conSBVTerm p (defaultValue :: c))
+                      (conSBVTerm p (defaultValue :: d))
+                      (conSBVTerm p (defaultValue :: e))
+                      (conSBVTerm p (defaultValue :: f))
 
 instance
   {-# OVERLAPPING #-}
@@ -724,6 +814,32 @@ instance
   castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
     Left HRefl -> Nothing
     Right HRefl -> Just $ TypedSymbol sym
+  isFuncType = True
+  funcDummyConstraint p f =
+    withNonFuncPrim @a p $
+      withNonFuncPrim @b p $
+        withNonFuncPrim @c p $
+          withNonFuncPrim @d p $
+            withNonFuncPrim @e p $
+              withNonFuncPrim @f p $
+                withNonFuncPrim @g p $
+                  withNonFuncPrim @h p $ do
+                    f
+                      (conSBVTerm p (defaultValue :: a))
+                      (conSBVTerm p (defaultValue :: b))
+                      (conSBVTerm p (defaultValue :: c))
+                      (conSBVTerm p (defaultValue :: d))
+                      (conSBVTerm p (defaultValue :: e))
+                      (conSBVTerm p (defaultValue :: f))
+                      (conSBVTerm p (defaultValue :: g))
+                      SBV..== f
+                        (conSBVTerm p (defaultValue :: a))
+                        (conSBVTerm p (defaultValue :: b))
+                        (conSBVTerm p (defaultValue :: c))
+                        (conSBVTerm p (defaultValue :: d))
+                        (conSBVTerm p (defaultValue :: e))
+                        (conSBVTerm p (defaultValue :: f))
+                        (conSBVTerm p (defaultValue :: g))
 
 pevalGeneralFunApplyTerm ::
   ( SupportedNonFuncPrim a,

@@ -458,6 +458,9 @@ class
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
   castTypedSymbol ::
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
+  isFuncType :: Bool
+  funcDummyConstraint ::
+    (KnownIsZero n) => p n -> SBVType n t -> (SBV.SBV Bool)
 
 castSomeTypedSymbol ::
   (IsSymbolKind knd') =>
@@ -2965,6 +2968,8 @@ instance SupportedPrim Bool where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
 instance NonFuncSBVRep Bool where
   type NonFuncSBVBaseType _ Bool = Bool
