@@ -55,6 +55,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         conSBVTerm,
         defaultValue,
         defaultValueDynamic,
+        funcDummyConstraint,
+        isFuncType,
         parseSMTModelResult,
         pevalEqTerm,
         pevalITETerm,
@@ -117,6 +119,8 @@ instance SupportedPrim Integer where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
 instance NonFuncSBVRep Integer where
   type NonFuncSBVBaseType n Integer = If (IsZero n) Integer (SBV.IntN n)
@@ -156,6 +160,8 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
 bvIsNonZeroFromGEq1 ::
   forall w r proxy.
@@ -202,6 +208,8 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
   type NonFuncSBVBaseType _ (WordN w) = SBV.WordN w
@@ -231,6 +239,8 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   parseSMTModelResult _ cv =
     withPrim @(FP eb sb) (Proxy @0) $
       parseScalarSMTModelResult (\(x :: SBV.FloatingPoint eb sb) -> coerce x) cv
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
   -- Workaround for sbv#702.
   sbvIte p = withPrim @(FP eb sb) p $ \c a b ->
@@ -303,6 +313,8 @@ instance SupportedPrim FPRoundingMode where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
 instance NonFuncSBVRep FPRoundingMode where
   type NonFuncSBVBaseType _ FPRoundingMode = SBV.RoundingMode
@@ -341,6 +353,8 @@ instance SupportedPrim AlgReal where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
+  isFuncType = False
+  funcDummyConstraint _ _ = SBV.sTrue
 
 instance NonFuncSBVRep AlgReal where
   type NonFuncSBVBaseType _ AlgReal = SBV.AlgReal
