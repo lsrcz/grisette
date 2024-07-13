@@ -69,16 +69,20 @@ import Control.Concurrent.STM
   )
 import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
 import Control.Exception (handle, throwTo)
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.RWS (RWST (runRWST))
 import Control.Monad.Reader
   ( MonadReader (ask),
     MonadTrans (lift),
     ReaderT (runReaderT),
+    ask,
+    local,
   )
 import Control.Monad.STM (STM)
-import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
+import Control.Monad.State (MonadState (get, put), StateT, evalStateT, modify)
+import Control.Monad.Writer (tell)
 import Data.Dynamic (fromDyn, toDyn)
-import qualified Data.HashSet as HS
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
@@ -526,7 +530,8 @@ instance ConfigurableSolver (GrisetteSMTConfig n) SBVSolverHandle where
                 writeTChan sbvSolverHandleOutChan (Left (SolvingError e))
       handle handler $ runSBVIncremental config $ do
         let loop = do
-              nextFormula <- liftIO $ atomically $ readTChan sbvSolverHandleInChan
+              nextFormula <-
+                liftIO $ atomically $ readTChan sbvSolverHandleInChan
               case nextFormula of
                 SolverPush n -> monadicSolverPush n >> loop
                 SolverPop n -> monadicSolverPop n >> loop
@@ -584,204 +589,13 @@ configIntroKnownIsZero :: GrisetteSMTConfig n -> ((KnownIsZero n) => r) -> r
 configIntroKnownIsZero (GrisetteSMTConfig _ (ExtraConfig _ (Approx _))) r = r
 configIntroKnownIsZero (GrisetteSMTConfig _ (ExtraConfig _ NoApprox)) r = r
 
-declareAllUFuncsImpl ::
-  forall integerBitWidth a m.
-  (HasCallStack, SBVFreshMonad m) =>
-  GrisetteSMTConfig integerBitWidth ->
-  Term a ->
-  HS.HashSet SomeTerm ->
-  SymBiMap ->
-  m (HS.HashSet SomeTerm, SymBiMap, SBV.SBool)
-declareAllUFuncsImpl _ t s m
-  | HS.member (introSupportedPrimConstraint t $ SomeTerm t) s =
-      return (s, m, SBV.sTrue)
-declareAllUFuncsImpl _ t@(ConTerm {}) s m =
-  return (HS.insert (SomeTerm t) s, m, SBV.sTrue)
-declareAllUFuncsImpl config t@(SymTerm _ ts) s m =
-  if isFuncType @a
-    then configIntroKnownIsZero config $
-      withPrim @a config $ do
-        let name = symSBVName ts (sizeBiMap m)
-        g <- symSBVTerm @a config name
-        return
-          ( HS.insert (SomeTerm t) s,
-            addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m,
-            funcDummyConstraint @a config g
-          )
-    else return (HS.insert (SomeTerm t) s, m, SBV.sTrue)
-declareAllUFuncsImpl config t@(ForallTerm _ _ v) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config v s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(ExistsTerm _ _ v) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config v s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(NotTerm _ v) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config v s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(OrTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(AndTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(EqTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(ITETerm _ c a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config c s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config a s1 m1
-  (s3, m3, cond3) <- declareAllUFuncsImpl config b s2 m2
-  return (HS.insert (SomeTerm t) s3, m3, cond1 SBV..&& cond2 SBV..&& cond3)
-declareAllUFuncsImpl config t@(AbsNumTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(AddNumTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(MulNumTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(NegNumTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(SignumNumTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(QuotIntegralTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(RemIntegralTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(DivIntegralTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(ModIntegralTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(AndBitsTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(OrBitsTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(XorBitsTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(ComplementBitsTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(BVConcatTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(BVExtendTerm _ _ _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(BVSelectTerm _ _ _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(ShiftLeftTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(ShiftRightTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(RotateLeftTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(RotateRightTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(LtOrdTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(LeOrdTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(FPUnaryTerm _ _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(FPBinaryTerm _ _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(FPRoundingUnaryTerm _ _ r a) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config r s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config a s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(FPRoundingBinaryTerm _ _ r a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config r s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config a s1 m1
-  (s3, m3, cond3) <- declareAllUFuncsImpl config b s2 m2
-  return (HS.insert (SomeTerm t) s3, m3, cond1 SBV..&& cond2 SBV..&& cond3)
-declareAllUFuncsImpl config t@(FPTraitTerm _ _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(FPFMATerm _ r a b c) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config r s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config a s1 m1
-  (s3, m3, cond3) <- declareAllUFuncsImpl config b s2 m2
-  (s4, m4, cond4) <- declareAllUFuncsImpl config c s3 m3
-  return
-    ( HS.insert (SomeTerm t) s4,
-      m4,
-      cond1 SBV..&& cond2 SBV..&& cond3 SBV..&& cond4
-    )
-declareAllUFuncsImpl config t@(PowerTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(RecipTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(ToSignedTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(ToUnsignedTerm _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(ApplyTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(UnaryTerm _ _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
-declareAllUFuncsImpl config t@(BinaryTerm _ _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(TernaryTerm _ _ a b c) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  (s3, m3, cond3) <- declareAllUFuncsImpl config c s2 m2
-  return (HS.insert (SomeTerm t) s3, m3, cond1 SBV..&& cond2 SBV..&& cond3)
-declareAllUFuncsImpl config t@(FdivTerm _ a b) s m = do
-  (s1, m1, cond1) <- declareAllUFuncsImpl config a s m
-  (s2, m2, cond2) <- declareAllUFuncsImpl config b s1 m1
-  return (HS.insert (SomeTerm t) s2, m2, cond1 SBV..&& cond2)
-declareAllUFuncsImpl config t@(FloatingUnaryTerm _ _ a) s m = do
-  (newS, newM, cond) <- declareAllUFuncsImpl config a s m
-  return (HS.insert (SomeTerm t) newS, newM, cond)
+newtype TermAll = TermAll SBV.SBool
+
+instance Semigroup TermAll where
+  TermAll a <> TermAll b = TermAll (a SBV..&& b)
+
+instance Monoid TermAll where
+  mempty = TermAll SBV.sTrue
 
 -- | Lower a single primitive term to SBV. With an explicitly provided
 -- 'SymBiMap' cache.
@@ -793,8 +607,9 @@ lowerSinglePrimCached ::
   SymBiMap ->
   m (SymBiMap, QuantifiedStack -> SBVType integerBitWidth a, SBV.SBool)
 lowerSinglePrimCached config t m = do
-  (_, newm, dummy) <- declareAllUFuncsImpl config t HS.empty m
-  (finalm, r) <- lowerSinglePrimCached' config t emptyQuantifiedSymbols newm
+  -- (_, newm, dummy) <- declareAllUFuncsImpl config t HS.empty m
+  (r, finalm, TermAll dummy) <-
+    runRWST (lowerSinglePrimCached' config t) emptyQuantifiedSymbols m
   return (finalm, r, dummy)
 
 -- | Lower a single primitive term to SBV.
@@ -812,276 +627,286 @@ lowerSinglePrimCached' ::
   (HasCallStack, SBVFreshMonad m) =>
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
-  QuantifiedSymbols ->
-  SymBiMap ->
-  m (SymBiMap, QuantifiedStack -> SBVType integerBitWidth a)
-lowerSinglePrimCached' config t qs m =
+  RWST
+    QuantifiedSymbols
+    TermAll
+    SymBiMap
+    m
+    (QuantifiedStack -> SBVType integerBitWidth a)
+lowerSinglePrimCached' config t = do
+  m <- get
   introSupportedPrimConstraint t $
     configIntroKnownIsZero config $
       case lookupTerm (SomeTerm t) m of
         Just x ->
           return
-            ( m,
-              ( \qst ->
-                  withPrim @a (Proxy @integerBitWidth) $
-                    fromDyn (x qst) undefined
-              )
+            ( \qst ->
+                withPrim @a (Proxy @integerBitWidth) $
+                  fromDyn (x qst) undefined
             )
-        Nothing -> lowerSinglePrimImpl config t qs m
-
--- lowerSinglePrim' ::
---   forall integerBitWidth a m.
---   (HasCallStack, SBVFreshMonad m) =>
---   GrisetteSMTConfig integerBitWidth ->
---   Term a ->
---   m (SymBiMap, QuantifiedStack -> SBVType integerBitWidth a)
--- lowerSinglePrim' config t =
---   lowerSinglePrimCached' config t emptyQuantifiedSymbols emptySymBiMap
+        Nothing -> do
+          lowerSinglePrimImpl config t
 
 lowerSinglePrimImpl ::
   forall integerBitWidth a m.
   (HasCallStack, SBVFreshMonad m, KnownIsZero integerBitWidth) =>
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
-  QuantifiedSymbols ->
-  SymBiMap ->
-  m (SymBiMap, QuantifiedStack -> SBVType integerBitWidth a)
-lowerSinglePrimImpl config (ConTerm _ v) _ m =
-  return (m, const $ conSBVTerm config v)
-lowerSinglePrimImpl config t@(SymTerm _ ts) qs m
-  | isQuantifiedSymbol ts qs = withPrim @a config $ do
+  RWST
+    QuantifiedSymbols
+    TermAll
+    SymBiMap
+    m
+    (QuantifiedStack -> SBVType integerBitWidth a)
+lowerSinglePrimImpl config (ConTerm _ v) =
+  return $ const $ conSBVTerm config v
+lowerSinglePrimImpl config t@(SymTerm _ ts) = do
+  qs <- ask
+  if isQuantifiedSymbol ts qs
+    then withPrim @a config $ do
       let retDyn qst =
             case lookupQuantified (someTypedSymbol ts) qst of
               Just v -> v
               Nothing -> error "BUG: Symbol not found in the quantified stack"
-      return
-        ( addBiMapIntermediate (SomeTerm t) retDyn m,
-          \x ->
-            fromDyn
-              (retDyn x)
-              (error "BUG: Symbol not found in the quantified stack")
-        )
-lowerSinglePrimImpl config t@(SymTerm _ ts) _ m = withPrim @a config $
-  withPrim @a config $ do
-    let name = symSBVName ts (sizeBiMap m)
-    g <- symSBVTerm @a config name
-    return
-      (addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m, const g)
+      modify $ \m -> addBiMapIntermediate (SomeTerm t) retDyn m
+      return $
+        \x ->
+          fromDyn
+            (retDyn x)
+            (error "BUG: Symbol not found in the quantified stack")
+    else withPrim @a config $ do
+      m <- get
+      let name = symSBVName ts (sizeBiMap m)
+      g <- symSBVTerm @a config name
+      when (isFuncType @a) $ tell $ TermAll $ funcDummyConstraint @a config g
+      put $ addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m
+      return $ const g
 #if MIN_VERSION_sbv(10,1,0)
-lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedConstantSymbol t1) v) qs m =
+lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedConstantSymbol t1) v) =
   withNonFuncPrim @t1 config $ do
     do
+      m <- get
       let (newm, sb@(TypedSymbol sbs)) = attachNextQuantifiedSymbolInfo m ts
+      put newm
       let substedTerm = substTerm ts (symTerm sbs) v
-      (nextm, r) <-
-        lowerSinglePrimCached'
-          config
-          substedTerm
-          (addQuantifiedSymbol sb qs)
-          newm
+      r <-
+        local (addQuantifiedSymbol sb) $
+          lowerSinglePrimCached'
+            config
+            substedTerm
       let ret qst = SBV.quantifiedBool $
             \(SBV.Forall (a :: SBVType integerBitWidth t1)) ->
               r $ addQuantified sb (toDyn a) qst
-      return (addBiMapIntermediate (SomeTerm t) (toDyn . ret) nextm, ret)
-lowerSinglePrimImpl config t@(ExistsTerm _ (ts :: TypedConstantSymbol t1) v) qs m =
+      modify $ addBiMapIntermediate (SomeTerm t) (toDyn . ret)
+      return ret
+lowerSinglePrimImpl config t@(ExistsTerm _ (ts :: TypedConstantSymbol t1) v) =
   withNonFuncPrim @t1 config $ do
     do
+      m <- get
       let (newm, sb@(TypedSymbol sbs)) = attachNextQuantifiedSymbolInfo m ts
+      put newm
       let substedTerm = substTerm ts (symTerm sbs) v
-      (nextm, r) <-
-        lowerSinglePrimCached'
-          config
-          substedTerm
-          (addQuantifiedSymbol sb qs)
-          newm
+      r <-
+        local (addQuantifiedSymbol sb) $
+          lowerSinglePrimCached'
+            config
+            substedTerm
       let ret qst = SBV.quantifiedBool $
             \(SBV.Exists (a :: SBVType integerBitWidth t1)) ->
               r $ addQuantified sb (toDyn a) qst
-      return (addBiMapIntermediate (SomeTerm t) (toDyn . ret) nextm, ret)
+      modify $ addBiMapIntermediate (SomeTerm t) (toDyn . ret)
+      return ret
 #else
-lowerSinglePrimImpl _ ForallTerm {} _ _ =
+lowerSinglePrimImpl _ ForallTerm {} =
   error "Quantifiers are only available when you build with SBV 10.1.0 or later"
-lowerSinglePrimImpl _ ExistsTerm {} _ _ =
+lowerSinglePrimImpl _ ExistsTerm {} =
   error "Quantifiers are only available when you build with SBV 10.1.0 or later"
 #endif
-lowerSinglePrimImpl config t qs m =
+lowerSinglePrimImpl config t =
   introSupportedPrimConstraint t $
     withPrim @a config $ do
-      (m, r) <- lowerSinglePrimIntermediate config t qs m
-      return (addBiMapIntermediate (SomeTerm t) (toDyn . r) m, r)
+      r <- lowerSinglePrimIntermediate config t
+      modify $ addBiMapIntermediate (SomeTerm t) (toDyn . r)
+      return r
 
 lowerSinglePrimIntermediate ::
   forall integerBitWidth a m.
   (HasCallStack, SBVFreshMonad m, KnownIsZero integerBitWidth) =>
   GrisetteSMTConfig integerBitWidth ->
   Term a ->
-  QuantifiedSymbols ->
-  SymBiMap ->
-  m (SymBiMap, QuantifiedStack -> SBVType integerBitWidth a)
-lowerSinglePrimIntermediate config (NotTerm _ a) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, SBV.sNot . a')
-lowerSinglePrimIntermediate config (OrTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> a' qst SBV..|| b' qst)
-lowerSinglePrimIntermediate config (AndTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> a' qst SBV..&& b' qst)
-lowerSinglePrimIntermediate config (EqTerm _ (a :: Term v) b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvEq @v config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (ITETerm _ c a b) qs m = do
-  (m1, c') <- lowerSinglePrimCached' config c qs m
-  (m2, a') <- lowerSinglePrimCached' config a qs m1
-  (m3, b') <- lowerSinglePrimCached' config b qs m2
-  return (m3, \qst -> sbvIte @a config (c' qst) (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (AddNumTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvAddNumTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (NegNumTerm _ a) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, sbvNegNumTerm @a config . a')
-lowerSinglePrimIntermediate config (MulNumTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvMulNumTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (AbsNumTerm _ a) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, sbvAbsNumTerm @a config . a')
-lowerSinglePrimIntermediate config (SignumNumTerm _ a) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, sbvSignumNumTerm @a config . a')
-lowerSinglePrimIntermediate config (LtOrdTerm _ (a :: Term v) b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvLtOrdTerm @v config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (LeOrdTerm _ (a :: Term v) b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvLeOrdTerm @v config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (AndBitsTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvAndBitsTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (OrBitsTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvOrBitsTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (XorBitsTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvXorBitsTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (ComplementBitsTerm _ a) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, sbvComplementBitsTerm @a config . a')
-lowerSinglePrimIntermediate config (ShiftLeftTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvShiftLeftTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (ShiftRightTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvShiftRightTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (RotateLeftTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvRotateLeftTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (RotateRightTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvRotateRightTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (ApplyTerm _ (f :: Term f) a) qs m = do
-  (m1, l1) <- lowerSinglePrimCached' config f qs m
-  (m2, l2) <- lowerSinglePrimCached' config a qs m1
-  return (m2, \qst -> sbvApplyTerm @f config (l1 qst) (l2 qst))
-lowerSinglePrimIntermediate config (ToSignedTerm _ (a :: Term (u n))) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, sbvToSigned (Proxy @u) (Proxy @n) config . a')
-lowerSinglePrimIntermediate config (ToUnsignedTerm _ (a :: Term (s n))) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  return (m1, sbvToUnsigned (Proxy @s) (Proxy @n) config . a')
+  RWST
+    QuantifiedSymbols
+    TermAll
+    SymBiMap
+    m
+    (QuantifiedStack -> SBVType integerBitWidth a)
+lowerSinglePrimIntermediate config (NotTerm _ a) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ SBV.sNot . a'
+lowerSinglePrimIntermediate config (OrTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> a' qst SBV..|| b' qst
+lowerSinglePrimIntermediate config (AndTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> a' qst SBV..&& b' qst
+lowerSinglePrimIntermediate config (EqTerm _ (a :: Term v) b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvEq @v config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (ITETerm _ c a b) = do
+  c' <- lowerSinglePrimCached' config c
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvIte @a config (c' qst) (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (AddNumTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvAddNumTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (NegNumTerm _ a) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvNegNumTerm @a config . a'
+lowerSinglePrimIntermediate config (MulNumTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvMulNumTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (AbsNumTerm _ a) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvAbsNumTerm @a config . a'
+lowerSinglePrimIntermediate config (SignumNumTerm _ a) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvSignumNumTerm @a config . a'
+lowerSinglePrimIntermediate config (LtOrdTerm _ (a :: Term v) b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvLtOrdTerm @v config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (LeOrdTerm _ (a :: Term v) b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvLeOrdTerm @v config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (AndBitsTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvAndBitsTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (OrBitsTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvOrBitsTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (XorBitsTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvXorBitsTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (ComplementBitsTerm _ a) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvComplementBitsTerm @a config . a'
+lowerSinglePrimIntermediate config (ShiftLeftTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvShiftLeftTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (ShiftRightTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvShiftRightTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (RotateLeftTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvRotateLeftTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (RotateRightTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvRotateRightTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (ApplyTerm _ (f :: Term f) a) = do
+  l1 <- lowerSinglePrimCached' config f
+  l2 <- lowerSinglePrimCached' config a
+  return $ \qst -> sbvApplyTerm @f config (l1 qst) (l2 qst)
+lowerSinglePrimIntermediate config (ToSignedTerm _ (a :: Term (u n))) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvToSigned (Proxy @u) (Proxy @n) config . a'
+lowerSinglePrimIntermediate config (ToUnsignedTerm _ (a :: Term (s n))) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvToUnsigned (Proxy @s) (Proxy @n) config . a'
 lowerSinglePrimIntermediate
   config
-  (BVConcatTerm _ (a :: Term (bv l)) (b :: Term (bv r)))
-  qs
-  m = do
-    (m1, a') <- lowerSinglePrimCached' config a qs m
-    (m2, b') <- lowerSinglePrimCached' config b qs m1
-    return (m2, \qst -> sbvBVConcatTerm @bv config (Proxy @l) (Proxy @r) (a' qst) (b' qst))
+  (BVConcatTerm _ (a :: Term (bv l)) (b :: Term (bv r))) =
+    do
+      a' <- lowerSinglePrimCached' config a
+      b' <- lowerSinglePrimCached' config b
+      return $ \qst -> sbvBVConcatTerm @bv config (Proxy @l) (Proxy @r) (a' qst) (b' qst)
 lowerSinglePrimIntermediate
   config
-  (BVExtendTerm _ signed (pr :: p r) (a :: Term (bv l)))
-  qs
-  m = do
-    (m1, a') <- lowerSinglePrimCached' config a qs m
-    return (m1, sbvBVExtendTerm @bv config (Proxy @l) pr signed . a')
+  (BVExtendTerm _ signed (pr :: p r) (a :: Term (bv l))) =
+    do
+      a' <- lowerSinglePrimCached' config a
+      return $ sbvBVExtendTerm @bv config (Proxy @l) pr signed . a'
 lowerSinglePrimIntermediate
   config
-  (BVSelectTerm _ (pix :: p ix) (pw :: q w) (a :: Term (bv n)))
-  qs
-  m = do
-    (m1, a') <- lowerSinglePrimCached' config a qs m
-    return (m1, sbvBVSelectTerm @bv config pix pw (Proxy @n) . a')
-lowerSinglePrimIntermediate config (DivIntegralTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvDivIntegralTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (ModIntegralTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvModIntegralTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (QuotIntegralTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvQuotIntegralTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (RemIntegralTerm _ a b) qs m = do
-  (m1, a') <- lowerSinglePrimCached' config a qs m
-  (m2, b') <- lowerSinglePrimCached' config b qs m1
-  return (m2, \qst -> sbvRemIntegralTerm @a config (a' qst) (b' qst))
-lowerSinglePrimIntermediate config (FPTraitTerm _ trait a) qs m = do
-  (m, a') <- lowerSinglePrimCached' config a qs m
-  return (m, sbvFPTraitTerm trait . a')
-lowerSinglePrimIntermediate config (FdivTerm _ a b) qs m = do
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  (m, b) <- lowerSinglePrimCached' config b qs m
-  return (m, \qst -> sbvFdivTerm @a config (a qst) (b qst))
-lowerSinglePrimIntermediate config (RecipTerm _ a) qs m = do
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  return (m, sbvRecipTerm @a config . a)
-lowerSinglePrimIntermediate config (FloatingUnaryTerm _ op a) qs m = do
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  return (m, sbvFloatingUnaryTerm @a config op . a)
-lowerSinglePrimIntermediate config (PowerTerm _ a b) qs m = do
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  (m, b) <- lowerSinglePrimCached' config b qs m
-  return (m, \qst -> sbvPowerTerm @a config (a qst) (b qst))
-lowerSinglePrimIntermediate config (FPUnaryTerm _ op a) qs m = do
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  return (m, sbvFPUnaryTerm op . a)
-lowerSinglePrimIntermediate config (FPBinaryTerm _ op a b) qs m = do
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  (m, b) <- lowerSinglePrimCached' config b qs m
-  return (m, \qst -> sbvFPBinaryTerm op (a qst) (b qst))
-lowerSinglePrimIntermediate config (FPRoundingUnaryTerm _ op round a) qs m = do
-  (m, round) <- lowerSinglePrimCached' config round qs m
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  return (m, \qst -> sbvFPRoundingUnaryTerm op (round qst) (a qst))
-lowerSinglePrimIntermediate config (FPRoundingBinaryTerm _ op round a b) qs m = do
-  (m, round) <- lowerSinglePrimCached' config round qs m
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  (m, b) <- lowerSinglePrimCached' config b qs m
-  return (m, \qst -> sbvFPRoundingBinaryTerm op (round qst) (a qst) (b qst))
-lowerSinglePrimIntermediate config (FPFMATerm _ round a b c) qs m = do
-  (m, round) <- lowerSinglePrimCached' config round qs m
-  (m, a) <- lowerSinglePrimCached' config a qs m
-  (m, b) <- lowerSinglePrimCached' config b qs m
-  (m, c) <- lowerSinglePrimCached' config c qs m
-  return (m, \qst -> sbvFPFMATerm (round qst) (a qst) (b qst) (c qst))
-lowerSinglePrimIntermediate _ _ _ _ = undefined
+  (BVSelectTerm _ (pix :: p ix) (pw :: q w) (a :: Term (bv n))) =
+    do
+      a' <- lowerSinglePrimCached' config a
+      return $ sbvBVSelectTerm @bv config pix pw (Proxy @n) . a'
+lowerSinglePrimIntermediate config (DivIntegralTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvDivIntegralTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (ModIntegralTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvModIntegralTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (QuotIntegralTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvQuotIntegralTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (RemIntegralTerm _ a b) = do
+  a' <- lowerSinglePrimCached' config a
+  b' <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvRemIntegralTerm @a config (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (FPTraitTerm _ trait a) = do
+  a' <- lowerSinglePrimCached' config a
+  return $ sbvFPTraitTerm trait . a'
+lowerSinglePrimIntermediate config (FdivTerm _ a b) = do
+  a <- lowerSinglePrimCached' config a
+  b <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvFdivTerm @a config (a qst) (b qst)
+lowerSinglePrimIntermediate config (RecipTerm _ a) = do
+  a <- lowerSinglePrimCached' config a
+  return $ sbvRecipTerm @a config . a
+lowerSinglePrimIntermediate config (FloatingUnaryTerm _ op a) = do
+  a <- lowerSinglePrimCached' config a
+  return $ sbvFloatingUnaryTerm @a config op . a
+lowerSinglePrimIntermediate config (PowerTerm _ a b) = do
+  a <- lowerSinglePrimCached' config a
+  b <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvPowerTerm @a config (a qst) (b qst)
+lowerSinglePrimIntermediate config (FPUnaryTerm _ op a) = do
+  a <- lowerSinglePrimCached' config a
+  return $ sbvFPUnaryTerm op . a
+lowerSinglePrimIntermediate config (FPBinaryTerm _ op a b) = do
+  a <- lowerSinglePrimCached' config a
+  b <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvFPBinaryTerm op (a qst) (b qst)
+lowerSinglePrimIntermediate config (FPRoundingUnaryTerm _ op round a) = do
+  round <- lowerSinglePrimCached' config round
+  a <- lowerSinglePrimCached' config a
+  return $ \qst -> sbvFPRoundingUnaryTerm op (round qst) (a qst)
+lowerSinglePrimIntermediate config (FPRoundingBinaryTerm _ op round a b) = do
+  round <- lowerSinglePrimCached' config round
+  a <- lowerSinglePrimCached' config a
+  b <- lowerSinglePrimCached' config b
+  return $ \qst -> sbvFPRoundingBinaryTerm op (round qst) (a qst) (b qst)
+lowerSinglePrimIntermediate config (FPFMATerm _ round a b c) = do
+  round <- lowerSinglePrimCached' config round
+  a <- lowerSinglePrimCached' config a
+  b <- lowerSinglePrimCached' config b
+  c <- lowerSinglePrimCached' config c
+  return $ \qst -> sbvFPFMATerm (round qst) (a qst) (b qst) (c qst)
+lowerSinglePrimIntermediate _ ConTerm {} = error "Should not happen"
+lowerSinglePrimIntermediate _ SymTerm {} = error "Should not happen"
+lowerSinglePrimIntermediate _ ForallTerm {} = error "Should not happen"
+lowerSinglePrimIntermediate _ ExistsTerm {} = error "Should not happen"
+lowerSinglePrimIntermediate _ UnaryTerm {} = error "Not implemented"
+lowerSinglePrimIntermediate _ BinaryTerm {} = error "Not implemented"
+lowerSinglePrimIntermediate _ TernaryTerm {} = error "Not implemented"
 
 #if MIN_VERSION_sbv(10,3,0)
 preprocessUIFuncs ::

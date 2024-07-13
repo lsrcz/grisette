@@ -173,11 +173,35 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 where
 
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+  ( column,
+    pageWidth,
+    Doc,
+    PageWidth(Unbounded, AvailablePerLine),
+    Pretty(pretty),
+  )
+#else
+import Data.Text.Prettyprint.Doc
+  ( column,
+    pageWidth,
+    Doc,
+    PageWidth(Unbounded, AvailablePerLine),
+    Pretty(pretty),
+  )
+#endif
+
+#if !MIN_VERSION_sbv(10, 0, 0)
+#define SMTDefinable Uninterpreted
+#endif
+
 import Control.DeepSeq (NFData (rnf))
 import Control.Monad (msum)
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.RWS (RWST)
 import Control.Monad.Reader (MonadTrans (lift), ReaderT)
 import Control.Monad.State (StateT)
+import Control.Monad.Trans.Writer (WriterT)
 import Data.Array ((!))
 import Data.Bits (Bits)
 import Data.Function (on)
@@ -242,28 +266,6 @@ import Type.Reflection
   )
 import Unsafe.Coerce (unsafeCoerce)
 
-#if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter
-  ( column,
-    pageWidth,
-    Doc,
-    PageWidth(Unbounded, AvailablePerLine),
-    Pretty(pretty),
-  )
-#else
-import Data.Text.Prettyprint.Doc
-  ( column,
-    pageWidth,
-    Doc,
-    PageWidth(Unbounded, AvailablePerLine),
-    Pretty(pretty),
-  )
-#endif
-
-#if !MIN_VERSION_sbv(10, 0, 0)
-#define SMTDefinable Uninterpreted
-#endif
-
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
@@ -279,6 +281,12 @@ instance (MonadIO m) => SBVFreshMonad (SBVTC.QueryT m) where
   sbvFresh = SBVTC.freshVar
 
 instance (SBVFreshMonad m) => SBVFreshMonad (ReaderT r m) where
+  sbvFresh = lift . sbvFresh
+
+instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (WriterT w m) where
+  sbvFresh = lift . sbvFresh
+
+instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (RWST r w s m) where
   sbvFresh = lift . sbvFresh
 
 instance (SBVFreshMonad m) => SBVFreshMonad (StateT s m) where

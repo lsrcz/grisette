@@ -1,10 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Grisette.SymPrim.QuantifierTests (quantifierTests) where
 
 import Grisette
-  ( LogicalOp (symImplies),
+  ( Function ((#)),
+    LogicalOp (symImplies),
     ModelOps (isEmptyModel),
     SymEq ((.==)),
     SymOrd ((.>)),
@@ -13,6 +15,7 @@ import Grisette
   )
 import Grisette.Internal.SymPrim.Quantifier (existsSym, forallSym)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
+import Grisette.SymPrim (type (=~>))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit (assertBool)
@@ -43,5 +46,18 @@ quantifierTests =
           case r of
             Left err -> error $ show err
             Right mo ->
-              assertBool "no elements should be in the model" $ isEmptyModel mo
+              assertBool "no elements should be in the model" $ isEmptyModel mo,
+        testCase "With ufunc" $ do
+          -- https://github.com/LeventErkok/sbv/issues/711
+          let f = "f" :: SymInteger =~> SymInteger
+          let x = "x" :: SymInteger
+          let y = "y" :: SymInteger
+          r <-
+            solve z3 $
+              forallSym x $
+                forallSym y $
+                  (x .== y) `symImplies` ((f # x) .== (f # y))
+          case r of
+            Left err -> error $ show err
+            Right _ -> return ()
       ]
