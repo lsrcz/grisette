@@ -8,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -16,7 +17,7 @@
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.TabularFun
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -34,10 +35,11 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
+import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( IsSymbolKind (decideSymbolKind),
+  ( NonFuncPrimConstraint,
     NonFuncSBVRep (NonFuncSBVBaseType),
     PEvalApplyTerm (pevalApplyTerm, sbvApplyTerm),
     SBVRep (SBVType),
@@ -45,29 +47,18 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SupportedPrim
       ( conSBVTerm,
         defaultValue,
-        funcDummyConstraint,
-        isFuncType,
         parseSMTModelResult,
         pevalITETerm,
-        sbvEq,
-        sbvIte,
-        symSBVName,
-        symSBVTerm,
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
     Term (ConTerm),
-    TypedSymbol (TypedSymbol),
     applyTerm,
     conTerm,
     partitionCVArg,
     pevalEqTerm,
-    pevalITEBasicTerm,
-    translateTypeError,
   )
-import Grisette.Internal.SymPrim.Prim.Term (SupportedPrim (castTypedSymbol))
 import Language.Haskell.TH.Syntax (Lift)
-import Type.Reflection (typeRep, type (:~~:) (HRefl))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -106,557 +97,12 @@ instance
     PrimConstraint n (a =-> b) =
       ( SupportedNonFuncPrim a,
         SupportedPrim b,
+        NonFuncPrimConstraint n a,
         PrimConstraint n b
       )
 
 instance (SupportedNonFuncPrim a, SupportedPrim b) => SBVRep (a =-> b) where
   type SBVType n (a =-> b) = SBV.SBV (NonFuncSBVBaseType n a) -> SBVType n b
-
-parseTabularFunSMTModelResult ::
-  forall a b.
-  (SupportedNonFuncPrim a, SupportedPrim b) =>
-  Int ->
-  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
-  a =-> b
-parseTabularFunSMTModelResult level (l, s) =
-  TabularFun
-    ( second
-        ( \r ->
-            case r of
-              [([], v)] -> parseSMTModelResult (level + 1) ([], v)
-              _ -> parseSMTModelResult (level + 1) (r, s)
-        )
-        <$> partitionCVArg @a l
-    )
-    (parseSMTModelResult (level + 1) ([], s))
-
-instance
-  (SupportedNonFuncPrim a, SupportedNonFuncPrim b) =>
-  SupportedPrim (a =-> b)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b))
-  conSBVTerm p f =
-    withNonFuncPrim @b p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc2" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        return $
-          SBV.uninterpret name
-  withPrim p r = withNonFuncPrim @a p $ withNonFuncPrim @b p r
-  sbvIte p = withNonFuncPrim @b p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b) ->
-    Maybe (TypedSymbol knd' (a =-> b))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f = withNonFuncPrim @a p $ withNonFuncPrim @b p $ do
-    f (conSBVTerm p (defaultValue :: a))
-      SBV..== f (conSBVTerm p (defaultValue :: a))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c
-  ) =>
-  SupportedPrim (a =-> b =-> c)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c))
-  conSBVTerm p f =
-    withNonFuncPrim @c p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc3" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          return $
-            SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p r
-  sbvIte p = withNonFuncPrim @c p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b =-> c) ->
-    Maybe (TypedSymbol knd' (a =-> b =-> c))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $ withNonFuncPrim @b p $ withNonFuncPrim @c p $ do
-      f
-        (conSBVTerm p (defaultValue :: a))
-        (conSBVTerm p (defaultValue :: b))
-        SBV..== f
-          (conSBVTerm p (defaultValue :: a))
-          (conSBVTerm p (defaultValue :: b))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d
-  ) =>
-  SupportedPrim (a =-> b =-> c =-> d)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d))
-  conSBVTerm p f =
-    withNonFuncPrim @d p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc4" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            return $
-              SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p r
-  sbvIte p = withNonFuncPrim @d p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b =-> c =-> d) ->
-    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $ do
-            f
-              (conSBVTerm p (defaultValue :: a))
-              (conSBVTerm p (defaultValue :: b))
-              (conSBVTerm p (defaultValue :: c))
-              SBV..== f
-                (conSBVTerm p (defaultValue :: a))
-                (conSBVTerm p (defaultValue :: b))
-                (conSBVTerm p (defaultValue :: c))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e
-  ) =>
-  SupportedPrim (a =-> b =-> c =-> d =-> e)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e))
-  conSBVTerm p f =
-    withNonFuncPrim @e p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc5" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              return $
-                SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p r
-  sbvIte p = withNonFuncPrim @e p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b =-> c =-> d =-> e) ->
-    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $ do
-              f
-                (conSBVTerm p (defaultValue :: a))
-                (conSBVTerm p (defaultValue :: b))
-                (conSBVTerm p (defaultValue :: c))
-                (conSBVTerm p (defaultValue :: d))
-                SBV..== f
-                  (conSBVTerm p (defaultValue :: a))
-                  (conSBVTerm p (defaultValue :: b))
-                  (conSBVTerm p (defaultValue :: c))
-                  (conSBVTerm p (defaultValue :: d))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedNonFuncPrim f,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f
-  ) =>
-  SupportedPrim (a =-> b =-> c =-> d =-> e =-> f)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e =-> f))
-  conSBVTerm p f =
-    withNonFuncPrim @f p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc6" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                return $
-                  SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p r
-  sbvIte p = withNonFuncPrim @f p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e =-> f))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b =-> c =-> d =-> e =-> f) ->
-    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e =-> f))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $ do
-                f
-                  (conSBVTerm p (defaultValue :: a))
-                  (conSBVTerm p (defaultValue :: b))
-                  (conSBVTerm p (defaultValue :: c))
-                  (conSBVTerm p (defaultValue :: d))
-                  (conSBVTerm p (defaultValue :: e))
-                  SBV..== f
-                    (conSBVTerm p (defaultValue :: a))
-                    (conSBVTerm p (defaultValue :: b))
-                    (conSBVTerm p (defaultValue :: c))
-                    (conSBVTerm p (defaultValue :: d))
-                    (conSBVTerm p (defaultValue :: e))
-
--- 7 arguments
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedNonFuncPrim f,
-    SupportedNonFuncPrim g,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f,
-    SupportedPrim g
-  ) =>
-  SupportedPrim (a =-> b =-> c =-> d =-> e =-> f =-> g)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g))
-  conSBVTerm p f =
-    withNonFuncPrim @g p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc7" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  return $
-                    SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p r
-  sbvIte p = withNonFuncPrim @g p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b =-> c =-> d =-> e =-> f =-> g) ->
-    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e =-> f =-> g))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $ do
-                  f
-                    (conSBVTerm p (defaultValue :: a))
-                    (conSBVTerm p (defaultValue :: b))
-                    (conSBVTerm p (defaultValue :: c))
-                    (conSBVTerm p (defaultValue :: d))
-                    (conSBVTerm p (defaultValue :: e))
-                    (conSBVTerm p (defaultValue :: f))
-                    SBV..== f
-                      (conSBVTerm p (defaultValue :: a))
-                      (conSBVTerm p (defaultValue :: b))
-                      (conSBVTerm p (defaultValue :: c))
-                      (conSBVTerm p (defaultValue :: d))
-                      (conSBVTerm p (defaultValue :: e))
-                      (conSBVTerm p (defaultValue :: f))
-
--- 8 arguments
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedNonFuncPrim f,
-    SupportedNonFuncPrim g,
-    SupportedNonFuncPrim h,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f,
-    SupportedPrim g,
-    SupportedPrim h
-  ) =>
-  SupportedPrim (a =-> b =-> c =-> d =-> e =-> f =-> g =-> h)
-  where
-  defaultValue = TabularFun [] defaultValue
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
-  conSBVTerm p f =
-    withNonFuncPrim @h p $
-      lowerTFunCon p f
-  symSBVName _ num = "tfunc8" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  withNonFuncPrim @h p $
-                    return $
-                      SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  withNonFuncPrim @h p r
-  sbvIte p = withNonFuncPrim @h p SBV.ite
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. TabularFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
-  parseSMTModelResult = parseTabularFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a =-> b =-> c =-> d =-> e =-> f =-> g =-> h) ->
-    Maybe (TypedSymbol knd' (a =-> b =-> c =-> d =-> e =-> f =-> g =-> h))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  withNonFuncPrim @h p $ do
-                    f
-                      (conSBVTerm p (defaultValue :: a))
-                      (conSBVTerm p (defaultValue :: b))
-                      (conSBVTerm p (defaultValue :: c))
-                      (conSBVTerm p (defaultValue :: d))
-                      (conSBVTerm p (defaultValue :: e))
-                      (conSBVTerm p (defaultValue :: f))
-                      (conSBVTerm p (defaultValue :: g))
-                      SBV..== f
-                        (conSBVTerm p (defaultValue :: a))
-                        (conSBVTerm p (defaultValue :: b))
-                        (conSBVTerm p (defaultValue :: c))
-                        (conSBVTerm p (defaultValue :: d))
-                        (conSBVTerm p (defaultValue :: e))
-                        (conSBVTerm p (defaultValue :: f))
-                        (conSBVTerm p (defaultValue :: g))
 
 instance
   (SupportedPrim a, SupportedPrim b, SupportedPrim (a =-> b)) =>
@@ -699,3 +145,36 @@ lowerTFunCon proxy (TabularFun l d) = go l d
         (conNonFuncSBVTerm proxy x SBV..== v)
         (conSBVTerm proxy r)
         (go xs d v)
+
+parseTabularFunSMTModelResult ::
+  forall a b.
+  (SupportedNonFuncPrim a, SupportedPrim b) =>
+  Int ->
+  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
+  a =-> b
+parseTabularFunSMTModelResult level (l, s) =
+  TabularFun
+    ( second
+        ( \r ->
+            case r of
+              [([], v)] -> parseSMTModelResult (level + 1) ([], v)
+              _ -> parseSMTModelResult (level + 1) (r, s)
+        )
+        <$> partitionCVArg @a l
+    )
+    (parseSMTModelResult (level + 1) ([], s))
+
+supportedPrimFunUpTo
+  [|TabularFun [] defaultValue|]
+  [|parseTabularFunSMTModelResult|]
+  ( \tyVars ->
+      [|
+        \p f ->
+          withNonFuncPrim @($(last tyVars)) p $
+            lowerTFunCon p f
+        |]
+  )
+  "TabularFun"
+  "tfunc"
+  ''(=->)
+  8

@@ -10,7 +10,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -45,12 +45,21 @@ import Grisette.Internal.Core.Data.Symbol
   ( Symbol (IndexedSymbol, SimpleSymbol),
     withInfo,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP (pevalFPBinaryTerm, pevalFPFMATerm, pevalFPRoundingBinaryTerm, pevalFPRoundingUnaryTerm, pevalFPTraitTerm, pevalFPUnaryTerm)
+import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+  ( pevalFPBinaryTerm,
+    pevalFPFMATerm,
+    pevalFPRoundingBinaryTerm,
+    pevalFPRoundingUnaryTerm,
+    pevalFPTraitTerm,
+    pevalFPUnaryTerm,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( BinaryOp (pevalBinary),
-    IsSymbolKind (decideSymbolKind),
+    IsSymbolKind,
     LinkedRep (underlyingTerm, wrapTerm),
+    NonFuncPrimConstraint,
     NonFuncSBVBaseType,
     PEvalApplyTerm (pevalApplyTerm, sbvApplyTerm),
     PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
@@ -80,16 +89,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SBVRep (SBVType),
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim
-      ( castTypedSymbol,
-        conSBVTerm,
-        defaultValue,
-        funcDummyConstraint,
-        isFuncType,
+      ( defaultValue,
         parseSMTModelResult,
         pevalITETerm,
-        sbvEq,
-        symSBVName,
-        symSBVTerm,
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
@@ -154,7 +156,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     partitionCVArg,
     pevalAndTerm,
     pevalEqTerm,
-    pevalITEBasicTerm,
     pevalNotTerm,
     pevalOrTerm,
     pevalQuotIntegralTerm,
@@ -251,6 +252,7 @@ instance
     PrimConstraint n (a --> b) =
       ( SupportedNonFuncPrim a,
         SupportedPrim b,
+        NonFuncPrimConstraint n a,
         PrimConstraint n b,
         SBVType n (a --> b) ~ (SBV.SBV (NonFuncSBVBaseType n a) -> SBVType n b)
       )
@@ -263,583 +265,6 @@ instance
     SBVType n (a --> b) =
       SBV.SBV (NonFuncSBVBaseType n a) ->
       SBVType n b
-
-parseGeneralFunSMTModelResult ::
-  forall a b.
-  (SupportedNonFuncPrim a, SupportedPrim b) =>
-  Int ->
-  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
-  a --> b
-parseGeneralFunSMTModelResult level (l, s) =
-  let sym = IndexedSymbol "arg" level
-      funs =
-        second
-          ( \r ->
-              case r of
-                [([], v)] -> parseSMTModelResult (level + 1) ([], v)
-                _ -> parseSMTModelResult (level + 1) (r, s)
-          )
-          <$> partitionCVArg @a l
-      def = parseSMTModelResult (level + 1) ([], s)
-      body =
-        foldl'
-          ( \acc (v, f) ->
-              pevalITETerm
-                (pevalEqTerm (symTerm sym) (conTerm v))
-                (conTerm f)
-                acc
-          )
-          (conTerm def)
-          funs
-   in buildGeneralFun (TypedSymbol sym) body
-
-instance
-  (SupportedNonFuncPrim a, SupportedNonFuncPrim b) =>
-  SupportedPrim (a --> b)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b))
-  symSBVName _ num = "gfunc2_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        return $
-          SBV.uninterpret name
-  withPrim p r = withNonFuncPrim @a p $ withNonFuncPrim @b p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b) ->
-    Maybe (TypedSymbol knd' (a --> b))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f = withNonFuncPrim @a p $ withNonFuncPrim @b p $ do
-    f (conSBVTerm p (defaultValue :: a))
-      SBV..== f (conSBVTerm p (defaultValue :: a))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c
-  ) =>
-  SupportedPrim (a --> b --> c)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b --> c))
-  symSBVName _ num = "gfunc3_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          return $
-            SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b --> c) ->
-    Maybe (TypedSymbol knd' (a --> b --> c))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $ withNonFuncPrim @b p $ withNonFuncPrim @c p $ do
-      f
-        (conSBVTerm p (defaultValue :: a))
-        (conSBVTerm p (defaultValue :: b))
-        SBV..== f
-          (conSBVTerm p (defaultValue :: a))
-          (conSBVTerm p (defaultValue :: b))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d
-  ) =>
-  SupportedPrim (a --> b --> c --> d)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b --> c --> d))
-  symSBVName _ num = "gfunc4_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            return $
-              SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b --> c --> d) ->
-    Maybe (TypedSymbol knd' (a --> b --> c --> d))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $ do
-            f
-              (conSBVTerm p (defaultValue :: a))
-              (conSBVTerm p (defaultValue :: b))
-              (conSBVTerm p (defaultValue :: c))
-              SBV..== f
-                (conSBVTerm p (defaultValue :: a))
-                (conSBVTerm p (defaultValue :: b))
-                (conSBVTerm p (defaultValue :: c))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e
-  ) =>
-  SupportedPrim (a --> b --> c --> d --> e)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b --> c --> d --> e))
-  symSBVName _ num = "gfunc5_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              return $
-                SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b --> c --> d --> e) ->
-    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $ do
-              f
-                (conSBVTerm p (defaultValue :: a))
-                (conSBVTerm p (defaultValue :: b))
-                (conSBVTerm p (defaultValue :: c))
-                (conSBVTerm p (defaultValue :: d))
-                SBV..== f
-                  (conSBVTerm p (defaultValue :: a))
-                  (conSBVTerm p (defaultValue :: b))
-                  (conSBVTerm p (defaultValue :: c))
-                  (conSBVTerm p (defaultValue :: d))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedNonFuncPrim f,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f
-  ) =>
-  SupportedPrim (a --> b --> c --> d --> e --> f)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f))
-  symSBVName _ num = "gfunc6_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                return $
-                  SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b --> c --> d --> e --> f) ->
-    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e --> f))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $ do
-                f
-                  (conSBVTerm p (defaultValue :: a))
-                  (conSBVTerm p (defaultValue :: b))
-                  (conSBVTerm p (defaultValue :: c))
-                  (conSBVTerm p (defaultValue :: d))
-                  (conSBVTerm p (defaultValue :: e))
-                  SBV..== f
-                    (conSBVTerm p (defaultValue :: a))
-                    (conSBVTerm p (defaultValue :: b))
-                    (conSBVTerm p (defaultValue :: c))
-                    (conSBVTerm p (defaultValue :: d))
-                    (conSBVTerm p (defaultValue :: e))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedNonFuncPrim f,
-    SupportedNonFuncPrim g,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f,
-    SupportedPrim g
-  ) =>
-  SupportedPrim (a --> b --> c --> d --> e --> f --> g)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f --> g))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f --> g))
-  symSBVName _ num = "gfunc7_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  return $
-                    SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f --> g))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b --> c --> d --> e --> f --> g) ->
-    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e --> f --> g))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $ do
-                  f
-                    (conSBVTerm p (defaultValue :: a))
-                    (conSBVTerm p (defaultValue :: b))
-                    (conSBVTerm p (defaultValue :: c))
-                    (conSBVTerm p (defaultValue :: d))
-                    (conSBVTerm p (defaultValue :: e))
-                    (conSBVTerm p (defaultValue :: f))
-                    SBV..== f
-                      (conSBVTerm p (defaultValue :: a))
-                      (conSBVTerm p (defaultValue :: b))
-                      (conSBVTerm p (defaultValue :: c))
-                      (conSBVTerm p (defaultValue :: d))
-                      (conSBVTerm p (defaultValue :: e))
-                      (conSBVTerm p (defaultValue :: f))
-
-instance
-  {-# OVERLAPPING #-}
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    SupportedNonFuncPrim c,
-    SupportedNonFuncPrim d,
-    SupportedNonFuncPrim e,
-    SupportedNonFuncPrim f,
-    SupportedNonFuncPrim g,
-    SupportedNonFuncPrim h,
-    SupportedPrim a,
-    SupportedPrim b,
-    SupportedPrim c,
-    SupportedPrim d,
-    SupportedPrim e,
-    SupportedPrim f,
-    SupportedPrim g,
-    SupportedPrim h
-  ) =>
-  SupportedPrim (a --> b --> c --> d --> e --> f --> g --> h)
-  where
-  defaultValue = buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)
-  pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
-  conSBVTerm _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun must have already been "
-            <> "partial evaluated away before reaching this point."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
-  symSBVName _ num = "gfunc8_" <> show num
-  symSBVTerm (p :: proxy n) name =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  withNonFuncPrim @h p $
-                    return $
-                      SBV.uninterpret name
-  withPrim p r =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  withNonFuncPrim @h p r
-  sbvEq _ _ =
-    translateTypeError
-      ( Just $
-          "BUG. Please send a bug report. GeneralFun is not supported for "
-            <> "equality comparison."
-      )
-      (typeRep @(a --> b --> c --> d --> e --> f --> g --> h))
-  parseSMTModelResult = parseGeneralFunSMTModelResult
-  castTypedSymbol ::
-    forall knd knd'.
-    (IsSymbolKind knd') =>
-    TypedSymbol knd (a --> b --> c --> d --> e --> f --> g --> h) ->
-    Maybe (TypedSymbol knd' (a --> b --> c --> d --> e --> f --> g --> h))
-  castTypedSymbol (TypedSymbol sym) = case decideSymbolKind @knd' of
-    Left HRefl -> Nothing
-    Right HRefl -> Just $ TypedSymbol sym
-  isFuncType = True
-  funcDummyConstraint p f =
-    withNonFuncPrim @a p $
-      withNonFuncPrim @b p $
-        withNonFuncPrim @c p $
-          withNonFuncPrim @d p $
-            withNonFuncPrim @e p $
-              withNonFuncPrim @f p $
-                withNonFuncPrim @g p $
-                  withNonFuncPrim @h p $ do
-                    f
-                      (conSBVTerm p (defaultValue :: a))
-                      (conSBVTerm p (defaultValue :: b))
-                      (conSBVTerm p (defaultValue :: c))
-                      (conSBVTerm p (defaultValue :: d))
-                      (conSBVTerm p (defaultValue :: e))
-                      (conSBVTerm p (defaultValue :: f))
-                      (conSBVTerm p (defaultValue :: g))
-                      SBV..== f
-                        (conSBVTerm p (defaultValue :: a))
-                        (conSBVTerm p (defaultValue :: b))
-                        (conSBVTerm p (defaultValue :: c))
-                        (conSBVTerm p (defaultValue :: d))
-                        (conSBVTerm p (defaultValue :: e))
-                        (conSBVTerm p (defaultValue :: f))
-                        (conSBVTerm p (defaultValue :: g))
 
 pevalGeneralFunApplyTerm ::
   ( SupportedNonFuncPrim a,
@@ -946,3 +371,53 @@ substTerm sym term = gov
         FPRoundingUnaryTerm _ uop mode op -> SomeTerm $ pevalFPRoundingUnaryTerm uop mode (gov op)
         FPRoundingBinaryTerm _ bop mode op1 op2 -> SomeTerm $ pevalFPRoundingBinaryTerm bop mode (gov op1) (gov op2)
         FPFMATerm _ mode op1 op2 op3 -> SomeTerm $ pevalFPFMATerm (gov mode) (gov op1) (gov op2) (gov op3)
+
+parseGeneralFunSMTModelResult ::
+  forall a b.
+  (SupportedNonFuncPrim a, SupportedPrim b) =>
+  Int ->
+  ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
+  a --> b
+parseGeneralFunSMTModelResult level (l, s) =
+  let sym = IndexedSymbol "arg" level
+      funs =
+        second
+          ( \r ->
+              case r of
+                [([], v)] -> parseSMTModelResult (level + 1) ([], v)
+                _ -> parseSMTModelResult (level + 1) (r, s)
+          )
+          <$> partitionCVArg @a l
+      def = parseSMTModelResult (level + 1) ([], s)
+      body =
+        foldl'
+          ( \acc (v, f) ->
+              pevalITETerm
+                (pevalEqTerm (symTerm sym) (conTerm v))
+                (conTerm f)
+                acc
+          )
+          (conTerm def)
+          funs
+   in buildGeneralFun (TypedSymbol sym) body
+
+supportedPrimFunUpTo
+  [|buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)|]
+  [|parseGeneralFunSMTModelResult|]
+  ( \tyVars ->
+      [|
+        translateTypeError
+          (Just "x")
+          ( typeRep ::
+              TypeRep
+                $( foldl1 (\fty ty -> [t|$ty --> $fty|])
+                     . reverse
+                     $ tyVars
+                 )
+          )
+        |]
+  )
+  "GeneralFun"
+  "gfunc"
+  ''(-->)
+  8

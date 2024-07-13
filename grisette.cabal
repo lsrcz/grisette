@@ -109,6 +109,7 @@ library
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
       Grisette.Internal.SymPrim.FP
+      Grisette.Internal.SymPrim.FunInstanceGen
       Grisette.Internal.SymPrim.GeneralFun
       Grisette.Internal.SymPrim.IntBitwidth
       Grisette.Internal.SymPrim.ModelRep
