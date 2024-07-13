@@ -1032,17 +1032,20 @@ loweringTests =
             let b = "b" :: SymInteger
             let c = "c" :: SymInteger
             let d = "d" :: SymInteger
-            Right m <-
+            r <-
               solve unboundedConfig $
                 (f # a # b .== a + b)
                   .&& (f # a # c .== a + c)
                   .&& (f # a # d .== a + d)
                   .&& (f # b # d .== b + d)
                   .&& (a .== 10 .&& b .== 20 .&& c .== 30 .&& d .== 40)
-            evalSym False m (f # a # b .== a + b) @?= con True
-            evalSym False m (f # a # c .== a + c) @?= con True
-            evalSym False m (f # a # d .== a + d) @?= con True
-            evalSym False m (f # b # d .== b + d) @?= con True,
+            case r of
+              Left err -> fail $ show err
+              Right m -> do
+                evalSym False m (f # a # b .== a + b) @?= con True
+                evalSym False m (f # a # c .== a + c) @?= con True
+                evalSym False m (f # a # d .== a + d) @?= con True
+                evalSym False m (f # b # d .== b + d) @?= con True,
           sbvVersionCheck $
             testGroup
               "Quantifiers"

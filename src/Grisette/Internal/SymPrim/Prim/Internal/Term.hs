@@ -161,6 +161,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalITEBasicTerm,
     pevalDefaultEqTerm,
     --
+    NonFuncPrimConstraint,
     NonFuncSBVRep (..),
     SupportedNonFuncPrim (..),
     SBVRep (..),
@@ -294,6 +295,16 @@ translateTypeError (Just reason) ta =
 class (SupportedPrim a, Ord a) => NonFuncSBVRep a where
   type NonFuncSBVBaseType (n :: Nat) a
 
+type NonFuncPrimConstraint n a =
+  ( SBV.SymVal (NonFuncSBVBaseType n a),
+    SBV.EqSymbolic (SBVType n a),
+    SBV.Mergeable (SBVType n a),
+    SBV.SMTDefinable (SBVType n a),
+    SBV.Mergeable (SBVType n a),
+    SBVType n a ~ SBV.SBV (NonFuncSBVBaseType n a),
+    PrimConstraint n a
+  )
+
 class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
   conNonFuncSBVTerm ::
     (KnownIsZero n) =>
@@ -306,19 +317,7 @@ class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
     String ->
     m (SBV.SBV (NonFuncSBVBaseType n a))
   withNonFuncPrim ::
-    (KnownIsZero n) =>
-    proxy n ->
-    ( ( SBV.SymVal (NonFuncSBVBaseType n a),
-        SBV.EqSymbolic (SBVType n a),
-        SBV.Mergeable (SBVType n a),
-        SBV.SMTDefinable (SBVType n a),
-        SBV.Mergeable (SBVType n a),
-        SBVType n a ~ SBV.SBV (NonFuncSBVBaseType n a),
-        PrimConstraint n a
-      ) =>
-      r
-    ) ->
-    r
+    (KnownIsZero n) => proxy n -> ((NonFuncPrimConstraint n a) => r) -> r
 
 partitionCVArg ::
   forall a.
@@ -460,7 +459,7 @@ class
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
   isFuncType :: Bool
   funcDummyConstraint ::
-    (KnownIsZero n) => p n -> SBVType n t -> (SBV.SBV Bool)
+    (KnownIsZero n) => p n -> SBVType n t -> SBV.SBV Bool
 
 castSomeTypedSymbol ::
   (IsSymbolKind knd') =>

@@ -1,0 +1,226 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+
+module Grisette.Internal.SymPrim.FunInstanceGen
+  ( supportedPrimFun,
+    supportedPrimFunUpTo,
+  )
+where
+
+import qualified Data.SBV as SBV
+import Grisette.Internal.SymPrim.Prim.Internal.Term
+  ( IsSymbolKind,
+    SupportedNonFuncPrim,
+    SupportedPrim
+      ( castTypedSymbol,
+        conSBVTerm,
+        defaultValue,
+        funcDummyConstraint,
+        isFuncType,
+        parseSMTModelResult,
+        pevalEqTerm,
+        pevalITETerm,
+        sbvEq,
+        symSBVName,
+        symSBVTerm,
+        withPrim
+      ),
+    TypedSymbol (TypedSymbol),
+    decideSymbolKind,
+    pevalITEBasicTerm,
+    translateTypeError,
+    withNonFuncPrim,
+  )
+import Language.Haskell.TH
+  ( Cxt,
+    Dec (InstanceD),
+    DecsQ,
+    Exp,
+    ExpQ,
+    Name,
+    Overlap (Overlapping),
+    Q,
+    Quote (newName),
+    Type,
+    TypeQ,
+    forallT,
+    lamE,
+    sigD,
+    stringE,
+    varE,
+    varP,
+    varT,
+  )
+import Language.Haskell.TH.Datatype.TyVarBndr
+  ( plainTVInferred,
+    plainTVSpecified,
+  )
+import Type.Reflection (TypeRep, typeRep, type (:~~:) (HRefl))
+
+instanceWithOverlapDescD ::
+  Maybe Overlap -> Q Cxt -> Q Type -> [DecsQ] -> DecsQ
+instanceWithOverlapDescD o ctxts ty descs = do
+  ctxts1 <- ctxts
+  descs1 <- sequence descs
+  ty1 <- ty
+  return [InstanceD o ctxts1 ty1 (concat descs1)]
+
+supportedPrimFun ::
+  ExpQ ->
+  ExpQ ->
+  ([TypeQ] -> ExpQ) ->
+  String ->
+  String ->
+  Name ->
+  Int ->
+  DecsQ
+supportedPrimFun
+  dv
+  parse
+  consbv
+  funNameInError
+  funNamePrefix
+  funTypeName
+  numArg = do
+    names <- traverse (newName . ("a" <>) . show) [0 .. numArg - 1]
+
+    let tyVars = varT <$> names
+    knd <- newName "knd"
+    knd' <- newName "knd'"
+    let kndty = varT knd
+    let knd'ty = varT knd'
+    instanceWithOverlapDescD
+      (if numArg == 2 then Nothing else Just Overlapping)
+      (constraints tyVars)
+      [t|SupportedPrim $(funType tyVars)|]
+      ( [ [d|$(varP 'defaultValue) = $dv|],
+          [d|$(varP 'pevalITETerm) = pevalITEBasicTerm|],
+          [d|
+            $(varP 'pevalEqTerm) =
+              $( translateError
+                   tyVars
+                   "does not supported equality comparison."
+               )
+            |],
+          [d|
+            $(varP 'conSBVTerm) = $(consbv tyVars)
+            |],
+          -- \$( translateError
+          --      tyVars
+          --      ( "must have already been partially evaluated away before "
+          --          <> "reaching this point."
+          --      )
+          --  )
+
+          [d|
+            $(varP 'symSBVName) = \_ num ->
+              $(stringE $ funNamePrefix <> show numArg <> "_") <> show num
+            |],
+          [d|
+            $(varP 'symSBVTerm) = \p nm ->
+              withPrim @($(funType tyVars)) p $
+                return $
+                  SBV.uninterpret nm
+            |],
+          [d|$(varP 'withPrim) = $(withPrims tyVars)|],
+          [d|
+            $(varP 'sbvEq) =
+              $( translateError
+                   tyVars
+                   "does not support equality comparison."
+               )
+            |],
+          [d|$(varP 'parseSMTModelResult) = $parse|],
+          (: [])
+            <$> sigD
+              'castTypedSymbol
+              ( forallT
+                  [plainTVInferred knd, plainTVSpecified knd']
+                  ((: []) <$> [t|IsSymbolKind $knd'ty|])
+                  [t|
+                    TypedSymbol $kndty $(funType tyVars) ->
+                    Maybe (TypedSymbol $knd'ty $(funType tyVars))
+                    |]
+              ),
+          [d|
+            $(varP 'castTypedSymbol) = \(TypedSymbol sym) ->
+              case decideSymbolKind @($knd'ty) of
+                Left HRefl -> Nothing
+                Right HRefl -> Just $ TypedSymbol sym
+            |],
+          [d|$(varP 'isFuncType) = True|],
+          ( if numArg == 2
+              then
+                [d|
+                  $(varP 'funcDummyConstraint) = \p f ->
+                    withPrim @($(funType tyVars)) p $
+                      withNonFuncPrim @($(last tyVars)) p $ do
+                        f (conSBVTerm p (defaultValue :: $(head tyVars)))
+                          SBV..== f
+                            (conSBVTerm p (defaultValue :: $(head tyVars)))
+                  |]
+              else
+                [d|
+                  $(varP 'funcDummyConstraint) = \p f ->
+                    withNonFuncPrim @($(head tyVars)) p $
+                      funcDummyConstraint @($(funType $ tail tyVars))
+                        p
+                        (f (conSBVTerm p (defaultValue :: $(head tyVars))))
+                  |]
+          )
+        ]
+      )
+    where
+      translateError tyVars finalMsg =
+        [|
+          translateTypeError
+            ( Just
+                $( stringE $
+                     "BUG. Please send a bug report. "
+                       <> funNameInError
+                       <> " "
+                       <> finalMsg
+                 )
+            )
+            (typeRep :: TypeRep $(funType tyVars))
+          |]
+
+      constraints = traverse (\ty -> [t|SupportedNonFuncPrim $ty|])
+      funType =
+        foldl1 (\fty ty -> [t|$(varT funTypeName) $ty $fty|]) . reverse
+      withPrims :: [Q Type] -> Q Exp
+      withPrims tyVars = do
+        p <- newName "p"
+        r <- newName "r"
+        lamE [varP p, varP r] $
+          foldr
+            (\ty r -> [|withNonFuncPrim @($ty) $(varE p) $r|])
+            (varE r)
+            tyVars
+
+supportedPrimFunUpTo ::
+  ExpQ -> ExpQ -> ([TypeQ] -> ExpQ) -> String -> String -> Name -> Int -> DecsQ
+supportedPrimFunUpTo
+  dv
+  parse
+  consbv
+  funNameInError
+  funNamePrefix
+  funTypeName
+  numArg =
+    concat
+      <$> sequence
+        [ supportedPrimFun
+            dv
+            parse
+            consbv
+            funNameInError
+            funNamePrefix
+            funTypeName
+            n
+          | n <- [2 .. numArg]
+        ]
