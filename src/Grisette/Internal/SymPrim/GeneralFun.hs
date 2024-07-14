@@ -9,6 +9,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -28,6 +29,7 @@
 module Grisette.Internal.SymPrim.GeneralFun
   ( type (-->) (..),
     buildGeneralFun,
+    generalSubstSomeTerm,
     substTerm,
   )
 where
@@ -35,12 +37,13 @@ where
 import Control.DeepSeq (NFData (rnf))
 import Data.Bifunctor (Bifunctor (second))
 import Data.Foldable (Foldable (foldl'))
+import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
-import Grisette.Internal.Core.Data.MemoUtils (htmemo)
+import Grisette.Internal.Core.Data.MemoUtils (htmemo2)
 import Grisette.Internal.Core.Data.Symbol
   ( Symbol (IndexedSymbol, SimpleSymbol),
     withInfo,
@@ -87,14 +90,17 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
     SBVRep (SBVType),
+    SomeTypedConstantSymbol,
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim
-      ( defaultValue,
+      ( castTypedSymbol,
+        defaultValue,
         parseSMTModelResult,
         pevalITETerm,
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
+    SymbolKind (AnyKind),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -162,10 +168,11 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalRemIntegralTerm,
     pevalRotateLeftTerm,
     pformat,
+    someTypedSymbol,
     symTerm,
     translateTypeError,
   )
-import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
+import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm), someTerm)
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection
   ( TypeRep,
@@ -293,85 +300,6 @@ instance
   sbvApplyTerm p f a =
     withPrim @(a --> b) p $ withNonFuncPrim @a p $ f a
 
--- | Substitute a term for a symbol in a term.
-substTerm ::
-  forall knd a b.
-  (SupportedPrim a, SupportedPrim b, IsSymbolKind knd) =>
-  TypedSymbol knd a ->
-  Term a ->
-  Term b ->
-  Term b
-substTerm sym term = gov
-  where
-    gov :: (SupportedPrim x) => Term x -> Term x
-    gov b = case go (SomeTerm b) of
-      SomeTerm v -> unsafeCoerce v
-    go :: SomeTerm -> SomeTerm
-    go = htmemo $ \stm@(SomeTerm (tm :: Term v)) ->
-      case tm of
-        ConTerm _ cv -> case (typeRep :: TypeRep v) of
-          App (App gf _) _ ->
-            case eqTypeRep gf (typeRep @(-->)) of
-              Just HRefl -> case cv of
-                GeneralFun sym1 tm1 ->
-                  if eqHeteroSymbol sym1 sym
-                    then stm
-                    else SomeTerm $ conTerm $ GeneralFun sym1 (gov tm1)
-              Nothing -> stm
-          _ -> stm
-        SymTerm _ ts -> SomeTerm $ if eqHeteroSymbol ts sym then unsafeCoerce term else tm
-        ForallTerm _ ts a ->
-          if eqHeteroSymbol ts sym
-            then stm
-            else SomeTerm $ forallTerm ts (gov a)
-        ExistsTerm _ ts a ->
-          if eqHeteroSymbol ts sym
-            then stm
-            else SomeTerm $ existsTerm ts (gov a)
-        UnaryTerm _ tag te -> SomeTerm $ pevalUnary tag (gov te)
-        BinaryTerm _ tag te te' -> SomeTerm $ pevalBinary tag (gov te) (gov te')
-        TernaryTerm _ tag op1 op2 op3 -> SomeTerm $ pevalTernary tag (gov op1) (gov op2) (gov op3)
-        NotTerm _ op -> SomeTerm $ pevalNotTerm (gov op)
-        OrTerm _ op1 op2 -> SomeTerm $ pevalOrTerm (gov op1) (gov op2)
-        AndTerm _ op1 op2 -> SomeTerm $ pevalAndTerm (gov op1) (gov op2)
-        EqTerm _ op1 op2 -> SomeTerm $ pevalEqTerm (gov op1) (gov op2)
-        ITETerm _ c op1 op2 -> SomeTerm $ pevalITETerm (gov c) (gov op1) (gov op2)
-        AddNumTerm _ op1 op2 -> SomeTerm $ pevalAddNumTerm (gov op1) (gov op2)
-        NegNumTerm _ op -> SomeTerm $ pevalNegNumTerm (gov op)
-        MulNumTerm _ op1 op2 -> SomeTerm $ pevalMulNumTerm (gov op1) (gov op2)
-        AbsNumTerm _ op -> SomeTerm $ pevalAbsNumTerm (gov op)
-        SignumNumTerm _ op -> SomeTerm $ pevalSignumNumTerm (gov op)
-        LtOrdTerm _ op1 op2 -> SomeTerm $ pevalLtOrdTerm (gov op1) (gov op2)
-        LeOrdTerm _ op1 op2 -> SomeTerm $ pevalLeOrdTerm (gov op1) (gov op2)
-        AndBitsTerm _ op1 op2 -> SomeTerm $ pevalAndBitsTerm (gov op1) (gov op2)
-        OrBitsTerm _ op1 op2 -> SomeTerm $ pevalOrBitsTerm (gov op1) (gov op2)
-        XorBitsTerm _ op1 op2 -> SomeTerm $ pevalXorBitsTerm (gov op1) (gov op2)
-        ComplementBitsTerm _ op -> SomeTerm $ pevalComplementBitsTerm (gov op)
-        ShiftLeftTerm _ op n -> SomeTerm $ pevalShiftLeftTerm (gov op) (gov n)
-        RotateLeftTerm _ op n -> SomeTerm $ pevalRotateLeftTerm (gov op) (gov n)
-        ShiftRightTerm _ op n -> SomeTerm $ pevalShiftRightTerm (gov op) (gov n)
-        RotateRightTerm _ op n -> SomeTerm $ pevalRotateRightTerm (gov op) (gov n)
-        ToSignedTerm _ op -> SomeTerm $ pevalBVToSignedTerm op
-        ToUnsignedTerm _ op -> SomeTerm $ pevalBVToUnsignedTerm op
-        BVConcatTerm _ op1 op2 -> SomeTerm $ pevalBVConcatTerm (gov op1) (gov op2)
-        BVSelectTerm _ ix w op -> SomeTerm $ pevalBVSelectTerm ix w (gov op)
-        BVExtendTerm _ n signed op -> SomeTerm $ pevalBVExtendTerm n signed (gov op)
-        ApplyTerm _ f op -> SomeTerm $ pevalApplyTerm (gov f) (gov op)
-        DivIntegralTerm _ op1 op2 -> SomeTerm $ pevalDivIntegralTerm (gov op1) (gov op2)
-        ModIntegralTerm _ op1 op2 -> SomeTerm $ pevalModIntegralTerm (gov op1) (gov op2)
-        QuotIntegralTerm _ op1 op2 -> SomeTerm $ pevalQuotIntegralTerm (gov op1) (gov op2)
-        RemIntegralTerm _ op1 op2 -> SomeTerm $ pevalRemIntegralTerm (gov op1) (gov op2)
-        FPTraitTerm _ trait op -> SomeTerm $ pevalFPTraitTerm trait (gov op)
-        FdivTerm _ op1 op2 -> SomeTerm $ pevalFdivTerm (gov op1) (gov op2)
-        RecipTerm _ op -> SomeTerm $ pevalRecipTerm (gov op)
-        FloatingUnaryTerm _ fop op -> SomeTerm $ pevalFloatingUnaryTerm fop (gov op)
-        PowerTerm _ op1 op2 -> SomeTerm $ pevalPowerTerm (gov op1) (gov op2)
-        FPUnaryTerm _ uop op -> SomeTerm $ pevalFPUnaryTerm uop (gov op)
-        FPBinaryTerm _ bop op1 op2 -> SomeTerm $ pevalFPBinaryTerm bop (gov op1) (gov op2)
-        FPRoundingUnaryTerm _ uop mode op -> SomeTerm $ pevalFPRoundingUnaryTerm uop mode (gov op)
-        FPRoundingBinaryTerm _ bop mode op1 op2 -> SomeTerm $ pevalFPRoundingBinaryTerm bop mode (gov op1) (gov op2)
-        FPFMATerm _ mode op1 op2 op3 -> SomeTerm $ pevalFPFMATerm (gov mode) (gov op1) (gov op2) (gov op3)
-
 parseGeneralFunSMTModelResult ::
   forall a b.
   (SupportedNonFuncPrim a, SupportedPrim b) =>
@@ -400,6 +328,221 @@ parseGeneralFunSMTModelResult level (l, s) =
           (conTerm def)
           funs
    in buildGeneralFun (TypedSymbol sym) body
+
+{-# NOINLINE generalSubstSomeTerm #-}
+generalSubstSomeTerm ::
+  forall v.
+  (forall a. TypedSymbol 'AnyKind a -> Term a) ->
+  HS.HashSet SomeTypedConstantSymbol ->
+  Term v ->
+  Term v
+generalSubstSomeTerm subst = go initialMemo
+  where
+    go ::
+      forall a.
+      (HS.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      HS.HashSet SomeTypedConstantSymbol ->
+      Term a ->
+      Term a
+    go memo boundedSymbols a = case memo boundedSymbols $ someTerm a of
+      SomeTerm v -> unsafeCoerce v
+    initialMemo :: HS.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm
+    initialMemo = htmemo2 (goSome initialMemo)
+    {-# NOINLINE initialMemo #-}
+    goSome ::
+      (HS.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      HS.HashSet SomeTypedConstantSymbol ->
+      SomeTerm ->
+      SomeTerm
+    goSome _ bs c@(SomeTerm (ConTerm _ cv :: Term x)) =
+      case (typeRep :: TypeRep x) of
+        App (App gf _) _ ->
+          case eqTypeRep gf (typeRep @(-->)) of
+            Just HRefl -> case cv of
+              GeneralFun sym (tm :: Term r) ->
+                let newmemo = htmemo2 (goSome newmemo)
+                    {-# NOINLINE newmemo #-}
+                 in SomeTerm $
+                      conTerm $
+                        GeneralFun
+                          sym
+                          ( go
+                              newmemo
+                              (HS.union (HS.singleton (someTypedSymbol sym)) bs)
+                              tm
+                          )
+            Nothing -> c
+        _ -> c
+    goSome _ bs c@(SomeTerm ((SymTerm _ sym) :: Term a)) =
+      case castTypedSymbol sym of
+        Just sym' | HS.member (someTypedSymbol sym') bs -> c
+        _ -> SomeTerm $ subst sym
+    goSome _ bs (SomeTerm (ForallTerm _ tsym b)) =
+      let newmemo = htmemo2 (goSome newmemo)
+          {-# NOINLINE newmemo #-}
+       in goUnary
+            newmemo
+            (HS.insert (someTypedSymbol tsym) bs)
+            (forallTerm tsym)
+            b
+    goSome _ bs (SomeTerm (ExistsTerm _ tsym b)) =
+      let newmemo = htmemo2 (goSome newmemo)
+          {-# NOINLINE newmemo #-}
+       in goUnary
+            newmemo
+            (HS.insert (someTypedSymbol tsym) bs)
+            (existsTerm tsym)
+            b
+    goSome memo bs (SomeTerm (UnaryTerm _ tag (arg :: Term a))) =
+      goUnary memo bs (pevalUnary tag) arg
+    goSome
+      memo
+      bs
+      ( SomeTerm
+          (BinaryTerm _ tag (arg1 :: Term a1) (arg2 :: Term a2))
+        ) =
+        goBinary memo bs (pevalBinary tag) arg1 arg2
+    goSome
+      memo
+      bs
+      ( SomeTerm
+          ( TernaryTerm
+              _
+              tag
+              (arg1 :: Term a1)
+              (arg2 :: Term a2)
+              (arg3 :: Term a3)
+            )
+        ) = do
+        goTernary memo bs (pevalTernary tag) arg1 arg2 arg3
+    goSome memo bs (SomeTerm (NotTerm _ arg)) =
+      goUnary memo bs pevalNotTerm arg
+    goSome memo bs (SomeTerm (OrTerm _ arg1 arg2)) =
+      goBinary memo bs pevalOrTerm arg1 arg2
+    goSome memo bs (SomeTerm (AndTerm _ arg1 arg2)) =
+      goBinary memo bs pevalAndTerm arg1 arg2
+    goSome memo bs (SomeTerm (EqTerm _ arg1 arg2)) =
+      goBinary memo bs pevalEqTerm arg1 arg2
+    goSome memo bs (SomeTerm (ITETerm _ cond arg1 arg2)) =
+      goTernary memo bs pevalITETerm cond arg1 arg2
+    goSome memo bs (SomeTerm (AddNumTerm _ arg1 arg2)) =
+      goBinary memo bs pevalAddNumTerm arg1 arg2
+    goSome memo bs (SomeTerm (NegNumTerm _ arg)) =
+      goUnary memo bs pevalNegNumTerm arg
+    goSome memo bs (SomeTerm (MulNumTerm _ arg1 arg2)) =
+      goBinary memo bs pevalMulNumTerm arg1 arg2
+    goSome memo bs (SomeTerm (AbsNumTerm _ arg)) =
+      goUnary memo bs pevalAbsNumTerm arg
+    goSome memo bs (SomeTerm (SignumNumTerm _ arg)) =
+      goUnary memo bs pevalSignumNumTerm arg
+    goSome memo bs (SomeTerm (LtOrdTerm _ arg1 arg2)) =
+      goBinary memo bs pevalLtOrdTerm arg1 arg2
+    goSome memo bs (SomeTerm (LeOrdTerm _ arg1 arg2)) =
+      goBinary memo bs pevalLeOrdTerm arg1 arg2
+    goSome memo bs (SomeTerm (AndBitsTerm _ arg1 arg2)) =
+      goBinary memo bs pevalAndBitsTerm arg1 arg2
+    goSome memo bs (SomeTerm (OrBitsTerm _ arg1 arg2)) =
+      goBinary memo bs pevalOrBitsTerm arg1 arg2
+    goSome memo bs (SomeTerm (XorBitsTerm _ arg1 arg2)) =
+      goBinary memo bs pevalXorBitsTerm arg1 arg2
+    goSome memo bs (SomeTerm (ComplementBitsTerm _ arg)) =
+      goUnary memo bs pevalComplementBitsTerm arg
+    goSome memo bs (SomeTerm (ShiftLeftTerm _ arg n)) =
+      goBinary memo bs pevalShiftLeftTerm arg n
+    goSome memo bs (SomeTerm (RotateLeftTerm _ arg n)) =
+      goBinary memo bs pevalRotateLeftTerm arg n
+    goSome memo bs (SomeTerm (ShiftRightTerm _ arg n)) =
+      goBinary memo bs pevalShiftRightTerm arg n
+    goSome memo bs (SomeTerm (RotateRightTerm _ arg n)) =
+      goBinary memo bs pevalRotateRightTerm arg n
+    goSome memo bs (SomeTerm (ToSignedTerm _ arg)) =
+      goUnary memo bs pevalBVToSignedTerm arg
+    goSome memo bs (SomeTerm (ToUnsignedTerm _ arg)) =
+      goUnary memo bs pevalBVToUnsignedTerm arg
+    goSome memo bs (SomeTerm (BVConcatTerm _ arg1 arg2)) =
+      goBinary memo bs pevalBVConcatTerm arg1 arg2
+    goSome memo bs (SomeTerm (BVSelectTerm _ ix w arg)) =
+      goUnary memo bs (pevalBVSelectTerm ix w) arg
+    goSome memo bs (SomeTerm (BVExtendTerm _ n signed arg)) =
+      goUnary memo bs (pevalBVExtendTerm n signed) arg
+    goSome memo bs (SomeTerm (ApplyTerm _ f arg)) =
+      goBinary memo bs pevalApplyTerm f arg
+    goSome memo bs (SomeTerm (DivIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs pevalDivIntegralTerm arg1 arg2
+    goSome memo bs (SomeTerm (ModIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs pevalModIntegralTerm arg1 arg2
+    goSome memo bs (SomeTerm (QuotIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs pevalQuotIntegralTerm arg1 arg2
+    goSome memo bs (SomeTerm (RemIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs pevalRemIntegralTerm arg1 arg2
+    goSome memo bs (SomeTerm (FPTraitTerm _ trait arg)) =
+      goUnary memo bs (pevalFPTraitTerm trait) arg
+    goSome memo bs (SomeTerm (FdivTerm _ arg1 arg2)) =
+      goBinary memo bs pevalFdivTerm arg1 arg2
+    goSome memo bs (SomeTerm (RecipTerm _ arg)) =
+      goUnary memo bs pevalRecipTerm arg
+    goSome memo bs (SomeTerm (FloatingUnaryTerm _ op arg)) =
+      goUnary memo bs (pevalFloatingUnaryTerm op) arg
+    goSome memo bs (SomeTerm (PowerTerm _ arg1 arg2)) =
+      goBinary memo bs pevalPowerTerm arg1 arg2
+    goSome memo bs (SomeTerm (FPUnaryTerm _ op arg)) =
+      goUnary memo bs (pevalFPUnaryTerm op) arg
+    goSome memo bs (SomeTerm (FPBinaryTerm _ op arg1 arg2)) =
+      goBinary memo bs (pevalFPBinaryTerm op) arg1 arg2
+    goSome memo bs (SomeTerm (FPRoundingUnaryTerm _ op mode arg)) =
+      goUnary memo bs (pevalFPRoundingUnaryTerm op mode) arg
+    goSome memo bs (SomeTerm (FPRoundingBinaryTerm _ op mode arg1 arg2)) =
+      goBinary memo bs (pevalFPRoundingBinaryTerm op mode) arg1 arg2
+    goSome memo bs (SomeTerm (FPFMATerm _ mode arg1 arg2 arg3)) =
+      SomeTerm $
+        pevalFPFMATerm
+          (go memo bs mode)
+          (go memo bs arg1)
+          (go memo bs arg2)
+          (go memo bs arg3)
+    goUnary ::
+      (SupportedPrim a, SupportedPrim b) =>
+      (HS.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      HS.HashSet SomeTypedConstantSymbol ->
+      (Term a -> Term b) ->
+      Term a ->
+      SomeTerm
+    goUnary memo bs f a = SomeTerm $ f (go memo bs a)
+    goBinary ::
+      (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+      (HS.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      HS.HashSet SomeTypedConstantSymbol ->
+      (Term a -> Term b -> Term c) ->
+      Term a ->
+      Term b ->
+      SomeTerm
+    goBinary memo bs f a b = SomeTerm $ f (go memo bs a) (go memo bs b)
+    goTernary ::
+      (SupportedPrim a, SupportedPrim b, SupportedPrim c, SupportedPrim d) =>
+      (HS.HashSet SomeTypedConstantSymbol -> SomeTerm -> SomeTerm) ->
+      HS.HashSet SomeTypedConstantSymbol ->
+      (Term a -> Term b -> Term c -> Term d) ->
+      Term a ->
+      Term b ->
+      Term c ->
+      SomeTerm
+    goTernary memo bs f a b c =
+      SomeTerm $ f (go memo bs a) (go memo bs b) (go memo bs c)
+
+-- | Substitute a term for a symbol in a term.
+substTerm ::
+  forall knd a b.
+  (SupportedPrim a, SupportedPrim b, IsSymbolKind knd) =>
+  TypedSymbol knd a ->
+  Term a ->
+  Term b ->
+  Term b
+substTerm sym a =
+  generalSubstSomeTerm
+    ( \t@(TypedSymbol t') ->
+        if eqHeteroSymbol sym t then unsafeCoerce a else symTerm t'
+    )
+    HS.empty
 
 supportedPrimFunUpTo
   [|buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)|]
