@@ -56,7 +56,6 @@ import Grisette.SymPrim.AlgRealTests (algRealTests)
 import qualified Grisette.SymPrim.BVTests
 import Grisette.SymPrim.FPTests (fpTests)
 import Grisette.SymPrim.GeneralFunTests (generalFunTests)
-import Grisette.SymPrim.SymGeneralFunTests (symGeneralFunTests)
 import qualified Grisette.SymPrim.Prim.BVTests
 import Grisette.SymPrim.Prim.BitsTests (bitsTests)
 import qualified Grisette.SymPrim.Prim.BoolTests
@@ -68,6 +67,7 @@ import Grisette.SymPrim.Prim.NumTests (numTests)
 import qualified Grisette.SymPrim.Prim.TabularFunTests
 import Grisette.SymPrim.QuantifierTests (quantifierTests)
 import Grisette.SymPrim.SomeBVTests (someBVTests)
+import Grisette.SymPrim.SymGeneralFunTests (symGeneralFunTests)
 import Grisette.SymPrim.SymPrimTests (symPrimTests)
 import qualified Grisette.SymPrim.TabularFunTests
 import Grisette.Unified.EvalModeTest (evalModeTest)
