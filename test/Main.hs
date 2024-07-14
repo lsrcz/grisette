@@ -55,10 +55,11 @@ import Grisette.Lib.Data.TraversableTests (traversableFunctionTests)
 import Grisette.SymPrim.AlgRealTests (algRealTests)
 import qualified Grisette.SymPrim.BVTests
 import Grisette.SymPrim.FPTests (fpTests)
+import Grisette.SymPrim.GeneralFunTests (generalFunTests)
+import Grisette.SymPrim.SymGeneralFunTests (symGeneralFunTests)
 import qualified Grisette.SymPrim.Prim.BVTests
 import Grisette.SymPrim.Prim.BitsTests (bitsTests)
 import qualified Grisette.SymPrim.Prim.BoolTests
-import Grisette.SymPrim.Prim.GeneralFunTests (generalFunTests)
 import Grisette.SymPrim.Prim.IntegralTests
   ( integralTests,
   )
@@ -173,13 +174,14 @@ irTests =
           integralTests,
           modelTests,
           numTests,
-          Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests,
-          generalFunTests
+          Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests
         ],
       symPrimTests,
       Grisette.SymPrim.TabularFunTests.tabularFunTests,
       Grisette.SymPrim.BVTests.bvTests,
       algRealTests,
+      generalFunTests,
+      symGeneralFunTests,
       someBVTests,
       fpTests,
       quantifierTests

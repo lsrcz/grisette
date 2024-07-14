@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grisette.SymPrim.Prim.GeneralFunTests (generalFunTests) where
+module Grisette.SymPrim.GeneralFunTests (generalFunTests) where
 
 import Grisette
   ( EvalSym (evalSym),

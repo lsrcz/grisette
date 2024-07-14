@@ -117,24 +117,34 @@ extractSymSomeTerm = go initialMemo
   where
     gotyped ::
       (SupportedPrim a) =>
-      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      ( HS.HashSet (SomeTypedConstantSymbol) ->
+        SomeTerm ->
+        Maybe (HS.HashSet (SomeTypedSymbol knd))
+      ) ->
       HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
     gotyped memo boundedSymbols a = memo boundedSymbols (SomeTerm a)
-    initialMemo :: HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))
+    initialMemo ::
+      HS.HashSet (SomeTypedConstantSymbol) ->
+      SomeTerm ->
+      Maybe (HS.HashSet (SomeTypedSymbol knd))
     initialMemo = htmemo2 (go initialMemo)
     {-# NOINLINE initialMemo #-}
 
     go ::
-      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      ( HS.HashSet (SomeTypedConstantSymbol) ->
+        SomeTerm ->
+        Maybe (HS.HashSet (SomeTypedSymbol knd))
+      ) ->
       HS.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
     go _ bs (SomeTerm (SymTerm _ (sym :: TypedAnySymbol a))) =
       case (castTypedSymbol sym, castTypedSymbol sym) of
         (Just sym', _) | HS.member (someTypedSymbol sym') bs -> return HS.empty
-        (_, Just sym') -> return $ HS.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
+        (_, Just sym') ->
+          return $ HS.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
         _ -> Nothing
     go _ bs (SomeTerm (ConTerm _ cv :: Term v)) =
       case (typeRep :: TypeRep v) of
@@ -186,28 +196,37 @@ extractSymSomeTerm = go initialMemo
     go memo bs (SomeTerm (RotateRightTerm _ arg n1)) = goBinary memo bs arg n1
     go memo bs (SomeTerm (ToSignedTerm _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (ToUnsignedTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BVConcatTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (BVConcatTerm _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (BVSelectTerm _ _ _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (BVExtendTerm _ _ _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (ApplyTerm _ func arg)) = goBinary memo bs func arg
-    go memo bs (SomeTerm (DivIntegralTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (ModIntegralTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (QuotIntegralTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (RemIntegralTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (DivIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (ModIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (QuotIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (RemIntegralTerm _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (FPTraitTerm _ _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (RecipTerm _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (FloatingUnaryTerm _ _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (PowerTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (FPUnaryTerm _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FPBinaryTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (FPBinaryTerm _ _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (FPRoundingUnaryTerm _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FPRoundingBinaryTerm _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (FPRoundingBinaryTerm _ _ _ arg1 arg2)) =
+      goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (FPFMATerm _ mode arg1 arg2 arg3)) =
-      gotyped memo bs mode
-        <> gotyped memo bs arg1
-        <> gotyped memo bs arg2
-        <> gotyped memo bs arg3
+      combineAllSets
+        [ gotyped memo bs mode,
+          gotyped memo bs arg1,
+          gotyped memo bs arg2,
+          gotyped memo bs arg3
+        ]
     goUnary ::
       (SupportedPrim a) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
@@ -222,7 +241,8 @@ extractSymSomeTerm = go initialMemo
       Term a ->
       Term b ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    goBinary memo bs arg1 arg2 = gotyped memo bs arg1 <> gotyped memo bs arg2
+    goBinary memo bs arg1 arg2 =
+      combineSet (gotyped memo bs arg1) (gotyped memo bs arg2)
     goTernary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
@@ -232,7 +252,14 @@ extractSymSomeTerm = go initialMemo
       Term c ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
     goTernary memo bs arg1 arg2 arg3 =
-      gotyped memo bs arg1 <> gotyped memo bs arg2 <> gotyped memo bs arg3
+      combineAllSets
+        [ gotyped memo bs arg1,
+          gotyped memo bs arg2,
+          gotyped memo bs arg3
+        ]
+    combineSet (Just a) (Just b) = Just $ HS.union a b
+    combineSet _ _ = Nothing
+    combineAllSets = foldl1 combineSet
 {-# INLINEABLE extractSymSomeTerm #-}
 
 -- | Extract all the symbols in a term.
@@ -247,53 +274,7 @@ extractTerm initialBoundedSymbols t =
 
 -- | Cast a term to another type.
 castTerm :: forall a b. (Typeable b) => Term a -> Maybe (Term b)
-castTerm t@ConTerm {} = cast t
-castTerm t@SymTerm {} = cast t
-castTerm t@ForallTerm {} = cast t
-castTerm t@ExistsTerm {} = cast t
-castTerm t@UnaryTerm {} = cast t
-castTerm t@BinaryTerm {} = cast t
-castTerm t@TernaryTerm {} = cast t
-castTerm t@NotTerm {} = cast t
-castTerm t@OrTerm {} = cast t
-castTerm t@AndTerm {} = cast t
-castTerm t@EqTerm {} = cast t
-castTerm t@ITETerm {} = cast t
-castTerm t@AddNumTerm {} = cast t
-castTerm t@NegNumTerm {} = cast t
-castTerm t@MulNumTerm {} = cast t
-castTerm t@AbsNumTerm {} = cast t
-castTerm t@SignumNumTerm {} = cast t
-castTerm t@LtOrdTerm {} = cast t
-castTerm t@LeOrdTerm {} = cast t
-castTerm t@AndBitsTerm {} = cast t
-castTerm t@OrBitsTerm {} = cast t
-castTerm t@XorBitsTerm {} = cast t
-castTerm t@ComplementBitsTerm {} = cast t
-castTerm t@ShiftLeftTerm {} = cast t
-castTerm t@ShiftRightTerm {} = cast t
-castTerm t@RotateLeftTerm {} = cast t
-castTerm t@RotateRightTerm {} = cast t
-castTerm t@ToSignedTerm {} = cast t
-castTerm t@ToUnsignedTerm {} = cast t
-castTerm t@BVConcatTerm {} = cast t
-castTerm t@BVSelectTerm {} = cast t
-castTerm t@BVExtendTerm {} = cast t
-castTerm t@ApplyTerm {} = cast t
-castTerm t@DivIntegralTerm {} = cast t
-castTerm t@ModIntegralTerm {} = cast t
-castTerm t@QuotIntegralTerm {} = cast t
-castTerm t@RemIntegralTerm {} = cast t
-castTerm t@FPTraitTerm {} = cast t
-castTerm t@FdivTerm {} = cast t
-castTerm t@RecipTerm {} = cast t
-castTerm t@FloatingUnaryTerm {} = cast t
-castTerm t@PowerTerm {} = cast t
-castTerm t@FPUnaryTerm {} = cast t
-castTerm t@FPBinaryTerm {} = cast t
-castTerm t@FPRoundingUnaryTerm {} = cast t
-castTerm t@FPRoundingBinaryTerm {} = cast t
-castTerm t@FPFMATerm {} = cast t
+castTerm t = introSupportedPrimConstraint t $ cast t
 {-# INLINE castTerm #-}
 
 -- | Compute the size of a list of terms. Do not count the same term twice.
