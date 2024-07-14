@@ -11,7 +11,7 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (..)) where
+module Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (..), someTerm) where
 
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Typeable (Proxy (Proxy), typeRep)
@@ -19,6 +19,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SupportedPrim,
     Term,
     identityWithTypeRep,
+    introSupportedPrimConstraint,
   )
 
 -- | Existential wrapper for symbolic Grisette terms.
@@ -35,3 +36,7 @@ instance Hashable SomeTerm where
 instance Show SomeTerm where
   show (SomeTerm (t :: Term a)) =
     "<<" ++ show t ++ " :: " ++ show (typeRep (Proxy @a)) ++ ">>"
+
+someTerm :: Term a -> SomeTerm
+someTerm v = introSupportedPrimConstraint v $ SomeTerm v
+{-# INLINE someTerm #-}

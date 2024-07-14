@@ -27,7 +27,7 @@ import Grisette.Internal.SymPrim.Prim.Model
     ModelValuePair ((::=)),
     SymbolSet (SymbolSet),
     equation,
-    evaluateTerm,
+    evalTerm,
   )
 import Grisette.Internal.SymPrim.Prim.ModelValue (toModelValue)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -126,54 +126,54 @@ modelTests =
                       (someTypedSymbol csymbol, toModelValue (0 :: Integer))
                     ]
                 ),
-          testCase "evaluateTerm" $ do
-            evaluateTerm False S.empty m3 (conTerm (1 :: Integer)) @=? conTerm 1
-            evaluateTerm True S.empty m3 (conTerm (1 :: Integer)) @=? conTerm 1
-            evaluateTerm False S.empty m3 (ssymTerm "a" :: Term Integer) @=? conTerm 1
-            evaluateTerm True S.empty m3 (ssymTerm "a" :: Term Integer) @=? conTerm 1
-            evaluateTerm False S.empty m3 (ssymTerm "x" :: Term Integer) @=? ssymTerm "x"
-            evaluateTerm True S.empty m3 (ssymTerm "x" :: Term Integer) @=? conTerm 0
-            evaluateTerm
+          testCase "evalTerm" $ do
+            evalTerm False m3 S.empty (conTerm (1 :: Integer)) @=? conTerm 1
+            evalTerm True m3 S.empty (conTerm (1 :: Integer)) @=? conTerm 1
+            evalTerm False m3 S.empty (ssymTerm "a" :: Term Integer) @=? conTerm 1
+            evalTerm True m3 S.empty (ssymTerm "a" :: Term Integer) @=? conTerm 1
+            evalTerm False m3 S.empty (ssymTerm "x" :: Term Integer) @=? ssymTerm "x"
+            evalTerm True m3 S.empty (ssymTerm "x" :: Term Integer) @=? conTerm 0
+            evalTerm
               False
-              (S.singleton (someTypedSymbol ("x" :: TypedConstantSymbol Integer)))
               m3
+              (S.singleton (someTypedSymbol ("x" :: TypedConstantSymbol Integer)))
               (ssymTerm "x" :: Term Integer)
               @=? ssymTerm "x"
-            evaluateTerm
+            evalTerm
               True
-              (S.singleton (someTypedSymbol ("x" :: TypedConstantSymbol Integer)))
               m3
+              (S.singleton (someTypedSymbol ("x" :: TypedConstantSymbol Integer)))
               (ssymTerm "x" :: Term Integer)
               @=? ssymTerm "x"
-            evaluateTerm False S.empty m3 (ssymTerm "y" :: Term Bool) @=? ssymTerm "y"
-            evaluateTerm True S.empty m3 (ssymTerm "y" :: Term Bool) @=? conTerm False
-            evaluateTerm False S.empty m3 (ssymTerm "z" :: Term (WordN 4)) @=? ssymTerm "z"
-            evaluateTerm True S.empty m3 (ssymTerm "z" :: Term (WordN 4)) @=? conTerm 0
-            evaluateTerm False S.empty m3 (pevalNegNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
-            evaluateTerm True S.empty m3 (pevalNegNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
-            evaluateTerm False S.empty m3 (pevalNegNumTerm $ ssymTerm "x" :: Term Integer) @=? pevalNegNumTerm (ssymTerm "x")
-            evaluateTerm True S.empty m3 (pevalNegNumTerm $ ssymTerm "x" :: Term Integer) @=? conTerm 0
-            evaluateTerm False S.empty m3 (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a") :: Term Integer) @=? conTerm 2
-            evaluateTerm True S.empty m3 (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a") :: Term Integer) @=? conTerm 2
-            evaluateTerm False S.empty m3 (pevalAddNumTerm (ssymTerm "x") (ssymTerm "a") :: Term Integer) @=? pevalAddNumTerm (conTerm 1) (ssymTerm "x")
-            evaluateTerm True S.empty m3 (pevalAddNumTerm (ssymTerm "x") (ssymTerm "a") :: Term Integer) @=? conTerm 1
-            evaluateTerm False S.empty m3 (pevalAddNumTerm (ssymTerm "x") (ssymTerm "y") :: Term Integer) @=? pevalAddNumTerm (ssymTerm "x") (ssymTerm "y")
-            evaluateTerm True S.empty m3 (pevalAddNumTerm (ssymTerm "x") (ssymTerm "y") :: Term Integer) @=? conTerm 0
-            evaluateTerm False S.empty m3 (pevalITETerm (ssymTerm "b") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
+            evalTerm False m3 S.empty (ssymTerm "y" :: Term Bool) @=? ssymTerm "y"
+            evalTerm True m3 S.empty (ssymTerm "y" :: Term Bool) @=? conTerm False
+            evalTerm False m3 S.empty (ssymTerm "z" :: Term (WordN 4)) @=? ssymTerm "z"
+            evalTerm True m3 S.empty (ssymTerm "z" :: Term (WordN 4)) @=? conTerm 0
+            evalTerm False m3 S.empty (pevalNegNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
+            evalTerm True m3 S.empty (pevalNegNumTerm $ ssymTerm "a" :: Term Integer) @=? conTerm (-1)
+            evalTerm False m3 S.empty (pevalNegNumTerm $ ssymTerm "x" :: Term Integer) @=? pevalNegNumTerm (ssymTerm "x")
+            evalTerm True m3 S.empty (pevalNegNumTerm $ ssymTerm "x" :: Term Integer) @=? conTerm 0
+            evalTerm False m3 S.empty (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a") :: Term Integer) @=? conTerm 2
+            evalTerm True m3 S.empty (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a") :: Term Integer) @=? conTerm 2
+            evalTerm False m3 S.empty (pevalAddNumTerm (ssymTerm "x") (ssymTerm "a") :: Term Integer) @=? pevalAddNumTerm (conTerm 1) (ssymTerm "x")
+            evalTerm True m3 S.empty (pevalAddNumTerm (ssymTerm "x") (ssymTerm "a") :: Term Integer) @=? conTerm 1
+            evalTerm False m3 S.empty (pevalAddNumTerm (ssymTerm "x") (ssymTerm "y") :: Term Integer) @=? pevalAddNumTerm (ssymTerm "x") (ssymTerm "y")
+            evalTerm True m3 S.empty (pevalAddNumTerm (ssymTerm "x") (ssymTerm "y") :: Term Integer) @=? conTerm 0
+            evalTerm False m3 S.empty (pevalITETerm (ssymTerm "b") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
               @=? conTerm 2
-            evaluateTerm True S.empty m3 (pevalITETerm (ssymTerm "b") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
+            evalTerm True m3 S.empty (pevalITETerm (ssymTerm "b") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
               @=? conTerm 2
-            evaluateTerm False S.empty m3 (pevalITETerm (ssymTerm "x") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
+            evalTerm False m3 S.empty (pevalITETerm (ssymTerm "x") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
               @=? pevalITETerm (ssymTerm "x") (conTerm 2) (conTerm 1)
-            evaluateTerm True S.empty m3 (pevalITETerm (ssymTerm "x") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
+            evalTerm True m3 S.empty (pevalITETerm (ssymTerm "x") (pevalAddNumTerm (ssymTerm "a") (ssymTerm "a")) (ssymTerm "a") :: Term Integer)
               @=? conTerm 1
-            evaluateTerm False S.empty m3 (pevalITETerm (ssymTerm "b") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
+            evalTerm False m3 S.empty (pevalITETerm (ssymTerm "b") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
               @=? ssymTerm "x"
-            evaluateTerm True S.empty m3 (pevalITETerm (ssymTerm "b") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
+            evalTerm True m3 S.empty (pevalITETerm (ssymTerm "b") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
               @=? conTerm 0
-            evaluateTerm False S.empty m3 (pevalITETerm (ssymTerm "z") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
+            evalTerm False m3 S.empty (pevalITETerm (ssymTerm "z") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
               @=? pevalITETerm (ssymTerm "z") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y"))
-            evaluateTerm True S.empty m3 (pevalITETerm (ssymTerm "z") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
+            evalTerm True m3 S.empty (pevalITETerm (ssymTerm "z") (ssymTerm "x") (pevalAddNumTerm (conTerm 1) (ssymTerm "y")) :: Term Integer)
               @=? conTerm 1,
           testCase "construction from ModelValuePair" $ do
             buildModel (asymbol ::= 1) @=? Model (M.singleton (someTypedSymbol asymbol) (toModelValue (1 :: Integer)))

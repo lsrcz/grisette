@@ -33,7 +33,7 @@ import Control.Monad.State
     modify',
   )
 import Data.Data (cast)
-import qualified Data.HashSet as S
+import qualified Data.HashSet as HS
 import Grisette.Internal.Core.Data.MemoUtils (htmemo2)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -110,31 +110,31 @@ import qualified Type.Reflection as R
 extractSymSomeTerm ::
   forall knd.
   (IsSymbolKind knd) =>
-  S.HashSet (SomeTypedConstantSymbol) ->
+  HS.HashSet (SomeTypedConstantSymbol) ->
   SomeTerm ->
-  Maybe (S.HashSet (SomeTypedSymbol knd))
+  Maybe (HS.HashSet (SomeTypedSymbol knd))
 extractSymSomeTerm = go initialMemo
   where
     gotyped ::
       (SupportedPrim a) =>
-      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedConstantSymbol) ->
+      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
-      Maybe (S.HashSet (SomeTypedSymbol knd))
+      Maybe (HS.HashSet (SomeTypedSymbol knd))
     gotyped memo boundedSymbols a = memo boundedSymbols (SomeTerm a)
-    initialMemo :: S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))
+    initialMemo :: HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))
     initialMemo = htmemo2 (go initialMemo)
     {-# NOINLINE initialMemo #-}
 
     go ::
-      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedConstantSymbol) ->
+      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      HS.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
-      Maybe (S.HashSet (SomeTypedSymbol knd))
+      Maybe (HS.HashSet (SomeTypedSymbol knd))
     go _ bs (SomeTerm (SymTerm _ (sym :: TypedAnySymbol a))) =
       case (castTypedSymbol sym, castTypedSymbol sym) of
-        (Just sym', _) | S.member (someTypedSymbol sym') bs -> return S.empty
-        (_, Just sym') -> return $ S.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
+        (Just sym', _) | HS.member (someTypedSymbol sym') bs -> return HS.empty
+        (_, Just sym') -> return $ HS.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
         _ -> Nothing
     go _ bs (SomeTerm (ConTerm _ cv :: Term v)) =
       case (typeRep :: TypeRep v) of
@@ -146,18 +146,18 @@ extractSymSomeTerm = go initialMemo
                     {-# NOINLINE newmemo #-}
                  in gotyped
                       newmemo
-                      (S.union (S.singleton (someTypedSymbol sym)) bs)
+                      (HS.union (HS.singleton (someTypedSymbol sym)) bs)
                       tm
-            Nothing -> return S.empty
-        _ -> return S.empty
+            Nothing -> return HS.empty
+        _ -> return HS.empty
     go _ bs (SomeTerm (ForallTerm _ sym arg)) =
       let newmemo = htmemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
-       in goUnary newmemo (S.insert (someTypedSymbol sym) bs) arg
+       in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
     go _ bs (SomeTerm (ExistsTerm _ sym arg)) =
       let newmemo = htmemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
-       in goUnary newmemo (S.insert (someTypedSymbol sym) bs) arg
+       in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
     go memo bs (SomeTerm (UnaryTerm _ _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (BinaryTerm _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
@@ -210,27 +210,27 @@ extractSymSomeTerm = go initialMemo
         <> gotyped memo bs arg3
     goUnary ::
       (SupportedPrim a) =>
-      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedConstantSymbol) ->
+      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
-      Maybe (S.HashSet (SomeTypedSymbol knd))
+      Maybe (HS.HashSet (SomeTypedSymbol knd))
     goUnary = gotyped
     goBinary ::
       (SupportedPrim a, SupportedPrim b) =>
-      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedConstantSymbol) ->
+      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Term b ->
-      Maybe (S.HashSet (SomeTypedSymbol knd))
+      Maybe (HS.HashSet (SomeTypedSymbol knd))
     goBinary memo bs arg1 arg2 = gotyped memo bs arg1 <> gotyped memo bs arg2
     goTernary ::
       (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
-      (S.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (S.HashSet (SomeTypedSymbol knd))) ->
-      S.HashSet (SomeTypedConstantSymbol) ->
+      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
+      HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Term b ->
       Term c ->
-      Maybe (S.HashSet (SomeTypedSymbol knd))
+      Maybe (HS.HashSet (SomeTypedSymbol knd))
     goTernary memo bs arg1 arg2 arg3 =
       gotyped memo bs arg1 <> gotyped memo bs arg2 <> gotyped memo bs arg3
 {-# INLINEABLE extractSymSomeTerm #-}
@@ -238,9 +238,9 @@ extractSymSomeTerm = go initialMemo
 -- | Extract all the symbols in a term.
 extractTerm ::
   (IsSymbolKind knd, SymbolKindConstraint knd a, SupportedPrim a) =>
-  S.HashSet (SomeTypedConstantSymbol) ->
+  HS.HashSet (SomeTypedConstantSymbol) ->
   Term a ->
-  Maybe (S.HashSet (SomeTypedSymbol knd))
+  Maybe (HS.HashSet (SomeTypedSymbol knd))
 extractTerm initialBoundedSymbols t =
   extractSymSomeTerm initialBoundedSymbols (SomeTerm t)
 {-# INLINE extractTerm #-}
@@ -298,13 +298,13 @@ castTerm t@FPFMATerm {} = cast t
 
 -- | Compute the size of a list of terms. Do not count the same term twice.
 someTermsSize :: [SomeTerm] -> Int
-someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
+someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
   where
-    exists t = gets (S.member (SomeTerm t))
-    add t = modify' (S.insert (SomeTerm t))
-    goSome :: SomeTerm -> State (S.HashSet SomeTerm) ()
+    exists t = gets (HS.member (SomeTerm t))
+    add t = modify' (HS.insert (SomeTerm t))
+    goSome :: SomeTerm -> State (HS.HashSet SomeTerm) ()
     goSome (SomeTerm b) = go b
-    go :: forall b. Term b -> State (S.HashSet SomeTerm) ()
+    go :: forall b. Term b -> State (HS.HashSet SomeTerm) ()
     go t@ConTerm {} = add t
     go t@SymTerm {} = add t
     go t@(ForallTerm _ _ arg) = goUnary t arg
@@ -352,7 +352,7 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
     go t@(FPRoundingUnaryTerm _ _ _ arg) = goUnary t arg
     go t@(FPRoundingBinaryTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
     go t@(FPFMATerm _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
-    goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (S.HashSet SomeTerm) ()
+    goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (HS.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t
       if b
@@ -366,7 +366,7 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
       Term a ->
       Term b ->
       Term c ->
-      State (S.HashSet SomeTerm) ()
+      State (HS.HashSet SomeTerm) ()
     goBinary t arg1 arg2 = do
       b <- exists t
       if b
@@ -382,7 +382,7 @@ someTermsSize terms = S.size $ execState (traverse goSome terms) S.empty
       Term b ->
       Term c ->
       Term d ->
-      State (S.HashSet SomeTerm) ()
+      State (HS.HashSet SomeTerm) ()
     goTernary t arg1 arg2 arg3 = do
       b <- exists t
       if b
@@ -401,7 +401,9 @@ someTermSize term = someTermsSize [term]
 
 -- | Compute the size of a list of terms. Do not count the same term twice.
 termsSize :: [Term a] -> Int
-termsSize terms = someTermsSize $ (\x -> introSupportedPrimConstraint x $ SomeTerm x) <$> terms
+termsSize terms =
+  someTermsSize $
+    (\x -> introSupportedPrimConstraint x $ SomeTerm x) <$> terms
 {-# INLINEABLE termsSize #-}
 
 -- | Compute the size of a term.
