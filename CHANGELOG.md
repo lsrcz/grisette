@@ -12,7 +12,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added pretty printer for models.
   ([#225](https://github.com/lsrcz/grisette/pull/225))
 - Added support for algebraic reals (`AlgReal` and `SymAlgReal`).
-  ([#228](https://github.com/lsrcz/grisette/pull/228))
+  ([#228](https://github.com/lsrcz/grisette/pull/228),
+   [#229](https://github.com/lsrcz/grisette/pull/229))
+- Added support for quantifiers.
+  ([#230](https://github.com/lsrcz/grisette/pull/230))
 
 ### Fixed
 - Fixed model parsing for floating points.
@@ -22,6 +25,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - [Breaking] Changed the operand order for `liftPFormatPrec2` and
   `liftPFormatList2`.
   ([#225](https://github.com/lsrcz/grisette/pull/225))
+- [Breaking] Changed the term representation with a compile-time tag for its
+  kind (`AnyKind` for all symbols and `ConstantKind` for symbols other than
+  uninterpreted functions). This also affects the 'ExtractSym'. A new
+  `extractSymMaybe` will regard this tag if not all symbols can be casted to
+  that tag. `extractSym` will always succeed, returning a set with `AnyKind`.
+  ([#230](https://github.com/lsrcz/grisette/pull/230))
 
 ## [0.7.0.0] - 2024-07-02
 
