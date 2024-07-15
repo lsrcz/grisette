@@ -99,8 +99,10 @@ newtype SymbolSet knd = SymbolSet
   }
   deriving (Eq, Generic, Hashable)
 
+-- | Set of constant symbols. Excluding unintepreted functions.
 type ConstantSymbolSet = SymbolSet 'ConstantKind
 
+-- | Set of any symbols.
 type AnySymbolSet = SymbolSet 'AnyKind
 
 instance Semigroup (SymbolSet knd) where
@@ -164,7 +166,36 @@ instance SymbolSetOps (SymbolSet knd) (TypedSymbol knd) where
   unionSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.union s1 s2
   differenceSet (SymbolSet s1) (SymbolSet s2) = SymbolSet $ S.difference s1 s2
 
-instance SymbolSetRep (TypedSymbol knd t) (SymbolSet knd) (TypedSymbol knd) where
+instance
+  SymbolSetRep
+    (SomeTypedSymbol knd)
+    (SymbolSet knd)
+    (TypedSymbol knd)
+  where
+  buildSymbolSet sym = SymbolSet $ S.singleton sym
+
+instance
+  SymbolSetRep
+    [SomeTypedSymbol knd]
+    (SymbolSet knd)
+    (TypedSymbol knd)
+  where
+  buildSymbolSet = SymbolSet . S.fromList
+
+instance
+  SymbolSetRep
+    [TypedSymbol knd t]
+    (SymbolSet knd)
+    (TypedSymbol knd)
+  where
+  buildSymbolSet sym = buildSymbolSet $ someTypedSymbol <$> sym
+
+instance
+  SymbolSetRep
+    (TypedSymbol knd t)
+    (SymbolSet knd)
+    (TypedSymbol knd)
+  where
   buildSymbolSet sym = insertSymbol sym emptySet
 
 instance

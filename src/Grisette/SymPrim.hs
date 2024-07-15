@@ -153,6 +153,14 @@ module Grisette.SymPrim
     type (=~>) (..),
     type (-~>) (..),
 
+    -- ** Quantifiers
+    forallSet,
+    forallSym,
+    forallFresh,
+    existsSet,
+    existsSym,
+    existsFresh,
+
     -- ** Basic constraints
     SupportedPrim,
     SymRep (SymType),
@@ -182,6 +190,9 @@ module Grisette.SymPrim
     TypedSymbol (..),
     TypedAnySymbol,
     TypedConstantSymbol,
+    SomeTypedSymbol (..),
+    SomeTypedAnySymbol,
+    SomeTypedConstantSymbol,
     SymbolSet,
     AnySymbolSet,
     ConstantSymbolSet,
@@ -248,12 +259,23 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (..),
     IsSymbolKind (..),
     LinkedRep,
+    SomeTypedAnySymbol,
+    SomeTypedConstantSymbol,
+    SomeTypedSymbol (..),
     SupportedPrim,
     SymRep (..),
     SymbolKind (..),
     TypedAnySymbol,
     TypedConstantSymbol,
     TypedSymbol (..),
+  )
+import Grisette.Internal.SymPrim.Quantifier
+  ( existsFresh,
+    existsSet,
+    existsSym,
+    forallFresh,
+    forallSet,
+    forallSym,
   )
 import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (..),

@@ -188,6 +188,7 @@ class
     f a b ->
     Maybe (SymbolSet knd)
 
+-- | Lift the standard 'extractSym' to binary type constructors.
 extractSym2 ::
   (ExtractSym2 f, ExtractSym a, ExtractSym b, IsSymbolKind knd) =>
   f a b ->
