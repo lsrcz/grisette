@@ -84,8 +84,8 @@ library
       Grisette.Internal.Core.Data.Class.ModelOps
       Grisette.Internal.Core.Data.Class.PlainUnion
       Grisette.Internal.Core.Data.Class.PPrint
-      Grisette.Internal.Core.Data.Class.SafeDivision
-      Grisette.Internal.Core.Data.Class.SafeFractional
+      Grisette.Internal.Core.Data.Class.SafeDiv
+      Grisette.Internal.Core.Data.Class.SafeFdiv
       Grisette.Internal.Core.Data.Class.SafeLinearArith
       Grisette.Internal.Core.Data.Class.SafeLogBase
       Grisette.Internal.Core.Data.Class.SafeSymRotate
@@ -183,7 +183,7 @@ library
       Grisette.Unified.Internal.BaseConstraint
       Grisette.Unified.Internal.BaseMonad
       Grisette.Unified.Internal.Class.UnifiedITEOp
-      Grisette.Unified.Internal.Class.UnifiedSafeDivision
+      Grisette.Unified.Internal.Class.UnifiedSafeDiv
       Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
       Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
       Grisette.Unified.Internal.Class.UnifiedSafeSymShift
@@ -296,7 +296,7 @@ test-suite spec
       Grisette.Core.Data.Class.MergeableTests
       Grisette.Core.Data.Class.PlainUnionTests
       Grisette.Core.Data.Class.PPrintTests
-      Grisette.Core.Data.Class.SafeDivisionTests
+      Grisette.Core.Data.Class.SafeDivTests
       Grisette.Core.Data.Class.SafeLinearArithTests
       Grisette.Core.Data.Class.SafeSymRotateTests
       Grisette.Core.Data.Class.SafeSymShiftTests

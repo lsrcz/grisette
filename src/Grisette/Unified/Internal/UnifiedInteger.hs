@@ -31,7 +31,7 @@ import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeDivision (UnifiedSafeDivision)
+import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
   )
@@ -46,7 +46,7 @@ class
     UnifiedPrimitive mode (GetInteger mode),
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
-    UnifiedSafeDivision mode ArithException i m,
+    UnifiedSafeDiv mode ArithException i m,
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
     UnifiedSafeLinearArith mode ArithException i m,

@@ -131,9 +131,9 @@ import Grisette.Internal.Core.Data.Class.Mergeable
 import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformat),
   )
-import Grisette.Internal.Core.Data.Class.SafeDivision
-  ( DivisionOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
-    SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
+import Grisette.Internal.Core.Data.Class.SafeDiv
+  ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
+    SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
   )
 import Grisette.Internal.Core.Data.Class.SafeLinearArith
   ( SafeLinearArith (safeAdd, safeNeg, safeSub),
@@ -660,8 +660,8 @@ divRemOrBase
 {-# INLINE divRemOrBase #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => DivisionOr (bv n)) =>
-  DivisionOr (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => DivOr (bv n)) =>
+  DivOr (SomeBV bv)
   where
   divOr = ternSomeBVR1 divOr
   {-# INLINE divOr #-}
@@ -679,12 +679,12 @@ instance
 instance
   ( forall n.
     (KnownNat n, 1 <= n) =>
-    SafeDivision e (bv n) (ExceptT e m),
+    SafeDiv e (bv n) (ExceptT e m),
     MonadError (Either BitwidthMismatch e) m,
     TryMerge m,
     Mergeable e
   ) =>
-  SafeDivision (Either BitwidthMismatch e) (SomeBV bv) m
+  SafeDiv (Either BitwidthMismatch e) (SomeBV bv) m
   where
   safeDiv = binSomeBVSafeR1 (safeDiv @e)
   {-# INLINE safeDiv #-}
