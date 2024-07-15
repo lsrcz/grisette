@@ -56,16 +56,6 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- >>> import Grisette.Backend
 -- >>> import Grisette.Lib.Base
 
-#if MIN_VERSION_sbv(10,1,0)
-sbvVersionCheck :: HasCallStack => ()
-sbvVersionCheck = ()
-#else
-sbvVersionCheck :: HasCallStack => ()
-sbvVersionCheck =
-  error 
-    "Quantifiers are only available when you build with SBV 10.1 or later."
-#endif
-
 -- | Forall quantifier over a set of constant symbols. Quantifier over functions
 -- is not supported.
 --
@@ -79,13 +69,12 @@ sbvVersionCheck =
 -- Only available with SBV 10.1.0 or later.
 forallSet :: ConstantSymbolSet -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
-  sbvVersionCheck `seq`
-    HS.foldr
-      ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
-          SymBool $ forallTerm s b'
-      )
-      b
-      set
+  HS.foldr
+    ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
+        SymBool $ forallTerm s b'
+    )
+    b
+    set
 
 -- | Forall quantifier over all symbolic constants in a value. Quantifier over
 -- functions is not supported.
@@ -97,7 +86,7 @@ forallSet (SymbolSet set) b =
 -- Only available with sbv 10.1.0 or later.
 forallSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
 forallSym s b =
-  sbvVersionCheck `seq` case extractSymMaybe s of
+  case extractSymMaybe s of
     Just s' -> forallSet s' b
     Nothing ->
       error
@@ -116,13 +105,12 @@ forallSym s b =
 -- Only available with SBV 10.1.0 or later.
 existsSet :: ConstantSymbolSet -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
-  sbvVersionCheck `seq`
-    HS.foldr
-      ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
-          SymBool $ existsTerm s b'
-      )
-      b
-      set
+  HS.foldr
+    ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
+        SymBool $ existsTerm s b'
+    )
+    b
+    set
 
 -- | Exists quantifier over all symbolic constants in a value. Quantifier over
 -- functions is not supported.
@@ -134,7 +122,7 @@ existsSet (SymbolSet set) b =
 -- Only available with sbv 10.1.0 or later.
 existsSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
 existsSym s b =
-  sbvVersionCheck `seq` case extractSymMaybe s of
+  case extractSymMaybe s of
     Just s' -> existsSet s' b
     Nothing ->
       error
