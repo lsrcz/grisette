@@ -23,6 +23,7 @@ where
 
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.HashSet as HS
+import Data.List (sort)
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.Core.Control.Monad.Union (Union, liftUnion)
 import Grisette.Internal.Core.Data.Class.ExtractSym
@@ -64,24 +65,24 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 -- >>> let x = "x" :: SymInteger
 -- >>> let y = "y" :: SymInteger
 -- >>> forallSet (buildSymbolSet [xsym, ysym]) (x .== y)
--- (forall y :: Integer (forall x :: Integer (= x y)))
+-- (forall x :: Integer (forall y :: Integer (= x y)))
 --
 -- Only available with SBV 10.1.0 or later.
 forallSet :: ConstantSymbolSet -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
-  HS.foldr
+  foldr
     ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
         SymBool $ forallTerm s b'
     )
     b
-    set
+    (sort $ HS.toList set)
 
 -- | Forall quantifier over all symbolic constants in a value. Quantifier over
 -- functions is not supported.
 --
 -- >>> let a = ["x", "y"] :: [SymInteger]
 -- >>> forallSym a $ sum a .== 0
--- (forall y :: Integer (forall x :: Integer (= (+ x y) 0)))
+-- (forall x :: Integer (forall y :: Integer (= (+ x y) 0)))
 --
 -- Only available with sbv 10.1.0 or later.
 forallSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
@@ -100,24 +101,24 @@ forallSym s b =
 -- >>> let x = "x" :: SymInteger
 -- >>> let y = "y" :: SymInteger
 -- >>> existsSet (buildSymbolSet [xsym, ysym]) (x .== y)
--- (exists y :: Integer (exists x :: Integer (= x y)))
+-- (exists x :: Integer (exists y :: Integer (= x y)))
 --
 -- Only available with SBV 10.1.0 or later.
 existsSet :: ConstantSymbolSet -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
-  HS.foldr
+  foldr
     ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
         SymBool $ existsTerm s b'
     )
     b
-    set
+    (sort $ HS.toList set)
 
 -- | Exists quantifier over all symbolic constants in a value. Quantifier over
 -- functions is not supported.
 --
 -- >>> let a = ["x", "y"] :: [SymInteger]
 -- >>> existsSym a $ sum a .== 0
--- (exists y :: Integer (exists x :: Integer (= (+ x y) 0)))
+-- (exists x :: Integer (exists y :: Integer (= (+ x y) 0)))
 --
 -- Only available with sbv 10.1.0 or later.
 existsSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
