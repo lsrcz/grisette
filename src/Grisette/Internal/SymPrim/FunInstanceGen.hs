@@ -5,6 +5,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.FunInstanceGen
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.FunInstanceGen
   ( supportedPrimFun,
     supportedPrimFunUpTo,
@@ -69,6 +77,8 @@ instanceWithOverlapDescD o ctxts ty descs = do
   ty1 <- ty
   return [InstanceD o ctxts1 ty1 (concat descs1)]
 
+-- | Generate an instance of 'SupportedPrim' for a function with a given number
+-- of arguments.
 supportedPrimFun ::
   ExpQ ->
   ExpQ ->
@@ -202,6 +212,8 @@ supportedPrimFun
             (varE r)
             tyVars
 
+-- | Generate instances of 'SupportedPrim' for functions with up to a given
+-- number of arguments.
 supportedPrimFunUpTo ::
   ExpQ -> ExpQ -> ([TypeQ] -> ExpQ) -> String -> String -> Name -> Int -> DecsQ
 supportedPrimFunUpTo

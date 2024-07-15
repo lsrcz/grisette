@@ -980,8 +980,13 @@ class
 
 -- Typed Symbols
 
+-- | The kind of a symbol.
+--
+-- All symbols are 'AnyKind', and all symbols other than general/tabular
+-- functions are 'ConstantKind'.
 data SymbolKind = ConstantKind | AnyKind
 
+-- | Decision procedure for symbol kinds.
 class IsSymbolKind (ty :: SymbolKind) where
   type SymbolKindConstraint ty :: Type -> Constraint
   decideSymbolKind :: Either (ty :~~: 'ConstantKind) (ty :~~: 'AnyKind)
@@ -1011,8 +1016,10 @@ data TypedSymbol (knd :: SymbolKind) t where
     {unTypedSymbol :: Symbol} ->
     TypedSymbol knd t
 
+-- | Constant symbol
 type TypedConstantSymbol = TypedSymbol 'ConstantKind
 
+-- | Any symbol
 type TypedAnySymbol = TypedSymbol 'AnyKind
 
 instance Eq (TypedSymbol knd t) where
@@ -1051,7 +1058,7 @@ withSymbolSupported (TypedSymbol _) a = a
 withSymbolKind :: TypedSymbol knd t -> ((IsSymbolKind knd) => a) -> a
 withSymbolKind (TypedSymbol _) a = a
 
--- | A non-index symbol. Type information are checked at runtime.
+-- | A non-indexed symbol. Type information are checked at runtime.
 data SomeTypedSymbol knd where
   SomeTypedSymbol ::
     forall knd t.
@@ -1059,8 +1066,10 @@ data SomeTypedSymbol knd where
     TypedSymbol knd t ->
     SomeTypedSymbol knd
 
+-- | Non-indexed constant symbol
 type SomeTypedConstantSymbol = SomeTypedSymbol 'ConstantKind
 
+-- | Non-indexed any symbol
 type SomeTypedAnySymbol = SomeTypedSymbol 'AnyKind
 
 instance NFData (SomeTypedSymbol knd) where

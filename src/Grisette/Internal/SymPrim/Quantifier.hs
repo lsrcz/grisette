@@ -3,6 +3,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.Quantifier
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.Quantifier
   ( forallSet,
     forallSym,
@@ -16,23 +24,20 @@ where
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.HashSet as HS
 import GHC.Stack (HasCallStack)
-import Grisette
-  ( FreshT (FreshT),
-    liftFresh,
-    mrgSingle,
-    simpleMerge,
-  )
 import Grisette.Internal.Core.Control.Monad.Union (Union, liftUnion)
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSymMaybe),
   )
 import Grisette.Internal.Core.Data.Class.GenSym
   ( Fresh,
+    FreshT (FreshT),
     GenSym (fresh),
     MonadFresh,
+    liftFresh,
   )
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
     TypedSymbol (TypedSymbol),
@@ -45,6 +50,12 @@ import Grisette.Internal.SymPrim.Prim.Model
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.SymPrim
+-- >>> import Grisette.Backend
+-- >>> import Grisette.Lib.Base
+
 #if MIN_VERSION_sbv(10,1,0)
 sbvVersionCheck :: HasCallStack => ()
 sbvVersionCheck = ()
@@ -52,9 +63,20 @@ sbvVersionCheck = ()
 sbvVersionCheck :: HasCallStack => ()
 sbvVersionCheck =
   error 
-    "Quantifiers are only available when you build with SBV 10.1.0 or later."
+    "Quantifiers are only available when you build with SBV 10.1 or later."
 #endif
 
+-- | Forall quantifier over a set of constant symbols. Quantifier over functions
+-- is not supported.
+--
+-- >>> let xsym = "x" :: TypedConstantSymbol Integer
+-- >>> let ysym = "y" :: TypedConstantSymbol Integer
+-- >>> let x = "x" :: SymInteger
+-- >>> let y = "y" :: SymInteger
+-- >>> forallSet (buildSymbolSet [xsym, ysym]) (x .== y)
+-- (forall y :: Integer (forall x :: Integer (= x y)))
+--
+-- Only available with SBV 10.1.0 or later.
 forallSet :: ConstantSymbolSet -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
   sbvVersionCheck `seq`
@@ -65,6 +87,14 @@ forallSet (SymbolSet set) b =
       b
       set
 
+-- | Forall quantifier over all symbolic constants in a value. Quantifier over
+-- functions is not supported.
+--
+-- >>> let a = ["x", "y"] :: [SymInteger]
+-- >>> forallSym a $ sum a .== 0
+-- (forall y :: Integer (forall x :: Integer (= (+ x y) 0)))
+--
+-- Only available with sbv 10.1.0 or later.
 forallSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
 forallSym s b =
   sbvVersionCheck `seq` case extractSymMaybe s of
@@ -73,6 +103,17 @@ forallSym s b =
       error
         "Cannot use forall here. Only non-function symbols can be quantified."
 
+-- | Exists quantifier over a set of constant symbols. Quantifier over functions
+-- is not supported.
+--
+-- >>> let xsym = "x" :: TypedConstantSymbol Integer
+-- >>> let ysym = "y" :: TypedConstantSymbol Integer
+-- >>> let x = "x" :: SymInteger
+-- >>> let y = "y" :: SymInteger
+-- >>> existsSet (buildSymbolSet [xsym, ysym]) (x .== y)
+-- (exists y :: Integer (exists x :: Integer (= x y)))
+--
+-- Only available with SBV 10.1.0 or later.
 existsSet :: ConstantSymbolSet -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
   sbvVersionCheck `seq`
@@ -83,6 +124,14 @@ existsSet (SymbolSet set) b =
       b
       set
 
+-- | Exists quantifier over all symbolic constants in a value. Quantifier over
+-- functions is not supported.
+--
+-- >>> let a = ["x", "y"] :: [SymInteger]
+-- >>> existsSym a $ sum a .== 0
+-- (exists y :: Integer (exists x :: Integer (= (+ x y) 0)))
+--
+-- Only available with sbv 10.1.0 or later.
 existsSym :: (HasCallStack, ExtractSym a) => a -> SymBool -> SymBool
 existsSym s b =
   sbvVersionCheck `seq` case extractSymMaybe s of
@@ -100,6 +149,20 @@ freshTUnionToFreshUnion (FreshT v) =
   FreshT $ \ident index ->
     return $ simpleMerge $ first mrgSingle <$> v ident index
 
+-- | Forall quantifier over symbolic constants in a freshly generated value.
+-- Quantifier over functions is not supported.
+--
+-- >>> :{
+-- x :: Fresh SymBool
+-- x = forallFresh () $ \(a :: SymBool) ->
+--       existsFresh () $ \(b :: SymBool) ->
+--         mrgReturn $ a .== b
+-- :}
+--
+-- >>> runFresh x "x"
+-- (forall x@0 :: Bool (exists x@1 :: Bool (= x@0 x@1)))
+--
+-- Only available with sbv 10.1.0 or later.
 forallFresh ::
   ( HasCallStack,
     ExtractSym v,
@@ -116,6 +179,20 @@ forallFresh spec f = do
     liftUnion u >>= f
   mrgSingle $ forallSym u p
 
+-- | Exists quantifier over symbolic constants in a freshly generated value.
+-- Quantifier over functions is not supported.
+--
+-- >>> :{
+-- x :: Fresh SymBool
+-- x = forallFresh () $ \(a :: SymBool) ->
+--       existsFresh () $ \(b :: SymBool) ->
+--         mrgReturn $ a .== b
+-- :}
+--
+-- >>> runFresh x "x"
+-- (forall x@0 :: Bool (exists x@1 :: Bool (= x@0 x@1)))
+--
+-- Only available with sbv 10.1.0 or later.
 existsFresh ::
   ( HasCallStack,
     ExtractSym v,

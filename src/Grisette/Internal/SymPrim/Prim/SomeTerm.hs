@@ -37,6 +37,7 @@ instance Show SomeTerm where
   show (SomeTerm (t :: Term a)) =
     "<<" ++ show t ++ " :: " ++ show (typeRep (Proxy @a)) ++ ">>"
 
+-- | Wrap a symbolic term into 'SomeTerm'.
 someTerm :: Term a -> SomeTerm
 someTerm v = introSupportedPrimConstraint v $ SomeTerm v
 {-# INLINE someTerm #-}
