@@ -363,7 +363,12 @@ module Grisette.Core
     quotRemOrZeroDividend,
     SafeDivision (..),
     SafeLinearArith (..),
+    FractionalOr (..),
+    fdivOrZero,
+    recipOrZero,
     SafeFractional (..),
+    LogBaseOr (..),
+    logBaseOrZero,
     SafeLogBase (..),
 
     -- ** Functions
@@ -1609,10 +1614,17 @@ import Grisette.Internal.Core.Data.Class.SafeDivision
     remOrDividend,
   )
 import Grisette.Internal.Core.Data.Class.SafeFractional
-  ( SafeFractional (..),
+  ( FractionalOr (..),
+    SafeFractional (..),
+    fdivOrZero,
+    recipOrZero,
   )
 import Grisette.Internal.Core.Data.Class.SafeLinearArith (SafeLinearArith (..))
-import Grisette.Internal.Core.Data.Class.SafeLogBase (SafeLogBase (..))
+import Grisette.Internal.Core.Data.Class.SafeLogBase
+  ( LogBaseOr (..),
+    SafeLogBase (..),
+    logBaseOrZero,
+  )
 import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate (..))
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift (..))
 import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion (..))
