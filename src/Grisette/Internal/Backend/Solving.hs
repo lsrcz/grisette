@@ -287,7 +287,7 @@ data ApproximationConfig (n :: Nat) where
 
 -- | Grisette specific extra configurations for the SBV backend.
 data ExtraConfig (i :: Nat) = ExtraConfig
-  { -- | Timeout in milliseconds for each solver call. CEGIS may call the
+  { -- | Timeout in microseconds for each solver call. CEGIS may call the
     -- solver multiple times and each call has its own timeout.
     timeout :: Maybe Int,
     -- | Configures how to approximate unbounded integer values.
@@ -431,6 +431,9 @@ approximate p config =
   config {extraConfig = (extraConfig config) {integerApprox = Approx p}}
 
 -- | Set the timeout for the solver configuration.
+--
+-- The timeout is in microseconds (1e-6 seconds). The timeout is applied to each
+-- individual solver query.
 withTimeout :: Int -> GrisetteSMTConfig i -> GrisetteSMTConfig i
 withTimeout t config =
   config {extraConfig = (extraConfig config) {timeout = Just t}}
