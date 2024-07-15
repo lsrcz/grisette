@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Grisette.Core.Data.Class.SafeDivisionTests (safeDivisionTests) where
+module Grisette.Core.Data.Class.SafeDivTests (safeDivTests) where
 
 import Control.DeepSeq (NFData, force)
 import Control.Exception (ArithException, catch)
@@ -21,7 +21,7 @@ import Grisette
     BitwidthMismatch (BitwidthMismatch),
     IntN,
     Mergeable,
-    SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
+    SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
     SomeIntN,
     SomeWordN,
     Union,
@@ -31,8 +31,8 @@ import Grisette
     pattern SomeWordN,
   )
 import Grisette.Internal.Core.Control.Monad.Union (isMerged)
-import Grisette.Internal.Core.Data.Class.SafeDivision
-  ( DivisionOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
+import Grisette.Internal.Core.Data.Class.SafeDiv
+  ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
   )
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Test.Framework (Test, testGroup)
@@ -267,7 +267,7 @@ testType ::
   forall t.
   ( NFData t,
     Show t,
-    SafeDivision ArithException t (ExceptT ArithException Union),
+    SafeDiv ArithException t (ExceptT ArithException Union),
     Mergeable t,
     Integral t,
     Typeable t,
@@ -294,10 +294,10 @@ testType safeDivTestFunc divOrTestFunc p =
       safeDivTestFunc "safeQuotRem" safeQuotRem (quotRem @t)
     ]
 
-safeDivisionTests :: Test
-safeDivisionTests =
+safeDivTests :: Test
+safeDivTests =
   testGroup
-    "SafeDivision"
+    "SafeDiv"
     [ testType generalOpSafeDivTest generalOpDivOrTest (Proxy :: Proxy Integer),
       testType opBoundedSafeDivTest opBoundedDivOrTest (Proxy :: Proxy Int8),
       testType opBoundedSafeDivTest opBoundedDivOrTest (Proxy :: Proxy Int16),

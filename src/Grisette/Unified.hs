@@ -64,7 +64,7 @@ module Grisette.Unified
     mrgMin,
 
     -- ** Unified safe ops
-    UnifiedSafeDivision (..),
+    UnifiedSafeDiv (..),
     safeDiv,
     safeMod,
     safeDivMod,
@@ -116,8 +116,8 @@ import Grisette.Unified.Internal.Class.UnifiedITEOp
     symIte,
     symIteMerge,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeDivision
-  ( UnifiedSafeDivision (..),
+import Grisette.Unified.Internal.Class.UnifiedSafeDiv
+  ( UnifiedSafeDiv (..),
     safeDiv,
     safeDivMod,
     safeMod,

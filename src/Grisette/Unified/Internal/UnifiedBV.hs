@@ -58,7 +58,7 @@ import Grisette.Unified.Internal.BaseConstraint
     ConSymConversion,
   )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
-import Grisette.Unified.Internal.Class.UnifiedSafeDivision (UnifiedSafeDivision)
+import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
   )
@@ -182,11 +182,11 @@ instance
   UnifiedBV mode n
 
 class
-  ( UnifiedSafeDivision mode ArithException word m,
+  ( UnifiedSafeDiv mode ArithException word m,
     UnifiedSafeLinearArith mode ArithException word m,
     UnifiedSafeSymShift mode ArithException word m,
     UnifiedSafeSymRotate mode ArithException word m,
-    UnifiedSafeDivision mode ArithException int m,
+    UnifiedSafeDiv mode ArithException int m,
     UnifiedSafeLinearArith mode ArithException int m,
     UnifiedSafeSymShift mode ArithException int m,
     UnifiedSafeSymRotate mode ArithException int m,
@@ -195,11 +195,11 @@ class
   SafeUnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int m
 
 instance
-  ( UnifiedSafeDivision mode ArithException word m,
+  ( UnifiedSafeDiv mode ArithException word m,
     UnifiedSafeLinearArith mode ArithException word m,
     UnifiedSafeSymShift mode ArithException word m,
     UnifiedSafeSymRotate mode ArithException word m,
-    UnifiedSafeDivision mode ArithException int m,
+    UnifiedSafeDiv mode ArithException int m,
     UnifiedSafeLinearArith mode ArithException int m,
     UnifiedSafeSymShift mode ArithException int m,
     UnifiedSafeSymRotate mode ArithException int m,
@@ -235,11 +235,11 @@ instance
 
 class
   ( SomeBVPair mode word int,
-    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeDiv mode (Either BitwidthMismatch ArithException) word m,
     UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) word m,
     UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) word m,
     UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) word m,
-    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeDiv mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) int m
@@ -248,11 +248,11 @@ class
 
 instance
   ( SomeBVPair mode word int,
-    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) word m,
+    UnifiedSafeDiv mode (Either BitwidthMismatch ArithException) word m,
     UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) word m,
     UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) word m,
     UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) word m,
-    UnifiedSafeDivision mode (Either BitwidthMismatch ArithException) int m,
+    UnifiedSafeDiv mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeLinearArith mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeSymRotate mode (Either BitwidthMismatch ArithException) int m,
     UnifiedSafeSymShift mode (Either BitwidthMismatch ArithException) int m

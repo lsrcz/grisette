@@ -5,16 +5,16 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.Data.Class.SafeFractional
+-- Module      :   Grisette.Internal.Core.Data.Class.SafeFdiv
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.Data.Class.SafeFractional
-  ( SafeFractional (..),
-    FractionalOr (..),
+module Grisette.Internal.Core.Data.Class.SafeFdiv
+  ( SafeFdiv (..),
+    FdivOr (..),
     fdivOrZero,
     recipOrZero,
   )
@@ -45,12 +45,13 @@ import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 -- >>> import Control.Exception
 
 -- | Safe fractional with default values returned on exception.
-class FractionalOr a where
+class FdivOr a where
   -- | Safe '/' with default values returned on exception.
   --
   -- >>> fdivOr "d" "a" "b" :: SymAlgReal
   -- (ite (= b 0.0) d (fdiv a b))
   fdivOr :: a -> a -> a -> a
+
   -- | Safe 'recip' with default values returned on exception.
   --
   -- >>> recipOr "d" "a" :: SymAlgReal
@@ -58,17 +59,17 @@ class FractionalOr a where
   recipOr :: a -> a -> a
 
 -- | Safe '/' with 0 returned on exception.
-fdivOrZero :: (FractionalOr a, Num a) => a -> a -> a
+fdivOrZero :: (FdivOr a, Num a) => a -> a -> a
 fdivOrZero l = fdivOr (l - l) l
 
 -- | Safe 'recip' with 0 returned on exception.
-recipOrZero :: (FractionalOr a, Num a) => a -> a
+recipOrZero :: (FdivOr a, Num a) => a -> a
 recipOrZero v = recipOr (v - v) v
 
 -- | Safe fractional division with monadic error handling in multi-path
 -- execution. These procedures throw an exception when the denominator is zero.
 -- The result should be able to handle errors with `MonadError`.
-class (MonadError e m, TryMerge m, Mergeable a) => SafeFractional e a m where
+class (MonadError e m, TryMerge m, Mergeable a) => SafeFdiv e a m where
   -- | Safe fractional division with monadic error handling in multi-path
   -- execution.
   --
@@ -88,7 +89,7 @@ class (MonadError e m, TryMerge m, Mergeable a) => SafeFractional e a m where
 
   {-# MINIMAL safeFdiv #-}
 
-instance FractionalOr AlgReal where
+instance FdivOr AlgReal where
   fdivOr d (AlgExactRational l) (AlgExactRational r)
     | r /= 0 = AlgExactRational (l / r)
     | otherwise = d
@@ -110,7 +111,7 @@ instance
   ( MonadError ArithException m,
     TryMerge m
   ) =>
-  SafeFractional ArithException AlgReal m
+  SafeFdiv ArithException AlgReal m
   where
   safeFdiv (AlgExactRational l) (AlgExactRational r)
     | r /= 0 =
@@ -130,7 +131,7 @@ instance
   safeRecip l =
     throw $ UnsupportedAlgRealOperation "safeRecip" $ show l
 
-instance FractionalOr SymAlgReal where
+instance FdivOr SymAlgReal where
   fdivOr d (SymAlgReal lt) r@(SymAlgReal rt) =
     symIte (r .== con 0) d (SymAlgReal $ pevalFdivTerm lt rt)
   recipOr d l@(SymAlgReal lt) =
@@ -138,7 +139,7 @@ instance FractionalOr SymAlgReal where
 
 instance
   (MonadError ArithException m, MonadUnion m) =>
-  SafeFractional ArithException SymAlgReal m
+  SafeFdiv ArithException SymAlgReal m
   where
   safeFdiv (SymAlgReal lt) r@(SymAlgReal rt) =
     mrgIf

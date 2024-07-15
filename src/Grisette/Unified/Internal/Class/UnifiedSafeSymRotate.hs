@@ -28,11 +28,9 @@ module Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
   )
 where
 
+import Control.Exception (ArithException)
 import Control.Monad.Error.Class (MonadError)
 import GHC.TypeLits (KnownNat, type (<=))
-import Grisette.Internal.Core.Data.Class.SafeDivision
-  ( ArithException,
-  )
 import Grisette.Internal.Core.Data.Class.SafeSymRotate (SafeSymRotate)
 import qualified Grisette.Internal.Core.Data.Class.SafeSymRotate
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)

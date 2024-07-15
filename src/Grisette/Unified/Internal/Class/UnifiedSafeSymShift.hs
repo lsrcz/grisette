@@ -30,11 +30,9 @@ module Grisette.Unified.Internal.Class.UnifiedSafeSymShift
   )
 where
 
+import Control.Exception (ArithException)
 import Control.Monad.Error.Class (MonadError)
 import GHC.TypeLits (KnownNat, type (<=))
-import Grisette.Internal.Core.Data.Class.SafeDivision
-  ( ArithException,
-  )
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift)
 import qualified Grisette.Internal.Core.Data.Class.SafeSymShift
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)

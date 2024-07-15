@@ -12,17 +12,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
--- Module      :   Grisette.Internal.Core.Data.Class.SafeDivision
+-- Module      :   Grisette.Internal.Core.Data.Class.SafeDiv
 -- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.Core.Data.Class.SafeDivision
+module Grisette.Internal.Core.Data.Class.SafeDiv
   ( ArithException (..),
-    SafeDivision (..),
-    DivisionOr (..),
+    SafeDiv (..),
+    DivOr (..),
     divOrZero,
     modOrDividend,
     quotOrZero,
@@ -77,7 +77,7 @@ import Grisette.Lib.Data.Functor (mrgFmap)
 -- >>> import Control.Exception
 
 -- | Safe division handling with default values returned on exception.
-class DivisionOr a where
+class DivOr a where
   -- | Safe 'div' with default value returned on exception.
   --
   -- >>> divOr "d" "a" "b" :: SymInteger
@@ -106,32 +106,32 @@ class DivisionOr a where
   quotRemOr :: (a, a) -> a -> a -> (a, a)
 
 -- | Safe 'div' with 0 returned on exception.
-divOrZero :: (DivisionOr a, Num a) => a -> a -> a
+divOrZero :: (DivOr a, Num a) => a -> a -> a
 divOrZero l = divOr (l - l) l
 {-# INLINE divOrZero #-}
 
 -- | Safe 'mod' with dividend returned on exception.
-modOrDividend :: (DivisionOr a, Num a) => a -> a -> a
+modOrDividend :: (DivOr a, Num a) => a -> a -> a
 modOrDividend l = modOr l l
 {-# INLINE modOrDividend #-}
 
 -- | Safe 'quot' with 0 returned on exception.
-quotOrZero :: (DivisionOr a, Num a) => a -> a -> a
+quotOrZero :: (DivOr a, Num a) => a -> a -> a
 quotOrZero l = quotOr (l - l) l
 {-# INLINE quotOrZero #-}
 
 -- | Safe 'rem' with dividend returned on exception.
-remOrDividend :: (DivisionOr a, Num a) => a -> a -> a
+remOrDividend :: (DivOr a, Num a) => a -> a -> a
 remOrDividend l = remOr l l
 {-# INLINE remOrDividend #-}
 
 -- | Safe 'divMod' with 0 returned on exception.
-divModOrZeroDividend :: (DivisionOr a, Num a) => a -> a -> (a, a)
+divModOrZeroDividend :: (DivOr a, Num a) => a -> a -> (a, a)
 divModOrZeroDividend l = divModOr (l - l, l) l
 {-# INLINE divModOrZeroDividend #-}
 
 -- | Safe 'quotRem' with 0 returned on exception.
-quotRemOrZeroDividend :: (DivisionOr a, Num a) => a -> a -> (a, a)
+quotRemOrZeroDividend :: (DivOr a, Num a) => a -> a -> (a, a)
 quotRemOrZeroDividend l = quotRemOr (l - l, l) l
 {-# INLINE quotRemOrZeroDividend #-}
 
@@ -139,7 +139,7 @@ quotRemOrZeroDividend l = quotRemOr (l - l, l) l
 -- execution. These procedures throw an exception when the
 -- divisor is zero. The result should be able to handle errors with
 -- `MonadError`.
-class (MonadError e m, TryMerge m, Mergeable a, DivisionOr a) => SafeDivision e a m where
+class (MonadError e m, TryMerge m, Mergeable a, DivOr a) => SafeDiv e a m where
   -- | Safe 'div' with monadic error handling in multi-path execution.
   --
   -- >>> safeDiv "a" "b" :: ExceptT ArithException Union SymInteger
@@ -190,28 +190,28 @@ class (MonadError e m, TryMerge m, Mergeable a, DivisionOr a) => SafeDivision e 
     ((safeQuot, safeRem) | safeQuotRem)
     #-}
 
-concreteDivisionOrHelper ::
+concreteDivOrHelper ::
   (Integral a) =>
   (a -> a -> r) ->
   r ->
   a ->
   a ->
   r
-concreteDivisionOrHelper f d l r
+concreteDivOrHelper f d l r
   | r == 0 = d
   | otherwise = f l r
 
-concreteSafeDivisionHelper ::
+concreteSafeDivHelper ::
   (MonadError ArithException m, TryMerge m, Integral a, Mergeable r) =>
   (a -> a -> r) ->
   a ->
   a ->
   m r
-concreteSafeDivisionHelper f l r
+concreteSafeDivHelper f l r
   | r == 0 = tryMerge $ throwError DivideByZero
   | otherwise = mrgSingle $ f l r
 
-concreteSignedBoundedDivisionOrHelper ::
+concreteSignedBoundedDivOrHelper ::
   ( Integral a,
     Bounded a,
     Mergeable r
@@ -221,12 +221,12 @@ concreteSignedBoundedDivisionOrHelper ::
   a ->
   a ->
   r
-concreteSignedBoundedDivisionOrHelper f d l r
+concreteSignedBoundedDivOrHelper f d l r
   | r == 0 = d
   | l == minBound && r == -1 = d
   | otherwise = f l r
 
-concreteSignedBoundedSafeDivisionHelper ::
+concreteSignedBoundedSafeDivHelper ::
   ( MonadError ArithException m,
     TryMerge m,
     Integral a,
@@ -237,7 +237,7 @@ concreteSignedBoundedSafeDivisionHelper ::
   a ->
   a ->
   m r
-concreteSignedBoundedSafeDivisionHelper f l r
+concreteSignedBoundedSafeDivHelper f l r
   | r == 0 = tryMerge $ throwError DivideByZero
   | l == minBound && r == -1 = tryMerge $ throwError Overflow
   | otherwise = mrgSingle $ f l r
@@ -250,42 +250,42 @@ concreteSignedBoundedSafeDivisionHelper f l r
 #define QRIGHTU(a) QID(a)' _'
 
 #define DIVISION_OR_CONCRETE(type) \
-instance DivisionOr type where \
-  divOr = concreteDivisionOrHelper div; \
-  modOr = concreteDivisionOrHelper mod; \
-  divModOr = concreteDivisionOrHelper divMod; \
-  quotOr = concreteDivisionOrHelper quot; \
-  remOr = concreteDivisionOrHelper rem; \
-  quotRemOr = concreteDivisionOrHelper quotRem
+instance DivOr type where \
+  divOr = concreteDivOrHelper div; \
+  modOr = concreteDivOrHelper mod; \
+  divModOr = concreteDivOrHelper divMod; \
+  quotOr = concreteDivOrHelper quot; \
+  remOr = concreteDivOrHelper rem; \
+  quotRemOr = concreteDivOrHelper quotRem
 
 #define SAFE_DIVISION_CONCRETE(type) \
 instance (MonadError ArithException m, TryMerge m) => \
-  SafeDivision ArithException type m where \
-  safeDiv = concreteSafeDivisionHelper div; \
-  safeMod = concreteSafeDivisionHelper mod; \
-  safeDivMod = concreteSafeDivisionHelper divMod; \
-  safeQuot = concreteSafeDivisionHelper quot; \
-  safeRem = concreteSafeDivisionHelper rem; \
-  safeQuotRem = concreteSafeDivisionHelper quotRem
+  SafeDiv ArithException type m where \
+  safeDiv = concreteSafeDivHelper div; \
+  safeMod = concreteSafeDivHelper mod; \
+  safeDivMod = concreteSafeDivHelper divMod; \
+  safeQuot = concreteSafeDivHelper quot; \
+  safeRem = concreteSafeDivHelper rem; \
+  safeQuotRem = concreteSafeDivHelper quotRem
 
 #define DIVISION_OR_CONCRETE_SIGNED_BOUNDED(type) \
-instance DivisionOr type where \
-  divOr = concreteSignedBoundedDivisionOrHelper div; \
-  modOr = concreteDivisionOrHelper mod; \
-  divModOr = concreteSignedBoundedDivisionOrHelper divMod; \
-  quotOr = concreteSignedBoundedDivisionOrHelper quot; \
-  remOr = concreteDivisionOrHelper rem; \
-  quotRemOr = concreteSignedBoundedDivisionOrHelper quotRem
+instance DivOr type where \
+  divOr = concreteSignedBoundedDivOrHelper div; \
+  modOr = concreteDivOrHelper mod; \
+  divModOr = concreteSignedBoundedDivOrHelper divMod; \
+  quotOr = concreteSignedBoundedDivOrHelper quot; \
+  remOr = concreteDivOrHelper rem; \
+  quotRemOr = concreteSignedBoundedDivOrHelper quotRem
 
 #define SAFE_DIVISION_CONCRETE_SIGNED_BOUNDED(type) \
 instance (MonadError ArithException m, TryMerge m) => \
-  SafeDivision ArithException type m where \
-  safeDiv = concreteSignedBoundedSafeDivisionHelper div; \
-  safeMod = concreteSafeDivisionHelper mod; \
-  safeDivMod = concreteSignedBoundedSafeDivisionHelper divMod; \
-  safeQuot = concreteSignedBoundedSafeDivisionHelper quot; \
-  safeRem = concreteSafeDivisionHelper rem; \
-  safeQuotRem = concreteSignedBoundedSafeDivisionHelper quotRem
+  SafeDiv ArithException type m where \
+  safeDiv = concreteSignedBoundedSafeDivHelper div; \
+  safeMod = concreteSafeDivHelper mod; \
+  safeDivMod = concreteSignedBoundedSafeDivHelper divMod; \
+  safeQuot = concreteSignedBoundedSafeDivHelper quot; \
+  safeRem = concreteSafeDivHelper rem; \
+  safeQuotRem = concreteSignedBoundedSafeDivHelper quotRem
 
 #if 1
 DIVISION_OR_CONCRETE(Integer)
@@ -314,43 +314,43 @@ SAFE_DIVISION_CONCRETE(Word)
 
 #endif
 
-instance (KnownNat n, 1 <= n) => DivisionOr (IntN n) where
-  divOr = concreteSignedBoundedDivisionOrHelper div
-  modOr = concreteDivisionOrHelper mod
-  divModOr = concreteSignedBoundedDivisionOrHelper divMod
-  quotOr = concreteSignedBoundedDivisionOrHelper quot
-  remOr = concreteDivisionOrHelper rem
-  quotRemOr = concreteSignedBoundedDivisionOrHelper quotRem
+instance (KnownNat n, 1 <= n) => DivOr (IntN n) where
+  divOr = concreteSignedBoundedDivOrHelper div
+  modOr = concreteDivOrHelper mod
+  divModOr = concreteSignedBoundedDivOrHelper divMod
+  quotOr = concreteSignedBoundedDivOrHelper quot
+  remOr = concreteDivOrHelper rem
+  quotRemOr = concreteSignedBoundedDivOrHelper quotRem
 
 instance
   (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) =>
-  SafeDivision ArithException (IntN n) m
+  SafeDiv ArithException (IntN n) m
   where
-  safeDiv = concreteSignedBoundedSafeDivisionHelper div
-  safeMod = concreteSafeDivisionHelper mod
-  safeDivMod = concreteSignedBoundedSafeDivisionHelper divMod
-  safeQuot = concreteSignedBoundedSafeDivisionHelper quot
-  safeRem = concreteSafeDivisionHelper rem
-  safeQuotRem = concreteSignedBoundedSafeDivisionHelper quotRem
+  safeDiv = concreteSignedBoundedSafeDivHelper div
+  safeMod = concreteSafeDivHelper mod
+  safeDivMod = concreteSignedBoundedSafeDivHelper divMod
+  safeQuot = concreteSignedBoundedSafeDivHelper quot
+  safeRem = concreteSafeDivHelper rem
+  safeQuotRem = concreteSignedBoundedSafeDivHelper quotRem
 
-instance (KnownNat n, 1 <= n) => DivisionOr (WordN n) where
-  divOr = concreteDivisionOrHelper div
-  modOr = concreteDivisionOrHelper mod
-  divModOr = concreteDivisionOrHelper divMod
-  quotOr = concreteDivisionOrHelper quot
-  remOr = concreteDivisionOrHelper rem
-  quotRemOr = concreteDivisionOrHelper quotRem
+instance (KnownNat n, 1 <= n) => DivOr (WordN n) where
+  divOr = concreteDivOrHelper div
+  modOr = concreteDivOrHelper mod
+  divModOr = concreteDivOrHelper divMod
+  quotOr = concreteDivOrHelper quot
+  remOr = concreteDivOrHelper rem
+  quotRemOr = concreteDivOrHelper quotRem
 
 instance
   (MonadError ArithException m, TryMerge m, KnownNat n, 1 <= n) =>
-  SafeDivision ArithException (WordN n) m
+  SafeDiv ArithException (WordN n) m
   where
-  safeDiv = concreteSafeDivisionHelper div
-  safeMod = concreteSafeDivisionHelper mod
-  safeDivMod = concreteSafeDivisionHelper divMod
-  safeQuot = concreteSafeDivisionHelper quot
-  safeRem = concreteSafeDivisionHelper rem
-  safeQuotRem = concreteSafeDivisionHelper quotRem
+  safeDiv = concreteSafeDivHelper div
+  safeMod = concreteSafeDivHelper mod
+  safeDivMod = concreteSafeDivHelper divMod
+  safeQuot = concreteSafeDivHelper quot
+  safeRem = concreteSafeDivHelper rem
+  safeQuotRem = concreteSafeDivHelper quotRem
 
 #define DIVISION_OR_SYMBOLIC_FUNC(name, type, op) \
 name d (type l) rs@(type r) = \
@@ -376,7 +376,7 @@ name (type l) rs@(type r) = \
     (mrgSingle (type $ op1 l r, type $ op2 l r)); \
 
 #if 1
-instance DivisionOr SymInteger where
+instance DivOr SymInteger where
   DIVISION_OR_SYMBOLIC_FUNC(divOr, SymInteger, pevalDivIntegralTerm)
   DIVISION_OR_SYMBOLIC_FUNC(modOr, SymInteger, pevalModIntegralTerm)
   DIVISION_OR_SYMBOLIC_FUNC(quotOr, SymInteger, pevalQuotIntegralTerm)
@@ -385,7 +385,7 @@ instance DivisionOr SymInteger where
   DIVISION_OR_SYMBOLIC_FUNC2(quotRemOr, SymInteger, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 instance
   (MonadUnion m, MonadError ArithException m) =>
-  SafeDivision ArithException SymInteger m where
+  SafeDiv ArithException SymInteger m where
   SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymInteger, pevalDivIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymInteger, pevalModIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymInteger, pevalQuotIntegralTerm)
@@ -437,7 +437,7 @@ name ls@(type l) rs@(type r) = \
       (mrgSingle (type $ op1 l r, type $ op2 l r))); \
 
 #if 1
-instance (KnownNat n, 1 <= n) => DivisionOr (SymIntN n) where
+instance (KnownNat n, 1 <= n) => DivOr (SymIntN n) where
   DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(divOr, SymIntN, pevalDivIntegralTerm)
   DIVISION_OR_SYMBOLIC_FUNC(modOr, SymIntN, pevalModIntegralTerm)
   DIVISION_OR_SYMBOLIC_FUNC_BOUNDED_SIGNED(quotOr, SymIntN, pevalQuotIntegralTerm)
@@ -446,7 +446,7 @@ instance (KnownNat n, 1 <= n) => DivisionOr (SymIntN n) where
   DIVISION_OR_SYMBOLIC_FUNC2_BOUNDED_SIGNED(quotRemOr, SymIntN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 instance
   (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
-  SafeDivision ArithException (SymIntN n) m where
+  SafeDiv ArithException (SymIntN n) m where
   SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeDiv, SymIntN, pevalDivIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymIntN, pevalModIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC_BOUNDED_SIGNED(safeQuot, SymIntN, pevalQuotIntegralTerm)
@@ -456,7 +456,7 @@ instance
 #endif
 
 #if 1
-instance (KnownNat n, 1 <= n) => DivisionOr (SymWordN n) where
+instance (KnownNat n, 1 <= n) => DivOr (SymWordN n) where
   DIVISION_OR_SYMBOLIC_FUNC(divOr, SymWordN, pevalDivIntegralTerm)
   DIVISION_OR_SYMBOLIC_FUNC(modOr, SymWordN, pevalModIntegralTerm)
   DIVISION_OR_SYMBOLIC_FUNC(quotOr, SymWordN, pevalQuotIntegralTerm)
@@ -465,7 +465,7 @@ instance (KnownNat n, 1 <= n) => DivisionOr (SymWordN n) where
   DIVISION_OR_SYMBOLIC_FUNC2(quotRemOr, SymWordN, pevalQuotIntegralTerm, pevalRemIntegralTerm)
 instance
   (MonadError ArithException m, MonadUnion m, KnownNat n, 1 <= n) =>
-  SafeDivision ArithException (SymWordN n) m where
+  SafeDiv ArithException (SymWordN n) m where
   SAFE_DIVISION_SYMBOLIC_FUNC(safeDiv, SymWordN, pevalDivIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeMod, SymWordN, pevalModIntegralTerm)
   SAFE_DIVISION_SYMBOLIC_FUNC(safeQuot, SymWordN, pevalQuotIntegralTerm)

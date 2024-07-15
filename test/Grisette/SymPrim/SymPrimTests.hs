@@ -49,7 +49,7 @@ import Grisette
     MergingStrategy (SimpleStrategy),
     ModelOps (emptyModel, insertValue),
     ModelRep (buildModel),
-    SafeDivision
+    SafeDiv
       ( safeDiv,
         safeDivMod,
         safeMod,
@@ -522,7 +522,7 @@ symPrimTests =
               testCase "signum" $ signum (ssym "a" :: SymInteger) @=? SymInteger (pevalSignumNumTerm (ssymTerm "a"))
             ],
           testGroup
-            "SafeDivision"
+            "SafeDiv"
             [ safeDivisionUnboundedTests @Integer "safeDiv" id safeDiv div pevalDivIntegralTerm,
               safeDivisionUnboundedTests @Integer "safeMod" id safeMod mod pevalModIntegralTerm,
               safeDivModUnboundedTests @Integer "safeDivMod" id safeDivMod divMod pevalDivIntegralTerm pevalModIntegralTerm,
@@ -612,7 +612,7 @@ symPrimTests =
                     signum as @=? SymIntN (pevalSignumNumTerm ast)
                 ],
               testGroup
-                "SafeDivision"
+                "SafeDiv"
                 [ testGroup
                     "WordN"
                     [ safeDivisionUnboundedTests @(WordN 4) "safeDiv" WordN safeDiv div pevalDivIntegralTerm,
