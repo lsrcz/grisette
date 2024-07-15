@@ -354,6 +354,13 @@ module Grisette.Core
     BitCast (..),
 
     -- ** Safe operation for Numbers
+    DivisionOr (..),
+    divOrZero,
+    modOrDividend,
+    quotOrZero,
+    remOrDividend,
+    divModOrZeroDividend,
+    quotRemOrZeroDividend,
     SafeDivision (..),
     SafeLinearArith (..),
     SafeFractional (..),
@@ -1591,7 +1598,16 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
-import Grisette.Internal.Core.Data.Class.SafeDivision (SafeDivision (..))
+import Grisette.Internal.Core.Data.Class.SafeDivision
+  ( DivisionOr (..),
+    SafeDivision (..),
+    divModOrZeroDividend,
+    divOrZero,
+    modOrDividend,
+    quotOrZero,
+    quotRemOrZeroDividend,
+    remOrDividend,
+  )
 import Grisette.Internal.Core.Data.Class.SafeFractional
   ( SafeFractional (..),
   )
