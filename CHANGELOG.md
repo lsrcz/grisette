@@ -16,6 +16,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
    [#229](https://github.com/lsrcz/grisette/pull/229))
 - Added support for quantifiers.
   ([#230](https://github.com/lsrcz/grisette/pull/230))
+- Added `SafeFdiv`, `SafeLogBase`, `DivOr`, `FdivOr`, and `LogBaseOr`.
+  ([#228](https://github.com/lsrcz/grisette/pull/228),
+   [#231](https://github.com/lsrcz/grisette/pull/231))
 
 ### Fixed
 - Fixed model parsing for floating points.
@@ -31,6 +34,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   `extractSymMaybe` will regard this tag if not all symbols can be casted to
   that tag. `extractSym` will always succeed, returning a set with `AnyKind`.
   ([#230](https://github.com/lsrcz/grisette/pull/230))
+- [Breaking] `SafeDivision` renamed to `SafeDiv`.
+  ([#231](https://github.com/lsrcz/grisette/pull/231))
 
 ## [0.7.0.0] - 2024-07-02
 
