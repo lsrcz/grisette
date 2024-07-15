@@ -132,7 +132,8 @@ import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformat),
   )
 import Grisette.Internal.Core.Data.Class.SafeDivision
-  ( SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
+  ( DivisionOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
+    SafeDivision (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
   )
 import Grisette.Internal.Core.Data.Class.SafeLinearArith
   ( SafeLinearArith (safeAdd, safeNeg, safeSub),
@@ -633,6 +634,48 @@ instance
   toSym (SomeBV (n :: cbv n)) = SomeBV (toSym n :: sbv n)
   {-# INLINE toSym #-}
 
+divRemOrBase ::
+  ( forall n.
+    (KnownNat n, 1 <= n) =>
+    (bv n, bv n) ->
+    bv n ->
+    bv n ->
+    (bv n, bv n)
+  ) ->
+  (SomeBV bv, SomeBV bv) ->
+  SomeBV bv ->
+  SomeBV bv ->
+  (SomeBV bv, SomeBV bv)
+divRemOrBase
+  f
+  (SomeBV (dd :: bv dd), SomeBV (dm :: bv dm))
+  (SomeBV (a :: bv a))
+  (SomeBV (b :: bv b)) =
+    case ( sameNat (Proxy @a) (Proxy @b),
+           sameNat (Proxy @a) (Proxy @dd),
+           sameNat (Proxy @a) (Proxy @dm)
+         ) of
+      (Just Refl, Just Refl, Just Refl) -> bimap SomeBV SomeBV $ f (dd, dm) a b
+      _ -> throw BitwidthMismatch
+{-# INLINE divRemOrBase #-}
+
+instance
+  (forall n. (KnownNat n, 1 <= n) => DivisionOr (bv n)) =>
+  DivisionOr (SomeBV bv)
+  where
+  divOr = ternSomeBVR1 divOr
+  {-# INLINE divOr #-}
+  modOr = ternSomeBVR1 modOr
+  {-# INLINE modOr #-}
+  quotOr = ternSomeBVR1 quotOr
+  {-# INLINE quotOr #-}
+  remOr = ternSomeBVR1 remOr
+  {-# INLINE remOr #-}
+  divModOr = divRemOrBase divModOr
+  {-# INLINE divModOr #-}
+  quotRemOr = divRemOrBase quotRemOr
+  {-# INLINE quotRemOr #-}
+
 instance
   ( forall n.
     (KnownNat n, 1 <= n) =>
@@ -926,6 +969,20 @@ binSomeBV f (SomeBV (l :: bv l)) (SomeBV (r :: bv r)) =
     Nothing -> throw BitwidthMismatch
 {-# INLINE binSomeBV #-}
 
+-- | Lift a ternary operation on sized bitvectors that returns anything to
+-- 'SomeBV'. Crash if the bitwidths do not match.
+ternSomeBV ::
+  (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n -> r) ->
+  SomeBV bv ->
+  SomeBV bv ->
+  SomeBV bv ->
+  r
+ternSomeBV f (SomeBV (a :: bv a)) (SomeBV (b :: bv b)) (SomeBV (c :: bv c)) =
+  case (sameNat (Proxy @a) (Proxy @b), sameNat (Proxy @a) (Proxy @c)) of
+    (Just Refl, Just Refl) -> f a b c
+    _ -> throw BitwidthMismatch
+{-# INLINE ternSomeBV #-}
+
 -- | Lift a binary operation on sized bitvectors that returns a bitvector to
 -- 'SomeBV'. The result will also be wrapped with 'SomeBV'. Crash if the
 -- bitwidths do not match.
@@ -947,6 +1004,18 @@ binSomeBVR2 ::
   (SomeBV bv, SomeBV bv)
 binSomeBVR2 f = binSomeBV (\a b -> let (x, y) = f a b in (SomeBV x, SomeBV y))
 {-# INLINE binSomeBVR2 #-}
+
+-- | Lift a ternary operation on sized bitvectors that returns a bitvector to
+-- 'SomeBV'. The result will also be wrapped with 'SomeBV'. Crash if the
+-- bitwidths do not match.
+ternSomeBVR1 ::
+  (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n -> bv n) ->
+  SomeBV bv ->
+  SomeBV bv ->
+  SomeBV bv ->
+  SomeBV bv
+ternSomeBVR1 f = ternSomeBV (\a b c -> SomeBV $ f a b c)
+{-# INLINE ternSomeBVR1 #-}
 
 -- | Lift a binary operation on sized bitvectors that returns anything wrapped
 -- with 'ExceptT' to 'SomeBV'. If the bitwidths do not match, throw an
