@@ -1,5 +1,5 @@
 name: grisette-examples
-version: 0.7.0.0
+version: 0.8.0.0
 synopsis: Examples for Grisette
 description: |
   More examples are available in the
@@ -15,7 +15,7 @@ extra-source-files:
 
 dependencies:
   - base >= 4.14 && < 5
-  - grisette
+  - grisette >= 0.8 && < 0.9
 
 executables:
   basic:
