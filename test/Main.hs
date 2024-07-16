@@ -74,6 +74,7 @@ import Grisette.Unified.EvalModeTest (evalModeTest)
 import Grisette.Unified.UnifiedClassesTest (unifiedClassesTest)
 import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
+import Grisette.Core.Data.Class.BitCastTests (bitCastTests)
 
 main :: IO ()
 main =
@@ -101,7 +102,8 @@ coreTests =
         "Data"
         [ testGroup
             "Class"
-            [ Grisette.Core.Data.Class.BoolTests.boolTests,
+            [ bitCastTests,
+              Grisette.Core.Data.Class.BoolTests.boolTests,
               evalSymTests,
               extractSymTests,
               genSymTests,

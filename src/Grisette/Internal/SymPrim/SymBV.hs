@@ -69,6 +69,7 @@ import GHC.TypeNats
     type (+),
     type (<=),
   )
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV
       ( sizedBVConcat,
@@ -91,7 +92,9 @@ import Grisette.Internal.Core.Data.Class.Solvable
 import Grisette.Internal.Core.Data.Class.SymRotate
   ( SymRotate (symRotate, symRotateNegated),
   )
-import Grisette.Internal.Core.Data.Class.SymShift (SymShift (symShift, symShiftNegated))
+import Grisette.Internal.Core.Data.Class.SymShift
+  ( SymShift (symShift, symShiftNegated),
+  )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.BV
   ( IntN,
@@ -133,6 +136,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pformat,
     symTerm,
   )
+import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Grisette.Internal.Utils.Parameterized
   ( KnownProof (KnownProof),
     LeqProof (LeqProof),
@@ -569,3 +573,21 @@ instance (KnownNat n, 1 <= n) => AllSyms (t n) where \
 ALLSYMS_BV(SymIntN)
 ALLSYMS_BV(SymWordN)
 #endif
+
+instance (KnownNat n, 1 <= n) => BitCast (SymIntN n) (SymWordN n) where
+  bitCast = toUnsigned
+
+instance (KnownNat n, 1 <= n) => BitCast (SymWordN n) (SymIntN n) where
+  bitCast = toSigned
+
+instance BitCast (SymIntN 1) SymBool where
+  bitCast (SymIntN v) = SymBool $ pevalEqTerm v (conTerm 1)
+
+instance BitCast (SymWordN 1) SymBool where
+  bitCast (SymWordN v) = SymBool $ pevalEqTerm v (conTerm 1)
+
+instance BitCast SymBool (SymIntN 1) where
+  bitCast (SymBool v) = SymIntN $ pevalITETerm v (conTerm 1) (conTerm 0)
+
+instance BitCast SymBool (SymWordN 1) where
+  bitCast (SymBool v) = SymWordN $ pevalITETerm v (conTerm 1) (conTerm 0)

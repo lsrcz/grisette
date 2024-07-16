@@ -627,3 +627,19 @@ BITCAST_VIA_WORDx(Float, WordN32, Word32)
 BITCAST_VIA_WORDx(IntN32, Float, Word32)
 BITCAST_VIA_WORDx(Float, IntN32, Word32)
 #endif
+
+instance BitCast Bool (WordN 1) where
+  bitCast False = 0
+  bitCast True = 1
+
+instance BitCast (WordN 1) Bool where
+  bitCast 0 = False
+  bitCast _ = True
+
+instance BitCast Bool (IntN 1) where
+  bitCast False = 0
+  bitCast True = 1
+
+instance BitCast (IntN 1) Bool where
+  bitCast 0 = False
+  bitCast _ = True
