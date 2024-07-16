@@ -19,6 +19,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added `SafeFdiv`, `SafeLogBase`, `DivOr`, `FdivOr`, and `LogBaseOr`.
   ([#228](https://github.com/lsrcz/grisette/pull/228),
    [#231](https://github.com/lsrcz/grisette/pull/231))
+- Added bitcast from and to `Bool`, `IntN`, `WordN`, `FP` and their symbolic
+  counterparts when appropriate.
+  ([#232](https://github.com/lsrcz/grisette/pull/232))
 
 ### Fixed
 - Fixed model parsing for floating points.

@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import GHC.Stack (HasCallStack)
 import Grisette
   ( EvalSym (evalSym),
+    FP,
     FPRoundingMode,
     Function ((#)),
     IntN,
@@ -89,6 +90,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     addNumTerm,
     andBitsTerm,
     andTerm,
+    bitCastTerm,
     bvconcatTerm,
     bvselectTerm,
     bvsignExtendTerm,
@@ -123,8 +125,6 @@ import Grisette.Internal.SymPrim.Prim.Term
     shiftRightTerm,
     signumNumTerm,
     ssymTerm,
-    toSignedTerm,
-    toUnsignedTerm,
     xorBitsTerm,
   )
 import Test.Framework (Test, testGroup)
@@ -149,7 +149,25 @@ testUnaryOpLowering ::
   String ->
   (SBVType n a -> SBVType n b) ->
   Assertion
-testUnaryOpLowering config f name sbvfun = do
+testUnaryOpLowering = testUnaryOpLowering' Nothing
+
+testUnaryOpLowering' ::
+  forall a b as n.
+  ( HasCallStack,
+    SupportedPrim a,
+    SBV.EqSymbolic (SBVType n b),
+    Typeable (SBVType n a),
+    SBV.SymVal as,
+    SBVType n a ~ SBV.SBV as,
+    Show as
+  ) =>
+  (Maybe (SBVType n a -> SBVType n Bool)) ->
+  GrisetteSMTConfig n ->
+  (Term a -> Term b) ->
+  String ->
+  (SBVType n a -> SBVType n b) ->
+  Assertion
+testUnaryOpLowering' precond config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
   let fa :: Term b = f a
   SBV.runSMTWith (sbvConfig config) $ do
@@ -173,6 +191,9 @@ testUnaryOpLowering config f name sbvfun = do
     case sbvv of
       Nothing -> lift $ assertFailure "Failed to extract the term"
       Just sbvvv -> SBV.query $ do
+        case precond of
+          Just p -> SBV.constrain $ p sbvvv
+          Nothing -> return ()
         SBV.constrain $ lt emptyQuantifiedStack SBV../= sbvfun sbvvv
         r <- SBV.checkSat
         case r of
@@ -358,8 +379,8 @@ testModelParse = testProperty ("Model parse(" ++ show (typeRep @t) ++ ")") $
 
 loweringTests :: Test
 loweringTests =
-  let unboundedConfig = z3
-      boundedConfig = approximate (Proxy @5) z3
+  let unboundedConfig = z3 {sbvConfig = SBV.z3 {SBV.solverSetOptions = [SBV.SetLogic SBV.Logic_ALL]}}
+      boundedConfig = approximate (Proxy @5) unboundedConfig
    in testGroup
         "Lowering"
         [ testGroup
@@ -681,9 +702,13 @@ loweringTests =
               testCase "Rem - bounded" $ do
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
                 testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
-              testCase "ToUnsigned" $ do
-                testUnaryOpLowering @(IntN 5) @(WordN 5) unboundedConfig toUnsignedTerm "toUnsigned" SBV.sFromIntegral
-                testUnaryOpLowering @(IntN 5) @(WordN 5) boundedConfig toUnsignedTerm "toUnsigned" SBV.sFromIntegral
+              testCase "BitCast" $ do
+                testUnaryOpLowering @(IntN 5) @(WordN 5) unboundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
+                testUnaryOpLowering @(IntN 5) @(WordN 5) boundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
+                testUnaryOpLowering @(IntN 1) @Bool unboundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
+                testUnaryOpLowering @(IntN 1) @Bool boundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
+                testUnaryOpLowering @Bool @(IntN 1) unboundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
+                testUnaryOpLowering @Bool @(IntN 1) boundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
             ],
           testGroup
             "WordN"
@@ -858,9 +883,13 @@ loweringTests =
               testCase "Rem" $ do
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
                 testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
-              testCase "ToSigned" $ do
-                testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
-                testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig toSignedTerm "toSigned" SBV.sFromIntegral
+              testCase "BitCast" $ do
+                testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
+                testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
+                testUnaryOpLowering @(WordN 1) @Bool unboundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
+                testUnaryOpLowering @(WordN 1) @Bool boundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
+                testUnaryOpLowering @Bool @(WordN 1) unboundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
+                testUnaryOpLowering @Bool @(WordN 1) boundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
             ],
           testGroup
             "FP"
@@ -909,7 +938,44 @@ loweringTests =
                     unboundedConfig
                     (fpTraitTerm trait)
                     "isNaN"
-                    op
+                    op,
+              testCase "BitCast" $ do
+                testUnaryOpLowering' @(FP 3 5) @(WordN 8)
+                  (Just $ \x -> SBV.sNot $ SBV.fpIsNaN x)
+                  unboundedConfig
+                  bitCastTerm
+                  "bitCast"
+                  SBV.sFloatingPointAsSWord
+                testUnaryOpLowering' @(FP 3 5) @(IntN 8)
+                  (Just $ \x -> SBV.sNot $ SBV.fpIsNaN x)
+                  unboundedConfig
+                  bitCastTerm
+                  "bitCast"
+                  (SBV.sFromIntegral . SBV.sFloatingPointAsSWord)
+                testUnaryOpLowering' @(WordN 8) @(FP 3 5)
+                  ( Just $ \x ->
+                      SBV.sNot $
+                        SBV.fpIsNaN
+                          ( SBV.sWordAsSFloatingPoint x ::
+                              SBV.SFloatingPoint 3 5
+                          )
+                  )
+                  unboundedConfig
+                  bitCastTerm
+                  "bitCast"
+                  SBV.sWordAsSFloatingPoint
+                testUnaryOpLowering' @(IntN 8) @(FP 3 5)
+                  ( Just $ \x ->
+                      SBV.sNot $
+                        SBV.fpIsNaN
+                          ( SBV.sWordAsSFloatingPoint . SBV.sFromIntegral $ x ::
+                              SBV.SFloatingPoint 3 5
+                          )
+                  )
+                  unboundedConfig
+                  bitCastTerm
+                  "bitCast"
+                  (SBV.sWordAsSFloatingPoint . SBV.sFromIntegral)
             ],
           testGroup
             "AlgReal"

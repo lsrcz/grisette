@@ -22,6 +22,15 @@ import Data.Int (Int32, Int64)
 import Data.Word (Word32, Word64)
 
 -- | Type class for bit-casting between types.
+--
+-- Special case regarding floating-point types:
+--
+-- Usually, bit-casting a value of type @a@ to type @b@ and then back to type
+-- @a@ should yield the original value. However, this is not the case for
+-- symbolic floating-point values. In SMT-LIB2, there is only one NaN value,
+-- which have multiple bit representations. Then bit-casting a NaN value to
+-- a bit-vector will yield one of the bit representations of NaN, which is
+-- not necessarily the same as the original bit representation of the NaN value.
 class BitCast from to where
   bitCast :: from -> to
 

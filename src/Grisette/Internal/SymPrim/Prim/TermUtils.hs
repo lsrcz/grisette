@@ -51,6 +51,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVExtendTerm,
         BVSelectTerm,
         BinaryTerm,
+        BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
         DivIntegralTerm,
@@ -85,8 +86,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        ToSignedTerm,
-        ToUnsignedTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -194,8 +193,7 @@ extractSymSomeTerm = go initialMemo
     go memo bs (SomeTerm (ShiftRightTerm _ arg n1)) = goBinary memo bs arg n1
     go memo bs (SomeTerm (RotateLeftTerm _ arg n1)) = goBinary memo bs arg n1
     go memo bs (SomeTerm (RotateRightTerm _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (ToSignedTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (ToUnsignedTerm _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (BitCastTerm _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (BVConcatTerm _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (BVSelectTerm _ _ _ arg)) = goUnary memo bs arg
@@ -313,8 +311,7 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
     go t@(ShiftRightTerm _ arg n) = goBinary t arg n
     go t@(RotateLeftTerm _ arg n) = goBinary t arg n
     go t@(RotateRightTerm _ arg n) = goBinary t arg n
-    go t@(ToSignedTerm _ arg) = goUnary t arg
-    go t@(ToUnsignedTerm _ arg) = goUnary t arg
+    go t@(BitCastTerm _ arg) = goUnary t arg
     go t@(BVConcatTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(BVSelectTerm _ _ _ arg) = goUnary t arg
     go t@(BVExtendTerm _ _ _ arg) = goUnary t arg
