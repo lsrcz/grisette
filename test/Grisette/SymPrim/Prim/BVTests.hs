@@ -19,13 +19,14 @@ import Grisette.Internal.SymPrim.Prim.Term
         pevalBVExtendTerm,
         pevalBVSelectTerm
       ),
+    PEvalBitCastTerm (pevalBitCastTerm),
     Term,
     bitCastTerm,
     bvconcatTerm,
     bvextendTerm,
     bvselectTerm,
     conTerm,
-    ssymTerm, PEvalBitCastTerm (pevalBitCastTerm),
+    ssymTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

@@ -9,6 +9,7 @@ import Grisette.Backend.TermRewritingTests
   )
 import Grisette.Core.Control.ExceptionTests (exceptionTests)
 import Grisette.Core.Control.Monad.UnionTests (unionTests)
+import Grisette.Core.Data.Class.BitCastTests (bitCastTests)
 import qualified Grisette.Core.Data.Class.BoolTests
 import Grisette.Core.Data.Class.EvalSymTests (evalSymTests)
 import Grisette.Core.Data.Class.ExtractSymTests (extractSymTests)
@@ -74,7 +75,6 @@ import Grisette.Unified.EvalModeTest (evalModeTest)
 import Grisette.Unified.UnifiedClassesTest (unifiedClassesTest)
 import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
-import Grisette.Core.Data.Class.BitCastTests (bitCastTests)
 
 main :: IO ()
 main =
