@@ -62,6 +62,7 @@ module Grisette.Backend.TermRewritingGen
     fpRoundingUnaryOpSpec,
     fpRoundingBinarySpec,
     fpFMASpec,
+    bitCastSpec,
     IEEEFP32Spec (..),
     IEEEFP32BoolOpSpec (..),
     FPRoundingModeSpec (..),
@@ -89,8 +90,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPUnaryOp (FPAbs, FPNeg),
     FloatingUnaryOp (FloatingSqrt),
+    PEvalBitCastTerm (pevalBitCastTerm),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalRecipTerm),
+    bitCastTerm,
     fdivTerm,
     floatingUnaryTerm,
     fpBinaryTerm,
@@ -334,6 +337,15 @@ absNumSpec = constructUnarySpec absNumTerm pevalAbsNumTerm
 
 signumNumSpec :: (TermRewritingSpec a av, PEvalNumTerm av) => a -> a
 signumNumSpec = constructUnarySpec signumNumTerm pevalSignumNumTerm
+
+bitCastSpec ::
+  ( TermRewritingSpec a av,
+    TermRewritingSpec b bv,
+    PEvalBitCastTerm av bv
+  ) =>
+  a ->
+  b
+bitCastSpec = constructUnarySpec bitCastTerm pevalBitCastTerm
 
 ltOrdSpec ::
   (TermRewritingSpec a av, PEvalOrdTerm av, TermRewritingSpec b Bool) =>
@@ -761,6 +773,7 @@ type SupportedBV bv (n :: Nat) =
     PEvalNumTerm (bv n),
     PEvalOrdTerm (bv n),
     PEvalBitwiseTerm (bv n),
+    KnownNat n,
     PEvalBVTerm bv
   )
 

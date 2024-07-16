@@ -4,7 +4,10 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- |
@@ -28,16 +31,19 @@ import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
+import GHC.TypeLits (type (+))
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP, withValidFPProofs)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     FloatingUnaryOp (FloatingSqrt),
     LinkedRep (underlyingTerm, wrapTerm),
+    PEvalBitCastTerm (pevalBitCastTerm),
     PEvalFloatingTerm (pevalFloatingUnaryTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalNumTerm
@@ -54,6 +60,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pformat,
     symTerm,
   )
+import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
@@ -191,3 +198,31 @@ instance Show SymFPRoundingMode where
 
 instance AllSyms SymFPRoundingMode where
   allSymsS v = (SomeSym v :)
+
+instance
+  (ValidFP eb sb, r ~ (eb + sb)) =>
+  BitCast (SymFP eb sb) (SymIntN r)
+  where
+  bitCast (SymFP a) =
+    withValidFPProofs @eb @sb $ SymIntN $ pevalBitCastTerm a
+
+instance
+  (ValidFP eb sb, r ~ (eb + sb)) =>
+  BitCast (SymFP eb sb) (SymWordN r)
+  where
+  bitCast (SymFP a) =
+    withValidFPProofs @eb @sb $ SymWordN $ pevalBitCastTerm a
+
+instance
+  (ValidFP eb sb, r ~ (eb + sb)) =>
+  BitCast (SymIntN r) (SymFP eb sb)
+  where
+  bitCast (SymIntN a) =
+    withValidFPProofs @eb @sb $ SymFP $ pevalBitCastTerm a
+
+instance
+  (ValidFP eb sb, r ~ (eb + sb)) =>
+  BitCast (SymWordN r) (SymFP eb sb)
+  where
+  bitCast (SymWordN a) =
+    withValidFPProofs @eb @sb $ SymFP $ pevalBitCastTerm a

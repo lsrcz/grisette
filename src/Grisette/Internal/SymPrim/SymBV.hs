@@ -103,8 +103,8 @@ import Grisette.Internal.SymPrim.BV
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
-    PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
     PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
+    PEvalBitCastTerm (pevalBitCastTerm),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
@@ -469,8 +469,8 @@ bvSelect ix w (somety (a :: origty n)) \
 -- BVSignConversion
 
 instance (KnownNat n, 1 <= n) => SignConversion (SymWordN n) (SymIntN n) where
-  toSigned (SymWordN n) = SymIntN $ pevalBVToSignedTerm n
-  toUnsigned (SymIntN n) = SymWordN $ pevalBVToUnsignedTerm n
+  toSigned (SymWordN n) = SymIntN $ pevalBitCastTerm n
+  toUnsigned (SymIntN n) = SymWordN $ pevalBitCastTerm n
 
 -- SymShift
 instance (KnownNat n, 1 <= n) => SymShift (SymWordN n) where
@@ -575,19 +575,19 @@ ALLSYMS_BV(SymWordN)
 #endif
 
 instance (KnownNat n, 1 <= n) => BitCast (SymIntN n) (SymWordN n) where
-  bitCast = toUnsigned
+  bitCast (SymIntN n) = SymWordN $ pevalBitCastTerm n
 
 instance (KnownNat n, 1 <= n) => BitCast (SymWordN n) (SymIntN n) where
-  bitCast = toSigned
+  bitCast (SymWordN n) = SymIntN $ pevalBitCastTerm n
 
 instance BitCast (SymIntN 1) SymBool where
-  bitCast (SymIntN v) = SymBool $ pevalEqTerm v (conTerm 1)
+  bitCast (SymIntN v) = SymBool $ pevalBitCastTerm v
 
 instance BitCast (SymWordN 1) SymBool where
-  bitCast (SymWordN v) = SymBool $ pevalEqTerm v (conTerm 1)
+  bitCast (SymWordN v) = SymBool $ pevalBitCastTerm v
 
 instance BitCast SymBool (SymIntN 1) where
-  bitCast (SymBool v) = SymIntN $ pevalITETerm v (conTerm 1) (conTerm 0)
+  bitCast (SymBool v) = SymIntN $ pevalBitCastTerm v
 
 instance BitCast SymBool (SymWordN 1) where
-  bitCast (SymBool v) = SymWordN $ pevalITETerm v (conTerm 1) (conTerm 0)
+  bitCast (SymBool v) = SymWordN $ pevalBitCastTerm v

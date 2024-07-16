@@ -65,8 +65,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     NonFuncPrimConstraint,
     NonFuncSBVBaseType,
     PEvalApplyTerm (pevalApplyTerm, sbvApplyTerm),
-    PEvalBVSignConversionTerm (pevalBVToSignedTerm, pevalBVToUnsignedTerm),
     PEvalBVTerm (pevalBVConcatTerm, pevalBVExtendTerm, pevalBVSelectTerm),
+    PEvalBitCastTerm (pevalBitCastTerm),
     PEvalBitwiseTerm
       ( pevalAndBitsTerm,
         pevalComplementBitsTerm,
@@ -111,6 +111,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVExtendTerm,
         BVSelectTerm,
         BinaryTerm,
+        BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
         DivIntegralTerm,
@@ -145,8 +146,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        ToSignedTerm,
-        ToUnsignedTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -439,10 +438,8 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
       goBinary memo pevalShiftRightTerm arg n
     goSome memo _ (SomeTerm (RotateRightTerm _ arg n)) =
       goBinary memo pevalRotateRightTerm arg n
-    goSome memo _ (SomeTerm (ToSignedTerm _ arg)) =
-      goUnary memo pevalBVToSignedTerm arg
-    goSome memo _ (SomeTerm (ToUnsignedTerm _ arg)) =
-      goUnary memo pevalBVToUnsignedTerm arg
+    goSome memo _ (SomeTerm (BitCastTerm _ (arg :: Term a) :: Term r)) =
+      goUnary memo (pevalBitCastTerm @a @r) arg
     goSome memo _ (SomeTerm (BVConcatTerm _ arg1 arg2)) =
       goBinary memo pevalBVConcatTerm arg1 arg2
     goSome memo _ (SomeTerm (BVSelectTerm _ ix w arg)) =

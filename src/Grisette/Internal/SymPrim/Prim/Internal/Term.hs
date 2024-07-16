@@ -56,7 +56,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalGeOrdTerm,
     pevalNEqTerm,
     PEvalDivModIntegralTerm (..),
-    PEvalBVSignConversionTerm (..),
+    PEvalBitCastTerm (..),
     PEvalBVTerm (..),
     PEvalFractionalTerm (..),
     PEvalFloatingTerm (..),
@@ -122,8 +122,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     shiftRightTerm,
     rotateLeftTerm,
     rotateRightTerm,
-    toSignedTerm,
-    toUnsignedTerm,
+    bitCastTerm,
     bvconcatTerm,
     bvselectTerm,
     bvextendTerm,
@@ -230,10 +229,10 @@ import GHC.Generics (Generic)
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast)
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV,
   )
-import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift)
 import Grisette.Internal.Core.Data.Symbol
@@ -731,56 +730,15 @@ class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
     withSbvDivModIntegralTermConstraint @t p $ l `SBV.sRem` r
 
 class
-  ( PEvalBVTerm s,
-    PEvalBVTerm u,
-    forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (u n),
-    forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (s n),
-    forall n. (KnownNat n, 1 <= n) => SignConversion (u n) (s n)
-  ) =>
-  PEvalBVSignConversionTerm u s
-    | u -> s,
-      s -> u
+  (SupportedNonFuncPrim a, SupportedNonFuncPrim b, BitCast a b) =>
+  PEvalBitCastTerm a b
   where
-  pevalBVToSignedTerm :: (KnownNat n, 1 <= n) => Term (u n) -> Term (s n)
-  pevalBVToUnsignedTerm :: (KnownNat n, 1 <= n) => Term (s n) -> Term (u n)
-  withSbvSignConversionTermConstraint ::
-    forall n integerBitwidth p q r.
-    (KnownIsZero integerBitwidth, KnownNat n, 1 <= n) =>
-    p n ->
-    q integerBitwidth ->
-    ( ( ( Integral (NonFuncSBVBaseType integerBitwidth (u n)),
-          Integral (NonFuncSBVBaseType integerBitwidth (s n))
-        ) =>
-        r
-      )
-    ) ->
-    r
-  sbvToSigned ::
-    forall n integerBitwidth o p q.
-    (KnownIsZero integerBitwidth, KnownNat n, 1 <= n) =>
-    o u ->
-    p n ->
-    q integerBitwidth ->
-    SBVType integerBitwidth (u n) ->
-    SBVType integerBitwidth (s n)
-  sbvToSigned _ _ qint u =
-    withNonFuncPrim @(u n) qint $
-      withNonFuncPrim @(s n) qint $
-        withSbvSignConversionTermConstraint @u @s (Proxy @n) qint $
-          SBV.sFromIntegral u
-  sbvToUnsigned ::
-    forall n integerBitwidth o p q.
-    (KnownIsZero integerBitwidth, KnownNat n, 1 <= n) =>
-    o s ->
-    p n ->
-    q integerBitwidth ->
-    SBVType integerBitwidth (s n) ->
-    SBVType integerBitwidth (u n)
-  sbvToUnsigned _ _ qint u =
-    withNonFuncPrim @(u n) qint $
-      withNonFuncPrim @(s n) qint $
-        withSbvSignConversionTermConstraint @u @s (Proxy @n) qint $
-          SBV.sFromIntegral u
+  pevalBitCastTerm :: Term a -> Term b
+  sbvBitCast ::
+    (KnownIsZero integerBitwidth) =>
+    q integerBitWidth ->
+    SBVType integerBitWidth a ->
+    SBVType integerBitWidth b
 
 class
   ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
@@ -1272,16 +1230,11 @@ data Term t where
     !(Term t) ->
     !(Term t) ->
     Term t
-  ToSignedTerm ::
-    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
+  BitCastTerm ::
+    (PEvalBitCastTerm a b) =>
     {-# UNPACK #-} !Id ->
-    !(Term (u n)) ->
-    Term (s n)
-  ToUnsignedTerm ::
-    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
-    {-# UNPACK #-} !Id ->
-    !(Term (s n)) ->
-    Term (u n)
+    !(Term a) ->
+    Term b
   BVConcatTerm ::
     ( PEvalBVTerm bv,
       KnownNat l,
@@ -1448,8 +1401,7 @@ identityWithTypeRep (ShiftLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ShiftRightTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RotateLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RotateRightTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ToSignedTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ToUnsignedTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BitCastTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVConcatTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVSelectTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVExtendTerm i _ _ _) = (someTypeRep (Proxy @t), i)
@@ -1498,8 +1450,7 @@ introSupportedPrimConstraint ShiftLeftTerm {} x = x
 introSupportedPrimConstraint RotateLeftTerm {} x = x
 introSupportedPrimConstraint ShiftRightTerm {} x = x
 introSupportedPrimConstraint RotateRightTerm {} x = x
-introSupportedPrimConstraint ToSignedTerm {} x = x
-introSupportedPrimConstraint ToUnsignedTerm {} x = x
+introSupportedPrimConstraint BitCastTerm {} x = x
 introSupportedPrimConstraint BVConcatTerm {} x = x
 introSupportedPrimConstraint BVSelectTerm {} x = x
 introSupportedPrimConstraint BVExtendTerm {} x = x
@@ -1548,8 +1499,7 @@ pformat (ShiftLeftTerm _ arg n) = "(shl " ++ pformat arg ++ " " ++ pformat n ++ 
 pformat (ShiftRightTerm _ arg n) = "(shr " ++ pformat arg ++ " " ++ pformat n ++ ")"
 pformat (RotateLeftTerm _ arg n) = "(rotl " ++ pformat arg ++ " " ++ pformat n ++ ")"
 pformat (RotateRightTerm _ arg n) = "(rotr " ++ pformat arg ++ " " ++ pformat n ++ ")"
-pformat (ToSignedTerm _ arg) = "(u2s " ++ pformat arg ++ " " ++ ")"
-pformat (ToUnsignedTerm _ arg) = "(s2u " ++ pformat arg ++ " " ++ ")"
+pformat (BitCastTerm _ arg) = "(bitcast " ++ pformat arg ++ ")"
 pformat (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformat arg ++ ")"
 pformat (BVExtendTerm _ signed n arg) =
@@ -1583,7 +1533,8 @@ instance Lift (Term t) where
   liftTyped (ExistsTerm _ sym arg) = [||existsTerm sym arg||]
   liftTyped (UnaryTerm _ tag arg) = [||constructUnary tag arg||]
   liftTyped (BinaryTerm _ tag arg1 arg2) = [||constructBinary tag arg1 arg2||]
-  liftTyped (TernaryTerm _ tag arg1 arg2 arg3) = [||constructTernary tag arg1 arg2 arg3||]
+  liftTyped (TernaryTerm _ tag arg1 arg2 arg3) =
+    [||constructTernary tag arg1 arg2 arg3||]
   liftTyped (NotTerm _ arg) = [||notTerm arg||]
   liftTyped (OrTerm _ arg1 arg2) = [||orTerm arg1 arg2||]
   liftTyped (AndTerm _ arg1 arg2) = [||andTerm arg1 arg2||]
@@ -1604,11 +1555,12 @@ instance Lift (Term t) where
   liftTyped (ShiftRightTerm _ arg n) = [||shiftRightTerm arg n||]
   liftTyped (RotateLeftTerm _ arg n) = [||rotateLeftTerm arg n||]
   liftTyped (RotateRightTerm _ arg n) = [||rotateRightTerm arg n||]
-  liftTyped (ToSignedTerm _ v) = [||toSignedTerm v||]
-  liftTyped (ToUnsignedTerm _ v) = [||toUnsignedTerm v||]
+  liftTyped (BitCastTerm _ v) = [||bitCastTerm v||]
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
-  liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) = [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
-  liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) = [||bvextendTerm signed (Proxy @n) arg||]
+  liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) =
+    [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
+  liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) =
+    [||bvextendTerm signed (Proxy @n) arg||]
   liftTyped (ApplyTerm _ f arg) = [||applyTerm f arg||]
   liftTyped (DivIntegralTerm _ arg1 arg2) = [||divIntegralTerm arg1 arg2||]
   liftTyped (ModIntegralTerm _ arg1 arg2) = [||modIntegralTerm arg1 arg2||]
@@ -1689,8 +1641,7 @@ instance Show (Term ty) where
   show (ShiftRightTerm i arg n) = "ShiftRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (RotateLeftTerm i arg n) = "RotateLeft{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (RotateRightTerm i arg n) = "RotateRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (ToSignedTerm i arg) = "ToSigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (ToUnsignedTerm i arg) = "ToUnsigned{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (BitCastTerm i arg) = "BitCast{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   show (BVConcatTerm i arg1 arg2) = "BVConcat{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (BVSelectTerm i ix w arg) =
     "BVSelect{id=" ++ show i ++ ", ix=" ++ show ix ++ ", w=" ++ show w ++ ", arg=" ++ show arg ++ "}"
@@ -1810,14 +1761,10 @@ data UTerm t where
   UShiftRightTerm :: (PEvalShiftTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URotateLeftTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URotateRightTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UToSignedTerm ::
-    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
-    !(Term (u n)) ->
-    UTerm (s n)
-  UToUnsignedTerm ::
-    (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
-    !(Term (s n)) ->
-    UTerm (u n)
+  UBitCastTerm ::
+    (PEvalBitCastTerm a b) =>
+    !(Term a) ->
+    UTerm b
   UBVConcatTerm ::
     ( PEvalBVTerm bv,
       KnownNat l,
@@ -1974,12 +1921,9 @@ instance (SupportedPrim t) => Interned (Term t) where
     DRotateLeftTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DRotateRightTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DBVConcatTerm :: TypeRep bv1 -> TypeRep bv2 -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
-    DToSignedTerm ::
-      !(TypeRep u, Id) ->
-      Description (Term s)
-    DToUnsignedTerm ::
-      !(TypeRep s, Id) ->
-      Description (Term u)
+    DBitCastTerm ::
+      !(TypeRep a, Id) ->
+      Description (Term b)
     DBVSelectTerm ::
       forall bv (n :: Nat) (w :: Nat) (ix :: Nat).
       !(TypeRep ix) ->
@@ -2048,8 +1992,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UShiftRightTerm arg n) = DShiftRightTerm (identity arg) (identity n)
   describe (URotateLeftTerm arg n) = DRotateLeftTerm (identity arg) (identity n)
   describe (URotateRightTerm arg n) = DRotateRightTerm (identity arg) (identity n)
-  describe (UToSignedTerm (arg :: Term bv)) = DToSignedTerm (typeRep :: TypeRep bv, identity arg)
-  describe (UToUnsignedTerm (arg :: Term bv)) = DToSignedTerm (typeRep :: TypeRep bv, identity arg)
+  describe (UBitCastTerm (arg :: Term a)) = DBitCastTerm (typeRep :: TypeRep a, identity arg)
   describe (UBVConcatTerm (arg1 :: bv1) (arg2 :: bv2)) =
     DBVConcatTerm (typeRep :: TypeRep bv1) (typeRep :: TypeRep bv2) (identity arg1) (identity arg2)
   describe (UBVSelectTerm (ix :: TypeRep ix) _ (arg :: Term arg)) =
@@ -2102,8 +2045,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UShiftRightTerm arg n) = ShiftRightTerm i arg n
       go (URotateLeftTerm arg n) = RotateLeftTerm i arg n
       go (URotateRightTerm arg n) = RotateRightTerm i arg n
-      go (UToSignedTerm arg) = ToSignedTerm i arg
-      go (UToUnsignedTerm arg) = ToUnsignedTerm i arg
+      go (UBitCastTerm arg) = BitCastTerm i arg
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
       go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
       go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
@@ -2154,8 +2096,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DShiftRightTerm li ln == DShiftRightTerm ri rn = li == ri && ln == rn
   DRotateLeftTerm li ln == DRotateLeftTerm ri rn = li == ri && ln == rn
   DRotateRightTerm li ln == DRotateRightTerm ri rn = li == ri && ln == rn
-  DToSignedTerm li == DToSignedTerm ri = eqTypedId li ri
-  DToUnsignedTerm li == DToUnsignedTerm ri = eqTypedId li ri
+  DBitCastTerm li == DBitCastTerm ri = eqTypedId li ri
   DBVConcatTerm lrep1 lrep2 li1 li2 == DBVConcatTerm rrep1 rrep2 ri1 ri2 =
     eqTypeRepBool lrep1 rrep1 && eqTypeRepBool lrep2 rrep2 && li1 == ri1 && li2 == ri2
   DBVSelectTerm lix li == DBVSelectTerm rix ri =
@@ -2226,8 +2167,7 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DShiftRightTerm id1 idn) = s `hashWithSalt` (39 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
   hashWithSalt s (DRotateLeftTerm id1 idn) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
   hashWithSalt s (DRotateRightTerm id1 idn) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
-  hashWithSalt s (DToSignedTerm id) = s `hashWithSalt` (23 :: Int) `hashWithSalt` id
-  hashWithSalt s (DToUnsignedTerm id) = s `hashWithSalt` (24 :: Int) `hashWithSalt` id
+  hashWithSalt s (DBitCastTerm id) = s `hashWithSalt` (49 :: Int) `hashWithSalt` id
   hashWithSalt s (DBVConcatTerm rep1 rep2 id1 id2) =
     s `hashWithSalt` (25 :: Int) `hashWithSalt` rep1 `hashWithSalt` rep2 `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DBVSelectTerm ix id1) = s `hashWithSalt` (26 :: Int) `hashWithSalt` ix `hashWithSalt` id1
@@ -2402,17 +2342,11 @@ rotateRightTerm :: (PEvalRotateTerm a) => Term a -> Term a -> Term a
 rotateRightTerm t n = internTerm $ URotateRightTerm t n
 {-# INLINE rotateRightTerm #-}
 
-toSignedTerm ::
-  (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
-  Term (u n) ->
-  Term (s n)
-toSignedTerm = internTerm . UToSignedTerm
-
-toUnsignedTerm ::
-  (PEvalBVSignConversionTerm u s, KnownNat n, 1 <= n) =>
-  Term (s n) ->
-  Term (u n)
-toUnsignedTerm = internTerm . UToUnsignedTerm
+bitCastTerm ::
+  (PEvalBitCastTerm a b) =>
+  Term a ->
+  Term b
+bitCastTerm = internTerm . UBitCastTerm
 
 bvconcatTerm ::
   ( PEvalBVTerm bv,

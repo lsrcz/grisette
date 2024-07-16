@@ -14,23 +14,18 @@ import Data.Proxy (Proxy (Proxy))
 import GHC.TypeNats (KnownNat, type (+), type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( PEvalBVSignConversionTerm
-      ( pevalBVToSignedTerm,
-        pevalBVToUnsignedTerm
-      ),
-    PEvalBVTerm
+  ( PEvalBVTerm
       ( pevalBVConcatTerm,
         pevalBVExtendTerm,
         pevalBVSelectTerm
       ),
     Term,
+    bitCastTerm,
     bvconcatTerm,
     bvextendTerm,
     bvselectTerm,
     conTerm,
-    ssymTerm,
-    toSignedTerm,
-    toUnsignedTerm,
+    ssymTerm, PEvalBitCastTerm (pevalBitCastTerm),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -107,7 +102,7 @@ bvTests :: Test
 bvTests =
   testGroup
     "BV"
-    [ testGroup "pevalBVToSignedTerm" $ do
+    [ testGroup "pevalBitCastTerm to signed" $ do
         ToSignedTest name term expected <-
           [ ToSignedTest
               { toSignedTestName = "concrete",
@@ -117,11 +112,13 @@ bvTests =
             ToSignedTest
               { toSignedTestName = "symbolic",
                 toSignedTestTerm = ssymTerm "a",
-                toSignedTestExpected = toSignedTerm $ ssymTerm "a"
+                toSignedTestExpected =
+                  bitCastTerm @(WordN 4) @(IntN 4) $ ssymTerm "a"
               },
             ToSignedTest
               { toSignedTestName = "toUnsigned",
-                toSignedTestTerm = toUnsignedTerm $ ssymTerm "a",
+                toSignedTestTerm =
+                  bitCastTerm @(IntN 4) @(WordN 4) $ ssymTerm "a",
                 toSignedTestExpected = ssymTerm "a"
               },
             ToSignedTest
@@ -132,8 +129,10 @@ bvTests =
                     (ssymTerm "b" :: Term (WordN 2)),
                 toSignedTestExpected =
                   bvconcatTerm
-                    (toSignedTerm (ssymTerm "a" :: Term (WordN 2)))
-                    (toSignedTerm (ssymTerm "b" :: Term (WordN 2)))
+                    ( bitCastTerm (ssymTerm "a" :: Term (WordN 2)) ::
+                        Term (IntN 2)
+                    )
+                    (bitCastTerm (ssymTerm "b" :: Term (WordN 2)))
               },
             ToSignedTest
               { toSignedTestName = "bvExtend",
@@ -143,13 +142,13 @@ bvTests =
                   bvextendTerm
                     True
                     (Proxy @4)
-                    (toSignedTerm (ssymTerm "a" :: Term (WordN 2)))
+                    (bitCastTerm @(WordN 2) @(IntN 2) (ssymTerm "a"))
               }
             ]
         return $ testCase name $ do
-          let actual = pevalBVToSignedTerm term
+          let actual = pevalBitCastTerm term
           actual @?= expected,
-      testGroup "pevalBVToUnsignedTerm" $ do
+      testGroup "pevalBitCastTerm to unsigned" $ do
         ToUnsignedTest name term expected <-
           [ ToUnsignedTest
               { toUnsignedTestName = "concrete",
@@ -159,11 +158,13 @@ bvTests =
             ToUnsignedTest
               { toUnsignedTestName = "symbolic",
                 toUnsignedTestTerm = ssymTerm "a",
-                toUnsignedTestExpected = toUnsignedTerm $ ssymTerm "a"
+                toUnsignedTestExpected =
+                  bitCastTerm @(IntN 4) @(WordN 4) $ ssymTerm "a"
               },
             ToUnsignedTest
               { toUnsignedTestName = "toSigned",
-                toUnsignedTestTerm = toSignedTerm $ ssymTerm "a",
+                toUnsignedTestTerm =
+                  bitCastTerm @(WordN 4) @(IntN 4) $ ssymTerm "a",
                 toUnsignedTestExpected = ssymTerm "a"
               },
             ToUnsignedTest
@@ -174,8 +175,8 @@ bvTests =
                     (ssymTerm "b" :: Term (IntN 2)),
                 toUnsignedTestExpected =
                   bvconcatTerm
-                    (toUnsignedTerm (ssymTerm "a" :: Term (IntN 2)))
-                    (toUnsignedTerm (ssymTerm "b" :: Term (IntN 2)))
+                    (bitCastTerm @(IntN 2) @(WordN 2) (ssymTerm "a"))
+                    (bitCastTerm (ssymTerm "b" :: Term (IntN 2)))
               },
             ToUnsignedTest
               { toUnsignedTestName = "bvExtend",
@@ -185,11 +186,11 @@ bvTests =
                   bvextendTerm
                     True
                     (Proxy @4)
-                    (toUnsignedTerm (ssymTerm "a" :: Term (IntN 2)))
+                    (bitCastTerm @(IntN 2) @(WordN 2) (ssymTerm "a"))
               }
             ]
         return $ testCase name $ do
-          let actual = pevalBVToUnsignedTerm term
+          let actual = pevalBitCastTerm term
           actual @?= expected,
       testGroup "pevalBVSelectTerm" $ do
         BVSelectTest name ix w term expected <-
@@ -258,9 +259,9 @@ bvTests =
                 bvSelectIx = Proxy @2,
                 bvSelectW = Proxy @1,
                 bvSelectTestTerm =
-                  toSignedTerm (ssymTerm "a" :: Term (WordN 4)),
+                  bitCastTerm @(WordN 4) @(IntN 4) (ssymTerm "a"),
                 bvSelectTestExpected =
-                  toSignedTerm
+                  bitCastTerm
                     ( bvselectTerm
                         (Proxy @2)
                         (Proxy @1)
@@ -272,9 +273,9 @@ bvTests =
                 bvSelectIx = Proxy @2,
                 bvSelectW = Proxy @1,
                 bvSelectTestTerm =
-                  toUnsignedTerm (ssymTerm "a" :: Term (IntN 4)),
+                  bitCastTerm @(IntN 4) @(WordN 4) (ssymTerm "a"),
                 bvSelectTestExpected =
-                  toUnsignedTerm
+                  bitCastTerm
                     ( bvselectTerm
                         (Proxy @2)
                         (Proxy @1)

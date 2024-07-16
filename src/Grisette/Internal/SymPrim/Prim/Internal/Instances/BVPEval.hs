@@ -1,9 +1,12 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# HLINT ignore "Eta reduce" #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -12,11 +15,12 @@
 
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval () where
 
+import Data.Kind (Type)
 import Data.Maybe (isJust)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import Data.Typeable (type (:~:) (Refl))
-import GHC.TypeNats (KnownNat, natVal, sameNat, type (+), type (-), type (<=))
+import GHC.TypeNats (KnownNat, Nat, natVal, sameNat, type (+), type (-), type (<=))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV
       ( sizedBVConcat,
@@ -26,22 +30,13 @@ import Grisette.Internal.Core.Data.Class.BitVector
         sizedBVZext
       ),
   )
-import Grisette.Internal.Core.Data.Class.SignConversion
-  ( SignConversion (toSigned, toUnsigned),
-  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm (doPevalBitCast)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalBVSignConversionTerm
-      ( pevalBVToSignedTerm,
-        pevalBVToUnsignedTerm,
-        sbvToSigned,
-        sbvToUnsigned,
-        withSbvSignConversionTermConstraint
-      ),
-    PEvalBVTerm
+  ( PEvalBVTerm
       ( pevalBVConcatTerm,
         pevalBVExtendTerm,
         pevalBVSelectTerm,
@@ -49,26 +44,25 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         sbvBVExtendTerm,
         sbvBVSelectTerm
       ),
-    SupportedPrim (withPrim),
+    PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
     Term
       ( BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        ConTerm,
-        ToSignedTerm,
-        ToUnsignedTerm
+        BitCastTerm,
+        ConTerm
       ),
+    bitCastTerm,
     bvconcatTerm,
     bvextendTerm,
     bvselectTerm,
     conTerm,
-    toSignedTerm,
-    toUnsignedTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
   ( binaryUnfoldOnce,
     unaryUnfoldOnce,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Utils (pattern Dyn)
 import Grisette.Internal.SymPrim.Prim.TermUtils (castTerm)
 import Grisette.Internal.Utils.Parameterized
   ( LeqProof (LeqProof),
@@ -86,58 +80,24 @@ import Grisette.Internal.Utils.Parameterized
     withKnownProof,
   )
 
-instance PEvalBVSignConversionTerm WordN IntN where
-  pevalBVToSignedTerm = unaryUnfoldOnce doPevalToSignedTerm toSignedTerm
-    where
-      doPevalToSignedTerm ::
-        forall n.
-        (KnownNat n, 1 <= n) =>
-        Term (WordN n) ->
-        Maybe (Term (IntN n))
-      doPevalToSignedTerm (ConTerm _ b) = Just $ conTerm $ toSigned b
-      doPevalToSignedTerm (ToUnsignedTerm _ b) = Just b >>= castTerm
-      doPevalToSignedTerm (BVConcatTerm _ b1 b2) =
-        Just $
-          pevalBVConcatTerm (pevalBVToSignedTerm b1) (pevalBVToSignedTerm b2)
-      doPevalToSignedTerm (BVExtendTerm _ signed pr b) =
-        Just $ pevalBVExtendTerm signed pr $ pevalBVToSignedTerm b
-      doPevalToSignedTerm _ = Nothing
-  pevalBVToUnsignedTerm = unaryUnfoldOnce doPevalToUnsignedTerm toUnsignedTerm
-    where
-      doPevalToUnsignedTerm ::
-        forall n.
-        (KnownNat n, 1 <= n) =>
-        Term (IntN n) ->
-        Maybe (Term (WordN n))
-      doPevalToUnsignedTerm (ConTerm _ b) = Just $ conTerm $ toUnsigned b
-      doPevalToUnsignedTerm (ToSignedTerm _ b) = Just b >>= castTerm
-      doPevalToUnsignedTerm (BVConcatTerm _ b1 b2) =
-        Just $
-          pevalBVConcatTerm
-            (pevalBVToUnsignedTerm b1)
-            (pevalBVToUnsignedTerm b2)
-      doPevalToUnsignedTerm (BVExtendTerm _ signed pr b) =
-        Just $ pevalBVExtendTerm signed pr $ pevalBVToUnsignedTerm b
-      doPevalToUnsignedTerm _ = Nothing
-  withSbvSignConversionTermConstraint (_ :: p n) qint r =
-    withPrim @(WordN n) qint r
-
 pevalDefaultBVSelectTerm ::
-  forall bv n ix w p q.
+  forall (bv2 :: Nat -> Type) bv n ix w p q.
   ( KnownNat n,
     KnownNat ix,
     KnownNat w,
     1 <= n,
     1 <= w,
     ix + w <= n,
-    PEvalBVTerm bv
+    PEvalBVTerm bv,
+    forall x. (KnownNat x, 1 <= x) => PEvalBitCastTerm (bv2 x) (bv x),
+    PEvalBVTerm bv2
   ) =>
   p ix ->
   q w ->
   Term (bv n) ->
   Term (bv w)
 pevalDefaultBVSelectTerm ix w =
-  unaryUnfoldOnce (doPevalDefaultBVSelectTerm ix w) (bvselectTerm ix w)
+  unaryUnfoldOnce (doPevalDefaultBVSelectTerm @bv2 ix w) (bvselectTerm ix w)
 
 unsafePevalBVSelectTerm ::
   forall bv n ix w.
@@ -158,14 +118,16 @@ unsafePevalBVSelectTerm n ix w term =
           (LeqProof, LeqProof, LeqProof) -> pevalBVSelectTerm ix w term
 
 doPevalDefaultBVSelectTerm ::
-  forall bv n ix w p q.
+  forall (bv2 :: Nat -> Type) bv n ix w p q.
   ( KnownNat n,
     KnownNat ix,
     KnownNat w,
+    forall x. (KnownNat x, 1 <= x) => PEvalBitCastTerm (bv2 x) (bv x),
     1 <= n,
     1 <= w,
     ix + w <= n,
-    PEvalBVTerm bv
+    PEvalBVTerm bv,
+    PEvalBVTerm bv2
   ) =>
   p ix ->
   q w ->
@@ -177,10 +139,8 @@ doPevalDefaultBVSelectTerm _ _ rhs
       Just rhs >>= castTerm
 doPevalDefaultBVSelectTerm ix w (ConTerm _ b) =
   Just $ conTerm $ sizedBVSelect ix w b
-doPevalDefaultBVSelectTerm ix w (ToSignedTerm _ b) =
-  Just $ pevalBVToSignedTerm $ pevalBVSelectTerm ix w b
-doPevalDefaultBVSelectTerm ix w (ToUnsignedTerm _ b) =
-  Just $ pevalBVToUnsignedTerm $ pevalBVSelectTerm ix w b
+doPevalDefaultBVSelectTerm ix w (BitCastTerm _ (Dyn (b :: Term (bv2 n)))) =
+  Just $ pevalBitCastTerm $ pevalBVSelectTerm ix w b
 doPevalDefaultBVSelectTerm
   pix
   pw
@@ -497,7 +457,7 @@ doPevalDefaultBVConcatTerm
 doPevalDefaultBVConcatTerm _ _ = Nothing
 
 instance PEvalBVTerm WordN where
-  pevalBVSelectTerm = pevalDefaultBVSelectTerm
+  pevalBVSelectTerm = pevalDefaultBVSelectTerm @IntN
   pevalBVConcatTerm = pevalDefaultBVConcatTerm
   pevalBVExtendTerm = pevalDefaultBVExtendTerm
   sbvBVConcatTerm _ pl pr l r =
@@ -519,19 +479,19 @@ instance PEvalBVTerm WordN where
                 if signed then SBV.signExtend bv else SBV.zeroExtend bv
 
 instance PEvalBVTerm IntN where
-  pevalBVSelectTerm = pevalDefaultBVSelectTerm
+  pevalBVSelectTerm = pevalDefaultBVSelectTerm @WordN
   pevalBVConcatTerm = pevalDefaultBVConcatTerm
   pevalBVExtendTerm = pevalDefaultBVExtendTerm
-  sbvBVConcatTerm pn (pl :: p l) (pr :: q r) l r =
+  sbvBVConcatTerm (pn :: p0 n) (pl :: p l) (pr :: q r) l r =
     bvIsNonZeroFromGEq1 pl $
       bvIsNonZeroFromGEq1 pr $
         withKnownNat (addNat (natRepr @l) (natRepr @r)) $
           case unsafeLeqProof @1 @(l + r) of
             LeqProof ->
               bvIsNonZeroFromGEq1 (Proxy @(l + r)) $
-                sbvToSigned (Proxy @WordN) (Proxy @(l + r)) pn $
-                  sbvToUnsigned (Proxy @IntN) pl pn l
-                    SBV.# sbvToUnsigned (Proxy @IntN) pr pn r
+                sbvBitCast @(WordN (l + r)) @(IntN (l + r)) @n pn $
+                  (sbvBitCast @(IntN l) @(WordN l) @n pn l)
+                    SBV.# (sbvBitCast @(IntN r) @(WordN r) @n pn r)
   sbvBVSelectTerm _ (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @w) $
@@ -580,3 +540,37 @@ sbvDefaultBVSelectTerm (_ :: p0 ix) (_ :: p1 w) (_ :: p2 n) bv =
         bvIsNonZeroFromGEq1 (Proxy @n) $
           bvIsNonZeroFromGEq1 (Proxy @w) $
             SBV.bvExtract (Proxy @(w + ix - 1)) (Proxy @ix) bv
+
+instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (WordN n) (IntN n) where
+  pevalBitCastTerm = unaryUnfoldOnce doPevalBitCastBV bitCastTerm
+    where
+      doPevalBitCastBV :: Term (WordN n) -> Maybe (Term (IntN n))
+      doPevalBitCastBV
+        (BVConcatTerm _ (l :: Term (WordN l)) (r :: Term (WordN r))) =
+          Just $
+            pevalBVConcatTerm
+              (pevalBitCastTerm @(WordN l) @(IntN l) l)
+              (pevalBitCastTerm @(WordN r) @(IntN r) r)
+      doPevalBitCastBV (BVExtendTerm _ signed pr (b :: Term (WordN l))) =
+        Just $
+          pevalBVExtendTerm signed pr $
+            pevalBitCastTerm @(WordN l) @(IntN l) b
+      doPevalBitCastBV v = doPevalBitCast v
+  sbvBitCast _ = bvIsNonZeroFromGEq1 (Proxy @n) SBV.sFromIntegral
+
+instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (IntN n) (WordN n) where
+  pevalBitCastTerm = unaryUnfoldOnce doPevalBitCastBV bitCastTerm
+    where
+      doPevalBitCastBV :: Term (IntN n) -> Maybe (Term (WordN n))
+      doPevalBitCastBV
+        (BVConcatTerm _ (l :: Term (IntN l)) (r :: Term (IntN r))) =
+          Just $
+            pevalBVConcatTerm
+              (pevalBitCastTerm @(IntN l) @(WordN l) l)
+              (pevalBitCastTerm @(IntN r) @(WordN r) r)
+      doPevalBitCastBV (BVExtendTerm _ signed pr (b :: Term (IntN l))) =
+        Just $
+          pevalBVExtendTerm signed pr $
+            pevalBitCastTerm @(IntN l) @(WordN l) b
+      doPevalBitCastBV v = doPevalBitCast v
+  sbvBitCast _ = bvIsNonZeroFromGEq1 (Proxy @n) SBV.sFromIntegral

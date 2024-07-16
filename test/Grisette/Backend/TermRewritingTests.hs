@@ -15,7 +15,8 @@ where
 
 import Data.Foldable (traverse_)
 import Grisette
-  ( GrisetteSMTConfig,
+  ( BitCast (bitCast),
+    GrisetteSMTConfig,
     ITEOp (symIte),
     IntN,
     LogicalOp (symNot),
@@ -48,6 +49,7 @@ import Grisette.Backend.TermRewritingGen
     absNumSpec,
     addNumSpec,
     andSpec,
+    bitCastSpec,
     divIntegralSpec,
     eqvSpec,
     fpTraitSpec,
@@ -69,9 +71,10 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
-import Grisette.Internal.SymPrim.FP (FP32)
+import Grisette.Internal.SymPrim.FP (FP, FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPTrait (FPIsPositive),
+    PEvalBitCastTerm,
     SupportedPrim,
     Term,
     conTerm,
@@ -86,7 +89,8 @@ import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure)
-import Test.QuickCheck (ioProperty, mapSize, withMaxSuccess)
+import Test.QuickCheck (Arbitrary, ioProperty, mapSize, withMaxSuccess, (==>))
+import Type.Reflection (typeRep)
 
 validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
 validateSpec config a = do
@@ -457,5 +461,56 @@ termRewritingTests =
             mapSize (`min` 10) $
               ioProperty . \(x :: FPRoundingModeBoolOpSpec) ->
                 onlyWhenBitwuzlaIsAvailable (`validateSpec` x)
-        ]
+        ],
+      testGroup "bitCast" $ do
+        let bitCastCase ::
+              forall a b. (Arbitrary a, PEvalBitCastTerm a b) => Test
+            bitCastCase = testProperty
+              (show (typeRep @a) <> " -> " <> show (typeRep @b))
+              $ \x ->
+                withMaxSuccess 10 . ioProperty $
+                  validateSpec
+                    z3
+                    ( bitCastSpec (conSpec x :: GeneralSpec a) ::
+                        GeneralSpec b
+                    )
+        let fromFPCase ::
+              forall a b.
+              (Arbitrary a, PEvalBitCastTerm a b, RealFloat a) =>
+              Test
+            fromFPCase = testProperty
+              (show (typeRep @a) <> " -> " <> show (typeRep @b))
+              $ \x ->
+                withMaxSuccess 10 . (not (isNaN x) ==>) . ioProperty $
+                  validateSpec
+                    z3
+                    ( bitCastSpec (conSpec x :: GeneralSpec a) ::
+                        GeneralSpec b
+                    )
+        let toFPCase ::
+              forall a b.
+              (Arbitrary a, PEvalBitCastTerm a b, RealFloat b) =>
+              Test
+            toFPCase = testProperty
+              (show (typeRep @a) <> " -> " <> show (typeRep @b))
+              $ \x ->
+                withMaxSuccess 10
+                  . (not (isNaN (bitCast x :: b)) ==>)
+                  . ioProperty
+                  $ validateSpec
+                    z3
+                    ( bitCastSpec (conSpec x :: GeneralSpec a) ::
+                        GeneralSpec b
+                    )
+        [ bitCastCase @(IntN 4) @(WordN 4),
+          bitCastCase @(WordN 4) @(IntN 4),
+          bitCastCase @(IntN 1) @Bool,
+          bitCastCase @(WordN 1) @Bool,
+          bitCastCase @Bool @(IntN 1),
+          bitCastCase @Bool @(WordN 1),
+          fromFPCase @(FP 3 5) @(IntN 8),
+          fromFPCase @(FP 3 5) @(WordN 8),
+          toFPCase @(IntN 8) @(FP 3 5),
+          toFPCase @(WordN 8) @(FP 3 5)
+          ]
     ]

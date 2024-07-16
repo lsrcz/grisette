@@ -153,8 +153,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
 import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalApplyTerm (sbvApplyTerm),
-    PEvalBVSignConversionTerm (sbvToSigned, sbvToUnsigned),
     PEvalBVTerm (sbvBVConcatTerm, sbvBVExtendTerm, sbvBVSelectTerm),
+    PEvalBitCastTerm (sbvBitCast),
     PEvalBitwiseTerm
       ( sbvAndBitsTerm,
         sbvComplementBitsTerm,
@@ -204,6 +204,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVExtendTerm,
         BVSelectTerm,
         BinaryTerm,
+        BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
         DivIntegralTerm,
@@ -238,8 +239,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
-        ToSignedTerm,
-        ToUnsignedTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -823,12 +822,9 @@ lowerSinglePrimIntermediate config (ApplyTerm _ (f :: Term f) a) = do
   l1 <- lowerSinglePrimCached' config f
   l2 <- lowerSinglePrimCached' config a
   return $ \qst -> sbvApplyTerm @f config (l1 qst) (l2 qst)
-lowerSinglePrimIntermediate config (ToSignedTerm _ (a :: Term (u n))) = do
+lowerSinglePrimIntermediate config (BitCastTerm _ (a :: Term x)) = do
   a' <- lowerSinglePrimCached' config a
-  return $ sbvToSigned (Proxy @u) (Proxy @n) config . a'
-lowerSinglePrimIntermediate config (ToUnsignedTerm _ (a :: Term (s n))) = do
-  a' <- lowerSinglePrimCached' config a
-  return $ sbvToUnsigned (Proxy @s) (Proxy @n) config . a'
+  return $ sbvBitCast @x @a @integerBitWidth config . a'
 lowerSinglePrimIntermediate
   config
   (BVConcatTerm _ (a :: Term (bv l)) (b :: Term (bv r))) =
