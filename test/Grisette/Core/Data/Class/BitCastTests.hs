@@ -18,11 +18,12 @@ import Grisette
     SymFP32,
     SymIntN,
     SymIntN32,
-    SymWordN,
+    SymWordN (SymWordN),
     SymWordN32,
     WordN,
     WordN32,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Term (FPTrait (FPIsNaN), Term, bitCastTerm, conTerm, fpTraitTerm, iteTerm, ssymTerm)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -81,6 +82,13 @@ bitCastTests =
         let fp32 = "x" :: SymFP32
         let int32 = bitCast fp32 :: SymIntN32
         let word32 = bitCast int32 :: SymWordN32
-        let final = bitCast word32 :: SymFP32
-        fp32 @?= final
+        let fp32' = bitCast word32 :: SymFP32
+        let final = bitCast fp32' :: SymWordN32
+        final
+          @?= SymWordN
+            ( iteTerm
+                (fpTraitTerm FPIsNaN (ssymTerm "x" :: Term (FP32)))
+                (conTerm 0x7fc00000)
+                (bitCastTerm (ssymTerm "x" :: Term FP32))
+            )
     ]

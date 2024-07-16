@@ -55,21 +55,6 @@ pevalBitCastGeneral ::
   Term b
 pevalBitCastGeneral = unaryUnfoldOnce doPevalBitCast bitCastTerm
 
-doPevalBitCastFP ::
-  (ValidFP eb sb, PEvalBitCastTerm (FP eb sb) b) =>
-  Term (FP eb sb) ->
-  Maybe (Term b)
-doPevalBitCastFP (ConTerm _ v)
-  | not $ isNaN v = Just $ conTerm $ bitCast v
-  | otherwise = Nothing
-doPevalBitCastFP t = doPevalBitCastSameType t
-
-pevalBitCastFP ::
-  (ValidFP eb sb, PEvalBitCastTerm (FP eb sb) b) =>
-  Term (FP eb sb) ->
-  Term b
-pevalBitCastFP = unaryUnfoldOnce doPevalBitCastFP bitCastTerm
-
 instance PEvalBitCastTerm Bool (IntN 1) where
   pevalBitCastTerm = pevalBitCastGeneral
   sbvBitCast _ x = SBV.ite x (SBV.literal 1) (SBV.literal 0)
@@ -105,13 +90,13 @@ instance
   (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastTerm (FP eb sb) (WordN n)
   where
-  pevalBitCastTerm = pevalBitCastFP
-  sbvBitCast _ = withValidFPProofs @eb @sb $ SBV.sFloatingPointAsSWord
+  pevalBitCastTerm = pevalBitCastGeneral
+  sbvBitCast _ v = withValidFPProofs @eb @sb $ SBV.sFloatingPointAsSWord v
 
 instance
   (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastTerm (FP eb sb) (IntN n)
   where
-  pevalBitCastTerm = pevalBitCastFP
+  pevalBitCastTerm = pevalBitCastGeneral
   sbvBitCast _ =
     withValidFPProofs @eb @sb $ SBV.sFromIntegral . SBV.sFloatingPointAsSWord

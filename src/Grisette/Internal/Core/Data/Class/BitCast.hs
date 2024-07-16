@@ -23,14 +23,21 @@ import Data.Word (Word32, Word64)
 
 -- | Type class for bit-casting between types.
 --
--- Special case regarding floating-point types:
+-- __Special Considerations for Floating-Point Types:__
 --
--- Usually, bit-casting a value of type @a@ to type @b@ and then back to type
--- @a@ should yield the original value. However, this is not the case for
--- symbolic floating-point values. In SMT-LIB2, there is only one NaN value,
--- which have multiple bit representations. Then bit-casting a NaN value to
--- a bit-vector will yield one of the bit representations of NaN, which is
--- not necessarily the same as the original bit representation of the NaN value.
+-- Typically, bit-casting a value from type @a@ to type @b@ and then back to
+-- type @a@ should result in the original value. However, this is not always
+-- true for floating-point values. In SMT-LIB2, there is only one NaN value with
+-- multiple bit representations. We define the bitcasting of a NaN value to a
+-- bit vector as the NaN value where the most significant bit in the fraction
+-- part is one, and the rest of the significand (including the sign bit) is
+-- zero. This behavior is consistent for both concrete and symbolic
+-- floating-point numbers.
+--
+-- If your application requires distinguishing between different NaN values,
+-- it is recommended to define your own floating-point type using bit-vectors.
+-- This allows you to check for NaN values and perform operations by bitcasting
+-- back to the provided floating-point types when they are not NaN values.
 class BitCast from to where
   bitCast :: from -> to
 
