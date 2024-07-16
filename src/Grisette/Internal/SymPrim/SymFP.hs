@@ -28,10 +28,12 @@ module Grisette.Internal.SymPrim.SymFP
 where
 
 import Control.DeepSeq (NFData)
+import Data.Bits (Bits (shiftL))
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
-import GHC.TypeLits (type (+))
+import GHC.TypeLits (natVal, type (+))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
@@ -41,6 +43,7 @@ import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP, withValidFPProofs)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
+    FPTrait (FPIsNaN),
     FloatingUnaryOp (FloatingSqrt),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalBitCastTerm (pevalBitCastTerm),
@@ -53,6 +56,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalNegNumTerm,
         pevalSignumNumTerm
       ),
+    SupportedPrim (pevalITETerm),
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
@@ -60,6 +64,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pformat,
     symTerm,
   )
+import Grisette.Internal.SymPrim.Prim.Term (pevalFPTraitTerm)
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -204,14 +209,30 @@ instance
   BitCast (SymFP eb sb) (SymIntN r)
   where
   bitCast (SymFP a) =
-    withValidFPProofs @eb @sb $ SymIntN $ pevalBitCastTerm a
+    withValidFPProofs @eb @sb $
+      SymIntN $
+        pevalITETerm
+          (pevalFPTraitTerm FPIsNaN a)
+          (conTerm $ ((1 `shiftL` (eb + 1)) - 1) `shiftL` (sb - 2))
+          (pevalBitCastTerm a)
+    where
+      eb = fromIntegral $ natVal (Proxy @eb) :: Int
+      sb = fromIntegral $ natVal (Proxy @sb) :: Int
 
 instance
   (ValidFP eb sb, r ~ (eb + sb)) =>
   BitCast (SymFP eb sb) (SymWordN r)
   where
   bitCast (SymFP a) =
-    withValidFPProofs @eb @sb $ SymWordN $ pevalBitCastTerm a
+    withValidFPProofs @eb @sb $
+      SymWordN $
+        pevalITETerm
+          (pevalFPTraitTerm FPIsNaN a)
+          (conTerm $ ((1 `shiftL` (eb + 1)) - 1) `shiftL` (sb - 2))
+          (pevalBitCastTerm a)
+    where
+      eb = fromIntegral $ natVal (Proxy @eb) :: Int
+      sb = fromIntegral $ natVal (Proxy @sb) :: Int
 
 instance
   (ValidFP eb sb, r ~ (eb + sb)) =>

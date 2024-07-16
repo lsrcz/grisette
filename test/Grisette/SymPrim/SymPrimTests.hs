@@ -40,9 +40,12 @@ import Data.Word (Word8)
 import Grisette
   ( Apply (apply),
     BV (bv),
+    BitCast (bitCast),
     EvalSym (evalSym),
     ExtractSym (extractSym),
+    FP32,
     Function ((#)),
+    IEEEConstants (fpNaN),
     ITEOp (symIte),
     LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
     Mergeable (rootStrategy),
@@ -71,10 +74,14 @@ import Grisette
         sizedBVZext
       ),
     Solvable (con, conView, isym, ssym),
+    SolvingFailure (Unsat),
     SomeSymIntN,
     SomeSymWordN,
     SymEq ((./=), (.==)),
+    SymIEEEFPTraits (symFpIsNaN),
+    SymIntN32,
     SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    SymWordN32,
     ToCon (toCon),
     ToSym (toSym),
     TypedAnySymbol,
@@ -83,7 +90,9 @@ import Grisette
     genSymSimple,
     mrgIf,
     mrgSingle,
+    solve,
     tryMerge,
+    z3,
     pattern Con,
     pattern SomeSymIntN,
     pattern SomeSymWordN,
@@ -154,6 +163,7 @@ import Grisette.Internal.SymPrim.Prim.Term
 import Grisette.SymPrim
   ( ModelSymPair ((:=)),
     SymBool (SymBool),
+    SymFP32,
     SymIntN (SymIntN),
     SymInteger (SymInteger),
     SymWordN (SymWordN),
@@ -856,6 +866,35 @@ symPrimTests =
                     toCon (con 255 :: SymWordN 8) @=? Just (255 :: Word8)
                 ]
             ],
+      testGroup
+        "SymFP"
+        [ testCase "bitCast consistent to SymWordN32" $ do
+            let x = "x" :: SymFP32
+            r <-
+              solve
+                z3
+                ( symFpIsNaN x
+                    .&& ( (bitCast x :: SymWordN32)
+                            ./= (con (bitCast (fpNaN :: FP32)))
+                        )
+                )
+            case r of
+              Left Unsat -> return ()
+              _ -> fail $ show r,
+          testCase "bitCast consistent to SymIntN32" $ do
+            let x = "x" :: SymFP32
+            r <-
+              solve
+                z3
+                ( symFpIsNaN x
+                    .&& ( (bitCast x :: SymIntN32)
+                            ./= (con (bitCast (fpNaN :: FP32)))
+                        )
+                )
+            case r of
+              Left Unsat -> return ()
+              _ -> fail $ show r
+        ],
       testGroup
         "SomeSym"
         [ testGroup
