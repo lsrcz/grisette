@@ -38,9 +38,9 @@ import Data.Word (Word32, Word64)
 -- true for floating-point values. In SMT-LIB2, there is only one NaN value with
 -- multiple bit representations.
 --
--- Given this, we do not provide 'BitCast' for the 'FP' type, instead, we use
--- the 'bitCastOrCanonical' function to use a canonical representation for the
--- NaN values.
+-- Given this, we do not provide 'BitCast' for the 'Grisette.SymPrim.FP' type,
+-- instead, we use the 'bitCastOrCanonical' function to use a canonical
+-- representation for the NaN values.
 --
 -- If your application requires distinguishing between different NaN values,
 -- it is recommended to define your own floating-point type using bit-vectors.
