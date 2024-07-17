@@ -39,10 +39,12 @@ module Grisette.Internal.SymPrim.FP
     withValidFPProofs,
     FPRoundingMode (..),
     allFPRoundingMode,
+    BitCastNaNError (..),
   )
 where
 
 import Control.DeepSeq (NFData (rnf))
+import Control.Exception (Exception)
 import Data.Bits (Bits (complement, shiftL, shiftR, xor, (.&.)))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Int (Int16, Int32, Int64)
@@ -63,6 +65,7 @@ import Data.SBV
     sWordAsSFloatingPoint,
   )
 import Data.Type.Equality (type (:~:) (Refl))
+import GHC.Exception (Exception (displayException))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, Nat, natVal, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast
@@ -155,29 +158,6 @@ withValidFPProofs r =
       withLeqProof (unsafeLeqProof @1 @eb) $
         withLeqProof (unsafeLeqProof @1 @sb) $
           bvIsNonZeroFromGEq1 (Proxy @(eb + sb)) r
-
-{-
-instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (WordN r) where
-  bitCast (FP f)
-    | isNaN f =
-        withValidFPProofs @eb @sb $
-          sizedBVConcat (shiftR (-1) 1 :: WordN eb) highsb
-    | otherwise = wordn
-    where
-      sb = fromIntegral $ natVal (Proxy @sb) :: Int
-      highsb = withValidFPProofs @eb @sb $ shiftL 3 (sb - 2) :: WordN sb
-      wordn :: WordN (eb + sb)
-      wordn =
-        withValidFPProofs @eb @sb $
-          fromIntegral $
-            fromJust $
-              unliteral $
-                sFloatingPointAsSWord $
-                  literal f
-
-instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (IntN r) where
-  bitCast x = withValidFPProofs @eb @sb bitCast (bitCast x :: WordN r)
-  -}
 
 instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (WordN r) (FP eb sb) where
   bitCast v = FP fp
@@ -375,3 +355,11 @@ BIT_CAST_OR_VIA_INTERMEDIATE(FP32, Float, WordN32)
 BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Word16, WordN16)
 BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Int16, WordN16)
 #endif
+
+-- | An error thrown when bitcasting 'FP' NaN to other types.
+data BitCastNaNError = BitCastNaNError
+  deriving (Show, Eq, Ord, Generic)
+
+instance Exception BitCastNaNError where
+  displayException BitCastNaNError =
+    "Bitcasting NaN value cannot be done with SMT-LIB2"
