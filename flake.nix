@@ -37,10 +37,10 @@
           hPkgs.hlint # Haskell codestyle checker
           hPkgs.haskell-language-server # LSP server for editor
           stableHPkgs.cabal-install
-          (pkgs.ihaskell.override {
-            haskell = hPkgs.haskell;
-            ghcWithPackages = hPkgs.ghcWithPackages;
-          })
+          # (pkgs.ihaskell.override {
+          #   haskell = hPkgs.haskell;
+          #   ghcWithPackages = hPkgs.ghcWithPackages;
+          # })
         ];
 
         devTools = basicDevTools ++ additionalDevTools;

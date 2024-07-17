@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -28,24 +29,33 @@ module Grisette.Internal.SymPrim.SymFP
 where
 
 import Control.DeepSeq (NFData)
-import Data.Bits (Bits (shiftL))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
-import GHC.TypeLits (natVal, type (+))
+import GHC.TypeLits (type (+))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
+import Grisette.Internal.Core.Data.Class.SafeBitCast
+  ( BitCastCanonical (bitCastCanonicalValue),
+    BitCastOr (bitCastOr),
+  )
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP, withValidFPProofs)
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    ValidFP,
+    withValidFPProofs,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
-    FPTrait (FPIsNaN),
     FloatingUnaryOp (FloatingSqrt),
     LinkedRep (underlyingTerm, wrapTerm),
+    PEvalBitCastOrTerm (pevalBitCastOrTerm),
     PEvalBitCastTerm (pevalBitCastTerm),
     PEvalFloatingTerm (pevalFloatingUnaryTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
@@ -56,7 +66,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalNegNumTerm,
         pevalSignumNumTerm
       ),
-    SupportedPrim (pevalITETerm),
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
@@ -64,7 +73,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pformat,
     symTerm,
   )
-import Grisette.Internal.SymPrim.Prim.Term (pevalFPTraitTerm)
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -205,34 +213,38 @@ instance AllSyms SymFPRoundingMode where
   allSymsS v = (SomeSym v :)
 
 instance
-  (ValidFP eb sb, r ~ (eb + sb)) =>
-  BitCast (SymFP eb sb) (SymIntN r)
+  (ValidFP eb sb, r ~ eb + sb) =>
+  BitCastCanonical (SymFP eb sb) (SymWordN r)
   where
-  bitCast (SymFP a) =
+  bitCastCanonicalValue _ =
     withValidFPProofs @eb @sb $
-      SymIntN $
-        pevalITETerm
-          (pevalFPTraitTerm FPIsNaN a)
-          (conTerm $ ((1 `shiftL` (eb + 1)) - 1) `shiftL` (sb - 2))
-          (pevalBitCastTerm a)
-    where
-      eb = fromIntegral $ natVal (Proxy @eb) :: Int
-      sb = fromIntegral $ natVal (Proxy @sb) :: Int
+      con (bitCastCanonicalValue (Proxy @(FP eb sb)) :: WordN r)
 
 instance
-  (ValidFP eb sb, r ~ (eb + sb)) =>
-  BitCast (SymFP eb sb) (SymWordN r)
+  (ValidFP eb sb, r ~ eb + sb) =>
+  BitCastCanonical (SymFP eb sb) (SymIntN r)
   where
-  bitCast (SymFP a) =
+  bitCastCanonicalValue _ =
     withValidFPProofs @eb @sb $
-      SymWordN $
-        pevalITETerm
-          (pevalFPTraitTerm FPIsNaN a)
-          (conTerm $ ((1 `shiftL` (eb + 1)) - 1) `shiftL` (sb - 2))
-          (pevalBitCastTerm a)
-    where
-      eb = fromIntegral $ natVal (Proxy @eb) :: Int
-      sb = fromIntegral $ natVal (Proxy @sb) :: Int
+      con (bitCastCanonicalValue (Proxy @(FP eb sb)) :: IntN r)
+
+instance
+  (ValidFP eb sb, r ~ eb + sb) =>
+  BitCastOr (SymFP eb sb) (SymWordN r)
+  where
+  bitCastOr (SymWordN d) (SymFP a) =
+    withValidFPProofs @eb @sb $ SymWordN (pevalBitCastOrTerm d a)
+
+instance
+  (ValidFP eb sb, r ~ eb + sb) =>
+  BitCastOr (SymFP eb sb) (SymIntN r)
+  where
+  bitCastOr (SymIntN d) (SymFP a) =
+    withValidFPProofs @eb @sb $ SymIntN (pevalBitCastOrTerm d a)
+
+#define BIT_CAST_CANONICAL_VIA_INTERMEDIATE(from, to, intermediate) \
+  instance BitCastCanonical (from) (to) where \
+    bitCastCanonicalValue x = bitCast (bitCastCanonicalValue x :: intermediate)
 
 instance
   (ValidFP eb sb, r ~ (eb + sb)) =>

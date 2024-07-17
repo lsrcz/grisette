@@ -80,7 +80,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
+import Grisette.Internal.Core.Data.Class.SafeBitCast (bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (conView),
     pattern Con,
@@ -375,11 +375,11 @@ TOCON_MACHINE_INTEGER(SymWordN, WordN, $intBitwidthQ, Word)
 #endif
 
 instance ToCon SymFP32 Float where
-  toCon (Con (fp :: FP32)) = Just $ bitCast fp
+  toCon (Con (fp :: FP32)) = Just $ bitCastOrCanonical fp
   toCon _ = Nothing
 
 instance ToCon SymFP64 Double where
-  toCon (Con (fp :: FP64)) = Just $ bitCast fp
+  toCon (Con (fp :: FP64)) = Just $ bitCastOrCanonical fp
   toCon _ = Nothing
 
 deriveBuiltins

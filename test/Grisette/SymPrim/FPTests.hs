@@ -40,6 +40,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPositiveInfinite,
     fpIsPositiveZero,
   )
+import Grisette.Internal.Core.Data.Class.SafeBitCast (bitCastOrCanonical)
 import Grisette.Internal.SymPrim.FP (FP32)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -83,7 +84,7 @@ unaryOpComplianceWithFloat ::
   Test
 unaryOpComplianceWithFloat name fpOp floatOp cmp =
   testProperty name $ \x ->
-    let x' = bitCast x
+    let x' = bitCastOrCanonical x
         actual = fpOp x
         expected = floatOp x'
      in cmp actual expected
@@ -96,8 +97,8 @@ binOpComplianceWithFloat ::
   Test
 binOpComplianceWithFloat name fpOp floatOp cmp =
   testProperty name $ \x y ->
-    let x' = bitCast x
-        y' = bitCast y
+    let x' = bitCastOrCanonical x
+        y' = bitCastOrCanonical y
         actual = fpOp x y
         expected = floatOp x' y'
      in cmp actual expected
@@ -119,8 +120,8 @@ fpTests =
               let regulated =
                     if isNaN fp
                       then 0x7fc00000
-                      else bitCast fp :: WordN 32
-              let actual = bitCast (bitCast regulated :: FP32)
+                      else bitCastOrCanonical fp :: WordN 32
+              let actual = bitCastOrCanonical (bitCast regulated :: FP32)
               actual @?= regulated
         ],
       testGroup
@@ -196,12 +197,12 @@ fpTests =
           -- significand is not compliant with Float
           -- unaryOpComplianceWithFloat "significand" significand significand sameFP
           testProperty "scaleFloat" $ \i (x :: FP32) ->
-            let x' = bitCast x :: Float
+            let x' = bitCastOrCanonical x :: Float
                 actual = scaleFloat i x
                 expected = scaleFloat i x'
              in sameFP actual expected,
           testProperty "isNaN" $ \(x :: FP32) ->
-            let x' = bitCast x :: Float
+            let x' = bitCastOrCanonical x :: Float
              in isNaN x == isNaN x',
           unaryOpComplianceWithFloat "isInfinite" isInfinite isInfinite (==),
           unaryOpComplianceWithFloat

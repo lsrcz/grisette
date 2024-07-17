@@ -18,12 +18,13 @@ import Grisette
     SymFP32,
     SymIntN,
     SymIntN32,
-    SymWordN (SymWordN),
+    SymWordN,
     SymWordN32,
     WordN,
     WordN32,
+    bitCastOrCanonical,
+    fpNaN,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Term (FPTrait (FPIsNaN), Term, bitCastTerm, conTerm, fpTraitTerm, iteTerm, ssymTerm)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -68,27 +69,25 @@ bitCastTests =
       testGroup
         "FP"
         [ testCase "FP32" $ do
-            bitCast (-512.625 :: FP32) @?= (0xc4002800 :: WordN32)
+            bitCastOrCanonical (-512.625 :: FP32) @?= (0xc4002800 :: WordN32)
+            bitCastOrCanonical (fpNaN :: FP32) @?= (0x7fc00000 :: WordN32)
             bitCast (0xc4002800 :: WordN32) @?= (-512.625 :: FP32)
-            bitCast (-512.625 :: FP32) @?= (0xc4002800 :: IntN32)
+            bitCastOrCanonical (-512.625 :: FP32) @?= (0xc4002800 :: IntN32)
+            bitCastOrCanonical (fpNaN :: FP32) @?= (0x7fc00000 :: IntN32)
             bitCast (0xc4002800 :: IntN32) @?= (-512.625 :: FP32),
           testCase "SymFP32" $ do
-            bitCast (-512.625 :: SymFP32) @?= (0xc4002800 :: SymWordN32)
+            bitCastOrCanonical (-512.625 :: SymFP32)
+              @?= (0xc4002800 :: SymWordN32)
+            bitCastOrCanonical (fpNaN :: SymFP32) @?= (0x7fc00000 :: SymWordN32)
             bitCast (0xc4002800 :: SymWordN32) @?= (-512.625 :: SymFP32)
-            bitCast (-512.625 :: SymFP32) @?= (0xc4002800 :: SymIntN32)
+            bitCastOrCanonical (-512.625 :: SymFP32)
+              @?= (0xc4002800 :: SymIntN32)
+            bitCastOrCanonical (fpNaN :: SymFP32) @?= (0x7fc00000 :: SymIntN32)
             bitCast (0xc4002800 :: SymIntN32) @?= (-512.625 :: SymFP32)
         ],
       testCase "Nested" $ do
-        let fp32 = "x" :: SymFP32
-        let int32 = bitCast fp32 :: SymIntN32
+        let int32 = "x" :: SymIntN32
         let word32 = bitCast int32 :: SymWordN32
-        let fp32' = bitCast word32 :: SymFP32
-        let final = bitCast fp32' :: SymWordN32
-        final
-          @?= SymWordN
-            ( iteTerm
-                (fpTraitTerm FPIsNaN (ssymTerm "x" :: Term (FP32)))
-                (conTerm 0x7fc00000)
-                (bitCastTerm (ssymTerm "x" :: Term FP32))
-            )
+        let final = bitCast word32 :: SymIntN32
+        final @?= int32
     ]

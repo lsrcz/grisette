@@ -352,6 +352,10 @@ module Grisette.Core
     SafeSymRotate (..),
     SignConversion (..),
     BitCast (..),
+    BitCastCanonical (..),
+    BitCastOr (..),
+    BitCastOrCanonical,
+    bitCastOrCanonical,
 
     -- ** Safe operation for Numbers
     DivOr (..),
@@ -1602,6 +1606,11 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     (.#),
     pattern If,
     pattern Single,
+  )
+import Grisette.Internal.Core.Data.Class.SafeBitCast
+  ( BitCastCanonical (..),
+    BitCastOr (..),
+    bitCastOrCanonical, BitCastOrCanonical,
   )
 import Grisette.Internal.Core.Data.Class.SafeDiv
   ( DivOr (..),

@@ -25,17 +25,20 @@ where
 import qualified Data.SBV as SBV
 import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
+import Grisette.Internal.Core.Data.Class.SafeBitCast (BitCastOr (bitCastOr))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP, withValidFPProofs)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
+  ( PEvalBitCastOrTerm (pevalBitCastOrTerm, sbvBitCastOr),
+    PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
     SupportedNonFuncPrim,
     Term (BitCastTerm, ConTerm),
+    bitCastOrTerm,
     bitCastTerm,
     conTerm,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
+import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce, unaryUnfoldOnce)
 import Grisette.Internal.SymPrim.Prim.Internal.Utils (pattern Dyn)
 
 doPevalBitCastSameType ::
@@ -54,6 +57,23 @@ pevalBitCastGeneral ::
   Term a ->
   Term b
 pevalBitCastGeneral = unaryUnfoldOnce doPevalBitCast bitCastTerm
+
+doPevalBitCastOr ::
+  (PEvalBitCastOrTerm a b) =>
+  Term b ->
+  Term a ->
+  Maybe (Term b)
+doPevalBitCastOr (ConTerm _ d) (ConTerm _ v) = Just $ conTerm $ bitCastOr d v
+doPevalBitCastOr _ _ = Nothing
+
+pevalBitCastOr ::
+  forall a b.
+  (PEvalBitCastOrTerm a b) =>
+  Term b ->
+  Term a ->
+  Term b
+pevalBitCastOr =
+  binaryUnfoldOnce doPevalBitCastOr bitCastOrTerm
 
 instance PEvalBitCastTerm Bool (IntN 1) where
   pevalBitCastTerm = pevalBitCastGeneral
@@ -88,15 +108,24 @@ instance
 
 instance
   (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
-  PEvalBitCastTerm (FP eb sb) (WordN n)
+  PEvalBitCastOrTerm (FP eb sb) (WordN n)
   where
-  pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ v = withValidFPProofs @eb @sb $ SBV.sFloatingPointAsSWord v
+  pevalBitCastOrTerm = pevalBitCastOr
+  sbvBitCastOr _ d v =
+    withValidFPProofs @eb @sb $
+      SBV.ite
+        (SBV.fpIsNaN v)
+        d
+        (SBV.sFloatingPointAsSWord v)
 
 instance
   (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
-  PEvalBitCastTerm (FP eb sb) (IntN n)
+  PEvalBitCastOrTerm (FP eb sb) (IntN n)
   where
-  pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ =
-    withValidFPProofs @eb @sb $ SBV.sFromIntegral . SBV.sFloatingPointAsSWord
+  pevalBitCastOrTerm = pevalBitCastOr
+  sbvBitCastOr _ d v =
+    withValidFPProofs @eb @sb $
+      SBV.ite
+        (SBV.fpIsNaN v)
+        d
+        (SBV.sFromIntegral $ SBV.sFloatingPointAsSWord v)

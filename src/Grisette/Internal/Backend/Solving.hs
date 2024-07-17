@@ -154,6 +154,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalApplyTerm (sbvApplyTerm),
     PEvalBVTerm (sbvBVConcatTerm, sbvBVExtendTerm, sbvBVSelectTerm),
+    PEvalBitCastOrTerm (sbvBitCastOr),
     PEvalBitCastTerm (sbvBitCast),
     PEvalBitwiseTerm
       ( sbvAndBitsTerm,
@@ -204,6 +205,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVExtendTerm,
         BVSelectTerm,
         BinaryTerm,
+        BitCastOrTerm,
         BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
@@ -825,6 +827,12 @@ lowerSinglePrimIntermediate config (ApplyTerm _ (f :: Term f) a) = do
 lowerSinglePrimIntermediate config (BitCastTerm _ (a :: Term x)) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvBitCast @x @a @integerBitWidth config . a'
+lowerSinglePrimIntermediate
+  config
+  (BitCastOrTerm _ (d :: Term a) (a :: Term x)) = do
+    d' <- lowerSinglePrimCached' config d
+    a' <- lowerSinglePrimCached' config a
+    return $ \qst -> sbvBitCastOr @x @a @integerBitWidth config (d' qst) (a' qst)
 lowerSinglePrimIntermediate
   config
   (BVConcatTerm _ (a :: Term (bv l)) (b :: Term (bv r))) =

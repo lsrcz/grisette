@@ -28,11 +28,11 @@ import Data.Word (Word32, Word64)
 -- Typically, bit-casting a value from type @a@ to type @b@ and then back to
 -- type @a@ should result in the original value. However, this is not always
 -- true for floating-point values. In SMT-LIB2, there is only one NaN value with
--- multiple bit representations. We define the bitcasting of a NaN value to a
--- bit vector as the NaN value where the most significant bit in the fraction
--- part is one, and the rest of the significand (including the sign bit) is
--- zero. This behavior is consistent for both concrete and symbolic
--- floating-point numbers.
+-- multiple bit representations.
+--
+-- Given this, we do not provide 'BitCast' for the 'FP' type, instead, we use
+-- the 'bitCastOrCanonical' function to use a canonical representation for the
+-- NaN values.
 --
 -- If your application requires distinguishing between different NaN values,
 -- it is recommended to define your own floating-point type using bit-vectors.

@@ -49,6 +49,7 @@ import Grisette.Backend.TermRewritingGen
     absNumSpec,
     addNumSpec,
     andSpec,
+    bitCastOrSpec,
     bitCastSpec,
     divIntegralSpec,
     eqvSpec,
@@ -74,6 +75,7 @@ import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
 import Grisette.Internal.SymPrim.FP (FP, FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPTrait (FPIsPositive),
+    PEvalBitCastOrTerm,
     PEvalBitCastTerm,
     SupportedPrim,
     Term,
@@ -476,20 +478,24 @@ termRewritingTests =
                     )
         let fromFPCase ::
               forall a b.
-              (Arbitrary a, PEvalBitCastTerm a b, RealFloat a) =>
+              (Arbitrary a, Arbitrary b, PEvalBitCastOrTerm a b, RealFloat a) =>
               Test
             fromFPCase = testProperty
               (show (typeRep @a) <> " -> " <> show (typeRep @b))
-              $ \x ->
+              $ \d x ->
                 withMaxSuccess 10 . (not (isNaN x) ==>) . ioProperty $
                   validateSpec
                     z3
-                    ( bitCastSpec (conSpec x :: GeneralSpec a) ::
-                        GeneralSpec b
+                    ( bitCastOrSpec
+                        (conSpec d :: GeneralSpec b)
+                        (conSpec x :: GeneralSpec a)
                     )
         let toFPCase ::
               forall a b.
-              (Arbitrary a, PEvalBitCastTerm a b, RealFloat b) =>
+              ( Arbitrary a,
+                PEvalBitCastTerm a b,
+                RealFloat b
+              ) =>
               Test
             toFPCase = testProperty
               (show (typeRep @a) <> " -> " <> show (typeRep @b))
