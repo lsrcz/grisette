@@ -124,8 +124,8 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Data.Class.BitCast (bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Internal.Core.Data.Class.SafeBitCast (bitCastOrCanonical)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, AlgRealPoly, RealPoint)
 import Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch,

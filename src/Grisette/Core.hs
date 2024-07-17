@@ -1411,7 +1411,13 @@ import Grisette.Internal.Core.Control.Monad.Union
     unionSize,
     unionUnaryOp,
   )
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (..))
+import Grisette.Internal.Core.Data.Class.BitCast
+  ( BitCast (..),
+    BitCastCanonical (..),
+    BitCastOr (..),
+    BitCastOrCanonical,
+    bitCastOrCanonical,
+  )
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (..),
     SizedBV (..),
@@ -1606,11 +1612,6 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     (.#),
     pattern If,
     pattern Single,
-  )
-import Grisette.Internal.Core.Data.Class.SafeBitCast
-  ( BitCastCanonical (..),
-    BitCastOr (..),
-    bitCastOrCanonical, BitCastOrCanonical,
   )
 import Grisette.Internal.Core.Data.Class.SafeDiv
   ( DivOr (..),

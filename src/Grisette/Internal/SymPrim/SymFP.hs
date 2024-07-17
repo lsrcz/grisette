@@ -34,12 +34,8 @@ import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (type (+))
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast), BitCastCanonical (bitCastCanonicalValue), BitCastOr (bitCastOr))
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
-import Grisette.Internal.Core.Data.Class.SafeBitCast
-  ( BitCastCanonical (bitCastCanonicalValue),
-    BitCastOr (bitCastOr),
-  )
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )

@@ -65,9 +65,13 @@ import Data.SBV
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, Nat, natVal, type (+), type (<=))
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
+import Grisette.Internal.Core.Data.Class.BitCast
+  ( BitCast (bitCast),
+    BitCastCanonical (bitCastCanonicalValue),
+    BitCastOr (bitCastOr),
+    bitCastOrCanonical,
+  )
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
-import Grisette.Internal.Core.Data.Class.SafeBitCast (BitCastCanonical (bitCastCanonicalValue), BitCastOr (bitCastOr), bitCastOrCanonical)
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.Utils.Parameterized
   ( KnownProof (KnownProof),

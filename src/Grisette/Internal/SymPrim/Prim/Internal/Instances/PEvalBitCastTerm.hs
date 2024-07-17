@@ -24,8 +24,10 @@ where
 
 import qualified Data.SBV as SBV
 import GHC.TypeLits (KnownNat, type (+), type (<=))
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
-import Grisette.Internal.Core.Data.Class.SafeBitCast (BitCastOr (bitCastOr))
+import Grisette.Internal.Core.Data.Class.BitCast
+  ( BitCast (bitCast),
+    BitCastOr (bitCastOr),
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP, withValidFPProofs)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
