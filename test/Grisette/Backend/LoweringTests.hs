@@ -90,6 +90,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     addNumTerm,
     andBitsTerm,
     andTerm,
+    bitCastOrTerm,
     bitCastTerm,
     bvconcatTerm,
     bvselectTerm,
@@ -939,19 +940,28 @@ loweringTests =
                     (fpTraitTerm trait)
                     "isNaN"
                     op,
+              testCase "BitCastOr" $ do
+                testBinaryOpLowering @(WordN 8) @(FP 3 5)
+                  unboundedConfig
+                  bitCastOrTerm
+                  "bitCastOr"
+                  ( \d v ->
+                      SBV.ite
+                        (SBV.fpIsNaN v)
+                        d
+                        (SBV.sFloatingPointAsSWord v)
+                  )
+                testBinaryOpLowering @(IntN 8) @(FP 3 5)
+                  unboundedConfig
+                  bitCastOrTerm
+                  "bitCastOr"
+                  ( \d v ->
+                      SBV.ite
+                        (SBV.fpIsNaN v)
+                        d
+                        (SBV.sFromIntegral $ SBV.sFloatingPointAsSWord v)
+                  ),
               testCase "BitCast" $ do
-                testUnaryOpLowering' @(FP 3 5) @(WordN 8)
-                  (Just $ \x -> SBV.sNot $ SBV.fpIsNaN x)
-                  unboundedConfig
-                  bitCastTerm
-                  "bitCast"
-                  SBV.sFloatingPointAsSWord
-                testUnaryOpLowering' @(FP 3 5) @(IntN 8)
-                  (Just $ \x -> SBV.sNot $ SBV.fpIsNaN x)
-                  unboundedConfig
-                  bitCastTerm
-                  "bitCast"
-                  (SBV.sFromIntegral . SBV.sFloatingPointAsSWord)
                 testUnaryOpLowering' @(WordN 8) @(FP 3 5)
                   ( Just $ \x ->
                       SBV.sNot $

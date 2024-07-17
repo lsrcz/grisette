@@ -124,8 +124,8 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Internal.Core.Data.Class.SafeBitCast (bitCastOrCanonical)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, AlgRealPoly, RealPoint)
 import Grisette.Internal.SymPrim.BV
   ( BitwidthMismatch,
@@ -590,7 +590,7 @@ instance (ValidFP eb sb) => Mergeable (FP eb sb) where
     let sub = SimpleStrategy $ \_ t _ -> t
      in withValidFPProofs @eb @sb
           $ SortedStrategy
-            (\fp -> (bitCast fp :: WordN (eb + sb)))
+            (\fp -> (bitCastOrCanonical fp :: WordN (eb + sb)))
           $ const sub
 
 #define MERGEABLE_SIMPLE(symtype) \

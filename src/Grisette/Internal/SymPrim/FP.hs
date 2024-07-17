@@ -67,7 +67,8 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, Nat, natVal, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
-import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.Core.Data.Class.SafeBitCast (BitCastCanonical (bitCastCanonicalValue), BitCastOr (bitCastOr), bitCastOrCanonical)
+import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.Utils.Parameterized
   ( KnownProof (KnownProof),
     knownAdd,
@@ -151,6 +152,7 @@ withValidFPProofs r =
         withLeqProof (unsafeLeqProof @1 @sb) $
           bvIsNonZeroFromGEq1 (Proxy @(eb + sb)) r
 
+{-
 instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (WordN r) where
   bitCast (FP f)
     | isNaN f =
@@ -171,6 +173,7 @@ instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (WordN r) where
 
 instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (FP eb sb) (IntN r) where
   bitCast x = withValidFPProofs @eb @sb bitCast (bitCast x :: WordN r)
+  -}
 
 instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (WordN r) (FP eb sb) where
   bitCast v = FP fp
@@ -192,22 +195,14 @@ instance (ValidFP eb sb, r ~ (eb + sb)) => BitCast (IntN r) (FP eb sb) where
     bitCast x = bitCast (bitCast x :: intermediate)
 
 #if 1
-BITCAST_VIA_INTERMEDIATE(FP64, Double, WordN 64)
-BITCAST_VIA_INTERMEDIATE(FP64, Int64, WordN 64)
-BITCAST_VIA_INTERMEDIATE(FP64, Word64, WordN 64)
 BITCAST_VIA_INTERMEDIATE(Double, FP64, WordN 64)
 BITCAST_VIA_INTERMEDIATE(Int64, FP64, WordN 64)
 BITCAST_VIA_INTERMEDIATE(Word64, FP64, WordN 64)
 
-BITCAST_VIA_INTERMEDIATE(FP32, Float, WordN 32)
-BITCAST_VIA_INTERMEDIATE(FP32, Int32, WordN 32)
-BITCAST_VIA_INTERMEDIATE(FP32, Word32, WordN 32)
 BITCAST_VIA_INTERMEDIATE(Float, FP32, WordN 32)
 BITCAST_VIA_INTERMEDIATE(Int32, FP32, WordN 32)
 BITCAST_VIA_INTERMEDIATE(Word32, FP32, WordN 32)
 
-BITCAST_VIA_INTERMEDIATE(FP16, Word16, WordN 16)
-BITCAST_VIA_INTERMEDIATE(FP16, Int16, WordN 16)
 BITCAST_VIA_INTERMEDIATE(Word16, FP16, WordN 16)
 BITCAST_VIA_INTERMEDIATE(Int16, FP16, WordN 16)
 #endif
@@ -217,10 +212,11 @@ instance NFData (FP eb sb) where
 instance (ValidFP eb sb) => Lift (FP eb sb) where
   liftTyped fp = [||bitCast wordnValue||]
     where
-      wordnValue = bitCast fp :: WordN (eb + sb)
+      wordnValue = bitCastOrCanonical fp :: WordN (eb + sb)
 
 instance (ValidFP eb sb) => Hashable (FP eb sb) where
-  hashWithSalt salt x = hashWithSalt salt (bitCast x :: WordN (eb + sb))
+  hashWithSalt salt x =
+    hashWithSalt salt (bitCastOrCanonical x :: WordN (eb + sb))
 
 deriving newtype instance (ValidFloat eb sb) => Num (FP eb sb)
 
@@ -304,3 +300,74 @@ allFPRoundingMode = [RNE, RNA, RTP, RTN, RTZ]
 
 instance QC.Arbitrary FPRoundingMode where
   arbitrary = QC.elements [RNE, RNA, RTP, RTN, RTZ]
+
+instance
+  (ValidFP eb sb, n ~ eb + sb) =>
+  BitCastCanonical (FP eb sb) (WordN n)
+  where
+  bitCastCanonicalValue _ =
+    withValidFPProofs @eb @sb $
+      sizedBVConcat (shiftR (-1) 1 :: WordN eb) highsb
+    where
+      sb = fromIntegral $ natVal (Proxy @sb) :: Int
+      highsb = withValidFPProofs @eb @sb $ shiftL 3 (sb - 2) :: WordN sb
+
+instance
+  (ValidFP eb sb, n ~ eb + sb) =>
+  BitCastCanonical (FP eb sb) (IntN n)
+  where
+  bitCastCanonicalValue n =
+    withValidFPProofs @eb @sb $
+      bitCast (bitCastCanonicalValue n :: WordN n)
+
+#define BIT_CAST_CANONICAL_VIA_INTERMEDIATE(from, to, intermediate) \
+  instance BitCastCanonical (from) (to) where \
+    bitCastCanonicalValue x = bitCast (bitCastCanonicalValue x :: intermediate)
+
+#if 1
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP64, Word64, WordN64)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP64, Int64, WordN64)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP64, Double, WordN64)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP32, Word32, WordN32)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP32, Int32, WordN32)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP32, Float, WordN32)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP16, Word16, WordN16)
+BIT_CAST_CANONICAL_VIA_INTERMEDIATE(FP16, Int16, WordN16)
+#endif
+
+instance (ValidFP eb sb, r ~ (eb + sb)) => BitCastOr (FP eb sb) (WordN r) where
+  bitCastOr d (FP f)
+    | isNaN f = d
+    | otherwise = wordn
+    where
+      wordn :: WordN (eb + sb)
+      wordn =
+        withValidFPProofs @eb @sb $
+          fromIntegral $
+            fromJust $
+              unliteral $
+                sFloatingPointAsSWord $
+                  literal f
+
+instance
+  (ValidFP eb sb, n ~ eb + sb) =>
+  BitCastOr (FP eb sb) (IntN n)
+  where
+  bitCastOr d n =
+    withValidFPProofs @eb @sb $
+      bitCast (bitCastOr (bitCast d) n :: WordN n)
+
+#define BIT_CAST_OR_VIA_INTERMEDIATE(from, to, intermediate) \
+  instance BitCastOr (from) (to) where \
+    bitCastOr d x = bitCast (bitCastOr (bitCast d) x :: intermediate)
+
+#if 1
+BIT_CAST_OR_VIA_INTERMEDIATE(FP64, Word64, WordN64)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP64, Int64, WordN64)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP64, Double, WordN64)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP32, Word32, WordN32)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP32, Int32, WordN32)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP32, Float, WordN32)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Word16, WordN16)
+BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Int16, WordN16)
+#endif

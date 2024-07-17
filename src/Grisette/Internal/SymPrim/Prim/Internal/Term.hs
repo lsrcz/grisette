@@ -57,6 +57,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalNEqTerm,
     PEvalDivModIntegralTerm (..),
     PEvalBitCastTerm (..),
+    PEvalBitCastOrTerm (..),
     PEvalBVTerm (..),
     PEvalFractionalTerm (..),
     PEvalFloatingTerm (..),
@@ -123,6 +124,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     rotateLeftTerm,
     rotateRightTerm,
     bitCastTerm,
+    bitCastOrTerm,
     bvconcatTerm,
     bvselectTerm,
     bvextendTerm,
@@ -159,7 +161,6 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalITEBasic,
     pevalITEBasicTerm,
     pevalDefaultEqTerm,
-    --
     NonFuncPrimConstraint,
     NonFuncSBVRep (..),
     SupportedNonFuncPrim (..),
@@ -233,6 +234,7 @@ import Grisette.Internal.Core.Data.Class.BitCast (BitCast)
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV,
   )
+import Grisette.Internal.Core.Data.Class.SafeBitCast (BitCastOr)
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift)
 import Grisette.Internal.Core.Data.Symbol
@@ -741,6 +743,18 @@ class
     SBVType integerBitWidth b
 
 class
+  (SupportedNonFuncPrim a, SupportedNonFuncPrim b, BitCastOr a b) =>
+  PEvalBitCastOrTerm a b
+  where
+  pevalBitCastOrTerm :: Term b -> Term a -> Term b
+  sbvBitCastOr ::
+    (KnownIsZero integerBitwidth) =>
+    q integerBitWidth ->
+    SBVType integerBitWidth b ->
+    SBVType integerBitWidth a ->
+    SBVType integerBitWidth b
+
+class
   ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
     SizedBV bv,
     Typeable bv
@@ -1235,6 +1249,12 @@ data Term t where
     {-# UNPACK #-} !Id ->
     !(Term a) ->
     Term b
+  BitCastOrTerm ::
+    (PEvalBitCastOrTerm a b) =>
+    {-# UNPACK #-} !Id ->
+    !(Term b) ->
+    !(Term a) ->
+    Term b
   BVConcatTerm ::
     ( PEvalBVTerm bv,
       KnownNat l,
@@ -1402,6 +1422,7 @@ identityWithTypeRep (ShiftRightTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RotateLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (RotateRightTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BitCastTerm i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BitCastOrTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVConcatTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVSelectTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (BVExtendTerm i _ _ _) = (someTypeRep (Proxy @t), i)
@@ -1451,6 +1472,7 @@ introSupportedPrimConstraint RotateLeftTerm {} x = x
 introSupportedPrimConstraint ShiftRightTerm {} x = x
 introSupportedPrimConstraint RotateRightTerm {} x = x
 introSupportedPrimConstraint BitCastTerm {} x = x
+introSupportedPrimConstraint BitCastOrTerm {} x = x
 introSupportedPrimConstraint BVConcatTerm {} x = x
 introSupportedPrimConstraint BVSelectTerm {} x = x
 introSupportedPrimConstraint BVExtendTerm {} x = x
@@ -1500,6 +1522,7 @@ pformat (ShiftRightTerm _ arg n) = "(shr " ++ pformat arg ++ " " ++ pformat n ++
 pformat (RotateLeftTerm _ arg n) = "(rotl " ++ pformat arg ++ " " ++ pformat n ++ ")"
 pformat (RotateRightTerm _ arg n) = "(rotr " ++ pformat arg ++ " " ++ pformat n ++ ")"
 pformat (BitCastTerm _ arg) = "(bitcast " ++ pformat arg ++ ")"
+pformat (BitCastOrTerm _ d arg) = "(bitcast_or " ++ pformat d ++ " " ++ pformat arg ++ ")"
 pformat (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformat arg ++ ")"
 pformat (BVExtendTerm _ signed n arg) =
@@ -1556,6 +1579,7 @@ instance Lift (Term t) where
   liftTyped (RotateLeftTerm _ arg n) = [||rotateLeftTerm arg n||]
   liftTyped (RotateRightTerm _ arg n) = [||rotateRightTerm arg n||]
   liftTyped (BitCastTerm _ v) = [||bitCastTerm v||]
+  liftTyped (BitCastOrTerm _ d v) = [||bitCastOrTerm d v||]
   liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
   liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) =
     [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
@@ -1642,6 +1666,7 @@ instance Show (Term ty) where
   show (RotateLeftTerm i arg n) = "RotateLeft{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (RotateRightTerm i arg n) = "RotateRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
   show (BitCastTerm i arg) = "BitCast{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (BitCastOrTerm i d arg) = "BitCastOr{id=" ++ show i ++ ", default=" ++ show d ++ ", arg=" ++ show arg ++ "}"
   show (BVConcatTerm i arg1 arg2) = "BVConcat{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (BVSelectTerm i ix w arg) =
     "BVSelect{id=" ++ show i ++ ", ix=" ++ show ix ++ ", w=" ++ show w ++ ", arg=" ++ show arg ++ "}"
@@ -1763,6 +1788,11 @@ data UTerm t where
   URotateRightTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UBitCastTerm ::
     (PEvalBitCastTerm a b) =>
+    !(Term a) ->
+    UTerm b
+  UBitCastOrTerm ::
+    (PEvalBitCastOrTerm a b) =>
+    !(Term b) ->
     !(Term a) ->
     UTerm b
   UBVConcatTerm ::
@@ -1924,6 +1954,10 @@ instance (SupportedPrim t) => Interned (Term t) where
     DBitCastTerm ::
       !(TypeRep a, Id) ->
       Description (Term b)
+    DBitCastOrTerm ::
+      Id ->
+      !(TypeRep a, Id) ->
+      Description (Term b)
     DBVSelectTerm ::
       forall bv (n :: Nat) (w :: Nat) (ix :: Nat).
       !(TypeRep ix) ->
@@ -1993,6 +2027,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (URotateLeftTerm arg n) = DRotateLeftTerm (identity arg) (identity n)
   describe (URotateRightTerm arg n) = DRotateRightTerm (identity arg) (identity n)
   describe (UBitCastTerm (arg :: Term a)) = DBitCastTerm (typeRep :: TypeRep a, identity arg)
+  describe (UBitCastOrTerm d (arg :: Term a)) = DBitCastOrTerm (identity d) (typeRep :: TypeRep a, identity arg)
   describe (UBVConcatTerm (arg1 :: bv1) (arg2 :: bv2)) =
     DBVConcatTerm (typeRep :: TypeRep bv1) (typeRep :: TypeRep bv2) (identity arg1) (identity arg2)
   describe (UBVSelectTerm (ix :: TypeRep ix) _ (arg :: Term arg)) =
@@ -2046,6 +2081,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (URotateLeftTerm arg n) = RotateLeftTerm i arg n
       go (URotateRightTerm arg n) = RotateRightTerm i arg n
       go (UBitCastTerm arg) = BitCastTerm i arg
+      go (UBitCastOrTerm d arg) = BitCastOrTerm i d arg
       go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
       go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
       go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
@@ -2097,6 +2133,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DRotateLeftTerm li ln == DRotateLeftTerm ri rn = li == ri && ln == rn
   DRotateRightTerm li ln == DRotateRightTerm ri rn = li == ri && ln == rn
   DBitCastTerm li == DBitCastTerm ri = eqTypedId li ri
+  DBitCastOrTerm ld li == DBitCastOrTerm rd ri = ld == rd && eqTypedId li ri
   DBVConcatTerm lrep1 lrep2 li1 li2 == DBVConcatTerm rrep1 rrep2 ri1 ri2 =
     eqTypeRepBool lrep1 rrep1 && eqTypeRepBool lrep2 rrep2 && li1 == ri1 && li2 == ri2
   DBVSelectTerm lix li == DBVSelectTerm rix ri =
@@ -2168,6 +2205,7 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DRotateLeftTerm id1 idn) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
   hashWithSalt s (DRotateRightTerm id1 idn) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
   hashWithSalt s (DBitCastTerm id) = s `hashWithSalt` (49 :: Int) `hashWithSalt` id
+  hashWithSalt s (DBitCastOrTerm did id) = s `hashWithSalt` (50 :: Int) `hashWithSalt` did `hashWithSalt` id
   hashWithSalt s (DBVConcatTerm rep1 rep2 id1 id2) =
     s `hashWithSalt` (25 :: Int) `hashWithSalt` rep1 `hashWithSalt` rep2 `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DBVSelectTerm ix id1) = s `hashWithSalt` (26 :: Int) `hashWithSalt` ix `hashWithSalt` id1
@@ -2347,6 +2385,13 @@ bitCastTerm ::
   Term a ->
   Term b
 bitCastTerm = internTerm . UBitCastTerm
+
+bitCastOrTerm ::
+  (PEvalBitCastOrTerm a b) =>
+  Term b ->
+  Term a ->
+  Term b
+bitCastOrTerm d = internTerm . UBitCastOrTerm d
 
 bvconcatTerm ::
   ( PEvalBVTerm bv,

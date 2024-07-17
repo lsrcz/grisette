@@ -40,7 +40,6 @@ import Data.Word (Word8)
 import Grisette
   ( Apply (apply),
     BV (bv),
-    BitCast (bitCast),
     EvalSym (evalSym),
     ExtractSym (extractSym),
     FP32,
@@ -86,6 +85,7 @@ import Grisette
     ToSym (toSym),
     TypedAnySymbol,
     Union,
+    bitCastOrCanonical,
     genSym,
     genSymSimple,
     mrgIf,
@@ -874,8 +874,8 @@ symPrimTests =
               solve
                 z3
                 ( symFpIsNaN x
-                    .&& ( (bitCast x :: SymWordN32)
-                            ./= (con (bitCast (fpNaN :: FP32)))
+                    .&& ( (bitCastOrCanonical x :: SymWordN32)
+                            ./= (con (bitCastOrCanonical (fpNaN :: FP32)))
                         )
                 )
             case r of
@@ -887,8 +887,8 @@ symPrimTests =
               solve
                 z3
                 ( symFpIsNaN x
-                    .&& ( (bitCast x :: SymIntN32)
-                            ./= (con (bitCast (fpNaN :: FP32)))
+                    .&& ( (bitCastOrCanonical x :: SymIntN32)
+                            ./= (con (bitCastOrCanonical (fpNaN :: FP32)))
                         )
                 )
             case r of

@@ -84,6 +84,7 @@ library
       Grisette.Internal.Core.Data.Class.ModelOps
       Grisette.Internal.Core.Data.Class.PlainUnion
       Grisette.Internal.Core.Data.Class.PPrint
+      Grisette.Internal.Core.Data.Class.SafeBitCast
       Grisette.Internal.Core.Data.Class.SafeDiv
       Grisette.Internal.Core.Data.Class.SafeFdiv
       Grisette.Internal.Core.Data.Class.SafeLinearArith
