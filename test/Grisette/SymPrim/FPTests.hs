@@ -10,7 +10,7 @@
 module Grisette.SymPrim.FPTests (fpTests) where
 
 import Data.Word (Word32, Word64)
-import Grisette (WordN)
+import Grisette (WordN, bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEConstants
@@ -40,7 +40,6 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPositiveInfinite,
     fpIsPositiveZero,
   )
-import Grisette.Internal.Core.Data.Class.SafeBitCast (bitCastOrCanonical)
 import Grisette.Internal.SymPrim.FP (FP32)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

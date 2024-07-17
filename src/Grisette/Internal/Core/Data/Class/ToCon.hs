@@ -80,7 +80,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Data.Class.SafeBitCast (bitCastOrCanonical)
+import Grisette.Internal.Core.Data.Class.BitCast (bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (conView),
     pattern Con,

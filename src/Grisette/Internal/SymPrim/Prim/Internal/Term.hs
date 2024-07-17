@@ -230,11 +230,10 @@ import GHC.Generics (Generic)
 import GHC.IO (unsafeDupablePerformIO)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast)
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast, BitCastOr)
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV,
   )
-import Grisette.Internal.Core.Data.Class.SafeBitCast (BitCastOr)
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift)
 import Grisette.Internal.Core.Data.Symbol
