@@ -209,7 +209,7 @@ instance AllSyms SymFPRoundingMode where
   allSymsS v = (SomeSym v :)
 
 instance
-  (ValidFP eb sb, r ~ eb + sb) =>
+  (ValidFP eb sb, r ~ (eb + sb)) =>
   BitCastCanonical (SymFP eb sb) (SymWordN r)
   where
   bitCastCanonicalValue _ =
@@ -217,7 +217,7 @@ instance
       con (bitCastCanonicalValue (Proxy @(FP eb sb)) :: WordN r)
 
 instance
-  (ValidFP eb sb, r ~ eb + sb) =>
+  (ValidFP eb sb, r ~ (eb + sb)) =>
   BitCastCanonical (SymFP eb sb) (SymIntN r)
   where
   bitCastCanonicalValue _ =
@@ -225,14 +225,14 @@ instance
       con (bitCastCanonicalValue (Proxy @(FP eb sb)) :: IntN r)
 
 instance
-  (ValidFP eb sb, r ~ eb + sb) =>
+  (ValidFP eb sb, r ~ (eb + sb)) =>
   BitCastOr (SymFP eb sb) (SymWordN r)
   where
   bitCastOr (SymWordN d) (SymFP a) =
     withValidFPProofs @eb @sb $ SymWordN (pevalBitCastOrTerm d a)
 
 instance
-  (ValidFP eb sb, r ~ eb + sb) =>
+  (ValidFP eb sb, r ~ (eb + sb)) =>
   BitCastOr (SymFP eb sb) (SymIntN r)
   where
   bitCastOr (SymIntN d) (SymFP a) =
