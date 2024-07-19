@@ -94,14 +94,14 @@ instance PEvalBitCastTerm (WordN 1) Bool where
   sbvBitCast _ x = SBV.sTestBit x 0
 
 instance
-  (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
+  (n ~ (eb + sb), ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastTerm (WordN n) (FP eb sb)
   where
   pevalBitCastTerm = pevalBitCastGeneral
   sbvBitCast _ = withValidFPProofs @eb @sb $ SBV.sWordAsSFloatingPoint
 
 instance
-  (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
+  (n ~ (eb + sb), ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastTerm (IntN n) (FP eb sb)
   where
   pevalBitCastTerm = pevalBitCastGeneral
@@ -109,7 +109,7 @@ instance
     withValidFPProofs @eb @sb $ SBV.sWordAsSFloatingPoint . SBV.sFromIntegral
 
 instance
-  (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
+  (n ~ (eb + sb), ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastOrTerm (FP eb sb) (WordN n)
   where
   pevalBitCastOrTerm = pevalBitCastOr
@@ -121,7 +121,7 @@ instance
         (SBV.sFloatingPointAsSWord v)
 
 instance
-  (n ~ eb + sb, ValidFP eb sb, KnownNat n, 1 <= n) =>
+  (n ~ (eb + sb), ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastOrTerm (FP eb sb) (IntN n)
   where
   pevalBitCastOrTerm = pevalBitCastOr

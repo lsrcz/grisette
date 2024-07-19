@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -61,7 +62,7 @@ class
 
 instance
   ( ValidFP eb sb,
-    r ~ eb + sb,
+    r ~ (eb + sb),
     KnownNat r,
     1 <= r,
     TryMerge m,
@@ -75,7 +76,7 @@ instance
 
 instance
   ( ValidFP eb sb,
-    r ~ eb + sb,
+    r ~ (eb + sb),
     KnownNat r,
     1 <= r,
     TryMerge m,
@@ -109,7 +110,7 @@ SAFE_BIT_CAST_VIA_INTERMEDIATE(FP16, Int16, WordN16)
 
 instance
   ( ValidFP eb sb,
-    r ~ eb + sb,
+    r ~ (eb + sb),
     KnownNat r,
     1 <= r,
     MonadUnion m,
@@ -125,7 +126,7 @@ instance
 
 instance
   ( ValidFP eb sb,
-    r ~ eb + sb,
+    r ~ (eb + sb),
     KnownNat r,
     1 <= r,
     MonadUnion m,

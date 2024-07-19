@@ -286,7 +286,7 @@ instance QC.Arbitrary FPRoundingMode where
   arbitrary = QC.elements [RNE, RNA, RTP, RTN, RTZ]
 
 instance
-  (ValidFP eb sb, n ~ eb + sb) =>
+  (ValidFP eb sb, n ~ (eb + sb)) =>
   BitCastCanonical (FP eb sb) (WordN n)
   where
   bitCastCanonicalValue _ =
@@ -297,7 +297,7 @@ instance
       highsb = withValidFPProofs @eb @sb $ shiftL 3 (sb - 2) :: WordN sb
 
 instance
-  (ValidFP eb sb, n ~ eb + sb) =>
+  (ValidFP eb sb, n ~ (eb + sb)) =>
   BitCastCanonical (FP eb sb) (IntN n)
   where
   bitCastCanonicalValue n =
@@ -334,7 +334,7 @@ instance (ValidFP eb sb, r ~ (eb + sb)) => BitCastOr (FP eb sb) (WordN r) where
                   literal f
 
 instance
-  (ValidFP eb sb, n ~ eb + sb) =>
+  (ValidFP eb sb, n ~ (eb + sb)) =>
   BitCastOr (FP eb sb) (IntN n)
   where
   bitCastOr d n =
