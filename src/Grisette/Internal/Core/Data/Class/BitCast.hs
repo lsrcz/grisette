@@ -38,7 +38,7 @@ import Data.Word (Word32, Word64)
 -- true for floating-point values. In SMT-LIB2, there is only one NaN value with
 -- multiple bit representations.
 --
--- Given this, we do not provide 'BitCast' for the 'Grisette.SymPrim.FP' type,
+-- Given this, we do not provide 'BitCast' for the t'Grisette.SymPrim.FP' type,
 -- instead, we use the 'bitCastOrCanonical' function to use a canonical
 -- representation for the NaN values.
 --
@@ -82,10 +82,10 @@ bitcastWithMArray x =
 -- | The canonical value when the bitcast cannot be precisely performed.
 --
 -- For example, with SMT-LIB2, there is only one NaN for floating point numbers,
--- with multiple bit representations. Our underlying 'FP' type also follows this
--- convention. This means that we cannot precisely bitcast a 'FP' to other
--- types. So instead, we bitcast the NaN value to a canonical representation,
--- defined with this type class.
+-- with multiple bit representations. Our underlying t'Grisette.SymPrim.FP' type
+-- also follows this convention. This means that we cannot precisely bitcast a
+-- t'Grisette.SymPrim.FP' to other types. So instead, we bitcast the NaN value
+-- to a canonical representation, defined with this type class.
 class BitCastCanonical from to where
   bitCastCanonicalValue :: proxy from -> to
 
