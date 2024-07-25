@@ -61,6 +61,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalBVTerm (..),
     PEvalFractionalTerm (..),
     PEvalFloatingTerm (..),
+    PEvalFromIntegralTerm (..),
 
     -- * Typed symbols
     SymbolKind (..),
@@ -145,6 +146,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     fpRoundingUnaryTerm,
     fpRoundingBinaryTerm,
     fpFMATerm,
+    fromIntegralTerm,
 
     -- * Support for boolean type
     trueTerm,
@@ -907,6 +909,17 @@ class (SupportedNonFuncPrim t) => PEvalFloatingTerm t where
         FloatingAtanh -> atanh l
 
 class
+  ( SupportedNonFuncPrim a,
+    SupportedNonFuncPrim b,
+    Integral a,
+    Num b
+  ) =>
+  PEvalFromIntegralTerm a b
+  where
+  pevalFromIntegralTerm :: Term a -> Term b
+  sbvFromIntegralTerm :: (KnownIsZero n) => proxy n -> SBVType n a -> SBVType n b
+
+class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
   UnaryOp tag arg t
     | tag arg -> t
@@ -1387,6 +1400,11 @@ data Term t where
     !(Term (FP eb sb)) ->
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
+  FromIntegralTerm ::
+    (PEvalFromIntegralTerm a b) =>
+    {-# UNPACK #-} !Id ->
+    !(Term a) ->
+    Term b
 
 identity :: Term t -> Id
 identity = snd . identityWithTypeRep
@@ -1440,6 +1458,7 @@ identityWithTypeRep (FPBinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPRoundingUnaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPRoundingBinaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FPFMATerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FromIntegralTerm i _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -1490,6 +1509,7 @@ introSupportedPrimConstraint FPBinaryTerm {} x = x
 introSupportedPrimConstraint FPRoundingUnaryTerm {} x = x
 introSupportedPrimConstraint FPRoundingBinaryTerm {} x = x
 introSupportedPrimConstraint FPFMATerm {} x = x
+introSupportedPrimConstraint FromIntegralTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 pformat :: forall t. (SupportedPrim t) => Term t -> String
@@ -1543,6 +1563,7 @@ pformat (FPRoundingBinaryTerm _ op mode arg1 arg2) =
   "(" ++ show op ++ " " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (FPFMATerm _ mode arg1 arg2 arg3) =
   "(fp.fma " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ " " ++ pformat arg3 ++ ")"
+pformat (FromIntegralTerm _ arg) = "(from_integral " ++ pformat arg ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -1599,6 +1620,7 @@ instance Lift (Term t) where
   liftTyped (FPRoundingUnaryTerm _ op mode arg) = [||fpRoundingUnaryTerm op mode arg||]
   liftTyped (FPRoundingBinaryTerm _ op mode arg1 arg2) = [||fpRoundingBinaryTerm op mode arg1 arg2||]
   liftTyped (FPFMATerm _ mode arg1 arg2 arg3) = [||fpFMATerm mode arg1 arg2 arg3||]
+  liftTyped (FromIntegralTerm _ arg) = [||fromIntegralTerm arg||]
 
 instance Show (Term ty) where
   show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
@@ -1716,6 +1738,8 @@ instance Show (Term ty) where
       ++ ", arg3="
       ++ show arg3
       ++ "}"
+  show (FromIntegralTerm i arg) =
+    "FromIntegral{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
   {-# INLINE show #-}
 
 prettyPrintTerm :: Term t -> Doc ann
@@ -1882,6 +1906,10 @@ data UTerm t where
     !(Term (FP eb sb)) ->
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
+  UFromIntegralTerm ::
+    (PEvalFromIntegralTerm a b) =>
+    !(Term a) ->
+    UTerm b
 
 eqTypedId :: (TypeRep a, Id) -> (TypeRep b, Id) -> Bool
 eqTypedId (a, i1) (b, i2) = i1 == i2 && eqTypeRepBool a b
@@ -1988,6 +2016,10 @@ instance (SupportedPrim t) => Interned (Term t) where
     DFPRoundingUnaryTerm :: FPRoundingUnaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
     DFPRoundingBinaryTerm :: FPRoundingBinaryOp -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
     DFPFMATerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term (FP eb sb))
+    DFromIntegralTerm ::
+      (PEvalFromIntegralTerm a b) =>
+      !(TypeRep a, Id) ->
+      Description (Term b)
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
@@ -2049,6 +2081,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UFPRoundingUnaryTerm op mode arg) = DFPRoundingUnaryTerm op (identity mode) (identity arg)
   describe (UFPRoundingBinaryTerm op mode arg1 arg2) = DFPRoundingBinaryTerm op (identity mode) (identity arg1) (identity arg2)
   describe (UFPFMATerm mode arg1 arg2 arg3) = DFPFMATerm (identity mode) (identity arg1) (identity arg2) (identity arg3)
+  describe (UFromIntegralTerm (arg :: Term a)) = DFromIntegralTerm (typeRep :: TypeRep a, identity arg)
 
   identify i = go
     where
@@ -2099,6 +2132,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm i op mode arg
       go (UFPRoundingBinaryTerm op mode arg1 arg2) = FPRoundingBinaryTerm i op mode arg1 arg2
       go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm i mode arg1 arg2 arg3
+      go (UFromIntegralTerm arg) = FromIntegralTerm i arg
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
@@ -2159,6 +2193,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
     lop == rop && lmode == rmode && li1 == ri1 && li2 == ri2
   DFPFMATerm lmode li1 li2 li3 == DFPFMATerm rmode ri1 ri2 ri3 =
     lmode == rmode && li1 == ri1 && li2 == ri2 && li3 == ri3
+  DFromIntegralTerm li == DFromIntegralTerm ri = eqTypedId li ri
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
@@ -2232,6 +2267,7 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
     s `hashWithSalt` (46 :: Int) `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DFPFMATerm mode id1 id2 id3) =
     s `hashWithSalt` (47 :: Int) `hashWithSalt` mode `hashWithSalt` id1 `hashWithSalt` id2 `hashWithSalt` id3
+  hashWithSalt s (DFromIntegralTerm id0) = s `hashWithSalt` (50 :: Int) `hashWithSalt` id0
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
 internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
@@ -2539,6 +2575,9 @@ fpFMATerm ::
   Term (FP eb sb) ->
   Term (FP eb sb)
 fpFMATerm mode l r s = internTerm $ UFPFMATerm mode l r s
+
+fromIntegralTerm :: (PEvalFromIntegralTerm a b) => Term a -> Term b
+fromIntegralTerm = internTerm . UFromIntegralTerm
 
 -- Support for boolean type
 defaultValueForBool :: Bool

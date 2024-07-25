@@ -80,6 +80,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
+    PEvalFromIntegralTerm (pevalFromIntegralTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
@@ -128,6 +129,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FdivTerm,
         FloatingUnaryTerm,
         ForallTerm,
+        FromIntegralTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -485,6 +487,8 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
           (go memo arg1)
           (go memo arg2)
           (go memo arg3)
+    goSome memo _ (SomeTerm (FromIntegralTerm _ (arg :: Term a) :: Term b)) =
+      goUnary memo (pevalFromIntegralTerm @a @b) arg
     goUnary memo f a = SomeTerm $ f (go memo a)
     goBinary memo f a b = SomeTerm $ f (go memo a) (go memo b)
     goTernary memo f a b c =
