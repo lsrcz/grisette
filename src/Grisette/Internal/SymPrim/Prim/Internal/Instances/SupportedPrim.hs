@@ -91,7 +91,8 @@ defaultValueForIntegerDyn = toModelValue defaultValueForInteger
 instance SBVRep Integer where
   type SBVType n Integer = SBV.SBV (If (IsZero n) (Integer) (SBV.IntN n))
 
-instance SupportedPrimConstraint Integer
+instance SupportedPrimConstraint Integer where
+  type PrimConstraint n Integer = (Integral (NonFuncSBVBaseType n Integer))
 
 instance SupportedPrim Integer where
   pformatCon = show

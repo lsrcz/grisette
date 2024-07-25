@@ -170,6 +170,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     PEvalFloatingTerm (sbvFloatingUnaryTerm, sbvPowerTerm),
     PEvalFractionalTerm (sbvFdivTerm, sbvRecipTerm),
+    PEvalFromIntegralTerm (sbvFromIntegralTerm),
     PEvalNumTerm
       ( sbvAbsNumTerm,
         sbvAddNumTerm,
@@ -221,6 +222,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FdivTerm,
         FloatingUnaryTerm,
         ForallTerm,
+        FromIntegralTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -907,6 +909,9 @@ lowerSinglePrimIntermediate config (FPFMATerm _ round a b c) = do
   b <- lowerSinglePrimCached' config b
   c <- lowerSinglePrimCached' config c
   return $ \qst -> sbvFPFMATerm (round qst) (a qst) (b qst) (c qst)
+lowerSinglePrimIntermediate config (FromIntegralTerm _ (b :: Term b)) = do
+  b <- lowerSinglePrimCached' config b
+  return $ sbvFromIntegralTerm @b @a config . b
 lowerSinglePrimIntermediate _ ConTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ SymTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ ForallTerm {} = error "Should not happen"

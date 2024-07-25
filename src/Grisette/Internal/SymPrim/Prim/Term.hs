@@ -26,6 +26,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm

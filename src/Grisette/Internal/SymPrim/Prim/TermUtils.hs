@@ -67,6 +67,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FdivTerm,
         FloatingUnaryTerm,
         ForallTerm,
+        FromIntegralTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
@@ -227,6 +228,7 @@ extractSymSomeTerm = go initialMemo
           gotyped memo bs arg2,
           gotyped memo bs arg3
         ]
+    go memo bs (SomeTerm (FromIntegralTerm _ arg)) = goUnary memo bs arg
     goUnary ::
       (SupportedPrim a) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
@@ -333,6 +335,7 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
     go t@(FPRoundingUnaryTerm _ _ _ arg) = goUnary t arg
     go t@(FPRoundingBinaryTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
     go t@(FPFMATerm _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
+    go t@(FromIntegralTerm _ arg) = goUnary t arg
     goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (HS.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t
