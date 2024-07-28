@@ -3,35 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    commit: 190ea1481d6eec70181ed000b4605cba7c218e85
-    git: https://github.com/LeventErkok/sbv.git
-    name: sbv
-    pantry-tree:
-      sha256: f0538b67013630821ef5d2f3604073204de4a0900b95231f14772123a91cf278
-      size: 73557
-    version: 10.10.5
-  original:
-    commit: 190ea1481d6eec70181ed000b4605cba7c218e85
-    git: https://github.com/LeventErkok/sbv.git
-- completed:
-    hackage: libBF-0.6.8@sha256:076f8dc0d33299c40afa2d0bfe51e93420c9c3e326ebfcac4f0e856152aa4f87,2503
-    pantry-tree:
-      sha256: b3950685f0ef81018241b8d2a518f440a6148658507341708dc0c81a3e19c1ff
-      size: 794
-  original:
-    hackage: libBF-0.6.8
-- completed:
-    hackage: hashable-1.5.0.0@sha256:fc68b07d957ade5a0a0beadd560a8d093ceac30b2f35c85eed3bcf7889a25975,5833
-    pantry-tree:
-      sha256: 603df10b52dd1130def3afeb518395eb0e40de2b6c33b649561fea24941e9c14
-      size: 1578
-  original:
-    hackage: hashable-1.5.0.0
+packages: []
 snapshots:
 - completed:
-    sha256: bb93febdb9f085b5d3d5a841891ae5d13376dfd1034ff2ab026cb9d93cc67b05
-    size: 652323
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/7/8.yaml
-  original: nightly-2024-07-08
+    sha256: c6e4cd173fb499ea2865dd89ef283f85e7c306972b5039a4f96c6371e37c2118
+    size: 656842
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/7/28.yaml
+  original: nightly-2024-07-28
