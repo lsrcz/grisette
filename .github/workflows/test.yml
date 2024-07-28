@@ -65,7 +65,7 @@ jobs:
               arg: "",
               ismain: true,
               experimental: false,
-              ghc: "965",
+              ghc: "966",
               cachekey: "stack-96",
             }
           - {
@@ -92,7 +92,7 @@ jobs:
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "965",
+                ghc: "966",
                 cachekey: "stack-96",
               }
 
