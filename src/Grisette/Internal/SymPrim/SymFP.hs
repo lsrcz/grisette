@@ -59,13 +59,13 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
       ),
     IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
     IEEEFPRoundingOp
-      ( symFpAdd,
-        symFpDiv,
-        symFpFMA,
-        symFpMul,
-        symFpRoundToIntegral,
-        symFpSqrt,
-        symFpSub
+      ( fpAdd,
+        fpDiv,
+        fpFMA,
+        fpMul,
+        fpRoundToIntegral,
+        fpSqrt,
+        fpSub
       ),
   )
 import Grisette.Internal.Core.Data.Class.Solvable
@@ -158,7 +158,7 @@ import Language.Haskell.TH.Syntax (Lift)
 --
 -- >>> "a" + 2.0 :: SymFP 11 53
 -- (+ a 2.0)
--- >>> symFpAdd rne "a" 2.0 :: SymFP 11 53
+-- >>> fpAdd rne "a" 2.0 :: SymFP 11 53
 -- (fp.add rne a 2.0)
 --
 -- More operations are available. Please refer to "Grisette.Core#g:symops" for
@@ -402,24 +402,24 @@ instance IEEEFPRoundingMode SymFPRoundingMode where
   {-# INLINE rtz #-}
 
 instance (ValidFP eb sb) => IEEEFPRoundingOp (SymFP eb sb) SymFPRoundingMode where
-  symFpAdd (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+  fpAdd (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
     SymFP $ pevalFPRoundingBinaryTerm FPAdd mode l r
-  {-# INLINE symFpAdd #-}
-  symFpSub (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+  {-# INLINE fpAdd #-}
+  fpSub (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
     SymFP $ pevalFPRoundingBinaryTerm FPSub mode l r
-  {-# INLINE symFpSub #-}
-  symFpMul (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+  {-# INLINE fpSub #-}
+  fpMul (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
     SymFP $ pevalFPRoundingBinaryTerm FPMul mode l r
-  {-# INLINE symFpMul #-}
-  symFpDiv (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+  {-# INLINE fpMul #-}
+  fpDiv (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
     SymFP $ pevalFPRoundingBinaryTerm FPDiv mode l r
-  {-# INLINE symFpDiv #-}
-  symFpFMA (SymFPRoundingMode mode) (SymFP l) (SymFP m) (SymFP r) =
+  {-# INLINE fpDiv #-}
+  fpFMA (SymFPRoundingMode mode) (SymFP l) (SymFP m) (SymFP r) =
     SymFP $ pevalFPFMATerm mode l m r
-  {-# INLINE symFpFMA #-}
-  symFpSqrt (SymFPRoundingMode mode) (SymFP v) =
+  {-# INLINE fpFMA #-}
+  fpSqrt (SymFPRoundingMode mode) (SymFP v) =
     SymFP $ pevalFPRoundingUnaryTerm FPSqrt mode v
-  {-# INLINE symFpSqrt #-}
-  symFpRoundToIntegral (SymFPRoundingMode mode) (SymFP v) =
+  {-# INLINE fpSqrt #-}
+  fpRoundToIntegral (SymFPRoundingMode mode) (SymFP v) =
     SymFP $ pevalFPRoundingUnaryTerm FPRoundToIntegral mode v
-  {-# INLINE symFpRoundToIntegral #-}
+  {-# INLINE fpRoundToIntegral #-}

@@ -18,6 +18,7 @@ import Grisette
   ( BitCast (bitCast),
     GrisetteSMTConfig,
     IEEEConstants (fpNegativeZero, fpPositiveZero),
+    IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
     ITEOp (symIte),
     IntN,
     LogicalOp (symNot),
@@ -33,9 +34,11 @@ import Grisette.Backend.TermRewritingGen
     BoolWithLIASpec,
     DifferentSizeBVSpec,
     FPRoundingModeBoolOpSpec,
+    FPRoundingModeSpec,
     FixedSizedBVWithBoolSpec,
     GeneralSpec,
-    IEEEFP32BoolOpSpec (IEEEFP32BoolOpSpec),
+    IEEEFPBoolOpSpec (IEEEFPBoolOpSpec),
+    IEEEFPSpec,
     LIAWithBoolSpec,
     NRAWithBoolSpec,
     TermRewritingSpec
@@ -54,6 +57,8 @@ import Grisette.Backend.TermRewritingGen
     divIntegralSpec,
     eqvSpec,
     fpBinaryOpSpec,
+    fpFMASpec,
+    fpRoundingBinarySpec,
     fpTraitSpec,
     iteSpec,
     leOrdSpec,
@@ -65,7 +70,7 @@ import Grisette.Backend.TermRewritingGen
     quotIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
-    signumNumSpec, IEEEFP32Spec,
+    signumNumSpec, fpRoundingUnaryOpSpec,
   )
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEConstants (fpNaN, fpNegativeInfinite, fpPositiveInfinite),
@@ -78,6 +83,7 @@ import Grisette.Internal.Core.Data.Class.SymIEEEFP
 import Grisette.Internal.SymPrim.FP (FP, FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
+    FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPTrait (FPIsPositive),
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
@@ -88,14 +94,14 @@ import Grisette.Internal.SymPrim.Prim.Term
     iteTerm,
     notTerm,
     pformat,
-    ssymTerm,
+    ssymTerm, FPRoundingUnaryOp (FPSqrt, FPRoundToIntegral),
   )
 import Grisette.Internal.SymPrim.SymFP (SymFP32)
 import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure)
-import Test.QuickCheck (Arbitrary, ioProperty, mapSize, withMaxSuccess, (==>))
+import Test.QuickCheck (Arbitrary, elements, forAll, ioProperty, mapSize, vectorOf, withMaxSuccess, (==>))
 import Type.Reflection (typeRep)
 
 validateSpec ::
@@ -415,25 +421,27 @@ termRewritingTests =
             onlyWhenBitwuzlaIsAvailable
               ( `validateSpec`
                   ( eqvSpec
-                      (conSpec 0.0 :: IEEEFP32Spec)
+                      (conSpec 0.0 :: IEEEFPSpec 5 11)
                       (conSpec $ -0.0) ::
-                      IEEEFP32BoolOpSpec
+                      IEEEFPBoolOpSpec 5 11
                   )
               ),
           testCase "-0.0 <= -0.0" $
             onlyWhenBitwuzlaIsAvailable
               ( `validateSpec`
                   ( leOrdSpec
-                      (conSpec 0.0 :: IEEEFP32Spec)
+                      (conSpec 0.0 :: IEEEFPSpec 5 11)
                       (conSpec $ -0.0) ::
-                      IEEEFP32BoolOpSpec
+                      IEEEFPBoolOpSpec 5 11
                   )
               ),
           testCase "is_pos(nan)" $
             onlyWhenBitwuzlaIsAvailable
               ( `validateSpec`
-                  ( fpTraitSpec FPIsPositive (conSpec fpNaN :: IEEEFP32Spec) ::
-                      IEEEFP32BoolOpSpec
+                  ( fpTraitSpec
+                      FPIsPositive
+                      (conSpec fpNaN :: IEEEFPSpec 5 11) ::
+                      IEEEFPBoolOpSpec 5 11
                   )
               ),
           testCase "is_pos(+inf)" $
@@ -445,24 +453,24 @@ termRewritingTests =
                           (symSpec "bool" :: BoolOnlySpec)
                           (conSpec fpNegativeInfinite)
                           (conSpec fpPositiveInfinite) ::
-                          IEEEFP32Spec
+                          IEEEFPSpec 5 11
                       ) ::
-                      IEEEFP32BoolOpSpec
+                      IEEEFPBoolOpSpec 5 11
                   )
               ),
           testCase "regression 2" $
             onlyWhenBitwuzlaIsAvailable
               ( `validateSpec`
                   ( eqvSpec
-                      (signumNumSpec (conSpec (1.175e-38) :: IEEEFP32Spec))
+                      (signumNumSpec (conSpec (1.175e-38) :: IEEEFPSpec 5 11))
                       (symSpec "b") ::
-                      IEEEFP32BoolOpSpec
+                      IEEEFPBoolOpSpec 5 11
                   )
               ),
           testCase "test sbv bug mitigation sbv#702" $
             onlyWhenBitwuzlaIsAvailable
               ( flip validateSpec $
-                  IEEEFP32BoolOpSpec
+                  IEEEFPBoolOpSpec
                     ( fpTraitTerm
                         FPIsPositive
                         ( iteTerm
@@ -475,7 +483,7 @@ termRewritingTests =
               ),
           testProperty "FP32BoolOp" $
             withMaxSuccess 1000 . mapSize (`min` 10) $
-              ioProperty . \(x :: IEEEFP32BoolOpSpec) ->
+              ioProperty . \(x :: IEEEFPBoolOpSpec 5 11) ->
                 onlyWhenBitwuzlaIsAvailable (`validateSpec` x),
           testProperty "FPRoundingModeBoolOpSpec" $
             mapSize (`min` 10) $
@@ -497,8 +505,66 @@ termRewritingTests =
                       symSpec "b"
                     ]
               let ps =
-                    [fpBinaryOpSpec op l r :: IEEEFP32Spec | l <- lst, r <- lst]
-              traverse_ (validateSpec c) ps
+                    [ fpBinaryOpSpec op l r :: IEEEFPSpec 5 11
+                      | l <- lst,
+                        r <- lst
+                    ]
+              traverse_ (validateSpec c) ps,
+          testGroup "RoundingOp" $ do
+            let rdgen =
+                  elements
+                    [ conSpec rna :: FPRoundingModeSpec,
+                      conSpec rne,
+                      conSpec rtz,
+                      conSpec rtp,
+                      conSpec rtn
+                    ]
+            let vgen =
+                  elements
+                    [ conSpec fpNegativeInfinite :: IEEEFPSpec 4 4,
+                      conSpec fpPositiveInfinite,
+                      conSpec fpNaN,
+                      conSpec fpPositiveZero,
+                      conSpec fpNegativeZero,
+                      conSpec 120,
+                      conSpec 60,
+                      conSpec 1,
+                      conSpec 2,
+                      conSpec 3,
+                      conSpec 4,
+                      conSpec (-1),
+                      conSpec (-2),
+                      conSpec (-3),
+                      conSpec (-4),
+                      conSpec 1.5625e-2,
+                      conSpec 2.4e2,
+                      conSpec 1.953125e-3,
+                      conSpec 1.3671875e-2,
+                      symSpec "a",
+                      symSpec "b"
+                    ]
+            [ testGroup "fpRoundingUnaryOp" $ do
+                op <- [FPSqrt, FPRoundToIntegral]
+                return $
+                  testProperty (show op) $
+                    forAll rdgen $ \rd ->
+                      forAll vgen $ \v ->
+                        ioProperty $ onlyWhenBitwuzlaIsAvailable $ \c -> do
+                          validateSpec c $ fpRoundingUnaryOpSpec op rd v,
+              testGroup "fpRoundingBinaryOp" $ do
+                op <- [FPAdd, FPSub, FPMul, FPDiv]
+                return $
+                  testProperty (show op) $
+                    forAll rdgen $ \rd ->
+                      forAll (vectorOf 2 vgen) $ \[l, r] ->
+                        ioProperty $ onlyWhenBitwuzlaIsAvailable $ \c -> do
+                          validateSpec c $ fpRoundingBinarySpec op rd l r,
+              testProperty "fma" $
+                forAll rdgen $ \rd ->
+                  forAll (vectorOf 3 vgen) $ \[x, y, z] ->
+                    ioProperty $ onlyWhenBitwuzlaIsAvailable $ \c -> do
+                      validateSpec c $ fpFMASpec rd x y z
+              ]
         ],
       testGroup "bitCast" $ do
         let bitCastCase ::

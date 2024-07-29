@@ -12,6 +12,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -64,6 +65,8 @@ import Data.SBV
     sFloatingPointAsSWord,
     sWordAsSFloatingPoint,
   )
+import Data.SBV.Float (fpEncodeFloat)
+import qualified Data.SBV.Float as SBVF
 import qualified Data.SBV.Internals as SBVI
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.Exception (Exception (displayException))
@@ -94,8 +97,12 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
         fpRem
       ),
     IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
+    IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub),
     fpIsNaN,
+    fpIsNegativeInfinite,
     fpIsNegativeZero,
+    fpIsPositiveInfinite,
+    fpIsPositiveZero,
     fpIsZero,
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
@@ -108,6 +115,38 @@ import Grisette.Internal.Utils.Parameterized
     withLeqProof,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
+import LibBF
+  ( BFOpts,
+    BigFloat,
+    RoundMode,
+    Status,
+    allowSubnormal,
+    bfAdd,
+    bfDiv,
+    bfFMA,
+    bfIsInf,
+    bfIsNaN,
+    bfIsNeg,
+    bfIsPos,
+    bfIsZero,
+    bfMul,
+    bfNaN,
+    bfNegInf,
+    bfNegZero,
+    bfPosInf,
+    bfPosZero,
+    bfRoundInt,
+    bfSqrt,
+    bfSub,
+    expBits,
+    precBits,
+    rnd,
+    pattern NearAway,
+    pattern NearEven,
+    pattern ToNegInf,
+    pattern ToPosInf,
+    pattern ToZero,
+  )
 import Test.QuickCheck (frequency, oneof)
 import qualified Test.QuickCheck as QC
 
@@ -444,3 +483,102 @@ instance IEEEFPRoundingMode FPRoundingMode where
   {-# INLINE rtn #-}
   rtz = RTZ
   {-# INLINE rtz #-}
+
+libBFRoundingMode :: FPRoundingMode -> RoundMode
+libBFRoundingMode RNE = NearEven
+libBFRoundingMode RNA = NearAway
+libBFRoundingMode RTP = ToPosInf
+libBFRoundingMode RTN = ToNegInf
+libBFRoundingMode RTZ = ToZero
+
+libBFOpts ::
+  forall eb sb. (ValidFP eb sb) => FPRoundingMode -> FP eb sb -> BFOpts
+libBFOpts mode _ = rnd rd <> precBits sb <> expBits eb <> allowSubnormal
+  where
+    eb = fromIntegral $ natVal (Proxy @eb) :: Int
+    sb = fromIntegral $ natVal (Proxy @sb) :: Word
+    rd = libBFRoundingMode mode
+
+toLibBF :: forall eb sb. (ValidFP eb sb) => FP eb sb -> BigFloat
+toLibBF f
+  | fpIsNegativeZero f = bfNegZero
+  | fpIsPositiveZero f = bfPosZero
+  | fpIsPositiveInfinite f = bfPosInf
+  | fpIsNegativeInfinite f = bfNegInf
+  | fpIsNaN f = bfNaN
+  | otherwise =
+      SBVF.fpValue $
+        uncurry (fpEncodeFloat eb sb) $
+          decodeFloat f
+  where
+    eb = fromIntegral $ natVal (Proxy @eb) :: Int
+    sb = fromIntegral $ natVal (Proxy @sb) :: Int
+
+fromLibBF :: forall eb sb. (ValidFP eb sb) => BigFloat -> FP eb sb
+fromLibBF f
+  | bfIsNeg f && bfIsZero f = fpNegativeZero
+  | bfIsPos f && bfIsZero f = fpPositiveZero
+  | bfIsNeg f && bfIsInf f = fpNegativeInfinite
+  | bfIsPos f && bfIsInf f = fpPositiveInfinite
+  | bfIsNaN f = fpNaN
+  | otherwise = uncurry encodeFloat $ decodeFloat fp
+  where
+    fp = SBVF.FP eb sb f
+    eb = fromIntegral $ natVal (Proxy @eb) :: Int
+    sb = fromIntegral $ natVal (Proxy @sb) :: Int
+
+liftLibBF1 ::
+  (ValidFP eb sb) =>
+  (BFOpts -> BigFloat -> (BigFloat, Status)) ->
+  FPRoundingMode ->
+  FP eb sb ->
+  FP eb sb
+liftLibBF1 f rd x = fromLibBF $ fst $ f opts xbf
+  where
+    opts = libBFOpts rd x
+    xbf = toLibBF x
+
+liftLibBF2 ::
+  (ValidFP eb sb) =>
+  (BFOpts -> BigFloat -> BigFloat -> (BigFloat, Status)) ->
+  FPRoundingMode ->
+  FP eb sb ->
+  FP eb sb ->
+  FP eb sb
+liftLibBF2 f rd l r = fromLibBF $ fst $ f opts lbf rbf
+  where
+    opts = libBFOpts rd l
+    lbf = toLibBF l
+    rbf = toLibBF r
+
+liftLibBF3 ::
+  (ValidFP eb sb) =>
+  (BFOpts -> BigFloat -> BigFloat -> BigFloat -> (BigFloat, Status)) ->
+  FPRoundingMode ->
+  FP eb sb ->
+  FP eb sb ->
+  FP eb sb ->
+  FP eb sb
+liftLibBF3 f rd x y z = fromLibBF $ fst $ f opts xbf ybf zbf
+  where
+    opts = libBFOpts rd x
+    xbf = toLibBF x
+    ybf = toLibBF y
+    zbf = toLibBF z
+
+instance (ValidFP eb sb) => IEEEFPRoundingOp (FP eb sb) FPRoundingMode where
+  fpAdd = liftLibBF2 bfAdd
+  {-# INLINE fpAdd #-}
+  fpSub = liftLibBF2 bfSub
+  {-# INLINE fpSub #-}
+  fpMul = liftLibBF2 bfMul
+  {-# INLINE fpMul #-}
+  fpDiv = liftLibBF2 bfDiv
+  {-# INLINE fpDiv #-}
+  fpFMA = liftLibBF3 bfFMA
+  {-# INLINE fpFMA #-}
+  fpSqrt = liftLibBF1 bfSqrt
+  {-# INLINE fpSqrt #-}
+  fpRoundToIntegral rd x =
+    fromLibBF $ fst $ bfRoundInt (libBFRoundingMode rd) $ toLibBF x
+  {-# INLINE fpRoundToIntegral #-}

@@ -64,8 +64,8 @@ module Grisette.Backend.TermRewritingGen
     fpFMASpec,
     bitCastSpec,
     bitCastOrSpec,
-    IEEEFP32Spec (..),
-    IEEEFP32BoolOpSpec (..),
+    IEEEFPSpec (..),
+    IEEEFPBoolOpSpec (..),
     FPRoundingModeSpec (..),
     FPRoundingModeBoolOpSpec (..),
   )
@@ -81,7 +81,6 @@ import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP
   ( FP,
-    FP32,
     FPRoundingMode (RNA, RNE, RTN, RTP, RTZ),
     ValidFP,
   )
@@ -1021,16 +1020,16 @@ instance (SupportedNonFuncPrim s) => TermRewritingSpec (GeneralSpec s) s where
   wrap = GeneralSpec
   same s = eqTerm (norewriteVer s) (rewriteVer s)
 
-data IEEEFP32Spec = IEEEFP32Spec (Term FP32) (Term FP32)
+data IEEEFPSpec eb sb = IEEEFPSpec (Term (FP eb sb)) (Term (FP eb sb))
 
-instance Show IEEEFP32Spec where
-  show (IEEEFP32Spec n r) =
-    "IEEEFP32Spec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+instance (ValidFP eb sb) => Show (IEEEFPSpec eb sb) where
+  show (IEEEFPSpec n r) =
+    "IEEEFPSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance TermRewritingSpec IEEEFP32Spec FP32 where
-  norewriteVer (IEEEFP32Spec n _) = n
-  rewriteVer (IEEEFP32Spec _ r) = r
-  wrap = IEEEFP32Spec
+instance (ValidFP eb sb) => TermRewritingSpec (IEEEFPSpec eb sb) (FP eb sb) where
+  norewriteVer (IEEEFPSpec n _) = n
+  rewriteVer (IEEEFPSpec _ r) = r
+  wrap = IEEEFPSpec
   same s =
     orTerm
       ( andTerm
@@ -1039,7 +1038,7 @@ instance TermRewritingSpec IEEEFP32Spec FP32 where
       )
       (eqTerm (norewriteVer s) (rewriteVer s))
 
-instance Arbitrary IEEEFP32Spec where
+instance (ValidFP eb sb) => Arbitrary (IEEEFPSpec eb sb) where
   arbitrary = do
     bool :: BoolOnlySpec <-
       oneof [conSpec <$> arbitrary, return $ symSpec "bool"]
@@ -1093,22 +1092,24 @@ instance Arbitrary IEEEFP32Spec where
           ++ rbop
           ++ [fpFMASpec rounding a b c]
 
-data IEEEFP32BoolOpSpec = IEEEFP32BoolOpSpec (Term Bool) (Term Bool)
+data IEEEFPBoolOpSpec (eb :: Nat) (sb :: Nat)
+  = IEEEFPBoolOpSpec (Term Bool) (Term Bool)
 
-instance Show IEEEFP32BoolOpSpec where
-  show (IEEEFP32BoolOpSpec n r) =
-    "IEEEFP32BoolOpSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+instance Show (IEEEFPBoolOpSpec eb sb) where
+  show (IEEEFPBoolOpSpec n r) =
+    "IEEEFPBoolOpSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
 
-instance TermRewritingSpec IEEEFP32BoolOpSpec Bool where
-  norewriteVer (IEEEFP32BoolOpSpec n _) = n
-  rewriteVer (IEEEFP32BoolOpSpec _ r) = r
-  wrap = IEEEFP32BoolOpSpec
+instance TermRewritingSpec (IEEEFPBoolOpSpec eb sb) Bool where
+  norewriteVer (IEEEFPBoolOpSpec n _) = n
+  rewriteVer (IEEEFPBoolOpSpec _ r) = r
+  wrap = IEEEFPBoolOpSpec
   same s = eqTerm (norewriteVer s) (rewriteVer s)
 
-singleFP32BoolOpSpecGen :: Gen IEEEFP32BoolOpSpec
-singleFP32BoolOpSpecGen = do
-  s0 :: IEEEFP32Spec <- arbitrary
-  s1 :: IEEEFP32Spec <- arbitrary
+singleFPBoolOpSpecGen ::
+  forall eb sb. (ValidFP eb sb) => Gen (IEEEFPBoolOpSpec eb sb)
+singleFPBoolOpSpecGen = do
+  s0 :: IEEEFPSpec eb sb <- arbitrary
+  s1 :: IEEEFPSpec eb sb <- arbitrary
   let traitGens =
         [ FPIsNaN,
           FPIsPositive,
@@ -1127,8 +1128,8 @@ singleFP32BoolOpSpecGen = do
   let cmpGens = return <$> [eqvSpec s0 s1, ltOrdSpec s0 s1, leOrdSpec s0 s1]
   oneof $ traitGens ++ cmpGens
 
-instance Arbitrary IEEEFP32BoolOpSpec where
-  arbitrary = singleFP32BoolOpSpecGen
+instance (ValidFP eb sb) => Arbitrary (IEEEFPBoolOpSpec eb sb) where
+  arbitrary = singleFPBoolOpSpecGen
 
 data FPRoundingModeSpec
   = FPRoundingModeSpec (Term FPRoundingMode) (Term FPRoundingMode)

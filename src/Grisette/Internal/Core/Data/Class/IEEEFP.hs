@@ -170,10 +170,10 @@ class IEEEFPRoundingMode mode where
 
 -- | Operations on IEEE floating-point numbers, with rounding mode.
 class (IEEEFPRoundingMode mode) => IEEEFPRoundingOp a mode | a -> mode where
-  symFpAdd :: mode -> a -> a -> a
-  symFpSub :: mode -> a -> a -> a
-  symFpMul :: mode -> a -> a -> a
-  symFpDiv :: mode -> a -> a -> a
-  symFpFMA :: mode -> a -> a -> a -> a
-  symFpSqrt :: mode -> a -> a
-  symFpRoundToIntegral :: mode -> a -> a
+  fpAdd :: mode -> a -> a -> a
+  fpSub :: mode -> a -> a -> a
+  fpMul :: mode -> a -> a -> a
+  fpDiv :: mode -> a -> a -> a
+  fpFMA :: mode -> a -> a -> a -> a
+  fpSqrt :: mode -> a -> a
+  fpRoundToIntegral :: mode -> a -> a
