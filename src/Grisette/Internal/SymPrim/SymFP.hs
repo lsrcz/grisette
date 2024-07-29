@@ -41,7 +41,7 @@ import Grisette.Internal.Core.Data.Class.BitCast
   )
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEConstants
+  ( IEEEFPConstants
       ( fpNaN,
         fpNegativeInfinite,
         fpNegativeZero,
@@ -331,7 +331,7 @@ instance
   bitCast (SymWordN a) =
     withValidFPProofs @eb @sb $ SymFP $ pevalBitCastTerm a
 
-instance (ValidFP eb sb) => IEEEConstants (SymFP eb sb) where
+instance (ValidFP eb sb) => IEEEFPConstants (SymFP eb sb) where
   fpPositiveInfinite = con fpPositiveInfinite
   {-# INLINE fpPositiveInfinite #-}
   fpNegativeInfinite = con fpNegativeInfinite

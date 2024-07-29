@@ -80,7 +80,7 @@ import Grisette.Internal.Core.Data.Class.BitCast
   )
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
 import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEConstants
+  ( IEEEFPConstants
       ( fpNaN,
         fpNegativeInfinite,
         fpNegativeZero,
@@ -426,7 +426,7 @@ instance Exception BitCastNaNError where
   displayException BitCastNaNError =
     "Bitcasting NaN value cannot be done with SMT-LIB2"
 
-instance (ValidFP eb sb) => IEEEConstants (FP eb sb) where
+instance (ValidFP eb sb) => IEEEFPConstants (FP eb sb) where
   fpPositiveInfinite = FP infinity
   {-# INLINE fpPositiveInfinite #-}
   fpNegativeInfinite = FP $ -infinity

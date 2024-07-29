@@ -24,7 +24,7 @@ module Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsNormal,
     fpIsSubnormal,
     fpIsPoint,
-    IEEEConstants (..),
+    IEEEFPConstants (..),
     IEEEFPRoundingMode (..),
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
@@ -100,7 +100,7 @@ fpIsPoint x = not (fpIsInfinite x) && not (fpIsNaN x)
 {-# INLINE fpIsPoint #-}
 
 -- | Constants for IEEE floating-point numbers.
-class IEEEConstants a where
+class IEEEFPConstants a where
   -- | Positive infinity.
   fpPositiveInfinite :: a
 

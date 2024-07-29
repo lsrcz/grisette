@@ -44,7 +44,7 @@ import Grisette
     ExtractSym (extractSym),
     FP32,
     Function ((#)),
-    IEEEConstants (fpNaN),
+    IEEEFPConstants (fpNaN),
     ITEOp (symIte),
     LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
     Mergeable (rootStrategy),

@@ -12,10 +12,33 @@ module Grisette.SymPrim.FPTests (fpTests) where
 
 import Data.Foldable (traverse_)
 import Data.Word (Word32, Word64)
-import Grisette (FP, IEEEFPOp (fpAbs, fpMaximum, fpMaximumNumber, fpMinimum, fpMinimumNumber, fpNeg, fpRem), IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz), IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub), WordN, bitCastOrCanonical)
+import Grisette
+  ( FP,
+    IEEEFPOp
+      ( fpAbs,
+        fpMaximum,
+        fpMaximumNumber,
+        fpMinimum,
+        fpMinimumNumber,
+        fpNeg,
+        fpRem
+      ),
+    IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
+    IEEEFPRoundingOp
+      ( fpAdd,
+        fpDiv,
+        fpFMA,
+        fpMul,
+        fpRoundToIntegral,
+        fpSqrt,
+        fpSub
+      ),
+    WordN,
+    bitCastOrCanonical,
+  )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEConstants
+  ( IEEEFPConstants
       ( fpNaN,
         fpNegativeInfinite,
         fpNegativeZero,
@@ -278,7 +301,7 @@ fpTests =
             (==)
         ],
       testGroup
-        "IEEEConstants"
+        "IEEEFPConstants"
         [ testCase "fpPositiveInfinite" $
             fpIsPositiveInfinite (fpPositiveInfinite :: FP32) @?= True,
           testCase "fpNegativeInfinite" $
@@ -464,7 +487,7 @@ fpTests =
         ]
     ]
 
-newtype SameFPObj = SameFPObj FP32 deriving newtype (Show, Num, IEEEConstants)
+newtype SameFPObj = SameFPObj FP32 deriving newtype (Show, Num, IEEEFPConstants)
 
 instance Eq SameFPObj where
   SameFPObj a == SameFPObj b

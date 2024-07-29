@@ -17,7 +17,13 @@ import Data.Foldable (traverse_)
 import Grisette
   ( BitCast (bitCast),
     GrisetteSMTConfig,
-    IEEEConstants (fpNegativeZero, fpPositiveZero),
+    IEEEFPConstants
+      ( fpNaN,
+        fpNegativeInfinite,
+        fpNegativeZero,
+        fpPositiveInfinite,
+        fpPositiveZero
+      ),
     IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
     ITEOp (symIte),
     IntN,
@@ -59,6 +65,7 @@ import Grisette.Backend.TermRewritingGen
     fpBinaryOpSpec,
     fpFMASpec,
     fpRoundingBinarySpec,
+    fpRoundingUnaryOpSpec,
     fpTraitSpec,
     iteSpec,
     leOrdSpec,
@@ -70,10 +77,7 @@ import Grisette.Backend.TermRewritingGen
     quotIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
-    signumNumSpec, fpRoundingUnaryOpSpec,
-  )
-import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEConstants (fpNaN, fpNegativeInfinite, fpPositiveInfinite),
+    signumNumSpec,
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
@@ -84,6 +88,7 @@ import Grisette.Internal.SymPrim.FP (FP, FP32)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
+    FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPTrait (FPIsPositive),
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
@@ -94,7 +99,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     iteTerm,
     notTerm,
     pformat,
-    ssymTerm, FPRoundingUnaryOp (FPSqrt, FPRoundToIntegral),
+    ssymTerm,
   )
 import Grisette.Internal.SymPrim.SymFP (SymFP32)
 import Test.Framework (Test, TestName, testGroup)
@@ -130,6 +135,14 @@ validateSpec config a = do
           ++ pformat (norewriteVer a)
           ++ " was rewritten to "
           ++ pformat (rewriteVer a)
+          ++ " corresponding cex formula:"
+          ++ pformat (counterExample a)
+          ++ "\n"
+          ++ show (norewriteVer a)
+          ++ "\n"
+          ++ show (rewriteVer a)
+          ++ "\n"
+          ++ show (counterExample a)
 
 bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
 bitwuzlaConfig = do
@@ -492,7 +505,7 @@ termRewritingTests =
           testGroup "fpBinaryOp" $ do
             op <-
               [FPMaximum, FPMinimum, FPMaximumNumber, FPMinimumNumber, FPRem]
-            return $ testCase (show op) $ onlyWhenBitwuzlaIsAvailable $ \c -> do
+            return $ testCase (show op) $ do
               let lst =
                     [ conSpec fpNegativeInfinite,
                       conSpec fpPositiveInfinite,
@@ -505,11 +518,11 @@ termRewritingTests =
                       symSpec "b"
                     ]
               let ps =
-                    [ fpBinaryOpSpec op l r :: IEEEFPSpec 5 11
+                    [ fpBinaryOpSpec op l r :: IEEEFPSpec 4 4
                       | l <- lst,
                         r <- lst
                     ]
-              traverse_ (validateSpec c) ps,
+              traverse_ (validateSpec z3) ps,
           testGroup "RoundingOp" $ do
             let rdgen =
                   elements
@@ -549,21 +562,24 @@ termRewritingTests =
                   testProperty (show op) $
                     forAll rdgen $ \rd ->
                       forAll vgen $ \v ->
-                        ioProperty $ onlyWhenBitwuzlaIsAvailable $ \c -> do
-                          validateSpec c $ fpRoundingUnaryOpSpec op rd v,
+                        ioProperty $
+                          validateSpec z3 $
+                            fpRoundingUnaryOpSpec op rd v,
               testGroup "fpRoundingBinaryOp" $ do
                 op <- [FPAdd, FPSub, FPMul, FPDiv]
                 return $
                   testProperty (show op) $
                     forAll rdgen $ \rd ->
                       forAll (vectorOf 2 vgen) $ \[l, r] ->
-                        ioProperty $ onlyWhenBitwuzlaIsAvailable $ \c -> do
-                          validateSpec c $ fpRoundingBinarySpec op rd l r,
+                        ioProperty $
+                          validateSpec z3 $
+                            fpRoundingBinarySpec op rd l r,
               testProperty "fma" $
                 forAll rdgen $ \rd ->
                   forAll (vectorOf 3 vgen) $ \[x, y, z] ->
-                    ioProperty $ onlyWhenBitwuzlaIsAvailable $ \c -> do
-                      validateSpec c $ fpFMASpec rd x y z
+                    ioProperty $
+                      validateSpec z3 $
+                        fpFMASpec rd x y z
               ]
         ],
       testGroup "bitCast" $ do

@@ -393,7 +393,7 @@ module Grisette.Core
     fpIsSubnormal,
     fpIsPoint,
     SymIEEEFPTraits (..),
-    IEEEConstants (..),
+    IEEEFPConstants (..),
     IEEEFPRoundingMode (..),
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
@@ -1527,7 +1527,7 @@ import Grisette.Internal.Core.Data.Class.GenSym
     runFreshT,
   )
 import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEConstants (..),
+  ( IEEEFPConstants (..),
     IEEEFPOp (..),
     IEEEFPRoundingMode (..),
     IEEEFPRoundingOp (..),
