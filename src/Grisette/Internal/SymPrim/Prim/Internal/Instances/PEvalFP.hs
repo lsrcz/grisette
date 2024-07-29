@@ -17,9 +17,10 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
 where
 
 import qualified Data.SBV as SBV
+import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEFPOp (fpRem, fpMinimum, fpMinimumNumber, fpMaximum, fpMaximumNumber))
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( FPBinaryOp (FPMax, FPMin, FPRem),
+  ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPTrait
@@ -141,8 +142,30 @@ pevalFPBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPBinaryTerm = fpBinaryTerm
+pevalFPBinaryTerm bop (ConTerm _ l) (ConTerm _ r) =
+  case bop of
+    FPMaximum -> conTerm $ fpMaximum l r
+    FPMaximumNumber -> conTerm $ fpMaximumNumber l r
+    FPMinimum -> conTerm $ fpMinimum l r
+    FPMinimumNumber -> conTerm $ fpMinimumNumber l r
+    FPRem -> conTerm $ fpRem l r
+pevalFPBinaryTerm FPMaximum l r | l == r = l
+pevalFPBinaryTerm FPMaximumNumber l r | l == r = l
+pevalFPBinaryTerm FPMinimum l r | l == r = l
+pevalFPBinaryTerm FPMinimumNumber l r | l == r = l
+pevalFPBinaryTerm bop l r = fpBinaryTerm bop l r
 {-# INLINE pevalFPBinaryTerm #-}
+
+sbvCmpHandleNegZero ::
+  (ValidFP eb sb) =>
+  SBV.SFloatingPoint eb sb ->
+  SBV.SFloatingPoint eb sb ->
+  SBV.SBool
+sbvCmpHandleNegZero x y =
+  SBV.ite
+    (SBV.fpIsZero x SBV..&& SBV.fpIsZero y)
+    (SBV.fpIsNegativeZero x)
+    (x SBV..< y)
 
 sbvFPBinaryTerm ::
   (ValidFP eb sb) =>
@@ -150,9 +173,21 @@ sbvFPBinaryTerm ::
   SBV.SFloatingPoint eb sb ->
   SBV.SFloatingPoint eb sb ->
   SBV.SFloatingPoint eb sb
-sbvFPBinaryTerm FPRem = SBV.fpRem
-sbvFPBinaryTerm FPMin = SBV.fpMin
-sbvFPBinaryTerm FPMax = SBV.fpMax
+sbvFPBinaryTerm FPRem x y = SBV.fpRem x y
+sbvFPBinaryTerm FPMinimum x y =
+  SBV.ite (SBV.fpIsNaN x SBV..|| SBV.fpIsNaN y) SBV.nan $
+    SBV.ite (sbvCmpHandleNegZero x y) x y
+sbvFPBinaryTerm FPMinimumNumber x y =
+  SBV.ite (SBV.fpIsNaN x) y $
+    SBV.ite (SBV.fpIsNaN y) x $
+      SBV.ite (sbvCmpHandleNegZero x y) x y
+sbvFPBinaryTerm FPMaximum x y =
+  SBV.ite (SBV.fpIsNaN x SBV..|| SBV.fpIsNaN y) SBV.nan $
+    SBV.ite (sbvCmpHandleNegZero x y) y x
+sbvFPBinaryTerm FPMaximumNumber x y =
+  SBV.ite (SBV.fpIsNaN x) y $
+    SBV.ite (SBV.fpIsNaN y) x $
+      SBV.ite (sbvCmpHandleNegZero x y) y x
 {-# INLINE sbvFPBinaryTerm #-}
 
 pevalFPRoundingUnaryTerm ::

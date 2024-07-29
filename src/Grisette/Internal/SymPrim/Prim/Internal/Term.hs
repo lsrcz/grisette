@@ -1119,13 +1119,20 @@ instance Show FPUnaryOp where
   show FPAbs = "fp.abs"
   show FPNeg = "fp.neg"
 
-data FPBinaryOp = FPRem | FPMin | FPMax
+data FPBinaryOp
+  = FPRem
+  | FPMinimum
+  | FPMinimumNumber
+  | FPMaximum
+  | FPMaximumNumber
   deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
 
 instance Show FPBinaryOp where
   show FPRem = "fp.rem"
-  show FPMin = "fp.min"
-  show FPMax = "fp.max"
+  show FPMinimum = "fp.minimum"
+  show FPMinimumNumber = "fp.minimumNumber"
+  show FPMaximum = "fp.maximum"
+  show FPMaximumNumber = "fp.maximumNumber"
 
 data FPRoundingUnaryOp = FPSqrt | FPRoundToIntegral
   deriving (Eq, Ord, Generic, Hashable, Lift, NFData)

@@ -1531,7 +1531,6 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     IEEEFPOp (..),
     IEEEFPRoundingMode (..),
     IEEEFPRoundingOp (..),
-    SymIEEEFPTraits (..),
     fpIsInfinite,
     fpIsNaN,
     fpIsNegative,
@@ -1698,6 +1697,9 @@ import Grisette.Internal.Core.Data.Class.SymEq
     genericSymEq,
     symEq1,
     symEq2,
+  )
+import Grisette.Internal.Core.Data.Class.SymIEEEFP
+  ( SymIEEEFPTraits (..),
   )
 import Grisette.Internal.Core.Data.Class.SymOrd
   ( GSymOrd (..),

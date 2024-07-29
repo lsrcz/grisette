@@ -1,16 +1,18 @@
 {-# LANGUAGE DataKinds #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-{-# HLINT ignore "Unused LANGUAGE pragma" #-}
-
 module Grisette.SymPrim.FPTests (fpTests) where
 
+import Data.Foldable (traverse_)
 import Data.Word (Word32, Word64)
-import Grisette (WordN, bitCastOrCanonical)
+import Grisette (IEEEFPOp (fpAbs, fpMaximum, fpMaximumNumber, fpMinimum, fpMinimumNumber, fpNeg, fpRem), WordN, bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEConstants
@@ -20,7 +22,14 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
         fpPositiveInfinite,
         fpPositiveZero
       ),
-    SymIEEEFPTraits
+    fpIsNaN,
+    fpIsNegativeInfinite,
+    fpIsNegativeZero,
+    fpIsPositiveInfinite,
+    fpIsPositiveZero,
+  )
+import Grisette.Internal.Core.Data.Class.SymIEEEFP
+  ( SymIEEEFPTraits
       ( symFpIsInfinite,
         symFpIsNaN,
         symFpIsNegative,
@@ -34,11 +43,6 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
         symFpIsSubnormal,
         symFpIsZero
       ),
-    fpIsNaN,
-    fpIsNegativeInfinite,
-    fpIsNegativeZero,
-    fpIsPositiveInfinite,
-    fpIsPositiveZero,
   )
 import Grisette.Internal.SymPrim.FP (FP32)
 import Test.Framework (Test, testGroup)
@@ -285,5 +289,120 @@ fpTests =
             fpIsPositiveZero (fpPositiveZero :: FP32) @?= True,
           testCase "fpNegativeZero" $
             fpIsNegativeZero (fpNegativeZero :: FP32) @?= True
+        ],
+      testGroup
+        "IEEEFPOp"
+        [ testCase "fpAbs" $ do
+            SameFPObj (fpAbs (0 :: FP32)) @?= 0
+            SameFPObj (fpAbs (fpNegativeZero :: FP32)) @?= 0
+            SameFPObj (fpAbs (fpPositiveInfinite :: FP32))
+              @?= fpPositiveInfinite
+            SameFPObj (fpAbs (fpNegativeInfinite :: FP32))
+              @?= fpPositiveInfinite
+            SameFPObj (fpAbs (1 :: FP32)) @?= 1
+            SameFPObj (fpAbs (-1 :: FP32)) @?= 1
+            SameFPObj (fpAbs (fpNaN :: FP32)) @?= fpNaN,
+          testCase "fpNeg" $ do
+            SameFPObj (fpNeg (0 :: FP32)) @?= -0
+            SameFPObj (fpNeg (fpNegativeZero :: FP32)) @?= 0
+            SameFPObj (fpNeg (fpPositiveInfinite :: FP32))
+              @?= fpNegativeInfinite
+            SameFPObj (fpNeg (fpNegativeInfinite :: FP32))
+              @?= fpPositiveInfinite
+            SameFPObj (fpNeg (1 :: FP32)) @?= -1
+            SameFPObj (fpNeg (-1 :: FP32)) @?= 1
+            SameFPObj (fpNeg (fpNaN :: FP32)) @?= fpNaN,
+          testGroup
+            "fpRem"
+            [ testCase "inf or nan / x" $ do
+                let lhs =
+                      [fpPositiveInfinite :: FP32, fpNegativeInfinite, fpNaN]
+                let rhs =
+                      [ 0,
+                        -0,
+                        1,
+                        -1,
+                        fpPositiveInfinite,
+                        fpNegativeInfinite,
+                        fpNaN
+                      ]
+                traverse_ (\(l, r) -> SameFPObj (fpRem l r) @?= fpNaN) $
+                  zip lhs rhs,
+              testCase "0 / neither 0 nor nan" $ do
+                let lhs = [fpPositiveZero :: FP32, fpNegativeZero]
+                let rhs =
+                      [1, -1, fpPositiveInfinite, fpNegativeInfinite]
+                traverse_ (\(l, r) -> SameFPObj (fpRem l r) @?= SameFPObj l) $
+                  [(l, r) | l <- lhs, r <- rhs],
+              testCase "0 / 0 or nan" $ do
+                let lhs = [fpPositiveZero :: FP32, fpNegativeZero]
+                let rhs = [fpPositiveZero, fpNegativeZero, fpNaN]
+                traverse_ (\(l, r) -> SameFPObj (fpRem l r) @?= fpNaN) $
+                  [(l, r) | l <- lhs, r <- rhs],
+              testCase "normal" $ do
+                SameFPObj (fpRem (5 :: FP32) 4) @?= 1
+                SameFPObj (fpRem (6 :: FP32) 4) @?= -2
+                SameFPObj (fpRem (7 :: FP32) 4) @?= -1
+                SameFPObj (fpRem (8 :: FP32) 4) @?= 0
+                SameFPObj (fpRem (9 :: FP32) 4) @?= 1
+                SameFPObj (fpRem (10 :: FP32) 4) @?= 2
+            ],
+          testCase "fpMinimum" $ do
+            SameFPObj (fpMinimum (0 :: FP32) 0) @?= 0
+            SameFPObj (fpMinimum (0 :: FP32) (-0)) @?= -0
+            SameFPObj (fpMinimum (-0 :: FP32) 0) @?= -0
+            SameFPObj (fpMinimum (-0 :: FP32) (-0)) @?= -0
+            SameFPObj (fpMinimum (fpNaN :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMinimum (fpNaN :: FP32) 1) @?= fpNaN
+            SameFPObj (fpMinimum (1 :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMinimum (fpNaN :: FP32) fpPositiveInfinite) @?= fpNaN
+            SameFPObj (fpMinimum (fpNegativeInfinite :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMinimum (1 :: FP32) 2) @?= 1,
+          testCase "fpMinimumNumber" $ do
+            SameFPObj (fpMinimumNumber (0 :: FP32) 0) @?= 0
+            SameFPObj (fpMinimumNumber (0 :: FP32) (-0)) @?= -0
+            SameFPObj (fpMinimumNumber (-0 :: FP32) 0) @?= -0
+            SameFPObj (fpMinimumNumber (-0 :: FP32) (-0)) @?= -0
+            SameFPObj (fpMinimumNumber (fpNaN :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMinimumNumber (fpNaN :: FP32) 1) @?= 1
+            SameFPObj (fpMinimumNumber (1 :: FP32) fpNaN) @?= 1
+            SameFPObj (fpMinimumNumber (fpNaN :: FP32) fpPositiveInfinite)
+              @?= fpPositiveInfinite
+            SameFPObj (fpMinimumNumber (fpNegativeInfinite :: FP32) fpNaN)
+              @?= fpNegativeInfinite
+            SameFPObj (fpMinimumNumber (1 :: FP32) 2) @?= 1,
+          testCase "fpMaximum" $ do
+            SameFPObj (fpMaximum (0 :: FP32) 0) @?= 0
+            SameFPObj (fpMaximum (0 :: FP32) (-0)) @?= 0
+            SameFPObj (fpMaximum (-0 :: FP32) 0) @?= 0
+            SameFPObj (fpMaximum (-0 :: FP32) (-0)) @?= -0
+            SameFPObj (fpMaximum (fpNaN :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMaximum (fpNaN :: FP32) 1) @?= fpNaN
+            SameFPObj (fpMaximum (1 :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMaximum (fpNaN :: FP32) fpPositiveInfinite) @?= fpNaN
+            SameFPObj (fpMaximum (fpNegativeInfinite :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMaximum (1 :: FP32) 2) @?= 2,
+          testCase "fpMaximumNumber" $ do
+            SameFPObj (fpMaximumNumber (0 :: FP32) 0) @?= 0
+            SameFPObj (fpMaximumNumber (0 :: FP32) (-0)) @?= 0
+            SameFPObj (fpMaximumNumber (-0 :: FP32) 0) @?= 0
+            SameFPObj (fpMaximumNumber (-0 :: FP32) (-0)) @?= -0
+            SameFPObj (fpMaximumNumber (fpNaN :: FP32) fpNaN) @?= fpNaN
+            SameFPObj (fpMaximumNumber (fpNaN :: FP32) 1) @?= 1
+            SameFPObj (fpMaximumNumber (1 :: FP32) fpNaN) @?= 1
+            SameFPObj (fpMaximumNumber (fpNaN :: FP32) fpPositiveInfinite)
+              @?= fpPositiveInfinite
+            SameFPObj (fpMaximumNumber (fpNegativeInfinite :: FP32) fpNaN)
+              @?= fpNegativeInfinite
+            SameFPObj (fpMaximumNumber (1 :: FP32) 2) @?= 2
         ]
     ]
+
+newtype SameFPObj = SameFPObj FP32 deriving newtype (Show, Num, IEEEConstants)
+
+instance Eq SameFPObj where
+  SameFPObj a == SameFPObj b
+    | a == 0 && b == 0 =
+        fpIsPositiveZero a == fpIsPositiveZero b
+  SameFPObj a == SameFPObj b | fpIsNaN a && fpIsNaN b = True
+  SameFPObj a == SameFPObj b = a == b

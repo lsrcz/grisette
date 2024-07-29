@@ -33,12 +33,12 @@ import Grisette.Internal.Core.Data.Class.BitCast
     BitCastOr,
     bitCastOrCanonical,
   )
-import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( SymIEEEFPTraits (symFpIsNaN),
-    fpIsNaN,
-  )
+import Grisette.Internal.Core.Data.Class.IEEEFP (fpIsNaN)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
+import Grisette.Internal.Core.Data.Class.SymIEEEFP
+  ( SymIEEEFPTraits (symFpIsNaN),
+  )
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.SymPrim.FP

@@ -34,21 +34,95 @@ import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (type (+))
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast), BitCastCanonical (bitCastCanonicalValue), BitCastOr (bitCastOr))
+import Grisette.Internal.Core.Data.Class.BitCast
+  ( BitCast (bitCast),
+    BitCastCanonical (bitCastCanonicalValue),
+    BitCastOr (bitCastOr),
+  )
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEConstants
+      ( fpNaN,
+        fpNegativeInfinite,
+        fpNegativeZero,
+        fpPositiveInfinite,
+        fpPositiveZero
+      ),
+    IEEEFPOp
+      ( fpAbs,
+        fpMaximum,
+        fpMaximumNumber,
+        fpMinimum,
+        fpMinimumNumber,
+        fpNeg,
+        fpRem
+      ),
+    IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
+    IEEEFPRoundingOp
+      ( symFpAdd,
+        symFpDiv,
+        symFpFMA,
+        symFpMul,
+        symFpRoundToIntegral,
+        symFpSqrt,
+        symFpSub
+      ),
+  )
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
+  )
+import Grisette.Internal.Core.Data.Class.SymIEEEFP
+  ( SymIEEEFPTraits
+      ( symFpIsInfinite,
+        symFpIsNaN,
+        symFpIsNegative,
+        symFpIsNegativeInfinite,
+        symFpIsNegativeZero,
+        symFpIsNormal,
+        symFpIsPoint,
+        symFpIsPositive,
+        symFpIsPositiveInfinite,
+        symFpIsPositiveZero,
+        symFpIsSubnormal,
+        symFpIsZero
+      ),
   )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP,
-    FPRoundingMode,
+    FPRoundingMode (RNA, RNE, RTN, RTP, RTZ),
     ValidFP,
     withValidFPProofs,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+  ( pevalFPBinaryTerm,
+    pevalFPFMATerm,
+    pevalFPRoundingBinaryTerm,
+    pevalFPRoundingUnaryTerm,
+    pevalFPTraitTerm,
+    pevalFPUnaryTerm,
+  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
+    FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
+    FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
+    FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
+    FPTrait
+      ( FPIsInfinite,
+        FPIsNaN,
+        FPIsNegative,
+        FPIsNegativeInfinite,
+        FPIsNegativeZero,
+        FPIsNormal,
+        FPIsPoint,
+        FPIsPositive,
+        FPIsPositiveInfinite,
+        FPIsPositiveZero,
+        FPIsSubnormal,
+        FPIsZero
+      ),
+    FPUnaryOp (FPAbs, FPNeg),
     FloatingUnaryOp (FloatingSqrt),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalBitCastOrTerm (pevalBitCastOrTerm),
@@ -70,6 +144,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     symTerm,
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
+import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
@@ -255,3 +330,96 @@ instance
   where
   bitCast (SymWordN a) =
     withValidFPProofs @eb @sb $ SymFP $ pevalBitCastTerm a
+
+instance (ValidFP eb sb) => IEEEConstants (SymFP eb sb) where
+  fpPositiveInfinite = con fpPositiveInfinite
+  {-# INLINE fpPositiveInfinite #-}
+  fpNegativeInfinite = con fpNegativeInfinite
+  {-# INLINE fpNegativeInfinite #-}
+  fpNaN = con fpNaN
+  {-# INLINE fpNaN #-}
+  fpNegativeZero = con fpNegativeZero
+  {-# INLINE fpNegativeZero #-}
+  fpPositiveZero = con fpPositiveZero
+  {-# INLINE fpPositiveZero #-}
+
+instance (ValidFP eb sb) => SymIEEEFPTraits (SymFP eb sb) where
+  symFpIsNaN (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNaN x
+  {-# INLINE symFpIsNaN #-}
+  symFpIsPositive (SymFP x) = SymBool $ pevalFPTraitTerm FPIsPositive x
+  {-# INLINE symFpIsPositive #-}
+  symFpIsNegative (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNegative x
+  {-# INLINE symFpIsNegative #-}
+  symFpIsInfinite (SymFP x) = SymBool $ pevalFPTraitTerm FPIsInfinite x
+  {-# INLINE symFpIsInfinite #-}
+  symFpIsPositiveInfinite (SymFP x) =
+    SymBool $ pevalFPTraitTerm FPIsPositiveInfinite x
+  {-# INLINE symFpIsPositiveInfinite #-}
+  symFpIsNegativeInfinite (SymFP x) =
+    SymBool $ pevalFPTraitTerm FPIsNegativeInfinite x
+  {-# INLINE symFpIsNegativeInfinite #-}
+  symFpIsPositiveZero (SymFP x) = SymBool $ pevalFPTraitTerm FPIsPositiveZero x
+  {-# INLINE symFpIsPositiveZero #-}
+  symFpIsNegativeZero (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNegativeZero x
+  {-# INLINE symFpIsNegativeZero #-}
+  symFpIsZero (SymFP x) = SymBool $ pevalFPTraitTerm FPIsZero x
+  {-# INLINE symFpIsZero #-}
+  symFpIsNormal (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNormal x
+  {-# INLINE symFpIsNormal #-}
+  symFpIsSubnormal (SymFP x) = SymBool $ pevalFPTraitTerm FPIsSubnormal x
+  {-# INLINE symFpIsSubnormal #-}
+  symFpIsPoint (SymFP x) = SymBool $ pevalFPTraitTerm FPIsPoint x
+  {-# INLINE symFpIsPoint #-}
+
+instance (ValidFP eb sb) => IEEEFPOp (SymFP eb sb) where
+  fpAbs (SymFP l) = SymFP $ pevalFPUnaryTerm FPAbs l
+  {-# INLINE fpAbs #-}
+  fpNeg (SymFP l) = SymFP $ pevalFPUnaryTerm FPNeg l
+  {-# INLINE fpNeg #-}
+  fpRem (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPRem l r
+  {-# INLINE fpRem #-}
+  fpMinimum (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPMinimum l r
+  {-# INLINE fpMinimum #-}
+  fpMinimumNumber (SymFP l) (SymFP r) =
+    SymFP $ pevalFPBinaryTerm FPMinimumNumber l r
+  {-# INLINE fpMinimumNumber #-}
+  fpMaximum (SymFP l) (SymFP r) = SymFP $ pevalFPBinaryTerm FPMaximum l r
+  {-# INLINE fpMaximum #-}
+  fpMaximumNumber (SymFP l) (SymFP r) =
+    SymFP $ pevalFPBinaryTerm FPMaximumNumber l r
+  {-# INLINE fpMaximumNumber #-}
+
+instance IEEEFPRoundingMode SymFPRoundingMode where
+  rne = con RNE
+  {-# INLINE rne #-}
+  rna = con RNA
+  {-# INLINE rna #-}
+  rtp = con RTP
+  {-# INLINE rtp #-}
+  rtn = con RTN
+  {-# INLINE rtn #-}
+  rtz = con RTZ
+  {-# INLINE rtz #-}
+
+instance (ValidFP eb sb) => IEEEFPRoundingOp (SymFP eb sb) SymFPRoundingMode where
+  symFpAdd (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPAdd mode l r
+  {-# INLINE symFpAdd #-}
+  symFpSub (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPSub mode l r
+  {-# INLINE symFpSub #-}
+  symFpMul (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPMul mode l r
+  {-# INLINE symFpMul #-}
+  symFpDiv (SymFPRoundingMode mode) (SymFP l) (SymFP r) =
+    SymFP $ pevalFPRoundingBinaryTerm FPDiv mode l r
+  {-# INLINE symFpDiv #-}
+  symFpFMA (SymFPRoundingMode mode) (SymFP l) (SymFP m) (SymFP r) =
+    SymFP $ pevalFPFMATerm mode l m r
+  {-# INLINE symFpFMA #-}
+  symFpSqrt (SymFPRoundingMode mode) (SymFP v) =
+    SymFP $ pevalFPRoundingUnaryTerm FPSqrt mode v
+  {-# INLINE symFpSqrt #-}
+  symFpRoundToIntegral (SymFPRoundingMode mode) (SymFP v) =
+    SymFP $ pevalFPRoundingUnaryTerm FPRoundToIntegral mode v
+  {-# INLINE symFpRoundToIntegral #-}
