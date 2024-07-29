@@ -332,6 +332,7 @@ parseGeneralFunSMTModelResult level (l, s) =
           funs
    in buildGeneralFun (TypedSymbol sym) body
 
+-- | General procedure for substituting symbols in a term.
 {-# NOINLINE generalSubstSomeTerm #-}
 generalSubstSomeTerm ::
   forall v.

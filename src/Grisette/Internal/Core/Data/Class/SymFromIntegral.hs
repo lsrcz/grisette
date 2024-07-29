@@ -4,6 +4,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Internal.Core.Data.Class.SymFromIntegral
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Core.Data.Class.SymFromIntegral
   ( SymFromIntegral (..),
   )
@@ -19,6 +27,7 @@ import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Grisette.Internal.SymPrim.SymFP (SymFP (SymFP))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 
+-- | Conversion from a symbolic integral type.
 class SymFromIntegral from to where
   symFromIntegral :: from -> to
 

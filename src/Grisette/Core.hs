@@ -351,11 +351,6 @@ module Grisette.Core
     SymRotate (..),
     SafeSymRotate (..),
     SignConversion (..),
-    BitCast (..),
-    BitCastCanonical (..),
-    BitCastOr (..),
-    BitCastOrCanonical,
-    bitCastOrCanonical,
 
     -- ** Safe operation for Numbers
     DivOr (..),
@@ -409,6 +404,14 @@ module Grisette.Core
     toSym1,
     ToSym2 (..),
     toSym2,
+
+    -- ** Conversion between different symbolic types
+    BitCast (..),
+    BitCastCanonical (..),
+    BitCastOr (..),
+    BitCastOrCanonical,
+    bitCastOrCanonical,
+    SymFromIntegral (..),
 
     -- * Unsolvable types and merging
 
@@ -1697,6 +1700,9 @@ import Grisette.Internal.Core.Data.Class.SymEq
     genericSymEq,
     symEq1,
     symEq2,
+  )
+import Grisette.Internal.Core.Data.Class.SymFromIntegral
+  ( SymFromIntegral (..),
   )
 import Grisette.Internal.Core.Data.Class.SymIEEEFP
   ( SymIEEEFPTraits (..),
