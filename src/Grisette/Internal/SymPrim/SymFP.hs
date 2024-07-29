@@ -33,7 +33,7 @@ import Data.Hashable (Hashable (hashWithSalt))
 import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
-import GHC.TypeLits (type (+))
+import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast
   ( BitCast (bitCast),
     BitCastCanonical (bitCastCanonicalValue),
@@ -48,6 +48,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
         fpPositiveInfinite,
         fpPositiveZero
       ),
+    IEEEFPConvertible (fromFPOr, toFP),
     IEEEFPOp
       ( fpAbs,
         fpMaximum,
@@ -141,10 +142,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     conTerm,
     pevalSubNumTerm,
     pformat,
-    symTerm,
+    symTerm, PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),
   )
+import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
+import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
@@ -423,3 +426,35 @@ instance (ValidFP eb sb) => IEEEFPRoundingOp (SymFP eb sb) SymFPRoundingMode whe
   fpRoundToIntegral (SymFPRoundingMode mode) (SymFP v) =
     SymFP $ pevalFPRoundingUnaryTerm FPRoundToIntegral mode v
   {-# INLINE fpRoundToIntegral #-}
+
+instance
+  (ValidFP eb sb) =>
+  IEEEFPConvertible SymInteger (SymFP eb sb) SymFPRoundingMode
+  where
+  fromFPOr (SymInteger d) (SymFPRoundingMode mode) (SymFP fp) =
+    SymInteger $ pevalFromFPOrTerm d mode fp
+  toFP (SymFPRoundingMode mode) (SymInteger v) = SymFP $ pevalToFPTerm mode v
+
+instance
+  (ValidFP eb sb) =>
+  IEEEFPConvertible SymAlgReal (SymFP eb sb) SymFPRoundingMode
+  where
+  fromFPOr (SymAlgReal d) (SymFPRoundingMode mode) (SymFP fp) =
+    SymAlgReal $ pevalFromFPOrTerm d mode fp
+  toFP (SymFPRoundingMode mode) (SymAlgReal v) = SymFP $ pevalToFPTerm mode v
+
+instance
+  (ValidFP eb sb, KnownNat n, 1 <= n) =>
+  IEEEFPConvertible (SymWordN n) (SymFP eb sb) SymFPRoundingMode
+  where
+  fromFPOr (SymWordN d) (SymFPRoundingMode mode) (SymFP fp) =
+    SymWordN $ pevalFromFPOrTerm d mode fp
+  toFP (SymFPRoundingMode mode) (SymWordN v) = SymFP $ pevalToFPTerm mode v
+
+instance
+  (ValidFP eb sb, KnownNat n, 1 <= n) =>
+  IEEEFPConvertible (SymIntN n) (SymFP eb sb) SymFPRoundingMode
+  where
+  fromFPOr (SymIntN d) (SymFPRoundingMode mode) (SymFP fp) =
+    SymIntN $ pevalFromFPOrTerm d mode fp
+  toFP (SymFPRoundingMode mode) (SymIntN v) = SymFP $ pevalToFPTerm mode v

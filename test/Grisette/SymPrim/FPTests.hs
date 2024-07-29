@@ -79,8 +79,8 @@ sameFP x y
   | isNaN x && isNaN y = True
   | isInfinite x && isInfinite y =
       (x < 0 && y < 0) || (x > 0 && y > 0)
-  | otherwise =
-      (uncurry encodeFloat (decodeFloat x) :: b) == y
+  -- | GHC's floating point support doesn't conform to IEEE754.
+  | otherwise = (uncurry encodeFloat (decodeFloat x) :: b) == y
 
 fp32ConversionTest :: (Word32 -> IO ()) -> [Test]
 fp32ConversionTest testFun =
