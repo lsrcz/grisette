@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,6 +29,7 @@ module Grisette.Internal.Core.Data.Class.IEEEFP
     IEEEFPRoundingMode (..),
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
+    IEEEFPConvertible (..),
   )
 where
 
@@ -177,3 +179,7 @@ class (IEEEFPRoundingMode mode) => IEEEFPRoundingOp a mode | a -> mode where
   fpFMA :: mode -> a -> a -> a -> a
   fpSqrt :: mode -> a -> a
   fpRoundToIntegral :: mode -> a -> a
+
+class IEEEFPConvertible a fp mode | fp -> mode where
+  fromFPOr :: a -> mode -> fp -> a
+  toFP :: mode -> a -> fp
