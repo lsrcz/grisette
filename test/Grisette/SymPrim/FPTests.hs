@@ -12,7 +12,7 @@ module Grisette.SymPrim.FPTests (fpTests) where
 
 import Data.Foldable (traverse_)
 import Data.Word (Word32, Word64)
-import Grisette (IEEEFPOp (fpAbs, fpMaximum, fpMaximumNumber, fpMinimum, fpMinimumNumber, fpNeg, fpRem), WordN, bitCastOrCanonical)
+import Grisette (FP, IEEEFPOp (fpAbs, fpMaximum, fpMaximumNumber, fpMinimum, fpMinimumNumber, fpNeg, fpRem), IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz), IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub), WordN, bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEConstants
@@ -395,6 +395,72 @@ fpTests =
             SameFPObj (fpMaximumNumber (fpNegativeInfinite :: FP32) fpNaN)
               @?= fpNegativeInfinite
             SameFPObj (fpMaximumNumber (1 :: FP32) 2) @?= 2
+        ],
+      testGroup
+        "IEEEFPRoundingOp"
+        [ testCase "unop nan" $ do
+            let op = [fpRoundToIntegral, fpSqrt]
+            let roundingMode = [rne, rna, rtz, rtn, rtp]
+            traverse_ (\(o, rd) -> SameFPObj (o rd fpNaN) @?= fpNaN) $
+              [(op, rd) | op <- op, rd <- roundingMode],
+          testCase "binop nan" $ do
+            let op = [fpAdd, fpSub, fpMul, fpDiv]
+            let roundingMode = [rne, rna, rtz, rtn, rtp]
+            let operands =
+                  [(fpNaN :: FP32, 1 :: FP32), (1, fpNaN), (fpNaN, fpNaN)]
+            traverse_ (\(o, r, (a, b)) -> SameFPObj (o r a b) @?= fpNaN) $
+              [(o, r, (a, b)) | o <- op, r <- roundingMode, (a, b) <- operands],
+          testCase "ternop nan" $ do
+            let op = [fpFMA]
+            let roundingMode = [rne, rna, rtz, rtn, rtp]
+            let operand = [fpNaN :: FP32, 1]
+            let operands =
+                  [ (a, b, c)
+                    | a <- operand,
+                      b <- operand,
+                      c <- operand,
+                      fpIsNaN a || fpIsNaN b || fpIsNaN c
+                  ]
+            traverse_ (\(o, r, (a, b, c)) -> SameFPObj (o r a b c) @?= fpNaN) $
+              [ (o, r, (a, b, c))
+                | o <- op,
+                  r <- roundingMode,
+                  (a, b, c) <- operands
+              ],
+          testCase "fpAdd" $ do
+            let v = 60 :: FP 4 4
+            fpAdd rne 2 v @?= 64
+            fpAdd rna 2 v @?= 64
+            fpAdd rne (-2) v @?= 56
+            fpAdd rna (-2) v @?= 60
+            fpAdd rtz 2 v @?= 60
+            fpAdd rtn 2 v @?= 60
+            fpAdd rtp 2 v @?= 64
+            fpAdd rne (-2) (-v) @?= -64
+            fpAdd rna (-2) (-v) @?= -64
+            fpAdd rtz (-2) (-v) @?= -60
+            fpAdd rtn (-2) (-v) @?= -64
+            fpAdd rtp (-2) (-v) @?= -60
+            fpAdd rne 1 v @?= 60
+            fpAdd rna 1 v @?= 60
+            fpAdd rtz 1 v @?= 60
+            fpAdd rtn 1 v @?= 60
+            fpAdd rtp 1 v @?= 64
+            fpAdd rne (-1) (-v) @?= -60
+            fpAdd rna (-1) (-v) @?= -60
+            fpAdd rtz (-1) (-v) @?= -60
+            fpAdd rtn (-1) (-v) @?= -64
+            fpAdd rtp (-1) (-v) @?= -60
+            fpAdd rne 3 v @?= 64
+            fpAdd rna 3 v @?= 64
+            fpAdd rtz 3 v @?= 60
+            fpAdd rtn 3 v @?= 60
+            fpAdd rtp 3 v @?= 64
+            fpAdd rne (-3) (-v) @?= -64
+            fpAdd rna (-3) (-v) @?= -64
+            fpAdd rtz (-3) (-v) @?= -60
+            fpAdd rtn (-3) (-v) @?= -64
+            fpAdd rtp (-3) (-v) @?= -60
         ]
     ]
 

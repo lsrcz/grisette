@@ -17,7 +17,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
 where
 
 import qualified Data.SBV as SBV
-import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEFPOp (fpRem, fpMinimum, fpMinimumNumber, fpMaximum, fpMaximumNumber))
+import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEFPOp (fpMaximum, fpMaximumNumber, fpMinimum, fpMinimumNumber, fpRem), IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub))
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
@@ -196,7 +196,11 @@ pevalFPRoundingUnaryTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPRoundingUnaryTerm = fpRoundingUnaryTerm
+pevalFPRoundingUnaryTerm uop (ConTerm _ rd) (ConTerm _ l) =
+  case uop of
+    FPSqrt -> conTerm $ fpSqrt rd l
+    FPRoundToIntegral -> conTerm $ fpRoundToIntegral rd l
+pevalFPRoundingUnaryTerm uop rd l = fpRoundingUnaryTerm uop rd l
 {-# INLINE pevalFPRoundingUnaryTerm #-}
 
 sbvFPRoundingUnaryTerm ::
@@ -216,7 +220,13 @@ pevalFPRoundingBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPRoundingBinaryTerm = fpRoundingBinaryTerm
+pevalFPRoundingBinaryTerm bop (ConTerm _ rd) (ConTerm _ l) (ConTerm _ r) =
+  case bop of
+    FPAdd -> conTerm $ fpAdd rd l r
+    FPSub -> conTerm $ fpSub rd l r
+    FPMul -> conTerm $ fpMul rd l r
+    FPDiv -> conTerm $ fpDiv rd l r
+pevalFPRoundingBinaryTerm bop rd l r = fpRoundingBinaryTerm bop rd l r
 {-# INLINE pevalFPRoundingBinaryTerm #-}
 
 sbvFPRoundingBinaryTerm ::
@@ -239,7 +249,9 @@ pevalFPFMATerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPFMATerm = fpFMATerm
+pevalFPFMATerm (ConTerm _ rd) (ConTerm _ x) (ConTerm _ y) (ConTerm _ z) =
+  conTerm $ fpFMA rd x y z
+pevalFPFMATerm rd x y z = fpFMATerm rd x y z
 {-# INLINE pevalFPFMATerm #-}
 
 sbvFPFMATerm ::
