@@ -2013,7 +2013,11 @@ instance (SupportedPrim t) => Interned (Term t) where
     DModIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DQuotIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRemIntegralTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
-    DFPTraitTerm :: FPTrait -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DFPTraitTerm ::
+      (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+      FPTrait ->
+      {-# UNPACK #-} !(TypeRep (FP eb sb), Id) ->
+      Description (Term Bool)
     DFdivTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term a)
     DRecipTerm :: {-# UNPACK #-} !Id -> Description (Term a)
     DFloatingUnaryTerm :: FloatingUnaryOp -> {-# UNPACK #-} !Id -> Description (Term a)
@@ -2078,7 +2082,8 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UModIntegralTerm arg1 arg2) = DModIntegralTerm (identity arg1) (identity arg2)
   describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (identity arg1) (identity arg2)
   describe (URemIntegralTerm arg1 arg2) = DQuotIntegralTerm (identity arg1) (identity arg2)
-  describe (UFPTraitTerm trait arg) = DFPTraitTerm trait (identity arg)
+  describe (UFPTraitTerm trait (arg :: Term arg)) =
+    DFPTraitTerm trait (typeRep :: TypeRep arg, identity arg)
   describe (UFdivTerm arg1 arg2) = DFdivTerm (identity arg1) (identity arg2)
   describe (URecipTerm arg) = DRecipTerm (identity arg)
   describe (UFloatingUnaryTerm op arg) = DFloatingUnaryTerm op (identity arg)
@@ -2187,7 +2192,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DModIntegralTerm li1 li2 == DModIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRemIntegralTerm li1 li2 == DRemIntegralTerm ri1 ri2 = li1 == ri1 && li2 == ri2
-  DFPTraitTerm lt li == DFPTraitTerm rt ri = lt == rt && li == ri
+  DFPTraitTerm lt li == DFPTraitTerm rt ri = lt == rt && eqTypedId li ri
   DFdivTerm li1 li2 == DFdivTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DRecipTerm li == DRecipTerm ri = li == ri
   DFloatingUnaryTerm lop li == DFloatingUnaryTerm rop ri = lop == rop && li == ri
