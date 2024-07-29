@@ -98,6 +98,7 @@ library
       Grisette.Internal.Core.Data.Class.SubstSym
       Grisette.Internal.Core.Data.Class.SymEq
       Grisette.Internal.Core.Data.Class.SymFromIntegral
+      Grisette.Internal.Core.Data.Class.SymIEEEFP
       Grisette.Internal.Core.Data.Class.SymOrd
       Grisette.Internal.Core.Data.Class.SymRotate
       Grisette.Internal.Core.Data.Class.SymShift

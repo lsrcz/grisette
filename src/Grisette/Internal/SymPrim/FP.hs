@@ -64,6 +64,7 @@ import Data.SBV
     sFloatingPointAsSWord,
     sWordAsSFloatingPoint,
   )
+import qualified Data.SBV.Internals as SBVI
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.Exception (Exception (displayException))
 import GHC.Generics (Generic)
@@ -75,6 +76,28 @@ import Grisette.Internal.Core.Data.Class.BitCast
     bitCastOrCanonical,
   )
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEConstants
+      ( fpNaN,
+        fpNegativeInfinite,
+        fpNegativeZero,
+        fpPositiveInfinite,
+        fpPositiveZero
+      ),
+    IEEEFPOp
+      ( fpAbs,
+        fpMaximum,
+        fpMaximumNumber,
+        fpMinimum,
+        fpMinimumNumber,
+        fpNeg,
+        fpRem
+      ),
+    IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
+    fpIsNaN,
+    fpIsNegativeZero,
+    fpIsZero,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.Utils.Parameterized
   ( KnownProof (KnownProof),
@@ -363,3 +386,61 @@ data BitCastNaNError = BitCastNaNError
 instance Exception BitCastNaNError where
   displayException BitCastNaNError =
     "Bitcasting NaN value cannot be done with SMT-LIB2"
+
+instance (ValidFP eb sb) => IEEEConstants (FP eb sb) where
+  fpPositiveInfinite = FP infinity
+  {-# INLINE fpPositiveInfinite #-}
+  fpNegativeInfinite = FP $ -infinity
+  {-# INLINE fpNegativeInfinite #-}
+  fpNaN = FP nan
+  {-# INLINE fpNaN #-}
+  fpNegativeZero = FP $ -0
+  {-# INLINE fpNegativeZero #-}
+  fpPositiveZero = FP 0
+  {-# INLINE fpPositiveZero #-}
+
+cmpHandleNegZero :: (ValidFP eb sb) => FP eb sb -> FP eb sb -> Bool
+cmpHandleNegZero x y =
+  if fpIsZero x && fpIsZero y then fpIsNegativeZero x else x < y
+
+instance (ValidFP eb sb) => IEEEFPOp (FP eb sb) where
+  fpAbs = abs
+  {-# INLINE fpAbs #-}
+  fpNeg = negate
+  {-# INLINE fpNeg #-}
+  fpRem = SBVI.fpRemH
+  {-# INLINE fpRem #-}
+  fpMinimum a b
+    | fpIsNaN a || fpIsNaN b = fpNaN
+    | cmpHandleNegZero a b = a
+    | otherwise = b
+  {-# INLINE fpMinimum #-}
+  fpMinimumNumber a b
+    | fpIsNaN a = b
+    | fpIsNaN b = a
+    | cmpHandleNegZero a b = a
+    | otherwise = b
+  {-# INLINE fpMinimumNumber #-}
+  fpMaximum a b
+    | fpIsNaN a || fpIsNaN b = fpNaN
+    | cmpHandleNegZero a b = b
+    | otherwise = a
+  {-# INLINE fpMaximum #-}
+  fpMaximumNumber a b
+    | fpIsNaN a = b
+    | fpIsNaN b = a
+    | cmpHandleNegZero a b = b
+    | otherwise = a
+  {-# INLINE fpMaximumNumber #-}
+
+instance IEEEFPRoundingMode FPRoundingMode where
+  rne = RNE
+  {-# INLINE rne #-}
+  rna = RNA
+  {-# INLINE rna #-}
+  rtp = RTP
+  {-# INLINE rtp #-}
+  rtn = RTN
+  {-# INLINE rtn #-}
+  rtz = RTZ
+  {-# INLINE rtz #-}

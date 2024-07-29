@@ -17,6 +17,7 @@ import Data.Foldable (traverse_)
 import Grisette
   ( BitCast (bitCast),
     GrisetteSMTConfig,
+    IEEEConstants (fpNegativeZero, fpPositiveZero),
     ITEOp (symIte),
     IntN,
     LogicalOp (symNot),
@@ -35,7 +36,6 @@ import Grisette.Backend.TermRewritingGen
     FixedSizedBVWithBoolSpec,
     GeneralSpec,
     IEEEFP32BoolOpSpec (IEEEFP32BoolOpSpec),
-    IEEEFP32Spec,
     LIAWithBoolSpec,
     NRAWithBoolSpec,
     TermRewritingSpec
@@ -53,6 +53,7 @@ import Grisette.Backend.TermRewritingGen
     bitCastSpec,
     divIntegralSpec,
     eqvSpec,
+    fpBinaryOpSpec,
     fpTraitSpec,
     iteSpec,
     leOrdSpec,
@@ -64,17 +65,20 @@ import Grisette.Backend.TermRewritingGen
     quotIntegralSpec,
     remIntegralSpec,
     shiftRightSpec,
-    signumNumSpec,
+    signumNumSpec, IEEEFP32Spec,
   )
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEConstants (fpNaN, fpNegativeInfinite, fpPositiveInfinite),
-    SymIEEEFPTraits (symFpIsPositiveInfinite),
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
+import Grisette.Internal.Core.Data.Class.SymIEEEFP
+  ( SymIEEEFPTraits (symFpIsPositiveInfinite),
+  )
 import Grisette.Internal.SymPrim.FP (FP, FP32)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( FPTrait (FPIsPositive),
+  ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
+    FPTrait (FPIsPositive),
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
     SupportedPrim,
@@ -94,7 +98,11 @@ import Test.HUnit (Assertion, assertFailure)
 import Test.QuickCheck (Arbitrary, ioProperty, mapSize, withMaxSuccess, (==>))
 import Type.Reflection (typeRep)
 
-validateSpec :: (TermRewritingSpec a av, Show a, SupportedPrim av) => GrisetteSMTConfig n -> a -> Assertion
+validateSpec ::
+  (TermRewritingSpec a av, Show a, SupportedPrim av) =>
+  GrisetteSMTConfig n ->
+  a ->
+  Assertion
 validateSpec config a = do
   r <- solve config (SymBool $ counterExample a)
   rs <- solve config (SymBool $ same a)
@@ -103,9 +111,19 @@ validateSpec config a = do
       return ()
     (Left _, Left err) -> do
       print err
-      assertFailure $ "Bad rewriting with unsolvable formula: " ++ pformat (norewriteVer a) ++ " was rewritten to " ++ pformat (rewriteVer a)
+      assertFailure $
+        "Bad rewriting with unsolvable formula: "
+          ++ pformat (norewriteVer a)
+          ++ " was rewritten to "
+          ++ pformat (rewriteVer a)
     (Right m, _) -> do
-      assertFailure $ "With model" ++ show m ++ "Bad rewriting: " ++ pformat (norewriteVer a) ++ " was rewritten to " ++ pformat (rewriteVer a)
+      assertFailure $
+        "With model"
+          ++ show m
+          ++ "Bad rewriting: "
+          ++ pformat (norewriteVer a)
+          ++ " was rewritten to "
+          ++ pformat (rewriteVer a)
 
 bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
 bitwuzlaConfig = do
@@ -462,7 +480,25 @@ termRewritingTests =
           testProperty "FPRoundingModeBoolOpSpec" $
             mapSize (`min` 10) $
               ioProperty . \(x :: FPRoundingModeBoolOpSpec) ->
-                onlyWhenBitwuzlaIsAvailable (`validateSpec` x)
+                onlyWhenBitwuzlaIsAvailable (`validateSpec` x),
+          testGroup "fpBinaryOp" $ do
+            op <-
+              [FPMaximum, FPMinimum, FPMaximumNumber, FPMinimumNumber, FPRem]
+            return $ testCase (show op) $ onlyWhenBitwuzlaIsAvailable $ \c -> do
+              let lst =
+                    [ conSpec fpNegativeInfinite,
+                      conSpec fpPositiveInfinite,
+                      conSpec fpNaN,
+                      conSpec fpPositiveZero,
+                      conSpec fpNegativeZero,
+                      conSpec 1,
+                      conSpec (-1),
+                      symSpec "a",
+                      symSpec "b"
+                    ]
+              let ps =
+                    [fpBinaryOpSpec op l r :: IEEEFP32Spec | l <- lst, r <- lst]
+              traverse_ (validateSpec c) ps
         ],
       testGroup "bitCast" $ do
         let bitCastCase ::

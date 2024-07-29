@@ -86,7 +86,7 @@ import Grisette.Internal.SymPrim.FP
     ValidFP,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( FPBinaryOp (FPMax, FPMin, FPRem),
+  ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
     FPRoundingUnaryOp (FPRoundToIntegral, FPSqrt),
     FPUnaryOp (FPAbs, FPNeg),
@@ -1031,7 +1031,13 @@ instance TermRewritingSpec IEEEFP32Spec FP32 where
   norewriteVer (IEEEFP32Spec n _) = n
   rewriteVer (IEEEFP32Spec _ r) = r
   wrap = IEEEFP32Spec
-  same s = eqTerm (norewriteVer s) (rewriteVer s)
+  same s =
+    orTerm
+      ( andTerm
+          (fpTraitTerm FPIsNaN (norewriteVer s))
+          (fpTraitTerm FPIsNaN (rewriteVer s))
+      )
+      (eqTerm (norewriteVer s) (rewriteVer s))
 
 instance Arbitrary IEEEFP32Spec where
   arbitrary = do
@@ -1057,7 +1063,16 @@ instance Arbitrary IEEEFP32Spec where
             floatingUnarySpec FloatingSqrt a
           ]
     let uop = fpUnaryOpSpec <$> [FPAbs, FPNeg] <*> return a
-    let bop = fpBinaryOpSpec <$> [FPRem, FPMin, FPMax] <*> [a] <*> [b]
+    let bop =
+          fpBinaryOpSpec
+            <$> [ FPRem,
+                  FPMinimum,
+                  FPMaximum,
+                  FPMaximumNumber,
+                  FPMinimumNumber
+                ]
+            <*> [a]
+            <*> [b]
     let ruop =
           fpRoundingUnaryOpSpec
             <$> [FPSqrt, FPRoundToIntegral]
