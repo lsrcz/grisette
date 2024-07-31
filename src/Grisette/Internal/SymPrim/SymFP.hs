@@ -42,7 +42,11 @@ import Grisette.Internal.Core.Data.Class.BitCast
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEFPConstants
-      ( fpNaN,
+      ( fpMaxNormalized,
+        fpMaxSubnormal,
+        fpMinNormalized,
+        fpMinSubnormal,
+        fpNaN,
         fpNegativeInfinite,
         fpNegativeZero,
         fpPositiveInfinite,
@@ -130,6 +134,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalBitCastTerm (pevalBitCastTerm),
     PEvalFloatingTerm (pevalFloatingUnaryTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
+    PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
@@ -142,7 +147,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     conTerm,
     pevalSubNumTerm,
     pformat,
-    symTerm, PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),
+    symTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
@@ -345,6 +350,14 @@ instance (ValidFP eb sb) => IEEEFPConstants (SymFP eb sb) where
   {-# INLINE fpNegativeZero #-}
   fpPositiveZero = con fpPositiveZero
   {-# INLINE fpPositiveZero #-}
+  fpMinNormalized = con fpMinNormalized
+  {-# INLINE fpMinNormalized #-}
+  fpMinSubnormal = con fpMinSubnormal
+  {-# INLINE fpMinSubnormal #-}
+  fpMaxNormalized = con fpMaxNormalized
+  {-# INLINE fpMaxNormalized #-}
+  fpMaxSubnormal = con fpMaxSubnormal
+  {-# INLINE fpMaxSubnormal #-}
 
 instance (ValidFP eb sb) => SymIEEEFPTraits (SymFP eb sb) where
   symFpIsNaN (SymFP x) = SymBool $ pevalFPTraitTerm FPIsNaN x

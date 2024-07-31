@@ -34,7 +34,7 @@ import Grisette
         fpSub
       ),
     WordN,
-    bitCastOrCanonical,
+    bitCastOrCanonical, IEEEFPConstants (fpMinNormalized, fpMaxNormalized, fpMinSubnormal, fpMaxSubnormal),
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.IEEEFP
@@ -311,7 +311,15 @@ fpTests =
           testCase "fpPositiveZero" $
             fpIsPositiveZero (fpPositiveZero :: FP32) @?= True,
           testCase "fpNegativeZero" $
-            fpIsNegativeZero (fpNegativeZero :: FP32) @?= True
+            fpIsNegativeZero (fpNegativeZero :: FP32) @?= True,
+          testCase "fpMinNormalized" $
+            fpMinNormalized @?= (1.5625e-2 :: FP 4 4),
+          testCase "fpMaxNormalized" $
+            fpMaxNormalized @?= (2.4e2 :: FP 4 4),
+          testCase "fpMinSubnormal" $
+            fpMinSubnormal @?= (1.953125e-3 :: FP 4 4),
+          testCase "fpMaxSubnormal" $
+            fpMaxSubnormal @?= (1.3671875e-2 :: FP 4 4)
         ],
       testGroup
         "IEEEFPOp"

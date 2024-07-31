@@ -118,6 +118,18 @@ class IEEEFPConstants a where
   -- | Positive zero.
   fpPositiveZero :: a
 
+  -- | Smallest positive normalized number.
+  fpMinNormalized :: a
+
+  -- | Smallest positive subnormal number.
+  fpMinSubnormal :: a
+
+  -- | Largest positive normalized number.
+  fpMaxNormalized :: a
+
+  -- | Largest positive subnormal number.
+  fpMaxSubnormal :: a
+
 -- | Operations on IEEE floating-point numbers, without rounding mode.
 class IEEEFPOp a where
   -- | IEEE754-2019 abs operation.
