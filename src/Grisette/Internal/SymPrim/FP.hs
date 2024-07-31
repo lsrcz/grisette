@@ -81,7 +81,11 @@ import Grisette.Internal.Core.Data.Class.BitCast
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEFPConstants
-      ( fpNaN,
+      ( fpMaxNormalized,
+        fpMaxSubnormal,
+        fpMinNormalized,
+        fpMinSubnormal,
+        fpNaN,
         fpNegativeInfinite,
         fpNegativeZero,
         fpPositiveInfinite,
@@ -437,6 +441,35 @@ instance (ValidFP eb sb) => IEEEFPConstants (FP eb sb) where
   {-# INLINE fpNegativeZero #-}
   fpPositiveZero = FP 0
   {-# INLINE fpPositiveZero #-}
+
+  fpMinNormalized =
+    withValidFPProofs @eb @sb $
+      bitCast $
+        (1 :: WordN (eb + sb)) `shiftL` fromIntegral (natVal (Proxy @sb) - 1)
+  {-# INLINE fpMinNormalized #-}
+
+  fpMaxNormalized =
+    withValidFPProofs @eb @sb $
+      bitCast $
+        complement
+          ( (1 :: WordN (eb + sb))
+              `shiftL` fromIntegral (natVal (Proxy @sb) - 1)
+          )
+          `shiftL` 1
+          `shiftR` 1
+  {-# INLINE fpMaxNormalized #-}
+
+  fpMinSubnormal = withValidFPProofs @eb @sb $ bitCast (1 :: WordN (eb + sb))
+  {-# INLINE fpMinSubnormal #-}
+
+  fpMaxSubnormal =
+    withValidFPProofs @eb @sb $
+      bitCast
+        ( (1 :: WordN (eb + sb))
+            `shiftL` fromIntegral (natVal (Proxy @sb) - 1)
+            - 1
+        )
+  {-# INLINE fpMaxSubnormal #-}
 
 cmpHandleNegZero :: (ValidFP eb sb) => FP eb sb -> FP eb sb -> Bool
 cmpHandleNegZero x y =
