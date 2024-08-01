@@ -30,6 +30,7 @@ module Grisette.Internal.Core.Data.Class.IEEEFP
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
     IEEEFPConvertible (..),
+    IEEEFPToAlgReal (..),
   )
 where
 
@@ -192,6 +193,34 @@ class (IEEEFPRoundingMode mode) => IEEEFPRoundingOp a mode | a -> mode where
   fpSqrt :: mode -> a -> a
   fpRoundToIntegral :: mode -> a -> a
 
+-- | Conversion from and to FPs.
 class IEEEFPConvertible a fp mode | fp -> mode where
-  fromFPOr :: a -> mode -> fp -> a
+  fromFPOr ::
+    -- | Default value when converting non-representable FPs. For example, when
+    -- converting to non-FP types, the NaN and infinities are not representable.
+    -- Additionally, when converting to bit-vectors, out-of-bound FPs are not
+    -- representable.
+    --
+    -- Note that out-of-bound means that the /value after conversion/ is out of
+    -- bound, not the /value before conversion/, meaning that converting from
+    -- 3.5 to 2-bit unsigned bit-vector is out-of-bound when rounding to
+    -- positive, but not when rounding to negative.
+    a ->
+    -- | Rounding mode. Ignored when converting to 'Grisette.AlgReal' because
+    -- every representable FP value is converted to an exact 'Grisette.AlgReal'.
+    mode ->
+    -- | FP value.
+    fp ->
+    a
   toFP :: mode -> a -> fp
+
+-- | Converting FP to real numbers.
+class
+  (IEEEFPConvertible a fp mode, IEEEFPRoundingMode mode) =>
+  IEEEFPToAlgReal a fp mode
+    | fp -> mode
+  where
+  -- | Similar to 'fromFPOr' for 'Grisette.AlgReal', but dropped the ignored
+  -- rounding mode.
+  fpToAlgReal :: a -> fp -> a
+  fpToAlgReal d = fromFPOr d rna
