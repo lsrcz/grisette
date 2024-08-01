@@ -79,15 +79,16 @@ binaryPartialUnfoldOnce partial fallback = ret
       catchError
         (partial' x y)
         ( \_ ->
-            catchError
-              ( case x of
-                  ITETerm _ cond vt vf -> left cond vt vf y partial' fallback'
-                  _ -> Nothing
-              )
-              ( \_ -> case y of
-                  ITETerm _ cond vt vf -> left cond vt vf x (flip partial') (flip fallback')
-                  _ -> Nothing
-              )
+            case (x, y) of
+              (ITETerm _ _ ITETerm {} _, ITETerm {}) -> Nothing
+              (ITETerm _ _ _ ITETerm {}, ITETerm {}) -> Nothing
+              (ITETerm {}, ITETerm _ _ ITETerm {} _) -> Nothing
+              (ITETerm {}, ITETerm _ _ _ ITETerm {}) -> Nothing
+              (ITETerm _ cond vt vf, _) ->
+                left cond vt vf y partial' fallback'
+              (_, ITETerm _ cond vt vf) ->
+                left cond vt vf x (flip partial') (flip fallback')
+              _ -> Nothing
         )
     left ::
       Term Bool ->
