@@ -97,6 +97,7 @@ library
       Grisette.Internal.Core.Data.Class.Solver
       Grisette.Internal.Core.Data.Class.SubstSym
       Grisette.Internal.Core.Data.Class.SymEq
+      Grisette.Internal.Core.Data.Class.SymFiniteBits
       Grisette.Internal.Core.Data.Class.SymFromIntegral
       Grisette.Internal.Core.Data.Class.SymIEEEFP
       Grisette.Internal.Core.Data.Class.SymOrd
@@ -312,6 +313,7 @@ test-suite spec
       Grisette.Core.Data.Class.SimpleMergeableTests
       Grisette.Core.Data.Class.SubstSymTests
       Grisette.Core.Data.Class.SymEqTests
+      Grisette.Core.Data.Class.SymFiniteBitsTests
       Grisette.Core.Data.Class.SymOrdTests
       Grisette.Core.Data.Class.SymRotateTests
       Grisette.Core.Data.Class.SymShiftTests

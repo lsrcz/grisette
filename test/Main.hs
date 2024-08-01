@@ -24,6 +24,7 @@ import Grisette.Core.Data.Class.SafeSymShiftTests (safeSymShiftTests)
 import Grisette.Core.Data.Class.SimpleMergeableTests (simpleMergeableTests)
 import Grisette.Core.Data.Class.SubstSymTests (substSymTests)
 import Grisette.Core.Data.Class.SymEqTests (seqTests)
+import Grisette.Core.Data.Class.SymFiniteBitsTests (symFiniteBitsTests)
 import Grisette.Core.Data.Class.SymOrdTests (sordTests)
 import Grisette.Core.Data.Class.SymRotateTests (symRotateTests)
 import Grisette.Core.Data.Class.SymShiftTests (symShiftTests)
@@ -118,6 +119,7 @@ coreTests =
               sordTests,
               simpleMergeableTests,
               substSymTests,
+              symFiniteBitsTests,
               symRotateTests,
               symShiftTests,
               toConTests,
