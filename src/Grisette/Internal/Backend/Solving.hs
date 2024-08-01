@@ -171,6 +171,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalFloatingTerm (sbvFloatingUnaryTerm, sbvPowerTerm),
     PEvalFractionalTerm (sbvFdivTerm, sbvRecipTerm),
     PEvalFromIntegralTerm (sbvFromIntegralTerm),
+    PEvalIEEEFPConvertibleTerm (sbvFromFPOrTerm, sbvToFPTerm),
     PEvalNumTerm
       ( sbvAbsNumTerm,
         sbvAddNumTerm,
@@ -222,6 +223,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FdivTerm,
         FloatingUnaryTerm,
         ForallTerm,
+        FromFPOrTerm,
         FromIntegralTerm,
         ITETerm,
         LeOrdTerm,
@@ -243,15 +245,16 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
+        ToFPTerm,
         UnaryTerm,
-        XorBitsTerm, FromFPOrTerm, ToFPTerm
+        XorBitsTerm
       ),
     TypedConstantSymbol,
     TypedSymbol (TypedSymbol),
     introSupportedPrimConstraint,
     someTypedSymbol,
     symTerm,
-    withSymbolSupported, PEvalIEEEFPConvertibleTerm (sbvFromFPOrTerm, sbvToFPTerm),
+    withSymbolSupported,
   )
 import Grisette.Internal.SymPrim.Prim.Model as PM
   ( Model,
