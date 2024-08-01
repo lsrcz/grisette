@@ -72,6 +72,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
         fpSqrt,
         fpSub
       ),
+    IEEEFPToAlgReal,
   )
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
@@ -455,6 +456,10 @@ instance
   fromFPOr (SymAlgReal d) (SymFPRoundingMode mode) (SymFP fp) =
     SymAlgReal $ pevalFromFPOrTerm d mode fp
   toFP (SymFPRoundingMode mode) (SymAlgReal v) = SymFP $ pevalToFPTerm mode v
+
+instance
+  (ValidFP eb sb) =>
+  IEEEFPToAlgReal SymAlgReal (SymFP eb sb) SymFPRoundingMode
 
 instance
   (ValidFP eb sb, KnownNat n, 1 <= n) =>

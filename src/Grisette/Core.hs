@@ -392,6 +392,8 @@ module Grisette.Core
     IEEEFPRoundingMode (..),
     IEEEFPOp (..),
     IEEEFPRoundingOp (..),
+    IEEEFPConvertible (..),
+    IEEEFPToAlgReal (..),
 
     -- ** Conversion between Concrete and Symbolic values
     ToCon (..),
@@ -1531,9 +1533,11 @@ import Grisette.Internal.Core.Data.Class.GenSym
   )
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEFPConstants (..),
+    IEEEFPConvertible (..),
     IEEEFPOp (..),
     IEEEFPRoundingMode (..),
     IEEEFPRoundingOp (..),
+    IEEEFPToAlgReal (..),
     fpIsInfinite,
     fpIsNaN,
     fpIsNegative,

@@ -45,7 +45,6 @@ module Grisette.Internal.SymPrim.FP
     ConvertibleBound (..),
     nextFP,
     prevFP,
-    toLibBF,
   )
 where
 
@@ -110,6 +109,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
       ),
     IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
     IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub),
+    IEEEFPToAlgReal,
     fpIsInfinite,
     fpIsNaN,
     fpIsNegativeInfinite,
@@ -118,7 +118,10 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPositiveZero,
     fpIsZero,
   )
-import Grisette.Internal.SymPrim.AlgReal (AlgReal (AlgExactRational), UnsupportedAlgRealOperation (UnsupportedAlgRealOperation, msg, op))
+import Grisette.Internal.SymPrim.AlgReal
+  ( AlgReal (AlgExactRational),
+    UnsupportedAlgRealOperation (UnsupportedAlgRealOperation, msg, op),
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.Utils.Parameterized
   ( KnownProof (KnownProof),
@@ -647,6 +650,10 @@ instance
     throw
       UnsupportedAlgRealOperation {op = "toFP", msg = show r}
 
+instance
+  (ValidFP eb sb) =>
+  IEEEFPToAlgReal AlgReal (FP eb sb) FPRoundingMode
+
 roundRationalToInteger :: FPRoundingMode -> Rational -> Integer
 roundRationalToInteger mode r
   | d == 1 = n
@@ -728,6 +735,15 @@ instance
             opts = libBFOpts mode (undefined :: FP eb sb)
          in fromLibBF $ fst $ bfRoundFloat opts bffp
 
+-- | Next representable floating-point number.
+--
+-- Note:
+--
+-- > nextFP(+inf) = +inf
+-- > nextFP(-inf) = -maxNormalized
+-- > nextFP(NaN) = NaN
+--
+-- The function do not distinguish between -0 and +0.
 nextFP :: forall eb sb. (ValidFP eb sb) => FP eb sb -> FP eb sb
 nextFP x
   | fpIsNaN x = fpNaN
@@ -745,6 +761,15 @@ nextFP x
       withValidFPProofs @eb @sb $
         bitCast ((bitCastOrCanonical x :: WordN (eb + sb)) - 1)
 
+-- | Previous representable floating-point number.
+--
+-- Note:
+--
+-- > prevFP(+inf) = +maxNormalized
+-- > prevFP(-inf) = -inf
+-- > prevFP(NaN) = NaN
+--
+-- The function do not distinguish between -0 and +0.
 prevFP :: forall eb sb. (ValidFP eb sb) => FP eb sb -> FP eb sb
 prevFP x
   | fpIsNaN x = fpNaN
@@ -762,6 +787,8 @@ prevFP x
       withValidFPProofs @eb @sb $
         bitCast ((bitCastOrCanonical x :: WordN (eb + sb)) + 1)
 
+-- | Bounds for converting bit vectors to floating-point numbers. Out-of-range
+-- FP values cannot be converted to a representable bit-vector.
 class ConvertibleBound bv where
   convertibleLowerBound ::
     forall eb sb n.
