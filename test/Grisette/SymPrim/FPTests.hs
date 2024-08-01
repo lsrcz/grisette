@@ -554,6 +554,7 @@ fpTests =
                           SBV.HasKind (sbvbv n),
                           Ord (sbvbv n),
                           Num (sbvbv n),
+                          Num (SBV.SBV (sbvbv n)),
                           SBV.SymVal (sbvbv n),
                           Typeable bv
                         ) =>
