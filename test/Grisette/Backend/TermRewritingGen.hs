@@ -64,6 +64,8 @@ module Grisette.Backend.TermRewritingGen
     fpFMASpec,
     bitCastSpec,
     bitCastOrSpec,
+    fromFPOrSpec,
+    toFPSpec,
     IEEEFPSpec (..),
     IEEEFPBoolOpSpec (..),
     FPRoundingModeSpec (..),
@@ -94,6 +96,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalBitCastTerm (pevalBitCastTerm),
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalRecipTerm),
+    PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),
     bitCastOrTerm,
     bitCastTerm,
     fdivTerm,
@@ -103,7 +106,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     fpRoundingBinaryTerm,
     fpRoundingUnaryTerm,
     fpUnaryTerm,
+    fromFPOrTerm,
     powerTerm,
+    toFPTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( BinaryOp (pevalBinary),
@@ -545,6 +550,31 @@ fpFMASpec a b c d =
   wrap
     (fpFMATerm (norewriteVer a) (norewriteVer b) (norewriteVer c) (norewriteVer d))
     (pevalFPFMATerm (rewriteVer a) (rewriteVer b) (rewriteVer c) (norewriteVer d))
+
+fromFPOrSpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb),
+    TermRewritingSpec rd FPRoundingMode,
+    TermRewritingSpec b i,
+    PEvalIEEEFPConvertibleTerm i
+  ) =>
+  b ->
+  rd ->
+  a ->
+  b
+fromFPOrSpec = constructTernarySpec fromFPOrTerm pevalFromFPOrTerm
+
+toFPSpec ::
+  ( ValidFP eb fb,
+    TermRewritingSpec a (FP eb fb),
+    TermRewritingSpec rd FPRoundingMode,
+    TermRewritingSpec b i,
+    PEvalIEEEFPConvertibleTerm i
+  ) =>
+  rd ->
+  b ->
+  a
+toFPSpec = constructBinarySpec toFPTerm pevalToFPTerm
 
 data BoolOnlySpec = BoolOnlySpec (Term Bool) (Term Bool)
 

@@ -244,14 +244,14 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         SymTerm,
         TernaryTerm,
         UnaryTerm,
-        XorBitsTerm
+        XorBitsTerm, FromFPOrTerm, ToFPTerm
       ),
     TypedConstantSymbol,
     TypedSymbol (TypedSymbol),
     introSupportedPrimConstraint,
     someTypedSymbol,
     symTerm,
-    withSymbolSupported,
+    withSymbolSupported, PEvalIEEEFPConvertibleTerm (sbvFromFPOrTerm, sbvToFPTerm),
   )
 import Grisette.Internal.SymPrim.Prim.Model as PM
   ( Model,
@@ -912,6 +912,15 @@ lowerSinglePrimIntermediate config (FPFMATerm _ round a b c) = do
 lowerSinglePrimIntermediate config (FromIntegralTerm _ (b :: Term b)) = do
   b <- lowerSinglePrimCached' config b
   return $ sbvFromIntegralTerm @b @a config . b
+lowerSinglePrimIntermediate config (FromFPOrTerm _ d mode arg) = do
+  d <- lowerSinglePrimCached' config d
+  mode <- lowerSinglePrimCached' config mode
+  arg <- lowerSinglePrimCached' config arg
+  return $ \qst -> sbvFromFPOrTerm @a config (d qst) (mode qst) (arg qst)
+lowerSinglePrimIntermediate config (ToFPTerm _ mode (arg :: Term b) _ _) = do
+  mode <- lowerSinglePrimCached' config mode
+  arg <- lowerSinglePrimCached' config arg
+  return $ \qst -> sbvToFPTerm @b config (mode qst) (arg qst)
 lowerSinglePrimIntermediate _ ConTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ SymTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ ForallTerm {} = error "Should not happen"

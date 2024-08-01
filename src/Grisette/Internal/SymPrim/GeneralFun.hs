@@ -81,6 +81,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalFdivTerm, pevalRecipTerm),
     PEvalFromIntegralTerm (pevalFromIntegralTerm),
+    PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),
     PEvalNumTerm
       ( pevalAbsNumTerm,
         pevalAddNumTerm,
@@ -129,6 +130,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         FdivTerm,
         FloatingUnaryTerm,
         ForallTerm,
+        FromFPOrTerm,
         FromIntegralTerm,
         ITETerm,
         LeOrdTerm,
@@ -150,6 +152,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         SignumNumTerm,
         SymTerm,
         TernaryTerm,
+        ToFPTerm,
         UnaryTerm,
         XorBitsTerm
       ),
@@ -490,6 +493,13 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
           (go memo arg3)
     goSome memo _ (SomeTerm (FromIntegralTerm _ (arg :: Term a) :: Term b)) =
       goUnary memo (pevalFromIntegralTerm @a @b) arg
+    goSome memo _ (SomeTerm (FromFPOrTerm _ d mode arg)) =
+      goTernary memo pevalFromFPOrTerm d mode arg
+    goSome
+      memo
+      _
+      (SomeTerm (ToFPTerm _ mode (arg :: Term a) (_ :: p eb) (_ :: q sb))) =
+        goBinary memo (pevalToFPTerm @a @eb @sb) mode arg
     goUnary memo f a = SomeTerm $ f (go memo a)
     goBinary memo f a b = SomeTerm $ f (go memo a) (go memo b)
     goTernary memo f a b c =
