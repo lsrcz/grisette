@@ -1458,6 +1458,8 @@ data Term t where
     {-# UNPACK #-} !Id ->
     !(Term FPRoundingMode) ->
     !(Term a) ->
+    Proxy eb ->
+    Proxy sb ->
     Term (FP eb sb)
 
 identity :: Term t -> Id
@@ -1514,7 +1516,7 @@ identityWithTypeRep (FPRoundingBinaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), 
 identityWithTypeRep (FPFMATerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FromIntegralTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (FromFPOrTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ToFPTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ToFPTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -1623,7 +1625,7 @@ pformat (FPFMATerm _ mode arg1 arg2 arg3) =
   "(fp.fma " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ " " ++ pformat arg3 ++ ")"
 pformat (FromIntegralTerm _ arg) = "(from_integral " ++ pformat arg ++ ")"
 pformat (FromFPOrTerm _ d r arg) = "(from_fp_or " ++ pformat d ++ " " ++ pformat r ++ " " ++ pformat arg ++ ")"
-pformat (ToFPTerm _ r arg) = "(to_fp " ++ pformat r ++ " " ++ pformat arg ++ ")"
+pformat (ToFPTerm _ r arg _ _) = "(to_fp " ++ pformat r ++ " " ++ pformat arg ++ ")"
 {-# INLINE pformat #-}
 
 instance NFData (Term a) where
@@ -1682,7 +1684,7 @@ instance Lift (Term t) where
   liftTyped (FPFMATerm _ mode arg1 arg2 arg3) = [||fpFMATerm mode arg1 arg2 arg3||]
   liftTyped (FromIntegralTerm _ arg) = [||fromIntegralTerm arg||]
   liftTyped (FromFPOrTerm _ d r arg) = [||fromFPOrTerm d r arg||]
-  liftTyped (ToFPTerm _ r arg) = [||toFPTerm r arg||]
+  liftTyped (ToFPTerm _ r arg _ _) = [||toFPTerm r arg||]
 
 instance Show (Term ty) where
   show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
@@ -1812,7 +1814,7 @@ instance Show (Term ty) where
       ++ ", arg="
       ++ show arg
       ++ "}"
-  show (ToFPTerm i mode arg) =
+  show (ToFPTerm i mode arg _ _) =
     "ToFPTerm{id="
       ++ show i
       ++ ", mode="
@@ -2008,6 +2010,8 @@ data UTerm t where
     ) =>
     !(Term FPRoundingMode) ->
     !(Term a) ->
+    Proxy eb ->
+    Proxy sb ->
     UTerm (FP eb sb)
 
 eqTypedId :: (TypeRep a, Id) -> (TypeRep b, Id) -> Bool
@@ -2199,7 +2203,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UFromIntegralTerm (arg :: Term a)) = DFromIntegralTerm (typeRep :: TypeRep a, identity arg)
   describe (UFromFPOrTerm d mode (arg :: Term a)) =
     DFromFPOrTerm (identity d) (identity mode) (typeRep :: TypeRep a, identity arg)
-  describe (UToFPTerm mode (arg :: Term a)) =
+  describe (UToFPTerm mode (arg :: Term a) _ _) =
     DToFPTerm (identity mode) (typeRep :: TypeRep a, identity arg)
 
   identify i = go
@@ -2253,7 +2257,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm i mode arg1 arg2 arg3
       go (UFromIntegralTerm arg) = FromIntegralTerm i arg
       go (UFromFPOrTerm d mode arg) = FromFPOrTerm i d mode arg
-      go (UToFPTerm mode arg) = ToFPTerm i mode arg
+      go (UToFPTerm mode arg eb sb) = ToFPTerm i mode arg eb sb
   cache = termCache
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
@@ -2717,6 +2721,7 @@ fromFPOrTerm ::
 fromFPOrTerm d r f = internTerm $ UFromFPOrTerm d r f
 
 toFPTerm ::
+  forall a eb sb.
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
     SupportedPrim FPRoundingMode,
@@ -2725,7 +2730,7 @@ toFPTerm ::
   Term FPRoundingMode ->
   Term a ->
   Term (FP eb sb)
-toFPTerm r f = internTerm $ UToFPTerm r f
+toFPTerm r f = internTerm $ UToFPTerm r f (Proxy @eb) (Proxy @sb)
 
 -- Support for boolean type
 defaultValueForBool :: Bool

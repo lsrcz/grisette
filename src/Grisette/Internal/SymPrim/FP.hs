@@ -10,6 +10,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -41,16 +42,21 @@ module Grisette.Internal.SymPrim.FP
     FPRoundingMode (..),
     allFPRoundingMode,
     BitCastNaNError (..),
+    ConvertibleBound (..),
+    nextFP,
+    prevFP,
+    toLibBF,
   )
 where
 
 import Control.DeepSeq (NFData (rnf))
-import Control.Exception (Exception)
+import Control.Exception (Exception, throw)
 import Data.Bits (Bits (complement, shiftL, shiftR, xor, (.&.)))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Int (Int16, Int32, Int64)
 import Data.Maybe (fromJust)
 import Data.Proxy (Proxy (Proxy))
+import Data.Ratio (numerator)
 import Data.SBV
   ( BVIsNonZero,
     FloatingPoint,
@@ -60,6 +66,7 @@ import Data.SBV
     Word16,
     Word32,
     Word64,
+    denominator,
     infinity,
     nan,
     sFloatingPointAsSWord,
@@ -91,6 +98,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
         fpPositiveInfinite,
         fpPositiveZero
       ),
+    IEEEFPConvertible (fromFPOr, toFP),
     IEEEFPOp
       ( fpAbs,
         fpMaximum,
@@ -102,6 +110,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
       ),
     IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
     IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub),
+    fpIsInfinite,
     fpIsNaN,
     fpIsNegativeInfinite,
     fpIsNegativeZero,
@@ -109,6 +118,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPositiveZero,
     fpIsZero,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal (AlgExactRational), UnsupportedAlgRealOperation (UnsupportedAlgRealOperation, msg, op))
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.Utils.Parameterized
   ( KnownProof (KnownProof),
@@ -128,6 +138,7 @@ import LibBF
     bfAdd,
     bfDiv,
     bfFMA,
+    bfFromInteger,
     bfIsInf,
     bfIsNaN,
     bfIsNeg,
@@ -139,6 +150,7 @@ import LibBF
     bfNegZero,
     bfPosInf,
     bfPosZero,
+    bfRoundFloat,
     bfRoundInt,
     bfSqrt,
     bfSub,
@@ -615,3 +627,232 @@ instance (ValidFP eb sb) => IEEEFPRoundingOp (FP eb sb) FPRoundingMode where
   fpRoundToIntegral rd x =
     fromLibBF $ fst $ bfRoundInt (libBFRoundingMode rd) $ toLibBF x
   {-# INLINE fpRoundToIntegral #-}
+
+instance
+  (ValidFP eb sb) =>
+  IEEEFPConvertible AlgReal (FP eb sb) FPRoundingMode
+  where
+  fromFPOr d _ fp
+    | fpIsInfinite fp = d
+    | fpIsNaN fp = d
+    | otherwise =
+        let (m, n) = decodeFloat fp
+         in fromRational (toRational m * (2 ^^ n))
+  toFP mode (AlgExactRational v) = fromLibBF $ fst $ bfDiv opts n d
+    where
+      opts = libBFOpts mode (undefined :: FP eb sb)
+      n = bfFromInteger $ numerator v
+      d = bfFromInteger $ denominator v
+  toFP _ r =
+    throw
+      UnsupportedAlgRealOperation {op = "toFP", msg = show r}
+
+roundRationalToInteger :: FPRoundingMode -> Rational -> Integer
+roundRationalToInteger mode r
+  | d == 1 = n
+  | d == 2 = case mode of
+      RNE -> if even ndivd then ndivd else ndivd + 1
+      RNA -> if n > 0 then ndivd + 1 else ndivd
+      RTP -> ndivd + 1
+      RTN -> ndivd
+      RTZ -> if n > 0 then ndivd else ndivd + 1
+  | otherwise = case mode of
+      RNE -> if nmodd > d `div` 2 then ndivd + 1 else ndivd
+      RNA -> if nmodd > d `div` 2 then ndivd + 1 else ndivd
+      RTP -> ndivd + 1
+      RTN -> ndivd
+      RTZ -> if n > 0 then ndivd else ndivd + 1
+  where
+    n = numerator r
+    d = denominator r
+    ndivd = n `div` d
+    nmodd = n `mod` d
+
+instance
+  (ValidFP eb sb) =>
+  IEEEFPConvertible Integer (FP eb sb) FPRoundingMode
+  where
+  fromFPOr d mode fp
+    | fpIsInfinite fp = d
+    | fpIsNaN fp = d
+    | otherwise =
+        let r = fromFPOr (fromIntegral d) mode fp
+         in case r of
+              AlgExactRational v -> roundRationalToInteger mode v
+              _ -> error "Should not happen"
+  toFP mode r = toFP mode (fromIntegral r :: AlgReal)
+
+instance
+  (ValidFP eb sb, KnownNat n, 1 <= n) =>
+  IEEEFPConvertible (WordN n) (FP eb sb) FPRoundingMode
+  where
+  fromFPOr d mode fp
+    | fpIsInfinite fp = d
+    | fpIsNaN fp = d
+    | otherwise =
+        let p = fromFPOr (fromIntegral d :: Integer) mode fp
+         in if p < (fromIntegral (minBound :: WordN n))
+              || p > (fromIntegral (maxBound :: WordN n))
+              then d
+              else fromIntegral p
+  toFP mode r = toFP mode (fromIntegral r :: AlgReal)
+
+instance
+  (ValidFP eb sb, KnownNat n, 1 <= n) =>
+  IEEEFPConvertible (IntN n) (FP eb sb) FPRoundingMode
+  where
+  fromFPOr d mode fp
+    | fpIsInfinite fp = d
+    | fpIsNaN fp = d
+    | otherwise =
+        let p = fromFPOr (fromIntegral d :: Integer) mode fp
+         in if p < (fromIntegral (minBound :: IntN n))
+              || p > (fromIntegral (maxBound :: IntN n))
+              then d
+              else fromIntegral p
+  toFP mode r = toFP mode (fromIntegral r :: AlgReal)
+
+instance
+  (ValidFP eb sb, ValidFP eb' sb') =>
+  IEEEFPConvertible (FP eb' sb') (FP eb sb) FPRoundingMode
+  where
+  fromFPOr _ = toFP
+  toFP mode fp
+    | fpIsNegativeInfinite fp = fpNegativeInfinite
+    | fpIsPositiveInfinite fp = fpPositiveInfinite
+    | fpIsNaN fp = fpNaN
+    | fpIsNegativeZero fp = fpNegativeZero
+    | fpIsPositiveZero fp = fpPositiveZero
+    | otherwise =
+        let bffp = toLibBF fp
+            opts = libBFOpts mode (undefined :: FP eb sb)
+         in fromLibBF $ fst $ bfRoundFloat opts bffp
+
+nextFP :: forall eb sb. (ValidFP eb sb) => FP eb sb -> FP eb sb
+nextFP x
+  | fpIsNaN x = fpNaN
+  | fpIsNegativeInfinite x = -fpMaxNormalized
+  | x == -fpMinNormalized = -fpMaxSubnormal
+  | x == -fpMinSubnormal = 0
+  | x == 0 = fpMinSubnormal
+  | x == fpMaxSubnormal = fpMinNormalized
+  | x == fpMaxNormalized = fpPositiveInfinite
+  | fpIsPositiveInfinite x = fpPositiveInfinite
+  | x > 0 =
+      withValidFPProofs @eb @sb $
+        bitCast ((bitCastOrCanonical x :: WordN (eb + sb)) + 1)
+  | otherwise =
+      withValidFPProofs @eb @sb $
+        bitCast ((bitCastOrCanonical x :: WordN (eb + sb)) - 1)
+
+prevFP :: forall eb sb. (ValidFP eb sb) => FP eb sb -> FP eb sb
+prevFP x
+  | fpIsNaN x = fpNaN
+  | fpIsPositiveInfinite x = fpMaxNormalized
+  | x == fpMinNormalized = fpMaxSubnormal
+  | x == fpMinSubnormal = 0
+  | x == 0 = -fpMinSubnormal
+  | x == -fpMaxSubnormal = -fpMinNormalized
+  | x == -fpMaxNormalized = fpNegativeInfinite
+  | fpIsNegativeInfinite x = fpNegativeInfinite
+  | x > 0 =
+      withValidFPProofs @eb @sb $
+        bitCast ((bitCastOrCanonical x :: WordN (eb + sb)) - 1)
+  | otherwise =
+      withValidFPProofs @eb @sb $
+        bitCast ((bitCastOrCanonical x :: WordN (eb + sb)) + 1)
+
+class ConvertibleBound bv where
+  convertibleLowerBound ::
+    forall eb sb n.
+    (ValidFP eb sb, KnownNat n, 1 <= n) =>
+    bv n ->
+    FPRoundingMode ->
+    FP eb sb
+  convertibleUpperBound ::
+    forall eb sb n.
+    (ValidFP eb sb, KnownNat n, 1 <= n) =>
+    bv n ->
+    FPRoundingMode ->
+    FP eb sb
+
+instance ConvertibleBound WordN where
+  convertibleLowerBound _ RTP = nextFP $ -1
+  convertibleLowerBound _ RTZ = nextFP $ -1
+  convertibleLowerBound _ RTN = 0
+  convertibleLowerBound _ RNA = nextFP $ -0.5
+  convertibleLowerBound _ RNE = -0.5
+  convertibleUpperBound ::
+    forall eb sb n.
+    (ValidFP eb sb, KnownNat n, 1 <= n) =>
+    WordN n ->
+    FPRoundingMode ->
+    FP eb sb
+  convertibleUpperBound _ mode
+    | ebn < n = fpMaxNormalized
+    | ebn == n && sb <= n = fpMaxNormalized
+    | ebn >= n && sb > n = case mode of
+        RTP -> toFP rne (maxBound :: WordN n)
+        RTZ -> prevFP $ toFP rne (maxBound :: WordN n) + 1
+        RTN -> prevFP $ toFP rne (maxBound :: WordN n) + 1
+        RNA -> prevFP $ toFP rne (maxBound :: WordN n) + 0.5
+        RNE -> prevFP $ toFP rne (maxBound :: WordN n) + 0.5
+    | ebn > n && sb == n = toFP rne (maxBound :: WordN n)
+    -- ebn > n && sb < n
+    | otherwise =
+        prevFP $ toFP rne (maxBound `div` 2 + 1 :: WordN n) * 2
+    where
+      n = natVal (Proxy @n)
+      eb = natVal (Proxy @eb)
+      ebn = 2 ^ (eb - 1)
+      sb = natVal (Proxy @sb)
+
+instance ConvertibleBound IntN where
+  convertibleLowerBound ::
+    forall eb sb n.
+    (ValidFP eb sb, KnownNat n, 1 <= n) =>
+    IntN n ->
+    FPRoundingMode ->
+    FP eb sb
+  convertibleLowerBound _ mode
+    | ebn <= n - 1 = -fpMaxNormalized
+    | ebn > n - 1 && sb <= n - 1 = toFP rne (minBound :: IntN n)
+    -- ebn > n - 1 && sb > n - 1
+    | otherwise = case mode of
+        RTP -> nextFP $ toFP rne (minBound :: IntN n) - 1
+        RTZ -> nextFP $ toFP rne (minBound :: IntN n) - 1
+        RTN -> toFP rne (minBound :: IntN n)
+        RNA ->
+          if sb == n
+            then toFP rne (minBound :: IntN n) - 0.5
+            else nextFP $ toFP rne (minBound :: IntN n) - 0.5
+        RNE -> toFP rne (minBound :: IntN n) - 0.5
+    where
+      n = natVal (Proxy @n)
+      eb = natVal (Proxy @eb)
+      ebn = 2 ^ (eb - 1)
+      sb = natVal (Proxy @sb)
+  convertibleUpperBound ::
+    forall eb sb n.
+    (ValidFP eb sb, KnownNat n, 1 <= n) =>
+    IntN n ->
+    FPRoundingMode ->
+    FP eb sb
+  convertibleUpperBound _ mode
+    | ebn < n - 1 = fpMaxNormalized
+    | ebn == n - 1 && sb <= n - 1 = fpMaxNormalized
+    | ebn >= n - 1 && sb > n - 1 = case mode of
+        RTP -> toFP rne (maxBound :: IntN n)
+        RTZ -> prevFP $ toFP rne (maxBound :: IntN n) + 1
+        RTN -> prevFP $ toFP rne (maxBound :: IntN n) + 1
+        RNA -> prevFP $ toFP rne (maxBound :: IntN n) + 0.5
+        RNE -> prevFP $ toFP rne (maxBound :: IntN n) + 0.5
+    | ebn > n - 1 && sb == n - 1 = toFP rne (maxBound :: IntN n)
+    -- ebn > n - 1 && sb < n - 1
+    | otherwise =
+        prevFP $ toFP rne (maxBound `div` 2 + 1 :: IntN n) * 2
+    where
+      n = natVal (Proxy @n)
+      eb = natVal (Proxy @eb)
+      ebn = 2 ^ (eb - 1)
+      sb = natVal (Proxy @sb)

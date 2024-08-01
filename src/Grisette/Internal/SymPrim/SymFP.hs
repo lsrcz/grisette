@@ -471,3 +471,11 @@ instance
   fromFPOr (SymIntN d) (SymFPRoundingMode mode) (SymFP fp) =
     SymIntN $ pevalFromFPOrTerm d mode fp
   toFP (SymFPRoundingMode mode) (SymIntN v) = SymFP $ pevalToFPTerm mode v
+
+instance
+  (ValidFP eb sb, ValidFP eb' sb') =>
+  IEEEFPConvertible (SymFP eb' sb') (SymFP eb sb) SymFPRoundingMode
+  where
+  fromFPOr (SymFP d) (SymFPRoundingMode mode) (SymFP fp) =
+    SymFP $ pevalFromFPOrTerm d mode fp
+  toFP (SymFPRoundingMode mode) (SymFP v) = SymFP $ pevalToFPTerm mode v

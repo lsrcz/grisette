@@ -1,9 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Backend.TermRewritingTests
@@ -14,11 +16,17 @@ module Grisette.Backend.TermRewritingTests
 where
 
 import Data.Foldable (traverse_)
+import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
-  ( BitCast (bitCast),
+  ( AlgReal,
+    BitCast (bitCast),
     GrisetteSMTConfig,
     IEEEFPConstants
-      ( fpNaN,
+      ( fpMaxNormalized,
+        fpMaxSubnormal,
+        fpMinNormalized,
+        fpMinSubnormal,
+        fpNaN,
         fpNegativeInfinite,
         fpNegativeZero,
         fpPositiveInfinite,
@@ -67,6 +75,7 @@ import Grisette.Backend.TermRewritingGen
     fpRoundingBinarySpec,
     fpRoundingUnaryOpSpec,
     fpTraitSpec,
+    fromFPOrSpec,
     iteSpec,
     leOrdSpec,
     modIntegralSpec,
@@ -78,13 +87,14 @@ import Grisette.Backend.TermRewritingGen
     remIntegralSpec,
     shiftRightSpec,
     signumNumSpec,
+    toFPSpec,
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
 import Grisette.Internal.Core.Data.Class.SymIEEEFP
   ( SymIEEEFPTraits (symFpIsPositiveInfinite),
   )
-import Grisette.Internal.SymPrim.FP (FP, FP32)
+import Grisette.Internal.SymPrim.FP (ConvertibleBound (convertibleLowerBound, convertibleUpperBound), FP, FP32, FPRoundingMode, ValidFP, nextFP, prevFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
@@ -92,6 +102,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     FPTrait (FPIsPositive),
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
+    PEvalIEEEFPConvertibleTerm,
     SupportedPrim,
     Term,
     conTerm,
@@ -106,8 +117,17 @@ import Test.Framework (Test, TestName, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, assertFailure)
-import Test.QuickCheck (Arbitrary, elements, forAll, ioProperty, mapSize, vectorOf, withMaxSuccess, (==>))
-import Type.Reflection (typeRep)
+import Test.QuickCheck
+  ( Arbitrary,
+    elements,
+    forAll,
+    ioProperty,
+    mapSize,
+    vectorOf,
+    withMaxSuccess,
+    (==>),
+  )
+import Type.Reflection (Typeable, typeRep)
 
 validateSpec ::
   (TermRewritingSpec a av, Show a, SupportedPrim av) =>
@@ -636,5 +656,188 @@ termRewritingTests =
           fromFPCase @(FP 3 5) @(WordN 8),
           toFPCase @(IntN 8) @(FP 3 5),
           toFPCase @(WordN 8) @(FP 3 5)
+          ],
+      testGroup "FPConvertible" $ do
+        let fromFPAssertion ::
+              forall eb sb b.
+              ( ValidFP eb sb,
+                Arbitrary b,
+                PEvalIEEEFPConvertibleTerm b
+              ) =>
+              b ->
+              FPRoundingMode ->
+              FP eb sb ->
+              IO ()
+            fromFPAssertion d rd x =
+              validateSpec
+                z3 -- {sbvConfig=(sbvConfig z3){verbose=True}}
+                ( fromFPOrSpec
+                    (conSpec d :: GeneralSpec b)
+                    (conSpec rd :: GeneralSpec FPRoundingMode)
+                    (conSpec x :: GeneralSpec (FP eb sb))
+                )
+            fromFPCase ::
+              forall eb sb b.
+              ( ValidFP eb sb,
+                Arbitrary b,
+                PEvalIEEEFPConvertibleTerm b
+              ) =>
+              Test
+            fromFPCase = testProperty
+              (show (typeRep @(FP eb sb)) <> " -> " <> show (typeRep @b))
+              $ \(d :: b) rd (x :: FP eb sb) ->
+                withMaxSuccess 10 . ioProperty $
+                  fromFPAssertion d rd x
+            toFPAssertion ::
+              forall eb sb b.
+              ( ValidFP eb sb,
+                PEvalIEEEFPConvertibleTerm b
+              ) =>
+              FPRoundingMode ->
+              b ->
+              IO ()
+            toFPAssertion rd x =
+              validateSpec
+                z3 -- {sbvConfig=(sbvConfig z3){verbose=True}}
+                ( toFPSpec
+                    (conSpec rd :: GeneralSpec FPRoundingMode)
+                    (conSpec x :: GeneralSpec b) ::
+                    GeneralSpec (FP eb sb)
+                )
+            toFPCase ::
+              forall eb sb b.
+              ( ValidFP eb sb,
+                Arbitrary b,
+                PEvalIEEEFPConvertibleTerm b
+              ) =>
+              Test
+            toFPCase = testProperty
+              (show (typeRep @b) <> " -> " <> show (typeRep @(FP eb sb)))
+              $ \rd (x :: b) ->
+                withMaxSuccess 10 . ioProperty $
+                  toFPAssertion @eb @sb rd x
+            specialFps :: (ValidFP eb sb) => [FP eb sb]
+            specialFps =
+              [ fpPositiveZero,
+                fpNegativeZero,
+                fpPositiveInfinite,
+                fpNegativeInfinite,
+                fpNaN,
+                fpMaxNormalized,
+                fpMinNormalized,
+                fpMaxSubnormal,
+                fpMinSubnormal
+              ]
+            boundFps ::
+              (ConvertibleBound bv, KnownNat n, 1 <= n, ValidFP eb sb) =>
+              bv n ->
+              FPRoundingMode ->
+              [FP eb sb]
+            boundFps n mode =
+              [ convertibleLowerBound n mode,
+                convertibleUpperBound n mode
+              ]
+            fps ::
+              (ConvertibleBound bv, KnownNat n, 1 <= n, ValidFP eb sb) =>
+              bv n ->
+              FPRoundingMode ->
+              [FP eb sb]
+            fps n mode =
+              specialFps
+                ++ boundFps n mode
+                ++ (nextFP <$> boundFps n mode)
+                ++ (prevFP <$> boundFps n mode)
+            boundedFromFPCase ::
+              forall bv n eb sb.
+              ( ConvertibleBound bv,
+                KnownNat n,
+                1 <= n,
+                ValidFP eb sb,
+                Arbitrary (bv n),
+                PEvalIEEEFPConvertibleTerm (bv n),
+                Num (bv n),
+                Typeable bv
+              ) =>
+              FPRoundingMode ->
+              Test
+            boundedFromFPCase mode =
+              testCase (show (typeRep @bv) ++ "/" ++ show mode) $
+                mapM_
+                  (fromFPAssertion @eb @sb @(bv n) 123 mode)
+                  (fps (undefined :: (bv n)) mode)
+            boundedFromFPTestGroup ::
+              forall n eb sb.
+              ( KnownNat n,
+                1 <= n,
+                ValidFP eb sb
+              ) =>
+              Test
+            boundedFromFPTestGroup =
+              testGroup
+                ( show (typeRep @(FP eb sb))
+                    ++ " -> "
+                    ++ show (typeRep @(IntN n))
+                    ++ "/"
+                    ++ show (typeRep @(WordN n))
+                )
+                $ do
+                  mode <- [rna, rne, rtz, rtp, rtn]
+                  [ boundedFromFPCase @IntN @n @eb @sb mode,
+                    boundedFromFPCase @WordN @n @eb @sb mode
+                    ]
+        [ fromFPCase @4 @4 @AlgReal,
+          -- SBV is buggy so the following check cannot pass
+          -- https://github.com/LeventErkok/sbv/pull/718
+          -- toFPCase @4 @4 @AlgReal,
+          testCase "FP 4 4 -> Integer" $ do
+            sequence_ $
+              (fromFPAssertion @4 @4 @Integer 0)
+                <$> [rna, rne, rtz, rtp, rtn]
+                <*> (specialFps ++ ((/ 4) . fromIntegral <$> [-7 .. 7])),
+          toFPCase @4 @4 @Integer,
+          -- SBV is buggy so the following check cannot pass
+          -- https://github.com/LeventErkok/sbv/pull/717
+          -- fromFPCase @4 @4 @(FP 3 3),
+          -- toFPCase @4 @4 @(FP 3 3),
+          -- fromFPCase @4 @4 @(FP 5 5),
+          -- toFPCase @4 @4 @(FP 5 5),
+          toFPCase @4 @4 @(WordN 8),
+          toFPCase @4 @4 @(IntN 8),
+          boundedFromFPTestGroup @32 @4 @4,
+          boundedFromFPTestGroup @12 @4 @16,
+          boundedFromFPTestGroup @12 @4 @12,
+          boundedFromFPTestGroup @12 @4 @11,
+          boundedFromFPTestGroup @12 @4 @10,
+          boundedFromFPTestGroup @12 @4 @9,
+          boundedFromFPTestGroup @12 @4 @2,
+          boundedFromFPTestGroup @10 @4 @16,
+          boundedFromFPTestGroup @10 @4 @10,
+          boundedFromFPTestGroup @10 @4 @9,
+          boundedFromFPTestGroup @10 @4 @8,
+          boundedFromFPTestGroup @10 @4 @7,
+          boundedFromFPTestGroup @10 @4 @2,
+          boundedFromFPTestGroup @9 @4 @16,
+          boundedFromFPTestGroup @9 @4 @9,
+          boundedFromFPTestGroup @9 @4 @8,
+          boundedFromFPTestGroup @9 @4 @7,
+          boundedFromFPTestGroup @9 @4 @6,
+          boundedFromFPTestGroup @9 @4 @2,
+          boundedFromFPTestGroup @8 @4 @16,
+          boundedFromFPTestGroup @8 @4 @8,
+          boundedFromFPTestGroup @8 @4 @7,
+          boundedFromFPTestGroup @8 @4 @6,
+          boundedFromFPTestGroup @8 @4 @5,
+          boundedFromFPTestGroup @8 @4 @2,
+          boundedFromFPTestGroup @7 @4 @16,
+          boundedFromFPTestGroup @7 @4 @7,
+          boundedFromFPTestGroup @7 @4 @6,
+          boundedFromFPTestGroup @7 @4 @5,
+          boundedFromFPTestGroup @7 @4 @4,
+          boundedFromFPTestGroup @7 @4 @2,
+          boundedFromFPTestGroup @5 @4 @16,
+          boundedFromFPTestGroup @5 @4 @5,
+          boundedFromFPTestGroup @5 @4 @4,
+          boundedFromFPTestGroup @5 @4 @3,
+          boundedFromFPTestGroup @5 @4 @2
           ]
     ]

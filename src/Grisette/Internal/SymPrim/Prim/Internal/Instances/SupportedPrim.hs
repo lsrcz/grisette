@@ -49,7 +49,11 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SBVRep
       ( SBVType
       ),
-    SupportedNonFuncPrim (conNonFuncSBVTerm, symNonFuncSBVTerm, withNonFuncPrim),
+    SupportedNonFuncPrim
+      ( conNonFuncSBVTerm,
+        symNonFuncSBVTerm,
+        withNonFuncPrim
+      ),
     SupportedPrim
       ( castTypedSymbol,
         conSBVTerm,
