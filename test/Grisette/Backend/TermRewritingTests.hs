@@ -35,11 +35,16 @@ import Grisette
     IEEEFPRoundingMode (rna, rne, rtn, rtp, rtz),
     ITEOp (symIte),
     IntN,
-    LogicalOp (symNot),
+    LinkedRep,
+    LogicalOp (symNot, true),
     Solvable (con),
     SymBool (SymBool),
+    SymFP,
+    SymIEEEFPTraits (symFpIsNaN),
+    SymRep (SymType),
     WordN,
     bitwuzla,
+    fpIsNaN,
     solve,
     z3,
   )
@@ -61,7 +66,8 @@ import Grisette.Backend.TermRewritingGen
         norewriteVer,
         rewriteVer,
         same,
-        symSpec
+        symSpec,
+        wrap
       ),
     absNumSpec,
     addNumSpec,
@@ -94,7 +100,15 @@ import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
 import Grisette.Internal.Core.Data.Class.SymIEEEFP
   ( SymIEEEFPTraits (symFpIsPositiveInfinite),
   )
-import Grisette.Internal.SymPrim.FP (ConvertibleBound (convertibleLowerBound, convertibleUpperBound), FP, FP32, FPRoundingMode, ValidFP, nextFP, prevFP)
+import Grisette.Internal.SymPrim.FP
+  ( ConvertibleBound (convertibleLowerBound, convertibleUpperBound),
+    FP,
+    FP32,
+    FPRoundingMode,
+    ValidFP,
+    nextFP,
+    prevFP,
+  )
 import Grisette.Internal.SymPrim.Prim.Term
   ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
     FPRoundingBinaryOp (FPAdd, FPDiv, FPMul, FPSub),
@@ -129,14 +143,15 @@ import Test.QuickCheck
   )
 import Type.Reflection (Typeable, typeRep)
 
-validateSpec ::
+validateSpec' ::
   (TermRewritingSpec a av, Show a, SupportedPrim av) =>
   GrisetteSMTConfig n ->
+  SymBool ->
   a ->
   Assertion
-validateSpec config a = do
-  r <- solve config (SymBool $ counterExample a)
-  rs <- solve config (SymBool $ same a)
+validateSpec' config precond a = do
+  r <- solve config (precond .&& SymBool (counterExample a))
+  rs <- solve config (precond .&& SymBool (same a))
   case (r, rs) of
     (Left _, Right _) -> do
       return ()
@@ -147,6 +162,10 @@ validateSpec config a = do
           ++ pformat (norewriteVer a)
           ++ " was rewritten to "
           ++ pformat (rewriteVer a)
+          ++ " under precondition"
+          ++ show precond
+          ++ " corresponding same formula:"
+          ++ pformat (same a)
     (Right m, _) -> do
       assertFailure $
         "With model"
@@ -155,6 +174,8 @@ validateSpec config a = do
           ++ pformat (norewriteVer a)
           ++ " was rewritten to "
           ++ pformat (rewriteVer a)
+          ++ " under precondition"
+          ++ show precond
           ++ " corresponding cex formula:"
           ++ pformat (counterExample a)
           ++ "\n"
@@ -163,6 +184,13 @@ validateSpec config a = do
           ++ show (rewriteVer a)
           ++ "\n"
           ++ show (counterExample a)
+
+validateSpec ::
+  (TermRewritingSpec a av, Show a, SupportedPrim av) =>
+  GrisetteSMTConfig n ->
+  a ->
+  Assertion
+validateSpec config = validateSpec' config true
 
 bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
 bitwuzlaConfig = do
@@ -659,56 +687,130 @@ termRewritingTests =
           ],
       testGroup "FPConvertible" $ do
         let fromFPAssertion ::
-              forall eb sb b.
+              forall eb sb spec b.
               ( ValidFP eb sb,
                 Arbitrary b,
-                PEvalIEEEFPConvertibleTerm b
+                PEvalIEEEFPConvertibleTerm b,
+                TermRewritingSpec spec b,
+                Show spec
               ) =>
               b ->
               FPRoundingMode ->
               FP eb sb ->
               IO ()
-            fromFPAssertion d rd x =
+            fromFPAssertion d rd x
+              | fpIsNaN x = return ()
+              | otherwise =
+                  validateSpec'
+                    z3
+                    ( con x
+                        .== p
+                        .&& symNot (symFpIsNaN p)
+                    )
+                    ( fromFPOrSpec
+                        (conSpec d :: spec)
+                        (conSpec rd :: GeneralSpec FPRoundingMode)
+                        ( wrap (ssymTerm "p") (conTerm x) ::
+                            GeneralSpec (FP eb sb)
+                        ) ::
+                        spec
+                    )
+              where
+                p = "p" :: SymFP eb sb
+            fromFPAssertionDirect ::
+              forall eb sb spec b.
+              ( ValidFP eb sb,
+                Arbitrary b,
+                PEvalIEEEFPConvertibleTerm b,
+                Show spec,
+                TermRewritingSpec spec b
+              ) =>
+              b ->
+              FPRoundingMode ->
+              FP eb sb ->
+              IO ()
+            fromFPAssertionDirect d rd x =
               validateSpec
-                z3 -- {sbvConfig=(sbvConfig z3){verbose=True}}
+                z3
                 ( fromFPOrSpec
-                    (conSpec d :: GeneralSpec b)
+                    (conSpec d :: spec)
                     (conSpec rd :: GeneralSpec FPRoundingMode)
                     (conSpec x :: GeneralSpec (FP eb sb))
                 )
             fromFPCase ::
-              forall eb sb b.
+              forall eb sb spec b.
               ( ValidFP eb sb,
                 Arbitrary b,
-                PEvalIEEEFPConvertibleTerm b
+                PEvalIEEEFPConvertibleTerm b,
+                Show spec,
+                TermRewritingSpec spec b
               ) =>
+              Bool ->
               Test
-            fromFPCase = testProperty
+            fromFPCase direct = testProperty
               (show (typeRep @(FP eb sb)) <> " -> " <> show (typeRep @b))
               $ \(d :: b) rd (x :: FP eb sb) ->
                 withMaxSuccess 10 . ioProperty $
-                  fromFPAssertion d rd x
+                  ( if direct
+                      then fromFPAssertionDirect @eb @sb @spec
+                      else fromFPAssertion @eb @sb @spec
+                  )
+                    d
+                    rd
+                    x
             toFPAssertion ::
-              forall eb sb b.
+              forall eb sb b bs.
               ( ValidFP eb sb,
-                PEvalIEEEFPConvertibleTerm b
+                PEvalIEEEFPConvertibleTerm b,
+                LinkedRep b bs,
+                Solvable b bs,
+                SymEq bs
               ) =>
               FPRoundingMode ->
               b ->
               IO ()
             toFPAssertion rd x =
-              validateSpec
-                z3 -- {sbvConfig=(sbvConfig z3){verbose=True}}
+              validateSpec'
+                z3
+                ((con x :: SymType b) .== "p")
                 ( toFPSpec
                     (conSpec rd :: GeneralSpec FPRoundingMode)
-                    (conSpec x :: GeneralSpec b) ::
-                    GeneralSpec (FP eb sb)
+                    (wrap (ssymTerm "p") (conTerm x) :: GeneralSpec b) ::
+                    IEEEFPSpec eb sb
                 )
+            toFPAssertionFP ::
+              forall eb sb eb0 sb0.
+              ( ValidFP eb sb,
+                ValidFP eb0 sb0
+              ) =>
+              FPRoundingMode ->
+              FP eb0 sb0 ->
+              IO ()
+            toFPAssertionFP _ x | fpIsNaN x = return ()
+            toFPAssertionFP rd x =
+              validateSpec'
+                z3
+                ( con x
+                    .== p
+                    .&& symNot (symFpIsNaN p)
+                )
+                ( toFPSpec
+                    (conSpec rd :: GeneralSpec FPRoundingMode)
+                    ( wrap (ssymTerm "p") (conTerm x) ::
+                        GeneralSpec (FP eb0 sb0)
+                    ) ::
+                    IEEEFPSpec eb sb
+                )
+              where
+                p = "p" :: SymFP eb0 sb0
             toFPCase ::
-              forall eb sb b.
+              forall eb sb b bs.
               ( ValidFP eb sb,
                 Arbitrary b,
-                PEvalIEEEFPConvertibleTerm b
+                PEvalIEEEFPConvertibleTerm b,
+                LinkedRep b bs,
+                Solvable b bs,
+                SymEq bs
               ) =>
               Test
             toFPCase = testProperty
@@ -716,6 +818,20 @@ termRewritingTests =
               $ \rd (x :: b) ->
                 withMaxSuccess 10 . ioProperty $
                   toFPAssertion @eb @sb rd x
+            toFPCaseFP ::
+              forall eb sb eb0 sb0.
+              ( ValidFP eb sb,
+                ValidFP eb0 sb0
+              ) =>
+              Test
+            toFPCaseFP = testProperty
+              ( show (typeRep @(FP eb0 sb0))
+                  <> " -> "
+                  <> show (typeRep @(FP eb sb))
+              )
+              $ \rd (x :: b) ->
+                withMaxSuccess 10 . ioProperty $
+                  toFPAssertionFP @eb @sb @eb0 @sb0 rd x
             specialFps :: (ValidFP eb sb) => [FP eb sb]
             specialFps =
               [ fpPositiveZero,
@@ -763,7 +879,10 @@ termRewritingTests =
             boundedFromFPCase mode =
               testCase (show (typeRep @bv) ++ "/" ++ show mode) $
                 mapM_
-                  (fromFPAssertion @eb @sb @(bv n) 123 mode)
+                  ( fromFPAssertion @eb @sb @(GeneralSpec (bv n))
+                      123
+                      mode
+                  )
                   (fps (undefined :: (bv n)) mode)
             boundedFromFPTestGroup ::
               forall n eb sb.
@@ -785,22 +904,20 @@ termRewritingTests =
                   [ boundedFromFPCase @IntN @n @eb @sb mode,
                     boundedFromFPCase @WordN @n @eb @sb mode
                     ]
-        [ fromFPCase @4 @4 @AlgReal,
-          -- SBV is buggy so the following check cannot pass
-          -- https://github.com/LeventErkok/sbv/pull/718
-          -- toFPCase @4 @4 @AlgReal,
+        [ -- z3 is buggy with the indirect encoding
+          -- https://github.com/Z3Prover/z3/issues/7321
+          fromFPCase @4 @4 @(GeneralSpec AlgReal) True,
+          toFPCase @4 @4 @AlgReal,
           testCase "FP 4 4 -> Integer" $ do
             sequence_ $
-              (fromFPAssertion @4 @4 @Integer 0)
+              (fromFPAssertionDirect @4 @4 @(GeneralSpec Integer) 0)
                 <$> [rna, rne, rtz, rtp, rtn]
                 <*> (specialFps ++ ((/ 4) . fromIntegral <$> [-7 .. 7])),
           toFPCase @4 @4 @Integer,
-          -- SBV is buggy so the following check cannot pass
-          -- https://github.com/LeventErkok/sbv/pull/717
-          -- fromFPCase @4 @4 @(FP 3 3),
-          -- toFPCase @4 @4 @(FP 3 3),
-          -- fromFPCase @4 @4 @(FP 5 5),
-          -- toFPCase @4 @4 @(FP 5 5),
+          fromFPCase @4 @4 @(IEEEFPSpec 3 3) False,
+          toFPCaseFP @4 @4 @3 @3,
+          fromFPCase @4 @4 @(IEEEFPSpec 5 5) False,
+          toFPCaseFP @4 @4 @5 @5,
           toFPCase @4 @4 @(WordN 8),
           toFPCase @4 @4 @(IntN 8),
           boundedFromFPTestGroup @32 @4 @4,

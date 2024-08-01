@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -18,7 +19,14 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBVI
 import GHC.TypeLits (KnownNat, Nat, type (<=))
 import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEFPConvertible (fromFPOr, toFP),
+  ( IEEEFPConstants (fpNaN, fpNegativeInfinite, fpNegativeZero, fpPositiveInfinite, fpPositiveZero),
+    IEEEFPConvertible (fromFPOr, toFP),
+    fpIsInfinite,
+    fpIsNaN,
+    fpIsNegativeInfinite,
+    fpIsNegativeZero,
+    fpIsPositiveInfinite,
+    fpIsPositiveZero,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
@@ -130,6 +138,7 @@ generalPevalFromFPOrTerm ::
   Term a
 generalPevalFromFPOrTerm (ConTerm _ d) (ConTerm _ rd) (ConTerm _ f) =
   conTerm $ fromFPOr d rd f
+generalPevalFromFPOrTerm d _ (ConTerm _ f) | fpIsNaN f || fpIsInfinite f = d
 generalPevalFromFPOrTerm d rd f = fromFPOrTerm d rd f
 
 algRealPevalFromFPOrTerm ::
@@ -143,6 +152,7 @@ algRealPevalFromFPOrTerm ::
   Term a
 algRealPevalFromFPOrTerm (ConTerm _ d) _ (ConTerm _ f) =
   conTerm $ fromFPOr d RNE f
+algRealPevalFromFPOrTerm d _ (ConTerm _ f) | fpIsNaN f || fpIsInfinite f = d
 algRealPevalFromFPOrTerm d _ f = fromFPOrTerm d (conTerm RNE) f
 
 generalDoPevalToFPTerm ::
@@ -166,6 +176,34 @@ generalPevalToFPTerm ::
   Term a ->
   Term (FP eb sb)
 generalPevalToFPTerm = binaryUnfoldOnce generalDoPevalToFPTerm toFPTerm
+
+fpDoPevalToFPTerm ::
+  ( ValidFP eb sb,
+    ValidFP eb1 sb1,
+    IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode
+  ) =>
+  Term FPRoundingMode ->
+  Term (FP eb1 sb1) ->
+  Maybe (Term (FP eb sb))
+fpDoPevalToFPTerm (ConTerm _ rd) (ConTerm _ f) =
+  Just $ conTerm $ toFP rd f
+fpDoPevalToFPTerm _ (ConTerm _ f)
+  | fpIsNaN f = Just $ conTerm fpNaN
+  | fpIsPositiveInfinite f = Just $ conTerm fpPositiveInfinite
+  | fpIsNegativeInfinite f = Just $ conTerm fpNegativeInfinite
+  | fpIsPositiveZero f = Just $ conTerm fpPositiveZero
+  | fpIsNegativeZero f = Just $ conTerm fpNegativeZero
+fpDoPevalToFPTerm _ _ = Nothing
+
+fpPevalToFPTerm ::
+  ( ValidFP eb sb,
+    ValidFP eb1 sb1,
+    IEEEFPConvertible (FP eb1 sb1) (FP eb sb) FPRoundingMode
+  ) =>
+  Term FPRoundingMode ->
+  Term (FP eb1 sb1) ->
+  Term (FP eb sb)
+fpPevalToFPTerm = binaryUnfoldOnce fpDoPevalToFPTerm toFPTerm
 
 instance PEvalIEEEFPConvertibleTerm Integer where
   pevalFromFPOrTerm = generalPevalFromFPOrTerm
@@ -201,7 +239,13 @@ instance PEvalIEEEFPConvertibleTerm Integer where
       NonZeroEvidence -> boundedSBVFromFPTerm @IntN p d mode l
   sbvToFPTerm p mode l =
     case isZero p of
-      IsZeroEvidence -> SBV.toSFloatingPoint mode l
+      IsZeroEvidence ->
+        case SBV.unliteral l of
+          Nothing -> SBV.toSFloatingPoint mode l
+          Just _ ->
+            error $
+              "SBV's toSFloatingPoint does not regard the rounding mode for "
+                ++ "integers. This should never be called. "
       NonZeroEvidence -> genericFPCast mode l
 
 instance PEvalIEEEFPConvertibleTerm AlgReal where
@@ -210,9 +254,9 @@ instance PEvalIEEEFPConvertibleTerm AlgReal where
   sbvFromFPOrTerm _ d mode l =
     SBV.ite (SBV.fpIsNaN l SBV..|| SBV.fpIsInfinite l) d $
       SBV.fromSFloatingPoint mode l
-  sbvToFPTerm _ v =
-    case SBV.unliteral v of
-      Nothing -> SBV.toSFloatingPoint v
+  sbvToFPTerm _ rm l =
+    case SBV.unliteral l of
+      Nothing -> SBV.toSFloatingPoint rm l
       Just _ ->
         error $
           "SBV is buggy on converting literal AlgReal to an FP. "
@@ -232,20 +276,30 @@ instance (KnownNat n, 1 <= n) => PEvalIEEEFPConvertibleTerm (IntN n) where
   sbvToFPTerm _ mode l = bvIsNonZeroFromGEq1 (Proxy @n) $ genericFPCast mode l
 
 instance (ValidFP eb sb) => PEvalIEEEFPConvertibleTerm (FP eb sb) where
-  pevalFromFPOrTerm _ = generalPevalToFPTerm
-  pevalToFPTerm = generalPevalToFPTerm
-  sbvFromFPOrTerm _ _ v =
-    case SBV.unliteral v of
-      Nothing -> SBV.toSFloatingPoint v
-      Just _ ->
-        error $
-          "SBV is buggy on converting literal FP to another FP with different "
-            ++ "precision. This should never be called. "
-            ++ "https://github.com/LeventErkok/sbv/pull/717"
-  sbvToFPTerm _ v = case SBV.unliteral v of
-    Nothing -> SBV.toSFloatingPoint v
-    Just _ ->
+  pevalFromFPOrTerm _ = fpPevalToFPTerm
+  pevalToFPTerm = fpPevalToFPTerm
+  sbvFromFPOrTerm p _ rm v = case (SBV.unliteral rm, SBV.unliteral v) of
+    (Just _, Just _) ->
       error $
         "SBV is buggy on converting literal FP to another FP with different "
           ++ "precision. This should never be called. "
           ++ "https://github.com/LeventErkok/sbv/pull/717"
+    _ ->
+      SBV.ite (SBV.fpIsNaN v) (conSBVTerm p (fpNaN :: FP eb sb)) $
+        SBV.toSFloatingPoint rm v
+  sbvToFPTerm ::
+    forall p n eb1 sb1.
+    (ValidFP eb sb, KnownIsZero n, ValidFP eb1 sb1) =>
+    p n ->
+    SBVType n FPRoundingMode ->
+    SBVType n (FP eb sb) ->
+    SBVType n (FP eb1 sb1)
+  sbvToFPTerm p rm v = case (SBV.unliteral rm, SBV.unliteral v) of
+    (Just _, Just _) ->
+      error $
+        "SBV is buggy on converting literal FP to another FP with different "
+          ++ "precision. This should never be called. "
+          ++ "https://github.com/LeventErkok/sbv/pull/717"
+    _ ->
+      SBV.ite (SBV.fpIsNaN v) (conSBVTerm p (fpNaN :: FP eb1 sb1)) $
+        SBV.toSFloatingPoint rm v
