@@ -93,7 +93,8 @@ import Grisette.Internal.Core.Data.Class.Mergeable
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
   )
-import Grisette.Internal.SymPrim.FP (ValidFP)
+import Grisette.Internal.SymPrim.BV (BitwidthMismatch)
+import Grisette.Internal.SymPrim.FP (BitCastNaNError, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
@@ -364,6 +365,8 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
+    ''BitwidthMismatch,
+    ''BitCastNaNError,
     ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,

@@ -21,6 +21,7 @@ module Grisette.Unified.Internal.UnifiedFP
     GetFPRoundingMode,
     UnifiedFP,
     AllUnifiedFP,
+    UnifiedFPImpl,
   )
 where
 

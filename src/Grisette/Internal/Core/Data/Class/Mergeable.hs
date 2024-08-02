@@ -133,7 +133,8 @@ import Grisette.Internal.SymPrim.BV
     WordN,
   )
 import Grisette.Internal.SymPrim.FP
-  ( FP,
+  ( BitCastNaNError,
+    FP,
     FPRoundingMode,
     ValidFP,
     withValidFPProofs,
@@ -811,6 +812,7 @@ deriveBuiltins
     ''AssertionError,
     ''VerificationConditions,
     ''BitwidthMismatch,
+    ''BitCastNaNError,
     ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,

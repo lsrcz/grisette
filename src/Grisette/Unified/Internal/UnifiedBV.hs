@@ -22,6 +22,7 @@
 module Grisette.Unified.Internal.UnifiedBV
   ( GetWordN,
     GetIntN,
+    UnifiedBVImpl,
     UnifiedBV,
     GetSomeWordN,
     GetSomeIntN,
@@ -128,10 +129,12 @@ class
     BitCast int word
   ) =>
   UnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int
-    | wordn n -> word intn int,
-      word -> wordn intn n int,
-      intn n -> int wordn word,
-      int -> intn wordn n word
+    | wordn -> intn,
+      intn -> wordn,
+      wordn n -> word,
+      word -> wordn n,
+      intn n -> int,
+      int -> intn n
   where
   -- | Get a unified unsigned size-tagged bit vector type. Resolves to 'WordN'
   -- in 'Con' mode, and 'SymWordN' in 'Sym' mode.

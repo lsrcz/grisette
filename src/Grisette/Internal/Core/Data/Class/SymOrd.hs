@@ -110,8 +110,8 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
-import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
+import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalOrdTerm
       ( pevalLeOrdTerm,
@@ -558,6 +558,8 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
+    ''BitwidthMismatch,
+    ''BitCastNaNError,
     ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,
