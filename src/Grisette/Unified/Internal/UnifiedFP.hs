@@ -32,6 +32,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     IEEEFPConvertible,
     IEEEFPOp,
     IEEEFPRoundingOp,
+    IEEEFPToAlgReal,
   )
 import Grisette.Internal.Core.Data.Class.SymIEEEFP (SymIEEEFPTraits)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
@@ -40,11 +41,11 @@ import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
   )
+import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
-import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 
 class
   ( BasicGrisetteType fp,
@@ -58,6 +59,8 @@ class
     UnifiedFromIntegral mode (GetInteger mode) fp,
     IEEEFPConvertible (GetInteger mode) fp rd,
     IEEEFPConvertible (GetAlgReal mode) fp rd,
+    IEEEFPToAlgReal (GetAlgReal mode) fp rd,
+    IEEEFPConvertible (GetInteger mode) fp rd,
     fpn ~ GetFP mode,
     fp ~ fpn eb sb,
     rd ~ GetFPRoundingMode mode
