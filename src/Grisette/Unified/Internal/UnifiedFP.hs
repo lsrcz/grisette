@@ -29,6 +29,7 @@ import Data.Kind (Type)
 import GHC.TypeNats (Nat)
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEFPConstants,
+    IEEEFPConvertible,
     IEEEFPOp,
     IEEEFPRoundingOp,
   )
@@ -40,7 +41,10 @@ import Grisette.Unified.Internal.BaseConstraint
     ConSymConversion,
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
+import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
+import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 
 class
   ( BasicGrisetteType fp,
@@ -51,6 +55,9 @@ class
     IEEEFPConstants fp,
     IEEEFPOp fp,
     IEEEFPRoundingOp fp rd,
+    UnifiedFromIntegral mode (GetInteger mode) fp,
+    IEEEFPConvertible (GetInteger mode) fp rd,
+    IEEEFPConvertible (GetAlgReal mode) fp rd,
     fpn ~ GetFP mode,
     fp ~ fpn eb sb,
     rd ~ GetFPRoundingMode mode

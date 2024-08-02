@@ -17,6 +17,7 @@ where
 
 import Control.Monad.Error.Class (MonadError)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
+import Grisette.Core (IEEEFPConvertible)
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast, BitCastCanonical, BitCastOr)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
@@ -39,7 +40,9 @@ class
     BitCastCanonical fp word,
     BitCastCanonical fp int,
     UnifiedFromIntegral mode word fp,
-    UnifiedFromIntegral mode int fp
+    UnifiedFromIntegral mode int fp,
+    IEEEFPConvertible int fp fprd,
+    IEEEFPConvertible word fp fprd
   ) =>
   UnifiedBVFPConversionImpl
     (mode :: EvalModeTag)

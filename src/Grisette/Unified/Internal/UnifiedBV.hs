@@ -62,6 +62,7 @@ import Grisette.Unified.Internal.BaseConstraint
 import Grisette.Unified.Internal.Class.UnifiedFiniteBits
   ( UnifiedFiniteBits,
   )
+import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
 import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
@@ -78,6 +79,8 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
+import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 
 type BVConstraint mode word int =
   ( BasicGrisetteType word,
@@ -126,7 +129,17 @@ class
     word ~ wordn n,
     int ~ intn n,
     BitCast word int,
-    BitCast int word
+    BitCast int word,
+    UnifiedFromIntegral mode (GetInteger mode) word,
+    UnifiedFromIntegral mode (GetInteger mode) int,
+    UnifiedFromIntegral mode word (GetInteger mode),
+    UnifiedFromIntegral mode word (GetAlgReal mode),
+    UnifiedFromIntegral mode word word,
+    UnifiedFromIntegral mode word int,
+    UnifiedFromIntegral mode int (GetInteger mode),
+    UnifiedFromIntegral mode int (GetAlgReal mode),
+    UnifiedFromIntegral mode int word,
+    UnifiedFromIntegral mode int int
   ) =>
   UnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int
     | wordn -> intn,
