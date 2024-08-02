@@ -137,9 +137,7 @@ class
     UnifiedFromIntegral mode word word,
     UnifiedFromIntegral mode word int,
     UnifiedFromIntegral mode int (GetInteger mode),
-    UnifiedFromIntegral mode int (GetAlgReal mode),
-    UnifiedFromIntegral mode int word,
-    UnifiedFromIntegral mode int int
+    UnifiedFromIntegral mode int (GetAlgReal mode)
   ) =>
   UnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int
     | wordn -> intn,
