@@ -192,6 +192,7 @@ library
       Grisette.Unified.Internal.Class.UnifiedFiniteBits
       Grisette.Unified.Internal.Class.UnifiedITEOp
       Grisette.Unified.Internal.Class.UnifiedSafeDiv
+      Grisette.Unified.Internal.Class.UnifiedSafeFdiv
       Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
       Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
       Grisette.Unified.Internal.Class.UnifiedSafeSymShift
