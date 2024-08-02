@@ -29,9 +29,8 @@ import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedData (AllUnifiedData)
-import Grisette.Unified.Internal.UnifiedInteger
-  ( UnifiedInteger,
-  )
+import Grisette.Unified.Internal.UnifiedFP (AllUnifiedFP)
+import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operaions for the types.
@@ -78,6 +77,7 @@ class
     UnifiedAlgReal mode,
     AllUnifiedBV mode,
     AllUnifiedData mode,
+    AllUnifiedFP mode,
     Monad (BaseMonad mode),
     TryMerge (BaseMonad mode),
     UnifiedBranching mode (BaseMonad mode)
