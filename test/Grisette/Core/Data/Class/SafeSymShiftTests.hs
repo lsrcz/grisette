@@ -10,7 +10,7 @@ import Control.Exception (ArithException (Overflow))
 import Control.Monad.Except (ExceptT)
 import Data.Bits (Bits (shiftL, shiftR), FiniteBits (finiteBitSize))
 import Data.Int (Int16, Int32, Int64, Int8)
-import Data.Typeable (Proxy (Proxy), Typeable)
+import Data.Typeable (Proxy (Proxy))
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette
   ( IntN,
@@ -48,13 +48,9 @@ concreteTypeSafeSymShiftTests ::
   ( Arbitrary a,
     Show a,
     Num a,
-    Eq a,
     SafeSymShift ArithException a EM,
     FiniteBits a,
-    Bounded a,
-    Typeable a,
-    Integral a,
-    Mergeable a
+    Bounded a
   ) =>
   proxy a ->
   [Test]
@@ -91,13 +87,9 @@ concreteSignedAtLeastThreeBitsTypeSafeSymShiftTests ::
   ( Arbitrary a,
     Show a,
     Num a,
-    Eq a,
     SafeSymShift ArithException a EM,
     FiniteBits a,
-    Bounded a,
-    Typeable a,
-    Integral a,
-    Mergeable a
+    Bounded a
   ) =>
   proxy a ->
   [Test]
@@ -119,16 +111,12 @@ concreteUnsignedSymTypeSafeSymShiftTests ::
   ( Arbitrary c,
     Show s,
     Num s,
-    Eq s,
     SafeSymShift ArithException s EM,
     FiniteBits c,
     FiniteBits s,
     Bounded c,
-    Typeable s,
-    Integral c,
     LinkedRep c s,
-    Solvable c s,
-    Mergeable s
+    Solvable c s
   ) =>
   proxy s ->
   [Test]
@@ -165,16 +153,13 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymShiftTests ::
   ( Arbitrary c,
     Show s,
     Num s,
-    Eq s,
     SafeSymShift ArithException s EM,
     FiniteBits c,
     FiniteBits s,
     Bounded c,
-    Typeable s,
     Integral c,
     LinkedRep c s,
-    Solvable c s,
-    Mergeable s
+    Solvable c s
   ) =>
   proxy s ->
   [Test]

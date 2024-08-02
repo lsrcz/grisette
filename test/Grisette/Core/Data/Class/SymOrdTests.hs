@@ -56,7 +56,7 @@ concreteOrdOkProp (i, j) = do
   symCompare i j @?= (mrgReturn $ compare i j :: Union Ordering)
 
 symbolicProdOrdOkProp ::
-  (HasCallStack, Show v, Show vl, Show vr, SymOrd v, SymOrd vl, SymOrd vr) =>
+  (HasCallStack, SymOrd v, SymOrd vl, SymOrd vr) =>
   v ->
   v ->
   vl ->

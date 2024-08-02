@@ -34,9 +34,16 @@ import Language.Haskell.TH (Dec, Name, Q)
 
 -- | Derive a builtin class for a type, with extra handlers.
 deriveBuiltinExtra ::
-  [SomeDeriveTypeParamHandler] -> Bool -> Strategy -> [Name] -> Name -> Q [Dec]
+  [SomeDeriveTypeParamHandler] ->
+  Maybe [SomeDeriveTypeParamHandler] ->
+  Bool ->
+  Strategy ->
+  [Name] ->
+  Name ->
+  Q [Dec]
 deriveBuiltinExtra
   extraHandlers
+  replacedHandlers
   ignoreBodyConstraints
   strategy
   constraints
@@ -61,11 +68,13 @@ deriveBuiltinExtra
               <> "parameters as the results"
         numDrop <- kindNumParam k
         deriveWithHandlers
-          ( SomeDeriveTypeParamHandler NatShouldBePositive
-              : extraHandlers
-                <> ( (SomeDeriveTypeParamHandler . flip PrimaryConstraint False)
-                       <$> constraints
-                   )
+          ( extraHandlers ++ case replacedHandlers of
+              Just handlers -> handlers
+              Nothing ->
+                SomeDeriveTypeParamHandler NatShouldBePositive
+                  : ( (SomeDeriveTypeParamHandler . flip PrimaryConstraint False)
+                        <$> constraints
+                    )
           )
           strategy
           ignoreBodyConstraints
@@ -74,7 +83,7 @@ deriveBuiltinExtra
 
 -- | Derive a builtin class for a type.
 deriveBuiltin :: Strategy -> [Name] -> Name -> Q [Dec]
-deriveBuiltin = deriveBuiltinExtra [] True
+deriveBuiltin = deriveBuiltinExtra [] Nothing True
 
 -- | Derive builtin classes for a list of types.
 deriveBuiltins :: Strategy -> [Name] -> [Name] -> Q [Dec]

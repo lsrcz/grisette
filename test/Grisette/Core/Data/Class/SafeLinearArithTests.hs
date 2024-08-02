@@ -121,7 +121,6 @@ safeLinearArithTestSimple ::
     Bounded a,
     Arbitrary a,
     Show a,
-    Show a,
     Typeable a
   ) =>
   Test

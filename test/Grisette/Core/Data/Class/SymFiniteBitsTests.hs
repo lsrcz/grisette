@@ -6,7 +6,6 @@
 
 module Grisette.Core.Data.Class.SymFiniteBitsTests (symFiniteBitsTests) where
 
-import Data.Bits (FiniteBits)
 import Data.Proxy (Proxy (Proxy))
 import Grisette
   ( BV (bv),
@@ -42,9 +41,7 @@ someBVSymFiniteBitsTest ::
     SymFiniteBits bv,
     Show bv,
     SymEq bv,
-    EvalSym bv,
-    ITEOp bv,
-    FiniteBits bv
+    EvalSym bv
   ) =>
   p bv ->
   Test
@@ -99,11 +96,9 @@ bvSymFiniteBitsTest ::
   ( Num (bv 4),
     Typeable bv,
     SymFiniteBits (bv 4),
-    ITEOp (bv 4),
     Show (bv 4),
     SymEq (bv 4),
-    EvalSym (bv 4),
-    FiniteBits (bv 4)
+    EvalSym (bv 4)
   ) =>
   p bv ->
   Test

@@ -53,7 +53,7 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit (Assertion, assertFailure, (@=?), (@?=))
 
 testCegis ::
-  (HasCallStack, ExtractSym a, EvalSym a, Show a, SymEq a) =>
+  (HasCallStack, ExtractSym a, EvalSym a, SymEq a) =>
   GrisetteSMTConfig i ->
   Bool ->
   a ->

@@ -41,7 +41,7 @@ instance NFData AEWrapper where
 
 sameDivPeval ::
   forall t.
-  (Num t, Eq t, PEvalDivModIntegralTerm t) =>
+  (PEvalDivModIntegralTerm t) =>
   t ->
   t ->
   (Term t -> Term t -> Term t) ->
@@ -56,7 +56,7 @@ sameDivPeval i j pf cf consf = do
 
 divisionPevalBoundedTests ::
   forall p t.
-  (Num t, Eq t, Bounded t, PEvalDivModIntegralTerm t) =>
+  (Bounded t, PEvalDivModIntegralTerm t) =>
   p t ->
   TestName ->
   (Term t -> Term t -> Term t) ->
@@ -72,7 +72,7 @@ divisionPevalBoundedTests _ name pf cf consf =
 
 divisionPevalTests ::
   forall p t0 t.
-  (Num t, Eq t, Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
+  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
@@ -128,7 +128,7 @@ divisionPevalUnboundedTestGroup name pf cf consf =
 
 moduloPevalTests ::
   forall p t0 t.
-  (Num t, Eq t, Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
+  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
   p t ->
   TestName ->
   (t0 -> t) ->

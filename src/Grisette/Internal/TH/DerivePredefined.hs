@@ -23,6 +23,7 @@ import Control.DeepSeq (NFData, NFData1)
 import Data.Functor.Classes (Eq1, Ord1, Show1)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1)
+import Data.List (nub)
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym, EvalSym1)
 import Grisette.Internal.Core.Data.Class.ExtractSym
@@ -45,7 +46,6 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   )
 import Grisette.Internal.TH.DeriveTypeParamHandler
   ( DeriveTypeParamHandler (handleBody, handleTypeParams),
-    PrimaryConstraint (PrimaryConstraint),
     SomeDeriveTypeParamHandler (SomeDeriveTypeParamHandler),
   )
 import Grisette.Internal.TH.DeriveUnifiedInterface
@@ -166,7 +166,7 @@ instance DeriveTypeParamHandler FixInnerConstraints where
   handleTypeParams _ _ = return
   handleBody FixInnerConstraints {..} types = do
     kinds <- classParamKinds cls
-    concat <$> mapM (handle kinds) types
+    concat <$> mapM (handle kinds) (nub types)
     where
       handle :: [Kind] -> [Type] -> Q [Pred]
       handle k tys
@@ -178,33 +178,35 @@ instance DeriveTypeParamHandler FixInnerConstraints where
 
 -- | Derive instances for a type with the given name, with the predefined
 -- strategy.
-derivePredefined :: Maybe EvalModeTag -> Name -> Name -> Q [Dec]
-derivePredefined _ cls name
+derivePredefined :: Name -> Name -> Q [Dec]
+derivePredefined cls name
   | cls == ''Generic =
       deriveWithHandlers [] (Stock ''Generic) True 0 [name]
-derivePredefined _ cls name
+derivePredefined cls name
   | cls == ''UnifiedSymEq =
       deriveFunctorArgUnifiedInterfaceExtra
-        [ SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable False,
-          SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable1 False
-        ]
+        []
+        -- SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable False,
+        -- SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable1 False
+
         ''UnifiedSymEq
         'withBaseSymEq
         ''UnifiedSymEq1
         'withBaseSymEq1
         name
-derivePredefined _ cls name
+derivePredefined cls name
   | cls == ''UnifiedSymOrd =
       deriveFunctorArgUnifiedInterfaceExtra
-        [ SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable False,
-          SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable1 False
-        ]
+        []
+        -- SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable False,
+        -- SomeDeriveTypeParamHandler $ PrimaryConstraint ''Mergeable1 False
+
         ''UnifiedSymOrd
         'withBaseSymOrd
         ''UnifiedSymOrd1
         'withBaseSymOrd1
         name
-derivePredefined evmode cls name = do
+derivePredefined cls name = do
   d <- reifyDatatype name
   strategy <-
     if
@@ -213,9 +215,12 @@ derivePredefined evmode cls name = do
       | otherwise ->
           fail "Currently only non-GADTs data or newtype are supported."
   deriveBuiltinExtra
-    [ SomeDeriveTypeParamHandler $ ModeTypeParamHandler evmode,
-      SomeDeriveTypeParamHandler $ FixInnerConstraints cls
-    ]
+    []
+    ( Just
+        [ -- SomeDeriveTypeParamHandler $ ModeTypeParamHandler evmode,
+          SomeDeriveTypeParamHandler $ FixInnerConstraints cls
+        ]
+    )
     False
     strategy
     (allNeededConstraints cls)
@@ -226,9 +231,9 @@ derivePredefined evmode cls name = do
 --
 -- Multiple classes can be derived at once.
 derivePredefinedMultipleClasses ::
-  Maybe EvalModeTag -> [Name] -> Name -> Q [Dec]
-derivePredefinedMultipleClasses evmode clss name =
-  concat <$> traverse (\cls -> derivePredefined evmode cls name) clss
+  [Name] -> Name -> Q [Dec]
+derivePredefinedMultipleClasses clss name =
+  concat <$> traverse (`derivePredefined` name) clss
 
 allGrisetteClasses :: [Name]
 allGrisetteClasses =
@@ -257,7 +262,7 @@ allGrisetteClasses =
 --
 -- Support the same set of classes as 'deriveAll'.
 derive :: Name -> [Name] -> Q [Dec]
-derive = flip (derivePredefinedMultipleClasses Nothing)
+derive = flip derivePredefinedMultipleClasses
 
 -- | Derive all classes related to Grisette for a type with the given name.
 --
@@ -315,7 +320,7 @@ derive = flip (derivePredefinedMultipleClasses Nothing)
 -- You may get strange errors if you only import
 -- v'Generics.Deriving.Default.Default' type but not the data constructor.
 deriveAll :: Name -> Q [Dec]
-deriveAll = derivePredefinedMultipleClasses Nothing allGrisetteClasses
+deriveAll = derivePredefinedMultipleClasses allGrisetteClasses
 
 -- | Derive all classes related to Grisette for a type with the given name,
 -- except for the given classes.
@@ -325,7 +330,6 @@ deriveAll = derivePredefinedMultipleClasses Nothing allGrisetteClasses
 deriveAllExcept :: Name -> [Name] -> Q [Dec]
 deriveAllExcept nm clss =
   derivePredefinedMultipleClasses
-    Nothing
     (filter (`notElem` allExcluded) allGrisetteClasses)
     nm
   where

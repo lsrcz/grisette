@@ -26,12 +26,10 @@ concreteUnsignedTypeSymShiftTests ::
   ( Arbitrary a,
     Show a,
     Num a,
-    Eq a,
     SymShift a,
     FiniteBits a,
     Bounded a,
-    Typeable a,
-    Integral a
+    Typeable a
   ) =>
   proxy a ->
   Test
@@ -61,8 +59,6 @@ concreteSignedTypeSymShiftTests ::
   forall proxy a.
   ( Arbitrary a,
     Show a,
-    Num a,
-    Eq a,
     SymShift a,
     FiniteBits a,
     Bounded a,
@@ -114,11 +110,9 @@ symbolicTypeSymShiftTests ::
   ( Arbitrary c,
     Show s,
     Num s,
-    Eq s,
     SymShift c,
     SymShift s,
     FiniteBits c,
-    FiniteBits s,
     Bounded c,
     Typeable s,
     Integral c,

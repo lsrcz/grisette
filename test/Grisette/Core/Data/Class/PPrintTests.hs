@@ -89,7 +89,7 @@ testPPrint2 n i a s = testCase n $ do
 
 propertyPFormatShow ::
   forall a.
-  (HasCallStack, PPrint a, Show a) =>
+  (PPrint a, Show a) =>
   String ->
   Gen a ->
   Test
@@ -100,7 +100,7 @@ propertyPFormatShow n g =
 
 propertyPFormatRead ::
   forall a.
-  (HasCallStack, PPrint a, Read a, Show a, Eq a) =>
+  (PPrint a, Read a, Show a, Eq a) =>
   String ->
   Gen a ->
   Test

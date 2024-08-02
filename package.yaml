@@ -90,6 +90,7 @@ ghc-options:
   - -Wmissing-import-lists
   - -Wpartial-fields
   - -Wunused-type-patterns
+  - -Wno-x-partial
 
 library:
   source-dirs: src
@@ -108,6 +109,7 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+      - -Wredundant-constraints
   doctest:
     main: Main.hs
     source-dirs: doctest

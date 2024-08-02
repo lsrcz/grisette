@@ -124,7 +124,15 @@ intBinConform f g x y = intN8eqint8 (f (fromIntegral x) (fromIntegral y)) (g x y
 
 finiteBitsConformTest ::
   forall ref typ.
-  (Arbitrary ref, Typeable ref, Typeable typ, Show ref, Show typ, Eq ref, Eq typ, FiniteBits ref, FiniteBits typ, Integral ref, Integral typ) =>
+  ( Arbitrary ref,
+    Typeable ref,
+    Typeable typ,
+    Show ref,
+    FiniteBits ref,
+    FiniteBits typ,
+    Integral ref,
+    Integral typ
+  ) =>
   Proxy ref ->
   Proxy typ ->
   Int ->
@@ -180,8 +188,6 @@ enumConformTest ::
   ( Arbitrary ref,
     Typeable ref,
     Typeable typ,
-    Eq ref,
-    Eq typ,
     Show ref,
     Show typ,
     NFData typ,
@@ -246,7 +252,7 @@ sameDivMod x y a2b fa fb = do
 
 divLikeTest ::
   forall a b.
-  (Arbitrary a, Eq a, Eq b, Num a, Show a, Bounded a, Bits a, Eq b, Show b, Num b, NFData b, Bounded b, Bits b, NFData a) =>
+  (Arbitrary a, Eq b, Num a, Show a, Bounded a, Show b, NFData b, NFData a) =>
   TestName ->
   (a -> b) ->
   (a -> a -> a) ->
@@ -268,7 +274,7 @@ divLikeTest name a2b fa fb =
 
 divModLikeTest ::
   forall a b.
-  (Arbitrary a, Eq a, Eq b, Num a, NFData a, Show a, Bounded a, Bits a, Eq b, Show b, Num b, NFData b, Bounded b, Bits b) =>
+  (Arbitrary a, Eq b, Num a, NFData a, Show a, Bounded a, Show b, NFData b) =>
   TestName ->
   (a -> b) ->
   (a -> a -> (a, a)) ->
@@ -290,7 +296,7 @@ divModLikeTest name a2b fa fb =
 
 realConformTest ::
   forall proxy ref typ.
-  (Typeable ref, Typeable typ, Integral ref, Num typ, Arbitrary ref, Real typ, Show ref) =>
+  (Typeable ref, Typeable typ, Integral ref, Arbitrary ref, Real typ, Show ref) =>
   proxy ref ->
   proxy typ ->
   Test
@@ -305,18 +311,11 @@ integralConformTest ::
   ( Arbitrary ref,
     Typeable ref,
     Typeable typ,
-    Eq ref,
-    Eq typ,
     Show ref,
     Show typ,
-    Num ref,
-    Num typ,
     Integral ref,
     Integral typ,
-    Bits ref,
-    Bits typ,
     Bounded ref,
-    Bounded typ,
     NFData typ,
     NFData ref
   ) =>
