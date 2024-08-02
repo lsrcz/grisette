@@ -428,7 +428,6 @@ bvselectSpec ::
     KnownNat bn,
     1 <= an,
     1 <= bn,
-    0 <= ix,
     ix + bn <= an
   ) =>
   proxy ix ->
@@ -824,9 +823,7 @@ dsbv1 ::
   ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
-    SupportedBV bv 4,
-    Typeable bv,
-    SizedBV bv
+    SupportedBV bv 4
   ) =>
   proxy bv ->
   Int ->
@@ -876,9 +873,7 @@ dsbv2 ::
   ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
-    SupportedBV bv 4,
-    Typeable bv,
-    SizedBV bv
+    SupportedBV bv 4
   ) =>
   proxy bv ->
   Int ->
@@ -928,9 +923,7 @@ dsbv3 ::
   ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
-    SupportedBV bv 4,
-    Typeable bv,
-    SizedBV bv
+    SupportedBV bv 4
   ) =>
   proxy bv ->
   Int ->
@@ -979,9 +972,7 @@ dsbv4 ::
   ( SupportedBV bv 1,
     SupportedBV bv 2,
     SupportedBV bv 3,
-    SupportedBV bv 4,
-    Typeable bv,
-    SizedBV bv
+    SupportedBV bv 4
   ) =>
   proxy bv ->
   Int ->

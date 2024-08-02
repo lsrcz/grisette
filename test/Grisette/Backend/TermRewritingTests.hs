@@ -117,7 +117,6 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
     PEvalIEEEFPConvertibleTerm,
-    SupportedPrim,
     Term,
     conTerm,
     fpTraitTerm,
@@ -144,7 +143,7 @@ import Test.QuickCheck
 import Type.Reflection (Typeable, typeRep)
 
 validateSpec' ::
-  (TermRewritingSpec a av, Show a, SupportedPrim av) =>
+  (TermRewritingSpec a av) =>
   GrisetteSMTConfig n ->
   SymBool ->
   a ->
@@ -186,7 +185,7 @@ validateSpec' config precond a = do
           ++ show (counterExample a)
 
 validateSpec ::
-  (TermRewritingSpec a av, Show a, SupportedPrim av) =>
+  (TermRewritingSpec a av) =>
   GrisetteSMTConfig n ->
   a ->
   Assertion
@@ -223,7 +222,7 @@ unboundedConfig = z3
 
 divisionTest ::
   forall a b.
-  (TermRewritingSpec a b, Show a, Enum b, Num b, SupportedPrim b) =>
+  (TermRewritingSpec a b, Enum b, Num b) =>
   TestName ->
   (a -> a -> a) ->
   Test
@@ -689,10 +688,8 @@ termRewritingTests =
         let fromFPAssertion ::
               forall eb sb spec b.
               ( ValidFP eb sb,
-                Arbitrary b,
                 PEvalIEEEFPConvertibleTerm b,
-                TermRewritingSpec spec b,
-                Show spec
+                TermRewritingSpec spec b
               ) =>
               b ->
               FPRoundingMode ->
@@ -720,9 +717,7 @@ termRewritingTests =
             fromFPAssertionDirect ::
               forall eb sb spec b.
               ( ValidFP eb sb,
-                Arbitrary b,
                 PEvalIEEEFPConvertibleTerm b,
-                Show spec,
                 TermRewritingSpec spec b
               ) =>
               b ->
@@ -742,7 +737,6 @@ termRewritingTests =
               ( ValidFP eb sb,
                 Arbitrary b,
                 PEvalIEEEFPConvertibleTerm b,
-                Show spec,
                 TermRewritingSpec spec b
               ) =>
               Bool ->
@@ -869,7 +863,6 @@ termRewritingTests =
                 KnownNat n,
                 1 <= n,
                 ValidFP eb sb,
-                Arbitrary (bv n),
                 PEvalIEEEFPConvertibleTerm (bv n),
                 Num (bv n),
                 Typeable bv

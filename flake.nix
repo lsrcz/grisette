@@ -11,7 +11,11 @@
         };
 
         stableHPkgs = pkgs.haskell.packages."ghc982";
-        hPkgs = pkgs.haskell.packages."ghc966";
+        hPkgs = pkgs.haskell.packages."ghc982".extend (hself: hsuper: rec {
+          ihaskell = pkgs.haskell.lib.dontCheck (hself.callHackage "ihaskell" "0.11.0.0" { });
+          ghc-syntax-highlighter =
+            hself.callHackage "ghc-syntax-highlighter" "0.0.11.0" { };
+        });
 
         basicDevTools = [
           hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
@@ -37,10 +41,10 @@
           hPkgs.hlint # Haskell codestyle checker
           hPkgs.haskell-language-server # LSP server for editor
           stableHPkgs.cabal-install
-          # (pkgs.ihaskell.override {
-          #   haskell = hPkgs.haskell;
-          #   ghcWithPackages = hPkgs.ghcWithPackages;
-          # })
+          (pkgs.ihaskell.override {
+            haskell = hPkgs.haskell;
+            ghcWithPackages = hPkgs.ghcWithPackages;
+          })
         ];
 
         devTools = basicDevTools ++ additionalDevTools;

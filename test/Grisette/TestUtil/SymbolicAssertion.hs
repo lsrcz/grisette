@@ -49,7 +49,7 @@ infix 1 .@?=
     )
 
 symShouldEq ::
-  (HasCallStack, Show a, SymEq a, EvalSym a) =>
+  (HasCallStack, SymEq a) =>
   a ->
   a ->
   (Model -> String) ->
@@ -59,5 +59,5 @@ symShouldEq actual expected notEqualCaseMessage = do
   canBeEqual <- solve (precise z3) $ actual .== expected
   case (canBeNotEqual, canBeEqual) of
     (Left _, Right _) -> return ()
-    (Right m, _) -> fail $ notEqualCaseMessage m
-    (_, Left _) -> fail "Cannot be equal"
+    (Right m, _) -> error $ notEqualCaseMessage m
+    (_, Left _) -> error "Cannot be equal"

@@ -62,16 +62,16 @@ jobs:
             }
           - {
               build: stack,
-              arg: "",
-              ismain: true,
+              arg: "--stack-yaml stack-lts-22.31.yaml",
+              ismain: false,
               experimental: false,
               ghc: "966",
               cachekey: "stack-96",
             }
           - {
               build: stack,
-              arg: "--stack-yaml stack-nightly.yaml",
-              ismain: false,
+              arg: "",
+              ismain: true,
               experimental: false,
               ghc: "982",
               cachekey: "stack-98",
@@ -92,8 +92,8 @@ jobs:
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "966",
-                cachekey: "stack-96",
+                ghc: "982",
+                cachekey: "stack-98",
               }
 
     runs-on: ${{ matrix.os }}

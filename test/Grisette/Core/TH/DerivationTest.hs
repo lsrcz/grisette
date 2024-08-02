@@ -42,3 +42,10 @@ symbolicT = fromJust $ toCon (toSym concreteT :: T 'Sym 10 SymInteger)
 newtype X mode = X [GetBool mode]
 
 deriveAll ''X
+
+data IdenticalFields mode n = IdenticalFields
+  { a :: n,
+    b :: n
+  }
+
+deriveAll ''IdenticalFields

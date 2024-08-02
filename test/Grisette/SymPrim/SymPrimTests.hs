@@ -191,8 +191,6 @@ sameSafeDiv ::
   forall c s.
   ( Show s,
     Eq s,
-    Eq c,
-    Num c,
     Mergeable s,
     NFData c,
     Solvable c s
@@ -212,8 +210,6 @@ sameSafeDivMod ::
   forall c s.
   ( Show s,
     Eq s,
-    Eq c,
-    Num c,
     Mergeable s,
     NFData c,
     Solvable c s
@@ -272,7 +268,15 @@ safeDivisionUnboundedOnlyTests f pf =
 
 safeDivisionGeneralTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
+  ( LinkedRep c s,
+    Arbitrary c0,
+    Show c0,
+    Solvable c s,
+    Eq s,
+    Num c,
+    Show s,
+    Mergeable s
+  ) =>
   (c0 -> c) ->
   (s -> s -> ExceptT ArithException Union s) ->
   (c -> c -> c) ->
@@ -379,7 +383,15 @@ safeDivModUnboundedOnlyTests f pf1 pf2 =
 
 safeDivModGeneralTests ::
   forall c c0 s.
-  (LinkedRep c s, Arbitrary c0, Show c0, Solvable c s, Eq s, Num c, Show s, Mergeable s, SymEq s) =>
+  ( LinkedRep c s,
+    Arbitrary c0,
+    Show c0,
+    Solvable c s,
+    Eq s,
+    Num c,
+    Show s,
+    Mergeable s
+  ) =>
   (c0 -> c) ->
   ( s ->
     s ->
@@ -677,10 +689,10 @@ symPrimTests =
                           let iint = fromIntegral i :: Integer
                            in safeNeg (toSym i :: SymIntN 8)
                                 @=? mrgIf
-                                  (-iint .< fromIntegral (-i))
+                                  ((-iint) .< fromIntegral (-i))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (-iint .> fromIntegral (-i))
+                                      ((-iint) .> fromIntegral (-i))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ -i :: ExceptT ArithException Union (SymIntN 8))
                                   )
@@ -718,10 +730,10 @@ symPrimTests =
                           let iint = fromIntegral i :: Integer
                            in safeNeg (toSym i :: SymWordN 8)
                                 @=? mrgIf
-                                  (-iint .< fromIntegral (-i))
+                                  ((-iint) .< fromIntegral (-i))
                                   (throwError Underflow)
                                   ( mrgIf
-                                      (-iint .> fromIntegral (-i))
+                                      ((-iint) .> fromIntegral (-i))
                                       (throwError Overflow)
                                       (mrgSingle $ toSym $ -i :: ExceptT ArithException Union (SymWordN 8))
                                   )

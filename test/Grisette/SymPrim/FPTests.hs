@@ -98,8 +98,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleT
   ( genericFPCast,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( SBVRep (SBVType),
-    SupportedPrim (conSBVTerm),
+  ( SupportedPrim (conSBVTerm),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -550,12 +549,8 @@ fpTests =
                         forall (bv :: Nat -> Type) (sbvbv :: Nat -> Type).
                         ( ConvertibleBound bv,
                           Num (bv n),
-                          SBVType 0 (bv n) ~ SBV.SBV (sbvbv n),
                           SBV.HasKind (sbvbv n),
-                          Ord (sbvbv n),
-                          Num (sbvbv n),
                           Num (SBV.SBV (sbvbv n)),
-                          SBV.SymVal (sbvbv n),
                           Typeable bv
                         ) =>
                         Test

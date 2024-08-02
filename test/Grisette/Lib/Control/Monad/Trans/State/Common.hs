@@ -209,7 +209,7 @@ mrgWithStateTTest state runStateT mrgWithStateT = do
   actual @?=~ expected
 
 mrgGetTest ::
-  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   GetFunc stateT SymBool SymBool ->
@@ -233,7 +233,7 @@ mrgGetTest state runStateT mrgGet = do
   actual @?=~ expected
 
 mrgPutTest ::
-  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool () ->
   PutFunc stateT SymBool SymBool ->
@@ -250,7 +250,7 @@ mrgPutTest state runStateT mrgPut = do
   actual @?=~ expected
 
 mrgModifyTest ::
-  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool () ->
   ModifyFunc stateT SymBool SymBool ->
@@ -274,7 +274,7 @@ mrgModifyTest state runStateT mrgModify = do
   actual @?=~ expected
 
 mrgGetsTest ::
-  (MonadUnion (stateT SymBool Union), Monad (stateT SymBool Union)) =>
+  (MonadUnion (stateT SymBool Union)) =>
   StateConstructor stateT SymBool SymBool ->
   RunStateFunc stateT SymBool SymBool ->
   GetsFunc stateT SymBool SymBool ->

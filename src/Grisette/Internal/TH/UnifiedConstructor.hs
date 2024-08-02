@@ -15,9 +15,7 @@ module Grisette.Internal.TH.UnifiedConstructor
 where
 
 import Control.Monad (join, replicateM, when, zipWithM)
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.TH.Util (constructorInfoToType, occName, putHaddock)
-import Grisette.Unified.Internal.EvalMode (EvalMode)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.UnifiedData
   ( GetData,
@@ -97,15 +95,14 @@ augmentFinalType mode (AppT a@(AppT ArrowT _) t) = do
   return (pred, AppT a ret)
 augmentFinalType mode t = do
   r <- [t|GetData $(return mode) $(return t)|]
-  pred <- [t|Mergeable $(return t)|]
   predu <- [t|UnifiedData $(return mode) $(return t)|]
-  return ([pred, predu], r)
+  return ([predu], r)
 
 augmentConstructorType :: Type -> Type -> Q Type
 augmentConstructorType mode (ForallT tybinders ctx ty1) = do
   (preds, augmentedTyp) <- augmentFinalType mode ty1
-  ismode <- [t|EvalMode $(return mode)|]
-  return $ ForallT tybinders (ismode : preds ++ ctx) augmentedTyp
+  -- ismode <- [t|EvalMode $(return mode)|]
+  return $ ForallT tybinders ({-ismode :-} preds ++ ctx) augmentedTyp
 augmentConstructorType _ _ =
   fail
     "augmentConstructorType: unsupported constructor, must be a forall type."

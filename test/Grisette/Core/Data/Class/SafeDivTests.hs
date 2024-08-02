@@ -66,7 +66,6 @@ generalOpDivOrTestBase ::
     Show r,
     Eq r',
     Show r',
-    Eq r,
     Num t
   ) =>
   (t -> t') ->
@@ -91,7 +90,6 @@ generalOpDivOrTest ::
     Arbitrary r,
     Show r,
     Eq r,
-    Eq r,
     Num t
   ) =>
   String ->
@@ -108,7 +106,6 @@ opBoundedDivOrTestBase ::
     Show r,
     Eq r',
     Show r',
-    Eq r,
     Bounded t,
     Num t
   ) =>
@@ -169,7 +166,6 @@ generalOpSafeDivTestBase ::
     Show t,
     Eq r',
     Show r',
-    Eq r,
     Num t,
     Mergeable r',
     Mergeable e,
@@ -193,7 +189,7 @@ generalOpSafeDivTestBase wrapInput wrapOutput wrapError name f fref =
     ]
 
 generalOpSafeDivTest ::
-  (NFData r, Arbitrary t, Show t, Eq r, Show r, Eq r, Num t, Mergeable r) =>
+  (NFData r, Arbitrary t, Show t, Show r, Eq r, Num t, Mergeable r) =>
   String ->
   (t -> t -> ExceptT ArithException Union r) ->
   (t -> t -> r) ->
@@ -268,7 +264,6 @@ testType ::
   ( NFData t,
     Show t,
     SafeDiv ArithException t (ExceptT ArithException Union),
-    Mergeable t,
     Integral t,
     Typeable t,
     Arbitrary t
