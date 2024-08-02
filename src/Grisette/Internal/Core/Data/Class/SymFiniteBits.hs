@@ -16,7 +16,12 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.Core.Data.Class.SymFiniteBits
-  ( SymFiniteBits (..),
+  ( lsb,
+    msb,
+    setBitTo,
+    bitBlast,
+    FromBits (..),
+    SymFiniteBits (..),
     symBitBlast,
     symLsb,
     symMsb,
@@ -26,16 +31,85 @@ module Grisette.Internal.Core.Data.Class.SymFiniteBits
   )
 where
 
-import Data.Bits (Bits (clearBit, setBit, (.|.)), FiniteBits (finiteBitSize))
+import Data.Bits
+  ( Bits (bit, clearBit, setBit, testBit, zeroBits, (.|.)),
+    FiniteBits (finiteBitSize),
+  )
+import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( BV (bv, bvSelect),
   )
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
-import Grisette.Internal.SymPrim.SomeBV (SomeBV (SomeBV), unsafeSomeBV)
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
+import Grisette.Internal.SymPrim.SomeBV
+  ( SomeBV (SomeBV),
+    SomeIntN,
+    SomeWordN,
+    unsafeSomeBV,
+  )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+
+setBitTo :: (Bits a) => a -> Int -> Bool -> a
+setBitTo v i b = if b then setBit v i else clearBit v i
+
+bitBlast :: (FiniteBits a) => a -> [Bool]
+bitBlast x = map (testBit x) [0 .. finiteBitSize x - 1]
+
+lsb :: (Bits a) => a -> Bool
+lsb x = testBit x 0
+
+msb :: (FiniteBits a) => a -> Bool
+msb x = testBit x (finiteBitSize x - 1)
+
+class (FiniteBits a) => FromBits a where
+  fromBits :: [Bool] -> a
+  fromBits bits
+    | length bits /= finiteBitSize (undefined :: a) =
+        error "fromBits: length mismatch"
+    | otherwise = foldl1 (.|.) lst
+    where
+      lst :: [a]
+      lst = (\(pos, b) -> if b then bit pos else zeroBits) <$> zip [0 ..] bits
+
+instance FromBits Int
+
+instance FromBits Int8
+
+instance FromBits Int16
+
+instance FromBits Int32
+
+instance FromBits Int64
+
+instance FromBits Word
+
+instance FromBits Word8
+
+instance FromBits Word16
+
+instance FromBits Word32
+
+instance FromBits Word64
+
+instance (KnownNat n, 1 <= n) => FromBits (WordN n)
+
+instance (KnownNat n, 1 <= n) => FromBits (IntN n)
+
+instance FromBits SomeIntN where
+  fromBits bits
+    | null bits =
+        error "Cannot create a SomeBV from an empty list of bits."
+  fromBits bits = unsafeSomeBV (length bits) $ \_ -> fromBits bits
+
+instance FromBits SomeWordN where
+  fromBits bits
+    | null bits =
+        error "Cannot create a SomeBV from an empty list of bits."
+  fromBits bits = unsafeSomeBV (length bits) $ \_ -> fromBits bits
 
 -- | A class for symbolic finite bit operations.
 class (FiniteBits a, ITEOp a) => SymFiniteBits a where
