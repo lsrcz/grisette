@@ -85,6 +85,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
@@ -339,6 +340,7 @@ CONCRETE_EXTRACT_SYMBOLICS(Monoid.Any)
 CONCRETE_EXTRACT_SYMBOLICS(Ordering)
 CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
 CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
+CONCRETE_EXTRACT_SYMBOLICS(AlgReal)
 #endif
 
 instance (ValidFP eb sb) => ExtractSym (FP eb sb) where

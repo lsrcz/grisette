@@ -24,6 +24,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.UnifiedAlgReal (UnifiedAlgReal)
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
@@ -74,6 +75,7 @@ class
     UnifiedBool mode,
     UnifiedPrimitive mode (GetBool mode),
     UnifiedInteger mode,
+    UnifiedAlgReal mode,
     AllUnifiedBV mode,
     AllUnifiedData mode,
     Monad (BaseMonad mode),

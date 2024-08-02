@@ -92,6 +92,7 @@ import Grisette.Internal.Core.Data.Class.ToCon
     toCon1,
     toCon2,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
@@ -354,6 +355,7 @@ CONCRETE_EVALUATESYM(Monoid.Any)
 CONCRETE_EVALUATESYM(Ordering)
 CONCRETE_EVALUATESYM_BV(IntN)
 CONCRETE_EVALUATESYM_BV(WordN)
+CONCRETE_EVALUATESYM(AlgReal)
 #endif
 
 instance (ValidFP eb fb) => EvalSym (FP eb fb) where

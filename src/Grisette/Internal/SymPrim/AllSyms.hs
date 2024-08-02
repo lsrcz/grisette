@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
@@ -80,6 +81,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.SomeTerm
@@ -459,6 +461,7 @@ CONCRETE_ALLSYMS(T.Text)
 CONCRETE_ALLSYMS(FPRoundingMode)
 CONCRETE_ALLSYMS_BV(WordN)
 CONCRETE_ALLSYMS_BV(IntN)
+CONCRETE_ALLSYMS(AlgReal)
 #endif
 
 instance (ValidFP eb sb) => AllSyms (FP eb sb) where

@@ -79,6 +79,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
@@ -324,6 +325,7 @@ CONCRETE_SUBSTITUTESYM(Ordering)
 CONCRETE_SUBSTITUTESYM_BV(WordN)
 CONCRETE_SUBSTITUTESYM_BV(IntN)
 CONCRETE_SUBSTITUTESYM(FPRoundingMode)
+CONCRETE_SUBSTITUTESYM(AlgReal)
 #endif
 
 instance (ValidFP eb sb) => SubstSym (FP eb sb) where

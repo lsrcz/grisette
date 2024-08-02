@@ -160,6 +160,7 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 
 -- | Pretty printing of values.
 --
@@ -560,6 +561,7 @@ FORMAT_SIMPLE(FPRoundingMode)
 FORMAT_SIMPLE(Monoid.All)
 FORMAT_SIMPLE(Monoid.Any)
 FORMAT_SIMPLE(Ordering)
+FORMAT_SIMPLE(AlgReal)
 #endif
 
 instance PPrint B.ByteString where
