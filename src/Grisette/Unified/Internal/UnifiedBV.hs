@@ -36,6 +36,7 @@ import Control.Monad.Except (MonadError)
 import Data.Bits (Bits, FiniteBits)
 import Data.Kind (Constraint, Type)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
+import Grisette.Internal.Core.Data.Class.BitCast (BitCast)
 import Grisette.Internal.Core.Data.Class.BitVector (BV, SizedBV)
 import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
@@ -73,6 +74,8 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.Class.UnifiedFiniteBits
+  ( UnifiedFiniteBits)
 
 type BVConstraint mode word int =
   ( BasicGrisetteType word,
@@ -93,7 +96,9 @@ type BVConstraint mode word int =
     UnifiedSymOrd mode int,
     UnifiedITEOp mode word,
     UnifiedITEOp mode int,
-    SignConversion word int
+    SignConversion word int,
+    UnifiedFiniteBits mode word,
+    UnifiedFiniteBits mode int
   ) ::
     Constraint
 
@@ -117,7 +122,9 @@ class
     wordn ~ GetWordN mode,
     intn ~ GetIntN mode,
     word ~ wordn n,
-    int ~ intn n
+    int ~ intn n,
+    BitCast word int,
+    BitCast int word
   ) =>
   UnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int
     | wordn n -> word intn int,
