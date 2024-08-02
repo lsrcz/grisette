@@ -109,6 +109,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -135,7 +136,6 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
-import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 
 -- $setup
 -- >>> import Grisette.Core

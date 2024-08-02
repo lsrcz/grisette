@@ -58,6 +58,9 @@ import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
   )
+import Grisette.Unified.Internal.Class.UnifiedFiniteBits
+  ( UnifiedFiniteBits,
+  )
 import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
 import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
@@ -74,8 +77,6 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
-import Grisette.Unified.Internal.Class.UnifiedFiniteBits
-  ( UnifiedFiniteBits)
 
 type BVConstraint mode word int =
   ( BasicGrisetteType word,
