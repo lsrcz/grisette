@@ -57,8 +57,6 @@ class
     IEEEFPOp fp,
     IEEEFPRoundingOp fp rd,
     UnifiedFromIntegral mode (GetInteger mode) fp,
-    IEEEFPConvertible (GetInteger mode) fp rd,
-    IEEEFPConvertible (GetAlgReal mode) fp rd,
     IEEEFPToAlgReal (GetAlgReal mode) fp rd,
     IEEEFPConvertible (GetInteger mode) fp rd,
     fpn ~ GetFP mode,

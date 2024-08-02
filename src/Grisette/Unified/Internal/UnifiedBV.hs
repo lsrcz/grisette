@@ -134,8 +134,6 @@ class
     UnifiedFromIntegral mode (GetInteger mode) int,
     UnifiedFromIntegral mode word (GetInteger mode),
     UnifiedFromIntegral mode word (GetAlgReal mode),
-    UnifiedFromIntegral mode word word,
-    UnifiedFromIntegral mode word int,
     UnifiedFromIntegral mode int (GetInteger mode),
     UnifiedFromIntegral mode int (GetAlgReal mode)
   ) =>

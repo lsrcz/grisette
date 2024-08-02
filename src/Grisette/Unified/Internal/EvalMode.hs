@@ -21,10 +21,12 @@ import Data.Typeable (Typeable)
 -- SafeUnifiedInteger',
 
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Unified.Internal.BVBVConversion (AllUnifiedBVBVConversion)
 import Grisette.Unified.Internal.BVFPConversion (AllUnifiedBVFPConversion)
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.FPFPConversion (AllUnifiedFPFPConversion)
 import Grisette.Unified.Internal.UnifiedAlgReal (UnifiedAlgReal)
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
@@ -80,6 +82,8 @@ class
     AllUnifiedData mode,
     AllUnifiedFP mode,
     AllUnifiedBVFPConversion mode,
+    AllUnifiedBVBVConversion mode,
+    AllUnifiedFPFPConversion mode,
     Monad (BaseMonad mode),
     TryMerge (BaseMonad mode),
     UnifiedBranching mode (BaseMonad mode)
