@@ -41,19 +41,28 @@ class
       bv0 -> bvn0 n0,
       bv1 -> bvn1 n1
 
-#define INSTANCE(md, ty0, ty1) \
+#define QUOTE() '
+
+#define CONINSTANCE(ty0, ty1) \
 instance \
   (KnownNat n0, 1 <= n0, KnownNat n1, 1 <= n1) => \
-  UnifiedBVBVConversionImpl 'md ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
+  UnifiedBVBVConversionImpl QUOTE()Con ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
 
-INSTANCE (Con, WordN, WordN)
-INSTANCE (Con, WordN, IntN)
-INSTANCE (Con, IntN, WordN)
-INSTANCE (Con, IntN, IntN)
-INSTANCE (Sym, SymWordN, SymWordN)
-INSTANCE (Sym, SymWordN, SymIntN)
-INSTANCE (Sym, SymIntN, SymWordN)
-INSTANCE (Sym, SymIntN, SymIntN)
+#define SYMINSTANCE(ty0, ty1) \
+instance \
+  (KnownNat n0, 1 <= n0, KnownNat n1, 1 <= n1) => \
+  UnifiedBVBVConversionImpl QUOTE()Sym ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
+
+#if 1
+CONINSTANCE(WordN, WordN)
+CONINSTANCE(WordN, IntN)
+CONINSTANCE(IntN, WordN)
+CONINSTANCE(IntN, IntN)
+SYMINSTANCE(SymWordN, SymWordN)
+SYMINSTANCE(SymWordN, SymIntN)
+SYMINSTANCE(SymIntN, SymWordN)
+SYMINSTANCE(SymIntN, SymIntN)
+#endif
 
 class
   ( UnifiedBVBVConversionImpl
