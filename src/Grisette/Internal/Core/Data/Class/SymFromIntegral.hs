@@ -66,7 +66,10 @@ instance (KnownNat n, 1 <= n) => SymFromIntegral (SymWordN n) SymAlgReal where
   symFromIntegral (SymWordN x) = SymAlgReal $ pevalFromIntegralTerm x
   {-# INLINE symFromIntegral #-}
 
-instance (KnownNat n, 1 <= n) => SymFromIntegral (SymWordN n) (SymIntN n) where
+instance
+  (KnownNat n, KnownNat m, 1 <= n, 1 <= m) =>
+  SymFromIntegral (SymWordN n) (SymIntN m)
+  where
   symFromIntegral (SymWordN x) = SymIntN $ pevalFromIntegralTerm x
   {-# INLINE symFromIntegral #-}
 
@@ -92,7 +95,10 @@ instance (KnownNat n, 1 <= n) => SymFromIntegral (SymIntN n) SymAlgReal where
   symFromIntegral (SymIntN x) = SymAlgReal $ pevalFromIntegralTerm x
   {-# INLINE symFromIntegral #-}
 
-instance (KnownNat n, 1 <= n) => SymFromIntegral (SymIntN n) (SymIntN n) where
+instance
+  (KnownNat n, KnownNat m, 1 <= n, 1 <= m) =>
+  SymFromIntegral (SymIntN n) (SymIntN m)
+  where
   symFromIntegral (SymIntN x) = SymIntN $ pevalFromIntegralTerm x
   {-# INLINE symFromIntegral #-}
 

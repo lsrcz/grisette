@@ -190,6 +190,7 @@ library
       Grisette.Unified.Internal.BaseConstraint
       Grisette.Unified.Internal.BaseMonad
       Grisette.Unified.Internal.Class.UnifiedFiniteBits
+      Grisette.Unified.Internal.Class.UnifiedFromIntegral
       Grisette.Unified.Internal.Class.UnifiedITEOp
       Grisette.Unified.Internal.Class.UnifiedSafeBitCast
       Grisette.Unified.Internal.Class.UnifiedSafeDiv
