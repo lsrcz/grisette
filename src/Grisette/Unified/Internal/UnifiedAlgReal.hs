@@ -30,10 +30,12 @@ import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
   )
+import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeFdiv (UnifiedSafeFdiv)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
+import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 
 class
   ( BasicGrisetteType (GetAlgReal mode),
@@ -45,6 +47,7 @@ class
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
     UnifiedSafeFdiv mode ArithException r m,
+    UnifiedFromIntegral mode (GetInteger mode) r,
     r ~ GetAlgReal mode
   ) =>
   UnifiedAlgRealImpl (mode :: EvalModeTag) r
