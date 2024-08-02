@@ -189,6 +189,7 @@ library
       Grisette.Unified
       Grisette.Unified.Internal.BaseConstraint
       Grisette.Unified.Internal.BaseMonad
+      Grisette.Unified.Internal.BVFPConversion
       Grisette.Unified.Internal.Class.UnifiedFiniteBits
       Grisette.Unified.Internal.Class.UnifiedFromIntegral
       Grisette.Unified.Internal.Class.UnifiedITEOp
@@ -201,7 +202,6 @@ library
       Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
       Grisette.Unified.Internal.Class.UnifiedSymEq
       Grisette.Unified.Internal.Class.UnifiedSymOrd
-      Grisette.Unified.Internal.ConversionInstances
       Grisette.Unified.Internal.EvalMode
       Grisette.Unified.Internal.EvalModeTag
       Grisette.Unified.Internal.MonadWithMode
