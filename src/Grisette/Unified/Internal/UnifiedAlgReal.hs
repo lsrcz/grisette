@@ -50,7 +50,10 @@ class
   UnifiedAlgRealImpl (mode :: EvalModeTag) r
     | mode -> r
   where
-  -- | 'Floating', 'Grisette.LogBaseOr' and 'Grisette.SafeLogBase' for
+  -- | Get a unified algebraic real type. Resolves to 'AlgReal' in 'Con' mode,
+  -- and 'SymAlgReal' in 'Sym' mode.
+  --
+  -- 'Floating', 'Grisette.LogBaseOr' and 'Grisette.SafeLogBase' for
   -- 'SymAlgReal' are not provided as they are not available for 'AlgReal'.
   type GetAlgReal mode = real | real -> mode
 
