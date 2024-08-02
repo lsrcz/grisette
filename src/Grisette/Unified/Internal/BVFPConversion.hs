@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Unified.Internal.ConversionInstances
+module Grisette.Unified.Internal.BVFPConversion
   ( UnifiedBVFPConversion,
     AllUnifiedBVFPConversion,
   )
@@ -17,10 +17,21 @@ where
 
 import Control.Monad.Error.Class (MonadError)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
-import Grisette.Core (IEEEFPConvertible)
-import Grisette.Internal.Core.Data.Class.BitCast (BitCast, BitCastCanonical, BitCastOr)
+import Grisette.Internal.Core.Data.Class.BitCast
+  ( BitCast,
+    BitCastCanonical,
+    BitCastOr,
+  )
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEFPConvertible,
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP
+  ( BitCastNaNError,
+    FP,
+    FPRoundingMode,
+    ValidFP,
+  )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
@@ -28,7 +39,9 @@ import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (UnifiedSafeBitCast)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedBV (UnifiedBVImpl (GetIntN, GetWordN))
-import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl (GetFP, GetFPRoundingMode))
+import Grisette.Unified.Internal.UnifiedFP
+  ( UnifiedFPImpl (GetFP, GetFPRoundingMode),
+  )
 
 class
   ( UnifiedBVImpl mode wordn intn n word int,
