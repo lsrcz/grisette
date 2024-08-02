@@ -26,14 +26,18 @@ import Control.Monad.Identity (Identity (Identity))
 import GHC.Generics (Generic)
 import Grisette
   ( BV (bv),
+    BitCast (bitCast),
     BitwidthMismatch,
     Default (Default),
+    IEEEFPConstants (fpNaN),
     IntN,
     Mergeable,
     SymBool,
+    SymFP,
     SymIntN,
     SymInteger,
     Union,
+    bitCastOrCanonical,
     mrgReturn,
   )
 import qualified Grisette
@@ -41,7 +45,7 @@ import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, ssymBV)
 import Grisette.Unified
   ( EvalMode,
-    EvalModeTag (Con),
+    EvalModeTag (Con, Sym),
     GetBool,
     GetData,
     GetIntN,
@@ -61,6 +65,9 @@ import Test.HUnit ((@?=))
 
 #if MIN_VERSION_base(4,16,0)
 import GHC.TypeLits (KnownNat, type (<=))
+import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl(GetFP))
+import Grisette.Internal.SymPrim.FP (BitCastNaNError (BitCastNaNError))
+import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
 #else
 import Grisette.Unified
   ( SafeUnifiedBV,
@@ -224,6 +231,27 @@ fdata d = do
     A v -> safeDiv @mode v (v - 1)
     AT v -> fdata v
 
+bvToFPBitCast ::
+  forall mode.
+  (EvalMode mode) =>
+  GetIntN mode 8 ->
+  GetFP mode 4 4
+bvToFPBitCast = bitCast
+
+fpToBVBitCast ::
+  forall mode.
+  (EvalMode mode) =>
+  GetFP mode 4 4 ->
+  GetIntN mode 8
+fpToBVBitCast = bitCastOrCanonical
+
+safeFPToBVBitCast ::
+  forall mode m.
+  (MonadWithMode mode m, MonadError BitCastNaNError m) =>
+  GetFP mode 4 4 ->
+  m (GetIntN mode 8)
+safeFPToBVBitCast = safeBitCast @mode
+
 evalModeTest :: Test
 evalModeTest =
   testGroup
@@ -308,5 +336,29 @@ evalModeTest =
               @?= ( Grisette.safeDiv a (a - 1) ::
                       ExceptT ArithException Union (SymIntN 8)
                   )
+        ],
+      testGroup
+        "Conversion"
+        [ testGroup
+            "FP/BV"
+            [ testCase "Con" $ do
+                bvToFPBitCast @'Con 0x22 @?= 0.15625
+                fpToBVBitCast @'Con 0.15625 @?= 0x22
+                fpToBVBitCast @'Con fpNaN @?= 0x7c
+                safeFPToBVBitCast @'Con 0.15625 @?= Right 0x22
+                safeFPToBVBitCast @'Con fpNaN @?= Left BitCastNaNError,
+              testCase "Sym" $ do
+                bvToFPBitCast @'Sym 0x22 @?= 0.15625
+                let a = "a" :: SymIntN 8
+                bvToFPBitCast @'Sym a @?= bitCast a
+                fpToBVBitCast @'Sym 0.15625 @?= 0x22
+                fpToBVBitCast @'Sym fpNaN @?= 0x7c
+                let b = "b" :: SymFP 4 4
+                fpToBVBitCast @'Sym b @?= bitCastOrCanonical b
+                safeFPToBVBitCast @'Sym b
+                  @?= ( Grisette.safeBitCast b ::
+                          ExceptT BitCastNaNError Union (SymIntN 8)
+                      )
+            ]
         ]
     ]

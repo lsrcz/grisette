@@ -93,8 +93,8 @@ import Grisette.Internal.Core.Data.Class.ToCon
     toCon2,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
-import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.BV (IntN, WordN, BitwidthMismatch)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP, BitCastNaNError)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model (Model, evalTerm)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -417,6 +417,8 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
+    ''BitwidthMismatch,
+    ''BitCastNaNError,
     ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,

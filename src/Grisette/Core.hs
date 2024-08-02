@@ -413,6 +413,7 @@ module Grisette.Core
     BitCastOr (..),
     BitCastOrCanonical,
     bitCastOrCanonical,
+    SafeBitCast (..),
     SymFromIntegral (..),
 
     -- * Unsolvable types and merging
@@ -1619,6 +1620,7 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     pattern If,
     pattern Single,
   )
+import Grisette.Internal.Core.Data.Class.SafeBitCast (SafeBitCast (..))
 import Grisette.Internal.Core.Data.Class.SafeDiv
   ( DivOr (..),
     SafeDiv (..),

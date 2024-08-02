@@ -23,6 +23,7 @@ import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
+import Grisette.Unified.Internal.ConversionInstances (AllUnifiedBVFPConversion)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedAlgReal (UnifiedAlgReal)
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
@@ -78,6 +79,7 @@ class
     AllUnifiedBV mode,
     AllUnifiedData mode,
     AllUnifiedFP mode,
+    AllUnifiedBVFPConversion mode,
     Monad (BaseMonad mode),
     TryMerge (BaseMonad mode),
     UnifiedBranching mode (BaseMonad mode)

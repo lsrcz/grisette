@@ -13,7 +13,8 @@
 {-# HLINT ignore "Eta reduce" #-}
 
 module Grisette.Unified.Internal.Class.UnifiedSafeFdiv
-  ( UnifiedSafeFdiv (..),
+  ( safeFdiv,
+    UnifiedSafeFdiv (..),
   )
 where
 
@@ -21,6 +22,7 @@ import Control.Exception (ArithException)
 import Control.Monad.Error.Class (MonadError)
 import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Data.Class.SafeFdiv (SafeFdiv)
+import qualified Grisette.Internal.Core.Data.Class.SafeFdiv
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
@@ -28,6 +30,17 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import Grisette.Unified.Internal.Util (withMode)
+
+safeFdiv ::
+  forall mode e a m.
+  (MonadError e m, UnifiedSafeFdiv mode e a m) =>
+  a ->
+  a ->
+  m a
+safeFdiv a b =
+  withBaseUnifiedSafeFdiv @mode @e @a @m $
+    Grisette.Internal.Core.Data.Class.SafeFdiv.safeFdiv a b
+{-# INLINE safeFdiv #-}
 
 class UnifiedSafeFdiv (mode :: EvalModeTag) e a m where
   withBaseUnifiedSafeFdiv :: ((SafeFdiv e a m) => r) -> r
