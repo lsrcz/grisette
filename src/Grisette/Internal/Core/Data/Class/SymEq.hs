@@ -80,6 +80,7 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term (pevalEqTerm)
@@ -290,6 +291,7 @@ CONCRETE_SEQ(Monoid.Any)
 CONCRETE_SEQ(Ordering)
 CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
+CONCRETE_SEQ(AlgReal)
 #endif
 
 instance (ValidFP eb sb) => SymEq (FP eb sb) where

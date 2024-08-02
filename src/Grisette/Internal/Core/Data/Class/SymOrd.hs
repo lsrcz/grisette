@@ -135,6 +135,7 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
+import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -425,6 +426,7 @@ CONCRETE_SORD(Monoid.Any)
 CONCRETE_SORD(Ordering)
 CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
+CONCRETE_SORD(AlgReal)
 #endif
 
 instance (ValidFP eb sb) => SymOrd (FP eb sb) where

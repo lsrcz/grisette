@@ -201,6 +201,7 @@ library
       Grisette.Unified.Internal.EvalMode
       Grisette.Unified.Internal.EvalModeTag
       Grisette.Unified.Internal.MonadWithMode
+      Grisette.Unified.Internal.UnifiedAlgReal
       Grisette.Unified.Internal.UnifiedBool
       Grisette.Unified.Internal.UnifiedBV
       Grisette.Unified.Internal.UnifiedConstraint
