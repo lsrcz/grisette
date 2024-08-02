@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -18,6 +19,13 @@ module Grisette.Internal.TH.DerivePredefined
     deriveAllExcept,
   )
 where
+
+#if MIN_VERSION_template_haskell(2,17,0)
+import Language.Haskell.TH (Type (MulArrowT))
+#endif
+#if MIN_VERSION_template_haskell(2,19,0)
+import Language.Haskell.TH (Type (PromotedInfixT, PromotedUInfixT))
+#endif
 
 import Control.DeepSeq (NFData, NFData1)
 import Data.Functor.Classes (Eq1, Ord1, Show1)
@@ -71,9 +79,29 @@ import Language.Haskell.TH
     Name,
     Pred,
     Q,
-    Type (ConT, PromotedT),
+    Type
+      ( AppT,
+        ArrowT,
+        ConT,
+        EqualityT,
+        InfixT,
+        ListT,
+        LitT,
+        ParensT,
+        PromotedConsT,
+        PromotedNilT,
+        PromotedT,
+        PromotedTupleT,
+        TupleT,
+        UInfixT,
+        UnboxedSumT,
+        UnboxedTupleT,
+        VarT,
+        WildCardT
+      ),
     appT,
     conT,
+    pprint,
     varT,
   )
 import Language.Haskell.TH.Datatype
@@ -162,11 +190,39 @@ instance DeriveTypeParamHandler ModeTypeParamHandler where
 
 newtype FixInnerConstraints = FixInnerConstraints {cls :: Name}
 
+needFix :: Type -> Bool
+needFix (AppT a b) = needFix a || needFix b
+needFix VarT {} = True
+needFix ConT {} = False
+needFix PromotedT {} = False
+needFix (InfixT a _ b) = needFix a || needFix b
+needFix (UInfixT a _ b) = needFix a || needFix b
+needFix (ParensT a) = needFix a
+needFix TupleT {} = False
+needFix UnboxedTupleT {} = False
+needFix UnboxedSumT {} = False
+needFix ArrowT = False
+needFix EqualityT = False
+needFix ListT = False
+needFix PromotedTupleT {} = False
+needFix PromotedNilT = False
+needFix PromotedConsT = False
+needFix LitT {} = False
+needFix WildCardT = False
+#if MIN_VERSION_template_haskell(2,17,0)
+needFix MulArrowT = False
+#endif
+#if MIN_VERSION_template_haskell(2,19,0)
+needFix (PromotedInfixT a _ b) = needFix a || needFix b
+needFix (PromotedUInfixT a _ b) = needFix a || needFix b
+#endif
+needFix t = error $ "Unsupported type in derivation: " <> pprint t
+
 instance DeriveTypeParamHandler FixInnerConstraints where
   handleTypeParams _ _ = return
   handleBody FixInnerConstraints {..} types = do
     kinds <- classParamKinds cls
-    concat <$> mapM (handle kinds) (nub types)
+    concat <$> mapM (handle kinds) (filter (any needFix) $ nub types)
     where
       handle :: [Kind] -> [Type] -> Q [Pred]
       handle k tys

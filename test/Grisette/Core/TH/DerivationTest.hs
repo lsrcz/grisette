@@ -45,7 +45,9 @@ deriveAll ''X
 
 data IdenticalFields mode n = IdenticalFields
   { a :: n,
-    b :: n
+    b :: n,
+    c :: Maybe Int,
+    d :: Maybe Int
   }
 
 deriveAll ''IdenticalFields
