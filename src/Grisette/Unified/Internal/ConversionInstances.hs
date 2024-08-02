@@ -22,6 +22,7 @@ import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
+import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (UnifiedSafeBitCast)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
@@ -36,7 +37,9 @@ class
     BitCastOr fp word,
     BitCastOr fp int,
     BitCastCanonical fp word,
-    BitCastCanonical fp int
+    BitCastCanonical fp int,
+    UnifiedFromIntegral mode word fp,
+    UnifiedFromIntegral mode int fp
   ) =>
   UnifiedBVFPConversionImpl
     (mode :: EvalModeTag)
