@@ -42,7 +42,7 @@ import Grisette.Internal.Core.Data.Class.SymIEEEFP
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.SymPrim.FP
-  ( BitCastNaNError (BitCastNaNError),
+  ( NotRepresentableFPError (NaNError),
     FP,
     FP16,
     FP32,
@@ -66,12 +66,12 @@ instance
     KnownNat r,
     1 <= r,
     TryMerge m,
-    MonadError BitCastNaNError m
+    MonadError NotRepresentableFPError m
   ) =>
-  SafeBitCast BitCastNaNError (FP eb sb) (WordN r) m
+  SafeBitCast NotRepresentableFPError (FP eb sb) (WordN r) m
   where
   safeBitCast a
-    | fpIsNaN a = tryMerge $ throwError BitCastNaNError
+    | fpIsNaN a = tryMerge $ throwError NaNError
     | otherwise = tryMerge $ return $ bitCastOrCanonical a
 
 instance
@@ -80,18 +80,18 @@ instance
     KnownNat r,
     1 <= r,
     TryMerge m,
-    MonadError BitCastNaNError m
+    MonadError NotRepresentableFPError m
   ) =>
-  SafeBitCast BitCastNaNError (FP eb sb) (IntN r) m
+  SafeBitCast NotRepresentableFPError (FP eb sb) (IntN r) m
   where
   safeBitCast a
-    | fpIsNaN a = tryMerge $ throwError BitCastNaNError
+    | fpIsNaN a = tryMerge $ throwError NaNError
     | otherwise = tryMerge $ return $ bitCastOrCanonical a
 
 #define SAFE_BIT_CAST_VIA_INTERMEDIATE(from, to, intermediate) \
 instance \
-  (MonadError BitCastNaNError m, TryMerge m) => \
-  SafeBitCast BitCastNaNError from to m \
+  (MonadError NotRepresentableFPError m, TryMerge m) => \
+  SafeBitCast NotRepresentableFPError from to m \
   where \
   safeBitCast a = do \
     r :: intermediate <- safeBitCast a; \
@@ -114,14 +114,14 @@ instance
     KnownNat r,
     1 <= r,
     MonadUnion m,
-    MonadError BitCastNaNError m
+    MonadError NotRepresentableFPError m
   ) =>
-  SafeBitCast BitCastNaNError (SymFP eb sb) (SymWordN r) m
+  SafeBitCast NotRepresentableFPError (SymFP eb sb) (SymWordN r) m
   where
   safeBitCast a =
     mrgIf
       (symFpIsNaN a)
-      (throwError BitCastNaNError)
+      (throwError NaNError)
       (return $ bitCastOrCanonical a)
 
 instance
@@ -130,12 +130,12 @@ instance
     KnownNat r,
     1 <= r,
     MonadUnion m,
-    MonadError BitCastNaNError m
+    MonadError NotRepresentableFPError m
   ) =>
-  SafeBitCast BitCastNaNError (SymFP eb sb) (SymIntN r) m
+  SafeBitCast NotRepresentableFPError (SymFP eb sb) (SymIntN r) m
   where
   safeBitCast a =
     mrgIf
       (symFpIsNaN a)
-      (throwError BitCastNaNError)
+      (throwError NaNError)
       (return $ bitCastOrCanonical a)

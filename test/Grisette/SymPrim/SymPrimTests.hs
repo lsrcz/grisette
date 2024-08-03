@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NegativeLiterals #-}
@@ -16,7 +17,7 @@ import Control.Exception
     catch,
     evaluate,
   )
-import Control.Monad.Except (ExceptT, MonadError (throwError))
+import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
 import Data.Bits
   ( Bits
       ( bit,
@@ -38,13 +39,17 @@ import Data.Int (Int8)
 import Data.Proxy (Proxy (Proxy))
 import Data.Word (Word8)
 import Grisette
-  ( Apply (apply),
+  ( AlgReal,
+    Apply (apply),
     BV (bv),
     EvalSym (evalSym),
     ExtractSym (extractSym),
+    FP,
     FP32,
+    FPRoundingMode,
     Function ((#)),
     IEEEFPConstants (fpNaN),
+    IEEEFPConvertible (fromFPOr),
     ITEOp (symIte),
     LogicalOp (symImplies, symNot, symXor, (.&&), (.||)),
     Mergeable (rootStrategy),
@@ -77,6 +82,8 @@ import Grisette
     SomeSymIntN,
     SomeSymWordN,
     SymEq ((./=), (.==)),
+    SymFP,
+    SymFPRoundingMode,
     SymIEEEFPTraits (symFpIsNaN),
     SymIntN32,
     SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
@@ -90,6 +97,7 @@ import Grisette
     genSymSimple,
     mrgIf,
     mrgSingle,
+    simpleMerge,
     solve,
     tryMerge,
     z3,
@@ -99,10 +107,12 @@ import Grisette
     type (-->),
     type (=->),
   )
+import Grisette.Internal.Core.Data.Class.SafeFromFP (SafeFromFP (safeFromFP))
 import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
   )
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError)
 import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
     SymbolSet (SymbolSet),
@@ -162,6 +172,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   )
 import Grisette.SymPrim
   ( ModelSymPair ((:=)),
+    SymAlgReal,
     SymBool (SymBool),
     SymFP32,
     SymIntN (SymIntN),
@@ -905,7 +916,50 @@ symPrimTests =
                 )
             case r of
               Left Unsat -> return ()
-              _ -> fail $ show r
+              _ -> fail $ show r,
+          testGroup "SafeFromFP" $ do
+            let safeFromFPComplianceTest ::
+                  forall c s.
+                  ( Arbitrary c,
+                    Show c,
+                    Solvable c s,
+                    SymEq s,
+                    SafeFromFP
+                      NotRepresentableFPError
+                      s
+                      (SymFP 4 4)
+                      SymFPRoundingMode
+                      (ExceptT NotRepresentableFPError Union)
+                  ) =>
+                  Test
+                safeFromFPComplianceTest =
+                  testProperty "safeFromFP" $
+                    \(d :: c) (md :: FPRoundingMode) (v :: FP 4 4) -> ioProperty $ do
+                      let s =
+                            runExceptT $
+                              safeFromFP
+                                (con md :: SymFPRoundingMode)
+                                (con v :: SymFP 4 4) ::
+                              Union (Either NotRepresentableFPError s)
+                      let f =
+                            fromFPOr
+                              (con d :: s)
+                              (con md :: SymFPRoundingMode)
+                              (con v :: SymFP 4 4)
+                      let cond = simpleMerge $ do
+                            s' <- s
+                            case s' of
+                              Left _ -> return $ f .== (con d)
+                              Right r -> return $ r .== f
+                      res <- solve z3 $ symNot cond
+                      case res of
+                        Left Unsat -> return ()
+                        m -> error $ show m
+            [ safeFromFPComplianceTest @Integer @SymInteger,
+              safeFromFPComplianceTest @AlgReal @SymAlgReal,
+              safeFromFPComplianceTest @(WordN 3) @(SymWordN 3),
+              safeFromFPComplianceTest @(IntN 3) @(SymIntN 3)
+              ]
         ],
       testGroup
         "SomeSym"

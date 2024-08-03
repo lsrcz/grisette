@@ -66,7 +66,7 @@ import Test.HUnit ((@?=))
 #if MIN_VERSION_base(4,16,0)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl(GetFP))
-import Grisette.Internal.SymPrim.FP (BitCastNaNError (BitCastNaNError))
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError (NaNError))
 import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
 #else
 import Grisette.Unified
@@ -247,7 +247,7 @@ fpToBVBitCast = bitCastOrCanonical
 
 safeFPToBVBitCast ::
   forall mode m.
-  (MonadWithMode mode m, MonadError BitCastNaNError m) =>
+  (MonadWithMode mode m, MonadError NotRepresentableFPError m) =>
   GetFP mode 4 4 ->
   m (GetIntN mode 8)
 safeFPToBVBitCast = safeBitCast @mode
@@ -346,7 +346,7 @@ evalModeTest =
                 fpToBVBitCast @'Con 0.15625 @?= 0x22
                 fpToBVBitCast @'Con fpNaN @?= 0x7c
                 safeFPToBVBitCast @'Con 0.15625 @?= Right 0x22
-                safeFPToBVBitCast @'Con fpNaN @?= Left BitCastNaNError,
+                safeFPToBVBitCast @'Con fpNaN @?= Left NaNError,
               testCase "Sym" $ do
                 bvToFPBitCast @'Sym 0x22 @?= 0.15625
                 let a = "a" :: SymIntN 8
@@ -357,7 +357,7 @@ evalModeTest =
                 fpToBVBitCast @'Sym b @?= bitCastOrCanonical b
                 safeFPToBVBitCast @'Sym b
                   @?= ( Grisette.safeBitCast b ::
-                          ExceptT BitCastNaNError Union (SymIntN 8)
+                          ExceptT NotRepresentableFPError Union (SymIntN 8)
                       )
             ]
         ]

@@ -26,7 +26,7 @@ import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.SafeBitCast (SafeBitCast)
 import qualified Grisette.Internal.Core.Data.Class.SafeBitCast
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, ValidFP)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
@@ -66,52 +66,52 @@ instance
 
 instance
   ( Typeable mode,
-    MonadError BitCastNaNError m,
+    MonadError NotRepresentableFPError m,
     UnifiedBranching mode m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
     n ~ eb + sb
   ) =>
-  UnifiedSafeBitCast mode BitCastNaNError (FP eb sb) (WordN n) m
+  UnifiedSafeBitCast mode NotRepresentableFPError (FP eb sb) (WordN n) m
   where
   withBaseSafeBitCast r =
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
   ( Typeable mode,
-    MonadError BitCastNaNError m,
+    MonadError NotRepresentableFPError m,
     UnifiedBranching mode m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
     n ~ eb + sb
   ) =>
-  UnifiedSafeBitCast mode BitCastNaNError (FP eb sb) (IntN n) m
+  UnifiedSafeBitCast mode NotRepresentableFPError (FP eb sb) (IntN n) m
   where
   withBaseSafeBitCast r =
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  ( MonadError BitCastNaNError m,
+  ( MonadError NotRepresentableFPError m,
     UnifiedBranching 'Sym m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
     n ~ eb + sb
   ) =>
-  UnifiedSafeBitCast 'Sym BitCastNaNError (SymFP eb sb) (SymWordN n) m
+  UnifiedSafeBitCast 'Sym NotRepresentableFPError (SymFP eb sb) (SymWordN n) m
   where
   withBaseSafeBitCast r = withBaseBranching @'Sym @m r
 
 instance
-  ( MonadError BitCastNaNError m,
+  ( MonadError NotRepresentableFPError m,
     UnifiedBranching 'Sym m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
     n ~ eb + sb
   ) =>
-  UnifiedSafeBitCast 'Sym BitCastNaNError (SymFP eb sb) (SymIntN n) m
+  UnifiedSafeBitCast 'Sym NotRepresentableFPError (SymFP eb sb) (SymIntN n) m
   where
   withBaseSafeBitCast r = withBaseBranching @'Sym @m r
