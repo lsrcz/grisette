@@ -41,7 +41,7 @@ module Grisette.Internal.SymPrim.FP
     withValidFPProofs,
     FPRoundingMode (..),
     allFPRoundingMode,
-    BitCastNaNError (..),
+    NotRepresentableFPError (..),
     ConvertibleBound (..),
     nextFP,
     prevFP,
@@ -437,13 +437,25 @@ BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Word16, WordN16)
 BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Int16, WordN16)
 #endif
 
--- | An error thrown when bitcasting 'FP' NaN to other types.
-data BitCastNaNError = BitCastNaNError
+-- | An error thrown when bitcasting or converting 'FP' NaN to other types.
+data NotRepresentableFPError
+  = NaNError
+  | InfError
+  | FPUnderflowError
+  | FPOverflowError
   deriving (Show, Eq, Ord, Generic)
 
-instance Exception BitCastNaNError where
-  displayException BitCastNaNError =
-    "Bitcasting NaN value cannot be done with SMT-LIB2"
+instance Exception NotRepresentableFPError where
+  displayException NaNError =
+    "Converting NaN value cannot be done precisely with SMT-LIB2"
+  displayException InfError =
+    "Converting Inf values to non-FP types cannot be done"
+  displayException FPUnderflowError =
+    "Converting FP values that cannot be represented by non-FP types due to "
+      <> "underflowing"
+  displayException FPOverflowError =
+    "Converting FP values that cannot be represented by non-FP types due to "
+      <> "overflowing"
 
 instance (ValidFP eb sb) => IEEEFPConstants (FP eb sb) where
   fpPositiveInfinite = FP infinity

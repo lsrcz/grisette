@@ -27,7 +27,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
-  ( BitCastNaNError,
+  ( NotRepresentableFPError,
     FP,
     FPRoundingMode,
     ValidFP,
@@ -102,15 +102,15 @@ instance
 
 class
   ( UnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd,
-    UnifiedSafeBitCast mode BitCastNaNError fp int m,
-    UnifiedSafeBitCast mode BitCastNaNError fp word m
+    UnifiedSafeBitCast mode NotRepresentableFPError fp int m,
+    UnifiedSafeBitCast mode NotRepresentableFPError fp word m
   ) =>
   SafeUnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd m
 
 instance
   ( UnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd,
-    UnifiedSafeBitCast mode BitCastNaNError fp int m,
-    UnifiedSafeBitCast mode BitCastNaNError fp word m
+    UnifiedSafeBitCast mode NotRepresentableFPError fp int m,
+    UnifiedSafeBitCast mode NotRepresentableFPError fp word m
   ) =>
   SafeUnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd m
 
@@ -190,7 +190,7 @@ class
       KnownNat n,
       1 <= n,
       n ~ eb + sb,
-      MonadError BitCastNaNError m
+      MonadError NotRepresentableFPError m
     ) =>
     SafeUnifiedBVFPConversion mode n eb sb m
   ) =>
@@ -206,7 +206,7 @@ instance
       KnownNat n,
       1 <= n,
       n ~ eb + sb,
-      MonadError BitCastNaNError m
+      MonadError NotRepresentableFPError m
     ) =>
     SafeUnifiedBVFPConversion mode n eb sb m
   ) =>

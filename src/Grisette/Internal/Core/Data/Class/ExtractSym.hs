@@ -87,7 +87,7 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
-import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model
   ( AnySymbolSet,
@@ -418,7 +418,7 @@ deriveBuiltins
     ''AssertionError,
     ''VerificationConditions,
     ''BitwidthMismatch,
-    ''BitCastNaNError,
+    ''NotRepresentableFPError,
     ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,

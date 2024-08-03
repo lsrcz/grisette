@@ -82,7 +82,7 @@ import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
-import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term (pevalEqTerm)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
@@ -347,7 +347,7 @@ deriveBuiltins
     ''AssertionError,
     ''VerificationConditions,
     ''BitwidthMismatch,
-    ''BitCastNaNError,
+    ''NotRepresentableFPError,
     ''Identity,
     ''Monoid.Dual,
     ''Monoid.Sum,

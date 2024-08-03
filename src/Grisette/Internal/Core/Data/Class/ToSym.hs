@@ -88,7 +88,7 @@ import Grisette.Internal.SymPrim.BV
     IntN,
     WordN,
   )
-import Grisette.Internal.SymPrim.FP (BitCastNaNError, FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -390,7 +390,7 @@ deriveBuiltins
     ''AssertionError,
     ''VerificationConditions,
     ''BitwidthMismatch,
-    ''BitCastNaNError,
+    ''NotRepresentableFPError,
     ''Monoid.Dual,
     ''Monoid.Sum,
     ''Monoid.Product,

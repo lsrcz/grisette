@@ -70,6 +70,7 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     fpIsPositiveInfinite,
     fpIsPositiveZero,
   )
+import Grisette.Internal.Core.Data.Class.SafeFromFP (SafeFromFP (safeFromFP))
 import Grisette.Internal.Core.Data.Class.SymIEEEFP
   ( SymIEEEFPTraits
       ( symFpIsInfinite,
@@ -90,6 +91,7 @@ import Grisette.Internal.SymPrim.BV (IntN)
 import Grisette.Internal.SymPrim.FP
   ( ConvertibleBound (convertibleLowerBound, convertibleUpperBound),
     FP32,
+    NotRepresentableFPError,
     ValidFP,
     nextFP,
     prevFP,
@@ -104,7 +106,7 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (assertBool, (@?=))
-import Test.QuickCheck (ioProperty)
+import Test.QuickCheck (Arbitrary, ioProperty)
 import Type.Reflection (Typeable, typeRep)
 
 sameFP :: forall a b. (RealFloat a, RealFloat b) => a -> b -> Bool
@@ -644,6 +646,25 @@ fpTests =
           test @5 @4 @2
           ],
       testGroup "IEEEFPConvertible" $ do
+        let safeFromFPComplianceTest ::
+              forall v.
+              ( Show v,
+                Eq v,
+                Arbitrary v,
+                SafeFromFP
+                  NotRepresentableFPError
+                  v
+                  (FP 4 4)
+                  FPRoundingMode
+                  (Either NotRepresentableFPError)
+              ) =>
+              Test
+            safeFromFPComplianceTest = testProperty "safeFromFP" $
+              \(d :: v) (md :: FPRoundingMode) (v :: FP 4 4) -> do
+                let s = safeFromFP md v :: Either NotRepresentableFPError v
+                case s of
+                  Left _ -> fromFPOr d md v == d
+                  Right r -> fromFPOr d md v == r
         [ testGroup
             "AlgReal"
             [ testCase "fromFPOr" $ do
@@ -654,6 +675,7 @@ fpTests =
                 fromFPOr (1 :: AlgReal) rne (fpNaN :: FP 4 4) @?= 1
                 fromFPOr (1 :: AlgReal) rne (3.75 :: FP 4 4)
                   @?= AlgExactRational (15 % 4),
+              safeFromFPComplianceTest @AlgReal,
               testCase "toFP" $ do
                 toFP rne (AlgExactRational (15 % 4)) @?= (3.75 :: FP 4 4)
                 toFP rne (AlgExactRational (15 % 8)) @?= (1.875 :: FP 4 4)
@@ -663,11 +685,11 @@ fpTests =
                 toFP rtp (AlgExactRational (17 % 8)) @?= (2.25 :: FP 4 4)
                 toFP rtn (AlgExactRational (17 % 8)) @?= (2 :: FP 4 4)
 
-                toFP rne (AlgExactRational (-17 % 8)) @?= (-2 :: FP 4 4)
-                toFP rna (AlgExactRational (-17 % 8)) @?= (-2.25 :: FP 4 4)
-                toFP rtz (AlgExactRational (-17 % 8)) @?= (-2 :: FP 4 4)
-                toFP rtp (AlgExactRational (-17 % 8)) @?= (-2 :: FP 4 4)
-                toFP rtn (AlgExactRational (-17 % 8)) @?= (-2.25 :: FP 4 4)
+                toFP rne (AlgExactRational (-(17 % 8))) @?= (-2 :: FP 4 4)
+                toFP rna (AlgExactRational (-(17 % 8))) @?= (-2.25 :: FP 4 4)
+                toFP rtz (AlgExactRational (-(17 % 8))) @?= (-2 :: FP 4 4)
+                toFP rtp (AlgExactRational (-(17 % 8))) @?= (-2 :: FP 4 4)
+                toFP rtn (AlgExactRational (-(17 % 8))) @?= (-2.25 :: FP 4 4)
             ],
           testGroup "FP" $ do
             let tcase name func = testCase name $ do
@@ -797,6 +819,7 @@ fpTests =
                     d
                     (replicate 5 lbv)
                     (replicate 5 rbv)
+
             [ testGroup
                 "Integer"
                 [ testCase "fromFPOr" $ do
@@ -812,6 +835,7 @@ fpTests =
                     fromFPOr (100 :: Integer) rtp <$> fps @?= rtpFromExpected
                     fromFPOr (100 :: Integer) rtn <$> fps @?= rtnFromExpected
                     fromFPOr (100 :: Integer) rtz <$> fps @?= rtzFromExpected,
+                  safeFromFPComplianceTest @Integer,
                   testCase "toFP" $ do
                     toFP rne (15 :: Integer) @?= (15 :: FP 4 4)
                     toFP rne <$> (ints :: [Integer]) @?= rneToFPExpected
@@ -843,6 +867,7 @@ fpTests =
                     fromFPOr (0 :: IntN 3) rne (4.5 :: FP 4 4) @?= 0
                     fromFPOr (0 :: IntN 3) rna (-4.5 :: FP 4 4) @?= 0
                     fromFPOr (0 :: IntN 3) rna (4.5 :: FP 4 4) @?= 0,
+                  safeFromFPComplianceTest @(IntN 3),
                   testGroup "ConvertibleBound" $ do
                     [ boundTest0 @IntN @12 @4 @16
                         "ebn<n-1&&sb>n-1,12/4/16"
@@ -1051,6 +1076,7 @@ fpTests =
                     fromFPOr (4 :: WordN 3) rne (7.5 :: FP 4 4) @?= 4
                     fromFPOr (4 :: WordN 3) rna (6.5 :: FP 4 4) @?= 7
                     fromFPOr (4 :: WordN 3) rna (7.5 :: FP 4 4) @?= 4,
+                  safeFromFPComplianceTest @(WordN 3),
                   testGroup "ConvertibleBound" $ do
                     [ boundTest0 @WordN @12 @4 @16
                         "ebn<n&&sb>n,12/4/16"
