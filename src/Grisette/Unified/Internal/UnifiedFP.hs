@@ -25,6 +25,7 @@ module Grisette.Unified.Internal.UnifiedFP
   )
 where
 
+import Control.Monad.Error.Class (MonadError)
 import Data.Kind (Type)
 import GHC.TypeNats (Nat)
 import Grisette.Internal.Core.Data.Class.IEEEFP
@@ -35,13 +36,15 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
     IEEEFPToAlgReal,
   )
 import Grisette.Internal.Core.Data.Class.SymIEEEFP (SymIEEEFPTraits)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Unified.Internal.BaseConstraint
   ( BasicGrisetteType,
     ConSymConversion,
   )
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
+import Grisette.Unified.Internal.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
+import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
@@ -114,11 +117,71 @@ instance
   ) =>
   UnifiedFP mode eb sb
 
+class
+  (UnifiedFPImpl mode fpn eb sb fp rd) =>
+  SafeUnifiedFPImpl mode fpn eb sb fp rd (m :: Type -> Type)
+
+instance
+  (UnifiedFPImpl mode fpn eb sb fp rd) =>
+  SafeUnifiedFPImpl mode fpn eb sb fp rd m
+
+class
+  ( SafeUnifiedFPImpl
+      mode
+      (GetFP mode)
+      eb
+      sb
+      (GetFP mode eb sb)
+      (GetFPRoundingMode mode)
+      m,
+    UnifiedSafeFromFP
+      mode
+      NotRepresentableFPError
+      (GetInteger mode)
+      (GetFP mode eb sb)
+      (GetFPRoundingMode mode)
+      m
+  ) =>
+  SafeUnifiedFP mode eb sb m
+
+instance
+  ( SafeUnifiedFPImpl
+      mode
+      (GetFP mode)
+      eb
+      sb
+      (GetFP mode eb sb)
+      (GetFPRoundingMode mode)
+      m,
+    UnifiedSafeFromFP
+      mode
+      NotRepresentableFPError
+      (GetInteger mode)
+      (GetFP mode eb sb)
+      (GetFPRoundingMode mode)
+      m
+  ) =>
+  SafeUnifiedFP mode eb sb m
+
 -- | Evaluation mode with unified floating point type.
 class
-  (forall eb sb. (ValidFP eb sb) => UnifiedFP mode eb sb) =>
+  ( forall eb sb. (ValidFP eb sb) => UnifiedFP mode eb sb,
+    forall eb sb m.
+    ( ValidFP eb sb,
+      UnifiedBranching mode m,
+      MonadError NotRepresentableFPError m
+    ) =>
+    SafeUnifiedFP mode eb sb m
+  ) =>
   AllUnifiedFP mode
 
 instance
-  (forall eb sb. (ValidFP eb sb) => UnifiedFP mode eb sb) =>
+  ( forall eb sb. (ValidFP eb sb) => UnifiedFP mode eb sb,
+    forall eb sb m.
+    ( ValidFP eb sb,
+      UnifiedBranching mode m,
+      MonadError NotRepresentableFPError m
+    ) =>
+    SafeUnifiedFP mode eb sb m
+  ) =>
   AllUnifiedFP mode

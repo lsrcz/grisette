@@ -8,7 +8,7 @@
 
 module Grisette.Internal.Core.Data.Class.SafeFromFP (SafeFromFP (..)) where
 
-import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Error.Class (MonadError (throwError))
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.IEEEFP
@@ -25,7 +25,7 @@ import Grisette.Internal.Core.Data.Class.SymIEEEFP
   ( SymIEEEFPTraits (symFpIsInfinite, symFpIsNaN),
   )
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd ((.<), (.>)))
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle, tryMerge)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
@@ -44,8 +44,6 @@ import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Lib.Control.Monad (mrgReturn)
-import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 
 class
   (MonadError e m, TryMerge m, IEEEFPConvertible a fp fprd) =>
@@ -58,9 +56,9 @@ instance
   SafeFromFP NotRepresentableFPError AlgReal (FP eb sb) FPRoundingMode m
   where
   safeFromFP mode a
-    | fpIsInfinite a = mrgThrowError InfError
-    | fpIsNaN a = mrgThrowError NaNError
-    | otherwise = mrgReturn $ fromFPOr undefined mode a
+    | fpIsInfinite a = tryMerge $ throwError InfError
+    | fpIsNaN a = tryMerge $ throwError NaNError
+    | otherwise = mrgSingle $ fromFPOr undefined mode a
 
 instance
   (MonadError NotRepresentableFPError m, MonadUnion m, ValidFP eb sb) =>
@@ -72,9 +70,9 @@ instance
     m
   where
   safeFromFP mode a =
-    mrgIf (symFpIsInfinite a) (mrgThrowError InfError) $
-      mrgIf (symFpIsNaN a) (mrgThrowError NaNError) $
-        mrgReturn $
+    mrgIf (symFpIsInfinite a) (tryMerge $ throwError InfError) $
+      mrgIf (symFpIsNaN a) (tryMerge $ throwError NaNError) $
+        mrgSingle $
           fromFPOr 0 mode a
 
 instance
@@ -82,9 +80,9 @@ instance
   SafeFromFP NotRepresentableFPError Integer (FP eb sb) FPRoundingMode m
   where
   safeFromFP mode a
-    | fpIsInfinite a = mrgThrowError InfError
-    | fpIsNaN a = mrgThrowError NaNError
-    | otherwise = mrgReturn $ fromFPOr 0 mode a
+    | fpIsInfinite a = tryMerge $ throwError InfError
+    | fpIsNaN a = tryMerge $ throwError NaNError
+    | otherwise = mrgSingle $ fromFPOr 0 mode a
 
 instance
   (MonadError NotRepresentableFPError m, MonadUnion m, ValidFP eb sb) =>
@@ -96,9 +94,9 @@ instance
     m
   where
   safeFromFP mode a =
-    mrgIf (symFpIsInfinite a) (mrgThrowError InfError) $
-      mrgIf (symFpIsNaN a) (mrgThrowError NaNError) $
-        mrgReturn $
+    mrgIf (symFpIsInfinite a) (tryMerge $ throwError InfError) $
+      mrgIf (symFpIsNaN a) (tryMerge $ throwError NaNError) $
+        mrgSingle $
           fromFPOr 0 mode a
 
 instance
@@ -113,11 +111,11 @@ instance
   safeFromFP mode a = do
     p :: Integer <- safeFromFP mode a
     if p < (fromIntegral (minBound :: WordN n))
-      then mrgThrowError FPUnderflowError
+      then tryMerge $ throwError FPUnderflowError
       else
         if p > (fromIntegral (maxBound :: WordN n))
-          then mrgThrowError FPOverflowError
-          else mrgReturn $ fromIntegral p
+          then tryMerge $ throwError FPOverflowError
+          else mrgSingle $ fromIntegral p
 
 symConvertibleLowerBound ::
   forall conBV symBV n eb sb.
@@ -181,15 +179,15 @@ instance
   SafeFromFP NotRepresentableFPError (SymWordN n) (SymFP eb sb) SymFPRoundingMode m
   where
   safeFromFP mode a =
-    mrgIf (symFpIsInfinite a) (mrgThrowError InfError)
-      $ mrgIf (symFpIsNaN a) (mrgThrowError NaNError)
+    mrgIf (symFpIsInfinite a) (tryMerge $ throwError InfError)
+      $ mrgIf (symFpIsNaN a) (tryMerge $ throwError NaNError)
       $ mrgIf
         (a .< symConvertibleLowerBound (undefined :: SymWordN n) mode)
-        (mrgThrowError FPUnderflowError)
+        (tryMerge $ throwError FPUnderflowError)
       $ mrgIf
         (a .> symConvertibleUpperBound (undefined :: SymWordN n) mode)
-        (mrgThrowError FPOverflowError)
-      $ mrgReturn
+        (tryMerge $ throwError FPOverflowError)
+      $ mrgSingle
       $ fromFPOr 0 mode a
 
 instance
@@ -204,11 +202,11 @@ instance
   safeFromFP mode a = do
     p :: Integer <- safeFromFP mode a
     if p < (fromIntegral (minBound :: IntN n))
-      then mrgThrowError FPUnderflowError
+      then tryMerge $ throwError FPUnderflowError
       else
         if p > (fromIntegral (maxBound :: IntN n))
-          then mrgThrowError FPOverflowError
-          else mrgReturn $ fromIntegral p
+          then tryMerge $ throwError FPOverflowError
+          else mrgSingle $ fromIntegral p
 
 instance
   ( MonadError NotRepresentableFPError m,
@@ -220,13 +218,13 @@ instance
   SafeFromFP NotRepresentableFPError (SymIntN n) (SymFP eb sb) SymFPRoundingMode m
   where
   safeFromFP mode a =
-    mrgIf (symFpIsInfinite a) (mrgThrowError InfError)
-      $ mrgIf (symFpIsNaN a) (mrgThrowError NaNError)
+    mrgIf (symFpIsInfinite a) (tryMerge $ throwError InfError)
+      $ mrgIf (symFpIsNaN a) (tryMerge $ throwError NaNError)
       $ mrgIf
         (a .< symConvertibleLowerBound (undefined :: SymIntN n) mode)
-        (mrgThrowError FPUnderflowError)
+        (tryMerge $ throwError FPUnderflowError)
       $ mrgIf
         (a .> symConvertibleUpperBound (undefined :: SymIntN n) mode)
-        (mrgThrowError FPOverflowError)
-      $ mrgReturn
+        (tryMerge $ throwError FPOverflowError)
+      $ mrgSingle
       $ fromFPOr 0 mode a
