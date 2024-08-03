@@ -27,15 +27,16 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
-  ( NotRepresentableFPError,
-    FP,
+  ( FP,
     FPRoundingMode,
+    NotRepresentableFPError,
     ValidFP,
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (UnifiedSafeBitCast)
+import Grisette.Unified.Internal.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedBV (UnifiedBVImpl (GetIntN, GetWordN))
@@ -103,14 +104,16 @@ instance
 class
   ( UnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd,
     UnifiedSafeBitCast mode NotRepresentableFPError fp int m,
-    UnifiedSafeBitCast mode NotRepresentableFPError fp word m
+    UnifiedSafeBitCast mode NotRepresentableFPError fp word m,
+    UnifiedSafeFromFP mode NotRepresentableFPError word fp fprd m
   ) =>
   SafeUnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd m
 
 instance
   ( UnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd,
     UnifiedSafeBitCast mode NotRepresentableFPError fp int m,
-    UnifiedSafeBitCast mode NotRepresentableFPError fp word m
+    UnifiedSafeBitCast mode NotRepresentableFPError fp word m,
+    UnifiedSafeFromFP mode NotRepresentableFPError word fp fprd m
   ) =>
   SafeUnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd m
 
