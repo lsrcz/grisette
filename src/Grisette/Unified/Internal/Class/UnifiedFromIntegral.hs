@@ -10,6 +10,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.Class.UnifiedFromIntegral
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedFromIntegral
   ( UnifiedFromIntegral (..),
     symFromIntegral,
@@ -31,6 +39,13 @@ import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym), IsConMode)
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SymFromIntegral.symFromIntegral`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > symFromIntegral @mode a
 symFromIntegral ::
   forall mode a b. (Typeable mode, UnifiedFromIntegral mode a b) => a -> b
 symFromIntegral a =
@@ -38,6 +53,9 @@ symFromIntegral a =
     (withBaseFromIntegral @mode @a @b $ fromIntegral a)
     (withBaseFromIntegral @mode @a @b $ SymFromIntegral.symFromIntegral a)
 
+-- | A class that provides unified conversion from integral types.
+--
+-- We use this type class to help resolve the constraints for `SymFromIntegral`.
 class UnifiedFromIntegral (mode :: EvalModeTag) a b where
   withBaseFromIntegral ::
     ((If (IsConMode mode) (Integral a, Num b) (SymFromIntegral a b)) => r) -> r

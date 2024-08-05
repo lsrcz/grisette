@@ -9,8 +9,17 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.BVFPConversion
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.BVFPConversion
   ( UnifiedBVFPConversion,
+    SafeUnifiedBVFPConversion,
     AllUnifiedBVFPConversion,
   )
 where
@@ -117,6 +126,8 @@ instance
   ) =>
   SafeUnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd m
 
+-- | Unified constraints for safe conversion from bit-vectors to floating point
+-- numbers.
 class
   ( SafeUnifiedBVFPConversionImpl
       mode
@@ -151,6 +162,8 @@ instance
   ) =>
   SafeUnifiedBVFPConversion mode n eb sb m
 
+-- | Unified constraints for conversion from bit-vectors to floating point
+-- numbers.
 class
   ( UnifiedBVFPConversionImpl
       (mode :: EvalModeTag)
@@ -183,6 +196,8 @@ instance
   ) =>
   UnifiedBVFPConversion mode n eb sb
 
+-- | Evaluation mode with unified conversion from bit-vectors to
+-- floating-points.
 class
   ( forall n eb sb.
     (ValidFP eb sb, KnownNat n, 1 <= n, n ~ eb + sb) =>

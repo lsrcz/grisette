@@ -150,7 +150,7 @@ instance TransformError AssertionError AssertionError where
 -- The symbolic execution will continue on the then-branch, where the condition is true.
 -- For the else branch, where the condition is false, the execution will be terminated.
 --
--- The resulting monadic environment should be compatible with the 'AssertionError'
+-- The resulting monadic environment should be compatible with the t'AssertionError'
 -- error type. See 'TransformError' type class for details.
 --
 -- __/Examples/__:
@@ -180,7 +180,7 @@ instance TransformError AssertionError AssertionError where
 -- >>> do; symAssert (ssym "a"); mrgReturn 1 :: ExceptT AssertionError Union Integer
 -- ExceptT {If (! a) (Left AssertionError) (Right 1)}
 --
--- 'AssertionError' is compatible with 'VerificationConditions':
+-- t'AssertionError' is compatible with 'VerificationConditions':
 --
 -- >>> symAssert (ssym "a") :: ExceptT VerificationConditions Union ()
 -- ExceptT {If (! a) (Left AssertionViolation) (Right ())}

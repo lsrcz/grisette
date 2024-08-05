@@ -133,7 +133,7 @@ natValue (NatRepr n) = n
 data SomeNatReprHelper where
   SomeNatReprHelper :: NatRepr n -> SomeNatReprHelper
 
--- | Existential wrapper for 'NatRepr'.
+-- | Existential wrapper for t'NatRepr'.
 data SomeNatRepr where
   SomeNatRepr :: (KnownNat n) => NatRepr n -> SomeNatRepr
 
@@ -143,7 +143,7 @@ mkNatRepr :: Natural -> SomeNatRepr
 mkNatRepr n = case SomeNatReprHelper (NatRepr n) of
   SomeNatReprHelper natRepr -> withKnownNat natRepr $ SomeNatRepr natRepr
 
--- | Existential wrapper for 'NatRepr' with the constraint that the natural
+-- | Existential wrapper for t'NatRepr' with the constraint that the natural
 -- number is greater than 0.
 data SomePositiveNatRepr where
   SomePositiveNatRepr ::
@@ -162,31 +162,31 @@ mkPositiveNatRepr n = case mkNatRepr n of
 natRepr :: forall n. (KnownNat n) => NatRepr n
 natRepr = NatRepr (natVal (Proxy @n))
 
--- | Decrement a 'NatRepr' by 1.
+-- | Decrement a t'NatRepr' by 1.
 decNat :: (1 <= n) => NatRepr n -> NatRepr (n - 1)
 decNat (NatRepr n) = NatRepr (n - 1)
 
--- | Predecessor of a 'NatRepr'
+-- | Predecessor of a t'NatRepr'
 predNat :: NatRepr (n + 1) -> NatRepr n
 predNat (NatRepr n) = NatRepr (n - 1)
 
--- | Increment a 'NatRepr' by 1.
+-- | Increment a t'NatRepr' by 1.
 incNat :: NatRepr n -> NatRepr (n + 1)
 incNat (NatRepr n) = NatRepr (n + 1)
 
--- | Addition of two 'NatRepr's.
+-- | Addition of two t'NatRepr's.
 addNat :: NatRepr m -> NatRepr n -> NatRepr (m + n)
 addNat (NatRepr m) (NatRepr n) = NatRepr (m + n)
 
--- | Subtraction of two 'NatRepr's.
+-- | Subtraction of two t'NatRepr's.
 subNat :: (n <= m) => NatRepr m -> NatRepr n -> NatRepr (m - n)
 subNat (NatRepr m) (NatRepr n) = NatRepr (m - n)
 
--- | Division of two 'NatRepr's.
+-- | Division of two t'NatRepr's.
 divNat :: (1 <= n) => NatRepr m -> NatRepr n -> NatRepr (Div m n)
 divNat (NatRepr m) (NatRepr n) = NatRepr (m `div` n)
 
--- | Half of a 'NatRepr'.
+-- | Half of a t'NatRepr'.
 halfNat :: NatRepr (n + n) -> NatRepr n
 halfNat (NatRepr n) = NatRepr (n `div` 2)
 
@@ -199,7 +199,7 @@ data KnownProof (n :: Nat) where
 withKnownProof :: KnownProof n -> ((KnownNat n) => r) -> r
 withKnownProof p r = case p of KnownProof -> r
 
--- | Construct a 'KnownProof' given the runtime value.
+-- | Construct a t'KnownProof' given the runtime value.
 --
 -- __Note:__ This function is unsafe, as it does not check that the runtime
 -- representation is consistent with the type-level representation.
@@ -208,7 +208,7 @@ withKnownProof p r = case p of KnownProof -> r
 unsafeKnownProof :: Natural -> KnownProof n
 unsafeKnownProof nVal = hasRepr (NatRepr nVal)
 
--- | Construct a 'KnownProof' given the runtime representation.
+-- | Construct a t'KnownProof' given the runtime representation.
 hasRepr :: forall n. NatRepr n -> KnownProof n
 hasRepr (NatRepr nVal) =
   case someNatVal nVal of
@@ -229,7 +229,7 @@ data LeqProof (m :: Nat) (n :: Nat) where
 withLeqProof :: LeqProof m n -> ((m <= n) => r) -> r
 withLeqProof p r = case p of LeqProof -> r
 
--- | Construct a 'LeqProof'.
+-- | Construct a t'LeqProof'.
 --
 -- __Note:__ This function is unsafe, as it does not check that the left-hand
 -- side is less than or equal to the right-hand side.
@@ -238,7 +238,7 @@ withLeqProof p r = case p of LeqProof -> r
 unsafeLeqProof :: forall m n. LeqProof m n
 unsafeLeqProof = unsafeCoerce (LeqProof @0 @0)
 
--- | Checks if a 'NatRepr' is less than or equal to another 'NatRepr'.
+-- | Checks if a t'NatRepr' is less than or equal to another t'NatRepr'.
 testLeq :: NatRepr m -> NatRepr n -> Maybe (LeqProof m n)
 testLeq (NatRepr m) (NatRepr n) =
   case compare m n of
@@ -246,7 +246,7 @@ testLeq (NatRepr m) (NatRepr n) =
     EQ -> Just unsafeLeqProof
     GT -> Just unsafeLeqProof
 
--- | Apply reflexivity to 'LeqProof'.
+-- | Apply reflexivity to t'LeqProof'.
 leqRefl :: f n -> LeqProof n n
 leqRefl _ = LeqProof
 
@@ -254,7 +254,7 @@ leqRefl _ = LeqProof
 leqSucc :: f n -> LeqProof n (n + 1)
 leqSucc _ = unsafeLeqProof
 
--- | Apply transitivity to 'LeqProof'.
+-- | Apply transitivity to t'LeqProof'.
 leqTrans :: LeqProof a b -> LeqProof b c -> LeqProof a c
 leqTrans _ _ = unsafeLeqProof
 
@@ -266,7 +266,7 @@ leqZero = unsafeLeqProof
 leqAdd2 :: LeqProof xl xh -> LeqProof yl yh -> LeqProof (xl + yl) (xh + yh)
 leqAdd2 _ _ = unsafeLeqProof
 
--- | Produce proof that adding a value to the larger element in an 'LeqProof'
+-- | Produce proof that adding a value to the larger element in an t'LeqProof'
 -- is larger.
 leqAdd :: LeqProof m n -> f o -> LeqProof m (n + o)
 leqAdd _ _ = unsafeLeqProof

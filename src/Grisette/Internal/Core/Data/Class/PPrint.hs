@@ -213,7 +213,7 @@ instance (PPrint a) => PPrint [a] where
 
 -- | Convenience function to layout and render a 'Doc' to 'T.Text'.
 --
--- You can control the layout with 'LayoutOptions'.
+-- You can control the layout with t'LayoutOptions'.
 docToTextWith :: LayoutOptions -> Doc ann -> T.Text
 docToTextWith options = renderStrict . layoutPretty options
 
@@ -233,7 +233,7 @@ docToText = docToTextWith defaultLayoutOptions
 
 -- | Convenience function to format a value to 'T.Text'.
 --
--- You can control the layout with 'LayoutOptions'.
+-- You can control the layout with t'LayoutOptions'.
 pformatTextWith :: (PPrint a) => LayoutOptions -> a -> T.Text
 pformatTextWith options = docToTextWith options . pformat
 

@@ -14,6 +14,14 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.Class.UnifiedSafeBitCast
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedSafeBitCast
   ( safeBitCast,
     UnifiedSafeBitCast (..),
@@ -54,6 +62,9 @@ safeBitCast a =
     Grisette.Internal.Core.Data.Class.SafeBitCast.safeBitCast a
 {-# INLINE safeBitCast #-}
 
+-- | A class that provides unified safe bitcast operations.
+--
+-- We use this type class to help resolve the constraints for `SafeBitCast`.
 class UnifiedSafeBitCast (mode :: EvalModeTag) e a b m where
   withBaseSafeBitCast :: ((SafeBitCast e a b m) => r) -> r
 

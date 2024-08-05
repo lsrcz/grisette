@@ -14,6 +14,14 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.Class.UnifiedSafeFromFP
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedSafeFromFP
   ( UnifiedSafeFromFP (..),
     safeFromFP,
@@ -42,6 +50,13 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeFromFP.safeFromFP`
+-- operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeFromFP @mode mode fp
 safeFromFP ::
   forall mode e a fp fprd m.
   (UnifiedSafeFromFP mode e a fp fprd m, MonadError e m) =>
@@ -52,6 +67,9 @@ safeFromFP rd fp =
   withBaseSafeFromFP @mode @e @a @fp @fprd @m $
     SafeFromFP.safeFromFP rd fp
 
+-- | A class that provides unified safe conversion from floating points.
+--
+-- We use this type class to help resolve the constraints for `SafeFromFP`.
 class UnifiedSafeFromFP (mode :: EvalModeTag) e a fp fprd m where
   withBaseSafeFromFP :: ((SafeFromFP e a fp fprd m) => r) -> r
 

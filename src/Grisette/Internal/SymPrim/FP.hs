@@ -437,7 +437,7 @@ BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Word16, WordN16)
 BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Int16, WordN16)
 #endif
 
--- | An error thrown when bitcasting or converting 'FP' NaN to other types.
+-- | An error thrown when bitcasting or converting t'FP' NaN to other types.
 data NotRepresentableFPError
   = NaNError
   | InfError
