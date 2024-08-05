@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -50,6 +51,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1, SymEq2)
 import qualified Grisette.Internal.Core.Data.Class.SymEq
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
@@ -58,7 +60,7 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   ( deriveFunctorArgUnifiedInterfaces,
     deriveUnifiedInterface1s,
   )
-import Grisette.Unified.Internal.EvalModeTag (IsConMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -218,6 +220,10 @@ instance
   where
   withBaseSymEq2 r = r
   {-# INLINE withBaseSymEq2 #-}
+
+instance (UnifiedSymEq 'Sym v) => UnifiedSymEq 'Sym (Union v) where
+  withBaseSymEq = withBaseSymEq @'Sym @v
+  {-# INLINE withBaseSymEq #-}
 
 deriveFunctorArgUnifiedInterfaces
   ''UnifiedSymEq

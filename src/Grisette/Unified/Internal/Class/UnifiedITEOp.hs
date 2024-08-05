@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -28,12 +29,13 @@ import Control.Monad.Identity (Identity (runIdentity))
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
 import Data.Typeable (Typeable)
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import qualified Grisette.Internal.Core.Data.Class.PlainUnion
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.EvalModeTag (IsConMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -87,10 +89,15 @@ class UnifiedITEOp mode v where
     ((If (IsConMode mode) (() :: Constraint) (ITEOp v)) => r) -> r
 
 instance
+  {-# INCOHERENT #-}
   ( Typeable mode,
     If (IsConMode mode) (() :: Constraint) (ITEOp a)
   ) =>
   UnifiedITEOp mode a
   where
   withBaseITEOp r = withMode @mode r r
+  {-# INLINE withBaseITEOp #-}
+
+instance (Mergeable v, UnifiedITEOp 'Sym v) => UnifiedITEOp 'Sym (Union v) where
+  withBaseITEOp = withBaseITEOp @'Sym @v
   {-# INLINE withBaseITEOp #-}
