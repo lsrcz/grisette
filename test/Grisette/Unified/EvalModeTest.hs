@@ -19,6 +19,21 @@
 
 module Grisette.Unified.EvalModeTest (evalModeTest) where
 
+#if MIN_VERSION_base(4,16,0)
+import GHC.TypeLits (KnownNat, type (<=))
+#else
+import Grisette.Unified
+  ( SafeUnifiedBV,
+    SafeUnifiedBVFPConversion,
+    SafeUnifiedSomeBV,
+    UnifiedBV,
+    UnifiedData,
+    UnifiedBVBVConversion,
+    UnifiedBVFPConversion,
+    UnifiedFPFPConversion
+  )
+#endif
+
 import Control.Exception (ArithException (DivideByZero))
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (ExceptT (ExceptT))
@@ -44,12 +59,15 @@ import Grisette
   )
 import qualified Grisette
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
+import Grisette.Internal.SymPrim.FP (NotRepresentableFPError (NaNError))
 import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, ssymBV)
 import Grisette.Unified
   ( EvalMode,
     EvalModeTag (Con, Sym),
     GetBool,
     GetData,
+    GetFP,
+    GetFPRoundingMode,
     GetIntN,
     GetInteger,
     GetSomeIntN,
@@ -63,23 +81,10 @@ import Grisette.Unified
     (.<),
     (.==),
   )
+import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
-
-#if MIN_VERSION_base(4,16,0)
-import GHC.TypeLits (KnownNat, type (<=))
-import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl(GetFP, GetFPRoundingMode))
-import Grisette.Internal.SymPrim.FP (NotRepresentableFPError (NaNError))
-import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
-#else
-import Grisette.Unified
-  ( SafeUnifiedBV,
-    SafeUnifiedSomeBV,
-    UnifiedBV,
-    UnifiedData,
-  )
-#endif
 
 fbool ::
   forall mode. (EvalMode mode) => GetBool mode -> GetBool mode -> GetBool mode
@@ -235,38 +240,81 @@ fdata d = do
     A v -> safeDiv @mode v (v - 1)
     AT v -> fdata v
 
+#if MIN_VERSION_base(4,16,0)
+type BVToFPConstraint mode = (EvalMode mode)
+#else
+type BVToFPConstraint mode =
+  (EvalMode mode, BitCast (GetIntN mode 8) (GetFP mode 4 4))
+#endif
+
 bvToFPBitCast ::
   forall mode.
-  (EvalMode mode) =>
+  (BVToFPConstraint mode) =>
   GetIntN mode 8 ->
   GetFP mode 4 4
 bvToFPBitCast = bitCast
 
+#if MIN_VERSION_base(4,16,0)
+type FPToBVConstraint mode = (EvalMode mode)
+#else
+type FPToBVConstraint mode =
+  (EvalMode mode, UnifiedBVFPConversion mode 8 4 4)
+#endif
+
 fpToBVBitCast ::
   forall mode.
-  (EvalMode mode) =>
+  (FPToBVConstraint mode) =>
   GetFP mode 4 4 ->
   GetIntN mode 8
 fpToBVBitCast = bitCastOrCanonical
 
+#if MIN_VERSION_base(4,16,0)
+type SafeFPToBVConstraint mode m =
+  (MonadWithMode mode m, MonadError NotRepresentableFPError m)
+#else
+type SafeFPToBVConstraint mode m =
+  ( MonadWithMode mode m,
+    MonadError NotRepresentableFPError m,
+    SafeUnifiedBVFPConversion mode 8 4 4 m
+  )
+#endif
+
 safeFPToBVBitCast ::
   forall mode m.
-  (MonadWithMode mode m, MonadError NotRepresentableFPError m) =>
+  (SafeFPToBVConstraint mode m) =>
   GetFP mode 4 4 ->
   m (GetIntN mode 8)
 safeFPToBVBitCast = safeBitCast @mode
 
+#if MIN_VERSION_base(4,16,0)
+type FPToFPConstraint mode = (EvalMode mode)
+#else
+type FPToFPConstraint mode =
+  ( EvalMode mode,
+    UnifiedFPFPConversion mode 4 4 3 5
+  )
+#endif
+
 fpToFPConvert ::
   forall mode.
-  (EvalMode mode) =>
+  (FPToFPConstraint mode) =>
   GetFPRoundingMode mode ->
   GetFP mode 4 4 ->
   GetFP mode 3 5
 fpToFPConvert = toFP
 
+#if MIN_VERSION_base(4,16,0)
+type BVToBVConstraint mode = (EvalMode mode)
+#else
+type BVToBVConstraint mode =
+  ( EvalMode mode,
+    UnifiedBVBVConversion mode 4 4
+  )
+#endif
+
 bvToBVFromIntegral ::
   forall mode.
-  (EvalMode mode) =>
+  (BVToBVConstraint mode) =>
   GetIntN mode 4 ->
   GetWordN mode 4
 bvToBVFromIntegral = symFromIntegral @mode

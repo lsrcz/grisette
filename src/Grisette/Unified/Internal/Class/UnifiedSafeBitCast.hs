@@ -2,8 +2,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -82,7 +82,7 @@ instance
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
-    n ~ eb + sb
+    n ~ (eb + sb)
   ) =>
   UnifiedSafeBitCast mode NotRepresentableFPError (FP eb sb) (WordN n) m
   where
@@ -96,7 +96,7 @@ instance
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
-    n ~ eb + sb
+    n ~ (eb + sb)
   ) =>
   UnifiedSafeBitCast mode NotRepresentableFPError (FP eb sb) (IntN n) m
   where
@@ -109,7 +109,7 @@ instance
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
-    n ~ eb + sb
+    n ~ (eb + sb)
   ) =>
   UnifiedSafeBitCast 'Sym NotRepresentableFPError (SymFP eb sb) (SymWordN n) m
   where
@@ -121,7 +121,7 @@ instance
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
-    n ~ eb + sb
+    n ~ (eb + sb)
   ) =>
   UnifiedSafeBitCast 'Sym NotRepresentableFPError (SymFP eb sb) (SymIntN n) m
   where
