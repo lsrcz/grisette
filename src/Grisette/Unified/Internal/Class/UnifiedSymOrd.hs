@@ -63,6 +63,7 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
+import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1, SymOrd2)
 import qualified Grisette.Internal.Core.Data.Class.SymOrd
@@ -81,7 +82,8 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
 import Grisette.Unified.Internal.EvalModeTag
-  ( IsConMode,
+  ( EvalModeTag (Sym),
+    IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
@@ -368,6 +370,10 @@ instance
   where
   withBaseSymOrd2 r = r
   {-# INLINE withBaseSymOrd2 #-}
+
+instance (UnifiedSymOrd 'Sym v) => UnifiedSymOrd 'Sym (Union v) where
+  withBaseSymOrd = withBaseSymOrd @'Sym @v
+  {-# INLINE withBaseSymOrd #-}
 
 deriveFunctorArgUnifiedInterfaces
   ''UnifiedSymOrd

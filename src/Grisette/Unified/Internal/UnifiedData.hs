@@ -46,10 +46,13 @@ import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
-    liftBaseMonad,
+    liftBaseMonad, UnifiedSimpleMergeable,
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Language.Haskell.TH.Syntax (Lift)
+import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
+import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
+import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
 
 class
   ( u ~ GetData mode v,
@@ -69,6 +72,11 @@ class
     (Show v) => Show u,
     (SymOrd v) => SymOrd u,
     (SubstSym v) => SubstSym u,
+    (UnifiedITEOp mode v) => UnifiedITEOp mode u,
+    (UnifiedSimpleMergeable mode v) => UnifiedSimpleMergeable mode u,
+    (mode ~ 'Sym) => UnifiedSimpleMergeable mode u,
+    UnifiedSymEq mode v => UnifiedSymEq mode u,
+    UnifiedSymOrd mode v => UnifiedSymOrd mode u,
     forall b. (ToCon v b) => ToCon u b,
     forall a. (ToSym a v) => ToSym a u
   ) =>
