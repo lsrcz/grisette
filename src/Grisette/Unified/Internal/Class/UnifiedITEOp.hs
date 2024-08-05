@@ -9,6 +9,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Unified.Internal.Class.UnifiedITEOp
@@ -99,5 +102,5 @@ instance
   {-# INLINE withBaseITEOp #-}
 
 instance (Mergeable v, UnifiedITEOp 'Sym v) => UnifiedITEOp 'Sym (Union v) where
-  withBaseITEOp = withBaseITEOp @'Sym @v
+  withBaseITEOp r = withBaseITEOp @'Sym @v r
   {-# INLINE withBaseITEOp #-}

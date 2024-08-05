@@ -12,6 +12,9 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Unified.Internal.Class.UnifiedSymEq
@@ -222,7 +225,7 @@ instance
   {-# INLINE withBaseSymEq2 #-}
 
 instance (UnifiedSymEq 'Sym v) => UnifiedSymEq 'Sym (Union v) where
-  withBaseSymEq = withBaseSymEq @'Sym @v
+  withBaseSymEq r = withBaseSymEq @'Sym @v r
   {-# INLINE withBaseSymEq #-}
 
 deriveFunctorArgUnifiedInterfaces

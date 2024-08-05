@@ -12,6 +12,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Unified.Internal.Class.UnifiedSymOrd
@@ -372,7 +375,7 @@ instance
   {-# INLINE withBaseSymOrd2 #-}
 
 instance (UnifiedSymOrd 'Sym v) => UnifiedSymOrd 'Sym (Union v) where
-  withBaseSymOrd = withBaseSymOrd @'Sym @v
+  withBaseSymOrd r = withBaseSymOrd @'Sym @v r
   {-# INLINE withBaseSymOrd #-}
 
 deriveFunctorArgUnifiedInterfaces
