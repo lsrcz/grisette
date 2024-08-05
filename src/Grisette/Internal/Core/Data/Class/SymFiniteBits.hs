@@ -123,9 +123,11 @@ instance FromBits SomeWordN where
 class (FiniteBits a, ITEOp a) => SymFiniteBits a where
   -- | Test a symbolic bit in a symbolic bit-vector.
   symTestBit :: a -> Int -> SymBool
+
   -- | Set a bit in a symbolic value to a specific value.
   symSetBitTo :: a -> Int -> SymBool -> a
   symSetBitTo v i b = symIte b (setBit v i) (clearBit v i)
+
   -- | Assembling symbolic bits to a symbolic bit-vector. The first symbolic
   -- boolean value in the list corresponding to the least signification value.
   symFromBits :: [SymBool] -> a

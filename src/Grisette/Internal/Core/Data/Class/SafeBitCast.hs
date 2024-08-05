@@ -42,11 +42,11 @@ import Grisette.Internal.Core.Data.Class.SymIEEEFP
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
 import Grisette.Internal.SymPrim.BV (IntN, WordN, WordN16, WordN32, WordN64)
 import Grisette.Internal.SymPrim.FP
-  ( NotRepresentableFPError (NaNError),
-    FP,
+  ( FP,
     FP16,
     FP32,
     FP64,
+    NotRepresentableFPError (NaNError),
     ValidFP,
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)

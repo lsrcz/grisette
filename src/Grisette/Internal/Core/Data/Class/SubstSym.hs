@@ -81,7 +81,7 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
-import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( IsSymbolKind,
