@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
@@ -81,7 +81,7 @@ class
     fprd
 
 instance
-  (ValidFP eb sb, KnownNat n, 1 <= n, n ~ eb + sb) =>
+  (ValidFP eb sb, KnownNat n, 1 <= n, n ~ (eb + sb)) =>
   UnifiedBVFPConversionImpl
     'Con
     WordN
@@ -96,7 +96,7 @@ instance
     FPRoundingMode
 
 instance
-  (ValidFP eb sb, KnownNat n, 1 <= n, n ~ eb + sb) =>
+  (ValidFP eb sb, KnownNat n, 1 <= n, n ~ (eb + sb)) =>
   UnifiedBVFPConversionImpl
     'Sym
     SymWordN
@@ -200,14 +200,14 @@ instance
 -- floating-points.
 class
   ( forall n eb sb.
-    (ValidFP eb sb, KnownNat n, 1 <= n, n ~ eb + sb) =>
+    (ValidFP eb sb, KnownNat n, 1 <= n, n ~ (eb + sb)) =>
     UnifiedBVFPConversion mode n eb sb,
     forall n eb sb m.
     ( UnifiedBranching mode m,
       ValidFP eb sb,
       KnownNat n,
       1 <= n,
-      n ~ eb + sb,
+      n ~ (eb + sb),
       MonadError NotRepresentableFPError m
     ) =>
     SafeUnifiedBVFPConversion mode n eb sb m
@@ -216,14 +216,14 @@ class
 
 instance
   ( forall n eb sb.
-    (ValidFP eb sb, KnownNat n, 1 <= n, n ~ eb + sb) =>
+    (ValidFP eb sb, KnownNat n, 1 <= n, n ~ (eb + sb)) =>
     UnifiedBVFPConversion mode n eb sb,
     forall n eb sb m.
     ( UnifiedBranching mode m,
       ValidFP eb sb,
       KnownNat n,
       1 <= n,
-      n ~ eb + sb,
+      n ~ (eb + sb),
       MonadError NotRepresentableFPError m
     ) =>
     SafeUnifiedBVFPConversion mode n eb sb m

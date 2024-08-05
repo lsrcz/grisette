@@ -139,9 +139,22 @@ module Grisette.Unified
     UnifiedData,
     extractData,
     wrapData,
+
+    -- ** Supplemental conversions
+    UnifiedBVBVConversion,
+    UnifiedBVFPConversion,
+    SafeUnifiedBVFPConversion,
+    UnifiedFPFPConversion,
   )
 where
 
+import Grisette.Unified.Internal.BVBVConversion
+  ( UnifiedBVBVConversion,
+  )
+import Grisette.Unified.Internal.BVFPConversion
+  ( SafeUnifiedBVFPConversion,
+    UnifiedBVFPConversion,
+  )
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedFiniteBits
   ( UnifiedFiniteBits (..),
@@ -245,6 +258,9 @@ import Grisette.Unified.Internal.EvalMode (EvalMode)
 import Grisette.Unified.Internal.EvalModeTag
   ( EvalModeTag (..),
     IsConMode,
+  )
+import Grisette.Unified.Internal.FPFPConversion
+  ( UnifiedFPFPConversion,
   )
 import Grisette.Unified.Internal.MonadWithMode (MonadWithMode)
 import Grisette.Unified.Internal.UnifiedAlgReal
