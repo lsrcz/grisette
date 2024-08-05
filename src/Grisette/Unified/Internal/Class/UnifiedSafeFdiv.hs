@@ -12,6 +12,14 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.Class.UnifiedSafeFdiv
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedSafeFdiv
   ( safeFdiv,
     UnifiedSafeFdiv (..),
@@ -31,6 +39,12 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import Grisette.Unified.Internal.Util (withMode)
 
+-- | Unified `Grisette.Internal.Core.Data.Class.SafeFdiv.safeFdiv` operation.
+--
+-- This function isn't able to infer the mode, so you need to provide the mode
+-- explicitly. For example:
+--
+-- > safeFdiv @mode a b
 safeFdiv ::
   forall mode e a m.
   (MonadError e m, UnifiedSafeFdiv mode e a m) =>
@@ -42,6 +56,9 @@ safeFdiv a b =
     Grisette.Internal.Core.Data.Class.SafeFdiv.safeFdiv a b
 {-# INLINE safeFdiv #-}
 
+-- | A class that provides unified floating division operations.
+--
+-- We use this type class to help resolve the constraints for `SafeFdiv`.
 class UnifiedSafeFdiv (mode :: EvalModeTag) e a m where
   withBaseUnifiedSafeFdiv :: ((SafeFdiv e a m) => r) -> r
 

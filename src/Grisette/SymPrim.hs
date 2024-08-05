@@ -21,36 +21,38 @@ module Grisette.SymPrim
     -- * 'AlgReal': algebraic real numbers. Can represent rational numbers.
     --   If come from solver's response, it may also represented by roots of
     --   polynomials or intervals.
-    -- * @'Bool' t'=->' 'Bool'@: functions represented as a table for the
-    --   input-output relations.
-    -- * @'Bool' t'-->' 'Bool'@: functions represented as a formula over some
-    --   bound variables.
+    -- * @'Bool' t'Grisette.SymPrim.=->' 'Bool'@: functions represented as a
+    --   table for the input-output relations.
+    -- * @'Bool' t'Grisette.SymPrim.-->' 'Bool'@: functions represented as a
+    --   formula over some bound variables.
     --
     -- We also provide symbolic counterparts for these types, along with the
     -- basic types 'Bool' and 'Integer'. These symbolic types can be directly
     -- translated to constraints in the SMT solver.
     --
-    -- * 'SymBool' ('Bool', symbolic Booleans)
-    -- * 'SymInteger' ('Integer', symbolic unbounded integers)
-    -- * @'SymIntN' n@ (@'IntN' n@, symbolic signed bit vectors of bit width
+    -- * t'SymBool' ('Bool', symbolic Booleans)
+    -- * t'SymInteger' ('Integer', symbolic unbounded integers)
+    -- * @t'SymIntN' n@ (@'IntN' n@, symbolic signed bit vectors of bit width
     --   @n@)
-    -- * @'SymWordN' n@ (@'WordN' n@, symbolic unsigned bit vectors of bit width
+    -- * @t'SymWordN' n@ (@'WordN' n@, symbolic unsigned bit vectors of bit width
     --   @n@)
-    -- * @'SymFP' eb sb@ (@'FP' eb sb@, symbolic IEEE-754 floating point numbers
+    -- * @t'SymFP' eb sb@ (@'FP' eb sb@, symbolic IEEE-754 floating point numbers
     --   with @eb@ exponent bits and @sb@ significand bits)
-    -- * 'SymAlgReal': symbolic algebraic real numbers.
-    -- * @'SymBool' t'=~>' 'SymBool'@ (@'Bool' t'=->' 'Bool'@, symbolic
+    -- * t'SymAlgReal': symbolic algebraic real numbers.
+    -- * @t'SymBool' t'Grisette.SymPrim.=~>' t'SymBool'@
+    --   (@'Bool' t'Grisette.SymPrim.=->' 'Bool'@, symbolic
     --   functions, uninterpreted or represented as a table for the
     --   input-output relations).
-    -- * @'SymBool' t'-~>' 'SymBool'@ (@'Bool' t'-->' 'Bool'@, symbolic
+    -- * @t'SymBool' t'Grisette.SymPrim.-~>' t'SymBool'@
+    --   (@'Bool' t'Grisette.SymPrim.-->' 'Bool'@, symbolic
     --   functions, uninterpreted or represented as a formula over some
     --   bound variables).
     --
     -- This module provides an operation to extract all primitive values from a
     -- symbolic value, with 'AllSyms'. The module also provides the
-    -- representation for symbols ('TypedSymbol'), symbol sets ('SymbolSet'),
-    -- and models ('Model'). They are useful when working with
-    -- t'Grisette.Core.EvalSym', t'Grisette.Core.ExtractSym', and
+    -- representation for symbols (@t'TypedSymbol'@), symbol sets
+    -- (@t'SymbolSet'@), and models (@t'Model'@). They are useful when working
+    -- with t'Grisette.Core.EvalSym', t'Grisette.Core.ExtractSym', and
     -- t'Grisette.Core.SubstSym'.
 
     -- * Extended types
@@ -82,10 +84,10 @@ module Grisette.SymPrim
     isymBV,
     arbitraryBV,
 
-    -- *** Some low-level helpers for writing instances for 'SomeBV'
+    -- *** Some low-level helpers for writing instances for t'SomeBV'
 
     -- | The functions here will check the bitwidths of the input bit-vectors
-    -- and raise 'BitwidthMismatch' if they do not match.
+    -- and raise t'BitwidthMismatch' if they do not match.
     unsafeSomeBV,
     unarySomeBV,
     unarySomeBVR1,

@@ -50,6 +50,7 @@ import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 
+-- | Implementation for 'UnifiedFP'.
 class
   ( BasicGrisetteType fp,
     ConSymConversion (FP eb sb) (SymFP eb sb) fp,

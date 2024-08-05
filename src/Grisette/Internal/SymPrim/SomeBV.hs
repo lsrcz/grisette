@@ -204,13 +204,13 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- | Non-indexed bitvectors.
 --
--- The creation of 'SomeBV' can be done with the `bv` function with a positive
+-- The creation of t'SomeBV' can be done with the `bv` function with a positive
 -- bit width and a value:
 --
 -- >>> bv 4 0xf :: SomeBV IntN
 -- 0xf
 --
--- Operations on two 'SomeBV' values require the bitwidths to be the same. So
+-- Operations on two t'SomeBV' values require the bitwidths to be the same. So
 -- you should check for the bit width (via `finiteBitSize`) before performing
 -- operations:
 --
@@ -790,37 +790,37 @@ instance
 
 -- Synonyms
 
--- | Type synonym for 'SomeBV' for concrete signed bitvectors.
+-- | Type synonym for t'SomeBV' for concrete signed bitvectors.
 type SomeIntN = SomeBV IntN
 
--- | Pattern synonym for 'SomeBV' for concrete signed bitvectors.
+-- | Pattern synonym for t'SomeBV' for concrete signed bitvectors.
 pattern SomeIntN :: () => (KnownNat n, 1 <= n) => IntN n -> SomeIntN
 pattern SomeIntN a = SomeBV a
 
--- | Type synonym for 'SomeBV' for concrete unsigned bitvectors.
+-- | Type synonym for t'SomeBV' for concrete unsigned bitvectors.
 type SomeWordN = SomeBV WordN
 
--- | Pattern synonym for 'SomeBV' for concrete unsigned bitvectors.
+-- | Pattern synonym for t'SomeBV' for concrete unsigned bitvectors.
 pattern SomeWordN :: () => (KnownNat n, 1 <= n) => WordN n -> SomeWordN
 pattern SomeWordN a = SomeBV a
 
--- | Type synonym for 'SomeBV' for symbolic signed bitvectors.
+-- | Type synonym for t'SomeBV' for symbolic signed bitvectors.
 type SomeSymIntN = SomeBV SymIntN
 
--- | Pattern synonym for 'SomeBV' for symbolic signed bitvectors.
+-- | Pattern synonym for t'SomeBV' for symbolic signed bitvectors.
 pattern SomeSymIntN :: () => (KnownNat n, 1 <= n) => SymIntN n -> SomeSymIntN
 pattern SomeSymIntN a = SomeBV a
 
--- | Type synonym for 'SomeBV' for symbolic unsigned bitvectors.
+-- | Type synonym for t'SomeBV' for symbolic unsigned bitvectors.
 type SomeSymWordN = SomeBV SymWordN
 
--- | Pattern synonym for 'SomeBV' for symbolic unsigned bitvectors.
+-- | Pattern synonym for t'SomeBV' for symbolic unsigned bitvectors.
 pattern SomeSymWordN :: () => (KnownNat n, 1 <= n) => SymWordN n -> SomeSymWordN
 pattern SomeSymWordN a = SomeBV a
 
 -- Construction
 
--- | Construct a 'SomeBV' with a given run-time bitwidth and a polymorphic
+-- | Construct a t'SomeBV' with a given run-time bitwidth and a polymorphic
 -- value for the underlying bitvector.
 unsafeSomeBV ::
   forall bv.
@@ -832,8 +832,8 @@ unsafeSomeBV n i
   | otherwise = case mkPositiveNatRepr (fromIntegral n) of
       SomePositiveNatRepr (_ :: NatRepr x) -> SomeBV (i (Proxy @x))
 
--- | Construct a symbolic 'SomeBV' with a given concrete 'SomeBV'. Similar to
--- 'con' but for 'SomeBV'.
+-- | Construct a symbolic t'SomeBV' with a given concrete t'SomeBV'. Similar to
+-- 'con' but for t'SomeBV'.
 --
 -- >>> a = bv 8 0x12 :: SomeIntN
 -- >>> conBV a :: SomeSymIntN
@@ -847,8 +847,8 @@ conBV ::
   SomeBV bv
 conBV (SomeBV (v :: cbv n)) = SomeBV $ con @(cbv n) @(bv n) v
 
--- | View pattern for symbolic 'SomeBV' to see if it contains a concrete value
--- and extract it. Similar to 'conView' but for 'SomeBV'.
+-- | View pattern for symbolic t'SomeBV' to see if it contains a concrete value
+-- and extract it. Similar to 'conView' but for t'SomeBV'.
 --
 -- >>> conBVView (bv 8 0x12 :: SomeSymIntN)
 -- Just 0x12
@@ -865,8 +865,8 @@ conBVView (SomeBV (bv :: bv n)) = case conView @(cbv n) bv of
   Just c -> Just $ SomeBV c
   Nothing -> Nothing
 
--- | Pattern synonym for symbolic 'SomeBV' to see if it contains a concrete
--- value and extract it. Similar to 'Grisette.Core.Con' but for 'SomeBV'.
+-- | Pattern synonym for symbolic t'SomeBV' to see if it contains a concrete
+-- value and extract it. Similar to 'Grisette.Core.Con' but for t'SomeBV'.
 --
 -- >>> case (bv 8 0x12 :: SomeSymIntN) of { ConBV c -> c; _ -> error "impossible" }
 -- 0x12
@@ -881,8 +881,8 @@ pattern ConBV c <- (conBVView -> Just c)
   where
     ConBV c = conBV c
 
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth and a symbol.
--- Similar to 'sym' but for 'SomeBV'.
+-- | Construct a symbolic t'SomeBV' with a given run-time bitwidth and a symbol.
+-- Similar to 'sym' but for t'SomeBV'.
 --
 -- >>> symBV 8 "a" :: SomeSymIntN
 -- a
@@ -896,8 +896,8 @@ symBV ::
   SomeBV bv
 symBV n s = unsafeSomeBV n $ \(_ :: proxy n) -> sym @(cbv n) s
 
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth and an
--- identifier. Similar to 'ssym' but for 'SomeBV'.
+-- | Construct a symbolic t'SomeBV' with a given run-time bitwidth and an
+-- identifier. Similar to 'ssym' but for t'SomeBV'.
 --
 -- >>> ssymBV 8 "a" :: SomeSymIntN
 -- a
@@ -911,8 +911,8 @@ ssymBV ::
   SomeBV bv
 ssymBV n s = unsafeSomeBV n $ \(_ :: proxy n) -> ssym @(cbv n) s
 
--- | Construct a symbolic 'SomeBV' with a given run-time bitwidth, an identifier
--- and an index. Similar to 'isym' but for 'SomeBV'.
+-- | Construct a symbolic t'SomeBV' with a given run-time bitwidth, an identifier
+-- and an index. Similar to 'isym' but for t'SomeBV'.
 --
 -- >>> isymBV 8 "a" 1 :: SomeSymIntN
 -- a@1
@@ -927,7 +927,7 @@ isymBV ::
   SomeBV bv
 isymBV n s i = unsafeSomeBV n $ \(_ :: proxy n) -> isym @(cbv n) s i
 
--- | Generate an arbitrary 'SomeBV' with a given run-time bitwidth.
+-- | Generate an arbitrary t'SomeBV' with a given run-time bitwidth.
 arbitraryBV ::
   forall bv.
   (forall n. (KnownNat n, 1 <= n) => Arbitrary (bv n)) =>
@@ -944,20 +944,20 @@ arbitraryBV n
 -- Helpers
 
 -- | Lift a unary operation on sized bitvectors that returns anything to
--- 'SomeBV'.
+-- t'SomeBV'.
 unarySomeBV :: forall bv r. (forall n. (KnownNat n, 1 <= n) => bv n -> r) -> SomeBV bv -> r
 unarySomeBV f (SomeBV bv) = f bv
 {-# INLINE unarySomeBV #-}
 
 -- | Lift a unary operation on sized bitvectors that returns a bitvector to
--- 'SomeBV'. The result will also be wrapped with 'SomeBV'.
+-- t'SomeBV'. The result will also be wrapped with t'SomeBV'.
 unarySomeBVR1 ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n) -> SomeBV bv -> SomeBV bv
 unarySomeBVR1 f = unarySomeBV (SomeBV . f)
 {-# INLINE unarySomeBVR1 #-}
 
 -- | Lift a binary operation on sized bitvectors that returns anything to
--- 'SomeBV'. Crash if the bitwidths do not match.
+-- t'SomeBV'. Crash if the bitwidths do not match.
 binSomeBV ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> r) ->
   SomeBV bv ->
@@ -970,7 +970,7 @@ binSomeBV f (SomeBV (l :: bv l)) (SomeBV (r :: bv r)) =
 {-# INLINE binSomeBV #-}
 
 -- | Lift a ternary operation on sized bitvectors that returns anything to
--- 'SomeBV'. Crash if the bitwidths do not match.
+-- t'SomeBV'. Crash if the bitwidths do not match.
 ternSomeBV ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n -> r) ->
   SomeBV bv ->
@@ -984,7 +984,7 @@ ternSomeBV f (SomeBV (a :: bv a)) (SomeBV (b :: bv b)) (SomeBV (c :: bv c)) =
 {-# INLINE ternSomeBV #-}
 
 -- | Lift a binary operation on sized bitvectors that returns a bitvector to
--- 'SomeBV'. The result will also be wrapped with 'SomeBV'. Crash if the
+-- t'SomeBV'. The result will also be wrapped with t'SomeBV'. Crash if the
 -- bitwidths do not match.
 binSomeBVR1 ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n) ->
@@ -995,7 +995,7 @@ binSomeBVR1 f = binSomeBV (\a b -> SomeBV $ f a b)
 {-# INLINE binSomeBVR1 #-}
 
 -- | Lift a binary operation on sized bitvectors that returns two bitvectors to
--- 'SomeBV'. The results will also be wrapped with 'SomeBV'. Crash if the
+-- t'SomeBV'. The results will also be wrapped with t'SomeBV'. Crash if the
 -- bitwidths do not match.
 binSomeBVR2 ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> (bv n, bv n)) ->
@@ -1006,7 +1006,7 @@ binSomeBVR2 f = binSomeBV (\a b -> let (x, y) = f a b in (SomeBV x, SomeBV y))
 {-# INLINE binSomeBVR2 #-}
 
 -- | Lift a ternary operation on sized bitvectors that returns a bitvector to
--- 'SomeBV'. The result will also be wrapped with 'SomeBV'. Crash if the
+-- t'SomeBV'. The result will also be wrapped with t'SomeBV'. Crash if the
 -- bitwidths do not match.
 ternSomeBVR1 ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n -> bv n) ->
@@ -1018,8 +1018,8 @@ ternSomeBVR1 f = ternSomeBV (\a b c -> SomeBV $ f a b c)
 {-# INLINE ternSomeBVR1 #-}
 
 -- | Lift a binary operation on sized bitvectors that returns anything wrapped
--- with 'ExceptT' to 'SomeBV'. If the bitwidths do not match, throw an
--- `BitwidthMismatch` error to the monadic context.
+-- with 'ExceptT' to t'SomeBV'. If the bitwidths do not match, throw an
+-- t`BitwidthMismatch` error to the monadic context.
 binSomeBVSafe ::
   ( MonadError (Either BitwidthMismatch e) m,
     TryMerge m,
@@ -1038,10 +1038,10 @@ binSomeBVSafe f (SomeBV (l :: bv l)) (SomeBV (r :: bv r)) =
 {-# INLINE binSomeBVSafe #-}
 
 -- | Lift a binary operation on sized bitvectors that returns a bitvector
--- wrapped with 'ExceptT' to 'SomeBV'. The result will also be wrapped with
--- 'SomeBV'.
+-- wrapped with 'ExceptT' to t'SomeBV'. The result will also be wrapped with
+-- t'SomeBV'.
 --
--- If the bitwidths do not match, throw an `BitwidthMismatch` error to the
+-- If the bitwidths do not match, throw an t`BitwidthMismatch` error to the
 -- monadic context.
 binSomeBVSafeR1 ::
   ( MonadError (Either BitwidthMismatch e) m,
@@ -1057,10 +1057,10 @@ binSomeBVSafeR1 f = binSomeBVSafe (\l r -> mrgFmap SomeBV $ f l r)
 {-# INLINE binSomeBVSafeR1 #-}
 
 -- | Lift a binary operation on sized bitvectors that returns two bitvectors
--- wrapped with 'ExceptT' to 'SomeBV'. The results will also be wrapped with
--- 'SomeBV'.
+-- wrapped with 'ExceptT' to t'SomeBV'. The results will also be wrapped with
+-- t'SomeBV'.
 --
--- If the bitwidths do not match, throw an `BitwidthMismatch` error to the
+-- If the bitwidths do not match, throw an t`BitwidthMismatch` error to the
 -- monadic context.
 binSomeBVSafeR2 ::
   ( MonadError (Either BitwidthMismatch e) m,

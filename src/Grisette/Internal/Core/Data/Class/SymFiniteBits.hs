@@ -53,19 +53,27 @@ import Grisette.Internal.SymPrim.SomeBV
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 
+-- | Set a bit in a concrete value to a specific value.
 setBitTo :: (Bits a) => a -> Int -> Bool -> a
 setBitTo v i b = if b then setBit v i else clearBit v i
 
+-- | Bit-blast a concrete value into a list of concrete bits. The first element
+-- in the resulting list corresponds to the least significant bit.
 bitBlast :: (FiniteBits a) => a -> [Bool]
 bitBlast x = map (testBit x) [0 .. finiteBitSize x - 1]
 
+-- | Extract the least significant bit of a concrete value.
 lsb :: (Bits a) => a -> Bool
 lsb x = testBit x 0
 
+-- | Extract the most significant bit of a concrete value.
 msb :: (FiniteBits a) => a -> Bool
 msb x = testBit x (finiteBitSize x - 1)
 
+-- | Type class for assembling concrete bits to a bit-vector.
 class (FiniteBits a) => FromBits a where
+  -- | Assembling concrete bits to a bit-vector. The first boolean value in the
+  -- list corresponding to the least signification value.
   fromBits :: [Bool] -> a
   fromBits bits
     | length bits /= finiteBitSize (undefined :: a) =
@@ -113,9 +121,13 @@ instance FromBits SomeWordN where
 
 -- | A class for symbolic finite bit operations.
 class (FiniteBits a, ITEOp a) => SymFiniteBits a where
+  -- | Test a symbolic bit in a symbolic bit-vector.
   symTestBit :: a -> Int -> SymBool
+  -- | Set a bit in a symbolic value to a specific value.
   symSetBitTo :: a -> Int -> SymBool -> a
   symSetBitTo v i b = symIte b (setBit v i) (clearBit v i)
+  -- | Assembling symbolic bits to a symbolic bit-vector. The first symbolic
+  -- boolean value in the list corresponding to the least signification value.
   symFromBits :: [SymBool] -> a
 
 instance SymFiniteBits (SomeBV SymIntN) where

@@ -174,7 +174,7 @@ instance SimpleMergeable FreshIndex where
 -- | Monad class for fresh symbolic value generation.
 --
 -- The monad should be a reader monad for the 'Identifier' and a state monad for
--- the 'FreshIndex'.
+-- the t'FreshIndex'.
 class (Monad m) => MonadFresh m where
   -- | Get the current index for fresh variable generation.
   getFreshIndex :: m FreshIndex
@@ -388,7 +388,7 @@ instance (MonadFresh m, Monoid w) => MonadFresh (RWSStrict.RWST r w s m) where
   localIdentifier f (RWSStrict.RWST m) =
     RWSStrict.RWST $ \r s -> localIdentifier f (m r s)
 
--- | 'FreshT' specialized with Identity.
+-- | t'FreshT' specialized with Identity.
 type Fresh = FreshT Identity
 
 -- | Run the symbolic generation with the given identifier and 0 as the initial
@@ -412,7 +412,7 @@ instance (Monad m) => MonadFresh (FreshT m) where
 -- This ensures that we can generate those types with complex merging rules.
 --
 -- The uniqueness of symbolic constants is managed with the a monadic context.
--- 'Fresh' and 'FreshT' can be useful.
+-- 'Fresh' and t'FreshT' can be useful.
 class (Mergeable a) => GenSym spec a where
   -- | Generate a symbolic value given some specification. Within a single
   -- `MonadFresh` context, calls to `fresh` would generate unique symbolic
@@ -473,7 +473,7 @@ genSym = runFresh . fresh
 -- The result will __/not/__ be wrapped in a union-like monad.
 --
 -- The uniqueness of symbolic constants is managed with the a monadic context.
--- 'Fresh' and 'FreshT' can be useful.
+-- 'Fresh' and t'FreshT' can be useful.
 class GenSymSimple spec a where
   -- | Generate a symbolic value given some specification. The uniqueness is ensured.
   --

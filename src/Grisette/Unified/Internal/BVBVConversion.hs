@@ -10,6 +10,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.BVBVConversion
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.BVBVConversion
   ( UnifiedBVBVConversion,
     AllUnifiedBVBVConversion,
@@ -64,6 +72,7 @@ SYMINSTANCE(SymIntN, SymWordN)
 SYMINSTANCE(SymIntN, SymIntN)
 #endif
 
+-- | Unified constraints for conversion between bit-vectors.
 class
   ( UnifiedBVBVConversionImpl
       mode
@@ -136,6 +145,7 @@ instance
   ) =>
   UnifiedBVBVConversion (mode :: EvalModeTag) n0 n1
 
+-- | Evaluation mode with unified conversion from bit-vectors to bit-vectors.
 class
   ( forall n0 n1.
     (KnownNat n0, KnownNat n1, 1 <= n0, 1 <= n1) =>

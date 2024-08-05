@@ -198,15 +198,15 @@ instance (Mergeable e) => Mergeable1 (CBMCEither e) where
 cbmcEither :: forall a c b. (a -> c) -> (b -> c) -> CBMCEither a b -> c
 cbmcEither l r v = either l r (unsafeCoerce v)
 
--- | Wrap an 'Either' value in 'CBMCExceptT'
+-- | Wrap an 'Either' value in t'CBMCExceptT'
 cbmcExcept :: (Monad m) => Either e a -> CBMCExceptT e m a
 cbmcExcept m = CBMCExceptT (return $ CBMCEither m)
 
--- | Map the error and values in a 'CBMCExceptT'
+-- | Map the error and values in a t'CBMCExceptT'
 mapCBMCExceptT :: (m (Either e a) -> n (Either e' b)) -> CBMCExceptT e m a -> CBMCExceptT e' n b
 mapCBMCExceptT f m = CBMCExceptT $ (unsafeCoerce . f . unsafeCoerce) (runCBMCExceptT m)
 
--- | Map the error in a 'CBMCExceptT'
+-- | Map the error in a t'CBMCExceptT'
 withCBMCExceptT :: (Functor m) => (e -> e') -> CBMCExceptT e m a -> CBMCExceptT e' m a
 withCBMCExceptT f = mapCBMCExceptT $ fmap $ either (Left . f) Right
 

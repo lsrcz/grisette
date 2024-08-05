@@ -116,6 +116,7 @@ type SomeBVPair mode word int =
   ) ::
     Constraint
 
+-- | Implementation for 'UnifiedBV'.
 class
   ( BVConstraint mode (GetWordN mode n) (GetIntN mode n),
     ConSymConversion (WordN n) (SymWordN n) (GetWordN mode n),

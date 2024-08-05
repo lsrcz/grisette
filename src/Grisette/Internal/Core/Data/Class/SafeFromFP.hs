@@ -6,6 +6,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Internal.Core.Data.Class.SafeFromFP
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Core.Data.Class.SafeFromFP (SafeFromFP (..)) where
 
 import Control.Monad.Error.Class (MonadError (throwError))
@@ -45,6 +53,8 @@ import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 
+-- | Safe conversion from floating point numbers that throws exceptions when
+-- the result isn't representable by the type.
 class
   (MonadError e m, TryMerge m, IEEEFPConvertible a fp fprd) =>
   SafeFromFP e a fp fprd m

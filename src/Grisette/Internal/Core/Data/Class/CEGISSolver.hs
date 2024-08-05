@@ -332,7 +332,7 @@ solverCegisMultiInputs ::
   handle ->
   -- | Initial symbolic inputs. The solver will try to find a
   -- program that works on all the inputs representable by these inputs (see
-  -- 'CEGISCondition').
+  -- t'CEGISCondition').
   [input] ->
   -- | The condition for the solver to solve. All the
   -- symbolic constants that are not in the inputs will
@@ -393,7 +393,7 @@ solverCegis ::
   handle ->
   -- | Initial symbolic inputs. The solver will try to find a
   -- program that works on all the inputs representable by it (see
-  -- 'CEGISCondition').
+  -- t'CEGISCondition').
   inputs ->
   -- | The condition for the solver to solve. All the
   -- symbolic constants that are not in the inputs will
@@ -751,7 +751,7 @@ solverCegisForAllExceptStdVC synthesizerSolver verifierSolver inputs =
 
 -- |
 -- CEGIS with multiple (possibly symbolic) inputs. Solves the following formula
--- (see 'CEGISCondition' for details).
+-- (see t'CEGISCondition' for details).
 --
 -- \[
 --   \forall P. (\exists I\in\mathrm{inputs}. \mathrm{pre}(P, I)) \wedge (\forall I\in\mathrm{inputs}. \mathrm{pre}(P, I)\implies \mathrm{post}(P, I))
@@ -769,7 +769,7 @@ cegisMultiInputs ::
   config ->
   -- | Initial symbolic inputs. The solver will try to find a
   -- program that works on all the inputs representable by these inputs (see
-  -- 'CEGISCondition').
+  -- t'CEGISCondition').
   [input] ->
   -- | The condition for the solver to solve. All the
   -- symbolic constants that are not in the inputs will
@@ -808,7 +808,7 @@ cegis ::
   config ->
   -- | Initial symbolic inputs. The solver will try to find a
   -- program that works on all the inputs representable by it (see
-  -- 'CEGISCondition').
+  -- t'CEGISCondition').
   inputs ->
   -- | The condition for the solver to solve. All the
   -- symbolic constants that are not in the inputs will

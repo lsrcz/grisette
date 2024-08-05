@@ -8,6 +8,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.FPFPConversion
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.FPFPConversion
   ( UnifiedFPFPConversion,
     AllUnifiedFPFPConversion,
@@ -62,6 +70,8 @@ instance
     (SymFP eb1 sb1)
     SymFPRoundingMode
 
+-- | Unified constraints for conversion from floating point numbers to floating
+-- point numbers.
 class
   ( UnifiedFPFPConversionImpl
       (mode :: EvalModeTag)
@@ -90,6 +100,8 @@ instance
   ) =>
   UnifiedFPFPConversion mode eb0 sb0 eb1 sb1
 
+-- | Evaluation mode with unified conversion from floating-points to
+-- floating-points.
 class
   ( forall eb0 sb0 eb1 sb1.
     (ValidFP eb0 sb0, ValidFP eb1 sb1) =>

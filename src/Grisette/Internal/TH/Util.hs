@@ -74,7 +74,7 @@ import Language.Haskell.TH.Datatype.TyVarBndr
   )
 import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
 
--- | Get the unqualified name of a 'Name'.
+-- | Get the unqualified name of a t'Name'.
 occName :: Name -> String
 occName (Name (OccName name) _) = name
 

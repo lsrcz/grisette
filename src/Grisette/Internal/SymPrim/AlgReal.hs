@@ -36,7 +36,7 @@ import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 -- | A univariate polynomial with integer coefficients.
 --
 -- For instance, @5x^3+2x-5@ is represented as
--- @'AlgRealPoly' [(5, 3), (2, 1), (-5, 0)]@.
+-- @v'AlgRealPoly' [(5, 3), (2, 1), (-5, 0)]@.
 newtype AlgRealPoly = AlgRealPoly [(Integer, Integer)]
   deriving (Eq, Generic, Lift)
   deriving newtype (Hashable, NFData)
