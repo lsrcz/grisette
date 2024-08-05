@@ -33,6 +33,7 @@ module Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
     liftMrgIte,
     mrgIte2,
     liftMrgIte2,
+    simpleMerge,
   )
 where
 
@@ -54,6 +55,7 @@ import Grisette.Internal.Core.Control.Exception (AssertionError)
 import Grisette.Internal.Core.Control.Monad.Union (liftUnion)
 import Grisette.Internal.Core.Data.Class.GenSym (FreshT)
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import qualified Grisette.Internal.Core.Data.Class.PlainUnion as Grisette
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
     SimpleMergeable1,
@@ -113,6 +115,16 @@ liftBaseMonad b =
     (withBaseBranching @mode @m $ mrgSingle . runIdentity $ b)
     (withBaseBranching @mode @m $ liftUnion b)
 {-# INLINE liftBaseMonad #-}
+
+simpleMerge ::
+  forall mode a.
+  (Typeable mode, UnifiedSimpleMergeable mode a) =>
+  BaseMonad mode a ->
+  a
+simpleMerge =
+  withMode @mode
+    runIdentity
+    (withBaseSimpleMergeable @mode @a Grisette.simpleMerge)
 
 -- | Unified `Grisette.mrgIte`.
 mrgIte ::
