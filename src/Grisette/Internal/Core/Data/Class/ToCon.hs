@@ -91,7 +91,7 @@ import Grisette.Internal.SymPrim.BV
     IntN (IntN),
     WordN (WordN),
   )
-import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, FP32, FP64, FPRoundingMode, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term

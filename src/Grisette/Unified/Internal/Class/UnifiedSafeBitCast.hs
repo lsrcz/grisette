@@ -34,7 +34,7 @@ import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.SafeBitCast (SafeBitCast)
 import qualified Grisette.Internal.Core.Data.Class.SafeBitCast
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (NotRepresentableFPError, FP, ValidFP)
+import Grisette.Internal.SymPrim.FP (FP, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable

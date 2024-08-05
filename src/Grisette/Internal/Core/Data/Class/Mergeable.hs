@@ -133,9 +133,9 @@ import Grisette.Internal.SymPrim.BV
     WordN,
   )
 import Grisette.Internal.SymPrim.FP
-  ( NotRepresentableFPError,
-    FP,
+  ( FP,
     FPRoundingMode,
+    NotRepresentableFPError,
     ValidFP,
     withValidFPProofs,
   )
