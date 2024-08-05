@@ -20,6 +20,7 @@ module Grisette.Unified.Internal.UnifiedFP
   ( GetFP,
     GetFPRoundingMode,
     UnifiedFP,
+    SafeUnifiedFP,
     AllUnifiedFP,
     UnifiedFPImpl,
   )
@@ -126,6 +127,8 @@ instance
   (UnifiedFPImpl mode fpn eb sb fp rd) =>
   SafeUnifiedFPImpl mode fpn eb sb fp rd m
 
+-- | This class is needed as constraint in user code prior to GHC 9.2.1.
+-- See the notes in 'Grisette.Unified.Internal.EvalMode.EvalMode'.
 class
   ( SafeUnifiedFPImpl
       mode
