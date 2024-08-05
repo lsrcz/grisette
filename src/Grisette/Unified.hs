@@ -32,6 +32,7 @@ module Grisette.Unified
     liftMrgIte,
     mrgIte2,
     liftMrgIte2,
+    simpleMerge,
 
     -- ** Unified ITE operator
     UnifiedITEOp (..),
@@ -228,6 +229,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
     mrgIte,
     mrgIte1,
     mrgIte2,
+    simpleMerge,
   )
 import Grisette.Unified.Internal.Class.UnifiedSymEq
   ( UnifiedSymEq (..),
