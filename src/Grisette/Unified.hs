@@ -63,6 +63,26 @@ module Grisette.Unified
     mrgMax,
     mrgMin,
 
+    -- ** Unified finite bits
+    UnifiedFiniteBits (..),
+    symTestBit,
+    symSetBitTo,
+    symFromBits,
+    symBitBlast,
+    symLsb,
+    symMsb,
+    symPopCount,
+    symCountLeadingZeros,
+    symCountTrailingZeros,
+
+    -- ** Unified conversions
+    UnifiedFromIntegral (..),
+    symFromIntegral,
+    UnifiedSafeBitCast (..),
+    safeBitCast,
+    UnifiedSafeFromFP (..),
+    safeFromFP,
+
     -- ** Unified safe ops
     UnifiedSafeDiv (..),
     safeDiv,
@@ -83,6 +103,8 @@ module Grisette.Unified
     safeSymShiftR,
     safeSymStrictShiftL,
     safeSymStrictShiftR,
+    UnifiedSafeFdiv (..),
+    safeFdiv,
 
     -- * Unified types
 
@@ -102,6 +124,16 @@ module Grisette.Unified
     GetInteger,
     UnifiedInteger,
 
+    -- ** FP
+    GetFP,
+    GetFPRoundingMode,
+    UnifiedFP,
+    SafeUnifiedFP,
+
+    -- ** AlgReal
+    GetAlgReal,
+    UnifiedAlgReal,
+
     -- ** Data
     GetData,
     UnifiedData,
@@ -111,10 +143,30 @@ module Grisette.Unified
 where
 
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
+import Grisette.Unified.Internal.Class.UnifiedFiniteBits
+  ( UnifiedFiniteBits (..),
+    symBitBlast,
+    symCountLeadingZeros,
+    symCountTrailingZeros,
+    symFromBits,
+    symLsb,
+    symMsb,
+    symPopCount,
+    symSetBitTo,
+    symTestBit,
+  )
+import Grisette.Unified.Internal.Class.UnifiedFromIntegral
+  ( UnifiedFromIntegral (..),
+    symFromIntegral,
+  )
 import Grisette.Unified.Internal.Class.UnifiedITEOp
   ( UnifiedITEOp (..),
     symIte,
     symIteMerge,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeBitCast
+  ( UnifiedSafeBitCast (..),
+    safeBitCast,
   )
 import Grisette.Unified.Internal.Class.UnifiedSafeDiv
   ( UnifiedSafeDiv (..),
@@ -124,6 +176,14 @@ import Grisette.Unified.Internal.Class.UnifiedSafeDiv
     safeQuot,
     safeQuotRem,
     safeRem,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeFdiv
+  ( UnifiedSafeFdiv (..),
+    safeFdiv,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSafeFromFP
+  ( UnifiedSafeFromFP (..),
+    safeFromFP,
   )
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith (..),
@@ -187,6 +247,10 @@ import Grisette.Unified.Internal.EvalModeTag
     IsConMode,
   )
 import Grisette.Unified.Internal.MonadWithMode (MonadWithMode)
+import Grisette.Unified.Internal.UnifiedAlgReal
+  ( GetAlgReal,
+    UnifiedAlgReal,
+  )
 import Grisette.Unified.Internal.UnifiedBV
   ( GetIntN,
     GetSomeIntN,
@@ -202,6 +266,12 @@ import Grisette.Unified.Internal.UnifiedData
     UnifiedData,
     extractData,
     wrapData,
+  )
+import Grisette.Unified.Internal.UnifiedFP
+  ( GetFP,
+    GetFPRoundingMode,
+    SafeUnifiedFP,
+    UnifiedFP,
   )
 import Grisette.Unified.Internal.UnifiedInteger
   ( GetInteger,

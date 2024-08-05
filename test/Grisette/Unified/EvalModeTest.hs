@@ -30,6 +30,8 @@ import Grisette
     BitwidthMismatch,
     Default (Default),
     IEEEFPConstants (fpNaN),
+    IEEEFPConvertible (toFP),
+    IEEEFPRoundingMode (rne),
     IntN,
     Mergeable,
     SymBool,
@@ -51,10 +53,12 @@ import Grisette.Unified
     GetIntN,
     GetInteger,
     GetSomeIntN,
+    GetWordN,
     MonadWithMode,
     extractData,
     mrgIte,
     safeDiv,
+    symFromIntegral,
     symIte,
     (.<),
     (.==),
@@ -65,7 +69,7 @@ import Test.HUnit ((@?=))
 
 #if MIN_VERSION_base(4,16,0)
 import GHC.TypeLits (KnownNat, type (<=))
-import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl(GetFP))
+import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl(GetFP, GetFPRoundingMode))
 import Grisette.Internal.SymPrim.FP (NotRepresentableFPError (NaNError))
 import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
 #else
@@ -252,6 +256,21 @@ safeFPToBVBitCast ::
   m (GetIntN mode 8)
 safeFPToBVBitCast = safeBitCast @mode
 
+fpToFPConvert ::
+  forall mode.
+  (EvalMode mode) =>
+  GetFPRoundingMode mode ->
+  GetFP mode 4 4 ->
+  GetFP mode 3 5
+fpToFPConvert = toFP
+
+bvToBVFromIntegral ::
+  forall mode.
+  (EvalMode mode) =>
+  GetIntN mode 4 ->
+  GetWordN mode 4
+bvToBVFromIntegral = symFromIntegral @mode
+
 evalModeTest :: Test
 evalModeTest =
   testGroup
@@ -359,6 +378,20 @@ evalModeTest =
                   @?= ( Grisette.safeBitCast b ::
                           ExceptT NotRepresentableFPError Union (SymIntN 8)
                       )
+            ],
+          testGroup
+            "FP/FP"
+            [ testCase "Con" $ do
+                fpToFPConvert @'Con rne 1 @?= 1,
+              testCase "Sym" $ do
+                fpToFPConvert @'Sym rne 1 @?= 1
+            ],
+          testGroup
+            "BV/BV"
+            [ testCase "Con" $ do
+                bvToBVFromIntegral @'Con 0xa @?= 0xa,
+              testCase "Sym" $ do
+                bvToBVFromIntegral @'Sym 0xa @?= 0xa
             ]
         ]
     ]
