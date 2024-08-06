@@ -17,8 +17,8 @@
 
 module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 
-import Control.Monad.Identity (Identity (Identity))
 import Control.Monad.Except (ExceptT, MonadError (throwError))
+import Control.Monad.Identity (Identity (Identity))
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
