@@ -60,6 +60,7 @@ deriveAll ''TNoMode
 mkUnifiedConstructor' ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
+
 deriveAll ''TNoArg
 mkUnifiedConstructor "mk" ''TNoArg
 
