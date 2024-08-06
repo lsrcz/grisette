@@ -17,6 +17,7 @@
 
 module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 
+import Control.Monad.Identity (Identity (Identity))
 import Control.Monad.Except (ExceptT, MonadError (throwError))
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
@@ -103,8 +104,8 @@ unifiedClassesTest =
       testGroup
         "UnifiedSEq"
         [ testCase "testSEq 'Con" $ do
-            let x1 = X True [1 :: WordN 8] XNil [XNil]
-            let x2 = X False [1 :: WordN 8] XNil [XNil]
+            let x1 = X True [1 :: WordN 8] (Identity XNil) [Identity XNil]
+            let x2 = X False [1 :: WordN 8] (Identity XNil) [Identity XNil]
             testSEq x1 x1 @?= True
             testSEq x1 x2 @?= False,
           testCase "testSEq 'Sym" $ do

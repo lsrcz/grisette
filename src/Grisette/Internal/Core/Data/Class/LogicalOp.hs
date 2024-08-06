@@ -11,6 +11,7 @@ module Grisette.Internal.Core.Data.Class.LogicalOp
   )
 where
 
+import Control.Monad.Identity (Identity)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.Prim.Term
   ( pevalAndTerm,
@@ -120,3 +121,12 @@ instance LogicalOp SymBool where
   symNot (SymBool v) = SymBool $ pevalNotTerm v
   (SymBool l) `symXor` (SymBool r) = SymBool $ pevalXorTerm l r
   (SymBool l) `symImplies` (SymBool r) = SymBool $ pevalImplyTerm l r
+
+instance (LogicalOp a) => LogicalOp (Identity a) where
+  true = pure true
+  false = pure false
+  (.||) = liftA2 (.||)
+  (.&&) = liftA2 (.&&)
+  symNot = fmap symNot
+  symXor = liftA2 symXor
+  symImplies = liftA2 symImplies

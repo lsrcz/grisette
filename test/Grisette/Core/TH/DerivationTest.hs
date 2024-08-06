@@ -18,6 +18,7 @@
 module Grisette.Core.TH.DerivationTest (concreteT, symbolicT) where
 
 import Data.Maybe (fromJust)
+import Control.Monad.Identity (Identity (Identity))
 import Grisette
   ( Default (Default),
     SymInteger,
@@ -34,7 +35,8 @@ data T mode n a
 deriveAll ''T
 
 concreteT :: T 'Con 10 Integer
-concreteT = toSym (T True [10] [10 :: Integer] TNil :: T 'Con 10 Integer)
+concreteT =
+    toSym (T True [10] [10 :: Integer] (Identity TNil) :: T 'Con 10 Integer)
 
 symbolicT :: T 'Sym 10 SymInteger
 symbolicT = fromJust $ toCon (toSym concreteT :: T 'Sym 10 SymInteger)

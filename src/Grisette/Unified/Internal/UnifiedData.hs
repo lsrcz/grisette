@@ -7,7 +7,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -29,6 +29,7 @@ module Grisette.Unified.Internal.UnifiedData
 where
 
 import Control.DeepSeq (NFData)
+import Control.Monad.Identity (Identity (Identity, runIdentity))
 import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
@@ -53,6 +54,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift)
 
 class
@@ -75,19 +77,17 @@ class
     (SubstSym v) => SubstSym u,
     (UnifiedITEOp mode v) => UnifiedITEOp mode u,
     (UnifiedSimpleMergeable mode v) => UnifiedSimpleMergeable mode u,
-    (mode ~ 'Sym) => UnifiedSimpleMergeable mode u,
     (UnifiedSymEq mode v) => UnifiedSymEq mode u,
     (UnifiedSymOrd mode v) => UnifiedSymOrd mode u,
     forall b. (ToCon v b) => ToCon u b,
     forall a. (ToSym a v) => ToSym a u
   ) =>
   UnifiedDataImpl (mode :: EvalModeTag) v u
-    | u mode -> v,
-      u v -> mode
+    | u -> mode v
   where
   -- | Get a unified data type. Resolves to @v@ in 'Con' mode, and @'Union' v@
   -- in 'Sym' mode.
-  type GetData mode v
+  type GetData mode v = r | r -> mode v
 
   -- | Wraps a value into the unified data type.
   wrapData :: v -> u
@@ -95,12 +95,12 @@ class
   -- | Extracts a value from the unified data type.
   extractData :: (Monad m, UnifiedBranching mode m) => u -> m v
 
-instance (Mergeable v) => UnifiedDataImpl 'Con v v where
-  type GetData 'Con v = v
-  wrapData = id
+instance (Mergeable v) => UnifiedDataImpl 'Con v (Identity v) where
+  type GetData 'Con v = Identity v
+  wrapData = Identity
   extractData ::
-    forall m. (Mergeable v, Monad m, UnifiedBranching Con m) => v -> m v
-  extractData = withBaseBranching @'Con @m mrgSingle
+    forall m. (Mergeable v, Monad m, UnifiedBranching Con m) => Identity v -> m v
+  extractData = withBaseBranching @'Con @m $ mrgSingle . runIdentity
 
 instance (Mergeable v) => UnifiedDataImpl 'Sym v (Union v) where
   type GetData 'Sym v = Union v
@@ -115,7 +115,21 @@ class (UnifiedDataImpl mode v (GetData mode v)) => UnifiedData mode v
 
 instance (UnifiedDataImpl bool v (GetData bool v)) => UnifiedData bool v
 
--- | Evaluation mode with unified data types.
-class (forall v. (Mergeable v) => UnifiedData bool v) => AllUnifiedData bool
+class
+  (UnifiedSimpleMergeable 'Sym (GetData 'Sym v)) =>
+  UnifiedDataSimpleMergeable v
 
-instance (forall v. (Mergeable v) => UnifiedData bool v) => AllUnifiedData bool
+instance (Mergeable v) => UnifiedDataSimpleMergeable v
+
+-- | Evaluation mode with unified data types.
+class
+  ( forall v. (Mergeable v) => UnifiedData bool v,
+    forall v. (Mergeable v) => UnifiedDataSimpleMergeable v
+  ) =>
+  AllUnifiedData bool
+
+instance
+  ( forall v. (Mergeable v) => UnifiedData bool v,
+    forall v. (Mergeable v) => UnifiedDataSimpleMergeable v
+  ) =>
+  AllUnifiedData bool

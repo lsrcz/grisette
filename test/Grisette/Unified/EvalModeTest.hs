@@ -121,7 +121,7 @@ fbv ::
   GetIntN mode n ->
   m (GetIntN mode n)
 fbv l r = do
-  v <- safeDiv @mode @ArithException l r
+  v <- safeDiv @mode l r
   mrgReturn $
     mrgIte @mode
       (l .== r)
@@ -235,7 +235,7 @@ fdata ::
   GetData mode (A mode) ->
   m (GetIntN mode 8)
 fdata d = do
-  a :: A mode <- extractData @mode d
+  a <- extractData d
   case a of
     A v -> safeDiv @mode v (v - 1)
     AT v -> fdata v
@@ -395,8 +395,8 @@ evalModeTest =
       testGroup
         "GetData"
         [ testCase "Con" $ do
-            fdata @'Con (A 2) @?= Right 2
-            fdata @'Con (A 1) @?= Left DivideByZero,
+            fdata @'Con (Identity $ A 2) @?= Right 2
+            fdata @'Con (Identity $ A 1) @?= Left DivideByZero,
           testCase "Sym" $ do
             let a = "a" :: SymIntN 8
             fdata (mrgReturn $ A a)
