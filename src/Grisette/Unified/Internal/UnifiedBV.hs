@@ -123,8 +123,6 @@ class
     UnifiedSimpleMergeable mode (GetWordN mode n),
     ConSymConversion (IntN n) (SymIntN n) (GetIntN mode n),
     UnifiedSimpleMergeable mode (GetIntN mode n),
-    SizedBV wordn,
-    SizedBV intn,
     wordn ~ GetWordN mode,
     intn ~ GetIntN mode,
     word ~ wordn n,
@@ -315,7 +313,9 @@ class
     ) =>
     SafeUnifiedSomeBV mode m,
     forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
-    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode),
+    SizedBV (GetWordN mode),
+    SizedBV (GetIntN mode)
   ) =>
   AllUnifiedBV mode
 
@@ -333,6 +333,8 @@ instance
     ) =>
     SafeUnifiedSomeBV mode m,
     forall n. (KnownNat n, 1 <= n) => UnifiedBV mode n,
-    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode)
+    SomeBVPair mode (GetSomeWordN mode) (GetSomeIntN mode),
+    SizedBV (GetWordN mode),
+    SizedBV (GetIntN mode)
   ) =>
   AllUnifiedBV mode
