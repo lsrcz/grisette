@@ -39,6 +39,7 @@ import Data.Kind (Constraint, Type)
 import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast)
 import Grisette.Internal.Core.Data.Class.BitVector (BV, SizedBV)
+import Grisette.Internal.Core.Data.Class.SafeDiv (DivOr)
 import Grisette.Internal.Core.Data.Class.SignConversion (SignConversion)
 import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
 import Grisette.Internal.Core.Data.Class.SymShift (SymShift)
@@ -111,6 +112,8 @@ type SomeBVPair mode word int =
   ( BVConstraint mode word int,
     BV word,
     BV int,
+    DivOr word,
+    DivOr int,
     ConSymConversion SomeWordN SomeSymWordN word,
     ConSymConversion SomeIntN SomeSymIntN int
   ) ::
@@ -129,6 +132,8 @@ class
     int ~ intn n,
     BitCast word int,
     BitCast int word,
+    DivOr word,
+    DivOr int,
     UnifiedFromIntegral mode (GetInteger mode) word,
     UnifiedFromIntegral mode (GetInteger mode) int,
     UnifiedFromIntegral mode word (GetInteger mode),
