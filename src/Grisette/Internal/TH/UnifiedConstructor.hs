@@ -22,7 +22,7 @@ import Grisette.Unified.Internal.UnifiedData
     UnifiedData,
     wrapData,
   )
-import Language.Haskell.TH (Ppr (ppr), pprint)
+import Language.Haskell.TH (pprint)
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName),
     DatatypeInfo (datatypeCons, datatypeVars),

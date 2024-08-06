@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Module      :   Grisette.Internal.Core.Data.Class.LogicalOp
 -- Copyright   :   (c) Sirui Lu 2021-2024
@@ -10,6 +12,10 @@ module Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (..),
   )
 where
+
+#if !MIN_VERSION_base(4,18,0)
+import Control.Applicative (liftA2)
+#endif
 
 import Control.Monad.Identity (Identity)
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
