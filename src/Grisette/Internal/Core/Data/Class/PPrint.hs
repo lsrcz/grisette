@@ -672,8 +672,7 @@ instance (PPrint a) => PPrint (Identity a) where
   pformatPrec = pformatPrec1
 
 instance PPrint1 Identity where
-  liftPFormatPrec f _ n (Identity a) =
-    pformatWithConstructor n "Identity" [f 11 a]
+  liftPFormatPrec f _ n (Identity a) = f n a
 
 -- MaybeT
 instance

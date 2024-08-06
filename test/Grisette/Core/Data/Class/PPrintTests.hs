@@ -11,7 +11,7 @@
 module Grisette.Core.Data.Class.PPrintTests (pprintTests) where
 
 import Control.Monad.Except (ExceptT (ExceptT))
-import Control.Monad.Identity (Identity, IdentityT (IdentityT))
+import Control.Monad.Identity (Identity (Identity), IdentityT (IdentityT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
 import qualified Data.HashMap.Lazy as HM
@@ -695,28 +695,33 @@ pprintTests =
             "Record Record"
             ( arbitrary :: Gen (Record (Record Int Int) (Record Int Int))
             ),
+          testPPrint1
+            "Identity"
+            0
+            (Identity $ Just $ Just 1 :: Identity (Maybe (Maybe Int)))
+            "Just (Just 1)",
           propertyPFormatRead
-            "Maybe (MaybeT Identity Int)"
-            (Just . MaybeT <$> arbitrary :: Gen (Maybe (MaybeT Identity Int))),
+            "Maybe (MaybeT Maybe Int)"
+            (Just . MaybeT <$> arbitrary :: Gen (Maybe (MaybeT Maybe Int))),
           propertyPFormatRead
-            "Maybe (ExceptT Int Identity Int)"
+            "Maybe (ExceptT Int Maybe Int)"
             ( Just . ExceptT <$> arbitrary ::
-                Gen (Maybe (ExceptT Int Identity Int))
+                Gen (Maybe (ExceptT Int Maybe Int))
             ),
           propertyPFormatRead
-            "Maybe (LazyWriterT Int Identity Int)"
+            "Maybe (LazyWriterT Int Maybe Int)"
             ( Just . WriterLazy.WriterT <$> arbitrary ::
-                Gen (Maybe (WriterLazy.WriterT Int Identity Int))
+                Gen (Maybe (WriterLazy.WriterT Int Maybe Int))
             ),
           propertyPFormatRead
-            "Maybe (StrictWriterT Int Identity Int)"
+            "Maybe (StrictWriterT Int Maybe Int)"
             ( Just . WriterLazy.WriterT <$> arbitrary ::
-                Gen (Maybe (WriterLazy.WriterT Int Identity Int))
+                Gen (Maybe (WriterLazy.WriterT Int Maybe Int))
             ),
           propertyPFormatRead
-            "Maybe (IdentityT Identity Int)"
+            "Maybe (IdentityT Maybe Int)"
             ( Just . IdentityT <$> arbitrary ::
-                Gen (Maybe (IdentityT Identity Int))
+                Gen (Maybe (IdentityT Maybe Int))
             ),
           testGroup
             "HashSet"
