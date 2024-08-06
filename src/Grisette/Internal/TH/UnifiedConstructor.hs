@@ -22,6 +22,7 @@ import Grisette.Unified.Internal.UnifiedData
     UnifiedData,
     wrapData,
   )
+import Language.Haskell.TH (Ppr (ppr), pprint)
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName),
     DatatypeInfo (datatypeCons, datatypeVars),
@@ -29,6 +30,7 @@ import Language.Haskell.TH.Datatype
     tvKind,
     tvName,
   )
+import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrSpec, kindedTVSpecified)
 import Language.Haskell.TH.Lib (appE, appTypeE, lamE, varE, varP)
 import Language.Haskell.TH.Syntax
   ( Body (NormalB),
@@ -81,13 +83,26 @@ mkUnifiedConstructor' names typName = do
   when (length names /= length constructors) $
     fail "Number of names does not match the number of constructors"
   let modeVars = filter ((== ConT ''EvalModeTag) . tvKind) (datatypeVars d)
-  when (length modeVars /= 1) $
-    fail "Expected exactly one EvalModeTag variable in the datatype."
+  -- when (length modeVars /= 1) $
+  --  fail "Expected exactly one EvalModeTag variable in the datatype."
   case modeVars of
     [mode] -> do
-      ds <- zipWithM (mkSingleWrapper d $ VarT $ tvName mode) names constructors
+      ds <-
+        zipWithM
+          (mkSingleWrapper d Nothing $ VarT $ tvName mode)
+          names
+          constructors
       return $ join ds
-    _ -> fail "Expected exactly one EvalModeTag variable in the datatype."
+    [] -> do
+      n <- newName "mode"
+      let newBndr = kindedTVSpecified n (ConT ''EvalModeTag)
+      ds <-
+        zipWithM
+          (mkSingleWrapper d (Just newBndr) (VarT n))
+          names
+          constructors
+      return $ join ds
+    _ -> fail "Expected one or zero EvalModeTag variable in the datatype."
 
 augmentFinalType :: Type -> Type -> Q ([Pred], Type)
 augmentFinalType mode (AppT a@(AppT ArrowT _) t) = do
@@ -98,14 +113,19 @@ augmentFinalType mode t = do
   predu <- [t|UnifiedData $(return mode) $(return t)|]
   return ([predu], r)
 
-augmentConstructorType :: Type -> Type -> Q Type
-augmentConstructorType mode (ForallT tybinders ctx ty1) = do
+augmentConstructorType :: Maybe TyVarBndrSpec -> Type -> Type -> Q Type
+augmentConstructorType modeBndr mode (ForallT tybinders ctx ty1) = do
   (preds, augmentedTyp) <- augmentFinalType mode ty1
-  -- ismode <- [t|EvalMode $(return mode)|]
-  return $ ForallT tybinders ({-ismode :-} preds ++ ctx) augmentedTyp
-augmentConstructorType _ _ =
-  fail
-    "augmentConstructorType: unsupported constructor, must be a forall type."
+  case modeBndr of
+    Just bndr -> return $ ForallT (bndr : tybinders) (preds ++ ctx) augmentedTyp
+    Nothing -> return $ ForallT tybinders (preds ++ ctx) augmentedTyp
+augmentConstructorType modeBndr mode ty = do
+  (preds, augmentedTyp) <- augmentFinalType mode ty
+  case modeBndr of
+    Just bndr -> return $ ForallT [bndr] preds augmentedTyp
+    Nothing ->
+      fail $
+        "augmentConstructorType: unsupported constructor type: " ++ pprint ty
 
 augmentExpr :: Type -> Int -> Exp -> Q Exp
 augmentExpr mode n f = do
@@ -119,10 +139,10 @@ augmentExpr mode n f = do
       )
     )
 
-mkSingleWrapper :: DatatypeInfo -> Type -> String -> ConstructorInfo -> Q [Dec]
-mkSingleWrapper dataType mode name info = do
+mkSingleWrapper :: DatatypeInfo -> Maybe TyVarBndrSpec -> Type -> String -> ConstructorInfo -> Q [Dec]
+mkSingleWrapper dataType modeBndr mode name info = do
   constructorTyp <- constructorInfoToType dataType info
-  augmentedTyp <- augmentConstructorType mode constructorTyp
+  augmentedTyp <- augmentConstructorType modeBndr mode constructorTyp
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentExpr mode (length $ constructorFields info) (ConE oriName)
