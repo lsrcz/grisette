@@ -116,6 +116,7 @@ liftBaseMonad b =
     (withBaseBranching @mode @m $ liftUnion b)
 {-# INLINE liftBaseMonad #-}
 
+-- | Unified merge of simply mergeable values in the base monad.
 simpleMerge ::
   forall mode a.
   (Typeable mode, UnifiedSimpleMergeable mode a) =>
