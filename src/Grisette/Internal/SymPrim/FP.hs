@@ -440,7 +440,6 @@ BIT_CAST_OR_VIA_INTERMEDIATE(FP16, Int16, WordN16)
 -- | An error thrown when bitcasting or converting t'FP' NaN to other types.
 data NotRepresentableFPError
   = NaNError
-  | InfError
   | FPUnderflowError
   | FPOverflowError
   deriving (Show, Eq, Ord, Generic)
@@ -448,8 +447,6 @@ data NotRepresentableFPError
 instance Exception NotRepresentableFPError where
   displayException NaNError =
     "Converting NaN value cannot be done precisely with SMT-LIB2"
-  displayException InfError =
-    "Converting Inf values to non-FP types cannot be done"
   displayException FPUnderflowError =
     "Converting FP values that cannot be represented by non-FP types due to "
       <> "underflowing"
