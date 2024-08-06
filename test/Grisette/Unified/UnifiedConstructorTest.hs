@@ -28,10 +28,10 @@ import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
 
 import Control.Monad.Identity (Identity (Identity))
 import Generics.Deriving (Default (Default))
-import Grisette (Solvable (con), SymInteger, ToSym (toSym), mrgReturn)
-import Grisette.TH (deriveAll, mkUnifiedConstructor)
+import Grisette (Solvable (con), SymInteger, ToSym (toSym), Union, mrgReturn)
+import Grisette.TH (deriveAll, mkUnifiedConstructor, mkUnifiedConstructor')
 import Grisette.Unified.Internal.EvalMode (EvalMode)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -54,11 +54,30 @@ type FConstraint mode =
 f :: forall mode. (FConstraint mode) => GetData mode (T mode SymInteger)
 f = mkT (toSym True) 10 mkT1
 
+data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
+
+deriveAll ''TNoMode
+mkUnifiedConstructor' ["tNoMode0", "tNoMode1"] ''TNoMode
+
+data TNoArg = TNoArg
+deriveAll ''TNoArg
+mkUnifiedConstructor "mk" ''TNoArg
+
 unifiedConstructorTest :: Test
 unifiedConstructorTest =
   testGroup
     "UnifiedConstructor"
     [ testCase "mkUnifiedConstructor" $ do
-        f @'Con @?= Identity (T True 10 (Identity T1))
-        f @'Sym @?= (mrgReturn (T (con True) 10 (mrgReturn T1)))
+        f @?= Identity (T True 10 (Identity T1))
+        f
+          @?= ( mrgReturn (T (con True) 10 (mrgReturn T1)) ::
+                  Union (T 'Sym SymInteger)
+              ),
+      testCase "NoMode" $ do
+        tNoMode0 True (10 :: Int) TNoMode1
+          @?= Identity (TNoMode0 True 10 TNoMode1)
+        tNoMode1 @?= (mrgReturn TNoMode1 :: Union (TNoMode Int)),
+      testCase "NoArg" $ do
+        mkTNoArg @?= Identity TNoArg
+        mkTNoArg @?= (mrgReturn TNoArg :: Union TNoArg)
     ]
