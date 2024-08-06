@@ -43,7 +43,6 @@ import Grisette.Internal.Backend.QuantifiedStack
   )
 import Grisette.Internal.Backend.Solving
   ( GrisetteSMTConfig (sbvConfig),
-    approximate,
     lowerSinglePrim,
     lowerSinglePrimCached,
     z3,
@@ -136,44 +135,44 @@ import Test.QuickCheck (Arbitrary, ioProperty)
 import Type.Reflection (typeRep)
 
 testUnaryOpLowering ::
-  forall a b as n.
+  forall a b as.
   ( HasCallStack,
     SupportedPrim a,
-    SBV.EqSymbolic (SBVType n b),
-    Typeable (SBVType n a),
+    SBV.EqSymbolic (SBVType b),
+    Typeable (SBVType a),
     SBV.SymVal as,
-    SBVType n a ~ SBV.SBV as,
+    SBVType a ~ SBV.SBV as,
     Show as
   ) =>
-  GrisetteSMTConfig n ->
+  GrisetteSMTConfig ->
   (Term a -> Term b) ->
   String ->
-  (SBVType n a -> SBVType n b) ->
+  (SBVType a -> SBVType b) ->
   Assertion
 testUnaryOpLowering = testUnaryOpLowering' Nothing
 
 testUnaryOpLowering' ::
-  forall a b as n.
+  forall a b as.
   ( HasCallStack,
     SupportedPrim a,
-    SBV.EqSymbolic (SBVType n b),
-    Typeable (SBVType n a),
+    SBV.EqSymbolic (SBVType b),
+    Typeable (SBVType a),
     SBV.SymVal as,
-    SBVType n a ~ SBV.SBV as,
+    SBVType a ~ SBV.SBV as,
     Show as
   ) =>
-  (Maybe (SBVType n a -> SBVType n Bool)) ->
-  GrisetteSMTConfig n ->
+  (Maybe (SBVType a -> SBVType Bool)) ->
+  GrisetteSMTConfig ->
   (Term a -> Term b) ->
   String ->
-  (SBVType n a -> SBVType n b) ->
+  (SBVType a -> SBVType b) ->
   Assertion
 testUnaryOpLowering' precond config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
   let fa :: Term b = f a
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt, _) <- lowerSinglePrim config fa
-    let sbva :: Maybe (SBVType n a) =
+    let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case sbva of
@@ -186,7 +185,7 @@ testUnaryOpLowering' precond config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unsolvable formula"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt, _) <- lowerSinglePrim config fa
-    let sbvv :: Maybe (SBVType n a) =
+    let sbvv :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case sbvv of
@@ -205,24 +204,24 @@ testUnaryOpLowering' precond config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unknown formula"
 
 testBinaryOpLowering ::
-  forall a b c as bs n.
+  forall a b c as bs.
   ( HasCallStack,
     SupportedPrim a,
     SupportedPrim b,
-    SBV.EqSymbolic (SBVType n c),
-    Typeable (SBVType n a),
-    Typeable (SBVType n b),
+    SBV.EqSymbolic (SBVType c),
+    Typeable (SBVType a),
+    Typeable (SBVType b),
     SBV.SymVal as,
     SBV.SymVal bs,
     Show as,
     Show bs,
-    SBVType n a ~ SBV.SBV as,
-    SBVType n b ~ SBV.SBV bs
+    SBVType a ~ SBV.SBV as,
+    SBVType b ~ SBV.SBV bs
   ) =>
-  GrisetteSMTConfig n ->
+  GrisetteSMTConfig ->
   (Term a -> Term b -> Term c) ->
   String ->
-  (SBVType n a -> SBVType n b -> SBVType n c) ->
+  (SBVType a -> SBVType b -> SBVType c) ->
   Assertion
 testBinaryOpLowering config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
@@ -230,10 +229,10 @@ testBinaryOpLowering config f name sbvfun = do
   let fab :: Term c = f a b
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt, _) <- lowerSinglePrim config fab
-    let sbva :: Maybe (SBVType n a) =
+    let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
-    let sbvb :: Maybe (SBVType n b) =
+    let sbvb :: Maybe (SBVType b) =
           M.lookup (SomeTerm b) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb) of
@@ -246,10 +245,10 @@ testBinaryOpLowering config f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt, _) <- lowerSinglePrim config fab
-    let sbva :: Maybe (SBVType n a) =
+    let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
-    let sbvb :: Maybe (SBVType n b) =
+    let sbvb :: Maybe (SBVType b) =
           M.lookup (SomeTerm b) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb) of
@@ -266,30 +265,30 @@ testBinaryOpLowering config f name sbvfun = do
       _ -> lift $ assertFailure "Failed to extract the term"
 
 testTernaryOpLowering ::
-  forall a b c d as bs cs n.
+  forall a b c d as bs cs.
   ( HasCallStack,
     SupportedPrim a,
     SupportedPrim b,
     SupportedPrim c,
-    SBV.EqSymbolic (SBVType n d),
-    Typeable (SBVType n a),
-    Typeable (SBVType n b),
-    Typeable (SBVType n c),
+    SBV.EqSymbolic (SBVType d),
+    Typeable (SBVType a),
+    Typeable (SBVType b),
+    Typeable (SBVType c),
     SBV.SymVal as,
     SBV.SymVal bs,
     SBV.SymVal cs,
     Show as,
     Show bs,
     Show cs,
-    SBVType n a ~ SBV.SBV as,
-    SBVType n b ~ SBV.SBV bs,
-    SBVType n c ~ SBV.SBV cs
+    SBVType a ~ SBV.SBV as,
+    SBVType b ~ SBV.SBV bs,
+    SBVType c ~ SBV.SBV cs
   ) =>
-  GrisetteSMTConfig n ->
+  GrisetteSMTConfig ->
   (Term a -> Term b -> Term c -> Term Bool) ->
   (Term a -> Term b -> Term c -> Term d) ->
   T.Text ->
-  (SBVType n a -> SBVType n b -> SBVType n c -> SBVType n d) ->
+  (SBVType a -> SBVType b -> SBVType c -> SBVType d) ->
   Assertion
 testTernaryOpLowering config precond f name sbvfun = do
   let a :: Term a = ssymTerm "a"
@@ -298,13 +297,13 @@ testTernaryOpLowering config precond f name sbvfun = do
   let fabc :: Term d = f a b c
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt, _) <- lowerSinglePrim config fabc
-    let sbva :: Maybe (SBVType n a) =
+    let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
-    let sbvb :: Maybe (SBVType n b) =
+    let sbvb :: Maybe (SBVType b) =
           M.lookup (SomeTerm b) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
-    let sbvc :: Maybe (SBVType n c) =
+    let sbvc :: Maybe (SBVType c) =
           M.lookup (SomeTerm c) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb, sbvc) of
@@ -318,13 +317,13 @@ testTernaryOpLowering config precond f name sbvfun = do
   SBV.runSMTWith (sbvConfig config) $ do
     (m, lt, _) <- lowerSinglePrim config fabc
     (m2, p, _) <- lowerSinglePrimCached config (precond a b c) m
-    let sbva :: Maybe (SBVType n a) =
+    let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m2)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
-    let sbvb :: Maybe (SBVType n b) =
+    let sbvb :: Maybe (SBVType b) =
           M.lookup (SomeTerm b) (biMapToSBV m2)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
-    let sbvc :: Maybe (SBVType n c) =
+    let sbvc :: Maybe (SBVType c) =
           M.lookup (SomeTerm c) (biMapToSBV m2)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
     case (sbva, sbvb, sbvc) of
@@ -381,7 +380,6 @@ testModelParse = testProperty ("Model parse(" ++ show (typeRep @t) ++ ")") $
 loweringTests :: Test
 loweringTests =
   let unboundedConfig = z3 {sbvConfig = SBV.z3 {SBV.solverSetOptions = [SBV.SetLogic SBV.Logic_ALL]}}
-      boundedConfig = approximate (Proxy @5) unboundedConfig
    in testGroup
         "Lowering"
         [ testGroup
@@ -434,12 +432,6 @@ loweringTests =
                   unboundedConfig
                   addNumTerm
                   "(+)"
-                  (\x y -> (x + 1) * (y + 1) - x * y - 1)
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig addNumTerm "(+)" (+)
-                testBinaryOpLowering @Integer @Integer @Integer
-                  boundedConfig
-                  addNumTerm
-                  "(+)"
                   (\x y -> (x + 1) * (y + 1) - x * y - 1),
               testCase "Uminus" $ do
                 testUnaryOpLowering @Integer @Integer unboundedConfig negNumTerm "negate" negate
@@ -447,29 +439,15 @@ loweringTests =
                   unboundedConfig
                   negNumTerm
                   "negate"
-                  (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1)
-                testUnaryOpLowering @Integer @Integer boundedConfig negNumTerm "negate" negate
-                testUnaryOpLowering @Integer @Integer
-                  boundedConfig
-                  negNumTerm
-                  "negate"
                   (\x -> (x + 1) * (x + 1) - 3 * x - x * x - 1),
               testCase "Abs" $ do
-                testUnaryOpLowering @Integer @Integer unboundedConfig absNumTerm "abs" abs
-                testUnaryOpLowering @Integer @Integer boundedConfig absNumTerm "abs" abs,
+                testUnaryOpLowering @Integer @Integer unboundedConfig absNumTerm "abs" abs,
               testCase "Signum" $ do
-                testUnaryOpLowering @Integer @Integer unboundedConfig signumNumTerm "signum" signum
-                testUnaryOpLowering @Integer @Integer boundedConfig signumNumTerm "signum" signum,
+                testUnaryOpLowering @Integer @Integer unboundedConfig signumNumTerm "signum" signum,
               testCase "Times" $ do
                 testBinaryOpLowering @Integer @Integer @Integer unboundedConfig mulNumTerm "(*)" (*)
                 testBinaryOpLowering @Integer @Integer @Integer
                   unboundedConfig
-                  mulNumTerm
-                  "(*)"
-                  (\x y -> (x + 1) * (y + 1) - x - y - 1)
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig mulNumTerm "(*)" (*)
-                testBinaryOpLowering @Integer @Integer @Integer
-                  boundedConfig
                   mulNumTerm
                   "(*)"
                   (\x y -> (x + 1) * (y + 1) - x - y - 1),
@@ -479,12 +457,6 @@ loweringTests =
                   unboundedConfig
                   ltOrdTerm
                   "(<)"
-                  (\x y -> x * 2 - x SBV..< y * 2 - y)
-                testBinaryOpLowering @Integer @Integer @Bool boundedConfig ltOrdTerm "(<)" (SBV..<)
-                testBinaryOpLowering @Integer @Integer @Bool
-                  boundedConfig
-                  ltOrdTerm
-                  "(<=)"
                   (\x y -> x * 2 - x SBV..< y * 2 - y),
               testCase "Le" $ do
                 testBinaryOpLowering @Integer @Integer @Bool unboundedConfig leOrdTerm "(<=)" (SBV..<=)
@@ -492,25 +464,15 @@ loweringTests =
                   unboundedConfig
                   leOrdTerm
                   "(<=)"
-                  (\x y -> x * 2 - x SBV..<= y * 2 - y)
-                testBinaryOpLowering @Integer @Integer @Bool boundedConfig leOrdTerm "(<=)" (SBV..<=)
-                testBinaryOpLowering @Integer @Integer @Bool
-                  boundedConfig
-                  leOrdTerm
-                  "(<=)"
                   (\x y -> x * 2 - x SBV..<= y * 2 - y),
               testCase "Div" $ do
-                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig divIntegralTerm "div" SBV.sDiv
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig divIntegralTerm "div" SBV.sDiv,
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig divIntegralTerm "div" SBV.sDiv,
               testCase "Mod" $ do
-                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig modIntegralTerm "mod" SBV.sMod
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig modIntegralTerm "mod" SBV.sMod,
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig modIntegralTerm "mod" SBV.sMod,
               testCase "Quot" $ do
-                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig quotIntegralTerm "quot" SBV.sQuot
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig quotIntegralTerm "quot" SBV.sQuot,
+                testBinaryOpLowering @Integer @Integer @Integer unboundedConfig quotIntegralTerm "quot" SBV.sQuot,
               testCase "Rem" $ do
                 testBinaryOpLowering @Integer @Integer @Integer unboundedConfig remIntegralTerm "rem" SBV.sRem
-                testBinaryOpLowering @Integer @Integer @Integer boundedConfig remIntegralTerm "rem" SBV.sRem
             ],
           testGroup
             "IntN Lowering"
@@ -692,24 +654,17 @@ loweringTests =
                           (SBV.sFromIntegral b :: SBV.SWord 5)
                   ),
               testCase "Div - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig divIntegralTerm "div" SBV.sDiv,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv,
               testCase "Mod - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig modIntegralTerm "mod" SBV.sMod
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig modIntegralTerm "mod" SBV.sMod,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig modIntegralTerm "mod" SBV.sMod,
               testCase "Quot - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig quotIntegralTerm "quot" SBV.sQuot
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig quotIntegralTerm "quot" SBV.sQuot,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig quotIntegralTerm "quot" SBV.sQuot,
               testCase "Rem - bounded" $ do
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
-                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
+                testBinaryOpLowering @(IntN 5) @(IntN 5) @(IntN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem,
               testCase "BitCast" $ do
                 testUnaryOpLowering @(IntN 5) @(WordN 5) unboundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
-                testUnaryOpLowering @(IntN 5) @(WordN 5) boundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
                 testUnaryOpLowering @(IntN 1) @Bool unboundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
-                testUnaryOpLowering @(IntN 1) @Bool boundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
                 testUnaryOpLowering @Bool @(IntN 1) unboundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
-                testUnaryOpLowering @Bool @(IntN 1) boundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
             ],
           testGroup
             "WordN"
@@ -873,24 +828,17 @@ loweringTests =
               testCase "RotateRight" $ do
                 testBinaryOpLowering @(WordN 5) unboundedConfig rotateRightTerm "rotateRight" SBV.sRotateRight,
               testCase "Div" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig divIntegralTerm "div" SBV.sDiv,
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig divIntegralTerm "div" SBV.sDiv,
               testCase "Mod" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig modIntegralTerm "mod" SBV.sMod
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig modIntegralTerm "mod" SBV.sMod,
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig modIntegralTerm "mod" SBV.sMod,
               testCase "Quot" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig quotIntegralTerm "quot" SBV.sQuot
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig quotIntegralTerm "quot" SBV.sQuot,
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig quotIntegralTerm "quot" SBV.sQuot,
               testCase "Rem" $ do
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem
-                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) boundedConfig remIntegralTerm "rem" SBV.sRem,
+                testBinaryOpLowering @(WordN 5) @(WordN 5) @(WordN 5) unboundedConfig remIntegralTerm "rem" SBV.sRem,
               testCase "BitCast" $ do
                 testUnaryOpLowering @(WordN 5) @(IntN 5) unboundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
-                testUnaryOpLowering @(WordN 5) @(IntN 5) boundedConfig bitCastTerm "bitCast" SBV.sFromIntegral
                 testUnaryOpLowering @(WordN 1) @Bool unboundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
-                testUnaryOpLowering @(WordN 1) @Bool boundedConfig bitCastTerm "bitCast" (`SBV.sTestBit` 0)
                 testUnaryOpLowering @Bool @(WordN 1) unboundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
-                testUnaryOpLowering @Bool @(WordN 1) boundedConfig bitCastTerm "bitCast" (\x -> SBV.ite x 1 0)
             ],
           testGroup
             "FP"

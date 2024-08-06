@@ -30,7 +30,7 @@ instance (ValidFP eb sb) => PEvalFloatingTerm (FP eb sb) where
       FloatingSqrt -> generalUnaryUnfolded sqrt $ floatingUnaryTerm op
       _ -> error $ "operation " <> show op <> " not supported for FP"
   pevalPowerTerm = error "power operation not supported for FP"
-  withSbvFloatingTermConstraint p r = withPrim @(FP eb sb) p r
+  withSbvFloatingTermConstraint r = withPrim @(FP eb sb) r
 
 instance PEvalFloatingTerm AlgReal where
   pevalFloatingUnaryTerm op =
@@ -43,4 +43,4 @@ instance PEvalFloatingTerm AlgReal where
         error "operation atanh not supported by sbv for AlgReal"
       _ -> floatingUnaryTerm op
   pevalPowerTerm = powerTerm
-  withSbvFloatingTermConstraint p r = withPrim @AlgReal p r
+  withSbvFloatingTermConstraint r = withPrim @AlgReal r

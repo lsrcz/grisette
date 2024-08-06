@@ -133,7 +133,6 @@ library
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
       Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
-      Grisette.Internal.SymPrim.Prim.Internal.IsZero
       Grisette.Internal.SymPrim.Prim.Internal.PartialEval
       Grisette.Internal.SymPrim.Prim.Internal.Term
       Grisette.Internal.SymPrim.Prim.Internal.Unfold

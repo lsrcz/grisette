@@ -52,7 +52,6 @@ import Grisette
       ),
     WordN,
     bitCastOrCanonical,
-    z3,
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
 import Grisette.Internal.Core.Data.Class.IEEEFP
@@ -563,10 +562,10 @@ fpTests =
                               convertibleUpperBound (0 :: bv n) RTP :: FP eb sb
                         let lbad = prevFP lb
                         let rbad = nextFP rb
-                        let sbvlb = conSBVTerm z3 lb
-                        let sbvrb = conSBVTerm z3 rb
-                        let sbvlbad = conSBVTerm z3 lbad
-                        let sbvrbad = conSBVTerm z3 rbad
+                        let sbvlb = conSBVTerm lb
+                        let sbvrb = conSBVTerm rb
+                        let sbvlbad = conSBVTerm lbad
+                        let sbvrbad = conSBVTerm rbad
                         let sbvlbbv =
                               genericFPCast SBV.sRTP sbvlb :: SBV.SBV (sbvbv n)
                         let sbvrbbv =

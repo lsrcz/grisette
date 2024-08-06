@@ -107,13 +107,13 @@ doPevalFiniteBitsSymShiftShiftRightTerm _ _ = Nothing
 instance (KnownNat n, 1 <= n) => PEvalShiftTerm (IntN n) where
   pevalShiftLeftTerm = pevalFiniteBitsSymShiftShiftLeftTerm
   pevalShiftRightTerm = pevalFiniteBitsSymShiftShiftRightTerm
-  withSbvShiftTermConstraint p r =
+  withSbvShiftTermConstraint r =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @(IntN n) p r
+      withNonFuncPrim @(IntN n) r
 
 instance (KnownNat n, 1 <= n) => PEvalShiftTerm (WordN n) where
   pevalShiftLeftTerm = pevalFiniteBitsSymShiftShiftLeftTerm
   pevalShiftRightTerm = pevalFiniteBitsSymShiftShiftRightTerm
-  withSbvShiftTermConstraint p r =
+  withSbvShiftTermConstraint r =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @(WordN n) p r
+      withNonFuncPrim @(WordN n) r

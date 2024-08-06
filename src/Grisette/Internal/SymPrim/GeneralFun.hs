@@ -262,12 +262,12 @@ instance
   SupportedPrimConstraint (a --> b)
   where
   type
-    PrimConstraint n (a --> b) =
+    PrimConstraint (a --> b) =
       ( SupportedNonFuncPrim a,
         SupportedPrim b,
-        NonFuncPrimConstraint n a,
-        PrimConstraint n b,
-        SBVType n (a --> b) ~ (SBV.SBV (NonFuncSBVBaseType n a) -> SBVType n b)
+        NonFuncPrimConstraint a,
+        PrimConstraint b,
+        SBVType (a --> b) ~ (SBV.SBV (NonFuncSBVBaseType a) -> SBVType b)
       )
 
 instance
@@ -275,9 +275,9 @@ instance
   SBVRep (a --> b)
   where
   type
-    SBVType n (a --> b) =
-      SBV.SBV (NonFuncSBVBaseType n a) ->
-      SBVType n b
+    SBVType (a --> b) =
+      SBV.SBV (NonFuncSBVBaseType a) ->
+      SBVType b
 
 pevalGeneralFunApplyTerm ::
   ( SupportedNonFuncPrim a,
@@ -303,8 +303,8 @@ instance
   PEvalApplyTerm (a --> b) a b
   where
   pevalApplyTerm = pevalGeneralFunApplyTerm
-  sbvApplyTerm p f a =
-    withPrim @(a --> b) p $ withNonFuncPrim @a p $ f a
+  sbvApplyTerm f a =
+    withPrim @(a --> b) $ withNonFuncPrim @a $ f a
 
 parseGeneralFunSMTModelResult ::
   forall a b.

@@ -32,7 +32,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Unfold
 instance (ValidFP eb sb) => PEvalFractionalTerm (FP eb sb) where
   pevalFdivTerm = generalBinaryUnfolded (/) fdivTerm
   pevalRecipTerm = generalUnaryUnfolded recip recipTerm
-  withSbvFractionalTermConstraint p r = withPrim @(FP eb sb) p r
+  withSbvFractionalTermConstraint r = withPrim @(FP eb sb) r
 
 pevalDefaultFdivTerm ::
   (PEvalFractionalTerm a) => Term a -> Term a -> Term a
@@ -58,4 +58,4 @@ doPevalDefaultRecipTerm _ = Nothing
 instance PEvalFractionalTerm AlgReal where
   pevalFdivTerm = pevalDefaultFdivTerm
   pevalRecipTerm = pevalDefaultRecipTerm
-  withSbvFractionalTermConstraint p r = withPrim @AlgReal p r
+  withSbvFractionalTermConstraint r = withPrim @AlgReal r
