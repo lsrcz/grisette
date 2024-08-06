@@ -1778,6 +1778,7 @@ import Grisette.Internal.Core.Data.Symbol
     withInfo,
     withLoc,
   )
+import Instances.TH.Lift ()
 
 -- $setup
 -- >>> import Grisette

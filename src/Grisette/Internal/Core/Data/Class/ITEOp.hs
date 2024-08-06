@@ -18,6 +18,7 @@ module Grisette.Internal.Core.Data.Class.ITEOp
   )
 where
 
+import Control.Monad.Identity (Identity (Identity))
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
@@ -85,4 +86,8 @@ ITEOP_FUN((-->), (-~>), SymGeneralFun)
 
 instance (ValidFP eb sb) => ITEOp (SymFP eb sb) where
   symIte (SymBool c) (SymFP t) (SymFP f) = SymFP $ pevalITETerm c t f
+  {-# INLINE symIte #-}
+
+instance (ITEOp v) => ITEOp (Identity v) where
+  symIte c (Identity t) (Identity f) = Identity $ symIte c t f
   {-# INLINE symIte #-}

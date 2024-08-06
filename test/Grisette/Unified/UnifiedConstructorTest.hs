@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -18,13 +20,19 @@
 
 module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
 
+#if MIN_VERSION_base(4,16,0)
+import Grisette.Unified.Internal.UnifiedData (GetData)
+#else
+import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
+#endif
+
+import Control.Monad.Identity (Identity (Identity))
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), mrgReturn)
 import Grisette.TH (deriveAll, mkUnifiedConstructor)
 import Grisette.Unified.Internal.EvalMode (EvalMode)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -36,20 +44,21 @@ data T mode a
 deriveAll ''T
 mkUnifiedConstructor "mk" ''T
 
+#if MIN_VERSION_base(4,16,0)
+type FConstraint mode = (EvalMode mode)
+#else
+type FConstraint mode =
+  (EvalMode mode, UnifiedData mode (T mode SymInteger))
+#endif
+
+f :: forall mode. (FConstraint mode) => GetData mode (T mode SymInteger)
+f = mkT (toSym True) 10 mkT1
+
 unifiedConstructorTest :: Test
 unifiedConstructorTest =
   testGroup
     "UnifiedConstructor"
     [ testCase "mkUnifiedConstructor" $ do
-        let f ::
-              forall mode.
-              (EvalMode mode, UnifiedData mode (T mode SymInteger)) =>
-              GetData mode (T mode SymInteger)
-            f =
-              mkT @mode
-                (toSym True)
-                (10 :: SymInteger)
-                (mkT1 @mode @SymInteger)
-        f @'Con @?= T True 10 T1
+        f @'Con @?= Identity (T True 10 (Identity T1))
         f @'Sym @?= (mrgReturn (T (con True) 10 (mrgReturn T1)))
     ]
