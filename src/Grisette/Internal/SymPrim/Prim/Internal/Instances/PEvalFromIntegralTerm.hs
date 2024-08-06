@@ -19,10 +19,6 @@ import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero
-  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
-    KnownIsZero (isZero),
-  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalFromIntegralTerm (pevalFromIntegralTerm, sbvFromIntegralTerm),
     SupportedNonFuncPrim (withNonFuncPrim),
@@ -41,20 +37,20 @@ pevalFromIntegralTermGeneric =
 
 instance PEvalFromIntegralTerm Integer AlgReal where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l = withNonFuncPrim @Integer p $ SBV.sFromIntegral l
+  sbvFromIntegralTerm l = withNonFuncPrim @Integer $ SBV.sFromIntegral l
 
 instance (KnownNat n, 1 <= n) => PEvalFromIntegralTerm Integer (WordN n) where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @Integer p $
+      withNonFuncPrim @Integer $
         SBV.sFromIntegral l
 
 instance (KnownNat n, 1 <= n) => PEvalFromIntegralTerm Integer (IntN n) where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @Integer p $
+      withNonFuncPrim @Integer $
         SBV.sFromIntegral l
 
 genericFPCast ::
@@ -77,17 +73,15 @@ genericFPCast rm f = SBVI.SBV (SBVI.SVal kTo (Right (SBVI.cache r)))
 
 instance (ValidFP eb sb) => PEvalFromIntegralTerm Integer (FP eb sb) where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
-    withNonFuncPrim @Integer p $
-      case isZero p of
-        IsZeroEvidence -> SBV.toSFloatingPoint SBV.sRoundNearestTiesToEven l
-        NonZeroEvidence -> genericFPCast SBV.sRoundNearestTiesToEven l
+  sbvFromIntegralTerm l =
+    withNonFuncPrim @Integer $
+      SBV.toSFloatingPoint SBV.sRoundNearestTiesToEven l
 
 instance (KnownNat n, 1 <= n) => PEvalFromIntegralTerm (WordN n) Integer where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @Integer p $
+      withNonFuncPrim @Integer $
         SBV.sFromIntegral l
 
 instance
@@ -95,10 +89,10 @@ instance
   PEvalFromIntegralTerm (WordN n) (WordN m)
   where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @m) $
-        withNonFuncPrim @Integer p $
+        withNonFuncPrim @Integer $
           SBV.sFromIntegral l
 
 instance
@@ -106,15 +100,15 @@ instance
   PEvalFromIntegralTerm (WordN n) (IntN m)
   where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @m) $
-        withNonFuncPrim @Integer p $
+        withNonFuncPrim @Integer $
           SBV.sFromIntegral l
 
 instance (KnownNat n, 1 <= n) => PEvalFromIntegralTerm (WordN n) AlgReal where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm _ l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1
       (Proxy @n)
       (SBV.sFromIntegral (SBV.sFromIntegral l :: SBV.SInteger))
@@ -124,15 +118,15 @@ instance
   PEvalFromIntegralTerm (WordN n) (FP eb sb)
   where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm _ l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       genericFPCast SBV.sRoundNearestTiesToEven l
 
 instance (KnownNat n, 1 <= n) => PEvalFromIntegralTerm (IntN n) Integer where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @Integer p $
+      withNonFuncPrim @Integer $
         SBV.sFromIntegral l
 
 instance
@@ -140,10 +134,10 @@ instance
   PEvalFromIntegralTerm (IntN n) (WordN m)
   where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @m) $
-        withNonFuncPrim @Integer p $
+        withNonFuncPrim @Integer $
           SBV.sFromIntegral l
 
 instance
@@ -151,15 +145,15 @@ instance
   PEvalFromIntegralTerm (IntN n) (IntN m)
   where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm p l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @m) $
-        withNonFuncPrim @Integer p $
+        withNonFuncPrim @Integer $
           SBV.sFromIntegral l
 
 instance (KnownNat n, 1 <= n) => PEvalFromIntegralTerm (IntN n) AlgReal where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm _ l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1
       (Proxy @n)
       (SBV.sFromIntegral (SBV.sFromIntegral l :: SBV.SInteger))
@@ -169,6 +163,6 @@ instance
   PEvalFromIntegralTerm (IntN n) (FP eb sb)
   where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
-  sbvFromIntegralTerm _ l =
+  sbvFromIntegralTerm l =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       genericFPCast SBV.sRoundNearestTiesToEven l

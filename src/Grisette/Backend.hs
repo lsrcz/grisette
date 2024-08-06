@@ -23,10 +23,7 @@ module Grisette.Backend
     abc,
 
     -- * Changing the extra configurations
-    ApproximationConfig (..),
     ExtraConfig (..),
-    precise,
-    approximate,
     withTimeout,
     clearTimeout,
 
@@ -42,11 +39,9 @@ where
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
 import Grisette.Internal.Backend.Solving
-  ( ApproximationConfig (..),
-    ExtraConfig (..),
+  ( ExtraConfig (..),
     GrisetteSMTConfig (..),
     abc,
-    approximate,
     bitwuzla,
     boolector,
     clearTimeout,
@@ -54,7 +49,6 @@ import Grisette.Internal.Backend.Solving
     cvc5,
     dReal,
     mathSAT,
-    precise,
     withTimeout,
     yices,
     z3,

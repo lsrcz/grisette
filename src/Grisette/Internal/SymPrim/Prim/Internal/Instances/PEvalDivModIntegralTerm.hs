@@ -28,10 +28,6 @@ where
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero
-  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
-    KnownIsZero (isZero),
-  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalDivModIntegralTerm
       ( pevalDivIntegralTerm,
@@ -139,20 +135,18 @@ instance PEvalDivModIntegralTerm Integer where
   pevalModIntegralTerm = pevalDefaultModIntegralTerm
   pevalQuotIntegralTerm = pevalDefaultQuotIntegralTerm
   pevalRemIntegralTerm = pevalDefaultRemIntegralTerm
-  withSbvDivModIntegralTermConstraint p r = case isZero p of
-    IsZeroEvidence -> r
-    NonZeroEvidence -> r
+  withSbvDivModIntegralTermConstraint r = r
 
 instance (KnownNat n, 1 <= n) => PEvalDivModIntegralTerm (IntN n) where
   pevalDivIntegralTerm = pevalDefaultDivBoundedIntegralTerm
   pevalModIntegralTerm = pevalDefaultModIntegralTerm
   pevalQuotIntegralTerm = pevalDefaultQuotBoundedIntegralTerm
   pevalRemIntegralTerm = pevalDefaultRemIntegralTerm
-  withSbvDivModIntegralTermConstraint p r = withPrim @(IntN n) p r
+  withSbvDivModIntegralTermConstraint r = withPrim @(IntN n) r
 
 instance (KnownNat n, 1 <= n) => PEvalDivModIntegralTerm (WordN n) where
   pevalDivIntegralTerm = pevalDefaultDivIntegralTerm
   pevalModIntegralTerm = pevalDefaultModIntegralTerm
   pevalQuotIntegralTerm = pevalDefaultQuotIntegralTerm
   pevalRemIntegralTerm = pevalDefaultRemIntegralTerm
-  withSbvDivModIntegralTermConstraint p r = withPrim @(WordN n) p r
+  withSbvDivModIntegralTermConstraint r = withPrim @(WordN n) r

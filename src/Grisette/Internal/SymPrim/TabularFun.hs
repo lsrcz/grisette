@@ -15,6 +15,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
+{-# HLINT ignore "Avoid lambda" #-}
+
 -- |
 -- Module      :   Grisette.Internal.SymPrim.TabularFun
 -- Copyright   :   (c) Sirui Lu 2021-2024
@@ -36,7 +38,6 @@ import qualified Data.SBV.Dynamic as SBVD
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero (KnownIsZero)
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( NonFuncPrimConstraint,
@@ -94,15 +95,15 @@ instance
   SupportedPrimConstraint (a =-> b)
   where
   type
-    PrimConstraint n (a =-> b) =
+    PrimConstraint (a =-> b) =
       ( SupportedNonFuncPrim a,
         SupportedPrim b,
-        NonFuncPrimConstraint n a,
-        PrimConstraint n b
+        NonFuncPrimConstraint a,
+        PrimConstraint b
       )
 
 instance (SupportedNonFuncPrim a, SupportedPrim b) => SBVRep (a =-> b) where
-  type SBVType n (a =-> b) = SBV.SBV (NonFuncSBVBaseType n a) -> SBVType n b
+  type SBVType (a =-> b) = SBV.SBV (NonFuncSBVBaseType a) -> SBVType b
 
 instance
   (SupportedPrim a, SupportedPrim b, SupportedPrim (a =-> b)) =>
@@ -122,29 +123,24 @@ instance
           go ((x, y) : xs) =
             pevalITETerm (pevalEqTerm a (conTerm x)) (conTerm y) (go xs)
       doPevalApplyTerm _ _ = Nothing
-  sbvApplyTerm p f a =
-    withPrim @(a =-> b) p $ withNonFuncPrim @a p $ f a
+  sbvApplyTerm f a =
+    withPrim @(a =-> b) $ withNonFuncPrim @a $ f a
 
 lowerTFunCon ::
-  forall proxy integerBitWidth a b.
+  forall a b.
   ( SupportedNonFuncPrim a,
     SupportedPrim b,
-    SBV.Mergeable (SBVType integerBitWidth b),
-    KnownIsZero integerBitWidth
+    SBV.Mergeable (SBVType b)
   ) =>
-  proxy integerBitWidth ->
   (a =-> b) ->
-  ( SBV.SBV (NonFuncSBVBaseType integerBitWidth a) ->
-    SBVType integerBitWidth b
+  ( SBV.SBV (NonFuncSBVBaseType a) ->
+    SBVType b
   )
-lowerTFunCon proxy (TabularFun l d) = go l d
+lowerTFunCon (TabularFun l d) = go l d
   where
-    go [] d _ = conSBVTerm proxy d
+    go [] d _ = conSBVTerm d
     go ((x, r) : xs) d v =
-      SBV.ite
-        (conNonFuncSBVTerm proxy x SBV..== v)
-        (conSBVTerm proxy r)
-        (go xs d v)
+      SBV.ite (conNonFuncSBVTerm x SBV..== v) (conSBVTerm r) (go xs d v)
 
 parseTabularFunSMTModelResult ::
   forall a b.
@@ -169,9 +165,9 @@ supportedPrimFunUpTo
   [|parseTabularFunSMTModelResult|]
   ( \tyVars ->
       [|
-        \p f ->
-          withNonFuncPrim @($(last tyVars)) p $
-            lowerTFunCon p f
+        \f ->
+          withNonFuncPrim @($(last tyVars)) $
+            lowerTFunCon f
         |]
   )
   "TabularFun"

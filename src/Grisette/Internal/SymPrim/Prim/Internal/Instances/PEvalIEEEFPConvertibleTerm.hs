@@ -39,10 +39,6 @@ import Grisette.Internal.SymPrim.FP
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
   ( bvIsNonZeroFromGEq1,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero
-  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
-    KnownIsZero (isZero),
-  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalIEEEFPConvertibleTerm
       ( pevalFromFPOrTerm,
@@ -78,25 +74,23 @@ genericFPCast rm f = SBVI.SBV (SBVI.SVal kTo (Right (SBVI.cache r)))
           [xsv]
 
 boundedSBVFromFPTerm ::
-  forall bv (n :: Nat) eb sb m p r.
-  ( KnownIsZero m,
-    ValidFP eb sb,
+  forall bv (n :: Nat) eb sb r.
+  ( ValidFP eb sb,
     SBVI.HasKind r,
     SBVI.SymVal r,
     Bounded r,
     Num r,
     Ord r,
-    SBVI.SBV r ~ SBVType m (bv n),
+    SBVI.SBV r ~ SBVType (bv n),
     KnownNat n,
     1 <= n,
     ConvertibleBound bv
   ) =>
-  p m ->
   SBVI.SBV r ->
-  SBVType m FPRoundingMode ->
-  SBVType m (FP eb sb) ->
+  SBVType FPRoundingMode ->
+  SBVType (FP eb sb) ->
   SBVI.SBV r
-boundedSBVFromFPTerm p d mode l =
+boundedSBVFromFPTerm d mode l =
   SBV.ite
     ( SBV.fpIsNaN l
         SBV..|| SBV.fpIsInfinite l
@@ -118,13 +112,10 @@ boundedSBVFromFPTerm p d mode l =
         ( \acc (srm, rm) ->
             SBV.ite
               (mode SBV..== srm)
-              ( conSBVTerm
-                  p
-                  (f (undefined :: bv n) rm :: FP eb sb)
-              )
+              (conSBVTerm (f (undefined :: bv n) rm :: FP eb sb))
               acc
         )
-        (0 :: SBVType m (FP eb sb))
+        (0 :: SBVType (FP eb sb))
         lst
 
 generalPevalFromFPOrTerm ::
@@ -208,53 +199,47 @@ fpPevalToFPTerm = binaryUnfoldOnce fpDoPevalToFPTerm toFPTerm
 instance PEvalIEEEFPConvertibleTerm Integer where
   pevalFromFPOrTerm = generalPevalFromFPOrTerm
   pevalToFPTerm = generalPevalToFPTerm
-  sbvFromFPOrTerm (p :: p n) d mode l =
-    case isZero p of
-      IsZeroEvidence ->
-        SBV.ite (SBV.fpIsNaN l SBV..|| SBV.fpIsInfinite l) d $
-          let r = SBV.fromSFloatingPoint mode l :: SBV.SReal
-              ifloor = SBV.sRealToSInteger r
-              diff = r - SBV.sFromIntegral ifloor
-           in SBV.ite (diff SBV..== 0) ifloor
-                $ SBV.ite (mode SBV..== SBV.sRTN) ifloor
-                $ SBV.ite (mode SBV..== SBV.sRTP) (ifloor + 1)
-                $ SBV.ite
-                  (mode SBV..== SBV.sRTZ)
-                  (SBV.ite (ifloor SBV..< 0) (ifloor + 1) ifloor)
-                $ SBV.ite
-                  (diff SBV..== 0.5)
+  sbvFromFPOrTerm d mode l =
+    SBV.ite (SBV.fpIsNaN l SBV..|| SBV.fpIsInfinite l) d $
+      let r = SBV.fromSFloatingPoint mode l :: SBV.SReal
+          ifloor = SBV.sRealToSInteger r
+          diff = r - SBV.sFromIntegral ifloor
+       in SBV.ite (diff SBV..== 0) ifloor
+            $ SBV.ite (mode SBV..== SBV.sRTN) ifloor
+            $ SBV.ite (mode SBV..== SBV.sRTP) (ifloor + 1)
+            $ SBV.ite
+              (mode SBV..== SBV.sRTZ)
+              (SBV.ite (ifloor SBV..< 0) (ifloor + 1) ifloor)
+            $ SBV.ite
+              (diff SBV..== 0.5)
+              ( SBV.ite
+                  (mode SBV..== SBV.sRNE)
                   ( SBV.ite
-                      (mode SBV..== SBV.sRNE)
-                      ( SBV.ite
-                          (SBV.sMod ifloor 2 SBV..== 0)
-                          ifloor
-                          (ifloor + 1)
-                      )
-                      (SBV.ite (ifloor SBV..< 0) ifloor (ifloor + 1))
+                      (SBV.sMod ifloor 2 SBV..== 0)
+                      ifloor
+                      (ifloor + 1)
                   )
-                $ SBV.ite
-                  (diff SBV..< 0.5)
-                  ifloor
-                  (ifloor + 1)
-      NonZeroEvidence -> boundedSBVFromFPTerm @IntN p d mode l
-  sbvToFPTerm p mode l =
-    case isZero p of
-      IsZeroEvidence ->
-        case SBV.unliteral l of
-          Nothing -> SBV.toSFloatingPoint mode l
-          Just _ ->
-            error $
-              "SBV's toSFloatingPoint does not regard the rounding mode for "
-                ++ "integers. This should never be called. "
-      NonZeroEvidence -> genericFPCast mode l
+                  (SBV.ite (ifloor SBV..< 0) ifloor (ifloor + 1))
+              )
+            $ SBV.ite
+              (diff SBV..< 0.5)
+              ifloor
+              (ifloor + 1)
+  sbvToFPTerm mode l =
+    case SBV.unliteral l of
+      Nothing -> SBV.toSFloatingPoint mode l
+      Just _ ->
+        error $
+          "SBV's toSFloatingPoint does not regard the rounding mode for "
+            ++ "integers. This should never be called. "
 
 instance PEvalIEEEFPConvertibleTerm AlgReal where
   pevalFromFPOrTerm = algRealPevalFromFPOrTerm
   pevalToFPTerm = generalPevalToFPTerm
-  sbvFromFPOrTerm _ d mode l =
+  sbvFromFPOrTerm d mode l =
     SBV.ite (SBV.fpIsNaN l SBV..|| SBV.fpIsInfinite l) d $
       SBV.fromSFloatingPoint mode l
-  sbvToFPTerm _ rm l =
+  sbvToFPTerm rm l =
     case SBV.unliteral l of
       Nothing -> SBV.toSFloatingPoint rm l
       Just _ ->
@@ -267,39 +252,38 @@ instance (KnownNat n, 1 <= n) => PEvalIEEEFPConvertibleTerm (WordN n) where
   pevalFromFPOrTerm = generalPevalFromFPOrTerm
   pevalToFPTerm = generalPevalToFPTerm
   sbvFromFPOrTerm = bvIsNonZeroFromGEq1 (Proxy @n) $ boundedSBVFromFPTerm @WordN
-  sbvToFPTerm _ mode l = bvIsNonZeroFromGEq1 (Proxy @n) $ genericFPCast mode l
+  sbvToFPTerm mode l = bvIsNonZeroFromGEq1 (Proxy @n) $ genericFPCast mode l
 
 instance (KnownNat n, 1 <= n) => PEvalIEEEFPConvertibleTerm (IntN n) where
   pevalFromFPOrTerm = generalPevalFromFPOrTerm
   pevalToFPTerm = generalPevalToFPTerm
   sbvFromFPOrTerm = bvIsNonZeroFromGEq1 (Proxy @n) $ boundedSBVFromFPTerm @IntN
-  sbvToFPTerm _ mode l = bvIsNonZeroFromGEq1 (Proxy @n) $ genericFPCast mode l
+  sbvToFPTerm mode l = bvIsNonZeroFromGEq1 (Proxy @n) $ genericFPCast mode l
 
 instance (ValidFP eb sb) => PEvalIEEEFPConvertibleTerm (FP eb sb) where
   pevalFromFPOrTerm _ = fpPevalToFPTerm
   pevalToFPTerm = fpPevalToFPTerm
-  sbvFromFPOrTerm p _ rm v = case (SBV.unliteral rm, SBV.unliteral v) of
+  sbvFromFPOrTerm _ rm v = case (SBV.unliteral rm, SBV.unliteral v) of
     (Just _, Just _) ->
       error $
         "SBV is buggy on converting literal FP to another FP with different "
           ++ "precision. This should never be called. "
           ++ "https://github.com/LeventErkok/sbv/pull/717"
     _ ->
-      SBV.ite (SBV.fpIsNaN v) (conSBVTerm p (fpNaN :: FP eb sb)) $
+      SBV.ite (SBV.fpIsNaN v) (conSBVTerm (fpNaN :: FP eb sb)) $
         SBV.toSFloatingPoint rm v
   sbvToFPTerm ::
-    forall p n eb1 sb1.
-    (ValidFP eb sb, KnownIsZero n, ValidFP eb1 sb1) =>
-    p n ->
-    SBVType n FPRoundingMode ->
-    SBVType n (FP eb sb) ->
-    SBVType n (FP eb1 sb1)
-  sbvToFPTerm p rm v = case (SBV.unliteral rm, SBV.unliteral v) of
+    forall eb1 sb1.
+    (ValidFP eb sb, ValidFP eb1 sb1) =>
+    SBVType FPRoundingMode ->
+    SBVType (FP eb sb) ->
+    SBVType (FP eb1 sb1)
+  sbvToFPTerm rm v = case (SBV.unliteral rm, SBV.unliteral v) of
     (Just _, Just _) ->
       error $
         "SBV is buggy on converting literal FP to another FP with different "
           ++ "precision. This should never be called. "
           ++ "https://github.com/LeventErkok/sbv/pull/717"
     _ ->
-      SBV.ite (SBV.fpIsNaN v) (conSBVTerm p (fpNaN :: FP eb1 sb1)) $
+      SBV.ite (SBV.fpIsNaN v) (conSBVTerm (fpNaN :: FP eb1 sb1)) $
         SBV.toSFloatingPoint rm v

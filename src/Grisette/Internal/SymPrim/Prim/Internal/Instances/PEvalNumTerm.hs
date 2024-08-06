@@ -30,10 +30,6 @@ import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero
-  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
-    KnownIsZero (isZero),
-  )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalNumTerm
       ( pevalAbsNumTerm,
@@ -227,9 +223,7 @@ instance PEvalNumTerm Integer where
   pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
   pevalSignumNumTerm =
     unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
-  withSbvNumTermConstraint p r = case isZero p of
-    IsZeroEvidence -> r
-    NonZeroEvidence -> r
+  withSbvNumTermConstraint r = r
 
 instance (KnownNat n, 1 <= n) => PEvalNumTerm (WordN n) where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -237,7 +231,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (WordN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
-  withSbvNumTermConstraint p r = withPrim @(WordN n) p r
+  withSbvNumTermConstraint r = withPrim @(WordN n) r
 
 instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -245,7 +239,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
-  withSbvNumTermConstraint p r = withPrim @(IntN n) p r
+  withSbvNumTermConstraint r = withPrim @(IntN n) r
 
 instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalAddNumTerm = generalBinaryUnfolded (+) addNumTerm
@@ -253,7 +247,7 @@ instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalMulNumTerm = generalBinaryUnfolded (*) mulNumTerm
   pevalAbsNumTerm = generalUnaryUnfolded abs absNumTerm
   pevalSignumNumTerm = generalUnaryUnfolded signum signumNumTerm
-  withSbvNumTermConstraint p r = withPrim @(FP eb sb) p r
+  withSbvNumTermConstraint r = withPrim @(FP eb sb) r
 
 instance PEvalNumTerm AlgReal where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -262,4 +256,4 @@ instance PEvalNumTerm AlgReal where
   pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
   pevalSignumNumTerm =
     unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
-  withSbvNumTermConstraint p r = withPrim @AlgReal p r
+  withSbvNumTermConstraint r = withPrim @AlgReal r

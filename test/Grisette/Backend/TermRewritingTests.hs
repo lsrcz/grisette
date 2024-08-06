@@ -144,7 +144,7 @@ import Type.Reflection (Typeable, typeRep)
 
 validateSpec' ::
   (TermRewritingSpec a av) =>
-  GrisetteSMTConfig n ->
+  GrisetteSMTConfig ->
   SymBool ->
   a ->
   Assertion
@@ -186,12 +186,12 @@ validateSpec' config precond a = do
 
 validateSpec ::
   (TermRewritingSpec a av) =>
-  GrisetteSMTConfig n ->
+  GrisetteSMTConfig ->
   a ->
   Assertion
 validateSpec config = validateSpec' config true
 
-bitwuzlaConfig :: IO (Maybe (GrisetteSMTConfig 0))
+bitwuzlaConfig :: IO (Maybe GrisetteSMTConfig)
 bitwuzlaConfig = do
   v <-
     solve bitwuzla $
@@ -207,7 +207,7 @@ bitwuzlaConfig = do
     Left _ -> return Nothing
     Right _ -> return $ Just bitwuzla
 
-onlyWhenBitwuzlaIsAvailable :: (GrisetteSMTConfig 0 -> IO ()) -> IO ()
+onlyWhenBitwuzlaIsAvailable :: (GrisetteSMTConfig -> IO ()) -> IO ()
 onlyWhenBitwuzlaIsAvailable action = do
   config <- bitwuzlaConfig
   case config of

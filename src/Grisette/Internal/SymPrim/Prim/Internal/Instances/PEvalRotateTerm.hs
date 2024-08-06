@@ -113,23 +113,23 @@ doPevalFiniteBitsSymRotateRotateRightTerm _ _ = Nothing
 instance (KnownNat n, 1 <= n) => PEvalRotateTerm (IntN n) where
   pevalRotateLeftTerm = pevalFiniteBitsSymRotateRotateLeftTerm
   pevalRotateRightTerm = pevalFiniteBitsSymRotateRotateRightTerm
-  withSbvRotateTermConstraint p r =
+  withSbvRotateTermConstraint r =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @(IntN n) p r
+      withNonFuncPrim @(IntN n) r
 
   -- SBV's rotateLeft and rotateRight are broken for signed values, so we have to
   -- do this
   -- https://github.com/LeventErkok/sbv/issues/673
-  sbvRotateLeftTerm p l r =
-    withNonFuncPrim @(IntN n) p $
-      withSbvRotateTermConstraint @(IntN n) p $
+  sbvRotateLeftTerm l r =
+    withNonFuncPrim @(IntN n) $
+      withSbvRotateTermConstraint @(IntN n) $
         SBV.sFromIntegral $
           SBV.sRotateLeft
             (SBV.sFromIntegral l :: SBV.SWord n)
             (SBV.sFromIntegral r :: SBV.SWord n)
-  sbvRotateRightTerm p l r =
-    withNonFuncPrim @(IntN n) p $
-      withSbvRotateTermConstraint @(IntN n) p $
+  sbvRotateRightTerm l r =
+    withNonFuncPrim @(IntN n) $
+      withSbvRotateTermConstraint @(IntN n) $
         SBV.sFromIntegral $
           SBV.sRotateRight
             (SBV.sFromIntegral l :: SBV.SWord n)
@@ -138,6 +138,6 @@ instance (KnownNat n, 1 <= n) => PEvalRotateTerm (IntN n) where
 instance (KnownNat n, 1 <= n) => PEvalRotateTerm (WordN n) where
   pevalRotateLeftTerm = pevalFiniteBitsSymRotateRotateLeftTerm
   pevalRotateRightTerm = pevalFiniteBitsSymRotateRotateRightTerm
-  withSbvRotateTermConstraint p r =
+  withSbvRotateTermConstraint r =
     bvIsNonZeroFromGEq1 (Proxy @n) $
-      withNonFuncPrim @(WordN n) p r
+      withNonFuncPrim @(WordN n) r

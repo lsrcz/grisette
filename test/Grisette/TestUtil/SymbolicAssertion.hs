@@ -7,7 +7,6 @@ import Grisette
     Model,
     SolvingFailure (Unsat),
     SymEq ((./=), (.==)),
-    precise,
     solve,
     z3,
   )
@@ -15,7 +14,7 @@ import Test.HUnit (Assertion)
 
 (@?=~) :: (HasCallStack, SymEq a, Show a, EvalSym a) => a -> a -> Assertion
 actual @?=~ expected = do
-  cex <- solve (precise z3) (symNot $ actual .== expected)
+  cex <- solve z3 (symNot $ actual .== expected)
   case cex of
     Left Unsat -> return ()
     Left err -> error $ "Solver isn't working: " ++ show err
@@ -55,8 +54,8 @@ symShouldEq ::
   (Model -> String) ->
   IO ()
 symShouldEq actual expected notEqualCaseMessage = do
-  canBeNotEqual <- solve (precise z3) $ actual ./= expected
-  canBeEqual <- solve (precise z3) $ actual .== expected
+  canBeNotEqual <- solve z3 $ actual ./= expected
+  canBeEqual <- solve z3 $ actual .== expected
   case (canBeNotEqual, canBeEqual) of
     (Left _, Right _) -> return ()
     (Right m, _) -> error $ notEqualCaseMessage m

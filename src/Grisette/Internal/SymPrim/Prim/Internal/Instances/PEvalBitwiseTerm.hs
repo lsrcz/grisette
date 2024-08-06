@@ -107,11 +107,11 @@ instance (KnownNat n, 1 <= n) => PEvalBitwiseTerm (WordN n) where
   pevalOrBitsTerm = pevalDefaultOrBitsTerm
   pevalXorBitsTerm = pevalDefaultXorBitsTerm
   pevalComplementBitsTerm = pevalDefaultComplementBitsTerm
-  withSbvBitwiseTermConstraint p r = withPrim @(WordN n) p r
+  withSbvBitwiseTermConstraint r = withPrim @(WordN n) r
 
 instance (KnownNat n, 1 <= n) => PEvalBitwiseTerm (IntN n) where
   pevalAndBitsTerm = pevalDefaultAndBitsTerm
   pevalOrBitsTerm = pevalDefaultOrBitsTerm
   pevalXorBitsTerm = pevalDefaultXorBitsTerm
   pevalComplementBitsTerm = pevalDefaultComplementBitsTerm
-  withSbvBitwiseTermConstraint p r = withPrim @(IntN n) p r
+  withSbvBitwiseTermConstraint r = withPrim @(IntN n) r

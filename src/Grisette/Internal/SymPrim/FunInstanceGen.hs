@@ -4,6 +4,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Avoid lambda" #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.FunInstanceGen
@@ -131,10 +134,8 @@ supportedPrimFun
               $(stringE $ funNamePrefix <> show numArg <> "_") <> show num
             |],
           [d|
-            $(varP 'symSBVTerm) = \p nm ->
-              withPrim @($(funType tyVars)) p $
-                return $
-                  SBV.uninterpret nm
+            $(varP 'symSBVTerm) = \r ->
+              withPrim @($(funType tyVars)) $ return $ SBV.uninterpret r
             |],
           [d|$(varP 'withPrim) = $(withPrims tyVars)|],
           [d|
@@ -166,20 +167,19 @@ supportedPrimFun
           ( if numArg == 2
               then
                 [d|
-                  $(varP 'funcDummyConstraint) = \p f ->
-                    withPrim @($(funType tyVars)) p $
-                      withNonFuncPrim @($(last tyVars)) p $ do
-                        f (conSBVTerm p (defaultValue :: $(head tyVars)))
+                  $(varP 'funcDummyConstraint) = \f ->
+                    withPrim @($(funType tyVars)) $
+                      withNonFuncPrim @($(last tyVars)) $ do
+                        f (conSBVTerm (defaultValue :: $(head tyVars)))
                           SBV..== f
-                            (conSBVTerm p (defaultValue :: $(head tyVars)))
+                            (conSBVTerm (defaultValue :: $(head tyVars)))
                   |]
               else
                 [d|
-                  $(varP 'funcDummyConstraint) = \p f ->
-                    withNonFuncPrim @($(head tyVars)) p $
+                  $(varP 'funcDummyConstraint) = \f ->
+                    withNonFuncPrim @($(head tyVars)) $
                       funcDummyConstraint @($(funType $ tail tyVars))
-                        p
-                        (f (conSBVTerm p (defaultValue :: $(head tyVars))))
+                        (f (conSBVTerm (defaultValue :: $(head tyVars))))
                   |]
           )
         ]
@@ -204,11 +204,10 @@ supportedPrimFun
         foldl1 (\fty ty -> [t|$(varT funTypeName) $ty $fty|]) . reverse
       withPrims :: [Q Type] -> Q Exp
       withPrims tyVars = do
-        p <- newName "p"
         r <- newName "r"
-        lamE [varP p, varP r] $
+        lamE [varP r] $
           foldr
-            (\ty r -> [|withNonFuncPrim @($ty) $(varE p) $r|])
+            (\ty r -> [|withNonFuncPrim @($ty) $r|])
             (varE r)
             tyVars
 

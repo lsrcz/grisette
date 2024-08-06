@@ -79,33 +79,33 @@ pevalBitCastOr =
 
 instance PEvalBitCastTerm Bool (IntN 1) where
   pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ x = SBV.ite x (SBV.literal 1) (SBV.literal 0)
+  sbvBitCast x = SBV.ite x (SBV.literal 1) (SBV.literal 0)
 
 instance PEvalBitCastTerm Bool (WordN 1) where
   pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ x = SBV.ite x (SBV.literal 1) (SBV.literal 0)
+  sbvBitCast x = SBV.ite x (SBV.literal 1) (SBV.literal 0)
 
 instance PEvalBitCastTerm (IntN 1) Bool where
   pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ x = SBV.sTestBit x 0
+  sbvBitCast x = SBV.sTestBit x 0
 
 instance PEvalBitCastTerm (WordN 1) Bool where
   pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ x = SBV.sTestBit x 0
+  sbvBitCast x = SBV.sTestBit x 0
 
 instance
   (n ~ (eb + sb), ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastTerm (WordN n) (FP eb sb)
   where
   pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ = withValidFPProofs @eb @sb $ SBV.sWordAsSFloatingPoint
+  sbvBitCast = withValidFPProofs @eb @sb $ SBV.sWordAsSFloatingPoint
 
 instance
   (n ~ (eb + sb), ValidFP eb sb, KnownNat n, 1 <= n) =>
   PEvalBitCastTerm (IntN n) (FP eb sb)
   where
   pevalBitCastTerm = pevalBitCastGeneral
-  sbvBitCast _ =
+  sbvBitCast =
     withValidFPProofs @eb @sb $ SBV.sWordAsSFloatingPoint . SBV.sFromIntegral
 
 instance
@@ -113,7 +113,7 @@ instance
   PEvalBitCastOrTerm (FP eb sb) (WordN n)
   where
   pevalBitCastOrTerm = pevalBitCastOr
-  sbvBitCastOr _ d v =
+  sbvBitCastOr d v =
     withValidFPProofs @eb @sb $
       SBV.ite
         (SBV.fpIsNaN v)
@@ -125,7 +125,7 @@ instance
   PEvalBitCastOrTerm (FP eb sb) (IntN n)
   where
   pevalBitCastOrTerm = pevalBitCastOr
-  sbvBitCastOr _ d v =
+  sbvBitCastOr d v =
     withValidFPProofs @eb @sb $
       SBV.ite
         (SBV.fpIsNaN v)

@@ -24,17 +24,17 @@ where
 
 import Control.Monad (msum)
 import Data.Foldable (Foldable (foldl'))
-import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP, allFPRoundingMode)
-import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
-import Grisette.Internal.SymPrim.Prim.Internal.IsZero
-  ( IsZeroCases (IsZeroEvidence, NonZeroEvidence),
-    KnownIsZero (isZero),
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    ValidFP,
+    allFPRoundingMode,
   )
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalNumTerm (pevalNegNumTerm),
     PEvalOrdTerm
@@ -111,33 +111,31 @@ instance PEvalOrdTerm Integer where
                 Just $ pevalLeOrdTerm (conTerm $ -r) (pevalNegNumTerm l)
               _ -> Nothing
           ]
-  withSbvOrdTermConstraint p r = case isZero p of
-    IsZeroEvidence -> r
-    NonZeroEvidence -> r
+  withSbvOrdTermConstraint r = r
 
 instance (KnownNat n, 1 <= n) => PEvalOrdTerm (WordN n) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
-  withSbvOrdTermConstraint p r = withPrim @(WordN n) p r
+  withSbvOrdTermConstraint r = withPrim @(WordN n) r
 
 instance (KnownNat n, 1 <= n) => PEvalOrdTerm (IntN n) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
-  withSbvOrdTermConstraint p r = withPrim @(IntN n) p r
+  withSbvOrdTermConstraint r = withPrim @(IntN n) r
 
 instance (ValidFP eb sb) => PEvalOrdTerm (FP eb sb) where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
-  withSbvOrdTermConstraint p r = withPrim @(FP eb sb) p r
-  sbvLeOrdTerm _ x y =
+  withSbvOrdTermConstraint r = withPrim @(FP eb sb) r
+  sbvLeOrdTerm x y =
     (SBV.sNot (SBV.fpIsNaN x) SBV..&& SBV.sNot (SBV.fpIsNaN y))
       SBV..&& (x SBV..<= y)
 
 -- Use this table to avoid accidental breakage introduced by sbv.
 fpRoundingModeLtTable :: [(SBV.SRoundingMode, SBV.SRoundingMode)]
 fpRoundingModeLtTable =
-  [ ( conSBVTerm @FPRoundingMode (Proxy @0) a,
-      conSBVTerm @FPRoundingMode (Proxy @0) b
+  [ ( conSBVTerm @FPRoundingMode a,
+      conSBVTerm @FPRoundingMode b
     )
     | a <- allFPRoundingMode,
       b <- allFPRoundingMode,
@@ -146,8 +144,8 @@ fpRoundingModeLtTable =
 
 fpRoundingModeLeTable :: [(SBV.SRoundingMode, SBV.SRoundingMode)]
 fpRoundingModeLeTable =
-  [ ( conSBVTerm @FPRoundingMode (Proxy @0) a,
-      conSBVTerm @FPRoundingMode (Proxy @0) b
+  [ ( conSBVTerm @FPRoundingMode a,
+      conSBVTerm @FPRoundingMode b
     )
     | a <- allFPRoundingMode,
       b <- allFPRoundingMode,
@@ -168,11 +166,11 @@ sbvTableLookup tbl lhs rhs =
 instance PEvalOrdTerm FPRoundingMode where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
-  withSbvOrdTermConstraint p r = withPrim @FPRoundingMode p r
-  sbvLtOrdTerm _ = sbvTableLookup fpRoundingModeLtTable
-  sbvLeOrdTerm _ = sbvTableLookup fpRoundingModeLeTable
+  withSbvOrdTermConstraint r = withPrim @FPRoundingMode r
+  sbvLtOrdTerm = sbvTableLookup fpRoundingModeLtTable
+  sbvLeOrdTerm = sbvTableLookup fpRoundingModeLeTable
 
 instance PEvalOrdTerm AlgReal where
   pevalLtOrdTerm = pevalGeneralLtOrdTerm
   pevalLeOrdTerm = pevalGeneralLeOrdTerm
-  withSbvOrdTermConstraint p r = withPrim @AlgReal p r
+  withSbvOrdTermConstraint r = withPrim @AlgReal r

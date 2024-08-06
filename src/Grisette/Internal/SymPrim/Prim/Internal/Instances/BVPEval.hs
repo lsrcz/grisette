@@ -460,15 +460,15 @@ instance PEvalBVTerm WordN where
   pevalBVSelectTerm = pevalDefaultBVSelectTerm @IntN
   pevalBVConcatTerm = pevalDefaultBVConcatTerm
   pevalBVExtendTerm = pevalDefaultBVExtendTerm
-  sbvBVConcatTerm _ pl pr l r =
+  sbvBVConcatTerm pl pr l r =
     bvIsNonZeroFromGEq1 pl $
       bvIsNonZeroFromGEq1 pr $
         l SBV.# r
-  sbvBVSelectTerm _ (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
+  sbvBVSelectTerm (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @w) $
         sbvDefaultBVSelectTerm pix pw pn bv
-  sbvBVExtendTerm _ (_ :: p0 l) (_ :: p1 r) signed bv =
+  sbvBVExtendTerm (_ :: p0 l) (_ :: p1 r) signed bv =
     withKnownProof
       (unsafeKnownProof @(r - l) (natVal (Proxy @r) - natVal (Proxy @l)))
       $ case (unsafeLeqProof @(l + 1) @r, unsafeLeqProof @1 @(r - l)) of
@@ -482,21 +482,21 @@ instance PEvalBVTerm IntN where
   pevalBVSelectTerm = pevalDefaultBVSelectTerm @WordN
   pevalBVConcatTerm = pevalDefaultBVConcatTerm
   pevalBVExtendTerm = pevalDefaultBVExtendTerm
-  sbvBVConcatTerm (pn :: p0 n) (pl :: p l) (pr :: q r) l r =
+  sbvBVConcatTerm (pl :: p l) (pr :: q r) l r =
     bvIsNonZeroFromGEq1 pl $
       bvIsNonZeroFromGEq1 pr $
         withKnownNat (addNat (natRepr @l) (natRepr @r)) $
           case unsafeLeqProof @1 @(l + r) of
             LeqProof ->
               bvIsNonZeroFromGEq1 (Proxy @(l + r)) $
-                sbvBitCast @(WordN (l + r)) @(IntN (l + r)) @n pn $
-                  (sbvBitCast @(IntN l) @(WordN l) @n pn l)
-                    SBV.# (sbvBitCast @(IntN r) @(WordN r) @n pn r)
-  sbvBVSelectTerm _ (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
+                sbvBitCast @(WordN (l + r)) @(IntN (l + r)) $
+                  (sbvBitCast @(IntN l) @(WordN l) l)
+                    SBV.# (sbvBitCast @(IntN r) @(WordN r) r)
+  sbvBVSelectTerm (pix :: p0 ix) (pw :: p1 w) (pn :: p2 n) bv =
     bvIsNonZeroFromGEq1 (Proxy @n) $
       bvIsNonZeroFromGEq1 (Proxy @w) $
         sbvDefaultBVSelectTerm pix pw pn bv
-  sbvBVExtendTerm _ (_ :: p0 l) (_ :: p1 r) signed bv =
+  sbvBVExtendTerm (_ :: p0 l) (_ :: p1 r) signed bv =
     withKnownProof
       (unsafeKnownProof @(r - l) (natVal (Proxy @r) - natVal (Proxy @l)))
       $ case (unsafeLeqProof @(l + 1) @r, unsafeLeqProof @1 @(r - l)) of
@@ -556,7 +556,7 @@ instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (WordN n) (IntN n) where
           pevalBVExtendTerm signed pr $
             pevalBitCastTerm @(WordN l) @(IntN l) b
       doPevalBitCastBV v = doPevalBitCast v
-  sbvBitCast _ = bvIsNonZeroFromGEq1 (Proxy @n) SBV.sFromIntegral
+  sbvBitCast = bvIsNonZeroFromGEq1 (Proxy @n) SBV.sFromIntegral
 
 instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (IntN n) (WordN n) where
   pevalBitCastTerm = unaryUnfoldOnce doPevalBitCastBV bitCastTerm
@@ -573,4 +573,4 @@ instance (KnownNat n, 1 <= n) => PEvalBitCastTerm (IntN n) (WordN n) where
           pevalBVExtendTerm signed pr $
             pevalBitCastTerm @(IntN l) @(WordN l) b
       doPevalBitCastBV v = doPevalBitCast v
-  sbvBitCast _ = bvIsNonZeroFromGEq1 (Proxy @n) SBV.sFromIntegral
+  sbvBitCast = bvIsNonZeroFromGEq1 (Proxy @n) SBV.sFromIntegral
