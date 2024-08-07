@@ -276,10 +276,22 @@ The Grisette library is distributed under the terms of the BSD3 license. The
 
 ## Note
 
+Grisette is fully compatible with GHC 9.6+, and works in most cases with GHC
+8.10+.
+
+### CLC proposal #10
+As the type classes provided by Grisette implements
+[CLC proposal #10](https://github.com/haskell/core-libraries-committee/issues/10),
+which requires `base-4.18.0.0` to work reliably, Grisette is fully compatible
+with GHC 9.6.
+You may experience instance resolution failure when using older GHCs in the
+client code (Grisette itself is buildable against GHC 8.10+ with some tricks).
+
 ### Quantifiers
 
-Grisette currently supports universal and existential quantifiers $\forall$ and $\exists$, but only when building with sbv >= 10.1.
-This also means that you need to use GHC >= 9.2.
+Grisette currently supports universal and existential quantifiers $\forall$ and
+$\exists$, but only when building with sbv >= 10.1. This also means that you
+need to use GHC >= 9.2.
 
 ### Floating-points
 
@@ -295,11 +307,8 @@ Since 0.7.0.0, Grisette provides a [unified
 interface](https://hackage.haskell.org/package/grisette/docs/Grisette-Unified.html)
 to symbolic and concrete evaluations. GHC 9.0 or earlier, without the
 [QuickLook](https://dl.acm.org/doi/10.1145/3408971) type inference algorithm for
-impredicative types, may fail to resolve some constraints . You may need to
+impredicative types, may fail to resolve some constraints. You may need to
 provide additional constraints in your code to help the compiler.
-
-If you don't use the unified interface, Grisette should work fine with GHC 8.10
-or later.
 
 ## Citing Grisette
 
