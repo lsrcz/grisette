@@ -4,11 +4,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -86,6 +90,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable,
     Mergeable1,
     Mergeable2,
+    resolveMergeable1,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
@@ -560,10 +565,19 @@ instance
   {-# INLINE toSym #-}
 
 instance
-  (ToSym s2 s1, ToSym1 m1 m2) =>
+  (ToSym s2 s1, ToSym1 m1 m2, Mergeable1 m2) =>
   ToSym1 (ReaderT s1 m1) (ReaderT s2 m2)
   where
-  liftToSym f (ReaderT f1) = ReaderT $ liftToSym (liftToSym f) f1
+  liftToSym ::
+    forall a b.
+    (ToSym s2 s1, ToSym1 m1 m2, Mergeable1 m2, Mergeable b) =>
+    (a -> b) ->
+    ReaderT s1 m1 a ->
+    ReaderT s2 m2 b
+  liftToSym f (ReaderT f1) =
+    resolveMergeable1 @m2 @b $
+      ReaderT $
+        liftToSym (liftToSym f) f1
   {-# INLINE liftToSym #-}
 
 -- IdentityT
@@ -635,7 +649,14 @@ instance
   (ToSym1 f0 f, ToSym1 g0 g) =>
   ToSym1 (Compose f0 g0) (Compose f g)
   where
-  liftToSym f (Compose v) = Compose $ liftToSym (liftToSym f) v
+  liftToSym ::
+    forall a b.
+    (ToSym1 f0 f, ToSym1 g0 g, Mergeable b) =>
+    (a -> b) ->
+    Compose f0 g0 a ->
+    Compose f g b
+  liftToSym f (Compose v) =
+    resolveMergeable1 @g @b $ Compose $ liftToSym (liftToSym f) v
   {-# INLINE liftToSym #-}
 
 -- Const

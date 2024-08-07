@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
@@ -52,6 +53,7 @@ module Grisette.Internal.Core.Data.Class.Mergeable
     buildStrategyList,
     resolveStrategy,
     resolveStrategy',
+    resolveMergeable1,
   )
 where
 
@@ -287,6 +289,15 @@ class
 rootStrategy1 :: (Mergeable a, Mergeable1 u) => MergingStrategy (u a)
 rootStrategy1 = liftRootStrategy rootStrategy
 {-# INLINE rootStrategy1 #-}
+
+-- | Workaround as GHC prior to 9.6 doesn't support quantified constraints
+-- reliably.
+--
+-- Similar to https://github.com/haskell/core-libraries-committee/issues/10,
+-- which is only available with 9.6 or higher.
+resolveMergeable1 ::
+  forall f a r. (Mergeable1 f, Mergeable a) => ((Mergeable (f a)) => r) -> r
+resolveMergeable1 v = v
 
 -- | Lifting of the 'Mergeable' class to binary type constructors.
 class
