@@ -252,7 +252,7 @@ unionTests =
         actual @?= expected,
       testCase "ToSym (Union a) (Union b)" $ do
         let actual = toSym (mrgSingle True :: Union Bool) :: Union SymBool
-        let expected = return (con True)
+        let expected = mrgSingle (con True)
         actual @?= expected,
       testCase "ToSym (Union Integer) SymInteger" $ do
         let actual = toSym (mrgIf "a" 1 2 :: Union Integer)

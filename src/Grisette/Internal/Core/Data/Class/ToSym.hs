@@ -81,6 +81,12 @@ import Grisette.Internal.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
+import Grisette.Internal.Core.Data.Class.Mergeable
+  ( GMergeable,
+    Mergeable,
+    Mergeable1,
+    Mergeable2,
+  )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV
@@ -88,7 +94,12 @@ import Grisette.Internal.SymPrim.BV
     IntN,
     WordN,
   )
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    NotRepresentableFPError,
+    ValidFP,
+  )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
@@ -121,7 +132,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Grisette.SymPrim
 
 -- | Convert a concrete value to symbolic value.
-class ToSym a b where
+class (Mergeable b) => ToSym a b where
   -- | Convert a concrete value to symbolic value.
   --
   -- >>> toSym False :: SymBool
@@ -131,14 +142,17 @@ class ToSym a b where
   -- [false,true]
   toSym :: a -> b
 
-instance {-# INCOHERENT #-} ToSym a a where
+instance {-# INCOHERENT #-} (Mergeable a) => ToSym a a where
   toSym = id
   {-# INLINE toSym #-}
 
 -- | Lifting of 'ToSym' to unary type constructors.
-class (forall a b. (ToSym a b) => ToSym (f1 a) (f2 b)) => ToSym1 f1 f2 where
+class
+  (forall a b. (ToSym a b) => ToSym (f1 a) (f2 b), Mergeable1 f2) =>
+  ToSym1 f1 f2
+  where
   -- | Lift a conversion to symbolic function to unary type constructors.
-  liftToSym :: (a -> b) -> f1 a -> f2 b
+  liftToSym :: (Mergeable b) => (a -> b) -> f1 a -> f2 b
 
 -- | Lift the standard 'toSym' to unary type constructors.
 toSym1 :: (ToSym1 f1 f2, ToSym a b) => f1 a -> f2 b
@@ -146,7 +160,10 @@ toSym1 = liftToSym toSym
 {-# INLINE toSym1 #-}
 
 -- | Lifting of 'ToSym' to binary type constructors.
-class (forall a b. (ToSym a b) => ToSym1 (f1 a) (f2 b)) => ToSym2 f1 f2 where
+class
+  (forall a b. (ToSym a b) => ToSym1 (f1 a) (f2 b), Mergeable2 f2) =>
+  ToSym2 f1 f2
+  where
   -- | Lift conversion to symbolic functions to binary type constructors.
   liftToSym2 :: (a -> b) -> (c -> d) -> f1 a c -> f2 b d
 
@@ -162,7 +179,8 @@ data family ToSymArgs arity a b :: Type
 
 data instance ToSymArgs Arity0 _ _ = ToSymArgs0
 
-newtype instance ToSymArgs Arity1 a b = ToSymArgs1 (a -> b)
+data instance ToSymArgs Arity1 _ _ where
+  ToSymArgs1 :: (Mergeable b) => (a -> b) -> ToSymArgs Arity1 a b
 
 -- | The class of types that can be generically converted to symbolic values.
 class GToSym arity f1 f2 where
@@ -208,10 +226,10 @@ instance (ToSym1 f1 f2) => GToSym Arity1 (Rec1 f1) (Rec1 f2) where
   {-# INLINE gtoSym #-}
 
 instance
-  (ToSym1 f1 f2, GToSym Arity1 g1 g2) =>
+  (ToSym1 f1 f2, GToSym Arity1 g1 g2, Mergeable1 g2) =>
   GToSym Arity1 (f1 :.: g1) (f2 :.: g2)
   where
-  gtoSym targs (Comp1 a) = Comp1 $ liftToSym (gtoSym targs) a
+  gtoSym targs@ToSymArgs1 {} (Comp1 a) = Comp1 $ liftToSym (gtoSym targs) a
   {-# INLINE gtoSym #-}
 
 -- | Generic 'toSym' function.
@@ -224,7 +242,7 @@ genericToSym = to . gtoSym ToSymArgs0 . from
 
 -- | Generic 'liftToSym' function.
 genericLiftToSym ::
-  (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2)) =>
+  (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2), Mergeable b) =>
   (a -> b) ->
   f1 a ->
   f2 b
@@ -232,20 +250,33 @@ genericLiftToSym f = to1 . gtoSym (ToSymArgs1 f) . from1
 {-# INLINE genericLiftToSym #-}
 
 instance
-  (Generic a, Generic b, GToSym Arity0 (Rep a) (Rep b)) =>
+  ( Generic a,
+    Generic b,
+    GToSym Arity0 (Rep a) (Rep b),
+    GMergeable Arity0 (Rep b)
+  ) =>
   ToSym a (Default b)
   where
   toSym = Default . genericToSym
   {-# INLINE toSym #-}
 
 instance
-  (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2), ToSym a b) =>
+  ( Generic1 f1,
+    Generic1 f2,
+    GToSym Arity1 (Rep1 f1) (Rep1 f2),
+    ToSym a b,
+    GMergeable Arity1 (Rep1 f2)
+  ) =>
   ToSym (f1 a) (Default1 f2 b)
   where
   toSym = toSym1
 
 instance
-  (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2)) =>
+  ( Generic1 f1,
+    Generic1 f2,
+    GToSym Arity1 (Rep1 f1) (Rep1 f2),
+    GMergeable Arity1 (Rep1 f2)
+  ) =>
   ToSym1 f1 (Default1 f2)
   where
   liftToSym f = Default1 . genericLiftToSym f
@@ -296,8 +327,9 @@ instance ToSym symtype symtype where \
 instance (KnownNat n, 1 <= n) => ToSym (symtype n) (symtype n) where \
   toSym = id
 
-#define TO_SYM_SYMID_FUN(op) \
-instance (SupportedPrim a, SupportedPrim b) => ToSym (a op b) (a op b) where \
+#define TO_SYM_SYMID_FUN(cop, op) \
+instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+  ToSym (op sa sb) (op sa sb) where \
   toSym = id
 
 #if 1
@@ -306,8 +338,8 @@ TO_SYM_SYMID_SIMPLE(SymInteger)
 TO_SYM_SYMID_SIMPLE(SymAlgReal)
 TO_SYM_SYMID_BV(SymIntN)
 TO_SYM_SYMID_BV(SymWordN)
-TO_SYM_SYMID_FUN(=~>)
-TO_SYM_SYMID_FUN(-~>)
+TO_SYM_SYMID_FUN((=->), (=~>))
+TO_SYM_SYMID_FUN((-->), (-~>))
 TO_SYM_SYMID_SIMPLE(SymFPRoundingMode)
 #endif
 
@@ -490,14 +522,14 @@ instance
 
 -- StateT
 instance
-  (ToSym1 m1 m2, ToSym a1 a2) =>
+  (ToSym1 m1 m2, ToSym a1 a2, Mergeable s) =>
   ToSym (StateLazy.StateT s m1 a1) (StateLazy.StateT s m2 a2)
   where
   toSym = toSym1
   {-# INLINE toSym #-}
 
 instance
-  (ToSym1 m1 m2) =>
+  (ToSym1 m1 m2, Mergeable s) =>
   ToSym1 (StateLazy.StateT s m1) (StateLazy.StateT s m2)
   where
   liftToSym f (StateLazy.StateT f1) =
@@ -505,14 +537,14 @@ instance
   {-# INLINE liftToSym #-}
 
 instance
-  (ToSym1 m1 m2, ToSym a1 a2) =>
+  (ToSym1 m1 m2, ToSym a1 a2, Mergeable s) =>
   ToSym (StateStrict.StateT s m1 a1) (StateStrict.StateT s m2 a2)
   where
   toSym = toSym1
   {-# INLINE toSym #-}
 
 instance
-  (ToSym1 m1 m2) =>
+  (ToSym1 m1 m2, Mergeable s) =>
   ToSym1 (StateStrict.StateT s m1) (StateStrict.StateT s m2)
   where
   liftToSym f (StateStrict.StateT f1) =
