@@ -24,10 +24,11 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
+    Mergeable,
     Solvable (con, isym, ssym),
     SymBool,
     SymEq ((.==)),
-    ToSym (toSym), Mergeable
+    ToSym (toSym),
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
