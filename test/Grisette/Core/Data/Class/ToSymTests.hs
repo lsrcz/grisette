@@ -27,7 +27,7 @@ import Grisette
     Solvable (con, isym, ssym),
     SymBool,
     SymEq ((.==)),
-    ToSym (toSym),
+    ToSym (toSym), Mergeable
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -35,7 +35,8 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
 import Test.QuickCheck (ioProperty)
 
-toSymForConcreteOkProp :: (HasCallStack, Show v, Eq v) => v -> Assertion
+toSymForConcreteOkProp ::
+  (HasCallStack, Show v, Eq v, Mergeable v) => v -> Assertion
 toSymForConcreteOkProp v = toSym v @?= v
 
 toSymTests :: Test

@@ -92,8 +92,8 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
 import Grisette.Internal.Core.Data.Class.Solver (UnionWithExcept (extractUnionExcept))
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd (symCompare, (.<), (.<=), (.>), (.>=)))
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
+import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon), ToCon1)
+import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym), ToSym1)
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
     tryMerge,
@@ -456,7 +456,7 @@ instance (SymOrd (m (CBMCEither e a))) => SymOrd (CBMCExceptT e m a) where
   symCompare (CBMCExceptT l) (CBMCExceptT r) = symCompare l r
 
 instance
-  (ToCon (m1 (CBMCEither e1 a)) (m2 (CBMCEither e2 b))) =>
+  (ToCon1 m1 m2, ToCon e1 e2, ToCon a b) =>
   ToCon (CBMCExceptT e1 m1 a) (CBMCExceptT e2 m2 b)
   where
   toCon (CBMCExceptT v) = CBMCExceptT <$> toCon v
@@ -468,7 +468,7 @@ instance
   toCon (CBMCExceptT v) = toCon v
 
 instance
-  (ToSym (m1 (CBMCEither e1 a)) (m2 (CBMCEither e2 b))) =>
+  (ToSym e1 e2, ToSym a b, ToSym1 m1 m2) =>
   ToSym (CBMCExceptT e1 m1 a) (CBMCExceptT e2 m2 b)
   where
   toSym (CBMCExceptT v) = CBMCExceptT $ toSym v

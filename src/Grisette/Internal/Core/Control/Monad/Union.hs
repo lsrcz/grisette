@@ -468,7 +468,7 @@ instance (ToSym a b) => ToSym (Union a) (Union b) where
   toSym = toSym1
 
 instance ToSym1 Union Union where
-  liftToSym = fmap
+  liftToSym f = tryMerge . fmap f
 
 instance ToSym (Union Bool) SymBool where
   toSym = simpleMerge . fmap con
