@@ -22,10 +22,24 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Added bitcast from and to `Bool`, `IntN`, `WordN`, `FP` and their symbolic
   counterparts when appropriate.
   ([#232](https://github.com/lsrcz/grisette/pull/232))
+- Add `SymFromIntegral`. ([#233](https://github.com/lsrcz/grisette/pull/233))
+- Add operations for concrete floating point numbers. Add IEEE754-2019
+  `fpMinimum`, `fpMinimumNumber`, `fpMaximum`, and `fpMaximumNumber` operations.
+  ([#235](https://github.com/lsrcz/grisette/pull/235))
+- Add conversion from and to floating points.
+  ([#236](https://github.com/lsrcz/grisette/pull/236))
+- Add `SymFiniteBits`. ([#237](https://github.com/lsrcz/grisette/pull/237))
+- Add unified instances for all provided operations, including `FP` and
+  `AlgReal`.
+  ([#239](https://github.com/lsrcz/grisette/pull/239),
+   [#240](https://github.com/lsrcz/grisette/pull/240),
+   [#243](https://github.com/lsrcz/grisette/pull/243))
 
 ### Fixed
 - Fixed model parsing for floating points.
   ([#227](https://github.com/lsrcz/grisette/pull/227))
+- Allowed `mkUnifiedConstructor` to be used with types without modes or args.
+  ([#242](https://github.com/lsrcz/grisette/pull/242))
 
 ### Changed
 - [Breaking] Changed the operand order for `liftPFormatPrec2` and
@@ -39,6 +53,23 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#230](https://github.com/lsrcz/grisette/pull/230))
 - [Breaking] `SafeDivision` renamed to `SafeDiv`.
   ([#231](https://github.com/lsrcz/grisette/pull/231))
+- Refined the template-haskell-based derivation mechanism.
+  ([#238](https://github.com/lsrcz/grisette/pull/238))
+- [Breaking] `GetData` is made injective by giving `Identity` wrapped type for
+  concrete evaluation instead of the type itself.
+  ([#242](https://github.com/lsrcz/grisette/pull/242))
+- Changed pprint for `Identity` to not to print the constructor.
+  ([#242](https://github.com/lsrcz/grisette/pull/242))
+- Make `ToSym` requires the target type to be `Mergeable`. This enable us to
+  merge the results for converting from `Union a` to `Union b` again.
+  ([#244](https://github.com/lsrcz/grisette/pull/244))
+
+### Removed
+- Removed `fpMin` and `fpMax`, which is removed in IEEE754-2019.
+  ([#235](https://github.com/lsrcz/grisette/pull/235))
+- Dropped support for post-evaluation approximation.
+  ([#241](https://github.com/lsrcz/grisette/pull/241))
+  
 
 ## [0.7.0.0] - 2024-07-02
 
