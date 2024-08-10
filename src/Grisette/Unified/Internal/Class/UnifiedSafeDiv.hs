@@ -39,9 +39,10 @@ import Grisette.Internal.Core.Data.Class.SafeDiv
     SafeDiv,
   )
 import qualified Grisette.Internal.Core.Data.Class.SafeDiv
-import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.SomeBV
-  ( SomeIntN,
+  ( SomeIntN, 
+    SomeBVException,
     SomeSymIntN,
     SomeSymWordN,
     SomeWordN,
@@ -214,12 +215,12 @@ instance
   withBaseSafeDiv r = withBaseBranching @'Sym @m r
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching mode m
   ) =>
   UnifiedSafeDiv
     mode
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeIntN
     m
   where
@@ -227,24 +228,24 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching 'Sym m
   ) =>
   UnifiedSafeDiv
     'Sym
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeSymIntN
     m
   where
   withBaseSafeDiv r = withBaseBranching @'Sym @m r
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching mode m
   ) =>
   UnifiedSafeDiv
     mode
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeWordN
     m
   where
@@ -252,12 +253,12 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching 'Sym m
   ) =>
   UnifiedSafeDiv
     'Sym
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeSymWordN
     m
   where

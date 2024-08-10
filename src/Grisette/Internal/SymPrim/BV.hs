@@ -26,8 +26,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.BV
-  ( BitwidthMismatch (..),
-    IntN (..),
+  ( IntN (..),
     IntN8,
     IntN16,
     IntN32,
@@ -44,7 +43,6 @@ import Control.Applicative (Alternative ((<|>)))
 import Control.DeepSeq (NFData)
 import Control.Exception
   ( ArithException (Overflow),
-    Exception (displayException),
     throw,
   )
 import Data.Bits
@@ -135,14 +133,6 @@ import qualified Text.Read.Lex as L
 -- >>> import Grisette.SymPrim
 -- >>> import Grisette.Backend
 -- >>> import Data.Proxy
-
--- | An exception that would be thrown when operations are performed on
--- incompatible bit widths.
-data BitwidthMismatch = BitwidthMismatch
-  deriving (Show, Eq, Ord, Generic)
-
-instance Exception BitwidthMismatch where
-  displayException BitwidthMismatch = "Bit width does not match"
 
 -- |
 -- Unsigned bit vector type. Indexed with the bit width. Signedness affect the

@@ -71,7 +71,7 @@ module Grisette.SymPrim
 
     -- ** Runtime-sized bit-vector types
     SomeBV (..),
-    BitwidthMismatch (..),
+    SomeBVException (..),
     pattern SomeIntN,
     type SomeIntN,
     pattern SomeWordN,
@@ -87,7 +87,7 @@ module Grisette.SymPrim
     -- *** Some low-level helpers for writing instances for t'SomeBV'
 
     -- | The functions here will check the bitwidths of the input bit-vectors
-    -- and raise t'BitwidthMismatch' if they do not match.
+    -- and raise v'BitwidthMismatch' if they do not match.
     unsafeSomeBV,
     unarySomeBV,
     unarySomeBVR1,
@@ -226,8 +226,7 @@ import Grisette.Internal.SymPrim.AllSyms
     symsSize,
   )
 import Grisette.Internal.SymPrim.BV
-  ( BitwidthMismatch (..),
-    IntN,
+  ( IntN,
     IntN16,
     IntN32,
     IntN64,
@@ -281,6 +280,7 @@ import Grisette.Internal.SymPrim.Quantifier
   )
 import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (..),
+    SomeBVException (..),
     arbitraryBV,
     binSomeBV,
     binSomeBVR1,

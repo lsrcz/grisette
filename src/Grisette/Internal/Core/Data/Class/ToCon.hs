@@ -87,8 +87,7 @@ import Grisette.Internal.Core.Data.Class.Solvable
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV
-  ( BitwidthMismatch,
-    IntN (IntN),
+  ( IntN (IntN),
     WordN (WordN),
   )
 import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, FPRoundingMode, NotRepresentableFPError, ValidFP)
@@ -406,7 +405,6 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''BitwidthMismatch,
     ''NotRepresentableFPError,
     ''Monoid.Dual,
     ''Monoid.Sum,
