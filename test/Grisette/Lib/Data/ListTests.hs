@@ -271,7 +271,7 @@ listTests =
                     Union (Maybe [SymInteger])
             let expected =
                   mrgIf
-                    (symNot ((aint .== cint) .&& (bint .== dint)))
+                    ((aint ./= cint) .|| (bint ./= dint))
                     (return Nothing)
                     (return $ Just [eint])
             actual @?= expected
@@ -405,9 +405,9 @@ listTests =
             let actual =
                   mrgFilter (.== 0) [aint, bint] :: Union [SymInteger]
             let expected =
-                  mrgIf (symNot $ aint .== 0 .|| bint .== 0) (return []) $
+                  mrgIf (aint ./= 0 .&& bint ./= 0) (return []) $
                     mrgIf
-                      (symNot $ aint .== 0 .&& bint .== 0)
+                      (aint ./= 0 .|| bint ./= 0)
                       (return [symIte (aint .== 0) aint bint])
                       (return [aint, bint])
             actual @?= expected
@@ -427,10 +427,10 @@ listTests =
                     Union ([SymInteger], [SymInteger])
             let expected =
                   mrgIf
-                    (symNot $ aint .== 0 .|| bint .== 0)
+                    (aint ./= 0 .&& bint ./= 0)
                     (return ([], [aint, bint]))
                     $ mrgIf
-                      (symNot $ aint .== 0 .&& bint .== 0)
+                      (aint ./= 0 .|| bint ./= 0)
                       ( return
                           ( [symIte (aint .== 0) aint bint],
                             [symIte (aint .== 0) bint aint]
@@ -453,7 +453,7 @@ listTests =
                   [aint, bint, cint] .!? dint :: Union (Maybe SymInteger)
             let expected =
                   mrgIf
-                    (symNot (dint .== 0 .|| dint .== 1 .|| dint .== 2))
+                    (dint ./= 0 .&& dint ./= 1 .&& dint ./= 2)
                     (return Nothing)
                     ( return $
                         Just $
@@ -475,7 +475,7 @@ listTests =
                     Union (Maybe SymInteger)
             let expected =
                   mrgIf
-                    (symNot $ aint .== bint .|| aint .== cint .|| aint .== dint)
+                    (aint ./= bint .&& aint ./= cint .&& aint ./= dint)
                     (mrgPure Nothing)
                     ( mrgPure $
                         Just $
@@ -504,7 +504,7 @@ listTests =
                     Union (Maybe SymInteger)
             let expected =
                   mrgIf
-                    (symNot $ aint .== 0 .|| bint .== 0 .|| cint .== 0)
+                    (aint ./= 0 .&& bint ./= 0 .&& cint ./= 0)
                     (mrgPure Nothing)
                     ( mrgPure $
                         Just $
@@ -638,12 +638,11 @@ listTests =
                     Union [SymInteger]
             let expected =
                   mrgIf
-                    ( symNot $
-                        aint .== bint .&& aint .== cint .&& aint .== dint
+                    ( aint ./= bint .|| aint ./= cint .|| aint ./= dint
                     )
                     ( return
-                        [ symIte (aint .== bint) bint cint,
-                          symIte (aint .== bint .&& aint .== cint) cint dint
+                        [ symIte (aint ./= bint) cint bint,
+                          symIte (aint ./= bint .|| aint ./= cint) dint cint
                         ]
                     )
                     (return [bint, cint, dint])

@@ -30,6 +30,9 @@ module Grisette.Internal.Core.Data.Class.SymEq
     SymEq2 (..),
     symEq2,
 
+    -- * More 'Eq' helper
+    distinct,
+
     -- * Generic 'SymEq'
     SymEqArgs (..),
     GSymEq (..),
@@ -53,6 +56,7 @@ import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
@@ -82,8 +86,17 @@ import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.&&)))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
-import Grisette.Internal.SymPrim.Prim.Term (pevalEqTerm)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    NotRepresentableFPError,
+    ValidFP,
+  )
+import Grisette.Internal.SymPrim.Prim.Term
+  ( SupportedPrim (pevalDistinctTerm),
+    pevalEqTerm,
+    underlyingTerm,
+  )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN (SymIntN),
@@ -101,6 +114,26 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 
+-- | Check if all elements in a list are distinct.
+--
+-- Note that empty or singleton lists are always distinct.
+--
+-- >>> distinct []
+-- True
+-- >>> distinct [1]
+-- True
+-- >>> distinct [1, 2, 3]
+-- True
+-- >>> distinct [1, 2, 2]
+-- False
+distinct :: (Eq a) => [a] -> Bool
+distinct [] = True
+distinct [_] = True
+distinct (x : xs) = go x xs && distinct xs
+  where
+    go _ [] = True
+    go x' (y : ys) = x' /= y .&& go x' ys
+
 -- $setup
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
@@ -117,10 +150,10 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 --
 -- >>> let a = "a" :: SymInteger
 -- >>> let b = "b" :: SymInteger
+-- >>> a .== b
+-- (= a b)
 -- >>> a ./= b
--- (! (= a b))
--- >>> a ./= b
--- (! (= a b))
+-- (distinct a b)
 --
 -- __Note:__ This type class can be derived for algebraic data types.
 -- You may need the @DerivingVia@ and @DerivingStrategies@ extensions.
@@ -136,6 +169,16 @@ class SymEq a where
   a ./= b = symNot $ a .== b
   {-# INLINE (./=) #-}
   infix 4 ./=
+
+  -- | Check if all elements in a list are distinct, under the symbolic equality
+  -- semantics.
+  symDistinct :: [a] -> SymBool
+  symDistinct [] = con True
+  symDistinct [_] = con True
+  symDistinct (x : xs) = go x xs .&& symDistinct xs
+    where
+      go _ [] = con True
+      go x' (y : ys) = x' ./= y .&& go x' ys
   {-# MINIMAL (.==) | (./=) #-}
 
 -- | Lifting of the 'SymEq' class to unary type constructors.
@@ -302,12 +345,24 @@ instance (ValidFP eb sb) => SymEq (FP eb sb) where
 #define SEQ_SIMPLE(symtype) \
 instance SymEq symtype where \
   (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
-  {-# INLINE (.==) #-}
+  {-# INLINE (.==) #-}; \
+  l ./= r = symDistinct [l, r]; \
+  {-# INLINE (./=) #-}; \
+  symDistinct [] = con True; \
+  symDistinct [_] = con True; \
+  symDistinct (l:ls) = SymBool $ \
+    pevalDistinctTerm (underlyingTerm l :| (underlyingTerm <$> ls))
 
 #define SEQ_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SymEq (symtype n) where \
   (symtype l) .== (symtype r) = SymBool $ pevalEqTerm l r; \
-  {-# INLINE (.==) #-}
+  {-# INLINE (.==) #-}; \
+  l ./= r = symDistinct [l, r]; \
+  {-# INLINE (./=) #-}; \
+  symDistinct [] = con True; \
+  symDistinct [_] = con True; \
+  symDistinct (l:ls) = SymBool $ \
+    pevalDistinctTerm (underlyingTerm l :| (underlyingTerm <$> ls))
 
 #if 1
 SEQ_SIMPLE(SymBool)

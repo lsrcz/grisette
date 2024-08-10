@@ -33,6 +33,7 @@ import Control.Monad.State
     modify',
   )
 import Data.Data (cast)
+import Data.Foldable (Foldable (toList), traverse_)
 import qualified Data.HashSet as HS
 import Grisette.Internal.Core.Data.MemoUtils (htmemo2)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
@@ -55,6 +56,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
+        DistinctTerm,
         DivIntegralTerm,
         EqTerm,
         ExistsTerm,
@@ -180,6 +182,8 @@ extractSymSomeTerm = go initialMemo
     go memo bs (SomeTerm (OrTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (AndTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (EqTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (DistinctTerm _ args)) =
+      combineAllSets $ map (gotyped memo bs) $ toList args
     go memo bs (SomeTerm (ITETerm _ cond arg1 arg2)) =
       goTernary memo bs cond arg1 arg2
     go memo bs (SomeTerm (AddNumTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
@@ -304,6 +308,13 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
     go t@(OrTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(AndTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(EqTerm _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(DistinctTerm _ args) = do
+      b <- exists t
+      if b
+        then return ()
+        else do
+          add t
+          traverse_ go args
     go t@(ITETerm _ cond arg1 arg2) = goTernary t cond arg1 arg2
     go t@(AddNumTerm _ arg1 arg2) = goBinary t arg1 arg2
     go t@(NegNumTerm _ arg) = goUnary t arg

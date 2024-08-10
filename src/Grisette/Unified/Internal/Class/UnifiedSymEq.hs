@@ -30,6 +30,7 @@ module Grisette.Unified.Internal.Class.UnifiedSymEq
     UnifiedSymEq2 (..),
     (.==),
     (./=),
+    symDistinct,
     liftSymEq,
     symEq1,
     liftSymEq2,
@@ -98,6 +99,26 @@ import Grisette.Unified.Internal.Util (withMode)
   withMode @mode
     (withBaseSymEq @mode @a $ a /= b)
     (withBaseSymEq @mode @a $ a Grisette.Internal.Core.Data.Class.SymEq../= b)
+
+-- | Unified `Grisette.Internal.Core.Data.Class.SymEq.symDistinct`.
+--
+-- Note that you may sometimes need to write type annotations for the result
+-- when the mode isn't clear:
+--
+-- > symDistinct l :: GetBool mode
+--
+-- One example when it isn't clear is when this is used in unified
+-- `Grisette.Unified.Internal.Class.UnifiedBranching.mrgIf`.
+symDistinct ::
+  forall mode a. (Typeable mode, UnifiedSymEq mode a) => [a] -> GetBool mode
+symDistinct l =
+  withMode @mode
+    ( withBaseSymEq @mode @a $
+        Grisette.Internal.Core.Data.Class.SymEq.distinct l
+    )
+    ( withBaseSymEq @mode @a $
+        Grisette.Internal.Core.Data.Class.SymEq.symDistinct l
+    )
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.liftSymEq`.
 liftSymEq ::

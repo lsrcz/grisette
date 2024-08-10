@@ -25,6 +25,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
 where
 
 import Data.Coerce (coerce)
+import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 import Data.Proxy (Proxy (Proxy))
 import Data.SBV (BVIsNonZero)
 import qualified Data.SBV as SBV
@@ -56,6 +57,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         funcDummyConstraint,
         isFuncType,
         parseSMTModelResult,
+        pevalDistinctTerm,
         pevalEqTerm,
         pevalITETerm,
         pformatCon,
@@ -70,10 +72,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term (ConTerm),
     TypedSymbol (TypedSymbol),
     conTerm,
+    distinctTerm,
     eqTerm,
     parseScalarSMTModelResult,
     pevalDefaultEqTerm,
     pevalITEBasicTerm,
+    pevalNotTerm,
     sbvFresh,
   )
 import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue, toModelValue)
@@ -92,12 +96,29 @@ instance SBVRep Integer where
 instance SupportedPrimConstraint Integer where
   type PrimConstraint Integer = (Integral (NonFuncSBVBaseType Integer))
 
+pairwiseHasConcreteEqual :: (SupportedNonFuncPrim a) => [Term a] -> Bool
+pairwiseHasConcreteEqual [] = False
+pairwiseHasConcreteEqual [_] = False
+pairwiseHasConcreteEqual (x : xs) =
+  go x xs || pairwiseHasConcreteEqual xs
+  where
+    go _ [] = False
+    go x (y : ys) = x == y || go x ys
+
+pevalGeneralDistinct ::
+  (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
+pevalGeneralDistinct (_ :| []) = conTerm True
+pevalGeneralDistinct (a :| [b]) = pevalNotTerm $ pevalEqTerm a b
+pevalGeneralDistinct l | pairwiseHasConcreteEqual $ toList l = conTerm False
+pevalGeneralDistinct l = distinctTerm l
+
 instance SupportedPrim Integer where
   pformatCon = show
   defaultValue = defaultValueForInteger
   defaultValueDynamic _ = defaultValueForIntegerDyn
   pevalITETerm = pevalITEBasicTerm
   pevalEqTerm = pevalDefaultEqTerm
+  pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm n = fromInteger n
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
@@ -135,6 +156,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
   pevalEqTerm = pevalDefaultEqTerm
+  pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm n = bvIsNonZeroFromGEq1 (Proxy @w) $ fromIntegral n
   symSBVName symbol _ = show symbol
   symSBVTerm name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
@@ -183,6 +205,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
   pevalEqTerm = pevalDefaultEqTerm
+  pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm n = bvIsNonZeroFromGEq1 (Proxy @w) $ fromIntegral n
   symSBVName symbol _ = show symbol
   symSBVTerm name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
@@ -223,6 +246,7 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
+  pevalDistinctTerm = distinctTerm
   conSBVTerm (FP fp) = SBV.literal fp
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
@@ -275,6 +299,7 @@ instance SupportedPrim FPRoundingMode where
   pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
+  pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm RNE = SBV.sRNE
   conSBVTerm RNA = SBV.sRNA
   conSBVTerm RTP = SBV.sRTP
@@ -327,6 +352,7 @@ instance SupportedPrim AlgReal where
   pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
+  pevalDistinctTerm = pevalGeneralDistinct
   conSBVTerm = SBV.literal . toSBVAlgReal
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name

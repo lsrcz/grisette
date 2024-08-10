@@ -109,6 +109,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     orTerm,
     andTerm,
     eqTerm,
+    distinctTerm,
     iteTerm,
     addNumTerm,
     negNumTerm,
@@ -223,6 +224,7 @@ import Data.Interned.Internal
     CacheState (CacheState),
   )
 import Data.Kind (Constraint, Type)
+import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 import Data.Maybe (fromMaybe)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
@@ -402,6 +404,7 @@ class
   defaultValueDynamic _ = toModelValue (defaultValue @t)
   pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
   pevalEqTerm :: Term t -> Term t -> Term Bool
+  pevalDistinctTerm :: NonEmpty (Term t) -> Term Bool
   conSBVTerm :: t -> SBVType t
   symSBVName :: TypedSymbol 'AnyKind t -> Int -> String
   symSBVTerm :: (SBVFreshMonad m) => String -> m (SBVType t)
@@ -435,6 +438,10 @@ class
   default sbvEq ::
     (SBVT.EqSymbolic (SBVType t)) => SBVType t -> SBVType t -> SBV.SBV Bool
   sbvEq = (SBV..==)
+  sbvDistinct :: NonEmpty (SBVType t) -> SBV.SBV Bool
+  default sbvDistinct ::
+    (SBVT.EqSymbolic (SBVType t)) => NonEmpty (SBVType t) -> SBV.SBV Bool
+  sbvDistinct = SBV.distinct . toList
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
   castTypedSymbol ::
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
@@ -1045,6 +1052,11 @@ data Term t where
     !(Term t) ->
     !(Term t) ->
     Term Bool
+  DistinctTerm ::
+    (SupportedNonFuncPrim t) =>
+    {-# UNPACK #-} !Id ->
+    !(NonEmpty (Term t)) ->
+    Term Bool
   ITETerm ::
     (SupportedPrim t) =>
     {-# UNPACK #-} !Id ->
@@ -1312,6 +1324,7 @@ identityWithTypeRep (NotTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (OrTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (AndTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (EqTerm i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (DistinctTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ITETerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (AddNumTerm i _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (NegNumTerm i _) = (someTypeRep (Proxy @t), i)
@@ -1365,6 +1378,7 @@ introSupportedPrimConstraint NotTerm {} x = x
 introSupportedPrimConstraint OrTerm {} x = x
 introSupportedPrimConstraint AndTerm {} x = x
 introSupportedPrimConstraint EqTerm {} x = x
+introSupportedPrimConstraint DistinctTerm {} x = x
 introSupportedPrimConstraint ITETerm {} x = x
 introSupportedPrimConstraint AddNumTerm {} x = x
 introSupportedPrimConstraint NegNumTerm {} x = x
@@ -1418,6 +1432,7 @@ pformat (NotTerm _ arg) = "(! " ++ pformat arg ++ ")"
 pformat (OrTerm _ arg1 arg2) = "(|| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (AndTerm _ arg1 arg2) = "(&& " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (EqTerm _ arg1 arg2) = "(= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
+pformat (DistinctTerm _ args) = "(distinct " ++ unwords (map pformat $ toList args) ++ ")"
 pformat (ITETerm _ cond arg1 arg2) = "(ite " ++ pformat cond ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (AddNumTerm _ arg1 arg2) = "(+ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
 pformat (NegNumTerm _ arg) = "(- " ++ pformat arg ++ ")"
@@ -1478,6 +1493,7 @@ instance Lift (Term t) where
   liftTyped (OrTerm _ arg1 arg2) = [||orTerm arg1 arg2||]
   liftTyped (AndTerm _ arg1 arg2) = [||andTerm arg1 arg2||]
   liftTyped (EqTerm _ arg1 arg2) = [||eqTerm arg1 arg2||]
+  liftTyped (DistinctTerm _ args) = [||distinctTerm args||]
   liftTyped (ITETerm _ cond arg1 arg2) = [||iteTerm cond arg1 arg2||]
   liftTyped (AddNumTerm _ arg1 arg2) = [||addNumTerm arg1 arg2||]
   liftTyped (NegNumTerm _ arg) = [||negNumTerm arg||]
@@ -1559,6 +1575,7 @@ instance Show (Term ty) where
   show (OrTerm i arg1 arg2) = "Or{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (AndTerm i arg1 arg2) = "And{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
   show (EqTerm i arg1 arg2) = "Eqv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (DistinctTerm i args) = "Distinct{id=" ++ show i ++ ", args=" ++ show args ++ "}"
   show (ITETerm i cond l r) =
     "ITE{id="
       ++ show i
@@ -1704,6 +1721,7 @@ data UTerm t where
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UEqTerm :: (SupportedNonFuncPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
+  UDistinctTerm :: (SupportedNonFuncPrim t) => !(NonEmpty (Term t)) -> UTerm Bool
   UITETerm ::
     (SupportedPrim t) =>
     !(Term Bool) ->
@@ -1898,6 +1916,7 @@ instance (SupportedPrim t) => Interned (Term t) where
     DOrTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DAndTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
     DEqTerm :: TypeRep args -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term Bool)
+    DDistinctTerm :: TypeRep args -> !(NonEmpty Id) -> Description (Term Bool)
     DITETerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DAddNumTerm :: {-# UNPACK #-} !Id -> {-# UNPACK #-} !Id -> Description (Term t)
     DNegNumTerm :: {-# UNPACK #-} !Id -> Description (Term t)
@@ -1993,6 +2012,8 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UOrTerm arg1 arg2) = DOrTerm (identity arg1) (identity arg2)
   describe (UAndTerm arg1 arg2) = DAndTerm (identity arg1) (identity arg2)
   describe (UEqTerm (arg1 :: Term arg) arg2) = DEqTerm (typeRep :: TypeRep arg) (identity arg1) (identity arg2)
+  describe (UDistinctTerm args@((_ :: Term arg) :| _)) =
+    DDistinctTerm (typeRep :: TypeRep arg) (identity <$> args)
   describe (UITETerm cond (l :: Term arg) r) = DITETerm (identity cond) (identity l) (identity r)
   describe (UAddNumTerm arg1 arg2) = DAddNumTerm (identity arg1) (identity arg2)
   describe (UNegNumTerm arg) = DNegNumTerm (identity arg)
@@ -2053,6 +2074,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UOrTerm arg1 arg2) = OrTerm i arg1 arg2
       go (UAndTerm arg1 arg2) = AndTerm i arg1 arg2
       go (UEqTerm arg1 arg2) = EqTerm i arg1 arg2
+      go (UDistinctTerm args) = DistinctTerm i args
       go (UITETerm cond l r) = ITETerm i cond l r
       go (UAddNumTerm arg1 arg2) = AddNumTerm i arg1 arg2
       go (UNegNumTerm arg) = NegNumTerm i arg
@@ -2108,6 +2130,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DOrTerm li1 li2 == DOrTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DAndTerm li1 li2 == DAndTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DEqTerm lrep li1 li2 == DEqTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && li1 == ri1 && li2 == ri2
+  DDistinctTerm lrep li == DDistinctTerm rrep ri = eqTypeRepBool lrep rrep && li == ri
   DITETerm lc li1 li2 == DITETerm rc ri1 ri2 = lc == rc && li1 == ri1 && li2 == ri2
   DAddNumTerm li1 li2 == DAddNumTerm ri1 ri2 = li1 == ri1 && li2 == ri2
   DNegNumTerm li == DNegNumTerm ri = li == ri
@@ -2176,6 +2199,7 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
       `hashWithSalt` rep
       `hashWithSalt` id1
       `hashWithSalt` id2
+  hashWithSalt s (DDistinctTerm rep ids) = s `hashWithSalt` (54 :: Int) `hashWithSalt` rep `hashWithSalt` ids
   hashWithSalt s (DITETerm idc id1 id2) =
     s
       `hashWithSalt` (9 :: Int)
@@ -2313,6 +2337,10 @@ andTerm l r = internTerm $ UAndTerm l r
 eqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
 eqTerm l r = internTerm $ UEqTerm l r
 {-# INLINE eqTerm #-}
+
+distinctTerm :: (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
+distinctTerm args = internTerm $ UDistinctTerm args
+{-# INLINE distinctTerm #-}
 
 iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 iteTerm c l r = internTerm $ UITETerm c l r
@@ -2607,18 +2635,32 @@ pevalNotTerm :: Term Bool -> Term Bool
 pevalNotTerm (NotTerm _ tm) = tm
 pevalNotTerm (ConTerm _ a) = if a then falseTerm else trueTerm
 pevalNotTerm (OrTerm _ (NotTerm _ n1) n2) = pevalAndTerm n1 (pevalNotTerm n2)
+pevalNotTerm (OrTerm _ (DistinctTerm _ (n1 :| [n2])) n3) =
+  pevalAndTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
 pevalNotTerm (OrTerm _ n1 (NotTerm _ n2)) = pevalAndTerm (pevalNotTerm n1) n2
+pevalNotTerm (OrTerm _ n1 (DistinctTerm _ (n2 :| [n3]))) =
+  pevalAndTerm (pevalNotTerm n1) (pevalEqTerm n2 n3)
 pevalNotTerm (AndTerm _ (NotTerm _ n1) n2) = pevalOrTerm n1 (pevalNotTerm n2)
+pevalNotTerm (AndTerm _ (DistinctTerm _ (n1 :| [n2])) n3) =
+  pevalOrTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
 pevalNotTerm (AndTerm _ n1 (NotTerm _ n2)) = pevalOrTerm (pevalNotTerm n1) n2
+pevalNotTerm (AndTerm _ n1 (DistinctTerm _ (n2 :| [n3]))) =
+  pevalOrTerm (pevalNotTerm n1) $ pevalEqTerm n2 n3
+pevalNotTerm (EqTerm _ a b) = distinctTerm $ a :| [b]
+pevalNotTerm (DistinctTerm _ (a :| [b])) = eqTerm a b
 pevalNotTerm tm = notTerm tm
 {-# INLINEABLE pevalNotTerm #-}
 
 orEqFirst :: Term Bool -> Term Bool -> Bool
 orEqFirst _ (ConTerm _ False) = True
 orEqFirst
-  (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+  (DistinctTerm _ ((e1 :: Term a) :| [ec1@(ConTerm _ _) :: Term b]))
   (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
+-- orEqFirst
+--   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+--   (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+--     | e1 == e2 && ec1 /= ec2 = True
 orEqFirst x y
   | x == y = True
   | otherwise = False
@@ -2629,9 +2671,13 @@ orEqTrue (ConTerm _ True) _ = True
 orEqTrue _ (ConTerm _ True) = True
 -- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
 orEqTrue
-  (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
-  (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+  (DistinctTerm _ ((e1 :: Term a) :| [ec1@(ConTerm _ _) :: Term b]))
+  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@(ConTerm _ _) :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
+-- orEqTrue
+--   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
+--   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+--     | e1 == e2 && ec1 /= ec2 = True
 orEqTrue (NotTerm _ l) r | l == r = True
 orEqTrue l (NotTerm _ r) | l == r = True
 orEqTrue _ _ = False
@@ -2642,8 +2688,12 @@ andEqFirst _ (ConTerm _ True) = True
 -- andEqFirst x (NotTerm _ y) = andEqFalse x y
 andEqFirst
   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@(ConTerm _ _) :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
+-- andEqFirst
+--   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+--   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+--     | e1 == e2 && ec1 /= ec2 = True
 andEqFirst x y
   | x == y = True
   | otherwise = False
@@ -2748,8 +2798,12 @@ pevalImpliesTerm (ConTerm _ False) _ = True
 pevalImpliesTerm _ (ConTerm _ True) = True
 pevalImpliesTerm
   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [(Dyn (ec2@(ConTerm _ _) :: Term b))]))
     | e1 == e2 && ec1 /= ec2 = True
+-- pevalImpliesTerm
+--   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+--   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
+--     | e1 == e2 && ec1 /= ec2 = True
 pevalImpliesTerm a b
   | a == b = True
   | otherwise = False
@@ -2794,14 +2848,21 @@ pevalITEBoolRightNot cond ifTrue nIfFalse
   | otherwise = Nothing -- need work
 
 pevalInferImplies :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
-pevalInferImplies cond (NotTerm _ nt1) trueRes falseRes
+pevalInferImplies cond (NotTerm _ nt1) _ falseRes
   | cond == nt1 = Just falseRes
-  | otherwise = case (cond, nt1) of
-      ( EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b),
-        EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))
-        )
-          | e1 == e2 && ec1 /= ec2 -> Just trueRes
-      _ -> Nothing
+  | otherwise = Nothing
+-- \| otherwise = case (cond, nt1) of
+--     ( EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b),
+--       EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))
+--       )
+--         | e1 == e2 && ec1 /= ec2 -> Just trueRes
+--     _ -> Nothing
+pevalInferImplies
+  (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
+  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@(ConTerm _ _) :: Term b)]))
+  trueRes
+  _
+    | e1 == e2 && ec1 /= ec2 = Just trueRes
 pevalInferImplies
   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
   (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
@@ -2974,6 +3035,9 @@ instance SupportedPrim Bool where
     fromMaybe (iteTerm cond ifTrue ifFalse) $
       pevalITEBool cond ifTrue ifFalse
   pevalEqTerm = pevalDefaultEqTerm
+  pevalDistinctTerm (_ :| []) = conTerm True
+  pevalDistinctTerm (a :| [b]) = pevalNotTerm $ pevalEqTerm a b
+  pevalDistinctTerm _ = conTerm False
   conSBVTerm n = if n then SBV.sTrue else SBV.sFalse
   symSBVName symbol _ = show symbol
   symSBVTerm = sbvFresh
