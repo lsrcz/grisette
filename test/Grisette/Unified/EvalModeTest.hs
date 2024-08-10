@@ -183,7 +183,7 @@ type SomeBVConstraint' mode m =
 #else
 type SomeBVConstraint' mode m =
   ( MonadWithMode mode m,
-    SafeUnifiedSomeBV mode (ExceptT (Either BitwidthMismatch ArithException) m)
+    SafeUnifiedSomeBV mode (ExceptT (Either SomeBVException ArithException) m)
   )
 #endif
 
