@@ -33,8 +33,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         funcDummyConstraint,
         isFuncType,
         parseSMTModelResult,
+        pevalDistinctTerm,
         pevalEqTerm,
         pevalITETerm,
+        sbvDistinct,
         sbvEq,
         symSBVName,
         symSBVTerm,
@@ -120,6 +122,13 @@ supportedPrimFun
                )
             |],
           [d|
+            $(varP 'pevalDistinctTerm) =
+              $( translateError
+                   tyVars
+                   "does not supported equality comparison."
+               )
+            |],
+          [d|
             $(varP 'conSBVTerm) = $(consbv tyVars)
             |],
           -- \$( translateError
@@ -140,6 +149,13 @@ supportedPrimFun
           [d|$(varP 'withPrim) = $(withPrims tyVars)|],
           [d|
             $(varP 'sbvEq) =
+              $( translateError
+                   tyVars
+                   "does not support equality comparison."
+               )
+            |],
+          [d|
+            $(varP 'sbvDistinct) =
               $( translateError
                    tyVars
                    "does not support equality comparison."

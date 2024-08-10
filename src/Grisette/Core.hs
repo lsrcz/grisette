@@ -330,6 +330,9 @@ module Grisette.Core
     SymEq2 (..),
     symEq2,
 
+    -- ** Supplemental operation for 'Eq'
+    distinct,
+
     -- ** Symbolic comparison
     SymOrd (..),
     SymOrd1 (..),
@@ -1705,7 +1708,7 @@ import Grisette.Internal.Core.Data.Class.SymEq
     genericLiftSymEq,
     genericSymEq,
     symEq1,
-    symEq2,
+    symEq2, distinct,
   )
 import Grisette.Internal.Core.Data.Class.SymFromIntegral
   ( SymFromIntegral (..),

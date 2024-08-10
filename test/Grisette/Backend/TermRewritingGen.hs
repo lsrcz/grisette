@@ -44,6 +44,7 @@ module Grisette.Backend.TermRewritingGen
     leOrdSpec,
     iteSpec,
     eqvSpec,
+    distinctSpec,
     notSpec,
     andSpec,
     orSpec,
@@ -77,6 +78,7 @@ import Data.Bits (FiniteBits)
 import Data.Data (Proxy (Proxy), Typeable)
 import Data.Functor ((<&>))
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
 import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
@@ -97,6 +99,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalFloatingTerm (pevalFloatingUnaryTerm, pevalPowerTerm),
     PEvalFractionalTerm (pevalRecipTerm),
     PEvalIEEEFPConvertibleTerm (pevalFromFPOrTerm, pevalToFPTerm),
+    SupportedPrim (pevalDistinctTerm),
     bitCastOrTerm,
     bitCastTerm,
     fdivTerm,
@@ -177,6 +180,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     constructBinary,
     constructTernary,
     constructUnary,
+    distinctTerm,
     divIntegralTerm,
     eqTerm,
     fpTraitTerm,
@@ -326,6 +330,13 @@ orSpec = constructBinarySpec orTerm pevalOrTerm
 
 eqvSpec :: (TermRewritingSpec a av, TermRewritingSpec b Bool) => a -> a -> b
 eqvSpec = constructBinarySpec eqTerm pevalEqTerm
+
+distinctSpec ::
+  (TermRewritingSpec a av, TermRewritingSpec b Bool) => NonEmpty a -> b
+distinctSpec l =
+  wrap
+    (distinctTerm (norewriteVer <$> l))
+    (pevalDistinctTerm (rewriteVer <$> l))
 
 iteSpec :: (TermRewritingSpec a Bool, TermRewritingSpec b bv) => a -> b -> b -> b
 iteSpec = constructTernarySpec iteTerm pevalITETerm
@@ -603,6 +614,9 @@ boolonly n | n > 0 = do
       return $ andSpec v1 v2,
       return $ orSpec v1 v2,
       return $ eqvSpec v1 v2,
+      return $ distinctSpec $ v1 :| [],
+      return $ distinctSpec $ v1 :| [v2],
+      return $ distinctSpec $ v1 :| [v2, v3],
       return $ iteSpec v1 v2 v3
     ]
 boolonly _ = error "Should never be called"
@@ -647,12 +661,19 @@ boolWithLIA n | n > 0 = do
   v3 <- boolWithLIA (n - 1)
   v1i <- liaWithBool (n - 1)
   v2i <- liaWithBool (n - 1)
+  v3i <- liaWithBool (n - 1)
   frequency
     [ (1, return $ notSpec v1),
       (1, return $ andSpec v1 v2),
       (1, return $ orSpec v1 v2),
       (1, return $ eqvSpec v1 v2),
-      (5, return $ eqvSpec v1i v2i),
+      (4, return $ eqvSpec v1i v2i),
+      (1, return $ distinctSpec $ v1 :| []),
+      (1, return $ distinctSpec $ v1 :| [v2]),
+      (1, return $ distinctSpec $ v1 :| [v2, v3]),
+      (2, return $ distinctSpec $ v1i :| []),
+      (2, return $ distinctSpec $ v1i :| [v2i]),
+      (2, return $ distinctSpec $ v1i :| [v2i, v3i]),
       (5, return $ ltOrdSpec v1i v2i),
       (5, return $ leOrdSpec v1i v2i),
       (1, return $ iteSpec v1 v2 v3)
@@ -729,12 +750,19 @@ boolWithFSBV pbv pn n | n > 0 = do
   v3 <- boolWithFSBV pbv pn (n - 1)
   v1i <- fsbvWithBool pbv pn (n - 1)
   v2i <- fsbvWithBool pbv pn (n - 1)
+  v3i <- fsbvWithBool pbv pn (n - 1)
   frequency
     [ (1, return $ notSpec v1),
       (1, return $ andSpec v1 v2),
       (1, return $ orSpec v1 v2),
       (1, return $ eqvSpec v1 v2),
       (5, return $ eqvSpec v1i v2i),
+      (1, return $ distinctSpec $ v1 :| []),
+      (1, return $ distinctSpec $ v1 :| [v2]),
+      (1, return $ distinctSpec $ v1 :| [v2, v3]),
+      (2, return $ distinctSpec $ v1i :| []),
+      (2, return $ distinctSpec $ v1i :| [v2i]),
+      (2, return $ distinctSpec $ v1i :| [v2i, v3i]),
       (5, return $ ltOrdSpec v1i v2i),
       (5, return $ leOrdSpec v1i v2i),
       (1, return $ iteSpec v1 v2 v3)
@@ -1131,6 +1159,7 @@ singleFPBoolOpSpecGen ::
 singleFPBoolOpSpecGen = do
   s0 :: IEEEFPSpec eb sb <- arbitrary
   s1 :: IEEEFPSpec eb sb <- arbitrary
+  s2 :: IEEEFPSpec eb sb <- arbitrary
   let traitGens =
         [ FPIsNaN,
           FPIsPositive,
@@ -1146,7 +1175,15 @@ singleFPBoolOpSpecGen = do
           FPIsPoint
         ]
           <&> (\trait -> return $ fpTraitSpec trait s0)
-  let cmpGens = return <$> [eqvSpec s0 s1, ltOrdSpec s0 s1, leOrdSpec s0 s1]
+  let cmpGens =
+        return
+          <$> [ eqvSpec s0 s1,
+                distinctSpec $ s0 :| [],
+                distinctSpec $ s0 :| [s1],
+                distinctSpec $ s0 :| [s1, s2],
+                ltOrdSpec s0 s1,
+                leOrdSpec s0 s1
+              ]
   oneof $ traitGens ++ cmpGens
 
 instance (ValidFP eb sb) => Arbitrary (IEEEFPBoolOpSpec eb sb) where
@@ -1193,7 +1230,15 @@ instance Arbitrary FPRoundingModeBoolOpSpec where
   arbitrary = do
     l :: FPRoundingModeSpec <- arbitrary
     r <- arbitrary
-    elements [eqvSpec l r, ltOrdSpec l r, leOrdSpec l r]
+    x <- arbitrary
+    elements
+      [ eqvSpec l r,
+        distinctSpec $ l :| [],
+        distinctSpec $ l :| [r],
+        distinctSpec $ l :| [r, x],
+        ltOrdSpec l r,
+        leOrdSpec l r
+      ]
 
 data BoolWithNRASpec = BoolWithNRASpec (Term Bool) (Term Bool)
 
@@ -1233,12 +1278,19 @@ boolWithNRA n | n > 0 = do
   v3 <- boolWithNRA (n - 1)
   v1i <- nraWithBool (n - 1)
   v2i <- nraWithBool (n - 1)
+  v3i <- nraWithBool (n - 1)
   frequency
     [ (1, return $ notSpec v1),
       (1, return $ andSpec v1 v2),
       (1, return $ orSpec v1 v2),
       (1, return $ eqvSpec v1 v2),
       (5, return $ eqvSpec v1i v2i),
+      (1, return $ distinctSpec $ v1 :| []),
+      (1, return $ distinctSpec $ v1 :| [v2]),
+      (1, return $ distinctSpec $ v1 :| [v2, v3]),
+      (2, return $ distinctSpec $ v1i :| []),
+      (2, return $ distinctSpec $ v1i :| [v2i]),
+      (2, return $ distinctSpec $ v1i :| [v2i, v3i]),
       (5, return $ ltOrdSpec v1i v2i),
       (5, return $ leOrdSpec v1i v2i),
       (1, return $ iteSpec v1 v2 v3)

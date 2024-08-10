@@ -260,7 +260,7 @@ monadFunctionTests =
                   mrgIf (a .== 0 .&& b .== 0) (return []) $
                     mrgIf
                       (a .== 0 .|| b .== 0)
-                      (return [symIte (a .== 0) b a])
+                      (return [symIte (a ./= 0) a b])
                       (return [a, b]) ::
                     Union [SymInteger]
             actual @?= expected

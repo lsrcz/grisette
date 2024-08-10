@@ -80,6 +80,7 @@ import Control.Monad.STM (STM)
 import Control.Monad.State (MonadState (get, put), StateT, evalStateT, modify)
 import Control.Monad.Writer (tell)
 import Data.Dynamic (fromDyn, toDyn)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Control as SBVC
@@ -186,6 +187,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         funcDummyConstraint,
         isFuncType,
         parseSMTModelResult,
+        sbvDistinct,
         sbvEq,
         sbvIte,
         symSBVName,
@@ -206,6 +208,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
+        DistinctTerm,
         DivIntegralTerm,
         EqTerm,
         ExistsTerm,
@@ -643,6 +646,9 @@ lowerSinglePrimIntermediate config (EqTerm _ (a :: Term v) b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvEq @v (a' qst) (b' qst)
+lowerSinglePrimIntermediate config (DistinctTerm _ (args :: NonEmpty (Term t))) = do
+  args' <- traverse (lowerSinglePrimCached' config) args
+  return $ \qst -> sbvDistinct @t (fmap ($ qst) args')
 lowerSinglePrimIntermediate config (ITETerm _ c a b) = do
   c' <- lowerSinglePrimCached' config c
   a' <- lowerSinglePrimCached' config a

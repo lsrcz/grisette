@@ -99,6 +99,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ( castTypedSymbol,
         defaultValue,
         parseSMTModelResult,
+        pevalDistinctTerm,
         pevalITETerm,
         withPrim
       ),
@@ -118,6 +119,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
+        DistinctTerm,
         DivIntegralTerm,
         EqTerm,
         ExistsTerm,
@@ -414,6 +416,8 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
       goBinary memo pevalAndTerm arg1 arg2
     goSome memo _ (SomeTerm (EqTerm _ arg1 arg2)) =
       goBinary memo pevalEqTerm arg1 arg2
+    goSome memo _ (SomeTerm (DistinctTerm _ args)) =
+      SomeTerm $ pevalDistinctTerm (fmap (go memo) args)
     goSome memo _ (SomeTerm (ITETerm _ cond arg1 arg2)) =
       goTernary memo pevalITETerm cond arg1 arg2
     goSome memo _ (SomeTerm (AddNumTerm _ arg1 arg2)) =
