@@ -1705,10 +1705,11 @@ import Grisette.Internal.Core.Data.Class.SymEq
     SymEq1 (..),
     SymEq2 (..),
     SymEqArgs (..),
+    distinct,
     genericLiftSymEq,
     genericSymEq,
     symEq1,
-    symEq2, distinct,
+    symEq2,
   )
 import Grisette.Internal.Core.Data.Class.SymFromIntegral
   ( SymFromIntegral (..),
