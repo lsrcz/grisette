@@ -34,6 +34,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#239](https://github.com/lsrcz/grisette/pull/239),
    [#240](https://github.com/lsrcz/grisette/pull/240),
    [#243](https://github.com/lsrcz/grisette/pull/243))
+- Allow the use of number literals for `SomeBV`.
+  ([#245](https://github.com/lsrcz/grisette/pull/245))
 
 ### Fixed
 - Fixed model parsing for floating points.
