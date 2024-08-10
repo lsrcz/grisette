@@ -179,6 +179,7 @@ class SymEq a where
     where
       go _ [] = con True
       go x' (y : ys) = x' ./= y .&& go x' ys
+
   {-# MINIMAL (.==) | (./=) #-}
 
 -- | Lifting of the 'SymEq' class to unary type constructors.
