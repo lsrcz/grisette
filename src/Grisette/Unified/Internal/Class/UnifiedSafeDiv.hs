@@ -41,8 +41,8 @@ import Grisette.Internal.Core.Data.Class.SafeDiv
 import qualified Grisette.Internal.Core.Data.Class.SafeDiv
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.SomeBV
-  ( SomeIntN, 
-    SomeBVException,
+  ( SomeBVException,
+    SomeIntN,
     SomeSymIntN,
     SomeSymWordN,
     SomeWordN,
