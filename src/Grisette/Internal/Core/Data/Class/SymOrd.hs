@@ -110,7 +110,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
-import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalOrdTerm
@@ -558,7 +558,6 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''BitwidthMismatch,
     ''NotRepresentableFPError,
     ''Identity,
     ''Monoid.Dual,

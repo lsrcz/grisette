@@ -35,9 +35,10 @@ import Control.Monad.Error.Class (MonadError)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SafeSymShift (SafeSymShift)
 import qualified Grisette.Internal.Core.Data.Class.SafeSymShift
-import Grisette.Internal.SymPrim.BV (BitwidthMismatch, IntN, WordN)
+import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.SomeBV
-  ( SomeIntN,
+  ( SomeBVException,
+    SomeIntN,
     SomeSymIntN,
     SomeSymWordN,
     SomeWordN,
@@ -173,12 +174,12 @@ instance
   withBaseSafeSymShift r = withBaseBranching @'Sym @m r
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching mode m
   ) =>
   UnifiedSafeSymShift
     mode
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeIntN
     m
   where
@@ -186,24 +187,24 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching 'Sym m
   ) =>
   UnifiedSafeSymShift
     'Sym
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeSymIntN
     m
   where
   withBaseSafeSymShift r = withBaseBranching @'Sym @m r
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching mode m
   ) =>
   UnifiedSafeSymShift
     mode
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeWordN
     m
   where
@@ -211,12 +212,12 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  ( MonadError (Either BitwidthMismatch ArithException) m,
+  ( MonadError (Either SomeBVException ArithException) m,
     UnifiedBranching 'Sym m
   ) =>
   UnifiedSafeSymShift
     'Sym
-    (Either BitwidthMismatch ArithException)
+    (Either SomeBVException ArithException)
     SomeSymWordN
     m
   where

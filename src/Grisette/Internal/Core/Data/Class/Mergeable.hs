@@ -130,8 +130,7 @@ import Grisette.Internal.Core.Data.Class.BitCast (bitCastOrCanonical)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, AlgRealPoly, RealPoint)
 import Grisette.Internal.SymPrim.BV
-  ( BitwidthMismatch,
-    IntN,
+  ( IntN,
     WordN,
   )
 import Grisette.Internal.SymPrim.FP
@@ -822,7 +821,6 @@ deriveBuiltins
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''BitwidthMismatch,
     ''NotRepresentableFPError,
     ''Identity,
     ''Monoid.Dual,

@@ -15,7 +15,7 @@ module Grisette.SymPrim.SomeBVTests (someBVTests) where
 import Control.DeepSeq (NFData, force)
 import Control.Exception (ArithException (Overflow), catch, evaluate)
 import Control.Monad.Except (ExceptT)
-import Data.Bits (FiniteBits (finiteBitSize))
+import Data.Bits (Bits (clearBit, complement, complementBit, setBit, shiftL, unsafeShiftL, xor, (.&.), (.|.)), FiniteBits (finiteBitSize))
 import Data.Proxy (Proxy (Proxy))
 import Grisette
   ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
@@ -23,11 +23,15 @@ import Grisette
     LogicalOp (symNot),
     Mergeable (rootStrategy),
     SafeLinearArith (safeAdd, safeSub),
+    SignConversion (toSigned, toUnsigned),
     Solvable (con, isym, ssym),
+    SomeBV (SomeBVLit),
+    SomeWordN,
     SymEq ((./=), (.==)),
     genSym,
     genSymSimple,
     mrgIf,
+    mrgReturn,
     mrgSingle,
   )
 import Grisette.Internal.Core.Control.Monad.Union (Union (UMrg))
@@ -35,12 +39,12 @@ import Grisette.Internal.Core.Data.UnionBase
   ( UnionBase (UnionSingle),
     ifWithLeftMost,
   )
-import Grisette.Internal.SymPrim.BV (BitwidthMismatch (BitwidthMismatch), IntN)
+import Grisette.Internal.SymPrim.BV (IntN)
 import Grisette.Internal.SymPrim.SomeBV
   ( SomeBV (SomeBV),
+    SomeBVException (BitwidthMismatch),
     SomeIntN,
     SomeSymIntN,
-    SomeWordN,
     arbitraryBV,
     binSomeBV,
     binSomeBVR1,
@@ -63,18 +67,37 @@ import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (assertBool, (@?=))
-import Test.QuickCheck (forAll, ioProperty)
+import Test.QuickCheck
+  ( Arbitrary (arbitrary),
+    Gen,
+    NonNegative (getNonNegative),
+    forAll,
+    ioProperty,
+  )
 
 testFuncMatch ::
   (Eq r, Show r) =>
+  String ->
   (SomeIntN -> SomeIntN -> r) ->
   SomeIntN ->
   SomeIntN ->
   r ->
   Test
-testFuncMatch f a b r = testCase "bit width match" $ do
+testFuncMatch name f a b r = testCase name $ do
   let actual = f a b
   let expected = r
+  actual @?= expected
+
+testFuncMatchLit ::
+  String ->
+  (SomeIntN -> SomeIntN -> SomeIntN) ->
+  SomeIntN ->
+  SomeIntN ->
+  SomeIntN ->
+  Test
+testFuncMatchLit name f a b r = testCase name $ do
+  let SomeBVLit actual = f a b
+  let SomeBVLit expected = r
   actual @?= expected
 
 testFuncMisMatch ::
@@ -87,7 +110,7 @@ testFuncMisMatch ::
 testFuncMisMatch f a b r = testCase "bit width mismatch" $ do
   actual <-
     evaluate (force $ f a b)
-      `catch` \(_ :: BitwidthMismatch) -> return r
+      `catch` \(_ :: SomeBVException) -> return r
   let expected = r
   actual @?= expected
 
@@ -95,7 +118,7 @@ testSafeFuncMatchException ::
   (Eq r, Show r, Mergeable r) =>
   ( SomeIntN ->
     SomeIntN ->
-    ExceptT (Either BitwidthMismatch ArithException) Union r
+    ExceptT (Either SomeBVException ArithException) Union r
   ) ->
   SomeIntN ->
   SomeIntN ->
@@ -108,24 +131,40 @@ testSafeFuncMatchException f a b e = testCase "bit width match" $ do
 
 testSafeFuncMatch ::
   (Eq r, Show r, Mergeable r) =>
+  String ->
   ( SomeIntN ->
     SomeIntN ->
-    ExceptT (Either BitwidthMismatch ArithException) Union r
+    ExceptT (Either SomeBVException ArithException) Union r
   ) ->
   SomeIntN ->
   SomeIntN ->
   r ->
   Test
-testSafeFuncMatch f a b r = testCase "bit width match" $ do
+testSafeFuncMatch name f a b r = testCase name $ do
   let actual = f a b
   let expected = mrgSingle r
+  actual @?= expected
+
+testSafeFuncMatchLit ::
+  String ->
+  ( SomeIntN ->
+    SomeIntN ->
+    Either (Either SomeBVException ArithException) SomeIntN
+  ) ->
+  SomeIntN ->
+  SomeIntN ->
+  SomeIntN ->
+  Test
+testSafeFuncMatchLit name f a b r = testCase name $ do
+  let Right (SomeBVLit actual) = f a b
+  let Right (SomeBVLit expected) = mrgSingle r
   actual @?= expected
 
 testSafeFuncMisMatch ::
   (Eq r, Show r, Mergeable r) =>
   ( SomeIntN ->
     SomeIntN ->
-    ExceptT (Either BitwidthMismatch ArithException) Union r
+    ExceptT (Either SomeBVException ArithException) Union r
   ) ->
   SomeIntN ->
   SomeIntN ->
@@ -167,44 +206,93 @@ someBVTests =
           testCase "ssymBV" $ ssymBV 4 "a" @?= SomeBV (ssym "a" :: SymIntN 4),
           testCase "isymBV" $
             isymBV 4 "a" 1 @?= SomeBV (isym "a" 1 :: SymIntN 4),
-          testCase "unarySomeBV" $ do
-            let actual =
-                  unarySomeBV @IntN @SomeIntN
-                    (SomeIntN . negate)
-                    (bv 4 5 :: SomeIntN)
-            let expected = bv 4 (-5)
-            actual @?= expected,
-          testCase "unarySomeBVR1" $ do
-            let actual = unarySomeBVR1 (negate) (bv 4 5 :: SomeIntN)
-            let expected = bv 4 (-5)
-            actual @?= expected,
+          testGroup
+            "unarySomeBV"
+            [ testCase "SomeBV" $ do
+                let actual =
+                      unarySomeBV @IntN @SomeIntN
+                        (SomeIntN . negate)
+                        undefined
+                        (bv 4 5 :: SomeIntN)
+                let expected = bv 4 (-5)
+                actual @?= expected,
+              testCase "SomeBVLit" $ do
+                let SomeBVLit actual =
+                      unarySomeBV @IntN @SomeIntN
+                        undefined
+                        (SomeBVLit . negate)
+                        (5 :: SomeIntN)
+                let SomeBVLit expected = SomeBVLit $ -5
+                actual @?= expected
+            ],
+          testGroup
+            "unarySomeBVR1"
+            [ testCase "SomeBV" $ do
+                let actual = unarySomeBVR1 negate undefined (bv 4 5 :: SomeIntN)
+                let expected = bv 4 (-5)
+                actual @?= expected,
+              testCase "SomeBVLit" $ do
+                let SomeBVLit actual =
+                      unarySomeBVR1 undefined negate (SomeBVLit 5 :: SomeIntN)
+                let SomeBVLit expected = SomeBVLit $ -5
+                actual @?= expected
+            ],
           testGroup
             "binSomeBV"
             [ testFuncMatch @SomeIntN
-                (binSomeBV (\l r -> SomeIntN $ l + r))
+                "SomeBV/SomeBV"
+                (binSomeBV (\l r -> SomeIntN $ l + r) undefined)
                 (bv 4 5)
                 (bv 4 2)
                 (bv 4 7),
+              testFuncMatch @SomeIntN
+                "SomeBV/SomeBVLit"
+                (binSomeBV (\l r -> SomeIntN $ l + r) undefined)
+                (bv 4 5)
+                2
+                (bv 4 7),
+              testFuncMatch @SomeIntN
+                "SomeBVLit/SomeBV"
+                (binSomeBV (\l r -> SomeIntN $ l + r) undefined)
+                5
+                (bv 4 2)
+                (bv 4 7),
+              testFuncMatchLit
+                "SomeBVLit/SomeBVLit"
+                (binSomeBV undefined (\l r -> SomeBVLit $ l + r))
+                5
+                2
+                7,
               testFuncMisMatch @SomeIntN
-                (binSomeBV (\l r -> SomeIntN $ l + r))
+                (binSomeBV (\l r -> SomeIntN $ l + r) undefined)
                 (bv 4 5)
                 (bv 5 4)
                 (bv 3 0)
             ],
           testGroup
             "binSomeBVR1"
-            [ testFuncMatch (binSomeBVR1 (+)) (bv 4 5) (bv 4 2) (bv 4 7),
-              testFuncMisMatch (binSomeBVR1 (+)) (bv 4 5) (bv 5 4) (bv 3 0)
+            [ testFuncMatch
+                "SomeBV/SomeBV"
+                (binSomeBVR1 (+) undefined)
+                (bv 4 5)
+                (bv 4 2)
+                (bv 4 7),
+              testFuncMisMatch
+                (binSomeBVR1 (+) undefined)
+                (bv 4 5)
+                (bv 5 4)
+                (bv 3 0)
             ],
           testGroup
             "binSomeBVR2"
             [ testFuncMatch
-                (binSomeBVR2 (\l r -> (l + r, l - r)))
+                "SomeBV/SomeBV"
+                (binSomeBVR2 (\l r -> (l + r, l - r)) undefined)
                 (bv 4 5)
                 (bv 4 2)
                 (bv 4 7, bv 4 3),
               testFuncMisMatch
-                (binSomeBVR2 (\l r -> (l + r, l - r)))
+                (binSomeBVR2 (\l r -> (l + r, l - r)) undefined)
                 (bv 4 5)
                 (bv 5 4)
                 (bv 3 0, bv 6 1)
@@ -212,33 +300,53 @@ someBVTests =
           testGroup "binSomeBVSafe" $ do
             let func l r = mrgFmap SomeIntN $ safeAdd l r
             [ testSafeFuncMatch @SomeIntN
-                (binSomeBVSafe func)
+                "SomeBV/SomeBV"
+                (binSomeBVSafe func undefined)
                 (bv 4 5)
                 (bv 4 2)
                 (bv 4 7),
+              testSafeFuncMatch @SomeIntN
+                "SomeBV/SomeBVInt"
+                (binSomeBVSafe func undefined)
+                (bv 4 5)
+                2
+                (bv 4 7),
+              testSafeFuncMatchLit
+                "SomeBVInt/SomeBVInt"
+                ( binSomeBVSafe
+                    undefined
+                    (\l r -> mrgReturn $ SomeBVLit $ l + r)
+                )
+                5
+                2
+                7,
               testSafeFuncMatchException @SomeIntN
-                (binSomeBVSafe func)
+                (binSomeBVSafe func undefined)
                 (bv 4 5)
                 (bv 4 5)
                 Overflow,
               testSafeFuncMisMatch @SomeIntN
-                (binSomeBVSafe func)
+                (binSomeBVSafe func undefined)
                 (bv 4 5)
                 (bv 5 4)
               ],
           testGroup
             "binSomeBVSafeR1"
             [ testSafeFuncMatch
-                (binSomeBVSafeR1 safeAdd)
+                "SomeBV/SomeBV"
+                (binSomeBVSafeR1 safeAdd undefined)
                 (bv 4 5)
                 (bv 4 2)
                 (bv 4 7),
               testSafeFuncMatchException
-                (binSomeBVSafeR1 safeAdd)
+                (binSomeBVSafeR1 safeAdd undefined)
                 (bv 4 5)
                 (bv 4 5)
                 Overflow,
-              testSafeFuncMisMatch (binSomeBVSafeR1 safeAdd) (bv 4 5) (bv 5 4)
+              testSafeFuncMisMatch
+                (binSomeBVSafeR1 safeAdd undefined)
+                (bv 4 5)
+                (bv 5 4)
             ],
           testGroup "binSomeBVSafeR2" $ do
             let func l r = do
@@ -246,6 +354,7 @@ someBVTests =
                   b <- safeSub l r
                   mrgSingle (a, b)
             [ testSafeFuncMatch
+                "SomeBV/SomeBV"
                 func
                 (bv 4 5)
                 (bv 4 2)
@@ -397,6 +506,22 @@ someBVTests =
             assertBool "SomeBV with same bitwidth should compare the value" $
               not $
                 a /= b,
+          testProperty "==/SomeBV/SomeBVLit" $ \(a :: Integer) (b :: Integer) ->
+            let ai = fromIntegral a :: SomeWordN
+                bi = fromIntegral b :: SomeWordN
+                ab = bv 4 a :: SomeWordN
+                bb = bv 4 b :: SomeWordN
+             in (ai == bb) == (ab == bb)
+                  && (ab == bi) == (ab == bb)
+                  && ai == ab,
+          testProperty "/=/SomeBV/SomeBVLit" $ \(a :: Integer) (b :: Integer) ->
+            let ai = fromIntegral a :: SomeWordN
+                bi = fromIntegral b :: SomeWordN
+                ab = bv 4 a :: SomeWordN
+                bb = bv 4 b :: SomeWordN
+             in (ai /= bb) == (ab /= bb)
+                  && (ab /= bi) == (ab /= bb)
+                  && not (ai /= ab),
           testCase "same bitwidth not equal" $ do
             let a = bv 4 4 :: SomeIntN
             let b = bv 4 5 :: SomeIntN
@@ -425,5 +550,122 @@ someBVTests =
             let b = ssymBV 3 "b" :: SomeSymIntN
             a .== b @?= con False
             a ./= b @?= con True
+        ],
+      testGroup
+        "Num"
+        [ testGroup
+            "SomeIntN"
+            [ binOpLitTest @SomeIntN (+) "+",
+              binOpLitTest @SomeIntN (-) "-",
+              unaryOpLitTest @SomeIntN negate "negate"
+            ],
+          testGroup
+            "SomeWordN"
+            [ binOpLitTest @SomeWordN (+) "+",
+              binOpLitTest @SomeWordN (-) "-",
+              unaryOpLitTest @SomeWordN negate "negate"
+            ]
+        ],
+      testGroup
+        "SignConversion"
+        [ testGroup
+            "SomeIntN"
+            [unaryOpLitTest @SomeIntN toUnsigned "toUnsigned"],
+          testGroup
+            "SomeWordN"
+            [unaryOpLitTest @SomeWordN toSigned "toSigned"]
+        ],
+      testGroup
+        "Bits"
+        [ testGroup
+            "SomeIntN"
+            [ binOpLitTest @SomeIntN (.&.) ".&.",
+              binOpLitTest @SomeIntN (.|.) ".|.",
+              binOpLitTest @SomeIntN xor "xor",
+              unaryOpLitTest @SomeIntN complement "complement",
+              binIntOpLitTest @SomeIntN
+                (getNonNegative <$> arbitrary)
+                setBit
+                "setBit",
+              binIntOpLitTest @SomeIntN
+                (getNonNegative <$> arbitrary)
+                clearBit
+                "clearBit",
+              binIntOpLitTest @SomeIntN
+                (getNonNegative <$> arbitrary)
+                complementBit
+                "complementBit",
+              binIntOpLitTest @SomeIntN
+                (getNonNegative <$> arbitrary)
+                shiftL
+                "shiftL",
+              binIntOpLitTest @SomeIntN
+                (getNonNegative <$> arbitrary)
+                unsafeShiftL
+                "unsafeShiftL"
+            ],
+          testGroup
+            "SomeWordN"
+            [ binOpLitTest @SomeWordN (.&.) ".&.",
+              binOpLitTest @SomeWordN (.|.) ".|.",
+              binOpLitTest @SomeWordN xor "xor",
+              unaryOpLitTest @SomeWordN complement "complement",
+              binIntOpLitTest @SomeWordN
+                (getNonNegative <$> arbitrary)
+                setBit
+                "setBit",
+              binIntOpLitTest @SomeWordN
+                (getNonNegative <$> arbitrary)
+                clearBit
+                "clearBit",
+              binIntOpLitTest @SomeWordN
+                (getNonNegative <$> arbitrary)
+                complementBit
+                "complementBit",
+              binIntOpLitTest @SomeWordN
+                (getNonNegative <$> arbitrary)
+                shiftL
+                "shiftL",
+              binIntOpLitTest @SomeWordN
+                (getNonNegative <$> arbitrary)
+                unsafeShiftL
+                "unsafeShiftL"
+            ]
         ]
     ]
+
+binOpLitTest ::
+  forall bv r. (Num bv, Eq r, BV bv) => (bv -> bv -> r) -> String -> Test
+binOpLitTest f name =
+  testProperty (name ++ "/SomeBV/SomeBVLit") $ \(a :: Integer) (b :: Integer) ->
+    let ai = fromIntegral a :: bv
+        bi = fromIntegral b :: bv
+        ab = bv 4 a :: bv
+        bb = bv 4 b :: bv
+     in (f ai bb) == (f ab bb)
+          && (f ab bi) == (f ab bb)
+          && (f ai bi) == (f ab bb)
+
+binIntOpLitTest ::
+  forall bv.
+  (Num bv, Eq bv, BV bv) =>
+  Gen Int ->
+  (bv -> Int -> bv) ->
+  String ->
+  Test
+binIntOpLitTest gen f name =
+  testProperty (name ++ "/SomeBV/SomeBVLit") $ \(a :: Integer) -> forAll gen $
+    \(b :: Int) ->
+      let ai = fromIntegral a :: bv
+          ab = bv 4 a :: bv
+       in (f ai b) == (f ab b)
+            && (f ab b) == (f ab b)
+            && (f ai b) == (f ab b)
+
+unaryOpLitTest ::
+  forall bv r. (Num bv, Eq r, BV bv) => (bv -> r) -> String -> Test
+unaryOpLitTest f name =
+  testProperty (name ++ "/SomeBV/SomeBVLit") $ \(a :: Integer) ->
+    let ai = fromIntegral a :: bv
+        ab = bv 4 a :: bv
+     in f ai == f ab

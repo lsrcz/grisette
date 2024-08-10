@@ -42,13 +42,13 @@ import GHC.Generics (Generic)
 import Grisette
   ( BV (bv),
     BitCast (bitCast),
-    BitwidthMismatch,
     Default (Default),
     IEEEFPConstants (fpNaN),
     IEEEFPConvertible (toFP),
     IEEEFPRoundingMode (rne),
     IntN,
     Mergeable,
+    SomeBVException,
     SymBool,
     SymFP,
     SymIntN,
@@ -154,11 +154,11 @@ fbv' l r = do
 
 #if MIN_VERSION_base(4,16,0)
 type SomeBVConstraint mode m =
-  (MonadWithMode mode m, MonadError (Either BitwidthMismatch ArithException) m)
+  (MonadWithMode mode m, MonadError (Either SomeBVException ArithException) m)
 #else
 type SomeBVConstraint mode m =
   ( MonadWithMode mode m,
-    MonadError (Either BitwidthMismatch ArithException) m,
+    MonadError (Either SomeBVException ArithException) m,
     SafeUnifiedSomeBV mode m
   )
 #endif
@@ -192,7 +192,7 @@ fsomebv' ::
   (SomeBVConstraint' mode m) =>
   GetSomeIntN mode ->
   GetSomeIntN mode ->
-  ExceptT (Either BitwidthMismatch ArithException) m (GetSomeIntN mode)
+  ExceptT (Either SomeBVException ArithException) m (GetSomeIntN mode)
 fsomebv' l r = do
   v <- safeDiv @mode l r
   mrgReturn $
@@ -386,7 +386,7 @@ evalModeTest =
                       (v + r)
                       (Grisette.symIte (l Grisette..< r) l r) ::
                     ExceptT
-                      (Either BitwidthMismatch ArithException)
+                      (Either SomeBVException ArithException)
                       Union
                       SomeSymIntN
             fsomebv l r @?= expected

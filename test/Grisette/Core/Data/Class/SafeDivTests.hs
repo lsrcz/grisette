@@ -18,10 +18,10 @@ import GHC.Int (Int16, Int32, Int64, Int8)
 import GHC.Word (Word16, Word32, Word64, Word8)
 import Grisette
   ( BV (bv),
-    BitwidthMismatch (BitwidthMismatch),
     IntN,
     Mergeable,
     SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
+    SomeBVException (BitwidthMismatch),
     SomeIntN,
     SomeWordN,
     Union,
@@ -325,12 +325,12 @@ safeDivTests =
               opBoundedSafeDivTestBase
                 SomeWordN
                 SomeWordN
-                (\e -> Right e :: Either BitwidthMismatch ArithException)
+                (\e -> Right e :: Either SomeBVException ArithException)
         let doubleOutputSafeDivTest =
               opBoundedSafeDivTestBase
                 SomeWordN
                 (bimap SomeWordN SomeWordN)
-                (\e -> Right e :: Either BitwidthMismatch ArithException)
+                (\e -> Right e :: Either SomeBVException ArithException)
         [ singleOutputDivOrTest "divOr" divOr (div @(WordN 8)),
           singleOutputDivOrTest "modOr" modOr (mod @(WordN 8)),
           doubleOutputDivOrTest "divModOr" divModOr (divMod @(WordN 8)),
@@ -350,7 +350,7 @@ safeDivTests =
             let actual =
                   safeDiv (bv 10 2) (bv 11 3) ::
                     ExceptT
-                      (Either BitwidthMismatch ArithException)
+                      (Either SomeBVException ArithException)
                       Union
                       SomeWordN
             let expected = mrgThrowError $ Left BitwidthMismatch
@@ -369,12 +369,12 @@ safeDivTests =
               opBoundedSafeDivTestBase
                 SomeIntN
                 SomeIntN
-                (\e -> Right e :: Either BitwidthMismatch ArithException)
+                (\e -> Right e :: Either SomeBVException ArithException)
         let doubleOutputSafeDivTest =
               opBoundedSafeDivTestBase
                 SomeIntN
                 (bimap SomeIntN SomeIntN)
-                (\e -> Right e :: Either BitwidthMismatch ArithException)
+                (\e -> Right e :: Either SomeBVException ArithException)
         [ singleOutputDivOrTest "divOr" divOr (div @(IntN 8)),
           singleOutputDivOrTest "modOr" modOr (mod @(IntN 8)),
           doubleOutputDivOrTest "divModOr" divModOr (divMod @(IntN 8)),
@@ -391,7 +391,7 @@ safeDivTests =
             let actual =
                   safeDiv (bv 10 2) (bv 11 3) ::
                     ExceptT
-                      (Either BitwidthMismatch ArithException)
+                      (Either SomeBVException ArithException)
                       Union
                       SomeIntN
             let expected = mrgThrowError $ Left BitwidthMismatch

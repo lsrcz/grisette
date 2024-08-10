@@ -17,10 +17,10 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette
   ( BV (bv),
-    BitwidthMismatch (BitwidthMismatch),
     IntN,
     Mergeable,
     SafeLinearArith (safeAdd, safeNeg, safeSub),
+    SomeBVException (BitwidthMismatch),
     SomeIntN,
     SomeWordN,
     TryMerge,
@@ -141,12 +141,12 @@ safeLinearArithTests =
       safeLinearArithTestSimple @(IntN 128),
       safeLinearArithTest @(IntN 2)
         @SomeIntN
-        @(Either BitwidthMismatch ArithException)
+        @(Either SomeBVException ArithException)
         SomeIntN
         Right,
       safeLinearArithTest @(IntN 128)
         @SomeIntN
-        @(Either BitwidthMismatch ArithException)
+        @(Either SomeBVException ArithException)
         SomeIntN
         Right,
       testCase "SomeIntN different bit width" $ do
@@ -154,7 +154,7 @@ safeLinearArithTests =
         let r = bv 3 1 :: SomeIntN
         let actual =
               safeAdd l r ::
-                ExceptT (Either BitwidthMismatch ArithException) Union SomeIntN
+                ExceptT (Either SomeBVException ArithException) Union SomeIntN
         let expected = mrgThrowError $ Left BitwidthMismatch
         actual @?= expected,
       safeLinearArithTestSimple @Word,
@@ -168,12 +168,12 @@ safeLinearArithTests =
       safeLinearArithTestSimple @(WordN 128),
       safeLinearArithTest @(WordN 2)
         @SomeWordN
-        @(Either BitwidthMismatch ArithException)
+        @(Either SomeBVException ArithException)
         SomeWordN
         Right,
       safeLinearArithTest @(WordN 128)
         @SomeWordN
-        @(Either BitwidthMismatch ArithException)
+        @(Either SomeBVException ArithException)
         SomeWordN
         Right,
       testCase "SomeWordN different bit width" $ do
@@ -182,7 +182,7 @@ safeLinearArithTests =
         let actual =
               safeAdd l r ::
                 ExceptT
-                  (Either BitwidthMismatch ArithException)
+                  (Either SomeBVException ArithException)
                   Union
                   SomeWordN
         let expected = mrgThrowError $ Left BitwidthMismatch
