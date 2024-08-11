@@ -167,7 +167,9 @@ import Grisette.Internal.Core.Data.Class.Solvable
 import Grisette.Internal.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
   )
-import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((./=), (.==)))
+import Grisette.Internal.Core.Data.Class.SymEq
+  ( SymEq (symDistinct, (./=), (.==)),
+  )
 import Grisette.Internal.Core.Data.Class.SymOrd
   ( SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
   )
@@ -693,6 +695,16 @@ instance
             (\(SomeBV x) -> unsafeCoerce x)
       )
 
+-- | The 'symDistinct' instance for 'SomeBV' will have the following behavior:
+--
+-- * If the list is empty or has only one element, it will return 'True'.
+-- * If none of the elements have a bit-width, it will throw
+--   'UndeterminedBitwidth' exception.
+-- * If the elements have different bit-widths, it will throw a
+--   'BitwidthMismatch' exception.
+-- * If there are at least one element have a bit-width, and all elements with
+--   known bit-width have the same bit-width, it will generate a single symbolic
+--   formula using @distinct@.
 instance
   ( forall n. (KnownNat n, 1 <= n) => SymEq (bv n),
     forall n. (KnownNat n, 1 <= n) => Num (bv n)
@@ -714,6 +726,21 @@ instance
   SomeBV (l :: bv l) ./= SomeBVLit r = l ./= fromIntegral r
   SomeBVLit l ./= SomeBV (r :: bv r) = fromIntegral l ./= r
   SomeBVLit _ ./= SomeBVLit _ = throw $ UndeterminedBitwidth "./="
+  symDistinct l = case l of
+    [] -> con True
+    [_] -> con True
+    _ -> case assignBitWidthList "symDistinct" l of
+      Right (SomeBV (a :: bv a) : l) -> symDistinct $ a : go l
+        where
+          go :: [SomeBV bv] -> [bv a]
+          go [] = []
+          go (SomeBV (x :: bv x) : xs) = case sameNat (Proxy @x) (Proxy @a) of
+            Just Refl -> x : go xs
+            Nothing -> error "Should not happen"
+          go (SomeBVLit _ : _) = error "Should not happen"
+      Right _ -> error "Should not happen"
+      Left UndeterminedBitwidth {} -> throw $ UndeterminedBitwidth "symDistinct"
+      Left BitwidthMismatch -> throw BitwidthMismatch
   {-# INLINE (./=) #-}
 
 instance
