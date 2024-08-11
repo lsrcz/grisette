@@ -29,6 +29,7 @@ module Grisette.Internal.Core.Data.Class.SymEq
     symEq1,
     SymEq2 (..),
     symEq2,
+    pairwiseSymDistinct,
 
     -- * More 'Eq' helper
     distinct,
@@ -173,14 +174,18 @@ class SymEq a where
   -- | Check if all elements in a list are distinct, under the symbolic equality
   -- semantics.
   symDistinct :: [a] -> SymBool
-  symDistinct [] = con True
-  symDistinct [_] = con True
-  symDistinct (x : xs) = go x xs .&& symDistinct xs
-    where
-      go _ [] = con True
-      go x' (y : ys) = x' ./= y .&& go x' ys
+  symDistinct = pairwiseSymDistinct
 
   {-# MINIMAL (.==) | (./=) #-}
+
+-- | Default pairwise symbolic distinct implementation.
+pairwiseSymDistinct :: (SymEq a) => [a] -> SymBool
+pairwiseSymDistinct [] = con True
+pairwiseSymDistinct [_] = con True
+pairwiseSymDistinct (x : xs) = go x xs .&& pairwiseSymDistinct xs
+  where
+    go _ [] = con True
+    go x' (y : ys) = x' ./= y .&& go x' ys
 
 -- | Lifting of the 'SymEq' class to unary type constructors.
 --
