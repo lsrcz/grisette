@@ -122,7 +122,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     fpTraitTerm,
     iteTerm,
     notTerm,
-    pformat,
+    pformatTerm,
     ssymTerm,
   )
 import Grisette.Internal.SymPrim.SymFP (SymFP32)
@@ -158,25 +158,25 @@ validateSpec' config precond a = do
       print err
       assertFailure $
         "Bad rewriting with unsolvable formula: "
-          ++ pformat (norewriteVer a)
+          ++ pformatTerm (norewriteVer a)
           ++ " was rewritten to "
-          ++ pformat (rewriteVer a)
+          ++ pformatTerm (rewriteVer a)
           ++ " under precondition"
           ++ show precond
           ++ " corresponding same formula:"
-          ++ pformat (same a)
+          ++ pformatTerm (same a)
     (Right m, _) -> do
       assertFailure $
         "With model"
           ++ show m
           ++ "Bad rewriting: "
-          ++ pformat (norewriteVer a)
+          ++ pformatTerm (norewriteVer a)
           ++ " was rewritten to "
-          ++ pformat (rewriteVer a)
+          ++ pformatTerm (rewriteVer a)
           ++ " under precondition"
           ++ show precond
           ++ " corresponding cex formula:"
-          ++ pformat (counterExample a)
+          ++ pformatTerm (counterExample a)
           ++ "\n"
           ++ show (norewriteVer a)
           ++ "\n"
