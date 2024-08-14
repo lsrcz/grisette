@@ -42,7 +42,6 @@
           hPkgs.haskell-language-server # LSP server for editor
           stableHPkgs.cabal-install
           (pkgs.ihaskell.override {
-            haskell = hPkgs.haskell;
             ghcWithPackages = hPkgs.ghcWithPackages;
           })
         ];
