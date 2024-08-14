@@ -5,6 +5,14 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm () where
 
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)

@@ -49,6 +49,8 @@ doPevalBitCastSameType (BitCastTerm _ (Dyn (b :: Term b))) = Just b
 doPevalBitCastSameType (BitCastTerm _ x) = doPevalBitCastSameType x
 doPevalBitCastSameType _ = Nothing
 
+-- | Partially evaluate a bitcast term. If no reduction is performed, return
+-- Nothing.
 doPevalBitCast :: (PEvalBitCastTerm a b) => Term a -> Maybe (Term b)
 doPevalBitCast (ConTerm _ v) = Just $ conTerm $ bitCast v
 doPevalBitCast t = doPevalBitCastSameType t

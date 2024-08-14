@@ -56,7 +56,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
@@ -96,7 +96,7 @@ instance Solvable AlgReal SymAlgReal where
   conView _ = Nothing
 
 instance Show SymAlgReal where
-  show (SymAlgReal t) = pformat t
+  show (SymAlgReal t) = pformatTerm t
 
 instance AllSyms SymAlgReal where
   allSymsS v = (SomeSym v :)

@@ -6,7 +6,7 @@
 
 -- |
 -- Module      :   Grisette.Internal.Backend.SymBiMap
--- Copyright   :   (c) Sirui Lu 2021-2023
+-- Copyright   :   (c) Sirui Lu 2021-2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
@@ -56,6 +56,7 @@ data SymBiMap = SymBiMap
     quantifiedSymbolNum :: Int
   }
 
+-- | Information about a quantified symbol.
 newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
   deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)
 
@@ -74,6 +75,7 @@ attachQuantifiedSymbolInfo
   (TypedSymbol (IndexedSymbol ident idx)) =
     TypedSymbol $ IndexedSymbol (withInfo ident info) idx
 
+-- | Attach the next quantified symbol info to a symbol.
 attachNextQuantifiedSymbolInfo ::
   SymBiMap -> TypedConstantSymbol a -> (SymBiMap, TypedConstantSymbol a)
 attachNextQuantifiedSymbolInfo m s =

@@ -175,7 +175,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalQuotIntegralTerm,
     pevalRemIntegralTerm,
     pevalRotateLeftTerm,
-    pformat,
+    pformatTerm,
     someTypedSymbol,
     symTerm,
     translateTypeError,
@@ -248,7 +248,7 @@ instance Eq (a --> b) where
   GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
 
 instance Show (a --> b) where
-  show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformat tm
+  show (GeneralFun sym tm) = "\\(" ++ show sym ++ ") -> " ++ pformatTerm tm
 
 instance Lift (a --> b) where
   liftTyped (GeneralFun sym tm) = [||GeneralFun sym tm||]

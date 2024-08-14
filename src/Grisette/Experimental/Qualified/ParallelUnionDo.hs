@@ -15,8 +15,10 @@ import Grisette.Experimental.MonadParallelUnion
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Prelude (const, ($))
 
+-- | Parallel '(>>=)' operation.
 (>>=) :: (MonadParallelUnion m, Mergeable b, NFData b) => m a -> (a -> m b) -> m b
 (>>=) = parBindUnion
 
+-- | Parallel '(>>)' operation.
 (>>) :: (MonadParallelUnion m, Mergeable b, NFData b) => m a -> m b -> m b
 (>>) a b = parBindUnion a $ const b

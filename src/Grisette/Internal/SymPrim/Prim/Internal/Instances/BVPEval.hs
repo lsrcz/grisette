@@ -13,6 +13,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval () where
 
 import Data.Kind (Type)

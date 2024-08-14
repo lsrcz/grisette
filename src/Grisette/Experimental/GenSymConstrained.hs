@@ -106,6 +106,8 @@ class (Mergeable a) => GenSymConstrained spec a where
     m (Union a)
   freshConstrained e spec = mrgSingle <$> simpleFreshConstrained e spec
 
+-- | Generates a symbolic value with the given specification, also place the
+-- necessary constraints.
 genSymConstrained :: forall spec a e. (GenSymConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e Union (Union a)
 genSymConstrained e spec = tryMerge . runFreshT (freshConstrained e spec)
 
@@ -127,6 +129,8 @@ class (Mergeable a) => GenSymSimpleConstrained spec a where
     spec ->
     m a
 
+-- | Generates a symbolic value with the given specification, also place the
+-- necessary constraints.
 genSymSimpleConstrained :: forall spec a e. (GenSymSimpleConstrained spec a, Mergeable e) => e -> spec -> Identifier -> ExceptT e Union a
 genSymSimpleConstrained e spec = tryMerge . runFreshT (simpleFreshConstrained e spec)
 
@@ -855,7 +859,7 @@ instance
 -- your own types.
 --
 -- This 'simpleFreshConstrained' implementation is for the types that does not need any specification.
--- It will generate product types by generating each fields with '()' as specification.
+-- It will generate product types by generating each fields with () as specification.
 -- It will not work on sum types.
 --
 -- __Note:__ __Never__ use on recursive types.

@@ -89,7 +89,7 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep (underlyingTerm),
-    pformat,
+    pformatTerm,
   )
 import Grisette.Internal.SymPrim.Prim.TermUtils
   ( someTermsSize,
@@ -113,7 +113,7 @@ data SomeSym where
   SomeSym :: (LinkedRep con sym) => sym -> SomeSym
 
 instance Show SomeSym where
-  show (SomeSym s) = pformat $ underlyingTerm s
+  show (SomeSym s) = pformatTerm $ underlyingTerm s
 
 -- | Extract all symbolic primitive values that are represented as SMT terms.
 --

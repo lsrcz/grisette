@@ -58,6 +58,7 @@ unaryPartialUnfoldOnce partial fallback = ret
     ret :: PartialRuleUnary a b
     ret = oneLevel (totalize @(Term a) @(Term b) partial fallback)
 
+-- | Unfold a unary operation once.
 unaryUnfoldOnce ::
   forall a b.
   (SupportedPrim b) =>
@@ -110,6 +111,7 @@ binaryPartialUnfoldOnce partial fallback = ret
     ret :: PartialRuleBinary a b c
     ret = oneLevel partial (totalize2 @(Term a) @(Term b) @(Term c) partial fallback)
 
+-- | Unfold a binary operation once.
 binaryUnfoldOnce ::
   forall a b c.
   (Typeable a, Typeable b, SupportedPrim c) =>
@@ -118,6 +120,7 @@ binaryUnfoldOnce ::
   TotalRuleBinary a b c
 binaryUnfoldOnce partial fallback = totalize2 (binaryPartialUnfoldOnce partial fallback) fallback
 
+-- | Unfold a unary operation once.
 generalUnaryUnfolded ::
   forall a b.
   (Typeable a, SupportedPrim b) =>
@@ -132,6 +135,7 @@ generalUnaryUnfolded compute =
         _ -> Nothing
     )
 
+-- | Unfold a binary operation once.
 generalBinaryUnfolded ::
   forall a b c.
   (Typeable a, Typeable b, SupportedPrim c) =>
