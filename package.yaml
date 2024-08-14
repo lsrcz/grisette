@@ -92,6 +92,7 @@ ghc-options:
   - -Wpartial-fields
   - -Wunused-type-patterns
   - -Wno-x-partial
+  - -Wno-unrecognised-warning-flags
 
 library:
   source-dirs: src
