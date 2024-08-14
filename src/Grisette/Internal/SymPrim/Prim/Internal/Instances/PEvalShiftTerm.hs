@@ -37,7 +37,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
--- | Partial evaluation of symbolic shift left term for finite bits types. 
+-- | Partial evaluation of symbolic shift left term for finite bits types.
 pevalFiniteBitsSymShiftShiftLeftTerm ::
   forall a.
   (Integral a, SymShift a, FiniteBits a, PEvalShiftTerm a) =>
@@ -70,7 +70,7 @@ doPevalFiniteBitsSymShiftShiftLeftTerm _ (ConTerm _ n)
       Just $ conTerm zeroBits
 doPevalFiniteBitsSymShiftShiftLeftTerm _ _ = Nothing
 
--- | Partial evaluation of symbolic shift right term for finite bits types. 
+-- | Partial evaluation of symbolic shift right term for finite bits types.
 pevalFiniteBitsSymShiftShiftRightTerm ::
   forall a.
   (Integral a, SymShift a, FiniteBits a, PEvalShiftTerm a) =>
