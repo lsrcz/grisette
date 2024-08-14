@@ -203,7 +203,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalFPUnaryTerm,
     pevalNotTerm,
     pevalOrTerm,
-    pformat,
+    pformatTerm,
     quotIntegralTerm,
     recipTerm,
     remIntegralTerm,
@@ -589,7 +589,7 @@ toFPSpec = constructBinarySpec toFPTerm pevalToFPTerm
 data BoolOnlySpec = BoolOnlySpec (Term Bool) (Term Bool)
 
 instance Show BoolOnlySpec where
-  show (BoolOnlySpec n r) = "BoolOnlySpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+  show (BoolOnlySpec n r) = "BoolOnlySpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec BoolOnlySpec Bool where
   norewriteVer (BoolOnlySpec n _) = n
@@ -627,7 +627,7 @@ instance Arbitrary BoolOnlySpec where
 data BoolWithLIASpec = BoolWithLIASpec (Term Bool) (Term Bool)
 
 instance Show BoolWithLIASpec where
-  show (BoolWithLIASpec n r) = "BoolWithLIASpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+  show (BoolWithLIASpec n r) = "BoolWithLIASpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec BoolWithLIASpec Bool where
   norewriteVer (BoolWithLIASpec n _) = n
@@ -639,7 +639,7 @@ data LIAWithBoolSpec = LIAWithBoolSpec (Term Integer) (Term Integer)
 
 instance Show LIAWithBoolSpec where
   show (LIAWithBoolSpec n r) =
-    "LIAWithBoolSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "LIAWithBoolSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec LIAWithBoolSpec Integer where
   norewriteVer (LIAWithBoolSpec n _) = n
@@ -710,7 +710,7 @@ instance Arbitrary LIAWithBoolSpec where
 data FixedSizedBVWithBoolSpec (bv :: Nat -> Type) (n :: Nat) = FixedSizedBVWithBoolSpec (Term (bv n)) (Term (bv n))
 
 instance (SupportedNonFuncPrim (bv n)) => Show (FixedSizedBVWithBoolSpec bv n) where
-  show (FixedSizedBVWithBoolSpec n r) = "FixedSizedBVWithBoolSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+  show (FixedSizedBVWithBoolSpec n r) = "FixedSizedBVWithBoolSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance (SupportedNonFuncPrim (bv n)) => TermRewritingSpec (FixedSizedBVWithBoolSpec bv n) (bv n) where
   norewriteVer (FixedSizedBVWithBoolSpec n _) = n
@@ -722,7 +722,7 @@ data BoolWithFixedSizedBVSpec (bv :: Nat -> Type) (n :: Nat) = BoolWithFixedSize
 
 instance Show (BoolWithFixedSizedBVSpec bv n) where
   show (BoolWithFixedSizedBVSpec n r) =
-    "BoolWithFixedSizedBVSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "BoolWithFixedSizedBVSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec (BoolWithFixedSizedBVSpec bv n) Bool where
   norewriteVer (BoolWithFixedSizedBVSpec n _) = n
@@ -820,7 +820,7 @@ instance (SupportedBV bv n) => Arbitrary (FixedSizedBVWithBoolSpec bv n) where
 data DifferentSizeBVSpec bv (n :: Nat) = DifferentSizeBVSpec (Term (bv n)) (Term (bv n))
 
 instance (SupportedNonFuncPrim (bv n)) => Show (DifferentSizeBVSpec bv n) where
-  show (DifferentSizeBVSpec n r) = "DSizeBVSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+  show (DifferentSizeBVSpec n r) = "DSizeBVSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance (SupportedNonFuncPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec bv n) (bv n) where
   norewriteVer (DifferentSizeBVSpec n _) = n
@@ -1061,7 +1061,7 @@ instance
 data GeneralSpec s = GeneralSpec (Term s) (Term s)
 
 instance (SupportedPrim s) => Show (GeneralSpec s) where
-  show (GeneralSpec n r) = "GeneralSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+  show (GeneralSpec n r) = "GeneralSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance (SupportedNonFuncPrim s) => TermRewritingSpec (GeneralSpec s) s where
   norewriteVer (GeneralSpec n _) = n
@@ -1073,7 +1073,7 @@ data IEEEFPSpec eb sb = IEEEFPSpec (Term (FP eb sb)) (Term (FP eb sb))
 
 instance (ValidFP eb sb) => Show (IEEEFPSpec eb sb) where
   show (IEEEFPSpec n r) =
-    "IEEEFPSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "IEEEFPSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance (ValidFP eb sb) => TermRewritingSpec (IEEEFPSpec eb sb) (FP eb sb) where
   norewriteVer (IEEEFPSpec n _) = n
@@ -1146,7 +1146,7 @@ data IEEEFPBoolOpSpec (eb :: Nat) (sb :: Nat)
 
 instance Show (IEEEFPBoolOpSpec eb sb) where
   show (IEEEFPBoolOpSpec n r) =
-    "IEEEFPBoolOpSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "IEEEFPBoolOpSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec (IEEEFPBoolOpSpec eb sb) Bool where
   norewriteVer (IEEEFPBoolOpSpec n _) = n
@@ -1194,7 +1194,7 @@ data FPRoundingModeSpec
 
 instance Show FPRoundingModeSpec where
   show (FPRoundingModeSpec n r) =
-    "FPRoundingModeSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "FPRoundingModeSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec FPRoundingModeSpec FPRoundingMode where
   norewriteVer (FPRoundingModeSpec n _) = n
@@ -1218,7 +1218,7 @@ data FPRoundingModeBoolOpSpec = FPRoundingModeBoolOpSpec (Term Bool) (Term Bool)
 
 instance Show FPRoundingModeBoolOpSpec where
   show (FPRoundingModeBoolOpSpec n r) =
-    "FPRoundingModeBoolOpSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "FPRoundingModeBoolOpSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec FPRoundingModeBoolOpSpec Bool where
   norewriteVer (FPRoundingModeBoolOpSpec n _) = n
@@ -1244,7 +1244,7 @@ data BoolWithNRASpec = BoolWithNRASpec (Term Bool) (Term Bool)
 
 instance Show BoolWithNRASpec where
   show (BoolWithNRASpec n r) =
-    "BoolWithNRASpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "BoolWithNRASpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec BoolWithNRASpec Bool where
   norewriteVer (BoolWithNRASpec n _) = n
@@ -1256,7 +1256,7 @@ data NRAWithBoolSpec = NRAWithBoolSpec (Term AlgReal) (Term AlgReal)
 
 instance Show NRAWithBoolSpec where
   show (NRAWithBoolSpec n r) =
-    "NRAWithBoolSpec { no: " ++ pformat n ++ ", re: " ++ pformat r ++ " }"
+    "NRAWithBoolSpec { no: " ++ pformatTerm n ++ ", re: " ++ pformatTerm r ++ " }"
 
 instance TermRewritingSpec NRAWithBoolSpec AlgReal where
   norewriteVer (NRAWithBoolSpec n _) = n
