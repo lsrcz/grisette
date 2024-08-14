@@ -50,7 +50,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     Term (ConTerm),
     TypedConstantSymbol,
     conTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
@@ -197,7 +197,7 @@ instance
   (SupportedPrim (ca --> cb), LinkedRep ca sa, LinkedRep cb sb) =>
   Show (sa -~> sb)
   where
-  show (SymGeneralFun t) = pformat t
+  show (SymGeneralFun t) = pformatTerm t
 
 instance
   (SupportedPrim (ca --> cb), LinkedRep ca sa, LinkedRep cb sb) =>

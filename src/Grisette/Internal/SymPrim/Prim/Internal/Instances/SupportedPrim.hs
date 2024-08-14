@@ -176,6 +176,8 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
+-- | Construct the 'SBV.BVIsNonZero' constraint from the proof that the width is
+-- at least 1.
 bvIsNonZeroFromGEq1 ::
   forall w r proxy.
   (1 <= w) =>

@@ -56,7 +56,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Unfold
     unaryUnfoldOnce,
   )
 
--- Add
+-- | Default partial evaluation of addition of numerical terms.
 pevalDefaultAddNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 pevalDefaultAddNumTerm =
   binaryUnfoldOnce
@@ -96,7 +96,7 @@ normalizeAddNum :: (PEvalNumTerm a) => Term a -> Term a
 normalizeAddNum (AddNumTerm _ l r@(ConTerm _ _)) = addNumTerm r l
 normalizeAddNum v = v
 
--- Neg
+-- | Default partial evaluation of negation of numerical terms.
 pevalDefaultNegNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 pevalDefaultNegNumTerm = unaryUnfoldOnce doPevalDefaultNegNumTerm negNumTerm
 

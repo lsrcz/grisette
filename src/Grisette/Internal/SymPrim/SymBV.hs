@@ -133,7 +133,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalModIntegralTerm,
     pevalOrTerm,
     pevalSubNumTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
@@ -327,7 +327,7 @@ FINITE_BITS_BV(SymWordN)
 
 #define SHOW_BV(symtype) \
 instance (KnownNat n, 1 <= n) => Show (symtype n) where \
-  show (symtype t) = pformat t
+  show (symtype t) = pformatTerm t
 
 #if 1
 SHOW_BV(SymIntN)

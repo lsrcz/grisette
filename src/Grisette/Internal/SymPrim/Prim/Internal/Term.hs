@@ -91,7 +91,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     identity,
     identityWithTypeRep,
     introSupportedPrimConstraint,
-    pformat,
+    pformatTerm,
 
     -- * Interning
     UTerm (..),
@@ -276,7 +276,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- >>> import Grisette.Core
 -- >>> import Grisette.SymPrim
 
--- SBV Translation
+-- | Monads that supports generating sbv fresh variables.
 class (Monad m) => SBVFreshMonad m where
   sbvFresh :: (SBV.SymVal a) => String -> m (SBV.SBV a)
 
@@ -298,6 +298,7 @@ instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (RWST r w s m) where
 instance (SBVFreshMonad m) => SBVFreshMonad (StateT s m) where
   sbvFresh = lift . sbvFresh
 
+-- | Error message for unsupported types.
 translateTypeError :: (HasCallStack) => Maybe String -> TypeRep a -> b
 translateTypeError Nothing ta =
   error $
@@ -306,9 +307,13 @@ translateTypeError (Just reason) ta =
   error $
     "Don't know how to translate the type " ++ show ta ++ " to SMT: " <> reason
 
+-- | Type class for resolving the base type for the SBV type for the primitive
+-- type.
 class (SupportedPrim a, Ord a) => NonFuncSBVRep a where
   type NonFuncSBVBaseType a
 
+-- | Type class for resolving the constraint for a supported non-function
+-- primitive type.
 type NonFuncPrimConstraint a =
   ( SBV.SymVal (NonFuncSBVBaseType a),
     SBV.EqSymbolic (SBVType a),
@@ -319,12 +324,15 @@ type NonFuncPrimConstraint a =
     PrimConstraint a
   )
 
+-- | Indicates that a type is supported, can be represented as a symbolic term,
+-- is not a function type, and can be lowered to an SBV term.
 class (NonFuncSBVRep a) => SupportedNonFuncPrim a where
   conNonFuncSBVTerm :: a -> SBV.SBV (NonFuncSBVBaseType a)
   symNonFuncSBVTerm ::
     (SBVFreshMonad m) => String -> m (SBV.SBV (NonFuncSBVBaseType a))
   withNonFuncPrim :: ((NonFuncPrimConstraint a) => r) -> r
 
+-- | Partition the list of CVs for models for functions.
 partitionCVArg ::
   forall a.
   (SupportedNonFuncPrim a) =>
@@ -360,6 +368,7 @@ partitionCVArg cv =
             else x : go (x1 : xs)
         go x = x
 
+-- | Parse the scalar model result.
 parseScalarSMTModelResult ::
   forall v r.
   (SBV.SatModel r, Typeable v) =>
@@ -371,9 +380,11 @@ parseScalarSMTModelResult convert cvs@([], v) = case SBV.parseCVs [v] of
   Nothing -> parseSMTModelResultError (typeRep @v) cvs
 parseScalarSMTModelResult _ cv = parseSMTModelResultError (typeRep @v) cv
 
+-- | Type class for resolving the SBV type for the primitive type.
 class SBVRep t where
   type SBVType t
 
+-- | Type class for resolving the constraint for a supported primitive type.
 class SupportedPrimConstraint t where
   type PrimConstraint t :: Constraint
   type PrimConstraint _ = ()
@@ -448,11 +459,13 @@ class
   isFuncType :: Bool
   funcDummyConstraint :: SBVType t -> SBV.SBV Bool
 
+-- | Cast a typed symbol to a different kind. Check if the kind is compatible.
 castSomeTypedSymbol ::
   (IsSymbolKind knd') => SomeTypedSymbol knd -> Maybe (SomeTypedSymbol knd')
 castSomeTypedSymbol (SomeTypedSymbol ty s@TypedSymbol {}) =
   SomeTypedSymbol ty <$> castTypedSymbol s
 
+-- | Error message for failure to parse the SBV model result.
 parseSMTModelResultError ::
   (HasCallStack) => TypeRep a -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> a
 parseSMTModelResultError ty cv =
@@ -462,6 +475,7 @@ parseSMTModelResultError ty cv =
       <> "\" to Grisette model value with the type "
       <> show ty
 
+-- | Partial evaluation for inequality terms.
 pevalNEqTerm :: (SupportedPrim a) => Term a -> Term a -> Term Bool
 pevalNEqTerm l r = pevalNotTerm $ pevalEqTerm l r
 {-# INLINE pevalNEqTerm #-}
@@ -484,7 +498,7 @@ class
   underlyingTerm :: sym -> Term con
   wrapTerm :: Term con -> sym
 
--- Partial Evaluation for the terms
+-- | Partial evaluation and lowering for function application terms.
 class
   (SupportedPrim f, SupportedPrim a, SupportedPrim b) =>
   PEvalApplyTerm f a b
@@ -493,6 +507,7 @@ class
   pevalApplyTerm :: Term f -> Term a -> Term b
   sbvApplyTerm :: SBVType f -> SBVType a -> SBVType b
 
+-- | Partial evaluation and lowering for bitwise operation terms.
 class (SupportedNonFuncPrim t, Bits t) => PEvalBitwiseTerm t where
   pevalAndBitsTerm :: Term t -> Term t -> Term t
   pevalOrBitsTerm :: Term t -> Term t -> Term t
@@ -508,6 +523,7 @@ class (SupportedNonFuncPrim t, Bits t) => PEvalBitwiseTerm t where
   sbvComplementBitsTerm :: SBVType t -> SBVType t
   sbvComplementBitsTerm = withSbvBitwiseTermConstraint @t SBV.complement
 
+-- | Partial evaluation and lowering for symbolic shifting terms.
 class (SupportedNonFuncPrim t, SymShift t) => PEvalShiftTerm t where
   pevalShiftLeftTerm :: Term t -> Term t -> Term t
   pevalShiftRightTerm :: Term t -> Term t -> Term t
@@ -520,6 +536,7 @@ class (SupportedNonFuncPrim t, SymShift t) => PEvalShiftTerm t where
   sbvShiftRightTerm l r =
     withNonFuncPrim @t $ withSbvShiftTermConstraint @t $ SBV.sShiftRight l r
 
+-- | Partial evaluation and lowering for symbolic rotate terms.
 class (SupportedNonFuncPrim t, SymRotate t) => PEvalRotateTerm t where
   pevalRotateLeftTerm :: Term t -> Term t -> Term t
   pevalRotateRightTerm :: Term t -> Term t -> Term t
@@ -532,6 +549,7 @@ class (SupportedNonFuncPrim t, SymRotate t) => PEvalRotateTerm t where
   sbvRotateRightTerm l r =
     withNonFuncPrim @t $ withSbvRotateTermConstraint @t $ SBV.sRotateRight l r
 
+-- | Partial evaluation and lowering for number terms.
 class (SupportedNonFuncPrim t, Num t) => PEvalNumTerm t where
   pevalAddNumTerm :: Term t -> Term t -> Term t
   pevalNegNumTerm :: Term t -> Term t
@@ -562,9 +580,11 @@ class (SupportedNonFuncPrim t, Num t) => PEvalNumTerm t where
     SBVType t
   sbvSignumNumTerm l = withSbvNumTermConstraint @t $ signum l
 
+-- | Partial evaluation for subtraction terms.
 pevalSubNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
 
+-- | Partial evaluation and lowering for comparison terms.
 class (SupportedNonFuncPrim t, Ord t) => PEvalOrdTerm t where
   pevalLtOrdTerm :: Term t -> Term t -> Term Bool
   pevalLeOrdTerm :: Term t -> Term t -> Term Bool
@@ -577,12 +597,15 @@ class (SupportedNonFuncPrim t, Ord t) => PEvalOrdTerm t where
   sbvLeOrdTerm :: SBVType t -> SBVType t -> SBV.SBV Bool
   sbvLeOrdTerm l r = withSbvOrdTermConstraint @t $ l SBV..<= r
 
+-- | Partial evaluation for greater than terms.
 pevalGtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGtOrdTerm = flip pevalLtOrdTerm
 
+-- | Partial evaluation for greater than or equal to terms.
 pevalGeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGeOrdTerm = flip pevalLeOrdTerm
 
+-- | Partial evaluation and lowering for integer division and modulo terms.
 class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
   pevalDivIntegralTerm :: Term t -> Term t -> Term t
   pevalModIntegralTerm :: Term t -> Term t -> Term t
@@ -603,6 +626,7 @@ class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
   sbvRemIntegralTerm l r =
     withSbvDivModIntegralTermConstraint @t $ l `SBV.sRem` r
 
+-- | Partial evaluation and lowering for bitcast terms.
 class
   (SupportedNonFuncPrim a, SupportedNonFuncPrim b, BitCast a b) =>
   PEvalBitCastTerm a b
@@ -610,6 +634,7 @@ class
   pevalBitCastTerm :: Term a -> Term b
   sbvBitCast :: SBVType a -> SBVType b
 
+-- | Partial evaluation and lowering for bitcast or default value terms.
 class
   (SupportedNonFuncPrim a, SupportedNonFuncPrim b, BitCastOr a b) =>
   PEvalBitCastOrTerm a b
@@ -617,6 +642,7 @@ class
   pevalBitCastOrTerm :: Term b -> Term a -> Term b
   sbvBitCastOr :: SBVType b -> SBVType a -> SBVType b
 
+-- | Partial evaluation and lowering for bit-vector terms.
 class
   ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
     SizedBV bv,
@@ -669,6 +695,7 @@ class
     SBVType (bv n) ->
     SBVType (bv w)
 
+-- | Partial evaluation and lowering for fractional terms.
 class (SupportedNonFuncPrim t, Fractional t) => PEvalFractionalTerm t where
   pevalFdivTerm :: Term t -> Term t -> Term t
   pevalRecipTerm :: Term t -> Term t
@@ -685,6 +712,7 @@ class (SupportedNonFuncPrim t, Fractional t) => PEvalFractionalTerm t where
     SBVType t
   sbvRecipTerm l = withSbvFractionalTermConstraint @t $ recip l
 
+-- | Unary floating point operations.
 data FloatingUnaryOp
   = FloatingExp
   | FloatingLog
@@ -720,6 +748,7 @@ instance Show FloatingUnaryOp where
   show FloatingAcosh = "acosh"
   show FloatingAtanh = "atanh"
 
+-- | Partial evaluation and lowering for floating point terms.
 class (SupportedNonFuncPrim t) => PEvalFloatingTerm t where
   pevalFloatingUnaryTerm :: FloatingUnaryOp -> Term t -> Term t
   pevalPowerTerm :: Term t -> Term t -> Term t
@@ -754,6 +783,7 @@ class (SupportedNonFuncPrim t) => PEvalFloatingTerm t where
         FloatingAcosh -> acosh l
         FloatingAtanh -> atanh l
 
+-- | Partial evaluation and lowering for integral terms.
 class
   ( SupportedNonFuncPrim a,
     SupportedNonFuncPrim b,
@@ -765,6 +795,8 @@ class
   pevalFromIntegralTerm :: Term a -> Term b
   sbvFromIntegralTerm :: SBVType a -> SBVType b
 
+-- | Partial evaluation and lowering for converting from and to IEEE floating
+-- point terms.
 class (SupportedNonFuncPrim a) => PEvalIEEEFPConvertibleTerm a where
   pevalFromFPOrTerm ::
     (ValidFP eb sb) =>
@@ -786,6 +818,7 @@ class (SupportedNonFuncPrim a) => PEvalIEEEFPConvertibleTerm a where
     SBVType a ->
     SBVType (FP eb sb)
 
+-- | Custom unary operator. Not used by Grisette at this time and do not use it.
 class
   (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
   UnaryOp tag arg t
@@ -794,6 +827,7 @@ class
   pevalUnary :: (Typeable tag, Typeable t) => tag -> Term arg -> Term t
   pformatUnary :: tag -> Term arg -> String
 
+-- | Custom binary operator. Not used by Grisette at this time and do not use it.
 class
   ( SupportedPrim arg1,
     SupportedPrim arg2,
@@ -811,6 +845,7 @@ class
   pevalBinary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term t
   pformatBinary :: tag -> Term arg1 -> Term arg2 -> String
 
+-- | Custom ternary operator. Not used by Grisette at this time and do not use it.
 class
   ( SupportedPrim arg1,
     SupportedPrim arg2,
@@ -885,6 +920,7 @@ instance Lift (TypedSymbol knd t) where
 instance Show (TypedSymbol knd t) where
   show (TypedSymbol symbol) = show symbol ++ " :: " ++ show (typeRep @t)
 
+-- | Show a typed symbol without the type information.
 showUntyped :: TypedSymbol knd t -> String
 showUntyped (TypedSymbol symbol) = show symbol
 
@@ -903,9 +939,11 @@ instance
   where
   fromString = TypedSymbol . fromString
 
+-- | Introduce the 'SupportedPrim' constraint from the t'TypedSymbol'.
 withSymbolSupported :: TypedSymbol knd t -> ((SupportedPrim t) => a) -> a
 withSymbolSupported (TypedSymbol _) a = a
 
+-- | Introduce the 'IsSymbolKind' constraint from the t'TypedSymbol'.
 withSymbolKind :: TypedSymbol knd t -> ((IsSymbolKind knd) => a) -> a
 withSymbolKind (TypedSymbol _) a = a
 
@@ -945,11 +983,13 @@ instance Hashable (SomeTypedSymbol knd) where
 instance Show (SomeTypedSymbol knd) where
   show (SomeTypedSymbol _ s) = show s
 
+-- | Construct a t'SomeTypedSymbol' from a t'TypedSymbol'.
 someTypedSymbol :: forall knd t. TypedSymbol knd t -> SomeTypedSymbol knd
 someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
 
 -- Terms
 
+-- | Traits for IEEE floating point numbers.
 data FPTrait
   = FPIsNaN
   | FPIsPositive
@@ -979,6 +1019,7 @@ instance Show FPTrait where
   show FPIsSubnormal = "is_subnormal"
   show FPIsPoint = "is_point"
 
+-- | Unary floating point operations.
 data FPUnaryOp = FPAbs | FPNeg
   deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
 
@@ -986,6 +1027,7 @@ instance Show FPUnaryOp where
   show FPAbs = "fp.abs"
   show FPNeg = "fp.neg"
 
+-- | Binary floating point operations.
 data FPBinaryOp
   = FPRem
   | FPMinimum
@@ -1001,6 +1043,7 @@ instance Show FPBinaryOp where
   show FPMaximum = "fp.maximum"
   show FPMaximumNumber = "fp.maximumNumber"
 
+-- | Unary floating point operations with rounding modes.
 data FPRoundingUnaryOp = FPSqrt | FPRoundToIntegral
   deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
 
@@ -1008,6 +1051,7 @@ instance Show FPRoundingUnaryOp where
   show FPSqrt = "fp.sqrt"
   show FPRoundToIntegral = "fp.roundToIntegral"
 
+-- | Binary floating point operations with rounding modes.
 data FPRoundingBinaryOp = FPAdd | FPSub | FPMul | FPDiv
   deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
 
@@ -1017,6 +1061,7 @@ instance Show FPRoundingBinaryOp where
   show FPMul = "fp.mul"
   show FPDiv = "fp.div"
 
+-- | Internal representation for Grisette symbolic terms.
 data Term t where
   ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
   SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'AnyKind t) -> Term t
@@ -1308,10 +1353,12 @@ data Term t where
     Proxy sb ->
     Term (FP eb sb)
 
+-- | Return the ID of a term.
 identity :: Term t -> Id
 identity = snd . identityWithTypeRep
 {-# INLINE identity #-}
 
+-- | Return the ID and the type representation of a term.
 identityWithTypeRep :: forall t. Term t -> (SomeTypeRep, Id)
 identityWithTypeRep (ConTerm i _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (SymTerm i _) = (someTypeRep (Proxy @t), i)
@@ -1366,6 +1413,7 @@ identityWithTypeRep (FromFPOrTerm i _ _ _) = (someTypeRep (Proxy @t), i)
 identityWithTypeRep (ToFPTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
+-- | Introduce the 'SupportedPrim' constraint from a term.
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
 introSupportedPrimConstraint ConTerm {} x = x
 introSupportedPrimConstraint SymTerm {} x = x
@@ -1420,62 +1468,63 @@ introSupportedPrimConstraint FromFPOrTerm {} x = x
 introSupportedPrimConstraint ToFPTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
-pformat :: forall t. (SupportedPrim t) => Term t -> String
-pformat (ConTerm _ t) = pformatCon t
-pformat (SymTerm _ sym) = pformatSym sym
-pformat (ForallTerm _ sym arg) = "(forall " ++ show sym ++ " " ++ pformat arg ++ ")"
-pformat (ExistsTerm _ sym arg) = "(exists " ++ show sym ++ " " ++ pformat arg ++ ")"
-pformat (UnaryTerm _ tag arg1) = pformatUnary tag arg1
-pformat (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
-pformat (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
-pformat (NotTerm _ arg) = "(! " ++ pformat arg ++ ")"
-pformat (OrTerm _ arg1 arg2) = "(|| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (AndTerm _ arg1 arg2) = "(&& " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (EqTerm _ arg1 arg2) = "(= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (DistinctTerm _ args) = "(distinct " ++ unwords (map pformat $ toList args) ++ ")"
-pformat (ITETerm _ cond arg1 arg2) = "(ite " ++ pformat cond ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (AddNumTerm _ arg1 arg2) = "(+ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (NegNumTerm _ arg) = "(- " ++ pformat arg ++ ")"
-pformat (MulNumTerm _ arg1 arg2) = "(* " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (AbsNumTerm _ arg) = "(abs " ++ pformat arg ++ ")"
-pformat (SignumNumTerm _ arg) = "(signum " ++ pformat arg ++ ")"
-pformat (LtOrdTerm _ arg1 arg2) = "(< " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (LeOrdTerm _ arg1 arg2) = "(<= " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (AndBitsTerm _ arg1 arg2) = "(& " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (OrBitsTerm _ arg1 arg2) = "(| " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (XorBitsTerm _ arg1 arg2) = "(^ " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (ComplementBitsTerm _ arg) = "(~ " ++ pformat arg ++ ")"
-pformat (ShiftLeftTerm _ arg n) = "(shl " ++ pformat arg ++ " " ++ pformat n ++ ")"
-pformat (ShiftRightTerm _ arg n) = "(shr " ++ pformat arg ++ " " ++ pformat n ++ ")"
-pformat (RotateLeftTerm _ arg n) = "(rotl " ++ pformat arg ++ " " ++ pformat n ++ ")"
-pformat (RotateRightTerm _ arg n) = "(rotr " ++ pformat arg ++ " " ++ pformat n ++ ")"
-pformat (BitCastTerm _ arg) = "(bitcast " ++ pformat arg ++ ")"
-pformat (BitCastOrTerm _ d arg) = "(bitcast_or " ++ pformat d ++ " " ++ pformat arg ++ ")"
-pformat (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformat arg ++ ")"
-pformat (BVExtendTerm _ signed n arg) =
-  (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformat arg ++ ")"
-pformat (ApplyTerm _ func arg) = "(apply " ++ pformat func ++ " " ++ pformat arg ++ ")"
-pformat (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformat arg ++ ")"
-pformat (FdivTerm _ arg1 arg2) = "(fdiv " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (RecipTerm _ arg) = "(recip " ++ pformat arg ++ ")"
-pformat (FloatingUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformat arg ++ ")"
-pformat (PowerTerm _ arg1 arg2) = "(** " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (FPUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformat arg ++ ")"
-pformat (FPBinaryTerm _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ pformat mode ++ " " ++ pformat arg ++ ")"
-pformat (FPRoundingBinaryTerm _ op mode arg1 arg2) =
-  "(" ++ show op ++ " " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ ")"
-pformat (FPFMATerm _ mode arg1 arg2 arg3) =
-  "(fp.fma " ++ pformat mode ++ " " ++ pformat arg1 ++ " " ++ pformat arg2 ++ " " ++ pformat arg3 ++ ")"
-pformat (FromIntegralTerm _ arg) = "(from_integral " ++ pformat arg ++ ")"
-pformat (FromFPOrTerm _ d r arg) = "(from_fp_or " ++ pformat d ++ " " ++ pformat r ++ " " ++ pformat arg ++ ")"
-pformat (ToFPTerm _ r arg _ _) = "(to_fp " ++ pformat r ++ " " ++ pformat arg ++ ")"
-{-# INLINE pformat #-}
+-- | Pretty-print a term.
+pformatTerm :: forall t. (SupportedPrim t) => Term t -> String
+pformatTerm (ConTerm _ t) = pformatCon t
+pformatTerm (SymTerm _ sym) = pformatSym sym
+pformatTerm (ForallTerm _ sym arg) = "(forall " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (ExistsTerm _ sym arg) = "(exists " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (UnaryTerm _ tag arg1) = pformatUnary tag arg1
+pformatTerm (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
+pformatTerm (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
+pformatTerm (NotTerm _ arg) = "(! " ++ pformatTerm arg ++ ")"
+pformatTerm (OrTerm _ arg1 arg2) = "(|| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AndTerm _ arg1 arg2) = "(&& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (EqTerm _ arg1 arg2) = "(= " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (DistinctTerm _ args) = "(distinct " ++ unwords (map pformatTerm $ toList args) ++ ")"
+pformatTerm (ITETerm _ cond arg1 arg2) = "(ite " ++ pformatTerm cond ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AddNumTerm _ arg1 arg2) = "(+ " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (NegNumTerm _ arg) = "(- " ++ pformatTerm arg ++ ")"
+pformatTerm (MulNumTerm _ arg1 arg2) = "(* " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AbsNumTerm _ arg) = "(abs " ++ pformatTerm arg ++ ")"
+pformatTerm (SignumNumTerm _ arg) = "(signum " ++ pformatTerm arg ++ ")"
+pformatTerm (LtOrdTerm _ arg1 arg2) = "(< " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (LeOrdTerm _ arg1 arg2) = "(<= " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AndBitsTerm _ arg1 arg2) = "(& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (OrBitsTerm _ arg1 arg2) = "(| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (XorBitsTerm _ arg1 arg2) = "(^ " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (ComplementBitsTerm _ arg) = "(~ " ++ pformatTerm arg ++ ")"
+pformatTerm (ShiftLeftTerm _ arg n) = "(shl " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (ShiftRightTerm _ arg n) = "(shr " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (RotateLeftTerm _ arg n) = "(rotl " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (RotateRightTerm _ arg n) = "(rotr " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (BitCastTerm _ arg) = "(bitcast " ++ pformatTerm arg ++ ")"
+pformatTerm (BitCastOrTerm _ d arg) = "(bitcast_or " ++ pformatTerm d ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (BVExtendTerm _ signed n arg) =
+  (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (ApplyTerm _ func arg) = "(apply " ++ pformatTerm func ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FdivTerm _ arg1 arg2) = "(fdiv " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (RecipTerm _ arg) = "(recip " ++ pformatTerm arg ++ ")"
+pformatTerm (FloatingUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (PowerTerm _ arg1 arg2) = "(** " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FPBinaryTerm _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ pformatTerm mode ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FPRoundingBinaryTerm _ op mode arg1 arg2) =
+  "(" ++ show op ++ " " ++ pformatTerm mode ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPFMATerm _ mode arg1 arg2 arg3) =
+  "(fp.fma " ++ pformatTerm mode ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ " " ++ pformatTerm arg3 ++ ")"
+pformatTerm (FromIntegralTerm _ arg) = "(from_integral " ++ pformatTerm arg ++ ")"
+pformatTerm (FromFPOrTerm _ d r arg) = "(from_fp_or " ++ pformatTerm d ++ " " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (ToFPTerm _ r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
+{-# INLINE pformatTerm #-}
 
 instance NFData (Term a) where
   rnf i = identity i `seq` ()
@@ -1675,6 +1724,7 @@ instance Show (Term ty) where
       ++ "}"
   {-# INLINE show #-}
 
+-- | Pretty-print a term, possibly eliding parts of it.
 prettyPrintTerm :: Term t -> Doc ann
 prettyPrintTerm v =
   column
@@ -1687,7 +1737,7 @@ prettyPrintTerm v =
           Unbounded -> pretty formatted
     )
   where
-    formatted = introSupportedPrimConstraint v $ pformat v
+    formatted = introSupportedPrimConstraint v $ pformatTerm v
     len = length formatted
 
 instance (SupportedPrim t) => Eq (Term t) where
@@ -1696,8 +1746,7 @@ instance (SupportedPrim t) => Eq (Term t) where
 instance (SupportedPrim t) => Hashable (Term t) where
   hashWithSalt s t = hashWithSalt s $ identity t
 
--- Interning
-
+-- | Term without identity (before internalizing).
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
   USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnyKind t) -> UTerm t
@@ -1874,6 +1923,7 @@ eqHeteroTag :: (Eq a) => (TypeRep a, a) -> (TypeRep b, b) -> Bool
 eqHeteroTag (tpa, taga) (tpb, tagb) = eqHeteroRep tpa tpb taga tagb
 {-# INLINE eqHeteroTag #-}
 
+-- | Compare two t'TypedSymbol's for equality.
 eqHeteroSymbol :: forall ta a tb b. TypedSymbol ta a -> TypedSymbol tb b -> Bool
 eqHeteroSymbol (TypedSymbol taga) (TypedSymbol tagb) =
   case eqTypeRep (typeRep @a) (typeRep @b) of
@@ -2268,6 +2318,7 @@ internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
       Nothing -> let t = identify (wid * i + r) bt in (CacheState (i + 1) (M.insert dt t m), t)
       Just t -> (CacheState i m, t)
 
+-- | Construct and internalizing a 'UnaryTerm'.
 constructUnary ::
   forall tag arg t.
   (SupportedPrim t, UnaryOp tag arg t, Typeable tag, Typeable t, Show tag) =>
@@ -2277,6 +2328,7 @@ constructUnary ::
 constructUnary tag tm = let x = internTerm $ UUnaryTerm tag tm in x
 {-# INLINE constructUnary #-}
 
+-- | Construct and internalizing a 'BinaryTerm'.
 constructBinary ::
   forall tag arg1 arg2 t.
   (SupportedPrim t, BinaryOp tag arg1 arg2 t, Typeable tag, Typeable t, Show tag) =>
@@ -2287,6 +2339,7 @@ constructBinary ::
 constructBinary tag tm1 tm2 = internTerm $ UBinaryTerm tag tm1 tm2
 {-# INLINE constructBinary #-}
 
+-- | Construct and internalizing a 'TernaryTerm'.
 constructTernary ::
   forall tag arg1 arg2 arg3 t.
   (SupportedPrim t, TernaryOp tag arg1 arg2 arg3 t, Typeable tag, Typeable t, Show tag) =>
@@ -2298,120 +2351,151 @@ constructTernary ::
 constructTernary tag tm1 tm2 tm3 = internTerm $ UTernaryTerm tag tm1 tm2 tm3
 {-# INLINE constructTernary #-}
 
+-- | Construct and internalizing a 'ConTerm'.
 conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
 conTerm t = internTerm $ UConTerm t
 {-# INLINE conTerm #-}
 
+-- | Construct and internalizing a 'SymTerm'.
 symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
 symTerm t = internTerm $ USymTerm $ TypedSymbol t
 {-# INLINE symTerm #-}
 
+-- | Construct and internalizing a 'ForallTerm'.
 forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
 forallTerm sym arg = internTerm $ UForallTerm sym arg
 {-# INLINE forallTerm #-}
 
+-- | Construct and internalizing a 'ExistsTerm'.
 existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
 existsTerm sym arg = internTerm $ UExistsTerm sym arg
 {-# INLINE existsTerm #-}
 
+-- | Construct and internalizing a 'SymTerm' with an identifier, using simple
+-- symbols.
 ssymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Term t
 ssymTerm = symTerm . SimpleSymbol
 {-# INLINE ssymTerm #-}
 
+-- | Construct and internalizing a 'SymTerm' with an identifier and an index,
+-- using indexed symbols.
 isymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Int -> Term t
 isymTerm str idx = symTerm $ IndexedSymbol str idx
 {-# INLINE isymTerm #-}
 
+-- | Construct and internalizing a 'NotTerm'.
 notTerm :: Term Bool -> Term Bool
 notTerm = internTerm . UNotTerm
 {-# INLINE notTerm #-}
 
+-- | Construct and internalizing a 'OrTerm'.
 orTerm :: Term Bool -> Term Bool -> Term Bool
 orTerm l r = internTerm $ UOrTerm l r
 {-# INLINE orTerm #-}
 
+-- | Construct and internalizing a 'AndTerm'.
 andTerm :: Term Bool -> Term Bool -> Term Bool
 andTerm l r = internTerm $ UAndTerm l r
 {-# INLINE andTerm #-}
 
+-- | Construct and internalizing a 'EqTerm'.
 eqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
 eqTerm l r = internTerm $ UEqTerm l r
 {-# INLINE eqTerm #-}
 
+-- | Construct and internalizing a 'DistinctTerm'.
 distinctTerm :: (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
 distinctTerm args = internTerm $ UDistinctTerm args
 {-# INLINE distinctTerm #-}
 
+-- | Construct and internalizing a 'ITETerm'.
 iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 iteTerm c l r = internTerm $ UITETerm c l r
 {-# INLINE iteTerm #-}
 
+-- | Construct and internalizing a 'AddNumTerm'.
 addNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 addNumTerm l r = internTerm $ UAddNumTerm l r
 {-# INLINE addNumTerm #-}
 
+-- | Construct and internalizing a 'NegNumTerm'.
 negNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 negNumTerm = internTerm . UNegNumTerm
 {-# INLINE negNumTerm #-}
 
+-- | Construct and internalizing a 'MulNumTerm'.
 mulNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 mulNumTerm l r = internTerm $ UMulNumTerm l r
 {-# INLINE mulNumTerm #-}
 
+-- | Construct and internalizing a 'AbsNumTerm'.
 absNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 absNumTerm = internTerm . UAbsNumTerm
 {-# INLINE absNumTerm #-}
 
+-- | Construct and internalizing a 'SignumNumTerm'.
 signumNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 signumNumTerm = internTerm . USignumNumTerm
 {-# INLINE signumNumTerm #-}
 
+-- | Construct and internalizing a 'LtOrdTerm'.
 ltOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 ltOrdTerm l r = internTerm $ ULtOrdTerm l r
 {-# INLINE ltOrdTerm #-}
 
+-- | Construct and internalizing a 'LeOrdTerm'.
 leOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 leOrdTerm l r = internTerm $ ULeOrdTerm l r
 {-# INLINE leOrdTerm #-}
 
+-- | Construct and internalizing a 'AndBitsTerm'.
 andBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 andBitsTerm l r = internTerm $ UAndBitsTerm l r
 {-# INLINE andBitsTerm #-}
 
+-- | Construct and internalizing a 'OrBitsTerm'.
 orBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 orBitsTerm l r = internTerm $ UOrBitsTerm l r
 {-# INLINE orBitsTerm #-}
 
+-- | Construct and internalizing a 'XorBitsTerm'.
 xorBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 xorBitsTerm l r = internTerm $ UXorBitsTerm l r
 {-# INLINE xorBitsTerm #-}
 
+-- | Construct and internalizing a 'ComplementBitsTerm'.
 complementBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a
 complementBitsTerm = internTerm . UComplementBitsTerm
 {-# INLINE complementBitsTerm #-}
 
+-- | Construct and internalizing a 'ShiftLeftTerm'.
 shiftLeftTerm :: (PEvalShiftTerm a) => Term a -> Term a -> Term a
 shiftLeftTerm t n = internTerm $ UShiftLeftTerm t n
 {-# INLINE shiftLeftTerm #-}
 
+-- | Construct and internalizing a 'ShiftRightTerm'.
 shiftRightTerm :: (PEvalShiftTerm a) => Term a -> Term a -> Term a
 shiftRightTerm t n = internTerm $ UShiftRightTerm t n
 {-# INLINE shiftRightTerm #-}
 
+-- | Construct and internalizing a 'RotateLeftTerm'.
 rotateLeftTerm :: (PEvalRotateTerm a) => Term a -> Term a -> Term a
 rotateLeftTerm t n = internTerm $ URotateLeftTerm t n
 {-# INLINE rotateLeftTerm #-}
 
+-- | Construct and internalizing a 'RotateRightTerm'.
 rotateRightTerm :: (PEvalRotateTerm a) => Term a -> Term a -> Term a
 rotateRightTerm t n = internTerm $ URotateRightTerm t n
 {-# INLINE rotateRightTerm #-}
 
+-- | Construct and internalizing a 'BitCastTerm'.
 bitCastTerm ::
   (PEvalBitCastTerm a b) =>
   Term a ->
   Term b
 bitCastTerm = internTerm . UBitCastTerm
 
+-- | Construct and internalizing a 'BitCastOrTerm'.
 bitCastOrTerm ::
   (PEvalBitCastOrTerm a b) =>
   Term b ->
@@ -2419,6 +2503,7 @@ bitCastOrTerm ::
   Term b
 bitCastOrTerm d = internTerm . UBitCastOrTerm d
 
+-- | Construct and internalizing a 'BVConcatTerm'.
 bvconcatTerm ::
   ( PEvalBVTerm bv,
     KnownNat l,
@@ -2434,6 +2519,7 @@ bvconcatTerm ::
 bvconcatTerm l r = internTerm $ UBVConcatTerm l r
 {-# INLINE bvconcatTerm #-}
 
+-- | Construct and internalizing a 'BVSelectTerm'.
 bvselectTerm ::
   forall bv n ix w p q.
   ( PEvalBVTerm bv,
@@ -2451,6 +2537,7 @@ bvselectTerm ::
 bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
 {-# INLINE bvselectTerm #-}
 
+-- | Construct and internalizing a 'BVExtendTerm'.
 bvextendTerm ::
   forall bv l r proxy.
   (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
@@ -2461,6 +2548,7 @@ bvextendTerm ::
 bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
 {-# INLINE bvextendTerm #-}
 
+-- | Construct and internalizing a 'BVExtendTerm' with sign extension.
 bvsignExtendTerm ::
   forall bv l r proxy.
   (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
@@ -2470,6 +2558,7 @@ bvsignExtendTerm ::
 bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
 {-# INLINE bvsignExtendTerm #-}
 
+-- | Construct and internalizing a 'BVExtendTerm' with zero extension.
 bvzeroExtendTerm ::
   forall bv l r proxy.
   (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
@@ -2479,6 +2568,7 @@ bvzeroExtendTerm ::
 bvzeroExtendTerm _ v = internTerm $ UBVExtendTerm False (typeRep @r) v
 {-# INLINE bvzeroExtendTerm #-}
 
+-- | Construct and internalizing a 'ApplyTerm'.
 applyTerm ::
   (SupportedPrim a, SupportedPrim b, SupportedPrim f, PEvalApplyTerm f a b) =>
   Term f ->
@@ -2487,22 +2577,27 @@ applyTerm ::
 applyTerm f a = internTerm $ UApplyTerm f a
 {-# INLINE applyTerm #-}
 
+-- | Construct and internalizing a 'DivIntegralTerm'.
 divIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 divIntegralTerm l r = internTerm $ UDivIntegralTerm l r
 {-# INLINE divIntegralTerm #-}
 
+-- | Construct and internalizing a 'ModIntegralTerm'.
 modIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 modIntegralTerm l r = internTerm $ UModIntegralTerm l r
 {-# INLINE modIntegralTerm #-}
 
+-- | Construct and internalizing a 'QuotIntegralTerm'.
 quotIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 quotIntegralTerm l r = internTerm $ UQuotIntegralTerm l r
 {-# INLINE quotIntegralTerm #-}
 
+-- | Construct and internalizing a 'RemIntegralTerm'.
 remIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 remIntegralTerm l r = internTerm $ URemIntegralTerm l r
 {-# INLINE remIntegralTerm #-}
 
+-- | Construct and internalizing a 'FPTraitTerm'.
 fpTraitTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPTrait ->
@@ -2510,22 +2605,27 @@ fpTraitTerm ::
   Term Bool
 fpTraitTerm trait v = internTerm $ UFPTraitTerm trait v
 
+-- | Construct and internalizing a 'FdivTerm'.
 fdivTerm :: (PEvalFractionalTerm a) => Term a -> Term a -> Term a
 fdivTerm l r = internTerm $ UFdivTerm l r
 {-# INLINE fdivTerm #-}
 
+-- | Construct and internalizing a 'RecipTerm'.
 recipTerm :: (PEvalFractionalTerm a) => Term a -> Term a
 recipTerm = internTerm . URecipTerm
 {-# INLINE recipTerm #-}
 
+-- | Construct and internalizing a 'FloatingUnaryTerm'.
 floatingUnaryTerm :: (PEvalFloatingTerm a) => FloatingUnaryOp -> Term a -> Term a
 floatingUnaryTerm op = internTerm . UFloatingUnaryTerm op
 {-# INLINE floatingUnaryTerm #-}
 
+-- | Construct and internalizing a 'PowerTerm'.
 powerTerm :: (PEvalFloatingTerm a) => Term a -> Term a -> Term a
 powerTerm l r = internTerm $ UPowerTerm l r
 {-# INLINE powerTerm #-}
 
+-- | Construct and internalizing a 'FPUnaryTerm'.
 fpUnaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPUnaryOp ->
@@ -2533,6 +2633,7 @@ fpUnaryTerm ::
   Term (FP eb sb)
 fpUnaryTerm op v = internTerm $ UFPUnaryTerm op v
 
+-- | Construct and internalizing a 'FPBinaryTerm'.
 fpBinaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPBinaryOp ->
@@ -2541,6 +2642,7 @@ fpBinaryTerm ::
   Term (FP eb sb)
 fpBinaryTerm op l r = internTerm $ UFPBinaryTerm op l r
 
+-- | Construct and internalizing a 'FPRoundingUnaryTerm'.
 fpRoundingUnaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingUnaryOp ->
@@ -2549,6 +2651,7 @@ fpRoundingUnaryTerm ::
   Term (FP eb sb)
 fpRoundingUnaryTerm op mode v = internTerm $ UFPRoundingUnaryTerm op mode v
 
+-- | Construct and internalizing a 'FPRoundingBinaryTerm'.
 fpRoundingBinaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingBinaryOp ->
@@ -2558,6 +2661,7 @@ fpRoundingBinaryTerm ::
   Term (FP eb sb)
 fpRoundingBinaryTerm op mode l r = internTerm $ UFPRoundingBinaryTerm op mode l r
 
+-- | Construct and internalizing a 'FPFMATerm'.
 fpFMATerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   Term FPRoundingMode ->
@@ -2567,9 +2671,11 @@ fpFMATerm ::
   Term (FP eb sb)
 fpFMATerm mode l r s = internTerm $ UFPFMATerm mode l r s
 
+-- | Construct and internalizing a 'FromIntegralTerm'.
 fromIntegralTerm :: (PEvalFromIntegralTerm a b) => Term a -> Term b
 fromIntegralTerm = internTerm . UFromIntegralTerm
 
+-- | Construct and internalizing a 'FromFPOrTerm'.
 fromFPOrTerm ::
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
@@ -2582,6 +2688,7 @@ fromFPOrTerm ::
   Term a
 fromFPOrTerm d r f = internTerm $ UFromFPOrTerm d r f
 
+-- | Construct and internalizing a 'ToFPTerm'.
 toFPTerm ::
   forall a eb sb.
   ( PEvalIEEEFPConvertibleTerm a,
@@ -2601,10 +2708,12 @@ defaultValueForBool = False
 defaultValueForBoolDyn :: ModelValue
 defaultValueForBoolDyn = toModelValue defaultValueForBool
 
+-- | Construct and internalizing 'True' term.
 trueTerm :: Term Bool
 trueTerm = conTerm True
 {-# INLINE trueTerm #-}
 
+-- | Construct and internalizing 'False' term.
 falseTerm :: Term Bool
 falseTerm = conTerm False
 {-# INLINE falseTerm #-}
@@ -2614,12 +2723,15 @@ boolConTermView (ConTerm _ b) = cast b
 boolConTermView _ = Nothing
 {-# INLINE boolConTermView #-}
 
+-- | Pattern matcher for concrete 'Bool' terms.
 pattern BoolConTerm :: Bool -> Term a
 pattern BoolConTerm b <- (boolConTermView -> Just b)
 
+-- | Pattern matcher for 'True' term.
 pattern TrueTerm :: Term a
 pattern TrueTerm <- BoolConTerm True
 
+-- | Pattern matcher for 'False' term.
 pattern FalseTerm :: Term a
 pattern FalseTerm <- BoolConTerm False
 
@@ -2627,10 +2739,11 @@ boolTermView :: forall a. Term a -> Maybe (Term Bool)
 boolTermView t = introSupportedPrimConstraint t $ cast t
 {-# INLINE boolTermView #-}
 
+-- | Pattern matcher for 'Bool' terms.
 pattern BoolTerm :: Term Bool -> Term a
 pattern BoolTerm b <- (boolTermView -> Just b)
 
--- Not
+-- | Partial evaluation for not terms.
 pevalNotTerm :: Term Bool -> Term Bool
 pevalNotTerm (NotTerm _ tm) = tm
 pevalNotTerm (ConTerm _ a) = if a then falseTerm else trueTerm
@@ -2712,7 +2825,7 @@ andEqFalse x (NotTerm _ y) | x == y = True
 andEqFalse _ _ = False
 {-# INLINE andEqFalse #-}
 
--- Or
+-- | Partial evaluation for or terms.
 pevalOrTerm :: Term Bool -> Term Bool -> Term Bool
 pevalOrTerm l r
   | orEqTrue l r = trueTerm
@@ -2750,6 +2863,7 @@ pevalOrTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalAndTerm nl nr
 pevalOrTerm l r = orTerm l r
 {-# INLINEABLE pevalOrTerm #-}
 
+-- | Partial evaluation for and terms.
 pevalAndTerm :: Term Bool -> Term Bool -> Term Bool
 pevalAndTerm l r
   | andEqFalse l r = falseTerm
@@ -2787,9 +2901,11 @@ pevalAndTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalOrTerm nl nr
 pevalAndTerm l r = andTerm l r
 {-# INLINEABLE pevalAndTerm #-}
 
+-- | Partial evaluation for imply terms.
 pevalImplyTerm :: Term Bool -> Term Bool -> Term Bool
 pevalImplyTerm l = pevalOrTerm (pevalNotTerm l)
 
+-- | Partial evaluation for xor terms.
 pevalXorTerm :: Term Bool -> Term Bool -> Term Bool
 pevalXorTerm l r = pevalOrTerm (pevalAndTerm (pevalNotTerm l) r) (pevalAndTerm l (pevalNotTerm r))
 
@@ -2954,6 +3070,7 @@ pevalITEBoolNoLeft cond ifTrue (OrTerm _ f1 f2) = pevalITEBoolRightOr cond ifTru
 pevalITEBoolNoLeft cond ifTrue (NotTerm _ nIfFalse) = pevalITEBoolRightNot cond ifTrue nIfFalse
 pevalITEBoolNoLeft _ _ _ = Nothing
 
+-- | Basic partial evaluation for ITE terms.
 pevalITEBasic :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Maybe (Term a)
 pevalITEBasic (ConTerm _ True) ifTrue _ = Just ifTrue
 pevalITEBasic (ConTerm _ False) _ ifFalse = Just ifFalse
@@ -2992,11 +3109,13 @@ pevalITEBool cond ifTrue ifFalse =
       pevalITEBoolNoLeft cond ifTrue ifFalse
     ]
 
+-- | Basic partial evaluation for ITE terms.
 pevalITEBasicTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
 pevalITEBasicTerm cond ifTrue ifFalse =
   fromMaybe (iteTerm cond ifTrue ifFalse) $
     pevalITEBasic cond ifTrue ifFalse
 
+-- | Default partial evaluation for equality terms.
 pevalDefaultEqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
 pevalDefaultEqTerm l@ConTerm {} r@ConTerm {} = conTerm $ l == r
 pevalDefaultEqTerm l@ConTerm {} r = pevalDefaultEqTerm r l

@@ -35,7 +35,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     Term (ConTerm),
     conTerm,
     pevalSubNumTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
@@ -95,7 +95,7 @@ instance IsString SymInteger where
   fromString = ssym . fromString
 
 instance Show SymInteger where
-  show (SymInteger t) = pformat t
+  show (SymInteger t) = pformatTerm t
 
 instance AllSyms SymInteger where
   allSymsS v = (SomeSym v :)

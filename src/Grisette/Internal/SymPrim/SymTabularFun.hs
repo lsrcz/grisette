@@ -42,7 +42,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
@@ -149,7 +149,7 @@ instance
   (SupportedPrim (ca =-> cb), LinkedRep ca sa, LinkedRep cb sb) =>
   Show (sa =~> sb)
   where
-  show (SymTabularFun t) = pformat t
+  show (SymTabularFun t) = pformatTerm t
 
 instance
   (SupportedPrim (ca =-> cb), LinkedRep ca sa, LinkedRep cb sb) =>

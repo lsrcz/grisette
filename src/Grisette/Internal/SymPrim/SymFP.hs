@@ -147,7 +147,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term (ConTerm),
     conTerm,
     pevalSubNumTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
@@ -215,7 +215,7 @@ instance (ValidFP eb sb) => Solvable (FP eb sb) (SymFP eb sb) where
   conView _ = Nothing
 
 instance (ValidFP eb sb) => Show (SymFP eb sb) where
-  show (SymFP a) = pformat a
+  show (SymFP a) = pformatTerm a
 
 instance (ValidFP eb sb) => AllSyms (SymFP eb sb) where
   allSymsS v = (SomeSym v :)
@@ -287,7 +287,7 @@ instance Solvable FPRoundingMode SymFPRoundingMode where
   conView _ = Nothing
 
 instance Show SymFPRoundingMode where
-  show (SymFPRoundingMode a) = pformat a
+  show (SymFPRoundingMode a) = pformatTerm a
 
 instance AllSyms SymFPRoundingMode where
   allSymsS v = (SomeSym v :)

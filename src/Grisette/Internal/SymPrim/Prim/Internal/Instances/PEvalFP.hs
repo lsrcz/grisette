@@ -1,5 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+-- |
+-- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   ( pevalFPTraitTerm,
     sbvFPTraitTerm,
@@ -17,7 +25,24 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
 where
 
 import qualified Data.SBV as SBV
-import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEFPOp (fpMaximum, fpMaximumNumber, fpMinimum, fpMinimumNumber, fpRem), IEEEFPRoundingOp (fpAdd, fpDiv, fpFMA, fpMul, fpRoundToIntegral, fpSqrt, fpSub))
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( IEEEFPOp
+      ( fpMaximum,
+        fpMaximumNumber,
+        fpMinimum,
+        fpMinimumNumber,
+        fpRem
+      ),
+    IEEEFPRoundingOp
+      ( fpAdd,
+        fpDiv,
+        fpFMA,
+        fpMul,
+        fpRoundToIntegral,
+        fpSqrt,
+        fpSub
+      ),
+  )
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( FPBinaryOp (FPMaximum, FPMaximumNumber, FPMinimum, FPMinimumNumber, FPRem),
@@ -50,6 +75,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
+-- | Partially evaluate a floating-point trait term.
 pevalFPTraitTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPTrait ->
@@ -97,6 +123,7 @@ goodFpIsNegative ::
 goodFpIsNegative x = SBV.sNot (SBV.fpIsNaN x) SBV..&& SBV.fpIsNegative x
 {-# INLINE goodFpIsNegative #-}
 
+-- | Lowering an floating-point trait term to sbv.
 sbvFPTraitTerm ::
   (ValidFP eb sb) =>
   FPTrait ->
@@ -119,6 +146,7 @@ sbvFPTraitTerm FPIsNormal = SBV.fpIsNormal
 sbvFPTraitTerm FPIsSubnormal = SBV.fpIsSubnormal
 sbvFPTraitTerm FPIsPoint = SBV.fpIsPoint
 
+-- | Partially evaluate a floating-point unary term.
 pevalFPUnaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPUnaryOp ->
@@ -127,6 +155,7 @@ pevalFPUnaryTerm ::
 pevalFPUnaryTerm = fpUnaryTerm
 {-# INLINE pevalFPUnaryTerm #-}
 
+-- | Lowering an floating-point unary term to sbv.
 sbvFPUnaryTerm ::
   (ValidFP eb sb) =>
   FPUnaryOp ->
@@ -136,6 +165,7 @@ sbvFPUnaryTerm FPAbs = SBV.fpAbs
 sbvFPUnaryTerm FPNeg = SBV.fpNeg
 {-# INLINE sbvFPUnaryTerm #-}
 
+-- | Partially evaluate a floating-point binary term.
 pevalFPBinaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPBinaryOp ->
@@ -167,6 +197,7 @@ sbvCmpHandleNegZero x y =
     (SBV.fpIsNegativeZero x)
     (x SBV..< y)
 
+-- | Lowering an floating-point binary term to sbv.
 sbvFPBinaryTerm ::
   (ValidFP eb sb) =>
   FPBinaryOp ->
@@ -190,6 +221,7 @@ sbvFPBinaryTerm FPMaximumNumber x y =
       SBV.ite (sbvCmpHandleNegZero x y) y x
 {-# INLINE sbvFPBinaryTerm #-}
 
+-- | Partially evaluate a floating-point rounding unary term.
 pevalFPRoundingUnaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingUnaryOp ->
@@ -203,6 +235,7 @@ pevalFPRoundingUnaryTerm uop (ConTerm _ rd) (ConTerm _ l) =
 pevalFPRoundingUnaryTerm uop rd l = fpRoundingUnaryTerm uop rd l
 {-# INLINE pevalFPRoundingUnaryTerm #-}
 
+-- | Lowering an floating-point rounding unary term to sbv.
 sbvFPRoundingUnaryTerm ::
   (ValidFP eb sb) =>
   FPRoundingUnaryOp ->
@@ -213,6 +246,7 @@ sbvFPRoundingUnaryTerm FPSqrt = SBV.fpSqrt
 sbvFPRoundingUnaryTerm FPRoundToIntegral = SBV.fpRoundToIntegral
 {-# INLINE sbvFPRoundingUnaryTerm #-}
 
+-- | Partially evaluate a floating-point rounding binary term.
 pevalFPRoundingBinaryTerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   FPRoundingBinaryOp ->
@@ -229,6 +263,7 @@ pevalFPRoundingBinaryTerm bop (ConTerm _ rd) (ConTerm _ l) (ConTerm _ r) =
 pevalFPRoundingBinaryTerm bop rd l r = fpRoundingBinaryTerm bop rd l r
 {-# INLINE pevalFPRoundingBinaryTerm #-}
 
+-- | Lowering an floating-point rounding binary term to sbv.
 sbvFPRoundingBinaryTerm ::
   (ValidFP eb sb) =>
   FPRoundingBinaryOp ->
@@ -242,6 +277,7 @@ sbvFPRoundingBinaryTerm FPMul = SBV.fpMul
 sbvFPRoundingBinaryTerm FPDiv = SBV.fpDiv
 {-# INLINE sbvFPRoundingBinaryTerm #-}
 
+-- | Partially evaluate a floating-point fused multiply-add term.
 pevalFPFMATerm ::
   (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
   Term FPRoundingMode ->
@@ -254,6 +290,7 @@ pevalFPFMATerm (ConTerm _ rd) (ConTerm _ x) (ConTerm _ y) (ConTerm _ z) =
 pevalFPFMATerm rd x y z = fpFMATerm rd x y z
 {-# INLINE pevalFPFMATerm #-}
 
+-- | Lowering an floating-point fused multiply-add term to sbv.
 sbvFPFMATerm ::
   (ValidFP eb sb) =>
   SBV.SRoundingMode ->

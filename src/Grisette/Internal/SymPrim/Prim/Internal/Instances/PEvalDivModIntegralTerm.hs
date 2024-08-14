@@ -46,7 +46,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
 
--- div
+-- | Default partial evaluation of division operation for integral types.
 pevalDefaultDivIntegralTerm ::
   (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 pevalDefaultDivIntegralTerm =
@@ -59,6 +59,8 @@ doPevalDefaultDivIntegralTerm (ConTerm _ a) (ConTerm _ b)
 doPevalDefaultDivIntegralTerm a (ConTerm _ 1) = Just a
 doPevalDefaultDivIntegralTerm _ _ = Nothing
 
+-- | Default partial evaluation of division operation for bounded integral
+-- types.
 pevalDefaultDivBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a) => Term a -> Term a -> Term a
 pevalDefaultDivBoundedIntegralTerm =
@@ -74,7 +76,7 @@ doPevalDefaultDivBoundedIntegralTerm (ConTerm _ a) (ConTerm _ b)
 doPevalDefaultDivBoundedIntegralTerm a (ConTerm _ 1) = Just a
 doPevalDefaultDivBoundedIntegralTerm _ _ = Nothing
 
--- mod
+-- | Default partial evaluation of modulo operation for integral types.
 pevalDefaultModIntegralTerm ::
   (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 pevalDefaultModIntegralTerm =
@@ -88,7 +90,7 @@ doPevalDefaultModIntegralTerm _ (ConTerm _ 1) = Just $ conTerm 0
 doPevalDefaultModIntegralTerm _ (ConTerm _ (-1)) = Just $ conTerm 0
 doPevalDefaultModIntegralTerm _ _ = Nothing
 
--- quot
+-- | Default partial evaluation of quotient operation for integral types.
 pevalDefaultQuotIntegralTerm ::
   (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 pevalDefaultQuotIntegralTerm =
@@ -101,6 +103,8 @@ doPevalDefaultQuotIntegralTerm (ConTerm _ a) (ConTerm _ b)
 doPevalDefaultQuotIntegralTerm a (ConTerm _ 1) = Just a
 doPevalDefaultQuotIntegralTerm _ _ = Nothing
 
+-- | Default partial evaluation of quotient operation for bounded integral
+-- types.
 pevalDefaultQuotBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a) => Term a -> Term a -> Term a
 pevalDefaultQuotBoundedIntegralTerm =
@@ -116,7 +120,7 @@ doPevalDefaultQuotBoundedIntegralTerm (ConTerm _ a) (ConTerm _ b)
 doPevalDefaultQuotBoundedIntegralTerm a (ConTerm _ 1) = Just a
 doPevalDefaultQuotBoundedIntegralTerm _ _ = Nothing
 
--- rem
+-- | Default partial evaluation of remainder operation for integral types.
 pevalDefaultRemIntegralTerm ::
   (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
 pevalDefaultRemIntegralTerm =

@@ -19,7 +19,9 @@ import Data.Hashable (Hashable (hashWithSalt))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con, conView, ssym, sym))
+import Grisette.Internal.Core.Data.Class.Solvable
+  ( Solvable (con, conView, ssym, sym),
+  )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
@@ -27,7 +29,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     SymRep (SymType),
     Term (ConTerm),
     conTerm,
-    pformat,
+    pformatTerm,
     symTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
@@ -80,7 +82,7 @@ instance IsString SymBool where
   fromString = ssym . fromString
 
 instance Show SymBool where
-  show (SymBool t) = pformat t
+  show (SymBool t) = pformatTerm t
 
 instance AllSyms SymBool where
   allSymsS v = (SomeSym v :)

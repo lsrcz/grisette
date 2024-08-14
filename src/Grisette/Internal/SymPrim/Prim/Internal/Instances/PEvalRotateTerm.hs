@@ -37,6 +37,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
+-- | Partial evaluation of symbolic rotate left term for finite bits types. 
 pevalFiniteBitsSymRotateRotateLeftTerm ::
   forall a.
   (Integral a, SymRotate a, FiniteBits a, PEvalRotateTerm a) =>
@@ -70,6 +71,7 @@ doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ n)
     bs = finiteBitSize n
 doPevalFiniteBitsSymRotateRotateLeftTerm _ _ = Nothing
 
+-- | Partial evaluation of symbolic rotate right term for finite bits types. 
 pevalFiniteBitsSymRotateRotateRightTerm ::
   forall a.
   (Integral a, SymRotate a, FiniteBits a, PEvalRotateTerm a) =>

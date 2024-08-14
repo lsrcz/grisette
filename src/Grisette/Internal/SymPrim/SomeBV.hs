@@ -695,7 +695,7 @@ instance
             (\(SomeBV x) -> unsafeCoerce x)
       )
 
--- | The 'symDistinct' instance for 'SomeBV' will have the following behavior:
+-- | The 'symDistinct' instance for t'SomeBV' will have the following behavior:
 --
 -- * If the list is empty or has only one element, it will return 'True'.
 -- * If none of the elements have a bit-width, it will throw
