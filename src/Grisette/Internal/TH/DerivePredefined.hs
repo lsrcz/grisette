@@ -2,6 +2,9 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.DerivePredefined
@@ -60,7 +63,7 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   ( deriveFunctorArgUnifiedInterfaceExtra,
   )
 import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
-import Grisette.Internal.TH.Util (classParamKinds, concatPreds)
+import Grisette.Internal.TH.Util (classParamKinds)
 import Grisette.Unified.Internal.Class.UnifiedSymEq
   ( UnifiedSymEq (withBaseSymEq),
     UnifiedSymEq1 (withBaseSymEq1),
@@ -68,10 +71,6 @@ import Grisette.Unified.Internal.Class.UnifiedSymEq
 import Grisette.Unified.Internal.Class.UnifiedSymOrd
   ( UnifiedSymOrd (withBaseSymOrd),
     UnifiedSymOrd1 (withBaseSymOrd1),
-  )
-import Grisette.Unified.Internal.EvalMode (EvalMode)
-import Grisette.Unified.Internal.EvalModeTag
-  ( EvalModeTag (Con, Sym),
   )
 import Language.Haskell.TH
   ( Dec,
@@ -102,16 +101,12 @@ import Language.Haskell.TH
     appT,
     conT,
     pprint,
-    varT,
   )
 import Language.Haskell.TH.Datatype
   ( DatatypeInfo (datatypeVariant),
     DatatypeVariant (Datatype, Newtype),
     reifyDatatype,
-    tvKind,
-    tvName,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndrUnit)
 import Language.Haskell.TH.Syntax (Lift)
 
 newtypeDefaultStrategy :: Name -> Q Strategy
@@ -164,29 +159,6 @@ allNeededConstraints nm
   | nm == ''SubstSym =
       [''SubstSym, ''SubstSym, ''Mergeable, ''Mergeable1]
   | otherwise = []
-
-newtype ModeTypeParamHandler = ModeTypeParamHandler
-  { mode :: Maybe EvalModeTag
-  }
-
-instance DeriveTypeParamHandler ModeTypeParamHandler where
-  handleTypeParams _ ModeTypeParamHandler {..} tys = do
-    mapM (uncurry handle) tys
-    where
-      handle ::
-        [(TyVarBndrUnit, Maybe Type)] ->
-        Maybe [Pred] ->
-        Q ([(TyVarBndrUnit, Maybe Type)], Maybe [Pred])
-      handle [(ty, substTy)] preds | tvKind ty == ConT ''EvalModeTag =
-        case (mode, substTy) of
-          (_, Just {}) -> return ([(ty, substTy)], preds)
-          (Just Con, _) -> return ([(ty, Just $ PromotedT 'Con)], preds)
-          (Just Sym, _) -> return ([(ty, Just $ PromotedT 'Sym)], preds)
-          (Nothing, _) -> do
-            evalMode <- [t|EvalMode $(varT $ tvName ty)|]
-            return ([(ty, substTy)], concatPreds (Just [evalMode]) preds)
-      handle tys preds = return (tys, preds)
-  handleBody _ _ = return []
 
 newtype FixInnerConstraints = FixInnerConstraints {cls :: Name}
 

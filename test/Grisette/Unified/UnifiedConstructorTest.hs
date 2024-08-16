@@ -30,7 +30,7 @@ import Control.Monad.Identity (Identity (Identity))
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), Union, mrgReturn)
 import Grisette.TH (deriveAll, mkUnifiedConstructor, mkUnifiedConstructor')
-import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalMode (EvalModeBase)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Test.Framework (Test, testGroup)
@@ -45,10 +45,10 @@ deriveAll ''T
 mkUnifiedConstructor "mk" ''T
 
 #if MIN_VERSION_base(4,16,0)
-type FConstraint mode = (EvalMode mode)
+type FConstraint mode = (EvalModeBase mode)
 #else
 type FConstraint mode =
-  (EvalMode mode, UnifiedData mode (T mode SymInteger))
+  (EvalModeBase mode, UnifiedData mode (T mode SymInteger))
 #endif
 
 f :: forall mode. (FConstraint mode) => GetData mode (T mode SymInteger)

@@ -48,6 +48,7 @@ import Grisette
     IEEEFPRoundingMode (rne),
     IntN,
     Mergeable,
+    MonadTryMerge,
     SomeBVException,
     SymBool,
     SymFP,
@@ -62,7 +63,10 @@ import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.SymPrim.FP (NotRepresentableFPError (NaNError))
 import Grisette.Internal.SymPrim.SomeBV (SomeIntN, SomeSymIntN, ssymBV)
 import Grisette.Unified
-  ( EvalMode,
+  ( EvalModeBV,
+    EvalModeBase,
+    EvalModeFP,
+    EvalModeInteger,
     EvalModeTag (Con, Sym),
     GetBool,
     GetData,
@@ -72,7 +76,7 @@ import Grisette.Unified
     GetInteger,
     GetSomeIntN,
     GetWordN,
-    MonadWithMode,
+    UnifiedBranching,
     extractData,
     mrgIte,
     safeDiv,
@@ -87,7 +91,7 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
 
 fbool ::
-  forall mode. (EvalMode mode) => GetBool mode -> GetBool mode -> GetBool mode
+  forall mode. (EvalModeBase mode) => GetBool mode -> GetBool mode -> GetBool mode
 fbool l r =
   mrgIte
     (l .== r :: GetBool mode)
@@ -96,7 +100,7 @@ fbool l r =
 
 finteger ::
   forall mode.
-  (EvalMode mode) =>
+  (EvalModeBase mode, EvalModeInteger mode) =>
   GetInteger mode ->
   GetInteger mode ->
   GetInteger mode
@@ -108,10 +112,23 @@ finteger l r =
 
 #if MIN_VERSION_base(4,16,0)
 type BVConstraint mode m n =
-  (MonadWithMode mode m, MonadError ArithException m, KnownNat n, 1 <= n)
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    MonadError ArithException m,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
+    KnownNat n,
+    1 <= n
+  )
 #else
 type BVConstraint mode m n =
-  (MonadWithMode mode m, MonadError ArithException m, SafeUnifiedBV mode n m)
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    MonadError ArithException m,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
+    SafeUnifiedBV mode n m
+  )
 #endif
 
 fbv ::
@@ -130,10 +147,19 @@ fbv l r = do
 
 #if MIN_VERSION_base(4,16,0)
 type BVConstraint' mode m n =
-  (MonadWithMode mode m, KnownNat n, 1 <= n)
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    MonadTryMerge m,
+    UnifiedBranching mode m,
+    KnownNat n,
+    1 <= n
+  )
 #else
 type BVConstraint' mode m n =
-  ( MonadWithMode mode m,
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    MonadTryMerge m,
+    UnifiedBranching mode m,
     SafeUnifiedBV mode n (ExceptT ArithException m)
   )
 #endif
@@ -154,10 +180,18 @@ fbv' l r = do
 
 #if MIN_VERSION_base(4,16,0)
 type SomeBVConstraint mode m =
-  (MonadWithMode mode m, MonadError (Either SomeBVException ArithException) m)
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
+    MonadError (Either SomeBVException ArithException) m
+  )
 #else
 type SomeBVConstraint mode m =
-  ( MonadWithMode mode m,
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
     MonadError (Either SomeBVException ArithException) m,
     SafeUnifiedSomeBV mode m
   )
@@ -179,10 +213,13 @@ fsomebv l r = do
 
 #if MIN_VERSION_base(4,16,0)
 type SomeBVConstraint' mode m =
-  (MonadWithMode mode m)
+  (EvalModeBase mode, EvalModeBV mode, MonadTryMerge m, UnifiedBranching mode m)
 #else
 type SomeBVConstraint' mode m =
-  ( MonadWithMode mode m,
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    MonadTryMerge m,
+    UnifiedBranching mode m,
     SafeUnifiedSomeBV mode (ExceptT (Either SomeBVException ArithException) m)
   )
 #endif
@@ -205,10 +242,14 @@ data A mode = A (GetIntN mode 8) | AT (GetData mode (A mode))
   deriving (Generic)
 
 #if MIN_VERSION_base(4,16,0)
-type DataConstraint mode = (EvalMode mode)
+type DataConstraint mode = (EvalModeBase mode, EvalModeBV mode)
 #else
 type DataConstraint mode =
-  (EvalMode mode, UnifiedData mode (A mode), UnifiedBV mode 8)
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    UnifiedData mode (A mode),
+    UnifiedBV mode 8
+  )
 #endif
 
 deriving via
@@ -219,11 +260,17 @@ deriving via
 
 #if MIN_VERSION_base(4,16,0)
 type FDataConstraint mode m =
-  (MonadWithMode mode m, MonadError ArithException m)
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    UnifiedBranching mode m,
+    MonadError ArithException m
+  )
 #else
 type FDataConstraint mode m =
-  ( MonadWithMode mode m,
+  ( EvalModeBase mode,
+    EvalModeBV mode,
     MonadError ArithException m,
+    UnifiedBranching mode m,
     UnifiedData mode (A mode),
     SafeUnifiedBV mode 8 m
   )
@@ -241,10 +288,10 @@ fdata d = do
     AT v -> fdata v
 
 #if MIN_VERSION_base(4,16,0)
-type BVToFPConstraint mode = (EvalMode mode)
+type BVToFPConstraint mode = (EvalModeFP mode)
 #else
 type BVToFPConstraint mode =
-  (EvalMode mode, BitCast (GetIntN mode 8) (GetFP mode 4 4))
+  (EvalModeFP mode, BitCast (GetIntN mode 8) (GetFP mode 4 4))
 #endif
 
 bvToFPBitCast ::
@@ -255,10 +302,10 @@ bvToFPBitCast ::
 bvToFPBitCast = bitCast
 
 #if MIN_VERSION_base(4,16,0)
-type FPToBVConstraint mode = (EvalMode mode)
+type FPToBVConstraint mode = (EvalModeFP mode)
 #else
 type FPToBVConstraint mode =
-  (EvalMode mode, UnifiedBVFPConversion mode 8 4 4)
+  (EvalModeFP mode, UnifiedBVFPConversion mode 8 4 4)
 #endif
 
 fpToBVBitCast ::
@@ -270,10 +317,14 @@ fpToBVBitCast = bitCastOrCanonical
 
 #if MIN_VERSION_base(4,16,0)
 type SafeFPToBVConstraint mode m =
-  (MonadWithMode mode m, MonadError NotRepresentableFPError m)
+  ( EvalModeFP mode,
+    UnifiedBranching mode m,
+    MonadError NotRepresentableFPError m
+  )
 #else
 type SafeFPToBVConstraint mode m =
-  ( MonadWithMode mode m,
+  ( EvalModeFP mode,
+    UnifiedBranching mode m,
     MonadError NotRepresentableFPError m,
     SafeUnifiedBVFPConversion mode 8 4 4 m
   )
@@ -287,10 +338,10 @@ safeFPToBVBitCast ::
 safeFPToBVBitCast = safeBitCast @mode
 
 #if MIN_VERSION_base(4,16,0)
-type FPToFPConstraint mode = (EvalMode mode)
+type FPToFPConstraint mode = (EvalModeFP mode)
 #else
 type FPToFPConstraint mode =
-  ( EvalMode mode,
+  ( EvalModeFP mode,
     UnifiedFPFPConversion mode 4 4 3 5
   )
 #endif
@@ -304,10 +355,11 @@ fpToFPConvert ::
 fpToFPConvert = toFP
 
 #if MIN_VERSION_base(4,16,0)
-type BVToBVConstraint mode = (EvalMode mode)
+type BVToBVConstraint mode = (EvalModeBase mode, EvalModeBV mode)
 #else
 type BVToBVConstraint mode =
-  ( EvalMode mode,
+  ( EvalModeBase mode,
+    EvalModeBV mode,
     UnifiedBVBVConversion mode 4 4
   )
 #endif

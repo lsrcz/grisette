@@ -14,12 +14,17 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Unified.Internal.EvalMode (EvalMode) where
+module Grisette.Unified.Internal.EvalMode
+  ( EvalModeBase,
+    EvalModeInteger,
+    EvalModeBV,
+    EvalModeFP,
+    EvalModeAlgReal,
+    EvalModeAll,
+  )
+where
 
 import Data.Typeable (Typeable)
--- SafeUnifiedInteger,
--- SafeUnifiedInteger',
-
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.BVBVConversion (AllUnifiedBVBVConversion)
 import Grisette.Unified.Internal.BVFPConversion (AllUnifiedBVFPConversion)
@@ -34,6 +39,42 @@ import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedData (AllUnifiedData)
 import Grisette.Unified.Internal.UnifiedFP (AllUnifiedFP)
 import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
+
+class
+  ( Typeable mode,
+    UnifiedBool mode,
+    UnifiedPrimitive mode (GetBool mode),
+    Monad (BaseMonad mode),
+    TryMerge (BaseMonad mode),
+    UnifiedBranching mode (BaseMonad mode),
+    AllUnifiedData mode
+  ) =>
+  EvalModeBase mode
+
+instance EvalModeBase 'Con
+
+instance EvalModeBase 'Sym
+
+class (AllUnifiedBV mode, AllUnifiedBVBVConversion mode) => EvalModeBV mode
+
+instance EvalModeBV 'Con
+
+instance EvalModeBV 'Sym
+
+type EvalModeInteger = UnifiedInteger
+
+class
+  ( AllUnifiedFP mode,
+    AllUnifiedFPFPConversion mode,
+    AllUnifiedBVFPConversion mode
+  ) =>
+  EvalModeFP mode
+
+instance EvalModeFP 'Con
+
+instance EvalModeFP 'Sym
+
+type EvalModeAlgReal = UnifiedAlgReal
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operaions for the types.
@@ -73,23 +114,14 @@ import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
 -- >     (l + r)
 -- >     (symIte @mode (l .< r) l r)
 class
-  ( Typeable mode,
-    UnifiedBool mode,
-    UnifiedPrimitive mode (GetBool mode),
-    UnifiedInteger mode,
-    UnifiedAlgReal mode,
-    AllUnifiedBV mode,
-    AllUnifiedData mode,
-    AllUnifiedFP mode,
-    AllUnifiedBVFPConversion mode,
-    AllUnifiedBVBVConversion mode,
-    AllUnifiedFPFPConversion mode,
-    Monad (BaseMonad mode),
-    TryMerge (BaseMonad mode),
-    UnifiedBranching mode (BaseMonad mode)
+  ( EvalModeBase mode,
+    EvalModeInteger mode,
+    EvalModeAlgReal mode,
+    EvalModeBV mode,
+    EvalModeFP mode
   ) =>
-  EvalMode mode
+  EvalModeAll mode
 
-instance EvalMode 'Con
+instance EvalModeAll 'Con
 
-instance EvalMode 'Sym
+instance EvalModeAll 'Sym

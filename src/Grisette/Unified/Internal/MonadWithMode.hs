@@ -11,11 +11,11 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Unified.Internal.MonadWithMode (MonadWithMode) where
+module Grisette.Unified.Internal.MonadWithMode (MonadWithModeAll) where
 
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalMode (EvalModeAll)
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operations for the types.
@@ -25,8 +25,8 @@ import Grisette.Unified.Internal.EvalMode (EvalMode)
 -- 'Grisette.safeDiv' for the integer type with in @ExceptT ArithException m@.
 --
 -- For users with GHC prior to 9.2.1, see notes in 'EvalMode'.
-type MonadWithMode mode m =
-  ( EvalMode mode,
+type MonadWithModeAll mode m =
+  ( EvalModeAll mode,
     Monad m,
     TryMerge m,
     UnifiedBranching mode m

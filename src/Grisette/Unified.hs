@@ -15,8 +15,13 @@ module Grisette.Unified
     BaseMonad,
 
     -- * Aggregated constraints
-    EvalMode,
-    MonadWithMode,
+    EvalModeBase,
+    EvalModeInteger,
+    EvalModeBV,
+    EvalModeFP,
+    EvalModeAlgReal,
+    EvalModeAll,
+    MonadWithModeAll,
 
     -- * Unified operations
 
@@ -258,7 +263,14 @@ import Grisette.Unified.Internal.Class.UnifiedSymOrd
     (.>),
     (.>=),
   )
-import Grisette.Unified.Internal.EvalMode (EvalMode)
+import Grisette.Unified.Internal.EvalMode
+  ( EvalModeAlgReal,
+    EvalModeAll,
+    EvalModeBV,
+    EvalModeBase,
+    EvalModeFP,
+    EvalModeInteger,
+  )
 import Grisette.Unified.Internal.EvalModeTag
   ( EvalModeTag (..),
     IsConMode,
@@ -266,7 +278,7 @@ import Grisette.Unified.Internal.EvalModeTag
 import Grisette.Unified.Internal.FPFPConversion
   ( UnifiedFPFPConversion,
   )
-import Grisette.Unified.Internal.MonadWithMode (MonadWithMode)
+import Grisette.Unified.Internal.MonadWithMode (MonadWithModeAll)
 import Grisette.Unified.Internal.UnifiedAlgReal
   ( GetAlgReal,
     UnifiedAlgReal,
