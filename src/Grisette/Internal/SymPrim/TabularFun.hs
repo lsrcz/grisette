@@ -57,7 +57,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     applyTerm,
     conTerm,
     partitionCVArg,
-    pevalEqTerm, pevalITEBasicTerm,
+    pevalEqTerm,
+    pevalITEBasicTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
