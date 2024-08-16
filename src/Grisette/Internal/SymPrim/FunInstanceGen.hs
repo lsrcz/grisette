@@ -44,7 +44,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     TypedSymbol (TypedSymbol),
     decideSymbolKind,
-    pevalITEBasicTerm,
     translateTypeError,
     withNonFuncPrim,
   )
@@ -87,6 +86,7 @@ instanceWithOverlapDescD o ctxts ty descs = do
 supportedPrimFun ::
   ExpQ ->
   ExpQ ->
+  ExpQ ->
   ([TypeQ] -> ExpQ) ->
   String ->
   String ->
@@ -95,6 +95,7 @@ supportedPrimFun ::
   DecsQ
 supportedPrimFun
   dv
+  ite
   parse
   consbv
   funNameInError
@@ -113,7 +114,7 @@ supportedPrimFun
       (constraints tyVars)
       [t|SupportedPrim $(funType tyVars)|]
       ( [ [d|$(varP 'defaultValue) = $dv|],
-          [d|$(varP 'pevalITETerm) = pevalITEBasicTerm|],
+          [d|$(varP 'pevalITETerm) = $ite|],
           [d|
             $(varP 'pevalEqTerm) =
               $( translateError
@@ -230,9 +231,10 @@ supportedPrimFun
 -- | Generate instances of 'SupportedPrim' for functions with up to a given
 -- number of arguments.
 supportedPrimFunUpTo ::
-  ExpQ -> ExpQ -> ([TypeQ] -> ExpQ) -> String -> String -> Name -> Int -> DecsQ
+  ExpQ -> ExpQ -> ExpQ -> ([TypeQ] -> ExpQ) -> String -> String -> Name -> Int -> DecsQ
 supportedPrimFunUpTo
   dv
+  ite
   parse
   consbv
   funNameInError
@@ -243,6 +245,7 @@ supportedPrimFunUpTo
       <$> sequence
         [ supportedPrimFun
             dv
+            ite
             parse
             consbv
             funNameInError

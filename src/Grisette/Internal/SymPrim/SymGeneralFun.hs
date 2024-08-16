@@ -71,7 +71,7 @@ import Language.Haskell.TH.Syntax (Lift (liftTyped))
 --
 -- >>> f' = con ("a" --> "a" + 1) :: SymInteger -~> SymInteger
 -- >>> f'
--- \(a:ARG :: Integer) -> (+ 1 a:ARG)
+-- \(arg@0 :: Integer) -> (+ 1 arg@0)
 -- >>> f = (f' #)
 -- >>> f 1
 -- 2
@@ -82,7 +82,14 @@ import Language.Haskell.TH.Syntax (Lift (liftTyped))
 -- >>> f "b"
 -- (+ 1 b)
 data sa -~> sb where
-  SymGeneralFun :: (LinkedRep ca sa, LinkedRep cb sb) => Term (ca --> cb) -> sa -~> sb
+  SymGeneralFun ::
+    ( LinkedRep ca sa,
+      LinkedRep cb sb,
+      SupportedPrim (ca --> cb),
+      SupportedNonFuncPrim ca
+    ) =>
+    Term (ca --> cb) ->
+    sa -~> sb
 
 infixr 0 -~>
 
@@ -90,7 +97,7 @@ infixr 0 -~>
 --
 -- >>> f = "a" --> "a" + 1 :: Integer --> Integer
 -- >>> f
--- \(a:ARG :: Integer) -> (+ 1 a:ARG)
+-- \(arg@0 :: Integer) -> (+ 1 arg@0)
 --
 -- This general symbolic function needs to be applied to symbolic values:
 --
@@ -137,42 +144,24 @@ instance
 instance
   ( LinkedRep ca sa,
     LinkedRep cb sb,
-    SupportedPrim ca,
     SupportedPrim cb,
-    SupportedPrim (ca --> cb)
+    SupportedPrim (ca --> cb),
+    SupportedNonFuncPrim ca
   ) =>
   LinkedRep (ca --> cb) (sa -~> sb)
   where
   underlyingTerm (SymGeneralFun a) = a
   wrapTerm = SymGeneralFun
 
-instance
-  ( SupportedNonFuncPrim ca,
-    SupportedPrim cb,
-    LinkedRep ca sa,
-    LinkedRep cb sb,
-    SupportedPrim (ca --> cb)
-  ) =>
-  Function (sa -~> sb) sa sb
-  where
+instance Function (sa -~> sb) sa sb where
   (SymGeneralFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
-instance
-  ( LinkedRep ca sa,
-    LinkedRep ct st,
-    Apply st,
-    SupportedNonFuncPrim ca,
-    SupportedPrim ct,
-    SupportedPrim (ca --> ct)
-  ) =>
-  Apply (sa -~> st)
-  where
+instance (Apply st) => Apply (sa -~> st) where
   type FunType (sa -~> st) = sa -> FunType st
   apply uf a = apply (uf # a)
 
 instance
-  ( SupportedPrim ca,
-    SupportedPrim cb,
+  ( SupportedNonFuncPrim ca,
     LinkedRep ca sa,
     LinkedRep cb sb,
     SupportedPrim (ca --> cb)
@@ -186,6 +175,7 @@ instance
 
 instance
   ( SupportedPrim (ca --> cb),
+    SupportedNonFuncPrim ca,
     LinkedRep ca sa,
     LinkedRep cb sb
   ) =>
@@ -193,26 +183,14 @@ instance
   where
   fromString = ssym . fromString
 
-instance
-  (SupportedPrim (ca --> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  Show (sa -~> sb)
-  where
+instance Show (sa -~> sb) where
   show (SymGeneralFun t) = pformatTerm t
 
-instance
-  (SupportedPrim (ca --> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  Eq (sa -~> sb)
-  where
+instance Eq (sa -~> sb) where
   SymGeneralFun l == SymGeneralFun r = l == r
 
-instance
-  (SupportedPrim (ca --> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  Hashable (sa -~> sb)
-  where
+instance Hashable (sa -~> sb) where
   hashWithSalt s (SymGeneralFun v) = s `hashWithSalt` v
 
-instance
-  (SupportedPrim (ca --> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  AllSyms (sa -~> sb)
-  where
-  allSymsS v = (SomeSym v :)
+instance AllSyms (sa -~> sb) where
+  allSymsS v@SymGeneralFun {} = (SomeSym v :)

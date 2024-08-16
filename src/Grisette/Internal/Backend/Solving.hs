@@ -80,6 +80,7 @@ import Control.Monad.STM (STM)
 import Control.Monad.State (MonadState (get, put), StateT, evalStateT, modify)
 import Control.Monad.Writer (tell)
 import Data.Dynamic (fromDyn, toDyn)
+import qualified Data.HashSet as HS
 import Data.List.NonEmpty (NonEmpty)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
@@ -579,7 +580,7 @@ lowerSinglePrimImpl config t@(ForallTerm _ (ts :: TypedConstantSymbol t1) v) =
       m <- get
       let (newm, sb@(TypedSymbol sbs)) = attachNextQuantifiedSymbolInfo m ts
       put newm
-      let substedTerm = substTerm ts (symTerm sbs) v
+      let substedTerm = substTerm ts (symTerm sbs) HS.empty v
       r <-
         local (addQuantifiedSymbol sb) $
           lowerSinglePrimCached'
@@ -596,7 +597,7 @@ lowerSinglePrimImpl config t@(ExistsTerm _ (ts :: TypedConstantSymbol t1) v) =
       m <- get
       let (newm, sb@(TypedSymbol sbs)) = attachNextQuantifiedSymbolInfo m ts
       put newm
-      let substedTerm = substTerm ts (symTerm sbs) v
+      let substedTerm = substTerm ts (symTerm sbs) HS.empty v
       r <-
         local (addQuantifiedSymbol sb) $
           lowerSinglePrimCached'

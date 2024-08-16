@@ -108,6 +108,7 @@ import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
+    SupportedNonFuncPrim,
     SupportedPrim,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
@@ -359,7 +360,7 @@ instance (KnownNat n, 1 <= n) => ToSym (contype n) (symtype n) where \
   toSym = con
 
 #define TO_SYM_FROMCON_FUN(conop, symop) \
-instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+instance (SupportedPrim (conop ca cb), SupportedNonFuncPrim ca, LinkedRep ca sa, LinkedRep cb sb) => \
   ToSym (conop ca cb) (symop sa sb) where \
   toSym = con
 

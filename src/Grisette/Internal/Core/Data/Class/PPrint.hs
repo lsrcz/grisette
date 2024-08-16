@@ -137,9 +137,7 @@ import Grisette.Internal.SymPrim.Prim.Model
   )
 import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep,
-    SomeTypedSymbol (SomeTypedSymbol),
-    SupportedPrim,
+  ( SomeTypedSymbol (SomeTypedSymbol),
     TypedSymbol (unTypedSymbol),
     prettyPrintTerm,
   )
@@ -589,8 +587,7 @@ instance (KnownNat n, 1 <= n) => PPrint (symtype n) where \
   pformat (symtype t) = prettyPrintTerm t
 
 #define FORMAT_SYM_FUN(op, cons) \
-instance (SupportedPrim ca, SupportedPrim cb, LinkedRep ca sa, LinkedRep cb sb)\
-  => PPrint (sa op sb) where \
+instance PPrint (sa op sb) where \
   pformat (cons t) = prettyPrintTerm t
 
 #if 1

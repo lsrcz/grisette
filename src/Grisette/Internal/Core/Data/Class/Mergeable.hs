@@ -141,10 +141,6 @@ import Grisette.Internal.SymPrim.FP
     withValidFPProofs,
   )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
-import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep,
-    SupportedPrim,
-  )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
@@ -604,6 +600,12 @@ instance (ValidFP eb sb) => Mergeable (FP eb sb) where
             (\fp -> (bitCastOrCanonical fp :: WordN (eb + sb)))
           $ const sub
 
+instance Mergeable (a =-> b) where
+  rootStrategy = NoStrategy
+
+instance Mergeable (a --> b) where
+  rootStrategy = SimpleStrategy symIte
+
 #define MERGEABLE_SIMPLE(symtype) \
 instance Mergeable symtype where \
   rootStrategy = SimpleStrategy symIte
@@ -612,9 +614,8 @@ instance Mergeable symtype where \
 instance (KnownNat n, 1 <= n) => Mergeable (symtype n) where \
   rootStrategy = SimpleStrategy symIte
 
-#define MERGEABLE_FUN(cop, op) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  Mergeable (op sa sb) where \
+#define MERGEABLE_FUN(cop, op, consop) \
+instance Mergeable (op sa sb) where \
   rootStrategy = SimpleStrategy symIte
 
 #if 1
@@ -624,8 +625,8 @@ MERGEABLE_SIMPLE(SymFPRoundingMode)
 MERGEABLE_SIMPLE(SymAlgReal)
 MERGEABLE_BV(SymIntN)
 MERGEABLE_BV(SymWordN)
-MERGEABLE_FUN((=->), (=~>))
-MERGEABLE_FUN((-->), (-~>))
+MERGEABLE_FUN((=->), (=~>), SymTabularFun)
+MERGEABLE_FUN((-->), (-~>), SymGeneralFun)
 #endif
 
 instance (ValidFP eb sb) => Mergeable (SymFP eb sb) where

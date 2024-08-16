@@ -51,6 +51,7 @@ import Data.Functor.Compose (Compose (Compose))
 import Data.Functor.Const (Const)
 import Data.Functor.Product (Product)
 import Data.Functor.Sum (Sum)
+import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
@@ -81,14 +82,20 @@ import Grisette.Internal.Core.Control.Exception
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
-import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->))
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    NotRepresentableFPError,
+    ValidFP,
+  )
+import Grisette.Internal.SymPrim.GeneralFun (substTerm, type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Term
   ( IsSymbolKind,
     LinkedRep (underlyingTerm),
-    SupportedPrim,
+    SymRep (SymType),
     SymbolKind,
     TypedSymbol,
+    someTypedSymbol,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
@@ -103,7 +110,7 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
-import Grisette.Internal.SymPrim.TabularFun (type (=->))
+import Grisette.Internal.SymPrim.TabularFun (type (=->) (TabularFun))
 import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
@@ -333,16 +340,18 @@ instance (ValidFP eb sb) => SubstSym (FP eb sb) where
 
 #define SUBSTITUTE_SYM_SIMPLE(symtype) \
 instance SubstSym symtype where \
-  substSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
+  substSym sym v (symtype t) = \
+    symtype $ substTerm sym (underlyingTerm v) HS.empty t
 
 #define SUBSTITUTE_SYM_BV(symtype) \
 instance (KnownNat n, 1 <= n) => SubstSym (symtype n) where \
-  substSym sym v (symtype t) = symtype $ substTerm sym (underlyingTerm v) t
+  substSym sym v (symtype t) = \
+    symtype $ substTerm sym (underlyingTerm v) HS.empty t
 
-#define SUBSTITUTE_SYM_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  SubstSym (op sa sb) where \
-  substSym sym v (cons t) = cons $ substTerm sym (underlyingTerm v) t
+#define SUBSTITUTE_SYM_FUN(op, cons) \
+instance SubstSym (op sa sb) where \
+  substSym sym v (cons t) = \
+    cons $ substTerm sym (underlyingTerm v) HS.empty t
 
 #if 1
 SUBSTITUTE_SYM_SIMPLE(SymBool)
@@ -350,13 +359,13 @@ SUBSTITUTE_SYM_SIMPLE(SymInteger)
 SUBSTITUTE_SYM_SIMPLE(SymAlgReal)
 SUBSTITUTE_SYM_BV(SymIntN)
 SUBSTITUTE_SYM_BV(SymWordN)
-SUBSTITUTE_SYM_FUN((=->), (=~>), SymTabularFun)
-SUBSTITUTE_SYM_FUN((-->), (-~>), SymGeneralFun)
+SUBSTITUTE_SYM_FUN((=~>), SymTabularFun)
+SUBSTITUTE_SYM_FUN((-~>), SymGeneralFun)
 SUBSTITUTE_SYM_SIMPLE(SymFPRoundingMode)
 #endif
 
 instance (ValidFP eb sb) => SubstSym (SymFP eb sb) where
-  substSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) t
+  substSym sym v (SymFP t) = SymFP $ substTerm sym (underlyingTerm v) HS.empty t
 
 -- Instances
 deriveBuiltins
@@ -627,3 +636,14 @@ instance (SubstSym a, SubstSym b) => SubstSym2 ((,,,) a b) where
   liftSubstSym2 f g sym val (x, y, z, w) =
     (substSym sym val x, substSym sym val y, f sym val z, g sym val w)
   {-# INLINE liftSubstSym2 #-}
+
+instance (SubstSym a, SubstSym b) => SubstSym (a =-> b) where
+  substSym sym val (TabularFun f d) =
+    TabularFun (substSym sym val f) (substSym sym val d)
+  {-# INLINE substSym #-}
+
+instance (SubstSym (SymType b)) => SubstSym (a --> b) where
+  substSym sym val (GeneralFun s t) =
+    GeneralFun s $
+      substTerm sym (underlyingTerm val) (HS.singleton $ someTypedSymbol s) t
+  {-# INLINE substSym #-}

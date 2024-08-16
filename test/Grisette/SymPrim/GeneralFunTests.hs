@@ -8,15 +8,24 @@ module Grisette.SymPrim.GeneralFunTests (generalFunTests) where
 import Grisette
   ( EvalSym (evalSym),
     ExtractSym (extractSym),
+    ITEOp (symIte),
     ModelRep (buildModel),
     ModelValuePair ((::=)),
     Solvable (con),
-    SymInteger,
     SymbolSetRep (buildSymbolSet),
     TypedAnySymbol,
+    TypedSymbol (TypedSymbol),
+    indexed,
     (-->),
     type (-->),
-    type (-~>),
+  )
+import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
+import Grisette.Internal.SymPrim.Prim.Internal.Term
+  ( PEvalNumTerm (pevalAddNumTerm),
+    conTerm,
+    isymTerm,
+    iteTerm,
+    ssymTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -35,9 +44,9 @@ generalFunTests =
         evalSym True m x @?= xe,
       testCase "EvalSym nested" $ do
         let x :: Integer --> Integer --> Integer =
-              "a" --> (con $ "b" --> "a" + "b" + "c" :: SymInteger -~> SymInteger)
+              "a" --> con $ "b" --> "a" + "b" + "c"
         let xe :: Integer --> Integer --> Integer =
-              "a" --> (con $ "b" --> "a" + "b" + 3 :: SymInteger -~> SymInteger)
+              "a" --> con $ "b" --> "a" + "b" + 3
         let m =
               buildModel
                 ( "b" ::= (1 :: Integer),
@@ -48,7 +57,62 @@ generalFunTests =
       testCase "ExtractSym" $ do
         let x0 :: Integer --> Integer = "a" --> "a" + "c"
         let x :: Integer --> Integer --> Integer =
-              "a" --> (con $ "b" --> "a" + "b" + "c" :: SymInteger -~> SymInteger)
+              "a" --> con $ "b" --> "a" + "b" + "c"
         extractSym x0 @?= buildSymbolSet ("c" :: TypedAnySymbol Integer)
-        extractSym x @?= buildSymbolSet ("c" :: TypedAnySymbol Integer)
+        extractSym x @?= buildSymbolSet ("c" :: TypedAnySymbol Integer),
+      testGroup
+        "ITEOp"
+        [ testCase "basic" $ do
+            let x0 :: Integer --> Integer --> Integer =
+                  "a" --> con ("c" --> "a" + "c" + "b")
+            let x :: Integer --> Integer --> Integer =
+                  "a" --> con ("b" --> "a" + "b" + "c")
+            let expected =
+                  GeneralFun (TypedSymbol $ indexed "arg" 2) $
+                    conTerm $
+                      GeneralFun (TypedSymbol $ indexed "arg" 1) $
+                        iteTerm
+                          (ssymTerm "x")
+                          ( pevalAddNumTerm
+                              ( pevalAddNumTerm
+                                  (isymTerm "arg" 2)
+                                  (isymTerm "arg" 1)
+                              )
+                              (ssymTerm "b")
+                          )
+                          ( pevalAddNumTerm
+                              ( pevalAddNumTerm
+                                  (isymTerm "arg" 2)
+                                  (isymTerm "arg" 1)
+                              )
+                              (ssymTerm "c")
+                          )
+            symIte "x" x0 x @?= expected,
+          testCase "interfering names" $ do
+            let x0 :: Integer --> Integer --> Integer =
+                  "a" --> con ("b" --> "a" + "b" + "c")
+            let x :: Integer --> Integer --> Integer =
+                  "b" --> con ("a" --> "a" + "b" + "c")
+            let expected =
+                  GeneralFun (TypedSymbol $ indexed "arg" 2) $
+                    conTerm $
+                      GeneralFun (TypedSymbol $ indexed "arg" 1) $
+                        iteTerm
+                          (ssymTerm "x")
+                          ( pevalAddNumTerm
+                              ( pevalAddNumTerm
+                                  (isymTerm "arg" 2)
+                                  (isymTerm "arg" 1)
+                              )
+                              (ssymTerm "c")
+                          )
+                          ( pevalAddNumTerm
+                              ( pevalAddNumTerm
+                                  (isymTerm "arg" 1)
+                                  (isymTerm "arg" 2)
+                              )
+                              (ssymTerm "c")
+                          )
+            symIte "x" x0 x @?= expected
+        ]
     ]
