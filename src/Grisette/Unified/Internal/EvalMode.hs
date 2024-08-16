@@ -58,7 +58,6 @@ import Grisette.Unified.Internal.UnifiedFun
 import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
 import Language.Haskell.TH
   ( DecsQ,
-    Quote (newName),
     Type (AppT, ArrowT, ConT, StarT, VarT),
     appT,
     classD,
@@ -66,6 +65,7 @@ import Language.Haskell.TH
     instanceD,
     kindedTV,
     mkName,
+    newName,
     promotedT,
     tySynD,
     varT,
@@ -227,6 +227,25 @@ type MonadEvalModeAll mode m =
 -- The function will also provide the constraint @MonadMyEvalModeUF@, which
 -- includes the constraints for the monad and the unified branching, similar to
 -- 'MonadEvalModeAll'.
+--
+-- For compilers older than GHC 9.2.1, see the notes for 'EvalModeAll'. This
+-- function will also generate constraints like @MyEvalModeUFFunUWordNUIntN@,
+-- which can be used to resolve the constraints for older compilers.
+--
+-- The naming conversion is the concatenation of the three parts:
+--
+-- * The base name provided by the user (i.e., @MyEvalModeUF@),
+-- * @Fun@,
+-- * The concatenation of all the types in the uninterpreted function (i.e.,
+--   @UWordNUIntN@).
+--
+-- The arguments to the type class is as follows:
+--
+-- * The first argument is the mode,
+-- * The second to the end arguments are the natural number arguments for all
+--   the types. Here the second argument is the bitwidth of the unsigned
+--   bit-vector argument, and the third argument is the bitwidth of the signed
+--   bit-vector result.
 genEvalMode :: String -> [TheoryToUnify] -> DecsQ
 genEvalMode nm theories = do
   modeName <- newName "mode"
@@ -234,7 +253,7 @@ genEvalMode nm theories = do
   baseConstraint <- [t|EvalModeBase $(return modeType)|]
   basicConstraints <- concat <$> traverse (nonFuncConstraint modeType) nonFuncs
   funcInstances <- concat <$> traverse (genUnifiedFunInstance nm) funcs
-  let instanceNames = unifiedFunInstanceName nm <$> funcs
+  let instanceNames = ("All" ++) . unifiedFunInstanceName nm <$> funcs
   funcConstraints <- traverse (genFunConstraint (return modeType)) instanceNames
   r <-
     classD

@@ -23,9 +23,7 @@
 
 module Grisette.Unified.EvalModeTest (evalModeTest) where
 
-#if MIN_VERSION_base(4,16,0)
-import GHC.TypeLits (KnownNat, type (<=))
-#else
+#if !MIN_VERSION_base(4,16,0)
 import Grisette.Unified
   ( SafeUnifiedBV,
     SafeUnifiedBVFPConversion,
@@ -43,6 +41,7 @@ import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity (Identity (Identity))
 import GHC.Generics (Generic)
+import GHC.TypeLits (KnownNat, type (<=))
 import Grisette
   ( BV (bv),
     BitCast (bitCast),
@@ -384,9 +383,28 @@ bvToBVFromIntegral = symFromIntegral @mode
 
 genEvalMode "EvalMode" [UFun [UIntN, UWordN]]
 
+#if MIN_VERSION_base(4,16,0)
+type EvalModeUFunConstraint mode n m =
+  ( EvalMode mode,
+    KnownNat n,
+    1 <= n,
+    KnownNat m,
+    1 <= m
+  )
+#else
+type EvalModeUFunConstraint mode n m =
+  ( EvalMode mode,
+    KnownNat n,
+    1 <= n,
+    KnownNat m,
+    1 <= m,
+    EvalModeFunUIntNUWordN mode n m
+  )
+#endif
+
 ufuncTest0 ::
   forall mode n m.
-  (EvalMode mode, KnownNat n, 1 <= n, KnownNat m, 1 <= m) =>
+  (EvalModeUFunConstraint mode n m) =>
   GetFun mode (GetIntN mode n) (GetWordN mode m) ->
   GetIntN mode n ->
   GetWordN mode m
@@ -394,7 +412,7 @@ ufuncTest0 f = (f #)
 
 ufunc0 ::
   forall mode n m.
-  (EvalMode mode, KnownNat n, 1 <= n, KnownNat m, 1 <= m) =>
+  (EvalModeUFunConstraint mode n m) =>
   GetFun mode (GetIntN mode n) (GetWordN mode m)
 ufunc0 = toSym (TabularFun [(1, 0)] 2 :: IntN n =-> WordN m)
 
