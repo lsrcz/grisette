@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Added missing instances for concrete general and tabular functions.
+  ([#249](https://github.com/lsrcz/grisette/pull/249))
+
+### Changed
+- Moved the constraints for the general and tabular functions and simplified
+  their instances declaration.
+  ([#249](https://github.com/lsrcz/grisette/pull/249))
+
 ## [0.8.0.0] - 2024-08-13
 
 ### Added
