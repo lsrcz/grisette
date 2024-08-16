@@ -4,18 +4,22 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ImpredicativeTypes #-}
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# HLINT ignore "Use fewer imports" #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Unused LANGUAGE pragma" #-}
-{-# HLINT ignore "Use fewer imports" #-}
 
 module Grisette.Unified.EvalModeTest (evalModeTest) where
 
@@ -43,6 +47,7 @@ import Grisette
   ( BV (bv),
     BitCast (bitCast),
     Default (Default),
+    Function ((#)),
     IEEEFPConstants (fpNaN),
     IEEEFPConvertible (toFP),
     IEEEFPRoundingMode (rne),
@@ -54,9 +59,12 @@ import Grisette
     SymFP,
     SymIntN,
     SymInteger,
+    ToSym (toSym),
     Union,
+    WordN,
     bitCastOrCanonical,
     mrgReturn,
+    type (=->) (TabularFun),
   )
 import qualified Grisette
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
@@ -76,8 +84,10 @@ import Grisette.Unified
     GetInteger,
     GetSomeIntN,
     GetWordN,
+    TheoryToUnify (UFun, UIntN, UWordN),
     UnifiedBranching,
     extractData,
+    genEvalMode,
     mrgIte,
     safeDiv,
     symFromIntegral,
@@ -86,6 +96,7 @@ import Grisette.Unified
     (.==),
   )
 import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
+import Grisette.Unified.Internal.UnifiedFun (UnifiedFun (GetFun))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -371,6 +382,55 @@ bvToBVFromIntegral ::
   GetWordN mode 4
 bvToBVFromIntegral = symFromIntegral @mode
 
+genEvalMode "EvalMode" [UFun [UIntN, UWordN]]
+
+ufuncTest0 ::
+  forall mode n m.
+  (EvalMode mode, KnownNat n, 1 <= n, KnownNat m, 1 <= m) =>
+  GetFun mode (GetIntN mode n) (GetWordN mode m) ->
+  GetIntN mode n ->
+  GetWordN mode m
+ufuncTest0 f = (f #)
+
+ufunc0 ::
+  forall mode n m.
+  (EvalMode mode, KnownNat n, 1 <= n, KnownNat m, 1 <= m) =>
+  GetFun mode (GetIntN mode n) (GetWordN mode m)
+ufunc0 = toSym (TabularFun [(1, 0)] 2 :: IntN n =-> WordN m)
+
+ufuncTest :: forall mode. (EvalMode mode) => GetIntN mode 8 -> GetWordN mode 8
+ufuncTest = ufuncTest0 ufunc0
+
+#if MIN_VERSION_base(4,16,0)
+type EvalModeBVConstraint mode m n =
+  ( MonadEvalMode mode m,
+    MonadError ArithException m,
+    KnownNat n,
+    1 <= n
+  )
+#else
+type EvalModeBVConstraint mode m n =
+  ( MonadEvalMode mode m,
+    MonadError ArithException m,
+    MonadTryMerge m,
+    SafeUnifiedBV mode n m
+  )
+#endif
+
+fbvEvalMode ::
+  forall mode n m.
+  (EvalModeBVConstraint mode m n) =>
+  GetIntN mode n ->
+  GetIntN mode n ->
+  m (GetIntN mode n)
+fbvEvalMode l r = do
+  v <- safeDiv @mode l r
+  mrgReturn $
+    mrgIte @mode
+      (l .== r)
+      (v + r)
+      (symIte @mode (l .< r) l r)
+
 evalModeTest :: Test
 evalModeTest =
   testGroup
@@ -403,7 +463,8 @@ evalModeTest =
         "GetIntN"
         [ testCase "Con" $ do
             fbv (1 :: IntN 8) 2 @?= Right 1
-            fbv' (1 :: IntN 8) 2 @?= ExceptT (Identity (Right 1)),
+            fbv' (1 :: IntN 8) 2 @?= ExceptT (Identity (Right 1))
+            fbvEvalMode (1 :: IntN 8) 2 @?= ExceptT (Identity (Right 1)),
           testCase "Sym" $ do
             let l = "l" :: SymIntN 8
             let r = "r" :: SymIntN 8
@@ -420,6 +481,7 @@ evalModeTest =
                       (SymIntN 8)
             fbv l r @?= expected
             fbv' l r @?= expected
+            fbvEvalMode l r @?= expected
         ],
       testGroup
         "GetSomeIntN"
@@ -493,5 +555,14 @@ evalModeTest =
               testCase "Sym" $ do
                 bvToBVFromIntegral @'Sym 0xa @?= 0xa
             ]
+        ],
+      testGroup
+        "GetFun"
+        [ testCase "Con" $ do
+            ufuncTest @'Con 1 @?= 0
+            ufuncTest @'Con 2 @?= 2,
+          testCase "Sym" $ do
+            let a = "a"
+            ufuncTest @'Sym a @?= symIte (a Grisette..== 1) 0 2
         ]
     ]

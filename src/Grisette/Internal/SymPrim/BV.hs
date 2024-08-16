@@ -8,11 +8,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
@@ -104,6 +104,7 @@ import Grisette.Internal.Core.Data.Class.BitVector
         sizedBVZext
       ),
   )
+import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
@@ -633,3 +634,11 @@ instance BitCast Bool (IntN 1) where
 instance BitCast (IntN 1) Bool where
   bitCast 0 = False
   bitCast _ = True
+
+instance Apply (IntN n) where
+  type FunType (IntN n) = IntN n
+  apply = id
+
+instance Apply (WordN n) where
+  type FunType (WordN n) = WordN n
+  apply = id
