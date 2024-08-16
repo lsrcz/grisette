@@ -11,11 +11,18 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Added missing instances for concrete general and tabular functions.
   ([#249](https://github.com/lsrcz/grisette/pull/249))
+- Added eval mode constraint on demand.
+  ([#250](https://github.com/lsrcz/grisette/pull/250))
+- Added support for uninterpreted functions in unified interfaces.
+  ([#250](https://github.com/lsrcz/grisette/pull/250))
 
 ### Changed
-- Moved the constraints for the general and tabular functions and simplified
-  their instances declaration.
+- [Breaking] Moved the constraints for the general and tabular functions and
+  simplified their instances declaration.
   ([#249](https://github.com/lsrcz/grisette/pull/249))
+- [Breaking] Renamed `EvalMode` to `EvalModeAll`, renamed `MonadWithMode` to 
+  `MonadEvalModeAll`.
+  ([#250](https://github.com/lsrcz/grisette/pull/250))
 
 ## [0.8.0.0] - 2024-08-13
 
