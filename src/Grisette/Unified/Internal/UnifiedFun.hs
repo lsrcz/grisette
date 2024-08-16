@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -83,14 +84,22 @@ import Language.Haskell.TH
     promotedT,
     varT,
   )
+import qualified Language.Haskell.TH
 import Language.Haskell.TH.Datatype.TyVarBndr
-  ( TyVarBndrVis,
-    kindedTV,
+  ( kindedTV,
     mapTVFlag,
     specifiedSpec,
     tvName,
   )
 import Language.Haskell.TH.Syntax (Lift)
+
+#if MIN_VERSION_template_haskell(2,21,0)
+type TyVarBndrVis = Language.Haskell.TH.TyVarBndrVis
+#elif MIN_VERSION_template_haskell(2,17,0)
+type TyVarBndrVis = Language.Haskell.TH.TyVarBndr ()
+#else
+type TyVarBndrVis = Language.Haskell.TH.TyVarBndr
+#endif
 
 -- | Provide unified function types.
 class UnifiedFun (mode :: EvalModeTag) where
@@ -257,7 +266,7 @@ genOuterUnifiedFunInstance nm innerName mode preds bndrs = do
 -- | Generate unified function instance names.
 unifiedFunInstanceName :: String -> [TheoryToUnify] -> String
 unifiedFunInstanceName prefix theories =
-  prefix ++ "UnifiedFunInstance" ++ (concatMap show theories)
+  prefix ++ "Fun" ++ (concatMap show theories)
 
 -- | Generate unified function instances.
 genUnifiedFunInstance :: String -> [TheoryToUnify] -> DecsQ
@@ -266,23 +275,20 @@ genUnifiedFunInstance prefix theories = do
   let modeType = VarT modeName
   allArgs <- traverse (genArgs modeType) theories
   let baseName = unifiedFunInstanceName prefix theories
-  let noBndr = all (\(bndr, _, _, _, _) -> null bndr) allArgs
-  let innerName = if noBndr then baseName else baseName ++ "Inner"
-
   rinner <-
     genInnerUnifiedFunInstance
-      innerName
+      baseName
       (kindedTV modeName (ConT ''EvalModeTag))
       (concatMap (\(_, p, _, _, _) -> p) allArgs)
       (concatMap (\(t, _, _, _, _) -> t) allArgs)
       ((\(_, _, u, c, s) -> (u, c, s)) <$> allArgs)
   router <-
-    if noBndr
+    if all (\(bndr, _, _, _, _) -> null bndr) allArgs
       then return []
       else
         genOuterUnifiedFunInstance
+          ("All" ++ baseName)
           baseName
-          innerName
           (kindedTV modeName (ConT ''EvalModeTag))
           (concatMap (\(_, p, _, _, _) -> p) allArgs)
           (concatMap (\(t, _, _, _, _) -> t) allArgs)
