@@ -43,7 +43,10 @@ import Data.Hashable (Hashable (hashWithSalt))
 import Data.Maybe (fromJust)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
-import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
+import Grisette.Internal.Core.Data.Class.Function
+  ( Apply (FunType, apply),
+    Function ((#)),
+  )
 import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.Core.Data.Symbol
   ( Symbol (IndexedSymbol),
@@ -105,6 +108,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
+    SymRep (SymType),
     SymbolKind (AnyKind),
     Term
       ( AbsNumTerm,
@@ -390,6 +394,10 @@ instance
     SBVType (a --> b) =
       SBV.SBV (NonFuncSBVBaseType a) ->
       SBVType b
+
+instance (Apply st, LinkedRep ca sa, LinkedRep ct st) => Apply (ca --> ct) where
+  type FunType (ca --> ct) = SymType ca -> FunType (SymType ct)
+  apply uf a = apply (uf # a)
 
 pevalGeneralFunApplyTerm ::
   ( SupportedNonFuncPrim a,

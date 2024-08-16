@@ -19,6 +19,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -85,6 +86,7 @@ import Grisette.Internal.Core.Data.Class.BitCast
     bitCastOrCanonical,
   )
 import Grisette.Internal.Core.Data.Class.BitVector (SizedBV (sizedBVConcat))
+import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.IEEEFP
   ( IEEEFPConstants
       ( fpMaxNormalized,
@@ -892,3 +894,11 @@ instance ConvertibleBound IntN where
       eb = natVal (Proxy @eb)
       ebn = 2 ^ (eb - 1)
       sb = natVal (Proxy @sb)
+
+instance Apply (FP eb sb) where
+  type FunType (FP eb sb) = FP eb sb
+  apply = id
+
+instance Apply FPRoundingMode where
+  type FunType FPRoundingMode = FPRoundingMode
+  apply = id

@@ -54,6 +54,14 @@ class Apply uf where
   type FunType uf
   apply :: uf -> FunType uf
 
+instance Apply Integer where
+  type FunType Integer = Integer
+  apply = id
+
+instance Apply Bool where
+  type FunType Bool = Bool
+  apply = id
+
 instance (Apply b) => Apply (a -> b) where
   type FunType (a -> b) = a -> FunType b
   apply f a = apply (f a)

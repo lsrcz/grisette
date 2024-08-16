@@ -15,13 +15,15 @@ module Grisette.Unified
     BaseMonad,
 
     -- * Aggregated constraints
+    genEvalMode,
+    TheoryToUnify (..),
     EvalModeBase,
     EvalModeInteger,
     EvalModeBV,
     EvalModeFP,
     EvalModeAlgReal,
     EvalModeAll,
-    MonadWithModeAll,
+    MonadEvalModeAll,
 
     -- * Unified operations
 
@@ -147,6 +149,20 @@ module Grisette.Unified
     extractData,
     wrapData,
 
+    -- ** Functions
+    GetFun,
+    GetFun2,
+    GetFun3,
+    GetFun4,
+    GetFun5,
+    GetFun6,
+    GetFun7,
+    GetFun8,
+    UnifiedFun,
+    UnifiedFunConstraint,
+    unifiedFunInstanceName,
+    genUnifiedFunInstance,
+
     -- ** Supplemental conversions
     UnifiedBVBVConversion,
     UnifiedBVFPConversion,
@@ -270,6 +286,8 @@ import Grisette.Unified.Internal.EvalMode
     EvalModeBase,
     EvalModeFP,
     EvalModeInteger,
+    MonadEvalModeAll,
+    genEvalMode,
   )
 import Grisette.Unified.Internal.EvalModeTag
   ( EvalModeTag (..),
@@ -278,7 +296,7 @@ import Grisette.Unified.Internal.EvalModeTag
 import Grisette.Unified.Internal.FPFPConversion
   ( UnifiedFPFPConversion,
   )
-import Grisette.Unified.Internal.MonadWithMode (MonadWithModeAll)
+import Grisette.Unified.Internal.Theories (TheoryToUnify (..))
 import Grisette.Unified.Internal.UnifiedAlgReal
   ( GetAlgReal,
     UnifiedAlgReal,
@@ -304,6 +322,20 @@ import Grisette.Unified.Internal.UnifiedFP
     GetFPRoundingMode,
     SafeUnifiedFP,
     UnifiedFP,
+  )
+import Grisette.Unified.Internal.UnifiedFun
+  ( GetFun,
+    GetFun2,
+    GetFun3,
+    GetFun4,
+    GetFun5,
+    GetFun6,
+    GetFun7,
+    GetFun8,
+    UnifiedFun,
+    UnifiedFunConstraint,
+    genUnifiedFunInstance,
+    unifiedFunInstanceName,
   )
 import Grisette.Unified.Internal.UnifiedInteger
   ( GetInteger,

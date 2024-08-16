@@ -324,6 +324,12 @@ CONCRETE_TOSYM(Ordering)
 instance (ValidFP eb sb) => ToSym (FP eb sb) (FP eb sb) where
   toSym = id
 
+instance ToSym (a =-> b) (a =-> b) where
+  toSym = id
+
+instance ToSym (a --> b) (a --> b) where
+  toSym = id
+
 #define TO_SYM_SYMID_SIMPLE(symtype) \
 instance ToSym symtype symtype where \
   toSym = id

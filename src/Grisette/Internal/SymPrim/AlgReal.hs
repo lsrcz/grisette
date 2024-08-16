@@ -4,6 +4,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.AlgReal
@@ -29,6 +30,7 @@ import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBV
 import GHC.Generics (Generic)
+import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Language.Haskell.TH.Syntax (Lift)
 import Test.QuickCheck (Arbitrary)
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
@@ -180,3 +182,7 @@ instance Real AlgReal where
 
 instance Arbitrary AlgReal where
   arbitrary = AlgExactRational <$> arbitrary
+
+instance Apply AlgReal where
+  type FunType AlgReal = AlgReal
+  apply = id

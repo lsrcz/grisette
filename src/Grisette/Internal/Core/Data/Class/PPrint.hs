@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuantifiedConstraints #-}
@@ -129,7 +130,13 @@ import Grisette.Internal.Core.Control.Exception
 import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FPRoundingMode,
+    NotRepresentableFPError,
+    ValidFP,
+  )
+import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Internal.Term ()
 import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
@@ -154,6 +161,7 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
+import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( Strategy (ViaDefault, ViaDefault1),
@@ -575,6 +583,12 @@ instance (KnownNat n, 1 <= n) => PPrint (WordN n) where
   pformat = viaShow
 
 instance (ValidFP eb sb) => PPrint (FP eb sb) where
+  pformat = viaShow
+
+instance (Show a, Show b) => PPrint (a =-> b) where
+  pformat = viaShow
+
+instance PPrint (a --> b) where
   pformat = viaShow
 
 -- Prettyprint

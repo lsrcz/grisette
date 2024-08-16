@@ -36,7 +36,7 @@ import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
 import GHC.Generics (Generic, Generic1)
-import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
+import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply), Function ((#)))
 import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -126,6 +126,10 @@ instance
       doPevalApplyTerm _ _ = Nothing
   sbvApplyTerm f a =
     withPrim @(a =-> b) $ withNonFuncPrim @a $ f a
+
+instance (Apply t, Eq a) => Apply (a =-> t) where
+  type FunType (a =-> t) = a -> FunType t
+  apply uf a = apply (uf # a)
 
 lowerTFunCon ::
   forall a b.
