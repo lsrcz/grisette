@@ -68,7 +68,8 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Unified
-  ( MonadWithMode,
+  ( EvalModeBase,
+    UnifiedBranching,
     UnifiedITEOp,
     UnifiedSymOrd,
     liftBaseMonad,
@@ -78,7 +79,6 @@ import Grisette.Unified
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq, (.==))
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (mrgMax, mrgMin)
-import Grisette.Unified.Internal.EvalMode (EvalMode)
 import Grisette.Unified.Internal.UnifiedBool (GetBool)
 import Grisette.Unified.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
 import {-# SOURCE #-} Grisette.Unified.Lib.Control.Monad
@@ -91,7 +91,7 @@ import Grisette.Unified.Lib.Data.Functor (mrgFmap, mrgVoid)
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem ::
   forall mode t a.
-  (Foldable t, EvalMode mode, UnifiedSymEq mode a) =>
+  (Foldable t, EvalModeBase mode, UnifiedSymEq mode a) =>
   a ->
   t a ->
   GetBool mode
@@ -101,7 +101,13 @@ symElem x = symAny ((.== x))
 -- | 'Data.Foldable.maximum' with unified comparison.
 mrgMaximum ::
   forall mode a t m.
-  (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSymOrd mode a) =>
+  ( Foldable t,
+    EvalModeBase mode,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
+    Mergeable a,
+    UnifiedSymOrd mode a
+  ) =>
   t a ->
   m a
 mrgMaximum l = do
@@ -124,7 +130,7 @@ symMaximum ::
     Mergeable a,
     UnifiedSymOrd mode a,
     UnifiedITEOp mode a,
-    EvalMode mode
+    EvalModeBase mode
   ) =>
   t a ->
   a
@@ -135,7 +141,13 @@ symMaximum l = symIteMerge (mrgMaximum @mode l :: BaseMonad mode a)
 -- propagation.
 mrgMinimum ::
   forall mode a t m.
-  (Foldable t, MonadWithMode mode m, Mergeable a, UnifiedSymOrd mode a) =>
+  ( Foldable t,
+    EvalModeBase mode,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
+    Mergeable a,
+    UnifiedSymOrd mode a
+  ) =>
   t a ->
   m a
 mrgMinimum l = do
@@ -157,7 +169,7 @@ symMinimum ::
     Mergeable a,
     UnifiedSymOrd mode a,
     UnifiedITEOp mode a,
-    EvalMode mode
+    EvalModeBase mode
   ) =>
   t a ->
   a
@@ -243,24 +255,24 @@ mrgMsum = foldr mrgMplus mrgMzero
 {-# INLINE mrgMsum #-}
 
 -- | 'Data.Foldable.and' on unified boolean.
-symAnd :: (EvalMode mode, Foldable t) => t (GetBool mode) -> GetBool mode
+symAnd :: (EvalModeBase mode, Foldable t) => t (GetBool mode) -> GetBool mode
 symAnd = foldl' (.&&) (toSym True)
 {-# INLINE symAnd #-}
 
 -- | 'Data.Foldable.or' on unified boolean.
-symOr :: (EvalMode mode, Foldable t) => t (GetBool mode) -> GetBool mode
+symOr :: (EvalModeBase mode, Foldable t) => t (GetBool mode) -> GetBool mode
 symOr = foldl' (.||) (toSym False)
 {-# INLINE symOr #-}
 
 -- | 'Data.Foldable.any' on unified boolean.
 symAny ::
-  (EvalMode mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
+  (EvalModeBase mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
 symAny f = foldl' (\acc v -> acc .|| f v) (toSym False)
 {-# INLINE symAny #-}
 
 -- | 'Data.Foldable.all' on unified boolean.
 symAll ::
-  (EvalMode mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
+  (EvalModeBase mode, Foldable t) => (a -> GetBool mode) -> t a -> GetBool mode
 symAll f = foldl' (\acc v -> acc .&& f v) (toSym True)
 {-# INLINE symAll #-}
 
@@ -268,7 +280,12 @@ symAll f = foldl' (\acc v -> acc .&& f v) (toSym True)
 -- propagation.
 mrgMaximumBy ::
   forall mode t a m.
-  (Foldable t, Mergeable a, MonadWithMode mode m) =>
+  ( Foldable t,
+    Mergeable a,
+    EvalModeBase mode,
+    MonadTryMerge m,
+    UnifiedBranching mode m
+  ) =>
   (a -> a -> BaseMonad mode Ordering) ->
   t a ->
   m a
@@ -291,7 +308,7 @@ mrgMaximumBy cmp l = do
 -- | 'Data.Foldable.maximumBy' with result merged with 'Grisette.Core.ITEOp'.
 symMaximumBy ::
   forall mode t a.
-  (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalMode mode) =>
+  (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) =>
   (a -> a -> BaseMonad mode Ordering) ->
   t a ->
   a
@@ -302,7 +319,12 @@ symMaximumBy cmp l = symIteMerge (mrgMaximumBy cmp l :: BaseMonad mode a)
 -- propagation.
 mrgMinimumBy ::
   forall mode t a m.
-  (Foldable t, Mergeable a, MonadWithMode mode m) =>
+  ( Foldable t,
+    Mergeable a,
+    EvalModeBase mode,
+    MonadTryMerge m,
+    UnifiedBranching mode m
+  ) =>
   (a -> a -> BaseMonad mode Ordering) ->
   t a ->
   m a
@@ -325,7 +347,7 @@ mrgMinimumBy cmp l = do
 -- | 'Data.Foldable.minimumBy' with result merged with 'Grisette.Core.ITEOp'.
 symMinimumBy ::
   forall mode t a.
-  (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalMode mode) =>
+  (Foldable t, Mergeable a, UnifiedITEOp mode a, EvalModeBase mode) =>
   (a -> a -> BaseMonad mode Ordering) ->
   t a ->
   a
@@ -334,7 +356,7 @@ symMinimumBy cmp l = symIteMerge (mrgMinimumBy cmp l :: BaseMonad mode a)
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symNotElem ::
-  (Foldable t, UnifiedSymEq mode a, EvalMode mode) =>
+  (Foldable t, UnifiedSymEq mode a, EvalModeBase mode) =>
   a ->
   t a ->
   GetBool mode
@@ -344,7 +366,12 @@ symNotElem x = symNot . symElem x
 -- | 'Data.Foldable.elem' with symbolic equality and
 -- 'Grisette.Core.MergingStrategy' knowledge propagation.
 mrgFind ::
-  (Foldable t, MonadWithMode mode m, Mergeable a) =>
+  ( Foldable t,
+    EvalModeBase mode,
+    MonadTryMerge m,
+    UnifiedBranching mode m,
+    Mergeable a
+  ) =>
   (a -> GetBool mode) ->
   t a ->
   m (Maybe a)

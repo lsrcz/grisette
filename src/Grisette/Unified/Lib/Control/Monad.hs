@@ -105,8 +105,9 @@ import Grisette.Lib.Data.Traversable
     mrgTraverse,
   )
 import Grisette.Unified
-  ( GetBool,
-    MonadWithMode,
+  ( EvalModeBase,
+    GetBool,
+    UnifiedBranching,
     UnifiedSymOrd,
     mrgIf,
     (.<=),
@@ -252,7 +253,11 @@ mrgMfilter p ma = do
 -- propagation and symbolic conditions.
 symMfilter ::
   forall mode m a.
-  (MonadTryMerge m, MonadPlus m, MonadWithMode mode m, Mergeable a) =>
+  ( MonadTryMerge m,
+    MonadPlus m,
+    UnifiedBranching mode m,
+    Mergeable a
+  ) =>
   (a -> GetBool mode) ->
   m a ->
   m a
@@ -278,7 +283,13 @@ mrgFilterM p =
 -- propagation and symbolic conditions.
 symFilterM ::
   forall mode m t a.
-  (TryMerge m, MonadWithMode mode m, Mergeable a, Foldable t) =>
+  ( TryMerge m,
+    UnifiedBranching mode m,
+    MonadTryMerge m,
+    EvalModeBase mode,
+    Mergeable a,
+    Foldable t
+  ) =>
   (a -> m (GetBool mode)) ->
   t a ->
   m [a]
@@ -363,10 +374,12 @@ mrgReplicateM n = mrgSequenceA . replicate n
 -- propagation and symbolic number of elements.
 symReplicateM ::
   forall mode m a int.
-  ( MonadWithMode mode m,
+  ( EvalModeBase mode,
     TryMerge m,
+    Applicative m,
     Mergeable a,
     Num int,
+    UnifiedBranching mode m,
     UnifiedSymOrd mode Int,
     UnifiedSymOrd mode int
   ) =>
@@ -398,10 +411,12 @@ mrgReplicateM_ n = mrgSequenceA_ . replicate n
 -- propagation and symbolic number of elements.
 symReplicateM_ ::
   forall mode m a int.
-  ( MonadWithMode mode m,
+  ( EvalModeBase mode,
     TryMerge m,
+    Applicative m,
     Mergeable a,
     Num int,
+    UnifiedBranching mode m,
     UnifiedSymOrd mode Int,
     UnifiedSymOrd mode int
   ) =>
