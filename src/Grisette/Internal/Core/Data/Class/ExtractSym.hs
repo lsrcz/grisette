@@ -95,8 +95,6 @@ import Grisette.Internal.SymPrim.Prim.Model
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( IsSymbolKind (decideSymbolKind),
-    LinkedRep,
-    SupportedPrim,
     SymRep (SymType),
     SymbolKind,
     someTypedSymbol,
@@ -364,9 +362,8 @@ instance (KnownNat n, 1 <= n) => ExtractSym (symtype n) where \
       Left HRefl -> SymbolSet <$> extractTerm HS.empty t; \
       Right HRefl -> SymbolSet <$> extractTerm HS.empty t
 
-#define EXTRACT_SYMBOLICS_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  ExtractSym (op sa sb) where \
+#define EXTRACT_SYMBOLICS_FUN(op, cons) \
+instance ExtractSym (op sa sb) where \
   extractSymMaybe :: \
     forall knd. (IsSymbolKind knd) => op sa sb -> Maybe (SymbolSet knd); \
   extractSymMaybe (cons t) = \
@@ -381,8 +378,8 @@ EXTRACT_SYMBOLICS_SIMPLE(SymFPRoundingMode)
 EXTRACT_SYMBOLICS_SIMPLE(SymAlgReal)
 EXTRACT_SYMBOLICS_BV(SymIntN)
 EXTRACT_SYMBOLICS_BV(SymWordN)
-EXTRACT_SYMBOLICS_FUN((=->), (=~>), SymTabularFun)
-EXTRACT_SYMBOLICS_FUN((-->), (-~>), SymGeneralFun)
+EXTRACT_SYMBOLICS_FUN((=~>), SymTabularFun)
+EXTRACT_SYMBOLICS_FUN((-~>), SymGeneralFun)
 #endif
 
 instance (ValidFP eb fb) => ExtractSym (SymFP eb fb) where

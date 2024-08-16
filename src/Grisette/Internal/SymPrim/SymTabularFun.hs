@@ -38,6 +38,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
+    SupportedNonFuncPrim,
     SupportedPrim,
     SymRep (SymType),
     Term (ConTerm),
@@ -73,7 +74,11 @@ import Language.Haskell.TH.Syntax (Lift (liftTyped))
 -- (ite (= b 1) 2 (ite (= b 2) 3 4))
 data sa =~> sb where
   SymTabularFun ::
-    (LinkedRep ca sa, LinkedRep cb sb) =>
+    ( LinkedRep ca sa,
+      LinkedRep cb sb,
+      SupportedPrim (ca =-> cb),
+      SupportedNonFuncPrim ca
+    ) =>
     Term (ca =-> cb) ->
     sa =~> sb
 
@@ -92,42 +97,28 @@ instance (SymRep a, SymRep b, SupportedPrim (a =-> b)) => SymRep (a =-> b) where
   type SymType (a =-> b) = SymType a =~> SymType b
 
 instance
-  (LinkedRep ca sa, LinkedRep cb sb, SupportedPrim (ca =-> cb)) =>
+  ( LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim (ca =-> cb),
+    SupportedNonFuncPrim ca
+  ) =>
   LinkedRep (ca =-> cb) (sa =~> sb)
   where
   underlyingTerm (SymTabularFun a) = a
   wrapTerm = SymTabularFun
 
-instance
-  ( SupportedPrim ca,
-    SupportedPrim cb,
-    LinkedRep ca sa,
-    LinkedRep cb sb,
-    SupportedPrim (ca =-> cb)
-  ) =>
-  Function (sa =~> sb) sa sb
-  where
+instance Function (sa =~> sb) sa sb where
   (SymTabularFun f) # t = wrapTerm $ pevalApplyTerm f (underlyingTerm t)
 
-instance
-  ( LinkedRep ca sa,
-    LinkedRep ct st,
-    Apply st,
-    SupportedPrim ca,
-    SupportedPrim ct,
-    SupportedPrim (ca =-> ct)
-  ) =>
-  Apply (sa =~> st)
-  where
+instance (Apply st) => Apply (sa =~> st) where
   type FunType (sa =~> st) = sa -> FunType st
   apply uf a = apply (uf # a)
 
 instance
-  ( SupportedPrim ca,
-    SupportedPrim cb,
-    LinkedRep ca sa,
+  ( LinkedRep ca sa,
     LinkedRep cb sb,
-    SupportedPrim (ca =-> cb)
+    SupportedPrim (ca =-> cb),
+    SupportedNonFuncPrim ca
   ) =>
   Solvable (ca =-> cb) (sa =~> sb)
   where
@@ -139,32 +130,21 @@ instance
 instance
   ( SupportedPrim (ca =-> cb),
     LinkedRep ca sa,
-    LinkedRep cb sb
+    LinkedRep cb sb,
+    SupportedNonFuncPrim ca
   ) =>
   IsString (sa =~> sb)
   where
   fromString = ssym . fromString
 
-instance
-  (SupportedPrim (ca =-> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  Show (sa =~> sb)
-  where
+instance Show (sa =~> sb) where
   show (SymTabularFun t) = pformatTerm t
 
-instance
-  (SupportedPrim (ca =-> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  Eq (sa =~> sb)
-  where
+instance Eq (sa =~> sb) where
   SymTabularFun l == SymTabularFun r = l == r
 
-instance
-  (SupportedPrim (ca =-> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  Hashable (sa =~> sb)
-  where
+instance Hashable (sa =~> sb) where
   hashWithSalt s (SymTabularFun v) = s `hashWithSalt` v
 
-instance
-  (SupportedPrim (ca =-> cb), LinkedRep ca sa, LinkedRep cb sb) =>
-  AllSyms (sa =~> sb)
-  where
-  allSymsS v = (SomeSym v :)
+instance AllSyms (sa =~> sb) where
+  allSymsS v@SymTabularFun {} = (SomeSym v :)

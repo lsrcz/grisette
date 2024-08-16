@@ -137,6 +137,7 @@ import Grisette.Internal.SymPrim.GeneralFun
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
+    SupportedNonFuncPrim,
     SupportedPrim,
   )
 import Grisette.Internal.SymPrim.SymBV
@@ -483,13 +484,21 @@ instance (KnownNat n, 1 <= n) => ToSym (Union (WordN n)) (SymWordN n) where
   toSym = simpleMerge . fmap con
 
 instance
-  (SupportedPrim ((=->) ca cb), LinkedRep ca sa, LinkedRep cb sb) =>
+  ( SupportedPrim ((=->) ca cb),
+    SupportedNonFuncPrim ca,
+    LinkedRep ca sa,
+    LinkedRep cb sb
+  ) =>
   ToSym (Union ((=->) ca cb)) ((=~>) sa sb)
   where
   toSym = simpleMerge . fmap con
 
 instance
-  (SupportedPrim ((-->) ca cb), LinkedRep ca sa, LinkedRep cb sb) =>
+  ( SupportedPrim ((-->) ca cb),
+    SupportedNonFuncPrim ca,
+    LinkedRep ca sa,
+    LinkedRep cb sb
+  ) =>
   ToSym (Union ((-->) ca cb)) ((-~>) sa sb)
   where
   toSym = simpleMerge . fmap con

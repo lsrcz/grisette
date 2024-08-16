@@ -138,6 +138,7 @@ import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep,
+    SupportedNonFuncPrim,
     SupportedPrim,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
@@ -147,9 +148,9 @@ import Grisette.Internal.SymPrim.SymBV
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
-import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
+import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
+import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 
 -- $setup
@@ -1666,19 +1667,28 @@ instance (KnownNat n, 1 <= n) => GenSymSimple () (symtype n) where \
     FreshIndex index <- nextFreshIndex; \
     return $ isym ident index
 
-#define GENSYM_FUN(cop, op) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  GenSym (op sa sb) (op sa sb)
-#define GENSYM_SIMPLE_FUN(cop, op) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  GenSymSimple (op sa sb) (op sa sb) where \
-  simpleFresh _ = simpleFresh ()
+#define GENSYM_FUN(cop, op, consop) \
+instance GenSym (op sa sb) (op sa sb) where \
+  fresh consop{} = fresh ()
+#define GENSYM_SIMPLE_FUN(cop, op, consop) \
+instance GenSymSimple (op sa sb) (op sa sb) where \
+  simpleFresh consop{} = simpleFresh ()
 #define GENSYM_UNIT_FUN(cop, op) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+instance \
+  ( SupportedPrim (cop ca cb), \
+    SupportedNonFuncPrim ca, \
+    LinkedRep ca sa, \
+    LinkedRep cb sb \
+  ) => \
   GenSym () (op sa sb) where \
   fresh _ = mrgSingle <$> simpleFresh ()
 #define GENSYM_UNIT_SIMPLE_FUN(cop, op) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
+instance \
+  ( SupportedPrim (cop ca cb), \
+    SupportedNonFuncPrim ca, \
+    LinkedRep ca sa, \
+    LinkedRep cb sb \
+  ) => \
   GenSymSimple () (op sa sb) where \
   simpleFresh _ = do; \
     ident <- getIdentifier; \
@@ -1712,12 +1722,12 @@ GENSYM_SIMPLE_BV(SymWordN)
 GENSYM_UNIT_BV(SymWordN)
 GENSYM_UNIT_SIMPLE_BV(SymWordN)
 
-GENSYM_FUN((=->), (=~>))
-GENSYM_SIMPLE_FUN((=->), (=~>))
+GENSYM_FUN((=->), (=~>), SymTabularFun)
+GENSYM_SIMPLE_FUN((=->), (=~>), SymTabularFun)
 GENSYM_UNIT_FUN((=->), (=~>))
 GENSYM_UNIT_SIMPLE_FUN((=->), (=~>))
-GENSYM_FUN((-->), (-~>))
-GENSYM_SIMPLE_FUN((-->), (-~>))
+GENSYM_FUN((-->), (-~>), SymGeneralFun)
+GENSYM_SIMPLE_FUN((-->), (-~>), SymGeneralFun)
 GENSYM_UNIT_FUN((-->), (-~>))
 GENSYM_UNIT_SIMPLE_FUN((-->), (-~>))
 #endif

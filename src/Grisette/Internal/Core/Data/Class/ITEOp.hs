@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -19,12 +20,16 @@ module Grisette.Internal.Core.Data.Class.ITEOp
 where
 
 import Control.Monad.Identity (Identity (Identity))
+import qualified Data.HashSet as HS
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.FP (ValidFP)
-import Grisette.Internal.SymPrim.GeneralFun (type (-->))
+import Grisette.Internal.SymPrim.GeneralFun (freshArgSymbol, substTerm, type (-->) (GeneralFun))
+import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep,
-    SupportedPrim (pevalITETerm),
+  ( SupportedPrim (pevalITETerm),
+    TypedConstantSymbol,
+    TypedSymbol (unTypedSymbol),
+    symTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV
@@ -39,7 +44,6 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
-import Grisette.Internal.SymPrim.TabularFun (type (=->))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -69,7 +73,7 @@ instance (KnownNat n, 1 <= n) => ITEOp (type n) where \
   {-# INLINE symIte #-}
 
 #define ITEOP_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => ITEOp (op sa sb) where \
+instance ITEOp (op sa sb) where \
   symIte (SymBool c) (cons t) (cons f) = cons $ pevalITETerm c t f; \
   {-# INLINE symIte #-}
 
@@ -83,6 +87,21 @@ ITEOP_BV(SymWordN)
 ITEOP_FUN((=->), (=~>), SymTabularFun)
 ITEOP_FUN((-->), (-~>), SymGeneralFun)
 #endif
+
+instance ITEOp (a --> b) where
+  symIte
+    (SymBool c)
+    (GeneralFun (ta :: TypedConstantSymbol a) a)
+    (GeneralFun tb b) =
+      GeneralFun argSymbol $
+        pevalITETerm
+          c
+          (substTerm ta (symTerm $ unTypedSymbol argSymbol) HS.empty a)
+          (substTerm tb (symTerm $ unTypedSymbol argSymbol) HS.empty b)
+      where
+        argSymbol :: TypedConstantSymbol a
+        argSymbol = freshArgSymbol [SomeTerm a, SomeTerm b]
+  {-# INLINE symIte #-}
 
 instance (ValidFP eb sb) => ITEOp (SymFP eb sb) where
   symIte (SymBool c) (SymFP t) (SymFP f) = SymFP $ pevalITETerm c t f

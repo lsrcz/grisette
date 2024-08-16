@@ -31,22 +31,22 @@ module Grisette.Internal.SymPrim.GeneralFun
     buildGeneralFun,
     generalSubstSomeTerm,
     substTerm,
+    freshArgSymbol,
   )
 where
 
 import Control.DeepSeq (NFData (rnf))
 import Data.Bifunctor (Bifunctor (second))
-import Data.Foldable (Foldable (foldl'))
+import Data.Foldable (Foldable (foldl', toList))
 import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Maybe (fromJust)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
-import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.Core.Data.Symbol
-  ( Symbol (IndexedSymbol, SimpleSymbol),
-    withInfo,
+  ( Symbol (IndexedSymbol),
   )
 import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
@@ -93,6 +93,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     PEvalRotateTerm (pevalRotateRightTerm),
     PEvalShiftTerm (pevalShiftLeftTerm, pevalShiftRightTerm),
     SBVRep (SBVType),
+    SomeTypedAnySymbol,
     SomeTypedConstantSymbol,
     SupportedNonFuncPrim (withNonFuncPrim),
     SupportedPrim
@@ -159,6 +160,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         XorBitsTerm
       ),
     TernaryOp (pevalTernary),
+    TypedAnySymbol,
     TypedConstantSymbol,
     TypedSymbol (TypedSymbol, unTypedSymbol),
     UnaryOp (pevalUnary),
@@ -170,6 +172,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     partitionCVArg,
     pevalAndTerm,
     pevalEqTerm,
+    pevalITEBasicTerm,
     pevalNotTerm,
     pevalOrTerm,
     pevalQuotIntegralTerm,
@@ -210,39 +213,146 @@ import Unsafe.Coerce (unsafeCoerce)
 -- (+ 1 (+ a y))
 data (-->) a b where
   GeneralFun ::
-    (SupportedPrim a, SupportedPrim b) =>
+    (SupportedNonFuncPrim a, SupportedPrim b) =>
     TypedConstantSymbol a ->
     Term b ->
     a --> b
 
 instance (LinkedRep a sa, LinkedRep b sb) => Function (a --> b) sa sb where
-  (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) t
+  (GeneralFun s t) # x = wrapTerm $ substTerm s (underlyingTerm x) HS.empty t
 
 infixr 0 -->
 
+extractSymSomeTermIncludeBoundedVars ::
+  SomeTerm -> HS.HashSet SomeTypedAnySymbol
+extractSymSomeTermIncludeBoundedVars = htmemo go
+  where
+    goTyped ::
+      (SupportedPrim a) =>
+      Term a ->
+      HS.HashSet SomeTypedAnySymbol
+    goTyped = go . SomeTerm
+
+    go :: SomeTerm -> HS.HashSet SomeTypedAnySymbol
+    go (SomeTerm (SymTerm _ (sym :: TypedAnySymbol a))) =
+      HS.singleton $ someTypedSymbol sym
+    go (SomeTerm (ConTerm _ cv :: Term v)) =
+      case (typeRep :: TypeRep v) of
+        App (App gf _) _ ->
+          case eqTypeRep (typeRep @(-->)) gf of
+            Just HRefl ->
+              case cv of
+                GeneralFun (tsym :: TypedConstantSymbol x) tm ->
+                  HS.union
+                    ( HS.singleton
+                        (someTypedSymbol $ fromJust $ castTypedSymbol tsym)
+                    )
+                    $ go (SomeTerm tm)
+            Nothing -> HS.empty
+        _ -> HS.empty
+    go (SomeTerm (ForallTerm _ sym arg)) =
+      HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $ goUnary arg
+    go (SomeTerm (ExistsTerm _ sym arg)) =
+      HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $ goUnary arg
+    go (SomeTerm (UnaryTerm _ _ arg)) = goUnary arg
+    go (SomeTerm (BinaryTerm _ _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (TernaryTerm _ _ arg1 arg2 arg3)) = goTernary arg1 arg2 arg3
+    go (SomeTerm (NotTerm _ arg)) = goUnary arg
+    go (SomeTerm (OrTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (AndTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (EqTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (DistinctTerm _ args)) =
+      mconcat <$> map goTyped $ toList args
+    go (SomeTerm (ITETerm _ cond arg1 arg2)) = goTernary cond arg1 arg2
+    go (SomeTerm (AddNumTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (NegNumTerm _ arg)) = goUnary arg
+    go (SomeTerm (MulNumTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (AbsNumTerm _ arg)) = goUnary arg
+    go (SomeTerm (SignumNumTerm _ arg)) = goUnary arg
+    go (SomeTerm (LtOrdTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (LeOrdTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (AndBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (OrBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (XorBitsTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (ComplementBitsTerm _ arg)) = goUnary arg
+    go (SomeTerm (ShiftLeftTerm _ arg n)) = goBinary arg n
+    go (SomeTerm (ShiftRightTerm _ arg n)) = goBinary arg n
+    go (SomeTerm (RotateLeftTerm _ arg n)) = goBinary arg n
+    go (SomeTerm (RotateRightTerm _ arg n)) = goBinary arg n
+    go (SomeTerm (BitCastTerm _ arg)) = goUnary arg
+    go (SomeTerm (BitCastOrTerm _ d arg)) = goBinary d arg
+    go (SomeTerm (BVConcatTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (BVSelectTerm _ _ _ arg)) = goUnary arg
+    go (SomeTerm (BVExtendTerm _ _ _ arg)) = goUnary arg
+    go (SomeTerm (ApplyTerm _ func arg)) = goBinary func arg
+    go (SomeTerm (DivIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (ModIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (QuotIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (RemIntegralTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPTraitTerm _ _ arg)) = goUnary arg
+    go (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (RecipTerm _ arg)) = goUnary arg
+    go (SomeTerm (FloatingUnaryTerm _ _ arg)) = goUnary arg
+    go (SomeTerm (PowerTerm _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPUnaryTerm _ _ arg)) = goUnary arg
+    go (SomeTerm (FPBinaryTerm _ _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPRoundingUnaryTerm _ _ _ arg)) = goUnary arg
+    go (SomeTerm (FPRoundingBinaryTerm _ _ _ arg1 arg2)) = goBinary arg1 arg2
+    go (SomeTerm (FPFMATerm _ mode arg1 arg2 arg3)) =
+      mconcat
+        [ goTyped mode,
+          goTyped arg1,
+          goTyped arg2,
+          goTyped arg3
+        ]
+    go (SomeTerm (FromIntegralTerm _ arg)) = goUnary arg
+    go (SomeTerm (FromFPOrTerm _ d mode arg)) = goTernary d mode arg
+    go (SomeTerm (ToFPTerm _ mode arg _ _)) = goBinary mode arg
+    goUnary :: (SupportedPrim a) => Term a -> HS.HashSet SomeTypedAnySymbol
+    goUnary = goTyped
+    goBinary ::
+      (SupportedPrim a, SupportedPrim b) =>
+      Term a ->
+      Term b ->
+      HS.HashSet SomeTypedAnySymbol
+    goBinary a b = goTyped a <> goTyped b
+    goTernary ::
+      (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+      Term a ->
+      Term b ->
+      Term c ->
+      HS.HashSet SomeTypedAnySymbol
+    goTernary a b c = goTyped a <> goTyped b <> goTyped c
+
+-- | Generate a fresh argument symbol that is not used as bounded or unbounded
+-- variables in the function body for a general symbolic function.
+freshArgSymbol ::
+  forall a. (SupportedNonFuncPrim a) => [SomeTerm] -> TypedConstantSymbol a
+freshArgSymbol terms = TypedSymbol $ go 0
+  where
+    allSymbols = mconcat $ extractSymSomeTermIncludeBoundedVars <$> terms
+    go :: Int -> Symbol
+    go n =
+      let currentSymbol = IndexedSymbol "arg" n
+          currentTypedSymbol =
+            someTypedSymbol (TypedSymbol currentSymbol :: TypedAnySymbol a)
+       in if HS.member currentTypedSymbol allSymbols
+            then go (n + 1)
+            else currentSymbol
+
 -- | Build a general symbolic function with a bounded symbol and a term.
 buildGeneralFun ::
+  forall a b.
   (SupportedNonFuncPrim a, SupportedPrim b) =>
   TypedConstantSymbol a ->
   Term b ->
   a --> b
 buildGeneralFun arg v =
   GeneralFun
-    (TypedSymbol newarg)
-    (substTerm arg (symTerm newarg) v)
+    argSymbol
+    (substTerm arg (symTerm $ unTypedSymbol argSymbol) HS.empty v)
   where
-    newarg = case unTypedSymbol arg of
-      SimpleSymbol s -> SimpleSymbol (withInfo s ARG)
-      IndexedSymbol s i -> IndexedSymbol (withInfo s ARG) i
-
-data ARG = ARG
-  deriving (Eq, Ord, Lift, Show, Generic)
-
-instance NFData ARG where
-  rnf ARG = ()
-
-instance Hashable ARG where
-  hashWithSalt s ARG = s `hashWithSalt` (0 :: Int)
+    argSymbol = freshArgSymbol [SomeTerm v]
 
 instance Eq (a --> b) where
   GeneralFun sym1 tm1 == GeneralFun sym2 tm2 = sym1 == sym2 && tm1 == tm2
@@ -292,7 +402,7 @@ pevalGeneralFunApplyTerm ::
 pevalGeneralFunApplyTerm = totalize2 doPevalApplyTerm applyTerm
   where
     doPevalApplyTerm (ConTerm _ (GeneralFun arg tm)) v =
-      Just $ substTerm arg v tm
+      Just $ substTerm arg v HS.empty tm
     doPevalApplyTerm (ITETerm _ c l r) v =
       return $ pevalITETerm c (pevalApplyTerm l v) (pevalApplyTerm r v)
     doPevalApplyTerm _ _ = Nothing
@@ -515,6 +625,7 @@ substTerm ::
   (SupportedPrim a, SupportedPrim b, IsSymbolKind knd) =>
   TypedSymbol knd a ->
   Term a ->
+  HS.HashSet SomeTypedConstantSymbol ->
   Term b ->
   Term b
 substTerm sym a =
@@ -522,10 +633,25 @@ substTerm sym a =
     ( \t@(TypedSymbol t') ->
         if eqHeteroSymbol sym t then unsafeCoerce a else symTerm t'
     )
-    HS.empty
 
 supportedPrimFunUpTo
   [|buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)|]
+  [|
+    \c t f -> case (t, f) of
+      ( ConTerm _ (GeneralFun (ta :: TypedConstantSymbol a) a),
+        ConTerm _ (GeneralFun tb b)
+        ) ->
+          conTerm $
+            GeneralFun argSymbol $
+              pevalITETerm
+                c
+                (substTerm ta (symTerm $ unTypedSymbol argSymbol) HS.empty a)
+                (substTerm tb (symTerm $ unTypedSymbol argSymbol) HS.empty b)
+          where
+            argSymbol :: TypedConstantSymbol a
+            argSymbol = freshArgSymbol [SomeTerm a, SomeTerm b]
+      _ -> pevalITEBasicTerm c t f
+    |]
   [|parseGeneralFunSMTModelResult|]
   ( \tyVars ->
       [|

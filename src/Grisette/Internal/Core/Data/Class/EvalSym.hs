@@ -98,9 +98,7 @@ import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Model (Model, evalTerm)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep,
-    SupportedPrim,
-    SymRep (SymType),
+  ( SymRep (SymType),
     someTypedSymbol,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
@@ -373,8 +371,7 @@ instance (KnownNat n, 1 <= n) => EvalSym (symtype n) where \
     symtype $ evalTerm fillDefault model HS.empty t
 
 #define EVALUATE_SYM_FUN(cop, op, cons) \
-instance (SupportedPrim (cop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  EvalSym (op sa sb) where \
+instance EvalSym (op sa sb) where \
   evalSym fillDefault model (cons t) = \
     cons $ evalTerm fillDefault model HS.empty t
 

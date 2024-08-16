@@ -93,10 +93,7 @@ import Grisette.Internal.SymPrim.BV
 import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
-import Grisette.Internal.SymPrim.Prim.Term
-  ( LinkedRep,
-    SupportedPrim,
-  )
+import Grisette.Internal.SymPrim.Prim.Term (LinkedRep)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV
   ( SymIntN,
@@ -109,9 +106,9 @@ import Grisette.Internal.SymPrim.SymFP
     SymFP64,
     SymFPRoundingMode,
   )
-import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>))
+import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
+import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
 import Grisette.Internal.TH.DeriveInstanceProvider
@@ -303,16 +300,22 @@ CONCRETE_TOCON(Ordering)
 instance (ValidFP eb sb) => ToCon (FP eb sb) (FP eb sb) where
   toCon = Just
 
+instance ToCon (a =-> b) (a =-> b) where
+  toCon = Just
+
+instance ToCon (a --> b) (a --> b) where
+  toCon = Just
+
 #define TO_CON_SYMID_SIMPLE(symtype) \
 instance ToCon symtype symtype where \
   toCon = Just
 
 #define TO_CON_SYMID_BV(symtype) \
-instance (KnownNat n, 1 <= n) => ToCon (symtype n) (symtype n) where \
+instance ToCon (symtype n) (symtype n) where \
   toCon = Just
 
 #define TO_CON_SYMID_FUN(op) \
-instance (SupportedPrim a, SupportedPrim b) => ToCon (a op b) (a op b) where \
+instance ToCon (a op b) (a op b) where \
   toCon = Just
 
 #if 1
@@ -337,10 +340,9 @@ instance ToCon symtype contype where \
 instance (KnownNat n, 1 <= n) => ToCon (symtype n) (contype n) where \
   toCon = conView
 
-#define TO_CON_FROMSYM_FUN(conop, symop) \
-instance (SupportedPrim (conop ca cb), LinkedRep ca sa, LinkedRep cb sb) => \
-  ToCon (symop sa sb) (conop ca cb) where \
-  toCon = conView
+#define TO_CON_FROMSYM_FUN(conop, symop, consop) \
+instance (LinkedRep ca sa, LinkedRep cb sb) => ToCon (symop sa sb) (conop ca cb) where \
+  toCon a@(consop _) = conView a
 
 #if 1
 TO_CON_FROMSYM_SIMPLE(Bool, SymBool)
@@ -348,8 +350,8 @@ TO_CON_FROMSYM_SIMPLE(Integer, SymInteger)
 TO_CON_FROMSYM_SIMPLE(AlgReal, SymAlgReal)
 TO_CON_FROMSYM_BV(IntN, SymIntN)
 TO_CON_FROMSYM_BV(WordN, SymWordN)
-TO_CON_FROMSYM_FUN((=->), (=~>))
-TO_CON_FROMSYM_FUN((-->), (-~>))
+TO_CON_FROMSYM_FUN((=->), (=~>), SymTabularFun)
+TO_CON_FROMSYM_FUN((-->), (-~>), SymGeneralFun)
 TO_CON_FROMSYM_SIMPLE(FPRoundingMode, SymFPRoundingMode)
 #endif
 

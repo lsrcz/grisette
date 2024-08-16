@@ -57,7 +57,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     applyTerm,
     conTerm,
     partitionCVArg,
-    pevalEqTerm,
+    pevalEqTerm, pevalITEBasicTerm,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -162,6 +162,7 @@ parseTabularFunSMTModelResult level (l, s) =
 
 supportedPrimFunUpTo
   [|TabularFun [] defaultValue|]
+  [|pevalITEBasicTerm|]
   [|parseTabularFunSMTModelResult|]
   ( \tyVars ->
       [|
