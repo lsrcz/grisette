@@ -58,6 +58,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator, (%))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
@@ -85,12 +86,19 @@ import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (conView),
     pattern Con,
   )
-import Grisette.Internal.SymPrim.AlgReal (AlgReal)
+import Grisette.Internal.SymPrim.AlgReal (AlgReal (AlgExactRational))
 import Grisette.Internal.SymPrim.BV
   ( IntN (IntN),
     WordN (WordN),
   )
-import Grisette.Internal.SymPrim.FP (FP, FP32, FP64, FPRoundingMode, NotRepresentableFPError, ValidFP)
+import Grisette.Internal.SymPrim.FP
+  ( FP,
+    FP32,
+    FP64,
+    FPRoundingMode,
+    NotRepresentableFPError,
+    ValidFP,
+  )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->))
 import Grisette.Internal.SymPrim.IntBitwidth (intBitwidthQ)
 import Grisette.Internal.SymPrim.Prim.Term (LinkedRep)
@@ -382,6 +390,19 @@ instance ToCon SymFP32 Float where
 
 instance ToCon SymFP64 Double where
   toCon (Con (fp :: FP64)) = Just $ bitCastOrCanonical fp
+  toCon _ = Nothing
+
+instance (ToCon a b, Integral b) => ToCon (Ratio a) (Ratio b) where
+  toCon r = do
+    n <- toCon (numerator r)
+    d <- toCon (denominator r)
+    return $ n % d
+
+instance ToCon SymAlgReal Rational where
+  toCon (Con (x :: AlgReal)) =
+    case x of
+      AlgExactRational r -> Just r
+      _ -> Nothing
   toCon _ = Nothing
 
 deriveBuiltins

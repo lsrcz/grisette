@@ -61,6 +61,7 @@ import Data.Kind (Type)
 import Data.Maybe (fromJust)
 import Data.Monoid (Alt, Ap)
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator, (%))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -355,6 +356,11 @@ CONCRETE_EVALUATESYM_BV(IntN)
 CONCRETE_EVALUATESYM_BV(WordN)
 CONCRETE_EVALUATESYM(AlgReal)
 #endif
+
+instance (Integral a, EvalSym a) => EvalSym (Ratio a) where
+  evalSym fillDefault model r =
+    evalSym fillDefault model (numerator r)
+      % evalSym fillDefault model (denominator r)
 
 instance (ValidFP eb fb) => EvalSym (FP eb fb) where
   evalSym _ _ = id

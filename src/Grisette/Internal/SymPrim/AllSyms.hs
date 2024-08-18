@@ -57,6 +57,7 @@ import qualified Data.ByteString as B
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Kind (Type)
+import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Generics
@@ -463,6 +464,10 @@ CONCRETE_ALLSYMS_BV(WordN)
 CONCRETE_ALLSYMS_BV(IntN)
 CONCRETE_ALLSYMS(AlgReal)
 #endif
+
+instance (AllSyms a) => AllSyms (Ratio a) where
+  allSymsS r = allSymsS (numerator r) . allSymsS (denominator r)
+  {-# INLINE allSymsS #-}
 
 instance (ValidFP eb sb) => AllSyms (FP eb sb) where
   allSymsS _ = id

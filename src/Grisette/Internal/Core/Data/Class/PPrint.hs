@@ -95,6 +95,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -117,6 +118,7 @@ import GHC.Generics
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
+import GHC.Real (ratioPrec, ratioPrec1)
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving
@@ -569,6 +571,13 @@ FORMAT_SIMPLE(Monoid.Any)
 FORMAT_SIMPLE(Ordering)
 FORMAT_SIMPLE(AlgReal)
 #endif
+
+instance (PPrint a) => PPrint (Ratio a) where
+  pformatPrec p r =
+    condEnclose (p > ratioPrec) "(" ")" $
+      pformatPrec ratioPrec1 (numerator r)
+        <> "%"
+        <> pformatPrec ratioPrec1 (denominator r)
 
 instance PPrint B.ByteString where
   pformat = pretty . C.unpack
