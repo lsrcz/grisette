@@ -58,6 +58,7 @@ import Data.Functor.Classes
   )
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Ratio (Ratio)
 import qualified Data.Text as T
 import Data.Type.Bool (If)
 import Data.Typeable (Typeable)
@@ -376,6 +377,14 @@ instance
 
 instance (UnifiedSymOrd 'Sym v) => UnifiedSymOrd 'Sym (Union v) where
   withBaseSymOrd r = withBaseSymOrd @'Sym @v r
+  {-# INLINE withBaseSymOrd #-}
+
+instance
+  (Typeable mode, UnifiedSymOrd mode a, Integral a) =>
+  UnifiedSymOrd mode (Ratio a)
+  where
+  withBaseSymOrd r =
+    withMode @mode (withBaseSymOrd @mode @a r) (withBaseSymOrd @mode @a r)
   {-# INLINE withBaseSymOrd #-}
 
 deriveFunctorArgUnifiedInterfaces
