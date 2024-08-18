@@ -99,6 +99,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap, Endo (Endo, appEndo))
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio)
 import qualified Data.Text as T
 import Data.Typeable
   ( Typeable,
@@ -155,7 +156,6 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 import Unsafe.Coerce (unsafeCoerce)
-import Data.Ratio (Ratio)
 
 -- | Merging strategies.
 --
