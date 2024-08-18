@@ -15,6 +15,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#250](https://github.com/lsrcz/grisette/pull/250))
 - Added support for uninterpreted functions in unified interfaces.
   ([#250](https://github.com/lsrcz/grisette/pull/250))
+- Added instances for concrete `Ratio` type.
+  ([#251](https://github.com/lsrcz/grisette/pull/251))
 
 ### Changed
 - [Breaking] Moved the constraints for the general and tabular functions and
