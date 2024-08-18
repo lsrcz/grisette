@@ -61,6 +61,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -342,6 +343,10 @@ CONCRETE_SEQ_BV(WordN)
 CONCRETE_SEQ_BV(IntN)
 CONCRETE_SEQ(AlgReal)
 #endif
+
+instance (SymEq a) => SymEq (Ratio a) where
+  a .== b = numerator a .== numerator b .&& denominator a .== denominator b
+  {-# INLINE (.==) #-}
 
 instance (ValidFP eb sb) => SymEq (FP eb sb) where
   l .== r = con $ l == r

@@ -92,8 +92,10 @@ import qualified Control.Monad.Writer.Strict as WriterStrict
 import Data.Bifunctor (Bifunctor (first))
 import qualified Data.ByteString as B
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Ratio (Ratio)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
+import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
@@ -832,6 +834,12 @@ CONCRETE_GENSYMSIMPLE_SAME_SHAPE(FPRoundingMode)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(WordN)
 CONCRETE_GENSYMSIMPLE_SAME_SHAPE_BV(IntN)
 #endif
+
+instance (Integral a, Typeable a, Show a) => GenSym (Ratio a) (Ratio a) where
+  fresh = return . mrgSingle
+
+instance GenSymSimple (Ratio a) (Ratio a) where
+  simpleFresh = return
 
 instance (ValidFP eb sb) => GenSym (FP eb sb) (FP eb sb) where
   fresh = return . mrgSingle

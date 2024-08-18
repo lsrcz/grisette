@@ -62,7 +62,9 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator, (%))
 import qualified Data.Text as T
+import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
@@ -408,6 +410,16 @@ instance ToSym Float SymFP32 where
 instance ToSym Double SymFP64 where
   toSym = con . bitCast
   {-# INLINE toSym #-}
+
+instance
+  (Integral b, Typeable b, Show b, ToSym a b) =>
+  ToSym (Ratio a) (Ratio b)
+  where
+  toSym r = toSym (numerator r) % toSym (denominator r)
+  {-# INLINE toSym #-}
+
+instance ToSym Rational SymAlgReal where
+  toSym v = con (fromRational v)
 
 deriveBuiltins
   (ViaDefault ''ToSym)

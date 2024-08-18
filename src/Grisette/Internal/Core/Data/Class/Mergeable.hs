@@ -155,6 +155,7 @@ import Grisette.Internal.TH.DeriveInstanceProvider
   )
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 import Unsafe.Coerce (unsafeCoerce)
+import Data.Ratio (Ratio)
 
 -- | Merging strategies.
 --
@@ -581,7 +582,6 @@ CONCRETE_ORD_MERGEABLE(Word32)
 CONCRETE_ORD_MERGEABLE(Word64)
 CONCRETE_ORD_MERGEABLE(Float)
 CONCRETE_ORD_MERGEABLE(Double)
-CONCRETE_ORD_MERGEABLE(Rational)
 CONCRETE_ORD_MERGEABLE(B.ByteString)
 CONCRETE_ORD_MERGEABLE(T.Text)
 CONCRETE_ORD_MERGEABLE(FPRoundingMode)
@@ -591,6 +591,11 @@ CONCRETE_ORD_MERGEABLE(Ordering)
 CONCRETE_ORD_MERGEABLE_BV(WordN)
 CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif
+
+instance (Integral a, Typeable a, Show a) => Mergeable (Ratio a) where
+  rootStrategy =
+    let sub = SimpleStrategy $ \_ t _ -> t
+     in SortedStrategy id $ const sub
 
 instance (ValidFP eb sb) => Mergeable (FP eb sb) where
   rootStrategy =

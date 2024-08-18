@@ -62,6 +62,7 @@ import Data.Maybe (fromJust)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
 import Data.Typeable (type (:~~:) (HRefl))
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -340,6 +341,11 @@ CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
 CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 CONCRETE_EXTRACT_SYMBOLICS(AlgReal)
 #endif
+
+instance (ExtractSym a) => ExtractSym (Ratio a) where
+  extractSymMaybe a =
+    extractSymMaybe (numerator a) <> extractSymMaybe (denominator a)
+  {-# INLINE extractSymMaybe #-}
 
 instance (ValidFP eb sb) => ExtractSym (FP eb sb) where
   extractSymMaybe _ = return mempty

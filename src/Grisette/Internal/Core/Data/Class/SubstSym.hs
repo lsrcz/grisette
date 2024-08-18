@@ -57,6 +57,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Ratio (Ratio, denominator, numerator, (%))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
@@ -334,6 +335,11 @@ CONCRETE_SUBSTITUTESYM_BV(IntN)
 CONCRETE_SUBSTITUTESYM(FPRoundingMode)
 CONCRETE_SUBSTITUTESYM(AlgReal)
 #endif
+
+instance (Integral a, SubstSym a) => SubstSym (Ratio a) where
+  substSym sym val a =
+    substSym sym val (numerator a) % substSym sym val (denominator a)
+  {-# INLINE substSym #-}
 
 instance (ValidFP eb sb) => SubstSym (FP eb sb) where
   substSym _ _ = id
