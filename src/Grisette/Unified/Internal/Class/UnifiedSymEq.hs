@@ -47,6 +47,7 @@ import qualified Data.ByteString as B
 import Data.Functor.Classes (Eq1 (liftEq), Eq2 (liftEq2), eq1, eq2)
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Ratio (Ratio)
 import qualified Data.Text as T
 import Data.Type.Bool (If)
 import Data.Typeable (Typeable)
@@ -247,6 +248,14 @@ instance
 
 instance (UnifiedSymEq 'Sym v) => UnifiedSymEq 'Sym (Union v) where
   withBaseSymEq r = withBaseSymEq @'Sym @v r
+  {-# INLINE withBaseSymEq #-}
+
+instance
+  (Typeable mode, UnifiedSymEq mode a) =>
+  UnifiedSymEq mode (Ratio a)
+  where
+  withBaseSymEq r =
+    withMode @mode (withBaseSymEq @mode @a r) (withBaseSymEq @mode @a r)
   {-# INLINE withBaseSymEq #-}
 
 deriveFunctorArgUnifiedInterfaces
