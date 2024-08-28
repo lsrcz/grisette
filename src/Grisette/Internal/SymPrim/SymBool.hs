@@ -75,7 +75,7 @@ instance Hashable SymBool where
 instance Solvable Bool SymBool where
   con = SymBool . conTerm
   sym = SymBool . symTerm
-  conView (SymBool (ConTerm _ t)) = Just t
+  conView (SymBool (ConTerm _ _ t)) = Just t
   conView _ = Nothing
 
 instance IsString SymBool where

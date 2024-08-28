@@ -246,7 +246,7 @@ instance (KnownNat n, 1 <= n) => Apply (SymWordN n) where
 instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
   con = symtype . conTerm; \
   sym = symtype . symTerm; \
-  conView (symtype (ConTerm _ t)) = Just t; \
+  conView (symtype (ConTerm _ _ t)) = Just t; \
   conView _ = Nothing
 
 #if 1

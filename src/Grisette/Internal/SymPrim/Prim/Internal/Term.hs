@@ -202,27 +202,14 @@ import Data.Text.Prettyprint.Doc
 #endif
 
 import Control.DeepSeq (NFData (rnf))
-import Control.Monad (msum)
+import Control.Monad (msum, (>=>))
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.RWS (RWST)
 import Control.Monad.Reader (MonadTrans (lift), ReaderT)
 import Control.Monad.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
-import Data.Array ((!))
 import Data.Bits (Bits)
-import Data.Function (on)
-import qualified Data.HashMap.Strict as M
-import Data.Hashable (Hashable (hash, hashWithSalt))
-import Data.IORef (atomicModifyIORef')
-import Data.Interned
-  ( Cache,
-    Id,
-    Interned (Description, Uninterned, cache, cacheWidth, describe, identify),
-  )
-import Data.Interned.Internal
-  ( Cache (getCache),
-    CacheState (CacheState),
-  )
+import Data.Hashable (Hashable (hashWithSalt))
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 import Data.Maybe (fromMaybe)
@@ -234,7 +221,7 @@ import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast)
 import GHC.Exts (sortWith)
 import GHC.Generics (Generic)
-import GHC.IO (unsafeDupablePerformIO)
+import GHC.IO (unsafePerformIO)
 import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat, Nat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast, BitCastOr)
@@ -249,7 +236,18 @@ import Grisette.Internal.Core.Data.Symbol
   )
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Caches
-  ( typeMemoizedCache,
+  ( Id,
+    Interned
+      ( Description,
+        Uninterned,
+        cacheWidth,
+        describe,
+        identify,
+        threadId
+      ),
+    WeakThreadId,
+    intern,
+    myWeakThreadId,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( eqHeteroRep,
@@ -277,7 +275,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- >>> import Grisette.SymPrim
 
 -- | Monads that supports generating sbv fresh variables.
-class (Monad m) => SBVFreshMonad m where
+class (MonadIO m) => SBVFreshMonad m where
   sbvFresh :: (SBV.SymVal a) => String -> m (SBV.SBV a)
 
 instance (MonadIO m) => SBVFreshMonad (SBVT.SymbolicT m) where
@@ -403,8 +401,6 @@ class
   ) =>
   SupportedPrim t
   where
-  termCache :: Cache (Term t)
-  termCache = typeMemoizedCache
   pformatCon :: t -> String
   default pformatCon :: (Show t) => t -> String
   pformatCon = show
@@ -820,7 +816,15 @@ class (SupportedNonFuncPrim a) => PEvalIEEEFPConvertibleTerm a where
 
 -- | Custom unary operator. Not used by Grisette at this time and do not use it.
 class
-  (SupportedPrim arg, SupportedPrim t, Lift tag, NFData tag, Show tag, Typeable tag, Eq tag, Hashable tag) =>
+  ( SupportedPrim arg,
+    SupportedPrim t,
+    Lift tag,
+    NFData tag,
+    Show tag,
+    Typeable tag,
+    Eq tag,
+    Hashable tag
+  ) =>
   UnaryOp tag arg t
     | tag arg -> t
   where
@@ -1063,18 +1067,42 @@ instance Show FPRoundingBinaryOp where
 
 -- | Internal representation for Grisette symbolic terms.
 data Term t where
-  ConTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !t -> Term t
-  SymTerm :: (SupportedPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'AnyKind t) -> Term t
-  ForallTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> Term Bool
-  ExistsTerm :: (SupportedNonFuncPrim t) => {-# UNPACK #-} !Id -> !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> Term Bool
+  ConTerm ::
+    (SupportedPrim t) =>
+    WeakThreadId ->
+    {-# UNPACK #-} !Id ->
+    !t ->
+    Term t
+  SymTerm ::
+    (SupportedPrim t) =>
+    WeakThreadId ->
+    {-# UNPACK #-} !Id ->
+    !(TypedSymbol 'AnyKind t) ->
+    Term t
+  ForallTerm ::
+    (SupportedNonFuncPrim t) =>
+    WeakThreadId ->
+    {-# UNPACK #-} !Id ->
+    !(TypedSymbol 'ConstantKind t) ->
+    !(Term Bool) ->
+    Term Bool
+  ExistsTerm ::
+    (SupportedNonFuncPrim t) =>
+    WeakThreadId ->
+    {-# UNPACK #-} !Id ->
+    !(TypedSymbol 'ConstantKind t) ->
+    !(Term Bool) ->
+    Term Bool
   UnaryTerm ::
     (UnaryOp tag arg t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !tag ->
     !(Term arg) ->
     Term t
   BinaryTerm ::
     (BinaryOp tag arg1 arg2 t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !tag ->
     !(Term arg1) ->
@@ -1082,28 +1110,34 @@ data Term t where
     Term t
   TernaryTerm ::
     (TernaryOp tag arg1 arg2 arg3 t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !tag ->
     !(Term arg1) ->
     !(Term arg2) ->
     !(Term arg3) ->
     Term t
-  NotTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> Term Bool
-  OrTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
-  AndTerm :: {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
+  NotTerm :: WeakThreadId -> {-# UNPACK #-} !Id -> !(Term Bool) -> Term Bool
+  OrTerm ::
+    WeakThreadId -> {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
+  AndTerm ::
+    WeakThreadId -> {-# UNPACK #-} !Id -> !(Term Bool) -> !(Term Bool) -> Term Bool
   EqTerm ::
     (SupportedNonFuncPrim t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term Bool
   DistinctTerm ::
     (SupportedNonFuncPrim t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(NonEmpty (Term t)) ->
     Term Bool
   ITETerm ::
     (SupportedPrim t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term Bool) ->
     !(Term t) ->
@@ -1111,82 +1145,106 @@ data Term t where
     Term t
   AddNumTerm ::
     (PEvalNumTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   NegNumTerm ::
     (PEvalNumTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     Term t
   MulNumTerm ::
     (PEvalNumTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   AbsNumTerm ::
-    (PEvalNumTerm t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
-  SignumNumTerm :: (PEvalNumTerm t) => {-# UNPACK #-} !Id -> !(Term t) -> Term t
+    (PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Id -> !(Term t) -> Term t
+  SignumNumTerm ::
+    (PEvalNumTerm t) => WeakThreadId -> {-# UNPACK #-} !Id -> !(Term t) -> Term t
   LtOrdTerm ::
     (PEvalOrdTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term Bool
   LeOrdTerm ::
     (PEvalOrdTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term Bool
   AndBitsTerm ::
     (PEvalBitwiseTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   OrBitsTerm ::
     (PEvalBitwiseTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   XorBitsTerm ::
     (PEvalBitwiseTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   ComplementBitsTerm ::
     (PEvalBitwiseTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     Term t
   ShiftLeftTerm ::
-    (PEvalShiftTerm t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+    (PEvalShiftTerm t) =>
+    WeakThreadId ->
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
   ShiftRightTerm ::
-    (PEvalShiftTerm t) => {-# UNPACK #-} !Id -> !(Term t) -> !(Term t) -> Term t
+    (PEvalShiftTerm t) =>
+    WeakThreadId ->
+    {-# UNPACK #-} !Id ->
+    !(Term t) ->
+    !(Term t) ->
+    Term t
   RotateLeftTerm ::
     (PEvalRotateTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   RotateRightTerm ::
     (PEvalRotateTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   BitCastTerm ::
     (PEvalBitCastTerm a b) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term a) ->
     Term b
   BitCastOrTerm ::
     (PEvalBitCastOrTerm a b) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term b) ->
     !(Term a) ->
@@ -1200,6 +1258,7 @@ data Term t where
       1 <= r,
       1 <= l + r
     ) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term (bv l)) ->
     !(Term (bv r)) ->
@@ -1213,6 +1272,7 @@ data Term t where
       1 <= w,
       ix + w <= n
     ) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(TypeRep ix) ->
     !(TypeRep w) ->
@@ -1220,6 +1280,7 @@ data Term t where
     Term (bv w)
   BVExtendTerm ::
     (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !Bool ->
     !(TypeRep r) ->
@@ -1231,71 +1292,83 @@ data Term t where
       SupportedPrim f,
       PEvalApplyTerm f a b
     ) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term f) ->
     !(Term a) ->
     Term b
   DivIntegralTerm ::
     (PEvalDivModIntegralTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   ModIntegralTerm ::
     (PEvalDivModIntegralTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   QuotIntegralTerm ::
     (PEvalDivModIntegralTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   RemIntegralTerm ::
     (PEvalDivModIntegralTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   FPTraitTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !FPTrait ->
     !(Term (FP eb sb)) ->
     Term Bool
   FdivTerm ::
     (PEvalFractionalTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   RecipTerm ::
     (PEvalFractionalTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     Term t
   FloatingUnaryTerm ::
     (PEvalFloatingTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !FloatingUnaryOp ->
     !(Term t) ->
     Term t
   PowerTerm ::
     (PEvalFloatingTerm t) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term t) ->
     !(Term t) ->
     Term t
   FPUnaryTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !FPUnaryOp ->
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FPBinaryTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !FPBinaryOp ->
     !(Term (FP eb sb)) ->
@@ -1303,6 +1376,7 @@ data Term t where
     Term (FP eb sb)
   FPRoundingUnaryTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
@@ -1310,6 +1384,7 @@ data Term t where
     Term (FP eb sb)
   FPRoundingBinaryTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
@@ -1318,6 +1393,7 @@ data Term t where
     Term (FP eb sb)
   FPFMATerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
@@ -1326,6 +1402,7 @@ data Term t where
     Term (FP eb sb)
   FromIntegralTerm ::
     (PEvalFromIntegralTerm a b) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term a) ->
     Term b
@@ -1335,6 +1412,7 @@ data Term t where
       SupportedPrim (FP eb sb),
       SupportedPrim FPRoundingMode
     ) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term a) ->
     !(Term FPRoundingMode) ->
@@ -1346,6 +1424,7 @@ data Term t where
       SupportedPrim (FP eb sb),
       SupportedPrim FPRoundingMode
     ) =>
+    WeakThreadId ->
     {-# UNPACK #-} !Id ->
     !(Term FPRoundingMode) ->
     !(Term a) ->
@@ -1360,57 +1439,57 @@ identity = snd . identityWithTypeRep
 
 -- | Return the ID and the type representation of a term.
 identityWithTypeRep :: forall t. Term t -> (SomeTypeRep, Id)
-identityWithTypeRep (ConTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (SymTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ForallTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ExistsTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (UnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (BinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (TernaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (NotTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (OrTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (AndTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (EqTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (DistinctTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ITETerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (AddNumTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (NegNumTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (MulNumTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (AbsNumTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (SignumNumTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (LtOrdTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (LeOrdTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (AndBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (OrBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (XorBitsTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ComplementBitsTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ShiftLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ShiftRightTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (RotateLeftTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (RotateRightTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (BitCastTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (BitCastOrTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (BVConcatTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (BVSelectTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (BVExtendTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ApplyTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (DivIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ModIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (QuotIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (RemIntegralTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FPTraitTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FdivTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (RecipTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FloatingUnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (PowerTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FPUnaryTerm i _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FPBinaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FPRoundingUnaryTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FPRoundingBinaryTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FPFMATerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FromIntegralTerm i _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (FromFPOrTerm i _ _ _) = (someTypeRep (Proxy @t), i)
-identityWithTypeRep (ToFPTerm i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ConTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (SymTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ForallTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ExistsTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (UnaryTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BinaryTerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (TernaryTerm _ i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (NotTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (OrTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AndTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (EqTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (DistinctTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ITETerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AddNumTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (NegNumTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (MulNumTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AbsNumTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (SignumNumTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (LtOrdTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (LeOrdTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (AndBitsTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (OrBitsTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (XorBitsTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ComplementBitsTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ShiftLeftTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ShiftRightTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RotateLeftTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RotateRightTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BitCastTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BitCastOrTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BVConcatTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BVSelectTerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (BVExtendTerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ApplyTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (DivIntegralTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ModIntegralTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (QuotIntegralTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RemIntegralTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPTraitTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FdivTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (RecipTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FloatingUnaryTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (PowerTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPUnaryTerm _ i _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPBinaryTerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPRoundingUnaryTerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPRoundingBinaryTerm _ i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FPFMATerm _ i _ _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FromIntegralTerm _ i _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (FromFPOrTerm _ i _ _ _) = (someTypeRep (Proxy @t), i)
+identityWithTypeRep (ToFPTerm _ i _ _ _ _) = (someTypeRep (Proxy @t), i)
 {-# INLINE identityWithTypeRep #-}
 
 -- | Introduce the 'SupportedPrim' constraint from a term.
@@ -1470,136 +1549,120 @@ introSupportedPrimConstraint ToFPTerm {} x = x
 
 -- | Pretty-print a term.
 pformatTerm :: forall t. (SupportedPrim t) => Term t -> String
-pformatTerm (ConTerm _ t) = pformatCon t
-pformatTerm (SymTerm _ sym) = pformatSym sym
-pformatTerm (ForallTerm _ sym arg) = "(forall " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (ExistsTerm _ sym arg) = "(exists " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (UnaryTerm _ tag arg1) = pformatUnary tag arg1
-pformatTerm (BinaryTerm _ tag arg1 arg2) = pformatBinary tag arg1 arg2
-pformatTerm (TernaryTerm _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
-pformatTerm (NotTerm _ arg) = "(! " ++ pformatTerm arg ++ ")"
-pformatTerm (OrTerm _ arg1 arg2) = "(|| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (AndTerm _ arg1 arg2) = "(&& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (EqTerm _ arg1 arg2) = "(= " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (DistinctTerm _ args) = "(distinct " ++ unwords (map pformatTerm $ toList args) ++ ")"
-pformatTerm (ITETerm _ cond arg1 arg2) = "(ite " ++ pformatTerm cond ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (AddNumTerm _ arg1 arg2) = "(+ " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (NegNumTerm _ arg) = "(- " ++ pformatTerm arg ++ ")"
-pformatTerm (MulNumTerm _ arg1 arg2) = "(* " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (AbsNumTerm _ arg) = "(abs " ++ pformatTerm arg ++ ")"
-pformatTerm (SignumNumTerm _ arg) = "(signum " ++ pformatTerm arg ++ ")"
-pformatTerm (LtOrdTerm _ arg1 arg2) = "(< " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (LeOrdTerm _ arg1 arg2) = "(<= " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (AndBitsTerm _ arg1 arg2) = "(& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (OrBitsTerm _ arg1 arg2) = "(| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (XorBitsTerm _ arg1 arg2) = "(^ " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (ComplementBitsTerm _ arg) = "(~ " ++ pformatTerm arg ++ ")"
-pformatTerm (ShiftLeftTerm _ arg n) = "(shl " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
-pformatTerm (ShiftRightTerm _ arg n) = "(shr " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
-pformatTerm (RotateLeftTerm _ arg n) = "(rotl " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
-pformatTerm (RotateRightTerm _ arg n) = "(rotr " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
-pformatTerm (BitCastTerm _ arg) = "(bitcast " ++ pformatTerm arg ++ ")"
-pformatTerm (BitCastOrTerm _ d arg) = "(bitcast_or " ++ pformatTerm d ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (BVConcatTerm _ arg1 arg2) = "(bvconcat " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (BVSelectTerm _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (BVExtendTerm _ signed n arg) =
+pformatTerm (ConTerm _ _ t) = pformatCon t
+pformatTerm (SymTerm _ _ sym) = pformatSym sym
+pformatTerm (ForallTerm _ _ sym arg) = "(forall " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (ExistsTerm _ _ sym arg) = "(exists " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (UnaryTerm _ _ tag arg1) = pformatUnary tag arg1
+pformatTerm (BinaryTerm _ _ tag arg1 arg2) = pformatBinary tag arg1 arg2
+pformatTerm (TernaryTerm _ _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
+pformatTerm (NotTerm _ _ arg) = "(! " ++ pformatTerm arg ++ ")"
+pformatTerm (OrTerm _ _ arg1 arg2) = "(|| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AndTerm _ _ arg1 arg2) = "(&& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (EqTerm _ _ arg1 arg2) = "(= " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (DistinctTerm _ _ args) = "(distinct " ++ unwords (map pformatTerm $ toList args) ++ ")"
+pformatTerm (ITETerm _ _ cond arg1 arg2) = "(ite " ++ pformatTerm cond ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AddNumTerm _ _ arg1 arg2) = "(+ " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (NegNumTerm _ _ arg) = "(- " ++ pformatTerm arg ++ ")"
+pformatTerm (MulNumTerm _ _ arg1 arg2) = "(* " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AbsNumTerm _ _ arg) = "(abs " ++ pformatTerm arg ++ ")"
+pformatTerm (SignumNumTerm _ _ arg) = "(signum " ++ pformatTerm arg ++ ")"
+pformatTerm (LtOrdTerm _ _ arg1 arg2) = "(< " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (LeOrdTerm _ _ arg1 arg2) = "(<= " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (AndBitsTerm _ _ arg1 arg2) = "(& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (OrBitsTerm _ _ arg1 arg2) = "(| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (XorBitsTerm _ _ arg1 arg2) = "(^ " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (ComplementBitsTerm _ _ arg) = "(~ " ++ pformatTerm arg ++ ")"
+pformatTerm (ShiftLeftTerm _ _ arg n) = "(shl " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (ShiftRightTerm _ _ arg n) = "(shr " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (RotateLeftTerm _ _ arg n) = "(rotl " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (RotateRightTerm _ _ arg n) = "(rotr " ++ pformatTerm arg ++ " " ++ pformatTerm n ++ ")"
+pformatTerm (BitCastTerm _ _ arg) = "(bitcast " ++ pformatTerm arg ++ ")"
+pformatTerm (BitCastOrTerm _ _ d arg) = "(bitcast_or " ++ pformatTerm d ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (BVConcatTerm _ _ arg1 arg2) = "(bvconcat " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (BVSelectTerm _ _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (BVExtendTerm _ _ signed n arg) =
   (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (ApplyTerm _ func arg) = "(apply " ++ pformatTerm func ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (DivIntegralTerm _ arg1 arg2) = "(div " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (ModIntegralTerm _ arg1 arg2) = "(mod " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (QuotIntegralTerm _ arg1 arg2) = "(quot " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (RemIntegralTerm _ arg1 arg2) = "(rem " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (FPTraitTerm _ trait arg) = "(" ++ show trait ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (FdivTerm _ arg1 arg2) = "(fdiv " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (RecipTerm _ arg) = "(recip " ++ pformatTerm arg ++ ")"
-pformatTerm (FloatingUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (PowerTerm _ arg1 arg2) = "(** " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (FPUnaryTerm _ op arg) = "(" ++ show op ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (FPBinaryTerm _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (FPRoundingUnaryTerm _ op mode arg) = "(" ++ show op ++ " " ++ pformatTerm mode ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (FPRoundingBinaryTerm _ op mode arg1 arg2) =
+pformatTerm (ApplyTerm _ _ func arg) = "(apply " ++ pformatTerm func ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (DivIntegralTerm _ _ arg1 arg2) = "(div " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (ModIntegralTerm _ _ arg1 arg2) = "(mod " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (QuotIntegralTerm _ _ arg1 arg2) = "(quot " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (RemIntegralTerm _ _ arg1 arg2) = "(rem " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPTraitTerm _ _ trait arg) = "(" ++ show trait ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FdivTerm _ _ arg1 arg2) = "(fdiv " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (RecipTerm _ _ arg) = "(recip " ++ pformatTerm arg ++ ")"
+pformatTerm (FloatingUnaryTerm _ _ op arg) = "(" ++ show op ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (PowerTerm _ _ arg1 arg2) = "(** " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPUnaryTerm _ _ op arg) = "(" ++ show op ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FPBinaryTerm _ _ op arg1 arg2) = "(" ++ show op ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
+pformatTerm (FPRoundingUnaryTerm _ _ op mode arg) = "(" ++ show op ++ " " ++ pformatTerm mode ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FPRoundingBinaryTerm _ _ op mode arg1 arg2) =
   "(" ++ show op ++ " " ++ pformatTerm mode ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (FPFMATerm _ mode arg1 arg2 arg3) =
+pformatTerm (FPFMATerm _ _ mode arg1 arg2 arg3) =
   "(fp.fma " ++ pformatTerm mode ++ " " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ " " ++ pformatTerm arg3 ++ ")"
-pformatTerm (FromIntegralTerm _ arg) = "(from_integral " ++ pformatTerm arg ++ ")"
-pformatTerm (FromFPOrTerm _ d r arg) = "(from_fp_or " ++ pformatTerm d ++ " " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (ToFPTerm _ r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (FromIntegralTerm _ _ arg) = "(from_integral " ++ pformatTerm arg ++ ")"
+pformatTerm (FromFPOrTerm _ _ d r arg) = "(from_fp_or " ++ pformatTerm d ++ " " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (ToFPTerm _ _ r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
 {-# INLINE pformatTerm #-}
 
 instance NFData (Term a) where
   rnf i = identity i `seq` ()
 
 instance Lift (Term t) where
-  liftTyped (ConTerm _ i) = [||conTerm i||]
-  liftTyped (SymTerm _ sym) = [||symTerm (unTypedSymbol sym)||]
-  liftTyped (ForallTerm _ sym arg) = [||forallTerm sym arg||]
-  liftTyped (ExistsTerm _ sym arg) = [||existsTerm sym arg||]
-  liftTyped (UnaryTerm _ tag arg) = [||constructUnary tag arg||]
-  liftTyped (BinaryTerm _ tag arg1 arg2) = [||constructBinary tag arg1 arg2||]
-  liftTyped (TernaryTerm _ tag arg1 arg2 arg3) =
-    [||constructTernary tag arg1 arg2 arg3||]
-  liftTyped (NotTerm _ arg) = [||notTerm arg||]
-  liftTyped (OrTerm _ arg1 arg2) = [||orTerm arg1 arg2||]
-  liftTyped (AndTerm _ arg1 arg2) = [||andTerm arg1 arg2||]
-  liftTyped (EqTerm _ arg1 arg2) = [||eqTerm arg1 arg2||]
-  liftTyped (DistinctTerm _ args) = [||distinctTerm args||]
-  liftTyped (ITETerm _ cond arg1 arg2) = [||iteTerm cond arg1 arg2||]
-  liftTyped (AddNumTerm _ arg1 arg2) = [||addNumTerm arg1 arg2||]
-  liftTyped (NegNumTerm _ arg) = [||negNumTerm arg||]
-  liftTyped (MulNumTerm _ arg1 arg2) = [||mulNumTerm arg1 arg2||]
-  liftTyped (AbsNumTerm _ arg) = [||absNumTerm arg||]
-  liftTyped (SignumNumTerm _ arg) = [||signumNumTerm arg||]
-  liftTyped (LtOrdTerm _ arg1 arg2) = [||ltOrdTerm arg1 arg2||]
-  liftTyped (LeOrdTerm _ arg1 arg2) = [||leOrdTerm arg1 arg2||]
-  liftTyped (AndBitsTerm _ arg1 arg2) = [||andBitsTerm arg1 arg2||]
-  liftTyped (OrBitsTerm _ arg1 arg2) = [||orBitsTerm arg1 arg2||]
-  liftTyped (XorBitsTerm _ arg1 arg2) = [||xorBitsTerm arg1 arg2||]
-  liftTyped (ComplementBitsTerm _ arg) = [||complementBitsTerm arg||]
-  liftTyped (ShiftLeftTerm _ arg n) = [||shiftLeftTerm arg n||]
-  liftTyped (ShiftRightTerm _ arg n) = [||shiftRightTerm arg n||]
-  liftTyped (RotateLeftTerm _ arg n) = [||rotateLeftTerm arg n||]
-  liftTyped (RotateRightTerm _ arg n) = [||rotateRightTerm arg n||]
-  liftTyped (BitCastTerm _ v) = [||bitCastTerm v||]
-  liftTyped (BitCastOrTerm _ d v) = [||bitCastOrTerm d v||]
-  liftTyped (BVConcatTerm _ arg1 arg2) = [||bvconcatTerm arg1 arg2||]
-  liftTyped (BVSelectTerm _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) =
-    [||bvselectTerm (Proxy @ix) (Proxy @w) arg||]
-  liftTyped (BVExtendTerm _ signed (_ :: TypeRep n) arg) =
-    [||bvextendTerm signed (Proxy @n) arg||]
-  liftTyped (ApplyTerm _ f arg) = [||applyTerm f arg||]
-  liftTyped (DivIntegralTerm _ arg1 arg2) = [||divIntegralTerm arg1 arg2||]
-  liftTyped (ModIntegralTerm _ arg1 arg2) = [||modIntegralTerm arg1 arg2||]
-  liftTyped (QuotIntegralTerm _ arg1 arg2) = [||quotIntegralTerm arg1 arg2||]
-  liftTyped (RemIntegralTerm _ arg1 arg2) = [||remIntegralTerm arg1 arg2||]
-  liftTyped (FPTraitTerm _ trait arg) = [||fpTraitTerm trait arg||]
-  liftTyped (FdivTerm _ arg1 arg2) = [||fdivTerm arg1 arg2||]
-  liftTyped (RecipTerm _ arg) = [||recipTerm arg||]
-  liftTyped (FloatingUnaryTerm _ op arg) = [||floatingUnaryTerm op arg||]
-  liftTyped (PowerTerm _ arg1 arg2) = [||powerTerm arg1 arg2||]
-  liftTyped (FPUnaryTerm _ op arg) = [||fpUnaryTerm op arg||]
-  liftTyped (FPBinaryTerm _ op arg1 arg2) = [||fpBinaryTerm op arg1 arg2||]
-  liftTyped (FPRoundingUnaryTerm _ op mode arg) = [||fpRoundingUnaryTerm op mode arg||]
-  liftTyped (FPRoundingBinaryTerm _ op mode arg1 arg2) = [||fpRoundingBinaryTerm op mode arg1 arg2||]
-  liftTyped (FPFMATerm _ mode arg1 arg2 arg3) = [||fpFMATerm mode arg1 arg2 arg3||]
-  liftTyped (FromIntegralTerm _ arg) = [||fromIntegralTerm arg||]
-  liftTyped (FromFPOrTerm _ d r arg) = [||fromFPOrTerm d r arg||]
-  liftTyped (ToFPTerm _ r arg _ _) = [||toFPTerm r arg||]
+  liftTyped t =
+    [||
+    introSupportedPrimConstraint t $
+      unsafePerformIO $
+        fullReconstructTerm t
+    ||]
 
 instance Show (Term ty) where
-  show (ConTerm i v) = "ConTerm{id=" ++ show i ++ ", v=" ++ show v ++ "}"
-  show (SymTerm i name) =
-    "SymTerm{id="
+  show (ConTerm tid i v) =
+    "ConTerm{tid=" ++ show tid ++ ", id=" ++ show i ++ ", v=" ++ show v ++ "}"
+  show (SymTerm tid i name) =
+    "SymTerm{tid="
+      ++ show tid
+      ++ ", id="
       ++ show i
       ++ ", name="
       ++ show name
       ++ ", type="
       ++ show (typeRep @ty)
       ++ "}"
-  show (ForallTerm i sym arg) = "Forall{id=" ++ show i ++ ", sym=" ++ show sym ++ ", arg=" ++ show arg ++ "}"
-  show (ExistsTerm i sym arg) = "Exists{id=" ++ show i ++ ", sym=" ++ show sym ++ ", arg=" ++ show arg ++ "}"
-  show (UnaryTerm i tag arg) = "Unary{id=" ++ show i ++ ", tag=" ++ show tag ++ ", arg=" ++ show arg ++ "}"
-  show (BinaryTerm i tag arg1 arg2) =
-    "Binary{id="
+  show (ForallTerm tid i sym arg) =
+    "Forall{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", sym="
+      ++ show sym
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (ExistsTerm tid i sym arg) =
+    "Exists{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", sym="
+      ++ show sym
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (UnaryTerm tid i tag arg) =
+    "Unary{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", tag="
+      ++ show tag
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (BinaryTerm tid i tag arg1 arg2) =
+    "Binary{tid="
+      ++ show tid
+      ++ ", id="
       ++ show i
       ++ ", tag="
       ++ show tag
@@ -1608,8 +1671,10 @@ instance Show (Term ty) where
       ++ ", arg2="
       ++ show arg2
       ++ "}"
-  show (TernaryTerm i tag arg1 arg2 arg3) =
-    "Ternary{id="
+  show (TernaryTerm tid i tag arg1 arg2 arg3) =
+    "Ternary{tid="
+      ++ show tid
+      ++ ", id="
       ++ show i
       ++ ", tag="
       ++ show tag
@@ -1620,13 +1685,50 @@ instance Show (Term ty) where
       ++ ", arg3="
       ++ show arg3
       ++ "}"
-  show (NotTerm i arg) = "Not{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (OrTerm i arg1 arg2) = "Or{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (AndTerm i arg1 arg2) = "And{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (EqTerm i arg1 arg2) = "Eqv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (DistinctTerm i args) = "Distinct{id=" ++ show i ++ ", args=" ++ show args ++ "}"
-  show (ITETerm i cond l r) =
-    "ITE{id="
+  show (NotTerm tid i arg) =
+    "Not{tid=" ++ show tid ++ ", id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (OrTerm tid i arg1 arg2) =
+    "Or{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (AndTerm tid i arg1 arg2) =
+    "And{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (EqTerm tid i arg1 arg2) =
+    "Eqv{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (DistinctTerm tid i args) =
+    "Distinct{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", args="
+      ++ show args
+      ++ "}"
+  show (ITETerm tid i cond l r) =
+    "ITE{tid="
+      ++ show tid
+      ++ ", id="
       ++ show i
       ++ ", cond="
       ++ show cond
@@ -1635,50 +1737,212 @@ instance Show (Term ty) where
       ++ ", else="
       ++ show r
       ++ "}"
-  show (AddNumTerm i arg1 arg2) = "AddNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (NegNumTerm i arg) = "NegNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (MulNumTerm i arg1 arg2) = "MulNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (AbsNumTerm i arg) = "AbsNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (SignumNumTerm i arg) = "SignumNum{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (LtOrdTerm i arg1 arg2) = "LTNum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (LeOrdTerm i arg1 arg2) = "LENum{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (AndBitsTerm i arg1 arg2) = "AndBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (OrBitsTerm i arg1 arg2) = "OrBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (XorBitsTerm i arg1 arg2) = "XorBits{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (ComplementBitsTerm i arg) = "ComplementBits{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (ShiftLeftTerm i arg n) = "ShiftLeft{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (ShiftRightTerm i arg n) = "ShiftRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (RotateLeftTerm i arg n) = "RotateLeft{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (RotateRightTerm i arg n) = "RotateRight{id=" ++ show i ++ ", arg=" ++ show arg ++ ", n=" ++ show n ++ "}"
-  show (BitCastTerm i arg) = "BitCast{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (BitCastOrTerm i d arg) = "BitCastOr{id=" ++ show i ++ ", default=" ++ show d ++ ", arg=" ++ show arg ++ "}"
-  show (BVConcatTerm i arg1 arg2) = "BVConcat{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (BVSelectTerm i ix w arg) =
-    "BVSelect{id=" ++ show i ++ ", ix=" ++ show ix ++ ", w=" ++ show w ++ ", arg=" ++ show arg ++ "}"
-  show (BVExtendTerm i signed n arg) =
+  show (AddNumTerm tid i arg1 arg2) =
+    "AddNum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (NegNumTerm tid i arg) =
+    "NegNum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (MulNumTerm tid i arg1 arg2) =
+    "MulNum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (AbsNumTerm tid i arg) =
+    "AbsNum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (SignumNumTerm tid i arg) =
+    "SignumNum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (LtOrdTerm tid i arg1 arg2) =
+    "LTNum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (LeOrdTerm tid i arg1 arg2) =
+    "LENum{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (AndBitsTerm tid i arg1 arg2) =
+    "AndBits{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (OrBitsTerm tid i arg1 arg2) =
+    "OrBits{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (XorBitsTerm tid i arg1 arg2) =
+    "XorBits{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (ComplementBitsTerm tid i arg) =
+    "ComplementBits{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (ShiftLeftTerm tid i arg n) =
+    "ShiftLeft{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ ", n="
+      ++ show n
+      ++ "}"
+  show (ShiftRightTerm tid i arg n) =
+    "ShiftRight{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ ", n="
+      ++ show n
+      ++ "}"
+  show (RotateLeftTerm tid i arg n) =
+    "RotateLeft{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ ", n="
+      ++ show n
+      ++ "}"
+  show (RotateRightTerm tid i arg n) =
+    "RotateRight{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ ", n="
+      ++ show n
+      ++ "}"
+  show (BitCastTerm tid i arg) =
+    "BitCast{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (BitCastOrTerm tid i d arg) =
+    "BitCastOr{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", default="
+      ++ show d
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (BVConcatTerm tid i arg1 arg2) =
+    "BVConcat{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", arg1="
+      ++ show arg1
+      ++ ", arg2="
+      ++ show arg2
+      ++ "}"
+  show (BVSelectTerm tid i ix w arg) =
+    "BVSelect{tid="
+      ++ show tid
+      ++ ", id="
+      ++ show i
+      ++ ", ix="
+      ++ show ix
+      ++ ", w="
+      ++ show w
+      ++ ", arg="
+      ++ show arg
+      ++ "}"
+  show (BVExtendTerm _ i signed n arg) =
     "BVExtend{id=" ++ show i ++ ", signed=" ++ show signed ++ ", n=" ++ show n ++ ", arg=" ++ show arg ++ "}"
-  show (ApplyTerm i f arg) =
+  show (ApplyTerm _ i f arg) =
     "Apply{id=" ++ show i ++ ", f=" ++ show f ++ ", arg=" ++ show arg ++ "}"
-  show (DivIntegralTerm i arg1 arg2) =
+  show (DivIntegralTerm _ i arg1 arg2) =
     "DivIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (ModIntegralTerm i arg1 arg2) =
+  show (ModIntegralTerm _ i arg1 arg2) =
     "ModIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (QuotIntegralTerm i arg1 arg2) =
+  show (QuotIntegralTerm _ i arg1 arg2) =
     "QuotIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (RemIntegralTerm i arg1 arg2) =
+  show (RemIntegralTerm _ i arg1 arg2) =
     "RemIntegral{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (FPTraitTerm i trait arg) =
+  show (FPTraitTerm _ i trait arg) =
     "FPTrait{id=" ++ show i ++ ", trait=" ++ show trait ++ ", arg=" ++ show arg ++ "}"
-  show (FdivTerm i arg1 arg2) = "Fdiv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (RecipTerm i arg) = "Recip{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (FloatingUnaryTerm i op arg) = "FloatingUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
-  show (PowerTerm i arg1 arg2) = "Power{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (FPUnaryTerm i op arg) = "FPUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
-  show (FPBinaryTerm i op arg1 arg2) =
+  show (FdivTerm _ i arg1 arg2) = "Fdiv{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (RecipTerm _ i arg) = "Recip{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
+  show (FloatingUnaryTerm _ i op arg) = "FloatingUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
+  show (PowerTerm _ i arg1 arg2) = "Power{id=" ++ show i ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
+  show (FPUnaryTerm _ i op arg) = "FPUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg=" ++ show arg ++ "}"
+  show (FPBinaryTerm _ i op arg1 arg2) =
     "FPBinary{id=" ++ show i ++ ", op=" ++ show op ++ ", arg1=" ++ show arg1 ++ ", arg2=" ++ show arg2 ++ "}"
-  show (FPRoundingUnaryTerm i op mode arg) =
+  show (FPRoundingUnaryTerm _ i op mode arg) =
     "FPRoundingUnary{id=" ++ show i ++ ", op=" ++ show op ++ ", mode=" ++ show mode ++ ", arg=" ++ show arg ++ "}"
-  show (FPRoundingBinaryTerm i op mode arg1 arg2) =
+  show (FPRoundingBinaryTerm _ i op mode arg1 arg2) =
     "FPRoundingBinary{id="
       ++ show i
       ++ ", op="
@@ -1690,7 +1954,7 @@ instance Show (Term ty) where
       ++ ", arg2="
       ++ show arg2
       ++ "}"
-  show (FPFMATerm i mode arg1 arg2 arg3) =
+  show (FPFMATerm _ i mode arg1 arg2 arg3) =
     "FPFMA{id="
       ++ show i
       ++ ", mode="
@@ -1702,9 +1966,9 @@ instance Show (Term ty) where
       ++ ", arg3="
       ++ show arg3
       ++ "}"
-  show (FromIntegralTerm i arg) =
+  show (FromIntegralTerm _ i arg) =
     "FromIntegral{id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
-  show (FromFPOrTerm i d mode arg) =
+  show (FromFPOrTerm _ i d mode arg) =
     "FromFPTerm{id="
       ++ show i
       ++ ", default="
@@ -1714,7 +1978,7 @@ instance Show (Term ty) where
       ++ ", arg="
       ++ show arg
       ++ "}"
-  show (ToFPTerm i mode arg _ _) =
+  show (ToFPTerm _ i mode arg _ _) =
     "ToFPTerm{id="
       ++ show i
       ++ ", mode="
@@ -1741,7 +2005,13 @@ prettyPrintTerm v =
     len = length formatted
 
 instance (SupportedPrim t) => Eq (Term t) where
-  (==) = (==) `on` identity
+  a == b =
+    if threadId a == threadId b
+      then identity a == identity b
+      else unsafePerformIO $ do
+        a' <- fullReconstructTerm a
+        b' <- fullReconstructTerm b
+        return $ identity a' == identity b'
 
 instance (SupportedPrim t) => Hashable (Term t) where
   hashWithSalt s t = hashWithSalt s $ identity t
@@ -2041,6 +2311,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       {-# UNPACK #-} !Id ->
       !(TypeRep a, Id) ->
       Description (Term (FP eb sb))
+  cacheWidth _ = 1000
 
   describe (UConTerm v) = DConTerm v
   describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
@@ -2111,60 +2382,110 @@ instance (SupportedPrim t) => Interned (Term t) where
   describe (UToFPTerm mode (arg :: Term a) _ _) =
     DToFPTerm (identity mode) (typeRep :: TypeRep a, identity arg)
 
-  identify i = go
+  identify tid i = go
     where
-      go (UConTerm v) = ConTerm i v
-      go (USymTerm v) = SymTerm i v
-      go (UForallTerm sym arg) = ForallTerm i sym arg
-      go (UExistsTerm sym arg) = ExistsTerm i sym arg
-      go (UUnaryTerm tag tm) = UnaryTerm i tag tm
-      go (UBinaryTerm tag tm1 tm2) = BinaryTerm i tag tm1 tm2
-      go (UTernaryTerm tag tm1 tm2 tm3) = TernaryTerm i tag tm1 tm2 tm3
-      go (UNotTerm arg) = NotTerm i arg
-      go (UOrTerm arg1 arg2) = OrTerm i arg1 arg2
-      go (UAndTerm arg1 arg2) = AndTerm i arg1 arg2
-      go (UEqTerm arg1 arg2) = EqTerm i arg1 arg2
-      go (UDistinctTerm args) = DistinctTerm i args
-      go (UITETerm cond l r) = ITETerm i cond l r
-      go (UAddNumTerm arg1 arg2) = AddNumTerm i arg1 arg2
-      go (UNegNumTerm arg) = NegNumTerm i arg
-      go (UMulNumTerm arg1 arg2) = MulNumTerm i arg1 arg2
-      go (UAbsNumTerm arg) = AbsNumTerm i arg
-      go (USignumNumTerm arg) = SignumNumTerm i arg
-      go (ULtOrdTerm arg1 arg2) = LtOrdTerm i arg1 arg2
-      go (ULeOrdTerm arg1 arg2) = LeOrdTerm i arg1 arg2
-      go (UAndBitsTerm arg1 arg2) = AndBitsTerm i arg1 arg2
-      go (UOrBitsTerm arg1 arg2) = OrBitsTerm i arg1 arg2
-      go (UXorBitsTerm arg1 arg2) = XorBitsTerm i arg1 arg2
-      go (UComplementBitsTerm arg) = ComplementBitsTerm i arg
-      go (UShiftLeftTerm arg n) = ShiftLeftTerm i arg n
-      go (UShiftRightTerm arg n) = ShiftRightTerm i arg n
-      go (URotateLeftTerm arg n) = RotateLeftTerm i arg n
-      go (URotateRightTerm arg n) = RotateRightTerm i arg n
-      go (UBitCastTerm arg) = BitCastTerm i arg
-      go (UBitCastOrTerm d arg) = BitCastOrTerm i d arg
-      go (UBVConcatTerm arg1 arg2) = BVConcatTerm i arg1 arg2
-      go (UBVSelectTerm ix w arg) = BVSelectTerm i ix w arg
-      go (UBVExtendTerm signed n arg) = BVExtendTerm i signed n arg
-      go (UApplyTerm f arg) = ApplyTerm i f arg
-      go (UDivIntegralTerm arg1 arg2) = DivIntegralTerm i arg1 arg2
-      go (UModIntegralTerm arg1 arg2) = ModIntegralTerm i arg1 arg2
-      go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm i arg1 arg2
-      go (URemIntegralTerm arg1 arg2) = RemIntegralTerm i arg1 arg2
-      go (UFPTraitTerm trait arg) = FPTraitTerm i trait arg
-      go (UFdivTerm arg1 arg2) = FdivTerm i arg1 arg2
-      go (URecipTerm arg) = RecipTerm i arg
-      go (UFloatingUnaryTerm op arg) = FloatingUnaryTerm i op arg
-      go (UPowerTerm arg1 arg2) = PowerTerm i arg1 arg2
-      go (UFPUnaryTerm op arg) = FPUnaryTerm i op arg
-      go (UFPBinaryTerm op arg1 arg2) = FPBinaryTerm i op arg1 arg2
-      go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm i op mode arg
-      go (UFPRoundingBinaryTerm op mode arg1 arg2) = FPRoundingBinaryTerm i op mode arg1 arg2
-      go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm i mode arg1 arg2 arg3
-      go (UFromIntegralTerm arg) = FromIntegralTerm i arg
-      go (UFromFPOrTerm d mode arg) = FromFPOrTerm i d mode arg
-      go (UToFPTerm mode arg eb sb) = ToFPTerm i mode arg eb sb
-  cache = termCache
+      go (UConTerm v) = ConTerm tid i v
+      go (USymTerm v) = SymTerm tid i v
+      go (UForallTerm sym arg) = ForallTerm tid i sym arg
+      go (UExistsTerm sym arg) = ExistsTerm tid i sym arg
+      go (UUnaryTerm tag tm) = UnaryTerm tid i tag tm
+      go (UBinaryTerm tag tm1 tm2) = BinaryTerm tid i tag tm1 tm2
+      go (UTernaryTerm tag tm1 tm2 tm3) = TernaryTerm tid i tag tm1 tm2 tm3
+      go (UNotTerm arg) = NotTerm tid i arg
+      go (UOrTerm arg1 arg2) = OrTerm tid i arg1 arg2
+      go (UAndTerm arg1 arg2) = AndTerm tid i arg1 arg2
+      go (UEqTerm arg1 arg2) = EqTerm tid i arg1 arg2
+      go (UDistinctTerm args) = DistinctTerm tid i args
+      go (UITETerm cond l r) = ITETerm tid i cond l r
+      go (UAddNumTerm arg1 arg2) = AddNumTerm tid i arg1 arg2
+      go (UNegNumTerm arg) = NegNumTerm tid i arg
+      go (UMulNumTerm arg1 arg2) = MulNumTerm tid i arg1 arg2
+      go (UAbsNumTerm arg) = AbsNumTerm tid i arg
+      go (USignumNumTerm arg) = SignumNumTerm tid i arg
+      go (ULtOrdTerm arg1 arg2) = LtOrdTerm tid i arg1 arg2
+      go (ULeOrdTerm arg1 arg2) = LeOrdTerm tid i arg1 arg2
+      go (UAndBitsTerm arg1 arg2) = AndBitsTerm tid i arg1 arg2
+      go (UOrBitsTerm arg1 arg2) = OrBitsTerm tid i arg1 arg2
+      go (UXorBitsTerm arg1 arg2) = XorBitsTerm tid i arg1 arg2
+      go (UComplementBitsTerm arg) = ComplementBitsTerm tid i arg
+      go (UShiftLeftTerm arg n) = ShiftLeftTerm tid i arg n
+      go (UShiftRightTerm arg n) = ShiftRightTerm tid i arg n
+      go (URotateLeftTerm arg n) = RotateLeftTerm tid i arg n
+      go (URotateRightTerm arg n) = RotateRightTerm tid i arg n
+      go (UBitCastTerm arg) = BitCastTerm tid i arg
+      go (UBitCastOrTerm d arg) = BitCastOrTerm tid i d arg
+      go (UBVConcatTerm arg1 arg2) = BVConcatTerm tid i arg1 arg2
+      go (UBVSelectTerm ix w arg) = BVSelectTerm tid i ix w arg
+      go (UBVExtendTerm signed n arg) = BVExtendTerm tid i signed n arg
+      go (UApplyTerm f arg) = ApplyTerm tid i f arg
+      go (UDivIntegralTerm arg1 arg2) = DivIntegralTerm tid i arg1 arg2
+      go (UModIntegralTerm arg1 arg2) = ModIntegralTerm tid i arg1 arg2
+      go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm tid i arg1 arg2
+      go (URemIntegralTerm arg1 arg2) = RemIntegralTerm tid i arg1 arg2
+      go (UFPTraitTerm trait arg) = FPTraitTerm tid i trait arg
+      go (UFdivTerm arg1 arg2) = FdivTerm tid i arg1 arg2
+      go (URecipTerm arg) = RecipTerm tid i arg
+      go (UFloatingUnaryTerm op arg) = FloatingUnaryTerm tid i op arg
+      go (UPowerTerm arg1 arg2) = PowerTerm tid i arg1 arg2
+      go (UFPUnaryTerm op arg) = FPUnaryTerm tid i op arg
+      go (UFPBinaryTerm op arg1 arg2) = FPBinaryTerm tid i op arg1 arg2
+      go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm tid i op mode arg
+      go (UFPRoundingBinaryTerm op mode arg1 arg2) = FPRoundingBinaryTerm tid i op mode arg1 arg2
+      go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm tid i mode arg1 arg2 arg3
+      go (UFromIntegralTerm arg) = FromIntegralTerm tid i arg
+      go (UFromFPOrTerm d mode arg) = FromFPOrTerm tid i d mode arg
+      go (UToFPTerm mode arg eb sb) = ToFPTerm tid i mode arg eb sb
+  threadId (ConTerm tid _ _) = tid
+  threadId (SymTerm tid _ _) = tid
+  threadId (ForallTerm tid _ _ _) = tid
+  threadId (ExistsTerm tid _ _ _) = tid
+  threadId (UnaryTerm tid _ _ _) = tid
+  threadId (BinaryTerm tid _ _ _ _) = tid
+  threadId (TernaryTerm tid _ _ _ _ _) = tid
+  threadId (NotTerm tid _ _) = tid
+  threadId (OrTerm tid _ _ _) = tid
+  threadId (AndTerm tid _ _ _) = tid
+  threadId (EqTerm tid _ _ _) = tid
+  threadId (DistinctTerm tid _ _) = tid
+  threadId (ITETerm tid _ _ _ _) = tid
+  threadId (AddNumTerm tid _ _ _) = tid
+  threadId (NegNumTerm tid _ _) = tid
+  threadId (MulNumTerm tid _ _ _) = tid
+  threadId (AbsNumTerm tid _ _) = tid
+  threadId (SignumNumTerm tid _ _) = tid
+  threadId (LtOrdTerm tid _ _ _) = tid
+  threadId (LeOrdTerm tid _ _ _) = tid
+  threadId (AndBitsTerm tid _ _ _) = tid
+  threadId (OrBitsTerm tid _ _ _) = tid
+  threadId (XorBitsTerm tid _ _ _) = tid
+  threadId (ComplementBitsTerm tid _ _) = tid
+  threadId (ShiftLeftTerm tid _ _ _) = tid
+  threadId (ShiftRightTerm tid _ _ _) = tid
+  threadId (RotateLeftTerm tid _ _ _) = tid
+  threadId (RotateRightTerm tid _ _ _) = tid
+  threadId (BitCastTerm tid _ _) = tid
+  threadId (BitCastOrTerm tid _ _ _) = tid
+  threadId (BVConcatTerm tid _ _ _) = tid
+  threadId (BVSelectTerm tid _ _ _ _) = tid
+  threadId (BVExtendTerm tid _ _ _ _) = tid
+  threadId (ApplyTerm tid _ _ _) = tid
+  threadId (DivIntegralTerm tid _ _ _) = tid
+  threadId (ModIntegralTerm tid _ _ _) = tid
+  threadId (QuotIntegralTerm tid _ _ _) = tid
+  threadId (RemIntegralTerm tid _ _ _) = tid
+  threadId (FPTraitTerm tid _ _ _) = tid
+  threadId (FdivTerm tid _ _ _) = tid
+  threadId (RecipTerm tid _ _) = tid
+  threadId (FloatingUnaryTerm tid _ _ _) = tid
+  threadId (PowerTerm tid _ _ _) = tid
+  threadId (FPUnaryTerm tid _ _ _) = tid
+  threadId (FPBinaryTerm tid _ _ _ _) = tid
+  threadId (FPRoundingUnaryTerm tid _ _ _ _) = tid
+  threadId (FPRoundingBinaryTerm tid _ _ _ _ _) = tid
+  threadId (FPFMATerm tid _ _ _ _ _) = tid
+  threadId (FromIntegralTerm tid _ _) = tid
+  threadId (FromFPOrTerm tid _ _ _ _) = tid
+  threadId (ToFPTerm tid _ _ _ _ _) = tid
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm (l :: tyl) == DConTerm (r :: tyr) = cast @tyl @tyr l == Just r
@@ -2306,194 +2627,833 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DFromFPOrTerm id0 id1 id2) = s `hashWithSalt` (52 :: Int) `hashWithSalt` id0 `hashWithSalt` id1 `hashWithSalt` id2
   hashWithSalt s (DToFPTerm id0 id1) = s `hashWithSalt` (53 :: Int) `hashWithSalt` id0 `hashWithSalt` id1
 
-internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
-internTerm !bt = unsafeDupablePerformIO $ atomicModifyIORef' slot go
+fullReconstructTerm1 ::
+  forall a b.
+  (SupportedPrim a) =>
+  (Term a -> IO (Term b)) ->
+  Term a ->
+  IO (Term b)
+fullReconstructTerm1 f x = fullReconstructTerm x >>= f
+{-# INLINE fullReconstructTerm1 #-}
+
+fullReconstructTerm2 ::
+  forall a b c.
+  (SupportedPrim a, SupportedPrim b) =>
+  (Term a -> Term b -> IO (Term c)) ->
+  Term a ->
+  Term b ->
+  IO (Term c)
+fullReconstructTerm2 f x y = do
+  rx <- fullReconstructTerm x
+  ry <- fullReconstructTerm y
+  f rx ry
+{-# INLINE fullReconstructTerm2 #-}
+
+fullReconstructTerm3 ::
+  forall a b c d.
+  (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+  (Term a -> Term b -> Term c -> IO (Term d)) ->
+  Term a ->
+  Term b ->
+  Term c ->
+  IO (Term d)
+fullReconstructTerm3 f x y z = do
+  rx <- fullReconstructTerm x
+  ry <- fullReconstructTerm y
+  rz <- fullReconstructTerm z
+  f rx ry rz
+{-# INLINE fullReconstructTerm3 #-}
+
+fullReconstructTerm :: forall t. (SupportedPrim t) => Term t -> IO (Term t)
+fullReconstructTerm (ConTerm _ _ i) = curThreadConTerm i
+fullReconstructTerm (SymTerm _ _ sym) = curThreadSymTerm (unTypedSymbol sym)
+fullReconstructTerm (ForallTerm _ _ sym arg) =
+  fullReconstructTerm1 (curThreadForallTerm sym) arg
+fullReconstructTerm (ExistsTerm _ _ sym arg) =
+  fullReconstructTerm1 (curThreadExistsTerm sym) arg
+fullReconstructTerm (UnaryTerm _ _ tag arg) =
+  fullReconstructTerm1 (curThreadConstructUnary tag) arg
+fullReconstructTerm (BinaryTerm _ _ tag arg1 arg2) =
+  fullReconstructTerm2 (curThreadConstructBinary tag) arg1 arg2
+fullReconstructTerm (TernaryTerm _ _ tag arg1 arg2 arg3) =
+  fullReconstructTerm3 (curThreadConstructTernary tag) arg1 arg2 arg3
+fullReconstructTerm (NotTerm _ _ arg) =
+  fullReconstructTerm1 curThreadNotTerm arg
+fullReconstructTerm (OrTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadOrTerm arg1 arg2
+fullReconstructTerm (AndTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadAndTerm arg1 arg2
+fullReconstructTerm (EqTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadEqTerm arg1 arg2
+fullReconstructTerm (DistinctTerm _ _ args) =
+  traverse fullReconstructTerm args >>= curThreadDistinctTerm
+fullReconstructTerm (ITETerm _ _ cond arg1 arg2) =
+  fullReconstructTerm3 curThreadIteTerm cond arg1 arg2
+fullReconstructTerm (AddNumTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadAddNumTerm arg1 arg2
+fullReconstructTerm (NegNumTerm _ _ arg) =
+  fullReconstructTerm1 curThreadNegNumTerm arg
+fullReconstructTerm (MulNumTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadMulNumTerm arg1 arg2
+fullReconstructTerm (AbsNumTerm _ _ arg) =
+  fullReconstructTerm1 curThreadAbsNumTerm arg
+fullReconstructTerm (SignumNumTerm _ _ arg) =
+  fullReconstructTerm1 curThreadSignumNumTerm arg
+fullReconstructTerm (LtOrdTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadLtOrdTerm arg1 arg2
+fullReconstructTerm (LeOrdTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadLeOrdTerm arg1 arg2
+fullReconstructTerm (AndBitsTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadAndBitsTerm arg1 arg2
+fullReconstructTerm (OrBitsTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadOrBitsTerm arg1 arg2
+fullReconstructTerm (XorBitsTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadXorBitsTerm arg1 arg2
+fullReconstructTerm (ComplementBitsTerm _ _ arg) =
+  fullReconstructTerm1 curThreadComplementBitsTerm arg
+fullReconstructTerm (ShiftLeftTerm _ _ arg n) =
+  fullReconstructTerm1 (curThreadShiftLeftTerm arg) n
+fullReconstructTerm (ShiftRightTerm _ _ arg n) =
+  fullReconstructTerm1 (curThreadShiftRightTerm arg) n
+fullReconstructTerm (RotateLeftTerm _ _ arg n) =
+  fullReconstructTerm1 (curThreadRotateLeftTerm arg) n
+fullReconstructTerm (RotateRightTerm _ _ arg n) =
+  fullReconstructTerm1 (curThreadRotateRightTerm arg) n
+fullReconstructTerm (BitCastTerm _ _ v) =
+  fullReconstructTerm1 curThreadBitCastTerm v
+fullReconstructTerm (BitCastOrTerm _ _ d v) =
+  fullReconstructTerm2 curThreadBitCastOrTerm d v
+fullReconstructTerm (BVConcatTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadBvconcatTerm arg1 arg2
+fullReconstructTerm (BVSelectTerm _ _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) =
+  fullReconstructTerm1 (curThreadBvselectTerm (Proxy @ix) (Proxy @w)) arg
+fullReconstructTerm (BVExtendTerm _ _ signed (_ :: TypeRep n) arg) =
+  fullReconstructTerm1 (curThreadBvextendTerm signed (Proxy @n)) arg
+fullReconstructTerm (ApplyTerm _ _ f arg) =
+  fullReconstructTerm2 curThreadApplyTerm f arg
+fullReconstructTerm (DivIntegralTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadDivIntegralTerm arg1 arg2
+fullReconstructTerm (ModIntegralTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadModIntegralTerm arg1 arg2
+fullReconstructTerm (QuotIntegralTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadQuotIntegralTerm arg1 arg2
+fullReconstructTerm (RemIntegralTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadRemIntegralTerm arg1 arg2
+fullReconstructTerm (FPTraitTerm _ _ trait arg) =
+  fullReconstructTerm1 (curThreadFpTraitTerm trait) arg
+fullReconstructTerm (FdivTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadFdivTerm arg1 arg2
+fullReconstructTerm (RecipTerm _ _ arg) =
+  fullReconstructTerm1 curThreadRecipTerm arg
+fullReconstructTerm (FloatingUnaryTerm _ _ op arg) =
+  fullReconstructTerm1 (curThreadFloatingUnaryTerm op) arg
+fullReconstructTerm (PowerTerm _ _ arg1 arg2) =
+  fullReconstructTerm2 curThreadPowerTerm arg1 arg2
+fullReconstructTerm (FPUnaryTerm _ _ op arg) =
+  fullReconstructTerm1 (curThreadFpUnaryTerm op) arg
+fullReconstructTerm (FPBinaryTerm _ _ op arg1 arg2) =
+  fullReconstructTerm2 (curThreadFpBinaryTerm op) arg1 arg2
+fullReconstructTerm (FPRoundingUnaryTerm _ _ op mode arg) =
+  fullReconstructTerm2 (curThreadFpRoundingUnaryTerm op) mode arg
+fullReconstructTerm (FPRoundingBinaryTerm _ _ op mode arg1 arg2) =
+  fullReconstructTerm3 (curThreadFpRoundingBinaryTerm op) mode arg1 arg2
+fullReconstructTerm (FPFMATerm _ _ mode arg1 arg2 arg3) = do
+  rmode <- fullReconstructTerm mode
+  rarg1 <- fullReconstructTerm arg1
+  rarg2 <- fullReconstructTerm arg2
+  rarg3 <- fullReconstructTerm arg3
+  curThreadFpFMATerm rmode rarg1 rarg2 rarg3
+fullReconstructTerm (FromIntegralTerm _ _ arg) =
+  fullReconstructTerm1 curThreadFromIntegralTerm arg
+fullReconstructTerm (FromFPOrTerm _ _ d r arg) =
+  fullReconstructTerm3 curThreadFromFPOrTerm d r arg
+fullReconstructTerm (ToFPTerm _ _ r arg _ _) =
+  fullReconstructTerm2 curThreadToFPTerm r arg
+
+toCurThread :: forall t. (SupportedPrim t) => Term t -> IO (Term t)
+toCurThread t = do
+  tid <- myWeakThreadId
+  go tid t
   where
-    slot = getCache cache ! r
-    !dt = describe bt
-    !hdt = hash dt
-    !wid = cacheWidth dt
-    r = hdt `mod` wid
-    go (CacheState i m) = case M.lookup dt m of
-      Nothing -> let t = identify (wid * i + r) bt in (CacheState (i + 1) (M.insert dt t m), t)
-      Just t -> (CacheState i m, t)
+    go :: (SupportedPrim t) => WeakThreadId -> Term t -> IO (Term t)
+    go tid t | threadId t == tid = return t
+    go _ t = fullReconstructTerm t
+
+-- | Construct and internalizing a 'UnaryTerm', assuming the argument comes from
+-- the current thread.
+curThreadConstructUnary ::
+  forall tag arg t.
+  (SupportedPrim t, UnaryOp tag arg t) =>
+  tag ->
+  Term arg ->
+  IO (Term t)
+curThreadConstructUnary tag tm = let x = intern $ UUnaryTerm tag tm in x
+{-# INLINE curThreadConstructUnary #-}
+
+-- | Construct and internalizing a 'BinaryTerm', assuming the arguments come
+-- from the current thread.
+curThreadConstructBinary ::
+  forall tag arg1 arg2 t.
+  ( SupportedPrim t,
+    BinaryOp tag arg1 arg2 t
+  ) =>
+  tag ->
+  Term arg1 ->
+  Term arg2 ->
+  IO (Term t)
+curThreadConstructBinary tag tm1 tm2 = intern $ UBinaryTerm tag tm1 tm2
+{-# INLINE curThreadConstructBinary #-}
+
+-- | Construct and internalizing a 'TernaryTerm'.
+curThreadConstructTernary ::
+  forall tag arg1 arg2 arg3 t.
+  ( SupportedPrim t,
+    TernaryOp tag arg1 arg2 arg3 t
+  ) =>
+  tag ->
+  Term arg1 ->
+  Term arg2 ->
+  Term arg3 ->
+  IO (Term t)
+curThreadConstructTernary tag tm1 tm2 tm3 =
+  intern $ UTernaryTerm tag tm1 tm2 tm3
+{-# INLINE curThreadConstructTernary #-}
+
+-- | Construct and internalizing a 'ConTerm'.
+curThreadConTerm :: (SupportedPrim t) => t -> IO (Term t)
+curThreadConTerm t = intern $ UConTerm t
+{-# INLINE curThreadConTerm #-}
+
+-- | Construct and internalizing a 'SymTerm'.
+curThreadSymTerm :: (SupportedPrim t) => Symbol -> IO (Term t)
+curThreadSymTerm t = intern $ USymTerm $ TypedSymbol t
+{-# INLINE curThreadSymTerm #-}
+
+-- | Construct and internalizing a 'ForallTerm'.
+curThreadForallTerm ::
+  (SupportedNonFuncPrim t) =>
+  TypedSymbol 'ConstantKind t ->
+  Term Bool ->
+  IO (Term Bool)
+curThreadForallTerm sym arg = intern $ UForallTerm sym arg
+{-# INLINE curThreadForallTerm #-}
+
+-- | Construct and internalizing a 'ExistsTerm'.
+curThreadExistsTerm ::
+  (SupportedNonFuncPrim t) =>
+  TypedSymbol 'ConstantKind t ->
+  Term Bool ->
+  IO (Term Bool)
+curThreadExistsTerm sym arg = intern $ UExistsTerm sym arg
+{-# INLINE curThreadExistsTerm #-}
+
+-- | Construct and internalizing a 'SymTerm' with an identifier, using simple
+-- symbols.
+curThreadSsymTerm :: (SupportedPrim t) => Identifier -> IO (Term t)
+curThreadSsymTerm = curThreadSymTerm . SimpleSymbol
+{-# INLINE curThreadSsymTerm #-}
+
+-- | Construct and internalizing a 'SymTerm' with an identifier and an index,
+-- using indexed symbols.
+curThreadIsymTerm :: (SupportedPrim t) => Identifier -> Int -> IO (Term t)
+curThreadIsymTerm str idx = curThreadSymTerm $ IndexedSymbol str idx
+{-# INLINE curThreadIsymTerm #-}
+
+-- | Construct and internalizing a 'NotTerm'.
+curThreadNotTerm :: Term Bool -> IO (Term Bool)
+curThreadNotTerm = intern . UNotTerm
+{-# INLINE curThreadNotTerm #-}
+
+-- | Construct and internalizing a 'OrTerm'.
+curThreadOrTerm :: Term Bool -> Term Bool -> IO (Term Bool)
+curThreadOrTerm l r = intern $ UOrTerm l r
+{-# INLINE curThreadOrTerm #-}
+
+-- | Construct and internalizing a 'AndTerm'.
+curThreadAndTerm :: Term Bool -> Term Bool -> IO (Term Bool)
+curThreadAndTerm l r = intern $ UAndTerm l r
+{-# INLINE curThreadAndTerm #-}
+
+-- | Construct and internalizing a 'EqTerm'.
+curThreadEqTerm ::
+  (SupportedNonFuncPrim a) => Term a -> Term a -> IO (Term Bool)
+curThreadEqTerm l r = intern $ UEqTerm l r
+{-# INLINE curThreadEqTerm #-}
+
+-- | Construct and internalizing a 'DistinctTerm'.
+curThreadDistinctTerm ::
+  (SupportedNonFuncPrim a) => NonEmpty (Term a) -> IO (Term Bool)
+curThreadDistinctTerm args = intern $ UDistinctTerm args
+{-# INLINE curThreadDistinctTerm #-}
+
+-- | Construct and internalizing a 'ITETerm'.
+curThreadIteTerm ::
+  (SupportedPrim a) => Term Bool -> Term a -> Term a -> IO (Term a)
+curThreadIteTerm c l r = intern $ UITETerm c l r
+{-# INLINE curThreadIteTerm #-}
+
+-- | Construct and internalizing a 'AddNumTerm'.
+curThreadAddNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> IO (Term a)
+curThreadAddNumTerm l r = intern $ UAddNumTerm l r
+{-# INLINE curThreadAddNumTerm #-}
+
+-- | Construct and internalizing a 'NegNumTerm'.
+curThreadNegNumTerm :: (PEvalNumTerm a) => Term a -> IO (Term a)
+curThreadNegNumTerm = intern . UNegNumTerm
+{-# INLINE curThreadNegNumTerm #-}
+
+-- | Construct and internalizing a 'MulNumTerm'.
+curThreadMulNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> IO (Term a)
+curThreadMulNumTerm l r = intern $ UMulNumTerm l r
+{-# INLINE curThreadMulNumTerm #-}
+
+-- | Construct and internalizing a 'AbsNumTerm'.
+curThreadAbsNumTerm :: (PEvalNumTerm a) => Term a -> IO (Term a)
+curThreadAbsNumTerm = intern . UAbsNumTerm
+{-# INLINE curThreadAbsNumTerm #-}
+
+-- | Construct and internalizing a 'SignumNumTerm'.
+curThreadSignumNumTerm :: (PEvalNumTerm a) => Term a -> IO (Term a)
+curThreadSignumNumTerm = intern . USignumNumTerm
+{-# INLINE curThreadSignumNumTerm #-}
+
+-- | Construct and internalizing a 'LtOrdTerm'.
+curThreadLtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> IO (Term Bool)
+curThreadLtOrdTerm l r = intern $ ULtOrdTerm l r
+{-# INLINE curThreadLtOrdTerm #-}
+
+-- | Construct and internalizing a 'LeOrdTerm'.
+curThreadLeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> IO (Term Bool)
+curThreadLeOrdTerm l r = intern $ ULeOrdTerm l r
+{-# INLINE curThreadLeOrdTerm #-}
+
+-- | Construct and internalizing a 'AndBitsTerm'.
+curThreadAndBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> IO (Term a)
+curThreadAndBitsTerm l r = intern $ UAndBitsTerm l r
+{-# INLINE curThreadAndBitsTerm #-}
+
+-- | Construct and internalizing a 'OrBitsTerm'.
+curThreadOrBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> IO (Term a)
+curThreadOrBitsTerm l r = intern $ UOrBitsTerm l r
+{-# INLINE curThreadOrBitsTerm #-}
+
+-- | Construct and internalizing a 'XorBitsTerm'.
+curThreadXorBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> IO (Term a)
+curThreadXorBitsTerm l r = intern $ UXorBitsTerm l r
+{-# INLINE curThreadXorBitsTerm #-}
+
+-- | Construct and internalizing a 'ComplementBitsTerm'.
+curThreadComplementBitsTerm :: (PEvalBitwiseTerm a) => Term a -> IO (Term a)
+curThreadComplementBitsTerm = intern . UComplementBitsTerm
+{-# INLINE curThreadComplementBitsTerm #-}
+
+-- | Construct and internalizing a 'ShiftLeftTerm'.
+curThreadShiftLeftTerm :: (PEvalShiftTerm a) => Term a -> Term a -> IO (Term a)
+curThreadShiftLeftTerm t n = intern $ UShiftLeftTerm t n
+{-# INLINE curThreadShiftLeftTerm #-}
+
+-- | Construct and internalizing a 'ShiftRightTerm'.
+curThreadShiftRightTerm :: (PEvalShiftTerm a) => Term a -> Term a -> IO (Term a)
+curThreadShiftRightTerm t n = intern $ UShiftRightTerm t n
+{-# INLINE curThreadShiftRightTerm #-}
+
+-- | Construct and internalizing a 'RotateLeftTerm'.
+curThreadRotateLeftTerm ::
+  (PEvalRotateTerm a) => Term a -> Term a -> IO (Term a)
+curThreadRotateLeftTerm t n = intern $ URotateLeftTerm t n
+{-# INLINE curThreadRotateLeftTerm #-}
+
+-- | Construct and internalizing a 'RotateRightTerm'.
+curThreadRotateRightTerm ::
+  (PEvalRotateTerm a) => Term a -> Term a -> IO (Term a)
+curThreadRotateRightTerm t n = intern $ URotateRightTerm t n
+{-# INLINE curThreadRotateRightTerm #-}
+
+-- | Construct and internalizing a 'BitCastTerm'.
+curThreadBitCastTerm ::
+  (PEvalBitCastTerm a b) =>
+  Term a ->
+  IO (Term b)
+curThreadBitCastTerm = intern . UBitCastTerm
+{-# INLINE curThreadBitCastTerm #-}
+
+-- | Construct and internalizing a 'BitCastOrTerm'.
+curThreadBitCastOrTerm ::
+  (PEvalBitCastOrTerm a b) =>
+  Term b ->
+  Term a ->
+  IO (Term b)
+curThreadBitCastOrTerm d = intern . UBitCastOrTerm d
+{-# INLINE curThreadBitCastOrTerm #-}
+
+-- | Construct and internalizing a 'BVConcatTerm'.
+curThreadBvconcatTerm ::
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    KnownNat (l + r),
+    1 <= l,
+    1 <= r,
+    1 <= l + r
+  ) =>
+  Term (bv l) ->
+  Term (bv r) ->
+  IO (Term (bv (l + r)))
+curThreadBvconcatTerm l r = intern $ UBVConcatTerm l r
+{-# INLINE curThreadBvconcatTerm #-}
+
+-- | Construct and internalizing a 'BVSelectTerm'.
+curThreadBvselectTerm ::
+  forall bv n ix w p q.
+  ( PEvalBVTerm bv,
+    KnownNat n,
+    KnownNat ix,
+    KnownNat w,
+    1 <= n,
+    1 <= w,
+    ix + w <= n
+  ) =>
+  p ix ->
+  q w ->
+  Term (bv n) ->
+  IO (Term (bv w))
+curThreadBvselectTerm _ _ v =
+  intern $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
+{-# INLINE curThreadBvselectTerm #-}
+
+-- | Construct and internalizing a 'BVExtendTerm'.
+curThreadBvextendTerm ::
+  forall bv l r proxy.
+  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  Bool ->
+  proxy r ->
+  Term (bv l) ->
+  IO (Term (bv r))
+curThreadBvextendTerm signed _ v = intern $ UBVExtendTerm signed (typeRep @r) v
+{-# INLINE curThreadBvextendTerm #-}
+
+-- | Construct and internalizing a 'BVExtendTerm' with sign extension.
+curThreadBvsignExtendTerm ::
+  forall bv l r proxy.
+  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  proxy r ->
+  Term (bv l) ->
+  IO (Term (bv r))
+curThreadBvsignExtendTerm _ v = intern $ UBVExtendTerm True (typeRep @r) v
+{-# INLINE curThreadBvsignExtendTerm #-}
+
+-- | Construct and internalizing a 'BVExtendTerm' with zero extension.
+curThreadBvzeroExtendTerm ::
+  forall bv l r proxy.
+  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  proxy r ->
+  Term (bv l) ->
+  IO (Term (bv r))
+curThreadBvzeroExtendTerm _ v = intern $ UBVExtendTerm False (typeRep @r) v
+{-# INLINE curThreadBvzeroExtendTerm #-}
+
+-- | Construct and internalizing a 'ApplyTerm'.
+curThreadApplyTerm ::
+  (SupportedPrim a, SupportedPrim b, SupportedPrim f, PEvalApplyTerm f a b) =>
+  Term f ->
+  Term a ->
+  IO (Term b)
+curThreadApplyTerm f a = intern $ UApplyTerm f a
+{-# INLINE curThreadApplyTerm #-}
+
+-- | Construct and internalizing a 'DivIntegralTerm'.
+curThreadDivIntegralTerm ::
+  (PEvalDivModIntegralTerm a) => Term a -> Term a -> IO (Term a)
+curThreadDivIntegralTerm l r = intern $ UDivIntegralTerm l r
+{-# INLINE curThreadDivIntegralTerm #-}
+
+-- | Construct and internalizing a 'ModIntegralTerm'.
+curThreadModIntegralTerm ::
+  (PEvalDivModIntegralTerm a) => Term a -> Term a -> IO (Term a)
+curThreadModIntegralTerm l r = intern $ UModIntegralTerm l r
+{-# INLINE curThreadModIntegralTerm #-}
+
+-- | Construct and internalizing a 'QuotIntegralTerm'.
+curThreadQuotIntegralTerm ::
+  (PEvalDivModIntegralTerm a) => Term a -> Term a -> IO (Term a)
+curThreadQuotIntegralTerm l r = intern $ UQuotIntegralTerm l r
+{-# INLINE curThreadQuotIntegralTerm #-}
+
+-- | Construct and internalizing a 'RemIntegralTerm'.
+curThreadRemIntegralTerm ::
+  (PEvalDivModIntegralTerm a) => Term a -> Term a -> IO (Term a)
+curThreadRemIntegralTerm l r = intern $ URemIntegralTerm l r
+{-# INLINE curThreadRemIntegralTerm #-}
+
+-- | Construct and internalizing a 'FPTraitTerm'.
+curThreadFpTraitTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPTrait ->
+  Term (FP eb sb) ->
+  IO (Term Bool)
+curThreadFpTraitTerm trait v = intern $ UFPTraitTerm trait v
+{-# INLINE curThreadFpTraitTerm #-}
+
+-- | Construct and internalizing a 'FdivTerm'.
+curThreadFdivTerm :: (PEvalFractionalTerm a) => Term a -> Term a -> IO (Term a)
+curThreadFdivTerm l r = intern $ UFdivTerm l r
+{-# INLINE curThreadFdivTerm #-}
+
+-- | Construct and internalizing a 'RecipTerm'.
+curThreadRecipTerm :: (PEvalFractionalTerm a) => Term a -> IO (Term a)
+curThreadRecipTerm = intern . URecipTerm
+{-# INLINE curThreadRecipTerm #-}
+
+-- | Construct and internalizing a 'FloatingUnaryTerm'.
+curThreadFloatingUnaryTerm ::
+  (PEvalFloatingTerm a) => FloatingUnaryOp -> Term a -> IO (Term a)
+curThreadFloatingUnaryTerm op = intern . UFloatingUnaryTerm op
+{-# INLINE curThreadFloatingUnaryTerm #-}
+
+-- | Construct and internalizing a 'PowerTerm'.
+curThreadPowerTerm :: (PEvalFloatingTerm a) => Term a -> Term a -> IO (Term a)
+curThreadPowerTerm l r = intern $ UPowerTerm l r
+{-# INLINE curThreadPowerTerm #-}
+
+-- | Construct and internalizing a 'FPUnaryTerm'.
+curThreadFpUnaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPUnaryOp ->
+  Term (FP eb sb) ->
+  IO (Term (FP eb sb))
+curThreadFpUnaryTerm op v = intern $ UFPUnaryTerm op v
+{-# INLINE curThreadFpUnaryTerm #-}
+
+-- | Construct and internalizing a 'FPBinaryTerm'.
+curThreadFpBinaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+  FPBinaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  IO (Term (FP eb sb))
+curThreadFpBinaryTerm op l r = intern $ UFPBinaryTerm op l r
+{-# INLINE curThreadFpBinaryTerm #-}
+
+-- | Construct and internalizing a 'FPRoundingUnaryTerm'.
+curThreadFpRoundingUnaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  FPRoundingUnaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  IO (Term (FP eb sb))
+curThreadFpRoundingUnaryTerm op mode v = intern $ UFPRoundingUnaryTerm op mode v
+{-# INLINE curThreadFpRoundingUnaryTerm #-}
+
+-- | Construct and internalizing a 'FPRoundingBinaryTerm'.
+curThreadFpRoundingBinaryTerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  FPRoundingBinaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  IO (Term (FP eb sb))
+curThreadFpRoundingBinaryTerm op mode l r =
+  intern $ UFPRoundingBinaryTerm op mode l r
+{-# INLINE curThreadFpRoundingBinaryTerm #-}
+
+-- | Construct and internalizing a 'FPFMATerm'.
+curThreadFpFMATerm ::
+  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  IO (Term (FP eb sb))
+curThreadFpFMATerm mode l r s = intern $ UFPFMATerm mode l r s
+{-# INLINE curThreadFpFMATerm #-}
+
+-- | Construct and internalizing a 'FromIntegralTerm'.
+curThreadFromIntegralTerm ::
+  (PEvalFromIntegralTerm a b) => Term a -> IO (Term b)
+curThreadFromIntegralTerm = intern . UFromIntegralTerm
+{-# INLINE curThreadFromIntegralTerm #-}
+
+-- | Construct and internalizing a 'FromFPOrTerm'.
+curThreadFromFPOrTerm ::
+  ( PEvalIEEEFPConvertibleTerm a,
+    ValidFP eb sb,
+    SupportedPrim FPRoundingMode,
+    SupportedPrim (FP eb sb)
+  ) =>
+  Term a ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  IO (Term a)
+curThreadFromFPOrTerm d r f = intern $ UFromFPOrTerm d r f
+{-# INLINE curThreadFromFPOrTerm #-}
+
+-- | Construct and internalizing a 'ToFPTerm'.
+curThreadToFPTerm ::
+  forall a eb sb.
+  ( PEvalIEEEFPConvertibleTerm a,
+    ValidFP eb sb,
+    SupportedPrim FPRoundingMode,
+    SupportedPrim (FP eb sb)
+  ) =>
+  Term FPRoundingMode ->
+  Term a ->
+  IO (Term (FP eb sb))
+curThreadToFPTerm r f = intern $ UToFPTerm r f (Proxy @eb) (Proxy @sb)
+{-# INLINE curThreadToFPTerm #-}
+
+inCurThread1 ::
+  forall a b.
+  (SupportedPrim a) =>
+  (Term a -> IO (Term b)) ->
+  Term a ->
+  IO (Term b)
+inCurThread1 f = toCurThread >=> f
+{-# INLINE inCurThread1 #-}
+
+inCurThread2 ::
+  forall a b c.
+  (SupportedPrim a, SupportedPrim b) =>
+  (Term a -> Term b -> IO (Term c)) ->
+  Term a ->
+  Term b ->
+  IO (Term c)
+inCurThread2 f a b = do
+  ra <- toCurThread a
+  rb <- toCurThread b
+  f ra rb
+{-# INLINE inCurThread2 #-}
+
+inCurThread3 ::
+  forall a b c d.
+  (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+  (Term a -> Term b -> Term c -> IO (Term d)) ->
+  Term a ->
+  Term b ->
+  Term c ->
+  IO (Term d)
+inCurThread3 f a b c = do
+  ra <- toCurThread a
+  rb <- toCurThread b
+  rc <- toCurThread c
+  f ra rb rc
+{-# INLINE inCurThread3 #-}
+
+unsafeInCurThread1 ::
+  forall a b.
+  (SupportedPrim a) =>
+  (Term a -> IO (Term b)) ->
+  Term a ->
+  Term b
+unsafeInCurThread1 f = unsafePerformIO . inCurThread1 f
+{-# INLINE unsafeInCurThread1 #-}
+
+unsafeInCurThread2 ::
+  forall a b c.
+  (SupportedPrim a, SupportedPrim b) =>
+  (Term a -> Term b -> IO (Term c)) ->
+  Term a ->
+  Term b ->
+  Term c
+unsafeInCurThread2 f a b = unsafePerformIO $ inCurThread2 f a b
+{-# INLINE unsafeInCurThread2 #-}
+
+unsafeInCurThread3 ::
+  forall a b c d.
+  (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
+  (Term a -> Term b -> Term c -> IO (Term d)) ->
+  Term a ->
+  Term b ->
+  Term c ->
+  Term d
+unsafeInCurThread3 f a b c = unsafePerformIO $ inCurThread3 f a b c
+{-# INLINE unsafeInCurThread3 #-}
 
 -- | Construct and internalizing a 'UnaryTerm'.
 constructUnary ::
   forall tag arg t.
-  (SupportedPrim t, UnaryOp tag arg t, Typeable tag, Typeable t, Show tag) =>
+  (SupportedPrim t, UnaryOp tag arg t) =>
   tag ->
   Term arg ->
   Term t
-constructUnary tag tm = let x = internTerm $ UUnaryTerm tag tm in x
-{-# INLINE constructUnary #-}
+constructUnary tag = unsafeInCurThread1 (curThreadConstructUnary tag)
+{-# NOINLINE constructUnary #-}
 
 -- | Construct and internalizing a 'BinaryTerm'.
 constructBinary ::
   forall tag arg1 arg2 t.
-  (SupportedPrim t, BinaryOp tag arg1 arg2 t, Typeable tag, Typeable t, Show tag) =>
+  (SupportedPrim t, BinaryOp tag arg1 arg2 t) =>
   tag ->
   Term arg1 ->
   Term arg2 ->
   Term t
-constructBinary tag tm1 tm2 = internTerm $ UBinaryTerm tag tm1 tm2
-{-# INLINE constructBinary #-}
+constructBinary tag = unsafeInCurThread2 (curThreadConstructBinary tag)
+{-# NOINLINE constructBinary #-}
 
 -- | Construct and internalizing a 'TernaryTerm'.
 constructTernary ::
   forall tag arg1 arg2 arg3 t.
-  (SupportedPrim t, TernaryOp tag arg1 arg2 arg3 t, Typeable tag, Typeable t, Show tag) =>
+  (SupportedPrim t, TernaryOp tag arg1 arg2 arg3 t) =>
   tag ->
   Term arg1 ->
   Term arg2 ->
   Term arg3 ->
   Term t
-constructTernary tag tm1 tm2 tm3 = internTerm $ UTernaryTerm tag tm1 tm2 tm3
-{-# INLINE constructTernary #-}
+constructTernary tag = unsafeInCurThread3 (curThreadConstructTernary tag)
+{-# NOINLINE constructTernary #-}
 
 -- | Construct and internalizing a 'ConTerm'.
-conTerm :: (SupportedPrim t, Typeable t, Hashable t, Eq t, Show t) => t -> Term t
-conTerm t = internTerm $ UConTerm t
-{-# INLINE conTerm #-}
+conTerm :: (SupportedPrim t) => t -> Term t
+conTerm = unsafePerformIO . curThreadConTerm
+{-# NOINLINE conTerm #-}
 
 -- | Construct and internalizing a 'SymTerm'.
-symTerm :: forall t. (SupportedPrim t, Typeable t) => Symbol -> Term t
-symTerm t = internTerm $ USymTerm $ TypedSymbol t
-{-# INLINE symTerm #-}
+symTerm :: forall t. (SupportedPrim t) => Symbol -> Term t
+symTerm = unsafePerformIO . curThreadSymTerm
+{-# NOINLINE symTerm #-}
 
 -- | Construct and internalizing a 'ForallTerm'.
-forallTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
-forallTerm sym arg = internTerm $ UForallTerm sym arg
-{-# INLINE forallTerm #-}
+forallTerm ::
+  (SupportedNonFuncPrim t) =>
+  TypedSymbol 'ConstantKind t ->
+  Term Bool ->
+  Term Bool
+forallTerm sym = unsafeInCurThread1 (curThreadForallTerm sym)
+{-# NOINLINE forallTerm #-}
 
 -- | Construct and internalizing a 'ExistsTerm'.
-existsTerm :: (SupportedNonFuncPrim t, Typeable t) => TypedSymbol 'ConstantKind t -> Term Bool -> Term Bool
-existsTerm sym arg = internTerm $ UExistsTerm sym arg
-{-# INLINE existsTerm #-}
+existsTerm ::
+  (SupportedNonFuncPrim t) =>
+  TypedSymbol 'ConstantKind t ->
+  Term Bool ->
+  Term Bool
+existsTerm sym = unsafeInCurThread1 (curThreadExistsTerm sym)
+{-# NOINLINE existsTerm #-}
 
 -- | Construct and internalizing a 'SymTerm' with an identifier, using simple
 -- symbols.
-ssymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Term t
-ssymTerm = symTerm . SimpleSymbol
-{-# INLINE ssymTerm #-}
+ssymTerm :: (SupportedPrim t) => Identifier -> Term t
+ssymTerm = unsafePerformIO . curThreadSsymTerm
+{-# NOINLINE ssymTerm #-}
 
 -- | Construct and internalizing a 'SymTerm' with an identifier and an index,
 -- using indexed symbols.
-isymTerm :: (SupportedPrim t, Typeable t) => Identifier -> Int -> Term t
-isymTerm str idx = symTerm $ IndexedSymbol str idx
-{-# INLINE isymTerm #-}
+isymTerm :: (SupportedPrim t) => Identifier -> Int -> Term t
+isymTerm ident index = unsafePerformIO $ curThreadIsymTerm ident index
+{-# NOINLINE isymTerm #-}
 
 -- | Construct and internalizing a 'NotTerm'.
 notTerm :: Term Bool -> Term Bool
-notTerm = internTerm . UNotTerm
-{-# INLINE notTerm #-}
+notTerm = unsafeInCurThread1 curThreadNotTerm
+{-# NOINLINE notTerm #-}
 
 -- | Construct and internalizing a 'OrTerm'.
 orTerm :: Term Bool -> Term Bool -> Term Bool
-orTerm l r = internTerm $ UOrTerm l r
-{-# INLINE orTerm #-}
+orTerm = unsafeInCurThread2 curThreadOrTerm
+{-# NOINLINE orTerm #-}
 
 -- | Construct and internalizing a 'AndTerm'.
 andTerm :: Term Bool -> Term Bool -> Term Bool
-andTerm l r = internTerm $ UAndTerm l r
-{-# INLINE andTerm #-}
+andTerm = unsafeInCurThread2 curThreadAndTerm
+{-# NOINLINE andTerm #-}
 
 -- | Construct and internalizing a 'EqTerm'.
 eqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
-eqTerm l r = internTerm $ UEqTerm l r
-{-# INLINE eqTerm #-}
+eqTerm = unsafeInCurThread2 curThreadEqTerm
+{-# NOINLINE eqTerm #-}
 
 -- | Construct and internalizing a 'DistinctTerm'.
 distinctTerm :: (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
-distinctTerm args = internTerm $ UDistinctTerm args
-{-# INLINE distinctTerm #-}
+distinctTerm args =
+  unsafePerformIO $ traverse toCurThread args >>= curThreadDistinctTerm
+{-# NOINLINE distinctTerm #-}
 
 -- | Construct and internalizing a 'ITETerm'.
 iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
-iteTerm c l r = internTerm $ UITETerm c l r
-{-# INLINE iteTerm #-}
+iteTerm = unsafeInCurThread3 curThreadIteTerm
+{-# NOINLINE iteTerm #-}
 
 -- | Construct and internalizing a 'AddNumTerm'.
 addNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
-addNumTerm l r = internTerm $ UAddNumTerm l r
-{-# INLINE addNumTerm #-}
+addNumTerm = unsafeInCurThread2 curThreadAddNumTerm
+{-# NOINLINE addNumTerm #-}
 
 -- | Construct and internalizing a 'NegNumTerm'.
 negNumTerm :: (PEvalNumTerm a) => Term a -> Term a
-negNumTerm = internTerm . UNegNumTerm
-{-# INLINE negNumTerm #-}
+negNumTerm = unsafeInCurThread1 curThreadNegNumTerm
+{-# NOINLINE negNumTerm #-}
 
 -- | Construct and internalizing a 'MulNumTerm'.
 mulNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
-mulNumTerm l r = internTerm $ UMulNumTerm l r
-{-# INLINE mulNumTerm #-}
+mulNumTerm = unsafeInCurThread2 curThreadMulNumTerm
+{-# NOINLINE mulNumTerm #-}
 
 -- | Construct and internalizing a 'AbsNumTerm'.
 absNumTerm :: (PEvalNumTerm a) => Term a -> Term a
-absNumTerm = internTerm . UAbsNumTerm
-{-# INLINE absNumTerm #-}
+absNumTerm = unsafeInCurThread1 curThreadAbsNumTerm
+{-# NOINLINE absNumTerm #-}
 
 -- | Construct and internalizing a 'SignumNumTerm'.
 signumNumTerm :: (PEvalNumTerm a) => Term a -> Term a
-signumNumTerm = internTerm . USignumNumTerm
-{-# INLINE signumNumTerm #-}
+signumNumTerm = unsafeInCurThread1 curThreadSignumNumTerm
+{-# NOINLINE signumNumTerm #-}
 
 -- | Construct and internalizing a 'LtOrdTerm'.
 ltOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
-ltOrdTerm l r = internTerm $ ULtOrdTerm l r
-{-# INLINE ltOrdTerm #-}
+ltOrdTerm = unsafeInCurThread2 curThreadLtOrdTerm
+{-# NOINLINE ltOrdTerm #-}
 
 -- | Construct and internalizing a 'LeOrdTerm'.
 leOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
-leOrdTerm l r = internTerm $ ULeOrdTerm l r
-{-# INLINE leOrdTerm #-}
+leOrdTerm = unsafeInCurThread2 curThreadLeOrdTerm
+{-# NOINLINE leOrdTerm #-}
 
 -- | Construct and internalizing a 'AndBitsTerm'.
 andBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
-andBitsTerm l r = internTerm $ UAndBitsTerm l r
-{-# INLINE andBitsTerm #-}
+andBitsTerm = unsafeInCurThread2 curThreadAndBitsTerm
+{-# NOINLINE andBitsTerm #-}
 
 -- | Construct and internalizing a 'OrBitsTerm'.
 orBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
-orBitsTerm l r = internTerm $ UOrBitsTerm l r
-{-# INLINE orBitsTerm #-}
+orBitsTerm = unsafeInCurThread2 curThreadOrBitsTerm
+{-# NOINLINE orBitsTerm #-}
 
 -- | Construct and internalizing a 'XorBitsTerm'.
 xorBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> Term a
-xorBitsTerm l r = internTerm $ UXorBitsTerm l r
-{-# INLINE xorBitsTerm #-}
+xorBitsTerm = unsafeInCurThread2 curThreadXorBitsTerm
+{-# NOINLINE xorBitsTerm #-}
 
 -- | Construct and internalizing a 'ComplementBitsTerm'.
 complementBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a
-complementBitsTerm = internTerm . UComplementBitsTerm
-{-# INLINE complementBitsTerm #-}
+complementBitsTerm = unsafeInCurThread1 curThreadComplementBitsTerm
+{-# NOINLINE complementBitsTerm #-}
 
 -- | Construct and internalizing a 'ShiftLeftTerm'.
 shiftLeftTerm :: (PEvalShiftTerm a) => Term a -> Term a -> Term a
-shiftLeftTerm t n = internTerm $ UShiftLeftTerm t n
-{-# INLINE shiftLeftTerm #-}
+shiftLeftTerm = unsafeInCurThread2 curThreadShiftLeftTerm
+{-# NOINLINE shiftLeftTerm #-}
 
 -- | Construct and internalizing a 'ShiftRightTerm'.
 shiftRightTerm :: (PEvalShiftTerm a) => Term a -> Term a -> Term a
-shiftRightTerm t n = internTerm $ UShiftRightTerm t n
-{-# INLINE shiftRightTerm #-}
+shiftRightTerm = unsafeInCurThread2 curThreadShiftRightTerm
+{-# NOINLINE shiftRightTerm #-}
 
 -- | Construct and internalizing a 'RotateLeftTerm'.
 rotateLeftTerm :: (PEvalRotateTerm a) => Term a -> Term a -> Term a
-rotateLeftTerm t n = internTerm $ URotateLeftTerm t n
-{-# INLINE rotateLeftTerm #-}
+rotateLeftTerm = unsafeInCurThread2 curThreadRotateLeftTerm
+{-# NOINLINE rotateLeftTerm #-}
 
 -- | Construct and internalizing a 'RotateRightTerm'.
 rotateRightTerm :: (PEvalRotateTerm a) => Term a -> Term a -> Term a
-rotateRightTerm t n = internTerm $ URotateRightTerm t n
-{-# INLINE rotateRightTerm #-}
+rotateRightTerm = unsafeInCurThread2 curThreadRotateRightTerm
+{-# NOINLINE rotateRightTerm #-}
 
 -- | Construct and internalizing a 'BitCastTerm'.
 bitCastTerm ::
   (PEvalBitCastTerm a b) =>
   Term a ->
   Term b
-bitCastTerm = internTerm . UBitCastTerm
+bitCastTerm = unsafeInCurThread1 curThreadBitCastTerm
+{-# NOINLINE bitCastTerm #-}
 
 -- | Construct and internalizing a 'BitCastOrTerm'.
 bitCastOrTerm ::
@@ -2501,7 +3461,8 @@ bitCastOrTerm ::
   Term b ->
   Term a ->
   Term b
-bitCastOrTerm d = internTerm . UBitCastOrTerm d
+bitCastOrTerm = unsafeInCurThread2 curThreadBitCastOrTerm
+{-# NOINLINE bitCastOrTerm #-}
 
 -- | Construct and internalizing a 'BVConcatTerm'.
 bvconcatTerm ::
@@ -2516,8 +3477,8 @@ bvconcatTerm ::
   Term (bv l) ->
   Term (bv r) ->
   Term (bv (l + r))
-bvconcatTerm l r = internTerm $ UBVConcatTerm l r
-{-# INLINE bvconcatTerm #-}
+bvconcatTerm = unsafeInCurThread2 curThreadBvconcatTerm
+{-# NOINLINE bvconcatTerm #-}
 
 -- | Construct and internalizing a 'BVSelectTerm'.
 bvselectTerm ::
@@ -2534,8 +3495,8 @@ bvselectTerm ::
   q w ->
   Term (bv n) ->
   Term (bv w)
-bvselectTerm _ _ v = internTerm $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
-{-# INLINE bvselectTerm #-}
+bvselectTerm ix w = unsafeInCurThread1 (curThreadBvselectTerm ix w)
+{-# NOINLINE bvselectTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm'.
 bvextendTerm ::
@@ -2545,8 +3506,8 @@ bvextendTerm ::
   proxy r ->
   Term (bv l) ->
   Term (bv r)
-bvextendTerm signed _ v = internTerm $ UBVExtendTerm signed (typeRep @r) v
-{-# INLINE bvextendTerm #-}
+bvextendTerm signed r = unsafeInCurThread1 (curThreadBvextendTerm signed r)
+{-# NOINLINE bvextendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with sign extension.
 bvsignExtendTerm ::
@@ -2555,8 +3516,8 @@ bvsignExtendTerm ::
   proxy r ->
   Term (bv l) ->
   Term (bv r)
-bvsignExtendTerm _ v = internTerm $ UBVExtendTerm True (typeRep @r) v
-{-# INLINE bvsignExtendTerm #-}
+bvsignExtendTerm r = unsafeInCurThread1 (curThreadBvsignExtendTerm r)
+{-# NOINLINE bvsignExtendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with zero extension.
 bvzeroExtendTerm ::
@@ -2565,8 +3526,8 @@ bvzeroExtendTerm ::
   proxy r ->
   Term (bv l) ->
   Term (bv r)
-bvzeroExtendTerm _ v = internTerm $ UBVExtendTerm False (typeRep @r) v
-{-# INLINE bvzeroExtendTerm #-}
+bvzeroExtendTerm r = unsafeInCurThread1 (curThreadBvzeroExtendTerm r)
+{-# NOINLINE bvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
 applyTerm ::
@@ -2574,28 +3535,28 @@ applyTerm ::
   Term f ->
   Term a ->
   Term b
-applyTerm f a = internTerm $ UApplyTerm f a
-{-# INLINE applyTerm #-}
+applyTerm = unsafeInCurThread2 curThreadApplyTerm
+{-# NOINLINE applyTerm #-}
 
 -- | Construct and internalizing a 'DivIntegralTerm'.
 divIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
-divIntegralTerm l r = internTerm $ UDivIntegralTerm l r
-{-# INLINE divIntegralTerm #-}
+divIntegralTerm = unsafeInCurThread2 curThreadDivIntegralTerm
+{-# NOINLINE divIntegralTerm #-}
 
 -- | Construct and internalizing a 'ModIntegralTerm'.
 modIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
-modIntegralTerm l r = internTerm $ UModIntegralTerm l r
-{-# INLINE modIntegralTerm #-}
+modIntegralTerm = unsafeInCurThread2 curThreadModIntegralTerm
+{-# NOINLINE modIntegralTerm #-}
 
 -- | Construct and internalizing a 'QuotIntegralTerm'.
 quotIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
-quotIntegralTerm l r = internTerm $ UQuotIntegralTerm l r
-{-# INLINE quotIntegralTerm #-}
+quotIntegralTerm = unsafeInCurThread2 curThreadQuotIntegralTerm
+{-# NOINLINE quotIntegralTerm #-}
 
 -- | Construct and internalizing a 'RemIntegralTerm'.
 remIntegralTerm :: (PEvalDivModIntegralTerm a) => Term a -> Term a -> Term a
-remIntegralTerm l r = internTerm $ URemIntegralTerm l r
-{-# INLINE remIntegralTerm #-}
+remIntegralTerm = unsafeInCurThread2 curThreadRemIntegralTerm
+{-# NOINLINE remIntegralTerm #-}
 
 -- | Construct and internalizing a 'FPTraitTerm'.
 fpTraitTerm ::
@@ -2603,27 +3564,28 @@ fpTraitTerm ::
   FPTrait ->
   Term (FP eb sb) ->
   Term Bool
-fpTraitTerm trait v = internTerm $ UFPTraitTerm trait v
+fpTraitTerm trait = unsafeInCurThread1 (curThreadFpTraitTerm trait)
+{-# NOINLINE fpTraitTerm #-}
 
 -- | Construct and internalizing a 'FdivTerm'.
 fdivTerm :: (PEvalFractionalTerm a) => Term a -> Term a -> Term a
-fdivTerm l r = internTerm $ UFdivTerm l r
-{-# INLINE fdivTerm #-}
+fdivTerm = unsafeInCurThread2 curThreadFdivTerm
+{-# NOINLINE fdivTerm #-}
 
 -- | Construct and internalizing a 'RecipTerm'.
 recipTerm :: (PEvalFractionalTerm a) => Term a -> Term a
-recipTerm = internTerm . URecipTerm
-{-# INLINE recipTerm #-}
+recipTerm = unsafeInCurThread1 curThreadRecipTerm
+{-# NOINLINE recipTerm #-}
 
 -- | Construct and internalizing a 'FloatingUnaryTerm'.
 floatingUnaryTerm :: (PEvalFloatingTerm a) => FloatingUnaryOp -> Term a -> Term a
-floatingUnaryTerm op = internTerm . UFloatingUnaryTerm op
-{-# INLINE floatingUnaryTerm #-}
+floatingUnaryTerm op = unsafeInCurThread1 (curThreadFloatingUnaryTerm op)
+{-# NOINLINE floatingUnaryTerm #-}
 
 -- | Construct and internalizing a 'PowerTerm'.
 powerTerm :: (PEvalFloatingTerm a) => Term a -> Term a -> Term a
-powerTerm l r = internTerm $ UPowerTerm l r
-{-# INLINE powerTerm #-}
+powerTerm = unsafeInCurThread2 curThreadPowerTerm
+{-# NOINLINE powerTerm #-}
 
 -- | Construct and internalizing a 'FPUnaryTerm'.
 fpUnaryTerm ::
@@ -2631,7 +3593,8 @@ fpUnaryTerm ::
   FPUnaryOp ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-fpUnaryTerm op v = internTerm $ UFPUnaryTerm op v
+fpUnaryTerm op = unsafeInCurThread1 (curThreadFpUnaryTerm op)
+{-# NOINLINE fpUnaryTerm #-}
 
 -- | Construct and internalizing a 'FPBinaryTerm'.
 fpBinaryTerm ::
@@ -2640,7 +3603,8 @@ fpBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-fpBinaryTerm op l r = internTerm $ UFPBinaryTerm op l r
+fpBinaryTerm op = unsafeInCurThread2 (curThreadFpBinaryTerm op)
+{-# NOINLINE fpBinaryTerm #-}
 
 -- | Construct and internalizing a 'FPRoundingUnaryTerm'.
 fpRoundingUnaryTerm ::
@@ -2649,7 +3613,8 @@ fpRoundingUnaryTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-fpRoundingUnaryTerm op mode v = internTerm $ UFPRoundingUnaryTerm op mode v
+fpRoundingUnaryTerm op = unsafeInCurThread2 (curThreadFpRoundingUnaryTerm op)
+{-# NOINLINE fpRoundingUnaryTerm #-}
 
 -- | Construct and internalizing a 'FPRoundingBinaryTerm'.
 fpRoundingBinaryTerm ::
@@ -2659,7 +3624,8 @@ fpRoundingBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-fpRoundingBinaryTerm op mode l r = internTerm $ UFPRoundingBinaryTerm op mode l r
+fpRoundingBinaryTerm op = unsafeInCurThread3 (curThreadFpRoundingBinaryTerm op)
+{-# NOINLINE fpRoundingBinaryTerm #-}
 
 -- | Construct and internalizing a 'FPFMATerm'.
 fpFMATerm ::
@@ -2669,11 +3635,18 @@ fpFMATerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-fpFMATerm mode l r s = internTerm $ UFPFMATerm mode l r s
+fpFMATerm mode a b c = unsafePerformIO $ do
+  mode' <- toCurThread mode
+  a' <- toCurThread a
+  b' <- toCurThread b
+  c' <- toCurThread c
+  curThreadFpFMATerm mode' a' b' c'
+{-# NOINLINE fpFMATerm #-}
 
 -- | Construct and internalizing a 'FromIntegralTerm'.
 fromIntegralTerm :: (PEvalFromIntegralTerm a b) => Term a -> Term b
-fromIntegralTerm = internTerm . UFromIntegralTerm
+fromIntegralTerm = unsafeInCurThread1 curThreadFromIntegralTerm
+{-# NOINLINE fromIntegralTerm #-}
 
 -- | Construct and internalizing a 'FromFPOrTerm'.
 fromFPOrTerm ::
@@ -2686,7 +3659,8 @@ fromFPOrTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term a
-fromFPOrTerm d r f = internTerm $ UFromFPOrTerm d r f
+fromFPOrTerm = unsafeInCurThread3 curThreadFromFPOrTerm
+{-# NOINLINE fromFPOrTerm #-}
 
 -- | Construct and internalizing a 'ToFPTerm'.
 toFPTerm ::
@@ -2699,7 +3673,8 @@ toFPTerm ::
   Term FPRoundingMode ->
   Term a ->
   Term (FP eb sb)
-toFPTerm r f = internTerm $ UToFPTerm r f (Proxy @eb) (Proxy @sb)
+toFPTerm = unsafeInCurThread2 curThreadToFPTerm
+{-# NOINLINE toFPTerm #-}
 
 -- Support for boolean type
 defaultValueForBool :: Bool
@@ -2719,7 +3694,7 @@ falseTerm = conTerm False
 {-# INLINE falseTerm #-}
 
 boolConTermView :: forall a. Term a -> Maybe Bool
-boolConTermView (ConTerm _ b) = cast b
+boolConTermView (ConTerm _ _ b) = cast b
 boolConTermView _ = Nothing
 {-# INLINE boolConTermView #-}
 
@@ -2745,30 +3720,30 @@ pattern BoolTerm b <- (boolTermView -> Just b)
 
 -- | Partial evaluation for not terms.
 pevalNotTerm :: Term Bool -> Term Bool
-pevalNotTerm (NotTerm _ tm) = tm
-pevalNotTerm (ConTerm _ a) = if a then falseTerm else trueTerm
-pevalNotTerm (OrTerm _ (NotTerm _ n1) n2) = pevalAndTerm n1 (pevalNotTerm n2)
-pevalNotTerm (OrTerm _ (DistinctTerm _ (n1 :| [n2])) n3) =
+pevalNotTerm (NotTerm _ _ tm) = tm
+pevalNotTerm (ConTerm _ _ a) = if a then falseTerm else trueTerm
+pevalNotTerm (OrTerm _ _ (NotTerm _ _ n1) n2) = pevalAndTerm n1 (pevalNotTerm n2)
+pevalNotTerm (OrTerm _ _ (DistinctTerm _ _ (n1 :| [n2])) n3) =
   pevalAndTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
-pevalNotTerm (OrTerm _ n1 (NotTerm _ n2)) = pevalAndTerm (pevalNotTerm n1) n2
-pevalNotTerm (OrTerm _ n1 (DistinctTerm _ (n2 :| [n3]))) =
+pevalNotTerm (OrTerm _ _ n1 (NotTerm _ _ n2)) = pevalAndTerm (pevalNotTerm n1) n2
+pevalNotTerm (OrTerm _ _ n1 (DistinctTerm _ _ (n2 :| [n3]))) =
   pevalAndTerm (pevalNotTerm n1) (pevalEqTerm n2 n3)
-pevalNotTerm (AndTerm _ (NotTerm _ n1) n2) = pevalOrTerm n1 (pevalNotTerm n2)
-pevalNotTerm (AndTerm _ (DistinctTerm _ (n1 :| [n2])) n3) =
+pevalNotTerm (AndTerm _ _ (NotTerm _ _ n1) n2) = pevalOrTerm n1 (pevalNotTerm n2)
+pevalNotTerm (AndTerm _ _ (DistinctTerm _ _ (n1 :| [n2])) n3) =
   pevalOrTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
-pevalNotTerm (AndTerm _ n1 (NotTerm _ n2)) = pevalOrTerm (pevalNotTerm n1) n2
-pevalNotTerm (AndTerm _ n1 (DistinctTerm _ (n2 :| [n3]))) =
+pevalNotTerm (AndTerm _ _ n1 (NotTerm _ _ n2)) = pevalOrTerm (pevalNotTerm n1) n2
+pevalNotTerm (AndTerm _ _ n1 (DistinctTerm _ _ (n2 :| [n3]))) =
   pevalOrTerm (pevalNotTerm n1) $ pevalEqTerm n2 n3
-pevalNotTerm (EqTerm _ a b) = distinctTerm $ a :| [b]
-pevalNotTerm (DistinctTerm _ (a :| [b])) = eqTerm a b
+pevalNotTerm (EqTerm _ _ a b) = distinctTerm $ a :| [b]
+pevalNotTerm (DistinctTerm _ _ (a :| [b])) = eqTerm a b
 pevalNotTerm tm = notTerm tm
 {-# INLINEABLE pevalNotTerm #-}
 
 orEqFirst :: Term Bool -> Term Bool -> Bool
-orEqFirst _ (ConTerm _ False) = True
+orEqFirst _ (ConTerm _ _ False) = True
 orEqFirst
-  (DistinctTerm _ ((e1 :: Term a) :| [ec1@(ConTerm _ _) :: Term b]))
-  (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+  (DistinctTerm _ _ ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
+  (EqTerm _ _ (Dyn (e2 :: Term a)) (Dyn (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
 -- orEqFirst
 --   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
@@ -2780,28 +3755,28 @@ orEqFirst x y
 {-# INLINE orEqFirst #-}
 
 orEqTrue :: Term Bool -> Term Bool -> Bool
-orEqTrue (ConTerm _ True) _ = True
-orEqTrue _ (ConTerm _ True) = True
+orEqTrue (ConTerm _ _ True) _ = True
+orEqTrue _ (ConTerm _ _ True) = True
 -- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
 orEqTrue
-  (DistinctTerm _ ((e1 :: Term a) :| [ec1@(ConTerm _ _) :: Term b]))
-  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@(ConTerm _ _) :: Term b)]))
+  (DistinctTerm _ _ ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
+  (DistinctTerm _ _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@ConTerm {} :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
 -- orEqTrue
 --   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b)))
 --   (NotTerm _ (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b))))
 --     | e1 == e2 && ec1 /= ec2 = True
-orEqTrue (NotTerm _ l) r | l == r = True
-orEqTrue l (NotTerm _ r) | l == r = True
+orEqTrue (NotTerm _ _ l) r | l == r = True
+orEqTrue l (NotTerm _ _ r) | l == r = True
 orEqTrue _ _ = False
 {-# INLINE orEqTrue #-}
 
 andEqFirst :: Term Bool -> Term Bool -> Bool
-andEqFirst _ (ConTerm _ True) = True
+andEqFirst _ (ConTerm _ _ True) = True
 -- andEqFirst x (NotTerm _ y) = andEqFalse x y
 andEqFirst
-  (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@(ConTerm _ _) :: Term b)]))
+  (EqTerm _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (DistinctTerm _ _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@ConTerm {} :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
 -- andEqFirst
 --   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
@@ -2813,15 +3788,15 @@ andEqFirst x y
 {-# INLINE andEqFirst #-}
 
 andEqFalse :: Term Bool -> Term Bool -> Bool
-andEqFalse (ConTerm _ False) _ = True
-andEqFalse _ (ConTerm _ False) = True
+andEqFalse (ConTerm _ _ False) _ = True
+andEqFalse _ (ConTerm _ _ False) = True
 -- andEqFalse (NotTerm _ e1) (NotTerm _ e2) = orEqTrue e1 e2
 andEqFalse
-  (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+  (EqTerm _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (EqTerm _ _ (Dyn (e2 :: Term a)) (Dyn (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
-andEqFalse (NotTerm _ x) y | x == y = True
-andEqFalse x (NotTerm _ y) | x == y = True
+andEqFalse (NotTerm _ _ x) y | x == y = True
+andEqFalse x (NotTerm _ _ y) | x == y = True
 andEqFalse _ _ = False
 {-# INLINE andEqFalse #-}
 
@@ -2831,35 +3806,36 @@ pevalOrTerm l r
   | orEqTrue l r = trueTerm
   | orEqFirst l r = l
   | orEqFirst r l = r
-pevalOrTerm l r@(OrTerm _ r1 r2)
+pevalOrTerm l r@(OrTerm _ _ r1 r2)
   | orEqTrue l r1 = trueTerm
   | orEqTrue l r2 = trueTerm
   | orEqFirst r1 l = r
   | orEqFirst r2 l = r
   | orEqFirst l r1 = pevalOrTerm l r2
   | orEqFirst l r2 = pevalOrTerm l r1
-pevalOrTerm l@(OrTerm _ l1 l2) r
+pevalOrTerm l@(OrTerm _ _ l1 l2) r
   | orEqTrue l1 r = trueTerm
   | orEqTrue l2 r = trueTerm
   | orEqFirst l1 r = l
   | orEqFirst l2 r = l
   | orEqFirst r l1 = pevalOrTerm l2 r
   | orEqFirst r l2 = pevalOrTerm l1 r
-pevalOrTerm l (AndTerm _ r1 r2)
+pevalOrTerm l (AndTerm _ _ r1 r2)
   | orEqFirst l r1 = l
   | orEqFirst l r2 = l
   | orEqTrue l r1 = pevalOrTerm l r2
   | orEqTrue l r2 = pevalOrTerm l r1
-pevalOrTerm (AndTerm _ l1 l2) r
+pevalOrTerm (AndTerm _ _ l1 l2) r
   | orEqFirst r l1 = r
   | orEqFirst r l2 = r
   | orEqTrue l1 r = pevalOrTerm l2 r
   | orEqTrue l2 r = pevalOrTerm l1 r
 pevalOrTerm
-  (AndTerm _ nl1@(NotTerm _ l1) l2)
-  (EqTerm _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool)))
+  (AndTerm _ _ nl1@(NotTerm _ _ l1) l2)
+  (EqTerm _ _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool)))
     | l1 == e1 && l2 == e2 = pevalOrTerm nl1 l2
-pevalOrTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalAndTerm nl nr
+pevalOrTerm (NotTerm _ _ nl) (NotTerm _ _ nr) =
+  pevalNotTerm $ pevalAndTerm nl nr
 pevalOrTerm l r = orTerm l r
 {-# INLINEABLE pevalOrTerm #-}
 
@@ -2869,35 +3845,35 @@ pevalAndTerm l r
   | andEqFalse l r = falseTerm
   | andEqFirst l r = l
   | andEqFirst r l = r
-pevalAndTerm l r@(AndTerm _ r1 r2)
+pevalAndTerm l r@(AndTerm _ _ r1 r2)
   | andEqFalse l r1 = falseTerm
   | andEqFalse l r2 = falseTerm
   | andEqFirst r1 l = r
   | andEqFirst r2 l = r
   | andEqFirst l r1 = pevalAndTerm l r2
   | andEqFirst l r2 = pevalAndTerm l r1
-pevalAndTerm l@(AndTerm _ l1 l2) r
+pevalAndTerm l@(AndTerm _ _ l1 l2) r
   | andEqFalse l1 r = falseTerm
   | andEqFalse l2 r = falseTerm
   | andEqFirst l1 r = l
   | andEqFirst l2 r = l
   | andEqFirst r l1 = pevalAndTerm l2 r
   | andEqFirst r l2 = pevalAndTerm l1 r
-pevalAndTerm l (OrTerm _ r1 r2)
+pevalAndTerm l (OrTerm _ _ r1 r2)
   | andEqFirst l r1 = l
   | andEqFirst l r2 = l
   | andEqFalse l r1 = pevalAndTerm l r2
   | andEqFalse l r2 = pevalAndTerm l r1
-pevalAndTerm (OrTerm _ l1 l2) r
+pevalAndTerm (OrTerm _ _ l1 l2) r
   | andEqFirst r l1 = r
   | andEqFirst r l2 = r
   | andEqFalse l1 r = pevalAndTerm l2 r
   | andEqFalse l2 r = pevalAndTerm l1 r
 pevalAndTerm
-  (OrTerm _ l1 nl2@(NotTerm _ l2))
-  (NotTerm _ (EqTerm _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool))))
+  (OrTerm _ _ l1 nl2@(NotTerm _ _ l2))
+  (NotTerm _ _ (EqTerm _ _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool))))
     | l1 == e1 && l2 == e2 = pevalAndTerm l1 nl2
-pevalAndTerm (NotTerm _ nl) (NotTerm _ nr) = pevalNotTerm $ pevalOrTerm nl nr
+pevalAndTerm (NotTerm _ _ nl) (NotTerm _ _ nr) = pevalNotTerm $ pevalOrTerm nl nr
 pevalAndTerm l r = andTerm l r
 {-# INLINEABLE pevalAndTerm #-}
 
@@ -2910,11 +3886,11 @@ pevalXorTerm :: Term Bool -> Term Bool -> Term Bool
 pevalXorTerm l r = pevalOrTerm (pevalAndTerm (pevalNotTerm l) r) (pevalAndTerm l (pevalNotTerm r))
 
 pevalImpliesTerm :: Term Bool -> Term Bool -> Bool
-pevalImpliesTerm (ConTerm _ False) _ = True
-pevalImpliesTerm _ (ConTerm _ True) = True
+pevalImpliesTerm (ConTerm _ _ False) _ = True
+pevalImpliesTerm _ (ConTerm _ _ True) = True
 pevalImpliesTerm
-  (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [(Dyn (ec2@(ConTerm _ _) :: Term b))]))
+  (EqTerm _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (DistinctTerm _ _ ((Dyn (e2 :: Term a)) :| [(Dyn (ec2@ConTerm {} :: Term b))]))
     | e1 == e2 && ec1 /= ec2 = True
 -- pevalImpliesTerm
 --   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
@@ -2930,7 +3906,7 @@ pevalITEBoolLeftNot cond nIfTrue ifFalse
   -- need test
   | cond == nIfTrue = Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
   | otherwise = case nIfTrue of
-      AndTerm _ nt1 nt2 -> ra
+      AndTerm _ _ nt1 nt2 -> ra
         where
           ra
             | pevalImpliesTerm cond nt1 =
@@ -2941,7 +3917,7 @@ pevalITEBoolLeftNot cond nIfTrue ifFalse
                 || pevalImpliesTerm cond (pevalNotTerm nt2) =
                 Just $ pevalOrTerm cond ifFalse
             | otherwise = Nothing
-      OrTerm _ nt1 nt2 -> ra
+      OrTerm _ _ nt1 nt2 -> ra
         where
           ra
             | pevalImpliesTerm cond nt1 || pevalImpliesTerm cond nt2 =
@@ -2964,7 +3940,7 @@ pevalITEBoolRightNot cond ifTrue nIfFalse
   | otherwise = Nothing -- need work
 
 pevalInferImplies :: Term Bool -> Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
-pevalInferImplies cond (NotTerm _ nt1) _ falseRes
+pevalInferImplies cond (NotTerm _ _ nt1) _ falseRes
   | cond == nt1 = Just falseRes
   | otherwise = Nothing
 -- \| otherwise = case (cond, nt1) of
@@ -2974,14 +3950,14 @@ pevalInferImplies cond (NotTerm _ nt1) _ falseRes
 --         | e1 == e2 && ec1 /= ec2 -> Just trueRes
 --     _ -> Nothing
 pevalInferImplies
-  (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (DistinctTerm _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@(ConTerm _ _) :: Term b)]))
+  (EqTerm _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (DistinctTerm _ _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@ConTerm {} :: Term b)]))
   trueRes
   _
     | e1 == e2 && ec1 /= ec2 = Just trueRes
 pevalInferImplies
-  (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _) :: Term b))
-  (EqTerm _ (Dyn (e2 :: Term a)) (Dyn (ec2@(ConTerm _ _) :: Term b)))
+  (EqTerm _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
+  (EqTerm _ _ (Dyn (e2 :: Term a)) (Dyn (ec2@ConTerm {} :: Term b)))
   _
   falseRes
     | e1 == e2 && ec1 /= ec2 = Just falseRes
@@ -3040,49 +4016,49 @@ pevalITEBoolRightOr cond ifTrue f1 f2
   | otherwise = Nothing
 
 pevalITEBoolLeft :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
-pevalITEBoolLeft cond (AndTerm _ t1 t2) ifFalse =
+pevalITEBoolLeft cond (AndTerm _ _ t1 t2) ifFalse =
   msum
     [ pevalITEBoolLeftAnd cond t1 t2 ifFalse,
       case ifFalse of
-        AndTerm _ f1 f2 -> pevalITEBoolBothAnd cond t1 t2 f1 f2
+        AndTerm _ _ f1 f2 -> pevalITEBoolBothAnd cond t1 t2 f1 f2
         _ -> Nothing
     ]
-pevalITEBoolLeft cond (OrTerm _ t1 t2) ifFalse =
+pevalITEBoolLeft cond (OrTerm _ _ t1 t2) ifFalse =
   msum
     [ pevalITEBoolLeftOr cond t1 t2 ifFalse,
       case ifFalse of
-        OrTerm _ f1 f2 -> pevalITEBoolBothOr cond t1 t2 f1 f2
+        OrTerm _ _ f1 f2 -> pevalITEBoolBothOr cond t1 t2 f1 f2
         _ -> Nothing
     ]
-pevalITEBoolLeft cond (NotTerm _ nIfTrue) ifFalse =
+pevalITEBoolLeft cond (NotTerm _ _ nIfTrue) ifFalse =
   msum
     [ pevalITEBoolLeftNot cond nIfTrue ifFalse,
       case ifFalse of
-        NotTerm _ nIfFalse ->
+        NotTerm _ _ nIfFalse ->
           pevalITEBoolBothNot cond nIfTrue nIfFalse
         _ -> Nothing
     ]
 pevalITEBoolLeft _ _ _ = Nothing
 
 pevalITEBoolNoLeft :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
-pevalITEBoolNoLeft cond ifTrue (AndTerm _ f1 f2) = pevalITEBoolRightAnd cond ifTrue f1 f2
-pevalITEBoolNoLeft cond ifTrue (OrTerm _ f1 f2) = pevalITEBoolRightOr cond ifTrue f1 f2
-pevalITEBoolNoLeft cond ifTrue (NotTerm _ nIfFalse) = pevalITEBoolRightNot cond ifTrue nIfFalse
+pevalITEBoolNoLeft cond ifTrue (AndTerm _ _ f1 f2) = pevalITEBoolRightAnd cond ifTrue f1 f2
+pevalITEBoolNoLeft cond ifTrue (OrTerm _ _ f1 f2) = pevalITEBoolRightOr cond ifTrue f1 f2
+pevalITEBoolNoLeft cond ifTrue (NotTerm _ _ nIfFalse) = pevalITEBoolRightNot cond ifTrue nIfFalse
 pevalITEBoolNoLeft _ _ _ = Nothing
 
 -- | Basic partial evaluation for ITE terms.
 pevalITEBasic :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Maybe (Term a)
-pevalITEBasic (ConTerm _ True) ifTrue _ = Just ifTrue
-pevalITEBasic (ConTerm _ False) _ ifFalse = Just ifFalse
-pevalITEBasic (NotTerm _ ncond) ifTrue ifFalse = Just $ pevalITETerm ncond ifFalse ifTrue
+pevalITEBasic (ConTerm _ _ True) ifTrue _ = Just ifTrue
+pevalITEBasic (ConTerm _ _ False) _ ifFalse = Just ifFalse
+pevalITEBasic (NotTerm _ _ ncond) ifTrue ifFalse = Just $ pevalITETerm ncond ifFalse ifTrue
 pevalITEBasic _ ifTrue ifFalse | ifTrue == ifFalse = Just ifTrue
-pevalITEBasic (ITETerm _ cc ct cf) (ITETerm _ tc tt tf) (ITETerm _ fc ft ff) -- later
+pevalITEBasic (ITETerm _ _ cc ct cf) (ITETerm _ _ tc tt tf) (ITETerm _ _ fc ft ff) -- later
   | cc == tc && cc == fc = Just $ pevalITETerm cc (pevalITETerm ct tt ft) (pevalITETerm cf tf ff)
-pevalITEBasic cond (ITETerm _ tc tt tf) ifFalse -- later
+pevalITEBasic cond (ITETerm _ _ tc tt tf) ifFalse -- later
   | cond == tc = Just $ pevalITETerm cond tt ifFalse
   | tt == ifFalse = Just $ pevalITETerm (pevalOrTerm (pevalNotTerm cond) tc) tt tf
   | tf == ifFalse = Just $ pevalITETerm (pevalAndTerm cond tc) tt tf
-pevalITEBasic cond ifTrue (ITETerm _ fc ft ff) -- later
+pevalITEBasic cond ifTrue (ITETerm _ _ fc ft ff) -- later
   | ifTrue == ft = Just $ pevalITETerm (pevalOrTerm cond fc) ifTrue ff
   | ifTrue == ff = Just $ pevalITETerm (pevalOrTerm cond (pevalNotTerm fc)) ifTrue ft
   | pevalImpliesTerm fc cond = Just $ pevalITETerm cond ifTrue ff
@@ -3092,10 +4068,10 @@ pevalITEBoolBasic :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
 pevalITEBoolBasic cond ifTrue ifFalse
   | cond == ifTrue = Just $ pevalOrTerm cond ifFalse
   | cond == ifFalse = Just $ pevalAndTerm cond ifTrue
-pevalITEBoolBasic cond (ConTerm _ v) ifFalse
+pevalITEBoolBasic cond (ConTerm _ _ v) ifFalse
   | v = Just $ pevalOrTerm cond ifFalse
   | otherwise = Just $ pevalAndTerm (pevalNotTerm cond) ifFalse
-pevalITEBoolBasic cond ifTrue (ConTerm _ v)
+pevalITEBoolBasic cond ifTrue (ConTerm _ _ v)
   | v = Just $ pevalOrTerm (pevalNotTerm cond) ifTrue
   | otherwise = Just $ pevalAndTerm cond ifTrue
 pevalITEBoolBasic _ _ _ = Nothing
@@ -3123,16 +4099,16 @@ pevalDefaultEqTerm l (BoolConTerm rv) =
   if rv
     then unsafeCoerce l
     else pevalNotTerm (unsafeCoerce l)
-pevalDefaultEqTerm (NotTerm _ lv) r
+pevalDefaultEqTerm (NotTerm _ _ lv) r
   | lv == r = falseTerm
-pevalDefaultEqTerm l (NotTerm _ rv)
+pevalDefaultEqTerm l (NotTerm _ _ rv)
   | l == rv = falseTerm
-pevalDefaultEqTerm (AddNumTerm _ (ConTerm _ c) v) (ConTerm _ c2) =
+pevalDefaultEqTerm (AddNumTerm _ _ (ConTerm _ _ c) v) (ConTerm _ _ c2) =
   pevalDefaultEqTerm v (conTerm $ c2 - c)
-pevalDefaultEqTerm l (ITETerm _ c t f)
+pevalDefaultEqTerm l (ITETerm _ _ c t f)
   | l == t = pevalOrTerm c (pevalDefaultEqTerm l f)
   | l == f = pevalOrTerm (pevalNotTerm c) (pevalDefaultEqTerm l t)
-pevalDefaultEqTerm (ITETerm _ c t f) r
+pevalDefaultEqTerm (ITETerm _ _ c t f) r
   | t == r = pevalOrTerm c (pevalDefaultEqTerm f r)
   | f == r = pevalOrTerm (pevalNotTerm c) (pevalDefaultEqTerm t r)
 pevalDefaultEqTerm l r

@@ -14,6 +14,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE BangPatterns #-}
 
 -- |
 -- Module      :   Grisette.Internal.Core.Data.Class.Solver
@@ -127,7 +128,7 @@ monadicSolverSolve formula = do
 
 -- | The commands that can be sent to a solver.
 data SolverCommand
-  = SolverAssert SymBool
+  = SolverAssert !SymBool
   | SolverCheckSat
   | SolverPush Int
   | SolverPop Int

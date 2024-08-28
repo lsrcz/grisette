@@ -40,7 +40,7 @@ pevalFromIntegralTermGeneric :: (PEvalFromIntegralTerm a b) => Term a -> Term b
 pevalFromIntegralTermGeneric =
   unaryUnfoldOnce doPEvalFromIntegralTerm fromIntegralTerm
   where
-    doPEvalFromIntegralTerm (ConTerm _ a) = Just $ conTerm $ fromIntegral a
+    doPEvalFromIntegralTerm (ConTerm _ _ a) = Just $ conTerm $ fromIntegral a
     doPEvalFromIntegralTerm _ = Nothing
 
 instance PEvalFromIntegralTerm Integer AlgReal where

@@ -48,11 +48,12 @@ pevalDefaultAndBitsTerm ::
   (Bits a, SupportedPrim a, PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 pevalDefaultAndBitsTerm = binaryUnfoldOnce doPevalAndBitsTerm andBitsTerm
   where
-    doPevalAndBitsTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm (a .&. b)
-    doPevalAndBitsTerm (ConTerm _ a) b
+    doPevalAndBitsTerm (ConTerm _ _ a) (ConTerm _ _ b) =
+      Just $ conTerm (a .&. b)
+    doPevalAndBitsTerm (ConTerm _ _ a) b
       | a == zeroBits = Just $ conTerm zeroBits
       | a == complement zeroBits = Just b
-    doPevalAndBitsTerm a (ConTerm _ b)
+    doPevalAndBitsTerm a (ConTerm _ _ b)
       | b == zeroBits = Just $ conTerm zeroBits
       | b == complement zeroBits = Just a
     doPevalAndBitsTerm a b | a == b = Just a
@@ -62,11 +63,11 @@ pevalDefaultOrBitsTerm ::
   (Bits a, SupportedPrim a, PEvalBitwiseTerm a) => Term a -> Term a -> Term a
 pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
   where
-    doPevalOrBitsTerm (ConTerm _ a) (ConTerm _ b) = Just $ conTerm (a .|. b)
-    doPevalOrBitsTerm (ConTerm _ a) b
+    doPevalOrBitsTerm (ConTerm _ _ a) (ConTerm _ _ b) = Just $ conTerm (a .|. b)
+    doPevalOrBitsTerm (ConTerm _ _ a) b
       | a == zeroBits = Just b
       | a == complement zeroBits = Just $ conTerm $ complement zeroBits
-    doPevalOrBitsTerm a (ConTerm _ b)
+    doPevalOrBitsTerm a (ConTerm _ _ b)
       | b == zeroBits = Just a
       | b == complement zeroBits = Just $ conTerm $ complement zeroBits
     doPevalOrBitsTerm a b | a == b = Just a
@@ -76,20 +77,20 @@ pevalDefaultXorBitsTerm ::
   (PEvalBitwiseTerm a, SupportedPrim a) => Term a -> Term a -> Term a
 pevalDefaultXorBitsTerm = binaryUnfoldOnce doPevalXorBitsTerm xorBitsTerm
   where
-    doPevalXorBitsTerm (ConTerm _ a) (ConTerm _ b) =
+    doPevalXorBitsTerm (ConTerm _ _ a) (ConTerm _ _ b) =
       Just $ conTerm (a `xor` b)
-    doPevalXorBitsTerm (ConTerm _ a) b
+    doPevalXorBitsTerm (ConTerm _ _ a) b
       | a == zeroBits = Just b
       | a == complement zeroBits = Just $ pevalComplementBitsTerm b
-    doPevalXorBitsTerm a (ConTerm _ b)
+    doPevalXorBitsTerm a (ConTerm _ _ b)
       | b == zeroBits = Just a
       | b == complement zeroBits = Just $ pevalComplementBitsTerm a
     doPevalXorBitsTerm a b | a == b = Just $ conTerm zeroBits
-    doPevalXorBitsTerm (ComplementBitsTerm _ i) (ComplementBitsTerm _ j) =
+    doPevalXorBitsTerm (ComplementBitsTerm _ _ i) (ComplementBitsTerm _ _ j) =
       Just $ pevalXorBitsTerm i j
-    doPevalXorBitsTerm (ComplementBitsTerm _ i) j =
+    doPevalXorBitsTerm (ComplementBitsTerm _ _ i) j =
       Just $ pevalComplementBitsTerm $ pevalXorBitsTerm i j
-    doPevalXorBitsTerm i (ComplementBitsTerm _ j) =
+    doPevalXorBitsTerm i (ComplementBitsTerm _ _ j) =
       Just $ pevalComplementBitsTerm $ pevalXorBitsTerm i j
     doPevalXorBitsTerm _ _ = Nothing
 
@@ -98,8 +99,8 @@ pevalDefaultComplementBitsTerm ::
 pevalDefaultComplementBitsTerm =
   unaryUnfoldOnce doPevalComplementBitsTerm complementBitsTerm
   where
-    doPevalComplementBitsTerm (ConTerm _ a) = Just $ conTerm $ complement a
-    doPevalComplementBitsTerm (ComplementBitsTerm _ a) = Just a
+    doPevalComplementBitsTerm (ConTerm _ _ a) = Just $ conTerm $ complement a
+    doPevalComplementBitsTerm (ComplementBitsTerm _ _ a) = Just a
     doPevalComplementBitsTerm _ = Nothing
 
 instance (KnownNat n, 1 <= n) => PEvalBitwiseTerm (WordN n) where

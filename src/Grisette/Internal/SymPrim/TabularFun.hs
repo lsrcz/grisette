@@ -117,8 +117,8 @@ instance
         Term (a =-> b) ->
         Term a ->
         Maybe (Term b)
-      doPevalApplyTerm (ConTerm _ f) (ConTerm _ a) = Just $ conTerm $ f # a
-      doPevalApplyTerm (ConTerm _ (TabularFun f d)) a = Just $ go f
+      doPevalApplyTerm (ConTerm _ _ f) (ConTerm _ _ a) = Just $ conTerm $ f # a
+      doPevalApplyTerm (ConTerm _ _ (TabularFun f d)) a = Just $ go f
         where
           go [] = conTerm d
           go ((x, y) : xs) =
