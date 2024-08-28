@@ -30,3 +30,4 @@ withMode con sym = case (eqT @mode @'Con, eqT @mode @'Sym) of
   (Just Refl, _) -> con
   (_, Just Refl) -> sym
   _ -> error "impossible"
+{-# INLINE withMode #-}

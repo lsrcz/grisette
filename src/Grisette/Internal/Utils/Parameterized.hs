@@ -113,6 +113,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- This is unsafe if used improperly, so use this with caution!
 unsafeAxiom :: forall a b. a :~: b
 unsafeAxiom = unsafeCoerce (Refl @a)
+{-# INLINE unsafeAxiom #-}
 
 -- | Construct the 'KnownNat' constraint when the runtime value is known.
 withKnownNat :: forall n r. NatRepr n -> ((KnownNat n) => r) -> r
@@ -121,6 +122,7 @@ withKnownNat (NatRepr nVal) v =
     SomeNat (Proxy :: Proxy n') ->
       case unsafeAxiom :: n :~: n' of
         Refl -> v
+{-# INLINE withKnownNat #-}
 
 -- | A runtime representation of type-level natural numbers.
 -- This can be used for performing dynamic checks on type-level natural numbers.
@@ -129,6 +131,7 @@ newtype NatRepr (n :: Nat) = NatRepr Natural
 -- | The underlying runtime natural number value of a type-level natural number.
 natValue :: NatRepr n -> Natural
 natValue (NatRepr n) = n
+{-# INLINE natValue #-}
 
 data SomeNatReprHelper where
   SomeNatReprHelper :: NatRepr n -> SomeNatReprHelper
@@ -142,6 +145,7 @@ data SomeNatRepr where
 mkNatRepr :: Natural -> SomeNatRepr
 mkNatRepr n = case SomeNatReprHelper (NatRepr n) of
   SomeNatReprHelper natRepr -> withKnownNat natRepr $ SomeNatRepr natRepr
+{-# INLINE mkNatRepr #-}
 
 -- | Existential wrapper for t'NatRepr' with the constraint that the natural
 -- number is greater than 0.
@@ -156,39 +160,48 @@ mkPositiveNatRepr 0 = error "mkPositiveNatRepr: 0 is not a positive number"
 mkPositiveNatRepr n = case mkNatRepr n of
   SomeNatRepr (natRepr :: NatRepr n) -> case unsafeLeqProof @1 @n of
     LeqProof -> SomePositiveNatRepr natRepr
+{-# INLINE mkPositiveNatRepr #-}
 
 -- | Construct a runtime representation of a type-level natural number when its
 -- runtime value is known.
 natRepr :: forall n. (KnownNat n) => NatRepr n
 natRepr = NatRepr (natVal (Proxy @n))
+{-# INLINE natRepr #-}
 
 -- | Decrement a t'NatRepr' by 1.
 decNat :: (1 <= n) => NatRepr n -> NatRepr (n - 1)
 decNat (NatRepr n) = NatRepr (n - 1)
+{-# INLINE decNat #-}
 
 -- | Predecessor of a t'NatRepr'
 predNat :: NatRepr (n + 1) -> NatRepr n
 predNat (NatRepr n) = NatRepr (n - 1)
+{-# INLINE predNat #-}
 
 -- | Increment a t'NatRepr' by 1.
 incNat :: NatRepr n -> NatRepr (n + 1)
 incNat (NatRepr n) = NatRepr (n + 1)
+{-# INLINE incNat #-}
 
 -- | Addition of two t'NatRepr's.
 addNat :: NatRepr m -> NatRepr n -> NatRepr (m + n)
 addNat (NatRepr m) (NatRepr n) = NatRepr (m + n)
+{-# INLINE addNat #-}
 
 -- | Subtraction of two t'NatRepr's.
 subNat :: (n <= m) => NatRepr m -> NatRepr n -> NatRepr (m - n)
 subNat (NatRepr m) (NatRepr n) = NatRepr (m - n)
+{-# INLINE subNat #-}
 
 -- | Division of two t'NatRepr's.
 divNat :: (1 <= n) => NatRepr m -> NatRepr n -> NatRepr (Div m n)
 divNat (NatRepr m) (NatRepr n) = NatRepr (m `div` n)
+{-# INLINE divNat #-}
 
 -- | Half of a t'NatRepr'.
 halfNat :: NatRepr (n + n) -> NatRepr n
 halfNat (NatRepr n) = NatRepr (n `div` 2)
+{-# INLINE halfNat #-}
 
 -- | @'KnownProof n'@ is a type whose values are only inhabited when @n@ has
 -- a known runtime value.
@@ -198,6 +211,7 @@ data KnownProof (n :: Nat) where
 -- | Introduces the 'KnownNat' constraint when it's proven.
 withKnownProof :: KnownProof n -> ((KnownNat n) => r) -> r
 withKnownProof p r = case p of KnownProof -> r
+{-# INLINE withKnownProof #-}
 
 -- | Construct a t'KnownProof' given the runtime value.
 --
@@ -207,6 +221,7 @@ withKnownProof p r = case p of KnownProof -> r
 -- generate incorrect results.
 unsafeKnownProof :: Natural -> KnownProof n
 unsafeKnownProof nVal = hasRepr (NatRepr nVal)
+{-# INLINE unsafeKnownProof #-}
 
 -- | Construct a t'KnownProof' given the runtime representation.
 hasRepr :: forall n. NatRepr n -> KnownProof n
@@ -215,11 +230,13 @@ hasRepr (NatRepr nVal) =
     SomeNat (Proxy :: Proxy n') ->
       case unsafeAxiom :: n :~: n' of
         Refl -> KnownProof
+{-# INLINE hasRepr #-}
 
 -- | Adding two type-level natural numbers with known runtime values gives a
 -- type-level natural number with a known runtime value.
 knownAdd :: forall m n. KnownProof m -> KnownProof n -> KnownProof (m + n)
 knownAdd KnownProof KnownProof = hasRepr @(m + n) (NatRepr (natVal (Proxy @m) + natVal (Proxy @n)))
+{-# INLINE knownAdd #-}
 
 -- | @'LeqProof m n'@ is a type whose values are only inhabited when @m <= n@.
 data LeqProof (m :: Nat) (n :: Nat) where
@@ -228,6 +245,7 @@ data LeqProof (m :: Nat) (n :: Nat) where
 -- | Introduces the @m <= n@ constraint when it's proven.
 withLeqProof :: LeqProof m n -> ((m <= n) => r) -> r
 withLeqProof p r = case p of LeqProof -> r
+{-# INLINE withLeqProof #-}
 
 -- | Construct a t'LeqProof'.
 --
@@ -237,6 +255,7 @@ withLeqProof p r = case p of LeqProof -> r
 -- generate incorrect results.
 unsafeLeqProof :: forall m n. LeqProof m n
 unsafeLeqProof = unsafeCoerce (LeqProof @0 @0)
+{-# INLINE unsafeLeqProof #-}
 
 -- | Checks if a t'NatRepr' is less than or equal to another t'NatRepr'.
 testLeq :: NatRepr m -> NatRepr n -> Maybe (LeqProof m n)
@@ -245,32 +264,40 @@ testLeq (NatRepr m) (NatRepr n) =
     LT -> Nothing
     EQ -> Just unsafeLeqProof
     GT -> Just unsafeLeqProof
+{-# INLINE testLeq #-}
 
 -- | Apply reflexivity to t'LeqProof'.
 leqRefl :: f n -> LeqProof n n
 leqRefl _ = LeqProof
+{-# INLINE leqRefl #-}
 
 -- | A natural number is less than or equal to its successor.
 leqSucc :: f n -> LeqProof n (n + 1)
 leqSucc _ = unsafeLeqProof
+{-# INLINE leqSucc #-}
 
 -- | Apply transitivity to t'LeqProof'.
 leqTrans :: LeqProof a b -> LeqProof b c -> LeqProof a c
 leqTrans _ _ = unsafeLeqProof
+{-# INLINE leqTrans #-}
 
 -- | Zero is less than or equal to any natural number.
 leqZero :: LeqProof 0 n
 leqZero = unsafeLeqProof
+{-# INLINE leqZero #-}
 
 -- | Add both sides of two inequalities.
 leqAdd2 :: LeqProof xl xh -> LeqProof yl yh -> LeqProof (xl + yl) (xh + yh)
 leqAdd2 _ _ = unsafeLeqProof
+{-# INLINE leqAdd2 #-}
 
 -- | Produce proof that adding a value to the larger element in an t'LeqProof'
 -- is larger.
 leqAdd :: LeqProof m n -> f o -> LeqProof m (n + o)
 leqAdd _ _ = unsafeLeqProof
+{-# INLINE leqAdd #-}
 
 -- | Adding two positive natural numbers is positive.
 leqAddPos :: (1 <= m, 1 <= n) => p m -> q n -> LeqProof 1 (m + n)
 leqAddPos _ _ = unsafeLeqProof
+{-# INLINE leqAddPos #-}

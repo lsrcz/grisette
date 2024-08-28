@@ -186,6 +186,7 @@ bvIsNonZeroFromGEq1 ::
   r
 bvIsNonZeroFromGEq1 _ r1 = case unsafeAxiom :: w :~: 1 of
   Refl -> r1
+{-# INLINE bvIsNonZeroFromGEq1 #-}
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (IntN w) where
   type NonFuncSBVBaseType (IntN w) = SBV.IntN w

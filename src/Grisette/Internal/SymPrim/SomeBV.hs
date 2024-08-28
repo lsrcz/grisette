@@ -1153,6 +1153,7 @@ unsafeSomeBV n i
   | n <= 0 = error "unsafeBV: trying to create a bitvector of non-positive size"
   | otherwise = case mkPositiveNatRepr (fromIntegral n) of
       SomePositiveNatRepr (_ :: NatRepr x) -> SomeBV (i (Proxy @x))
+{-# INLINE unsafeSomeBV #-}
 
 -- | Construct a symbolic t'SomeBV' with a given concrete t'SomeBV'. Similar to
 -- 'con' but for t'SomeBV'.
