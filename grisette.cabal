@@ -231,6 +231,7 @@ library
       QuickCheck >=2.14 && <2.16
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
+    , atomic-primops
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
     , containers >=0.4 && <0.8
@@ -271,6 +272,7 @@ test-suite doctest
       QuickCheck >=2.14 && <2.16
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
+    , atomic-primops
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
     , containers >=0.4 && <0.8
@@ -380,6 +382,7 @@ test-suite spec
     , QuickCheck >=2.14 && <2.16
     , array >=0.5.4 && <0.6
     , async >=2.2.2 && <2.3
+    , atomic-primops
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
     , containers >=0.4 && <0.8
