@@ -76,9 +76,11 @@ import Grisette.Unified.EvalModeTest (evalModeTest)
 import Grisette.Unified.UnifiedClassesTest (unifiedClassesTest)
 import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
+import Grisette.Internal.SymPrim.Prim.Internal.Caches (setupPeriodicTermCacheGC)
 
 main :: IO ()
-main =
+main = do
+  setupPeriodicTermCacheGC 1000000
   defaultMain
     [ coreTests,
       irTests,

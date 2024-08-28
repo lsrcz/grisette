@@ -56,12 +56,12 @@ doPevalFiniteBitsSymRotateRotateLeftTerm ::
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalFiniteBitsSymRotateRotateLeftTerm (ConTerm _ a) (ConTerm _ n)
+doPevalFiniteBitsSymRotateRotateLeftTerm (ConTerm _ _ a) (ConTerm _ _ n)
   | n >= 0 = Just $ conTerm $ symRotate a n -- Just $ conTerm $ rotateL a (fromIntegral n)
-doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ 0) = Just x
--- doPevalFiniteBitsSymRotateRotateLeftTerm (RotateLeftTerm _ x (ConTerm _ n)) (ConTerm _ n1)
+doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ _ 0) = Just x
+-- doPevalFiniteBitsSymRotateRotateLeftTerm (RotateLeftTerm _ x (ConTerm _ _ n)) (ConTerm _ _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalFiniteBitsSymRotateRotateLeftTerm x (conTerm $ n + n1)
-doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ n)
+doPevalFiniteBitsSymRotateRotateLeftTerm x (ConTerm _ _ n)
   | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral bs =
       Just $
         pevalFiniteBitsSymRotateRotateLeftTerm
@@ -90,7 +90,7 @@ doPevalFiniteBitsSymRotateRotateRightTerm ::
   Term a ->
   Term a ->
   Maybe (Term a)
-doPevalFiniteBitsSymRotateRotateRightTerm (ConTerm _ a) (ConTerm _ n)
+doPevalFiniteBitsSymRotateRotateRightTerm (ConTerm _ _ a) (ConTerm _ _ n)
   | n >= 0 =
       Just . conTerm $
         rotateR
@@ -99,10 +99,10 @@ doPevalFiniteBitsSymRotateRotateRightTerm (ConTerm _ a) (ConTerm _ n)
               (fromIntegral n :: Integer)
                 `mod` fromIntegral (finiteBitSize n)
           )
-doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm _ 0) = Just x
--- doPevalFiniteBitsSymRotateRotateRightTerm (RotateRightTerm _ x (ConTerm _ n)) (ConTerm _ n1)
+doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm _ _ 0) = Just x
+-- doPevalFiniteBitsSymRotateRotateRightTerm (RotateRightTerm _ x (ConTerm _ _ n)) (ConTerm _ _ n1)
 --   | n >= 0 && n1 >= 0 = Just $ pevalFiniteBitsSymRotateRotateRightTerm x (conTerm $ n + n1)
-doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm _ n)
+doPevalFiniteBitsSymRotateRotateRightTerm x (ConTerm _ _ n)
   | n >= 0 && (fromIntegral n :: Integer) >= fromIntegral bs =
       Just $
         pevalFiniteBitsSymRotateRotateRightTerm

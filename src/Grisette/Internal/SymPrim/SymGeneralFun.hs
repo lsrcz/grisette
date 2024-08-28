@@ -170,7 +170,7 @@ instance
   where
   con = SymGeneralFun . conTerm
   sym = SymGeneralFun . symTerm
-  conView (SymGeneralFun (ConTerm _ t)) = Just t
+  conView (SymGeneralFun (ConTerm _ _ t)) = Just t
   conView _ = Nothing
 
 instance

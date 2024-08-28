@@ -246,7 +246,7 @@ instance (ValidFP eb sb) => SBVRep (FP eb sb) where
 instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
+  pevalEqTerm (ConTerm _ _ l) (ConTerm _ _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   pevalDistinctTerm = distinctTerm
@@ -299,7 +299,7 @@ instance SBVRep FPRoundingMode where
 instance SupportedPrim FPRoundingMode where
   defaultValue = RNE
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
+  pevalEqTerm (ConTerm _ _ l) (ConTerm _ _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   pevalDistinctTerm = pevalGeneralDistinct
@@ -352,7 +352,7 @@ instance SBVRep AlgReal where
 instance SupportedPrim AlgReal where
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
-  pevalEqTerm (ConTerm _ l) (ConTerm _ r) = conTerm $ l == r
+  pevalEqTerm (ConTerm _ _ l) (ConTerm _ _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
   pevalDistinctTerm = pevalGeneralDistinct

@@ -145,13 +145,13 @@ extractSymSomeTerm = go initialMemo
       HS.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    go _ bs (SomeTerm (SymTerm _ (sym :: TypedAnySymbol a))) =
+    go _ bs (SomeTerm (SymTerm _ _ (sym :: TypedAnySymbol a))) =
       case (castTypedSymbol sym, castTypedSymbol sym) of
         (Just sym', _) | HS.member (someTypedSymbol sym') bs -> return HS.empty
         (_, Just sym') ->
           return $ HS.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
         _ -> Nothing
-    go _ bs (SomeTerm (ConTerm _ cv :: Term v)) =
+    go _ bs (SomeTerm (ConTerm _ _ cv :: Term v)) =
       case (typeRep :: TypeRep v) of
         App (App gf _) _ ->
           case eqTypeRep (typeRep @(-->)) gf of
@@ -165,79 +165,79 @@ extractSymSomeTerm = go initialMemo
                       tm
             Nothing -> return HS.empty
         _ -> return HS.empty
-    go _ bs (SomeTerm (ForallTerm _ sym arg)) =
+    go _ bs (SomeTerm (ForallTerm _ _ sym arg)) =
       let newmemo = htmemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
-    go _ bs (SomeTerm (ExistsTerm _ sym arg)) =
+    go _ bs (SomeTerm (ExistsTerm _ _ sym arg)) =
       let newmemo = htmemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
-    go memo bs (SomeTerm (UnaryTerm _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BinaryTerm _ _ arg1 arg2)) =
+    go memo bs (SomeTerm (UnaryTerm _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (BinaryTerm _ _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (TernaryTerm _ _ arg1 arg2 arg3)) =
+    go memo bs (SomeTerm (TernaryTerm _ _ _ arg1 arg2 arg3)) =
       goTernary memo bs arg1 arg2 arg3
-    go memo bs (SomeTerm (NotTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (OrTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (AndTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (EqTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (DistinctTerm _ args)) =
+    go memo bs (SomeTerm (NotTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (OrTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (AndTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (EqTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (DistinctTerm _ _ args)) =
       combineAllSets $ map (gotyped memo bs) $ toList args
-    go memo bs (SomeTerm (ITETerm _ cond arg1 arg2)) =
+    go memo bs (SomeTerm (ITETerm _ _ cond arg1 arg2)) =
       goTernary memo bs cond arg1 arg2
-    go memo bs (SomeTerm (AddNumTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (NegNumTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (MulNumTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (AbsNumTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (SignumNumTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (LtOrdTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (LeOrdTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (AndBitsTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (OrBitsTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (XorBitsTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (ComplementBitsTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (ShiftLeftTerm _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (ShiftRightTerm _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (RotateLeftTerm _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (RotateRightTerm _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (BitCastTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BitCastOrTerm _ d arg)) = goBinary memo bs d arg
-    go memo bs (SomeTerm (BVConcatTerm _ arg1 arg2)) =
+    go memo bs (SomeTerm (AddNumTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (NegNumTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (MulNumTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (AbsNumTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (SignumNumTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (LtOrdTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (LeOrdTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (AndBitsTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (OrBitsTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (XorBitsTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (ComplementBitsTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (ShiftLeftTerm _ _ arg n1)) = goBinary memo bs arg n1
+    go memo bs (SomeTerm (ShiftRightTerm _ _ arg n1)) = goBinary memo bs arg n1
+    go memo bs (SomeTerm (RotateLeftTerm _ _ arg n1)) = goBinary memo bs arg n1
+    go memo bs (SomeTerm (RotateRightTerm _ _ arg n1)) = goBinary memo bs arg n1
+    go memo bs (SomeTerm (BitCastTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (BitCastOrTerm _ _ d arg)) = goBinary memo bs d arg
+    go memo bs (SomeTerm (BVConcatTerm _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (BVSelectTerm _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BVExtendTerm _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (ApplyTerm _ func arg)) = goBinary memo bs func arg
-    go memo bs (SomeTerm (DivIntegralTerm _ arg1 arg2)) =
+    go memo bs (SomeTerm (BVSelectTerm _ _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (BVExtendTerm _ _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (ApplyTerm _ _ func arg)) = goBinary memo bs func arg
+    go memo bs (SomeTerm (DivIntegralTerm _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (ModIntegralTerm _ arg1 arg2)) =
+    go memo bs (SomeTerm (ModIntegralTerm _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (QuotIntegralTerm _ arg1 arg2)) =
+    go memo bs (SomeTerm (QuotIntegralTerm _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (RemIntegralTerm _ arg1 arg2)) =
+    go memo bs (SomeTerm (RemIntegralTerm _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPTraitTerm _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FdivTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (RecipTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FloatingUnaryTerm _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (PowerTerm _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPUnaryTerm _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FPBinaryTerm _ _ arg1 arg2)) =
+    go memo bs (SomeTerm (FPTraitTerm _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (FdivTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (RecipTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (FloatingUnaryTerm _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (PowerTerm _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
+    go memo bs (SomeTerm (FPUnaryTerm _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (FPBinaryTerm _ _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPRoundingUnaryTerm _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FPRoundingBinaryTerm _ _ _ arg1 arg2)) =
+    go memo bs (SomeTerm (FPRoundingUnaryTerm _ _ _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (FPRoundingBinaryTerm _ _ _ _ arg1 arg2)) =
       goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPFMATerm _ mode arg1 arg2 arg3)) =
+    go memo bs (SomeTerm (FPFMATerm _ _ mode arg1 arg2 arg3)) =
       combineAllSets
         [ gotyped memo bs mode,
           gotyped memo bs arg1,
           gotyped memo bs arg2,
           gotyped memo bs arg3
         ]
-    go memo bs (SomeTerm (FromIntegralTerm _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FromFPOrTerm _ d mode arg)) =
+    go memo bs (SomeTerm (FromIntegralTerm _ _ arg)) = goUnary memo bs arg
+    go memo bs (SomeTerm (FromFPOrTerm _ _ d mode arg)) =
       goTernary memo bs d mode arg
-    go memo bs (SomeTerm (ToFPTerm _ mode arg _ _)) = goBinary memo bs mode arg
+    go memo bs (SomeTerm (ToFPTerm _ _ mode arg _ _)) = goBinary memo bs mode arg
     goUnary ::
       (SupportedPrim a) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
@@ -299,62 +299,62 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
     go :: forall b. Term b -> State (HS.HashSet SomeTerm) ()
     go t@ConTerm {} = add t
     go t@SymTerm {} = add t
-    go t@(ForallTerm _ _ arg) = goUnary t arg
-    go t@(ExistsTerm _ _ arg) = goUnary t arg
-    go t@(UnaryTerm _ _ arg) = goUnary t arg
-    go t@(BinaryTerm _ _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(TernaryTerm _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
-    go t@(NotTerm _ arg) = goUnary t arg
-    go t@(OrTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(AndTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(EqTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(DistinctTerm _ args) = do
+    go t@(ForallTerm _ _ _ arg) = goUnary t arg
+    go t@(ExistsTerm _ _ _ arg) = goUnary t arg
+    go t@(UnaryTerm _ _ _ arg) = goUnary t arg
+    go t@(BinaryTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(TernaryTerm _ _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
+    go t@(NotTerm _ _ arg) = goUnary t arg
+    go t@(OrTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(AndTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(EqTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(DistinctTerm _ _ args) = do
       b <- exists t
       if b
         then return ()
         else do
           add t
           traverse_ go args
-    go t@(ITETerm _ cond arg1 arg2) = goTernary t cond arg1 arg2
-    go t@(AddNumTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(NegNumTerm _ arg) = goUnary t arg
-    go t@(MulNumTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(AbsNumTerm _ arg) = goUnary t arg
-    go t@(SignumNumTerm _ arg) = goUnary t arg
-    go t@(LtOrdTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(LeOrdTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(AndBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(OrBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(XorBitsTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(ComplementBitsTerm _ arg) = goUnary t arg
-    go t@(ShiftLeftTerm _ arg n) = goBinary t arg n
-    go t@(ShiftRightTerm _ arg n) = goBinary t arg n
-    go t@(RotateLeftTerm _ arg n) = goBinary t arg n
-    go t@(RotateRightTerm _ arg n) = goBinary t arg n
-    go t@(BitCastTerm _ arg) = goUnary t arg
-    go t@(BitCastOrTerm _ d arg) = goBinary t d arg
-    go t@(BVConcatTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(BVSelectTerm _ _ _ arg) = goUnary t arg
-    go t@(BVExtendTerm _ _ _ arg) = goUnary t arg
-    go t@(ApplyTerm _ func arg) = goBinary t func arg
-    go t@(DivIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(ModIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(QuotIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(RemIntegralTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(FPTraitTerm _ _ arg) = goUnary t arg
-    go t@(FdivTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(RecipTerm _ arg) = goUnary t arg
-    go t@(FloatingUnaryTerm _ _ arg) = goUnary t arg
-    go t@(PowerTerm _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(FPUnaryTerm _ _ arg) = goUnary t arg
-    go t@(FPBinaryTerm _ _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(FPRoundingUnaryTerm _ _ _ arg) = goUnary t arg
-    go t@(FPRoundingBinaryTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(FPFMATerm _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
-    go t@(FromIntegralTerm _ arg) = goUnary t arg
-    go t@(FromFPOrTerm _ d mode arg) =
+    go t@(ITETerm _ _ cond arg1 arg2) = goTernary t cond arg1 arg2
+    go t@(AddNumTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(NegNumTerm _ _ arg) = goUnary t arg
+    go t@(MulNumTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(AbsNumTerm _ _ arg) = goUnary t arg
+    go t@(SignumNumTerm _ _ arg) = goUnary t arg
+    go t@(LtOrdTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(LeOrdTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(AndBitsTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(OrBitsTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(XorBitsTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(ComplementBitsTerm _ _ arg) = goUnary t arg
+    go t@(ShiftLeftTerm _ _ arg n) = goBinary t arg n
+    go t@(ShiftRightTerm _ _ arg n) = goBinary t arg n
+    go t@(RotateLeftTerm _ _ arg n) = goBinary t arg n
+    go t@(RotateRightTerm _ _ arg n) = goBinary t arg n
+    go t@(BitCastTerm _ _ arg) = goUnary t arg
+    go t@(BitCastOrTerm _ _ d arg) = goBinary t d arg
+    go t@(BVConcatTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(BVSelectTerm _ _ _ _ arg) = goUnary t arg
+    go t@(BVExtendTerm _ _ _ _ arg) = goUnary t arg
+    go t@(ApplyTerm _ _ func arg) = goBinary t func arg
+    go t@(DivIntegralTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(ModIntegralTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(QuotIntegralTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(RemIntegralTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPTraitTerm _ _ _ arg) = goUnary t arg
+    go t@(FdivTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(RecipTerm _ _ arg) = goUnary t arg
+    go t@(FloatingUnaryTerm _ _ _ arg) = goUnary t arg
+    go t@(PowerTerm _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPUnaryTerm _ _ _ arg) = goUnary t arg
+    go t@(FPBinaryTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPRoundingUnaryTerm _ _ _ _ arg) = goUnary t arg
+    go t@(FPRoundingBinaryTerm _ _ _ _ arg1 arg2) = goBinary t arg1 arg2
+    go t@(FPFMATerm _ _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
+    go t@(FromIntegralTerm _ _ arg) = goUnary t arg
+    go t@(FromFPOrTerm _ _ d mode arg) =
       goTernary t d mode arg
-    go t@(ToFPTerm _ mode arg _ _) = goBinary t mode arg
+    go t@(ToFPTerm _ _ mode arg _ _) = goBinary t mode arg
     goUnary :: forall a b. (SupportedPrim a) => Term a -> Term b -> State (HS.HashSet SomeTerm) ()
     goUnary t arg = do
       b <- exists t

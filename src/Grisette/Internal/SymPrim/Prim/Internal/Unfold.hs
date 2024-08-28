@@ -45,7 +45,7 @@ unaryPartialUnfoldOnce partial fallback = ret
   where
     oneLevel :: TotalRuleUnary a b -> PartialRuleUnary a b
     oneLevel fallback' x = case (x, partial x) of
-      (ITETerm _ cond vt vf, pr) ->
+      (ITETerm _ _ cond vt vf, pr) ->
         let pt = partial vt
             pf = partial vf
          in case (pt, pf) of
@@ -81,13 +81,13 @@ binaryPartialUnfoldOnce partial fallback = ret
         (partial' x y)
         ( \_ ->
             case (x, y) of
-              (ITETerm _ _ ITETerm {} _, ITETerm {}) -> Nothing
-              (ITETerm _ _ _ ITETerm {}, ITETerm {}) -> Nothing
-              (ITETerm {}, ITETerm _ _ ITETerm {} _) -> Nothing
-              (ITETerm {}, ITETerm _ _ _ ITETerm {}) -> Nothing
-              (ITETerm _ cond vt vf, _) ->
+              (ITETerm _ _ _ ITETerm {} _, ITETerm {}) -> Nothing
+              (ITETerm _ _ _ _ ITETerm {}, ITETerm {}) -> Nothing
+              (ITETerm {}, ITETerm _ _ _ ITETerm {} _) -> Nothing
+              (ITETerm {}, ITETerm _ _ _ _ ITETerm {}) -> Nothing
+              (ITETerm _ _ cond vt vf, _) ->
                 left cond vt vf y partial' fallback'
-              (_, ITETerm _ cond vt vf) ->
+              (_, ITETerm _ _ cond vt vf) ->
                 left cond vt vf x (flip partial') (flip fallback')
               _ -> Nothing
         )
@@ -131,7 +131,7 @@ generalUnaryUnfolded ::
 generalUnaryUnfolded compute =
   unaryUnfoldOnce
     ( \case
-        ConTerm _ lv -> Just $ conTerm $ compute lv
+        ConTerm _ _ lv -> Just $ conTerm $ compute lv
         _ -> Nothing
     )
 
@@ -147,6 +147,6 @@ generalBinaryUnfolded ::
 generalBinaryUnfolded compute =
   binaryUnfoldOnce
     ( \l r -> case (l, r) of
-        (ConTerm _ lv, ConTerm _ rv) -> Just $ conTerm $ compute lv rv
+        (ConTerm _ _ lv, ConTerm _ _ rv) -> Just $ conTerm $ compute lv rv
         _ -> Nothing
     )

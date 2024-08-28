@@ -45,14 +45,14 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils (pattern Dyn)
 
 doPevalBitCastSameType ::
   forall x b. (SupportedNonFuncPrim b) => Term x -> Maybe (Term b)
-doPevalBitCastSameType (BitCastTerm _ (Dyn (b :: Term b))) = Just b
-doPevalBitCastSameType (BitCastTerm _ x) = doPevalBitCastSameType x
+doPevalBitCastSameType (BitCastTerm _ _ (Dyn (b :: Term b))) = Just b
+doPevalBitCastSameType (BitCastTerm _ _ x) = doPevalBitCastSameType x
 doPevalBitCastSameType _ = Nothing
 
 -- | Partially evaluate a bitcast term. If no reduction is performed, return
 -- Nothing.
 doPevalBitCast :: (PEvalBitCastTerm a b) => Term a -> Maybe (Term b)
-doPevalBitCast (ConTerm _ v) = Just $ conTerm $ bitCast v
+doPevalBitCast (ConTerm _ _ v) = Just $ conTerm $ bitCast v
 doPevalBitCast t = doPevalBitCastSameType t
 
 pevalBitCastGeneral ::
@@ -67,7 +67,8 @@ doPevalBitCastOr ::
   Term b ->
   Term a ->
   Maybe (Term b)
-doPevalBitCastOr (ConTerm _ d) (ConTerm _ v) = Just $ conTerm $ bitCastOr d v
+doPevalBitCastOr (ConTerm _ _ d) (ConTerm _ _ v) =
+   Just $ conTerm $ bitCastOr d v
 doPevalBitCastOr _ _ = Nothing
 
 pevalBitCastOr ::
