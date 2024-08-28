@@ -271,6 +271,7 @@ import Type.Reflection
     type (:~~:) (HRefl),
   )
 import Unsafe.Coerce (unsafeCoerce)
+import Data.IORef (readIORef)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -2307,19 +2308,29 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DToFPTerm id0 id1) = s `hashWithSalt` (53 :: Int) `hashWithSalt` id0 `hashWithSalt` id1
 
 internTerm :: forall t. (SupportedPrim t) => Uninterned (Term t) -> Term t
-internTerm !bt = unsafeDupablePerformIO $   atomicModifyIORefCAS slot go
+internTerm !bt = unsafeDupablePerformIO $ do
+  CacheState oldi oldm <- readIORef slot
+  case M.lookup dt oldm of
+    Just t -> pure t
+    Nothing -> do
+      let !newi = oldi + 1
+      let !t = identify (wid * oldi + r) bt
+      let !newm = M.insert dt t oldm
+      atomicModifyIORefCAS slot (go newi newm t)
   where
     slot = getCache cache ! r
     !dt = describe bt
     !hdt = hash dt
     !wid = cacheWidth dt
     !r = hdt `mod` wid
-    go (CacheState i m) =
-      case M.lookup dt m of
-        Nothing ->
-          let !t = identify (wid * i + r) bt
-           in (CacheState (i + 1) (M.insert dt t m), t)
-        Just t -> (CacheState i m, t)
+    go newi newm newt (CacheState i m) =
+      if newi == i + 1
+        then (CacheState newi newm, newt)
+        else case M.lookup dt m of
+          Nothing ->
+            let !t = identify (wid * i + r) bt
+             in (CacheState (i + 1) (M.insert dt t m), t)
+          Just t -> (CacheState i m, t)
 
 -- | Construct and internalizing a 'UnaryTerm'.
 constructUnary ::
