@@ -136,9 +136,9 @@ generalPevalFromFPOrTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term a
-generalPevalFromFPOrTerm (ConTerm _ _ d) (ConTerm _ _ rd) (ConTerm _ _ f) =
+generalPevalFromFPOrTerm (ConTerm _ _ _ d) (ConTerm _ _ _ rd) (ConTerm _ _ _ f) =
   conTerm $ fromFPOr d rd f
-generalPevalFromFPOrTerm d _ (ConTerm _ _ f) | fpIsNaN f || fpIsInfinite f = d
+generalPevalFromFPOrTerm d _ (ConTerm _ _ _ f) | fpIsNaN f || fpIsInfinite f = d
 generalPevalFromFPOrTerm d rd f = fromFPOrTerm d rd f
 
 algRealPevalFromFPOrTerm ::
@@ -150,9 +150,9 @@ algRealPevalFromFPOrTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term a
-algRealPevalFromFPOrTerm (ConTerm _ _ d) _ (ConTerm _ _ f) =
+algRealPevalFromFPOrTerm (ConTerm _ _ _ d) _ (ConTerm _ _ _ f) =
   conTerm $ fromFPOr d RNE f
-algRealPevalFromFPOrTerm d _ (ConTerm _ _ f) | fpIsNaN f || fpIsInfinite f = d
+algRealPevalFromFPOrTerm d _ (ConTerm _ _ _ f) | fpIsNaN f || fpIsInfinite f = d
 algRealPevalFromFPOrTerm d _ f = fromFPOrTerm d (conTerm RNE) f
 
 generalDoPevalToFPTerm ::
@@ -163,7 +163,7 @@ generalDoPevalToFPTerm ::
   Term FPRoundingMode ->
   Term a ->
   Maybe (Term (FP eb sb))
-generalDoPevalToFPTerm (ConTerm _ _ rd) (ConTerm _ _ f) =
+generalDoPevalToFPTerm (ConTerm _ _ _ rd) (ConTerm _ _ _ f) =
   Just $ conTerm $ toFP rd f
 generalDoPevalToFPTerm _ _ = Nothing
 
@@ -185,9 +185,9 @@ fpDoPevalToFPTerm ::
   Term FPRoundingMode ->
   Term (FP eb1 sb1) ->
   Maybe (Term (FP eb sb))
-fpDoPevalToFPTerm (ConTerm _ _ rd) (ConTerm _ _ f) =
+fpDoPevalToFPTerm (ConTerm _ _ _ rd) (ConTerm _ _ _ f) =
   Just $ conTerm $ toFP rd f
-fpDoPevalToFPTerm _ (ConTerm _ _ f)
+fpDoPevalToFPTerm _ (ConTerm _ _ _ f)
   | fpIsNaN f = Just $ conTerm fpNaN
   | fpIsPositiveInfinite f = Just $ conTerm fpPositiveInfinite
   | fpIsNegativeInfinite f = Just $ conTerm fpNegativeInfinite

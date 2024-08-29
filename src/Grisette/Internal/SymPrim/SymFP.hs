@@ -211,7 +211,7 @@ instance (ValidFP eb sb) => IsString (SymFP eb sb) where
 instance (ValidFP eb sb) => Solvable (FP eb sb) (SymFP eb sb) where
   con = SymFP . conTerm
   sym = SymFP . symTerm
-  conView (SymFP (ConTerm _ _ t)) = Just t
+  conView (SymFP (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 
 instance (ValidFP eb sb) => Show (SymFP eb sb) where
@@ -283,7 +283,7 @@ instance IsString SymFPRoundingMode where
 instance Solvable FPRoundingMode SymFPRoundingMode where
   con = SymFPRoundingMode . conTerm
   sym = SymFPRoundingMode . symTerm
-  conView (SymFPRoundingMode (ConTerm _ _ t)) = Just t
+  conView (SymFPRoundingMode (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 
 instance Show SymFPRoundingMode where

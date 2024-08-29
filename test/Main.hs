@@ -32,6 +32,7 @@ import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
 import Grisette.Core.Data.UnionBaseTests (unionBaseTests)
+import Grisette.Internal.SymPrim.Prim.Internal.Caches (setupPeriodicTermCacheGC)
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
@@ -61,9 +62,8 @@ import Grisette.SymPrim.GeneralFunTests (generalFunTests)
 import qualified Grisette.SymPrim.Prim.BVTests
 import Grisette.SymPrim.Prim.BitsTests (bitsTests)
 import qualified Grisette.SymPrim.Prim.BoolTests
-import Grisette.SymPrim.Prim.IntegralTests
-  ( integralTests,
-  )
+import Grisette.SymPrim.Prim.ConcurrentTests (concurrentTests)
+import Grisette.SymPrim.Prim.IntegralTests (integralTests)
 import Grisette.SymPrim.Prim.ModelTests (modelTests)
 import Grisette.SymPrim.Prim.NumTests (numTests)
 import qualified Grisette.SymPrim.Prim.TabularFunTests
@@ -76,7 +76,6 @@ import Grisette.Unified.EvalModeTest (evalModeTest)
 import Grisette.Unified.UnifiedClassesTest (unifiedClassesTest)
 import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
-import Grisette.Internal.SymPrim.Prim.Internal.Caches (setupPeriodicTermCacheGC)
 
 main :: IO ()
 main = do
@@ -174,7 +173,8 @@ irTests =
     "Grisette.SymPrim"
     [ testGroup
         "Prim"
-        [ bitsTests,
+        [ concurrentTests,
+          bitsTests,
           Grisette.SymPrim.Prim.BoolTests.boolTests,
           Grisette.SymPrim.Prim.BVTests.bvTests,
           integralTests,

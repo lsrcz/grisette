@@ -124,7 +124,7 @@ instance
   where
   con = SymTabularFun . conTerm
   sym = SymTabularFun . symTerm
-  conView (SymTabularFun (ConTerm _ _ t)) = Just t
+  conView (SymTabularFun (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 
 instance

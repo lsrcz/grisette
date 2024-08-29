@@ -358,6 +358,7 @@ test-suite spec
       Grisette.SymPrim.Prim.BitsTests
       Grisette.SymPrim.Prim.BoolTests
       Grisette.SymPrim.Prim.BVTests
+      Grisette.SymPrim.Prim.ConcurrentTests
       Grisette.SymPrim.Prim.IntegralTests
       Grisette.SymPrim.Prim.ModelTests
       Grisette.SymPrim.Prim.NumTests

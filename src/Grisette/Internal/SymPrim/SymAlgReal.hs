@@ -92,7 +92,7 @@ instance IsString SymAlgReal where
 instance Solvable AlgReal SymAlgReal where
   con = SymAlgReal . conTerm
   sym = SymAlgReal . symTerm
-  conView (SymAlgReal (ConTerm _ _ t)) = Just t
+  conView (SymAlgReal (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 
 instance Show SymAlgReal where

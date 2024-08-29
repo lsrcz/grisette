@@ -33,11 +33,17 @@ module Grisette.Internal.SymPrim.Prim.Internal.Caches
 where
 
 #if MIN_VERSION_base(4, 19, 0)
-import GHC.Conc.Sync (fromThreadId, threadStatus, ThreadStatus (ThreadDied, ThreadFinished))
+import GHC.Conc.Sync (fromThreadId)
 #endif
 
-import Control.Concurrent (ThreadId, forkIO, mkWeakThreadId, myThreadId, threadDelay)
-import Control.Monad (filterM, forever, replicateM, when)
+import Control.Concurrent
+  ( ThreadId,
+    forkIO,
+    mkWeakThreadId,
+    myThreadId,
+    threadDelay,
+  )
+import Control.Monad (filterM, forever, replicateM)
 import qualified Data.Array as A
 import Data.Atomics (atomicModifyIORefCAS, atomicModifyIORefCAS_)
 import Data.Data (Proxy (Proxy), TypeRep, Typeable, typeRep)
@@ -48,6 +54,10 @@ import Data.Hashable (Hashable (hash, hashWithSalt))
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Word (Word64)
 import GHC.Base (Any)
+import GHC.Conc
+  ( ThreadStatus (ThreadDied, ThreadFinished),
+    threadStatus,
+  )
 import GHC.IO (stToIO, unsafePerformIO)
 import GHC.Weak (Weak, deRefWeak)
 import Unsafe.Coerce (unsafeCoerce)
@@ -101,9 +111,9 @@ class (Hashable (Description t)) => Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
-  identify :: WeakThreadId -> Id -> Uninterned t -> t
+  identify :: WeakThreadId -> Int -> Id -> Uninterned t -> t
   threadId :: t -> WeakThreadId
-  cacheWidth :: p t -> Int
+  -- cacheWidth :: p t -> Int
 
 {-# NOINLINE termCacheCell #-}
 termCacheCell :: IORef (M.HashMap WeakThreadId (IORef (M.HashMap TypeRep Any)))
@@ -122,30 +132,30 @@ setupPeriodicTermCacheGC n = do
     shallowCollectGarbageTermCache
   return ()
 
+cacheWidth :: Int
+cacheWidth = 100
+{-# INLINE cacheWidth #-}
+
 mkCache :: forall t. (Interned t) => WeakThreadId -> IO (Cache t)
 mkCache tid = result
   where
     element = CacheState <$> HT.new <*> HT.new
-    w = cacheWidth (Proxy @t)
     result = do
-      elements <- replicateM w element
-      return $ Cache tid $ A.listArray (0, w - 1) elements
+      elements <- replicateM cacheWidth element
+      return $ Cache tid $ A.listArray (0, cacheWidth - 1) elements
 
 -- | Internal cache for memoization of term construction. Different types have
 -- different caches and they may share names, ids, or representations, but they
 -- are not the same term.
-typeMemoizedCache :: forall a. (Interned a, Typeable a) => IO (Cache a)
-typeMemoizedCache = do
+typeMemoizedCache :: 
+ forall a. (Interned a, Typeable a) => WeakThreadId -> IO (Cache a)
+typeMemoizedCache tid = do
   caches <- readIORef termCacheCell
-  tid <- myWeakThreadId
   case M.lookup tid caches of
     Just cref -> do
       cache <- readIORef cref
       case M.lookup (typeRep (Proxy @a)) cache of
-        Just d -> do
-          let x = unsafeCoerce d
-          when (cacheTid x /= tid) $ error "Bad thread id in intern!!!"
-          return x
+        Just d -> return $ unsafeCoerce d
         Nothing -> do
           r1 <- mkCache tid
           writeIORef cref $!
@@ -156,7 +166,7 @@ typeMemoizedCache = do
       r <- newIORef $ M.singleton (typeRep (Proxy @a)) (unsafeCoerce r1)
       atomicModifyIORefCAS termCacheCell $ \m -> (M.insert tid r m, r1)
 
-haveCache :: forall t. (Interned t) => IO Bool
+haveCache :: IO Bool
 haveCache = do
   caches <- readIORef termCacheCell
   tid <- myWeakThreadId
@@ -165,18 +175,16 @@ haveCache = do
 intern :: forall t. (Interned t, Typeable t) => Uninterned t -> IO t
 intern !bt = do
   tid <- myWeakThreadId
-  cache <- typeMemoizedCache
-  when (cacheTid cache /= tid) $ error "Bad thread id in intern!"
+  cache <- typeMemoizedCache tid
   let !dt = describe bt :: Description t
       !hdt = hash dt
-      !wid = cacheWidth dt
-      !r = hdt `mod` wid
+      !r = hdt `mod` cacheWidth
       CacheState s _ = getCache cache A.! r
   HT.lookup s dt >>= \case
     Nothing -> do
       i <- stToIO $ HTST.size s
-      let !newId = wid * i + r
-          !t = identify tid newId bt
+      let !newId = cacheWidth * i + r
+          !t = identify tid hdt newId bt
       HT.insert s dt t
       return t
     Just t -> return t
