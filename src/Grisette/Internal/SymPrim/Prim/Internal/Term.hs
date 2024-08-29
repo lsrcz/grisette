@@ -2447,67 +2447,430 @@ eqHeteroSymbol0 (tpa, taga) (tpb, tagb) = case eqTypeRep tpb tpa of
   Nothing -> False
 {-# INLINE eqHeteroSymbol0 #-}
 
+preHashConDescription :: (Hashable t) => t -> Int
+preHashConDescription = hashWithSalt 0
+{-# INLINE preHashConDescription #-}
+
+preHashSymDescription :: (Hashable t) => TypedSymbol 'AnyKind t -> Int
+preHashSymDescription = hashWithSalt 1
+{-# INLINE preHashSymDescription #-}
+
+preHashForallDescription ::
+  (Hashable t) => (TypeRep t, TypedSymbol 'ConstantKind t) -> HashId -> Int
+preHashForallDescription (tp, sym) h =
+  2
+    `hashWithSalt` tp
+    `hashWithSalt` sym
+    `hashWithSalt` h
+{-# INLINE preHashForallDescription #-}
+
+preHashExistsDescription ::
+  (Hashable t) => (TypeRep t, TypedSymbol 'ConstantKind t) -> HashId -> Int
+preHashExistsDescription (tp, sym) h =
+  3
+    `hashWithSalt` tp
+    `hashWithSalt` sym
+    `hashWithSalt` h
+{-# INLINE preHashExistsDescription #-}
+
+preHashUnaryDescription ::
+  (Hashable tag) => (TypeRep tag, tag) -> TypeHashId arg -> Int
+preHashUnaryDescription (tp, tag) h =
+  4
+    `hashWithSalt` tp
+    `hashWithSalt` tag
+    `hashWithSalt` h
+{-# INLINE preHashUnaryDescription #-}
+
+preHashBinaryDescription ::
+  (Hashable tag) =>
+  (TypeRep tag, tag) ->
+  TypeHashId arg1 ->
+  TypeHashId arg2 ->
+  Int
+preHashBinaryDescription (tp, tag) h1 h2 =
+  5
+    `hashWithSalt` tp
+    `hashWithSalt` tag
+    `hashWithSalt` h1
+    `hashWithSalt` h2
+{-# INLINE preHashBinaryDescription #-}
+
+preHashTernaryDescription ::
+  (Hashable tag) =>
+  (TypeRep tag, tag) ->
+  TypeHashId arg1 ->
+  TypeHashId arg2 ->
+  TypeHashId arg3 ->
+  Int
+preHashTernaryDescription (tp, tag) h1 h2 h3 =
+  6
+    `hashWithSalt` tp
+    `hashWithSalt` tag
+    `hashWithSalt` h1
+    `hashWithSalt` h2
+    `hashWithSalt` h3
+{-# INLINE preHashTernaryDescription #-}
+
+preHashNotDescription :: HashId -> Int
+preHashNotDescription = hashWithSalt 7
+{-# INLINE preHashNotDescription #-}
+
+preHashOrDescription :: HashId -> HashId -> Int
+preHashOrDescription h1 h2 = 8 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashOrDescription #-}
+
+preHashAndDescription :: HashId -> HashId -> Int
+preHashAndDescription h1 h2 = 9 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashAndDescription #-}
+
+preHashEqDescription :: TypeRep t -> HashId -> HashId -> Int
+preHashEqDescription tp h1 h2 =
+  10 `hashWithSalt` tp `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashEqDescription #-}
+
+preHashDistinctDescription :: TypeRep t -> NonEmpty HashId -> Int
+preHashDistinctDescription tp hs = 11 `hashWithSalt` tp `hashWithSalt` hs
+{-# INLINE preHashDistinctDescription #-}
+
+preHashITEDescription :: HashId -> HashId -> HashId -> Int
+preHashITEDescription h1 h2 h3 =
+  12 `hashWithSalt` h1 `hashWithSalt` h2 `hashWithSalt` h3
+{-# INLINE preHashITEDescription #-}
+
+preHashAddNumDescription :: HashId -> HashId -> Int
+preHashAddNumDescription h1 h2 = 13 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashAddNumDescription #-}
+
+preHashNegNumDescription :: HashId -> Int
+preHashNegNumDescription = hashWithSalt 14
+{-# INLINE preHashNegNumDescription #-}
+
+preHashMulNumDescription :: HashId -> HashId -> Int
+preHashMulNumDescription h1 h2 = 15 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashMulNumDescription #-}
+
+preHashAbsNumDescription :: HashId -> Int
+preHashAbsNumDescription = hashWithSalt 16
+{-# INLINE preHashAbsNumDescription #-}
+
+preHashSignumNumDescription :: HashId -> Int
+preHashSignumNumDescription = hashWithSalt 17
+{-# INLINE preHashSignumNumDescription #-}
+
+preHashLtOrdDescription :: TypeRep t -> HashId -> HashId -> Int
+preHashLtOrdDescription tp h1 h2 =
+  18 `hashWithSalt` tp `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashLtOrdDescription #-}
+
+preHashLeOrdDescription :: TypeRep t -> HashId -> HashId -> Int
+preHashLeOrdDescription tp h1 h2 =
+  19 `hashWithSalt` tp `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashLeOrdDescription #-}
+
+preHashAndBitsDescription :: HashId -> HashId -> Int
+preHashAndBitsDescription h1 h2 = 20 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashAndBitsDescription #-}
+
+preHashOrBitsDescription :: HashId -> HashId -> Int
+preHashOrBitsDescription h1 h2 = 21 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashOrBitsDescription #-}
+
+preHashXorBitsDescription :: HashId -> HashId -> Int
+preHashXorBitsDescription h1 h2 = 22 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashXorBitsDescription #-}
+
+preHashComplementBitsDescription :: HashId -> Int
+preHashComplementBitsDescription = hashWithSalt 23
+{-# INLINE preHashComplementBitsDescription #-}
+
+preHashShiftLeftDescription :: HashId -> HashId -> Int
+preHashShiftLeftDescription h1 h2 = 24 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashShiftLeftDescription #-}
+
+preHashShiftRightDescription :: HashId -> HashId -> Int
+preHashShiftRightDescription h1 h2 = 25 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashShiftRightDescription #-}
+
+preHashRotateLeftDescription :: HashId -> HashId -> Int
+preHashRotateLeftDescription h1 h2 = 26 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashRotateLeftDescription #-}
+
+preHashRotateRightDescription :: HashId -> HashId -> Int
+preHashRotateRightDescription h1 h2 = 27 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashRotateRightDescription #-}
+
+preHashBVConcatDescription ::
+  TypeRep bv1 -> TypeRep bv2 -> HashId -> HashId -> Int
+preHashBVConcatDescription tp1 tp2 h1 h2 =
+  28 `hashWithSalt` tp1 `hashWithSalt` tp2 `hashWithSalt` h1 `hashWithSalt` h2
+
+preHashBVSelectDescription ::
+  forall bv (ix :: Nat) (n :: Nat). TypeRep ix -> TypeHashId (bv n) -> Int
+preHashBVSelectDescription tp h = 29 `hashWithSalt` tp `hashWithSalt` h
+
+preHashBVExtendDescription ::
+  forall bv (r :: Nat) (l :: Nat).
+  Bool ->
+  TypeRep r ->
+  TypeHashId (bv l) ->
+  Int
+preHashBVExtendDescription signed tp h =
+  30 `hashWithSalt` signed `hashWithSalt` tp `hashWithSalt` h
+
+preHashBitCastDescription :: TypeHashId a -> Int
+preHashBitCastDescription = hashWithSalt 31
+{-# INLINE preHashBitCastDescription #-}
+
+preHashBitCastOrDescription :: HashId -> TypeHashId b -> Int
+preHashBitCastOrDescription h1 h2 = 32 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashBitCastOrDescription #-}
+
+preHashApplyDescription :: TypeHashId f -> TypeHashId a -> Int
+preHashApplyDescription h1 h2 = 33 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashApplyDescription #-}
+
+preHashDivIntegralDescription :: HashId -> HashId -> Int
+preHashDivIntegralDescription h1 h2 = 34 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashDivIntegralDescription #-}
+
+preHashModIntegralDescription :: HashId -> HashId -> Int
+preHashModIntegralDescription h1 h2 = 35 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashModIntegralDescription #-}
+
+preHashQuotIntegralDescription :: HashId -> HashId -> Int
+preHashQuotIntegralDescription h1 h2 = 36 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashQuotIntegralDescription #-}
+
+preHashRemIntegralDescription :: HashId -> HashId -> Int
+preHashRemIntegralDescription h1 h2 = 37 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashRemIntegralDescription #-}
+
+preHashFPTraitDescription :: FPTrait -> TypeHashId (FP eb sb) -> Int
+preHashFPTraitDescription trait h = 38 `hashWithSalt` trait `hashWithSalt` h
+{-# INLINE preHashFPTraitDescription #-}
+
+preHashFdivDescription :: HashId -> HashId -> Int
+preHashFdivDescription h1 h2 = 39 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashFdivDescription #-}
+
+preHashRecipDescription :: HashId -> Int
+preHashRecipDescription = hashWithSalt 40
+{-# INLINE preHashRecipDescription #-}
+
+preHashFloatingUnaryDescription :: FloatingUnaryOp -> HashId -> Int
+preHashFloatingUnaryDescription op h = 41 `hashWithSalt` op `hashWithSalt` h
+{-# INLINE preHashFloatingUnaryDescription #-}
+
+preHashPowerDescription :: HashId -> HashId -> Int
+preHashPowerDescription h1 h2 = 42 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashPowerDescription #-}
+
+preHashFPUnaryDescription :: FPUnaryOp -> HashId -> Int
+preHashFPUnaryDescription op h = 43 `hashWithSalt` op `hashWithSalt` h
+{-# INLINE preHashFPUnaryDescription #-}
+
+preHashFPBinaryDescription :: FPBinaryOp -> HashId -> HashId -> Int
+preHashFPBinaryDescription op h1 h2 =
+  44 `hashWithSalt` op `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashFPBinaryDescription #-}
+
+preHashFPRoundingUnaryDescription ::
+  FPRoundingUnaryOp -> HashId -> HashId -> Int
+preHashFPRoundingUnaryDescription op mode h =
+  45 `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` h
+{-# INLINE preHashFPRoundingUnaryDescription #-}
+
+preHashFPRoundingBinaryDescription ::
+  FPRoundingBinaryOp -> HashId -> HashId -> HashId -> Int
+preHashFPRoundingBinaryDescription op mode h1 h2 =
+  46 `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` h1 `hashWithSalt` h2
+
+preHashFPFMADescription ::
+  HashId -> HashId -> HashId -> HashId -> Int
+preHashFPFMADescription mode h1 h2 h3 =
+  47 `hashWithSalt` mode `hashWithSalt` h1 `hashWithSalt` h2 `hashWithSalt` h3
+{-# INLINE preHashFPFMADescription #-}
+
+preHashFromIntegralDescription :: TypeHashId a -> Int
+preHashFromIntegralDescription = hashWithSalt 48
+{-# INLINE preHashFromIntegralDescription #-}
+
+preHashFromFPOrDescription :: HashId -> HashId -> TypeHashId (FP eb sb) -> Int
+preHashFromFPOrDescription h1 h2 h3 =
+  49 `hashWithSalt` h1 `hashWithSalt` h2 `hashWithSalt` h3
+{-# INLINE preHashFromFPOrDescription #-}
+
+preHashToFPTermDescription :: HashId -> TypeHashId a -> Int
+preHashToFPTermDescription h1 h2 = 50 `hashWithSalt` h1 `hashWithSalt` h2
+{-# INLINE preHashToFPTermDescription #-}
+
 instance (SupportedPrim t) => Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
-    DConTerm :: t -> Description (Term t)
-    DSymTerm :: TypedSymbol 'AnyKind t -> Description (Term t)
-    DForallTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) -> {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DExistsTerm :: {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) -> {-# UNPACK #-} !HashId -> Description (Term Bool)
+    DConTerm :: {-# UNPACK #-} !Int -> t -> Description (Term t)
+    DSymTerm ::
+      {-# UNPACK #-} !Int ->
+      TypedSymbol 'AnyKind t ->
+      Description (Term t)
+    DForallTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DExistsTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
     DUnaryTerm ::
       (Eq tag, Hashable tag) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !(TypeRep tag, tag) ->
       {-# UNPACK #-} !(TypeHashId arg) ->
       Description (Term t)
     DBinaryTerm ::
       (Eq tag, Hashable tag) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !(TypeRep tag, tag) ->
       {-# UNPACK #-} !(TypeHashId arg1) ->
       {-# UNPACK #-} !(TypeHashId arg2) ->
       Description (Term t)
     DTernaryTerm ::
       (Eq tag, Hashable tag) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !(TypeRep tag, tag) ->
       {-# UNPACK #-} !(TypeHashId arg1) ->
       {-# UNPACK #-} !(TypeHashId arg2) ->
       {-# UNPACK #-} !(TypeHashId arg3) ->
       Description (Term t)
-    DNotTerm :: {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DOrTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DAndTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DEqTerm :: TypeRep args -> {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DDistinctTerm :: TypeRep args -> !(NonEmpty HashId) -> Description (Term Bool)
-    DITETerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DAddNumTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DNegNumTerm :: {-# UNPACK #-} !HashId -> Description (Term t)
-    DMulNumTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DAbsNumTerm :: {-# UNPACK #-} !HashId -> Description (Term t)
-    DSignumNumTerm :: {-# UNPACK #-} !HashId -> Description (Term t)
-    DLtOrdTerm :: TypeRep args -> {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DLeOrdTerm :: TypeRep args -> {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term Bool)
-    DAndBitsTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DOrBitsTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DXorBitsTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DComplementBitsTerm :: {-# UNPACK #-} !HashId -> Description (Term t)
-    DShiftLeftTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DShiftRightTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DRotateLeftTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DRotateRightTerm :: {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
-    DBVConcatTerm :: TypeRep bv1 -> TypeRep bv2 -> {-# UNPACK #-} !HashId -> {-# UNPACK #-} !HashId -> Description (Term t)
+    DNotTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DOrTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DAndTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DEqTerm ::
+      {-# UNPACK #-} !Int ->
+      !(TypeRep args) ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DDistinctTerm ::
+      {-# UNPACK #-} !Int ->
+      TypeRep args ->
+      !(NonEmpty HashId) ->
+      Description (Term Bool)
+    DITETerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DAddNumTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DNegNumTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DMulNumTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DAbsNumTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DSignumNumTerm ::
+      {-# UNPACK #-} !Int -> {-# UNPACK #-} !HashId -> Description (Term t)
+    DLtOrdTerm ::
+      {-# UNPACK #-} !Int ->
+      TypeRep args ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DLeOrdTerm ::
+      {-# UNPACK #-} !Int ->
+      TypeRep args ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term Bool)
+    DAndBitsTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DOrBitsTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DXorBitsTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DComplementBitsTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DShiftLeftTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DShiftRightTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DRotateLeftTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DRotateRightTerm ::
+      {-# UNPACK #-} !Int ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
+    DBVConcatTerm ::
+      {-# UNPACK #-} !Int ->
+      TypeRep bv1 ->
+      TypeRep bv2 ->
+      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term t)
     DBitCastTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !(TypeHashId a) ->
       Description (Term b)
     DBitCastOrTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !(TypeHashId a) ->
       Description (Term b)
     DBVSelectTerm ::
       forall bv (n :: Nat) (w :: Nat) (ix :: Nat).
+      {-# UNPACK #-} !Int ->
       !(TypeRep ix) ->
       {-# UNPACK #-} !(TypeHashId (bv n)) ->
       Description (Term (bv w))
     DBVExtendTerm ::
       forall bv (l :: Nat) (r :: Nat).
+      {-# UNPACK #-} !Int ->
       !Bool ->
       !(TypeRep r) ->
       {-# UNPACK #-} !(TypeHashId (bv l)) ->
@@ -2515,60 +2878,79 @@ instance (SupportedPrim t) => Interned (Term t) where
     DApplyTerm ::
       ( PEvalApplyTerm f a b
       ) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !(TypeHashId f) ->
       {-# UNPACK #-} !(TypeHashId a) ->
       Description (Term b)
     DDivIntegralTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term a)
     DModIntegralTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term a)
     DQuotIntegralTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term a)
     DRemIntegralTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term a)
     DFPTraitTerm ::
       (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
+      {-# UNPACK #-} !Int ->
       FPTrait ->
       {-# UNPACK #-} !(TypeHashId (FP eb sb)) ->
       Description (Term Bool)
     DFdivTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term a)
-    DRecipTerm :: {-# UNPACK #-} !HashId -> Description (Term a)
+    DRecipTerm ::
+      {-# UNPACK #-} !Int -> {-# UNPACK #-} !HashId -> Description (Term a)
     DFloatingUnaryTerm ::
-      FloatingUnaryOp -> {-# UNPACK #-} !HashId -> Description (Term a)
+      {-# UNPACK #-} !Int ->
+      FloatingUnaryOp ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term a)
     DPowerTerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term a)
     DFPUnaryTerm ::
-      FPUnaryOp -> {-# UNPACK #-} !HashId -> Description (Term (FP eb sb))
+      {-# UNPACK #-} !Int ->
+      FPUnaryOp ->
+      {-# UNPACK #-} !HashId ->
+      Description (Term (FP eb sb))
     DFPBinaryTerm ::
+      {-# UNPACK #-} !Int ->
       FPBinaryOp ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term (FP eb sb))
     DFPRoundingUnaryTerm ::
+      {-# UNPACK #-} !Int ->
       FPRoundingUnaryOp ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term (FP eb sb))
     DFPRoundingBinaryTerm ::
+      {-# UNPACK #-} !Int ->
       FPRoundingBinaryOp ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term (FP eb sb))
     DFPFMATerm ::
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
@@ -2576,88 +2958,357 @@ instance (SupportedPrim t) => Interned (Term t) where
       Description (Term (FP eb sb))
     DFromIntegralTerm ::
       (PEvalFromIntegralTerm a b) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !(TypeHashId a) ->
       Description (Term b)
     DFromFPOrTerm ::
       (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !(TypeHashId (FP eb sb)) ->
       Description (Term a)
     DToFPTerm ::
       (PEvalIEEEFPConvertibleTerm a, ValidFP eb sb) =>
+      {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !(TypeHashId a) ->
       Description (Term (FP eb sb))
 
-  describe (UConTerm v) = DConTerm v
-  describe ((USymTerm name) :: UTerm t) = DSymTerm @t name
+  describe (UConTerm v) = DConTerm (preHashConDescription v) v
+  describe ((USymTerm name) :: UTerm t) =
+    DSymTerm @t (preHashSymDescription name) name
   describe (UForallTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
-    DForallTerm (typeRep :: TypeRep arg, sym) (hashId arg)
+    let tsym = (typeRep @arg, sym)
+        argHashId = hashId arg
+     in DForallTerm (preHashForallDescription tsym argHashId) tsym argHashId
   describe (UExistsTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
-    DExistsTerm (typeRep :: TypeRep arg, sym) (hashId arg)
+    let tsym = (typeRep @arg, sym)
+        argHashId = hashId arg
+     in DExistsTerm (preHashExistsDescription tsym argHashId) tsym argHashId
   describe ((UUnaryTerm (tag :: tagt) (tm :: Term arg)) :: UTerm t) =
-    DUnaryTerm (typeRep, tag) (typeHashId tm)
-  describe ((UBinaryTerm (tag :: tagt) (tm1 :: Term arg1) (tm2 :: Term arg2)) :: UTerm t) =
-    DBinaryTerm @tagt @arg1 @arg2 @t (typeRep, tag) (typeHashId tm1) (typeHashId tm2)
-  describe ((UTernaryTerm (tag :: tagt) (tm1 :: Term arg1) (tm2 :: Term arg2) (tm3 :: Term arg3)) :: UTerm t) =
-    DTernaryTerm @tagt @arg1 @arg2 @arg3 @t
-      (typeRep, tag)
-      (typeHashId tm1)
-      (typeHashId tm2)
-      (typeHashId tm3)
-  describe (UNotTerm arg) = DNotTerm (hashId arg)
-  describe (UOrTerm arg1 arg2) = DOrTerm (hashId arg1) (hashId arg2)
-  describe (UAndTerm arg1 arg2) = DAndTerm (hashId arg1) (hashId arg2)
-  describe (UEqTerm (arg1 :: Term arg) arg2) = DEqTerm (typeRep :: TypeRep arg) (hashId arg1) (hashId arg2)
+    let ttag = (typeRep @tagt, tag)
+        tmHashId = typeHashId tm
+     in DUnaryTerm (preHashUnaryDescription ttag tmHashId) ttag tmHashId
+  describe
+    ((UBinaryTerm (tag :: tagt) tm1 tm2) :: UTerm t) =
+      let ttag = (typeRep @tagt, tag)
+          tm1HashId = typeHashId tm1
+          tm2HashId = typeHashId tm2
+       in DBinaryTerm
+            (preHashBinaryDescription ttag tm1HashId tm2HashId)
+            ttag
+            tm1HashId
+            tm2HashId
+  describe ((UTernaryTerm (tag :: tagt) tm1 tm2 tm3) :: UTerm t) =
+    let ttag = (typeRep @tagt, tag)
+        tm1HashId = typeHashId tm1
+        tm2HashId = typeHashId tm2
+        tm3HashId = typeHashId tm3
+     in DTernaryTerm
+          (preHashTernaryDescription ttag tm1HashId tm2HashId tm3HashId)
+          ttag
+          tm1HashId
+          tm2HashId
+          tm3HashId
+  describe (UNotTerm arg) =
+    let argHashId = hashId arg
+     in DNotTerm (preHashNotDescription argHashId) argHashId
+  describe (UOrTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DOrTerm
+          (preHashOrDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UAndTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DAndTerm
+          (preHashAndDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UEqTerm (arg1 :: Term arg) arg2) =
+    DEqTerm
+      (preHashEqDescription (typeRep @arg) (hashId arg1) (hashId arg2))
+      (typeRep @arg)
+      (hashId arg1)
+      (hashId arg2)
   describe (UDistinctTerm args@((_ :: Term arg) :| _)) =
-    DDistinctTerm (typeRep :: TypeRep arg) (hashId <$> args)
-  describe (UITETerm cond (l :: Term arg) r) = DITETerm (hashId cond) (hashId l) (hashId r)
-  describe (UAddNumTerm arg1 arg2) = DAddNumTerm (hashId arg1) (hashId arg2)
-  describe (UNegNumTerm arg) = DNegNumTerm (hashId arg)
-  describe (UMulNumTerm arg1 arg2) = DMulNumTerm (hashId arg1) (hashId arg2)
-  describe (UAbsNumTerm arg) = DAbsNumTerm (hashId arg)
-  describe (USignumNumTerm arg) = DSignumNumTerm (hashId arg)
-  describe (ULtOrdTerm (arg1 :: arg) arg2) = DLtOrdTerm (typeRep :: TypeRep arg) (hashId arg1) (hashId arg2)
-  describe (ULeOrdTerm (arg1 :: arg) arg2) = DLeOrdTerm (typeRep :: TypeRep arg) (hashId arg1) (hashId arg2)
-  describe (UAndBitsTerm arg1 arg2) = DAndBitsTerm (hashId arg1) (hashId arg2)
-  describe (UOrBitsTerm arg1 arg2) = DOrBitsTerm (hashId arg1) (hashId arg2)
-  describe (UXorBitsTerm arg1 arg2) = DXorBitsTerm (hashId arg1) (hashId arg2)
-  describe (UComplementBitsTerm arg) = DComplementBitsTerm (hashId arg)
-  describe (UShiftLeftTerm arg n) = DShiftLeftTerm (hashId arg) (hashId n)
-  describe (UShiftRightTerm arg n) = DShiftRightTerm (hashId arg) (hashId n)
-  describe (URotateLeftTerm arg n) = DRotateLeftTerm (hashId arg) (hashId n)
-  describe (URotateRightTerm arg n) = DRotateRightTerm (hashId arg) (hashId n)
-  describe (UBitCastTerm (arg :: Term a)) = DBitCastTerm (typeHashId arg)
-  describe (UBitCastOrTerm d (arg :: Term a)) = DBitCastOrTerm (hashId d) (typeHashId arg)
-  describe (UBVConcatTerm (arg1 :: bv1) (arg2 :: bv2)) =
-    DBVConcatTerm (typeRep :: TypeRep bv1) (typeRep :: TypeRep bv2) (hashId arg1) (hashId arg2)
+    let tr = typeRep @arg
+     in DDistinctTerm
+          (preHashDistinctDescription tr (hashId <$> args))
+          tr
+          (hashId <$> args)
+  describe (UITETerm cond (l :: Term arg) r) =
+    let condHashId = hashId cond
+        lHashId = hashId l
+        rHashId = hashId r
+     in DITETerm
+          (preHashITEDescription condHashId lHashId rHashId)
+          condHashId
+          lHashId
+          rHashId
+  describe (UAddNumTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DAddNumTerm
+          (preHashAddNumDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UNegNumTerm arg) =
+    let argHashId = hashId arg
+     in DNegNumTerm (preHashNegNumDescription argHashId) argHashId
+  describe (UMulNumTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DMulNumTerm
+          (preHashMulNumDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UAbsNumTerm arg) =
+    let argHashId = hashId arg
+     in DAbsNumTerm (preHashAbsNumDescription argHashId) argHashId
+  describe (USignumNumTerm arg) =
+    let argHashId = hashId arg
+     in DSignumNumTerm (preHashSignumNumDescription argHashId) argHashId
+  describe (ULtOrdTerm (arg1 :: arg) arg2) =
+    let tr = typeRep @arg
+        arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DLtOrdTerm
+          (preHashLtOrdDescription tr arg1HashId arg2HashId)
+          tr
+          arg1HashId
+          arg2HashId
+  describe (ULeOrdTerm (arg1 :: arg) arg2) =
+    let tr = typeRep @arg
+        arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DLeOrdTerm
+          (preHashLeOrdDescription tr arg1HashId arg2HashId)
+          tr
+          arg1HashId
+          arg2HashId
+  describe (UAndBitsTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DAndBitsTerm
+          (preHashAndBitsDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UOrBitsTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DOrBitsTerm
+          (preHashOrBitsDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UXorBitsTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DXorBitsTerm
+          (preHashXorBitsDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UComplementBitsTerm arg) =
+    let argHashId = hashId arg
+     in DComplementBitsTerm
+          (preHashComplementBitsDescription argHashId)
+          argHashId
+  describe (UShiftLeftTerm arg n) =
+    let argHashId = hashId arg
+        nHashId = hashId n
+     in DShiftLeftTerm
+          (preHashShiftLeftDescription argHashId nHashId)
+          argHashId
+          nHashId
+  describe (UShiftRightTerm arg n) =
+    let argHashId = hashId arg
+        nHashId = hashId n
+     in DShiftRightTerm
+          (preHashShiftRightDescription argHashId nHashId)
+          argHashId
+          nHashId
+  describe (URotateLeftTerm arg n) =
+    let argHashId = hashId arg
+        nHashId = hashId n
+     in DRotateLeftTerm
+          (preHashRotateLeftDescription argHashId nHashId)
+          argHashId
+          nHashId
+  describe (URotateRightTerm arg n) =
+    let argHashId = hashId arg
+        nHashId = hashId n
+     in DRotateRightTerm
+          (preHashRotateRightDescription argHashId nHashId)
+          argHashId
+          nHashId
+  describe (UBitCastTerm (arg :: Term a)) =
+    let argHashId = typeHashId arg
+     in DBitCastTerm (preHashBitCastDescription argHashId) argHashId
+  describe (UBitCastOrTerm d (arg :: Term a)) =
+    let dHashId = hashId d
+        argHashId = typeHashId arg
+     in DBitCastOrTerm
+          (preHashBitCastOrDescription dHashId argHashId)
+          dHashId
+          argHashId
+  describe (UBVConcatTerm (arg1 :: Term bv1) (arg2 :: Term bv2)) =
+    let tp1 = typeRep @bv1
+        tp2 = typeRep @bv2
+        arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DBVConcatTerm
+          (preHashBVConcatDescription tp1 tp2 arg1HashId arg2HashId)
+          tp1
+          tp2
+          arg1HashId
+          arg2HashId
   describe (UBVSelectTerm (ix :: TypeRep ix) _ (arg :: Term arg)) =
-    DBVSelectTerm ix (typeHashId arg)
+    let argHashId = typeHashId arg
+     in DBVSelectTerm
+          (preHashBVSelectDescription ix argHashId)
+          ix
+          argHashId
   describe (UBVExtendTerm signed (n :: TypeRep n) (arg :: Term arg)) =
-    DBVExtendTerm signed n (typeHashId arg)
+    let argHashId = typeHashId arg
+     in DBVExtendTerm
+          (preHashBVExtendDescription signed n argHashId)
+          signed
+          n
+          argHashId
   describe (UApplyTerm (f :: Term f) (arg :: Term a)) =
-    DApplyTerm (typeHashId f) (typeHashId arg)
-  describe (UDivIntegralTerm arg1 arg2) = DDivIntegralTerm (hashId arg1) (hashId arg2)
-  describe (UModIntegralTerm arg1 arg2) = DModIntegralTerm (hashId arg1) (hashId arg2)
-  describe (UQuotIntegralTerm arg1 arg2) = DRemIntegralTerm (hashId arg1) (hashId arg2)
-  describe (URemIntegralTerm arg1 arg2) = DQuotIntegralTerm (hashId arg1) (hashId arg2)
+    let fHashId = typeHashId f
+        argHashId = typeHashId arg
+     in DApplyTerm
+          (preHashApplyDescription fHashId argHashId)
+          fHashId
+          argHashId
+  describe (UDivIntegralTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DDivIntegralTerm
+          (preHashDivIntegralDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UModIntegralTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DModIntegralTerm
+          (preHashModIntegralDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UQuotIntegralTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DQuotIntegralTerm
+          (preHashQuotIntegralDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (URemIntegralTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DRemIntegralTerm
+          (preHashRemIntegralDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
   describe (UFPTraitTerm trait (arg :: Term arg)) =
-    DFPTraitTerm trait (typeHashId arg)
-  describe (UFdivTerm arg1 arg2) = DFdivTerm (hashId arg1) (hashId arg2)
-  describe (URecipTerm arg) = DRecipTerm (hashId arg)
-  describe (UFloatingUnaryTerm op arg) = DFloatingUnaryTerm op (hashId arg)
-  describe (UPowerTerm arg1 arg2) = DPowerTerm (hashId arg1) (hashId arg2)
-  describe (UFPUnaryTerm op arg) = DFPUnaryTerm op (hashId arg)
-  describe (UFPBinaryTerm op arg1 arg2) = DFPBinaryTerm op (hashId arg1) (hashId arg2)
-  describe (UFPRoundingUnaryTerm op mode arg) = DFPRoundingUnaryTerm op (hashId mode) (hashId arg)
-  describe (UFPRoundingBinaryTerm op mode arg1 arg2) = DFPRoundingBinaryTerm op (hashId mode) (hashId arg1) (hashId arg2)
-  describe (UFPFMATerm mode arg1 arg2 arg3) = DFPFMATerm (hashId mode) (hashId arg1) (hashId arg2) (hashId arg3)
-  describe (UFromIntegralTerm (arg :: Term a)) = DFromIntegralTerm (typeHashId arg)
+    let argHashId = typeHashId arg
+     in DFPTraitTerm
+          (preHashFPTraitDescription trait argHashId)
+          trait
+          argHashId
+  describe (UFdivTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DFdivTerm
+          (preHashFdivDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (URecipTerm arg) =
+    let argHashId = hashId arg
+     in DRecipTerm (preHashRecipDescription argHashId) argHashId
+  describe (UFloatingUnaryTerm op arg) =
+    let argHashId = hashId arg
+     in DFloatingUnaryTerm
+          (preHashFloatingUnaryDescription op argHashId)
+          op
+          argHashId
+  describe (UPowerTerm arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DPowerTerm
+          (preHashPowerDescription arg1HashId arg2HashId)
+          arg1HashId
+          arg2HashId
+  describe (UFPUnaryTerm op arg) =
+    let argHashId = hashId arg
+     in DFPUnaryTerm
+          (preHashFPUnaryDescription op argHashId)
+          op
+          argHashId
+  describe (UFPBinaryTerm op arg1 arg2) =
+    let arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DFPBinaryTerm
+          (preHashFPBinaryDescription op arg1HashId arg2HashId)
+          op
+          arg1HashId
+          arg2HashId
+  describe (UFPRoundingUnaryTerm op mode arg) =
+    let modeHashId = hashId mode
+        argHashId = hashId arg
+     in DFPRoundingUnaryTerm
+          (preHashFPRoundingUnaryDescription op modeHashId argHashId)
+          op
+          modeHashId
+          argHashId
+  describe (UFPRoundingBinaryTerm op mode arg1 arg2) =
+    let modeHashId = hashId mode
+        arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DFPRoundingBinaryTerm
+          ( preHashFPRoundingBinaryDescription
+              op
+              modeHashId
+              arg1HashId
+              arg2HashId
+          )
+          op
+          modeHashId
+          arg1HashId
+          arg2HashId
+  describe (UFPFMATerm mode arg1 arg2 arg3) =
+    let modeHashId = hashId mode
+        arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+        arg3HashId = hashId arg3
+     in DFPFMATerm
+          (preHashFPFMADescription modeHashId arg1HashId arg2HashId arg3HashId)
+          modeHashId
+          arg1HashId
+          arg2HashId
+          arg3HashId
+  describe (UFromIntegralTerm (arg :: Term a)) =
+    let argHashId = typeHashId arg
+     in DFromIntegralTerm (preHashFromIntegralDescription argHashId) argHashId
   describe (UFromFPOrTerm d mode (arg :: Term a)) =
-    DFromFPOrTerm (hashId d) (hashId mode) (typeHashId arg)
+    let dHashId = hashId d
+        modeHashId = hashId mode
+        argHashId = typeHashId arg
+     in DFromFPOrTerm
+          (preHashFromFPOrDescription dHashId modeHashId argHashId)
+          dHashId
+          modeHashId
+          argHashId
   describe (UToFPTerm mode (arg :: Term a) _ _) =
-    DToFPTerm (hashId mode) (typeHashId arg)
+    let modeHashId = hashId mode
+        argHashId = typeHashId arg
+     in DToFPTerm
+          (preHashToFPTermDescription modeHashId argHashId)
+          modeHashId
+          argHashId
 
   identify tid ha i = go
     where
@@ -2765,147 +3416,124 @@ instance (SupportedPrim t) => Interned (Term t) where
   threadId (ToFPTerm tid _ _ _ _ _ _) = tid
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
-  DConTerm (l :: tyl) == DConTerm (r :: tyr) = cast @tyl @tyr l == Just r
-  DSymTerm ls == DSymTerm rs = ls == rs
-  DForallTerm ls li == DForallTerm rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
-  DExistsTerm ls li == DExistsTerm rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
-  DUnaryTerm (tagl :: tagl) li == DUnaryTerm (tagr :: tagr) ri = eqHeteroTag tagl tagr && eqTypeHashId li ri
-  DBinaryTerm (tagl :: tagl) li1 li2 == DBinaryTerm (tagr :: tagr) ri1 ri2 =
+  DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) = cast @tyl @tyr l == Just r
+  DSymTerm _ ls == DSymTerm _ rs = ls == rs
+  DForallTerm _ ls li == DForallTerm _ rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
+  DExistsTerm _ ls li == DExistsTerm _ rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
+  DUnaryTerm _ (tagl :: tagl) li == DUnaryTerm _ (tagr :: tagr) ri = eqHeteroTag tagl tagr && eqTypeHashId li ri
+  DBinaryTerm _ (tagl :: tagl) li1 li2 == DBinaryTerm _ (tagr :: tagr) ri1 ri2 =
     eqHeteroTag tagl tagr && eqTypeHashId li1 ri1 && eqTypeHashId li2 ri2
-  DTernaryTerm (tagl :: tagl) li1 li2 li3 == DTernaryTerm (tagr :: tagr) ri1 ri2 ri3 =
+  DTernaryTerm _ (tagl :: tagl) li1 li2 li3 == DTernaryTerm _ (tagr :: tagr) ri1 ri2 ri3 =
     eqHeteroTag tagl tagr && eqTypeHashId li1 ri1 && eqTypeHashId li2 ri2 && eqTypeHashId li3 ri3
-  DNotTerm li == DNotTerm ri = eqHashId li ri
-  DOrTerm li1 li2 == DOrTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DAndTerm li1 li2 == DAndTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DEqTerm lrep li1 li2 == DEqTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
-  DDistinctTerm lrep li == DDistinctTerm rrep ri =
+  DNotTerm _ li == DNotTerm _ ri = eqHashId li ri
+  DOrTerm _ li1 li2 == DOrTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DAndTerm _ li1 li2 == DAndTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DEqTerm _ lrep li1 li2 == DEqTerm _ rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
+  DDistinctTerm _ lrep li == DDistinctTerm _ rrep ri =
     eqTypeRepBool lrep rrep
       && length li == length ri
       && and (zipWith eqHashId (toList li) (toList ri))
-  DITETerm lc li1 li2 == DITETerm rc ri1 ri2 = eqHashId lc rc && eqHashId li1 ri1 && eqHashId li2 ri2
-  DAddNumTerm li1 li2 == DAddNumTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DNegNumTerm li == DNegNumTerm ri = eqHashId li ri
-  DMulNumTerm li1 li2 == DMulNumTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DAbsNumTerm li == DAbsNumTerm ri = eqHashId li ri
-  DSignumNumTerm li == DSignumNumTerm ri = eqHashId li ri
-  DLtOrdTerm lrep li1 li2 == DLtOrdTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
-  DLeOrdTerm lrep li1 li2 == DLeOrdTerm rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
-  DAndBitsTerm li1 li2 == DAndBitsTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DOrBitsTerm li1 li2 == DOrBitsTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DXorBitsTerm li1 li2 == DXorBitsTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DComplementBitsTerm li == DComplementBitsTerm ri = eqHashId li ri
-  DShiftLeftTerm li ln == DShiftLeftTerm ri rn = eqHashId li ri && eqHashId ln rn
-  DShiftRightTerm li ln == DShiftRightTerm ri rn = eqHashId li ri && eqHashId ln rn
-  DRotateLeftTerm li ln == DRotateLeftTerm ri rn = eqHashId li ri && eqHashId ln rn
-  DRotateRightTerm li ln == DRotateRightTerm ri rn = eqHashId li ri && eqHashId ln rn
-  DBitCastTerm li == DBitCastTerm ri = eqTypeHashId li ri
-  DBitCastOrTerm ld li == DBitCastOrTerm rd ri = ld == rd && eqTypeHashId li ri
-  DBVConcatTerm lrep1 lrep2 li1 li2 == DBVConcatTerm rrep1 rrep2 ri1 ri2 =
+  DITETerm _ lc li1 li2 == DITETerm _ rc ri1 ri2 = eqHashId lc rc && eqHashId li1 ri1 && eqHashId li2 ri2
+  DAddNumTerm _ li1 li2 == DAddNumTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DNegNumTerm _ li == DNegNumTerm _ ri = eqHashId li ri
+  DMulNumTerm _ li1 li2 == DMulNumTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DAbsNumTerm _ li == DAbsNumTerm _ ri = eqHashId li ri
+  DSignumNumTerm _ li == DSignumNumTerm _ ri = eqHashId li ri
+  DLtOrdTerm _ lrep li1 li2 == DLtOrdTerm _ rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
+  DLeOrdTerm _ lrep li1 li2 == DLeOrdTerm _ rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
+  DAndBitsTerm _ li1 li2 == DAndBitsTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DOrBitsTerm _ li1 li2 == DOrBitsTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DXorBitsTerm _ li1 li2 == DXorBitsTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DComplementBitsTerm _ li == DComplementBitsTerm _ ri = eqHashId li ri
+  DShiftLeftTerm _ li ln == DShiftLeftTerm _ ri rn = eqHashId li ri && eqHashId ln rn
+  DShiftRightTerm _ li ln == DShiftRightTerm _ ri rn = eqHashId li ri && eqHashId ln rn
+  DRotateLeftTerm _ li ln == DRotateLeftTerm _ ri rn = eqHashId li ri && eqHashId ln rn
+  DRotateRightTerm _ li ln == DRotateRightTerm _ ri rn = eqHashId li ri && eqHashId ln rn
+  DBitCastTerm _ li == DBitCastTerm _ ri = eqTypeHashId li ri
+  DBitCastOrTerm _ ld li == DBitCastOrTerm _ rd ri = ld == rd && eqTypeHashId li ri
+  DBVConcatTerm _ lrep1 lrep2 li1 li2 == DBVConcatTerm _ rrep1 rrep2 ri1 ri2 =
     eqTypeRepBool lrep1 rrep1 && eqTypeRepBool lrep2 rrep2 && eqHashId li1 ri1 && eqHashId li2 ri2
-  DBVSelectTerm lix li == DBVSelectTerm rix ri =
+  DBVSelectTerm _ lix li == DBVSelectTerm _ rix ri =
     eqTypeRepBool lix rix && eqTypeHashId li ri
-  DBVExtendTerm lIsSigned ln li == DBVExtendTerm rIsSigned rn ri =
+  DBVExtendTerm _ lIsSigned ln li == DBVExtendTerm _ rIsSigned rn ri =
     lIsSigned == rIsSigned
       && eqTypeRepBool ln rn
       && eqTypeHashId li ri
-  DApplyTerm lf li == DApplyTerm rf ri = eqTypeHashId lf rf && eqTypeHashId li ri
-  DDivIntegralTerm li1 li2 == DDivIntegralTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DModIntegralTerm li1 li2 == DModIntegralTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DQuotIntegralTerm li1 li2 == DQuotIntegralTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DRemIntegralTerm li1 li2 == DRemIntegralTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DFPTraitTerm lt li == DFPTraitTerm rt ri = lt == rt && eqTypeHashId li ri
-  DFdivTerm li1 li2 == DFdivTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DRecipTerm li == DRecipTerm ri = eqHashId li ri
-  DFloatingUnaryTerm lop li == DFloatingUnaryTerm rop ri = lop == rop && eqHashId li ri
-  DPowerTerm li1 li2 == DPowerTerm ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DFPUnaryTerm lop li == DFPUnaryTerm rop ri = lop == rop && eqHashId li ri
-  DFPBinaryTerm lop li1 li2 == DFPBinaryTerm rop ri1 ri2 = lop == rop && eqHashId li1 ri1 && eqHashId li2 ri2
-  DFPRoundingUnaryTerm lop lmode li == DFPRoundingUnaryTerm rop rmode ri =
+  DApplyTerm _ lf li == DApplyTerm _ rf ri = eqTypeHashId lf rf && eqTypeHashId li ri
+  DDivIntegralTerm _ li1 li2 == DDivIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DModIntegralTerm _ li1 li2 == DModIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DQuotIntegralTerm _ li1 li2 == DQuotIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DRemIntegralTerm _ li1 li2 == DRemIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DFPTraitTerm _ lt li == DFPTraitTerm _ rt ri = lt == rt && eqTypeHashId li ri
+  DFdivTerm _ li1 li2 == DFdivTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DRecipTerm _ li == DRecipTerm _ ri = eqHashId li ri
+  DFloatingUnaryTerm _ lop li == DFloatingUnaryTerm _ rop ri = lop == rop && eqHashId li ri
+  DPowerTerm _ li1 li2 == DPowerTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
+  DFPUnaryTerm _ lop li == DFPUnaryTerm _ rop ri = lop == rop && eqHashId li ri
+  DFPBinaryTerm _ lop li1 li2 == DFPBinaryTerm _ rop ri1 ri2 = lop == rop && eqHashId li1 ri1 && eqHashId li2 ri2
+  DFPRoundingUnaryTerm _ lop lmode li == DFPRoundingUnaryTerm _ rop rmode ri =
     lop == rop && eqHashId lmode rmode && eqHashId li ri
-  DFPRoundingBinaryTerm lop lmode li1 li2 == DFPRoundingBinaryTerm rop rmode ri1 ri2 =
+  DFPRoundingBinaryTerm _ lop lmode li1 li2 == DFPRoundingBinaryTerm _ rop rmode ri1 ri2 =
     lop == rop && eqHashId lmode rmode && eqHashId li1 ri1 && eqHashId li2 ri2
-  DFPFMATerm lmode li1 li2 li3 == DFPFMATerm rmode ri1 ri2 ri3 =
+  DFPFMATerm _ lmode li1 li2 li3 == DFPFMATerm _ rmode ri1 ri2 ri3 =
     eqHashId lmode rmode && eqHashId li1 ri1 && eqHashId li2 ri2 && eqHashId li3 ri3
-  DFromIntegralTerm li == DFromIntegralTerm ri = eqTypeHashId li ri
-  DFromFPOrTerm ld li lai == DFromFPOrTerm rd ri rai = eqHashId ld rd && eqHashId li ri && eqTypeHashId lai rai
-  DToFPTerm li lai == DToFPTerm ri rai = eqHashId li ri && eqTypeHashId lai rai
+  DFromIntegralTerm _ li == DFromIntegralTerm _ ri = eqTypeHashId li ri
+  DFromFPOrTerm _ ld li lai == DFromFPOrTerm _ rd ri rai = eqHashId ld rd && eqHashId li ri && eqTypeHashId lai rai
+  DToFPTerm _ li lai == DToFPTerm _ ri rai = eqHashId li ri && eqTypeHashId lai rai
   _ == _ = False
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
-  hashWithSalt s (DConTerm c) = s `hashWithSalt` (0 :: Int) `hashWithSalt` c
-  hashWithSalt s (DSymTerm name) = s `hashWithSalt` (1 :: Int) `hashWithSalt` name
-  hashWithSalt s (DForallTerm sym id) = s `hashWithSalt` (48 :: Int) `hashWithSalt` sym `hashWithSalt` id
-  hashWithSalt s (DExistsTerm sym id) = s `hashWithSalt` (49 :: Int) `hashWithSalt` sym `hashWithSalt` id
-  hashWithSalt s (DUnaryTerm tag id1) = s `hashWithSalt` (2 :: Int) `hashWithSalt` tag `hashWithSalt` id1
-  hashWithSalt s (DBinaryTerm tag id1 id2) =
-    s `hashWithSalt` (3 :: Int) `hashWithSalt` tag `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DTernaryTerm tag id1 id2 id3) =
-    s `hashWithSalt` (4 :: Int) `hashWithSalt` tag `hashWithSalt` id1 `hashWithSalt` id2 `hashWithSalt` id3
-  hashWithSalt s (DNotTerm id1) = s `hashWithSalt` (5 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DOrTerm id1 id2) = s `hashWithSalt` (6 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DAndTerm id1 id2) = s `hashWithSalt` (7 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DEqTerm rep id1 id2) =
-    s
-      `hashWithSalt` (8 :: Int)
-      `hashWithSalt` rep
-      `hashWithSalt` id1
-      `hashWithSalt` id2
-  hashWithSalt s (DDistinctTerm rep ids) = s `hashWithSalt` (54 :: Int) `hashWithSalt` rep `hashWithSalt` ids
-  hashWithSalt s (DITETerm idc id1 id2) =
-    s
-      `hashWithSalt` (9 :: Int)
-      `hashWithSalt` idc
-      `hashWithSalt` id1
-      `hashWithSalt` id2
-  hashWithSalt s (DAddNumTerm id1 id2) = s `hashWithSalt` (10 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DNegNumTerm id1) = s `hashWithSalt` (11 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DMulNumTerm id1 id2) = s `hashWithSalt` (12 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DAbsNumTerm id1) = s `hashWithSalt` (13 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DSignumNumTerm id1) = s `hashWithSalt` (14 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DLtOrdTerm rep id1 id2) =
-    s `hashWithSalt` (15 :: Int) `hashWithSalt` rep `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DLeOrdTerm rep id1 id2) =
-    s `hashWithSalt` (16 :: Int) `hashWithSalt` rep `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DAndBitsTerm id1 id2) = s `hashWithSalt` (17 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DOrBitsTerm id1 id2) = s `hashWithSalt` (18 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DXorBitsTerm id1 id2) = s `hashWithSalt` (19 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DComplementBitsTerm id1) = s `hashWithSalt` (20 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DShiftLeftTerm id1 idn) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
-  hashWithSalt s (DShiftRightTerm id1 idn) = s `hashWithSalt` (39 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
-  hashWithSalt s (DRotateLeftTerm id1 idn) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
-  hashWithSalt s (DRotateRightTerm id1 idn) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1 `hashWithSalt` idn
-  hashWithSalt s (DBitCastTerm id) = s `hashWithSalt` (49 :: Int) `hashWithSalt` id
-  hashWithSalt s (DBitCastOrTerm did id) = s `hashWithSalt` (50 :: Int) `hashWithSalt` did `hashWithSalt` id
-  hashWithSalt s (DBVConcatTerm rep1 rep2 id1 id2) =
-    s `hashWithSalt` (25 :: Int) `hashWithSalt` rep1 `hashWithSalt` rep2 `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DBVSelectTerm ix id1) = s `hashWithSalt` (26 :: Int) `hashWithSalt` ix `hashWithSalt` id1
-  hashWithSalt s (DBVExtendTerm signed n id1) =
-    s
-      `hashWithSalt` (27 :: Int)
-      `hashWithSalt` signed
-      `hashWithSalt` n
-      `hashWithSalt` id1
-  hashWithSalt s (DDivIntegralTerm id1 id2) = s `hashWithSalt` (30 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DModIntegralTerm id1 id2) = s `hashWithSalt` (31 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DQuotIntegralTerm id1 id2) = s `hashWithSalt` (32 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DRemIntegralTerm id1 id2) = s `hashWithSalt` (33 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DApplyTerm id1 id2) = s `hashWithSalt` (38 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DFPTraitTerm trait id1) = s `hashWithSalt` (39 :: Int) `hashWithSalt` trait `hashWithSalt` id1
-  hashWithSalt s (DFdivTerm id1 id2) = s `hashWithSalt` (40 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DRecipTerm id1) = s `hashWithSalt` (41 :: Int) `hashWithSalt` id1
-  hashWithSalt s (DFloatingUnaryTerm op id1) = s `hashWithSalt` (42 :: Int) `hashWithSalt` op `hashWithSalt` id1
-  hashWithSalt s (DPowerTerm id1 id2) = s `hashWithSalt` (48 :: Int) `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DFPUnaryTerm op id1) = s `hashWithSalt` (43 :: Int) `hashWithSalt` op `hashWithSalt` id1
-  hashWithSalt s (DFPBinaryTerm op id1 id2) = s `hashWithSalt` (44 :: Int) `hashWithSalt` op `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DFPRoundingUnaryTerm op mode id1) =
-    s `hashWithSalt` (45 :: Int) `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` id1
-  hashWithSalt s (DFPRoundingBinaryTerm op mode id1 id2) =
-    s `hashWithSalt` (46 :: Int) `hashWithSalt` op `hashWithSalt` mode `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DFPFMATerm mode id1 id2 id3) =
-    s `hashWithSalt` (47 :: Int) `hashWithSalt` mode `hashWithSalt` id1 `hashWithSalt` id2 `hashWithSalt` id3
-  hashWithSalt s (DFromIntegralTerm id0) = s `hashWithSalt` (51 :: Int) `hashWithSalt` id0
-  hashWithSalt s (DFromFPOrTerm id0 id1 id2) = s `hashWithSalt` (52 :: Int) `hashWithSalt` id0 `hashWithSalt` id1 `hashWithSalt` id2
-  hashWithSalt s (DToFPTerm id0 id1) = s `hashWithSalt` (53 :: Int) `hashWithSalt` id0 `hashWithSalt` id1
+  hashWithSalt s (DConTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DSymTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DForallTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DExistsTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DUnaryTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DBinaryTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DTernaryTerm h _ _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DNotTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DOrTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DAndTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DEqTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DDistinctTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DITETerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DAddNumTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DNegNumTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DMulNumTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DAbsNumTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DSignumNumTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DLtOrdTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DLeOrdTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DAndBitsTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DOrBitsTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DXorBitsTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DComplementBitsTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DShiftLeftTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DShiftRightTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DRotateLeftTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DRotateRightTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DBitCastTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DBitCastOrTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DBVConcatTerm h _ _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DBVSelectTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DBVExtendTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DDivIntegralTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DModIntegralTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DQuotIntegralTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DRemIntegralTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DApplyTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFPTraitTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFdivTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DRecipTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DFloatingUnaryTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DPowerTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFPUnaryTerm h _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFPBinaryTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFPRoundingUnaryTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFPRoundingBinaryTerm h _ _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFPFMATerm h _ _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DFromIntegralTerm h _) = s `hashWithSalt` h
+  hashWithSalt s (DFromFPOrTerm h _ _ _) = s `hashWithSalt` h
+  hashWithSalt s (DToFPTerm h _ _) = s `hashWithSalt` h
 
 fullReconstructTerm1 ::
   forall a b.
