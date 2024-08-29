@@ -40,5 +40,5 @@ data ModelSymPair ct st where
 instance ModelRep (ModelSymPair ct st) Model where
   buildModel (sym := val) =
     case underlyingTerm sym of
-      SymTerm _ _ symbol -> insertValue symbol val emptyModel
+      SymTerm _ _ _ symbol -> insertValue symbol val emptyModel
       _ -> error "buildModel: should only use symbolic constants"

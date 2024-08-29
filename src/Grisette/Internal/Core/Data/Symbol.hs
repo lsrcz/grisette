@@ -126,6 +126,7 @@ instance Ord Identifier where
 instance Hashable Identifier where
   hashWithSalt s (Identifier n) = s `hashWithSalt` n
   hashWithSalt s (IdentifierWithInfo n i) = s `hashWithSalt` n `hashWithSalt` i
+  {-# INLINE hashWithSalt #-}
 
 instance Lift Identifier where
   liftTyped (Identifier n) = [||Identifier n||]
@@ -222,7 +223,12 @@ uniqueIdentifier ident = do
 data Symbol where
   SimpleSymbol :: Identifier -> Symbol
   IndexedSymbol :: Identifier -> Int -> Symbol
-  deriving (Eq, Ord, Generic, Lift, NFData, Hashable)
+  deriving (Eq, Ord, Generic, Lift, NFData)
+
+instance Hashable Symbol where
+  hashWithSalt s (SimpleSymbol i) = hashWithSalt s i
+  hashWithSalt s (IndexedSymbol i idx) = s `hashWithSalt` i `hashWithSalt` idx
+  {-# INLINE hashWithSalt #-}
 
 -- | Get the identifier of a symbol.
 symbolIdentifier :: Symbol -> Identifier

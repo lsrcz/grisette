@@ -49,9 +49,9 @@ pevalDefaultFdivTerm =
 
 doPevalDefaultFdivTerm ::
   (PEvalFractionalTerm a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultFdivTerm (ConTerm _ _ a) (ConTerm _ _ b)
+doPevalDefaultFdivTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b)
   | b /= 0 = Just $ conTerm $ a / b
-doPevalDefaultFdivTerm a (ConTerm _ _ 1) = Just a
+doPevalDefaultFdivTerm a (ConTerm _ _ _ 1) = Just a
 doPevalDefaultFdivTerm _ _ = Nothing
 
 pevalDefaultRecipTerm ::
@@ -60,7 +60,7 @@ pevalDefaultRecipTerm = unaryUnfoldOnce doPevalDefaultRecipTerm recipTerm
 
 doPevalDefaultRecipTerm ::
   (PEvalFractionalTerm a) => Term a -> Maybe (Term a)
-doPevalDefaultRecipTerm (ConTerm _ _ n) | n /= 0 = Just $ conTerm $ recip n
+doPevalDefaultRecipTerm (ConTerm _ _ _ n) | n /= 0 = Just $ conTerm $ recip n
 doPevalDefaultRecipTerm _ = Nothing
 
 instance PEvalFractionalTerm AlgReal where

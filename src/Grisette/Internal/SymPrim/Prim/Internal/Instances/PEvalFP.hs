@@ -83,7 +83,7 @@ pevalFPTraitTerm ::
   Term Bool
 pevalFPTraitTerm trait = unaryUnfoldOnce doPevalFPTraitTerm (fpTraitTerm trait)
   where
-    doPevalFPTraitTerm (ConTerm _ _ a) = case trait of
+    doPevalFPTraitTerm (ConTerm _ _ _ a) = case trait of
       FPIsNaN -> Just $ conTerm $ isNaN a
       FPIsPositive ->
         Just $
@@ -172,7 +172,7 @@ pevalFPBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPBinaryTerm bop (ConTerm _ _ l) (ConTerm _ _ r) =
+pevalFPBinaryTerm bop (ConTerm _ _ _ l) (ConTerm _ _ _ r) =
   case bop of
     FPMaximum -> conTerm $ fpMaximum l r
     FPMaximumNumber -> conTerm $ fpMaximumNumber l r
@@ -228,7 +228,7 @@ pevalFPRoundingUnaryTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPRoundingUnaryTerm uop (ConTerm _ _ rd) (ConTerm _ _ l) =
+pevalFPRoundingUnaryTerm uop (ConTerm _ _ _ rd) (ConTerm _ _ _ l) =
   case uop of
     FPSqrt -> conTerm $ fpSqrt rd l
     FPRoundToIntegral -> conTerm $ fpRoundToIntegral rd l
@@ -254,7 +254,7 @@ pevalFPRoundingBinaryTerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPRoundingBinaryTerm bop (ConTerm _ _ rd) (ConTerm _ _ l) (ConTerm _ _ r) =
+pevalFPRoundingBinaryTerm bop (ConTerm _ _ _ rd) (ConTerm _ _ _ l) (ConTerm _ _ _ r) =
   case bop of
     FPAdd -> conTerm $ fpAdd rd l r
     FPSub -> conTerm $ fpSub rd l r
@@ -285,9 +285,12 @@ pevalFPFMATerm ::
   Term (FP eb sb) ->
   Term (FP eb sb) ->
   Term (FP eb sb)
-pevalFPFMATerm 
- (ConTerm _ _ rd) (ConTerm _ _ x) (ConTerm _ _ y) (ConTerm _ _ z) =
-  conTerm $ fpFMA rd x y z
+pevalFPFMATerm
+  (ConTerm _ _ _ rd)
+  (ConTerm _ _ _ x)
+  (ConTerm _ _ _ y)
+  (ConTerm _ _ _ z) =
+    conTerm $ fpFMA rd x y z
 pevalFPFMATerm rd x y z = fpFMATerm rd x y z
 {-# INLINE pevalFPFMATerm #-}
 

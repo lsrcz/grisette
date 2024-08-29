@@ -65,35 +65,35 @@ pevalDefaultAddNumTerm =
 
 doPevalDefaultAddNumTerm ::
   (PEvalNumTerm a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultAddNumTerm (ConTerm _ _ a) (ConTerm _ _ b) = Just $ conTerm $ a + b
-doPevalDefaultAddNumTerm l@(ConTerm _ _ a) b = case (a, b) of
+doPevalDefaultAddNumTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) = Just $ conTerm $ a + b
+doPevalDefaultAddNumTerm l@(ConTerm _ _ _ a) b = case (a, b) of
   (0, k) -> Just k
-  (l1, AddNumTerm _ _ (ConTerm _ _ j) k) ->
+  (l1, AddNumTerm _ _ _ (ConTerm _ _ _ j) k) ->
     Just $ pevalAddNumTerm (conTerm $ l1 + j) k
   _ -> doPevalDefaultAddNumTermNoCon l b
-doPevalDefaultAddNumTerm a r@(ConTerm _ _ _) = doPevalDefaultAddNumTerm r a
+doPevalDefaultAddNumTerm a r@(ConTerm {}) = doPevalDefaultAddNumTerm r a
 doPevalDefaultAddNumTerm l r = doPevalDefaultAddNumTermNoCon l r
 
 doPevalDefaultAddNumTermNoCon ::
   (PEvalNumTerm a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultAddNumTermNoCon (AddNumTerm _ _ i@ConTerm {} j) k =
+doPevalDefaultAddNumTermNoCon (AddNumTerm _ _ _ i@ConTerm {} j) k =
   Just $ pevalAddNumTerm i $ pevalAddNumTerm j k
-doPevalDefaultAddNumTermNoCon i (AddNumTerm _ _ j@ConTerm {} k) =
+doPevalDefaultAddNumTermNoCon i (AddNumTerm _ _ _ j@ConTerm {} k) =
   Just $ pevalAddNumTerm j $ pevalAddNumTerm i k
-doPevalDefaultAddNumTermNoCon (NegNumTerm _ _ i) (NegNumTerm _ _ j) =
+doPevalDefaultAddNumTermNoCon (NegNumTerm _ _ _ i) (NegNumTerm _ _ _ j) =
   Just $ pevalNegNumTerm $ pevalAddNumTerm i j
 doPevalDefaultAddNumTermNoCon
-  (MulNumTerm _ _ (ConTerm _ _ i) j)
-  (MulNumTerm _ _ (ConTerm _ _ k) l)
+  (MulNumTerm _ _ _ (ConTerm _ _ _ i) j)
+  (MulNumTerm _ _ _ (ConTerm _ _ _ k) l)
     | j == l = Just $ pevalMulNumTerm (conTerm $ i + k) j
 doPevalDefaultAddNumTermNoCon
-  (MulNumTerm _ _ i@ConTerm {} j)
-  (MulNumTerm _ _ k@(ConTerm _ _ _) l)
+  (MulNumTerm _ _ _ i@ConTerm {} j)
+  (MulNumTerm _ _ _ k@(ConTerm {}) l)
     | i == k = Just $ pevalMulNumTerm i (pevalAddNumTerm j l)
 doPevalDefaultAddNumTermNoCon _ _ = Nothing
 
 normalizeAddNum :: (PEvalNumTerm a) => Term a -> Term a
-normalizeAddNum (AddNumTerm _ _ l r@(ConTerm _ _ _)) = addNumTerm r l
+normalizeAddNum (AddNumTerm _ _ _ l r@(ConTerm {})) = addNumTerm r l
 normalizeAddNum v = v
 
 -- | Default partial evaluation of negation of numerical terms.
@@ -101,21 +101,21 @@ pevalDefaultNegNumTerm :: (PEvalNumTerm a) => Term a -> Term a
 pevalDefaultNegNumTerm = unaryUnfoldOnce doPevalDefaultNegNumTerm negNumTerm
 
 doPevalDefaultNegNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
-doPevalDefaultNegNumTerm (ConTerm _ _ a) = Just $ conTerm $ -a
-doPevalDefaultNegNumTerm (NegNumTerm _ _ v) = Just v
-doPevalDefaultNegNumTerm (AddNumTerm _ _ (ConTerm _ _ l) r) =
+doPevalDefaultNegNumTerm (ConTerm _ _ _ a) = Just $ conTerm $ -a
+doPevalDefaultNegNumTerm (NegNumTerm _ _ _ v) = Just v
+doPevalDefaultNegNumTerm (AddNumTerm _ _ _ (ConTerm _ _ _ l) r) =
   Just $ pevalSubNumTerm (conTerm $ -l) r
-doPevalDefaultNegNumTerm (AddNumTerm _ _ (NegNumTerm _ _ l) r) =
+doPevalDefaultNegNumTerm (AddNumTerm _ _ _ (NegNumTerm _ _ _ l) r) =
   Just $ pevalAddNumTerm l (pevalNegNumTerm r)
-doPevalDefaultNegNumTerm (AddNumTerm _ _ l (NegNumTerm _ _ r)) =
+doPevalDefaultNegNumTerm (AddNumTerm _ _ _ l (NegNumTerm _ _ _ r)) =
   Just $ pevalAddNumTerm (pevalNegNumTerm l) r
-doPevalDefaultNegNumTerm (MulNumTerm _ _ (ConTerm _ _ l) r) =
+doPevalDefaultNegNumTerm (MulNumTerm _ _ _ (ConTerm _ _ _ l) r) =
   Just $ pevalMulNumTerm (conTerm $ -l) r
-doPevalDefaultNegNumTerm (MulNumTerm _ _ (NegNumTerm _ _ _) _) =
+doPevalDefaultNegNumTerm (MulNumTerm _ _ _ (NegNumTerm {}) _) =
   error "Should not happen"
-doPevalDefaultNegNumTerm (MulNumTerm _ _ _ (NegNumTerm _ _ _)) =
+doPevalDefaultNegNumTerm (MulNumTerm _ _ _ _ (NegNumTerm {})) =
   error "Should not happen"
-doPevalDefaultNegNumTerm (AddNumTerm _ _ _ ConTerm {}) = error "Should not happen"
+doPevalDefaultNegNumTerm (AddNumTerm _ _ _ _ ConTerm {}) = error "Should not happen"
 doPevalDefaultNegNumTerm _ = Nothing
 
 -- Mul
@@ -126,42 +126,42 @@ pevalDefaultMulNumTerm =
     (\a b -> normalizeMulNum $ mulNumTerm a b)
 
 normalizeMulNum :: (PEvalNumTerm a) => Term a -> Term a
-normalizeMulNum (MulNumTerm _ _ l r@(ConTerm _ _ _)) = mulNumTerm r l
+normalizeMulNum (MulNumTerm _ _ _ l r@(ConTerm {})) = mulNumTerm r l
 normalizeMulNum v = v
 
 doPevalDefaultMulNumTerm ::
   (PEvalNumTerm a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultMulNumTerm (ConTerm _ _ a) (ConTerm _ _ b) =
+doPevalDefaultMulNumTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) =
   Just $ conTerm $ a * b
-doPevalDefaultMulNumTerm l@(ConTerm _ _ a) b = case (a, b) of
+doPevalDefaultMulNumTerm l@(ConTerm _ _ _ a) b = case (a, b) of
   (0, _) -> Just $ conTerm 0
   (1, k) -> Just k
   (-1, k) -> Just $ pevalNegNumTerm k
-  (l1, MulNumTerm _ _ (ConTerm _ _ j) k) ->
+  (l1, MulNumTerm _ _ _ (ConTerm _ _ _ j) k) ->
     Just $ pevalMulNumTerm (conTerm $ l1 * j) k
-  (l1, AddNumTerm _ _ (ConTerm _ _ j) k) ->
+  (l1, AddNumTerm _ _ _ (ConTerm _ _ _ j) k) ->
     Just $ pevalAddNumTerm (conTerm $ l1 * j) (pevalMulNumTerm (conTerm l1) k)
-  (l1, NegNumTerm _ _ j) -> Just (pevalMulNumTerm (conTerm $ -l1) j)
-  (_, MulNumTerm _ _ _ ConTerm {}) -> error "Should not happen"
-  (_, AddNumTerm _ _ _ ConTerm {}) -> error "Should not happen"
+  (l1, NegNumTerm _ _ _ j) -> Just (pevalMulNumTerm (conTerm $ -l1) j)
+  (_, MulNumTerm _ _ _ _ ConTerm {}) -> error "Should not happen"
+  (_, AddNumTerm _ _ _ _ ConTerm {}) -> error "Should not happen"
   _ -> doPevalDefaultMulNumTermNoCon l b
-doPevalDefaultMulNumTerm a r@(ConTerm _ _ _) = doPevalDefaultMulNumTerm r a
+doPevalDefaultMulNumTerm a r@(ConTerm {}) = doPevalDefaultMulNumTerm r a
 doPevalDefaultMulNumTerm l r = doPevalDefaultMulNumTermNoCon l r
 
 doPevalDefaultMulNumTermNoCon ::
   (PEvalNumTerm a) => Term a -> Term a -> Maybe (Term a)
-doPevalDefaultMulNumTermNoCon (MulNumTerm _ _ i@ConTerm {} j) k =
+doPevalDefaultMulNumTermNoCon (MulNumTerm _ _ _ i@ConTerm {} j) k =
   Just $ pevalMulNumTerm i $ pevalMulNumTerm j k
-doPevalDefaultMulNumTermNoCon i (MulNumTerm _ _ j@ConTerm {} k) =
+doPevalDefaultMulNumTermNoCon i (MulNumTerm _ _ _ j@ConTerm {} k) =
   Just $ pevalMulNumTerm j $ pevalMulNumTerm i k
-doPevalDefaultMulNumTermNoCon (NegNumTerm _ _ i) j =
+doPevalDefaultMulNumTermNoCon (NegNumTerm _ _ _ i) j =
   Just $ pevalNegNumTerm $ pevalMulNumTerm i j
-doPevalDefaultMulNumTermNoCon i (NegNumTerm _ _ j) =
+doPevalDefaultMulNumTermNoCon i (NegNumTerm _ _ _ j) =
   Just $ pevalNegNumTerm $ pevalMulNumTerm i j
 doPevalDefaultMulNumTermNoCon i j@ConTerm {} = Just $ pevalMulNumTerm j i
-doPevalDefaultMulNumTermNoCon (MulNumTerm _ _ _ ConTerm {}) _ =
+doPevalDefaultMulNumTermNoCon (MulNumTerm _ _ _ _ ConTerm {}) _ =
   error "Should not happen"
-doPevalDefaultMulNumTermNoCon _ (MulNumTerm _ _ _ ConTerm {}) =
+doPevalDefaultMulNumTermNoCon _ (MulNumTerm _ _ _ _ ConTerm {}) =
   error "Should not happen"
 doPevalDefaultMulNumTermNoCon _ _ = Nothing
 
@@ -171,9 +171,9 @@ pevalBitsAbsNumTerm =
   unaryUnfoldOnce doPevalBitsAbsNumTerm absNumTerm
 
 doPevalGeneralAbsNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
-doPevalGeneralAbsNumTerm (ConTerm _ _ a) = Just $ conTerm $ abs a
-doPevalGeneralAbsNumTerm (NegNumTerm _ _ v) = Just $ pevalAbsNumTerm v
-doPevalGeneralAbsNumTerm t@(AbsNumTerm _ _ _) = Just t
+doPevalGeneralAbsNumTerm (ConTerm _ _ _ a) = Just $ conTerm $ abs a
+doPevalGeneralAbsNumTerm (NegNumTerm _ _ _ v) = Just $ pevalAbsNumTerm v
+doPevalGeneralAbsNumTerm t@(AbsNumTerm {}) = Just t
 doPevalGeneralAbsNumTerm _ = Nothing
 
 doPevalBitsAbsNumTerm ::
@@ -189,7 +189,7 @@ doPevalNoOverflowAbsNumTerm t =
   msum
     [ doPevalGeneralAbsNumTerm t,
       case t of
-        MulNumTerm _ _ l r ->
+        MulNumTerm _ _ _ l r ->
           Just $ pevalMulNumTerm (pevalAbsNumTerm l) $ pevalAbsNumTerm r
         _ -> Nothing
     ]
@@ -201,7 +201,7 @@ pevalGeneralSignumNumTerm =
   unaryUnfoldOnce doPevalGeneralSignumNumTerm signumNumTerm
 
 doPevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
-doPevalGeneralSignumNumTerm (ConTerm _ _ a) = Just $ conTerm $ signum a
+doPevalGeneralSignumNumTerm (ConTerm _ _ _ a) = Just $ conTerm $ signum a
 doPevalGeneralSignumNumTerm _ = Nothing
 
 doPevalNoOverflowSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
@@ -209,8 +209,8 @@ doPevalNoOverflowSignumNumTerm t =
   msum
     [ doPevalGeneralSignumNumTerm t,
       case t of
-        NegNumTerm _ _ v -> Just $ pevalNegNumTerm $ pevalSignumNumTerm v
-        MulNumTerm _ _ l r ->
+        NegNumTerm _ _ _ v -> Just $ pevalNegNumTerm $ pevalSignumNumTerm v
+        MulNumTerm _ _ _ l r ->
           Just $
             pevalMulNumTerm (pevalSignumNumTerm l) $
               pevalSignumNumTerm r
@@ -232,7 +232,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (WordN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
-  withSbvNumTermConstraint r = withPrim @(WordN n) r
+  withSbvNumTermConstraint = withPrim @(WordN n)
 
 instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -240,7 +240,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
-  withSbvNumTermConstraint r = withPrim @(IntN n) r
+  withSbvNumTermConstraint = withPrim @(IntN n)
 
 instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalAddNumTerm = generalBinaryUnfolded (+) addNumTerm
@@ -248,7 +248,7 @@ instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalMulNumTerm = generalBinaryUnfolded (*) mulNumTerm
   pevalAbsNumTerm = generalUnaryUnfolded abs absNumTerm
   pevalSignumNumTerm = generalUnaryUnfolded signum signumNumTerm
-  withSbvNumTermConstraint r = withPrim @(FP eb sb) r
+  withSbvNumTermConstraint = withPrim @(FP eb sb)
 
 instance PEvalNumTerm AlgReal where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -257,4 +257,4 @@ instance PEvalNumTerm AlgReal where
   pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
   pevalSignumNumTerm =
     unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
-  withSbvNumTermConstraint r = withPrim @AlgReal r
+  withSbvNumTermConstraint = withPrim @AlgReal

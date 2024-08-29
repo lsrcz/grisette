@@ -551,9 +551,9 @@ lowerSinglePrimImpl ::
     SymBiMap
     m
     (QuantifiedStack -> SBVType a)
-lowerSinglePrimImpl _ (ConTerm _ _ v) =
+lowerSinglePrimImpl _ (ConTerm _ _ _ v) =
   return $ const $ conSBVTerm v
-lowerSinglePrimImpl _ t@(SymTerm _ _ ts) = do
+lowerSinglePrimImpl _ t@(SymTerm _ _ _ ts) = do
   qs <- ask
   if isQuantifiedSymbol ts qs
     then withPrim @a $ do
@@ -575,7 +575,7 @@ lowerSinglePrimImpl _ t@(SymTerm _ _ ts) = do
       put $ addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m
       return $ const g
 #if MIN_VERSION_sbv(10,1,0)
-lowerSinglePrimImpl config t@(ForallTerm _ _ (ts :: TypedConstantSymbol t1) v) =
+lowerSinglePrimImpl config t@(ForallTerm _ _ _ (ts :: TypedConstantSymbol t1) v) =
   withNonFuncPrim @t1 $ do
     do
       m <- get
@@ -592,7 +592,7 @@ lowerSinglePrimImpl config t@(ForallTerm _ _ (ts :: TypedConstantSymbol t1) v) =
               r $ addQuantified sb (toDyn a) qst
       modify $ addBiMapIntermediate (SomeTerm t) (toDyn . ret)
       return ret
-lowerSinglePrimImpl config t@(ExistsTerm _ _ (ts :: TypedConstantSymbol t1) v) =
+lowerSinglePrimImpl config t@(ExistsTerm _ _ _ (ts :: TypedConstantSymbol t1) v) =
   withNonFuncPrim @t1 $ do
     do
       m <- get
@@ -633,181 +633,181 @@ lowerSinglePrimIntermediate ::
     SymBiMap
     m
     (QuantifiedStack -> SBVType a)
-lowerSinglePrimIntermediate config (NotTerm _ _ a) = do
+lowerSinglePrimIntermediate config (NotTerm _ _ _ a) = do
   a' <- lowerSinglePrimCached' config a
   return $ SBV.sNot . a'
-lowerSinglePrimIntermediate config (OrTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (OrTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> a' qst SBV..|| b' qst
-lowerSinglePrimIntermediate config (AndTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (AndTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> a' qst SBV..&& b' qst
-lowerSinglePrimIntermediate config (EqTerm _ _ (a :: Term v) b) = do
+lowerSinglePrimIntermediate config (EqTerm _ _ _ (a :: Term v) b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvEq @v (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (DistinctTerm _ _ (args :: NonEmpty (Term t))) = do
+lowerSinglePrimIntermediate config (DistinctTerm _ _ _ (args :: NonEmpty (Term t))) = do
   args' <- traverse (lowerSinglePrimCached' config) args
   return $ \qst -> sbvDistinct @t (fmap ($ qst) args')
-lowerSinglePrimIntermediate config (ITETerm _ _ c a b) = do
+lowerSinglePrimIntermediate config (ITETerm _ _ _ c a b) = do
   c' <- lowerSinglePrimCached' config c
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvIte @a (c' qst) (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (AddNumTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (AddNumTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvAddNumTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (NegNumTerm _ _ a) = do
+lowerSinglePrimIntermediate config (NegNumTerm _ _ _ a) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvNegNumTerm @a . a'
-lowerSinglePrimIntermediate config (MulNumTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (MulNumTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvMulNumTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (AbsNumTerm _ _ a) = do
+lowerSinglePrimIntermediate config (AbsNumTerm _ _ _ a) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvAbsNumTerm @a . a'
-lowerSinglePrimIntermediate config (SignumNumTerm _ _ a) = do
+lowerSinglePrimIntermediate config (SignumNumTerm _ _ _ a) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvSignumNumTerm @a . a'
-lowerSinglePrimIntermediate config (LtOrdTerm _ _ (a :: Term v) b) = do
+lowerSinglePrimIntermediate config (LtOrdTerm _ _ _ (a :: Term v) b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvLtOrdTerm @v (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (LeOrdTerm _ _ (a :: Term v) b) = do
+lowerSinglePrimIntermediate config (LeOrdTerm _ _ _ (a :: Term v) b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvLeOrdTerm @v (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (AndBitsTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (AndBitsTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvAndBitsTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (OrBitsTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (OrBitsTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvOrBitsTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (XorBitsTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (XorBitsTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvXorBitsTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (ComplementBitsTerm _ _ a) = do
+lowerSinglePrimIntermediate config (ComplementBitsTerm _ _ _ a) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvComplementBitsTerm @a . a'
-lowerSinglePrimIntermediate config (ShiftLeftTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (ShiftLeftTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvShiftLeftTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (ShiftRightTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (ShiftRightTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvShiftRightTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (RotateLeftTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (RotateLeftTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvRotateLeftTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (RotateRightTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (RotateRightTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvRotateRightTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (ApplyTerm _ _ (f :: Term f) a) = do
+lowerSinglePrimIntermediate config (ApplyTerm _ _ _ (f :: Term f) a) = do
   l1 <- lowerSinglePrimCached' config f
   l2 <- lowerSinglePrimCached' config a
   return $ \qst -> sbvApplyTerm @f (l1 qst) (l2 qst)
-lowerSinglePrimIntermediate config (BitCastTerm _ _ (a :: Term x)) = do
+lowerSinglePrimIntermediate config (BitCastTerm _ _ _ (a :: Term x)) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvBitCast @x @a . a'
 lowerSinglePrimIntermediate
   config
-  (BitCastOrTerm _ _ (d :: Term a) (a :: Term x)) = do
+  (BitCastOrTerm _ _ _ (d :: Term a) (a :: Term x)) = do
     d' <- lowerSinglePrimCached' config d
     a' <- lowerSinglePrimCached' config a
     return $ \qst -> sbvBitCastOr @x @a (d' qst) (a' qst)
 lowerSinglePrimIntermediate
   config
-  (BVConcatTerm _ _ (a :: Term (bv l)) (b :: Term (bv r))) =
+  (BVConcatTerm _ _ _ (a :: Term (bv l)) (b :: Term (bv r))) =
     do
       a' <- lowerSinglePrimCached' config a
       b' <- lowerSinglePrimCached' config b
       return $ \qst -> sbvBVConcatTerm @bv (Proxy @l) (Proxy @r) (a' qst) (b' qst)
 lowerSinglePrimIntermediate
   config
-  (BVExtendTerm _ _ signed (pr :: p r) (a :: Term (bv l))) =
+  (BVExtendTerm _ _ _ signed (pr :: p r) (a :: Term (bv l))) =
     do
       a' <- lowerSinglePrimCached' config a
       return $ sbvBVExtendTerm @bv (Proxy @l) pr signed . a'
 lowerSinglePrimIntermediate
   config
-  (BVSelectTerm _ _ (pix :: p ix) (pw :: q w) (a :: Term (bv n))) =
+  (BVSelectTerm _ _ _ (pix :: p ix) (pw :: q w) (a :: Term (bv n))) =
     do
       a' <- lowerSinglePrimCached' config a
       return $ sbvBVSelectTerm @bv pix pw (Proxy @n) . a'
-lowerSinglePrimIntermediate config (DivIntegralTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (DivIntegralTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvDivIntegralTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (ModIntegralTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (ModIntegralTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvModIntegralTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (QuotIntegralTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (QuotIntegralTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvQuotIntegralTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (RemIntegralTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (RemIntegralTerm _ _ _ a b) = do
   a' <- lowerSinglePrimCached' config a
   b' <- lowerSinglePrimCached' config b
   return $ \qst -> sbvRemIntegralTerm @a (a' qst) (b' qst)
-lowerSinglePrimIntermediate config (FPTraitTerm _ _ trait a) = do
+lowerSinglePrimIntermediate config (FPTraitTerm _ _ _ trait a) = do
   a' <- lowerSinglePrimCached' config a
   return $ sbvFPTraitTerm trait . a'
-lowerSinglePrimIntermediate config (FdivTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (FdivTerm _ _ _ a b) = do
   a <- lowerSinglePrimCached' config a
   b <- lowerSinglePrimCached' config b
   return $ \qst -> sbvFdivTerm @a (a qst) (b qst)
-lowerSinglePrimIntermediate config (RecipTerm _ _ a) = do
+lowerSinglePrimIntermediate config (RecipTerm _ _ _ a) = do
   a <- lowerSinglePrimCached' config a
   return $ sbvRecipTerm @a . a
-lowerSinglePrimIntermediate config (FloatingUnaryTerm _ _ op a) = do
+lowerSinglePrimIntermediate config (FloatingUnaryTerm _ _ _ op a) = do
   a <- lowerSinglePrimCached' config a
   return $ sbvFloatingUnaryTerm @a op . a
-lowerSinglePrimIntermediate config (PowerTerm _ _ a b) = do
+lowerSinglePrimIntermediate config (PowerTerm _ _ _ a b) = do
   a <- lowerSinglePrimCached' config a
   b <- lowerSinglePrimCached' config b
   return $ \qst -> sbvPowerTerm @a (a qst) (b qst)
-lowerSinglePrimIntermediate config (FPUnaryTerm _ _ op a) = do
+lowerSinglePrimIntermediate config (FPUnaryTerm _ _ _ op a) = do
   a <- lowerSinglePrimCached' config a
   return $ sbvFPUnaryTerm op . a
-lowerSinglePrimIntermediate config (FPBinaryTerm _ _ op a b) = do
+lowerSinglePrimIntermediate config (FPBinaryTerm _ _ _ op a b) = do
   a <- lowerSinglePrimCached' config a
   b <- lowerSinglePrimCached' config b
   return $ \qst -> sbvFPBinaryTerm op (a qst) (b qst)
-lowerSinglePrimIntermediate config (FPRoundingUnaryTerm _ _ op round a) = do
+lowerSinglePrimIntermediate config (FPRoundingUnaryTerm _ _ _ op round a) = do
   round <- lowerSinglePrimCached' config round
   a <- lowerSinglePrimCached' config a
   return $ \qst -> sbvFPRoundingUnaryTerm op (round qst) (a qst)
-lowerSinglePrimIntermediate config (FPRoundingBinaryTerm _ _ op round a b) = do
+lowerSinglePrimIntermediate config (FPRoundingBinaryTerm _ _ _ op round a b) = do
   round <- lowerSinglePrimCached' config round
   a <- lowerSinglePrimCached' config a
   b <- lowerSinglePrimCached' config b
   return $ \qst -> sbvFPRoundingBinaryTerm op (round qst) (a qst) (b qst)
-lowerSinglePrimIntermediate config (FPFMATerm _ _ round a b c) = do
+lowerSinglePrimIntermediate config (FPFMATerm _ _ _ round a b c) = do
   round <- lowerSinglePrimCached' config round
   a <- lowerSinglePrimCached' config a
   b <- lowerSinglePrimCached' config b
   c <- lowerSinglePrimCached' config c
   return $ \qst -> sbvFPFMATerm (round qst) (a qst) (b qst) (c qst)
-lowerSinglePrimIntermediate config (FromIntegralTerm _ _ (b :: Term b)) = do
+lowerSinglePrimIntermediate config (FromIntegralTerm _ _ _ (b :: Term b)) = do
   b <- lowerSinglePrimCached' config b
   return $ sbvFromIntegralTerm @b @a . b
-lowerSinglePrimIntermediate config (FromFPOrTerm _ _ d mode arg) = do
+lowerSinglePrimIntermediate config (FromFPOrTerm _ _ _ d mode arg) = do
   d <- lowerSinglePrimCached' config d
   mode <- lowerSinglePrimCached' config mode
   arg <- lowerSinglePrimCached' config arg
   return $ \qst -> sbvFromFPOrTerm @a (d qst) (mode qst) (arg qst)
-lowerSinglePrimIntermediate config (ToFPTerm _ _ mode (arg :: Term b) _ _) = do
+lowerSinglePrimIntermediate config (ToFPTerm _ _ _ mode (arg :: Term b) _ _) = do
   mode <- lowerSinglePrimCached' config mode
   arg <- lowerSinglePrimCached' config arg
   return $ \qst -> sbvToFPTerm @b (mode qst) (arg qst)

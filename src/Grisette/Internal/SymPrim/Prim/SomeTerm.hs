@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,11 +15,10 @@
 module Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (..), someTerm) where
 
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Typeable (Proxy (Proxy), typeRep)
+import Data.Typeable (Proxy (Proxy), eqT, typeRep, type (:~:) (Refl))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SupportedPrim,
     Term,
-    identityWithTypeRep,
     introSupportedPrimConstraint,
   )
 
@@ -27,11 +27,13 @@ data SomeTerm where
   SomeTerm :: forall a. (SupportedPrim a) => Term a -> SomeTerm
 
 instance Eq SomeTerm where
-  (SomeTerm t1) == (SomeTerm t2) =
-    identityWithTypeRep t1 == identityWithTypeRep t2
+  (SomeTerm (t1 :: Term a)) == (SomeTerm (t2 :: Term b)) =
+    case eqT @a @b of
+      Just Refl -> t1 == t2
+      Nothing -> False
 
 instance Hashable SomeTerm where
-  hashWithSalt s (SomeTerm t) = hashWithSalt s $ identityWithTypeRep t
+  hashWithSalt s (SomeTerm t) = hashWithSalt s t
 
 instance Show SomeTerm where
   show (SomeTerm (t :: Term a)) =
