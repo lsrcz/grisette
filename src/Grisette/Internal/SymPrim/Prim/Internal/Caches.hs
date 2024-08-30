@@ -46,12 +46,13 @@ import Data.Atomics (atomicModifyIORefCAS, atomicModifyIORefCAS_)
 import Data.Data (Proxy (Proxy), TypeRep, Typeable, typeRep)
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashTable.IO as HT
-import qualified Data.HashTable.ST.Basic as HTST
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import qualified Data.Vector.Hashtables as VHT
+import qualified Data.Vector.Mutable as BV
 import Data.Word (Word32)
 import GHC.Base (Any)
-import GHC.IO (stToIO, unsafePerformIO)
+import GHC.IO (unsafePerformIO)
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
     WeakThreadIdRef,
@@ -68,14 +69,16 @@ type Digest = Word32
 newtype Cache t
   = Cache {getCache :: A.Array Int (CacheState t)}
 
+type HashTable k v = VHT.Dictionary (VHT.PrimState IO) BV.MVector k BV.MVector v
+
 data CacheState t
   = CacheState
-  { currentThread :: HT.BasicHashTable (Description t) t,
+  { currentThread :: HashTable (Description t) t,
     otherThread :: HT.BasicHashTable (WeakThreadId, Id) t
   }
 
 cacheStateSize :: CacheState t -> IO Int
-cacheStateSize (CacheState s _) = stToIO $ HTST.size s
+cacheStateSize (CacheState s _) = VHT.size s
 
 cacheSize :: Cache t -> IO Int
 cacheSize (Cache a) = sum <$> mapM cacheStateSize (A.elems a)
@@ -141,7 +144,7 @@ cacheWidth = 10
 mkCache :: forall t. (Interned t) => IO (Cache t)
 mkCache = result
   where
-    element = CacheState <$> HT.new <*> HT.new
+    element = CacheState <$> VHT.initialize 0 <*> HT.new
     result = do
       elements <- replicateM (fromIntegral cacheWidth) element
       return $ Cache $ A.listArray (0, fromIntegral cacheWidth - 1) elements
@@ -185,12 +188,12 @@ intern !bt = do
       !hdt = descriptionDigest dt
       !r = hdt `mod` cacheWidth
       CacheState s _ = getCache cache A.! (fromIntegral r)
-  HT.lookup s dt >>= \case
+  VHT.lookup s dt >>= \case
     Nothing -> do
-      i <- stToIO $ HTST.size s
+      i <- VHT.size s
       let !newId = cacheWidth * fromIntegral i + r
           !t = identify (weakThreadId tid) hdt newId bt
-      HT.insert s dt t
+      VHT.insert s dt t
       return t
     Just t -> return t
 {-# NOINLINE intern #-}

@@ -28,3 +28,4 @@ cabal.project.local~
 .ipynb_checkpoints/
 .DS_Store
 *.smt2
+*.eventlog.html
