@@ -51,7 +51,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        BinaryTerm,
         BitCastOrTerm,
         BitCastTerm,
         ComplementBitsTerm,
@@ -90,9 +89,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TernaryTerm,
         ToFPTerm,
-        UnaryTerm,
         XorBitsTerm
       ),
     TypedAnySymbol,
@@ -173,11 +170,6 @@ extractSymSomeTerm = go initialMemo
       let newmemo = htmemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
-    go memo bs (SomeTerm (UnaryTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BinaryTerm _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (TernaryTerm _ _ _ _ arg1 arg2 arg3)) =
-      goTernary memo bs arg1 arg2 arg3
     go memo bs (SomeTerm (NotTerm _ _ _ arg)) = goUnary memo bs arg
     go memo bs (SomeTerm (OrTerm _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
     go memo bs (SomeTerm (AndTerm _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
@@ -301,9 +293,6 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
     go t@SymTerm {} = add t
     go t@(ForallTerm _ _ _ _ arg) = goUnary t arg
     go t@(ExistsTerm _ _ _ _ arg) = goUnary t arg
-    go t@(UnaryTerm _ _ _ _ arg) = goUnary t arg
-    go t@(BinaryTerm _ _ _ _ arg1 arg2) = goBinary t arg1 arg2
-    go t@(TernaryTerm _ _ _ _ arg1 arg2 arg3) = goTernary t arg1 arg2 arg3
     go t@(NotTerm _ _ _ arg) = goUnary t arg
     go t@(OrTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2
     go t@(AndTerm _ _ _ arg1 arg2) = goBinary t arg1 arg2

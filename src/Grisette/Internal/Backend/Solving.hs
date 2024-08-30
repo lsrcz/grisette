@@ -205,7 +205,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        BinaryTerm,
         BitCastOrTerm,
         BitCastTerm,
         ComplementBitsTerm,
@@ -244,9 +243,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TernaryTerm,
         ToFPTerm,
-        UnaryTerm,
         XorBitsTerm
       ),
     TypedConstantSymbol,
@@ -815,9 +812,6 @@ lowerSinglePrimIntermediate _ ConTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ SymTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ ForallTerm {} = error "Should not happen"
 lowerSinglePrimIntermediate _ ExistsTerm {} = error "Should not happen"
-lowerSinglePrimIntermediate _ UnaryTerm {} = error "Not implemented"
-lowerSinglePrimIntermediate _ BinaryTerm {} = error "Not implemented"
-lowerSinglePrimIntermediate _ TernaryTerm {} = error "Not implemented"
 
 #if MIN_VERSION_sbv(10,3,0)
 preprocessUIFuncs ::

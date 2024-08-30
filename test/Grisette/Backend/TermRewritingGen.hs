@@ -26,11 +26,8 @@ module Grisette.Backend.TermRewritingGen
     NRAWithBoolSpec (..),
     BoolOnlySpec (..),
     constructUnarySpec,
-    constructUnarySpec',
     constructBinarySpec,
-    constructBinarySpec',
     constructTernarySpec,
-    constructTernarySpec',
     divIntegralSpec,
     modIntegralSpec,
     quotIntegralSpec,
@@ -114,8 +111,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     toFPTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( BinaryOp (pevalBinary),
-    FPTrait
+  ( FPTrait
       ( FPIsInfinite,
         FPIsNaN,
         FPIsNegative,
@@ -166,8 +162,6 @@ import Grisette.Internal.SymPrim.Prim.Term
     SupportedNonFuncPrim,
     SupportedPrim (pevalITETerm),
     Term,
-    TernaryOp (pevalTernary),
-    UnaryOp (pevalUnary),
     absNumTerm,
     addNumTerm,
     andBitsTerm,
@@ -177,9 +171,6 @@ import Grisette.Internal.SymPrim.Prim.Term
     bvselectTerm,
     complementBitsTerm,
     conTerm,
-    constructBinary,
-    constructTernary,
-    constructUnary,
     distinctTerm,
     divIntegralTerm,
     eqTerm,
@@ -243,17 +234,6 @@ constructUnarySpec ::
 constructUnarySpec construct partial a =
   wrap (construct $ norewriteVer a) (partial $ rewriteVer a)
 
-constructUnarySpec' ::
-  forall a av b bv tag.
-  ( TermRewritingSpec a av,
-    TermRewritingSpec b bv,
-    UnaryOp tag av bv
-  ) =>
-  tag ->
-  a ->
-  b
-constructUnarySpec' tag = constructUnarySpec @a @av @b @bv (constructUnary tag) (pevalUnary tag)
-
 constructBinarySpec ::
   forall a av b bv c cv.
   ( TermRewritingSpec a av,
@@ -269,19 +249,6 @@ constructBinarySpec construct partial a b =
   wrap
     (construct (norewriteVer a) (norewriteVer b))
     (partial (rewriteVer a) (rewriteVer b))
-
-constructBinarySpec' ::
-  forall a av b bv c cv tag.
-  ( TermRewritingSpec a av,
-    TermRewritingSpec b bv,
-    TermRewritingSpec c cv,
-    BinaryOp tag av bv cv
-  ) =>
-  tag ->
-  a ->
-  b ->
-  c
-constructBinarySpec' tag = constructBinarySpec @a @av @b @bv @c @cv (constructBinary tag) (pevalBinary tag)
 
 constructTernarySpec ::
   forall a av b bv c cv d dv.
@@ -300,24 +267,6 @@ constructTernarySpec construct partial a b c =
   wrap
     (construct (norewriteVer a) (norewriteVer b) (norewriteVer c))
     (partial (rewriteVer a) (rewriteVer b) (rewriteVer c))
-
-constructTernarySpec' ::
-  forall a av b bv c cv d dv tag.
-  ( TermRewritingSpec a av,
-    TermRewritingSpec b bv,
-    TermRewritingSpec c cv,
-    TermRewritingSpec d dv,
-    TernaryOp tag av bv cv dv
-  ) =>
-  tag ->
-  a ->
-  b ->
-  c ->
-  d
-constructTernarySpec' tag =
-  constructTernarySpec @a @av @b @bv @c @cv @d @dv
-    (constructTernary tag)
-    (pevalTernary tag)
 
 notSpec :: (TermRewritingSpec a Bool) => a -> a
 notSpec = constructUnarySpec notTerm pevalNotTerm
