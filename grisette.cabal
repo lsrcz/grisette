@@ -227,6 +227,7 @@ library
   hs-source-dirs:
       src
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags
+  ghc-prof-options: -finfo-table-map -fdistinct-constructor-tables
   build-depends:
       QuickCheck >=2.14 && <2.16
     , array >=0.5.4 && <0.6
@@ -254,6 +255,8 @@ library
     , th-lift-instances >=0.1.16 && <0.2
     , transformers >=0.5.6 && <0.7
     , unordered-containers >=0.2.11 && <0.3
+    , vector
+    , vector-hashtables
   default-language: Haskell2010
   if flag(optimize)
     ghc-options: -O2
@@ -268,6 +271,7 @@ test-suite doctest
   hs-source-dirs:
       doctest
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts -with-rtsopts=-N
+  ghc-prof-options: -finfo-table-map -fdistinct-constructor-tables
   build-depends:
       QuickCheck >=2.14 && <2.16
     , array >=0.5.4 && <0.6
@@ -297,6 +301,8 @@ test-suite doctest
     , th-lift-instances >=0.1.16 && <0.2
     , transformers >=0.5.6 && <0.7
     , unordered-containers >=0.2.11 && <0.3
+    , vector
+    , vector-hashtables
   default-language: Haskell2010
   if flag(optimize)
     ghc-options: -O2
@@ -378,6 +384,7 @@ test-suite spec
   hs-source-dirs:
       test
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags -threaded -rtsopts -with-rtsopts=-N -Wredundant-constraints
+  ghc-prof-options: -finfo-table-map -fdistinct-constructor-tables
   build-depends:
       HUnit ==1.6.*
     , QuickCheck >=2.14 && <2.16
@@ -410,6 +417,8 @@ test-suite spec
     , th-lift-instances >=0.1.16 && <0.2
     , transformers >=0.5.6 && <0.7
     , unordered-containers >=0.2.11 && <0.3
+    , vector
+    , vector-hashtables
   default-language: Haskell2010
   if flag(optimize)
     ghc-options: -O2
