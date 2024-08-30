@@ -62,8 +62,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   )
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( BinaryOp (pevalBinary),
-    IsSymbolKind,
+  ( IsSymbolKind,
     LinkedRep (underlyingTerm, wrapTerm),
     NonFuncPrimConstraint,
     NonFuncSBVBaseType,
@@ -119,7 +118,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         BVConcatTerm,
         BVExtendTerm,
         BVSelectTerm,
-        BinaryTerm,
         BitCastOrTerm,
         BitCastTerm,
         ComplementBitsTerm,
@@ -158,16 +156,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
-        TernaryTerm,
         ToFPTerm,
-        UnaryTerm,
         XorBitsTerm
       ),
-    TernaryOp (pevalTernary),
     TypedAnySymbol,
     TypedConstantSymbol,
     TypedSymbol (TypedSymbol, unTypedSymbol),
-    UnaryOp (pevalUnary),
     applyTerm,
     conTerm,
     eqHeteroSymbol,
@@ -258,9 +252,6 @@ extractSymSomeTermIncludeBoundedVars = htmemo go
       HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $ goUnary arg
     go (SomeTerm (ExistsTerm _ _ _ sym arg)) =
       HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $ goUnary arg
-    go (SomeTerm (UnaryTerm _ _ _ _ arg)) = goUnary arg
-    go (SomeTerm (BinaryTerm _ _ _ _ arg1 arg2)) = goBinary arg1 arg2
-    go (SomeTerm (TernaryTerm _ _ _ _ arg1 arg2 arg3)) = goTernary arg1 arg2 arg3
     go (SomeTerm (NotTerm _ _ _ arg)) = goUnary arg
     go (SomeTerm (OrTerm _ _ _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (AndTerm _ _ _ arg1 arg2)) = goBinary arg1 arg2
@@ -506,28 +497,6 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
             htmemo (goSome newmemo (HS.insert (someTypedSymbol tsym) bs))
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (existsTerm tsym) b
-    goSome memo _ (SomeTerm (UnaryTerm _ _ _ tag (arg :: Term a))) =
-      goUnary memo (pevalUnary tag) arg
-    goSome
-      memo
-      _
-      (SomeTerm (BinaryTerm _ _ _ tag (arg1 :: Term a1) (arg2 :: Term a2))) =
-        goBinary memo (pevalBinary tag) arg1 arg2
-    goSome
-      memo
-      _
-      ( SomeTerm
-          ( TernaryTerm
-              _
-              _
-              _
-              tag
-              (arg1 :: Term a1)
-              (arg2 :: Term a2)
-              (arg3 :: Term a3)
-            )
-        ) = do
-        goTernary memo (pevalTernary tag) arg1 arg2 arg3
     goSome memo _ (SomeTerm (NotTerm _ _ _ arg)) =
       goUnary memo pevalNotTerm arg
     goSome memo _ (SomeTerm (OrTerm _ _ _ arg1 arg2)) =

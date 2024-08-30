@@ -18,13 +18,14 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StrictData #-}
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
+-- {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -43,9 +44,6 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     LinkedRep (..),
 
     -- * Partial evaluation for the terms
-    UnaryOp (..),
-    BinaryOp (..),
-    TernaryOp (..),
     PEvalApplyTerm (..),
     PEvalBitwiseTerm (..),
     PEvalShiftTerm (..),
@@ -99,9 +97,6 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     prettyPrintTerm,
     forallTerm,
     existsTerm,
-    constructUnary,
-    constructBinary,
-    constructTernary,
     conTerm,
     symTerm,
     ssymTerm,
@@ -203,7 +198,7 @@ import Data.Text.Prettyprint.Doc
 #endif
 
 import Control.DeepSeq (NFData (rnf))
-import Control.Monad (msum, (>=>))
+import Control.Monad (msum)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.RWS (RWST)
 import Control.Monad.Reader (MonadTrans (lift), ReaderT)
@@ -249,7 +244,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Caches
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
-    eqHeteroRep,
     eqTypeRepBool,
     myWeakThreadId,
     pattern Dyn,
@@ -279,21 +273,27 @@ class (MonadIO m) => SBVFreshMonad m where
 
 instance (MonadIO m) => SBVFreshMonad (SBVT.SymbolicT m) where
   sbvFresh = SBVT.free
+  {-# INLINE sbvFresh #-}
 
 instance (MonadIO m) => SBVFreshMonad (SBVTC.QueryT m) where
   sbvFresh = SBVTC.freshVar
+  {-# INLINE sbvFresh #-}
 
 instance (SBVFreshMonad m) => SBVFreshMonad (ReaderT r m) where
   sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
 
 instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (WriterT w m) where
   sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
 
 instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (RWST r w s m) where
   sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
 
 instance (SBVFreshMonad m) => SBVFreshMonad (StateT s m) where
   sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
 
 -- | Error message for unsupported types.
 translateTypeError :: (HasCallStack) => Maybe String -> TypeRep a -> b
@@ -459,6 +459,7 @@ castSomeTypedSymbol ::
   (IsSymbolKind knd') => SomeTypedSymbol knd -> Maybe (SomeTypedSymbol knd')
 castSomeTypedSymbol (SomeTypedSymbol ty s@TypedSymbol {}) =
   SomeTypedSymbol ty <$> castTypedSymbol s
+{-# INLINE castSomeTypedSymbol #-}
 
 -- | Error message for failure to parse the SBV model result.
 parseSMTModelResultError ::
@@ -595,10 +596,12 @@ class (SupportedNonFuncPrim t, Ord t) => PEvalOrdTerm t where
 -- | Partial evaluation for greater than terms.
 pevalGtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGtOrdTerm = flip pevalLtOrdTerm
+{-# INLINE pevalGtOrdTerm #-}
 
 -- | Partial evaluation for greater than or equal to terms.
 pevalGeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
 pevalGeOrdTerm = flip pevalLeOrdTerm
+{-# INLINE pevalGeOrdTerm #-}
 
 -- | Partial evaluation and lowering for integer division and modulo terms.
 class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
@@ -813,60 +816,6 @@ class (SupportedNonFuncPrim a) => PEvalIEEEFPConvertibleTerm a where
     SBVType a ->
     SBVType (FP eb sb)
 
--- | Custom unary operator. Not used by Grisette at this time and do not use it.
-class
-  ( SupportedPrim arg,
-    SupportedPrim t,
-    Lift tag,
-    NFData tag,
-    Show tag,
-    Typeable tag,
-    Eq tag,
-    Hashable tag
-  ) =>
-  UnaryOp tag arg t
-    | tag arg -> t
-  where
-  pevalUnary :: (Typeable tag, Typeable t) => tag -> Term arg -> Term t
-  pformatUnary :: tag -> Term arg -> String
-
--- | Custom binary operator. Not used by Grisette at this time and do not use it.
-class
-  ( SupportedPrim arg1,
-    SupportedPrim arg2,
-    SupportedPrim t,
-    Lift tag,
-    NFData tag,
-    Show tag,
-    Typeable tag,
-    Eq tag,
-    Hashable tag
-  ) =>
-  BinaryOp tag arg1 arg2 t
-    | tag arg1 arg2 -> t
-  where
-  pevalBinary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term t
-  pformatBinary :: tag -> Term arg1 -> Term arg2 -> String
-
--- | Custom ternary operator. Not used by Grisette at this time and do not use it.
-class
-  ( SupportedPrim arg1,
-    SupportedPrim arg2,
-    SupportedPrim arg3,
-    SupportedPrim t,
-    Lift tag,
-    NFData tag,
-    Show tag,
-    Typeable tag,
-    Eq tag,
-    Hashable tag
-  ) =>
-  TernaryOp tag arg1 arg2 arg3 t
-    | tag arg1 arg2 arg3 -> t
-  where
-  pevalTernary :: (Typeable tag, Typeable t) => tag -> Term arg1 -> Term arg2 -> Term arg3 -> Term t
-  pformatTernary :: tag -> Term arg1 -> Term arg2 -> Term arg3 -> String
-
 -- Typed Symbols
 
 -- | The kind of a symbol.
@@ -945,10 +894,12 @@ instance
 -- | Introduce the 'SupportedPrim' constraint from the t'TypedSymbol'.
 withSymbolSupported :: TypedSymbol knd t -> ((SupportedPrim t) => a) -> a
 withSymbolSupported (TypedSymbol _) a = a
+{-# INLINE withSymbolSupported #-}
 
 -- | Introduce the 'IsSymbolKind' constraint from the t'TypedSymbol'.
 withSymbolKind :: TypedSymbol knd t -> ((IsSymbolKind knd) => a) -> a
 withSymbolKind (TypedSymbol _) a = a
+{-# INLINE withSymbolKind #-}
 
 -- | A non-indexed symbol. Type information are checked at runtime.
 data SomeTypedSymbol knd where
@@ -966,11 +917,13 @@ type SomeTypedAnySymbol = SomeTypedSymbol 'AnyKind
 
 instance NFData (SomeTypedSymbol knd) where
   rnf (SomeTypedSymbol p s) = rnf (SomeTypeRep p) `seq` rnf s
+  {-# INLINE rnf #-}
 
 instance Eq (SomeTypedSymbol knd) where
   (SomeTypedSymbol t1 s1) == (SomeTypedSymbol t2 s2) = case eqTypeRep t1 t2 of
     Just HRefl -> s1 == s2
     _ -> False
+  {-# INLINE (==) #-}
 
 instance Ord (SomeTypedSymbol knd) where
   (SomeTypedSymbol t1 s1) <= (SomeTypedSymbol t2 s2) =
@@ -982,6 +935,7 @@ instance Ord (SomeTypedSymbol knd) where
 
 instance Hashable (SomeTypedSymbol knd) where
   hashWithSalt s (SomeTypedSymbol t1 s1) = s `hashWithSalt` s1 `hashWithSalt` t1
+  {-# INLINE hashWithSalt #-}
 
 instance Show (SomeTypedSymbol knd) where
   show (SomeTypedSymbol _ s) = show s
@@ -989,6 +943,7 @@ instance Show (SomeTypedSymbol knd) where
 -- | Construct a t'SomeTypedSymbol' from a t'TypedSymbol'.
 someTypedSymbol :: forall knd t. TypedSymbol knd t -> SomeTypedSymbol knd
 someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
+{-# INLINE someTypedSymbol #-}
 
 -- Terms
 
@@ -1096,33 +1051,6 @@ data Term t where
     !(TypedSymbol 'ConstantKind t) ->
     !(Term Bool) ->
     Term Bool
-  UnaryTerm ::
-    (UnaryOp tag arg t) =>
-    WeakThreadId ->
-    {-# UNPACK #-} !Int ->
-    {-# UNPACK #-} !Id ->
-    !tag ->
-    !(Term arg) ->
-    Term t
-  BinaryTerm ::
-    (BinaryOp tag arg1 arg2 t) =>
-    WeakThreadId ->
-    {-# UNPACK #-} !Int ->
-    {-# UNPACK #-} !Id ->
-    !tag ->
-    !(Term arg1) ->
-    !(Term arg2) ->
-    Term t
-  TernaryTerm ::
-    (TernaryOp tag arg1 arg2 arg3 t) =>
-    WeakThreadId ->
-    {-# UNPACK #-} !Int ->
-    {-# UNPACK #-} !Id ->
-    !tag ->
-    !(Term arg1) ->
-    !(Term arg2) ->
-    !(Term arg3) ->
-    Term t
   NotTerm ::
     WeakThreadId ->
     {-# UNPACK #-} !Int ->
@@ -1553,9 +1481,6 @@ typeHashId (ConTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
 typeHashId (SymTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
 typeHashId (ForallTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
 typeHashId (ExistsTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (UnaryTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (BinaryTerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (TernaryTerm _ ha i _ _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
 typeHashId (NotTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
 typeHashId (OrTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
 typeHashId (AndTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
@@ -1608,9 +1533,6 @@ introSupportedPrimConstraint ConTerm {} x = x
 introSupportedPrimConstraint SymTerm {} x = x
 introSupportedPrimConstraint ForallTerm {} x = x
 introSupportedPrimConstraint ExistsTerm {} x = x
-introSupportedPrimConstraint UnaryTerm {} x = x
-introSupportedPrimConstraint BinaryTerm {} x = x
-introSupportedPrimConstraint TernaryTerm {} x = x
 introSupportedPrimConstraint NotTerm {} x = x
 introSupportedPrimConstraint OrTerm {} x = x
 introSupportedPrimConstraint AndTerm {} x = x
@@ -1663,9 +1585,6 @@ pformatTerm (ConTerm _ _ _ t) = pformatCon t
 pformatTerm (SymTerm _ _ _ sym) = pformatSym sym
 pformatTerm (ForallTerm _ _ _ sym arg) = "(forall " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (ExistsTerm _ _ _ sym arg) = "(exists " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (UnaryTerm _ _ _ tag arg1) = pformatUnary tag arg1
-pformatTerm (BinaryTerm _ _ _ tag arg1 arg2) = pformatBinary tag arg1 arg2
-pformatTerm (TernaryTerm _ _ _ tag arg1 arg2 arg3) = pformatTernary tag arg1 arg2 arg3
 pformatTerm (NotTerm _ _ _ arg) = "(! " ++ pformatTerm arg ++ ")"
 pformatTerm (OrTerm _ _ _ arg1 arg2) = "(|| " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
 pformatTerm (AndTerm _ _ _ arg1 arg2) = "(&& " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
@@ -1717,6 +1636,7 @@ pformatTerm (ToFPTerm _ _ _ r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ pf
 
 instance NFData (Term a) where
   rnf i = identity i `seq` ()
+  {-# INLINE rnf #-}
 
 instance Lift (Term t) where
   liftTyped t =
@@ -1758,42 +1678,6 @@ instance Show (Term ty) where
       ++ show sym
       ++ ", arg="
       ++ show arg
-      ++ "}"
-  show (UnaryTerm tid _ i tag arg) =
-    "Unary{tid="
-      ++ show tid
-      ++ ", id="
-      ++ show i
-      ++ ", tag="
-      ++ show tag
-      ++ ", arg="
-      ++ show arg
-      ++ "}"
-  show (BinaryTerm tid _ i tag arg1 arg2) =
-    "Binary{tid="
-      ++ show tid
-      ++ ", id="
-      ++ show i
-      ++ ", tag="
-      ++ show tag
-      ++ ", arg1="
-      ++ show arg1
-      ++ ", arg2="
-      ++ show arg2
-      ++ "}"
-  show (TernaryTerm tid _ i tag arg1 arg2 arg3) =
-    "Ternary{tid="
-      ++ show tid
-      ++ ", id="
-      ++ show i
-      ++ ", tag="
-      ++ show tag
-      ++ ", arg1="
-      ++ show arg1
-      ++ ", arg2="
-      ++ show arg2
-      ++ ", arg3="
-      ++ show arg3
       ++ "}"
   show (NotTerm tid _ i arg) =
     "Not{tid=" ++ show tid ++ ", id=" ++ show i ++ ", arg=" ++ show arg ++ "}"
@@ -2260,6 +2144,7 @@ instance (SupportedPrim t) => Eq (Term t) where
 
 instance (SupportedPrim t) => Hashable (Term t) where
   hashWithSalt s t = hashWithSalt s $ baseHash t
+  {-# INLINE hashWithSalt #-}
 
 -- | Term without identity (before internalizing).
 data UTerm t where
@@ -2267,20 +2152,6 @@ data UTerm t where
   USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnyKind t) -> UTerm t
   UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> UTerm Bool
   UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> UTerm Bool
-  UUnaryTerm :: (UnaryOp tag arg t) => !tag -> !(Term arg) -> UTerm t
-  UBinaryTerm ::
-    (BinaryOp tag arg1 arg2 t) =>
-    !tag ->
-    !(Term arg1) ->
-    !(Term arg2) ->
-    UTerm t
-  UTernaryTerm ::
-    (TernaryOp tag arg1 arg2 arg3 t) =>
-    !tag ->
-    !(Term arg1) ->
-    !(Term arg2) ->
-    !(Term arg3) ->
-    UTerm t
   UNotTerm :: !(Term Bool) -> UTerm Bool
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
@@ -2430,10 +2301,6 @@ data UTerm t where
     Proxy sb ->
     UTerm (FP eb sb)
 
-eqHeteroTag :: (Eq a) => (TypeRep a, a) -> (TypeRep b, b) -> Bool
-eqHeteroTag (tpa, taga) (tpb, tagb) = eqHeteroRep tpa tpb taga tagb
-{-# INLINE eqHeteroTag #-}
-
 -- | Compare two t'TypedSymbol's for equality.
 eqHeteroSymbol :: forall ta a tb b. TypedSymbol ta a -> TypedSymbol tb b -> Bool
 eqHeteroSymbol (TypedSymbol taga) (TypedSymbol tagb) =
@@ -2473,45 +2340,6 @@ preHashExistsDescription (tp, sym) h =
     `hashWithSalt` sym
     `hashWithSalt` h
 {-# INLINE preHashExistsDescription #-}
-
-preHashUnaryDescription ::
-  (Hashable tag) => (TypeRep tag, tag) -> TypeHashId arg -> Int
-preHashUnaryDescription (tp, tag) h =
-  4
-    `hashWithSalt` tp
-    `hashWithSalt` tag
-    `hashWithSalt` h
-{-# INLINE preHashUnaryDescription #-}
-
-preHashBinaryDescription ::
-  (Hashable tag) =>
-  (TypeRep tag, tag) ->
-  TypeHashId arg1 ->
-  TypeHashId arg2 ->
-  Int
-preHashBinaryDescription (tp, tag) h1 h2 =
-  5
-    `hashWithSalt` tp
-    `hashWithSalt` tag
-    `hashWithSalt` h1
-    `hashWithSalt` h2
-{-# INLINE preHashBinaryDescription #-}
-
-preHashTernaryDescription ::
-  (Hashable tag) =>
-  (TypeRep tag, tag) ->
-  TypeHashId arg1 ->
-  TypeHashId arg2 ->
-  TypeHashId arg3 ->
-  Int
-preHashTernaryDescription (tp, tag) h1 h2 h3 =
-  6
-    `hashWithSalt` tp
-    `hashWithSalt` tag
-    `hashWithSalt` h1
-    `hashWithSalt` h2
-    `hashWithSalt` h3
-{-# INLINE preHashTernaryDescription #-}
 
 preHashNotDescription :: HashId -> Int
 preHashNotDescription = hashWithSalt 7
@@ -2724,27 +2552,6 @@ instance (SupportedPrim t) => Interned (Term t) where
       {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) ->
       {-# UNPACK #-} !HashId ->
       Description (Term Bool)
-    DUnaryTerm ::
-      (Eq tag, Hashable tag) =>
-      {-# UNPACK #-} !Int ->
-      {-# UNPACK #-} !(TypeRep tag, tag) ->
-      {-# UNPACK #-} !(TypeHashId arg) ->
-      Description (Term t)
-    DBinaryTerm ::
-      (Eq tag, Hashable tag) =>
-      {-# UNPACK #-} !Int ->
-      {-# UNPACK #-} !(TypeRep tag, tag) ->
-      {-# UNPACK #-} !(TypeHashId arg1) ->
-      {-# UNPACK #-} !(TypeHashId arg2) ->
-      Description (Term t)
-    DTernaryTerm ::
-      (Eq tag, Hashable tag) =>
-      {-# UNPACK #-} !Int ->
-      {-# UNPACK #-} !(TypeRep tag, tag) ->
-      {-# UNPACK #-} !(TypeHashId arg1) ->
-      {-# UNPACK #-} !(TypeHashId arg2) ->
-      {-# UNPACK #-} !(TypeHashId arg3) ->
-      Description (Term t)
     DNotTerm ::
       {-# UNPACK #-} !Int ->
       {-# UNPACK #-} !HashId ->
@@ -2987,31 +2794,6 @@ instance (SupportedPrim t) => Interned (Term t) where
     let tsym = (typeRep @arg, sym)
         argHashId = hashId arg
      in DExistsTerm (preHashExistsDescription tsym argHashId) tsym argHashId
-  describe ((UUnaryTerm (tag :: tagt) (tm :: Term arg)) :: UTerm t) =
-    let ttag = (typeRep @tagt, tag)
-        tmHashId = typeHashId tm
-     in DUnaryTerm (preHashUnaryDescription ttag tmHashId) ttag tmHashId
-  describe
-    ((UBinaryTerm (tag :: tagt) tm1 tm2) :: UTerm t) =
-      let ttag = (typeRep @tagt, tag)
-          tm1HashId = typeHashId tm1
-          tm2HashId = typeHashId tm2
-       in DBinaryTerm
-            (preHashBinaryDescription ttag tm1HashId tm2HashId)
-            ttag
-            tm1HashId
-            tm2HashId
-  describe ((UTernaryTerm (tag :: tagt) tm1 tm2 tm3) :: UTerm t) =
-    let ttag = (typeRep @tagt, tag)
-        tm1HashId = typeHashId tm1
-        tm2HashId = typeHashId tm2
-        tm3HashId = typeHashId tm3
-     in DTernaryTerm
-          (preHashTernaryDescription ttag tm1HashId tm2HashId tm3HashId)
-          ttag
-          tm1HashId
-          tm2HashId
-          tm3HashId
   describe (UNotTerm arg) =
     let argHashId = hashId arg
      in DNotTerm (preHashNotDescription argHashId) argHashId
@@ -3310,6 +3092,7 @@ instance (SupportedPrim t) => Interned (Term t) where
           (preHashToFPTermDescription modeHashId argHashId)
           modeHashId
           argHashId
+  {-# INLINE describe #-}
 
   identify tid ha i = go
     where
@@ -3317,9 +3100,6 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (USymTerm v) = SymTerm tid ha i v
       go (UForallTerm sym arg) = ForallTerm tid ha i sym arg
       go (UExistsTerm sym arg) = ExistsTerm tid ha i sym arg
-      go (UUnaryTerm tag tm) = UnaryTerm tid ha i tag tm
-      go (UBinaryTerm tag tm1 tm2) = BinaryTerm tid ha i tag tm1 tm2
-      go (UTernaryTerm tag tm1 tm2 tm3) = TernaryTerm tid ha i tag tm1 tm2 tm3
       go (UNotTerm arg) = NotTerm tid ha i arg
       go (UOrTerm arg1 arg2) = OrTerm tid ha i arg1 arg2
       go (UAndTerm arg1 arg2) = AndTerm tid ha i arg1 arg2
@@ -3364,68 +3144,67 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFromIntegralTerm arg) = FromIntegralTerm tid ha i arg
       go (UFromFPOrTerm d mode arg) = FromFPOrTerm tid ha i d mode arg
       go (UToFPTerm mode arg eb sb) = ToFPTerm tid ha i mode arg eb sb
-  threadId (ConTerm tid _ _ _) = tid
-  threadId (SymTerm tid _ _ _) = tid
-  threadId (ForallTerm tid _ _ _ _) = tid
-  threadId (ExistsTerm tid _ _ _ _) = tid
-  threadId (UnaryTerm tid _ _ _ _) = tid
-  threadId (BinaryTerm tid _ _ _ _ _) = tid
-  threadId (TernaryTerm tid _ _ _ _ _ _) = tid
-  threadId (NotTerm tid _ _ _) = tid
-  threadId (OrTerm tid _ _ _ _) = tid
-  threadId (AndTerm tid _ _ _ _) = tid
-  threadId (EqTerm tid _ _ _ _) = tid
-  threadId (DistinctTerm tid _ _ _) = tid
-  threadId (ITETerm tid _ _ _ _ _) = tid
-  threadId (AddNumTerm tid _ _ _ _) = tid
-  threadId (NegNumTerm tid _ _ _) = tid
-  threadId (MulNumTerm tid _ _ _ _) = tid
-  threadId (AbsNumTerm tid _ _ _) = tid
-  threadId (SignumNumTerm tid _ _ _) = tid
-  threadId (LtOrdTerm tid _ _ _ _) = tid
-  threadId (LeOrdTerm tid _ _ _ _) = tid
-  threadId (AndBitsTerm tid _ _ _ _) = tid
-  threadId (OrBitsTerm tid _ _ _ _) = tid
-  threadId (XorBitsTerm tid _ _ _ _) = tid
-  threadId (ComplementBitsTerm tid _ _ _) = tid
-  threadId (ShiftLeftTerm tid _ _ _ _) = tid
-  threadId (ShiftRightTerm tid _ _ _ _) = tid
-  threadId (RotateLeftTerm tid _ _ _ _) = tid
-  threadId (RotateRightTerm tid _ _ _ _) = tid
-  threadId (BitCastTerm tid _ _ _) = tid
-  threadId (BitCastOrTerm tid _ _ _ _) = tid
-  threadId (BVConcatTerm tid _ _ _ _) = tid
-  threadId (BVSelectTerm tid _ _ _ _ _) = tid
-  threadId (BVExtendTerm tid _ _ _ _ _) = tid
-  threadId (ApplyTerm tid _ _ _ _) = tid
-  threadId (DivIntegralTerm tid _ _ _ _) = tid
-  threadId (ModIntegralTerm tid _ _ _ _) = tid
-  threadId (QuotIntegralTerm tid _ _ _ _) = tid
-  threadId (RemIntegralTerm tid _ _ _ _) = tid
-  threadId (FPTraitTerm tid _ _ _ _) = tid
-  threadId (FdivTerm tid _ _ _ _) = tid
-  threadId (RecipTerm tid _ _ _) = tid
-  threadId (FloatingUnaryTerm tid _ _ _ _) = tid
-  threadId (PowerTerm tid _ _ _ _) = tid
-  threadId (FPUnaryTerm tid _ _ _ _) = tid
-  threadId (FPBinaryTerm tid _ _ _ _ _) = tid
-  threadId (FPRoundingUnaryTerm tid _ _ _ _ _) = tid
-  threadId (FPRoundingBinaryTerm tid _ _ _ _ _ _) = tid
-  threadId (FPFMATerm tid _ _ _ _ _ _) = tid
-  threadId (FromIntegralTerm tid _ _ _) = tid
-  threadId (FromFPOrTerm tid _ _ _ _ _) = tid
-  threadId (ToFPTerm tid _ _ _ _ _ _) = tid
+      {-# INLINE go #-}
+  {-# INLINE identify #-}
+  threadId = termThreadId
+  {-# INLINE threadId #-}
+
+termThreadId :: Term t -> WeakThreadId
+termThreadId (ConTerm tid _ _ _) = tid
+termThreadId (SymTerm tid _ _ _) = tid
+termThreadId (ForallTerm tid _ _ _ _) = tid
+termThreadId (ExistsTerm tid _ _ _ _) = tid
+termThreadId (NotTerm tid _ _ _) = tid
+termThreadId (OrTerm tid _ _ _ _) = tid
+termThreadId (AndTerm tid _ _ _ _) = tid
+termThreadId (EqTerm tid _ _ _ _) = tid
+termThreadId (DistinctTerm tid _ _ _) = tid
+termThreadId (ITETerm tid _ _ _ _ _) = tid
+termThreadId (AddNumTerm tid _ _ _ _) = tid
+termThreadId (NegNumTerm tid _ _ _) = tid
+termThreadId (MulNumTerm tid _ _ _ _) = tid
+termThreadId (AbsNumTerm tid _ _ _) = tid
+termThreadId (SignumNumTerm tid _ _ _) = tid
+termThreadId (LtOrdTerm tid _ _ _ _) = tid
+termThreadId (LeOrdTerm tid _ _ _ _) = tid
+termThreadId (AndBitsTerm tid _ _ _ _) = tid
+termThreadId (OrBitsTerm tid _ _ _ _) = tid
+termThreadId (XorBitsTerm tid _ _ _ _) = tid
+termThreadId (ComplementBitsTerm tid _ _ _) = tid
+termThreadId (ShiftLeftTerm tid _ _ _ _) = tid
+termThreadId (ShiftRightTerm tid _ _ _ _) = tid
+termThreadId (RotateLeftTerm tid _ _ _ _) = tid
+termThreadId (RotateRightTerm tid _ _ _ _) = tid
+termThreadId (BitCastTerm tid _ _ _) = tid
+termThreadId (BitCastOrTerm tid _ _ _ _) = tid
+termThreadId (BVConcatTerm tid _ _ _ _) = tid
+termThreadId (BVSelectTerm tid _ _ _ _ _) = tid
+termThreadId (BVExtendTerm tid _ _ _ _ _) = tid
+termThreadId (ApplyTerm tid _ _ _ _) = tid
+termThreadId (DivIntegralTerm tid _ _ _ _) = tid
+termThreadId (ModIntegralTerm tid _ _ _ _) = tid
+termThreadId (QuotIntegralTerm tid _ _ _ _) = tid
+termThreadId (RemIntegralTerm tid _ _ _ _) = tid
+termThreadId (FPTraitTerm tid _ _ _ _) = tid
+termThreadId (FdivTerm tid _ _ _ _) = tid
+termThreadId (RecipTerm tid _ _ _) = tid
+termThreadId (FloatingUnaryTerm tid _ _ _ _) = tid
+termThreadId (PowerTerm tid _ _ _ _) = tid
+termThreadId (FPUnaryTerm tid _ _ _ _) = tid
+termThreadId (FPBinaryTerm tid _ _ _ _ _) = tid
+termThreadId (FPRoundingUnaryTerm tid _ _ _ _ _) = tid
+termThreadId (FPRoundingBinaryTerm tid _ _ _ _ _ _) = tid
+termThreadId (FPFMATerm tid _ _ _ _ _ _) = tid
+termThreadId (FromIntegralTerm tid _ _ _) = tid
+termThreadId (FromFPOrTerm tid _ _ _ _ _) = tid
+termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
+{-# INLINE termThreadId #-}
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) = cast @tyl @tyr l == Just r
   DSymTerm _ ls == DSymTerm _ rs = ls == rs
   DForallTerm _ ls li == DForallTerm _ rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
   DExistsTerm _ ls li == DExistsTerm _ rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
-  DUnaryTerm _ (tagl :: tagl) li == DUnaryTerm _ (tagr :: tagr) ri = eqHeteroTag tagl tagr && eqTypeHashId li ri
-  DBinaryTerm _ (tagl :: tagl) li1 li2 == DBinaryTerm _ (tagr :: tagr) ri1 ri2 =
-    eqHeteroTag tagl tagr && eqTypeHashId li1 ri1 && eqTypeHashId li2 ri2
-  DTernaryTerm _ (tagl :: tagl) li1 li2 li3 == DTernaryTerm _ (tagr :: tagr) ri1 ri2 ri3 =
-    eqHeteroTag tagl tagr && eqTypeHashId li1 ri1 && eqTypeHashId li2 ri2 && eqTypeHashId li3 ri3
   DNotTerm _ li == DNotTerm _ ri = eqHashId li ri
   DOrTerm _ li1 li2 == DOrTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DAndTerm _ li1 li2 == DAndTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
@@ -3482,15 +3261,13 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DFromFPOrTerm _ ld li lai == DFromFPOrTerm _ rd ri rai = eqHashId ld rd && eqHashId li ri && eqTypeHashId lai rai
   DToFPTerm _ li lai == DToFPTerm _ ri rai = eqHashId li ri && eqTypeHashId lai rai
   _ == _ = False
+  {-# INLINE (==) #-}
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DConTerm h _) = s `hashWithSalt` h
   hashWithSalt s (DSymTerm h _) = s `hashWithSalt` h
   hashWithSalt s (DForallTerm h _ _) = s `hashWithSalt` h
   hashWithSalt s (DExistsTerm h _ _) = s `hashWithSalt` h
-  hashWithSalt s (DUnaryTerm h _ _) = s `hashWithSalt` h
-  hashWithSalt s (DBinaryTerm h _ _ _) = s `hashWithSalt` h
-  hashWithSalt s (DTernaryTerm h _ _ _ _) = s `hashWithSalt` h
   hashWithSalt s (DNotTerm h _) = s `hashWithSalt` h
   hashWithSalt s (DOrTerm h _ _) = s `hashWithSalt` h
   hashWithSalt s (DAndTerm h _ _) = s `hashWithSalt` h
@@ -3535,10 +3312,10 @@ instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s (DFromIntegralTerm h _) = s `hashWithSalt` h
   hashWithSalt s (DFromFPOrTerm h _ _ _) = s `hashWithSalt` h
   hashWithSalt s (DToFPTerm h _ _) = s `hashWithSalt` h
+  {-# INLINE hashWithSalt #-}
 
 fullReconstructTerm1 ::
   forall a b.
-  (SupportedPrim a) =>
   (Term a -> IO (Term b)) ->
   Term a ->
   IO (Term b)
@@ -3547,7 +3324,6 @@ fullReconstructTerm1 f x = fullReconstructTerm x >>= f
 
 fullReconstructTerm2 ::
   forall a b c.
-  (SupportedPrim a, SupportedPrim b) =>
   (Term a -> Term b -> IO (Term c)) ->
   Term a ->
   Term b ->
@@ -3560,7 +3336,6 @@ fullReconstructTerm2 f x y = do
 
 fullReconstructTerm3 ::
   forall a b c d.
-  (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
   (Term a -> Term b -> Term c -> IO (Term d)) ->
   Term a ->
   Term b ->
@@ -3573,19 +3348,13 @@ fullReconstructTerm3 f x y z = do
   f rx ry rz
 {-# INLINE fullReconstructTerm3 #-}
 
-fullReconstructTerm :: forall t. (SupportedPrim t) => Term t -> IO (Term t)
+fullReconstructTerm :: forall t. Term t -> IO (Term t)
 fullReconstructTerm (ConTerm _ _ _ i) = curThreadConTerm i
 fullReconstructTerm (SymTerm _ _ _ sym) = curThreadSymTerm (unTypedSymbol sym)
 fullReconstructTerm (ForallTerm _ _ _ sym arg) =
   fullReconstructTerm1 (curThreadForallTerm sym) arg
 fullReconstructTerm (ExistsTerm _ _ _ sym arg) =
   fullReconstructTerm1 (curThreadExistsTerm sym) arg
-fullReconstructTerm (UnaryTerm _ _ _ tag arg) =
-  fullReconstructTerm1 (curThreadConstructUnary tag) arg
-fullReconstructTerm (BinaryTerm _ _ _ tag arg1 arg2) =
-  fullReconstructTerm2 (curThreadConstructBinary tag) arg1 arg2
-fullReconstructTerm (TernaryTerm _ _ _ tag arg1 arg2 arg3) =
-  fullReconstructTerm3 (curThreadConstructTernary tag) arg1 arg2 arg3
 fullReconstructTerm (NotTerm _ _ _ arg) =
   fullReconstructTerm1 curThreadNotTerm arg
 fullReconstructTerm (OrTerm _ _ _ arg1 arg2) =
@@ -3679,54 +3448,10 @@ fullReconstructTerm (FromFPOrTerm _ _ _ d r arg) =
 fullReconstructTerm (ToFPTerm _ _ _ r arg _ _) =
   fullReconstructTerm2 curThreadToFPTerm r arg
 
-toCurThread :: forall t. (SupportedPrim t) => Term t -> IO (Term t)
-toCurThread t = do
-  tid <- myWeakThreadId
-  go tid t
-  where
-    go :: (SupportedPrim t) => WeakThreadId -> Term t -> IO (Term t)
-    go tid t | threadId t == tid = return t
-    go _ t = fullReconstructTerm t
-
--- | Construct and internalizing a 'UnaryTerm', assuming the argument comes from
--- the current thread.
-curThreadConstructUnary ::
-  forall tag arg t.
-  (SupportedPrim t, UnaryOp tag arg t) =>
-  tag ->
-  Term arg ->
-  IO (Term t)
-curThreadConstructUnary tag tm = let x = intern $ UUnaryTerm tag tm in x
-{-# INLINE curThreadConstructUnary #-}
-
--- | Construct and internalizing a 'BinaryTerm', assuming the arguments come
--- from the current thread.
-curThreadConstructBinary ::
-  forall tag arg1 arg2 t.
-  ( SupportedPrim t,
-    BinaryOp tag arg1 arg2 t
-  ) =>
-  tag ->
-  Term arg1 ->
-  Term arg2 ->
-  IO (Term t)
-curThreadConstructBinary tag tm1 tm2 = intern $ UBinaryTerm tag tm1 tm2
-{-# INLINE curThreadConstructBinary #-}
-
--- | Construct and internalizing a 'TernaryTerm'.
-curThreadConstructTernary ::
-  forall tag arg1 arg2 arg3 t.
-  ( SupportedPrim t,
-    TernaryOp tag arg1 arg2 arg3 t
-  ) =>
-  tag ->
-  Term arg1 ->
-  Term arg2 ->
-  Term arg3 ->
-  IO (Term t)
-curThreadConstructTernary tag tm1 tm2 tm3 =
-  intern $ UTernaryTerm tag tm1 tm2 tm3
-{-# INLINE curThreadConstructTernary #-}
+toCurThreadImpl :: forall t. WeakThreadId -> Term t -> IO (Term t)
+toCurThreadImpl tid t | termThreadId t == tid = return t
+toCurThreadImpl _ t = fullReconstructTerm t
+{-# INLINE toCurThreadImpl #-}
 
 -- | Construct and internalizing a 'ConTerm'.
 curThreadConTerm :: (SupportedPrim t) => t -> IO (Term t)
@@ -4116,7 +3841,9 @@ inCurThread1 ::
   (Term a -> IO (Term b)) ->
   Term a ->
   IO (Term b)
-inCurThread1 f = toCurThread >=> f
+inCurThread1 f t = do
+  tid <- myWeakThreadId
+  toCurThreadImpl tid t >>= f
 {-# INLINE inCurThread1 #-}
 
 inCurThread2 ::
@@ -4127,8 +3854,9 @@ inCurThread2 ::
   Term b ->
   IO (Term c)
 inCurThread2 f a b = do
-  ra <- toCurThread a
-  rb <- toCurThread b
+  tid <- myWeakThreadId
+  ra <- toCurThreadImpl tid a
+  rb <- toCurThreadImpl tid b
   f ra rb
 {-# INLINE inCurThread2 #-}
 
@@ -4141,9 +3869,10 @@ inCurThread3 ::
   Term c ->
   IO (Term d)
 inCurThread3 f a b c = do
-  ra <- toCurThread a
-  rb <- toCurThread b
-  rc <- toCurThread c
+  tid <- myWeakThreadId
+  ra <- toCurThreadImpl tid a
+  rb <- toCurThreadImpl tid b
+  rc <- toCurThreadImpl tid c
   f ra rb rc
 {-# INLINE inCurThread3 #-}
 
@@ -4176,39 +3905,6 @@ unsafeInCurThread3 ::
   Term d
 unsafeInCurThread3 f a b c = unsafePerformIO $ inCurThread3 f a b c
 {-# INLINE unsafeInCurThread3 #-}
-
--- | Construct and internalizing a 'UnaryTerm'.
-constructUnary ::
-  forall tag arg t.
-  (SupportedPrim t, UnaryOp tag arg t) =>
-  tag ->
-  Term arg ->
-  Term t
-constructUnary tag = unsafeInCurThread1 (curThreadConstructUnary tag)
-{-# NOINLINE constructUnary #-}
-
--- | Construct and internalizing a 'BinaryTerm'.
-constructBinary ::
-  forall tag arg1 arg2 t.
-  (SupportedPrim t, BinaryOp tag arg1 arg2 t) =>
-  tag ->
-  Term arg1 ->
-  Term arg2 ->
-  Term t
-constructBinary tag = unsafeInCurThread2 (curThreadConstructBinary tag)
-{-# NOINLINE constructBinary #-}
-
--- | Construct and internalizing a 'TernaryTerm'.
-constructTernary ::
-  forall tag arg1 arg2 arg3 t.
-  (SupportedPrim t, TernaryOp tag arg1 arg2 arg3 t) =>
-  tag ->
-  Term arg1 ->
-  Term arg2 ->
-  Term arg3 ->
-  Term t
-constructTernary tag = unsafeInCurThread3 (curThreadConstructTernary tag)
-{-# NOINLINE constructTernary #-}
 
 -- | Construct and internalizing a 'ConTerm'.
 conTerm :: (SupportedPrim t) => t -> Term t
@@ -4273,7 +3969,9 @@ eqTerm = unsafeInCurThread2 curThreadEqTerm
 -- | Construct and internalizing a 'DistinctTerm'.
 distinctTerm :: (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
 distinctTerm args =
-  unsafePerformIO $ traverse toCurThread args >>= curThreadDistinctTerm
+  unsafePerformIO $ do
+    tid <- myWeakThreadId
+    traverse (toCurThreadImpl tid) args >>= curThreadDistinctTerm
 {-# NOINLINE distinctTerm #-}
 
 -- | Construct and internalizing a 'ITETerm'.
@@ -4545,10 +4243,11 @@ fpFMATerm ::
   Term (FP eb sb) ->
   Term (FP eb sb)
 fpFMATerm mode a b c = unsafePerformIO $ do
-  mode' <- toCurThread mode
-  a' <- toCurThread a
-  b' <- toCurThread b
-  c' <- toCurThread c
+  tid <- myWeakThreadId
+  mode' <- toCurThreadImpl tid mode
+  a' <- toCurThreadImpl tid a
+  b' <- toCurThreadImpl tid b
+  c' <- toCurThreadImpl tid c
   curThreadFpFMATerm mode' a' b' c'
 {-# NOINLINE fpFMATerm #-}
 
@@ -4957,8 +4656,8 @@ pevalITEBoolNoLeft _ _ _ = Nothing
 
 -- | Basic partial evaluation for ITE terms.
 pevalITEBasic :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Maybe (Term a)
-pevalITEBasic (ConTerm _ _ _ True) ifTrue _ = Just ifTrue
-pevalITEBasic (ConTerm _ _ _ False) _ ifFalse = Just ifFalse
+pevalITEBasic (ConTerm _ _ _ True) ~ifTrue ~_ = Just ifTrue
+pevalITEBasic (ConTerm _ _ _ False) ~_ ~ifFalse = Just ifFalse
 pevalITEBasic (NotTerm _ _ _ ncond) ifTrue ifFalse = Just $ pevalITETerm ncond ifFalse ifTrue
 pevalITEBasic _ ifTrue ifFalse | ifTrue == ifFalse = Just ifTrue
 pevalITEBasic (ITETerm _ _ _ cc ct cf) (ITETerm _ _ _ tc tt tf) (ITETerm _ _ _ fc ft ff) -- later
@@ -4986,7 +4685,7 @@ pevalITEBoolBasic cond ifTrue (ConTerm _ _ _ v)
 pevalITEBoolBasic _ _ _ = Nothing
 
 pevalITEBool :: Term Bool -> Term Bool -> Term Bool -> Maybe (Term Bool)
-pevalITEBool cond ifTrue ifFalse =
+pevalITEBool cond ~ifTrue ~ifFalse =
   msum
     [ pevalITEBasic cond ifTrue ifFalse,
       pevalITEBoolBasic cond ifTrue ifFalse,
@@ -4996,7 +4695,7 @@ pevalITEBool cond ifTrue ifFalse =
 
 -- | Basic partial evaluation for ITE terms.
 pevalITEBasicTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
-pevalITEBasicTerm cond ifTrue ifFalse =
+pevalITEBasicTerm cond ~ifTrue ~ifFalse =
   fromMaybe (iteTerm cond ifTrue ifFalse) $
     pevalITEBasic cond ifTrue ifFalse
 
@@ -5035,7 +4734,7 @@ instance SupportedPrim Bool where
   pformatCon False = "false"
   defaultValue = defaultValueForBool
   defaultValueDynamic _ = defaultValueForBoolDyn
-  pevalITETerm cond ifTrue ifFalse =
+  pevalITETerm cond ~ifTrue ~ifFalse =
     fromMaybe (iteTerm cond ifTrue ifFalse) $
       pevalITEBool cond ifTrue ifFalse
   pevalEqTerm = pevalDefaultEqTerm
