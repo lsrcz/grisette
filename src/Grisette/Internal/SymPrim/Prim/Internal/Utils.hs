@@ -1,10 +1,13 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UnliftedFFITypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- |
@@ -22,10 +25,29 @@ module Grisette.Internal.SymPrim.Prim.Internal.Utils
     cmpHeteroRep,
     eqHeteroRep,
     eqTypeRepBool,
+    WeakThreadId,
+    weakThreadId,
+    WeakThreadIdRef,
+    myWeakThreadId,
+    weakThreadRefAlive,
   )
 where
 
+#if MIN_VERSION_base(4,19,0)
+import GHC.Conc.Sync (fromThreadId)
+#else
+import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#)
+#if __GLASGOW_HASKELL__ >= 904
+#elif __GLASGOW_HASKELL__ >= 900
+import Foreign.C.Types (CLong)
+#else
+import Foreign.C.Types (CInt)
+#endif
+#endif
 import Data.Typeable (cast)
+import Data.Word (Word64)
+import GHC.Conc (ThreadId, ThreadStatus (ThreadDied, ThreadFinished), myThreadId, threadStatus)
+import System.Mem.Weak (Weak, deRefWeak)
 import Type.Reflection
   ( TypeRep,
     Typeable,
@@ -68,3 +90,53 @@ eqTypeRepBool a b = case eqTypeRep a b of
   Just HRefl -> True
   _ -> False
 {-# INLINE eqTypeRepBool #-}
+
+type WeakThreadId = Word64
+
+type WeakThreadIdRef = Weak ThreadId
+
+{-# INLINE weakThreadId #-}
+-- | Get an id of a thread that doesn't prevent its garbage collection.
+weakThreadId :: ThreadId -> Word64
+#if MIN_VERSION_base(4,19,0)
+weakThreadId = fromThreadId
+#else
+weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
+
+foreign import ccall unsafe "rts_getThreadId"
+#if __GLASGOW_HASKELL__ >= 904
+  -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163
+  rts_getThreadId :: Addr# -> Word64
+#elif __GLASGOW_HASKELL__ >= 900
+  -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254
+  rts_getThreadId :: Addr# -> CLong
+#else
+  rts_getThreadId :: Addr# -> CInt
+#endif
+
+-- Note: FFI imports take Addr# instead of ThreadId# because of
+-- https://gitlab.haskell.org/ghc/ghc/-/issues/8281, which would prevent loading
+-- effectful-core into GHCi.
+--
+-- Previous workaround was to use an internal library with just this module, but
+-- this is not viable because of bugs in stack (sigh).
+--
+-- The coercion is fine because GHC represents ThreadId# as a pointer.
+{-# INLINE threadIdToAddr# #-}
+threadIdToAddr# :: ThreadId# -> Addr#
+threadIdToAddr# = unsafeCoerce#
+#endif
+
+myWeakThreadId :: IO WeakThreadId
+myWeakThreadId = weakThreadId <$> myThreadId
+{-# INLINE myWeakThreadId #-}
+
+weakThreadRefAlive :: WeakThreadIdRef -> IO Bool
+weakThreadRefAlive wtid = do
+  tid <- deRefWeak wtid
+  case tid of
+    Nothing -> return False
+    Just tid -> do
+      st <- threadStatus tid
+      return $ st `notElem` [ThreadFinished, ThreadDied]
+{-# INLINE weakThreadRefAlive #-}

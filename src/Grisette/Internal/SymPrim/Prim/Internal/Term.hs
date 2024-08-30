@@ -18,6 +18,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -244,13 +245,13 @@ import Grisette.Internal.SymPrim.Prim.Internal.Caches
         identify,
         threadId
       ),
-    WeakThreadId,
     intern,
-    myWeakThreadId,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
-  ( eqHeteroRep,
+  ( WeakThreadId,
+    eqHeteroRep,
     eqTypeRepBool,
+    myWeakThreadId,
     pattern Dyn,
   )
 import Grisette.Internal.SymPrim.Prim.ModelValue
