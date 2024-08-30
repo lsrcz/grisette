@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -18,9 +19,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Caches
-  ( WeakThreadId,
-    myWeakThreadId,
-    Cache (..),
+  ( Cache (..),
     CacheState (..),
     Id,
     Interned (..),
@@ -29,12 +28,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Caches
     shallowCollectGarbageTermCache,
     setupPeriodicTermCacheGC,
     haveCache,
+    threadCacheSize,
   )
 where
-
-#if MIN_VERSION_base(4, 19, 0)
-import GHC.Conc.Sync (fromThreadId)
-#endif
 
 import Control.Concurrent
   ( ThreadId,
@@ -50,56 +46,23 @@ import Data.Data (Proxy (Proxy), TypeRep, Typeable, typeRep)
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashTable.IO as HT
 import qualified Data.HashTable.ST.Basic as HTST
-import Data.Hashable (Hashable (hash, hashWithSalt))
+import Data.Hashable (Hashable (hash))
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
-import Data.Word (Word64)
 import GHC.Base (Any)
-import GHC.Conc
-  ( ThreadStatus (ThreadDied, ThreadFinished),
-    threadStatus,
-  )
 import GHC.IO (stToIO, unsafePerformIO)
-import GHC.Weak (Weak, deRefWeak)
+import Grisette.Internal.SymPrim.Prim.Internal.Utils
+  ( WeakThreadId,
+    WeakThreadIdRef,
+    myWeakThreadId,
+    weakThreadId,
+    weakThreadRefAlive,
+  )
 import Unsafe.Coerce (unsafeCoerce)
 
 type Id = Int
 
-#if MIN_VERSION_base(4, 19, 0)
-data WeakThreadId = WeakThreadId Word64 (Weak ThreadId)
-myWeakThreadId :: IO WeakThreadId
-myWeakThreadId = do
-  tid <- myThreadId
-  wk <- mkWeakThreadId tid
-  return $ WeakThreadId (fromThreadId tid) wk
-#else
-data WeakThreadId = WeakThreadId String (Weak ThreadId)
-myWeakThreadId :: IO WeakThreadId
-myWeakThreadId = do
-  tid <- myThreadId
-  wk <- mkWeakThreadId tid
-  return $ WeakThreadId (show tid) wk
-#endif
-
-weakThreadAlive :: WeakThreadId -> IO Bool
-weakThreadAlive (WeakThreadId _ wtid) = do
-  tid <- deRefWeak wtid
-  case tid of
-    Nothing -> return False
-    Just tid -> do
-      st <- threadStatus tid
-      return $ st `notElem` [ThreadFinished, ThreadDied]
-
-instance Show WeakThreadId where
-  show (WeakThreadId s _) = show s
-
-instance Eq WeakThreadId where
-  (WeakThreadId s1 _) == (WeakThreadId s2 _) = s1 == s2
-
-instance Hashable WeakThreadId where
-  hashWithSalt s (WeakThreadId i _) = s `hashWithSalt` i
-
-data Cache t
-  = Cache {cacheTid :: WeakThreadId, getCache :: A.Array Int (CacheState t)}
+newtype Cache t
+  = Cache {getCache :: A.Array Int (CacheState t)}
 
 data CacheState t
   = CacheState
@@ -107,23 +70,60 @@ data CacheState t
     otherThread :: HT.BasicHashTable (WeakThreadId, Id) t
   }
 
+cacheStateSize :: CacheState t -> IO Int
+cacheStateSize (CacheState s _) = stToIO $ HTST.size s
+
+cacheSize :: Cache t -> IO Int
+cacheSize (Cache a) = sum <$> mapM cacheStateSize (A.elems a)
+
 class (Hashable (Description t)) => Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
   identify :: WeakThreadId -> Int -> Id -> Uninterned t -> t
   threadId :: t -> WeakThreadId
-  -- cacheWidth :: p t -> Int
 
 {-# NOINLINE termCacheCell #-}
-termCacheCell :: IORef (M.HashMap WeakThreadId (IORef (M.HashMap TypeRep Any)))
+termCacheCell ::
+  IORef
+    ( M.HashMap
+        WeakThreadId
+        ( WeakThreadIdRef,
+          IORef (M.HashMap TypeRep (Cache Any))
+        )
+    )
 termCacheCell = unsafePerformIO $ newIORef M.empty
+
+threadCacheSize :: WeakThreadId -> IO Int
+threadCacheSize tid = do
+  caches <- readIORef termCacheCell
+  case M.lookup tid caches of
+    Just (_, cref) -> do
+      cache <- readIORef cref
+      sum <$> mapM cacheSize (M.elems cache)
+    Nothing -> return 0
 
 shallowCollectGarbageTermCache :: IO ()
 shallowCollectGarbageTermCache = do
   cache <- readIORef termCacheCell
-  finishedOrDied <- filterM (fmap not . weakThreadAlive) $ M.keys cache
+  finishedOrDied <-
+    fmap (fmap fst)
+      $ filterM
+        ( \(_, (v, _)) ->
+            not <$> weakThreadRefAlive v
+        )
+      $ M.toList cache
+  -- let k = map (cache M.!) finishedOrDied
+  -- M.traverseWithKey
+  --   ( \k _ -> do
+  --       s <- threadCacheSize k
+  --       putStr $ show (k, s)
+  --   )
+  --   cache
+  -- putStrLn ""
   atomicModifyIORefCAS_ termCacheCell $ \m -> foldr M.delete m finishedOrDied
+
+-- performMajorGC
 
 setupPeriodicTermCacheGC :: Int -> IO ()
 setupPeriodicTermCacheGC n = do
@@ -136,35 +136,38 @@ cacheWidth :: Int
 cacheWidth = 100
 {-# INLINE cacheWidth #-}
 
-mkCache :: forall t. (Interned t) => WeakThreadId -> IO (Cache t)
-mkCache tid = result
+mkCache :: forall t. (Interned t) => IO (Cache t)
+mkCache = result
   where
     element = CacheState <$> HT.new <*> HT.new
     result = do
       elements <- replicateM cacheWidth element
-      return $ Cache tid $ A.listArray (0, cacheWidth - 1) elements
+      return $ Cache $ A.listArray (0, cacheWidth - 1) elements
 
 -- | Internal cache for memoization of term construction. Different types have
 -- different caches and they may share names, ids, or representations, but they
 -- are not the same term.
-typeMemoizedCache :: 
- forall a. (Interned a, Typeable a) => WeakThreadId -> IO (Cache a)
+typeMemoizedCache ::
+  forall a. (Interned a, Typeable a) => ThreadId -> IO (Cache a)
 typeMemoizedCache tid = do
   caches <- readIORef termCacheCell
-  case M.lookup tid caches of
-    Just cref -> do
+  let wtid = weakThreadId tid
+  wtidRef <- mkWeakThreadId tid
+  case M.lookup wtid caches of
+    Just (_, cref) -> do
       cache <- readIORef cref
       case M.lookup (typeRep (Proxy @a)) cache of
         Just d -> return $ unsafeCoerce d
         Nothing -> do
-          r1 <- mkCache tid
+          r1 <- mkCache
           writeIORef cref $!
             M.insert (typeRep (Proxy @a)) (unsafeCoerce r1) cache
           return r1
     Nothing -> do
-      r1 <- mkCache tid
+      r1 <- mkCache
       r <- newIORef $ M.singleton (typeRep (Proxy @a)) (unsafeCoerce r1)
-      atomicModifyIORefCAS termCacheCell $ \m -> (M.insert tid r m, r1)
+      atomicModifyIORefCAS termCacheCell $
+        \m -> (M.insert wtid (wtidRef, r) m, r1)
 
 haveCache :: IO Bool
 haveCache = do
@@ -174,7 +177,7 @@ haveCache = do
 
 intern :: forall t. (Interned t, Typeable t) => Uninterned t -> IO t
 intern !bt = do
-  tid <- myWeakThreadId
+  tid <- myThreadId
   cache <- typeMemoizedCache tid
   let !dt = describe bt :: Description t
       !hdt = hash dt
@@ -184,7 +187,7 @@ intern !bt = do
     Nothing -> do
       i <- stToIO $ HTST.size s
       let !newId = cacheWidth * i + r
-          !t = identify tid hdt newId bt
+          !t = identify (weakThreadId tid) hdt newId bt
       HT.insert s dt t
       return t
     Just t -> return t
