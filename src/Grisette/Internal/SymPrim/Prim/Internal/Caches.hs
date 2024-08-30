@@ -113,7 +113,6 @@ shallowCollectGarbageTermCache = do
             not <$> weakThreadRefAlive v
         )
       $ M.toList cache
-  -- let k = map (cache M.!) finishedOrDied
   -- M.traverseWithKey
   --   ( \k _ -> do
   --       s <- threadCacheSize k
@@ -123,8 +122,6 @@ shallowCollectGarbageTermCache = do
   -- putStrLn ""
   atomicModifyIORefCAS_ termCacheCell $ \m -> foldr M.delete m finishedOrDied
 
--- performMajorGC
-
 setupPeriodicTermCacheGC :: Int -> IO ()
 setupPeriodicTermCacheGC n = do
   _ <- forkIO $ forever $ do
@@ -133,7 +130,7 @@ setupPeriodicTermCacheGC n = do
   return ()
 
 cacheWidth :: Int
-cacheWidth = 100
+cacheWidth = 10
 {-# INLINE cacheWidth #-}
 
 mkCache :: forall t. (Interned t) => IO (Cache t)
@@ -152,7 +149,6 @@ typeMemoizedCache ::
 typeMemoizedCache tid = do
   caches <- readIORef termCacheCell
   let wtid = weakThreadId tid
-  wtidRef <- mkWeakThreadId tid
   case M.lookup wtid caches of
     Just (_, cref) -> do
       cache <- readIORef cref
@@ -165,6 +161,7 @@ typeMemoizedCache tid = do
           return r1
     Nothing -> do
       r1 <- mkCache
+      wtidRef <- mkWeakThreadId tid
       r <- newIORef $ M.singleton (typeRep (Proxy @a)) (unsafeCoerce r1)
       atomicModifyIORefCAS termCacheCell $
         \m -> (M.insert wtid (wtidRef, r) m, r1)
