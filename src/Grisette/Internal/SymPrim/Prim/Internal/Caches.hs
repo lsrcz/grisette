@@ -29,6 +29,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Caches
     setupPeriodicTermCacheGC,
     haveCache,
     threadCacheSize,
+    Digest,
   )
 where
 
@@ -46,8 +47,9 @@ import Data.Data (Proxy (Proxy), TypeRep, Typeable, typeRep)
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashTable.IO as HT
 import qualified Data.HashTable.ST.Basic as HTST
-import Data.Hashable (Hashable (hash))
+import Data.Hashable (Hashable)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.Word (Word32)
 import GHC.Base (Any)
 import GHC.IO (stToIO, unsafePerformIO)
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
@@ -59,7 +61,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
   )
 import Unsafe.Coerce (unsafeCoerce)
 
-type Id = Int
+type Id = Word32
+
+type Digest = Word32
 
 newtype Cache t
   = Cache {getCache :: A.Array Int (CacheState t)}
@@ -80,8 +84,9 @@ class (Hashable (Description t)) => Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
-  identify :: WeakThreadId -> Int -> Id -> Uninterned t -> t
+  identify :: WeakThreadId -> Digest -> Id -> Uninterned t -> t
   threadId :: t -> WeakThreadId
+  descriptionDigest :: Description t -> Digest
 
 {-# NOINLINE termCacheCell #-}
 termCacheCell ::
@@ -129,7 +134,7 @@ setupPeriodicTermCacheGC n = do
     shallowCollectGarbageTermCache
   return ()
 
-cacheWidth :: Int
+cacheWidth :: Word32
 cacheWidth = 10
 {-# INLINE cacheWidth #-}
 
@@ -138,8 +143,8 @@ mkCache = result
   where
     element = CacheState <$> HT.new <*> HT.new
     result = do
-      elements <- replicateM cacheWidth element
-      return $ Cache $ A.listArray (0, cacheWidth - 1) elements
+      elements <- replicateM (fromIntegral cacheWidth) element
+      return $ Cache $ A.listArray (0, fromIntegral cacheWidth - 1) elements
 
 -- | Internal cache for memoization of term construction. Different types have
 -- different caches and they may share names, ids, or representations, but they
@@ -177,13 +182,13 @@ intern !bt = do
   tid <- myThreadId
   cache <- typeMemoizedCache tid
   let !dt = describe bt :: Description t
-      !hdt = hash dt
+      !hdt = descriptionDigest dt
       !r = hdt `mod` cacheWidth
-      CacheState s _ = getCache cache A.! r
+      CacheState s _ = getCache cache A.! (fromIntegral r)
   HT.lookup s dt >>= \case
     Nothing -> do
       i <- stToIO $ HTST.size s
-      let !newId = cacheWidth * i + r
+      let !newId = cacheWidth * fromIntegral i + r
           !t = identify (weakThreadId tid) hdt newId bt
       HT.insert s dt t
       return t
