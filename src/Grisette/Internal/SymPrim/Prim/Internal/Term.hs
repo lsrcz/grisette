@@ -214,8 +214,9 @@ import qualified Data.SBV.Dynamic as SBVD
 import qualified Data.SBV.Trans as SBVT
 import qualified Data.SBV.Trans.Control as SBVTC
 import Data.String (IsString (fromString))
-import Data.Typeable (Proxy (Proxy), cast)
+import Data.Typeable (Proxy (Proxy), cast, typeRepFingerprint)
 import GHC.Exts (sortWith)
+import GHC.Fingerprint (Fingerprint)
 import GHC.Generics (Generic)
 import GHC.IO (unsafePerformIO)
 import GHC.Stack (HasCallStack)
@@ -260,6 +261,7 @@ import Type.Reflection
     TypeRep,
     Typeable,
     eqTypeRep,
+    someTypeRep,
     typeRep,
     type (:~~:) (HRefl),
   )
@@ -1265,7 +1267,7 @@ data Term t where
     {-# UNPACK #-} !Digest ->
     {-# UNPACK #-} !Id ->
     !Bool ->
-    !(TypeRep r) ->
+    !(Proxy r) ->
     !(Term (bv l)) ->
     Term (bv r)
   ApplyTerm ::
@@ -1457,18 +1459,18 @@ eqHashId :: HashId -> HashId -> Bool
 eqHashId = (==)
 {-# INLINE eqHashId #-}
 
-eqTypeHashId :: TypeHashId a -> TypeHashId b -> Bool
-eqTypeHashId (TypeHashId lrep l) (TypeHashId rrep r) =
-  eqTypeRepBool lrep rrep && l == r
-{-# INLINE eqTypeHashId #-}
+-- eqTypeHashId :: TypeHashId a -> TypeHashId b -> Bool
+-- eqTypeHashId (TypeHashId lrep l) (TypeHashId rrep r) =
+--   eqTypeRepBool lrep rrep && l == r
+-- {-# INLINE eqTypeHashId #-}
 
-data TypeHashId a = TypeHashId !(TypeRep a) {-# UNPACK #-} !HashId
+data TypeHashId = TypeHashId !Fingerprint {-# UNPACK #-} !HashId
 
-instance Eq (TypeHashId a) where
-  TypeHashId l li == TypeHashId r ri = eqTypeRepBool l r && li == ri
+instance Eq TypeHashId where
+  TypeHashId l li == TypeHashId r ri = l == r && li == ri
   {-# INLINE (==) #-}
 
-instance Hashable (TypeHashId a) where
+instance Hashable TypeHashId where
   hashWithSalt s (TypeHashId tp i) = s `hashWithSalt` tp `hashWithSalt` i
   {-# INLINE hashWithSalt #-}
 
@@ -1477,56 +1479,60 @@ hashId t = case typeHashId t of
   TypeHashId _ hi -> hi
 {-# INLINE hashId #-}
 
+typeFingerprint :: forall t p. (Typeable t) => p t -> Fingerprint
+typeFingerprint p = typeRepFingerprint $ someTypeRep p
+{-# INLINE typeFingerprint #-}
+
 -- | Return the ID and the type representation of a term.
-typeHashId :: forall t. Term t -> TypeHashId t
-typeHashId (ConTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (SymTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ForallTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ExistsTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (NotTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (OrTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (AndTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (EqTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (DistinctTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ITETerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (AddNumTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (NegNumTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (MulNumTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (AbsNumTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (SignumNumTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (LtOrdTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (LeOrdTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (AndBitsTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (OrBitsTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (XorBitsTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ComplementBitsTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ShiftLeftTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ShiftRightTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (RotateLeftTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (RotateRightTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (BitCastTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (BitCastOrTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (BVConcatTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (BVSelectTerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (BVExtendTerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ApplyTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (DivIntegralTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ModIntegralTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (QuotIntegralTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (RemIntegralTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FPTraitTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FdivTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (RecipTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FloatingUnaryTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (PowerTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FPUnaryTerm _ ha i _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FPBinaryTerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FPRoundingUnaryTerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FPRoundingBinaryTerm _ ha i _ _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FPFMATerm _ ha i _ _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FromIntegralTerm _ ha i _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (FromFPOrTerm _ ha i _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
-typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeRep @t) $ HashId ha i
+typeHashId :: forall t. Term t -> TypeHashId
+typeHashId (ConTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (SymTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ForallTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ExistsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (NotTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (OrTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (AndTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (EqTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (DistinctTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ITETerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (AddNumTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (NegNumTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (MulNumTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (AbsNumTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (SignumNumTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (LtOrdTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (LeOrdTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (AndBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (OrBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (XorBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ComplementBitsTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ShiftLeftTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ShiftRightTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (RotateLeftTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (RotateRightTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (BitCastTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (BitCastOrTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (BVConcatTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (BVSelectTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (BVExtendTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ApplyTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (DivIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ModIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (QuotIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (RemIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FPTraitTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FdivTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (RecipTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FloatingUnaryTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (PowerTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FPUnaryTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FPBinaryTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FPRoundingUnaryTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FPRoundingBinaryTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FPFMATerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FromIntegralTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (FromFPOrTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
 {-# INLINE typeHashId #-}
 
 -- | Introduce the 'SupportedPrim' constraint from a term.
@@ -2217,7 +2223,7 @@ data UTerm t where
   UBVExtendTerm ::
     (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
     !Bool ->
-    !(TypeRep r) ->
+    !(Proxy r) ->
     !(Term (bv l)) ->
     UTerm (bv r)
   UApplyTerm ::
@@ -2311,12 +2317,6 @@ eqHeteroSymbol (TypedSymbol taga) (TypedSymbol tagb) =
     Nothing -> False
 {-# INLINE eqHeteroSymbol #-}
 
-eqHeteroSymbol0 :: (TypeRep a, TypedSymbol ta a) -> (TypeRep b, TypedSymbol tb b) -> Bool
-eqHeteroSymbol0 (tpa, taga) (tpb, tagb) = case eqTypeRep tpb tpa of
-  Just HRefl -> unTypedSymbol taga == unTypedSymbol tagb
-  Nothing -> False
-{-# INLINE eqHeteroSymbol0 #-}
-
 preHashConDescription :: (Hashable t) => t -> Digest
 preHashConDescription = fromIntegral . hashWithSalt 0
 {-# INLINE preHashConDescription #-}
@@ -2326,22 +2326,20 @@ preHashSymDescription = fromIntegral . hashWithSalt 1
 {-# INLINE preHashSymDescription #-}
 
 preHashForallDescription ::
-  (Hashable t) => (TypeRep t, TypedSymbol 'ConstantKind t) -> HashId -> Digest
-preHashForallDescription (tp, sym) h =
+  (Hashable t) => TypedSymbol 'ConstantKind t -> HashId -> Digest
+preHashForallDescription sym h =
   fromIntegral
     ( 2
-        `hashWithSalt` tp
         `hashWithSalt` sym
         `hashWithSalt` h
     )
 {-# INLINE preHashForallDescription #-}
 
 preHashExistsDescription ::
-  (Hashable t) => (TypeRep t, TypedSymbol 'ConstantKind t) -> HashId -> Digest
-preHashExistsDescription (tp, sym) h =
+  (Hashable t) => TypedSymbol 'ConstantKind t -> HashId -> Digest
+preHashExistsDescription sym h =
   fromIntegral
     ( 3
-        `hashWithSalt` tp
         `hashWithSalt` sym
         `hashWithSalt` h
     )
@@ -2361,12 +2359,12 @@ preHashAndDescription h1 h2 =
   fromIntegral (9 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashAndDescription #-}
 
-preHashEqDescription :: TypeRep t -> HashId -> HashId -> Digest
+preHashEqDescription :: Fingerprint -> HashId -> HashId -> Digest
 preHashEqDescription tp h1 h2 =
   fromIntegral (10 `hashWithSalt` tp `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashEqDescription #-}
 
-preHashDistinctDescription :: TypeRep t -> NonEmpty HashId -> Digest
+preHashDistinctDescription :: Fingerprint -> NonEmpty HashId -> Digest
 preHashDistinctDescription tp hs =
   fromIntegral (11 `hashWithSalt` tp `hashWithSalt` hs)
 {-# INLINE preHashDistinctDescription #-}
@@ -2448,41 +2446,32 @@ preHashRotateRightDescription h1 h2 =
   fromIntegral (27 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashRotateRightDescription #-}
 
-preHashBVConcatDescription ::
-  TypeRep bv1 -> TypeRep bv2 -> HashId -> HashId -> Digest
-preHashBVConcatDescription tp1 tp2 h1 h2 =
+preHashBVConcatDescription :: TypeHashId -> TypeHashId -> Digest
+preHashBVConcatDescription h1 h2 =
   fromIntegral
     ( 28
-        `hashWithSalt` tp1
-        `hashWithSalt` tp2
         `hashWithSalt` h1
         `hashWithSalt` h2
     )
 
-preHashBVSelectDescription ::
-  forall bv (ix :: Nat) (n :: Nat). TypeRep ix -> TypeHashId (bv n) -> Digest
+preHashBVSelectDescription :: Fingerprint -> TypeHashId -> Digest
 preHashBVSelectDescription tp h =
   fromIntegral (29 `hashWithSalt` tp `hashWithSalt` h)
 
-preHashBVExtendDescription ::
-  forall bv (r :: Nat) (l :: Nat).
-  Bool ->
-  TypeRep r ->
-  TypeHashId (bv l) ->
-  Digest
-preHashBVExtendDescription signed tp h =
-  fromIntegral (30 `hashWithSalt` signed `hashWithSalt` tp `hashWithSalt` h)
+preHashBVExtendDescription :: Bool -> TypeHashId -> Digest
+preHashBVExtendDescription signed h =
+  fromIntegral (30 `hashWithSalt` signed `hashWithSalt` h)
 
-preHashBitCastDescription :: TypeHashId a -> Digest
+preHashBitCastDescription :: TypeHashId -> Digest
 preHashBitCastDescription = fromIntegral . hashWithSalt 31
 {-# INLINE preHashBitCastDescription #-}
 
-preHashBitCastOrDescription :: HashId -> TypeHashId b -> Digest
+preHashBitCastOrDescription :: HashId -> TypeHashId -> Digest
 preHashBitCastOrDescription h1 h2 =
   fromIntegral (32 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashBitCastOrDescription #-}
 
-preHashApplyDescription :: TypeHashId f -> TypeHashId a -> Digest
+preHashApplyDescription :: TypeHashId -> TypeHashId -> Digest
 preHashApplyDescription h1 h2 =
   fromIntegral (33 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashApplyDescription #-}
@@ -2507,7 +2496,7 @@ preHashRemIntegralDescription h1 h2 =
   fromIntegral (37 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashRemIntegralDescription #-}
 
-preHashFPTraitDescription :: FPTrait -> TypeHashId (FP eb sb) -> Digest
+preHashFPTraitDescription :: FPTrait -> TypeHashId -> Digest
 preHashFPTraitDescription trait h =
   fromIntegral (38 `hashWithSalt` trait `hashWithSalt` h)
 {-# INLINE preHashFPTraitDescription #-}
@@ -2570,17 +2559,17 @@ preHashFPFMADescription mode h1 h2 h3 =
     )
 {-# INLINE preHashFPFMADescription #-}
 
-preHashFromIntegralDescription :: TypeHashId a -> Digest
+preHashFromIntegralDescription :: TypeHashId -> Digest
 preHashFromIntegralDescription = fromIntegral . hashWithSalt 48
 {-# INLINE preHashFromIntegralDescription #-}
 
 preHashFromFPOrDescription ::
-  HashId -> HashId -> TypeHashId (FP eb sb) -> Digest
+  HashId -> HashId -> TypeHashId -> Digest
 preHashFromFPOrDescription h1 h2 h3 =
   fromIntegral (49 `hashWithSalt` h1 `hashWithSalt` h2 `hashWithSalt` h3)
 {-# INLINE preHashFromFPOrDescription #-}
 
-preHashToFPTermDescription :: HashId -> TypeHashId a -> Digest
+preHashToFPTermDescription :: HashId -> TypeHashId -> Digest
 preHashToFPTermDescription h1 h2 =
   fromIntegral (50 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashToFPTermDescription #-}
@@ -2595,12 +2584,12 @@ instance (SupportedPrim t) => Interned (Term t) where
       Description (Term t)
     DForallTerm ::
       {-# UNPACK #-} !Digest ->
-      {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) ->
+      {-# UNPACK #-} !(TypedSymbol 'ConstantKind t) ->
       {-# UNPACK #-} !HashId ->
       Description (Term Bool)
     DExistsTerm ::
       {-# UNPACK #-} !Digest ->
-      {-# UNPACK #-} !(TypeRep t, TypedSymbol 'ConstantKind t) ->
+      {-# UNPACK #-} !(TypedSymbol 'ConstantKind t) ->
       {-# UNPACK #-} !HashId ->
       Description (Term Bool)
     DNotTerm ::
@@ -2619,13 +2608,13 @@ instance (SupportedPrim t) => Interned (Term t) where
       Description (Term Bool)
     DEqTerm ::
       {-# UNPACK #-} !Digest ->
-      !(TypeRep args) ->
+      Fingerprint ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term Bool)
     DDistinctTerm ::
       {-# UNPACK #-} !Digest ->
-      TypeRep args ->
+      Fingerprint ->
       !(NonEmpty HashId) ->
       Description (Term Bool)
     DITETerm ::
@@ -2707,37 +2696,35 @@ instance (SupportedPrim t) => Interned (Term t) where
       Description (Term t)
     DBVConcatTerm ::
       {-# UNPACK #-} !Digest ->
-      TypeRep bv1 ->
-      TypeRep bv2 ->
-      {-# UNPACK #-} !HashId ->
-      {-# UNPACK #-} !HashId ->
+      {-# UNPACK #-} !TypeHashId ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term t)
     DBitCastTerm ::
       {-# UNPACK #-} !Digest ->
-      {-# UNPACK #-} !(TypeHashId a) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term b)
     DBitCastOrTerm ::
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !HashId ->
-      {-# UNPACK #-} !(TypeHashId a) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term b)
     DBVSelectTerm ::
-      forall bv (n :: Nat) (w :: Nat) (ix :: Nat).
+      forall bv (w :: Nat).
       {-# UNPACK #-} !Digest ->
-      !(TypeRep ix) ->
-      {-# UNPACK #-} !(TypeHashId (bv n)) ->
+      !Fingerprint ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term (bv w))
     DBVExtendTerm ::
-      forall bv (l :: Nat) (r :: Nat).
+      forall bv (r :: Nat).
       {-# UNPACK #-} !Digest ->
       !Bool ->
-      !(TypeRep r) ->
-      {-# UNPACK #-} !(TypeHashId (bv l)) ->
+      !(Proxy r) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term (bv r))
     DApplyTerm ::
       {-# UNPACK #-} !Digest ->
-      {-# UNPACK #-} !(TypeHashId f) ->
-      {-# UNPACK #-} !(TypeHashId a) ->
+      {-# UNPACK #-} !TypeHashId ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term b)
     DDivIntegralTerm ::
       {-# UNPACK #-} !Digest ->
@@ -2762,7 +2749,7 @@ instance (SupportedPrim t) => Interned (Term t) where
     DFPTraitTerm ::
       {-# UNPACK #-} !Digest ->
       FPTrait ->
-      {-# UNPACK #-} !(TypeHashId (FP eb sb)) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term Bool)
     DFdivTerm ::
       {-# UNPACK #-} !Digest ->
@@ -2814,31 +2801,29 @@ instance (SupportedPrim t) => Interned (Term t) where
       Description (Term (FP eb sb))
     DFromIntegralTerm ::
       {-# UNPACK #-} !Digest ->
-      {-# UNPACK #-} !(TypeHashId a) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term b)
     DFromFPOrTerm ::
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
-      {-# UNPACK #-} !(TypeHashId (FP eb sb)) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term a)
     DToFPTerm ::
       {-# UNPACK #-} !Digest ->
       {-# UNPACK #-} !HashId ->
-      {-# UNPACK #-} !(TypeHashId a) ->
+      {-# UNPACK #-} !TypeHashId ->
       Description (Term (FP eb sb))
 
   describe (UConTerm v) = DConTerm (preHashConDescription v) v
   describe ((USymTerm name) :: UTerm t) =
     DSymTerm @t (preHashSymDescription name) name
   describe (UForallTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
-    let tsym = (typeRep @arg, sym)
-        argHashId = hashId arg
-     in DForallTerm (preHashForallDescription tsym argHashId) tsym argHashId
+    let argHashId = hashId arg
+     in DForallTerm (preHashForallDescription sym argHashId) sym argHashId
   describe (UExistsTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
-    let tsym = (typeRep @arg, sym)
-        argHashId = hashId arg
-     in DExistsTerm (preHashExistsDescription tsym argHashId) tsym argHashId
+    let argHashId = hashId arg
+     in DExistsTerm (preHashExistsDescription sym argHashId) sym argHashId
   describe (UNotTerm arg) =
     let argHashId = hashId arg
      in DNotTerm (preHashNotDescription argHashId) argHashId
@@ -2856,18 +2841,22 @@ instance (SupportedPrim t) => Interned (Term t) where
           (preHashAndDescription arg1HashId arg2HashId)
           arg1HashId
           arg2HashId
-  describe (UEqTerm (arg1 :: Term arg) arg2) =
-    DEqTerm
-      (preHashEqDescription (typeRep @arg) (hashId arg1) (hashId arg2))
-      (typeRep @arg)
-      (hashId arg1)
-      (hashId arg2)
+  describe (UEqTerm (arg1 :: Term arg) arg2) = do
+    let fingerprint = typeFingerprint (Proxy @arg)
+        arg1HashId = hashId arg1
+        arg2HashId = hashId arg2
+     in DEqTerm
+          (preHashEqDescription fingerprint arg1HashId arg2HashId)
+          fingerprint
+          arg1HashId
+          arg2HashId
   describe (UDistinctTerm args@((_ :: Term arg) :| _)) =
-    let tr = typeRep @arg
+    let fingerprint = typeFingerprint (Proxy @arg)
+        argsHashId = hashId <$> args
      in DDistinctTerm
-          (preHashDistinctDescription tr (hashId <$> args))
-          tr
-          (hashId <$> args)
+          (preHashDistinctDescription fingerprint argsHashId)
+          fingerprint
+          argsHashId
   describe (UITETerm cond (l :: Term arg) r) =
     let condHashId = hashId cond
         lHashId = hashId l
@@ -2983,26 +2972,23 @@ instance (SupportedPrim t) => Interned (Term t) where
           dHashId
           argHashId
   describe (UBVConcatTerm (arg1 :: Term bv1) (arg2 :: Term bv2)) =
-    let tp1 = typeRep @bv1
-        tp2 = typeRep @bv2
-        arg1HashId = hashId arg1
-        arg2HashId = hashId arg2
+    let arg1HashId = typeHashId arg1
+        arg2HashId = typeHashId arg2
      in DBVConcatTerm
-          (preHashBVConcatDescription tp1 tp2 arg1HashId arg2HashId)
-          tp1
-          tp2
+          (preHashBVConcatDescription arg1HashId arg2HashId)
           arg1HashId
           arg2HashId
   describe (UBVSelectTerm (ix :: TypeRep ix) _ (arg :: Term arg)) =
-    let argHashId = typeHashId arg
+    let ixFingerprint = typeRepFingerprint $ someTypeRep ix
+        argHashId = typeHashId arg
      in DBVSelectTerm
-          (preHashBVSelectDescription ix argHashId)
-          ix
+          (preHashBVSelectDescription ixFingerprint argHashId)
+          ixFingerprint
           argHashId
-  describe (UBVExtendTerm signed (n :: TypeRep n) (arg :: Term arg)) =
+  describe (UBVExtendTerm signed (n :: Proxy n) (arg :: Term arg)) =
     let argHashId = typeHashId arg
      in DBVExtendTerm
-          (preHashBVExtendDescription signed n argHashId)
+          (preHashBVExtendDescription signed argHashId)
           signed
           n
           argHashId
@@ -3221,7 +3207,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   descriptionDigest (DRotateRightTerm h _ _) = h
   descriptionDigest (DBitCastTerm h _) = h
   descriptionDigest (DBitCastOrTerm h _ _) = h
-  descriptionDigest (DBVConcatTerm h _ _ _ _) = h
+  descriptionDigest (DBVConcatTerm h _ _) = h
   descriptionDigest (DBVSelectTerm h _ _) = h
   descriptionDigest (DBVExtendTerm h _ _ _) = h
   descriptionDigest (DDivIntegralTerm h _ _) = h
@@ -3298,14 +3284,16 @@ termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) = cast @tyl @tyr l == Just r
   DSymTerm _ ls == DSymTerm _ rs = ls == rs
-  DForallTerm _ ls li == DForallTerm _ rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
-  DExistsTerm _ ls li == DExistsTerm _ rs ri = eqHeteroSymbol0 ls rs && eqHashId li ri
+  DForallTerm _ ls li == DForallTerm _ rs ri =
+    eqHeteroSymbol ls rs && eqHashId li ri
+  DExistsTerm _ ls li == DExistsTerm _ rs ri =
+    eqHeteroSymbol ls rs && eqHashId li ri
   DNotTerm _ li == DNotTerm _ ri = eqHashId li ri
   DOrTerm _ li1 li2 == DOrTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DAndTerm _ li1 li2 == DAndTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DEqTerm _ lrep li1 li2 == DEqTerm _ rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
-  DDistinctTerm _ lrep li == DDistinctTerm _ rrep ri =
-    eqTypeRepBool lrep rrep
+  DEqTerm _ lfp li1 li2 == DEqTerm _ rfp ri1 ri2 = lfp == rfp && eqHashId li1 ri1 && eqHashId li2 ri2
+  DDistinctTerm _ lfp li == DDistinctTerm _ rfp ri =
+    lfp == rfp
       && length li == length ri
       && and (zipWith eqHashId (toList li) (toList ri))
   DITETerm _ lc li1 li2 == DITETerm _ rc ri1 ri2 = eqHashId lc rc && eqHashId li1 ri1 && eqHashId li2 ri2
@@ -3324,22 +3312,20 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DShiftRightTerm _ li ln == DShiftRightTerm _ ri rn = eqHashId li ri && eqHashId ln rn
   DRotateLeftTerm _ li ln == DRotateLeftTerm _ ri rn = eqHashId li ri && eqHashId ln rn
   DRotateRightTerm _ li ln == DRotateRightTerm _ ri rn = eqHashId li ri && eqHashId ln rn
-  DBitCastTerm _ li == DBitCastTerm _ ri = eqTypeHashId li ri
-  DBitCastOrTerm _ ld li == DBitCastOrTerm _ rd ri = ld == rd && eqTypeHashId li ri
-  DBVConcatTerm _ lrep1 lrep2 li1 li2 == DBVConcatTerm _ rrep1 rrep2 ri1 ri2 =
-    eqTypeRepBool lrep1 rrep1 && eqTypeRepBool lrep2 rrep2 && eqHashId li1 ri1 && eqHashId li2 ri2
+  DBitCastTerm _ li == DBitCastTerm _ ri = li == ri
+  DBitCastOrTerm _ ld li == DBitCastOrTerm _ rd ri = ld == rd && li == ri
+  DBVConcatTerm _ li1 li2 == DBVConcatTerm _ ri1 ri2 = li1 == ri1 && li2 == ri2
   DBVSelectTerm _ lix li == DBVSelectTerm _ rix ri =
-    eqTypeRepBool lix rix && eqTypeHashId li ri
-  DBVExtendTerm _ lIsSigned ln li == DBVExtendTerm _ rIsSigned rn ri =
+    lix == rix && li == ri
+  DBVExtendTerm _ lIsSigned _ li == DBVExtendTerm _ rIsSigned _ ri =
     lIsSigned == rIsSigned
-      && eqTypeRepBool ln rn
-      && eqTypeHashId li ri
-  DApplyTerm _ lf li == DApplyTerm _ rf ri = eqTypeHashId lf rf && eqTypeHashId li ri
+      && li == ri
+  DApplyTerm _ lf li == DApplyTerm _ rf ri = lf == rf && li == ri
   DDivIntegralTerm _ li1 li2 == DDivIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DModIntegralTerm _ li1 li2 == DModIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DQuotIntegralTerm _ li1 li2 == DQuotIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DRemIntegralTerm _ li1 li2 == DRemIntegralTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
-  DFPTraitTerm _ lt li == DFPTraitTerm _ rt ri = lt == rt && eqTypeHashId li ri
+  DFPTraitTerm _ lt li == DFPTraitTerm _ rt ri = lt == rt && li == ri
   DFdivTerm _ li1 li2 == DFdivTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DRecipTerm _ li == DRecipTerm _ ri = eqHashId li ri
   DFloatingUnaryTerm _ lop li == DFloatingUnaryTerm _ rop ri = lop == rop && eqHashId li ri
@@ -3352,9 +3338,9 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
     lop == rop && eqHashId lmode rmode && eqHashId li1 ri1 && eqHashId li2 ri2
   DFPFMATerm _ lmode li1 li2 li3 == DFPFMATerm _ rmode ri1 ri2 ri3 =
     eqHashId lmode rmode && eqHashId li1 ri1 && eqHashId li2 ri2 && eqHashId li3 ri3
-  DFromIntegralTerm _ li == DFromIntegralTerm _ ri = eqTypeHashId li ri
-  DFromFPOrTerm _ ld li lai == DFromFPOrTerm _ rd ri rai = eqHashId ld rd && eqHashId li ri && eqTypeHashId lai rai
-  DToFPTerm _ li lai == DToFPTerm _ ri rai = eqHashId li ri && eqTypeHashId lai rai
+  DFromIntegralTerm _ li == DFromIntegralTerm _ ri = li == ri
+  DFromFPOrTerm _ ld li lai == DFromFPOrTerm _ rd ri rai = eqHashId ld rd && eqHashId li ri && lai == rai
+  DToFPTerm _ li lai == DToFPTerm _ ri rai = eqHashId li ri && lai == rai
   _ == _ = False
   {-# INLINE (==) #-}
 
@@ -3453,8 +3439,8 @@ fullReconstructTerm (BVConcatTerm _ _ _ arg1 arg2) =
   fullReconstructTerm2 curThreadBvconcatTerm arg1 arg2
 fullReconstructTerm (BVSelectTerm _ _ _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) =
   fullReconstructTerm1 (curThreadBvselectTerm (Proxy @ix) (Proxy @w)) arg
-fullReconstructTerm (BVExtendTerm _ _ _ signed (_ :: TypeRep n) arg) =
-  fullReconstructTerm1 (curThreadBvextendTerm signed (Proxy @n)) arg
+fullReconstructTerm (BVExtendTerm _ _ _ signed p arg) =
+  fullReconstructTerm1 (curThreadBvextendTerm signed p) arg
 fullReconstructTerm (ApplyTerm _ _ _ f arg) =
   fullReconstructTerm2 curThreadApplyTerm f arg
 fullReconstructTerm (DivIntegralTerm _ _ _ arg1 arg2) =
@@ -3711,7 +3697,7 @@ curThreadBvextendTerm ::
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBvextendTerm signed _ v = intern $ UBVExtendTerm signed (typeRep @r) v
+curThreadBvextendTerm signed _ v = intern $ UBVExtendTerm signed (Proxy @r) v
 {-# INLINE curThreadBvextendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with sign extension.
@@ -3721,7 +3707,7 @@ curThreadBvsignExtendTerm ::
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBvsignExtendTerm _ v = intern $ UBVExtendTerm True (typeRep @r) v
+curThreadBvsignExtendTerm _ v = intern $ UBVExtendTerm True (Proxy @r) v
 {-# INLINE curThreadBvsignExtendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with zero extension.
@@ -3731,7 +3717,7 @@ curThreadBvzeroExtendTerm ::
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBvzeroExtendTerm _ v = intern $ UBVExtendTerm False (typeRep @r) v
+curThreadBvzeroExtendTerm _ v = intern $ UBVExtendTerm False (Proxy @r) v
 {-# INLINE curThreadBvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
