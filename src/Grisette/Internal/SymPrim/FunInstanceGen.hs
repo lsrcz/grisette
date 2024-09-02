@@ -36,6 +36,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalDistinctTerm,
         pevalEqTerm,
         pevalITETerm,
+        sameCon,
         sbvDistinct,
         sbvEq,
         symSBVName,
@@ -113,7 +114,8 @@ supportedPrimFun
       (if numArg == 2 then Nothing else Just Overlapping)
       (constraints tyVars)
       [t|SupportedPrim $(funType tyVars)|]
-      ( [ [d|$(varP 'defaultValue) = $dv|],
+      ( [ [d|$(varP 'sameCon) = (==)|],
+          [d|$(varP 'defaultValue) = $dv|],
           [d|$(varP 'pevalITETerm) = $ite|],
           [d|
             $(varP 'pevalEqTerm) =

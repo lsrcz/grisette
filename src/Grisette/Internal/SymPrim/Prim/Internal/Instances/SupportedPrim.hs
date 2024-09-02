@@ -25,12 +25,17 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
 where
 
 import Data.Coerce (coerce)
+import Data.Hashable (Hashable (hashWithSalt))
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 import Data.Proxy (Proxy (Proxy))
 import Data.SBV (BVIsNonZero)
 import qualified Data.SBV as SBV
 import Data.Type.Equality ((:~:) (Refl), type (:~~:) (HRefl))
 import GHC.TypeNats (KnownNat, type (<=))
+import Grisette.Internal.Core.Data.Class.IEEEFP
+  ( fpIsNegativeZero,
+    fpIsPositiveZero,
+  )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal, fromSBVAlgReal, toSBVAlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
@@ -55,12 +60,14 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         defaultValue,
         defaultValueDynamic,
         funcDummyConstraint,
+        hashConWithSalt,
         isFuncType,
         parseSMTModelResult,
         pevalDistinctTerm,
         pevalEqTerm,
         pevalITETerm,
         pformatCon,
+        sameCon,
         sbvIte,
         symSBVName,
         symSBVTerm,
@@ -244,6 +251,14 @@ instance (ValidFP eb sb) => SBVRep (FP eb sb) where
   type SBVType (FP eb sb) = SBV.SBV (SBV.FloatingPoint eb sb)
 
 instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
+  sameCon a b
+    | isNaN a = isNaN b
+    | fpIsPositiveZero a = fpIsPositiveZero b
+    | fpIsNegativeZero a = fpIsNegativeZero b
+    | otherwise = a == b
+  hashConWithSalt s a
+    | isNaN a = hashWithSalt s (2654435761 :: Int)
+    | otherwise = hashWithSalt s a
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
   pevalEqTerm (ConTerm _ _ _ l) (ConTerm _ _ _ r) = conTerm $ l == r

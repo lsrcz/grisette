@@ -32,7 +32,6 @@ import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
 import Grisette.Core.Data.UnionBaseTests (unionBaseTests)
-import Grisette.Internal.SymPrim.Prim.Internal.Caches (setupPeriodicTermCacheGC)
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
@@ -79,7 +78,6 @@ import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()
 main = do
-  setupPeriodicTermCacheGC 1000000
   defaultMain
     [ coreTests,
       irTests,

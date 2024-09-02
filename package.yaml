@@ -64,8 +64,6 @@ dependencies:
   - libBF >= 0.6.3 && < 0.7
   - th-lift-instances >= 0.1.16 && < 0.2
   - atomic-primops
-  - vector-hashtables
-  - vector
 
 flags:
   {

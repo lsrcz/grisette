@@ -1314,11 +1314,16 @@ module Grisette.Core
     -- * Utilities #utils#
 
     -- ** Memoization
+    stableMemo,
+    stableMemo2,
+    stableMemo3,
+    stableMup,
+    stableMemoFix,
     htmemo,
     htmemo2,
     htmemo3,
-    htmup,
     htmemoFix,
+    htmup,
 
     -- ** Generic deriving of classes
 
@@ -1769,6 +1774,11 @@ import Grisette.Internal.Core.Data.MemoUtils
     htmemo3,
     htmemoFix,
     htmup,
+    stableMemo,
+    stableMemo2,
+    stableMemo3,
+    stableMemoFix,
+    stableMup,
   )
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier (..),

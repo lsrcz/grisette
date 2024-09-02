@@ -18,6 +18,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Strict #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications #-}
@@ -404,6 +405,10 @@ class
   ) =>
   SupportedPrim t
   where
+  sameCon :: t -> t -> Bool
+  sameCon = (==)
+  hashConWithSalt :: Int -> t -> Int
+  hashConWithSalt = hashWithSalt
   pformatCon :: t -> String
   default pformatCon :: (Show t) => t -> String
   pformatCon = show
@@ -1445,7 +1450,7 @@ baseHash t = case hashId t of
   HashId h _ -> h
 {-# INLINE baseHash #-}
 
-data HashId = HashId {-# UNPACK #-} !Digest {-# UNPACK #-} !Id
+data HashId = HashId {-# UNPACK #-} !Digest {-# UNPACK #-} !Id deriving (Show)
 
 instance Eq HashId where
   HashId _ l == HashId _ r = l == r
@@ -1464,7 +1469,7 @@ eqHashId = (==)
 --   eqTypeRepBool lrep rrep && l == r
 -- {-# INLINE eqTypeHashId #-}
 
-data TypeHashId = TypeHashId !Fingerprint {-# UNPACK #-} !HashId
+data TypeHashId = TypeHashId !Fingerprint {-# UNPACK #-} !HashId deriving (Show)
 
 instance Eq TypeHashId where
   TypeHashId l li == TypeHashId r ri = l == r && li == ri
@@ -2317,16 +2322,16 @@ eqHeteroSymbol (TypedSymbol taga) (TypedSymbol tagb) =
     Nothing -> False
 {-# INLINE eqHeteroSymbol #-}
 
-preHashConDescription :: (Hashable t) => t -> Digest
-preHashConDescription = fromIntegral . hashWithSalt 0
+preHashConDescription :: (SupportedPrim t) => t -> Digest
+preHashConDescription = fromIntegral . hashConWithSalt 0
 {-# INLINE preHashConDescription #-}
 
-preHashSymDescription :: (Hashable t) => TypedSymbol 'AnyKind t -> Digest
+preHashSymDescription :: TypedSymbol 'AnyKind t -> Digest
 preHashSymDescription = fromIntegral . hashWithSalt 1
 {-# INLINE preHashSymDescription #-}
 
 preHashForallDescription ::
-  (Hashable t) => TypedSymbol 'ConstantKind t -> HashId -> Digest
+  TypedSymbol 'ConstantKind t -> HashId -> Digest
 preHashForallDescription sym h =
   fromIntegral
     ( 2
@@ -2336,7 +2341,7 @@ preHashForallDescription sym h =
 {-# INLINE preHashForallDescription #-}
 
 preHashExistsDescription ::
-  (Hashable t) => TypedSymbol 'ConstantKind t -> HashId -> Digest
+  TypedSymbol 'ConstantKind t -> HashId -> Digest
 preHashExistsDescription sym h =
   fromIntegral
     ( 3
@@ -3281,8 +3286,13 @@ termThreadId (FromFPOrTerm tid _ _ _ _ _) = tid
 termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
 {-# INLINE termThreadId #-}
 
+deriving instance (SupportedPrim t) => Show (Description (Term t))
+
 instance (SupportedPrim t) => Eq (Description (Term t)) where
-  DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) = cast @tyl @tyr l == Just r
+  DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) =
+    case cast @tyl @tyr l of
+      Just l' -> sameCon l' r
+      Nothing -> False
   DSymTerm _ ls == DSymTerm _ rs = ls == rs
   DForallTerm _ ls li == DForallTerm _ rs ri =
     eqHeteroSymbol ls rs && eqHashId li ri
@@ -4328,12 +4338,12 @@ defaultValueForBoolDyn = toModelValue defaultValueForBool
 -- | Construct and internalizing 'True' term.
 trueTerm :: Term Bool
 trueTerm = conTerm True
-{-# INLINE trueTerm #-}
+{-# NOINLINE trueTerm #-}
 
 -- | Construct and internalizing 'False' term.
 falseTerm :: Term Bool
 falseTerm = conTerm False
-{-# INLINE falseTerm #-}
+{-# NOINLINE falseTerm #-}
 
 boolConTermView :: forall a. Term a -> Maybe Bool
 boolConTermView (ConTerm _ _ _ b) = cast b

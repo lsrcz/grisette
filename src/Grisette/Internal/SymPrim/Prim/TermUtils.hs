@@ -35,7 +35,7 @@ import Control.Monad.State
 import Data.Data (cast)
 import Data.Foldable (Foldable (toList), traverse_)
 import qualified Data.HashSet as HS
-import Grisette.Internal.Core.Data.MemoUtils (htmemo2)
+import Grisette.Internal.Core.Data.MemoUtils (stableMemo2)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (SymbolKindConstraint),
@@ -109,6 +109,7 @@ import Type.Reflection
   )
 import qualified Type.Reflection as R
 
+{-# NOINLINE extractSymSomeTerm #-}
 extractSymSomeTerm ::
   forall knd.
   (IsSymbolKind knd) =>
@@ -131,7 +132,7 @@ extractSymSomeTerm = go initialMemo
       HS.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    initialMemo = htmemo2 (go initialMemo)
+    initialMemo = stableMemo2 (go initialMemo)
     {-# NOINLINE initialMemo #-}
 
     go ::
@@ -154,7 +155,7 @@ extractSymSomeTerm = go initialMemo
           case eqTypeRep (typeRep @(-->)) gf of
             Just HRefl -> case cv of
               GeneralFun sym (tm :: Term r) ->
-                let newmemo = htmemo2 (go newmemo)
+                let newmemo = stableMemo2 (go newmemo)
                     {-# NOINLINE newmemo #-}
                  in gotyped
                       newmemo
@@ -163,11 +164,11 @@ extractSymSomeTerm = go initialMemo
             Nothing -> return HS.empty
         _ -> return HS.empty
     go _ bs (SomeTerm (ForallTerm _ _ _ sym arg)) =
-      let newmemo = htmemo2 (go newmemo)
+      let newmemo = stableMemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
     go _ bs (SomeTerm (ExistsTerm _ _ _ sym arg)) =
-      let newmemo = htmemo2 (go newmemo)
+      let newmemo = stableMemo2 (go newmemo)
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
     go memo bs (SomeTerm (NotTerm _ _ _ arg)) = goUnary memo bs arg
@@ -263,7 +264,6 @@ extractSymSomeTerm = go initialMemo
     combineSet (Just a) (Just b) = Just $ HS.union a b
     combineSet _ _ = Nothing
     combineAllSets = foldl1 combineSet
-{-# INLINEABLE extractSymSomeTerm #-}
 
 -- | Extract all the symbols in a term.
 extractTerm ::
@@ -273,7 +273,7 @@ extractTerm ::
   Maybe (HS.HashSet (SomeTypedSymbol knd))
 extractTerm initialBoundedSymbols t =
   extractSymSomeTerm initialBoundedSymbols (SomeTerm t)
-{-# INLINE extractTerm #-}
+{-# NOINLINE extractTerm #-}
 
 -- | Cast a term to another type.
 castTerm :: forall a b. (Typeable b) => Term a -> Maybe (Term b)
