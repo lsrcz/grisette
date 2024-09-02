@@ -47,7 +47,7 @@ import Grisette.Internal.Core.Data.Class.Function
   ( Apply (FunType, apply),
     Function ((#)),
   )
-import Grisette.Internal.Core.Data.MemoUtils (htmemo)
+import Grisette.Internal.Core.Data.MemoUtils (stableMemo)
 import Grisette.Internal.Core.Data.Symbol
   ( Symbol (IndexedSymbol),
   )
@@ -223,7 +223,7 @@ infixr 0 -->
 
 extractSymSomeTermIncludeBoundedVars ::
   SomeTerm -> HS.HashSet SomeTypedAnySymbol
-extractSymSomeTermIncludeBoundedVars = htmemo go
+extractSymSomeTermIncludeBoundedVars = stableMemo go
   where
     goTyped ::
       (SupportedPrim a) =>
@@ -460,7 +460,7 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
     go memo a = case memo $ someTerm a of
       SomeTerm v -> unsafeCoerce v
     initialMemo :: SomeTerm -> SomeTerm
-    initialMemo = htmemo (goSome initialMemo initialBoundedSymbols)
+    initialMemo = stableMemo (goSome initialMemo initialBoundedSymbols)
     {-# NOINLINE initialMemo #-}
     goSome ::
       (SomeTerm -> SomeTerm) ->
@@ -474,7 +474,7 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
             Just HRefl -> case cv of
               GeneralFun sym (tm :: Term r) ->
                 let newmemo =
-                      htmemo
+                      stableMemo
                         ( goSome
                             newmemo
                             (HS.union (HS.singleton (someTypedSymbol sym)) bs)
@@ -489,12 +489,12 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
         _ -> SomeTerm $ subst sym
     goSome _ bs (SomeTerm (ForallTerm _ _ _ tsym b)) =
       let newmemo =
-            htmemo (goSome newmemo (HS.insert (someTypedSymbol tsym) bs))
+            stableMemo (goSome newmemo (HS.insert (someTypedSymbol tsym) bs))
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (forallTerm tsym) b
     goSome _ bs (SomeTerm (ExistsTerm _ _ _ tsym b)) =
       let newmemo =
-            htmemo (goSome newmemo (HS.insert (someTypedSymbol tsym) bs))
+            stableMemo (goSome newmemo (HS.insert (someTypedSymbol tsym) bs))
           {-# NOINLINE newmemo #-}
        in goUnary newmemo (existsTerm tsym) b
     goSome memo _ (SomeTerm (NotTerm _ _ _ arg)) =
