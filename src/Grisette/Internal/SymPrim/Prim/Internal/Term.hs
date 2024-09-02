@@ -4407,7 +4407,7 @@ orEqFirst x y
 {-# INLINE orEqFirst #-}
 
 orEqTrue :: Term Bool -> Term Bool -> Bool
-orEqTrue (ConTerm _ _ _ True) _ = True
+orEqTrue (ConTerm _ _ _ True) ~_ = True
 orEqTrue _ (ConTerm _ _ _ True) = True
 -- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
 orEqTrue
@@ -4440,7 +4440,7 @@ andEqFirst x y
 {-# INLINE andEqFirst #-}
 
 andEqFalse :: Term Bool -> Term Bool -> Bool
-andEqFalse (ConTerm _ _ _ False) _ = True
+andEqFalse (ConTerm _ _ _ False) ~_ = True
 andEqFalse _ (ConTerm _ _ _ False) = True
 -- andEqFalse (NotTerm _ e1) (NotTerm _ e2) = orEqTrue e1 e2
 andEqFalse
@@ -4454,7 +4454,7 @@ andEqFalse _ _ = False
 
 -- | Partial evaluation for or terms.
 pevalOrTerm :: Term Bool -> Term Bool -> Term Bool
-pevalOrTerm l r
+pevalOrTerm l ~r
   | orEqTrue l r = trueTerm
   | orEqFirst l r = l
   | orEqFirst r l = r
@@ -4493,7 +4493,7 @@ pevalOrTerm l r = orTerm l r
 
 -- | Partial evaluation for and terms.
 pevalAndTerm :: Term Bool -> Term Bool -> Term Bool
-pevalAndTerm l r
+pevalAndTerm l ~r
   | andEqFalse l r = falseTerm
   | andEqFirst l r = l
   | andEqFirst r l = r

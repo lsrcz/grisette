@@ -536,10 +536,16 @@ symPrimTests =
         [ testGroup
             "LogicalOp"
             [ testCase ".||" $ ssym "a" .|| ssym "b" @=? SymBool (pevalOrTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase ".|| short circuit" $ con True .|| undefined @=? (con True :: SymBool),
               testCase ".&&" $ ssym "a" .&& ssym "b" @=? SymBool (pevalAndTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase ".&& short circuit" $ con False .&& undefined @=? (con False :: SymBool),
               testCase "symNot" $ symNot (ssym "a") @=? SymBool (pevalNotTerm (ssymTerm "a")),
               testCase "symXor" $ symXor (ssym "a") (ssym "b") @=? SymBool (pevalXorTerm (ssymTerm "a") (ssymTerm "b")),
-              testCase "symImplies" $ symImplies (ssym "a") (ssym "b") @=? SymBool (pevalImplyTerm (ssymTerm "a") (ssymTerm "b"))
+              testCase "symImplies" $ symImplies (ssym "a") (ssym "b") @=? SymBool (pevalImplyTerm (ssymTerm "a") (ssymTerm "b")),
+              testCase "symImplies short circuit" $ symImplies (con False) (ssym "b") @=? (con True :: SymBool),
+              testCase "symIte short circuit" $ do
+                symIte (con True) (ssym "a") undefined @=? (ssym "a" :: SymBool)
+                symIte (con False) undefined (ssym "a") @=? (ssym "a" :: SymBool)
             ]
         ],
       testGroup
