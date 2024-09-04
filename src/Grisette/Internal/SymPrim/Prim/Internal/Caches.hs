@@ -67,8 +67,7 @@ type Id = Word32
 -- | A digest of a term.
 type Digest = Word32
 
-newtype Cache t
-  = Cache {getCache :: A.Array Int (CacheState t)}
+newtype Cache t = Cache {getCache :: A.Array Int (CacheState t)}
 
 type HashTable k v = IORef (HM.HashMap k v)
 

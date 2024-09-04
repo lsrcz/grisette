@@ -68,7 +68,7 @@ doPevalBitCastOr ::
   Term a ->
   Maybe (Term b)
 doPevalBitCastOr (ConTerm _ _ _ d) (ConTerm _ _ _ v) =
-   Just $ conTerm $ bitCastOr d v
+  Just $ conTerm $ bitCastOr d v
 doPevalBitCastOr _ _ = Nothing
 
 pevalBitCastOr ::
