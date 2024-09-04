@@ -232,7 +232,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (WordN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
-  withSbvNumTermConstraint = withPrim @(WordN n)
+  withSbvNumTermConstraint r = withPrim @(WordN n) r
 
 instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -240,7 +240,7 @@ instance (KnownNat n, 1 <= n) => PEvalNumTerm (IntN n) where
   pevalMulNumTerm = pevalDefaultMulNumTerm
   pevalAbsNumTerm = pevalBitsAbsNumTerm
   pevalSignumNumTerm = pevalGeneralSignumNumTerm
-  withSbvNumTermConstraint = withPrim @(IntN n)
+  withSbvNumTermConstraint r = withPrim @(IntN n) r
 
 instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalAddNumTerm = generalBinaryUnfolded (+) addNumTerm
@@ -248,7 +248,7 @@ instance (ValidFP eb sb) => PEvalNumTerm (FP eb sb) where
   pevalMulNumTerm = generalBinaryUnfolded (*) mulNumTerm
   pevalAbsNumTerm = generalUnaryUnfolded abs absNumTerm
   pevalSignumNumTerm = generalUnaryUnfolded signum signumNumTerm
-  withSbvNumTermConstraint = withPrim @(FP eb sb)
+  withSbvNumTermConstraint r = withPrim @(FP eb sb) r
 
 instance PEvalNumTerm AlgReal where
   pevalAddNumTerm = pevalDefaultAddNumTerm
@@ -257,4 +257,4 @@ instance PEvalNumTerm AlgReal where
   pevalAbsNumTerm = unaryUnfoldOnce doPevalNoOverflowAbsNumTerm absNumTerm
   pevalSignumNumTerm =
     unaryUnfoldOnce doPevalNoOverflowSignumNumTerm signumNumTerm
-  withSbvNumTermConstraint = withPrim @AlgReal
+  withSbvNumTermConstraint r = withPrim @AlgReal r
