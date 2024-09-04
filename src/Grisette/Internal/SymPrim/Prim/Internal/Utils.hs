@@ -34,19 +34,30 @@ module Grisette.Internal.SymPrim.Prim.Internal.Utils
 where
 
 #if MIN_VERSION_base(4,19,0)
-import GHC.Conc.Sync (fromThreadId)
+import GHC.Conc.Sync
+  ( ThreadId,
+    ThreadStatus (ThreadDied, ThreadFinished),
+    fromThreadId,
+    myThreadId,
+    threadStatus,
+  )
 #else
+import GHC.Conc
+  ( ThreadId (ThreadId),
+    ThreadStatus (ThreadDied, ThreadFinished),
+    myThreadId,
+    threadStatus,
+  )
 import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#)
 #if __GLASGOW_HASKELL__ >= 904
 #elif __GLASGOW_HASKELL__ >= 900
-import Foreign.C.Types (CLong)
+import Foreign.C.Types (CLong (CLong))
 #else
-import Foreign.C.Types (CInt)
+import Foreign.C.Types (CInt (CInt))
 #endif
 #endif
 import Data.Typeable (cast)
 import Data.Word (Word64)
-import GHC.Conc (ThreadId, ThreadStatus (ThreadDied, ThreadFinished), myThreadId, threadStatus)
 import System.Mem.Weak (Weak, deRefWeak)
 import Type.Reflection
   ( TypeRep,
@@ -91,11 +102,16 @@ eqTypeRepBool a b = case eqTypeRep a b of
   _ -> False
 {-# INLINE eqTypeRepBool #-}
 
+-- | A weak identifier to a thread id that doesn't prevent its garbage
+-- collection.
 type WeakThreadId = Word64
 
+-- | A weak reference to a thread id that doesn't prevent its garbage
+-- collection.
 type WeakThreadIdRef = Weak ThreadId
 
 {-# INLINE weakThreadId #-}
+
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Word64
 #if MIN_VERSION_base(4,19,0)
@@ -127,10 +143,12 @@ threadIdToAddr# :: ThreadId# -> Addr#
 threadIdToAddr# = unsafeCoerce#
 #endif
 
+-- | Get a weak identifier to the current thread id.
 myWeakThreadId :: IO WeakThreadId
 myWeakThreadId = weakThreadId <$> myThreadId
 {-# INLINE myWeakThreadId #-}
 
+-- | Check if a weak reference to a thread id is still alive.
 weakThreadRefAlive :: WeakThreadIdRef -> IO Bool
 weakThreadRefAlive wtid = do
   tid <- deRefWeak wtid

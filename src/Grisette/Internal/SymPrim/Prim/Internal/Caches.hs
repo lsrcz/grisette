@@ -19,17 +19,14 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Caches
-  ( Cache (..),
-    CacheState (..),
-    Id,
+  ( Id,
+    Digest,
     Interned (..),
-    typeMemoizedCache,
     intern,
     haveCache,
     threadCacheSize,
     dumpThreadCache,
     threadCacheLiveSize,
-    Digest,
   )
 where
 
@@ -64,8 +61,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
 import System.Mem.Weak (addFinalizer, mkWeakPtr)
 import Unsafe.Coerce (unsafeCoerce)
 
+-- | A unique identifier for a term.
 type Id = Word32
 
+-- | A digest of a term.
 type Digest = Word32
 
 newtype Cache t
@@ -76,56 +75,17 @@ type HashTable k v = IORef (HM.HashMap k v)
 data CacheState t where
   CacheState ::
     (Interned t) =>
-    { nextId :: U.IOVector Id,
-      sem :: MVar (),
-      currentThread :: HashTable (Description t) (Id, Weak t)
+    { _nextId :: U.IOVector Id,
+      _sem :: MVar (),
+      _currentThread :: HashTable (Description t) (Id, Weak t)
     } ->
     CacheState t
 
-cacheStateSize :: CacheState t -> IO Int
-cacheStateSize (CacheState _ _ s) = HM.size <$> readIORef s
-
-cacheStateLiveSize :: CacheState t -> IO Int
-cacheStateLiveSize (CacheState _ sem s) = do
-  takeMVar sem
-  v <- fmap snd . HM.toList <$> readIORef s
-  r <-
-    sum
-      <$> mapM
-        ( \(_, x) -> do
-            x <- deRefWeak x
-            if isJust x then return 1 else return 0
-        )
-        v
-  putMVar sem ()
-  return r
-
-dumpCacheState :: CacheState t -> IO ()
-dumpCacheState (CacheState _ sem s) = do
-  takeMVar sem
-  v <- HM.toList <$> readIORef s
-  mapM_
-    ( \(k, (i, v)) -> do
-        v1 <- deRefWeak v
-        case v1 of
-          Nothing -> print (k, i, "dead")
-          Just r -> print (k, i, r)
-    )
-    v
-  putMVar sem ()
-
-dumpCache :: Cache t -> IO ()
-dumpCache (Cache a) = mapM_ dumpCacheState (A.elems a)
-
-cacheSize :: Cache t -> IO Int
-cacheSize (Cache a) = sum <$> mapM cacheStateSize (A.elems a)
-
-cacheLiveSize :: Cache t -> IO Int
-cacheLiveSize (Cache a) = sum <$> mapM cacheStateLiveSize (A.elems a)
-
+-- | A class for interning terms.
 class
   ( Show (Description t),
     Hashable (Description t),
+    Eq (Description t),
     Typeable t,
     Show t
   ) =>
@@ -148,65 +108,6 @@ termCacheCell ::
         )
     )
 termCacheCell = unsafePerformIO $ newIORef HM.empty
-
-threadCacheSize :: WeakThreadId -> IO Int
-threadCacheSize tid = do
-  caches <- readIORef termCacheCell
-  case HM.lookup tid caches of
-    Just (_, cref) -> do
-      cache <- readIORef cref
-      sum <$> mapM cacheSize (HM.elems cache)
-    Nothing -> return 0
-
-threadCacheLiveSize :: WeakThreadId -> IO Int
-threadCacheLiveSize tid = do
-  caches <- readIORef termCacheCell
-  case HM.lookup tid caches of
-    Just (_, cref) -> do
-      cache <- readIORef cref
-      sum <$> mapM cacheLiveSize (HM.elems cache)
-    Nothing -> return 0
-
-dumpThreadCache :: WeakThreadId -> IO ()
-dumpThreadCache tid = do
-  caches <- readIORef termCacheCell
-  case HM.lookup tid caches of
-    Just (_, cref) -> do
-      cache <- readIORef cref
-      mapM_ dumpCache (HM.elems cache)
-    Nothing -> return ()
-
-{-
-shallowCollectGarbageTermCache :: IO ()
-shallowCollectGarbageTermCache = do
-  cache <- readIORef termCacheCell
-  finishedOrDied <-
-    fmap (fmap fst)
-      $ filterM
-        ( \(_, (v, _)) ->
-            not <$> weakThreadRefAlive v
-        )
-      $ HM.toList cache
-  HM.traverseWithKey
-    ( \k _ -> do
-        s <- threadCacheSize k
-        sl <- threadCacheLiveSize k
-        s1 <- atomically $ threadCacheGCSetSize k
-        putStr $ show (k, s, sl, s1)
-    )
-    cache
-  putStrLn ""
-  print finishedOrDied
-  -- atomicModifyIORefCAS_ termCacheCell $ \m -> foldr HM.delete m finishedOrDied
-  performMajorGC
-
-setupPeriodicTermCacheGC :: Int -> IO ()
-setupPeriodicTermCacheGC n = do
-  _ <- forkIO $ forever $ do
-    threadDelay n
-    shallowCollectGarbageTermCache
-  return ()
-  -}
 
 cacheWidth :: Word32
 cacheWidth = 10
@@ -250,12 +151,6 @@ typeMemoizedCache tid = do
       atomicModifyIORefCAS termCacheCell $
         \m -> (HM.insert wtid (wtidRef, r) m, r1)
 
-haveCache :: IO Bool
-haveCache = do
-  caches <- readIORef termCacheCell
-  tid <- myWeakThreadId
-  return $ HM.member tid caches
-
 reclaimTerm ::
   forall t. (Interned t) => WeakThreadId -> Int -> Description t -> IO ()
 reclaimTerm id grp dt = do
@@ -280,6 +175,7 @@ reclaimTerm id grp dt = do
         Nothing -> return ()
     Nothing -> return ()
 
+-- | Internalize a term.
 intern :: forall t. (Interned t, Typeable t) => Uninterned t -> IO t
 intern !bt = do
   tid <- myThreadId
@@ -315,3 +211,81 @@ intern !bt = do
           putMVar sem ()
           return t1
 {-# NOINLINE intern #-}
+
+-- | Check if the current thread has a cache.
+haveCache :: IO Bool
+haveCache = do
+  caches <- readIORef termCacheCell
+  tid <- myWeakThreadId
+  return $ HM.member tid caches
+
+cacheStateSize :: CacheState t -> IO Int
+cacheStateSize (CacheState _ _ s) = HM.size <$> readIORef s
+
+cacheStateLiveSize :: CacheState t -> IO Int
+cacheStateLiveSize (CacheState _ sem s) = do
+  takeMVar sem
+  v <- fmap snd . HM.toList <$> readIORef s
+  r <-
+    sum
+      <$> mapM
+        ( \(_, x) -> do
+            x <- deRefWeak x
+            if isJust x then return 1 else return 0
+        )
+        v
+  putMVar sem ()
+  return r
+
+dumpCacheState :: CacheState t -> IO ()
+dumpCacheState (CacheState _ sem s) = do
+  takeMVar sem
+  v <- HM.toList <$> readIORef s
+  mapM_
+    ( \(k, (i, v)) -> do
+        v1 <- deRefWeak v
+        case v1 of
+          Nothing -> print (k, i, "dead")
+          Just r -> print (k, i, r)
+    )
+    v
+  putMVar sem ()
+
+dumpCache :: Cache t -> IO ()
+dumpCache (Cache a) = mapM_ dumpCacheState (A.elems a)
+
+cacheSize :: Cache t -> IO Int
+cacheSize (Cache a) = sum <$> mapM cacheStateSize (A.elems a)
+
+cacheLiveSize :: Cache t -> IO Int
+cacheLiveSize (Cache a) = sum <$> mapM cacheStateLiveSize (A.elems a)
+
+-- | Get the size of the current thread's cache.
+threadCacheSize :: WeakThreadId -> IO Int
+threadCacheSize tid = do
+  caches <- readIORef termCacheCell
+  case HM.lookup tid caches of
+    Just (_, cref) -> do
+      cache <- readIORef cref
+      sum <$> mapM cacheSize (HM.elems cache)
+    Nothing -> return 0
+
+-- | Get the live size of the current thread's cache.
+threadCacheLiveSize :: WeakThreadId -> IO Int
+threadCacheLiveSize tid = do
+  caches <- readIORef termCacheCell
+  case HM.lookup tid caches of
+    Just (_, cref) -> do
+      cache <- readIORef cref
+      sum <$> mapM cacheLiveSize (HM.elems cache)
+    Nothing -> return 0
+
+-- | Dump the current thread's cache.
+dumpThreadCache :: WeakThreadId -> IO ()
+dumpThreadCache tid = do
+  caches <- readIORef termCacheCell
+  case HM.lookup tid caches of
+    Just (_, cref) -> do
+      cache <- readIORef cref
+      mapM_ dumpCache (HM.elems cache)
+    Nothing -> return ()
