@@ -52,6 +52,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- | A bidirectional map between symbolic Grisette terms and sbv terms.
 data SymBiMap = SymBiMap
   { biMapToSBV :: M.HashMap SomeTerm (QuantifiedStack -> Dynamic),
+    biMapSize :: Int,
     biMapFromSBV :: M.HashMap String SomeTypedAnySymbol,
     quantifiedSymbolNum :: Int
   }
@@ -61,8 +62,8 @@ newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
   deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)
 
 nextQuantifiedSymbolInfo :: SymBiMap -> (SymBiMap, QuantifiedSymbolInfo)
-nextQuantifiedSymbolInfo (SymBiMap t f num) =
-  (SymBiMap t f (num + 1), QuantifiedSymbolInfo num)
+nextQuantifiedSymbolInfo (SymBiMap t s f num) =
+  (SymBiMap t s f (num + 1), QuantifiedSymbolInfo num)
 
 attachQuantifiedSymbolInfo ::
   QuantifiedSymbolInfo -> TypedConstantSymbol a -> TypedConstantSymbol a
@@ -84,11 +85,11 @@ attachNextQuantifiedSymbolInfo m s =
 
 -- | An empty bidirectional map.
 emptySymBiMap :: SymBiMap
-emptySymBiMap = SymBiMap M.empty M.empty 0
+emptySymBiMap = SymBiMap M.empty 0 M.empty 0
 
 -- | The size of the bidirectional map.
 sizeBiMap :: SymBiMap -> Int
-sizeBiMap = M.size . biMapToSBV
+sizeBiMap = biMapSize
 
 -- | Add a new entry to the bidirectional map.
 addBiMap ::
@@ -99,19 +100,20 @@ addBiMap ::
   SomeTypedSymbol knd ->
   SymBiMap ->
   SymBiMap
-addBiMap s d n sb (SymBiMap t f num) =
+addBiMap s d n sb (SymBiMap t sz f num) =
   case castSomeTypedSymbol sb of
-    Just sb' -> SymBiMap (M.insert s (const d) t) (M.insert n sb' f) num
+    Just sb' -> SymBiMap (M.insert s (const d) t) (sz + 1) (M.insert n sb' f) num
     _ -> error "Casting to AnySymbol, should not fail"
 
 -- | Add a new entry to the bidirectional map for intermediate values.
 addBiMapIntermediate ::
   (HasCallStack) => SomeTerm -> (QuantifiedStack -> Dynamic) -> SymBiMap -> SymBiMap
-addBiMapIntermediate s d (SymBiMap t f num) = SymBiMap (M.insert s d t) f num
+addBiMapIntermediate s d (SymBiMap t sz f num) =
+  SymBiMap (M.insert s d t) (sz + 1) f num
 
 -- | Find a symbolic Grisette term from a string.
 findStringToSymbol :: (IsSymbolKind knd) => String -> SymBiMap -> Maybe (SomeTypedSymbol knd)
-findStringToSymbol s (SymBiMap _ f _) = do
+findStringToSymbol s (SymBiMap _ _ f _) = do
   r <- M.lookup s f
   castSomeTypedSymbol r
 
