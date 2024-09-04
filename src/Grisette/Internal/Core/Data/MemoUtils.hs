@@ -131,6 +131,7 @@ memo0 p f =
 stableMemo :: (a -> b) -> (a -> b)
 stableMemo f = getConst . memo0 (Proxy :: Proxy Weak) (Const . f . getConst) . Const
 
+-- | Lift a memoizer to work with one more argument.
 stableMup :: (b -> c) -> (a -> b) -> (a -> c)
 stableMup mem f = stableMemo (mem . f)
 
@@ -142,6 +143,7 @@ stableMemo2 = stableMup stableMemo
 stableMemo3 :: (a -> b -> c -> d) -> (a -> b -> c -> d)
 stableMemo3 = stableMup stableMemo2
 
+-- | Memoizing recursion. Use like 'fix'.
 stableMemoFix :: ((a -> b) -> (a -> b)) -> a -> b
 stableMemoFix h = fix (stableMemo . h)
 
