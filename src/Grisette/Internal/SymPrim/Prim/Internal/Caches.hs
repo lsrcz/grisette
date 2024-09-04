@@ -58,6 +58,7 @@ import Data.Word (Word32)
 import GHC.Base (Any)
 import GHC.IO (unsafePerformIO)
 import GHC.Weak (Weak, deRefWeak)
+import qualified Data.Vector.Unboxed.Mutable as U
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
     WeakThreadIdRef,
@@ -79,7 +80,7 @@ type HashTable k v = HT.BasicHashTable k v
 data CacheState t where
   CacheState ::
     (Interned t) =>
-    { nextId :: IORef Id,
+    { nextId :: U.IOVector Id,
       sem :: MVar (),
       currentThread :: HashTable (Description t) (Id, Weak t),
       otherThread :: HT.BasicHashTable (WeakThreadId, Id) t
@@ -221,7 +222,7 @@ mkCache = result
   where
     element =
       CacheState
-        <$> newIORef 0
+        <$> U.replicate 1 0
         <*> newMVar ()
         <*> HT.new
         <*> HT.new
@@ -297,8 +298,8 @@ intern !bt = do
   takeMVar sem
   HT.lookup s dt >>= \case
     Nothing -> do
-      i <- readIORef nextBaseId
-      writeIORef nextBaseId (i + 1)
+      i <- U.unsafeRead nextBaseId 0
+      U.unsafeWrite nextBaseId 0 (i + 1)
       let !newId = cacheWidth * i + r
           !t = identify (weakThreadId tid) hdt newId bt
       weakRef <- mkWeakPtr t (Just $ reclaimTerm wtid (fromIntegral r) dt)

@@ -63,6 +63,7 @@ dependencies:
   - stm >= 2.5 && < 2.6
   - libBF >= 0.6.3 && < 0.7
   - th-lift-instances >= 0.1.16 && < 0.2
+  - vector
   - atomic-primops
 
 flags:
