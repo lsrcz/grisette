@@ -63,8 +63,8 @@ dependencies:
   - stm >= 2.5 && < 2.6
   - libBF >= 0.6.3 && < 0.7
   - th-lift-instances >= 0.1.16 && < 0.2
-  - vector
-  - atomic-primops
+  - vector >= 0.12.1.2 && < 0.14
+  - atomic-primops >= 0.8.3 && < 0.9
 
 flags:
   {
@@ -79,7 +79,8 @@ flags:
 when:
   - condition: flag(optimize)
     then:
-      ghc-options: -O2
+      ghc-options:
+        - -O2
     else:
       ghc-options: -O0
 
