@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnliftedFFITypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -30,17 +31,25 @@ module Grisette.Internal.SymPrim.Prim.Internal.Utils
     WeakThreadIdRef,
     myWeakThreadId,
     weakThreadRefAlive,
+    mkWeakThreadIdRefWithFinalizer,
+    addStableNameFinalizer,
+    addThreadIdFinalizer,
+    mkWeakStableNameRefWithFinalizer,
+    SomeStableName (..),
+    mkWeakSomeStableNameRefWithFinalizer,
+    mkWeakSomeStableNameRef,
   )
 where
 
 #if MIN_VERSION_base(4,19,0)
 import GHC.Conc.Sync
-  ( ThreadId,
+  ( ThreadId(ThreadId),
     ThreadStatus (ThreadDied, ThreadFinished),
     fromThreadId,
     myThreadId,
     threadStatus,
   )
+import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
 #else
 import GHC.Conc
   ( ThreadId (ThreadId),
@@ -48,7 +57,7 @@ import GHC.Conc
     myThreadId,
     threadStatus,
   )
-import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#)
+import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#, mkWeak#, mkWeakNoFinalizer#)
 #if __GLASGOW_HASKELL__ >= 904
 #elif __GLASGOW_HASKELL__ >= 900
 import Foreign.C.Types (CLong (CLong))
@@ -58,7 +67,10 @@ import Foreign.C.Types (CInt (CInt))
 #endif
 import Data.Typeable (cast)
 import Data.Word (Word64)
-import System.Mem.Weak (Weak, deRefWeak)
+import GHC.IO (IO (IO))
+import GHC.StableName (StableName (StableName), eqStableName)
+import GHC.Weak (Weak (Weak))
+import System.Mem.Weak (deRefWeak)
 import Type.Reflection
   ( TypeRep,
     Typeable,
@@ -158,3 +170,53 @@ weakThreadRefAlive wtid = do
       st <- threadStatus tid
       return $ st `notElem` [ThreadFinished, ThreadDied]
 {-# INLINE weakThreadRefAlive #-}
+
+-- | Create a weak reference to a thread id with a finalizer.
+mkWeakThreadIdRefWithFinalizer :: ThreadId -> IO () -> IO (Weak ThreadId)
+mkWeakThreadIdRefWithFinalizer t@(ThreadId t#) (IO finalizer) = IO $ \s ->
+  case mkWeak# t# t finalizer s of
+    (# s1, w #) -> (# s1, Weak w #)
+
+-- | Add a finalizer to a thread id.
+addThreadIdFinalizer :: ThreadId -> IO () -> IO ()
+addThreadIdFinalizer t@(ThreadId t#) (IO finalizer) = IO $ \s ->
+  case mkWeak# t# t finalizer s of
+    (# s1, _ #) -> (# s1, () #)
+
+-- | Create a weak reference to a stable name with a finalizer.
+mkWeakStableNameRefWithFinalizer ::
+  StableName a -> IO () -> IO (Weak (StableName a))
+mkWeakStableNameRefWithFinalizer t@(StableName t#) (IO finalizer) = IO $ \s ->
+  case mkWeak# t# t finalizer s of
+    (# s1, w #) -> (# s1, Weak w #)
+
+-- | Add a finalizer to a stable name.
+addStableNameFinalizer :: StableName a -> IO () -> IO ()
+addStableNameFinalizer t@(StableName t#) (IO finalizer) = IO $ \s ->
+  case mkWeak# t# t finalizer s of
+    (# s1, _ #) -> (# s1, () #)
+
+-- | A type-erased stable name.
+data SomeStableName where
+  SomeStableName :: StableName a -> SomeStableName
+
+instance Show SomeStableName where
+  show _ = "n"
+
+instance Eq SomeStableName where
+  SomeStableName l == SomeStableName r = eqStableName l r
+
+-- | Create a weak reference to a stable name.
+mkWeakSomeStableNameRef :: SomeStableName -> IO (Weak SomeStableName)
+mkWeakSomeStableNameRef t@(SomeStableName (StableName t#)) = IO $ \s ->
+  case mkWeakNoFinalizer# t# t s of
+    (# s1, w #) -> (# s1, Weak w #)
+
+-- | Create a weak reference to a stable name with a finalizer.
+mkWeakSomeStableNameRefWithFinalizer ::
+  SomeStableName -> IO () -> IO (Weak SomeStableName)
+mkWeakSomeStableNameRefWithFinalizer
+  t@(SomeStableName (StableName t#))
+  (IO finalizer) = IO $ \s ->
+    case mkWeak# t# t finalizer s of
+      (# s1, w #) -> (# s1, Weak w #)
