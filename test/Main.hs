@@ -77,7 +77,7 @@ import Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest)
 import Test.Framework (Test, defaultMain, testGroup)
 
 main :: IO ()
-main = do
+main =
   defaultMain
     [ coreTests,
       irTests,

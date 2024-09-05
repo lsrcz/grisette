@@ -88,6 +88,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingBinaryOp (..),
     FloatingUnaryOp (..),
     Term (..),
+    toCurThread,
     identity,
     typeHashId,
     introSupportedPrimConstraint,
@@ -235,7 +236,6 @@ import Grisette.Internal.Core.Data.Symbol
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( Digest,
-    Id,
     Interned
       ( Description,
         Uninterned,
@@ -244,6 +244,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Caches
         identify,
         threadId
       ),
+    SomeStableName,
     intern,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
@@ -1034,21 +1035,21 @@ data Term t where
     (SupportedPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !t ->
     Term t
   SymTerm ::
     (SupportedPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(TypedSymbol 'AnyKind t) ->
     Term t
   ForallTerm ::
     (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(TypedSymbol 'ConstantKind t) ->
     !(Term Bool) ->
     Term Bool
@@ -1056,27 +1057,27 @@ data Term t where
     (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(TypedSymbol 'ConstantKind t) ->
     !(Term Bool) ->
     Term Bool
   NotTerm ::
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term Bool) ->
     Term Bool
   OrTerm ::
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term Bool) ->
     !(Term Bool) ->
     Term Bool
   AndTerm ::
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term Bool) ->
     !(Term Bool) ->
     Term Bool
@@ -1084,7 +1085,7 @@ data Term t where
     (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term Bool
@@ -1092,14 +1093,14 @@ data Term t where
     (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(NonEmpty (Term t)) ->
     Term Bool
   ITETerm ::
     (SupportedPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term Bool) ->
     !(Term t) ->
     !(Term t) ->
@@ -1108,7 +1109,7 @@ data Term t where
     (PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1116,14 +1117,14 @@ data Term t where
     (PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     Term t
   MulNumTerm ::
     (PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1131,21 +1132,21 @@ data Term t where
     (PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     Term t
   SignumNumTerm ::
     (PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     Term t
   LtOrdTerm ::
     (PEvalOrdTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term Bool
@@ -1153,7 +1154,7 @@ data Term t where
     (PEvalOrdTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term Bool
@@ -1161,7 +1162,7 @@ data Term t where
     (PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1169,7 +1170,7 @@ data Term t where
     (PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1177,7 +1178,7 @@ data Term t where
     (PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1185,14 +1186,14 @@ data Term t where
     (PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     Term t
   ShiftLeftTerm ::
     (PEvalShiftTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1200,7 +1201,7 @@ data Term t where
     (PEvalShiftTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1208,7 +1209,7 @@ data Term t where
     (PEvalRotateTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1216,7 +1217,7 @@ data Term t where
     (PEvalRotateTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1224,14 +1225,14 @@ data Term t where
     (PEvalBitCastTerm a b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term a) ->
     Term b
   BitCastOrTerm ::
     (PEvalBitCastOrTerm a b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term b) ->
     !(Term a) ->
     Term b
@@ -1246,7 +1247,7 @@ data Term t where
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term (bv l)) ->
     !(Term (bv r)) ->
     Term (bv (l + r))
@@ -1261,7 +1262,7 @@ data Term t where
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(TypeRep ix) ->
     !(TypeRep w) ->
     !(Term (bv n)) ->
@@ -1270,7 +1271,7 @@ data Term t where
     (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !Bool ->
     !(Proxy r) ->
     !(Term (bv l)) ->
@@ -1283,7 +1284,7 @@ data Term t where
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term f) ->
     !(Term a) ->
     Term b
@@ -1291,7 +1292,7 @@ data Term t where
     (PEvalDivModIntegralTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1299,7 +1300,7 @@ data Term t where
     (PEvalDivModIntegralTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1307,7 +1308,7 @@ data Term t where
     (PEvalDivModIntegralTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1315,7 +1316,7 @@ data Term t where
     (PEvalDivModIntegralTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1323,7 +1324,7 @@ data Term t where
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !FPTrait ->
     !(Term (FP eb sb)) ->
     Term Bool
@@ -1331,7 +1332,7 @@ data Term t where
     (PEvalFractionalTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1339,14 +1340,14 @@ data Term t where
     (PEvalFractionalTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     Term t
   FloatingUnaryTerm ::
     (PEvalFloatingTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !FloatingUnaryOp ->
     !(Term t) ->
     Term t
@@ -1354,7 +1355,7 @@ data Term t where
     (PEvalFloatingTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term t) ->
     !(Term t) ->
     Term t
@@ -1362,7 +1363,7 @@ data Term t where
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !FPUnaryOp ->
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
@@ -1370,7 +1371,7 @@ data Term t where
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !FPBinaryOp ->
     !(Term (FP eb sb)) ->
     !(Term (FP eb sb)) ->
@@ -1379,7 +1380,7 @@ data Term t where
     (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
@@ -1388,7 +1389,7 @@ data Term t where
     (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
@@ -1398,7 +1399,7 @@ data Term t where
     (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
     !(Term (FP eb sb)) ->
@@ -1408,7 +1409,7 @@ data Term t where
     (PEvalFromIntegralTerm a b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term a) ->
     Term b
   FromFPOrTerm ::
@@ -1419,7 +1420,7 @@ data Term t where
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term a) ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
@@ -1432,7 +1433,7 @@ data Term t where
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
-    {-# UNPACK #-} !Id ->
+    SomeStableName ->
     !(Term FPRoundingMode) ->
     !(Term a) ->
     Proxy eb ->
@@ -1440,7 +1441,7 @@ data Term t where
     Term (FP eb sb)
 
 -- | Return the ID of a term.
-identity :: Term t -> Id
+identity :: Term t -> SomeStableName
 identity t = case hashId t of
   HashId _ i -> i
 {-# INLINE identity #-}
@@ -1450,7 +1451,7 @@ baseHash t = case hashId t of
   HashId h _ -> h
 {-# INLINE baseHash #-}
 
-data HashId = HashId {-# UNPACK #-} !Digest {-# UNPACK #-} !Id deriving (Show)
+data HashId = HashId {-# UNPACK #-} !Digest SomeStableName deriving (Show)
 
 instance Eq HashId where
   HashId _ l == HashId _ r = l == r
@@ -2151,9 +2152,10 @@ instance (SupportedPrim t) => Eq (Term t) where
     if threadId a == threadId b
       then identity a == identity b
       else unsafePerformIO $ do
-        a' <- fullReconstructTerm a
-        b' <- fullReconstructTerm b
-        return $ identity a' == identity b'
+        tid <- myWeakThreadId
+        a' <- toCurThreadImpl tid a
+        b' <- toCurThreadImpl tid b
+        return $ a' == b'
 
 instance (SupportedPrim t) => Hashable (Term t) where
   hashWithSalt s t = hashWithSalt s $ baseHash t
@@ -3496,6 +3498,12 @@ toCurThreadImpl :: forall t. WeakThreadId -> Term t -> IO (Term t)
 toCurThreadImpl tid t | termThreadId t == tid = return t
 toCurThreadImpl _ t = fullReconstructTerm t
 {-# INLINE toCurThreadImpl #-}
+
+toCurThread :: forall t. Term t -> IO (Term t)
+toCurThread t = do
+  tid <- myWeakThreadId
+  toCurThreadImpl tid t
+{-# INLINE toCurThread #-}
 
 -- | Construct and internalizing a 'ConTerm'.
 curThreadConTerm :: (SupportedPrim t) => t -> IO (Term t)

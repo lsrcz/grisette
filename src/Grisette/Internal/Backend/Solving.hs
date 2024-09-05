@@ -844,7 +844,7 @@ parseModel ::
   SBVI.SMTModel ->
   SymBiMap ->
   PM.Model
-parseModel _ (SBVI.SMTModel _ _ assoc origFuncs) mp =
+parseModel _ model@(SBVI.SMTModel _ _ assoc origFuncs) mp =
   case preprocessUIFuncs origFuncs of
     Just funcs -> foldr goSingle emptyModel $ funcs ++ assocFuncs
     _ -> error "SBV Failed to parse model"
@@ -858,4 +858,7 @@ parseModel _ (SBVI.SMTModel _ _ assoc origFuncs) mp =
       Nothing ->
         error $
           "BUG: Please send a bug report. The model is not consistent with the "
-            <> "list of symbols that have been defined."
+            <> "list of symbols that have been defined. The map is "
+            <> show mp
+            <> ". The model is "
+            <> show model

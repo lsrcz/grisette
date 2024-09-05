@@ -57,6 +57,16 @@ data SymBiMap = SymBiMap
     quantifiedSymbolNum :: Int
   }
 
+instance Show SymBiMap where
+  show (SymBiMap t s f _) =
+    "SymBiMap { size: "
+      ++ show s
+      ++ ", toSBV: "
+      ++ show (M.keys t)
+      ++ ", fromSBV: "
+      ++ show (M.toList f)
+      ++ " }"
+
 -- | Information about a quantified symbol.
 newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
   deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)

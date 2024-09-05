@@ -8,7 +8,7 @@ import Control.DeepSeq (force)
 import Control.Exception (evaluate)
 import Data.Hashable (Hashable (hash))
 import Data.String (IsString (fromString))
-import Grisette (SymInteger (SymInteger))
+import Grisette (SymEq ((.==)), SymInteger (SymInteger), evalSymToCon, solve, z3)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -31,5 +31,22 @@ concurrentTests =
           putMVar bref p
         br <- takeMVar bref
         ar @?= br
-        hash ar @?= hash br
+        hash ar @?= hash br,
+      testCase "Eval" $ do
+        aref <- newEmptyMVar
+        bref <- newEmptyMVar
+        _ <- forkIO $ do
+          a <- evaluate $ force ("a" :: SymInteger)
+          putMVar aref a
+        _ <- forkIO $ do
+          b <- evaluate $ force ("b" :: SymInteger)
+          putMVar bref b
+        a@(SymInteger ta) <- takeMVar aref
+        b@(SymInteger tb) <- takeMVar bref
+        r <- solve z3 $ a .== b
+        print ta
+        print tb
+        case r of
+          Left err -> error $ show err
+          Right m -> evalSymToCon m a @?= (evalSymToCon m b :: Integer)
     ]
