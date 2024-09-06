@@ -98,6 +98,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
+    someTerm,
   )
 import Type.Reflection
   ( TypeRep,
@@ -119,7 +120,6 @@ extractSymSomeTerm ::
 extractSymSomeTerm = go initialMemo
   where
     gotyped ::
-      (SupportedPrim a) =>
       ( HS.HashSet (SomeTypedConstantSymbol) ->
         SomeTerm ->
         Maybe (HS.HashSet (SomeTypedSymbol knd))
@@ -127,7 +127,8 @@ extractSymSomeTerm = go initialMemo
       HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    gotyped memo boundedSymbols a = memo boundedSymbols (SomeTerm a)
+    gotyped memo boundedSymbols a =
+      introSupportedPrimConstraint a $ memo boundedSymbols (SomeTerm a)
     initialMemo ::
       HS.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
@@ -232,14 +233,12 @@ extractSymSomeTerm = go initialMemo
       goTernary memo bs d mode arg
     go memo bs (SomeTerm (ToFPTerm _ _ _ mode arg _ _)) = goBinary memo bs mode arg
     goUnary ::
-      (SupportedPrim a) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
       HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
     goUnary = gotyped
     goBinary ::
-      (SupportedPrim a, SupportedPrim b) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
       HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
@@ -248,7 +247,6 @@ extractSymSomeTerm = go initialMemo
     goBinary memo bs arg1 arg2 =
       combineSet (gotyped memo bs arg1) (gotyped memo bs arg2)
     goTernary ::
-      (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
       (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
       HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
@@ -284,8 +282,8 @@ castTerm t = introSupportedPrimConstraint t $ cast t
 someTermsSize :: [SomeTerm] -> Int
 someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
   where
-    exists t = gets (HS.member (SomeTerm t))
-    add t = modify' (HS.insert (SomeTerm t))
+    exists t = gets (HS.member (someTerm t))
+    add t = modify' (HS.insert (someTerm t))
     goSome :: SomeTerm -> State (HS.HashSet SomeTerm) ()
     goSome (SomeTerm b) = go b
     go :: forall b. Term b -> State (HS.HashSet SomeTerm) ()
@@ -354,7 +352,6 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
           go arg
     goBinary ::
       forall a b c.
-      (SupportedPrim a, SupportedPrim b) =>
       Term a ->
       Term b ->
       Term c ->
@@ -369,7 +366,6 @@ someTermsSize terms = HS.size $ execState (traverse goSome terms) HS.empty
           go arg2
     goTernary ::
       forall a b c d.
-      (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
       Term a ->
       Term b ->
       Term c ->

@@ -88,6 +88,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingBinaryOp (..),
     FloatingUnaryOp (..),
     Term (..),
+    pattern DynTerm,
     toCurThread,
     identity,
     typeHashId,
@@ -227,8 +228,6 @@ import Grisette.Internal.Core.Data.Class.BitCast (BitCast, BitCastOr)
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV,
   )
-import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate)
-import Grisette.Internal.Core.Data.Class.SymShift (SymShift)
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
@@ -249,7 +248,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Caches
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
-    eqTypeRepBool,
     myWeakThreadId,
     pattern Dyn,
   )
@@ -505,16 +503,12 @@ class
   wrapTerm :: Term con -> sym
 
 -- | Partial evaluation and lowering for function application terms.
-class
-  (SupportedPrim f, SupportedPrim a, SupportedPrim b) =>
-  PEvalApplyTerm f a b
-    | f -> a b
-  where
+class (SupportedPrim b) => PEvalApplyTerm f a b | f -> a b where
   pevalApplyTerm :: Term f -> Term a -> Term b
   sbvApplyTerm :: SBVType f -> SBVType a -> SBVType b
 
 -- | Partial evaluation and lowering for bitwise operation terms.
-class (SupportedNonFuncPrim t, Bits t) => PEvalBitwiseTerm t where
+class (SupportedPrim t) => PEvalBitwiseTerm t where
   pevalAndBitsTerm :: Term t -> Term t -> Term t
   pevalOrBitsTerm :: Term t -> Term t -> Term t
   pevalXorBitsTerm :: Term t -> Term t -> Term t
@@ -530,7 +524,7 @@ class (SupportedNonFuncPrim t, Bits t) => PEvalBitwiseTerm t where
   sbvComplementBitsTerm = withSbvBitwiseTermConstraint @t SBV.complement
 
 -- | Partial evaluation and lowering for symbolic shifting terms.
-class (SupportedNonFuncPrim t, SymShift t) => PEvalShiftTerm t where
+class (SupportedNonFuncPrim t) => PEvalShiftTerm t where
   pevalShiftLeftTerm :: Term t -> Term t -> Term t
   pevalShiftRightTerm :: Term t -> Term t -> Term t
   withSbvShiftTermConstraint ::
@@ -543,7 +537,7 @@ class (SupportedNonFuncPrim t, SymShift t) => PEvalShiftTerm t where
     withNonFuncPrim @t $ withSbvShiftTermConstraint @t $ SBV.sShiftRight l r
 
 -- | Partial evaluation and lowering for symbolic rotate terms.
-class (SupportedNonFuncPrim t, SymRotate t) => PEvalRotateTerm t where
+class (SupportedNonFuncPrim t) => PEvalRotateTerm t where
   pevalRotateLeftTerm :: Term t -> Term t -> Term t
   pevalRotateRightTerm :: Term t -> Term t -> Term t
   withSbvRotateTermConstraint ::
@@ -591,7 +585,7 @@ pevalSubNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
 
 -- | Partial evaluation and lowering for comparison terms.
-class (SupportedNonFuncPrim t, Ord t) => PEvalOrdTerm t where
+class (SupportedNonFuncPrim t) => PEvalOrdTerm t where
   pevalLtOrdTerm :: Term t -> Term t -> Term Bool
   pevalLeOrdTerm :: Term t -> Term t -> Term Bool
   withSbvOrdTermConstraint :: (((SBV.OrdSymbolic (SBVType t)) => r)) -> r
@@ -614,7 +608,7 @@ pevalGeOrdTerm = flip pevalLeOrdTerm
 {-# INLINE pevalGeOrdTerm #-}
 
 -- | Partial evaluation and lowering for integer division and modulo terms.
-class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
+class (SupportedNonFuncPrim t) => PEvalDivModIntegralTerm t where
   pevalDivIntegralTerm :: Term t -> Term t -> Term t
   pevalModIntegralTerm :: Term t -> Term t -> Term t
   pevalQuotIntegralTerm :: Term t -> Term t -> Term t
@@ -636,7 +630,7 @@ class (SupportedNonFuncPrim t, Integral t) => PEvalDivModIntegralTerm t where
 
 -- | Partial evaluation and lowering for bitcast terms.
 class
-  (SupportedNonFuncPrim a, SupportedNonFuncPrim b, BitCast a b) =>
+  (SupportedNonFuncPrim b, BitCast a b) =>
   PEvalBitCastTerm a b
   where
   pevalBitCastTerm :: Term a -> Term b
@@ -644,7 +638,7 @@ class
 
 -- | Partial evaluation and lowering for bitcast or default value terms.
 class
-  (SupportedNonFuncPrim a, SupportedNonFuncPrim b, BitCastOr a b) =>
+  (SupportedNonFuncPrim b, BitCastOr a b) =>
   PEvalBitCastOrTerm a b
   where
   pevalBitCastOrTerm :: Term b -> Term a -> Term b
@@ -793,11 +787,7 @@ class (SupportedNonFuncPrim t) => PEvalFloatingTerm t where
 
 -- | Partial evaluation and lowering for integral terms.
 class
-  ( SupportedNonFuncPrim a,
-    SupportedNonFuncPrim b,
-    Integral a,
-    Num b
-  ) =>
+  (SupportedNonFuncPrim b, Integral a, Num b) =>
   PEvalFromIntegralTerm a b
   where
   pevalFromIntegralTerm :: Term a -> Term b
@@ -805,7 +795,7 @@ class
 
 -- | Partial evaluation and lowering for converting from and to IEEE floating
 -- point terms.
-class (SupportedNonFuncPrim a) => PEvalIEEEFPConvertibleTerm a where
+class PEvalIEEEFPConvertibleTerm a where
   pevalFromFPOrTerm ::
     (ValidFP eb sb) =>
     Term a ->
@@ -1277,11 +1267,7 @@ data Term t where
     !(Term (bv l)) ->
     Term (bv r)
   ApplyTerm ::
-    ( SupportedPrim a,
-      SupportedPrim b,
-      SupportedPrim f,
-      PEvalApplyTerm f a b
-    ) =>
+    (PEvalApplyTerm f a b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1377,7 +1363,7 @@ data Term t where
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FPRoundingUnaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1386,7 +1372,7 @@ data Term t where
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FPRoundingBinaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1396,7 +1382,7 @@ data Term t where
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FPFMATerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1415,8 +1401,7 @@ data Term t where
   FromFPOrTerm ::
     ( PEvalIEEEFPConvertibleTerm a,
       ValidFP eb sb,
-      SupportedPrim (FP eb sb),
-      SupportedPrim FPRoundingMode
+      SupportedPrim a
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
@@ -1428,8 +1413,7 @@ data Term t where
   ToFPTerm ::
     ( PEvalIEEEFPConvertibleTerm a,
       ValidFP eb sb,
-      SupportedPrim (FP eb sb),
-      SupportedPrim FPRoundingMode
+      SupportedPrim (FP eb sb)
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
@@ -1439,6 +1423,9 @@ data Term t where
     Proxy eb ->
     Proxy sb ->
     Term (FP eb sb)
+
+pattern DynTerm :: forall a b. (SupportedPrim a) => Term a -> Term b
+pattern DynTerm x <- ((\v -> introSupportedPrimConstraint v $ cast v) -> Just x)
 
 -- | Return the ID of a term.
 identity :: Term t -> SomeStableName
@@ -1465,12 +1452,8 @@ eqHashId :: HashId -> HashId -> Bool
 eqHashId = (==)
 {-# INLINE eqHashId #-}
 
--- eqTypeHashId :: TypeHashId a -> TypeHashId b -> Bool
--- eqTypeHashId (TypeHashId lrep l) (TypeHashId rrep r) =
---   eqTypeRepBool lrep rrep && l == r
--- {-# INLINE eqTypeHashId #-}
-
-data TypeHashId = TypeHashId !Fingerprint {-# UNPACK #-} !HashId deriving (Show)
+data TypeHashId = TypeHashId {-# UNPACK #-} !Fingerprint {-# UNPACK #-} !HashId
+  deriving (Show)
 
 instance Eq TypeHashId where
   TypeHashId l li == TypeHashId r ri = l == r && li == ri
@@ -1594,7 +1577,7 @@ introSupportedPrimConstraint ToFPTerm {} x = x
 {-# INLINE introSupportedPrimConstraint #-}
 
 -- | Pretty-print a term.
-pformatTerm :: forall t. (SupportedPrim t) => Term t -> String
+pformatTerm :: forall t. Term t -> String
 pformatTerm (ConTerm _ _ _ t) = pformatCon t
 pformatTerm (SymTerm _ _ _ sym) = pformatSym sym
 pformatTerm (ForallTerm _ _ _ sym arg) = "(forall " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
@@ -2165,13 +2148,22 @@ instance (SupportedPrim t) => Hashable (Term t) where
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
   USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnyKind t) -> UTerm t
-  UForallTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> UTerm Bool
-  UExistsTerm :: (SupportedNonFuncPrim t) => !(TypedSymbol 'ConstantKind t) -> !(Term Bool) -> UTerm Bool
+  UForallTerm ::
+    (SupportedNonFuncPrim t) =>
+    !(TypedSymbol 'ConstantKind t) ->
+    !(Term Bool) ->
+    UTerm Bool
+  UExistsTerm ::
+    (SupportedNonFuncPrim t) =>
+    !(TypedSymbol 'ConstantKind t) ->
+    !(Term Bool) ->
+    UTerm Bool
   UNotTerm :: !(Term Bool) -> UTerm Bool
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UEqTerm :: (SupportedNonFuncPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
-  UDistinctTerm :: (SupportedNonFuncPrim t) => !(NonEmpty (Term t)) -> UTerm Bool
+  UDistinctTerm ::
+    (SupportedNonFuncPrim t) => !(NonEmpty (Term t)) -> UTerm Bool
   UITETerm ::
     (SupportedPrim t) =>
     !(Term Bool) ->
@@ -2234,11 +2226,7 @@ data UTerm t where
     !(Term (bv l)) ->
     UTerm (bv r)
   UApplyTerm ::
-    ( SupportedPrim a,
-      SupportedPrim b,
-      SupportedPrim f,
-      PEvalApplyTerm f a b
-    ) =>
+    (PEvalApplyTerm f a b) =>
     Term f ->
     Term a ->
     UTerm b
@@ -2257,7 +2245,8 @@ data UTerm t where
     UTerm Bool
   UFdivTerm :: (PEvalFractionalTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URecipTerm :: (PEvalFractionalTerm t) => !(Term t) -> UTerm t
-  UFloatingUnaryTerm :: (PEvalFloatingTerm t) => !FloatingUnaryOp -> !(Term t) -> UTerm t
+  UFloatingUnaryTerm ::
+    (PEvalFloatingTerm t) => !FloatingUnaryOp -> !(Term t) -> UTerm t
   UPowerTerm :: (PEvalFloatingTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UFPUnaryTerm ::
     (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
@@ -2271,20 +2260,20 @@ data UTerm t where
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
   UFPRoundingUnaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     !FPRoundingUnaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
   UFPRoundingBinaryTerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     !FPRoundingBinaryOp ->
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
   UFPFMATerm ::
-    (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+    (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
     !(Term FPRoundingMode) ->
     !(Term (FP eb sb)) ->
     !(Term (FP eb sb)) ->
@@ -2296,9 +2285,7 @@ data UTerm t where
     UTerm b
   UFromFPOrTerm ::
     ( PEvalIEEEFPConvertibleTerm a,
-      ValidFP eb sb,
-      SupportedPrim FPRoundingMode,
-      SupportedPrim (FP eb sb)
+      ValidFP eb sb
     ) =>
     Term a ->
     !(Term FPRoundingMode) ->
@@ -2307,7 +2294,6 @@ data UTerm t where
   UToFPTerm ::
     ( PEvalIEEEFPConvertibleTerm a,
       ValidFP eb sb,
-      SupportedPrim FPRoundingMode,
       SupportedPrim (FP eb sb)
     ) =>
     !(Term FPRoundingMode) ->
@@ -2404,12 +2390,12 @@ preHashSignumNumDescription :: HashId -> Digest
 preHashSignumNumDescription = fromIntegral . hashWithSalt 17
 {-# INLINE preHashSignumNumDescription #-}
 
-preHashLtOrdDescription :: TypeRep t -> HashId -> HashId -> Digest
+preHashLtOrdDescription :: Fingerprint -> HashId -> HashId -> Digest
 preHashLtOrdDescription tp h1 h2 =
   fromIntegral (18 `hashWithSalt` tp `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashLtOrdDescription #-}
 
-preHashLeOrdDescription :: TypeRep t -> HashId -> HashId -> Digest
+preHashLeOrdDescription :: Fingerprint -> HashId -> HashId -> Digest
 preHashLeOrdDescription tp h1 h2 =
   fromIntegral (19 `hashWithSalt` tp `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashLeOrdDescription #-}
@@ -2652,13 +2638,13 @@ instance (SupportedPrim t) => Interned (Term t) where
       {-# UNPACK #-} !Digest -> {-# UNPACK #-} !HashId -> Description (Term t)
     DLtOrdTerm ::
       {-# UNPACK #-} !Digest ->
-      TypeRep args ->
+      {-# UNPACK #-} !Fingerprint ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term Bool)
     DLeOrdTerm ::
       {-# UNPACK #-} !Digest ->
-      TypeRep args ->
+      {-# UNPACK #-} !Fingerprint ->
       {-# UNPACK #-} !HashId ->
       {-# UNPACK #-} !HashId ->
       Description (Term Bool)
@@ -2897,7 +2883,7 @@ instance (SupportedPrim t) => Interned (Term t) where
     let argHashId = hashId arg
      in DSignumNumTerm (preHashSignumNumDescription argHashId) argHashId
   describe (ULtOrdTerm (arg1 :: arg) arg2) =
-    let tr = typeRep @arg
+    let tr = typeFingerprint $ typeRep @arg
         arg1HashId = hashId arg1
         arg2HashId = hashId arg2
      in DLtOrdTerm
@@ -2906,7 +2892,7 @@ instance (SupportedPrim t) => Interned (Term t) where
           arg1HashId
           arg2HashId
   describe (ULeOrdTerm (arg1 :: arg) arg2) =
-    let tr = typeRep @arg
+    let tr = typeFingerprint $ typeRep @arg
         arg1HashId = hashId arg1
         arg2HashId = hashId arg2
      in DLeOrdTerm
@@ -3177,7 +3163,8 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFPUnaryTerm op arg) = FPUnaryTerm tid ha i op arg
       go (UFPBinaryTerm op arg1 arg2) = FPBinaryTerm tid ha i op arg1 arg2
       go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm tid ha i op mode arg
-      go (UFPRoundingBinaryTerm op mode arg1 arg2) = FPRoundingBinaryTerm tid ha i op mode arg1 arg2
+      go (UFPRoundingBinaryTerm op mode arg1 arg2) =
+        FPRoundingBinaryTerm tid ha i op mode arg1 arg2
       go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm tid ha i mode arg1 arg2 arg3
       go (UFromIntegralTerm arg) = FromIntegralTerm tid ha i arg
       go (UFromFPOrTerm d mode arg) = FromFPOrTerm tid ha i d mode arg
@@ -3314,8 +3301,8 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DMulNumTerm _ li1 li2 == DMulNumTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DAbsNumTerm _ li == DAbsNumTerm _ ri = eqHashId li ri
   DSignumNumTerm _ li == DSignumNumTerm _ ri = eqHashId li ri
-  DLtOrdTerm _ lrep li1 li2 == DLtOrdTerm _ rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
-  DLeOrdTerm _ lrep li1 li2 == DLeOrdTerm _ rrep ri1 ri2 = eqTypeRepBool lrep rrep && eqHashId li1 ri1 && eqHashId li2 ri2
+  DLtOrdTerm _ lrep li1 li2 == DLtOrdTerm _ rrep ri1 ri2 = lrep == rrep && eqHashId li1 ri1 && eqHashId li2 ri2
+  DLeOrdTerm _ lrep li1 li2 == DLeOrdTerm _ rrep ri1 ri2 = lrep == rrep && eqHashId li1 ri1 && eqHashId li2 ri2
   DAndBitsTerm _ li1 li2 == DAndBitsTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DOrBitsTerm _ li1 li2 == DOrBitsTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
   DXorBitsTerm _ li1 li2 == DXorBitsTerm _ ri1 ri2 = eqHashId li1 ri1 && eqHashId li2 ri2
@@ -3478,21 +3465,27 @@ fullReconstructTerm (FPUnaryTerm _ _ _ op arg) =
 fullReconstructTerm (FPBinaryTerm _ _ _ op arg1 arg2) =
   fullReconstructTerm2 (curThreadFpBinaryTerm op) arg1 arg2
 fullReconstructTerm (FPRoundingUnaryTerm _ _ _ op mode arg) =
-  fullReconstructTerm2 (curThreadFpRoundingUnaryTerm op) mode arg
+  introSupportedPrimConstraint mode $
+    fullReconstructTerm2 (curThreadFpRoundingUnaryTerm op) mode arg
 fullReconstructTerm (FPRoundingBinaryTerm _ _ _ op mode arg1 arg2) =
-  fullReconstructTerm3 (curThreadFpRoundingBinaryTerm op) mode arg1 arg2
-fullReconstructTerm (FPFMATerm _ _ _ mode arg1 arg2 arg3) = do
-  rmode <- fullReconstructTerm mode
-  rarg1 <- fullReconstructTerm arg1
-  rarg2 <- fullReconstructTerm arg2
-  rarg3 <- fullReconstructTerm arg3
-  curThreadFpFMATerm rmode rarg1 rarg2 rarg3
+  introSupportedPrimConstraint mode $
+    fullReconstructTerm3 (curThreadFpRoundingBinaryTerm op) mode arg1 arg2
+fullReconstructTerm (FPFMATerm _ _ _ mode arg1 arg2 arg3) =
+  introSupportedPrimConstraint mode $ do
+    rmode <- fullReconstructTerm mode
+    rarg1 <- fullReconstructTerm arg1
+    rarg2 <- fullReconstructTerm arg2
+    rarg3 <- fullReconstructTerm arg3
+    curThreadFpFMATerm rmode rarg1 rarg2 rarg3
 fullReconstructTerm (FromIntegralTerm _ _ _ arg) =
   fullReconstructTerm1 curThreadFromIntegralTerm arg
 fullReconstructTerm (FromFPOrTerm _ _ _ d r arg) =
-  fullReconstructTerm3 curThreadFromFPOrTerm d r arg
+  introSupportedPrimConstraint r $
+    introSupportedPrimConstraint arg $
+      fullReconstructTerm3 curThreadFromFPOrTerm d r arg
 fullReconstructTerm (ToFPTerm _ _ _ r arg _ _) =
-  fullReconstructTerm2 curThreadToFPTerm r arg
+  introSupportedPrimConstraint r $
+    fullReconstructTerm2 curThreadToFPTerm r arg
 
 toCurThreadImpl :: forall t. WeakThreadId -> Term t -> IO (Term t)
 toCurThreadImpl tid t | termThreadId t == tid = return t
@@ -3739,11 +3732,7 @@ curThreadBvzeroExtendTerm _ v = intern $ UBVExtendTerm False (Proxy @r) v
 {-# INLINE curThreadBvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
-curThreadApplyTerm ::
-  (SupportedPrim a, SupportedPrim b, SupportedPrim f, PEvalApplyTerm f a b) =>
-  Term f ->
-  Term a ->
-  IO (Term b)
+curThreadApplyTerm :: (PEvalApplyTerm f a b) => Term f -> Term a -> IO (Term b)
 curThreadApplyTerm f a = intern $ UApplyTerm f a
 {-# INLINE curThreadApplyTerm #-}
 
@@ -3822,7 +3811,7 @@ curThreadFpBinaryTerm op l r = intern $ UFPBinaryTerm op l r
 
 -- | Construct and internalizing a 'FPRoundingUnaryTerm'.
 curThreadFpRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -3832,7 +3821,7 @@ curThreadFpRoundingUnaryTerm op mode v = intern $ UFPRoundingUnaryTerm op mode v
 
 -- | Construct and internalizing a 'FPRoundingBinaryTerm'.
 curThreadFpRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -3844,7 +3833,7 @@ curThreadFpRoundingBinaryTerm op mode l r =
 
 -- | Construct and internalizing a 'FPFMATerm'.
 curThreadFpFMATerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb) ->
@@ -3863,8 +3852,7 @@ curThreadFromIntegralTerm = intern . UFromIntegralTerm
 curThreadFromFPOrTerm ::
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
-    SupportedPrim FPRoundingMode,
-    SupportedPrim (FP eb sb)
+    SupportedPrim a
   ) =>
   Term a ->
   Term FPRoundingMode ->
@@ -3878,7 +3866,6 @@ curThreadToFPTerm ::
   forall a eb sb.
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
-    SupportedPrim FPRoundingMode,
     SupportedPrim (FP eb sb)
   ) =>
   Term FPRoundingMode ->
@@ -3889,7 +3876,6 @@ curThreadToFPTerm r f = intern $ UToFPTerm r f (Proxy @eb) (Proxy @sb)
 
 inCurThread1 ::
   forall a b.
-  (SupportedPrim a) =>
   (Term a -> IO (Term b)) ->
   Term a ->
   IO (Term b)
@@ -3900,7 +3886,6 @@ inCurThread1 f t = do
 
 inCurThread2 ::
   forall a b c.
-  (SupportedPrim a, SupportedPrim b) =>
   (Term a -> Term b -> IO (Term c)) ->
   Term a ->
   Term b ->
@@ -3914,7 +3899,6 @@ inCurThread2 f a b = do
 
 inCurThread3 ::
   forall a b c d.
-  (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
   (Term a -> Term b -> Term c -> IO (Term d)) ->
   Term a ->
   Term b ->
@@ -3930,7 +3914,6 @@ inCurThread3 f a b c = do
 
 unsafeInCurThread1 ::
   forall a b.
-  (SupportedPrim a) =>
   (Term a -> IO (Term b)) ->
   Term a ->
   Term b
@@ -3939,7 +3922,6 @@ unsafeInCurThread1 f = unsafePerformIO . inCurThread1 f
 
 unsafeInCurThread2 ::
   forall a b c.
-  (SupportedPrim a, SupportedPrim b) =>
   (Term a -> Term b -> IO (Term c)) ->
   Term a ->
   Term b ->
@@ -3949,7 +3931,6 @@ unsafeInCurThread2 f a b = unsafePerformIO $ inCurThread2 f a b
 
 unsafeInCurThread3 ::
   forall a b c d.
-  (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
   (Term a -> Term b -> Term c -> IO (Term d)) ->
   Term a ->
   Term b ->
@@ -4189,11 +4170,7 @@ bvzeroExtendTerm r = unsafeInCurThread1 (curThreadBvzeroExtendTerm r)
 {-# NOINLINE bvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
-applyTerm ::
-  (SupportedPrim a, SupportedPrim b, SupportedPrim f, PEvalApplyTerm f a b) =>
-  Term f ->
-  Term a ->
-  Term b
+applyTerm :: (PEvalApplyTerm f a b) => Term f -> Term a -> Term b
 applyTerm = unsafeInCurThread2 curThreadApplyTerm
 {-# NOINLINE applyTerm #-}
 
@@ -4267,7 +4244,7 @@ fpBinaryTerm op = unsafeInCurThread2 (curThreadFpBinaryTerm op)
 
 -- | Construct and internalizing a 'FPRoundingUnaryTerm'.
 fpRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -4277,7 +4254,7 @@ fpRoundingUnaryTerm op = unsafeInCurThread2 (curThreadFpRoundingUnaryTerm op)
 
 -- | Construct and internalizing a 'FPRoundingBinaryTerm'.
 fpRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -4288,7 +4265,7 @@ fpRoundingBinaryTerm op = unsafeInCurThread3 (curThreadFpRoundingBinaryTerm op)
 
 -- | Construct and internalizing a 'FPFMATerm'.
 fpFMATerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb) ->
@@ -4312,8 +4289,7 @@ fromIntegralTerm = unsafeInCurThread1 curThreadFromIntegralTerm
 fromFPOrTerm ::
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
-    SupportedPrim FPRoundingMode,
-    SupportedPrim (FP eb sb)
+    SupportedPrim a
   ) =>
   Term a ->
   Term FPRoundingMode ->
@@ -4327,7 +4303,6 @@ toFPTerm ::
   forall a eb sb.
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
-    SupportedPrim FPRoundingMode,
     SupportedPrim (FP eb sb)
   ) =>
   Term FPRoundingMode ->

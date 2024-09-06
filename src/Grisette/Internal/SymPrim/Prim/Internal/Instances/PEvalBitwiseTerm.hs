@@ -74,7 +74,7 @@ pevalDefaultOrBitsTerm = binaryUnfoldOnce doPevalOrBitsTerm orBitsTerm
     doPevalOrBitsTerm _ _ = Nothing
 
 pevalDefaultXorBitsTerm ::
-  (PEvalBitwiseTerm a, SupportedPrim a) => Term a -> Term a -> Term a
+  (PEvalBitwiseTerm a, SupportedPrim a, Bits a) => Term a -> Term a -> Term a
 pevalDefaultXorBitsTerm = binaryUnfoldOnce doPevalXorBitsTerm xorBitsTerm
   where
     doPevalXorBitsTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) =

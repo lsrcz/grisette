@@ -65,12 +65,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     bvextendTerm,
     bvselectTerm,
     conTerm,
+    pattern DynTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
   ( binaryUnfoldOnce,
     unaryUnfoldOnce,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Utils (pattern Dyn)
 import Grisette.Internal.SymPrim.Prim.TermUtils (castTerm)
 import Grisette.Internal.Utils.Parameterized
   ( LeqProof (LeqProof),
@@ -147,7 +147,7 @@ doPevalDefaultBVSelectTerm _ _ rhs
       Just rhs >>= castTerm
 doPevalDefaultBVSelectTerm ix w (ConTerm _ _ _ b) =
   Just $ conTerm $ sizedBVSelect ix w b
-doPevalDefaultBVSelectTerm ix w (BitCastTerm _ _ _ (Dyn (b :: Term (bv2 n)))) =
+doPevalDefaultBVSelectTerm ix w (BitCastTerm _ _ _ (DynTerm (b :: Term (bv2 n)))) =
   Just $ pevalBitCastTerm $ pevalBVSelectTerm ix w b
 doPevalDefaultBVSelectTerm
   pix

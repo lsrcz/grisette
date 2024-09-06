@@ -130,6 +130,7 @@ boundedSBVFromFPTerm d mode l =
 generalPevalFromFPOrTerm ::
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
+    SupportedPrim a,
     IEEEFPConvertible a (FP eb sb) FPRoundingMode
   ) =>
   Term a ->
@@ -142,14 +143,14 @@ generalPevalFromFPOrTerm d _ (ConTerm _ _ _ f) | fpIsNaN f || fpIsInfinite f = d
 generalPevalFromFPOrTerm d rd f = fromFPOrTerm d rd f
 
 algRealPevalFromFPOrTerm ::
-  ( PEvalIEEEFPConvertibleTerm a,
+  ( PEvalIEEEFPConvertibleTerm AlgReal,
     ValidFP eb sb,
-    IEEEFPConvertible a (FP eb sb) FPRoundingMode
+    IEEEFPConvertible AlgReal (FP eb sb) FPRoundingMode
   ) =>
-  Term a ->
+  Term AlgReal ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
-  Term a
+  Term AlgReal
 algRealPevalFromFPOrTerm (ConTerm _ _ _ d) _ (ConTerm _ _ _ f) =
   conTerm $ fromFPOr d RNE f
 algRealPevalFromFPOrTerm d _ (ConTerm _ _ _ f) | fpIsNaN f || fpIsInfinite f = d

@@ -39,13 +39,16 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     bitCastOrTerm,
     bitCastTerm,
     conTerm,
+    pattern DynTerm,
   )
-import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce, unaryUnfoldOnce)
-import Grisette.Internal.SymPrim.Prim.Internal.Utils (pattern Dyn)
+import Grisette.Internal.SymPrim.Prim.Internal.Unfold
+  ( binaryUnfoldOnce,
+    unaryUnfoldOnce,
+  )
 
 doPevalBitCastSameType ::
   forall x b. (SupportedNonFuncPrim b) => Term x -> Maybe (Term b)
-doPevalBitCastSameType (BitCastTerm _ _ _ (Dyn (b :: Term b))) = Just b
+doPevalBitCastSameType (BitCastTerm _ _ _ (DynTerm (b :: Term b))) = Just b
 doPevalBitCastSameType (BitCastTerm _ _ _ x) = doPevalBitCastSameType x
 doPevalBitCastSameType _ = Nothing
 

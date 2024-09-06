@@ -114,7 +114,7 @@ binaryPartialUnfoldOnce partial fallback = ret
 -- | Unfold a binary operation once.
 binaryUnfoldOnce ::
   forall a b c.
-  (Typeable a, Typeable b, SupportedPrim c) =>
+  (SupportedPrim c) =>
   PartialRuleBinary a b c ->
   TotalRuleBinary a b c ->
   TotalRuleBinary a b c
