@@ -225,11 +225,8 @@ extractSymSomeTermIncludeBoundedVars ::
   SomeTerm -> HS.HashSet SomeTypedAnySymbol
 extractSymSomeTermIncludeBoundedVars = stableMemo go
   where
-    goTyped ::
-      (SupportedPrim a) =>
-      Term a ->
-      HS.HashSet SomeTypedAnySymbol
-    goTyped = go . SomeTerm
+    goTyped :: Term a -> HS.HashSet SomeTypedAnySymbol
+    goTyped = go . someTerm
 
     go :: SomeTerm -> HS.HashSet SomeTypedAnySymbol
     go (SomeTerm (SymTerm _ _ _ (sym :: TypedAnySymbol a))) =
@@ -303,16 +300,14 @@ extractSymSomeTermIncludeBoundedVars = stableMemo go
     go (SomeTerm (FromIntegralTerm _ _ _ arg)) = goUnary arg
     go (SomeTerm (FromFPOrTerm _ _ _ d mode arg)) = goTernary d mode arg
     go (SomeTerm (ToFPTerm _ _ _ mode arg _ _)) = goBinary mode arg
-    goUnary :: (SupportedPrim a) => Term a -> HS.HashSet SomeTypedAnySymbol
+    goUnary :: Term a -> HS.HashSet SomeTypedAnySymbol
     goUnary = goTyped
     goBinary ::
-      (SupportedPrim a, SupportedPrim b) =>
       Term a ->
       Term b ->
       HS.HashSet SomeTypedAnySymbol
     goBinary a b = goTyped a <> goTyped b
     goTernary ::
-      (SupportedPrim a, SupportedPrim b, SupportedPrim c) =>
       Term a ->
       Term b ->
       Term c ->

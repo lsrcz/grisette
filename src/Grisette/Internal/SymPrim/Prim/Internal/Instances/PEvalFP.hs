@@ -223,7 +223,7 @@ sbvFPBinaryTerm FPMaximumNumber x y =
 
 -- | Partially evaluate a floating-point rounding unary term.
 pevalFPRoundingUnaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPRoundingUnaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -248,7 +248,7 @@ sbvFPRoundingUnaryTerm FPRoundToIntegral = SBV.fpRoundToIntegral
 
 -- | Partially evaluate a floating-point rounding binary term.
 pevalFPRoundingBinaryTerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   FPRoundingBinaryOp ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
@@ -279,7 +279,7 @@ sbvFPRoundingBinaryTerm FPDiv = SBV.fpDiv
 
 -- | Partially evaluate a floating-point fused multiply-add term.
 pevalFPFMATerm ::
-  (ValidFP eb sb, SupportedPrim (FP eb sb), SupportedPrim FPRoundingMode) =>
+  (ValidFP eb sb, SupportedPrim (FP eb sb)) =>
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   Term (FP eb sb) ->

@@ -41,11 +41,9 @@ concurrentTests =
         _ <- forkIO $ do
           b <- evaluate $ force ("b" :: SymInteger)
           putMVar bref b
-        a@(SymInteger ta) <- takeMVar aref
-        b@(SymInteger tb) <- takeMVar bref
+        a <- takeMVar aref
+        b <- takeMVar bref
         r <- solve z3 $ a .== b
-        print ta
-        print tb
         case r of
           Left err -> error $ show err
           Right m -> evalSymToCon m a @?= (evalSymToCon m b :: Integer)

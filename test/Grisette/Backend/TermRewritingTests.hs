@@ -117,6 +117,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalBitCastOrTerm,
     PEvalBitCastTerm,
     PEvalIEEEFPConvertibleTerm,
+    SupportedNonFuncPrim,
     Term,
     conTerm,
     fpTraitTerm,
@@ -631,7 +632,9 @@ termRewritingTests =
         ],
       testGroup "bitCast" $ do
         let bitCastCase ::
-              forall a b. (Arbitrary a, PEvalBitCastTerm a b) => Test
+              forall a b.
+              (Arbitrary a, PEvalBitCastTerm a b, SupportedNonFuncPrim a) =>
+              Test
             bitCastCase = testProperty
               (show (typeRep @a) <> " -> " <> show (typeRep @b))
               $ \x ->
@@ -643,7 +646,12 @@ termRewritingTests =
                     )
         let fromFPCase ::
               forall a b.
-              (Arbitrary a, Arbitrary b, PEvalBitCastOrTerm a b, RealFloat a) =>
+              ( Arbitrary a,
+                Arbitrary b,
+                PEvalBitCastOrTerm a b,
+                RealFloat a,
+                SupportedNonFuncPrim a
+              ) =>
               Test
             fromFPCase = testProperty
               (show (typeRep @a) <> " -> " <> show (typeRep @b))
@@ -659,7 +667,8 @@ termRewritingTests =
               forall a b.
               ( Arbitrary a,
                 PEvalBitCastTerm a b,
-                RealFloat b
+                RealFloat b,
+                SupportedNonFuncPrim a
               ) =>
               Test
             toFPCase = testProperty
@@ -758,6 +767,7 @@ termRewritingTests =
                 PEvalIEEEFPConvertibleTerm b,
                 LinkedRep b bs,
                 Solvable b bs,
+                SupportedNonFuncPrim b,
                 SymEq bs
               ) =>
               FPRoundingMode ->
@@ -802,6 +812,7 @@ termRewritingTests =
               ( ValidFP eb sb,
                 Arbitrary b,
                 PEvalIEEEFPConvertibleTerm b,
+                SupportedNonFuncPrim b,
                 LinkedRep b bs,
                 Solvable b bs,
                 SymEq bs
@@ -864,6 +875,7 @@ termRewritingTests =
                 1 <= n,
                 ValidFP eb sb,
                 PEvalIEEEFPConvertibleTerm (bv n),
+                SupportedNonFuncPrim (bv n),
                 Num (bv n),
                 Typeable bv
               ) =>

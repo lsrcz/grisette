@@ -56,7 +56,7 @@ sameDivPeval i j pf cf consf = do
 
 divisionPevalBoundedTests ::
   forall p t.
-  (Bounded t, PEvalDivModIntegralTerm t) =>
+  (Bounded t, PEvalDivModIntegralTerm t, Num t) =>
   p t ->
   TestName ->
   (Term t -> Term t -> Term t) ->
@@ -72,7 +72,7 @@ divisionPevalBoundedTests _ name pf cf consf =
 
 divisionPevalTests ::
   forall p t0 t.
-  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
+  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t, Num t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
@@ -128,7 +128,7 @@ divisionPevalUnboundedTestGroup name pf cf consf =
 
 moduloPevalTests ::
   forall p t0 t.
-  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t) =>
+  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t, Num t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
