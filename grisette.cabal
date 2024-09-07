@@ -234,6 +234,7 @@ library
     , atomic-primops >=0.8.3 && <0.9
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
+    , concurrent-extra >=0.7.0.12 && <0.8
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
@@ -277,6 +278,7 @@ test-suite doctest
     , atomic-primops >=0.8.3 && <0.9
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
+    , concurrent-extra >=0.7.0.12 && <0.8
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , doctest >=0.18.2 && <0.23
@@ -390,6 +392,7 @@ test-suite spec
     , atomic-primops >=0.8.3 && <0.9
     , base >=4.14 && <5
     , bytestring >=0.10.12 && <0.13
+    , concurrent-extra >=0.7.0.12 && <0.8
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
