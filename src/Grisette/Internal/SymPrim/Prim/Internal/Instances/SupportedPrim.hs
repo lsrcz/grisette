@@ -60,7 +60,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         defaultValue,
         funcDummyConstraint,
         hashConWithSalt,
-        isFuncType,
         parseSMTModelResult,
         pevalDistinctTerm,
         pevalEqTerm,
@@ -123,7 +122,6 @@ instance SupportedPrim Integer where
   conSBVTerm n = fromInteger n
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  withPrim r = r
   parseSMTModelResult _ = parseScalarSMTModelResult id
   castTypedSymbol ::
     forall knd knd'.
@@ -134,7 +132,6 @@ instance SupportedPrim Integer where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep Integer where
@@ -162,6 +159,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
   symSBVName symbol _ = show symbol
   symSBVTerm name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  {-# INLINE withPrim #-}
   parseSMTModelResult _ cv =
     withPrim @(IntN w) $
       parseScalarSMTModelResult (\(x :: SBV.IntN w) -> fromIntegral x) cv
@@ -174,7 +172,6 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
 -- | Construct the 'SBV.BVIsNonZero' constraint from the proof that the width is
@@ -214,6 +211,7 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
   symSBVName symbol _ = show symbol
   symSBVTerm name = bvIsNonZeroFromGEq1 (Proxy @w) $ sbvFresh name
   withPrim r = bvIsNonZeroFromGEq1 (Proxy @w) r
+  {-# INLINE withPrim #-}
   parseSMTModelResult _ cv =
     withPrim @(IntN w) $
       parseScalarSMTModelResult (\(x :: SBV.WordN w) -> fromIntegral x) cv
@@ -226,7 +224,6 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
@@ -262,11 +259,9 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   conSBVTerm (FP fp) = SBV.literal fp
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  withPrim r = r
   parseSMTModelResult _ cv =
     withPrim @(FP eb sb) $
       parseScalarSMTModelResult (\(x :: SBV.FloatingPoint eb sb) -> coerce x) cv
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
   -- Workaround for sbv#702.
@@ -319,7 +314,6 @@ instance SupportedPrim FPRoundingMode where
   conSBVTerm RTZ = SBV.sRTZ
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  withPrim r = r
   parseSMTModelResult _ cv =
     withPrim @(FPRoundingMode) $
       parseScalarSMTModelResult
@@ -340,7 +334,6 @@ instance SupportedPrim FPRoundingMode where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep FPRoundingMode where
@@ -368,7 +361,6 @@ instance SupportedPrim AlgReal where
   conSBVTerm = SBV.literal . toSBVAlgReal
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
-  withPrim r = r
   parseSMTModelResult _ cv =
     withPrim @AlgReal $
       parseScalarSMTModelResult fromSBVAlgReal cv
@@ -381,7 +373,6 @@ instance SupportedPrim AlgReal where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep AlgReal where
