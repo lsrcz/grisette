@@ -82,11 +82,7 @@ data CacheState t where
     CacheState t
 
 -- | A class for interning terms.
-class -- ( Hashable (Description t),
-  --   Eq (Description t),
-  --   Show t
-  -- ) =>
-  Interned t where
+class Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
@@ -149,7 +145,7 @@ typeMemoizedCache tid = do
 
 reclaimTerm ::
   forall t.
-  (Interned t, Hashable (Description t), Typeable t) =>
+  (Interned t, Hashable (Description t), Typeable t, Eq (Description t)) =>
   WeakThreadId ->
   Int ->
   Description t ->
@@ -179,7 +175,7 @@ reclaimTerm id grp dt = do
 -- | Internalize a term.
 intern ::
   forall t.
-  (Interned t, Typeable t, Hashable (Description t)) =>
+  (Interned t, Typeable t, Hashable (Description t), Eq (Description t)) =>
   Uninterned t ->
   IO t
 intern !bt = do
