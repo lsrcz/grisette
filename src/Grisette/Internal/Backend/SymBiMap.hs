@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Strict #-}
 
 -- |
 -- Module      :   Grisette.Internal.Backend.SymBiMap

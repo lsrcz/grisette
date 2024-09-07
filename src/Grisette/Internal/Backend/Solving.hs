@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -68,7 +69,7 @@ import Control.Concurrent.STM
 import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
 import Control.Exception (handle, throwTo)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.RWS (RWST (runRWST))
+import Control.Monad.RWS.Strict (RWST (runRWST))
 import Control.Monad.Reader
   ( MonadReader (ask),
     MonadTrans (lift),
@@ -77,7 +78,12 @@ import Control.Monad.Reader
     local,
   )
 import Control.Monad.STM (STM)
-import Control.Monad.State (MonadState (get, put), StateT, evalStateT, modify)
+import Control.Monad.State.Strict
+  ( MonadState (get, put),
+    StateT,
+    evalStateT,
+    modify,
+  )
 import Control.Monad.Writer (tell)
 import Data.Dynamic (fromDyn, toDyn)
 import qualified Data.HashSet as HS

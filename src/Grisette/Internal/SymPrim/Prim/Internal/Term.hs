@@ -207,10 +207,13 @@ import Data.Text.Prettyprint.Doc
 import Control.DeepSeq (NFData (rnf))
 import Control.Monad (msum)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.RWS (RWST)
+import qualified Control.Monad.RWS.Lazy as Lazy
+import qualified Control.Monad.RWS.Strict as Strict
 import Control.Monad.Reader (MonadTrans (lift), ReaderT)
-import Control.Monad.State (StateT)
-import Control.Monad.Trans.Writer (WriterT)
+import qualified Control.Monad.State.Lazy as Lazy
+import qualified Control.Monad.State.Strict as Strict
+import qualified Control.Monad.Writer.Lazy as Lazy
+import qualified Control.Monad.Writer.Strict as Strict
 import Data.Bits (Bits)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Kind (Constraint, Type)
@@ -286,15 +289,27 @@ instance (SBVFreshMonad m) => SBVFreshMonad (ReaderT r m) where
   sbvFresh = lift . sbvFresh
   {-# INLINE sbvFresh #-}
 
-instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (WriterT w m) where
+instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (Lazy.WriterT w m) where
   sbvFresh = lift . sbvFresh
   {-# INLINE sbvFresh #-}
 
-instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (RWST r w s m) where
+instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (Lazy.RWST r w s m) where
   sbvFresh = lift . sbvFresh
   {-# INLINE sbvFresh #-}
 
-instance (SBVFreshMonad m) => SBVFreshMonad (StateT s m) where
+instance (SBVFreshMonad m) => SBVFreshMonad (Lazy.StateT s m) where
+  sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
+
+instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (Strict.WriterT w m) where
+  sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
+
+instance (SBVFreshMonad m, Monoid w) => SBVFreshMonad (Strict.RWST r w s m) where
+  sbvFresh = lift . sbvFresh
+  {-# INLINE sbvFresh #-}
+
+instance (SBVFreshMonad m) => SBVFreshMonad (Strict.StateT s m) where
   sbvFresh = lift . sbvFresh
   {-# INLINE sbvFresh #-}
 
