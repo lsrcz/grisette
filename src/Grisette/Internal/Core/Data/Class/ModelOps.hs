@@ -106,17 +106,17 @@ class
 -- >>> valueOf bBool (buildModel (aBool ::= True) :: Model)
 -- Nothing
 -- >>> insertValue bBool False (buildModel (aBool ::= True) :: Model)
--- Model {a -> True :: Bool, b -> False :: Bool}
+-- Model {a -> true :: Bool, b -> false :: Bool}
 -- >>> let abModel = buildModel (aBool ::= True, bBool ::= False) :: Model
 -- >>> let acSet = buildSymbolSet (aBool, cBool) :: AnySymbolSet
 -- >>> exceptFor acSet abModel
--- Model {b -> False :: Bool}
+-- Model {b -> false :: Bool}
 -- >>> restrictTo acSet abModel
--- Model {a -> True :: Bool}
+-- Model {a -> true :: Bool}
 -- >>> extendTo acSet abModel
--- Model {a -> True :: Bool, b -> False :: Bool, c -> False :: Bool}
+-- Model {a -> true :: Bool, b -> false :: Bool, c -> false :: Bool}
 -- >>> exact acSet abModel
--- Model {a -> True :: Bool, c -> False :: Bool}
+-- Model {a -> true :: Bool, c -> false :: Bool}
 class
   (SymbolSetOps symbolSet typedSymbol) =>
   ModelOps model symbolSet typedSymbol
@@ -166,5 +166,5 @@ class ModelRep rep model | rep -> model where
   -- >>> let aBool = "a" :: TypedAnySymbol Bool
   -- >>> let bBool = "b" :: TypedAnySymbol Bool
   -- >>> buildModel (aBool ::= True, bBool ::= False) :: Model
-  -- Model {a -> True :: Bool, b -> False :: Bool}
+  -- Model {a -> true :: Bool, b -> false :: Bool}
   buildModel :: rep -> model

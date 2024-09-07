@@ -25,7 +25,6 @@ import Grisette
     Union,
     WordN,
   )
-import Grisette.Internal.SymPrim.Prim.Term (LinkedRep)
 import Grisette.Lib.Control.Monad (mrgReturn)
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
 import Test.Framework (Test, testGroup)
@@ -99,8 +98,8 @@ concreteUnsignedSymTypeSafeSymRotateTests ::
     FiniteBits c,
     Bounded c,
     Integral c,
-    LinkedRep c s,
-    Solvable c s
+    Solvable c s,
+    Show c
   ) =>
   proxy s ->
   [Test]
@@ -129,8 +128,8 @@ concreteSignedAtLeastThreeBitsSymTypeSafeSymRotateTests ::
     FiniteBits c,
     Bounded c,
     Integral c,
-    LinkedRep c s,
-    Solvable c s
+    Solvable c s,
+    Show c
   ) =>
   proxy s ->
   [Test]

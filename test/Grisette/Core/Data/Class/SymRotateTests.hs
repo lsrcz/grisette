@@ -127,7 +127,8 @@ symbolicTypeSymRotateTests ::
     Typeable s,
     Integral c,
     LinkedRep c s,
-    Solvable c s
+    Solvable c s,
+    Show c
   ) =>
   proxy s ->
   Test

@@ -1047,7 +1047,7 @@ module Grisette.Core
     -- >>> res
     -- ExceptT {If (|| a (! b)) (If a (Left Error1) (Left Error2)) (Right c)}
     -- >>> solveExcept z3 (\case Left _ -> con False; Right x -> x) res
-    -- Right (Model {a -> False :: Bool, b -> True :: Bool, c -> True :: Bool})
+    -- Right (Model {a -> false :: Bool, b -> true :: Bool, c -> true :: Bool})
     --
     -- The solver call in the above example means that we want the solver to
     -- find the conditions under which no error is thrown, and the result is

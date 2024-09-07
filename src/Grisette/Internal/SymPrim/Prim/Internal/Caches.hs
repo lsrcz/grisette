@@ -26,7 +26,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Caches
     intern,
     haveCache,
     threadCacheSize,
-    dumpThreadCache,
+    -- dumpThreadCache,
     threadCacheLiveSize,
   )
 where
@@ -83,8 +83,7 @@ data CacheState t where
 
 -- | A class for interning terms.
 class
-  ( Show (Description t),
-    Hashable (Description t),
+  ( Hashable (Description t),
     Eq (Description t),
     Typeable t,
     Show t
@@ -242,6 +241,7 @@ cacheStateLiveSize (CacheState sem s) = do
   putMVar sem ()
   return r
 
+{-
 dumpCacheState :: CacheState t -> IO ()
 dumpCacheState (CacheState sem s) = do
   takeMVar sem
@@ -258,6 +258,7 @@ dumpCacheState (CacheState sem s) = do
 
 dumpCache :: Cache t -> IO ()
 dumpCache (Cache a) = mapM_ dumpCacheState (A.elems a)
+-}
 
 cacheSize :: Cache t -> IO Int
 cacheSize (Cache a) = sum <$> mapM cacheStateSize (A.elems a)
@@ -285,6 +286,7 @@ threadCacheLiveSize tid = do
       sum <$> mapM cacheLiveSize (HM.elems cache)
     Nothing -> return 0
 
+{-
 -- | Dump the current thread's cache.
 dumpThreadCache :: WeakThreadId -> IO ()
 dumpThreadCache tid = do
@@ -294,3 +296,4 @@ dumpThreadCache tid = do
       cache <- readIORef cref
       mapM_ dumpCache (HM.elems cache)
     Nothing -> return ()
+-}
