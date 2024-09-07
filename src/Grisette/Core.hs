@@ -1319,6 +1319,11 @@ module Grisette.Core
     stableMemo3,
     stableMup,
     stableMemoFix,
+    weakStableMemo,
+    weakStableMemo2,
+    weakStableMemo3,
+    weakStableMup,
+    weakStableMemoFix,
     htmemo,
     htmemo2,
     htmemo3,
@@ -1779,6 +1784,11 @@ import Grisette.Internal.Core.Data.MemoUtils
     stableMemo3,
     stableMemoFix,
     stableMup,
+    weakStableMemo,
+    weakStableMemo2,
+    weakStableMemo3,
+    weakStableMemoFix,
+    weakStableMup,
   )
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier (..),

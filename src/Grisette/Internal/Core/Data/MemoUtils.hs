@@ -21,6 +21,11 @@ module Grisette.Internal.Core.Data.MemoUtils
     stableMemo3,
     stableMup,
     stableMemoFix,
+    weakStableMemo,
+    weakStableMemo2,
+    weakStableMemo3,
+    weakStableMup,
+    weakStableMemoFix,
     htmemo,
     htmemo2,
     htmemo3,
@@ -56,20 +61,22 @@ class Ref ref where
   mkRef :: a -> b -> IO () -> IO (ref b)
   deRef :: ref a -> IO (Maybe a)
   finalize :: ref a -> IO ()
+  tableFinalizer :: MemoTable ref f g -> IO ()
+  tableFinalizer = HashTable.mapM_ $ finalize . unO . snd
 
 instance Ref Weak where
   mkRef x y = Weak.mkWeak x y . Just
   deRef = Weak.deRefWeak
   finalize = Weak.finalize
 
-data Strong a = Strong a !(Weak a)
+newtype Strong a = Strong a
 
 instance Ref Strong where
-  mkRef _ y final = do
-    weak <- Weak.mkWeakPtr y $ Just final
-    return $ Strong y weak
-  deRef (Strong x _) = return $ Just x
-  finalize (Strong _ weak) = Weak.finalize weak
+  mkRef _ y _ = do
+    return $ Strong y
+  deRef (Strong x) = return $ Just x
+  finalize (Strong _) = return ()
+  tableFinalizer _ = return ()
 
 finalizer ::
   StableName (f Any) -> RLock.RLock -> Weak (MemoTable ref f g) -> IO ()
@@ -119,9 +126,6 @@ memo' _ f tbl lock weakTbl !x = unsafePerformIO $ do
       RLock.release lock
       return y
 
-tableFinalizer :: (Ref ref) => MemoTable ref f g -> IO ()
-tableFinalizer = HashTable.mapM_ $ finalize . unO . snd
-
 {-# NOINLINE memo0 #-}
 memo0 ::
   (Ref ref) =>
@@ -139,7 +143,7 @@ memo0 p f =
 
 -- | Memoize a unary function.
 stableMemo :: (a -> b) -> (a -> b)
-stableMemo f = getConst . memo0 (Proxy :: Proxy Weak) (Const . f . getConst) . Const
+stableMemo f = getConst . memo0 (Proxy :: Proxy Strong) (Const . f . getConst) . Const
 
 -- | Lift a memoizer to work with one more argument.
 stableMup :: (b -> c) -> (a -> b) -> (a -> c)
@@ -156,6 +160,26 @@ stableMemo3 = stableMup stableMemo2
 -- | Memoizing recursion. Use like 'fix'.
 stableMemoFix :: ((a -> b) -> (a -> b)) -> a -> b
 stableMemoFix h = fix (stableMemo . h)
+
+-- | Memoize a unary function.
+weakStableMemo :: (a -> b) -> (a -> b)
+weakStableMemo f = getConst . memo0 (Proxy :: Proxy Weak) (Const . f . getConst) . Const
+
+-- | Lift a memoizer to work with one more argument.
+weakStableMup :: (b -> c) -> (a -> b) -> (a -> c)
+weakStableMup mem f = weakStableMemo (mem . f)
+
+-- | Curried memoization to share partial evaluation
+weakStableMemo2 :: (a -> b -> c) -> (a -> b -> c)
+weakStableMemo2 = weakStableMup weakStableMemo
+
+-- | Curried memoization to share partial evaluation
+weakStableMemo3 :: (a -> b -> c -> d) -> (a -> b -> c -> d)
+weakStableMemo3 = weakStableMup weakStableMemo2
+
+-- | Memoizing recursion. Use like 'fix'.
+weakStableMemoFix :: ((a -> b) -> (a -> b)) -> a -> b
+weakStableMemoFix h = fix (weakStableMemo . h)
 
 type HashTable k v = H.BasicHashTable k v
 
