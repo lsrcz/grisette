@@ -88,6 +88,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     FPRoundingBinaryOp (..),
     FloatingUnaryOp (..),
     Term (..),
+    defaultValueDynamic,
     pattern DynTerm,
     toCurThread,
     identity,
@@ -409,9 +410,6 @@ class
   default pformatCon :: (Show t) => t -> String
   pformatCon = show
   defaultValue :: t
-  defaultValueDynamic :: proxy t -> ModelValue
-  default defaultValueDynamic :: (Hashable t) => proxy t -> ModelValue
-  defaultValueDynamic _ = toModelValue (defaultValue @t)
   pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
   pevalEqTerm :: Term t -> Term t -> Term Bool
   pevalDistinctTerm :: NonEmpty (Term t) -> Term Bool
@@ -457,6 +455,10 @@ class
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
   isFuncType :: Bool
   funcDummyConstraint :: SBVType t -> SBV.SBV Bool
+
+defaultValueDynamic ::
+  forall t proxy. (SupportedPrim t) => proxy t -> ModelValue
+defaultValueDynamic _ = toModelValue (defaultValue @t)
 
 -- | A value with its type information.
 data ModelValue where
@@ -4339,9 +4341,6 @@ toFPTerm = unsafeInCurThread2 curThreadToFPTerm
 defaultValueForBool :: Bool
 defaultValueForBool = False
 
-defaultValueForBoolDyn :: ModelValue
-defaultValueForBoolDyn = toModelValue defaultValueForBool
-
 -- | Construct and internalizing 'True' term.
 trueTerm :: Term Bool
 trueTerm = conTerm True
@@ -4789,7 +4788,6 @@ instance SupportedPrim Bool where
   pformatCon True = "true"
   pformatCon False = "false"
   defaultValue = defaultValueForBool
-  defaultValueDynamic _ = defaultValueForBoolDyn
   pevalITETerm cond ~ifTrue ~ifFalse =
     fromMaybe (iteTerm cond ifTrue ifFalse) $
       pevalITEBool cond ifTrue ifFalse
