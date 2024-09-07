@@ -45,7 +45,6 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (decideSymbolKind),
-    ModelValue,
     NonFuncSBVRep (NonFuncSBVBaseType),
     SBVRep
       ( SBVType
@@ -59,7 +58,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ( castTypedSymbol,
         conSBVTerm,
         defaultValue,
-        defaultValueDynamic,
         funcDummyConstraint,
         hashConWithSalt,
         isFuncType,
@@ -87,15 +85,11 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalITEBasicTerm,
     pevalNotTerm,
     sbvFresh,
-    toModelValue,
   )
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 
 defaultValueForInteger :: Integer
 defaultValueForInteger = 0
-
-defaultValueForIntegerDyn :: ModelValue
-defaultValueForIntegerDyn = toModelValue defaultValueForInteger
 
 -- Basic Integer
 instance SBVRep Integer where
@@ -123,7 +117,6 @@ pevalGeneralDistinct l = distinctTerm l
 instance SupportedPrim Integer where
   pformatCon = show
   defaultValue = defaultValueForInteger
-  defaultValueDynamic _ = defaultValueForIntegerDyn
   pevalITETerm = pevalITEBasicTerm
   pevalEqTerm = pevalDefaultEqTerm
   pevalDistinctTerm = pevalGeneralDistinct

@@ -72,7 +72,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
 import Grisette.Internal.SymPrim.Prim.Term
   ( ModelValue,
     SomeTypedSymbol (SomeTypedSymbol),
-    SupportedPrim (defaultValue, defaultValueDynamic),
+    SupportedPrim (defaultValue), defaultValueDynamic,
     TypedSymbol (TypedSymbol, unTypedSymbol),
     conTerm,
     pevalEqTerm,
