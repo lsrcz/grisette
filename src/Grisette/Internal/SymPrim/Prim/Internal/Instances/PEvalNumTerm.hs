@@ -44,6 +44,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     absNumTerm,
     addNumTerm,
     conTerm,
+    introSupportedPrimConstraint,
     mulNumTerm,
     negNumTerm,
     pevalSubNumTerm,
@@ -57,14 +58,17 @@ import Grisette.Internal.SymPrim.Prim.Internal.Unfold
   )
 
 -- | Default partial evaluation of addition of numerical terms.
-pevalDefaultAddNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
-pevalDefaultAddNumTerm =
-  binaryUnfoldOnce
-    doPevalDefaultAddNumTerm
-    (\a b -> normalizeAddNum $ addNumTerm a b)
+pevalDefaultAddNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
+pevalDefaultAddNumTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce
+      doPevalDefaultAddNumTerm
+      (\a b -> normalizeAddNum $ addNumTerm a b)
+      l
+      r
 
 doPevalDefaultAddNumTerm ::
-  (PEvalNumTerm a) => Term a -> Term a -> Maybe (Term a)
+  (PEvalNumTerm a, Eq a) => Term a -> Term a -> Maybe (Term a)
 doPevalDefaultAddNumTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) = Just $ conTerm $ a + b
 doPevalDefaultAddNumTerm l@(ConTerm _ _ _ a) b = case (a, b) of
   (0, k) -> Just k
@@ -97,8 +101,10 @@ normalizeAddNum (AddNumTerm _ _ _ l r@(ConTerm {})) = addNumTerm r l
 normalizeAddNum v = v
 
 -- | Default partial evaluation of negation of numerical terms.
-pevalDefaultNegNumTerm :: (PEvalNumTerm a) => Term a -> Term a
-pevalDefaultNegNumTerm = unaryUnfoldOnce doPevalDefaultNegNumTerm negNumTerm
+pevalDefaultNegNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a
+pevalDefaultNegNumTerm l =
+  introSupportedPrimConstraint l $
+    unaryUnfoldOnce doPevalDefaultNegNumTerm negNumTerm l
 
 doPevalDefaultNegNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalDefaultNegNumTerm (ConTerm _ _ _ a) = Just $ conTerm $ -a
@@ -119,18 +125,21 @@ doPevalDefaultNegNumTerm (AddNumTerm _ _ _ _ ConTerm {}) = error "Should not hap
 doPevalDefaultNegNumTerm _ = Nothing
 
 -- Mul
-pevalDefaultMulNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
-pevalDefaultMulNumTerm =
-  binaryUnfoldOnce
-    doPevalDefaultMulNumTerm
-    (\a b -> normalizeMulNum $ mulNumTerm a b)
+pevalDefaultMulNumTerm :: (PEvalNumTerm a, Eq a) => Term a -> Term a -> Term a
+pevalDefaultMulNumTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce
+      doPevalDefaultMulNumTerm
+      (\a b -> normalizeMulNum $ mulNumTerm a b)
+      l
+      r
 
 normalizeMulNum :: (PEvalNumTerm a) => Term a -> Term a
 normalizeMulNum (MulNumTerm _ _ _ l r@(ConTerm {})) = mulNumTerm r l
 normalizeMulNum v = v
 
 doPevalDefaultMulNumTerm ::
-  (PEvalNumTerm a) => Term a -> Term a -> Maybe (Term a)
+  (PEvalNumTerm a, Eq a) => Term a -> Term a -> Maybe (Term a)
 doPevalDefaultMulNumTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) =
   Just $ conTerm $ a * b
 doPevalDefaultMulNumTerm l@(ConTerm _ _ _ a) b = case (a, b) of
@@ -167,8 +176,9 @@ doPevalDefaultMulNumTermNoCon _ _ = Nothing
 
 -- Abs
 pevalBitsAbsNumTerm :: (PEvalNumTerm a, Bits a) => Term a -> Term a
-pevalBitsAbsNumTerm =
-  unaryUnfoldOnce doPevalBitsAbsNumTerm absNumTerm
+pevalBitsAbsNumTerm l =
+  introSupportedPrimConstraint l $
+    unaryUnfoldOnce doPevalBitsAbsNumTerm absNumTerm l
 
 doPevalGeneralAbsNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalGeneralAbsNumTerm (ConTerm _ _ _ a) = Just $ conTerm $ abs a
@@ -197,8 +207,9 @@ doPevalNoOverflowAbsNumTerm t =
 -- Signum
 
 pevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Term a
-pevalGeneralSignumNumTerm =
-  unaryUnfoldOnce doPevalGeneralSignumNumTerm signumNumTerm
+pevalGeneralSignumNumTerm l =
+  introSupportedPrimConstraint l $
+    unaryUnfoldOnce doPevalGeneralSignumNumTerm signumNumTerm l
 
 doPevalGeneralSignumNumTerm :: (PEvalNumTerm a) => Term a -> Maybe (Term a)
 doPevalGeneralSignumNumTerm (ConTerm _ _ _ a) = Just $ conTerm $ signum a

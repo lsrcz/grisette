@@ -454,6 +454,7 @@ class
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
   castTypedSymbol ::
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
+
   -- isFuncType :: Bool
   funcDummyConstraint :: SBVType t -> SBV.SBV Bool
 
@@ -540,7 +541,7 @@ class (SupportedPrim b) => PEvalApplyTerm f a b | f -> a b where
   sbvApplyTerm :: SBVType f -> SBVType a -> SBVType b
 
 -- | Partial evaluation and lowering for bitwise operation terms.
-class (SupportedPrim t) => PEvalBitwiseTerm t where
+class PEvalBitwiseTerm t where
   pevalAndBitsTerm :: Term t -> Term t -> Term t
   pevalOrBitsTerm :: Term t -> Term t -> Term t
   pevalXorBitsTerm :: Term t -> Term t -> Term t
@@ -556,14 +557,18 @@ class (SupportedPrim t) => PEvalBitwiseTerm t where
   sbvComplementBitsTerm = withSbvBitwiseTermConstraint @t SBV.complement
 
 -- | Partial evaluation and lowering for symbolic shifting terms.
-class (SupportedNonFuncPrim t) => PEvalShiftTerm t where
+class PEvalShiftTerm t where
   pevalShiftLeftTerm :: Term t -> Term t -> Term t
   pevalShiftRightTerm :: Term t -> Term t -> Term t
   withSbvShiftTermConstraint ::
     (((SBV.SIntegral (NonFuncSBVBaseType t)) => r)) -> r
   sbvShiftLeftTerm :: SBVType t -> SBVType t -> SBVType t
+  default sbvShiftLeftTerm ::
+    (SupportedNonFuncPrim t) => SBVType t -> SBVType t -> SBVType t
   sbvShiftLeftTerm l r =
     withNonFuncPrim @t $ withSbvShiftTermConstraint @t $ SBV.sShiftLeft l r
+  default sbvShiftRightTerm ::
+    (SupportedNonFuncPrim t) => SBVType t -> SBVType t -> SBVType t
   sbvShiftRightTerm :: SBVType t -> SBVType t -> SBVType t
   sbvShiftRightTerm l r =
     withNonFuncPrim @t $ withSbvShiftTermConstraint @t $ SBV.sShiftRight l r
@@ -582,7 +587,7 @@ class (SupportedNonFuncPrim t) => PEvalRotateTerm t where
     withNonFuncPrim @t $ withSbvRotateTermConstraint @t $ SBV.sRotateRight l r
 
 -- | Partial evaluation and lowering for number terms.
-class (SupportedNonFuncPrim t, Num t) => PEvalNumTerm t where
+class (Num t) => PEvalNumTerm t where
   pevalAddNumTerm :: Term t -> Term t -> Term t
   pevalNegNumTerm :: Term t -> Term t
   pevalMulNumTerm :: Term t -> Term t -> Term t
@@ -617,7 +622,7 @@ pevalSubNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> Term a
 pevalSubNumTerm l r = pevalAddNumTerm l (pevalNegNumTerm r)
 
 -- | Partial evaluation and lowering for comparison terms.
-class (SupportedNonFuncPrim t) => PEvalOrdTerm t where
+class PEvalOrdTerm t where
   pevalLtOrdTerm :: Term t -> Term t -> Term Bool
   pevalLeOrdTerm :: Term t -> Term t -> Term Bool
   withSbvOrdTermConstraint :: (((SBV.OrdSymbolic (SBVType t)) => r)) -> r
@@ -1126,7 +1131,7 @@ data Term t where
     !(Term t) ->
     Term t
   AddNumTerm ::
-    (PEvalNumTerm t) =>
+    (SupportedPrim t, PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1134,14 +1139,14 @@ data Term t where
     !(Term t) ->
     Term t
   NegNumTerm ::
-    (PEvalNumTerm t) =>
+    (SupportedPrim t, PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
     !(Term t) ->
     Term t
   MulNumTerm ::
-    (PEvalNumTerm t) =>
+    (SupportedPrim t, PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1149,21 +1154,21 @@ data Term t where
     !(Term t) ->
     Term t
   AbsNumTerm ::
-    (PEvalNumTerm t) =>
+    (SupportedPrim t, PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
     !(Term t) ->
     Term t
   SignumNumTerm ::
-    (PEvalNumTerm t) =>
+    (SupportedPrim t, PEvalNumTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
     !(Term t) ->
     Term t
   LtOrdTerm ::
-    (PEvalOrdTerm t) =>
+    (SupportedPrim t, PEvalOrdTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1171,7 +1176,7 @@ data Term t where
     !(Term t) ->
     Term Bool
   LeOrdTerm ::
-    (PEvalOrdTerm t) =>
+    (SupportedPrim t, PEvalOrdTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1179,7 +1184,7 @@ data Term t where
     !(Term t) ->
     Term Bool
   AndBitsTerm ::
-    (PEvalBitwiseTerm t) =>
+    (SupportedPrim t, PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1187,7 +1192,7 @@ data Term t where
     !(Term t) ->
     Term t
   OrBitsTerm ::
-    (PEvalBitwiseTerm t) =>
+    (SupportedPrim t, PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1195,7 +1200,7 @@ data Term t where
     !(Term t) ->
     Term t
   XorBitsTerm ::
-    (PEvalBitwiseTerm t) =>
+    (SupportedPrim t, PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1203,14 +1208,14 @@ data Term t where
     !(Term t) ->
     Term t
   ComplementBitsTerm ::
-    (PEvalBitwiseTerm t) =>
+    (SupportedPrim t, PEvalBitwiseTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
     !(Term t) ->
     Term t
   ShiftLeftTerm ::
-    (PEvalShiftTerm t) =>
+    (SupportedPrim t, PEvalShiftTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1218,7 +1223,7 @@ data Term t where
     !(Term t) ->
     Term t
   ShiftRightTerm ::
-    (PEvalShiftTerm t) =>
+    (SupportedPrim t, PEvalShiftTerm t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1552,7 +1557,7 @@ typeHashId (FPFMATerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) 
 typeHashId (FromIntegralTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
 typeHashId (FromFPOrTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
 typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-{-# INLINE typeHashId #-}
+-- {-# NOINLINE typeHashId #-}
 
 -- | Introduce the 'SupportedPrim' constraint from a term.
 introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
@@ -1604,7 +1609,7 @@ introSupportedPrimConstraint FPFMATerm {} x = x
 introSupportedPrimConstraint FromIntegralTerm {} x = x
 introSupportedPrimConstraint FromFPOrTerm {} x = x
 introSupportedPrimConstraint ToFPTerm {} x = x
-{-# INLINE introSupportedPrimConstraint #-}
+-- {-# INLINE introSupportedPrimConstraint #-}
 
 -- | Pretty-print a term.
 pformatTerm :: forall t. Term t -> String
@@ -1659,7 +1664,7 @@ pformatTerm (FPFMATerm _ _ _ mode arg1 arg2 arg3) =
 pformatTerm (FromIntegralTerm _ _ _ arg) = "(from_integral " ++ pformatTerm arg ++ ")"
 pformatTerm (FromFPOrTerm _ _ _ d r arg) = "(from_fp_or " ++ pformatTerm d ++ " " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (ToFPTerm _ _ _ r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ pformatTerm arg ++ ")"
-{-# INLINE pformatTerm #-}
+-- {-# INLINE pformatTerm #-}
 
 instance NFData (Term a) where
   rnf i = identity i `seq` ()
@@ -2142,7 +2147,7 @@ instance Show (Term ty) where
       ++ ", arg="
       ++ show arg
       ++ "}"
-  {-# INLINE show #-}
+  -- {-# INLINE show #-}
 
 -- | Pretty-print a term, possibly eliding parts of it.
 prettyPrintTerm :: Term t -> Doc ann
@@ -2199,19 +2204,21 @@ data UTerm t where
     !(Term t) ->
     !(Term t) ->
     UTerm t
-  UAddNumTerm :: (PEvalNumTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UNegNumTerm :: (PEvalNumTerm t) => !(Term t) -> UTerm t
-  UMulNumTerm :: (PEvalNumTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UAbsNumTerm :: (PEvalNumTerm t) => !(Term t) -> UTerm t
-  USignumNumTerm :: (PEvalNumTerm t) => !(Term t) -> UTerm t
-  ULtOrdTerm :: (PEvalOrdTerm t) => !(Term t) -> !(Term t) -> UTerm Bool
-  ULeOrdTerm :: (PEvalOrdTerm t) => !(Term t) -> !(Term t) -> UTerm Bool
-  UAndBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UOrBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UXorBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UComplementBitsTerm :: (PEvalBitwiseTerm t) => !(Term t) -> UTerm t
-  UShiftLeftTerm :: (PEvalShiftTerm t) => !(Term t) -> !(Term t) -> UTerm t
-  UShiftRightTerm :: (PEvalShiftTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UAddNumTerm :: (SupportedPrim t, PEvalNumTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UNegNumTerm :: (SupportedPrim t, PEvalNumTerm t) => !(Term t) -> UTerm t
+  UMulNumTerm :: (SupportedPrim t, PEvalNumTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UAbsNumTerm :: (SupportedPrim t, PEvalNumTerm t) => !(Term t) -> UTerm t
+  USignumNumTerm :: (SupportedPrim t, PEvalNumTerm t) => !(Term t) -> UTerm t
+  ULtOrdTerm :: (SupportedPrim t, PEvalOrdTerm t) => !(Term t) -> !(Term t) -> UTerm Bool
+  ULeOrdTerm :: (SupportedPrim t, PEvalOrdTerm t) => !(Term t) -> !(Term t) -> UTerm Bool
+  UAndBitsTerm :: (SupportedPrim t, PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UOrBitsTerm :: (SupportedPrim t, PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UXorBitsTerm :: (SupportedPrim t, PEvalBitwiseTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UComplementBitsTerm :: (SupportedPrim t, PEvalBitwiseTerm t) => !(Term t) -> UTerm t
+  UShiftLeftTerm ::
+    (SupportedPrim t, PEvalShiftTerm t) => !(Term t) -> !(Term t) -> UTerm t
+  UShiftRightTerm ::
+    (SupportedPrim t, PEvalShiftTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URotateLeftTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   URotateRightTerm :: (PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UBitCastTerm ::
@@ -2314,6 +2321,7 @@ data UTerm t where
     UTerm b
   UFromFPOrTerm ::
     ( PEvalIEEEFPConvertibleTerm a,
+      SupportedPrim a,
       ValidFP eb sb
     ) =>
     Term a ->
@@ -2596,7 +2604,7 @@ preHashToFPTermDescription h1 h2 =
   fromIntegral (50 `hashWithSalt` h1 `hashWithSalt` h2)
 {-# INLINE preHashToFPTermDescription #-}
 
-instance (SupportedPrim t) => Interned (Term t) where
+instance Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
     DConTerm :: {-# UNPACK #-} !Digest -> t -> Description (Term t)
@@ -3147,7 +3155,7 @@ instance (SupportedPrim t) => Interned (Term t) where
           (preHashToFPTermDescription modeHashId argHashId)
           modeHashId
           argHashId
-  {-# INLINE describe #-}
+  -- {-# INLINE describe #-}
 
   identify tid ha i = go
     where
@@ -3201,7 +3209,7 @@ instance (SupportedPrim t) => Interned (Term t) where
       go (UFromFPOrTerm d mode arg) = FromFPOrTerm tid ha i d mode arg
       go (UToFPTerm mode arg eb sb) = ToFPTerm tid ha i mode arg eb sb
       {-# INLINE go #-}
-  {-# INLINE identify #-}
+  -- {-# INLINE identify #-}
   threadId = termThreadId
   {-# INLINE threadId #-}
 
@@ -3253,7 +3261,7 @@ instance (SupportedPrim t) => Interned (Term t) where
   descriptionDigest (DFromIntegralTerm h _) = h
   descriptionDigest (DFromFPOrTerm h _ _ _) = h
   descriptionDigest (DToFPTerm h _ _) = h
-  {-# INLINE descriptionDigest #-}
+  -- {-# INLINE descriptionDigest #-}
 
 termThreadId :: Term t -> WeakThreadId
 termThreadId (ConTerm tid _ _ _) = tid
@@ -3304,7 +3312,7 @@ termThreadId (FPFMATerm tid _ _ _ _ _ _) = tid
 termThreadId (FromIntegralTerm tid _ _ _) = tid
 termThreadId (FromFPOrTerm tid _ _ _ _ _) = tid
 termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
-{-# INLINE termThreadId #-}
+-- {-# INLINE termThreadId #-}
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) =
@@ -3370,7 +3378,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
   DFromFPOrTerm _ ld li lai == DFromFPOrTerm _ rd ri rai = eqHashId ld rd && eqHashId li ri && lai == rai
   DToFPTerm _ li lai == DToFPTerm _ ri rai = eqHashId li ri && lai == rai
   _ == _ = False
-  {-# INLINE (==) #-}
+  -- {-# INLINE (==) #-}
 
 instance (SupportedPrim t) => Hashable (Description (Term t)) where
   hashWithSalt s = hashWithSalt s . descriptionDigest
@@ -3600,67 +3608,78 @@ curThreadIteTerm c l r = intern $ UITETerm c l r
 
 -- | Construct and internalizing a 'AddNumTerm'.
 curThreadAddNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> IO (Term a)
-curThreadAddNumTerm l r = intern $ UAddNumTerm l r
+curThreadAddNumTerm l r =
+  introSupportedPrimConstraint l $ intern $ UAddNumTerm l r
 {-# INLINE curThreadAddNumTerm #-}
 
 -- | Construct and internalizing a 'NegNumTerm'.
 curThreadNegNumTerm :: (PEvalNumTerm a) => Term a -> IO (Term a)
-curThreadNegNumTerm = intern . UNegNumTerm
+curThreadNegNumTerm l = introSupportedPrimConstraint l $ intern $ UNegNumTerm l
 {-# INLINE curThreadNegNumTerm #-}
 
 -- | Construct and internalizing a 'MulNumTerm'.
 curThreadMulNumTerm :: (PEvalNumTerm a) => Term a -> Term a -> IO (Term a)
-curThreadMulNumTerm l r = intern $ UMulNumTerm l r
+curThreadMulNumTerm l r =
+  introSupportedPrimConstraint l $ intern $ UMulNumTerm l r
 {-# INLINE curThreadMulNumTerm #-}
 
 -- | Construct and internalizing a 'AbsNumTerm'.
 curThreadAbsNumTerm :: (PEvalNumTerm a) => Term a -> IO (Term a)
-curThreadAbsNumTerm = intern . UAbsNumTerm
+curThreadAbsNumTerm l = introSupportedPrimConstraint l $ intern $ UAbsNumTerm l
 {-# INLINE curThreadAbsNumTerm #-}
 
 -- | Construct and internalizing a 'SignumNumTerm'.
 curThreadSignumNumTerm :: (PEvalNumTerm a) => Term a -> IO (Term a)
-curThreadSignumNumTerm = intern . USignumNumTerm
+curThreadSignumNumTerm l =
+  introSupportedPrimConstraint l $ intern $ USignumNumTerm l
 {-# INLINE curThreadSignumNumTerm #-}
 
 -- | Construct and internalizing a 'LtOrdTerm'.
 curThreadLtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> IO (Term Bool)
-curThreadLtOrdTerm l r = intern $ ULtOrdTerm l r
+curThreadLtOrdTerm l r =
+  introSupportedPrimConstraint l $ intern $ ULtOrdTerm l r
 {-# INLINE curThreadLtOrdTerm #-}
 
 -- | Construct and internalizing a 'LeOrdTerm'.
 curThreadLeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> IO (Term Bool)
-curThreadLeOrdTerm l r = intern $ ULeOrdTerm l r
+curThreadLeOrdTerm l r =
+  introSupportedPrimConstraint l $ intern $ ULeOrdTerm l r
 {-# INLINE curThreadLeOrdTerm #-}
 
 -- | Construct and internalizing a 'AndBitsTerm'.
 curThreadAndBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> IO (Term a)
-curThreadAndBitsTerm l r = intern $ UAndBitsTerm l r
+curThreadAndBitsTerm l r =
+  introSupportedPrimConstraint l $ intern $ UAndBitsTerm l r
 {-# INLINE curThreadAndBitsTerm #-}
 
 -- | Construct and internalizing a 'OrBitsTerm'.
 curThreadOrBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> IO (Term a)
-curThreadOrBitsTerm l r = intern $ UOrBitsTerm l r
+curThreadOrBitsTerm l r =
+  introSupportedPrimConstraint l $ intern $ UOrBitsTerm l r
 {-# INLINE curThreadOrBitsTerm #-}
 
 -- | Construct and internalizing a 'XorBitsTerm'.
 curThreadXorBitsTerm :: (PEvalBitwiseTerm a) => Term a -> Term a -> IO (Term a)
-curThreadXorBitsTerm l r = intern $ UXorBitsTerm l r
+curThreadXorBitsTerm l r =
+  introSupportedPrimConstraint l $ intern $ UXorBitsTerm l r
 {-# INLINE curThreadXorBitsTerm #-}
 
 -- | Construct and internalizing a 'ComplementBitsTerm'.
 curThreadComplementBitsTerm :: (PEvalBitwiseTerm a) => Term a -> IO (Term a)
-curThreadComplementBitsTerm = intern . UComplementBitsTerm
+curThreadComplementBitsTerm l =
+  introSupportedPrimConstraint l $ intern $ UComplementBitsTerm l
 {-# INLINE curThreadComplementBitsTerm #-}
 
 -- | Construct and internalizing a 'ShiftLeftTerm'.
 curThreadShiftLeftTerm :: (PEvalShiftTerm a) => Term a -> Term a -> IO (Term a)
-curThreadShiftLeftTerm t n = intern $ UShiftLeftTerm t n
+curThreadShiftLeftTerm t n =
+  introSupportedPrimConstraint t $ intern $ UShiftLeftTerm t n
 {-# INLINE curThreadShiftLeftTerm #-}
 
 -- | Construct and internalizing a 'ShiftRightTerm'.
 curThreadShiftRightTerm :: (PEvalShiftTerm a) => Term a -> Term a -> IO (Term a)
-curThreadShiftRightTerm t n = intern $ UShiftRightTerm t n
+curThreadShiftRightTerm t n =
+  introSupportedPrimConstraint t $ intern $ UShiftRightTerm t n
 {-# INLINE curThreadShiftRightTerm #-}
 
 -- | Construct and internalizing a 'RotateLeftTerm'.
@@ -3945,7 +3964,7 @@ unsafeInCurThread1 ::
   Term a ->
   Term b
 unsafeInCurThread1 f = unsafePerformIO . inCurThread1 f
-{-# INLINE unsafeInCurThread1 #-}
+{-# NOINLINE unsafeInCurThread1 #-}
 
 unsafeInCurThread2 ::
   forall a b c.
@@ -3954,7 +3973,7 @@ unsafeInCurThread2 ::
   Term b ->
   Term c
 unsafeInCurThread2 f a b = unsafePerformIO $ inCurThread2 f a b
-{-# INLINE unsafeInCurThread2 #-}
+{-# NOINLINE unsafeInCurThread2 #-}
 
 unsafeInCurThread3 ::
   forall a b c d.
@@ -3964,7 +3983,7 @@ unsafeInCurThread3 ::
   Term c ->
   Term d
 unsafeInCurThread3 f a b c = unsafePerformIO $ inCurThread3 f a b c
-{-# INLINE unsafeInCurThread3 #-}
+{-# NOINLINE unsafeInCurThread3 #-}
 
 -- | Construct and internalizing a 'ConTerm'.
 conTerm :: (SupportedPrim t) => t -> Term t
