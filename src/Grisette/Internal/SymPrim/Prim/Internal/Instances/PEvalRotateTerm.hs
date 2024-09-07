@@ -38,6 +38,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SupportedNonFuncPrim (withNonFuncPrim),
     Term (ConTerm),
     conTerm,
+    introSupportedPrimConstraint,
     rotateLeftTerm,
     rotateRightTerm,
   )
@@ -51,10 +52,11 @@ pevalFiniteBitsSymRotateRotateLeftTerm ::
   Term a ->
   Term a
 pevalFiniteBitsSymRotateRotateLeftTerm t n =
-  unaryUnfoldOnce
-    (`doPevalFiniteBitsSymRotateRotateLeftTerm` n)
-    (`rotateLeftTerm` n)
-    t
+  introSupportedPrimConstraint t $
+    unaryUnfoldOnce
+      (`doPevalFiniteBitsSymRotateRotateLeftTerm` n)
+      (`rotateLeftTerm` n)
+      t
 
 doPevalFiniteBitsSymRotateRotateLeftTerm ::
   forall a.
@@ -85,10 +87,11 @@ pevalFiniteBitsSymRotateRotateRightTerm ::
   Term a ->
   Term a
 pevalFiniteBitsSymRotateRotateRightTerm t n =
-  unaryUnfoldOnce
-    (`doPevalFiniteBitsSymRotateRotateRightTerm` n)
-    (`rotateRightTerm` n)
-    t
+  introSupportedPrimConstraint t $
+    unaryUnfoldOnce
+      (`doPevalFiniteBitsSymRotateRotateRightTerm` n)
+      (`rotateRightTerm` n)
+      t
 
 doPevalFiniteBitsSymRotateRotateRightTerm ::
   forall a.

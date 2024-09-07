@@ -28,6 +28,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term (ConTerm),
     conTerm,
     fdivTerm,
+    introSupportedPrimConstraint,
     recipTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
@@ -43,23 +44,26 @@ instance (ValidFP eb sb) => PEvalFractionalTerm (FP eb sb) where
   withSbvFractionalTermConstraint r = withPrim @(FP eb sb) r
 
 pevalDefaultFdivTerm ::
-  (PEvalFractionalTerm a) => Term a -> Term a -> Term a
-pevalDefaultFdivTerm =
-  binaryUnfoldOnce doPevalDefaultFdivTerm fdivTerm
+  (PEvalFractionalTerm a, Eq a) => Term a -> Term a -> Term a
+pevalDefaultFdivTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultFdivTerm fdivTerm l r
 
 doPevalDefaultFdivTerm ::
-  (PEvalFractionalTerm a) => Term a -> Term a -> Maybe (Term a)
+  (PEvalFractionalTerm a, Eq a) => Term a -> Term a -> Maybe (Term a)
 doPevalDefaultFdivTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b)
   | b /= 0 = Just $ conTerm $ a / b
 doPevalDefaultFdivTerm a (ConTerm _ _ _ 1) = Just a
 doPevalDefaultFdivTerm _ _ = Nothing
 
 pevalDefaultRecipTerm ::
-  (PEvalFractionalTerm a) => Term a -> Term a
-pevalDefaultRecipTerm = unaryUnfoldOnce doPevalDefaultRecipTerm recipTerm
+  (PEvalFractionalTerm a, Eq a) => Term a -> Term a
+pevalDefaultRecipTerm l =
+  introSupportedPrimConstraint l $
+    unaryUnfoldOnce doPevalDefaultRecipTerm recipTerm l
 
 doPevalDefaultRecipTerm ::
-  (PEvalFractionalTerm a) => Term a -> Maybe (Term a)
+  (PEvalFractionalTerm a, Eq a) => Term a -> Maybe (Term a)
 doPevalDefaultRecipTerm (ConTerm _ _ _ n) | n /= 0 = Just $ conTerm $ recip n
 doPevalDefaultRecipTerm _ = Nothing
 

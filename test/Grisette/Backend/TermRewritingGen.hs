@@ -792,7 +792,8 @@ type SupportedBV bv (n :: Nat) =
     PEvalOrdTerm (bv n),
     PEvalBitwiseTerm (bv n),
     KnownNat n,
-    PEvalBVTerm bv
+    PEvalBVTerm bv,
+    1 <= n
   )
 
 dsbv1 ::

@@ -655,6 +655,7 @@ termRewritingTests =
                 PEvalBitCastOrTerm a b,
                 RealFloat a,
                 SupportedNonFuncPrim a,
+                SupportedNonFuncPrim b,
                 Show b,
                 Show a
               ) =>
