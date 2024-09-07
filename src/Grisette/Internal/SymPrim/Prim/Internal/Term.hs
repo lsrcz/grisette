@@ -393,7 +393,6 @@ class SupportedPrimConstraint t where
 class
   ( Lift t,
     Typeable t,
-    Show t,
     NFData t,
     SupportedPrimConstraint t,
     SBVRep t
@@ -409,8 +408,6 @@ class
   pformatCon :: t -> String
   default pformatCon :: (Show t) => t -> String
   pformatCon = show
-  pformatSym :: TypedSymbol 'AnyKind t -> String
-  pformatSym = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
   default defaultValueDynamic :: (Hashable t) => proxy t -> ModelValue
@@ -466,7 +463,7 @@ data ModelValue where
   ModelValue :: forall v. (SupportedPrim v) => v -> ModelValue
 
 instance Show ModelValue where
-  show (ModelValue (v :: v)) = show v ++ " :: " ++ show (typeRep @v)
+  show (ModelValue (v :: v)) = pformatCon v ++ " :: " ++ show (typeRep @v)
 
 instance Eq ModelValue where
   (ModelValue (v1 :: v1)) == (ModelValue (v2 :: v2)) =
@@ -1609,7 +1606,7 @@ introSupportedPrimConstraint ToFPTerm {} x = x
 -- | Pretty-print a term.
 pformatTerm :: forall t. Term t -> String
 pformatTerm (ConTerm _ _ _ t) = pformatCon t
-pformatTerm (SymTerm _ _ _ sym) = pformatSym sym
+pformatTerm (SymTerm _ _ _ sym) = showUntyped sym
 pformatTerm (ForallTerm _ _ _ sym arg) = "(forall " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (ExistsTerm _ _ _ sym arg) = "(exists " ++ show sym ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (NotTerm _ _ _ arg) = "(! " ++ pformatTerm arg ++ ")"
@@ -1675,7 +1672,7 @@ instance Lift (Term t) where
 
 instance Show (Term ty) where
   show (ConTerm tid _ i v) =
-    "ConTerm{tid=" ++ show tid ++ ", id=" ++ show i ++ ", v=" ++ show v ++ "}"
+    "ConTerm{tid=" ++ show tid ++ ", id=" ++ show i ++ ", v=" ++ pformatCon v ++ "}"
   show (SymTerm tid _ i name) =
     "SymTerm{tid="
       ++ show tid
@@ -3305,8 +3302,6 @@ termThreadId (FromIntegralTerm tid _ _ _) = tid
 termThreadId (FromFPOrTerm tid _ _ _ _ _) = tid
 termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
 {-# INLINE termThreadId #-}
-
-deriving instance (SupportedPrim t) => Show (Description (Term t))
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) =

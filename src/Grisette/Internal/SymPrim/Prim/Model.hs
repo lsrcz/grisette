@@ -386,7 +386,7 @@ evalTerm fillDefault (Model ma) =
 -- A type used for building a model by hand.
 --
 -- >>> buildModel ("x" ::= (1 :: Integer), "y" ::= True) :: Model
--- Model {x -> 1 :: Integer, y -> True :: Bool}
+-- Model {x -> 1 :: Integer, y -> true :: Bool}
 data ModelValuePair t = (TypedAnySymbol t) ::= t deriving (Show)
 
 instance ModelRep (ModelValuePair t) Model where

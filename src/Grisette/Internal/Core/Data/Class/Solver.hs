@@ -167,7 +167,7 @@ class Solver handle where
   --
   -- >>> solver <- newSolver z3
   -- >>> solverSolve solver "a"
-  -- Right (Model {a -> True :: Bool})
+  -- Right (Model {a -> true :: Bool})
   -- >>> solverSolve solver $ symNot "a"
   -- Left Unsat
   --
@@ -176,7 +176,7 @@ class Solver handle where
   -- >>> solverResetAssertions solver
   -- Right ()
   -- >>> solverSolve solver $ symNot "a"
-  -- Right (Model {a -> False :: Bool})
+  -- Right (Model {a -> false :: Bool})
   solverResetAssertions :: handle -> IO (Either SolvingFailure ())
   solverResetAssertions handle =
     solverRunCommand (const $ return $ Right ()) handle SolverResetAssertions
@@ -313,7 +313,7 @@ withSolver config action =
 -- | Solve a single formula. Find an assignment to it to make it true.
 --
 -- >>> solve z3 ("a" .&& ("b" :: SymInteger) .== 1)
--- Right (Model {a -> True :: Bool, b -> 1 :: Integer})
+-- Right (Model {a -> true :: Bool, b -> 1 :: Integer})
 -- >>> solve z3 ("a" .&& symNot "a")
 -- Left Unsat
 solve ::

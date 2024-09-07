@@ -33,7 +33,7 @@ import Grisette.Internal.SymPrim.Prim.Term
 -- This is used to build a model from a list of symbolic constants and their values.
 --
 -- >>> buildModel ("a" := (1 :: Integer), "b" := True) :: Model
--- Model {a -> 1 :: Integer, b -> True :: Bool}
+-- Model {a -> 1 :: Integer, b -> true :: Bool}
 data ModelSymPair ct st where
   (:=) :: (LinkedRep ct st) => st -> ct -> ModelSymPair ct st
 

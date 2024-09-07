@@ -226,6 +226,7 @@ supportedPrimFun
                 sequence
                   [ [t|SupportedNonFuncPrim $ty|],
                     [t|Eq $ty|],
+                    [t|Show $ty|],
                     [t|Hashable $ty|]
                   ]
             )

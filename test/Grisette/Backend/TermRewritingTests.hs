@@ -633,7 +633,11 @@ termRewritingTests =
       testGroup "bitCast" $ do
         let bitCastCase ::
               forall a b.
-              (Arbitrary a, PEvalBitCastTerm a b, SupportedNonFuncPrim a) =>
+              ( Arbitrary a,
+                PEvalBitCastTerm a b,
+                SupportedNonFuncPrim a,
+                Show a
+              ) =>
               Test
             bitCastCase = testProperty
               (show (typeRep @a) <> " -> " <> show (typeRep @b))
@@ -650,7 +654,9 @@ termRewritingTests =
                 Arbitrary b,
                 PEvalBitCastOrTerm a b,
                 RealFloat a,
-                SupportedNonFuncPrim a
+                SupportedNonFuncPrim a,
+                Show b,
+                Show a
               ) =>
               Test
             fromFPCase = testProperty
@@ -668,7 +674,8 @@ termRewritingTests =
               ( Arbitrary a,
                 PEvalBitCastTerm a b,
                 RealFloat b,
-                SupportedNonFuncPrim a
+                SupportedNonFuncPrim a,
+                Show a
               ) =>
               Test
             toFPCase = testProperty
@@ -746,7 +753,8 @@ termRewritingTests =
               ( ValidFP eb sb,
                 Arbitrary b,
                 PEvalIEEEFPConvertibleTerm b,
-                TermRewritingSpec spec b
+                TermRewritingSpec spec b,
+                Show b
               ) =>
               Bool ->
               Test
@@ -815,7 +823,8 @@ termRewritingTests =
                 SupportedNonFuncPrim b,
                 LinkedRep b bs,
                 Solvable b bs,
-                SymEq bs
+                SymEq bs,
+                Show b
               ) =>
               Test
             toFPCase = testProperty
