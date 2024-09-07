@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE Strict #-}
 
 -- |
 -- Module      :   Grisette.Internal.Backend.QuantifiedStack
@@ -21,7 +22,7 @@ module Grisette.Internal.Backend.QuantifiedStack
 where
 
 import Data.Dynamic (Dynamic)
-import qualified Data.HashMap.Lazy as M
+import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
