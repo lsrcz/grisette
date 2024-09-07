@@ -40,6 +40,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term (ConTerm),
     conTerm,
     divIntegralTerm,
+    introSupportedPrimConstraint,
     modIntegralTerm,
     quotIntegralTerm,
     remIntegralTerm,
@@ -49,8 +50,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
 -- | Default partial evaluation of division operation for integral types.
 pevalDefaultDivIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultDivIntegralTerm =
-  binaryUnfoldOnce doPevalDefaultDivIntegralTerm divIntegralTerm
+pevalDefaultDivIntegralTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultDivIntegralTerm divIntegralTerm l r
 
 doPevalDefaultDivIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
@@ -66,8 +68,9 @@ pevalDefaultDivBoundedIntegralTerm ::
   Term a ->
   Term a ->
   Term a
-pevalDefaultDivBoundedIntegralTerm =
-  binaryUnfoldOnce doPevalDefaultDivBoundedIntegralTerm divIntegralTerm
+pevalDefaultDivBoundedIntegralTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultDivBoundedIntegralTerm divIntegralTerm l r
 
 doPevalDefaultDivBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a, Integral a) =>
@@ -82,8 +85,9 @@ doPevalDefaultDivBoundedIntegralTerm _ _ = Nothing
 -- | Default partial evaluation of modulo operation for integral types.
 pevalDefaultModIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultModIntegralTerm =
-  binaryUnfoldOnce doPevalDefaultModIntegralTerm modIntegralTerm
+pevalDefaultModIntegralTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultModIntegralTerm modIntegralTerm l r
 
 doPevalDefaultModIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
@@ -96,8 +100,9 @@ doPevalDefaultModIntegralTerm _ _ = Nothing
 -- | Default partial evaluation of quotient operation for integral types.
 pevalDefaultQuotIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultQuotIntegralTerm =
-  binaryUnfoldOnce doPevalDefaultQuotIntegralTerm quotIntegralTerm
+pevalDefaultQuotIntegralTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultQuotIntegralTerm quotIntegralTerm l r
 
 doPevalDefaultQuotIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)
@@ -110,8 +115,9 @@ doPevalDefaultQuotIntegralTerm _ _ = Nothing
 -- types.
 pevalDefaultQuotBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultQuotBoundedIntegralTerm =
-  binaryUnfoldOnce doPevalDefaultQuotBoundedIntegralTerm quotIntegralTerm
+pevalDefaultQuotBoundedIntegralTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultQuotBoundedIntegralTerm quotIntegralTerm l r
 
 doPevalDefaultQuotBoundedIntegralTerm ::
   (PEvalDivModIntegralTerm a, Bounded a, Integral a) =>
@@ -126,8 +132,9 @@ doPevalDefaultQuotBoundedIntegralTerm _ _ = Nothing
 -- | Default partial evaluation of remainder operation for integral types.
 pevalDefaultRemIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Term a
-pevalDefaultRemIntegralTerm =
-  binaryUnfoldOnce doPevalDefaultRemIntegralTerm remIntegralTerm
+pevalDefaultRemIntegralTerm l r =
+  introSupportedPrimConstraint l $
+    binaryUnfoldOnce doPevalDefaultRemIntegralTerm remIntegralTerm l r
 
 doPevalDefaultRemIntegralTerm ::
   (PEvalDivModIntegralTerm a, Integral a) => Term a -> Term a -> Maybe (Term a)

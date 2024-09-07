@@ -39,6 +39,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     bitCastOrTerm,
     bitCastTerm,
     conTerm,
+    introSupportedPrimConstraint,
     pattern DynTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold
@@ -80,8 +81,9 @@ pevalBitCastOr ::
   Term b ->
   Term a ->
   Term b
-pevalBitCastOr =
-  binaryUnfoldOnce doPevalBitCastOr bitCastOrTerm
+pevalBitCastOr d a =
+  introSupportedPrimConstraint d $
+    binaryUnfoldOnce doPevalBitCastOr bitCastOrTerm d a
 
 instance PEvalBitCastTerm Bool (IntN 1) where
   pevalBitCastTerm = pevalBitCastGeneral

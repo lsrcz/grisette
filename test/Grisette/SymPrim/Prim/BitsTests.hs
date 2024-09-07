@@ -7,7 +7,7 @@
 module Grisette.SymPrim.Prim.BitsTests (bitsTests) where
 
 import Data.Bits (Bits (rotateL, rotateR), FiniteBits)
-import Grisette (IntN, WordN)
+import Grisette (IntN, SupportedPrim, WordN)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalBitwiseTerm
       ( pevalAndBitsTerm,
@@ -304,7 +304,7 @@ bitsTests =
     ]
 
 concreteSmallRotateRightCorrect ::
-  (PEvalRotateTerm a, Integral a, FiniteBits a) =>
+  (PEvalRotateTerm a, Integral a, FiniteBits a, SupportedPrim a) =>
   a ->
   a ->
   Property

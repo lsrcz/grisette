@@ -17,6 +17,7 @@ import Grisette.Internal.SymPrim.Prim.Term
         pevalQuotIntegralTerm,
         pevalRemIntegralTerm
       ),
+    SupportedPrim,
     Term,
     conTerm,
     divIntegralTerm,
@@ -41,7 +42,7 @@ instance NFData AEWrapper where
 
 sameDivPeval ::
   forall t.
-  (PEvalDivModIntegralTerm t) =>
+  (SupportedPrim t) =>
   t ->
   t ->
   (Term t -> Term t -> Term t) ->
@@ -56,7 +57,7 @@ sameDivPeval i j pf cf consf = do
 
 divisionPevalBoundedTests ::
   forall p t.
-  (Bounded t, PEvalDivModIntegralTerm t, Num t) =>
+  (Bounded t, Num t, SupportedPrim t) =>
   p t ->
   TestName ->
   (Term t -> Term t -> Term t) ->
@@ -72,7 +73,7 @@ divisionPevalBoundedTests _ name pf cf consf =
 
 divisionPevalTests ::
   forall p t0 t.
-  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t, Num t) =>
+  (Arbitrary t0, Show t0, Num t, SupportedPrim t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
@@ -128,7 +129,7 @@ divisionPevalUnboundedTestGroup name pf cf consf =
 
 moduloPevalTests ::
   forall p t0 t.
-  (Arbitrary t0, Show t0, PEvalDivModIntegralTerm t, Num t) =>
+  (Arbitrary t0, Show t0, Num t, SupportedPrim t) =>
   p t ->
   TestName ->
   (t0 -> t) ->
