@@ -67,7 +67,6 @@ import Control.Concurrent.STM
   )
 import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
 import Control.Exception (handle, throwTo)
-import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.RWS (RWST (runRWST))
 import Control.Monad.Reader
@@ -187,7 +186,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     SupportedPrim
       ( conSBVTerm,
         funcDummyConstraint,
-        isFuncType,
         parseSMTModelResult,
         sbvDistinct,
         sbvEq,
@@ -568,7 +566,7 @@ lowerSinglePrimImpl _ t@(SymTerm _ _ _ ts) = do
       m <- get
       let name = symSBVName ts (sizeBiMap m)
       g <- symSBVTerm @a name
-      when (isFuncType @a) $ tell $ TermAll $ funcDummyConstraint @a g
+      tell $ TermAll $ funcDummyConstraint @a g
       put $ addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts) m
       return $ const g
 #if MIN_VERSION_sbv(10,1,0)

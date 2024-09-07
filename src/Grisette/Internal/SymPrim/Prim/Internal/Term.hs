@@ -440,6 +440,7 @@ class
     ) ->
     a
   withPrim i = i
+  {-# INLINE withPrim #-}
   sbvIte :: SBV.SBV Bool -> SBVType t -> SBVType t -> SBVType t
   sbvIte = withPrim @t SBV.ite
   sbvEq :: SBVType t -> SBVType t -> SBV.SBV Bool
@@ -453,7 +454,7 @@ class
   parseSMTModelResult :: Int -> ([([SBVD.CV], SBVD.CV)], SBVD.CV) -> t
   castTypedSymbol ::
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
-  isFuncType :: Bool
+  -- isFuncType :: Bool
   funcDummyConstraint :: SBVType t -> SBV.SBV Bool
 
 defaultValueDynamic ::
@@ -4809,7 +4810,6 @@ instance SupportedPrim Bool where
     case decideSymbolKind @knd' of
       Left HRefl -> Just $ TypedSymbol s
       Right HRefl -> Just $ TypedSymbol s
-  isFuncType = False
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep Bool where

@@ -32,7 +32,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         conSBVTerm,
         defaultValue,
         funcDummyConstraint,
-        isFuncType,
         parseSMTModelResult,
         pevalDistinctTerm,
         pevalEqTerm,
@@ -183,7 +182,6 @@ supportedPrimFun
                 Left HRefl -> Nothing
                 Right HRefl -> Just $ TypedSymbol sym
             |],
-          [d|$(varP 'isFuncType) = True|],
           ( if numArg == 2
               then
                 [d|
