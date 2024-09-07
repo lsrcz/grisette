@@ -82,14 +82,11 @@ data CacheState t where
     CacheState t
 
 -- | A class for interning terms.
-class
-  ( Hashable (Description t),
-    Eq (Description t),
-    Typeable t,
-    Show t
-  ) =>
-  Interned t
-  where
+class -- ( Hashable (Description t),
+  --   Eq (Description t),
+  --   Show t
+  -- ) =>
+  Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
@@ -151,7 +148,12 @@ typeMemoizedCache tid = do
         \m -> (HM.insert wtid (wtidRef, r) m, r1)
 
 reclaimTerm ::
-  forall t. (Interned t) => WeakThreadId -> Int -> Description t -> IO ()
+  forall t.
+  (Interned t, Hashable (Description t), Typeable t) =>
+  WeakThreadId ->
+  Int ->
+  Description t ->
+  IO ()
 reclaimTerm id grp dt = do
   caches <- readIORef termCacheCell
   case HM.lookup id caches of
@@ -175,7 +177,11 @@ reclaimTerm id grp dt = do
     Nothing -> return ()
 
 -- | Internalize a term.
-intern :: forall t. (Interned t, Typeable t) => Uninterned t -> IO t
+intern ::
+  forall t.
+  (Interned t, Typeable t, Hashable (Description t)) =>
+  Uninterned t ->
+  IO t
 intern !bt = do
   tid <- myThreadId
   let wtid = weakThreadId tid

@@ -54,20 +54,20 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (binaryUnfoldOnce)
 
 -- | General partially evaluation of less than operation.
-pevalGeneralLtOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
+pevalGeneralLtOrdTerm :: (PEvalOrdTerm a, Ord a) => Term a -> Term a -> Term Bool
 pevalGeneralLtOrdTerm = binaryUnfoldOnce doPevalGeneralLtOrdTerm ltOrdTerm
 
 doPevalGeneralLtOrdTerm ::
-  (PEvalOrdTerm a) => Term a -> Term a -> Maybe (Term Bool)
+  (PEvalOrdTerm a, Ord a) => Term a -> Term a -> Maybe (Term Bool)
 doPevalGeneralLtOrdTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) = Just $ conTerm $ a < b
 doPevalGeneralLtOrdTerm _ _ = Nothing
 
 -- | General partially evaluation of less than or equal to operation.
-pevalGeneralLeOrdTerm :: (PEvalOrdTerm a) => Term a -> Term a -> Term Bool
+pevalGeneralLeOrdTerm :: (PEvalOrdTerm a, Ord a) => Term a -> Term a -> Term Bool
 pevalGeneralLeOrdTerm = binaryUnfoldOnce doPevalGeneralLeOrdTerm leOrdTerm
 
 doPevalGeneralLeOrdTerm ::
-  (PEvalOrdTerm a) => Term a -> Term a -> Maybe (Term Bool)
+  (PEvalOrdTerm a, Ord a) => Term a -> Term a -> Maybe (Term Bool)
 doPevalGeneralLeOrdTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) = Just $ conTerm $ a <= b
 doPevalGeneralLeOrdTerm _ _ = Nothing
 

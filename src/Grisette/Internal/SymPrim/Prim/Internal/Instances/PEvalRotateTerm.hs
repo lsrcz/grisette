@@ -28,7 +28,13 @@ import Grisette.Internal.Core.Data.Class.SymRotate (SymRotate (symRotate))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim (bvIsNonZeroFromGEq1)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( PEvalRotateTerm (pevalRotateLeftTerm, pevalRotateRightTerm, sbvRotateLeftTerm, sbvRotateRightTerm, withSbvRotateTermConstraint),
+  ( PEvalRotateTerm
+      ( pevalRotateLeftTerm,
+        pevalRotateRightTerm,
+        sbvRotateLeftTerm,
+        sbvRotateRightTerm,
+        withSbvRotateTermConstraint
+      ),
     SupportedNonFuncPrim (withNonFuncPrim),
     Term (ConTerm),
     conTerm,
