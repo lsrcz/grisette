@@ -144,9 +144,9 @@ import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
     SymbolSet (SymbolSet),
   )
-import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( SomeTypedSymbol (SomeTypedSymbol),
+  ( ModelValue,
+    SomeTypedSymbol (SomeTypedSymbol),
     TypedSymbol (unTypedSymbol),
     prettyPrintTerm,
   )

@@ -69,13 +69,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term,
     TypedAnySymbol,
   )
-import Grisette.Internal.SymPrim.Prim.ModelValue
-  ( ModelValue,
-    toModelValue,
-    unsafeFromModelValue,
-  )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( SomeTypedSymbol (SomeTypedSymbol),
+  ( ModelValue,
+    SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim (defaultValue, defaultValueDynamic),
     TypedSymbol (TypedSymbol, unTypedSymbol),
     conTerm,
@@ -83,6 +79,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     showUntyped,
     someTypedSymbol,
     symTerm,
+    toModelValue,
+    unsafeFromModelValue,
     withSymbolSupported,
   )
 

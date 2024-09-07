@@ -29,7 +29,6 @@ import Grisette.Internal.SymPrim.Prim.Model
     equation,
     evalTerm,
   )
-import Grisette.Internal.SymPrim.Prim.ModelValue (toModelValue)
 import Grisette.Internal.SymPrim.Prim.Term
   ( PEvalNumTerm (pevalAddNumTerm, pevalNegNumTerm),
     SupportedPrim (pevalITETerm),
@@ -38,6 +37,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalEqTerm,
     someTypedSymbol,
     ssymTerm,
+    toModelValue,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

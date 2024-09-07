@@ -107,7 +107,7 @@ instance (SupportedNonFuncPrim a, SupportedPrim b) => SBVRep (a =-> b) where
   type SBVType (a =-> b) = SBV.SBV (NonFuncSBVBaseType a) -> SBVType b
 
 instance
-  (SupportedPrim a, SupportedPrim b, SupportedPrim (a =-> b)) =>
+  (SupportedPrim a, SupportedPrim b, Eq a, SupportedPrim (a =-> b)) =>
   PEvalApplyTerm (a =-> b) a b
   where
   pevalApplyTerm = totalize2 doPevalApplyTerm applyTerm

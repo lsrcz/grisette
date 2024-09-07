@@ -22,6 +22,7 @@ module Grisette.Internal.SymPrim.FunInstanceGen
   )
 where
 
+import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind,
@@ -218,7 +219,16 @@ supportedPrimFun
             (typeRep :: TypeRep $(funType tyVars))
           |]
 
-      constraints = traverse (\ty -> [t|SupportedNonFuncPrim $ty|])
+      constraints =
+        fmap concat
+          . traverse
+            ( \ty ->
+                sequence
+                  [ [t|SupportedNonFuncPrim $ty|],
+                    [t|Eq $ty|],
+                    [t|Hashable $ty|]
+                  ]
+            )
       funType =
         foldl1 (\fty ty -> [t|$(varT funTypeName) $ty $fty|]) . reverse
       withPrims :: [Q Type] -> Q Exp

@@ -45,6 +45,7 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (decideSymbolKind),
+    ModelValue,
     NonFuncSBVRep (NonFuncSBVBaseType),
     SBVRep
       ( SBVType
@@ -86,8 +87,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalITEBasicTerm,
     pevalNotTerm,
     sbvFresh,
+    toModelValue,
   )
-import Grisette.Internal.SymPrim.Prim.ModelValue (ModelValue, toModelValue)
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 
 defaultValueForInteger :: Integer
