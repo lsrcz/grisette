@@ -40,6 +40,7 @@ import Data.Bifunctor (Bifunctor (second))
 import Data.Foldable (Foldable (foldl', toList))
 import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (fromJust)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
@@ -167,6 +168,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     eqHeteroSymbol,
     existsTerm,
     forallTerm,
+    introSupportedPrimConstraint,
     partitionCVArg,
     pevalAndTerm,
     pevalEqTerm,
@@ -499,9 +501,12 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
     goSome memo _ (SomeTerm (AndTerm _ _ _ arg1 arg2)) =
       goBinary memo pevalAndTerm arg1 arg2
     goSome memo _ (SomeTerm (EqTerm _ _ _ arg1 arg2)) =
-      goBinary memo pevalEqTerm arg1 arg2
-    goSome memo _ (SomeTerm (DistinctTerm _ _ _ args)) =
-      SomeTerm $ pevalDistinctTerm (fmap (go memo) args)
+      introSupportedPrimConstraint arg1 $
+        goBinary memo pevalEqTerm arg1 arg2
+    goSome memo _ (SomeTerm (DistinctTerm _ _ _ args@(arg1 :| _))) =
+      introSupportedPrimConstraint arg1 $
+        SomeTerm $
+          pevalDistinctTerm (fmap (go memo) args)
     goSome memo _ (SomeTerm (ITETerm _ _ _ cond arg1 arg2)) =
       goTernary memo pevalITETerm cond arg1 arg2
     goSome memo _ (SomeTerm (AddNumTerm _ _ _ arg1 arg2)) =

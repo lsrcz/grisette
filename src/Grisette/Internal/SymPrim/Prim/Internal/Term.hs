@@ -249,7 +249,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Caches
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
     myWeakThreadId,
-    pattern Dyn,
   )
 import Grisette.Internal.SymPrim.Prim.ModelValue
   ( ModelValue,
@@ -1072,7 +1071,6 @@ data Term t where
     !(Term Bool) ->
     Term Bool
   EqTerm ::
-    (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1080,7 +1078,6 @@ data Term t where
     !(Term t) ->
     Term Bool
   DistinctTerm ::
-    (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -2161,9 +2158,8 @@ data UTerm t where
   UNotTerm :: !(Term Bool) -> UTerm Bool
   UOrTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
   UAndTerm :: !(Term Bool) -> !(Term Bool) -> UTerm Bool
-  UEqTerm :: (SupportedNonFuncPrim t) => !(Term t) -> !(Term t) -> UTerm Bool
-  UDistinctTerm ::
-    (SupportedNonFuncPrim t) => !(NonEmpty (Term t)) -> UTerm Bool
+  UEqTerm :: !(Term t) -> !(Term t) -> UTerm Bool
+  UDistinctTerm :: !(NonEmpty (Term t)) -> UTerm Bool
   UITETerm ::
     (SupportedPrim t) =>
     !(Term Bool) ->
@@ -2835,7 +2831,8 @@ instance (SupportedPrim t) => Interned (Term t) where
           arg1HashId
           arg2HashId
   describe (UEqTerm (arg1 :: Term arg) arg2) = do
-    let fingerprint = typeFingerprint (Proxy @arg)
+    let fingerprint =
+          introSupportedPrimConstraint arg1 $ typeFingerprint (Proxy @arg)
         arg1HashId = hashId arg1
         arg2HashId = hashId arg2
      in DEqTerm
@@ -2843,8 +2840,9 @@ instance (SupportedPrim t) => Interned (Term t) where
           fingerprint
           arg1HashId
           arg2HashId
-  describe (UDistinctTerm args@((_ :: Term arg) :| _)) =
-    let fingerprint = typeFingerprint (Proxy @arg)
+  describe (UDistinctTerm args@((arg1 :: Term arg) :| _)) =
+    let fingerprint =
+          introSupportedPrimConstraint arg1 $ typeFingerprint (Proxy @arg)
         argsHashId = hashId <$> args
      in DDistinctTerm
           (preHashDistinctDescription fingerprint argsHashId)
@@ -3554,14 +3552,12 @@ curThreadAndTerm l r = intern $ UAndTerm l r
 {-# INLINE curThreadAndTerm #-}
 
 -- | Construct and internalizing a 'EqTerm'.
-curThreadEqTerm ::
-  (SupportedNonFuncPrim a) => Term a -> Term a -> IO (Term Bool)
+curThreadEqTerm :: Term a -> Term a -> IO (Term Bool)
 curThreadEqTerm l r = intern $ UEqTerm l r
 {-# INLINE curThreadEqTerm #-}
 
 -- | Construct and internalizing a 'DistinctTerm'.
-curThreadDistinctTerm ::
-  (SupportedNonFuncPrim a) => NonEmpty (Term a) -> IO (Term Bool)
+curThreadDistinctTerm :: NonEmpty (Term a) -> IO (Term Bool)
 curThreadDistinctTerm args = intern $ UDistinctTerm args
 {-# INLINE curThreadDistinctTerm #-}
 
@@ -3995,12 +3991,12 @@ andTerm = unsafeInCurThread2 curThreadAndTerm
 {-# NOINLINE andTerm #-}
 
 -- | Construct and internalizing a 'EqTerm'.
-eqTerm :: (SupportedNonFuncPrim a) => Term a -> Term a -> Term Bool
+eqTerm :: Term a -> Term a -> Term Bool
 eqTerm = unsafeInCurThread2 curThreadEqTerm
 {-# NOINLINE eqTerm #-}
 
 -- | Construct and internalizing a 'DistinctTerm'.
-distinctTerm :: (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
+distinctTerm :: NonEmpty (Term a) -> Term Bool
 distinctTerm args =
   unsafePerformIO $ do
     tid <- myWeakThreadId
@@ -4359,16 +4355,21 @@ pevalNotTerm (NotTerm _ _ _ tm) = tm
 pevalNotTerm (ConTerm _ _ _ a) = if a then falseTerm else trueTerm
 pevalNotTerm (OrTerm _ _ _ (NotTerm _ _ _ n1) n2) = pevalAndTerm n1 (pevalNotTerm n2)
 pevalNotTerm (OrTerm _ _ _ (DistinctTerm _ _ _ (n1 :| [n2])) n3) =
-  pevalAndTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
+  introSupportedPrimConstraint n1 $
+    pevalAndTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
 pevalNotTerm (OrTerm _ _ _ n1 (NotTerm _ _ _ n2)) = pevalAndTerm (pevalNotTerm n1) n2
 pevalNotTerm (OrTerm _ _ _ n1 (DistinctTerm _ _ _ (n2 :| [n3]))) =
-  pevalAndTerm (pevalNotTerm n1) (pevalEqTerm n2 n3)
+  introSupportedPrimConstraint n2 $
+    pevalAndTerm (pevalNotTerm n1) (pevalEqTerm n2 n3)
 pevalNotTerm (AndTerm _ _ _ (NotTerm _ _ _ n1) n2) = pevalOrTerm n1 (pevalNotTerm n2)
 pevalNotTerm (AndTerm _ _ _ (DistinctTerm _ _ _ (n1 :| [n2])) n3) =
-  pevalOrTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
+  introSupportedPrimConstraint n1 $
+    pevalOrTerm (pevalEqTerm n1 n2) (pevalNotTerm n3)
 pevalNotTerm (AndTerm _ _ _ n1 (NotTerm _ _ _ n2)) = pevalOrTerm (pevalNotTerm n1) n2
 pevalNotTerm (AndTerm _ _ _ n1 (DistinctTerm _ _ _ (n2 :| [n3]))) =
-  pevalOrTerm (pevalNotTerm n1) $ pevalEqTerm n2 n3
+  introSupportedPrimConstraint n2 $
+    pevalOrTerm (pevalNotTerm n1) $
+      pevalEqTerm n2 n3
 pevalNotTerm (EqTerm _ _ _ a b) = distinctTerm $ a :| [b]
 pevalNotTerm (DistinctTerm _ _ _ (a :| [b])) = eqTerm a b
 pevalNotTerm tm = notTerm tm
@@ -4378,7 +4379,7 @@ orEqFirst :: Term Bool -> Term Bool -> Bool
 orEqFirst _ (ConTerm _ _ _ False) = True
 orEqFirst
   (DistinctTerm _ _ _ ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
-  (EqTerm _ _ _ (Dyn (e2 :: Term a)) (Dyn (ec2@ConTerm {} :: Term b)))
+  (EqTerm _ _ _ (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
 -- orEqFirst
 --   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _) :: Term b)))
@@ -4395,7 +4396,7 @@ orEqTrue _ (ConTerm _ _ _ True) = True
 -- orEqTrue (NotTerm _ e1) (NotTerm _ e2) = andEqFalse e1 e2
 orEqTrue
   (DistinctTerm _ _ _ ((e1 :: Term a) :| [ec1@ConTerm {} :: Term b]))
-  (DistinctTerm _ _ _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@ConTerm {} :: Term b)]))
+  (DistinctTerm _ _ _ ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
 -- orEqTrue
 --   (NotTerm _ (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _) :: Term b)))
@@ -4411,7 +4412,7 @@ andEqFirst _ (ConTerm _ _ _ True) = True
 -- andEqFirst x (NotTerm _ y) = andEqFalse x y
 andEqFirst
   (EqTerm _ _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (DistinctTerm _ _ _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@ConTerm {} :: Term b)]))
+  (DistinctTerm _ _ _ ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
     | e1 == e2 && ec1 /= ec2 = True
 -- andEqFirst
 --   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _) :: Term b))
@@ -4428,7 +4429,7 @@ andEqFalse _ (ConTerm _ _ _ False) = True
 -- andEqFalse (NotTerm _ e1) (NotTerm _ e2) = orEqTrue e1 e2
 andEqFalse
   (EqTerm _ _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (EqTerm _ _ _ (Dyn (e2 :: Term a)) (Dyn (ec2@ConTerm {} :: Term b)))
+  (EqTerm _ _ _ (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
     | e1 == e2 && ec1 /= ec2 = True
 andEqFalse (NotTerm _ _ _ x) y | x == y = True
 andEqFalse x (NotTerm _ _ _ y) | x == y = True
@@ -4467,7 +4468,7 @@ pevalOrTerm (AndTerm _ _ _ l1 l2) r
   | orEqTrue l2 r = pevalOrTerm l1 r
 pevalOrTerm
   (AndTerm _ _ _ nl1@(NotTerm _ _ _ l1) l2)
-  (EqTerm _ _ _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool)))
+  (EqTerm _ _ _ (DynTerm (e1 :: Term Bool)) (DynTerm (e2 :: Term Bool)))
     | l1 == e1 && l2 == e2 = pevalOrTerm nl1 l2
 pevalOrTerm (NotTerm _ _ _ nl) (NotTerm _ _ _ nr) =
   pevalNotTerm $ pevalAndTerm nl nr
@@ -4506,7 +4507,7 @@ pevalAndTerm (OrTerm _ _ _ l1 l2) r
   | andEqFalse l2 r = pevalAndTerm l1 r
 pevalAndTerm
   (OrTerm _ _ _ l1 nl2@(NotTerm _ _ _ l2))
-  (NotTerm _ _ _ (EqTerm _ _ _ (Dyn (e1 :: Term Bool)) (Dyn (e2 :: Term Bool))))
+  (NotTerm _ _ _ (EqTerm _ _ _ (DynTerm (e1 :: Term Bool)) (DynTerm (e2 :: Term Bool))))
     | l1 == e1 && l2 == e2 = pevalAndTerm l1 nl2
 pevalAndTerm (NotTerm _ _ _ nl) (NotTerm _ _ _ nr) = pevalNotTerm $ pevalOrTerm nl nr
 pevalAndTerm l r = andTerm l r
@@ -4525,7 +4526,7 @@ pevalImpliesTerm (ConTerm _ _ _ False) _ = True
 pevalImpliesTerm _ (ConTerm _ _ _ True) = True
 pevalImpliesTerm
   (EqTerm _ _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (DistinctTerm _ _ _ ((Dyn (e2 :: Term a)) :| [(Dyn (ec2@ConTerm {} :: Term b))]))
+  (DistinctTerm _ _ _ ((DynTerm (e2 :: Term a)) :| [(DynTerm (ec2@ConTerm {} :: Term b))]))
     | e1 == e2 && ec1 /= ec2 = True
 -- pevalImpliesTerm
 --   (EqTerm _ (e1 :: Term a) (ec1@(ConTerm _ _ _) :: Term b))
@@ -4586,13 +4587,13 @@ pevalInferImplies cond (NotTerm _ _ _ nt1) _ falseRes
 --     _ -> Nothing
 pevalInferImplies
   (EqTerm _ _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (DistinctTerm _ _ _ ((Dyn (e2 :: Term a)) :| [Dyn (ec2@ConTerm {} :: Term b)]))
+  (DistinctTerm _ _ _ ((DynTerm (e2 :: Term a)) :| [DynTerm (ec2@ConTerm {} :: Term b)]))
   trueRes
   _
     | e1 == e2 && ec1 /= ec2 = Just trueRes
 pevalInferImplies
   (EqTerm _ _ _ (e1 :: Term a) (ec1@ConTerm {} :: Term b))
-  (EqTerm _ _ _ (Dyn (e2 :: Term a)) (Dyn (ec2@ConTerm {} :: Term b)))
+  (EqTerm _ _ _ (DynTerm (e2 :: Term a)) (DynTerm (ec2@ConTerm {} :: Term b)))
   _
   falseRes
     | e1 == e2 && ec1 /= ec2 = Just falseRes
