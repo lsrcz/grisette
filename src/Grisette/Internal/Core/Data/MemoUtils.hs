@@ -30,7 +30,7 @@ module Grisette.Internal.Core.Data.MemoUtils
 where
 
 import Control.Applicative (Const (Const, getConst))
-import Control.Concurrent (MVar, newMVar, putMVar, takeMVar)
+import qualified Control.Concurrent.RLock as RLock
 import Control.Monad.Fix (fix)
 import Data.HashTable.IO (BasicHashTable)
 import qualified Data.HashTable.IO as H
@@ -71,15 +71,16 @@ instance Ref Strong where
   deRef (Strong x _) = return $ Just x
   finalize (Strong _ weak) = Weak.finalize weak
 
-finalizer :: StableName (f Any) -> MVar () -> Weak (MemoTable ref f g) -> IO ()
+finalizer ::
+  StableName (f Any) -> RLock.RLock -> Weak (MemoTable ref f g) -> IO ()
 finalizer sn lock weakTbl = do
   r <- Weak.deRefWeak weakTbl
   case r of
     Nothing -> return ()
     Just tbl -> do
-      takeMVar lock
+      RLock.acquire lock
       HashTable.delete tbl sn
-      putMVar lock ()
+      RLock.release lock
 
 unsafeToAny :: f a -> f Any
 unsafeToAny = unsafeCoerce
@@ -93,13 +94,13 @@ memo' ::
   Proxy ref ->
   (forall a. f a -> g a) ->
   MemoTable ref f g ->
-  MVar () ->
+  RLock.RLock ->
   Weak (MemoTable ref f g) ->
   f b ->
   g b
 memo' _ f tbl lock weakTbl !x = unsafePerformIO $ do
   sn <- makeStableName $ unsafeToAny x
-  takeMVar lock
+  RLock.acquire lock
   lkp <- HashTable.lookup tbl sn
   case lkp of
     Nothing -> notFound sn
@@ -108,14 +109,14 @@ memo' _ f tbl lock weakTbl !x = unsafePerformIO $ do
       case maybeVal of
         Nothing -> notFound sn
         Just val -> do
-          putMVar lock ()
+          RLock.release lock
           return $ unsafeFromAny val
   where
     notFound sn = do
       let y = f x
       weak <- mkRef x (unsafeToAny y) $ finalizer sn lock weakTbl
       HashTable.insert tbl sn $ O weak
-      putMVar lock ()
+      RLock.release lock
       return y
 
 tableFinalizer :: (Ref ref) => MemoTable ref f g -> IO ()
@@ -131,7 +132,7 @@ memo0 ::
 memo0 p f =
   let (tbl, lock, weak) = unsafePerformIO $ do
         tbl' <- HashTable.new
-        lock' <- newMVar ()
+        lock' <- RLock.new
         weak' <- Weak.mkWeakPtr tbl . Just $ tableFinalizer tbl
         return (tbl', lock', weak')
    in memo' p f tbl lock weak
@@ -163,15 +164,19 @@ type HashTable k v = H.BasicHashTable k v
 htmemo :: (Eq k, Hashable k) => (k -> a) -> k -> a
 htmemo f = unsafePerformIO $ do
   cache <- H.new :: IO (HashTable k v)
+  rlock <- RLock.new
   return $ \x -> unsafePerformIO $ do
+    RLock.acquire rlock
     tryV <- H.lookup cache x
     case tryV of
       Nothing -> do
-        -- traceM "New value"
         let v = f x
         H.insert cache x v
+        RLock.release rlock
         return v
-      Just v -> return v
+      Just v -> do
+        RLock.release rlock
+        return v
 
 -- | Lift a memoizer to work with one more argument.
 htmup :: (Eq k, Hashable k) => (b -> c) -> (k -> b) -> (k -> c)

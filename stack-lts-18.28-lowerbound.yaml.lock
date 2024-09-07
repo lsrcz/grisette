@@ -214,6 +214,20 @@ packages:
       size: 670
   original:
     hackage: th-abstraction-0.4.0.0
+- completed:
+    hackage: atomic-primops-0.8.3@sha256:e3a97b5e3aee52a6098a104c1ae682d817e5a4e812e16e262196e257dd913907,2426
+    pantry-tree:
+      sha256: 32641fd419724a9992b9e979e1fb355e0990bbdd89709e7247852d962c363f80
+      size: 1245
+  original:
+    hackage: atomic-primops-0.8.3
+- completed:
+    hackage: concurrent-extra-0.7.0.12@sha256:f9a9c09770dbe32eeb3c741ef6c4e0b3389a203cd46eeb4c696b11ee66f01423,3386
+    pantry-tree:
+      sha256: 1e06b9e225a107ebcb7b1f441f0591140e63c18256fae4a2ef396c298fe44e4a
+      size: 1393
+  original:
+    hackage: concurrent-extra-0.7.0.12
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

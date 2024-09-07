@@ -65,6 +65,7 @@ dependencies:
   - th-lift-instances >= 0.1.16 && < 0.2
   - vector >= 0.12.1.2 && < 0.14
   - atomic-primops >= 0.8.3 && < 0.9
+  - concurrent-extra >= 0.7.0.12 && < 0.8
 
 flags:
   {
