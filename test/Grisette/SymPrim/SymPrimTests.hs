@@ -117,7 +117,6 @@ import Grisette.Internal.SymPrim.Prim.Model
   ( Model (Model),
     SymbolSet (SymbolSet),
   )
-import Grisette.Internal.SymPrim.Prim.ModelValue (toModelValue)
 import Grisette.Internal.SymPrim.Prim.Term
   ( LinkedRep (wrapTerm),
     PEvalApplyTerm (pevalApplyTerm),
@@ -169,6 +168,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalXorTerm,
     someTypedSymbol,
     ssymTerm,
+    toModelValue,
   )
 import Grisette.SymPrim
   ( ModelSymPair ((:=)),

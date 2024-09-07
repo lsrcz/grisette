@@ -138,7 +138,6 @@ library
       Grisette.Internal.SymPrim.Prim.Internal.Unfold
       Grisette.Internal.SymPrim.Prim.Internal.Utils
       Grisette.Internal.SymPrim.Prim.Model
-      Grisette.Internal.SymPrim.Prim.ModelValue
       Grisette.Internal.SymPrim.Prim.SomeTerm
       Grisette.Internal.SymPrim.Prim.Term
       Grisette.Internal.SymPrim.Prim.TermUtils

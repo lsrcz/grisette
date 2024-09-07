@@ -94,6 +94,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     typeHashId,
     introSupportedPrimConstraint,
     pformatTerm,
+    ModelValue (..),
+    toModelValue,
+    unsafeFromModelValue,
 
     -- * Interning
     UTerm (..),
@@ -250,10 +253,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( WeakThreadId,
     myWeakThreadId,
   )
-import Grisette.Internal.SymPrim.Prim.ModelValue
-  ( ModelValue,
-    toModelValue,
-  )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 import Type.Reflection
   ( SomeTypeRep (SomeTypeRep),
@@ -394,8 +393,6 @@ class SupportedPrimConstraint t where
 class
   ( Lift t,
     Typeable t,
-    Hashable t,
-    Eq t,
     Show t,
     NFData t,
     SupportedPrimConstraint t,
@@ -404,8 +401,10 @@ class
   SupportedPrim t
   where
   sameCon :: t -> t -> Bool
+  default sameCon :: (Eq t) => t -> t -> Bool
   sameCon = (==)
   hashConWithSalt :: Int -> t -> Int
+  default hashConWithSalt :: (Hashable t) => Int -> t -> Int
   hashConWithSalt = hashWithSalt
   pformatCon :: t -> String
   default pformatCon :: (Show t) => t -> String
@@ -414,6 +413,7 @@ class
   pformatSym = showUntyped
   defaultValue :: t
   defaultValueDynamic :: proxy t -> ModelValue
+  default defaultValueDynamic :: (Hashable t) => proxy t -> ModelValue
   defaultValueDynamic _ = toModelValue (defaultValue @t)
   pevalITETerm :: Term Bool -> Term t -> Term t -> Term t
   pevalEqTerm :: Term t -> Term t -> Term Bool
@@ -460,6 +460,39 @@ class
     (IsSymbolKind knd') => TypedSymbol knd t -> Maybe (TypedSymbol knd' t)
   isFuncType :: Bool
   funcDummyConstraint :: SBVType t -> SBV.SBV Bool
+
+-- | A value with its type information.
+data ModelValue where
+  ModelValue :: forall v. (SupportedPrim v) => v -> ModelValue
+
+instance Show ModelValue where
+  show (ModelValue (v :: v)) = show v ++ " :: " ++ show (typeRep @v)
+
+instance Eq ModelValue where
+  (ModelValue (v1 :: v1)) == (ModelValue (v2 :: v2)) =
+    case eqTypeRep (typeRep @v1) (typeRep @v2) of
+      Just HRefl -> sameCon v1 v2
+      _ -> False
+
+instance Hashable ModelValue where
+  s `hashWithSalt` (ModelValue (v :: v)) =
+    (s `hashWithSalt` (typeRep @v)) `hashConWithSalt` v
+
+-- | Convert from a model value. Crashes if the types does not match.
+unsafeFromModelValue :: forall a. (Typeable a) => ModelValue -> a
+unsafeFromModelValue (ModelValue (v :: v)) =
+  case eqTypeRep (typeRep @v) (typeRep @a) of
+    Just HRefl -> v
+    _ ->
+      error $
+        "Bad model value type, expected type: "
+          ++ show (typeRep @a)
+          ++ ", but got: "
+          ++ show (typeRep @v)
+
+-- | Convert to a model value.
+toModelValue :: forall a. (SupportedPrim a) => a -> ModelValue
+toModelValue = ModelValue
 
 -- | Cast a typed symbol to a different kind. Check if the kind is compatible.
 castSomeTypedSymbol ::
