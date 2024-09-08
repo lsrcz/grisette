@@ -171,7 +171,7 @@ testUnaryOpLowering' precond config f name sbvfun = do
   let a :: Term a = ssymTerm "a"
   let fa :: Term b = f a
   SBV.runSMTWith (sbvConfig config) $ do
-    (m, lt, _) <- lowerSinglePrim config fa
+    (m, lt, _) <- lowerSinglePrim fa
     let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -184,7 +184,7 @@ testUnaryOpLowering' precond config f name sbvfun = do
           SBV.Sat -> return ()
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unsolvable formula"
   SBV.runSMTWith (sbvConfig config) $ do
-    (m, lt, _) <- lowerSinglePrim config fa
+    (m, lt, _) <- lowerSinglePrim fa
     let sbvv :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -228,7 +228,7 @@ testBinaryOpLowering config f name sbvfun = do
   let b :: Term b = ssymTerm "b"
   let fab :: Term c = f a b
   SBV.runSMTWith (sbvConfig config) $ do
-    (m, lt, _) <- lowerSinglePrim config fab
+    (m, lt, _) <- lowerSinglePrim fab
     let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -244,7 +244,7 @@ testBinaryOpLowering config f name sbvfun = do
           _ -> lift $ assertFailure $ "Lowering for " ++ name ++ " generated unsolvable formula"
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
-    (m, lt, _) <- lowerSinglePrim config fab
+    (m, lt, _) <- lowerSinglePrim fab
     let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -296,7 +296,7 @@ testTernaryOpLowering config precond f name sbvfun = do
   let c :: Term c = ssymTerm "c"
   let fabc :: Term d = f a b c
   SBV.runSMTWith (sbvConfig config) $ do
-    (m, lt, _) <- lowerSinglePrim config fabc
+    (m, lt, _) <- lowerSinglePrim fabc
     let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -315,8 +315,8 @@ testTernaryOpLowering config precond f name sbvfun = do
           _ -> lift $ assertFailure $ T.unpack $ "Lowering for " <> name <> " generated unsolvable formula"
       _ -> lift $ assertFailure "Failed to extract the term"
   SBV.runSMTWith (sbvConfig config) $ do
-    (m, lt, _) <- lowerSinglePrim config fabc
-    (m2, p, _) <- lowerSinglePrimCached config (precond a b c) m
+    (m, lt, _) <- lowerSinglePrim fabc
+    (m2, p, _) <- lowerSinglePrimCached (precond a b c) m
     let sbva :: Maybe (SBVType a) =
           M.lookup (SomeTerm a) (biMapToSBV m2)
             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -1087,7 +1087,7 @@ loweringTests =
                           asym
                           (eqTerm (addNumTerm a x) (addNumTerm a $ conTerm 20))
                   SBV.runSMTWith SBV.z3 $ do
-                    (m, v, _) <- lowerSinglePrim z3 (andTerm xterm yterm)
+                    (m, v, _) <- lowerSinglePrim (andTerm xterm yterm)
                     let sbva =
                           M.lookup (SomeTerm a) (biMapToSBV m)
                             >>= \f -> fromDynamic (f emptyQuantifiedStack)
@@ -1112,7 +1112,7 @@ loweringTests =
                   let x :: Term Integer = ssymTerm "x"
                   let xterm = forallTerm xsym (eqTerm x (conTerm 10))
                   SBV.runSMTWith SBV.z3 $ do
-                    (_, v, _) <- lowerSinglePrim z3 xterm
+                    (_, v, _) <- lowerSinglePrim xterm
                     SBV.query $ do
                       SBV.constrain $ v emptyQuantifiedStack
                       satres <- SBV.checkSat
@@ -1127,7 +1127,7 @@ loweringTests =
                   let xterm =
                         forallTerm xsym $ existsTerm asym (ltOrdTerm x a)
                   SBV.runSMTWith SBV.z3 $ do
-                    (_, v, _) <- lowerSinglePrim z3 xterm
+                    (_, v, _) <- lowerSinglePrim xterm
                     SBV.query $ do
                       SBV.constrain $ v emptyQuantifiedStack
                       satres <- SBV.checkSat
@@ -1142,7 +1142,7 @@ loweringTests =
                   let xterm =
                         existsTerm asym $ forallTerm xsym (ltOrdTerm x a)
                   SBV.runSMTWith SBV.z3 $ do
-                    (_, v, _) <- lowerSinglePrim z3 xterm
+                    (_, v, _) <- lowerSinglePrim xterm
                     SBV.query $ do
                       SBV.constrain $ v emptyQuantifiedStack
                       satres <- SBV.checkSat
