@@ -52,6 +52,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     conTerm,
     pformatTerm,
     symTerm,
+    typedAnySymbol,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
 
@@ -169,7 +170,7 @@ instance
   Solvable (ca --> cb) (sa -~> sb)
   where
   con = SymGeneralFun . conTerm
-  sym = SymGeneralFun . symTerm
+  sym = SymGeneralFun . symTerm . typedAnySymbol
   conView (SymGeneralFun (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 

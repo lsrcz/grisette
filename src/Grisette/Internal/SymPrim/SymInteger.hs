@@ -37,6 +37,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalSubNumTerm,
     pformatTerm,
     symTerm,
+    typedConstantSymbol,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -87,7 +88,7 @@ instance Hashable SymInteger where
 
 instance Solvable Integer SymInteger where
   con = SymInteger . conTerm
-  sym = SymInteger . symTerm
+  sym = SymInteger . symTerm . typedConstantSymbol
   conView (SymInteger (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 

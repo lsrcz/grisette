@@ -47,7 +47,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalNegNumTerm,
         pevalSignumNumTerm
       ),
-    pevalSubNumTerm,
+    pevalSubNumTerm, typedConstantSymbol,
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
@@ -91,7 +91,7 @@ instance IsString SymAlgReal where
 
 instance Solvable AlgReal SymAlgReal where
   con = SymAlgReal . conTerm
-  sym = SymAlgReal . symTerm
+  sym = SymAlgReal . symTerm . typedConstantSymbol
   conView (SymAlgReal (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 

@@ -45,6 +45,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     conTerm,
     pformatTerm,
     symTerm,
+    typedAnySymbol,
   )
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
@@ -123,7 +124,7 @@ instance
   Solvable (ca =-> cb) (sa =~> sb)
   where
   con = SymTabularFun . conTerm
-  sym = SymTabularFun . symTerm
+  sym = SymTabularFun . symTerm . typedAnySymbol
   conView (SymTabularFun (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 

@@ -43,9 +43,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         symSBVTerm,
         withPrim
       ),
-    TypedSymbol (TypedSymbol),
+    TypedSymbol (unTypedSymbol),
     decideSymbolKind,
     translateTypeError,
+    typedAnySymbol,
     withNonFuncPrim,
   )
 import Language.Haskell.TH
@@ -177,10 +178,10 @@ supportedPrimFun
                     |]
               ),
           [d|
-            $(varP 'castTypedSymbol) = \(TypedSymbol sym) ->
+            $(varP 'castTypedSymbol) = \sym ->
               case decideSymbolKind @($knd'ty) of
                 Left HRefl -> Nothing
-                Right HRefl -> Just $ TypedSymbol sym
+                Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol sym
             |],
           ( if numArg == 2
               then

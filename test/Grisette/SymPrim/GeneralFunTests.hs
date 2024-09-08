@@ -14,8 +14,8 @@ import Grisette
     Solvable (con),
     SymbolSetRep (buildSymbolSet),
     TypedAnySymbol,
-    TypedSymbol (TypedSymbol),
     indexed,
+    typedConstantSymbol,
     (-->),
     type (-->),
   )
@@ -68,9 +68,9 @@ generalFunTests =
             let x :: Integer --> Integer --> Integer =
                   "a" --> con ("b" --> "a" + "b" + "c")
             let expected =
-                  GeneralFun (TypedSymbol $ indexed "arg" 2) $
+                  GeneralFun (typedConstantSymbol $ indexed "arg" 2) $
                     conTerm $
-                      GeneralFun (TypedSymbol $ indexed "arg" 1) $
+                      GeneralFun (typedConstantSymbol $ indexed "arg" 1) $
                         iteTerm
                           (ssymTerm "x")
                           ( pevalAddNumTerm
@@ -94,9 +94,9 @@ generalFunTests =
             let x :: Integer --> Integer --> Integer =
                   "b" --> con ("a" --> "a" + "b" + "c")
             let expected =
-                  GeneralFun (TypedSymbol $ indexed "arg" 2) $
+                  GeneralFun (typedConstantSymbol $ indexed "arg" 2) $
                     conTerm $
-                      GeneralFun (TypedSymbol $ indexed "arg" 1) $
+                      GeneralFun (typedConstantSymbol $ indexed "arg" 1) $
                         iteTerm
                           (ssymTerm "x")
                           ( pevalAddNumTerm

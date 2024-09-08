@@ -163,7 +163,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ),
     TypedAnySymbol,
     TypedConstantSymbol,
-    TypedSymbol (TypedSymbol, unTypedSymbol),
+    TypedSymbol,
     applyTerm,
     conTerm,
     eqHeteroSymbol,
@@ -183,6 +183,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     someTypedSymbol,
     symTerm,
     translateTypeError,
+    typedAnySymbol,
+    typedConstantSymbol,
+    withConstantSymbolSupported,
+    withSymbolSupported,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm), someTerm)
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
@@ -249,9 +253,13 @@ extractSymSomeTermIncludeBoundedVars = stableMemo go
             Nothing -> HS.empty
         _ -> HS.empty
     go (SomeTerm (ForallTerm _ _ _ sym arg)) =
-      HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $ goUnary arg
+      withConstantSymbolSupported sym $
+        HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $
+          goUnary arg
     go (SomeTerm (ExistsTerm _ _ _ sym arg)) =
-      HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $ goUnary arg
+      withConstantSymbolSupported sym $
+        HS.insert (someTypedSymbol $ fromJust $ castTypedSymbol sym) $
+          goUnary arg
     go (SomeTerm (NotTerm _ _ _ arg)) = goUnary arg
     go (SomeTerm (OrTerm _ _ _ arg1 arg2)) = goBinary arg1 arg2
     go (SomeTerm (AndTerm _ _ _ arg1 arg2)) = goBinary arg1 arg2
@@ -321,14 +329,14 @@ extractSymSomeTermIncludeBoundedVars = stableMemo go
 -- variables in the function body for a general symbolic function.
 freshArgSymbol ::
   forall a. (SupportedNonFuncPrim a) => [SomeTerm] -> TypedConstantSymbol a
-freshArgSymbol terms = TypedSymbol $ go 0
+freshArgSymbol terms = typedConstantSymbol $ go 0
   where
     allSymbols = mconcat $ extractSymSomeTermIncludeBoundedVars <$> terms
     go :: Int -> Symbol
     go n =
       let currentSymbol = IndexedSymbol "arg" n
           currentTypedSymbol =
-            someTypedSymbol (TypedSymbol currentSymbol :: TypedAnySymbol a)
+            someTypedSymbol (typedAnySymbol currentSymbol :: TypedAnySymbol a)
        in if HS.member currentTypedSymbol allSymbols
             then go (n + 1)
             else currentSymbol
@@ -343,7 +351,7 @@ buildGeneralFun ::
 buildGeneralFun arg v =
   GeneralFun
     argSymbol
-    (substTerm arg (symTerm $ unTypedSymbol argSymbol) HS.empty v)
+    (substTerm arg (symTerm argSymbol) HS.empty v)
   where
     argSymbol = freshArgSymbol [SomeTerm v]
 
@@ -422,7 +430,7 @@ parseGeneralFunSMTModelResult ::
   ([([SBVD.CV], SBVD.CV)], SBVD.CV) ->
   a --> b
 parseGeneralFunSMTModelResult level (l, s) =
-  let sym = IndexedSymbol "arg" level
+  let sym = typedConstantSymbol $ IndexedSymbol "arg" level
       funs =
         second
           ( \r ->
@@ -442,7 +450,7 @@ parseGeneralFunSMTModelResult level (l, s) =
           )
           (conTerm def)
           funs
-   in buildGeneralFun (TypedSymbol sym) body
+   in buildGeneralFun sym body
 
 -- | General procedure for substituting symbols in a term.
 {-# NOINLINE generalSubstSomeTerm #-}
@@ -610,12 +618,14 @@ substTerm ::
   Term b
 substTerm sym a =
   generalSubstSomeTerm
-    ( \t@(TypedSymbol t') ->
-        if eqHeteroSymbol sym t then unsafeCoerce a else symTerm t'
+    ( \t ->
+        if eqHeteroSymbol sym t
+          then unsafeCoerce a
+          else withSymbolSupported t $ symTerm t
     )
 
 supportedPrimFunUpTo
-  [|buildGeneralFun (TypedSymbol "a") (conTerm defaultValue)|]
+  [|buildGeneralFun (typedConstantSymbol "a") (conTerm defaultValue)|]
   [|
     \c t f -> case (t, f) of
       ( ConTerm _ _ _ (GeneralFun (ta :: TypedConstantSymbol a) a),
@@ -625,8 +635,8 @@ supportedPrimFunUpTo
             GeneralFun argSymbol $
               pevalITETerm
                 c
-                (substTerm ta (symTerm $ unTypedSymbol argSymbol) HS.empty a)
-                (substTerm tb (symTerm $ unTypedSymbol argSymbol) HS.empty b)
+                (substTerm ta (symTerm argSymbol) HS.empty a)
+                (substTerm tb (symTerm argSymbol) HS.empty b)
           where
             argSymbol :: TypedConstantSymbol a
             argSymbol = freshArgSymbol [SomeTerm a, SomeTerm b]

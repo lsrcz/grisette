@@ -20,6 +20,7 @@ import Grisette.Internal.SymPrim.Prim.Term
         pevalBVSelectTerm
       ),
     PEvalBitCastTerm (pevalBitCastTerm),
+    SupportedPrim,
     Term,
     bitCastTerm,
     bvConcatTerm,
@@ -53,7 +54,8 @@ data BVSelectTest where
       KnownNat w,
       1 <= w,
       KnownNat n,
-      ix + w <= n
+      ix + w <= n,
+      SupportedPrim (bv w)
     ) =>
     { bvSelectTestName :: String,
       bvSelectIx :: Proxy ix,
@@ -71,7 +73,8 @@ data BVExtendTest where
       1 <= l,
       KnownNat r,
       1 <= r,
-      l <= r
+      l <= r,
+      SupportedPrim (bv r)
     ) =>
     { bvExtendTestName :: String,
       bvExtendSigned :: Bool,
@@ -90,7 +93,8 @@ data BVConcatTest where
       KnownNat (l + r),
       1 <= l,
       1 <= r,
-      1 <= l + r
+      1 <= l + r,
+      SupportedPrim (bv (l + r))
     ) =>
     { bvConcatTestName :: String,
       bvConcatTestLhs :: Term (bv l),

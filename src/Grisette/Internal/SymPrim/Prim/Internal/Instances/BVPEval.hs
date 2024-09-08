@@ -27,7 +27,7 @@ import Data.Kind (Type)
 import Data.Maybe (isJust)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
-import Data.Typeable (type (:~:) (Refl))
+import Data.Typeable (Typeable, type (:~:) (Refl))
 import GHC.TypeNats (KnownNat, Nat, natVal, sameNat, type (+), type (-), type (<=))
 import Grisette.Internal.Core.Data.Class.BitVector
   ( SizedBV
@@ -53,6 +53,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         sbvBVSelectTerm
       ),
     PEvalBitCastTerm (pevalBitCastTerm, sbvBitCast),
+    SupportedPrim,
     Term
       ( BVConcatTerm,
         BVExtendTerm,
@@ -98,7 +99,9 @@ pevalDefaultBVSelectTerm ::
     ix + w <= n,
     PEvalBVTerm bv,
     forall x. (KnownNat x, 1 <= x) => PEvalBitCastTerm (bv2 x) (bv x),
-    PEvalBVTerm bv2
+    PEvalBVTerm bv2,
+    Typeable bv,
+    SupportedPrim (bv2 n)
   ) =>
   p ix ->
   q w ->
@@ -135,7 +138,9 @@ doPevalDefaultBVSelectTerm ::
     1 <= w,
     ix + w <= n,
     PEvalBVTerm bv,
-    PEvalBVTerm bv2
+    PEvalBVTerm bv2,
+    Typeable bv,
+    SupportedPrim (bv2 n)
   ) =>
   p ix ->
   q w ->
@@ -216,7 +221,9 @@ pevalDefaultBVExtendTerm ::
     KnownNat r,
     1 <= l,
     1 <= r,
-    l <= r
+    l <= r,
+    Typeable bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Bool ->
   proxy r ->
@@ -247,7 +254,9 @@ doPevalDefaultBVExtendTerm ::
     KnownNat r,
     1 <= l,
     1 <= r,
-    l <= r
+    l <= r,
+    Typeable bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Bool ->
   proxy r ->
@@ -284,7 +293,8 @@ pevalDefaultBVConcatTerm ::
     KnownNat b,
     1 <= a,
     1 <= b,
-    PEvalBVTerm bv
+    PEvalBVTerm bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Term (bv a) ->
   Term (bv b) ->
@@ -297,7 +307,7 @@ pevalDefaultBVConcatTerm =
 
 unsafeBVConcatTerm ::
   forall bv n1 n2 r.
-  (PEvalBVTerm bv) =>
+  (PEvalBVTerm bv, forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)) =>
   NatRepr n1 ->
   NatRepr n2 ->
   NatRepr r ->
@@ -341,10 +351,12 @@ doPevalDefaultBVConcatTerm ::
   forall bv l r.
   ( KnownNat l,
     KnownNat r,
+    KnownNat (l + r),
     1 <= l,
     1 <= r,
     1 <= (l + r),
-    PEvalBVTerm bv
+    PEvalBVTerm bv,
+    forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv n)
   ) =>
   Term (bv l) ->
   Term (bv r) ->
