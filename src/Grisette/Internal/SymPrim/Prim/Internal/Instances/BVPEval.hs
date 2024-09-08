@@ -61,9 +61,9 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         ConTerm
       ),
     bitCastTerm,
-    bvconcatTerm,
-    bvextendTerm,
-    bvselectTerm,
+    bvConcatTerm,
+    bvExtendTerm,
+    bvSelectTerm,
     conTerm,
     pattern DynTerm,
   )
@@ -105,7 +105,7 @@ pevalDefaultBVSelectTerm ::
   Term (bv n) ->
   Term (bv w)
 pevalDefaultBVSelectTerm ix w =
-  unaryUnfoldOnce (doPevalDefaultBVSelectTerm @bv2 ix w) (bvselectTerm ix w)
+  unaryUnfoldOnce (doPevalDefaultBVSelectTerm @bv2 ix w) (bvSelectTerm ix w)
 
 unsafePevalBVSelectTerm ::
   forall bv n ix w.
@@ -223,7 +223,7 @@ pevalDefaultBVExtendTerm ::
   Term (bv l) ->
   Term (bv r)
 pevalDefaultBVExtendTerm signed p =
-  unaryUnfoldOnce (doPevalDefaultBVExtendTerm signed p) (bvextendTerm signed p)
+  unaryUnfoldOnce (doPevalDefaultBVExtendTerm signed p) (bvExtendTerm signed p)
 
 unsafePevalBVExtendTerm ::
   forall bv l r.
@@ -293,7 +293,7 @@ pevalDefaultBVConcatTerm =
   withKnownNat (addNat (natRepr @a) (natRepr @b)) $
     case (unsafeLeqProof @1 @(a + b)) of
       LeqProof ->
-        binaryUnfoldOnce doPevalDefaultBVConcatTerm bvconcatTerm
+        binaryUnfoldOnce doPevalDefaultBVConcatTerm bvConcatTerm
 
 unsafeBVConcatTerm ::
   forall bv n1 n2 r.
@@ -314,7 +314,7 @@ unsafeBVConcatTerm n1Repr n2Repr rRepr lhs rhs =
       withKnownNat n1Repr $
         withKnownNat n2Repr $
           withKnownNat rRepr $
-            bvconcatTerm lhs rhs
+            bvConcatTerm lhs rhs
 
 unsafePevalBVConcatTerm ::
   forall bv n1 n2 r.

@@ -91,8 +91,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     andTerm,
     bitCastOrTerm,
     bitCastTerm,
-    bvconcatTerm,
-    bvselectTerm,
+    bvConcatTerm,
+    bvSelectTerm,
     bvsignExtendTerm,
     bvzeroExtendTerm,
     complementBitsTerm,
@@ -519,77 +519,77 @@ loweringTests =
               testCase "Extract" $ do
                 testUnaryOpLowering @(IntN 5) @(IntN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @1))
+                  (bvSelectTerm (Proxy @0) (Proxy @1))
                   "select"
                   (SBV.bvExtract @0 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @1))
+                  (bvSelectTerm (Proxy @1) (Proxy @1))
                   "select"
                   (SBV.bvExtract @1 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @2) (Proxy @1))
+                  (bvSelectTerm (Proxy @2) (Proxy @1))
                   "select"
                   (SBV.bvExtract @2 @2 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @3) (Proxy @1))
+                  (bvSelectTerm (Proxy @3) (Proxy @1))
                   "select"
                   (SBV.bvExtract @3 @3 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @4) (Proxy @1))
+                  (bvSelectTerm (Proxy @4) (Proxy @1))
                   "select"
                   (SBV.bvExtract @4 @4 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @2))
+                  (bvSelectTerm (Proxy @0) (Proxy @2))
                   "select"
                   (SBV.bvExtract @1 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @2))
+                  (bvSelectTerm (Proxy @1) (Proxy @2))
                   "select"
                   (SBV.bvExtract @2 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @2) (Proxy @2))
+                  (bvSelectTerm (Proxy @2) (Proxy @2))
                   "select"
                   (SBV.bvExtract @3 @2 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @3) (Proxy @2))
+                  (bvSelectTerm (Proxy @3) (Proxy @2))
                   "select"
                   (SBV.bvExtract @4 @3 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 3)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @3))
+                  (bvSelectTerm (Proxy @0) (Proxy @3))
                   "select"
                   (SBV.bvExtract @2 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 3)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @3))
+                  (bvSelectTerm (Proxy @1) (Proxy @3))
                   "select"
                   (SBV.bvExtract @3 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 3)
                   unboundedConfig
-                  (bvselectTerm (Proxy @2) (Proxy @3))
+                  (bvSelectTerm (Proxy @2) (Proxy @3))
                   "select"
                   (SBV.bvExtract @4 @2 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 4)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @4))
+                  (bvSelectTerm (Proxy @0) (Proxy @4))
                   "select"
                   (SBV.bvExtract @3 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 4)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @4))
+                  (bvSelectTerm (Proxy @1) (Proxy @4))
                   "select"
                   (SBV.bvExtract @4 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(IntN 5) @(IntN 5)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @5))
+                  (bvSelectTerm (Proxy @0) (Proxy @5))
                   "select"
                   id,
               testCase "Extension" $ do
@@ -616,7 +616,7 @@ loweringTests =
               testCase "Concat" $ do
                 testBinaryOpLowering @(IntN 4) @(IntN 5) @(IntN 9)
                   unboundedConfig
-                  bvconcatTerm
+                  bvConcatTerm
                   "bvconcat"
                   (SBV.#),
               testCase "AndBits" $ do
@@ -711,77 +711,77 @@ loweringTests =
               testCase "Extract" $ do
                 testUnaryOpLowering @(WordN 5) @(WordN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @1))
+                  (bvSelectTerm (Proxy @0) (Proxy @1))
                   "select"
                   (SBV.bvExtract @0 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @1))
+                  (bvSelectTerm (Proxy @1) (Proxy @1))
                   "select"
                   (SBV.bvExtract @1 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @2) (Proxy @1))
+                  (bvSelectTerm (Proxy @2) (Proxy @1))
                   "select"
                   (SBV.bvExtract @2 @2 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @3) (Proxy @1))
+                  (bvSelectTerm (Proxy @3) (Proxy @1))
                   "select"
                   (SBV.bvExtract @3 @3 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 1)
                   unboundedConfig
-                  (bvselectTerm (Proxy @4) (Proxy @1))
+                  (bvSelectTerm (Proxy @4) (Proxy @1))
                   "select"
                   (SBV.bvExtract @4 @4 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @2))
+                  (bvSelectTerm (Proxy @0) (Proxy @2))
                   "select"
                   (SBV.bvExtract @1 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @2))
+                  (bvSelectTerm (Proxy @1) (Proxy @2))
                   "select"
                   (SBV.bvExtract @2 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @2) (Proxy @2))
+                  (bvSelectTerm (Proxy @2) (Proxy @2))
                   "select"
                   (SBV.bvExtract @3 @2 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 2)
                   unboundedConfig
-                  (bvselectTerm (Proxy @3) (Proxy @2))
+                  (bvSelectTerm (Proxy @3) (Proxy @2))
                   "select"
                   (SBV.bvExtract @4 @3 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 3)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @3))
+                  (bvSelectTerm (Proxy @0) (Proxy @3))
                   "select"
                   (SBV.bvExtract @2 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 3)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @3))
+                  (bvSelectTerm (Proxy @1) (Proxy @3))
                   "select"
                   (SBV.bvExtract @3 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 3)
                   unboundedConfig
-                  (bvselectTerm (Proxy @2) (Proxy @3))
+                  (bvSelectTerm (Proxy @2) (Proxy @3))
                   "select"
                   (SBV.bvExtract @4 @2 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 4)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @4))
+                  (bvSelectTerm (Proxy @0) (Proxy @4))
                   "select"
                   (SBV.bvExtract @3 @0 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 4)
                   unboundedConfig
-                  (bvselectTerm (Proxy @1) (Proxy @4))
+                  (bvSelectTerm (Proxy @1) (Proxy @4))
                   "select"
                   (SBV.bvExtract @4 @1 @5 Proxy Proxy)
                 testUnaryOpLowering @(WordN 5) @(WordN 5)
                   unboundedConfig
-                  (bvselectTerm (Proxy @0) (Proxy @5))
+                  (bvSelectTerm (Proxy @0) (Proxy @5))
                   "select"
                   id,
               testCase "Extension" $ do
@@ -808,7 +808,7 @@ loweringTests =
               testCase "Concat" $ do
                 testBinaryOpLowering @(WordN 4) @(WordN 5) @(WordN 9)
                   unboundedConfig
-                  bvconcatTerm
+                  bvConcatTerm
                   "bvconcat"
                   (SBV.#),
               testCase "AndBits" $ do
