@@ -47,7 +47,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalNegNumTerm,
         pevalSignumNumTerm
       ),
-    pevalSubNumTerm, typedConstantSymbol,
+    pevalSubNumTerm,
+    typedConstantSymbol,
   )
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
