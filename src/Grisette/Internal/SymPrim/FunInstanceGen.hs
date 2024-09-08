@@ -72,7 +72,7 @@ import Language.Haskell.TH.Datatype.TyVarBndr
   ( plainTVInferred,
     plainTVSpecified,
   )
-import Type.Reflection (TypeRep, typeRep, type (:~~:) (HRefl))
+import Type.Reflection (TypeRep, Typeable, typeRep, type (:~~:) (HRefl))
 
 instanceWithOverlapDescD ::
   Maybe Overlap -> Q Cxt -> Q Type -> [DecsQ] -> DecsQ
@@ -225,7 +225,8 @@ supportedPrimFun
                   [ [t|SupportedNonFuncPrim $ty|],
                     [t|Eq $ty|],
                     [t|Show $ty|],
-                    [t|Hashable $ty|]
+                    [t|Hashable $ty|],
+                    [t|Typeable $ty|]
                   ]
             )
       funType =

@@ -41,7 +41,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (SymbolKindConstraint),
     SomeTypedConstantSymbol,
     SomeTypedSymbol (SomeTypedSymbol),
-    SupportedPrim (castTypedSymbol),
+    SupportedPrim (castTypedSymbol, primTypeRep),
     Term
       ( AbsNumTerm,
         AddNumTerm,
@@ -108,7 +108,6 @@ import Type.Reflection
     pattern App,
     type (:~~:) (HRefl),
   )
-import qualified Type.Reflection as R
 
 {-# NOINLINE extractSymSomeTerm #-}
 extractSymSomeTerm ::
@@ -148,10 +147,10 @@ extractSymSomeTerm = go initialMemo
       case (castTypedSymbol sym, castTypedSymbol sym) of
         (Just sym', _) | HS.member (someTypedSymbol sym') bs -> return HS.empty
         (_, Just sym') ->
-          return $ HS.singleton $ SomeTypedSymbol (R.typeRep @a) sym'
+          return $ HS.singleton $ SomeTypedSymbol (primTypeRep @a) sym'
         _ -> Nothing
     go _ bs (SomeTerm (ConTerm _ _ _ cv :: Term v)) =
-      case (typeRep :: TypeRep v) of
+      case (primTypeRep :: TypeRep v) of
         App (App gf _) _ ->
           case eqTypeRep (typeRep @(-->)) gf of
             Just HRefl -> case cv of

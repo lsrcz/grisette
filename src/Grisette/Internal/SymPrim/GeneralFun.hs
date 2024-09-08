@@ -105,6 +105,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         parseSMTModelResult,
         pevalDistinctTerm,
         pevalITETerm,
+        primTypeRep,
         withPrim
       ),
     SupportedPrimConstraint (PrimConstraint),
@@ -234,7 +235,7 @@ extractSymSomeTermIncludeBoundedVars = stableMemo go
     go (SomeTerm (SymTerm _ _ _ (sym :: TypedAnySymbol a))) =
       HS.singleton $ someTypedSymbol sym
     go (SomeTerm (ConTerm _ _ _ cv :: Term v)) =
-      case (typeRep :: TypeRep v) of
+      case (primTypeRep :: TypeRep v) of
         App (App gf _) _ ->
           case eqTypeRep (typeRep @(-->)) gf of
             Just HRefl ->
@@ -465,7 +466,7 @@ generalSubstSomeTerm subst initialBoundedSymbols = go initialMemo
       SomeTerm ->
       SomeTerm
     goSome _ bs c@(SomeTerm (ConTerm _ _ _ cv :: Term x)) =
-      case (typeRep :: TypeRep x) of
+      case (primTypeRep :: TypeRep x) of
         App (App gf _) _ ->
           case eqTypeRep gf (typeRep @(-->)) of
             Just HRefl -> case cv of

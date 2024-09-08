@@ -380,7 +380,9 @@ evalTerm fillDefault (Model ma) =
             if fillDefault
               then conTerm (defaultValue @a)
               else symTerm sym'
-          Just dy -> conTerm (unsafeFromModelValue @a dy)
+          Just dy ->
+            withSymbolSupported sym $
+              conTerm (unsafeFromModelValue @a dy)
     )
 
 -- |
