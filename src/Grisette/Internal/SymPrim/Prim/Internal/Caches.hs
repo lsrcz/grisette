@@ -75,7 +75,6 @@ type HashTable k v = IORef (HM.HashMap k v)
 
 data CacheState t where
   CacheState ::
-    (Interned t) =>
     { _sem :: MVar (),
       _currentThread :: HashTable (Description t) (Int, Weak SomeStableName)
     } ->
