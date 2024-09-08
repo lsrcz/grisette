@@ -131,9 +131,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     rotateRightTerm,
     bitCastTerm,
     bitCastOrTerm,
-    bvconcatTerm,
-    bvselectTerm,
-    bvextendTerm,
+    bvConcatTerm,
+    bvSelectTerm,
+    bvExtendTerm,
     bvsignExtendTerm,
     bvzeroExtendTerm,
     applyTerm,
@@ -1305,8 +1305,8 @@ data Term t where
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
-    !(TypeRep ix) ->
-    !(TypeRep w) ->
+    !(Proxy ix) ->
+    !(Proxy w) ->
     !(Term (bv n)) ->
     Term (bv w)
   BVExtendTerm ::
@@ -1691,12 +1691,59 @@ instance NFData (Term a) where
   {-# INLINE rnf #-}
 
 instance Lift (Term t) where
-  liftTyped t =
-    [||
-    introSupportedPrimConstraint t $
-      unsafePerformIO $
-        fullReconstructTerm t
-    ||]
+  liftTyped (ConTerm _ _ _ v) = [||conTerm v||]
+  liftTyped (SymTerm _ _ _ t) = [||symTerm (unTypedSymbol t)||]
+  liftTyped (ForallTerm _ _ _ t1 t2) = [||forallTerm t1 t2||]
+  liftTyped (ExistsTerm _ _ _ t1 t2) = [||existsTerm t1 t2||]
+  liftTyped (NotTerm _ _ _ t) = [||notTerm t||]
+  liftTyped (OrTerm _ _ _ t1 t2) = [||orTerm t1 t2||]
+  liftTyped (AndTerm _ _ _ t1 t2) = [||andTerm t1 t2||]
+  liftTyped (EqTerm _ _ _ t1 t2) = [||eqTerm t1 t2||]
+  liftTyped (DistinctTerm _ _ _ t) = [||distinctTerm t||]
+  liftTyped (ITETerm _ _ _ t1 t2 t3) = [||iteTerm t1 t2 t3||]
+  liftTyped (AddNumTerm _ _ _ t1 t2) = [||addNumTerm t1 t2||]
+  liftTyped (NegNumTerm _ _ _ t) = [||negNumTerm t||]
+  liftTyped (MulNumTerm _ _ _ t1 t2) = [||mulNumTerm t1 t2||]
+  liftTyped (AbsNumTerm _ _ _ t) = [||absNumTerm t||]
+  liftTyped (SignumNumTerm _ _ _ t) = [||signumNumTerm t||]
+  liftTyped (LtOrdTerm _ _ _ t1 t2) = [||ltOrdTerm t1 t2||]
+  liftTyped (LeOrdTerm _ _ _ t1 t2) = [||leOrdTerm t1 t2||]
+  liftTyped (AndBitsTerm _ _ _ t1 t2) = [||andBitsTerm t1 t2||]
+  liftTyped (OrBitsTerm _ _ _ t1 t2) = [||orBitsTerm t1 t2||]
+  liftTyped (XorBitsTerm _ _ _ t1 t2) = [||xorBitsTerm t1 t2||]
+  liftTyped (ComplementBitsTerm _ _ _ t) = [||complementBitsTerm t||]
+  liftTyped (ShiftLeftTerm _ _ _ t1 t2) = [||shiftLeftTerm t1 t2||]
+  liftTyped (ShiftRightTerm _ _ _ t1 t2) = [||shiftRightTerm t1 t2||]
+  liftTyped (RotateLeftTerm _ _ _ t1 t2) = [||rotateLeftTerm t1 t2||]
+  liftTyped (RotateRightTerm _ _ _ t1 t2) = [||rotateRightTerm t1 t2||]
+  liftTyped (BitCastTerm _ _ _ t) = [||bitCastTerm t||]
+  liftTyped (BitCastOrTerm _ _ _ t1 t2) = [||bitCastOrTerm t1 t2||]
+  liftTyped (BVConcatTerm _ _ _ t1 t2) = [||bvConcatTerm t1 t2||]
+  liftTyped (BVSelectTerm _ _ _ (_ :: p ix) (_ :: q w) t3) =
+    [||bvSelectTerm (Proxy @ix) (Proxy @w) t3||]
+  liftTyped (BVExtendTerm _ _ _ b (_ :: p r) t2) =
+    [||bvExtendTerm b (Proxy @r) t2||]
+  liftTyped (ApplyTerm _ _ _ t1 t2) = [||applyTerm t1 t2||]
+  liftTyped (DivIntegralTerm _ _ _ t1 t2) = [||divIntegralTerm t1 t2||]
+  liftTyped (ModIntegralTerm _ _ _ t1 t2) = [||modIntegralTerm t1 t2||]
+  liftTyped (QuotIntegralTerm _ _ _ t1 t2) = [||quotIntegralTerm t1 t2||]
+  liftTyped (RemIntegralTerm _ _ _ t1 t2) = [||remIntegralTerm t1 t2||]
+  liftTyped (FPTraitTerm _ _ _ t1 t2) = [||fpTraitTerm t1 t2||]
+  liftTyped (FdivTerm _ _ _ t1 t2) = [||fdivTerm t1 t2||]
+  liftTyped (RecipTerm _ _ _ t) = [||recipTerm t||]
+  liftTyped (FloatingUnaryTerm _ _ _ t1 t2) = [||floatingUnaryTerm t1 t2||]
+  liftTyped (PowerTerm _ _ _ t1 t2) = [||powerTerm t1 t2||]
+  liftTyped (FPUnaryTerm _ _ _ t1 t2) = [||fpUnaryTerm t1 t2||]
+  liftTyped (FPBinaryTerm _ _ _ t1 t2 t3) = [||fpBinaryTerm t1 t2 t3||]
+  liftTyped (FPRoundingUnaryTerm _ _ _ t1 t2 t3) =
+    [||fpRoundingUnaryTerm t1 t2 t3||]
+  liftTyped (FPRoundingBinaryTerm _ _ _ t1 t2 t3 t4) =
+    [||fpRoundingBinaryTerm t1 t2 t3 t4||]
+  liftTyped (FPFMATerm _ _ _ t1 t2 t3 t4) = [||fpFMATerm t1 t2 t3 t4||]
+  liftTyped (FromIntegralTerm _ _ _ t) = [||fromIntegralTerm t||]
+  liftTyped (FromFPOrTerm _ _ _ t1 t2 t3) = [||fromFPOrTerm t1 t2 t3||]
+  liftTyped (ToFPTerm _ _ _ t1 t2 _ _) =
+    [||toFPTerm t1 t2||]
 
 instance Show (Term ty) where
   show (ConTerm tid _ i v) =
@@ -2274,8 +2321,8 @@ data UTerm t where
       1 <= w,
       ix + w <= n
     ) =>
-    !(TypeRep ix) ->
-    !(TypeRep w) ->
+    !(Proxy ix) ->
+    !(Proxy w) ->
     !(Term (bv n)) ->
     UTerm (bv w)
   UBVExtendTerm ::
@@ -3053,7 +3100,7 @@ instance Interned (Term t) where
           (preHashBVConcatDescription arg1HashId arg2HashId)
           arg1HashId
           arg2HashId
-  describe (UBVSelectTerm (ix :: TypeRep ix) _ (arg :: Term arg)) =
+  describe (UBVSelectTerm (ix :: Proxy ix) _ (arg :: Term arg)) =
     let ixFingerprint = typeRepFingerprint $ someTypeRep ix
         argHashId = typeHashId arg
      in DBVSelectTerm
@@ -3520,11 +3567,11 @@ fullReconstructTerm (BitCastTerm _ _ _ v) =
 fullReconstructTerm (BitCastOrTerm _ _ _ d v) =
   fullReconstructTerm2 curThreadBitCastOrTerm d v
 fullReconstructTerm (BVConcatTerm _ _ _ arg1 arg2) =
-  fullReconstructTerm2 curThreadBvconcatTerm arg1 arg2
-fullReconstructTerm (BVSelectTerm _ _ _ (_ :: TypeRep ix) (_ :: TypeRep w) arg) =
-  fullReconstructTerm1 (curThreadBvselectTerm (Proxy @ix) (Proxy @w)) arg
+  fullReconstructTerm2 curThreadBVConcatTerm arg1 arg2
+fullReconstructTerm (BVSelectTerm _ _ _ (_ :: Proxy ix) (_ :: Proxy w) arg) =
+  fullReconstructTerm1 (curThreadBVSelectTerm (Proxy @ix) (Proxy @w)) arg
 fullReconstructTerm (BVExtendTerm _ _ _ signed p arg) =
-  fullReconstructTerm1 (curThreadBvextendTerm signed p) arg
+  fullReconstructTerm1 (curThreadBVExtendTerm signed p) arg
 fullReconstructTerm (ApplyTerm _ _ _ f arg) =
   fullReconstructTerm2 curThreadApplyTerm f arg
 fullReconstructTerm (DivIntegralTerm _ _ _ arg1 arg2) =
@@ -3763,7 +3810,7 @@ curThreadBitCastOrTerm d a =
 {-# INLINE curThreadBitCastOrTerm #-}
 
 -- | Construct and internalizing a 'BVConcatTerm'.
-curThreadBvconcatTerm ::
+curThreadBVConcatTerm ::
   ( PEvalBVTerm bv,
     KnownNat l,
     KnownNat r,
@@ -3775,11 +3822,11 @@ curThreadBvconcatTerm ::
   Term (bv l) ->
   Term (bv r) ->
   IO (Term (bv (l + r)))
-curThreadBvconcatTerm l r = intern $ UBVConcatTerm l r
-{-# INLINE curThreadBvconcatTerm #-}
+curThreadBVConcatTerm l r = intern $ UBVConcatTerm l r
+{-# INLINE curThreadBVConcatTerm #-}
 
 -- | Construct and internalizing a 'BVSelectTerm'.
-curThreadBvselectTerm ::
+curThreadBVSelectTerm ::
   forall bv n ix w p q.
   ( PEvalBVTerm bv,
     KnownNat n,
@@ -3793,20 +3840,20 @@ curThreadBvselectTerm ::
   q w ->
   Term (bv n) ->
   IO (Term (bv w))
-curThreadBvselectTerm _ _ v =
-  intern $ UBVSelectTerm (typeRep @ix) (typeRep @w) v
-{-# INLINE curThreadBvselectTerm #-}
+curThreadBVSelectTerm _ _ v =
+  intern $ UBVSelectTerm (Proxy @ix) (Proxy @w) v
+{-# INLINE curThreadBVSelectTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm'.
-curThreadBvextendTerm ::
+curThreadBVExtendTerm ::
   forall bv l r proxy.
   (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBvextendTerm signed _ v = intern $ UBVExtendTerm signed (Proxy @r) v
-{-# INLINE curThreadBvextendTerm #-}
+curThreadBVExtendTerm signed _ v = intern $ UBVExtendTerm signed (Proxy @r) v
+{-# INLINE curThreadBVExtendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with sign extension.
 curThreadBvsignExtendTerm ::
@@ -4208,7 +4255,7 @@ bitCastOrTerm = unsafeInCurThread2 curThreadBitCastOrTerm
 {-# NOINLINE bitCastOrTerm #-}
 
 -- | Construct and internalizing a 'BVConcatTerm'.
-bvconcatTerm ::
+bvConcatTerm ::
   ( PEvalBVTerm bv,
     KnownNat l,
     KnownNat r,
@@ -4220,11 +4267,11 @@ bvconcatTerm ::
   Term (bv l) ->
   Term (bv r) ->
   Term (bv (l + r))
-bvconcatTerm = unsafeInCurThread2 curThreadBvconcatTerm
-{-# NOINLINE bvconcatTerm #-}
+bvConcatTerm = unsafeInCurThread2 curThreadBVConcatTerm
+{-# NOINLINE bvConcatTerm #-}
 
 -- | Construct and internalizing a 'BVSelectTerm'.
-bvselectTerm ::
+bvSelectTerm ::
   forall bv n ix w p q.
   ( PEvalBVTerm bv,
     KnownNat n,
@@ -4238,19 +4285,19 @@ bvselectTerm ::
   q w ->
   Term (bv n) ->
   Term (bv w)
-bvselectTerm ix w = unsafeInCurThread1 (curThreadBvselectTerm ix w)
-{-# NOINLINE bvselectTerm #-}
+bvSelectTerm ix w = unsafeInCurThread1 (curThreadBVSelectTerm ix w)
+{-# NOINLINE bvSelectTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm'.
-bvextendTerm ::
+bvExtendTerm ::
   forall bv l r proxy.
   (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
   Term (bv r)
-bvextendTerm signed r = unsafeInCurThread1 (curThreadBvextendTerm signed r)
-{-# NOINLINE bvextendTerm #-}
+bvExtendTerm signed r = unsafeInCurThread1 (curThreadBVExtendTerm signed r)
+{-# NOINLINE bvExtendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with sign extension.
 bvsignExtendTerm ::

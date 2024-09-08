@@ -22,9 +22,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     PEvalBitCastTerm (pevalBitCastTerm),
     Term,
     bitCastTerm,
-    bvconcatTerm,
-    bvextendTerm,
-    bvselectTerm,
+    bvConcatTerm,
+    bvExtendTerm,
+    bvSelectTerm,
     conTerm,
     ssymTerm,
   )
@@ -125,11 +125,11 @@ bvTests =
             ToSignedTest
               { toSignedTestName = "bvConcat",
                 toSignedTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 2))
                     (ssymTerm "b" :: Term (WordN 2)),
                 toSignedTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     ( bitCastTerm (ssymTerm "a" :: Term (WordN 2)) ::
                         Term (IntN 2)
                     )
@@ -138,9 +138,9 @@ bvTests =
             ToSignedTest
               { toSignedTestName = "bvExtend",
                 toSignedTestTerm =
-                  bvextendTerm True (Proxy @4) (ssymTerm "a" :: Term (WordN 2)),
+                  bvExtendTerm True (Proxy @4) (ssymTerm "a" :: Term (WordN 2)),
                 toSignedTestExpected =
-                  bvextendTerm
+                  bvExtendTerm
                     True
                     (Proxy @4)
                     (bitCastTerm @(WordN 2) @(IntN 2) (ssymTerm "a"))
@@ -171,20 +171,20 @@ bvTests =
             ToUnsignedTest
               { toUnsignedTestName = "bvConcat",
                 toUnsignedTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (IntN 2))
                     (ssymTerm "b" :: Term (IntN 2)),
                 toUnsignedTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (bitCastTerm @(IntN 2) @(WordN 2) (ssymTerm "a"))
                     (bitCastTerm (ssymTerm "b" :: Term (IntN 2)))
               },
             ToUnsignedTest
               { toUnsignedTestName = "bvExtend",
                 toUnsignedTestTerm =
-                  bvextendTerm True (Proxy @4) (ssymTerm "a" :: Term (IntN 2)),
+                  bvExtendTerm True (Proxy @4) (ssymTerm "a" :: Term (IntN 2)),
                 toUnsignedTestExpected =
-                  bvextendTerm
+                  bvExtendTerm
                     True
                     (Proxy @4)
                     (bitCastTerm @(IntN 2) @(WordN 2) (ssymTerm "a"))
@@ -250,7 +250,7 @@ bvTests =
                 bvSelectW = Proxy @1,
                 bvSelectTestTerm = ssymTerm "a" :: Term (WordN 4),
                 bvSelectTestExpected =
-                  bvselectTerm
+                  bvSelectTerm
                     (Proxy @2)
                     (Proxy @1)
                     (ssymTerm "a" :: Term (WordN 4))
@@ -263,7 +263,7 @@ bvTests =
                   bitCastTerm @(WordN 4) @(IntN 4) (ssymTerm "a"),
                 bvSelectTestExpected =
                   bitCastTerm
-                    ( bvselectTerm
+                    ( bvSelectTerm
                         (Proxy @2)
                         (Proxy @1)
                         (ssymTerm "a" :: Term (WordN 4))
@@ -277,7 +277,7 @@ bvTests =
                   bitCastTerm @(IntN 4) @(WordN 4) (ssymTerm "a"),
                 bvSelectTestExpected =
                   bitCastTerm
-                    ( bvselectTerm
+                    ( bvSelectTerm
                         (Proxy @2)
                         (Proxy @1)
                         (ssymTerm "a" :: Term (IntN 4))
@@ -288,12 +288,12 @@ bvTests =
                 bvSelectIx = Proxy @3,
                 bvSelectW = Proxy @2,
                 bvSelectTestTerm =
-                  bvselectTerm
+                  bvSelectTerm
                     (Proxy @2)
                     (Proxy @6)
                     (ssymTerm "a" :: Term (WordN 16)),
                 bvSelectTestExpected =
-                  bvselectTerm
+                  bvSelectTerm
                     (Proxy @5)
                     (Proxy @2)
                     (ssymTerm "a" :: Term (WordN 16))
@@ -310,11 +310,11 @@ bvTests =
                 bvSelectIx = Proxy @1,
                 bvSelectW = Proxy @2,
                 bvSelectTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvSelectTestExpected =
-                  bvselectTerm
+                  bvSelectTerm
                     (Proxy @1)
                     (Proxy @2)
                     (ssymTerm "b" :: Term (WordN 4))
@@ -324,7 +324,7 @@ bvTests =
                 bvSelectIx = Proxy @0,
                 bvSelectW = Proxy @4,
                 bvSelectTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvSelectTestExpected = ssymTerm "b" :: Term (WordN 4)
@@ -334,11 +334,11 @@ bvTests =
                 bvSelectIx = Proxy @5,
                 bvSelectW = Proxy @2,
                 bvSelectTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvSelectTestExpected =
-                  bvselectTerm
+                  bvSelectTerm
                     (Proxy @1)
                     (Proxy @2)
                     (ssymTerm "a" :: Term (WordN 4))
@@ -348,7 +348,7 @@ bvTests =
                 bvSelectIx = Proxy @4,
                 bvSelectW = Proxy @4,
                 bvSelectTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvSelectTestExpected = ssymTerm "a" :: Term (WordN 4)
@@ -358,17 +358,17 @@ bvTests =
                 bvSelectIx = Proxy @3,
                 bvSelectW = Proxy @4,
                 bvSelectTestTerm =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvSelectTestExpected =
-                  bvconcatTerm
-                    ( bvselectTerm
+                  bvConcatTerm
+                    ( bvSelectTerm
                         (Proxy @0)
                         (Proxy @3)
                         (ssymTerm "a" :: Term (WordN 4))
                     )
-                    ( bvselectTerm
+                    ( bvSelectTerm
                         (Proxy @3)
                         (Proxy @1)
                         (ssymTerm "b" :: Term (WordN 4))
@@ -379,9 +379,9 @@ bvTests =
                 bvSelectIx = Proxy @1,
                 bvSelectW = Proxy @2,
                 bvSelectTestTerm =
-                  bvextendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
+                  bvExtendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
                 bvSelectTestExpected =
-                  bvselectTerm
+                  bvSelectTerm
                     (Proxy @1)
                     (Proxy @2)
                     (ssymTerm "a" :: Term (WordN 4))
@@ -391,7 +391,7 @@ bvTests =
                 bvSelectIx = Proxy @0,
                 bvSelectW = Proxy @4,
                 bvSelectTestTerm =
-                  bvextendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
+                  bvExtendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
                 bvSelectTestExpected = ssymTerm "a" :: Term (WordN 4)
               },
             BVSelectTest
@@ -399,10 +399,10 @@ bvTests =
                 bvSelectIx = Proxy @3,
                 bvSelectW = Proxy @4,
                 bvSelectTestTerm =
-                  bvextendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
+                  bvExtendTerm True (Proxy @8) (ssymTerm "a" :: Term (WordN 4)),
                 bvSelectTestExpected =
-                  bvextendTerm True (Proxy @4) $
-                    bvselectTerm
+                  bvExtendTerm True (Proxy @4) $
+                    bvSelectTerm
                       (Proxy @3)
                       (Proxy @1)
                       (ssymTerm "a" :: Term (WordN 4))
@@ -453,7 +453,7 @@ bvTests =
                 bvExtendR = Proxy @6,
                 bvExtendTestTerm = ssymTerm "a" :: Term (WordN 4),
                 bvExtendExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 0 :: Term (WordN 2))
                     (ssymTerm "a" :: Term (WordN 4))
               },
@@ -467,7 +467,7 @@ bvTests =
                     (Proxy @4)
                     (ssymTerm "a" :: Term (WordN 2)),
                 bvExtendExpected =
-                  bvextendTerm True (Proxy @6) (ssymTerm "a" :: Term (WordN 2))
+                  bvExtendTerm True (Proxy @6) (ssymTerm "a" :: Term (WordN 2))
               }
             ]
         return . testCase name $
@@ -484,11 +484,11 @@ bvTests =
               { bvConcatTestName = "[c1 (c2 s)] -> (c1c2 s)",
                 bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 5 :: Term (WordN 3))
                     (ssymTerm "b" :: Term (WordN 3)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 29 :: Term (WordN 7))
                     ( ssymTerm "b" :: Term (WordN 3)
                     )
@@ -497,13 +497,13 @@ bvTests =
               { bvConcatTestName = "[c1 (s c2)] -> (c1 (s c2))",
                 bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "b" :: Term (WordN 3))
                     (conTerm 5 :: Term (WordN 3)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "b" :: Term (WordN 3))
                         (conTerm 5 :: Term (WordN 3))
                     )
@@ -512,14 +512,14 @@ bvTests =
               { bvConcatTestName = "[c1 (c2 (s c3))] -> (c1c2 (s c3))",
                 bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
                 bvConcatTestRhs =
-                  bvconcatTerm (conTerm 5 :: Term (WordN 5)) $
-                    bvconcatTerm
+                  bvConcatTerm (conTerm 5 :: Term (WordN 5)) $
+                    bvConcatTerm
                       (ssymTerm "b" :: Term (WordN 6))
                       (conTerm 7 :: Term (WordN 7)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 101 :: Term (WordN 9))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "b" :: Term (WordN 6))
                         (conTerm 7 :: Term (WordN 7))
                     )
@@ -529,21 +529,21 @@ bvTests =
                 bvConcatTestLhs = conTerm 3 :: Term (WordN 4),
                 bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 3))
               },
             BVConcatTest
               { bvConcatTestName = "[(c1 s) c2] -> (c1 (s c2))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "a" :: Term (WordN 4)),
                 bvConcatTestRhs = conTerm 5 :: Term (WordN 3),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         ( conTerm 5 :: Term (WordN 3)
                         )
@@ -552,19 +552,19 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(c1 s1) (c2 s2)] -> (c1 (s1 (c2 s2)))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "a" :: Term (WordN 4)),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 5 :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
-                        ( bvconcatTerm
+                        ( bvConcatTerm
                             (conTerm 5 :: Term (WordN 4))
                             (ssymTerm "b" :: Term (WordN 4))
                         )
@@ -573,18 +573,18 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(c1 s1) (s2 c2)] -> (c1 ((s1 s2) c2))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "a" :: Term (WordN 4)),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "b" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
-                        ( bvconcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
                             (ssymTerm "a" :: Term (WordN 4))
                             (ssymTerm "b" :: Term (WordN 4))
                         )
@@ -595,22 +595,22 @@ bvTests =
               { bvConcatTestName =
                   "[(c1 s1) (c2 (s2 c3))] -> (c1 (((s1 c2) s2)) c3))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "a" :: Term (WordN 4)),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 5 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "b" :: Term (WordN 4))
                         (conTerm 7 :: Term (WordN 4))
                     ),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
-                        ( bvconcatTerm
-                            ( bvconcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
+                            ( bvConcatTerm
                                 (ssymTerm "a" :: Term (WordN 4))
                                 (conTerm 5 :: Term (WordN 4))
                             )
@@ -622,14 +622,14 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(c s1) s2] -> (c (s1 s2))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "a" :: Term (WordN 4)),
                 bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (ssymTerm "b" :: Term (WordN 3))
                     )
@@ -637,29 +637,29 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(s c1) c2] -> (s c1c2)",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 3)),
                 bvConcatTestRhs = conTerm 3 :: Term (WordN 4),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 83 :: Term (WordN 7))
               },
             BVConcatTest
               { bvConcatTestName = "[(s1 c1) (c2 s2)] -> (s1 (c1c2 s2))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4)),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (conTerm 83 :: Term (WordN 8))
                         (ssymTerm "b" :: Term (WordN 4))
                     )
@@ -667,17 +667,17 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(s1 c1) (s2 c2)] -> (((s1 c1) s2) c2)",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4)),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "b" :: Term (WordN 4))
                     (conTerm 3 :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
-                    ( bvconcatTerm
-                        ( bvconcatTerm
+                  bvConcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
                             (ssymTerm "a" :: Term (WordN 4))
                             (conTerm 5 :: Term (WordN 4))
                         )
@@ -689,20 +689,20 @@ bvTests =
               { bvConcatTestName =
                   "[(s1 c1) (c2 (s2 c3))] -> (((s1 c1c2) s2) c3)",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4)),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "b" :: Term (WordN 4))
                         (conTerm 7 :: Term (WordN 4))
                     ),
                 bvConcatTestExpected =
-                  bvconcatTerm
-                    ( bvconcatTerm
-                        ( bvconcatTerm
+                  bvConcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
                             (ssymTerm "a" :: Term (WordN 4))
                             (conTerm 83 :: Term (WordN 8))
                         )
@@ -714,13 +714,13 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(s1 c1) s2] -> ((s1 c1) s2)",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4)),
                 bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
                 bvConcatTestExpected =
-                  bvconcatTerm
-                    ( bvconcatTerm
+                  bvConcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 5 :: Term (WordN 4))
                     )
@@ -729,17 +729,17 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(c1 (s1 c2)) c3] -> (c1 (s1 c2c3))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 5 :: Term (WordN 4))
                     ),
                 bvConcatTestRhs = conTerm 7 :: Term (WordN 4),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 87 :: Term (WordN 8))
                     )
@@ -748,22 +748,22 @@ bvTests =
               { bvConcatTestName =
                   "[(c1 (s1 c2)) (c3 s3)] -> (c1 (s1 (c2c3 s3)))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 5 :: Term (WordN 4))
                     ),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 7 :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
-                        ( bvconcatTerm
+                        ( bvConcatTerm
                             (conTerm 87 :: Term (WordN 8))
                             ( ssymTerm "b" :: Term (WordN 4)
                             )
@@ -774,22 +774,22 @@ bvTests =
               { bvConcatTestName =
                   "[(c1 (s1 c2)) (s2 c3)] -> (c1 (((s1 c2) s2) c3))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 5 :: Term (WordN 4))
                     ),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "b" :: Term (WordN 4))
                     (conTerm 7 :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
-                        ( bvconcatTerm
-                            ( bvconcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
+                            ( bvConcatTerm
                                 (ssymTerm "a" :: Term (WordN 4))
                                 (conTerm 5 :: Term (WordN 4))
                             )
@@ -802,25 +802,25 @@ bvTests =
               { bvConcatTestName =
                   "[(c1 (s1 c2)) (c3 (s2 c4))] -> (c1 (((s1 c2c3) s2) c4))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 5 :: Term (WordN 4))
                     ),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 7 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "b" :: Term (WordN 4))
                         (conTerm 9 :: Term (WordN 4))
                     ),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
-                        ( bvconcatTerm
-                            ( bvconcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
+                            ( bvConcatTerm
                                 (ssymTerm "a" :: Term (WordN 4))
                                 (conTerm 87 :: Term (WordN 8))
                             )
@@ -832,18 +832,18 @@ bvTests =
             BVConcatTest
               { bvConcatTestName = "[(c1 (s1 c2)) s2] -> (c1 ((s1 c2) s2))",
                 bvConcatTestLhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (conTerm 5 :: Term (WordN 4))
                     ),
                 bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 3 :: Term (WordN 4))
-                    ( bvconcatTerm
-                        ( bvconcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
                             (ssymTerm "a" :: Term (WordN 4))
                             (conTerm 5 :: Term (WordN 4))
                         )
@@ -856,7 +856,7 @@ bvTests =
                 bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
                 bvConcatTestRhs = conTerm 5 :: Term (WordN 4),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4))
               },
@@ -864,13 +864,13 @@ bvTests =
               { bvConcatTestName = "[s (c s)] -> (s (c s))",
                 bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 5 :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (conTerm 5 :: Term (WordN 4))
                         (ssymTerm "b" :: Term (WordN 4))
                     )
@@ -879,12 +879,12 @@ bvTests =
               { bvConcatTestName = "[s (s c)] -> ((s s) c))",
                 bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "b" :: Term (WordN 4))
                     (conTerm 5 :: Term (WordN 4)),
                 bvConcatTestExpected =
-                  bvconcatTerm
-                    ( bvconcatTerm
+                  bvConcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "a" :: Term (WordN 4))
                         (ssymTerm "b" :: Term (WordN 4))
                     )
@@ -894,16 +894,16 @@ bvTests =
               { bvConcatTestName = "[s (c (s c))] -> (((s c) s)) c)",
                 bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
                 bvConcatTestRhs =
-                  bvconcatTerm
+                  bvConcatTerm
                     (conTerm 5 :: Term (WordN 4))
-                    ( bvconcatTerm
+                    ( bvConcatTerm
                         (ssymTerm "b" :: Term (WordN 4))
                         (conTerm 7 :: Term (WordN 4))
                     ),
                 bvConcatTestExpected =
-                  bvconcatTerm
-                    ( bvconcatTerm
-                        ( bvconcatTerm
+                  bvConcatTerm
+                    ( bvConcatTerm
+                        ( bvConcatTerm
                             (ssymTerm "a" :: Term (WordN 4))
                             (conTerm 5 :: Term (WordN 4))
                         )
@@ -916,7 +916,7 @@ bvTests =
                 bvConcatTestLhs = ssymTerm "a" :: Term (WordN 4),
                 bvConcatTestRhs = ssymTerm "b" :: Term (WordN 3),
                 bvConcatTestExpected =
-                  bvconcatTerm
+                  bvConcatTerm
                     (ssymTerm "a" :: Term (WordN 4))
                     (ssymTerm "b" :: Term (WordN 3))
               }

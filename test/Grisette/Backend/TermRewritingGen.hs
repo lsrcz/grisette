@@ -166,9 +166,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     addNumTerm,
     andBitsTerm,
     andTerm,
-    bvconcatTerm,
-    bvextendTerm,
-    bvselectTerm,
+    bvConcatTerm,
+    bvExtendTerm,
+    bvSelectTerm,
     complementBitsTerm,
     conTerm,
     distinctTerm,
@@ -377,7 +377,7 @@ bvconcatSpec ::
   a ->
   b ->
   c
-bvconcatSpec = constructBinarySpec bvconcatTerm pevalBVConcatTerm
+bvconcatSpec = constructBinarySpec bvConcatTerm pevalBVConcatTerm
 
 bvselectSpec ::
   ( TermRewritingSpec a (bv an),
@@ -394,7 +394,7 @@ bvselectSpec ::
   proxy bn ->
   a ->
   b
-bvselectSpec p1 p2 = constructUnarySpec (bvselectTerm p1 p2) (pevalBVSelectTerm p1 p2)
+bvselectSpec p1 p2 = constructUnarySpec (bvSelectTerm p1 p2) (pevalBVSelectTerm p1 p2)
 
 bvextendSpec ::
   ( TermRewritingSpec a (bv an),
@@ -410,7 +410,7 @@ bvextendSpec ::
   proxy bn ->
   a ->
   b
-bvextendSpec signed p = constructUnarySpec (bvextendTerm signed p) (pevalBVExtendTerm signed p)
+bvextendSpec signed p = constructUnarySpec (bvExtendTerm signed p) (pevalBVExtendTerm signed p)
 
 divIntegralSpec :: (TermRewritingSpec a b, PEvalDivModIntegralTerm b) => a -> a -> a
 divIntegralSpec = constructBinarySpec divIntegralTerm pevalDivIntegralTerm
