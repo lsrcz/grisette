@@ -42,13 +42,14 @@ import Control.Concurrent
 import Control.Monad (replicateM)
 import qualified Data.Array as A
 import Data.Atomics (atomicModifyIORefCAS, atomicModifyIORefCAS_)
-import Data.Data (Proxy (Proxy), TypeRep, Typeable, typeRep)
+import Data.Data (Proxy (Proxy), Typeable, typeRepFingerprint)
 import qualified Data.HashMap.Strict as HM
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Maybe (isJust)
 import Data.Word (Word32)
 import GHC.Base (Any)
+import GHC.Fingerprint (Fingerprint)
 import GHC.IO (unsafePerformIO)
 import GHC.StableName (makeStableName)
 import GHC.Weak (Weak, deRefWeak)
@@ -61,6 +62,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
     myWeakThreadId,
     weakThreadId,
   )
+import Type.Reflection (someTypeRep)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | A unique identifier for a term.
@@ -95,7 +97,7 @@ termCacheCell ::
     ( HM.HashMap
         WeakThreadId
         ( WeakThreadIdRef,
-          IORef (HM.HashMap TypeRep (Cache Any))
+          IORef (HM.HashMap Fingerprint (Cache Any))
         )
     )
 termCacheCell = unsafePerformIO $ newIORef HM.empty
@@ -119,42 +121,43 @@ mkCache = result
 -- different caches and they may share names, ids, or representations, but they
 -- are not the same term.
 typeMemoizedCache ::
-  forall a. (Interned a, Typeable a) => ThreadId -> IO (Cache a)
-typeMemoizedCache tid = do
+  forall a. (Interned a) => ThreadId -> Fingerprint -> IO (Cache a)
+typeMemoizedCache tid tyFingerprint = do
   caches <- readIORef termCacheCell
   let wtid = weakThreadId tid
   case HM.lookup wtid caches of
     Just (_, cref) -> do
       cache <- readIORef cref
-      case HM.lookup (typeRep (Proxy @a)) cache of
+      case HM.lookup tyFingerprint cache of
         Just d -> return $ unsafeCoerce d
         Nothing -> do
           r1 <- mkCache
           writeIORef cref $!
-            HM.insert (typeRep (Proxy @a)) (unsafeCoerce r1) cache
+            HM.insert tyFingerprint (unsafeCoerce r1) cache
           return r1
     Nothing -> do
       r1 <- mkCache
       wtidRef <-
         mkWeakThreadIdRefWithFinalizer tid $
           atomicModifyIORefCAS_ termCacheCell (HM.delete wtid)
-      r <- newIORef $ HM.singleton (typeRep (Proxy @a)) (unsafeCoerce r1)
+      r <- newIORef $ HM.singleton tyFingerprint (unsafeCoerce r1)
       atomicModifyIORefCAS termCacheCell $
         \m -> (HM.insert wtid (wtidRef, r) m, r1)
 
 reclaimTerm ::
   forall t.
-  (Interned t, Hashable (Description t), Typeable t, Eq (Description t)) =>
+  (Interned t, Hashable (Description t), Eq (Description t)) =>
   WeakThreadId ->
+  Fingerprint ->
   Int ->
   Description t ->
   IO ()
-reclaimTerm id grp dt = do
+reclaimTerm id tyFingerprint grp dt = do
   caches <- readIORef termCacheCell
   case HM.lookup id caches of
     Just (_, cref) -> do
       cache <- readIORef cref
-      case HM.lookup (typeRep (Proxy @t)) cache of
+      case HM.lookup tyFingerprint cache of
         Just c -> do
           let Cache a = unsafeCoerce c :: Cache t
           let CacheState sem s = a A.! grp
@@ -180,7 +183,8 @@ intern ::
 intern !bt = do
   tid <- myThreadId
   let wtid = weakThreadId tid
-  cache <- typeMemoizedCache tid
+  let fingerprint = typeRepFingerprint $ someTypeRep (Proxy @t)
+  cache <- typeMemoizedCache tid fingerprint
   let !dt = describe bt :: Description t
       !hdt = descriptionDigest dt
       !r = hdt `mod` cacheWidth
@@ -194,7 +198,7 @@ intern !bt = do
       let someNewId = SomeStableName newId
       idRef <-
         mkWeakSomeStableNameRefWithFinalizer someNewId $
-          reclaimTerm wtid (fromIntegral r) dt
+          reclaimTerm wtid fingerprint (fromIntegral r) dt
       let !t = identify (weakThreadId tid) hdt someNewId bt
       writeIORef s $ HM.insert dt (0, idRef) current
       putMVar sem ()
@@ -207,7 +211,7 @@ intern !bt = do
           let someNewId = SomeStableName newId
           idRef <-
             mkWeakSomeStableNameRefWithFinalizer someNewId $
-              reclaimTerm wtid (fromIntegral r) dt
+              reclaimTerm wtid fingerprint (fromIntegral r) dt
           let !term = identify (weakThreadId tid) hdt someNewId bt
           writeIORef s $ HM.insert dt (0, idRef) current
           putMVar sem ()
