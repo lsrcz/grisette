@@ -30,13 +30,15 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( PEvalFromIntegralTerm (pevalFromIntegralTerm, sbvFromIntegralTerm),
     SupportedNonFuncPrim (withNonFuncPrim),
+    SupportedPrim,
     Term (ConTerm),
     conTerm,
     fromIntegralTerm,
   )
 import Grisette.Internal.SymPrim.Prim.Internal.Unfold (unaryUnfoldOnce)
 
-pevalFromIntegralTermGeneric :: (PEvalFromIntegralTerm a b) => Term a -> Term b
+pevalFromIntegralTermGeneric ::
+  (PEvalFromIntegralTerm a b, SupportedPrim b) => Term a -> Term b
 pevalFromIntegralTermGeneric =
   unaryUnfoldOnce doPEvalFromIntegralTerm fromIntegralTerm
   where

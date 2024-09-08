@@ -564,7 +564,7 @@ class
   wrapTerm :: Term con -> sym
 
 -- | Partial evaluation and lowering for function application terms.
-class (SupportedPrim b) => PEvalApplyTerm f a b | f -> a b where
+class PEvalApplyTerm f a b | f -> a b where
   pevalApplyTerm :: Term f -> Term a -> Term b
   sbvApplyTerm :: SBVType f -> SBVType a -> SBVType b
 
@@ -846,10 +846,7 @@ class PEvalFloatingTerm t where
         FloatingAtanh -> atanh l
 
 -- | Partial evaluation and lowering for integral terms.
-class
-  (SupportedNonFuncPrim b, Integral a, Num b) =>
-  PEvalFromIntegralTerm a b
-  where
+class (Integral a, Num b) => PEvalFromIntegralTerm a b where
   pevalFromIntegralTerm :: Term a -> Term b
   sbvFromIntegralTerm :: SBVType a -> SBVType b
 
@@ -1366,7 +1363,7 @@ data Term t where
     !(Term (bv l)) ->
     Term (bv r)
   ApplyTerm ::
-    (PEvalApplyTerm f a b) =>
+    (PEvalApplyTerm f a b, SupportedPrim b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1491,7 +1488,7 @@ data Term t where
     !(Term (FP eb sb)) ->
     Term (FP eb sb)
   FromIntegralTerm ::
-    (PEvalFromIntegralTerm a b) =>
+    (PEvalFromIntegralTerm a b, SupportedPrim b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -2404,7 +2401,7 @@ data UTerm t where
     !(Term (bv l)) ->
     UTerm (bv r)
   UApplyTerm ::
-    (PEvalApplyTerm f a b) =>
+    (PEvalApplyTerm f a b, SupportedPrim b) =>
     Term f ->
     Term a ->
     UTerm b
@@ -2478,7 +2475,7 @@ data UTerm t where
     !(Term (FP eb sb)) ->
     UTerm (FP eb sb)
   UFromIntegralTerm ::
-    (PEvalFromIntegralTerm a b) =>
+    (PEvalFromIntegralTerm a b, SupportedPrim b) =>
     !(Term a) ->
     UTerm b
   UFromFPOrTerm ::
@@ -3357,25 +3354,31 @@ instance Interned (Term t) where
         goPhantomBVSelect tid ha i getPhantomDict ix w arg
       go (UBVExtendTerm signed n arg) =
         goPhantomBVExtend tid ha i getPhantomDict signed n arg
-      go (UApplyTerm f arg) = ApplyTerm tid ha i f arg
+      go (UApplyTerm f arg) = goPhantomApply tid ha i getPhantomDict f arg
       go (UDivIntegralTerm arg1 arg2) = DivIntegralTerm tid ha i arg1 arg2
       go (UModIntegralTerm arg1 arg2) = ModIntegralTerm tid ha i arg1 arg2
       go (UQuotIntegralTerm arg1 arg2) = QuotIntegralTerm tid ha i arg1 arg2
       go (URemIntegralTerm arg1 arg2) = RemIntegralTerm tid ha i arg1 arg2
-      go (UFPTraitTerm trait arg) = FPTraitTerm tid ha i trait arg
+      go (UFPTraitTerm trait arg) =
+        goPhantomFPTrait tid ha i getPhantomDict trait arg
       go (UFdivTerm arg1 arg2) = FdivTerm tid ha i arg1 arg2
       go (URecipTerm arg) = RecipTerm tid ha i arg
       go (UFloatingUnaryTerm op arg) = FloatingUnaryTerm tid ha i op arg
       go (UPowerTerm arg1 arg2) = PowerTerm tid ha i arg1 arg2
-      go (UFPUnaryTerm op arg) = FPUnaryTerm tid ha i op arg
-      go (UFPBinaryTerm op arg1 arg2) = FPBinaryTerm tid ha i op arg1 arg2
-      go (UFPRoundingUnaryTerm op mode arg) = FPRoundingUnaryTerm tid ha i op mode arg
+      go (UFPUnaryTerm op arg) = goPhantomFPUnary tid ha i getPhantomDict op arg
+      go (UFPBinaryTerm op arg1 arg2) =
+        goPhantomFPBinary tid ha i getPhantomDict op arg1 arg2
+      go (UFPRoundingUnaryTerm op mode arg) =
+        goPhantomFPRoundingUnary tid ha i getPhantomDict op mode arg
       go (UFPRoundingBinaryTerm op mode arg1 arg2) =
-        FPRoundingBinaryTerm tid ha i op mode arg1 arg2
-      go (UFPFMATerm mode arg1 arg2 arg3) = FPFMATerm tid ha i mode arg1 arg2 arg3
-      go (UFromIntegralTerm arg) = FromIntegralTerm tid ha i arg
+        goPhantomFPRoundingBinary tid ha i getPhantomDict op mode arg1 arg2
+      go (UFPFMATerm mode arg1 arg2 arg3) =
+        goPhantomFPFMA tid ha i getPhantomDict mode arg1 arg2 arg3
+      go (UFromIntegralTerm arg) =
+        goPhantomFromIntegral tid ha i getPhantomDict arg
       go (UFromFPOrTerm d mode arg) = FromFPOrTerm tid ha i d mode arg
-      go (UToFPTerm mode arg eb sb) = ToFPTerm tid ha i mode arg eb sb
+      go (UToFPTerm mode arg _ _) =
+        goPhantomToFP tid ha i getPhantomDict mode arg
       {-# INLINE go #-}
 
   -- {-# INLINE identify #-}
@@ -3494,6 +3497,7 @@ goPhantomBVSelect ::
 goPhantomBVSelect tid ha i PhantomDict ix w arg =
   BVSelectTerm tid ha i ix w arg
 
+{-# NOINLINE goPhantomBVExtend #-}
 goPhantomBVExtend ::
   ( PEvalBVTerm bv,
     KnownNat l,
@@ -3512,6 +3516,125 @@ goPhantomBVExtend ::
   Term (bv r)
 goPhantomBVExtend tid ha i PhantomDict signed n arg =
   BVExtendTerm tid ha i signed n arg
+
+{-# NOINLINE goPhantomApply #-}
+goPhantomApply ::
+  (PEvalApplyTerm f a t) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict t ->
+  Term f ->
+  Term a ->
+  Term t
+goPhantomApply tid ha i PhantomDict f arg = ApplyTerm tid ha i f arg
+
+{-# NOINLINE goPhantomFPTrait #-}
+goPhantomFPTrait ::
+  (ValidFP eb sb) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  FPTrait ->
+  Term (FP eb sb) ->
+  Term Bool
+goPhantomFPTrait tid ha i PhantomDict trait arg = FPTraitTerm tid ha i trait arg
+
+{-# NOINLINE goPhantomFPUnary #-}
+goPhantomFPUnary ::
+  (ValidFP eb sb) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  FPUnaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+goPhantomFPUnary tid ha i PhantomDict op arg = FPUnaryTerm tid ha i op arg
+
+{-# NOINLINE goPhantomFPBinary #-}
+goPhantomFPBinary ::
+  (ValidFP eb sb) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  FPBinaryOp ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+goPhantomFPBinary tid ha i PhantomDict op arg1 arg2 =
+  FPBinaryTerm tid ha i op arg1 arg2
+
+{-# NOINLINE goPhantomFPRoundingUnary #-}
+goPhantomFPRoundingUnary ::
+  (ValidFP eb sb) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  FPRoundingUnaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+goPhantomFPRoundingUnary tid ha i PhantomDict op mode arg =
+  FPRoundingUnaryTerm tid ha i op mode arg
+
+{-# NOINLINE goPhantomFPRoundingBinary #-}
+goPhantomFPRoundingBinary ::
+  (ValidFP eb sb) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  FPRoundingBinaryOp ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+goPhantomFPRoundingBinary tid ha i PhantomDict op mode arg1 arg2 =
+  FPRoundingBinaryTerm tid ha i op mode arg1 arg2
+
+{-# NOINLINE goPhantomFPFMA #-}
+goPhantomFPFMA ::
+  (ValidFP eb sb) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  Term FPRoundingMode ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb) ->
+  Term (FP eb sb)
+goPhantomFPFMA tid ha i PhantomDict mode arg1 arg2 arg3 =
+  FPFMATerm tid ha i mode arg1 arg2 arg3
+
+{-# NOINLINE goPhantomFromIntegral #-}
+goPhantomFromIntegral ::
+  (PEvalFromIntegralTerm a b) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict b ->
+  Term a ->
+  Term b
+goPhantomFromIntegral tid ha i PhantomDict arg = FromIntegralTerm tid ha i arg
+
+{-# NOINLINE goPhantomToFP #-}
+goPhantomToFP ::
+  forall a eb sb.
+  (ValidFP eb sb, PEvalIEEEFPConvertibleTerm a) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (FP eb sb) ->
+  Term FPRoundingMode ->
+  Term a ->
+  Term (FP eb sb)
+goPhantomToFP tid ha i PhantomDict mode arg =
+  ToFPTerm tid ha i mode arg (Proxy @eb) (Proxy @sb)
 
 termThreadId :: Term t -> WeakThreadId
 termThreadId (ConTerm tid _ _ _) = tid
@@ -4077,7 +4200,11 @@ curThreadBvzeroExtendTerm _ v =
 
 -- | Construct and internalizing a 'ApplyTerm'.
 curThreadApplyTerm ::
-  forall f a b. (PEvalApplyTerm f a b) => Term f -> Term a -> IO (Term b)
+  forall f a b.
+  (PEvalApplyTerm f a b, SupportedPrim b) =>
+  Term f ->
+  Term a ->
+  IO (Term b)
 curThreadApplyTerm f a =
   withSupportedPrimTypeable @b $
     intern $
@@ -4198,7 +4325,10 @@ curThreadFpFMATerm mode l r s = intern $ UFPFMATerm mode l r s
 
 -- | Construct and internalizing a 'FromIntegralTerm'.
 curThreadFromIntegralTerm ::
-  forall a b. (PEvalFromIntegralTerm a b) => Term a -> IO (Term b)
+  forall a b.
+  (PEvalFromIntegralTerm a b, SupportedPrim b) =>
+  Term a ->
+  IO (Term b)
 curThreadFromIntegralTerm =
   withSupportedPrimTypeable @b $ intern . UFromIntegralTerm
 {-# INLINE curThreadFromIntegralTerm #-}
@@ -4207,15 +4337,17 @@ curThreadFromIntegralTerm =
 curThreadFromFPOrTerm ::
   forall a eb sb.
   ( PEvalIEEEFPConvertibleTerm a,
-    ValidFP eb sb,
-    SupportedPrim a
+    ValidFP eb sb
   ) =>
   Term a ->
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   IO (Term a)
 curThreadFromFPOrTerm d r f =
-  withSupportedPrimTypeable @a $ intern $ UFromFPOrTerm d r f
+  introSupportedPrimConstraint d $
+    withSupportedPrimTypeable @a $
+      intern $
+        UFromFPOrTerm d r f
 {-# INLINE curThreadFromFPOrTerm #-}
 
 -- | Construct and internalizing a 'ToFPTerm'.
@@ -4549,7 +4681,8 @@ bvzeroExtendTerm r = unsafeInCurThread1 (curThreadBvzeroExtendTerm r)
 {-# NOINLINE bvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
-applyTerm :: (PEvalApplyTerm f a b) => Term f -> Term a -> Term b
+applyTerm ::
+  (PEvalApplyTerm f a b, SupportedPrim b) => Term f -> Term a -> Term b
 applyTerm = unsafeInCurThread2 curThreadApplyTerm
 {-# NOINLINE applyTerm #-}
 
@@ -4660,15 +4793,15 @@ fpFMATerm mode a b c = unsafePerformIO $ do
 {-# NOINLINE fpFMATerm #-}
 
 -- | Construct and internalizing a 'FromIntegralTerm'.
-fromIntegralTerm :: (PEvalFromIntegralTerm a b) => Term a -> Term b
+fromIntegralTerm ::
+  (PEvalFromIntegralTerm a b, SupportedPrim b) => Term a -> Term b
 fromIntegralTerm = unsafeInCurThread1 curThreadFromIntegralTerm
 {-# NOINLINE fromIntegralTerm #-}
 
 -- | Construct and internalizing a 'FromFPOrTerm'.
 fromFPOrTerm ::
   ( PEvalIEEEFPConvertibleTerm a,
-    ValidFP eb sb,
-    SupportedPrim a
+    ValidFP eb sb
   ) =>
   Term a ->
   Term FPRoundingMode ->
@@ -5172,71 +5305,12 @@ instance SupportedNonFuncPrim Bool where
   symNonFuncSBVTerm = symSBVTerm @Bool
   withNonFuncPrim r = r
 
--- newtype PhantomBox a = PhantomBox a
---   deriving newtype (NFData, Eq, Ord)
-
 data PhantomDict a where
   PhantomDict :: (SupportedPrim a) => PhantomDict a
 
 data PhantomNonFuncDict a where
   PhantomNonFuncDict ::
     (SupportedNonFuncPrim a) => PhantomNonFuncDict a
-
-{-
-instance (Lift t) => Lift (PhantomBox t) where
-  liftTyped (PhantomBox a) = [||PhantomBox a||]
-
-instance
-  (SupportedPrimConstraint t) =>
-  SupportedPrimConstraint (PhantomBox t)
-  where
-  type PrimConstraint (PhantomBox t) = PrimConstraint t
-
-instance (SBVRep t) => SBVRep (PhantomBox t) where
-  type SBVType (PhantomBox t) = SBVType t
-
-instance (SupportedPrim t) => SupportedPrim (PhantomBox t) where
-  primTypeRep = unsafeCoerce $ primTypeRep @t
-  sameCon = unsafeCoerce $ sameCon @t
-  hashConWithSalt = unsafeCoerce $ hashConWithSalt @t
-  pformatCon = unsafeCoerce $ pformatCon @t
-  defaultValue = unsafeCoerce $ defaultValue @t
-  pevalITETerm = unsafeCoerce $ pevalITETerm @t
-  pevalEqTerm = unsafeCoerce $ pevalEqTerm @t
-  pevalDistinctTerm = unsafeCoerce $ pevalDistinctTerm @t
-  conSBVTerm = unsafeCoerce $ conSBVTerm @t
-  symSBVName = unsafeCoerce $ symSBVName @t
-  symSBVTerm a = do
-    r <- symSBVTerm @t a
-    return $ unsafeCoerce r
-  withPrim = withPrim @t
-  {-# INLINE withPrim #-}
-  sbvIte = unsafeCoerce $ sbvIte @t
-  sbvEq = unsafeCoerce $ sbvEq @t
-  sbvDistinct = unsafeCoerce $ sbvDistinct @t
-  parseSMTModelResult = unsafeCoerce $ parseSMTModelResult @t
-  castTypedSymbol ::
-    forall knd' knd.
-    (SupportedPrim t, IsSymbolKind knd') =>
-    TypedSymbol knd (PhantomBox t) ->
-    Maybe (TypedSymbol knd' (PhantomBox t))
-  castTypedSymbol s =
-    unsafeCoerce
-      ( castTypedSymbol (unsafeCoerce s :: TypedSymbol knd t) ::
-          Maybe (TypedSymbol knd' t)
-      )
-  funcDummyConstraint = unsafeCoerce $ funcDummyConstraint @t
-
-instance (NonFuncSBVRep t) => NonFuncSBVRep (PhantomBox t) where
-  type NonFuncSBVBaseType (PhantomBox t) = NonFuncSBVBaseType t
-
-instance (SupportedNonFuncPrim t) => SupportedNonFuncPrim (PhantomBox t) where
-  conNonFuncSBVTerm = unsafeCoerce $ conNonFuncSBVTerm @t
-  symNonFuncSBVTerm s = do
-    r <- symNonFuncSBVTerm @t s
-    return $ unsafeCoerce r
-  withNonFuncPrim = withNonFuncPrim @t
-  -}
 
 {-# NOINLINE phantomDictCache #-}
 phantomDictCache :: IORef (HM.HashMap SomeTypeRep (PhantomDict Any))
