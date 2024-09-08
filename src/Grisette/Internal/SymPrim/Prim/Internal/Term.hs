@@ -1641,7 +1641,7 @@ typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint @t) $ HashId 
 -- | Introduce the 'SupportedPrim' constraint from a term.
 introSupportedPrimConstraint0 :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
 introSupportedPrimConstraint0 ConTerm {} x = x
-introSupportedPrimConstraint0 (SymTerm _ _ _ t) x = withSymbolSupported t $ x
+introSupportedPrimConstraint0 (SymTerm _ _ _ t) x = withSymbolSupported t x
 introSupportedPrimConstraint0 ForallTerm {} x = x
 introSupportedPrimConstraint0 ExistsTerm {} x = x
 introSupportedPrimConstraint0 NotTerm {} x = x
@@ -2776,7 +2776,8 @@ preHashToFPTermDescription h1 h2 =
 instance Interned (Term t) where
   type Uninterned (Term t) = UTerm t
   data Description (Term t) where
-    DConTerm :: {-# UNPACK #-} !Digest -> t -> Description (Term t)
+    DConTerm ::
+      (t -> t -> Bool) -> {-# UNPACK #-} !Digest -> t -> Description (Term t)
     DSymTerm ::
       {-# UNPACK #-} !Digest ->
       TypedSymbol 'AnyKind t ->
@@ -3014,7 +3015,7 @@ instance Interned (Term t) where
       {-# UNPACK #-} !TypeHashId ->
       Description (Term (FP eb sb))
 
-  describe (UConTerm v) = DConTerm (preHashConDescription v) v
+  describe (UConTerm v) = DConTerm sameCon (preHashConDescription v) v
   describe ((USymTerm name) :: UTerm t) =
     DSymTerm @t (preHashSymDescription name) name
   describe (UForallTerm (sym :: TypedSymbol 'ConstantKind arg) arg) =
@@ -3384,7 +3385,7 @@ instance Interned (Term t) where
   threadId = termThreadId
   {-# INLINE threadId #-}
 
-  descriptionDigest (DConTerm h _) = h
+  descriptionDigest (DConTerm _ h _) = h
   descriptionDigest (DSymTerm h _) = h
   descriptionDigest (DForallTerm h _ _) = h
   descriptionDigest (DExistsTerm h _ _) = h
@@ -3496,13 +3497,9 @@ termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
 
 -- {-# INLINE termThreadId #-}
 
-instance (SupportedPrim t) => Eq (Description (Term t)) where
-  DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) =
-    withSupportedPrimTypeable @tyl $
-      withSupportedPrimTypeable @tyr $
-        case cast @tyl @tyr l of
-          Just l' -> sameCon l' r
-          Nothing -> False
+instance Eq (Description (Term t)) where
+  DConTerm eqFunc _ l == DConTerm _ _ r =
+    eqFunc l r
   DSymTerm _ ls == DSymTerm _ rs = ls == rs
   DForallTerm _ ls li == DForallTerm _ rs ri =
     eqHeteroSymbol ls rs && eqHashId li ri
@@ -3565,7 +3562,7 @@ instance (SupportedPrim t) => Eq (Description (Term t)) where
 
 -- {-# INLINE (==) #-}
 
-instance (SupportedPrim t) => Hashable (Description (Term t)) where
+instance Hashable (Description (Term t)) where
   hashWithSalt s = hashWithSalt s . descriptionDigest
   {-# INLINE hashWithSalt #-}
 
