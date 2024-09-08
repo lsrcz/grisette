@@ -101,6 +101,7 @@ pevalDefaultBVSelectTerm ::
     forall x. (KnownNat x, 1 <= x) => PEvalBitCastTerm (bv2 x) (bv x),
     PEvalBVTerm bv2,
     Typeable bv,
+    SupportedPrim (bv w),
     SupportedPrim (bv2 n)
   ) =>
   p ix ->
@@ -140,6 +141,7 @@ doPevalDefaultBVSelectTerm ::
     PEvalBVTerm bv,
     PEvalBVTerm bv2,
     Typeable bv,
+    SupportedPrim (bv w),
     SupportedPrim (bv2 n)
   ) =>
   p ix ->

@@ -698,10 +698,7 @@ class PEvalDivModIntegralTerm t where
     withSbvDivModIntegralTermConstraint @t $ l `SBV.sRem` r
 
 -- | Partial evaluation and lowering for bitcast terms.
-class
-  (SupportedNonFuncPrim b, BitCast a b) =>
-  PEvalBitCastTerm a b
-  where
+class (BitCast a b) => PEvalBitCastTerm a b where
   pevalBitCastTerm :: Term a -> Term b
   sbvBitCast :: SBVType a -> SBVType b
 
@@ -925,9 +922,7 @@ typedConstantSymbol = typedConstantSymbol' getPhantomNonFuncDict
 {-# NOINLINE typedConstantSymbol' #-}
 typedConstantSymbol' ::
   forall t. PhantomNonFuncDict t -> Symbol -> TypedSymbol 'ConstantKind t
-typedConstantSymbol' PhantomNonFuncDict symbol =
-  unsafeCoerce
-    (TypedSymbol symbol :: TypedSymbol 'ConstantKind (PhantomBox t))
+typedConstantSymbol' PhantomNonFuncDict symbol = TypedSymbol symbol
 
 typedAnySymbol ::
   forall t. (SupportedPrim t) => Symbol -> TypedSymbol 'AnyKind t
@@ -937,9 +932,7 @@ typedAnySymbol = typedAnySymbol' getPhantomDict
 {-# NOINLINE typedAnySymbol' #-}
 typedAnySymbol' ::
   forall t. PhantomDict t -> Symbol -> TypedSymbol 'AnyKind t
-typedAnySymbol' PhantomDict symbol =
-  unsafeCoerce
-    (TypedSymbol symbol :: TypedSymbol 'AnyKind (PhantomBox t))
+typedAnySymbol' PhantomDict symbol = TypedSymbol symbol
 
 -- | Constant symbol
 type TypedConstantSymbol = TypedSymbol 'ConstantKind
@@ -1309,7 +1302,7 @@ data Term t where
     !(Term t) ->
     Term t
   BitCastTerm ::
-    (PEvalBitCastTerm a b) =>
+    (SupportedPrim b, PEvalBitCastTerm a b) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -2362,7 +2355,7 @@ data UTerm t where
   URotateRightTerm ::
     (SupportedPrim t, PEvalRotateTerm t) => !(Term t) -> !(Term t) -> UTerm t
   UBitCastTerm ::
-    (PEvalBitCastTerm a b) =>
+    (SupportedPrim b, PEvalBitCastTerm a b) =>
     !(Term a) ->
     UTerm b
   UBitCastOrTerm ::
@@ -3330,7 +3323,7 @@ instance Interned (Term t) where
 
   identify tid ha i = go
     where
-      go (UConTerm v) = unsafeCoerce $ goPhantomCon tid ha i getPhantomDict v
+      go (UConTerm v) = goPhantomCon tid ha i getPhantomDict v
       go (USymTerm v) = SymTerm tid ha i v
       go (UForallTerm sym arg) = ForallTerm tid ha i sym arg
       go (UExistsTerm sym arg) = ExistsTerm tid ha i sym arg
@@ -3339,6 +3332,7 @@ instance Interned (Term t) where
       go (UAndTerm arg1 arg2) = AndTerm tid ha i arg1 arg2
       go (UEqTerm arg1 arg2) = EqTerm tid ha i arg1 arg2
       go (UDistinctTerm args) = DistinctTerm tid ha i args
+      -- ITE is propagated
       go (UITETerm cond l r) = ITETerm tid ha i cond l r
       go (UAddNumTerm arg1 arg2) = AddNumTerm tid ha i arg1 arg2
       go (UNegNumTerm arg) = NegNumTerm tid ha i arg
@@ -3355,11 +3349,14 @@ instance Interned (Term t) where
       go (UShiftRightTerm arg n) = ShiftRightTerm tid ha i arg n
       go (URotateLeftTerm arg n) = RotateLeftTerm tid ha i arg n
       go (URotateRightTerm arg n) = RotateRightTerm tid ha i arg n
-      go (UBitCastTerm arg) = BitCastTerm tid ha i arg
+      go (UBitCastTerm arg) = goPhantomBitCast tid ha i getPhantomDict arg
       go (UBitCastOrTerm d arg) = BitCastOrTerm tid ha i d arg
-      go (UBVConcatTerm arg1 arg2) = BVConcatTerm tid ha i arg1 arg2
-      go (UBVSelectTerm ix w arg) = BVSelectTerm tid ha i ix w arg
-      go (UBVExtendTerm signed n arg) = BVExtendTerm tid ha i signed n arg
+      go (UBVConcatTerm arg1 arg2) =
+        goPhantomBVConcat tid ha i getPhantomDict arg1 arg2
+      go (UBVSelectTerm ix w arg) =
+        goPhantomBVSelect tid ha i getPhantomDict ix w arg
+      go (UBVExtendTerm signed n arg) =
+        goPhantomBVExtend tid ha i getPhantomDict signed n arg
       go (UApplyTerm f arg) = ApplyTerm tid ha i f arg
       go (UDivIntegralTerm arg1 arg2) = DivIntegralTerm tid ha i arg1 arg2
       go (UModIntegralTerm arg1 arg2) = ModIntegralTerm tid ha i arg1 arg2
@@ -3442,8 +3439,79 @@ goPhantomCon ::
   Id ->
   PhantomDict t ->
   t ->
-  Term (PhantomBox t)
-goPhantomCon tid ha i PhantomDict v = ConTerm tid ha i $ unsafeCoerce v
+  Term t
+goPhantomCon tid ha i PhantomDict v = ConTerm tid ha i v
+
+{-# NOINLINE goPhantomBitCast #-}
+goPhantomBitCast ::
+  (PEvalBitCastTerm a t) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict t ->
+  Term a ->
+  Term t
+goPhantomBitCast tid ha i PhantomDict arg = BitCastTerm tid ha i arg
+
+{-# NOINLINE goPhantomBVConcat #-}
+goPhantomBVConcat ::
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    KnownNat (l + r),
+    1 <= l,
+    1 <= r,
+    1 <= l + r
+  ) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (bv (l + r)) ->
+  Term (bv l) ->
+  Term (bv r) ->
+  Term (bv (l + r))
+goPhantomBVConcat tid ha i PhantomDict arg1 arg2 =
+  BVConcatTerm tid ha i arg1 arg2
+
+{-# NOINLINE goPhantomBVSelect #-}
+goPhantomBVSelect ::
+  ( PEvalBVTerm bv,
+    KnownNat n,
+    KnownNat ix,
+    KnownNat w,
+    1 <= n,
+    1 <= w,
+    ix + w <= n
+  ) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (bv w) ->
+  Proxy ix ->
+  Proxy w ->
+  Term (bv n) ->
+  Term (bv w)
+goPhantomBVSelect tid ha i PhantomDict ix w arg =
+  BVSelectTerm tid ha i ix w arg
+
+goPhantomBVExtend ::
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r
+  ) =>
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict (bv r) ->
+  Bool ->
+  Proxy r ->
+  Term (bv l) ->
+  Term (bv r)
+goPhantomBVExtend tid ha i PhantomDict signed n arg =
+  BVExtendTerm tid ha i signed n arg
 
 termThreadId :: Term t -> WeakThreadId
 termThreadId (ConTerm tid _ _ _) = tid
@@ -3787,8 +3855,7 @@ curThreadDistinctTerm args = intern $ UDistinctTerm args
 {-# INLINE curThreadDistinctTerm #-}
 
 -- | Construct and internalizing a 'ITETerm'.
-curThreadIteTerm ::
-  (SupportedPrim a) => Term Bool -> Term a -> Term a -> IO (Term a)
+curThreadIteTerm :: Term Bool -> Term a -> Term a -> IO (Term a)
 curThreadIteTerm c l r =
   introSupportedPrimConstraint l $
     intern $
@@ -3888,7 +3955,7 @@ curThreadRotateRightTerm t n =
 -- | Construct and internalizing a 'BitCastTerm'.
 curThreadBitCastTerm ::
   forall a b.
-  (PEvalBitCastTerm a b) =>
+  (SupportedPrim b, PEvalBitCastTerm a b) =>
   Term a ->
   IO (Term b)
 curThreadBitCastTerm =
@@ -4296,7 +4363,7 @@ distinctTerm args =
 {-# NOINLINE distinctTerm #-}
 
 -- | Construct and internalizing a 'ITETerm'.
-iteTerm :: (SupportedPrim a) => Term Bool -> Term a -> Term a -> Term a
+iteTerm :: Term Bool -> Term a -> Term a -> Term a
 iteTerm = unsafeInCurThread3 curThreadIteTerm
 {-# NOINLINE iteTerm #-}
 
@@ -4377,7 +4444,7 @@ rotateRightTerm = unsafeInCurThread2 curThreadRotateRightTerm
 
 -- | Construct and internalizing a 'BitCastTerm'.
 bitCastTerm ::
-  (PEvalBitCastTerm a b) =>
+  (PEvalBitCastTerm a b, SupportedPrim b) =>
   Term a ->
   Term b
 bitCastTerm = unsafeInCurThread1 curThreadBitCastTerm
@@ -5105,16 +5172,17 @@ instance SupportedNonFuncPrim Bool where
   symNonFuncSBVTerm = symSBVTerm @Bool
   withNonFuncPrim r = r
 
-newtype PhantomBox a = PhantomBox a
-  deriving newtype (NFData, Eq, Ord)
+-- newtype PhantomBox a = PhantomBox a
+--   deriving newtype (NFData, Eq, Ord)
 
 data PhantomDict a where
-  PhantomDict :: (SupportedPrim (PhantomBox a)) => PhantomDict a
+  PhantomDict :: (SupportedPrim a) => PhantomDict a
 
 data PhantomNonFuncDict a where
   PhantomNonFuncDict ::
-    (SupportedNonFuncPrim (PhantomBox a)) => PhantomNonFuncDict a
+    (SupportedNonFuncPrim a) => PhantomNonFuncDict a
 
+{-
 instance (Lift t) => Lift (PhantomBox t) where
   liftTyped (PhantomBox a) = [||PhantomBox a||]
 
@@ -5168,6 +5236,7 @@ instance (SupportedNonFuncPrim t) => SupportedNonFuncPrim (PhantomBox t) where
     r <- symNonFuncSBVTerm @t s
     return $ unsafeCoerce r
   withNonFuncPrim = withNonFuncPrim @t
+  -}
 
 {-# NOINLINE phantomDictCache #-}
 phantomDictCache :: IORef (HM.HashMap SomeTypeRep (PhantomDict Any))

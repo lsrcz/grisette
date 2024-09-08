@@ -636,6 +636,7 @@ termRewritingTests =
               ( Arbitrary a,
                 PEvalBitCastTerm a b,
                 SupportedNonFuncPrim a,
+                SupportedNonFuncPrim b,
                 Show a,
                 Typeable a,
                 Typeable b
@@ -680,6 +681,7 @@ termRewritingTests =
                 PEvalBitCastTerm a b,
                 RealFloat b,
                 SupportedNonFuncPrim a,
+                SupportedNonFuncPrim b,
                 Show a,
                 Typeable a,
                 Typeable b
