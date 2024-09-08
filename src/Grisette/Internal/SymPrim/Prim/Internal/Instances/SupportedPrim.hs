@@ -75,7 +75,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
       ( PrimConstraint
       ),
     Term (ConTerm),
-    TypedSymbol (TypedSymbol),
+    TypedSymbol (unTypedSymbol),
     conTerm,
     distinctTerm,
     eqTerm,
@@ -84,6 +84,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalITEBasicTerm,
     pevalNotTerm,
     sbvFresh,
+    typedAnySymbol,
+    typedConstantSymbol,
   )
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 
@@ -128,10 +130,10 @@ instance SupportedPrim Integer where
     (IsSymbolKind knd') =>
     TypedSymbol knd Integer ->
     Maybe (TypedSymbol knd' Integer)
-  castTypedSymbol (TypedSymbol s) =
+  castTypedSymbol s =
     case decideSymbolKind @knd' of
-      Left HRefl -> Just $ TypedSymbol s
-      Right HRefl -> Just $ TypedSymbol s
+      Left HRefl -> Just $ typedConstantSymbol $ unTypedSymbol s
+      Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep Integer where
@@ -168,10 +170,10 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
     (IsSymbolKind knd') =>
     TypedSymbol knd (IntN w) ->
     Maybe (TypedSymbol knd' (IntN w))
-  castTypedSymbol (TypedSymbol s) =
+  castTypedSymbol s =
     case decideSymbolKind @knd' of
-      Left HRefl -> Just $ TypedSymbol s
-      Right HRefl -> Just $ TypedSymbol s
+      Left HRefl -> Just $ typedConstantSymbol $ unTypedSymbol s
+      Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
   funcDummyConstraint _ = SBV.sTrue
 
 -- | Construct the 'SBV.BVIsNonZero' constraint from the proof that the width is
@@ -220,10 +222,10 @@ instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
     (IsSymbolKind knd') =>
     TypedSymbol knd (WordN w) ->
     Maybe (TypedSymbol knd' (WordN w))
-  castTypedSymbol (TypedSymbol s) =
+  castTypedSymbol s =
     case decideSymbolKind @knd' of
-      Left HRefl -> Just $ TypedSymbol s
-      Right HRefl -> Just $ TypedSymbol s
+      Left HRefl -> Just $ typedConstantSymbol $ unTypedSymbol s
+      Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
   funcDummyConstraint _ = SBV.sTrue
 
 instance (KnownNat w, 1 <= w) => NonFuncSBVRep (WordN w) where
@@ -281,10 +283,10 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
     (IsSymbolKind knd') =>
     TypedSymbol knd (FP eb sb) ->
     Maybe (TypedSymbol knd' (FP eb sb))
-  castTypedSymbol (TypedSymbol s) =
+  castTypedSymbol s =
     case decideSymbolKind @knd' of
-      Left HRefl -> Just $ TypedSymbol s
-      Right HRefl -> Just $ TypedSymbol s
+      Left HRefl -> Just $ typedConstantSymbol $ unTypedSymbol s
+      Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
 
 instance (ValidFP eb sb) => NonFuncSBVRep (FP eb sb) where
   type NonFuncSBVBaseType (FP eb sb) = SBV.FloatingPoint eb sb
@@ -330,10 +332,10 @@ instance SupportedPrim FPRoundingMode where
     (IsSymbolKind knd') =>
     TypedSymbol knd FPRoundingMode ->
     Maybe (TypedSymbol knd' FPRoundingMode)
-  castTypedSymbol (TypedSymbol s) =
+  castTypedSymbol s =
     case decideSymbolKind @knd' of
-      Left HRefl -> Just $ TypedSymbol s
-      Right HRefl -> Just $ TypedSymbol s
+      Left HRefl -> Just $ typedConstantSymbol $ unTypedSymbol s
+      Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep FPRoundingMode where
@@ -369,10 +371,10 @@ instance SupportedPrim AlgReal where
     (IsSymbolKind knd') =>
     TypedSymbol knd AlgReal ->
     Maybe (TypedSymbol knd' AlgReal)
-  castTypedSymbol (TypedSymbol s) =
+  castTypedSymbol s =
     case decideSymbolKind @knd' of
-      Left HRefl -> Just $ TypedSymbol s
-      Right HRefl -> Just $ TypedSymbol s
+      Left HRefl -> Just $ typedConstantSymbol $ unTypedSymbol s
+      Right HRefl -> Just $ typedAnySymbol $ unTypedSymbol s
   funcDummyConstraint _ = SBV.sTrue
 
 instance NonFuncSBVRep AlgReal where

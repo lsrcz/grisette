@@ -149,6 +149,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     pevalSubNumTerm,
     pformatTerm,
     symTerm,
+    typedConstantSymbol,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
 import Grisette.Internal.SymPrim.SymBV (SymIntN (SymIntN), SymWordN (SymWordN))
@@ -210,7 +211,7 @@ instance (ValidFP eb sb) => IsString (SymFP eb sb) where
 
 instance (ValidFP eb sb) => Solvable (FP eb sb) (SymFP eb sb) where
   con = SymFP . conTerm
-  sym = SymFP . symTerm
+  sym = SymFP . symTerm . typedConstantSymbol
   conView (SymFP (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 
@@ -282,7 +283,7 @@ instance IsString SymFPRoundingMode where
 
 instance Solvable FPRoundingMode SymFPRoundingMode where
   con = SymFPRoundingMode . conTerm
-  sym = SymFPRoundingMode . symTerm
+  sym = SymFPRoundingMode . symTerm . typedConstantSymbol
   conView (SymFPRoundingMode (ConTerm _ _ _ t)) = Just t
   conView _ = Nothing
 

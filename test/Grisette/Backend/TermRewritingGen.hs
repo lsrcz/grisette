@@ -779,6 +779,7 @@ instance (SupportedNonFuncPrim (bv n)) => TermRewritingSpec (DifferentSizeBVSpec
 
 type SupportedBV bv (n :: Nat) =
   ( SupportedPrim (bv n),
+    SupportedNonFuncPrim (bv n),
     Ord (bv n),
     Num (bv n),
     FiniteBits (bv n),

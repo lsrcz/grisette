@@ -45,8 +45,10 @@ import Grisette.Internal.SymPrim.Prim.Term
     SomeTypedAnySymbol,
     SomeTypedSymbol,
     TypedConstantSymbol,
-    TypedSymbol (TypedSymbol),
+    TypedSymbol (unTypedSymbol),
     castSomeTypedSymbol,
+    typedConstantSymbol,
+    withConstantSymbolSupported,
   )
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -78,14 +80,13 @@ nextQuantifiedSymbolInfo (SymBiMap t s f num) =
 
 attachQuantifiedSymbolInfo ::
   QuantifiedSymbolInfo -> TypedConstantSymbol a -> TypedConstantSymbol a
-attachQuantifiedSymbolInfo
-  info
-  (TypedSymbol (SimpleSymbol ident)) =
-    TypedSymbol $ SimpleSymbol $ withInfo ident info
-attachQuantifiedSymbolInfo
-  info
-  (TypedSymbol (IndexedSymbol ident idx)) =
-    TypedSymbol $ IndexedSymbol (withInfo ident info) idx
+attachQuantifiedSymbolInfo info tsym =
+  withConstantSymbolSupported tsym $
+    case unTypedSymbol tsym of
+      SimpleSymbol ident ->
+        typedConstantSymbol $ SimpleSymbol $ withInfo ident info
+      IndexedSymbol ident idx ->
+        typedConstantSymbol $ IndexedSymbol (withInfo ident info) idx
 
 -- | Attach the next quantified symbol info to a symbol.
 attachNextQuantifiedSymbolInfo ::

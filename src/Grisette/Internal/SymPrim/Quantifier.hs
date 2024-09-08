@@ -41,7 +41,6 @@ import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SomeTypedSymbol (SomeTypedSymbol),
-    TypedSymbol (TypedSymbol),
     existsTerm,
     forallTerm,
   )
@@ -71,7 +70,7 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 forallSet :: ConstantSymbolSet -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
   foldr
-    ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
+    ( \(SomeTypedSymbol _ s) (SymBool b') ->
         SymBool $ forallTerm s b'
     )
     b
@@ -107,7 +106,7 @@ forallSym s b =
 existsSet :: ConstantSymbolSet -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
   foldr
-    ( \(SomeTypedSymbol _ s@TypedSymbol {}) (SymBool b') ->
+    ( \(SomeTypedSymbol _ s) (SymBool b') ->
         SymBool $ existsTerm s b'
     )
     b

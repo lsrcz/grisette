@@ -73,7 +73,7 @@ import Grisette.Internal.SymPrim.Prim.Term
   ( ModelValue,
     SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim (defaultValue),
-    TypedSymbol (TypedSymbol, unTypedSymbol),
+    TypedSymbol,
     conTerm,
     defaultValueDynamic,
     pevalEqTerm,
@@ -150,9 +150,9 @@ instance Show Model where
 -- | Given a typed symbol and a model, return the equation (symbol = value)
 -- encoded in the model.
 equation :: TypedAnySymbol a -> Model -> Maybe (Term Bool)
-equation tsym@(TypedSymbol {}) m = withSymbolSupported tsym $
+equation tsym m = withSymbolSupported tsym $
   case valueOf tsym m of
-    Just v -> Just $ pevalEqTerm (symTerm $ unTypedSymbol tsym) (conTerm v)
+    Just v -> Just $ pevalEqTerm (symTerm tsym) (conTerm v)
     Nothing -> Nothing
 
 instance SymbolSetOps (SymbolSet knd) (TypedSymbol knd) where
@@ -374,14 +374,14 @@ evalTerm ::
   Term a
 evalTerm fillDefault (Model ma) =
   generalSubstSomeTerm
-    ( \(sym@(TypedSymbol sym') :: TypedSymbol 'AnyKind a) ->
-        case (M.lookup (someTypedSymbol sym) ma) of
-          Nothing ->
-            if fillDefault
-              then conTerm (defaultValue @a)
-              else symTerm sym'
-          Just dy ->
-            withSymbolSupported sym $
+    ( \(sym :: TypedSymbol 'AnyKind a) ->
+        withSymbolSupported sym $
+          case (M.lookup (someTypedSymbol sym) ma) of
+            Nothing ->
+              if fillDefault
+                then conTerm (defaultValue @a)
+                else symTerm sym
+            Just dy ->
               conTerm (unsafeFromModelValue @a dy)
     )
 

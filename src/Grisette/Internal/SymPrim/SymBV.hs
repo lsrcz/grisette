@@ -134,7 +134,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalOrTerm,
     pevalSubNumTerm,
     pformatTerm,
-    symTerm,
+    symTerm, typedConstantSymbol,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Grisette.Internal.Utils.Parameterized
@@ -245,7 +245,7 @@ instance (KnownNat n, 1 <= n) => Apply (SymWordN n) where
 #define SOLVABLE_BV(contype, symtype) \
 instance (KnownNat n, 1 <= n) => Solvable (contype n) (symtype n) where \
   con = symtype . conTerm; \
-  sym = symtype . symTerm; \
+  sym = symtype . symTerm . typedConstantSymbol; \
   conView (symtype (ConTerm _ _ _ t)) = Just t; \
   conView _ = Nothing
 

@@ -30,7 +30,7 @@ import Grisette
     SymBool,
     SymEq ((.==)),
     Symbol (IndexedSymbol),
-    TypedSymbol (TypedSymbol),
+    typedAnySymbol
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -106,7 +106,7 @@ evalSymTests =
               let model =
                     buildModel
                       ( "a" ::= True,
-                        TypedSymbol (IndexedSymbol "a" 1) ::= False,
+                        typedAnySymbol (IndexedSymbol "a" 1) ::= False,
                         "b" ::= False,
                         "c" ::= True
                       )

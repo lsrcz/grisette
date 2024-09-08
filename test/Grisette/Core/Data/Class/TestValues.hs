@@ -17,7 +17,7 @@ import Grisette
     SymBool,
     Symbol (IndexedSymbol, SimpleSymbol),
     TypedAnySymbol,
-    TypedSymbol (TypedSymbol),
+    typedAnySymbol,
   )
 
 conBool :: Bool -> SymBool
@@ -36,7 +36,7 @@ isymBool :: Identifier -> Int -> SymBool
 isymBool = isym
 
 ssymbolBool :: Identifier -> TypedAnySymbol Bool
-ssymbolBool = TypedSymbol . SimpleSymbol
+ssymbolBool = typedAnySymbol . SimpleSymbol
 
 isymbolBool :: Identifier -> Int -> TypedAnySymbol Bool
-isymbolBool i idx = TypedSymbol $ IndexedSymbol i idx
+isymbolBool i idx = typedAnySymbol $ IndexedSymbol i idx

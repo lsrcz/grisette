@@ -7,10 +7,13 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# HLINT ignore "Eta reduce" #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -26,9 +29,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# OPTIONS_GHC -funbox-strict-fields #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Eta reduce" #-}
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -69,7 +71,9 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
 
     -- * Typed symbols
     SymbolKind (..),
-    TypedSymbol (..),
+    TypedSymbol (unTypedSymbol),
+    typedConstantSymbol,
+    typedAnySymbol,
     TypedConstantSymbol,
     TypedAnySymbol,
     SomeTypedSymbol (..),
@@ -78,6 +82,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     IsSymbolKind (..),
     showUntyped,
     withSymbolSupported,
+    withConstantSymbolSupported,
     someTypedSymbol,
     eqHeteroSymbol,
     castSomeTypedSymbol,
@@ -217,8 +222,11 @@ import qualified Control.Monad.State.Lazy as Lazy
 import qualified Control.Monad.State.Strict as Strict
 import qualified Control.Monad.Writer.Lazy as Lazy
 import qualified Control.Monad.Writer.Strict as Strict
+import Data.Atomics (atomicModifyIORefCAS_)
 import Data.Bits (Bits)
+import qualified Data.HashMap.Strict as HM
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.IORef (IORef, newIORef, readIORef)
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 import Data.Maybe (fromMaybe)
@@ -228,7 +236,7 @@ import qualified Data.SBV.Trans as SBVT
 import qualified Data.SBV.Trans.Control as SBVTC
 import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast, typeRepFingerprint)
-import GHC.Exts (sortWith)
+import GHC.Exts (Any, sortWith)
 import GHC.Fingerprint (Fingerprint)
 import GHC.Generics (Generic)
 import GHC.IO (unsafePerformIO)
@@ -245,6 +253,7 @@ import Grisette.Internal.Core.Data.Symbol
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( Digest,
+    Id,
     Interned
       ( Description,
         Uninterned,
@@ -705,13 +714,7 @@ class
   sbvBitCastOr :: SBVType b -> SBVType a -> SBVType b
 
 -- | Partial evaluation and lowering for bit-vector terms.
-class
-  ( forall n. (KnownNat n, 1 <= n) => SupportedNonFuncPrim (bv n),
-    SizedBV bv,
-    Typeable bv
-  ) =>
-  PEvalBVTerm bv
-  where
+class (SizedBV bv) => PEvalBVTerm bv where
   pevalBVConcatTerm ::
     (KnownNat l, KnownNat r, 1 <= l, 1 <= r) =>
     Term (bv l) ->
@@ -914,6 +917,30 @@ data TypedSymbol (knd :: SymbolKind) t where
     {unTypedSymbol :: Symbol} ->
     TypedSymbol knd t
 
+typedConstantSymbol ::
+  forall t. (SupportedNonFuncPrim t) => Symbol -> TypedSymbol 'ConstantKind t
+typedConstantSymbol = typedConstantSymbol' getPhantomNonFuncDict
+{-# INLINE typedConstantSymbol #-}
+
+{-# NOINLINE typedConstantSymbol' #-}
+typedConstantSymbol' ::
+  forall t. PhantomNonFuncDict t -> Symbol -> TypedSymbol 'ConstantKind t
+typedConstantSymbol' PhantomNonFuncDict symbol =
+  unsafeCoerce
+    (TypedSymbol symbol :: TypedSymbol 'ConstantKind (PhantomBox t))
+
+typedAnySymbol ::
+  forall t. (SupportedPrim t) => Symbol -> TypedSymbol 'AnyKind t
+typedAnySymbol = typedAnySymbol' getPhantomDict
+{-# INLINE typedAnySymbol #-}
+
+{-# NOINLINE typedAnySymbol' #-}
+typedAnySymbol' ::
+  forall t. PhantomDict t -> Symbol -> TypedSymbol 'AnyKind t
+typedAnySymbol' PhantomDict symbol =
+  unsafeCoerce
+    (TypedSymbol symbol :: TypedSymbol 'AnyKind (PhantomBox t))
+
 -- | Constant symbol
 type TypedConstantSymbol = TypedSymbol 'ConstantKind
 
@@ -960,6 +987,16 @@ withSymbolSupported ::
 withSymbolSupported (TypedSymbol _) a =
   withSupportedPrimTypeable @t $ a
 {-# INLINE withSymbolSupported #-}
+
+-- | Introduce the 'SupportedPrim' constraint from the t'TypedSymbol'.
+withConstantSymbolSupported ::
+  forall t a.
+  TypedSymbol 'ConstantKind t ->
+  ((SupportedNonFuncPrim t, Typeable t) => a) ->
+  a
+withConstantSymbolSupported (TypedSymbol _) a =
+  withSupportedPrimTypeable @t $ a
+{-# INLINE withConstantSymbolSupported #-}
 
 -- | Introduce the 'IsSymbolKind' constraint from the t'TypedSymbol'.
 withSymbolKind :: TypedSymbol knd t -> ((IsSymbolKind knd) => a) -> a
@@ -1094,14 +1131,12 @@ data Term t where
     !t ->
     Term t
   SymTerm ::
-    (SupportedPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
     !(TypedSymbol 'AnyKind t) ->
     Term t
   ForallTerm ::
-    (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1109,7 +1144,6 @@ data Term t where
     !(Term Bool) ->
     Term Bool
   ExistsTerm ::
-    (SupportedNonFuncPrim t) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1296,7 +1330,8 @@ data Term t where
       KnownNat (l + r),
       1 <= l,
       1 <= r,
-      1 <= l + r
+      1 <= l + r,
+      SupportedPrim (bv (l + r))
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
@@ -1311,7 +1346,8 @@ data Term t where
       KnownNat w,
       1 <= n,
       1 <= w,
-      ix + w <= n
+      ix + w <= n,
+      SupportedPrim (bv w)
     ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
@@ -1321,7 +1357,14 @@ data Term t where
     !(Term (bv n)) ->
     Term (bv w)
   BVExtendTerm ::
-    (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+    ( PEvalBVTerm bv,
+      KnownNat l,
+      KnownNat r,
+      1 <= l,
+      1 <= r,
+      l <= r,
+      SupportedPrim (bv r)
+    ) =>
     WeakThreadId ->
     {-# UNPACK #-} !Digest ->
     SomeStableName ->
@@ -1545,7 +1588,7 @@ typeFingerprint = typeRepFingerprint $ SomeTypeRep $ primTypeRep @t
 -- | Return the ID and the type representation of a term.
 typeHashId :: forall t. Term t -> TypeHashId
 typeHashId (ConTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
-typeHashId (SymTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (SymTerm _ ha i TypedSymbol {}) = TypeHashId (typeFingerprint @t) $ HashId ha i
 typeHashId (ForallTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
 typeHashId (ExistsTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
 typeHashId (NotTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
@@ -1598,7 +1641,7 @@ typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint @t) $ HashId 
 -- | Introduce the 'SupportedPrim' constraint from a term.
 introSupportedPrimConstraint0 :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
 introSupportedPrimConstraint0 ConTerm {} x = x
-introSupportedPrimConstraint0 SymTerm {} x = x
+introSupportedPrimConstraint0 (SymTerm _ _ _ t) x = withSymbolSupported t $ x
 introSupportedPrimConstraint0 ForallTerm {} x = x
 introSupportedPrimConstraint0 ExistsTerm {} x = x
 introSupportedPrimConstraint0 NotTerm {} x = x
@@ -1655,6 +1698,7 @@ introSupportedPrimConstraint t a =
 withSupportedPrimTypeable ::
   forall a b. (SupportedPrim a) => ((Typeable a) => b) -> b
 withSupportedPrimTypeable = withTypeable (primTypeRep @a)
+{-# INLINE withSupportedPrimTypeable #-}
 
 -- {-# INLINE introSupportedPrimConstraint #-}
 
@@ -1720,7 +1764,7 @@ instance NFData (Term a) where
 
 instance Lift (Term t) where
   liftTyped (ConTerm _ _ _ v) = [||conTerm v||]
-  liftTyped (SymTerm _ _ _ t) = [||symTerm (unTypedSymbol t)||]
+  liftTyped (SymTerm _ _ _ t) = [||symTerm t||]
   liftTyped (ForallTerm _ _ _ t1 t2) = [||forallTerm t1 t2||]
   liftTyped (ExistsTerm _ _ _ t1 t2) = [||existsTerm t1 t2||]
   liftTyped (NotTerm _ _ _ t) = [||notTerm t||]
@@ -1776,7 +1820,7 @@ instance Lift (Term t) where
 instance Show (Term ty) where
   show (ConTerm tid _ i v) =
     "ConTerm{tid=" ++ show tid ++ ", id=" ++ show i ++ ", v=" ++ pformatCon v ++ "}"
-  show (SymTerm tid _ i name) =
+  show (SymTerm tid _ i name@TypedSymbol {}) =
     "SymTerm{tid="
       ++ show tid
       ++ ", id="
@@ -2278,14 +2322,12 @@ instance (SupportedPrim t) => Hashable (Term t) where
 -- | Term without identity (before internalizing).
 data UTerm t where
   UConTerm :: (SupportedPrim t) => !t -> UTerm t
-  USymTerm :: (SupportedPrim t) => !(TypedSymbol 'AnyKind t) -> UTerm t
+  USymTerm :: !(TypedSymbol 'AnyKind t) -> UTerm t
   UForallTerm ::
-    (SupportedNonFuncPrim t) =>
     !(TypedSymbol 'ConstantKind t) ->
     !(Term Bool) ->
     UTerm Bool
   UExistsTerm ::
-    (SupportedNonFuncPrim t) =>
     !(TypedSymbol 'ConstantKind t) ->
     !(Term Bool) ->
     UTerm Bool
@@ -2335,7 +2377,8 @@ data UTerm t where
       KnownNat (l + r),
       1 <= l,
       1 <= r,
-      1 <= l + r
+      1 <= l + r,
+      SupportedPrim (bv (l + r))
     ) =>
     !(Term (bv l)) ->
     !(Term (bv r)) ->
@@ -2347,14 +2390,22 @@ data UTerm t where
       KnownNat w,
       1 <= n,
       1 <= w,
-      ix + w <= n
+      ix + w <= n,
+      SupportedPrim (bv w)
     ) =>
     !(Proxy ix) ->
     !(Proxy w) ->
     !(Term (bv n)) ->
     UTerm (bv w)
   UBVExtendTerm ::
-    (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+    ( PEvalBVTerm bv,
+      KnownNat l,
+      KnownNat r,
+      1 <= l,
+      1 <= r,
+      l <= r,
+      SupportedPrim (bv r)
+    ) =>
     !Bool ->
     !(Proxy r) ->
     !(Term (bv l)) ->
@@ -3278,7 +3329,7 @@ instance Interned (Term t) where
 
   identify tid ha i = go
     where
-      go (UConTerm v) = ConTerm tid ha i v
+      go (UConTerm v) = unsafeCoerce $ goPhantomCon tid ha i getPhantomDict v
       go (USymTerm v) = SymTerm tid ha i v
       go (UForallTerm sym arg) = ForallTerm tid ha i sym arg
       go (UExistsTerm sym arg) = ExistsTerm tid ha i sym arg
@@ -3383,6 +3434,15 @@ instance Interned (Term t) where
   descriptionDigest (DToFPTerm h _ _) = h
 
 -- {-# INLINE descriptionDigest #-}
+{-# NOINLINE goPhantomCon #-}
+goPhantomCon ::
+  WeakThreadId ->
+  Digest ->
+  Id ->
+  PhantomDict t ->
+  t ->
+  Term (PhantomBox t)
+goPhantomCon tid ha i PhantomDict v = ConTerm tid ha i $ unsafeCoerce v
 
 termThreadId :: Term t -> WeakThreadId
 termThreadId (ConTerm tid _ _ _) = tid
@@ -3545,7 +3605,7 @@ fullReconstructTerm3 f x y z = do
 
 fullReconstructTerm :: forall t. Term t -> IO (Term t)
 fullReconstructTerm (ConTerm _ _ _ i) = curThreadConTerm i
-fullReconstructTerm (SymTerm _ _ _ sym) = curThreadSymTerm (unTypedSymbol sym)
+fullReconstructTerm (SymTerm _ _ _ sym) = curThreadSymTerm sym
 fullReconstructTerm (ForallTerm _ _ _ sym arg) =
   fullReconstructTerm1 (curThreadForallTerm sym) arg
 fullReconstructTerm (ExistsTerm _ _ _ sym arg) =
@@ -3669,17 +3729,13 @@ curThreadConTerm t =
 {-# INLINE curThreadConTerm #-}
 
 -- | Construct and internalizing a 'SymTerm'.
-curThreadSymTerm :: forall t. (SupportedPrim t) => Symbol -> IO (Term t)
-curThreadSymTerm t =
-  withSupportedPrimTypeable @t $
-    intern $
-      USymTerm $
-        TypedSymbol t
+curThreadSymTerm :: forall knd t. TypedSymbol knd t -> IO (Term t)
+curThreadSymTerm (TypedSymbol s) =
+  withSupportedPrimTypeable @t $ intern $ USymTerm $ TypedSymbol s
 {-# INLINE curThreadSymTerm #-}
 
 -- | Construct and internalizing a 'ForallTerm'.
 curThreadForallTerm ::
-  (SupportedNonFuncPrim t) =>
   TypedSymbol 'ConstantKind t ->
   Term Bool ->
   IO (Term Bool)
@@ -3688,7 +3744,6 @@ curThreadForallTerm sym arg = intern $ UForallTerm sym arg
 
 -- | Construct and internalizing a 'ExistsTerm'.
 curThreadExistsTerm ::
-  (SupportedNonFuncPrim t) =>
   TypedSymbol 'ConstantKind t ->
   Term Bool ->
   IO (Term Bool)
@@ -3698,13 +3753,15 @@ curThreadExistsTerm sym arg = intern $ UExistsTerm sym arg
 -- | Construct and internalizing a 'SymTerm' with an identifier, using simple
 -- symbols.
 curThreadSsymTerm :: (SupportedPrim t) => Identifier -> IO (Term t)
-curThreadSsymTerm = curThreadSymTerm . SimpleSymbol
+curThreadSsymTerm ident =
+  curThreadSymTerm @AnyKind $ TypedSymbol $ SimpleSymbol ident
 {-# INLINE curThreadSsymTerm #-}
 
 -- | Construct and internalizing a 'SymTerm' with an identifier and an index,
 -- using indexed symbols.
 curThreadIsymTerm :: (SupportedPrim t) => Identifier -> Int -> IO (Term t)
-curThreadIsymTerm str idx = curThreadSymTerm $ IndexedSymbol str idx
+curThreadIsymTerm str idx =
+  curThreadSymTerm @AnyKind $ TypedSymbol $ IndexedSymbol str idx
 {-# INLINE curThreadIsymTerm #-}
 
 -- | Construct and internalizing a 'NotTerm'.
@@ -3854,18 +3911,21 @@ curThreadBitCastOrTerm d a =
 
 -- | Construct and internalizing a 'BVConcatTerm'.
 curThreadBVConcatTerm ::
+  forall bv l r.
   ( PEvalBVTerm bv,
     KnownNat l,
     KnownNat r,
     KnownNat (l + r),
     1 <= l,
     1 <= r,
-    1 <= l + r
+    1 <= l + r,
+    SupportedPrim (bv (l + r))
   ) =>
   Term (bv l) ->
   Term (bv r) ->
   IO (Term (bv (l + r)))
-curThreadBVConcatTerm l r = intern $ UBVConcatTerm l r
+curThreadBVConcatTerm l r =
+  withSupportedPrimTypeable @(bv (l + r)) $ intern $ UBVConcatTerm l r
 {-# INLINE curThreadBVConcatTerm #-}
 
 -- | Construct and internalizing a 'BVSelectTerm'.
@@ -3877,45 +3937,78 @@ curThreadBVSelectTerm ::
     KnownNat w,
     1 <= n,
     1 <= w,
-    ix + w <= n
+    ix + w <= n,
+    SupportedPrim (bv w)
   ) =>
   p ix ->
   q w ->
   Term (bv n) ->
   IO (Term (bv w))
 curThreadBVSelectTerm _ _ v =
-  intern $ UBVSelectTerm (Proxy @ix) (Proxy @w) v
+  withSupportedPrimTypeable @(bv w) $
+    intern $
+      UBVSelectTerm (Proxy @ix) (Proxy @w) v
 {-# INLINE curThreadBVSelectTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm'.
 curThreadBVExtendTerm ::
   forall bv l r proxy.
-  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SupportedPrim (bv r)
+  ) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBVExtendTerm signed _ v = intern $ UBVExtendTerm signed (Proxy @r) v
+curThreadBVExtendTerm signed _ v =
+  withSupportedPrimTypeable @(bv r) $
+    intern $
+      UBVExtendTerm signed (Proxy @r) v
 {-# INLINE curThreadBVExtendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with sign extension.
 curThreadBvsignExtendTerm ::
   forall bv l r proxy.
-  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SupportedPrim (bv r)
+  ) =>
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBvsignExtendTerm _ v = intern $ UBVExtendTerm True (Proxy @r) v
+curThreadBvsignExtendTerm _ v =
+  withSupportedPrimTypeable @(bv r) $
+    intern $
+      UBVExtendTerm True (Proxy @r) v
 {-# INLINE curThreadBvsignExtendTerm #-}
 
 -- | Construct and internalizing a 'BVExtendTerm' with zero extension.
 curThreadBvzeroExtendTerm ::
   forall bv l r proxy.
-  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SupportedPrim (bv r)
+  ) =>
   proxy r ->
   Term (bv l) ->
   IO (Term (bv r))
-curThreadBvzeroExtendTerm _ v = intern $ UBVExtendTerm False (Proxy @r) v
+curThreadBvzeroExtendTerm _ v =
+  withSupportedPrimTypeable @(bv r) $
+    intern $
+      UBVExtendTerm False (Proxy @r) v
 {-# INLINE curThreadBvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
@@ -4145,26 +4238,24 @@ conTerm = unsafePerformIO . curThreadConTerm
 {-# NOINLINE conTerm #-}
 
 -- | Construct and internalizing a 'SymTerm'.
-symTerm :: forall t. (SupportedPrim t) => Symbol -> Term t
+symTerm :: TypedSymbol knd t -> Term t
 symTerm = unsafePerformIO . curThreadSymTerm
 {-# NOINLINE symTerm #-}
 
 -- | Construct and internalizing a 'ForallTerm'.
 forallTerm ::
-  (SupportedNonFuncPrim t) =>
   TypedSymbol 'ConstantKind t ->
   Term Bool ->
   Term Bool
-forallTerm sym = unsafeInCurThread1 (curThreadForallTerm sym)
+forallTerm sym@TypedSymbol {} = unsafeInCurThread1 (curThreadForallTerm sym)
 {-# NOINLINE forallTerm #-}
 
 -- | Construct and internalizing a 'ExistsTerm'.
 existsTerm ::
-  (SupportedNonFuncPrim t) =>
   TypedSymbol 'ConstantKind t ->
   Term Bool ->
   Term Bool
-existsTerm sym = unsafeInCurThread1 (curThreadExistsTerm sym)
+existsTerm sym@TypedSymbol {} = unsafeInCurThread1 (curThreadExistsTerm sym)
 {-# NOINLINE existsTerm #-}
 
 -- | Construct and internalizing a 'SymTerm' with an identifier, using simple
@@ -4306,13 +4397,15 @@ bitCastOrTerm = unsafeInCurThread2 curThreadBitCastOrTerm
 
 -- | Construct and internalizing a 'BVConcatTerm'.
 bvConcatTerm ::
+  forall bv l r.
   ( PEvalBVTerm bv,
     KnownNat l,
     KnownNat r,
     KnownNat (l + r),
     1 <= l,
     1 <= r,
-    1 <= l + r
+    1 <= l + r,
+    SupportedPrim (bv (l + r))
   ) =>
   Term (bv l) ->
   Term (bv r) ->
@@ -4329,7 +4422,8 @@ bvSelectTerm ::
     KnownNat w,
     1 <= n,
     1 <= w,
-    ix + w <= n
+    ix + w <= n,
+    SupportedPrim (bv w)
   ) =>
   p ix ->
   q w ->
@@ -4341,7 +4435,14 @@ bvSelectTerm ix w = unsafeInCurThread1 (curThreadBVSelectTerm ix w)
 -- | Construct and internalizing a 'BVExtendTerm'.
 bvExtendTerm ::
   forall bv l r proxy.
-  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SupportedPrim (bv r)
+  ) =>
   Bool ->
   proxy r ->
   Term (bv l) ->
@@ -4352,7 +4453,14 @@ bvExtendTerm signed r = unsafeInCurThread1 (curThreadBVExtendTerm signed r)
 -- | Construct and internalizing a 'BVExtendTerm' with sign extension.
 bvsignExtendTerm ::
   forall bv l r proxy.
-  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SupportedPrim (bv r)
+  ) =>
   proxy r ->
   Term (bv l) ->
   Term (bv r)
@@ -4362,7 +4470,14 @@ bvsignExtendTerm r = unsafeInCurThread1 (curThreadBvsignExtendTerm r)
 -- | Construct and internalizing a 'BVExtendTerm' with zero extension.
 bvzeroExtendTerm ::
   forall bv l r proxy.
-  (PEvalBVTerm bv, KnownNat l, KnownNat r, 1 <= l, 1 <= r, l <= r) =>
+  ( PEvalBVTerm bv,
+    KnownNat l,
+    KnownNat r,
+    1 <= l,
+    1 <= r,
+    l <= r,
+    SupportedPrim (bv r)
+  ) =>
   proxy r ->
   Term (bv l) ->
   Term (bv r)
@@ -4992,3 +5107,105 @@ instance SupportedNonFuncPrim Bool where
   conNonFuncSBVTerm = conSBVTerm
   symNonFuncSBVTerm = symSBVTerm @Bool
   withNonFuncPrim r = r
+
+newtype PhantomBox a = PhantomBox a
+  deriving newtype (NFData, Eq, Ord)
+
+data PhantomDict a where
+  PhantomDict :: (SupportedPrim (PhantomBox a)) => PhantomDict a
+
+data PhantomNonFuncDict a where
+  PhantomNonFuncDict ::
+    (SupportedNonFuncPrim (PhantomBox a)) => PhantomNonFuncDict a
+
+instance (Lift t) => Lift (PhantomBox t) where
+  liftTyped (PhantomBox a) = [||PhantomBox a||]
+
+instance
+  (SupportedPrimConstraint t) =>
+  SupportedPrimConstraint (PhantomBox t)
+  where
+  type PrimConstraint (PhantomBox t) = PrimConstraint t
+
+instance (SBVRep t) => SBVRep (PhantomBox t) where
+  type SBVType (PhantomBox t) = SBVType t
+
+instance (SupportedPrim t) => SupportedPrim (PhantomBox t) where
+  primTypeRep = unsafeCoerce $ primTypeRep @t
+  sameCon = unsafeCoerce $ sameCon @t
+  hashConWithSalt = unsafeCoerce $ hashConWithSalt @t
+  pformatCon = unsafeCoerce $ pformatCon @t
+  defaultValue = unsafeCoerce $ defaultValue @t
+  pevalITETerm = unsafeCoerce $ pevalITETerm @t
+  pevalEqTerm = unsafeCoerce $ pevalEqTerm @t
+  pevalDistinctTerm = unsafeCoerce $ pevalDistinctTerm @t
+  conSBVTerm = unsafeCoerce $ conSBVTerm @t
+  symSBVName = unsafeCoerce $ symSBVName @t
+  symSBVTerm a = do
+    r <- symSBVTerm @t a
+    return $ unsafeCoerce r
+  withPrim = withPrim @t
+  {-# INLINE withPrim #-}
+  sbvIte = unsafeCoerce $ sbvIte @t
+  sbvEq = unsafeCoerce $ sbvEq @t
+  sbvDistinct = unsafeCoerce $ sbvDistinct @t
+  parseSMTModelResult = unsafeCoerce $ parseSMTModelResult @t
+  castTypedSymbol ::
+    forall knd' knd.
+    (SupportedPrim t, IsSymbolKind knd') =>
+    TypedSymbol knd (PhantomBox t) ->
+    Maybe (TypedSymbol knd' (PhantomBox t))
+  castTypedSymbol s =
+    unsafeCoerce
+      ( castTypedSymbol (unsafeCoerce s :: TypedSymbol knd t) ::
+          Maybe (TypedSymbol knd' t)
+      )
+  funcDummyConstraint = unsafeCoerce $ funcDummyConstraint @t
+
+instance (NonFuncSBVRep t) => NonFuncSBVRep (PhantomBox t) where
+  type NonFuncSBVBaseType (PhantomBox t) = NonFuncSBVBaseType t
+
+instance (SupportedNonFuncPrim t) => SupportedNonFuncPrim (PhantomBox t) where
+  conNonFuncSBVTerm = unsafeCoerce $ conNonFuncSBVTerm @t
+  symNonFuncSBVTerm s = do
+    r <- symNonFuncSBVTerm @t s
+    return $ unsafeCoerce r
+  withNonFuncPrim = withNonFuncPrim @t
+
+{-# NOINLINE phantomDictCache #-}
+phantomDictCache :: IORef (HM.HashMap SomeTypeRep (PhantomDict Any))
+phantomDictCache = unsafePerformIO $ newIORef HM.empty
+
+-- TODO
+{-# NOINLINE getPhantomDict #-}
+getPhantomDict :: forall a. (SupportedPrim a) => PhantomDict a
+getPhantomDict = unsafePerformIO $ do
+  cache <- readIORef phantomDictCache
+  let !tr = SomeTypeRep $ primTypeRep @a
+  case HM.lookup tr cache of
+    Just p -> return $ unsafeCoerce p
+    Nothing -> do
+      let r = PhantomDict :: PhantomDict a
+      atomicModifyIORefCAS_ phantomDictCache $ HM.insert tr $ unsafeCoerce r
+      return r
+
+{-# NOINLINE phantomNonFuncDictCache #-}
+phantomNonFuncDictCache ::
+  IORef (HM.HashMap SomeTypeRep (PhantomNonFuncDict Any))
+phantomNonFuncDictCache = unsafePerformIO $ newIORef HM.empty
+
+-- TODO
+{-# NOINLINE getPhantomNonFuncDict #-}
+getPhantomNonFuncDict ::
+  forall a. (SupportedNonFuncPrim a) => PhantomNonFuncDict a
+getPhantomNonFuncDict = unsafePerformIO $ do
+  cache <- readIORef phantomNonFuncDictCache
+  let !tr = SomeTypeRep $ primTypeRep @a
+  case HM.lookup tr cache of
+    Just p -> return $ unsafeCoerce p
+    Nothing -> do
+      let r = PhantomNonFuncDict :: PhantomNonFuncDict a
+      atomicModifyIORefCAS_ phantomNonFuncDictCache $
+        HM.insert tr $
+          unsafeCoerce r
+      return r

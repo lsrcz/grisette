@@ -248,10 +248,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         XorBitsTerm
       ),
     TypedConstantSymbol,
-    TypedSymbol (TypedSymbol),
     introSupportedPrimConstraint,
     someTypedSymbol,
     symTerm,
+    withConstantSymbolSupported,
     withSymbolSupported,
   )
 import Grisette.Internal.SymPrim.Prim.Model as PM
@@ -567,33 +567,35 @@ lowerSinglePrimCached t' m' = do
                 addBiMap (SomeTerm t) (toDyn g) name (someTypedSymbol ts)
             return $ const g
       goCachedImpl qs t@(ForallTerm _ _ _ (ts :: TypedConstantSymbol t1) v) =
-        withNonFuncPrim @t1 $ do
-          do
-            m <- liftIO $ readIORef mapState
-            let (newm, sb@(TypedSymbol sbs)) =
-                  attachNextQuantifiedSymbolInfo m ts
-            liftIO $ writeIORef mapState newm
-            let substedTerm = substTerm ts (symTerm sbs) HS.empty v
-            r <- goCached (addQuantifiedSymbol sb qs) substedTerm
-            let ret = sbvForall sb r
-            liftIO $
-              modifyIORef' mapState $
-                addBiMapIntermediate (SomeTerm t) (toDyn . ret)
-            return ret
+        withConstantSymbolSupported ts $
+          withNonFuncPrim @t1 $ do
+            do
+              m <- liftIO $ readIORef mapState
+              let (newm, sb) =
+                    attachNextQuantifiedSymbolInfo m ts
+              liftIO $ writeIORef mapState newm
+              let substedTerm = substTerm ts (symTerm sb) HS.empty v
+              r <- goCached (addQuantifiedSymbol sb qs) substedTerm
+              let ret = sbvForall sb r
+              liftIO $
+                modifyIORef' mapState $
+                  addBiMapIntermediate (SomeTerm t) (toDyn . ret)
+              return ret
       goCachedImpl qs t@(ExistsTerm _ _ _ (ts :: TypedConstantSymbol t1) v) =
-        withNonFuncPrim @t1 $ do
-          do
-            m <- liftIO $ readIORef mapState
-            let (newm, sb@(TypedSymbol sbs)) =
-                  attachNextQuantifiedSymbolInfo m ts
-            liftIO $ writeIORef mapState newm
-            let substedTerm = substTerm ts (symTerm sbs) HS.empty v
-            r <- goCached (addQuantifiedSymbol sb qs) substedTerm
-            let ret = sbvExists sb r
-            liftIO $
-              modifyIORef' mapState $
-                addBiMapIntermediate (SomeTerm t) (toDyn . ret)
-            return ret
+        withConstantSymbolSupported ts $
+          withNonFuncPrim @t1 $ do
+            do
+              m <- liftIO $ readIORef mapState
+              let (newm, sb) =
+                    attachNextQuantifiedSymbolInfo m ts
+              liftIO $ writeIORef mapState newm
+              let substedTerm = substTerm ts (symTerm sb) HS.empty v
+              r <- goCached (addQuantifiedSymbol sb qs) substedTerm
+              let ret = sbvExists sb r
+              liftIO $
+                modifyIORef' mapState $
+                  addBiMapIntermediate (SomeTerm t) (toDyn . ret)
+              return ret
       goCachedImpl qs t =
         withPrim @a $ do
           r <- goCachedIntermediate qs t

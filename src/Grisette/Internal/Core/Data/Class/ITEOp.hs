@@ -28,7 +28,6 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.Internal.SymPrim.Prim.Term
   ( SupportedPrim (pevalITETerm),
     TypedConstantSymbol,
-    TypedSymbol (unTypedSymbol),
     symTerm,
   )
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal))
@@ -96,8 +95,8 @@ instance ITEOp (a --> b) where
       GeneralFun argSymbol $
         pevalITETerm
           c
-          (substTerm ta (symTerm $ unTypedSymbol argSymbol) HS.empty a)
-          (substTerm tb (symTerm $ unTypedSymbol argSymbol) HS.empty b)
+          (substTerm ta (symTerm argSymbol) HS.empty a)
+          (substTerm tb (symTerm argSymbol) HS.empty b)
       where
         argSymbol :: TypedConstantSymbol a
         argSymbol = freshArgSymbol [SomeTerm a, SomeTerm b]
