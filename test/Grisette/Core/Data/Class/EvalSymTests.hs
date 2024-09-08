@@ -30,7 +30,7 @@ import Grisette
     SymBool,
     SymEq ((.==)),
     Symbol (IndexedSymbol),
-    typedAnySymbol
+    typedAnySymbol,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)

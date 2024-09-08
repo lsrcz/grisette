@@ -134,7 +134,8 @@ import Grisette.Internal.SymPrim.Prim.Term
     pevalOrTerm,
     pevalSubNumTerm,
     pformatTerm,
-    symTerm, typedConstantSymbol,
+    symTerm,
+    typedConstantSymbol,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 import Grisette.Internal.Utils.Parameterized

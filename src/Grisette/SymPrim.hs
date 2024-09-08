@@ -270,7 +270,9 @@ import Grisette.Internal.SymPrim.Prim.Term
     SymbolKind (..),
     TypedAnySymbol,
     TypedConstantSymbol,
-    TypedSymbol (..), typedConstantSymbol, typedAnySymbol,
+    TypedSymbol (..),
+    typedAnySymbol,
+    typedConstantSymbol,
   )
 import Grisette.Internal.SymPrim.Quantifier
   ( existsFresh,
