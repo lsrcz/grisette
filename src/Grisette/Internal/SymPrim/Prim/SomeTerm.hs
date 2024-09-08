@@ -15,11 +15,12 @@
 module Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (..), someTerm) where
 
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Typeable (Proxy (Proxy), eqT, typeRep, type (:~:) (Refl))
+import Data.Typeable (eqT, type (:~:) (Refl))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( SupportedPrim,
+  ( SupportedPrim (primTypeRep),
     Term,
     introSupportedPrimConstraint,
+    withSupportedPrimTypeable,
   )
 
 -- | Existential wrapper for symbolic Grisette terms.
@@ -28,16 +29,18 @@ data SomeTerm where
 
 instance Eq SomeTerm where
   (SomeTerm (t1 :: Term a)) == (SomeTerm (t2 :: Term b)) =
-    case eqT @a @b of
-      Just Refl -> t1 == t2
-      Nothing -> False
+    withSupportedPrimTypeable @a $
+      withSupportedPrimTypeable @b $
+        case eqT @a @b of
+          Just Refl -> t1 == t2
+          Nothing -> False
 
 instance Hashable SomeTerm where
   hashWithSalt s (SomeTerm t) = hashWithSalt s t
 
 instance Show SomeTerm where
   show (SomeTerm (t :: Term a)) =
-    "<<" ++ show t ++ " :: " ++ show (typeRep (Proxy @a)) ++ ">>"
+    "<<" ++ show t ++ " :: " ++ show (primTypeRep @a) ++ ">>"
 
 -- | Wrap a symbolic term into t'SomeTerm'.
 someTerm :: Term a -> SomeTerm

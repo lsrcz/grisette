@@ -27,6 +27,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -40,6 +42,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
   ( -- * Supported primitive types
     SupportedPrimConstraint (..),
     SupportedPrim (..),
+    withSupportedPrimTypeable,
     SymRep (..),
     ConRep (..),
     LinkedRep (..),
@@ -265,6 +268,7 @@ import Type.Reflection
     eqTypeRep,
     someTypeRep,
     typeRep,
+    withTypeable,
     type (:~~:) (HRefl),
   )
 import Unsafe.Coerce (unsafeCoerce)
@@ -408,13 +412,15 @@ class SupportedPrimConstraint t where
 -- and can be lowered to an SBV term.
 class
   ( Lift t,
-    Typeable t,
     NFData t,
     SupportedPrimConstraint t,
     SBVRep t
   ) =>
   SupportedPrim t
   where
+  primTypeRep :: TypeRep t
+  default primTypeRep :: (Typeable t) => TypeRep t
+  primTypeRep = typeRep
   sameCon :: t -> t -> Bool
   default sameCon :: (Eq t) => t -> t -> Bool
   sameCon = (==)
@@ -480,29 +486,29 @@ data ModelValue where
   ModelValue :: forall v. (SupportedPrim v) => v -> ModelValue
 
 instance Show ModelValue where
-  show (ModelValue (v :: v)) = pformatCon v ++ " :: " ++ show (typeRep @v)
+  show (ModelValue (v :: v)) = pformatCon v ++ " :: " ++ show (primTypeRep @v)
 
 instance Eq ModelValue where
   (ModelValue (v1 :: v1)) == (ModelValue (v2 :: v2)) =
-    case eqTypeRep (typeRep @v1) (typeRep @v2) of
+    case eqTypeRep (primTypeRep @v1) (primTypeRep @v2) of
       Just HRefl -> sameCon v1 v2
       _ -> False
 
 instance Hashable ModelValue where
   s `hashWithSalt` (ModelValue (v :: v)) =
-    (s `hashWithSalt` (typeRep @v)) `hashConWithSalt` v
+    (s `hashWithSalt` (primTypeRep @v)) `hashConWithSalt` v
 
 -- | Convert from a model value. Crashes if the types does not match.
 unsafeFromModelValue :: forall a. (Typeable a) => ModelValue -> a
 unsafeFromModelValue (ModelValue (v :: v)) =
-  case eqTypeRep (typeRep @v) (typeRep @a) of
+  case eqTypeRep (primTypeRep @v) (typeRep @a) of
     Just HRefl -> v
     _ ->
       error $
         "Bad model value type, expected type: "
           ++ show (typeRep @a)
           ++ ", but got: "
-          ++ show (typeRep @v)
+          ++ show (primTypeRep @v)
 
 -- | Convert to a model value.
 toModelValue :: forall a. (SupportedPrim a) => a -> ModelValue
@@ -924,7 +930,7 @@ instance Lift (TypedSymbol knd t) where
   liftTyped (TypedSymbol x) = [||TypedSymbol x||]
 
 instance Show (TypedSymbol knd t) where
-  show (TypedSymbol symbol) = show symbol ++ " :: " ++ show (typeRep @t)
+  show (TypedSymbol symbol) = show symbol ++ " :: " ++ show (primTypeRep @t)
 
 -- | Show a typed symbol without the type information.
 showUntyped :: TypedSymbol knd t -> String
@@ -946,8 +952,13 @@ instance
   fromString = TypedSymbol . fromString
 
 -- | Introduce the 'SupportedPrim' constraint from the t'TypedSymbol'.
-withSymbolSupported :: TypedSymbol knd t -> ((SupportedPrim t) => a) -> a
-withSymbolSupported (TypedSymbol _) a = a
+withSymbolSupported ::
+  forall knd t a.
+  TypedSymbol knd t ->
+  ((SupportedPrim t, Typeable t) => a) ->
+  a
+withSymbolSupported (TypedSymbol _) a =
+  withSupportedPrimTypeable @t $ a
 {-# INLINE withSymbolSupported #-}
 
 -- | Introduce the 'IsSymbolKind' constraint from the t'TypedSymbol'.
@@ -996,7 +1007,7 @@ instance Show (SomeTypedSymbol knd) where
 
 -- | Construct a t'SomeTypedSymbol' from a t'TypedSymbol'.
 someTypedSymbol :: forall knd t. TypedSymbol knd t -> SomeTypedSymbol knd
-someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (typeRep @t) s
+someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (primTypeRep @t) s
 {-# INLINE someTypedSymbol #-}
 
 -- Terms
@@ -1477,7 +1488,14 @@ data Term t where
     Term (FP eb sb)
 
 pattern DynTerm :: forall a b. (SupportedPrim a) => Term a -> Term b
-pattern DynTerm x <- ((\v -> introSupportedPrimConstraint v $ cast v) -> Just x)
+pattern DynTerm x <-
+  ( ( \v ->
+        introSupportedPrimConstraint v $
+          withSupportedPrimTypeable @a $
+            cast v
+    ) ->
+      Just x
+    )
 
 -- | Return the ID of a term.
 identity :: Term t -> SomeStableName
@@ -1520,113 +1538,123 @@ hashId t = case typeHashId t of
   TypeHashId _ hi -> hi
 {-# INLINE hashId #-}
 
-typeFingerprint :: forall t p. (Typeable t) => p t -> Fingerprint
-typeFingerprint p = typeRepFingerprint $ someTypeRep p
+typeFingerprint :: forall t. (SupportedPrim t) => Fingerprint
+typeFingerprint = typeRepFingerprint $ SomeTypeRep $ primTypeRep @t
 {-# INLINE typeFingerprint #-}
 
 -- | Return the ID and the type representation of a term.
 typeHashId :: forall t. Term t -> TypeHashId
-typeHashId (ConTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (SymTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ForallTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ExistsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (NotTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (OrTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (AndTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (EqTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (DistinctTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ITETerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (AddNumTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (NegNumTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (MulNumTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (AbsNumTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (SignumNumTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (LtOrdTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (LeOrdTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (AndBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (OrBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (XorBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ComplementBitsTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ShiftLeftTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ShiftRightTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (RotateLeftTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (RotateRightTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (BitCastTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (BitCastOrTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (BVConcatTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (BVSelectTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (BVExtendTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ApplyTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (DivIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ModIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (QuotIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (RemIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FPTraitTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FdivTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (RecipTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FloatingUnaryTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (PowerTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FPUnaryTerm _ ha i _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FPBinaryTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FPRoundingUnaryTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FPRoundingBinaryTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FPFMATerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FromIntegralTerm _ ha i _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (FromFPOrTerm _ ha i _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
-typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint (Proxy @t)) $ HashId ha i
+typeHashId (ConTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (SymTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ForallTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ExistsTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (NotTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (OrTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (AndTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (EqTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (DistinctTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ITETerm _ ha i _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (AddNumTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (NegNumTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (MulNumTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (AbsNumTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (SignumNumTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (LtOrdTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (LeOrdTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (AndBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (OrBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (XorBitsTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ComplementBitsTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ShiftLeftTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ShiftRightTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (RotateLeftTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (RotateRightTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (BitCastTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (BitCastOrTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (BVConcatTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (BVSelectTerm _ ha i _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (BVExtendTerm _ ha i _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ApplyTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (DivIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ModIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (QuotIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (RemIntegralTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FPTraitTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FdivTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (RecipTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FloatingUnaryTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (PowerTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FPUnaryTerm _ ha i _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FPBinaryTerm _ ha i _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FPRoundingUnaryTerm _ ha i _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FPRoundingBinaryTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FPFMATerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FromIntegralTerm _ ha i _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (FromFPOrTerm _ ha i _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
+typeHashId (ToFPTerm _ ha i _ _ _ _) = TypeHashId (typeFingerprint @t) $ HashId ha i
 
 -- {-# NOINLINE typeHashId #-}
 
 -- | Introduce the 'SupportedPrim' constraint from a term.
-introSupportedPrimConstraint :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
-introSupportedPrimConstraint ConTerm {} x = x
-introSupportedPrimConstraint SymTerm {} x = x
-introSupportedPrimConstraint ForallTerm {} x = x
-introSupportedPrimConstraint ExistsTerm {} x = x
-introSupportedPrimConstraint NotTerm {} x = x
-introSupportedPrimConstraint OrTerm {} x = x
-introSupportedPrimConstraint AndTerm {} x = x
-introSupportedPrimConstraint EqTerm {} x = x
-introSupportedPrimConstraint DistinctTerm {} x = x
-introSupportedPrimConstraint ITETerm {} x = x
-introSupportedPrimConstraint AddNumTerm {} x = x
-introSupportedPrimConstraint NegNumTerm {} x = x
-introSupportedPrimConstraint MulNumTerm {} x = x
-introSupportedPrimConstraint AbsNumTerm {} x = x
-introSupportedPrimConstraint SignumNumTerm {} x = x
-introSupportedPrimConstraint LtOrdTerm {} x = x
-introSupportedPrimConstraint LeOrdTerm {} x = x
-introSupportedPrimConstraint AndBitsTerm {} x = x
-introSupportedPrimConstraint OrBitsTerm {} x = x
-introSupportedPrimConstraint XorBitsTerm {} x = x
-introSupportedPrimConstraint ComplementBitsTerm {} x = x
-introSupportedPrimConstraint ShiftLeftTerm {} x = x
-introSupportedPrimConstraint RotateLeftTerm {} x = x
-introSupportedPrimConstraint ShiftRightTerm {} x = x
-introSupportedPrimConstraint RotateRightTerm {} x = x
-introSupportedPrimConstraint BitCastTerm {} x = x
-introSupportedPrimConstraint BitCastOrTerm {} x = x
-introSupportedPrimConstraint BVConcatTerm {} x = x
-introSupportedPrimConstraint BVSelectTerm {} x = x
-introSupportedPrimConstraint BVExtendTerm {} x = x
-introSupportedPrimConstraint ApplyTerm {} x = x
-introSupportedPrimConstraint DivIntegralTerm {} x = x
-introSupportedPrimConstraint ModIntegralTerm {} x = x
-introSupportedPrimConstraint QuotIntegralTerm {} x = x
-introSupportedPrimConstraint RemIntegralTerm {} x = x
-introSupportedPrimConstraint FPTraitTerm {} x = x
-introSupportedPrimConstraint FdivTerm {} x = x
-introSupportedPrimConstraint RecipTerm {} x = x
-introSupportedPrimConstraint FloatingUnaryTerm {} x = x
-introSupportedPrimConstraint PowerTerm {} x = x
-introSupportedPrimConstraint FPUnaryTerm {} x = x
-introSupportedPrimConstraint FPBinaryTerm {} x = x
-introSupportedPrimConstraint FPRoundingUnaryTerm {} x = x
-introSupportedPrimConstraint FPRoundingBinaryTerm {} x = x
-introSupportedPrimConstraint FPFMATerm {} x = x
-introSupportedPrimConstraint FromIntegralTerm {} x = x
-introSupportedPrimConstraint FromFPOrTerm {} x = x
-introSupportedPrimConstraint ToFPTerm {} x = x
+introSupportedPrimConstraint0 :: forall t a. Term t -> ((SupportedPrim t) => a) -> a
+introSupportedPrimConstraint0 ConTerm {} x = x
+introSupportedPrimConstraint0 SymTerm {} x = x
+introSupportedPrimConstraint0 ForallTerm {} x = x
+introSupportedPrimConstraint0 ExistsTerm {} x = x
+introSupportedPrimConstraint0 NotTerm {} x = x
+introSupportedPrimConstraint0 OrTerm {} x = x
+introSupportedPrimConstraint0 AndTerm {} x = x
+introSupportedPrimConstraint0 EqTerm {} x = x
+introSupportedPrimConstraint0 DistinctTerm {} x = x
+introSupportedPrimConstraint0 ITETerm {} x = x
+introSupportedPrimConstraint0 AddNumTerm {} x = x
+introSupportedPrimConstraint0 NegNumTerm {} x = x
+introSupportedPrimConstraint0 MulNumTerm {} x = x
+introSupportedPrimConstraint0 AbsNumTerm {} x = x
+introSupportedPrimConstraint0 SignumNumTerm {} x = x
+introSupportedPrimConstraint0 LtOrdTerm {} x = x
+introSupportedPrimConstraint0 LeOrdTerm {} x = x
+introSupportedPrimConstraint0 AndBitsTerm {} x = x
+introSupportedPrimConstraint0 OrBitsTerm {} x = x
+introSupportedPrimConstraint0 XorBitsTerm {} x = x
+introSupportedPrimConstraint0 ComplementBitsTerm {} x = x
+introSupportedPrimConstraint0 ShiftLeftTerm {} x = x
+introSupportedPrimConstraint0 RotateLeftTerm {} x = x
+introSupportedPrimConstraint0 ShiftRightTerm {} x = x
+introSupportedPrimConstraint0 RotateRightTerm {} x = x
+introSupportedPrimConstraint0 BitCastTerm {} x = x
+introSupportedPrimConstraint0 BitCastOrTerm {} x = x
+introSupportedPrimConstraint0 BVConcatTerm {} x = x
+introSupportedPrimConstraint0 BVSelectTerm {} x = x
+introSupportedPrimConstraint0 BVExtendTerm {} x = x
+introSupportedPrimConstraint0 ApplyTerm {} x = x
+introSupportedPrimConstraint0 DivIntegralTerm {} x = x
+introSupportedPrimConstraint0 ModIntegralTerm {} x = x
+introSupportedPrimConstraint0 QuotIntegralTerm {} x = x
+introSupportedPrimConstraint0 RemIntegralTerm {} x = x
+introSupportedPrimConstraint0 FPTraitTerm {} x = x
+introSupportedPrimConstraint0 FdivTerm {} x = x
+introSupportedPrimConstraint0 RecipTerm {} x = x
+introSupportedPrimConstraint0 FloatingUnaryTerm {} x = x
+introSupportedPrimConstraint0 PowerTerm {} x = x
+introSupportedPrimConstraint0 FPUnaryTerm {} x = x
+introSupportedPrimConstraint0 FPBinaryTerm {} x = x
+introSupportedPrimConstraint0 FPRoundingUnaryTerm {} x = x
+introSupportedPrimConstraint0 FPRoundingBinaryTerm {} x = x
+introSupportedPrimConstraint0 FPFMATerm {} x = x
+introSupportedPrimConstraint0 FromIntegralTerm {} x = x
+introSupportedPrimConstraint0 FromFPOrTerm {} x = x
+introSupportedPrimConstraint0 ToFPTerm {} x = x
+
+introSupportedPrimConstraint ::
+  forall t a. Term t -> ((SupportedPrim t, Typeable t) => a) -> a
+introSupportedPrimConstraint t a =
+  introSupportedPrimConstraint0 t $ withSupportedPrimTypeable @t $ a
+{-# INLINE introSupportedPrimConstraint #-}
+
+withSupportedPrimTypeable ::
+  forall a b. (SupportedPrim a) => ((Typeable a) => b) -> b
+withSupportedPrimTypeable = withTypeable (primTypeRep @a)
 
 -- {-# INLINE introSupportedPrimConstraint #-}
 
@@ -1756,7 +1784,7 @@ instance Show (Term ty) where
       ++ ", name="
       ++ show name
       ++ ", type="
-      ++ show (typeRep @ty)
+      ++ show (primTypeRep @ty)
       ++ "}"
   show (ForallTerm tid _ i sym arg) =
     "Forall{tid="
@@ -2432,7 +2460,7 @@ data UTerm t where
 -- | Compare two t'TypedSymbol's for equality.
 eqHeteroSymbol :: forall ta a tb b. TypedSymbol ta a -> TypedSymbol tb b -> Bool
 eqHeteroSymbol (TypedSymbol taga) (TypedSymbol tagb) =
-  case eqTypeRep (typeRep @a) (typeRep @b) of
+  case eqTypeRep (primTypeRep @a) (primTypeRep @b) of
     Just HRefl -> taga == tagb
     Nothing -> False
 {-# INLINE eqHeteroSymbol #-}
@@ -2963,7 +2991,7 @@ instance Interned (Term t) where
           arg2HashId
   describe (UEqTerm (arg1 :: Term arg) arg2) = do
     let fingerprint =
-          introSupportedPrimConstraint arg1 $ typeFingerprint (Proxy @arg)
+          introSupportedPrimConstraint arg1 $ typeFingerprint @arg
         arg1HashId = hashId arg1
         arg2HashId = hashId arg2
      in DEqTerm
@@ -2973,7 +3001,7 @@ instance Interned (Term t) where
           arg2HashId
   describe (UDistinctTerm args@((arg1 :: Term arg) :| _)) =
     let fingerprint =
-          introSupportedPrimConstraint arg1 $ typeFingerprint (Proxy @arg)
+          introSupportedPrimConstraint arg1 $ typeFingerprint @arg
         argsHashId = hashId <$> args
      in DDistinctTerm
           (preHashDistinctDescription fingerprint argsHashId)
@@ -3011,8 +3039,8 @@ instance Interned (Term t) where
   describe (USignumNumTerm arg) =
     let argHashId = hashId arg
      in DSignumNumTerm (preHashSignumNumDescription argHashId) argHashId
-  describe (ULtOrdTerm (arg1 :: arg) arg2) =
-    let tr = typeFingerprint $ typeRep @arg
+  describe (ULtOrdTerm (arg1 :: Term arg) arg2) =
+    let tr = typeFingerprint @arg
         arg1HashId = hashId arg1
         arg2HashId = hashId arg2
      in DLtOrdTerm
@@ -3020,8 +3048,8 @@ instance Interned (Term t) where
           tr
           arg1HashId
           arg2HashId
-  describe (ULeOrdTerm (arg1 :: arg) arg2) =
-    let tr = typeFingerprint $ typeRep @arg
+  describe (ULeOrdTerm (arg1 :: Term arg) arg2) =
+    let tr = typeFingerprint @arg
         arg1HashId = hashId arg1
         arg2HashId = hashId arg2
      in DLeOrdTerm
@@ -3410,9 +3438,11 @@ termThreadId (ToFPTerm tid _ _ _ _ _ _) = tid
 
 instance (SupportedPrim t) => Eq (Description (Term t)) where
   DConTerm _ (l :: tyl) == DConTerm _ (r :: tyr) =
-    case cast @tyl @tyr l of
-      Just l' -> sameCon l' r
-      Nothing -> False
+    withSupportedPrimTypeable @tyl $
+      withSupportedPrimTypeable @tyr $
+        case cast @tyl @tyr l of
+          Just l' -> sameCon l' r
+          Nothing -> False
   DSymTerm _ ls == DSymTerm _ rs = ls == rs
   DForallTerm _ ls li == DForallTerm _ rs ri =
     eqHeteroSymbol ls rs && eqHashId li ri
@@ -3631,13 +3661,20 @@ toCurThread t = do
 {-# INLINE toCurThread #-}
 
 -- | Construct and internalizing a 'ConTerm'.
-curThreadConTerm :: (SupportedPrim t) => t -> IO (Term t)
-curThreadConTerm t = intern $ UConTerm t
+curThreadConTerm :: forall t. (SupportedPrim t) => t -> IO (Term t)
+curThreadConTerm t =
+  withSupportedPrimTypeable @t $
+    intern $
+      UConTerm t
 {-# INLINE curThreadConTerm #-}
 
 -- | Construct and internalizing a 'SymTerm'.
-curThreadSymTerm :: (SupportedPrim t) => Symbol -> IO (Term t)
-curThreadSymTerm t = intern $ USymTerm $ TypedSymbol t
+curThreadSymTerm :: forall t. (SupportedPrim t) => Symbol -> IO (Term t)
+curThreadSymTerm t =
+  withSupportedPrimTypeable @t $
+    intern $
+      USymTerm $
+        TypedSymbol t
 {-# INLINE curThreadSymTerm #-}
 
 -- | Construct and internalizing a 'ForallTerm'.
@@ -3698,7 +3735,10 @@ curThreadDistinctTerm args = intern $ UDistinctTerm args
 -- | Construct and internalizing a 'ITETerm'.
 curThreadIteTerm ::
   (SupportedPrim a) => Term Bool -> Term a -> Term a -> IO (Term a)
-curThreadIteTerm c l r = intern $ UITETerm c l r
+curThreadIteTerm c l r =
+  introSupportedPrimConstraint l $
+    intern $
+      UITETerm c l r
 {-# INLINE curThreadIteTerm #-}
 
 -- | Construct and internalizing a 'AddNumTerm'.
@@ -3793,10 +3833,13 @@ curThreadRotateRightTerm t n =
 
 -- | Construct and internalizing a 'BitCastTerm'.
 curThreadBitCastTerm ::
+  forall a b.
   (PEvalBitCastTerm a b) =>
   Term a ->
   IO (Term b)
-curThreadBitCastTerm = intern . UBitCastTerm
+curThreadBitCastTerm =
+  withSupportedPrimTypeable @b $
+    intern . UBitCastTerm
 {-# INLINE curThreadBitCastTerm #-}
 
 -- | Construct and internalizing a 'BitCastOrTerm'.
@@ -3876,8 +3919,12 @@ curThreadBvzeroExtendTerm _ v = intern $ UBVExtendTerm False (Proxy @r) v
 {-# INLINE curThreadBvzeroExtendTerm #-}
 
 -- | Construct and internalizing a 'ApplyTerm'.
-curThreadApplyTerm :: (PEvalApplyTerm f a b) => Term f -> Term a -> IO (Term b)
-curThreadApplyTerm f a = intern $ UApplyTerm f a
+curThreadApplyTerm ::
+  forall f a b. (PEvalApplyTerm f a b) => Term f -> Term a -> IO (Term b)
+curThreadApplyTerm f a =
+  withSupportedPrimTypeable @b $
+    intern $
+      UApplyTerm f a
 {-# INLINE curThreadApplyTerm #-}
 
 -- | Construct and internalizing a 'DivIntegralTerm'.
@@ -3994,12 +4041,14 @@ curThreadFpFMATerm mode l r s = intern $ UFPFMATerm mode l r s
 
 -- | Construct and internalizing a 'FromIntegralTerm'.
 curThreadFromIntegralTerm ::
-  (PEvalFromIntegralTerm a b) => Term a -> IO (Term b)
-curThreadFromIntegralTerm = intern . UFromIntegralTerm
+  forall a b. (PEvalFromIntegralTerm a b) => Term a -> IO (Term b)
+curThreadFromIntegralTerm =
+  withSupportedPrimTypeable @b $ intern . UFromIntegralTerm
 {-# INLINE curThreadFromIntegralTerm #-}
 
 -- | Construct and internalizing a 'FromFPOrTerm'.
 curThreadFromFPOrTerm ::
+  forall a eb sb.
   ( PEvalIEEEFPConvertibleTerm a,
     ValidFP eb sb,
     SupportedPrim a
@@ -4008,7 +4057,8 @@ curThreadFromFPOrTerm ::
   Term FPRoundingMode ->
   Term (FP eb sb) ->
   IO (Term a)
-curThreadFromFPOrTerm d r f = intern $ UFromFPOrTerm d r f
+curThreadFromFPOrTerm d r f =
+  withSupportedPrimTypeable @a $ intern $ UFromFPOrTerm d r f
 {-# INLINE curThreadFromFPOrTerm #-}
 
 -- | Construct and internalizing a 'ToFPTerm'.
@@ -4476,7 +4526,7 @@ falseTerm = conTerm False
 {-# NOINLINE falseTerm #-}
 
 boolConTermView :: forall a. Term a -> Maybe Bool
-boolConTermView (ConTerm _ _ _ b) = cast b
+boolConTermView (ConTerm _ _ _ b) = withSupportedPrimTypeable @a $ cast b
 boolConTermView _ = Nothing
 {-# INLINE boolConTermView #-}
 
