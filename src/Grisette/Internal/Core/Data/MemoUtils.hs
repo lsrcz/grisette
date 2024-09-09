@@ -120,7 +120,9 @@ memo' _ f tbl lock weakTbl !x = unsafePerformIO $ do
           return $ unsafeFromAny val
   where
     notFound sn = do
-      let y = f x
+      RLock.release lock
+      let !y = f x
+      RLock.acquire lock
       weak <- mkRef x (unsafeToAny y) $ finalizer sn lock weakTbl
       HashTable.insert tbl sn $ O weak
       RLock.release lock

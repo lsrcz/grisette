@@ -20,7 +20,8 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( SomeStableName (..),
-    Id,
+    VI,
+    Ident,
     Digest,
     Interned (..),
     intern,
@@ -47,6 +48,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Maybe (isJust)
+import qualified Data.Vector.Unboxed.Mutable as M
 import Data.Word (Word32)
 import GHC.Base (Any)
 import GHC.Fingerprint (Fingerprint)
@@ -65,8 +67,10 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
 import Type.Reflection (someTypeRep)
 import Unsafe.Coerce (unsafeCoerce)
 
+type VI = Word32
+
 -- | A unique identifier for a term.
-type Id = SomeStableName
+type Ident = SomeStableName
 
 -- | A digest of a term.
 type Digest = Word32
@@ -78,7 +82,8 @@ type HashTable k v = IORef (HM.HashMap k v)
 data CacheState t where
   CacheState ::
     { _sem :: MVar (),
-      _currentThread :: HashTable (Description t) (Int, Weak SomeStableName)
+      _nextId :: M.IOVector VI,
+      _currentThread :: HashTable (Description t) (VI, Weak SomeStableName)
     } ->
     CacheState t
 
@@ -87,7 +92,7 @@ class Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
-  identify :: WeakThreadId -> Digest -> Id -> Uninterned t -> t
+  identify :: WeakThreadId -> Digest -> VI -> Ident -> Uninterned t -> t
   threadId :: t -> WeakThreadId
   descriptionDigest :: Description t -> Digest
 
@@ -112,6 +117,7 @@ mkCache = result
     element =
       CacheState
         <$> newMVar ()
+        <*> M.replicate 1 0
         <*> newIORef HM.empty
     result = do
       elements <- replicateM (fromIntegral cacheWidth) element
@@ -160,7 +166,7 @@ reclaimTerm id tyFingerprint grp dt = do
       case HM.lookup tyFingerprint cache of
         Just c -> do
           let Cache a = unsafeCoerce c :: Cache t
-          let CacheState sem s = a A.! grp
+          let CacheState sem _ s = a A.! grp
           takeMVar sem
           current <- readIORef s
           case HM.lookup dt current of
@@ -188,37 +194,43 @@ intern !bt = do
   let !dt = describe bt :: Description t
       !hdt = descriptionDigest dt
       !r = hdt `mod` cacheWidth
-      CacheState sem s = getCache cache A.! (fromIntegral r)
+      CacheState sem nextId s = getCache cache A.! (fromIntegral r)
   takeMVar sem
   -- print ("intern", wtid, dt, r)
   current <- readIORef s
   case HM.lookup dt current of
     Nothing -> do
-      newId <- makeStableName dt
-      let someNewId = SomeStableName newId
+      newId0 <- M.unsafeRead nextId 0
+      M.unsafeWrite nextId 0 (newId0 + 1)
+      let newId = newId0 * cacheWidth + r
+      newIdent <- makeStableName dt
+      let someNewIdent = SomeStableName newIdent
       idRef <-
-        mkWeakSomeStableNameRefWithFinalizer someNewId $
+        mkWeakSomeStableNameRefWithFinalizer someNewIdent $
           reclaimTerm wtid fingerprint (fromIntegral r) dt
-      let !t = identify (weakThreadId tid) hdt someNewId bt
-      writeIORef s $ HM.insert dt (0, idRef) current
+      let !t = identify (weakThreadId tid) hdt newId someNewIdent bt
+      writeIORef s $ HM.insert dt (newId, idRef) current
       putMVar sem ()
       return t
-    Just (_, oldIdRef) -> do
-      t1 <- deRefWeak oldIdRef
+    Just (oldId, oldIdentRef) -> do
+      t1 <- deRefWeak oldIdentRef
       case t1 of
         Nothing -> do
-          newId <- makeStableName dt
-          let someNewId = SomeStableName newId
+          newId0 <- M.unsafeRead nextId 0
+          M.unsafeWrite nextId 0 (newId0 + 1)
+          let newId = newId0 * cacheWidth + r
+          newIdent <- makeStableName dt
+          let someNewIdent = SomeStableName newIdent
           idRef <-
-            mkWeakSomeStableNameRefWithFinalizer someNewId $
+            mkWeakSomeStableNameRefWithFinalizer someNewIdent $
               reclaimTerm wtid fingerprint (fromIntegral r) dt
-          let !term = identify (weakThreadId tid) hdt someNewId bt
-          writeIORef s $ HM.insert dt (0, idRef) current
+          let !term = identify (weakThreadId tid) hdt newId someNewIdent bt
+          writeIORef s $ HM.insert dt (newId, idRef) current
           putMVar sem ()
           return term
         Just t1 -> do
           putMVar sem ()
-          return $! identify (weakThreadId tid) hdt t1 bt
+          return $! identify (weakThreadId tid) hdt oldId t1 bt
 {-# NOINLINE intern #-}
 
 -- | Check if the current thread has a cache.
@@ -229,10 +241,10 @@ haveCache = do
   return $ HM.member tid caches
 
 cacheStateSize :: CacheState t -> IO Int
-cacheStateSize (CacheState _ s) = HM.size <$> readIORef s
+cacheStateSize (CacheState _ _ s) = HM.size <$> readIORef s
 
 cacheStateLiveSize :: CacheState t -> IO Int
-cacheStateLiveSize (CacheState sem s) = do
+cacheStateLiveSize (CacheState sem _ s) = do
   takeMVar sem
   v <- fmap snd . HM.toList <$> readIORef s
   r <-

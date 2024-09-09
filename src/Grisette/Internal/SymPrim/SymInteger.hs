@@ -89,7 +89,7 @@ instance Hashable SymInteger where
 instance Solvable Integer SymInteger where
   con = SymInteger . conTerm
   sym = SymInteger . symTerm . typedConstantSymbol
-  conView (SymInteger (ConTerm _ _ _ t)) = Just t
+  conView (SymInteger (ConTerm _ _ _ _ t)) = Just t
   conView _ = Nothing
 
 instance IsString SymInteger where
