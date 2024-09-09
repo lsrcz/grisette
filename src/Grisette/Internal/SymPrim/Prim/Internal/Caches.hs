@@ -59,18 +59,19 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( SomeStableName (SomeStableName),
     WeakThreadId,
     WeakThreadIdRef,
-    mkWeakSomeStableNameRefWithFinalizer,
+    mkWeakStableNameRefWithFinalizer,
     mkWeakThreadIdRefWithFinalizer,
     myWeakThreadId,
     weakThreadId,
   )
+import System.Mem.StableName (StableName)
 import Type.Reflection (someTypeRep)
 import Unsafe.Coerce (unsafeCoerce)
 
 type VI = Word32
 
 -- | A unique identifier for a term.
-type Ident = SomeStableName
+type Ident = StableName Any
 
 -- | A digest of a term.
 type Digest = Word32
@@ -83,7 +84,7 @@ data CacheState t where
   CacheState ::
     { _sem :: MVar (),
       _nextId :: M.IOVector VI,
-      _currentThread :: HashTable (Description t) (VI, Weak SomeStableName)
+      _currentThread :: HashTable (Description t) (VI, Weak Ident)
     } ->
     CacheState t
 
@@ -204,12 +205,12 @@ intern !bt = do
       M.unsafeWrite nextId 0 (newId0 + 1)
       let newId = newId0 * cacheWidth + r
       newIdent <- makeStableName dt
-      let someNewIdent = SomeStableName newIdent
-      idRef <-
-        mkWeakSomeStableNameRefWithFinalizer someNewIdent $
+      let anyNewIdent = unsafeCoerce newIdent :: Ident
+      identRef <-
+        mkWeakStableNameRefWithFinalizer anyNewIdent $
           reclaimTerm wtid fingerprint (fromIntegral r) dt
-      let !t = identify (weakThreadId tid) hdt newId someNewIdent bt
-      writeIORef s $ HM.insert dt (newId, idRef) current
+      let !t = identify (weakThreadId tid) hdt newId anyNewIdent bt
+      writeIORef s $ HM.insert dt (newId, identRef) current
       putMVar sem ()
       return t
     Just (oldId, oldIdentRef) -> do
@@ -220,12 +221,12 @@ intern !bt = do
           M.unsafeWrite nextId 0 (newId0 + 1)
           let newId = newId0 * cacheWidth + r
           newIdent <- makeStableName dt
-          let someNewIdent = SomeStableName newIdent
-          idRef <-
-            mkWeakSomeStableNameRefWithFinalizer someNewIdent $
+          let anyNewIdent = unsafeCoerce newIdent :: Ident
+          identRef <-
+            mkWeakStableNameRefWithFinalizer anyNewIdent $
               reclaimTerm wtid fingerprint (fromIntegral r) dt
-          let !term = identify (weakThreadId tid) hdt newId someNewIdent bt
-          writeIORef s $ HM.insert dt (newId, idRef) current
+          let !term = identify (weakThreadId tid) hdt newId anyNewIdent bt
+          writeIORef s $ HM.insert dt (newId, identRef) current
           putMVar sem ()
           return term
         Just t1 -> do
