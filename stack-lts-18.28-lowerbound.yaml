@@ -56,7 +56,6 @@ extra-deps:
   - loch-th-0.2.2
   - th-compat-0.1.2
   - QuickCheck-2.14
-  - intern-0.9.2
   - array-0.5.4.0
   - random-1.1
   - splitmix-0.0.5
