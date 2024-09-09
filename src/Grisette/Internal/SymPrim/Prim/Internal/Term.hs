@@ -100,6 +100,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     pattern DynTerm,
     toCurThread,
     termId,
+    termIdent,
     typeHashId,
     introSupportedPrimConstraint,
     pformatTerm,
@@ -1578,6 +1579,57 @@ pattern DynTerm x <-
       Just x
     )
 
+termIdent :: Term t -> Ident
+termIdent (ConTerm _ _ _ i _) = i
+termIdent (SymTerm _ _ _ i _) = i
+termIdent (ForallTerm _ _ _ i _ _) = i
+termIdent (ExistsTerm _ _ _ i _ _) = i
+termIdent (NotTerm _ _ _ i _) = i
+termIdent (OrTerm _ _ _ i _ _) = i
+termIdent (AndTerm _ _ _ i _ _) = i
+termIdent (EqTerm _ _ _ i _ _) = i
+termIdent (DistinctTerm _ _ _ i _) = i
+termIdent (ITETerm _ _ _ i _ _ _) = i
+termIdent (AddNumTerm _ _ _ i _ _) = i
+termIdent (NegNumTerm _ _ _ i _) = i
+termIdent (MulNumTerm _ _ _ i _ _) = i
+termIdent (AbsNumTerm _ _ _ i _) = i
+termIdent (SignumNumTerm _ _ _ i _) = i
+termIdent (LtOrdTerm _ _ _ i _ _) = i
+termIdent (LeOrdTerm _ _ _ i _ _) = i
+termIdent (AndBitsTerm _ _ _ i _ _) = i
+termIdent (OrBitsTerm _ _ _ i _ _) = i
+termIdent (XorBitsTerm _ _ _ i _ _) = i
+termIdent (ComplementBitsTerm _ _ _ i _) = i
+termIdent (ShiftLeftTerm _ _ _ i _ _) = i
+termIdent (ShiftRightTerm _ _ _ i _ _) = i
+termIdent (RotateLeftTerm _ _ _ i _ _) = i
+termIdent (RotateRightTerm _ _ _ i _ _) = i
+termIdent (BitCastTerm _ _ _ i _) = i
+termIdent (BitCastOrTerm _ _ _ i _ _) = i
+termIdent (BVConcatTerm _ _ _ i _ _) = i
+termIdent (BVSelectTerm _ _ _ i _ _ _) = i
+termIdent (BVExtendTerm _ _ _ i _ _ _) = i
+termIdent (ApplyTerm _ _ _ i _ _) = i
+termIdent (DivIntegralTerm _ _ _ i _ _) = i
+termIdent (ModIntegralTerm _ _ _ i _ _) = i
+termIdent (QuotIntegralTerm _ _ _ i _ _) = i
+termIdent (RemIntegralTerm _ _ _ i _ _) = i
+termIdent (FPTraitTerm _ _ _ i _ _) = i
+termIdent (FdivTerm _ _ _ i _ _) = i
+termIdent (RecipTerm _ _ _ i _) = i
+termIdent (FloatingUnaryTerm _ _ _ i _ _) = i
+termIdent (PowerTerm _ _ _ i _ _) = i
+termIdent (FPUnaryTerm _ _ _ i _ _) = i
+termIdent (FPBinaryTerm _ _ _ i _ _ _) = i
+termIdent (FPRoundingUnaryTerm _ _ _ i _ _ _) = i
+termIdent (FPRoundingBinaryTerm _ _ _ i _ _ _ _) = i
+termIdent (FPFMATerm _ _ _ i _ _ _ _) = i
+termIdent (FromIntegralTerm _ _ _ i _) = i
+termIdent (FromFPOrTerm _ _ _ i _ _ _) = i
+termIdent (ToFPTerm _ _ _ i _ _ _ _) = i
+{-# INLINE termIdent #-}
+
 -- | Return the ID of a term.
 termId :: Term t -> VI
 termId t = case hashId t of
@@ -1797,7 +1849,7 @@ pformatTerm (ToFPTerm _ _ _ _ r arg _ _) = "(to_fp " ++ pformatTerm r ++ " " ++ 
 -- {-# INLINE pformatTerm #-}
 
 instance NFData (Term a) where
-  rnf i = termId i `seq` ()
+  rnf i = rnf (termId i) `seq` rnf (termIdent i)
   {-# INLINE rnf #-}
 
 instance Lift (Term t) where
