@@ -20,7 +20,7 @@
 -- Portability :   GHC only
 module Grisette.Internal.SymPrim.Prim.Internal.Caches
   ( SomeStableName (..),
-    VI,
+    Id,
     Ident,
     Digest,
     Interned (..),
@@ -69,9 +69,10 @@ import System.Mem.StableName (StableName)
 import Type.Reflection (someTypeRep)
 import Unsafe.Coerce (unsafeCoerce)
 
-type VI = Word32
-
 -- | A unique identifier for a term.
+type Id = Word32
+
+-- | The identity of a term.
 type Ident = StableName Any
 
 -- | A digest of a term.
@@ -84,8 +85,8 @@ type HashTable k v = IORef (HM.HashMap k v)
 data CacheState t where
   CacheState ::
     { _sem :: MVar (),
-      _nextId :: M.IOVector VI,
-      _currentThread :: HashTable (Description t) (VI, Weak Ident)
+      _nextId :: M.IOVector Id,
+      _currentThread :: HashTable (Description t) (Id, Weak Ident)
     } ->
     CacheState t
 
@@ -102,7 +103,7 @@ class Interned t where
   data Description t
   type Uninterned t
   describe :: Uninterned t -> Description t
-  identify :: WeakThreadId -> Digest -> VI -> Ident -> Uninterned t -> t
+  identify :: WeakThreadId -> Digest -> Id -> Ident -> Uninterned t -> t
   threadId :: t -> WeakThreadId
   descriptionDigest :: Description t -> Digest
 
