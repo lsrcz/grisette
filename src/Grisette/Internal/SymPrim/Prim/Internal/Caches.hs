@@ -44,6 +44,7 @@ import Control.Monad (replicateM)
 import qualified Data.Array as A
 import Data.Atomics (atomicModifyIORefCAS, atomicModifyIORefCAS_)
 import Data.Data (Proxy (Proxy), Typeable, typeRepFingerprint)
+import Data.Foldable (traverse_)
 import qualified Data.HashMap.Strict as HM
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
@@ -54,7 +55,7 @@ import GHC.Base (Any)
 import GHC.Fingerprint (Fingerprint)
 import GHC.IO (unsafePerformIO)
 import GHC.StableName (makeStableName)
-import GHC.Weak (Weak, deRefWeak)
+import GHC.Weak (Weak, deRefWeak, finalize)
 import Grisette.Internal.SymPrim.Prim.Internal.Utils
   ( SomeStableName (SomeStableName),
     WeakThreadId,
@@ -87,6 +88,14 @@ data CacheState t where
       _currentThread :: HashTable (Description t) (VI, Weak Ident)
     } ->
     CacheState t
+
+finalizeCacheState :: CacheState t -> IO ()
+finalizeCacheState (CacheState _ _ s) = do
+  m <- readIORef s
+  traverse_ (\(_, w) -> finalize w) m
+
+finalizeCache :: Cache t -> IO ()
+finalizeCache (Cache a) = mapM_ finalizeCacheState (A.elems a)
 
 -- | A class for interning terms.
 class Interned t where
@@ -145,7 +154,8 @@ typeMemoizedCache tid tyFingerprint = do
     Nothing -> do
       r1 <- mkCache
       wtidRef <-
-        mkWeakThreadIdRefWithFinalizer tid $
+        mkWeakThreadIdRefWithFinalizer tid $ do
+          finalizeCache r1
           atomicModifyIORefCAS_ termCacheCell (HM.delete wtid)
       r <- newIORef $ HM.singleton tyFingerprint (unsafeCoerce r1)
       atomicModifyIORefCAS termCacheCell $
