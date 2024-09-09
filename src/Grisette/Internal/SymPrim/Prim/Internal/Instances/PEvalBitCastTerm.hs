@@ -49,14 +49,14 @@ import Grisette.Internal.SymPrim.Prim.Internal.Unfold
 
 doPevalBitCastSameType ::
   forall x b. (SupportedPrim b) => Term x -> Maybe (Term b)
-doPevalBitCastSameType (BitCastTerm _ _ _ (DynTerm (b :: Term b))) = Just b
-doPevalBitCastSameType (BitCastTerm _ _ _ x) = doPevalBitCastSameType x
+doPevalBitCastSameType (BitCastTerm _ _ _ _ (DynTerm (b :: Term b))) = Just b
+doPevalBitCastSameType (BitCastTerm _ _ _ _ x) = doPevalBitCastSameType x
 doPevalBitCastSameType _ = Nothing
 
 -- | Partially evaluate a bitcast term. If no reduction is performed, return
 -- Nothing.
 doPevalBitCast :: (PEvalBitCastTerm a b, SupportedPrim b) => Term a -> Maybe (Term b)
-doPevalBitCast (ConTerm _ _ _ v) = Just $ conTerm $ bitCast v
+doPevalBitCast (ConTerm _ _ _ _ v) = Just $ conTerm $ bitCast v
 doPevalBitCast t = doPevalBitCastSameType t
 
 pevalBitCastGeneral ::
@@ -71,7 +71,7 @@ doPevalBitCastOr ::
   Term b ->
   Term a ->
   Maybe (Term b)
-doPevalBitCastOr (ConTerm _ _ _ d) (ConTerm _ _ _ v) =
+doPevalBitCastOr (ConTerm _ _ _ _ d) (ConTerm _ _ _ _ v) =
   Just $ conTerm $ bitCastOr d v
 doPevalBitCastOr _ _ = Nothing
 

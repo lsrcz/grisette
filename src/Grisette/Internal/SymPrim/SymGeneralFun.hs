@@ -171,7 +171,7 @@ instance
   where
   con = SymGeneralFun . conTerm
   sym = SymGeneralFun . symTerm . typedAnySymbol
-  conView (SymGeneralFun (ConTerm _ _ _ t)) = Just t
+  conView (SymGeneralFun (ConTerm _ _ _ _ t)) = Just t
   conView _ = Nothing
 
 instance

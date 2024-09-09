@@ -59,7 +59,7 @@ pevalGeneralLtOrdTerm = binaryUnfoldOnce doPevalGeneralLtOrdTerm ltOrdTerm
 
 doPevalGeneralLtOrdTerm ::
   (PEvalOrdTerm a, Ord a) => Term a -> Term a -> Maybe (Term Bool)
-doPevalGeneralLtOrdTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) = Just $ conTerm $ a < b
+doPevalGeneralLtOrdTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b) = Just $ conTerm $ a < b
 doPevalGeneralLtOrdTerm _ _ = Nothing
 
 -- | General partially evaluation of less than or equal to operation.
@@ -68,7 +68,7 @@ pevalGeneralLeOrdTerm = binaryUnfoldOnce doPevalGeneralLeOrdTerm leOrdTerm
 
 doPevalGeneralLeOrdTerm ::
   (PEvalOrdTerm a, Ord a) => Term a -> Term a -> Maybe (Term Bool)
-doPevalGeneralLeOrdTerm (ConTerm _ _ _ a) (ConTerm _ _ _ b) = Just $ conTerm $ a <= b
+doPevalGeneralLeOrdTerm (ConTerm _ _ _ _ a) (ConTerm _ _ _ _ b) = Just $ conTerm $ a <= b
 doPevalGeneralLeOrdTerm _ _ = Nothing
 
 instance PEvalOrdTerm Integer where
@@ -78,18 +78,18 @@ instance PEvalOrdTerm Integer where
         msum
           [ doPevalGeneralLtOrdTerm l r,
             case (l, r) of
-              (ConTerm _ _ _ l, AddNumTerm _ _ _ (ConTerm _ _ _ j) k) ->
+              (ConTerm _ _ _ _ l, AddNumTerm _ _ _ _ (ConTerm _ _ _ _ j) k) ->
                 Just $ pevalLtOrdTerm (conTerm $ l - j) k
-              (AddNumTerm _ _ _ (ConTerm _ _ _ i) j, ConTerm _ _ _ k) ->
+              (AddNumTerm _ _ _ _ (ConTerm _ _ _ _ i) j, ConTerm _ _ _ _ k) ->
                 Just $ pevalLtOrdTerm j (conTerm $ k - i)
-              ((AddNumTerm _ _ _ (ConTerm _ _ _ j) k), l) ->
+              ((AddNumTerm _ _ _ _ (ConTerm _ _ _ _ j) k), l) ->
                 Just $
                   pevalLtOrdTerm
                     (conTerm j)
                     (pevalSubNumTerm l k)
-              (j, (AddNumTerm _ _ _ (ConTerm _ _ _ k) l)) ->
+              (j, (AddNumTerm _ _ _ _ (ConTerm _ _ _ _ k) l)) ->
                 Just $ pevalLtOrdTerm (conTerm $ -k) (pevalSubNumTerm l j)
-              (l, ConTerm _ _ _ r) ->
+              (l, ConTerm _ _ _ _ r) ->
                 Just $ pevalLtOrdTerm (conTerm $ -r) (pevalNegNumTerm l)
               _ -> Nothing
           ]
@@ -99,15 +99,15 @@ instance PEvalOrdTerm Integer where
         msum
           [ doPevalGeneralLeOrdTerm l r,
             case (l, r) of
-              (ConTerm _ _ _ l, AddNumTerm _ _ _ (ConTerm _ _ _ j) k) ->
+              (ConTerm _ _ _ _ l, AddNumTerm _ _ _ _ (ConTerm _ _ _ _ j) k) ->
                 Just $ pevalLeOrdTerm (conTerm $ l - j) k
-              (AddNumTerm _ _ _ (ConTerm _ _ _ i) j, ConTerm _ _ _ k) ->
+              (AddNumTerm _ _ _ _ (ConTerm _ _ _ _ i) j, ConTerm _ _ _ _ k) ->
                 Just $ pevalLeOrdTerm j (conTerm $ k - i)
-              (AddNumTerm _ _ _ (ConTerm _ _ _ j) k, l) ->
+              (AddNumTerm _ _ _ _ (ConTerm _ _ _ _ j) k, l) ->
                 Just $ pevalLeOrdTerm (conTerm j) (pevalSubNumTerm l k)
-              (j, AddNumTerm _ _ _ (ConTerm _ _ _ k) l) ->
+              (j, AddNumTerm _ _ _ _ (ConTerm _ _ _ _ k) l) ->
                 Just $ pevalLeOrdTerm (conTerm $ -k) (pevalSubNumTerm l j)
-              (l, ConTerm _ _ _ r) ->
+              (l, ConTerm _ _ _ _ r) ->
                 Just $ pevalLeOrdTerm (conTerm $ -r) (pevalNegNumTerm l)
               _ -> Nothing
           ]

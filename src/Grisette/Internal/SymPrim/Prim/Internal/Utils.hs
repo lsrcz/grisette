@@ -200,9 +200,6 @@ addStableNameFinalizer t@(StableName t#) (IO finalizer) = IO $ \s ->
 data SomeStableName where
   SomeStableName :: StableName a -> SomeStableName
 
-instance Show SomeStableName where
-  show _ = "n"
-
 instance Eq SomeStableName where
   SomeStableName l == SomeStableName r = eqStableName l r
 
