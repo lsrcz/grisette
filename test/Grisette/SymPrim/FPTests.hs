@@ -19,6 +19,7 @@ import Data.Kind (Type)
 import Data.Ratio ((%))
 import Data.SBV (SMTResult (Satisfiable, Unsatisfiable))
 import qualified Data.SBV as SBV
+import Data.Serialize (decode, encode)
 import Data.Word (Word32, Word64)
 import GHC.TypeLits (KnownNat, Nat, type (<=))
 import Grisette
@@ -1145,7 +1146,15 @@ fpTests =
                     toFP rtp <$> (posints :: [WordN 32]) @?= rtpPosToFPExpected
                 ]
               ]
-          ]
+          ],
+      testProperty "Serialize" $ \(x :: FP 8 24) ->
+        ioProperty $
+          if isNaN x
+            then case (decode . encode) x of
+              Right (v :: FP 8 24) -> assertBool "Should be NaN" $ fpIsNaN v
+              Left err -> fail err
+            else
+              Right x @?= (decode . encode) x
     ]
 
 newtype SameFPObj = SameFPObj FP32 deriving newtype (Show, Num, IEEEFPConstants)

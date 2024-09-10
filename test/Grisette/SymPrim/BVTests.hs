@@ -42,6 +42,7 @@ import Data.Bits
   )
 import Data.Int (Int8)
 import Data.Proxy (Proxy (Proxy))
+import Data.Serialize (decode, encode)
 import Data.Typeable (Typeable, typeRep)
 import Data.Word (Word8)
 import GHC.Stack (HasCallStack)
@@ -487,6 +488,13 @@ sizedBVTests =
             ioProperty $ shiftL x maxBound @=? 0,
           testProperty "IntN shiftL by large amount" $ \(x :: IntN 128) ->
             ioProperty $ shiftL x maxBound @=? 0
+        ],
+      testGroup
+        "Serialize"
+        [ testProperty "WordN 8" $
+            \(x :: WordN 8) -> Right x == (decode . encode) x,
+          testProperty "IntN 8" $
+            \(x :: IntN 8) -> Right x == (decode . encode) x
         ]
     ]
 

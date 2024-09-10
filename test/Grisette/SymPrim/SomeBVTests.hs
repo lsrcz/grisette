@@ -15,8 +15,22 @@ module Grisette.SymPrim.SomeBVTests (someBVTests) where
 import Control.DeepSeq (NFData, force)
 import Control.Exception (ArithException (Overflow), catch, evaluate)
 import Control.Monad.Except (ExceptT)
-import Data.Bits (Bits (clearBit, complement, complementBit, setBit, shiftL, unsafeShiftL, xor, (.&.), (.|.)), FiniteBits (finiteBitSize))
+import Data.Bits
+  ( Bits
+      ( clearBit,
+        complement,
+        complementBit,
+        setBit,
+        shiftL,
+        unsafeShiftL,
+        xor,
+        (.&.),
+        (.|.)
+      ),
+    FiniteBits (finiteBitSize),
+  )
 import Data.Proxy (Proxy (Proxy))
+import Data.Serialize (decode, encode)
 import Grisette
   ( BV (bv, bvConcat, bvExt, bvSelect, bvSext, bvZext),
     ITEOp (symIte),
@@ -631,7 +645,9 @@ someBVTests =
                 unsafeShiftL
                 "unsafeShiftL"
             ]
-        ]
+        ],
+      testProperty "Serialize" $ forAll (arbitraryBV 8) $ \(v :: SomeWordN) ->
+        Right v == decode (encode v)
     ]
 
 binOpLitTest ::

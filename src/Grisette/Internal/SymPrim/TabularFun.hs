@@ -35,8 +35,12 @@ import Data.Bifunctor (Bifunctor (second))
 import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
+import Data.Serialize (Serialize)
 import GHC.Generics (Generic, Generic1)
-import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply), Function ((#)))
+import Grisette.Internal.Core.Data.Class.Function
+  ( Apply (FunType, apply),
+    Function ((#)),
+  )
 import Grisette.Internal.SymPrim.FunInstanceGen (supportedPrimFunUpTo)
 import Grisette.Internal.SymPrim.Prim.Internal.PartialEval (totalize2)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
@@ -77,7 +81,7 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> f # 3
 -- 4
 data (=->) a b = TabularFun {funcTable :: [(a, b)], defaultFuncValue :: b}
-  deriving (Show, Eq, Generic, Generic1, Lift, NFData, NFData1)
+  deriving (Show, Eq, Generic, Generic1, Lift, NFData, NFData1, Serialize)
 
 infixr 0 =->
 

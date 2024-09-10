@@ -29,6 +29,7 @@ import Control.Exception (Exception, throw)
 import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBV
+import Data.Serialize (Serialize)
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Language.Haskell.TH.Syntax (Lift)
@@ -41,7 +42,7 @@ import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 -- @v'AlgRealPoly' [(5, 3), (2, 1), (-5, 0)]@.
 newtype AlgRealPoly = AlgRealPoly [(Integer, Integer)]
   deriving (Eq, Generic, Lift)
-  deriving newtype (Hashable, NFData)
+  deriving newtype (Hashable, NFData, Serialize)
 
 -- | Boundary point for real intervals.
 data RealPoint
@@ -50,7 +51,7 @@ data RealPoint
   | -- | Closed point.
     ClosedPoint Rational
   deriving (Eq, Generic, Lift)
-  deriving anyclass (Hashable, NFData)
+  deriving anyclass (Hashable, NFData, Serialize)
 
 toSBVRealPoint :: RealPoint -> SBV.RealPoint Rational
 toSBVRealPoint (OpenPoint r) = SBV.OpenPoint r
@@ -84,7 +85,7 @@ data AlgReal where
     RealPoint ->
     AlgReal
   deriving (Generic, Lift)
-  deriving anyclass (Hashable, NFData)
+  deriving anyclass (Hashable, NFData, Serialize)
 
 -- | Convert algebraic real numbers to SBV's algebraic real numbers.
 toSBVAlgReal :: AlgReal -> SBV.AlgReal
