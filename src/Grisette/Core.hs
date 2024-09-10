@@ -300,16 +300,20 @@ module Grisette.Core
     --
     -- >>> "a" :: Symbol
     -- a
+    SExpr (..),
+    showsSExprWithParens,
+    fileLocation,
     Identifier (..),
     Symbol (..),
     identifier,
-    withInfo,
-    withLoc,
+    withMetadata,
+    mapMetadata,
+    withLocation,
     uniqueIdentifier,
     simple,
     indexed,
     symbolIdentifier,
-    modifyIdentifier,
+    mapIdentifier,
 
     -- ** Creation and extraction of solvable values
     Solvable (..),
@@ -1790,17 +1794,23 @@ import Grisette.Internal.Core.Data.MemoUtils
     weakStableMemoFix,
     weakStableMup,
   )
+import Grisette.Internal.Core.Data.SExpr
+  ( SExpr (..),
+    fileLocation,
+    showsSExprWithParens,
+  )
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier (..),
     Symbol (..),
     identifier,
     indexed,
-    modifyIdentifier,
+    mapIdentifier,
+    mapMetadata,
     simple,
     symbolIdentifier,
     uniqueIdentifier,
-    withInfo,
-    withLoc,
+    withLocation,
+    withMetadata,
   )
 import Instances.TH.Lift ()
 

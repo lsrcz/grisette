@@ -28,10 +28,11 @@ module Grisette.Internal.Core.Data.Class.Solvable
 where
 
 import Data.String (IsString)
+import qualified Data.Text as T
 import Grisette.Internal.Core.Data.Symbol
   ( Identifier,
     Symbol (IndexedSymbol, SimpleSymbol),
-    withLoc,
+    withLocation,
   )
 import Language.Haskell.TH.Syntax.Compat (SpliceQ)
 
@@ -114,7 +115,7 @@ pattern Con c <-
 -- attached to the identifier.
 --
 -- >>> $$(slocsym "a") :: SymBool
--- a:<interactive>:...
+-- a:[grisette-file-location <interactive>...]
 --
 -- Calling 'slocsym' with the same name at different location will always
 -- generate different symbolic constants. Calling 'slocsym' at the same
@@ -125,17 +126,17 @@ pattern Con c <-
 -- >>> let f _ = $$(slocsym "a") :: SymBool
 -- >>> f () == f ()
 -- True
-slocsym :: (Solvable c s) => Identifier -> SpliceQ s
-slocsym nm = [||ssym $$(withLoc nm)||]
+slocsym :: (Solvable c s) => T.Text -> SpliceQ s
+slocsym nm = [||ssym $$(withLocation nm)||]
 
 -- | Generate indexed symbolic variables. The file location will be attached to
 -- the identifier.
 --
 -- >>> $$(ilocsym "a" 1) :: SymBool
--- a:<interactive>:...@1
+-- a:[grisette-file-location <interactive>...]@1
 --
 -- Calling 'ilocsym' with the same name and index at different location will
 -- always generate different symbolic constants. Calling 'slocsym' at the same
 -- location for multiple times will generate the same symbolic constants.
-ilocsym :: (Solvable c s) => Identifier -> Int -> SpliceQ s
-ilocsym nm idx = [||isym $$(withLoc nm) idx||]
+ilocsym :: (Solvable c s) => T.Text -> Int -> SpliceQ s
+ilocsym nm idx = [||isym $$(withLocation nm) idx||]
