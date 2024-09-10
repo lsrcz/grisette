@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -64,6 +65,7 @@ where
 
 import Control.DeepSeq (NFData (rnf))
 import Control.Exception (Exception, throw)
+import Control.Monad (when)
 import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Bits
@@ -96,6 +98,7 @@ import Data.Bits
 import Data.Data (Proxy (Proxy))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Maybe (catMaybes, fromJust, isJust)
+import Data.Serialize (Serialize (get, put), getWord8, putWord8)
 import qualified Data.Text as T
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.Exception (Exception (displayException))
@@ -103,6 +106,7 @@ import GHC.Generics (Generic)
 import GHC.TypeNats
   ( KnownNat,
     Nat,
+    Natural,
     natVal,
     sameNat,
     type (+),
@@ -344,6 +348,28 @@ instance
 data SomeBV bv where
   SomeBV :: (KnownNat n, 1 <= n) => bv n -> SomeBV bv
   SomeBVLit :: Integer -> SomeBV bv
+
+instance
+  ( forall n.
+    (KnownNat n, 1 <= n) =>
+    Serialize (bv n)
+  ) =>
+  Serialize (SomeBV bv)
+  where
+  put (SomeBV (bv :: bv n)) = putWord8 0 >> put (natVal (Proxy @n)) >> put bv
+  put (SomeBVLit i) = putWord8 1 >> put i
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> do
+        n :: Natural <- get
+        when (n == 0) $ fail "Invalid bit width"
+        case mkPositiveNatRepr n of
+          SomePositiveNatRepr (_ :: NatRepr x) -> do
+            x <- get @(bv x)
+            return $ SomeBV x
+      1 -> SomeBVLit <$> get
+      _ -> fail "Invalid tag"
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Hashable (bv n),

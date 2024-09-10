@@ -89,13 +89,6 @@ packages:
   original:
     hackage: QuickCheck-2.14
 - completed:
-    hackage: intern-0.9.2@sha256:85eae3bd0a6cbfc622c0c70aa476641971bcd5e59dbc4c7a4b17888e432a5bd5,1619
-    pantry-tree:
-      sha256: 23a96e5332f89615698291ed8e28a410b8a4a01af70de15869a8565602d89360
-      size: 921
-  original:
-    hackage: intern-0.9.2
-- completed:
     hackage: array-0.5.4.0@sha256:2b2425e01d592c0e66594c008405ea4c6f6e4d929daeddabbd81be9bb49ebffa,1588
     pantry-tree:
       sha256: e17dfafde2f226674cffd56b1f445c332b6e5855860f79dedd9de0b6916e7ff0
@@ -228,6 +221,13 @@ packages:
       size: 1393
   original:
     hackage: concurrent-extra-0.7.0.12
+- completed:
+    hackage: cereal-0.5.8.1@sha256:a08b65dd8beb3159b4a9a42c4d98ec5363cb551e78c9e9ffb7e810a676b4610b,2863
+    pantry-tree:
+      sha256: 74301654fb8533eaa02c5585d2796abb38615408e3c4004ed31305da04c4c60a
+      size: 641
+  original:
+    hackage: cereal-0.5.8.1
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

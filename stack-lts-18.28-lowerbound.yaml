@@ -75,6 +75,8 @@ extra-deps:
   - th-abstraction-0.4.0.0
   - atomic-primops-0.8.3
   - concurrent-extra-0.7.0.12
+  - cereal-0.5.8.1
+
 # Override default flag values for local packages and extra-deps
 # flags: {}
 

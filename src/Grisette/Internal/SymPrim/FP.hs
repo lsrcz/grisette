@@ -75,6 +75,7 @@ import Data.SBV
 import Data.SBV.Float (fpEncodeFloat)
 import qualified Data.SBV.Float as SBVF
 import qualified Data.SBV.Internals as SBVI
+import Data.Serialize (Serialize (get, put))
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.Exception (Exception (displayException))
 import GHC.Generics (Generic)
@@ -902,3 +903,11 @@ instance Apply (FP eb sb) where
 instance Apply FPRoundingMode where
   type FunType FPRoundingMode = FPRoundingMode
   apply = id
+
+instance (ValidFP eb sb) => Serialize (FP eb sb) where
+  put x =
+    withValidFPProofs @eb @sb $
+      put (bitCastOrCanonical x :: WordN (eb + sb))
+  get = do
+    w :: WordN (eb + sb) <- withValidFPProofs @eb @sb get
+    return $ withValidFPProofs @eb @sb $ bitCast w
