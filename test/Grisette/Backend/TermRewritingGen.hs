@@ -78,7 +78,14 @@ import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, Nat, type (+), type (<=))
-import Grisette (Identifier, SizedBV, SymRotate, SymShift, withInfo)
+import Grisette
+  ( Identifier,
+    SExpr (Atom),
+    SizedBV,
+    SymRotate,
+    SymShift,
+    withMetadata,
+  )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.FP
   ( FP,
@@ -550,7 +557,7 @@ boolonly :: Int -> Gen BoolOnlySpec
 boolonly 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bool" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bool" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -600,7 +607,7 @@ boolWithLIA :: Int -> Gen BoolWithLIASpec
 boolWithLIA 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bool" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bool" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -633,7 +640,7 @@ liaWithBool :: Int -> Gen LIAWithBoolSpec
 liaWithBool 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("int" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("int" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec <$> arbitrary
    in oneof [r, s]
@@ -689,7 +696,7 @@ boolWithFSBV ::
 boolWithFSBV _ _ 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bool" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bool" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -728,7 +735,7 @@ fsbvWithBool ::
 fsbvWithBool _ _ 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("int" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("int" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r =
         conSpec
@@ -810,7 +817,7 @@ dsbv1 ::
 dsbv1 _ 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bv1" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bv1" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -860,7 +867,7 @@ dsbv2 ::
 dsbv2 _ 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bv2" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bv2" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -910,7 +917,7 @@ dsbv3 ::
 dsbv3 _ 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bv3" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bv3" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -959,7 +966,7 @@ dsbv4 ::
 dsbv4 _ 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bv4" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bv4" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec . fromInteger <$> arbitrary
    in oneof [r, s]
@@ -1219,7 +1226,7 @@ boolWithNRA :: Int -> Gen BoolWithNRASpec
 boolWithNRA 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("bool" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("bool" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = oneof $ return . conSpec <$> [True, False]
    in oneof [r, s]
@@ -1252,7 +1259,7 @@ nraWithBool :: Int -> Gen NRAWithBoolSpec
 nraWithBool 0 =
   let s =
         oneof $
-          return . symSpec . (`withInfo` ("real" :: T.Text))
+          return . symSpec . (`withMetadata` (Atom ("real" :: T.Text)))
             <$> ["a", "b", "c", "d", "e", "f", "g"]
       r = conSpec <$> arbitrary
    in oneof [r, s]

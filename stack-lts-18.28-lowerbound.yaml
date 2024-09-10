@@ -76,6 +76,7 @@ extra-deps:
   - atomic-primops-0.8.3
   - concurrent-extra-0.7.0.12
   - cereal-0.5.8.1
+  - cereal-text-0.1.0.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

@@ -16,6 +16,7 @@ import Grisette
     ITEOp (symIte),
     ListSpec (ListSpec),
     MonadFresh (localIdentifier),
+    SExpr (Atom),
     SimpleListSpec (SimpleListSpec),
     SymBool,
     choose,
@@ -28,11 +29,12 @@ import Grisette
     genSym,
     genSymSimple,
     liftFresh,
+    mapMetadata,
     mrgIf,
     mrgSingle,
     runFresh,
     runFreshT,
-    withInfo,
+    withMetadata,
   )
 import Grisette.Core.Data.Class.TestValues (conBool, isymBool, ssymBool)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
@@ -1270,17 +1272,18 @@ genSymTests =
       testCase "localIdentifier" $ do
         let computation = do
               a <- simpleFresh ()
-              (b1, b2) <- localIdentifier (`withInfo` ("b" :: T.Text)) $ do
-                b1 <- simpleFresh ()
-                b2 <- simpleFresh ()
-                return (b1, b2)
+              (b1, b2) <-
+                localIdentifier (mapMetadata (const $ Atom ("b" :: T.Text))) $ do
+                  b1 <- simpleFresh ()
+                  b2 <- simpleFresh ()
+                  return (b1, b2)
               c <- simpleFresh ()
               return [a, b1, b2, c :: SymBool]
         let actual = runFresh computation "c"
         actual
           @?= [ isymBool "c" 0,
-                isymBool (withInfo "c" ("b" :: T.Text)) 0,
-                isymBool (withInfo "c" ("b" :: T.Text)) 1,
+                isymBool (withMetadata "c" (Atom ("b" :: T.Text))) 0,
+                isymBool (withMetadata "c" (Atom ("b" :: T.Text))) 1,
                 isymBool "c" 1
               ]
     ]

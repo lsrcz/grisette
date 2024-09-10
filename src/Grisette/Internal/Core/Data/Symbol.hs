@@ -23,28 +23,36 @@
 module Grisette.Internal.Core.Data.Symbol
   ( Identifier (..),
     identifier,
-    withInfo,
-    withLoc,
+    withMetadata,
+    withLocation,
+    mapMetadata,
     uniqueIdentifier,
     Symbol (..),
     simple,
     indexed,
     symbolIdentifier,
-    modifyIdentifier,
+    mapIdentifier,
   )
 where
 
-import Control.DeepSeq (NFData (rnf))
+import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
-import Data.Typeable (Proxy (Proxy), Typeable, eqT, typeRep, type (:~:) (Refl))
-import Debug.Trace.LocationTH (__LOCATION__)
 import GHC.Generics (Generic)
 import GHC.IO (unsafePerformIO)
-import Language.Haskell.TH.Syntax (Lift (liftTyped), unsafeTExpCoerce)
-import Language.Haskell.TH.Syntax.Compat (SpliceQ, liftSplice)
+import Grisette.Internal.Core.Data.SExpr
+  ( SExpr (Atom, List, NumberAtom),
+    fileLocation,
+    showsSExprWithParens,
+  )
+import Language.Haskell.TH.Syntax (Lift)
+import Language.Haskell.TH.Syntax.Compat (SpliceQ)
+
+-- $setup
+-- >>> import Grisette.Core
+-- >>> import Grisette.SymPrim
 
 -- | Identifier type used for 'Grisette.Core.GenSym'
 --
@@ -64,12 +72,12 @@ import Language.Haskell.TH.Syntax.Compat (SpliceQ, liftSplice)
 --     >>> "a" :: Identifier -- available when OverloadedStrings is enabled
 --     a
 --
---   * bundle the identifier with some user provided information
+--   * bundle the identifier with some user provided metadata
 --
 --     Identifiers created with different name or different additional
 --     information will not be the same.
 --
---     >>> withInfo "a" (1 :: Int)
+--     >>> withMetadata "a" (NumberAtom 1)
 --     a:1
 --
 --   * bundle the calling file location with the identifier to ensure global
@@ -78,63 +86,21 @@ import Language.Haskell.TH.Syntax.Compat (SpliceQ, liftSplice)
 --     Identifiers created at different locations will not be the
 --     same. The identifiers created at the same location will be the same.
 --
---     >>> $$(withLoc "a") -- a sample result could be "a:<interactive>:18:4-18"
---     a:<interactive>:...
-data Identifier where
-  Identifier :: T.Text -> Identifier
-  IdentifierWithInfo ::
-    ( Typeable a,
-      Ord a,
-      Lift a,
-      NFData a,
-      Show a,
-      Hashable a
-    ) =>
-    Identifier ->
-    a ->
-    Identifier
+--     >>> $$(withLocation "a") -- a sample result could be "a:[grisette-file-location <interactive> 18 (4 18)]"
+--     a:[grisette-file-location <interactive>...]
+data Identifier = Identifier {baseIdent :: T.Text, metadata :: SExpr}
+  deriving (Eq, Ord, Generic, Lift)
+  deriving anyclass (Hashable, NFData)
 
 instance Show Identifier where
-  show (Identifier i) = T.unpack i
-  show (IdentifierWithInfo s i) = show s ++ ":" ++ show i
+  showsPrec _ (Identifier i (List [])) = showString (T.unpack i)
+  showsPrec _ (Identifier i metadata) =
+    showString (T.unpack i)
+      . showString ":"
+      . showsSExprWithParens '[' ']' metadata
 
 instance IsString Identifier where
-  fromString = Identifier . T.pack
-
-instance Eq Identifier where
-  Identifier l == Identifier r = l == r
-  IdentifierWithInfo l (linfo :: linfo)
-    == IdentifierWithInfo r (rinfo :: rinfo) = case eqT @linfo @rinfo of
-      Just Refl -> l == r && linfo == rinfo
-      _ -> False
-  _ == _ = False
-
-instance Ord Identifier where
-  Identifier l <= Identifier r = l <= r
-  Identifier _ <= _ = True
-  _ <= Identifier _ = False
-  IdentifierWithInfo l (linfo :: linfo)
-    <= IdentifierWithInfo r (rinfo :: rinfo) =
-      l < r
-        || ( l == r
-               && ( case eqT @linfo @rinfo of
-                      Just Refl -> linfo <= rinfo
-                      _ -> typeRep (Proxy @linfo) <= typeRep (Proxy @rinfo)
-                  )
-           )
-
-instance Hashable Identifier where
-  hashWithSalt s (Identifier n) = s `hashWithSalt` n
-  hashWithSalt s (IdentifierWithInfo n i) = s `hashWithSalt` n `hashWithSalt` i
-  {-# INLINE hashWithSalt #-}
-
-instance Lift Identifier where
-  liftTyped (Identifier n) = [||Identifier n||]
-  liftTyped (IdentifierWithInfo n i) = [||IdentifierWithInfo n i||]
-
-instance NFData Identifier where
-  rnf (Identifier n) = rnf n
-  rnf (IdentifierWithInfo n i) = rnf n `seq` rnf i
+  fromString i = Identifier (T.pack i) $ List []
 
 -- | Simple identifier.
 -- The same identifier refers to the same symbolic variable in the whole
@@ -143,79 +109,38 @@ instance NFData Identifier where
 -- The user may need to use unique identifiers to avoid unintentional identifier
 -- collision.
 identifier :: T.Text -> Identifier
-identifier = Identifier
+identifier = flip Identifier $ List []
 
--- | Identifier with extra information.
+-- | Identifier with extra metadata.
 --
--- The same identifier with the same information refers to the same symbolic
+-- The same identifier with the same metadata refers to the same symbolic
 -- variable in the whole program.
 --
--- The user may need to use unique identifiers or additional information to
+-- The user may need to use unique identifiers or additional metadata to
 -- avoid unintentional identifier collision.
-withInfo ::
-  (Typeable a, Ord a, Lift a, NFData a, Show a, Hashable a) =>
-  Identifier ->
-  a ->
-  Identifier
-withInfo = IdentifierWithInfo
+withMetadata :: T.Text -> SExpr -> Identifier
+withMetadata = Identifier
 
--- $setup
--- >>> import Grisette.Core
--- >>> import Grisette.SymPrim
+-- | Identifier with the file location.
+withLocation :: T.Text -> SpliceQ Identifier
+withLocation nm = [||withMetadata nm $$fileLocation||]
 
--- File location type.
-data FileLocation = FileLocation
-  { locPath :: String,
-    locLineno :: Int,
-    locSpan :: (Int, Int)
-  }
-  deriving (Eq, Ord, Generic, Lift, NFData, Hashable)
-
-instance Show FileLocation where
-  show (FileLocation p l (s1, s2)) =
-    p ++ ":" ++ show l ++ ":" ++ show s1 ++ "-" ++ show s2
-
-parseFileLocation :: String -> FileLocation
-parseFileLocation str =
-  let r = reverse str
-      (s2, r1) = break (== '-') r
-      (s1, r2) = break (== ':') $ tail r1
-      (l, p) = break (== ':') $ tail r2
-   in FileLocation
-        (reverse $ tail p)
-        (read $ reverse l)
-        (read $ reverse s1, read $ reverse s2)
-
--- | Identifier with the current location as extra information.
---
--- >>> $$(withLoc "a") -- a sample result could be "a:<interactive>:18:4-18"
--- a:<interactive>:...
---
--- The uniqueness is ensured for the call to 'identifier' at different location.
-withLoc :: Identifier -> SpliceQ Identifier
-withLoc s =
-  [||
-  withInfo
-    s
-    (parseFileLocation $$(liftSplice $ unsafeTExpCoerce __LOCATION__))
-  ||]
+-- | Modify the metadata of an identifier.
+mapMetadata :: (SExpr -> SExpr) -> Identifier -> Identifier
+mapMetadata f (Identifier i m) = Identifier i (f m)
 
 identifierCount :: IORef Int
 identifierCount = unsafePerformIO $ newIORef 0
 {-# NOINLINE identifierCount #-}
 
-newtype UniqueCount = UniqueCount Int
-  deriving newtype (Eq, Ord, NFData, Hashable)
-  deriving (Lift)
-
-instance Show UniqueCount where
-  show (UniqueCount i) = "unique<" <> show i <> ">"
-
 -- | Get a globally unique identifier within the 'IO' monad.
 uniqueIdentifier :: T.Text -> IO Identifier
 uniqueIdentifier ident = do
   i <- atomicModifyIORef' identifierCount (\x -> (x + 1, x))
-  return $ withInfo (identifier ident) (UniqueCount i)
+  return $
+    withMetadata
+      ident
+      (List [Atom "grisette-unique", NumberAtom $ toInteger i])
 
 -- | Symbol types for a symbolic variable.
 --
@@ -236,9 +161,9 @@ symbolIdentifier (SimpleSymbol i) = i
 symbolIdentifier (IndexedSymbol i _) = i
 
 -- | Modify the identifier of a symbol.
-modifyIdentifier :: (Identifier -> Identifier) -> Symbol -> Symbol
-modifyIdentifier f (SimpleSymbol i) = SimpleSymbol (f i)
-modifyIdentifier f (IndexedSymbol i idx) = IndexedSymbol (f i) idx
+mapIdentifier :: (Identifier -> Identifier) -> Symbol -> Symbol
+mapIdentifier f (SimpleSymbol i) = SimpleSymbol (f i)
+mapIdentifier f (IndexedSymbol i idx) = IndexedSymbol (f i) idx
 
 instance Show Symbol where
   show (SimpleSymbol i) = show i

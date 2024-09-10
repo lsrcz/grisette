@@ -1,7 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
@@ -21,21 +19,18 @@ module Grisette.Internal.Backend.SymBiMap
     addBiMapIntermediate,
     findStringToSymbol,
     lookupTerm,
-    QuantifiedSymbolInfo (..),
     attachNextQuantifiedSymbolInfo,
   )
 where
 
-import Control.DeepSeq (NFData)
 import Data.Dynamic (Dynamic)
 import qualified Data.HashMap.Strict as M
-import Data.Hashable (Hashable)
-import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.Backend.QuantifiedStack (QuantifiedStack)
+import Grisette.Internal.Core.Data.SExpr (SExpr (Atom, List, NumberAtom))
 import Grisette.Internal.Core.Data.Symbol
-  ( Symbol (IndexedSymbol, SimpleSymbol),
-    withInfo,
+  ( mapIdentifier,
+    mapMetadata,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm,
@@ -50,7 +45,6 @@ import Grisette.Internal.SymPrim.Prim.Term
     typedConstantSymbol,
     withConstantSymbolSupported,
   )
-import Language.Haskell.TH.Syntax (Lift)
 
 -- | A bidirectional map between symbolic Grisette terms and sbv terms.
 data SymBiMap = SymBiMap
@@ -71,22 +65,26 @@ instance Show SymBiMap where
       ++ " }"
 
 -- | Information about a quantified symbol.
-newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
-  deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)
-
-nextQuantifiedSymbolInfo :: SymBiMap -> (SymBiMap, QuantifiedSymbolInfo)
+-- newtype QuantifiedSymbolInfo = QuantifiedSymbolInfo Int
+--   deriving (Generic, Ord, Eq, Show, Hashable, Lift, NFData)
+nextQuantifiedSymbolInfo :: SymBiMap -> (SymBiMap, SExpr -> SExpr)
 nextQuantifiedSymbolInfo (SymBiMap t s f num) =
-  (SymBiMap t s f (num + 1), QuantifiedSymbolInfo num)
+  ( SymBiMap t s f (num + 1),
+    \meta ->
+      List
+        [ Atom "grisette-quantified",
+          NumberAtom $ fromIntegral num,
+          meta
+        ]
+  )
 
 attachQuantifiedSymbolInfo ::
-  QuantifiedSymbolInfo -> TypedConstantSymbol a -> TypedConstantSymbol a
+  (SExpr -> SExpr) -> TypedConstantSymbol a -> TypedConstantSymbol a
 attachQuantifiedSymbolInfo info tsym =
   withConstantSymbolSupported tsym $
-    case unTypedSymbol tsym of
-      SimpleSymbol ident ->
-        typedConstantSymbol $ SimpleSymbol $ withInfo ident info
-      IndexedSymbol ident idx ->
-        typedConstantSymbol $ IndexedSymbol (withInfo ident info) idx
+    typedConstantSymbol $
+      mapIdentifier (mapMetadata info) $
+        unTypedSymbol tsym
 
 -- | Attach the next quantified symbol info to a symbol.
 attachNextQuantifiedSymbolInfo ::
