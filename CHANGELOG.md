@@ -25,6 +25,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - [Breaking] Renamed `EvalMode` to `EvalModeAll`, renamed `MonadWithMode` to 
   `MonadEvalModeAll`.
   ([#250](https://github.com/lsrcz/grisette/pull/250))
+- Improved parallel symbolic evaluation performance.
+  ([#252](https://github.com/lsrcz/grisette/pull/252))
+
+### Fixed
+- Fixed memory leak within the term cache.
+  ([#252](https://github.com/lsrcz/grisette/pull/252))
 
 ## [0.8.0.0] - 2024-08-13
 
