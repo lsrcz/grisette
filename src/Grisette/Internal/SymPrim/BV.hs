@@ -45,6 +45,7 @@ import Control.Exception
   ( ArithException (Overflow),
     throw,
   )
+import qualified Data.Binary as Binary
 import Data.Bits
   ( Bits
       ( bit,
@@ -66,12 +67,12 @@ import Data.Bits
       ),
     FiniteBits (finiteBitSize),
   )
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Proxy (Proxy (Proxy))
 import Data.SBV (Int16, Int32, Int64, Int8, Word8)
-import Data.Serialize (Serialize (put))
-import qualified Data.Serialize as Serialize
+import qualified Data.Serialize as Cereal
 import Data.Word (Word16, Word32, Word64)
 import GHC.Enum
   ( boundedEnumFrom,
@@ -176,9 +177,17 @@ instance (KnownNat n, 1 <= n) => Show (WordN n) where
       binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
-instance (KnownNat n, 1 <= n) => Serialize (WordN n) where
-  put (WordN w) = put w
-  get = WordN <$> Serialize.get
+instance (KnownNat n, 1 <= n) => Serial (WordN n) where
+  serialize (WordN w) = serialize w
+  deserialize = WordN <$> deserialize
+
+instance (KnownNat n, 1 <= n) => Cereal.Serialize (WordN n) where
+  put = serialize
+  get = deserialize
+
+instance (KnownNat n, 1 <= n) => Binary.Binary (WordN n) where
+  put = serialize
+  get = deserialize
 
 convertInt :: (Num a) => L.Lexeme -> ReadPrec a
 convertInt (L.Number n)
@@ -247,9 +256,17 @@ instance (KnownNat n, 1 <= n) => Show (IntN n) where
       binRepPre = "0b" ++ replicate (fromIntegral bitwidth - length binRep) '0'
       binRep = showIntAtBase 2 (\x -> if x == 0 then '0' else '1') w ""
 
-instance (KnownNat n, 1 <= n) => Serialize (IntN n) where
-  put (IntN w) = put w
-  get = IntN <$> Serialize.get
+instance (KnownNat n, 1 <= n) => Serial (IntN n) where
+  serialize (IntN w) = serialize w
+  deserialize = IntN <$> deserialize
+
+instance (KnownNat n, 1 <= n) => Cereal.Serialize (IntN n) where
+  put = serialize
+  get = deserialize
+
+instance (KnownNat n, 1 <= n) => Binary.Binary (IntN n) where
+  put = serialize
+  get = deserialize
 
 instance (KnownNat n, 1 <= n) => Read (IntN n) where
   readPrec = readNumber convertInt <|> readBinary

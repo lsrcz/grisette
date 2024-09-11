@@ -68,6 +68,7 @@ import Control.Exception (Exception, throw)
 import Control.Monad (when)
 import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
 import Data.Bifunctor (Bifunctor (bimap))
+import qualified Data.Binary as Binary
 import Data.Bits
   ( Bits
       ( bit,
@@ -95,18 +96,21 @@ import Data.Bits
       ),
     FiniteBits (countLeadingZeros, countTrailingZeros, finiteBitSize),
   )
+import Data.Bytes.Get (MonadGet (getWord8))
+import Data.Bytes.Put (MonadPut (putWord8))
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Data (Proxy (Proxy))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Maybe (catMaybes, fromJust, isJust)
-import Data.Serialize (Serialize (get, put), getWord8, putWord8)
+import qualified Data.Serialize as Cereal
 import qualified Data.Text as T
 import Data.Type.Equality (type (:~:) (Refl))
 import GHC.Exception (Exception (displayException))
 import GHC.Generics (Generic)
+import GHC.Natural (Natural)
 import GHC.TypeNats
   ( KnownNat,
     Nat,
-    Natural,
     natVal,
     sameNat,
     type (+),
@@ -350,26 +354,38 @@ data SomeBV bv where
   SomeBVLit :: Integer -> SomeBV bv
 
 instance
-  ( forall n.
-    (KnownNat n, 1 <= n) =>
-    Serialize (bv n)
-  ) =>
-  Serialize (SomeBV bv)
+  (forall n. (KnownNat n, 1 <= n) => Serial (bv n)) =>
+  Serial (SomeBV bv)
   where
-  put (SomeBV (bv :: bv n)) = putWord8 0 >> put (natVal (Proxy @n)) >> put bv
-  put (SomeBVLit i) = putWord8 1 >> put i
-  get = do
+  serialize (SomeBV (bv :: bv n)) =
+    putWord8 0 >> serialize (natVal (Proxy @n)) >> serialize bv
+  serialize (SomeBVLit i) = putWord8 1 >> serialize i
+  deserialize = do
     tag <- getWord8
     case tag of
       0 -> do
-        n :: Natural <- get
+        n :: Natural <- deserialize
         when (n == 0) $ fail "Invalid bit width"
         case mkPositiveNatRepr n of
           SomePositiveNatRepr (_ :: NatRepr x) -> do
-            x <- get @(bv x)
+            x <- deserialize @(bv x)
             return $ SomeBV x
-      1 -> SomeBVLit <$> get
+      1 -> SomeBVLit <$> deserialize
       _ -> fail "Invalid tag"
+
+instance
+  (forall n. (KnownNat n, 1 <= n) => Serial (bv n)) =>
+  Cereal.Serialize (SomeBV bv)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  (forall n. (KnownNat n, 1 <= n) => Serial (bv n)) =>
+  Binary.Binary (SomeBV bv)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Hashable (bv n),
@@ -646,7 +662,7 @@ instance (SizedBV bv) => BV (SomeBV bv) where
     | ix + w > n =
         error $
           "bvSelect: trying to select a bitvector outside the bounds of the "
-            <> "input"
+            <> "inserialize"
     | w == 0 = error "bvSelect: trying to select a bitvector of size 0"
     | otherwise = res (Proxy @n) (Proxy @n)
     where

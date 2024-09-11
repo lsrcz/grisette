@@ -16,8 +16,10 @@
 module Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal)) where
 
 import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
@@ -137,6 +139,14 @@ instance Floating SymAlgReal where
   SymAlgReal l ** SymAlgReal r = SymAlgReal $ pevalPowerTerm l r
   logBase = error "consider using safeLogBase instead of logBase for AlgReal"
 
-instance Serialize SymAlgReal where
-  put = put . underlyingAlgRealTerm
-  get = SymAlgReal <$> get
+instance Serial SymAlgReal where
+  serialize = serialize . underlyingAlgRealTerm
+  deserialize = SymAlgReal <$> deserialize
+
+instance Cereal.Serialize SymAlgReal where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary SymAlgReal where
+  put = serialize
+  get = deserialize

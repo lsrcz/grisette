@@ -15,8 +15,10 @@
 module Grisette.Internal.SymPrim.SymBool (SymBool (SymBool)) where
 
 import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
@@ -24,7 +26,7 @@ import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
-import Grisette.Internal.SymPrim.Prim.Term
+import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),
     SymRep (SymType),
@@ -89,6 +91,14 @@ instance Show SymBool where
 instance AllSyms SymBool where
   allSymsS v = (SomeSym v :)
 
-instance Serialize SymBool where
-  put = put . underlyingBoolTerm
-  get = SymBool <$> get
+instance Serial SymBool where
+  serialize = serialize . underlyingBoolTerm
+  deserialize = SymBool <$> deserialize
+
+instance Cereal.Serialize SymBool where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary SymBool where
+  put = serialize
+  get = deserialize
