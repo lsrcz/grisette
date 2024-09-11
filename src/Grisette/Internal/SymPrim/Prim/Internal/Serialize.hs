@@ -45,11 +45,19 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Caches (Id)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (decideSymbolKind),
+    PEvalBitwiseTerm,
     PEvalNumTerm,
+    PEvalOrdTerm,
+    PEvalRotateTerm,
+    PEvalShiftTerm,
     SomeTypedAnySymbol,
     SomeTypedSymbol (SomeTypedSymbol),
     SupportedNonFuncPrim,
@@ -57,25 +65,37 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     Term
       ( AbsNumTerm,
         AddNumTerm,
+        AndBitsTerm,
         AndTerm,
+        ComplementBitsTerm,
         ConTerm,
         EqTerm,
         ExistsTerm,
         ForallTerm,
         ITETerm,
+        LeOrdTerm,
+        LtOrdTerm,
         MulNumTerm,
         NegNumTerm,
         NotTerm,
+        OrBitsTerm,
         OrTerm,
+        RotateLeftTerm,
+        RotateRightTerm,
+        ShiftLeftTerm,
+        ShiftRightTerm,
         SignumNumTerm,
-        SymTerm
+        SymTerm,
+        XorBitsTerm
       ),
     TypedAnySymbol,
     TypedConstantSymbol,
     TypedSymbol (TypedSymbol),
     absNumTerm,
     addNumTerm,
+    andBitsTerm,
     andTerm,
+    complementBitsTerm,
     conTerm,
     distinctTerm,
     eqTerm,
@@ -83,15 +103,23 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     forallTerm,
     introSupportedPrimConstraint,
     iteTerm,
+    leOrdTerm,
+    ltOrdTerm,
     mulNumTerm,
     negNumTerm,
     notTerm,
+    orBitsTerm,
     orTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
     signumNumTerm,
     someTypedSymbol,
     symTerm,
     termId,
     withSupportedPrimTypeable,
+    xorBitsTerm,
   )
 import Grisette.Internal.SymPrim.Prim.SomeTerm
   ( SomeTerm (SomeTerm),
@@ -600,6 +628,36 @@ absNumTermTag = 13
 signumNumTermTag :: Word8
 signumNumTermTag = 14
 
+ltOrdTermTag :: Word8
+ltOrdTermTag = 15
+
+leOrdTermTag :: Word8
+leOrdTermTag = 16
+
+andBitsTermTag :: Word8
+andBitsTermTag = 17
+
+orBitsTermTag :: Word8
+orBitsTermTag = 18
+
+xorBitsTermTag :: Word8
+xorBitsTermTag = 19
+
+complementBitsTermTag :: Word8
+complementBitsTermTag = 20
+
+shiftLeftTermTag :: Word8
+shiftLeftTermTag = 21
+
+shiftRightTermTag :: Word8
+shiftRightTermTag = 22
+
+rotateLeftTermTag :: Word8
+rotateLeftTermTag = 23
+
+rotateRightTermTag :: Word8
+rotateRightTermTag = 24
+
 terminalTag :: Word8
 terminalTag = 255
 
@@ -663,7 +721,59 @@ asNumTypeTerm (SomeTerm (t1 :: Term a)) f =
         _ -> err
   where
     ta = primTypeRep @a
-    err = error $ "asNumTypeTermPair: unsupported type: " <> show ta
+    err = error $ "asNumTypeTerm: unsupported type: " <> show ta
+
+asOrdTypeTerm ::
+  (HasCallStack) => SomeTerm -> (forall n. (PEvalOrdTerm n) => Term n -> r) -> r
+asOrdTypeTerm (SomeTerm (t1 :: Term a)) f =
+  case ( eqTypeRep ta (typeRep @Integer),
+         eqTypeRep ta (typeRep @AlgReal),
+         eqTypeRep ta (typeRep @FPRoundingMode)
+       ) of
+    (Just HRefl, _, _) -> f t1
+    (_, Just HRefl, _) -> f t1
+    (_, _, Just HRefl) -> f t1
+    _ ->
+      case ta of
+        App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n) ->
+          case ( eqTypeRep ta (typeRep @WordN),
+                 eqTypeRep ta (typeRep @IntN)
+               ) of
+            (Just HRefl, _) -> withPrim @a $ f t1
+            (_, Just HRefl) -> withPrim @a $ f t1
+            _ -> err
+        App (App (tf :: TypeRep f) (_ :: TypeRep a0)) (_ :: TypeRep a1) ->
+          case eqTypeRep tf (typeRep @FP) of
+            Just HRefl ->
+              withPrim @a $ withPrim @a $ f t1
+            _ -> err
+        _ -> err
+  where
+    ta = primTypeRep @a
+    err = error $ "asOrdTypeTerm: unsupported type: " <> show ta
+
+asBitsTypeTerm ::
+  (HasCallStack) =>
+  SomeTerm ->
+  ( forall n.
+    (PEvalBitwiseTerm n, PEvalShiftTerm n, PEvalRotateTerm n) =>
+    Term n ->
+    r
+  ) ->
+  r
+asBitsTypeTerm (SomeTerm (t1 :: Term a)) f =
+  case ta of
+    App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n) ->
+      case ( eqTypeRep ta (typeRep @WordN),
+             eqTypeRep ta (typeRep @IntN)
+           ) of
+        (Just HRefl, _) -> withPrim @a $ f t1
+        (_, Just HRefl) -> withPrim @a $ f t1
+        _ -> err
+    _ -> err
+  where
+    ta = primTypeRep @a
+    err = error $ "asOrdTypeTerm: unsupported type: " <> show ta
 
 asNumTypeTermPair ::
   (HasCallStack) =>
@@ -682,6 +792,47 @@ asNumTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
     ta = primTypeRep @a
     tb = primTypeRep @b
     err = error $ "asNumTypeTermPair: unsupported type: " <> show ta <> show tb
+
+asOrdTypeTermPair ::
+  (HasCallStack) =>
+  SomeTerm ->
+  SomeTerm ->
+  (forall n. (PEvalOrdTerm n) => Term n -> Term n -> r) ->
+  r
+asOrdTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
+  asOrdTypeTerm (SomeTerm t1) $ \(t1' :: Term a1) ->
+    introSupportedPrimConstraint t1' $
+      case (eqTypeRep (primTypeRep @a1) tb) of
+        Just HRefl ->
+          f t1' t2
+        _ -> err
+  where
+    ta = primTypeRep @a
+    tb = primTypeRep @b
+    err = error $ "asOrdTypeTermPair: unsupported type: " <> show ta <> show tb
+
+asBitsTypeTermPair ::
+  (HasCallStack) =>
+  SomeTerm ->
+  SomeTerm ->
+  ( forall n.
+    (PEvalBitwiseTerm n, PEvalShiftTerm n, PEvalRotateTerm n) =>
+    Term n ->
+    Term n ->
+    r
+  ) ->
+  r
+asBitsTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
+  asBitsTypeTerm (SomeTerm t1) $ \(t1' :: Term a1) ->
+    introSupportedPrimConstraint t1' $
+      case (eqTypeRep (primTypeRep @a1) tb) of
+        Just HRefl ->
+          f t1' t2
+        _ -> err
+  where
+    ta = primTypeRep @a
+    tb = primTypeRep @b
+    err = error $ "asOrdTypeTermPair: unsupported type: " <> show ta <> show tb
 
 statefulGetSomeTerm ::
   StateT (HM.HashMap Id SomeTerm, SomeTerm) Get SomeTerm
@@ -726,6 +877,16 @@ statefulGetSomeTerm = do
       | tag == mulNumTermTag -> getNumBinary tmId mulNumTerm
       | tag == absNumTermTag -> getNumUnary tmId absNumTerm
       | tag == signumNumTermTag -> getNumUnary tmId signumNumTerm
+      | tag == ltOrdTermTag -> getOrdBinary tmId ltOrdTerm
+      | tag == leOrdTermTag -> getOrdBinary tmId leOrdTerm
+      | tag == andBitsTermTag -> getBitsBinary tmId andBitsTerm
+      | tag == orBitsTermTag -> getBitsBinary tmId orBitsTerm
+      | tag == xorBitsTermTag -> getBitsBinary tmId xorBitsTerm
+      | tag == complementBitsTermTag -> getBitsUnary tmId complementBitsTerm
+      | tag == shiftLeftTermTag -> getBitsBinary tmId shiftLeftTerm
+      | tag == shiftRightTermTag -> getBitsBinary tmId shiftRightTerm
+      | tag == rotateLeftTermTag -> getBitsBinary tmId rotateLeftTerm
+      | tag == rotateRightTermTag -> getBitsBinary tmId rotateRightTerm
       | tag == terminalTag -> return Nothing
       | otherwise -> error $ "statefulGetSomeTerm: unknown tag: " <> show tag
   case r of
@@ -769,15 +930,43 @@ statefulGetSomeTerm = do
       tmId
       (f :: forall t. (PEvalNumTerm t) => Term t -> Term t) = do
         t1 <- getTerm
-        asNumTypeTerm t1 $ \t1' ->
-          return $
-            Just (someTerm $ f t1', tmId)
+        asNumTypeTerm t1 $ \t1' -> return $ Just (someTerm $ f t1', tmId)
+    getBitsUnary
+      tmId
+      (f :: forall t. (PEvalBitwiseTerm t) => Term t -> Term t) = do
+        t1 <- getTerm
+        asBitsTypeTerm t1 $ \t1' -> return $ Just (someTerm $ f t1', tmId)
     getNumBinary
       tmId
       (f :: forall t. (PEvalNumTerm t) => Term t -> Term t -> Term t) = do
         t1 <- getTerm
         t2 <- getTerm
         asNumTypeTermPair t1 t2 $ \t1' t2' ->
+          return $
+            Just (someTerm $ f t1' t2', tmId)
+    getOrdBinary
+      tmId
+      (f :: forall t. (PEvalOrdTerm t) => Term t -> Term t -> Term Bool) = do
+        t1 <- getTerm
+        t2 <- getTerm
+        asOrdTypeTermPair t1 t2 $ \t1' t2' ->
+          return $
+            Just (someTerm $ f t1' t2', tmId)
+    getBitsBinary
+      tmId
+      ( f ::
+          forall t.
+          ( PEvalBitwiseTerm t,
+            PEvalShiftTerm t,
+            PEvalRotateTerm t
+          ) =>
+          Term t ->
+          Term t ->
+          Term t
+        ) = do
+        t1 <- getTerm
+        t2 <- getTerm
+        asBitsTypeTermPair t1 t2 $ \t1' t2' ->
           return $
             Just (someTerm $ f t1' t2', tmId)
 
@@ -829,6 +1018,16 @@ putSingleSomeTerm (SomeTerm tm) = do
         MulNumTerm _ _ _ _ t1 t2 -> putBinary tmId mulNumTermTag t1 t2
         AbsNumTerm _ _ _ _ t -> putUnary tmId absNumTermTag t
         SignumNumTerm _ _ _ _ t -> putUnary tmId signumNumTermTag t
+        LtOrdTerm _ _ _ _ t1 t2 -> putBinary tmId ltOrdTermTag t1 t2
+        LeOrdTerm _ _ _ _ t1 t2 -> putBinary tmId leOrdTermTag t1 t2
+        AndBitsTerm _ _ _ _ t1 t2 -> putBinary tmId andBitsTermTag t1 t2
+        OrBitsTerm _ _ _ _ t1 t2 -> putBinary tmId orBitsTermTag t1 t2
+        XorBitsTerm _ _ _ _ t1 t2 -> putBinary tmId xorBitsTermTag t1 t2
+        ComplementBitsTerm _ _ _ _ t -> putUnary tmId complementBitsTermTag t
+        ShiftLeftTerm _ _ _ _ t1 t2 -> putBinary tmId shiftLeftTermTag t1 t2
+        ShiftRightTerm _ _ _ _ t1 t2 -> putBinary tmId shiftRightTermTag t1 t2
+        RotateLeftTerm _ _ _ _ t1 t2 -> putBinary tmId rotateLeftTermTag t1 t2
+        RotateRightTerm _ _ _ _ t1 t2 -> putBinary tmId rotateRightTermTag t1 t2
         _ -> error "putSomeTerm: unsupported term"
   State.put $ HS.insert (termId tm) st
   where
