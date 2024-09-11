@@ -12,14 +12,21 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (..), someTerm) where
+module Grisette.Internal.SymPrim.Prim.SomeTerm
+  ( SomeTerm (..),
+    someTerm,
+    someTermId,
+  )
+where
 
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Typeable (eqT, type (:~:) (Refl))
+import Grisette.Internal.SymPrim.Prim.Internal.Caches (Id)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( SupportedPrim (primTypeRep),
     Term,
     introSupportedPrimConstraint,
+    termId,
     withSupportedPrimTypeable,
   )
 
@@ -46,3 +53,7 @@ instance Show SomeTerm where
 someTerm :: Term a -> SomeTerm
 someTerm v = introSupportedPrimConstraint v $ SomeTerm v
 {-# INLINE someTerm #-}
+
+someTermId :: SomeTerm -> Id
+someTermId (SomeTerm t) = termId t
+{-# INLINE someTermId #-}

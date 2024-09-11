@@ -16,6 +16,7 @@ module Grisette.Internal.SymPrim.SymBool (SymBool (SymBool)) where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Serialize (Serialize (get, put))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
@@ -87,3 +88,7 @@ instance Show SymBool where
 
 instance AllSyms SymBool where
   allSymsS v = (SomeSym v :)
+
+instance Serialize SymBool where
+  put = put . underlyingBoolTerm
+  get = SymBool <$> get

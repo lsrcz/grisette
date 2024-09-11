@@ -72,6 +72,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
     -- * Typed symbols
     SymbolKind (..),
     TypedSymbol (unTypedSymbol),
+    pattern TypedSymbol,
     typedConstantSymbol,
     typedAnySymbol,
     TypedConstantSymbol,
@@ -528,8 +529,8 @@ toModelValue = ModelValue
 -- | Cast a typed symbol to a different kind. Check if the kind is compatible.
 castSomeTypedSymbol ::
   (IsSymbolKind knd') => SomeTypedSymbol knd -> Maybe (SomeTypedSymbol knd')
-castSomeTypedSymbol (SomeTypedSymbol ty s@TypedSymbol {}) =
-  SomeTypedSymbol ty <$> castTypedSymbol s
+castSomeTypedSymbol (SomeTypedSymbol s@TypedSymbol {}) =
+  SomeTypedSymbol <$> castTypedSymbol s
 {-# INLINE castSomeTypedSymbol #-}
 
 -- | Error message for failure to parse the SBV model result.
@@ -1001,7 +1002,6 @@ withSymbolKind (TypedSymbol _) a = a
 data SomeTypedSymbol knd where
   SomeTypedSymbol ::
     forall knd t.
-    TypeRep t ->
     TypedSymbol knd t ->
     SomeTypedSymbol knd
 
@@ -1012,33 +1012,42 @@ type SomeTypedConstantSymbol = SomeTypedSymbol 'ConstantKind
 type SomeTypedAnySymbol = SomeTypedSymbol 'AnyKind
 
 instance NFData (SomeTypedSymbol knd) where
-  rnf (SomeTypedSymbol p s) = rnf (SomeTypeRep p) `seq` rnf s
+  rnf (SomeTypedSymbol s) = rnf s
   {-# INLINE rnf #-}
 
 instance Eq (SomeTypedSymbol knd) where
-  (SomeTypedSymbol t1 s1) == (SomeTypedSymbol t2 s2) = case eqTypeRep t1 t2 of
-    Just HRefl -> s1 == s2
-    _ -> False
+  (SomeTypedSymbol (s1 :: TypedSymbol knd a))
+    == (SomeTypedSymbol (s2 :: TypedSymbol knd b)) =
+      withSymbolSupported s1 $
+        withSymbolSupported s2 $
+          case eqTypeRep (primTypeRep @a) (primTypeRep @b) of
+            Just HRefl -> s1 == s2
+            _ -> False
   {-# INLINE (==) #-}
 
 instance Ord (SomeTypedSymbol knd) where
-  (SomeTypedSymbol t1 s1) <= (SomeTypedSymbol t2 s2) =
-    SomeTypeRep t1 < SomeTypeRep t2
-      || ( case eqTypeRep t1 t2 of
-             Just HRefl -> s1 <= s2
-             _ -> False
-         )
+  (SomeTypedSymbol (s1 :: TypedSymbol knd a))
+    <= (SomeTypedSymbol (s2 :: TypedSymbol knd b)) =
+      withSymbolSupported s1 $
+        withSymbolSupported s2 $
+          let t1 = primTypeRep @a
+              t2 = primTypeRep @b
+           in SomeTypeRep t1 < SomeTypeRep t2
+                || ( case eqTypeRep t1 t2 of
+                       Just HRefl -> s1 <= s2
+                       _ -> False
+                   )
 
 instance Hashable (SomeTypedSymbol knd) where
-  hashWithSalt s (SomeTypedSymbol t1 s1) = s `hashWithSalt` s1 `hashWithSalt` t1
+  hashWithSalt s (SomeTypedSymbol s1) = s `hashWithSalt` s1
   {-# INLINE hashWithSalt #-}
 
 instance Show (SomeTypedSymbol knd) where
-  show (SomeTypedSymbol _ s) = show s
+  show (SomeTypedSymbol s) = show s
 
 -- | Construct a t'SomeTypedSymbol' from a t'TypedSymbol'.
 someTypedSymbol :: forall knd t. TypedSymbol knd t -> SomeTypedSymbol knd
-someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol (primTypeRep @t) s
+someTypedSymbol s@(TypedSymbol _) = SomeTypedSymbol s
 {-# INLINE someTypedSymbol #-}
 
 -- Terms

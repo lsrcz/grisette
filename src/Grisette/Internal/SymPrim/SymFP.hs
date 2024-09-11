@@ -31,6 +31,7 @@ where
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Proxy (Proxy (Proxy))
+import Data.Serialize (Serialize (get, put))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
@@ -485,3 +486,7 @@ instance
   fromFPOr (SymFP d) (SymFPRoundingMode mode) (SymFP fp) =
     SymFP $ pevalFromFPOrTerm d mode fp
   toFP (SymFPRoundingMode mode) (SymFP v) = SymFP $ pevalToFPTerm mode v
+
+instance (ValidFP eb sb) => Serialize (SymFP eb sb) where
+  put = put . underlyingFPTerm
+  get = SymFP <$> get

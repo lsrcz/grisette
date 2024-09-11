@@ -248,6 +248,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         XorBitsTerm
       ),
     TypedConstantSymbol,
+    TypedSymbol,
     introSupportedPrimConstraint,
     someTypedSymbol,
     symTerm,
@@ -852,7 +853,7 @@ parseModel _ model@(SBVI.SMTModel _ _ assoc origFuncs) mp =
     assocFuncs = (\(s, v) -> (s, ([], v))) <$> assoc
     goSingle :: (String, ([([SBVD.CV], SBVD.CV)], SBVD.CV)) -> PM.Model -> PM.Model
     goSingle (name, cv) m = case findStringToSymbol name mp of
-      Just (SomeTypedSymbol (_ :: p r) s) ->
+      Just (SomeTypedSymbol (s :: TypedSymbol knd r)) ->
         withSymbolSupported s $
           insertValue s (parseSMTModelResult 0 cv :: r) m
       Nothing ->

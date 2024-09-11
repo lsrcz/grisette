@@ -79,6 +79,11 @@ module Grisette.Internal.Utils.Parameterized
     unsafeKnownProof,
     knownAdd,
 
+    -- * Proof of CmpNat
+    CmpNatProof (..),
+    unsafeCmpNatProof,
+    withCmpNatProof,
+
     -- * Proof of (<=) for type-level natural numbers
     LeqProof (..),
     withLeqProof,
@@ -94,9 +99,11 @@ module Grisette.Internal.Utils.Parameterized
   )
 where
 
+import Data.Type.Equality (type (==))
 import Data.Typeable (Proxy (Proxy), type (:~:) (Refl))
 import GHC.TypeNats
-  ( Div,
+  ( CmpNat,
+    Div,
     KnownNat,
     Nat,
     SomeNat (SomeNat),
@@ -256,6 +263,20 @@ withLeqProof p r = case p of LeqProof -> r
 unsafeLeqProof :: forall m n. LeqProof m n
 unsafeLeqProof = unsafeCoerce (LeqProof @0 @0)
 {-# INLINE unsafeLeqProof #-}
+
+-- | Proof that the comparison of two type-level natural numbers is consistent
+-- with the runtime comparison.
+data CmpNatProof (m :: Nat) (n :: Nat) (o :: Ordering) where
+  CmpNatProof :: ((CmpNat m n == o) ~ 'True) => CmpNatProof m n o
+
+-- | Construct a t'CmpNatProof'.
+unsafeCmpNatProof :: forall m n o. CmpNatProof m n o
+unsafeCmpNatProof = unsafeCoerce (CmpNatProof @0 @0 @'EQ)
+{-# INLINE unsafeCmpNatProof #-}
+
+withCmpNatProof :: CmpNatProof m n o -> (((CmpNat m n == o) ~ 'True) => r) -> r
+withCmpNatProof p r = case p of CmpNatProof -> r
+{-# INLINE withCmpNatProof #-}
 
 -- | Checks if a t'NatRepr' is less than or equal to another t'NatRepr'.
 testLeq :: NatRepr m -> NatRepr n -> Maybe (LeqProof m n)

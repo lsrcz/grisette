@@ -25,6 +25,7 @@ where
 
 import Control.DeepSeq (NFData (rnf))
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Serialize (Serialize (get, put))
 import Data.String (IsString (fromString))
 import Grisette.Internal.Core.Data.Class.Function
   ( Apply (FunType, apply),
@@ -149,3 +150,14 @@ instance Hashable (sa =~> sb) where
 
 instance AllSyms (sa =~> sb) where
   allSymsS v@SymTabularFun {} = (SomeSym v :)
+
+instance
+  ( LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim (ca =-> cb),
+    SupportedNonFuncPrim ca
+  ) =>
+  Serialize (sa =~> sb)
+  where
+  put = put . underlyingTerm
+  get = SymTabularFun <$> get

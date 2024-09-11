@@ -34,4 +34,5 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
+import Grisette.Internal.SymPrim.Prim.Internal.Serialize ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term

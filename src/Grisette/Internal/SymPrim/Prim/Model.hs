@@ -144,8 +144,8 @@ instance Show Model where
       ++ x
     where
       go0 [] = ""
-      go0 [(SomeTypedSymbol _ s, v)] = showUntyped s ++ " -> " ++ show v
-      go0 ((SomeTypedSymbol _ s, v) : xs) = showUntyped s ++ " -> " ++ show v ++ ", " ++ go0 xs
+      go0 [(SomeTypedSymbol s, v)] = showUntyped s ++ " -> " ++ show v
+      go0 ((SomeTypedSymbol s, v) : xs) = showUntyped s ++ " -> " ++ show v ++ ", " ++ go0 xs
 
 -- | Given a typed symbol and a model, return the equation (symbol = value)
 -- encoded in the model.
@@ -353,7 +353,7 @@ instance ModelOps Model AnySymbolSet TypedAnySymbol where
   extendTo (SymbolSet s) (Model m) =
     Model $
       S.foldl'
-        ( \acc sym@(SomeTypedSymbol _ (tsym :: TypedAnySymbol t)) -> case M.lookup sym acc of
+        ( \acc sym@(SomeTypedSymbol (tsym :: TypedAnySymbol t)) -> case M.lookup sym acc of
             Just _ -> acc
             Nothing -> withSymbolSupported tsym $ M.insert sym (defaultValueDynamic (Proxy @t)) acc
         )

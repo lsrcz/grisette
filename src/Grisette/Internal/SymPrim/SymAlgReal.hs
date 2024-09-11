@@ -17,6 +17,7 @@ module Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal (SymAlgReal)) where
 
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Serialize (Serialize (get, put))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
@@ -135,3 +136,7 @@ instance Floating SymAlgReal where
   atanh = error "atanh isn't supported by the underlying sbv library"
   SymAlgReal l ** SymAlgReal r = SymAlgReal $ pevalPowerTerm l r
   logBase = error "consider using safeLogBase instead of logBase for AlgReal"
+
+instance Serialize SymAlgReal where
+  put = put . underlyingAlgRealTerm
+  get = SymAlgReal <$> get
