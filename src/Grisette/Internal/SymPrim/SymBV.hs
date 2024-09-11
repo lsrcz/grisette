@@ -60,6 +60,7 @@ import Data.Bits
   )
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Proxy (Proxy (Proxy))
+import Data.Serialize (Serialize (get, put))
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeNats
@@ -592,3 +593,11 @@ instance BitCast SymBool (SymIntN 1) where
 
 instance BitCast SymBool (SymWordN 1) where
   bitCast (SymBool v) = SymWordN $ pevalBitCastTerm v
+
+instance (KnownNat n, 1 <= n) => Serialize (SymWordN n) where
+  put = put . underlyingWordNTerm
+  get = SymWordN <$> get
+
+instance (KnownNat n, 1 <= n) => Serialize (SymIntN n) where
+  put = put . underlyingIntNTerm
+  get = SymIntN <$> get

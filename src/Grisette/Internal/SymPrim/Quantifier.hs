@@ -70,7 +70,7 @@ import Grisette.Internal.SymPrim.SymBool (SymBool (SymBool))
 forallSet :: ConstantSymbolSet -> SymBool -> SymBool
 forallSet (SymbolSet set) b =
   foldr
-    ( \(SomeTypedSymbol _ s) (SymBool b') ->
+    ( \(SomeTypedSymbol s) (SymBool b') ->
         SymBool $ forallTerm s b'
     )
     b
@@ -106,7 +106,7 @@ forallSym s b =
 existsSet :: ConstantSymbolSet -> SymBool -> SymBool
 existsSet (SymbolSet set) b =
   foldr
-    ( \(SomeTypedSymbol _ s) (SymBool b') ->
+    ( \(SomeTypedSymbol s) (SymBool b') ->
         SymBool $ existsTerm s b'
     )
     b

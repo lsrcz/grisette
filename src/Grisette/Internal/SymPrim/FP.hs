@@ -46,6 +46,9 @@ module Grisette.Internal.SymPrim.FP
     ConvertibleBound (..),
     nextFP,
     prevFP,
+    withUnsafeValidFP,
+    checkDynamicValidFP,
+    invalidFPMessage,
   )
 where
 
@@ -76,10 +79,19 @@ import Data.SBV.Float (fpEncodeFloat)
 import qualified Data.SBV.Float as SBVF
 import qualified Data.SBV.Internals as SBVI
 import Data.Serialize (Serialize (get, put))
-import Data.Type.Equality (type (:~:) (Refl))
+import Data.Type.Bool (type (&&), type (||))
+import Data.Type.Equality (type (:~:) (Refl), type (==))
 import GHC.Exception (Exception (displayException))
 import GHC.Generics (Generic)
-import GHC.TypeLits (KnownNat, Nat, natVal, type (+), type (<=))
+import GHC.TypeNats
+  ( CmpNat,
+    KnownNat,
+    Nat,
+    Natural,
+    natVal,
+    type (+),
+    type (<=),
+  )
 import Grisette.Internal.Core.Data.Class.BitCast
   ( BitCast (bitCast),
     BitCastCanonical (bitCastCanonicalValue),
@@ -190,6 +202,38 @@ bvIsNonZeroFromGEq1 _ r1 = case unsafeAxiom :: w :~: 1 of
 -- | A type-level proof that the given bit-widths are valid for a floating-point
 -- number.
 type ValidFP (eb :: Nat) (sb :: Nat) = ValidFloat eb sb
+
+checkDynamicValidFP :: Natural -> Natural -> Bool
+checkDynamicValidFP eb sb =
+  eb >= 2 && eb <= 61 && sb >= 2 && sb <= 4611686018427387902
+
+invalidFPMessage :: String
+invalidFPMessage =
+  "Invalid floating point type `SFloatingPoint eb sb'\n`n"
+    <> "  A valid float of type 'SFloatingPoint eb sb' must satisfy:\n"
+    <> "        eb `elem` [2 .. 61]\n"
+    <> "        sb `elem` [2 .. 4611686018427387902]\n\n"
+    <> "  Given type falls outside of this range, or the sizes are not known naturals."
+
+withUnsafeValidFP ::
+  forall eb sb r. (KnownNat eb, KnownNat sb) => ((ValidFP eb sb) => r) -> r
+withUnsafeValidFP r =
+  let eb = natVal (Proxy @eb)
+      sb = natVal (Proxy @sb)
+   in if checkDynamicValidFP eb sb
+        then case unsafeAxiom @True
+          @( ((CmpNat eb 2 == 'EQ) || (CmpNat eb 2 == 'GT))
+               && ( ((CmpNat eb 61 == 'EQ) || (CmpNat eb 61 == 'LT))
+                      && ( ((CmpNat sb 2 == 'EQ) || (CmpNat sb 2 == 'GT))
+                             && ( (CmpNat sb 4611686018427387902 == 'EQ)
+                                    || (CmpNat sb 4611686018427387902 == 'LT)
+                                )
+                         )
+                  )
+           ) of
+          Refl -> r
+        else
+          error invalidFPMessage
 
 -- | IEEE 754 floating-point number with @eb@ exponent bits and @sb@ significand
 -- bits.
@@ -353,7 +397,7 @@ data FPRoundingMode
   | -- | Round towards zero.
     RTZ
   deriving (Eq, Ord, Generic, Lift)
-  deriving anyclass (Hashable, NFData)
+  deriving anyclass (Hashable, NFData, Serialize)
 
 instance Show FPRoundingMode where
   show RNE = "rne"

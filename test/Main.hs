@@ -65,6 +65,7 @@ import Grisette.SymPrim.Prim.ConcurrentTests (concurrentTests)
 import Grisette.SymPrim.Prim.IntegralTests (integralTests)
 import Grisette.SymPrim.Prim.ModelTests (modelTests)
 import Grisette.SymPrim.Prim.NumTests (numTests)
+import qualified Grisette.SymPrim.Prim.SerializationTests
 import qualified Grisette.SymPrim.Prim.TabularFunTests
 import Grisette.SymPrim.QuantifierTests (quantifierTests)
 import Grisette.SymPrim.SomeBVTests (someBVTests)
@@ -178,7 +179,8 @@ irTests =
           integralTests,
           modelTests,
           numTests,
-          Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests
+          Grisette.SymPrim.Prim.TabularFunTests.tabularFunTests,
+          Grisette.SymPrim.Prim.SerializationTests.serializationTests
         ],
       symPrimTests,
       Grisette.SymPrim.TabularFunTests.tabularFunTests,

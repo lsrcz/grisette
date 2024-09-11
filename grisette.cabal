@@ -135,6 +135,7 @@ library
       Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm
       Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim
       Grisette.Internal.SymPrim.Prim.Internal.PartialEval
+      Grisette.Internal.SymPrim.Prim.Internal.Serialize
       Grisette.Internal.SymPrim.Prim.Internal.Term
       Grisette.Internal.SymPrim.Prim.Internal.Unfold
       Grisette.Internal.SymPrim.Prim.Internal.Utils
@@ -370,6 +371,7 @@ test-suite spec
       Grisette.SymPrim.Prim.IntegralTests
       Grisette.SymPrim.Prim.ModelTests
       Grisette.SymPrim.Prim.NumTests
+      Grisette.SymPrim.Prim.SerializationTests
       Grisette.SymPrim.Prim.TabularFunTests
       Grisette.SymPrim.QuantifierTests
       Grisette.SymPrim.SomeBVTests

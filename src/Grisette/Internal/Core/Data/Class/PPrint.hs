@@ -931,7 +931,7 @@ instance PPrint Model where
     pformatWithConstructor n "Model" [bodyFormatted]
     where
       pformatSymbolWithoutType :: SomeTypedSymbol knd -> Doc ann
-      pformatSymbolWithoutType (SomeTypedSymbol _ s) = pformat $ unTypedSymbol s
+      pformatSymbolWithoutType (SomeTypedSymbol s) = pformat $ unTypedSymbol s
       pformatPair :: (SomeTypedSymbol knd, ModelValue) -> Doc ann
       pformatPair (s, v) = pformatSymbolWithoutType s <> " -> " <> pformat v
       bodyFormatted = pformatListLike "{" "}" $ pformatPair <$> HM.toList m

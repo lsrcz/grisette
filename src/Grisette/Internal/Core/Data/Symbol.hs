@@ -38,6 +38,7 @@ where
 import Control.DeepSeq (NFData)
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
+import Data.Serialize (Serialize)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -90,7 +91,7 @@ import Language.Haskell.TH.Syntax.Compat (SpliceQ)
 --     a:[grisette-file-location <interactive>...]
 data Identifier = Identifier {baseIdent :: T.Text, metadata :: SExpr}
   deriving (Eq, Ord, Generic, Lift)
-  deriving anyclass (Hashable, NFData)
+  deriving anyclass (Hashable, NFData, Serialize)
 
 instance Show Identifier where
   showsPrec _ (Identifier i (List [])) = showString (T.unpack i)
@@ -148,7 +149,7 @@ uniqueIdentifier ident = do
 data Symbol where
   SimpleSymbol :: Identifier -> Symbol
   IndexedSymbol :: Identifier -> Int -> Symbol
-  deriving (Eq, Ord, Generic, Lift, NFData)
+  deriving (Eq, Ord, Generic, Lift, NFData, Serialize)
 
 instance Hashable Symbol where
   hashWithSalt s (SimpleSymbol i) = hashWithSalt s i

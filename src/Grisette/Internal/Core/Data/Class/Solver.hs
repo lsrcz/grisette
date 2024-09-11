@@ -221,7 +221,7 @@ solverSolveMulti solver numOfModelRequested formula = do
       | otherwise = do
           let newFormula =
                 S.foldl'
-                  ( \acc (SomeTypedSymbol _ v) ->
+                  ( \acc (SomeTypedSymbol v) ->
                       acc
                         .|| (symNot (SymBool $ fromJust $ equation v prevModel))
                   )

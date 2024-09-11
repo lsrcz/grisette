@@ -147,7 +147,7 @@ extractSymSomeTerm = go initialMemo
       case (castTypedSymbol sym, castTypedSymbol sym) of
         (Just sym', _) | HS.member (someTypedSymbol sym') bs -> return HS.empty
         (_, Just sym') ->
-          return $ HS.singleton $ SomeTypedSymbol (primTypeRep @a) sym'
+          return $ HS.singleton $ SomeTypedSymbol sym'
         _ -> Nothing
     go _ bs (SomeTerm (ConTerm _ _ _ _ cv :: Term v)) =
       case (primTypeRep :: TypeRep v) of
