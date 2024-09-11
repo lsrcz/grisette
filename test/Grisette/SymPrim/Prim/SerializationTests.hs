@@ -23,18 +23,28 @@ import Grisette.Internal.SymPrim.Prim.Term
     Term,
     absNumTerm,
     addNumTerm,
+    andBitsTerm,
     andTerm,
+    complementBitsTerm,
     conTerm,
     eqTerm,
     existsTerm,
     forallTerm,
     iteTerm,
+    leOrdTerm,
+    ltOrdTerm,
     negNumTerm,
     notTerm,
+    orBitsTerm,
     orTerm,
     pevalFPTraitTerm,
+    rotateLeftTerm,
+    rotateRightTerm,
+    shiftLeftTerm,
+    shiftRightTerm,
     signumNumTerm,
     ssymTerm,
+    xorBitsTerm,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -124,7 +134,37 @@ serializationTests =
           absNumTerm (ssymTerm "a" :: Term Integer),
       testCase "SignumNumTerm" $
         assertSerialization $
-          signumNumTerm (ssymTerm "a" :: Term Integer)
+          signumNumTerm (ssymTerm "a" :: Term Integer),
+      testCase "ltOrdTerm" $
+        assertSerialization $
+          ltOrdTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "leOrdTerm" $
+        assertSerialization $
+          leOrdTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "andBitsTerm" $
+        assertSerialization $
+          andBitsTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "orBitsTerm" $
+        assertSerialization $
+          orBitsTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "xorBitsTerm" $
+        assertSerialization $
+          xorBitsTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "complementBitsTerm" $
+        assertSerialization $
+          complementBitsTerm (ssymTerm "a" :: Term (WordN 8)),
+      testCase "shiftLeftTerm" $
+        assertSerialization $
+          shiftLeftTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "shiftRightTerm" $
+        assertSerialization $
+          shiftRightTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "rotateLeftTerm" $
+        assertSerialization $
+          rotateLeftTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "rotateRightTerm" $
+        assertSerialization $
+          rotateRightTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b")
     ]
 
 t1 :: Integer =-> Integer
