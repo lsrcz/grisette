@@ -28,8 +28,10 @@ module Grisette.Internal.SymPrim.SymGeneralFun
 where
 
 import Control.DeepSeq (NFData (rnf))
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function
@@ -203,7 +205,29 @@ instance
     SupportedPrim (ca --> cb),
     SupportedNonFuncPrim ca
   ) =>
-  Serialize (sa -~> sb)
+  Serial (sa -~> sb)
   where
-  put = put . underlyingTerm
-  get = SymGeneralFun <$> get
+  serialize = serialize . underlyingTerm
+  deserialize = SymGeneralFun <$> deserialize
+
+instance
+  ( LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim (ca --> cb),
+    SupportedNonFuncPrim ca
+  ) =>
+  Cereal.Serialize (sa -~> sb)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  ( LinkedRep ca sa,
+    LinkedRep cb sb,
+    SupportedPrim (ca --> cb),
+    SupportedNonFuncPrim ca
+  ) =>
+  Binary.Binary (sa -~> sb)
+  where
+  put = serialize
+  get = deserialize

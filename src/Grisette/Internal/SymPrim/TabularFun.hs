@@ -32,10 +32,12 @@ where
 
 import Control.DeepSeq (NFData, NFData1)
 import Data.Bifunctor (Bifunctor (second))
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
-import Data.Serialize (Serialize)
+import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Data.Class.Function
   ( Apply (FunType, apply),
@@ -81,7 +83,15 @@ import Language.Haskell.TH.Syntax (Lift)
 -- >>> f # 3
 -- 4
 data (=->) a b = TabularFun {funcTable :: [(a, b)], defaultFuncValue :: b}
-  deriving (Show, Eq, Generic, Generic1, Lift, NFData, NFData1, Serialize)
+  deriving (Show, Eq, Generic, Generic1, Lift, NFData, NFData1, Serial)
+
+instance (Serial a, Serial b) => Cereal.Serialize (a =-> b) where
+  put = serialize
+  get = deserialize
+
+instance (Serial a, Serial b) => Binary.Binary (a =-> b) where
+  put = serialize
+  get = deserialize
 
 infixr 0 =->
 

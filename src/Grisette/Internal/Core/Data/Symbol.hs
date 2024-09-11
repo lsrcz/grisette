@@ -36,9 +36,11 @@ module Grisette.Internal.Core.Data.Symbol
 where
 
 import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
-import Data.Serialize (Serialize)
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -91,7 +93,15 @@ import Language.Haskell.TH.Syntax.Compat (SpliceQ)
 --     a:[grisette-file-location <interactive>...]
 data Identifier = Identifier {baseIdent :: T.Text, metadata :: SExpr}
   deriving (Eq, Ord, Generic, Lift)
-  deriving anyclass (Hashable, NFData, Serialize)
+  deriving anyclass (Hashable, NFData, Serial)
+
+instance Cereal.Serialize Identifier where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary Identifier where
+  put = serialize
+  get = deserialize
 
 instance Show Identifier where
   showsPrec _ (Identifier i (List [])) = showString (T.unpack i)
@@ -149,7 +159,15 @@ uniqueIdentifier ident = do
 data Symbol where
   SimpleSymbol :: Identifier -> Symbol
   IndexedSymbol :: Identifier -> Int -> Symbol
-  deriving (Eq, Ord, Generic, Lift, NFData, Serialize)
+  deriving (Eq, Ord, Generic, Lift, NFData, Serial)
+
+instance Cereal.Serialize Symbol where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary Symbol where
+  put = serialize
+  get = deserialize
 
 instance Hashable Symbol where
   hashWithSalt s (SimpleSymbol i) = hashWithSalt s i

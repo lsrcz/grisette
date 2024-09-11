@@ -15,8 +15,10 @@
 module Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger)) where
 
 import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
@@ -102,6 +104,14 @@ instance Show SymInteger where
 instance AllSyms SymInteger where
   allSymsS v = (SomeSym v :)
 
-instance Serialize SymInteger where
-  put = put . underlyingIntegerTerm
-  get = SymInteger <$> get
+instance Serial SymInteger where
+  serialize = serialize . underlyingIntegerTerm
+  deserialize = SymInteger <$> deserialize
+
+instance Cereal.Serialize SymInteger where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary SymInteger where
+  put = serialize
+  get = deserialize

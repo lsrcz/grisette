@@ -13,26 +13,24 @@
 module Grisette.Internal.SymPrim.Prim.Internal.Serialize () where
 
 import Control.Monad (replicateM, unless, when)
-import Control.Monad.State (MonadTrans (lift), StateT, evalStateT)
+import Control.Monad.State (StateT, evalStateT)
 import qualified Control.Monad.State as State
+import qualified Data.Binary as Binary
+import Data.Bytes.Get (MonadGet (getWord8))
+import Data.Bytes.Put (MonadPut (putWord8))
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Foldable (traverse_)
-import qualified Data.HashMap.Internal.Strict as HM
+import qualified Data.HashMap.Strict as HM
 import qualified Data.HashSet as HS
 import Data.Hashable (Hashable)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (Proxy))
-import Data.Serialize
-  ( Get,
-    PutM,
-    Putter,
-    Serialize (get, put),
-    getWord8,
-    putWord8,
-  )
-import Data.Vector.Internal.Check (HasCallStack)
+import qualified Data.Serialize as Cereal
 import Data.Word (Word8)
-import GHC.TypeNats (KnownNat, Natural, natVal, type (<=))
+import GHC.Natural (Natural)
+import GHC.Stack (HasCallStack)
+import GHC.TypeNats (KnownNat, natVal, type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
@@ -160,7 +158,7 @@ data KnownNonFuncTypeWitness where
       Show a,
       Hashable a,
       Typeable a,
-      Serialize a
+      Serial a
     ) =>
     Proxy a ->
     KnownNonFuncTypeWitness
@@ -190,7 +188,7 @@ data KnownTypeWitness where
       Show a,
       Hashable a,
       Typeable a,
-      Serialize a
+      Serial a
     ) =>
     Proxy a ->
     KnownTypeWitness
@@ -485,48 +483,48 @@ knownType _ =
 -- FP: 4
 -- FPRoundingMode: 5
 -- AlgReal: 6
-putKnownNonFuncType :: Putter KnownNonFuncType
-putKnownNonFuncType BoolType = putWord8 0
-putKnownNonFuncType IntegerType = putWord8 1
-putKnownNonFuncType (WordNType (Proxy :: Proxy n)) =
-  putWord8 2 >> put (natVal (Proxy @n))
-putKnownNonFuncType (IntNType (Proxy :: Proxy n)) =
-  putWord8 3 >> put (natVal (Proxy @n))
-putKnownNonFuncType (FPType (Proxy :: Proxy eb) (Proxy :: Proxy sb)) =
-  putWord8 4 >> put (natVal (Proxy @eb)) >> put (natVal (Proxy @sb))
-putKnownNonFuncType FPRoundingModeType = putWord8 5
-putKnownNonFuncType AlgRealType = putWord8 6
+serializeKnownNonFuncType :: (MonadPut m) => KnownNonFuncType -> m ()
+serializeKnownNonFuncType BoolType = putWord8 0
+serializeKnownNonFuncType IntegerType = putWord8 1
+serializeKnownNonFuncType (WordNType (Proxy :: Proxy n)) =
+  putWord8 2 >> serialize (natVal (Proxy @n))
+serializeKnownNonFuncType (IntNType (Proxy :: Proxy n)) =
+  putWord8 3 >> serialize (natVal (Proxy @n))
+serializeKnownNonFuncType (FPType (Proxy :: Proxy eb) (Proxy :: Proxy sb)) =
+  putWord8 4 >> serialize (natVal (Proxy @eb)) >> serialize (natVal (Proxy @sb))
+serializeKnownNonFuncType FPRoundingModeType = putWord8 5
+serializeKnownNonFuncType AlgRealType = putWord8 6
 
-putKnownType :: Putter KnownType
-putKnownType (NonFuncType t) = putWord8 0 >> putKnownNonFuncType t
-putKnownType (TabularFunType ts) =
+serializeKnownType :: (MonadPut m) => KnownType -> m ()
+serializeKnownType (NonFuncType t) = putWord8 0 >> serializeKnownNonFuncType t
+serializeKnownType (TabularFunType ts) =
   putWord8 1
     >> putWord8 (fromIntegral $ length ts)
-    >> traverse_ putKnownNonFuncType ts
-putKnownType (GeneralFunType ts) =
+    >> traverse_ serializeKnownNonFuncType ts
+serializeKnownType (GeneralFunType ts) =
   putWord8 2
     >> putWord8 (fromIntegral $ length ts)
-    >> traverse_ putKnownNonFuncType ts
+    >> traverse_ serializeKnownNonFuncType ts
 
-getKnownNonFuncType :: Get KnownNonFuncType
-getKnownNonFuncType = do
+deserializeKnownNonFuncType :: (MonadGet m) => m KnownNonFuncType
+deserializeKnownNonFuncType = do
   tag <- getWord8
   case tag of
     0 -> return BoolType
     1 -> return IntegerType
     2 -> do
-      n <- get @Natural
+      n <- deserialize @Natural
       when (n == 0) $ fail "WordN 0 is not allowed"
       case mkPositiveNatRepr n of
         SomePositiveNatRepr (_ :: NatRepr n) -> return $ WordNType (Proxy @n)
     3 -> do
-      n <- get @Natural
+      n <- deserialize @Natural
       when (n == 0) $ fail "IntN 0 is not allowed"
       case mkPositiveNatRepr n of
         SomePositiveNatRepr (_ :: NatRepr n) -> return $ IntNType (Proxy @n)
     4 -> do
-      eb <- get @Natural
-      sb <- get @Natural
+      eb <- deserialize @Natural
+      sb <- deserialize @Natural
       unless (checkDynamicValidFP eb sb) $ fail invalidFPMessage
       case (mkPositiveNatRepr eb, mkPositiveNatRepr sb) of
         ( SomePositiveNatRepr (_ :: NatRepr eb),
@@ -537,51 +535,73 @@ getKnownNonFuncType = do
     6 -> return AlgRealType
     _ -> fail "Unknown type tag"
 
-getKnownType :: Get KnownType
-getKnownType = do
+deserializeKnownType :: (MonadGet m) => m KnownType
+deserializeKnownType = do
   tag <- getWord8
   case tag of
-    0 -> NonFuncType <$> getKnownNonFuncType
+    0 -> NonFuncType <$> deserializeKnownNonFuncType
     1 -> do
       n <- getWord8
-      nfs <- replicateM (fromIntegral n) getKnownNonFuncType
+      nfs <- replicateM (fromIntegral n) deserializeKnownNonFuncType
       return $ TabularFunType nfs
     2 -> do
       n <- getWord8
-      nfs <- replicateM (fromIntegral n) getKnownNonFuncType
+      nfs <- replicateM (fromIntegral n) deserializeKnownNonFuncType
       return $ GeneralFunType nfs
     _ -> fail "Unknown type tag"
 
-instance (IsSymbolKind knd) => Serialize (SomeTypedSymbol knd) where
-  put (SomeTypedSymbol tsb@(TypedSymbol sb)) =
+instance (IsSymbolKind knd) => Serial (SomeTypedSymbol knd) where
+  serialize (SomeTypedSymbol tsb@(TypedSymbol sb)) =
     case decideSymbolKind @knd of
       Left HRefl -> do
-        putKnownNonFuncType $ knownNonFuncType tsb
-        put sb
+        serializeKnownNonFuncType $ knownNonFuncType tsb
+        serialize sb
       Right HRefl -> do
-        putKnownType $ knownType tsb
-        put sb
-  get = case decideSymbolKind @knd of
+        serializeKnownType $ knownType tsb
+        serialize sb
+  deserialize = case decideSymbolKind @knd of
     Left HRefl -> do
-      kt <- getKnownNonFuncType
+      kt <- deserializeKnownNonFuncType
       case witnessKnownNonFuncType kt of
         KnownNonFuncTypeWitness (Proxy :: Proxy a) -> do
-          sb <- get
+          sb <- deserialize
           return $ SomeTypedSymbol $ TypedSymbol @a sb
     Right HRefl -> do
-      kt <- getKnownType
+      kt <- deserializeKnownType
       case witnessKnownType kt of
         KnownTypeWitness (Proxy :: Proxy a) -> do
-          sb <- get
+          sb <- deserialize
           return $ SomeTypedSymbol $ TypedSymbol @a sb
 
-instance (IsSymbolKind knd, Typeable a) => Serialize (TypedSymbol knd a) where
-  put tsb = put $ someTypedSymbol tsb
-  get = do
-    SomeTypedSymbol (tsb@TypedSymbol {} :: TypedSymbol knd b) <- get
+instance (IsSymbolKind knd) => Cereal.Serialize (SomeTypedSymbol knd) where
+  put = serialize
+  get = deserialize
+
+instance (IsSymbolKind knd) => Binary.Binary (SomeTypedSymbol knd) where
+  put = serialize
+  get = deserialize
+
+instance (IsSymbolKind knd, Typeable a) => Serial (TypedSymbol knd a) where
+  serialize tsb = serialize $ someTypedSymbol tsb
+  deserialize = do
+    SomeTypedSymbol (tsb@TypedSymbol {} :: TypedSymbol knd b) <- deserialize
     case eqTypeRep (typeRep @a) (primTypeRep @b) of
       Just HRefl -> return tsb
-      Nothing -> fail "get TypedSymbol: type mismatch"
+      Nothing -> fail "deserialize TypedSymbol: type mismatch"
+
+instance
+  (IsSymbolKind knd, Typeable a) =>
+  Cereal.Serialize (TypedSymbol knd a)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  (IsSymbolKind knd, Typeable a) =>
+  Binary.Binary (TypedSymbol knd a)
+  where
+  put = serialize
+  get = deserialize
 
 conTermTag :: Word8
 conTermTag = 0
@@ -834,125 +854,130 @@ asBitsTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
     tb = primTypeRep @b
     err = error $ "asOrdTypeTermPair: unsupported type: " <> show ta <> show tb
 
-statefulGetSomeTerm ::
-  StateT (HM.HashMap Id SomeTerm, SomeTerm) Get SomeTerm
-statefulGetSomeTerm = do
+statefulDeserializeSomeTerm ::
+  (MonadGet m) => StateT (HM.HashMap Id SomeTerm, SomeTerm) m SomeTerm
+statefulDeserializeSomeTerm = do
   r <- do
-    tmId <- lift get
-    tag <- lift getWord8
+    tmId <- deserialize
+    tag <- getWord8
     if
-      | tag == conTermTag -> lift $ do
-          knownType <- getKnownType
+      | tag == conTermTag -> do
+          knownType <- deserializeKnownType
           case witnessKnownType knownType of
             KnownTypeWitness (Proxy :: Proxy a) -> do
-              tm <- someTerm . conTerm <$> get @a
+              tm <- someTerm . conTerm <$> deserialize @a
               return $ Just (tm, tmId)
-      | tag == symTermTag -> lift $ do
-          SomeTypedSymbol sb <- get @SomeTypedAnySymbol
+      | tag == symTermTag -> do
+          SomeTypedSymbol sb <- deserialize @SomeTypedAnySymbol
           return $ Just (someTerm $ symTerm sb, tmId)
-      | tag == forallTermTag -> getQuantified tmId forallTerm
-      | tag == existsTermTag -> getQuantified tmId existsTerm
+      | tag == forallTermTag -> deserializeQuantified tmId forallTerm
+      | tag == existsTermTag -> deserializeQuantified tmId existsTerm
       | tag == notTermTag -> do
-          t <- getTerm
+          t <- deserializeTerm
           return $ Just (someTerm $ notTerm $ asBoolTerm t, tmId)
-      | tag == orTermTag -> getBoolBinary tmId orTerm
-      | tag == andTermTag -> getBoolBinary tmId andTerm
+      | tag == orTermTag -> deserializeBoolBinary tmId orTerm
+      | tag == andTermTag -> deserializeBoolBinary tmId andTerm
       | tag == eqTermTag -> do
-          t1 <- getTerm
-          t2 <- getTerm
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
           asSameTypeTermPair t1 t2 $ \t1' t2' ->
             return $ Just (someTerm $ eqTerm t1' t2', tmId)
       | tag == distinctTermTag -> do
-          ts <- getNonEmptyTermList
+          ts <- deserializeNonEmptyTermList
           asSameTypeNonEmptyTermList ts $ \ts' ->
             return $ Just (someTerm $ distinctTerm ts', tmId)
       | tag == iteTermTag -> do
-          t1 <- getTerm
-          t2 <- getTerm
-          t3 <- getTerm
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
+          t3 <- deserializeTerm
           asSameTypeTermPair t2 t3 $ \t2' t3' ->
             return $ Just (someTerm $ iteTerm (asBoolTerm t1) t2' t3', tmId)
-      | tag == addNumTermTag -> getNumBinary tmId addNumTerm
-      | tag == negNumTermTag -> getNumUnary tmId negNumTerm
-      | tag == mulNumTermTag -> getNumBinary tmId mulNumTerm
-      | tag == absNumTermTag -> getNumUnary tmId absNumTerm
-      | tag == signumNumTermTag -> getNumUnary tmId signumNumTerm
-      | tag == ltOrdTermTag -> getOrdBinary tmId ltOrdTerm
-      | tag == leOrdTermTag -> getOrdBinary tmId leOrdTerm
-      | tag == andBitsTermTag -> getBitsBinary tmId andBitsTerm
-      | tag == orBitsTermTag -> getBitsBinary tmId orBitsTerm
-      | tag == xorBitsTermTag -> getBitsBinary tmId xorBitsTerm
-      | tag == complementBitsTermTag -> getBitsUnary tmId complementBitsTerm
-      | tag == shiftLeftTermTag -> getBitsBinary tmId shiftLeftTerm
-      | tag == shiftRightTermTag -> getBitsBinary tmId shiftRightTerm
-      | tag == rotateLeftTermTag -> getBitsBinary tmId rotateLeftTerm
-      | tag == rotateRightTermTag -> getBitsBinary tmId rotateRightTerm
+      | tag == addNumTermTag -> deserializeNumBinary tmId addNumTerm
+      | tag == negNumTermTag -> deserializeNumUnary tmId negNumTerm
+      | tag == mulNumTermTag -> deserializeNumBinary tmId mulNumTerm
+      | tag == absNumTermTag -> deserializeNumUnary tmId absNumTerm
+      | tag == signumNumTermTag -> deserializeNumUnary tmId signumNumTerm
+      | tag == ltOrdTermTag -> deserializeOrdBinary tmId ltOrdTerm
+      | tag == leOrdTermTag -> deserializeOrdBinary tmId leOrdTerm
+      | tag == andBitsTermTag -> deserializeBitsBinary tmId andBitsTerm
+      | tag == orBitsTermTag -> deserializeBitsBinary tmId orBitsTerm
+      | tag == xorBitsTermTag -> deserializeBitsBinary tmId xorBitsTerm
+      | tag == complementBitsTermTag ->
+          deserializeBitsUnary tmId complementBitsTerm
+      | tag == shiftLeftTermTag -> deserializeBitsBinary tmId shiftLeftTerm
+      | tag == shiftRightTermTag -> deserializeBitsBinary tmId shiftRightTerm
+      | tag == rotateLeftTermTag -> deserializeBitsBinary tmId rotateLeftTerm
+      | tag == rotateRightTermTag -> deserializeBitsBinary tmId rotateRightTerm
       | tag == terminalTag -> return Nothing
-      | otherwise -> error $ "statefulGetSomeTerm: unknown tag: " <> show tag
+      | otherwise ->
+          error $ "statefulDeserializeSomeTerm: unknown tag: " <> show tag
   case r of
     Just (tm, tmId) -> do
       State.modify' $ \(m, _) -> (HM.insert tmId tm m, tm)
-      statefulGetSomeTerm
+      statefulDeserializeSomeTerm
     Nothing -> State.gets snd
   where
-    getNonEmptyTermList ::
-      StateT (HM.HashMap Id SomeTerm, SomeTerm) Get (NonEmpty SomeTerm)
-    getNonEmptyTermList = do
-      ids <- lift $ get @[Id]
+    deserializeNonEmptyTermList ::
+      (MonadGet m) =>
+      StateT (HM.HashMap Id SomeTerm, SomeTerm) m (NonEmpty SomeTerm)
+    deserializeNonEmptyTermList = do
+      ids <- deserialize @[Id]
       case ids of
-        [] -> fail "statefulGetSomeTerm: empty list"
+        [] -> fail "statefulDeserializeSomeTerm: empty list"
         (x : xs) -> do
           x' <- queryTerm x
           xs' <- traverse queryTerm xs
           return $ x' :| xs'
-    getTerm :: StateT (HM.HashMap Id SomeTerm, SomeTerm) Get SomeTerm
-    getTerm = do
-      tmId <- lift get
+    deserializeTerm ::
+      (MonadGet m) => StateT (HM.HashMap Id SomeTerm, SomeTerm) m SomeTerm
+    deserializeTerm = do
+      tmId <- deserialize
       queryTerm tmId
-    queryTerm :: Id -> StateT (HM.HashMap Id SomeTerm, SomeTerm) Get SomeTerm
+    queryTerm ::
+      (MonadGet m) => Id -> StateT (HM.HashMap Id SomeTerm, SomeTerm) m SomeTerm
     queryTerm termId = do
       tm <- State.gets $ HM.lookup termId . fst
       case tm of
-        Nothing -> fail "statefulGetSomeTerm: unknown term id"
+        Nothing -> fail "statefulDeserializeSomeTerm: unknown term id"
         Just tm' -> return tm'
-    getBoolBinary tmId f = do
-      t1 <- getTerm
-      t2 <- getTerm
+    deserializeBoolBinary tmId f = do
+      t1 <- deserializeTerm
+      t2 <- deserializeTerm
       return $
         Just (someTerm $ f (asBoolTerm t1) (asBoolTerm t2), tmId)
-    getQuantified
+    deserializeQuantified
       tmId
       (f :: forall t. TypedConstantSymbol t -> Term Bool -> Term Bool) = do
-        SomeTypedSymbol sb <- lift get
-        t <- getTerm
+        SomeTypedSymbol sb <- deserialize
+        t <- deserializeTerm
         return $ Just (someTerm $ f sb $ asBoolTerm t, tmId)
-    getNumUnary
+    deserializeNumUnary
       tmId
       (f :: forall t. (PEvalNumTerm t) => Term t -> Term t) = do
-        t1 <- getTerm
+        t1 <- deserializeTerm
         asNumTypeTerm t1 $ \t1' -> return $ Just (someTerm $ f t1', tmId)
-    getBitsUnary
+    deserializeBitsUnary
       tmId
       (f :: forall t. (PEvalBitwiseTerm t) => Term t -> Term t) = do
-        t1 <- getTerm
+        t1 <- deserializeTerm
         asBitsTypeTerm t1 $ \t1' -> return $ Just (someTerm $ f t1', tmId)
-    getNumBinary
+    deserializeNumBinary
       tmId
       (f :: forall t. (PEvalNumTerm t) => Term t -> Term t -> Term t) = do
-        t1 <- getTerm
-        t2 <- getTerm
+        t1 <- deserializeTerm
+        t2 <- deserializeTerm
         asNumTypeTermPair t1 t2 $ \t1' t2' ->
           return $
             Just (someTerm $ f t1' t2', tmId)
-    getOrdBinary
+    deserializeOrdBinary
       tmId
       (f :: forall t. (PEvalOrdTerm t) => Term t -> Term t -> Term Bool) = do
-        t1 <- getTerm
-        t2 <- getTerm
+        t1 <- deserializeTerm
+        t2 <- deserializeTerm
         asOrdTypeTermPair t1 t2 $ \t1' t2' ->
           return $
             Just (someTerm $ f t1' t2', tmId)
-    getBitsBinary
+    deserializeBitsBinary
       tmId
       ( f ::
           forall t.
@@ -964,153 +989,212 @@ statefulGetSomeTerm = do
           Term t ->
           Term t
         ) = do
-        t1 <- getTerm
-        t2 <- getTerm
+        t1 <- deserializeTerm
+        t2 <- deserializeTerm
         asBitsTypeTermPair t1 t2 $ \t1' t2' ->
           return $
             Just (someTerm $ f t1' t2', tmId)
 
-getSomeTerm :: Get SomeTerm
-getSomeTerm =
+deserializeSomeTerm :: (MonadGet m) => m SomeTerm
+deserializeSomeTerm =
   evalStateT
-    statefulGetSomeTerm
+    statefulDeserializeSomeTerm
     ( HM.empty,
-      error "getSomeTerm: should not happen: started with the terminal value"
+      error $
+        "deserializeSomeTerm: should not happen: started with the terminal "
+          <> "value"
     )
 
-putSingleSomeTerm :: SomeTerm -> StateT (HS.HashSet Id) PutM ()
-putSingleSomeTerm (SomeTerm tm) = do
+serializeSingleSomeTerm ::
+  (MonadPut m) => SomeTerm -> StateT (HS.HashSet Id) m ()
+serializeSingleSomeTerm (SomeTerm tm) = do
   st <- State.get
   let tmId = termId tm
   if HS.member tmId st
     then return ()
     else do
       case tm of
-        ConTerm _ _ _ _ (v :: v) -> lift $ do
-          put tmId
+        ConTerm _ _ _ _ (v :: v) -> do
+          serialize tmId
           putWord8 conTermTag
           let kt = knownType (Proxy @v)
           case witnessKnownType kt of
             KnownTypeWitness (Proxy :: Proxy v1) ->
               case eqTypeRep (primTypeRep @v) (typeRep @v1) of
                 Just HRefl -> do
-                  putKnownType kt
-                  put v
-                Nothing -> error "putSomeTerm: should not happen: type mismatch"
-        SymTerm _ _ _ _ (v :: TypedAnySymbol v) -> lift $ do
-          put tmId
+                  serializeKnownType kt
+                  serialize v
+                Nothing ->
+                  error "serializeSomeTerm: should not happen: type mismatch"
+        SymTerm _ _ _ _ (v :: TypedAnySymbol v) -> do
+          serialize tmId
           putWord8 symTermTag
-          put $ someTypedSymbol v
-        ForallTerm _ _ _ _ ts t -> putQuantified tmId forallTermTag ts t
-        ExistsTerm _ _ _ _ ts t -> putQuantified tmId existsTermTag ts t
+          serialize $ someTypedSymbol v
+        ForallTerm _ _ _ _ ts t -> serializeQuantified tmId forallTermTag ts t
+        ExistsTerm _ _ _ _ ts t -> serializeQuantified tmId existsTermTag ts t
         NotTerm _ _ _ _ t -> do
-          putSingleSomeTerm $ someTerm t
-          lift $ do
-            put tmId
+          serializeSingleSomeTerm $ someTerm t
+          do
+            serialize tmId
             putWord8 notTermTag
-            put $ termId t
-        OrTerm _ _ _ _ t1 t2 -> putBinary tmId orTermTag t1 t2
-        AndTerm _ _ _ _ t1 t2 -> putBinary tmId andTermTag t1 t2
-        EqTerm _ _ _ _ t1 t2 -> putBinary tmId eqTermTag t1 t2
-        ITETerm _ _ _ _ t1 t2 t3 -> putTernary tmId iteTermTag t1 t2 t3
-        AddNumTerm _ _ _ _ t1 t2 -> putBinary tmId addNumTermTag t1 t2
-        NegNumTerm _ _ _ _ t -> putUnary tmId negNumTermTag t
-        MulNumTerm _ _ _ _ t1 t2 -> putBinary tmId mulNumTermTag t1 t2
-        AbsNumTerm _ _ _ _ t -> putUnary tmId absNumTermTag t
-        SignumNumTerm _ _ _ _ t -> putUnary tmId signumNumTermTag t
-        LtOrdTerm _ _ _ _ t1 t2 -> putBinary tmId ltOrdTermTag t1 t2
-        LeOrdTerm _ _ _ _ t1 t2 -> putBinary tmId leOrdTermTag t1 t2
-        AndBitsTerm _ _ _ _ t1 t2 -> putBinary tmId andBitsTermTag t1 t2
-        OrBitsTerm _ _ _ _ t1 t2 -> putBinary tmId orBitsTermTag t1 t2
-        XorBitsTerm _ _ _ _ t1 t2 -> putBinary tmId xorBitsTermTag t1 t2
-        ComplementBitsTerm _ _ _ _ t -> putUnary tmId complementBitsTermTag t
-        ShiftLeftTerm _ _ _ _ t1 t2 -> putBinary tmId shiftLeftTermTag t1 t2
-        ShiftRightTerm _ _ _ _ t1 t2 -> putBinary tmId shiftRightTermTag t1 t2
-        RotateLeftTerm _ _ _ _ t1 t2 -> putBinary tmId rotateLeftTermTag t1 t2
-        RotateRightTerm _ _ _ _ t1 t2 -> putBinary tmId rotateRightTermTag t1 t2
-        _ -> error "putSomeTerm: unsupported term"
+            serialize $ termId t
+        OrTerm _ _ _ _ t1 t2 -> serializeBinary tmId orTermTag t1 t2
+        AndTerm _ _ _ _ t1 t2 -> serializeBinary tmId andTermTag t1 t2
+        EqTerm _ _ _ _ t1 t2 -> serializeBinary tmId eqTermTag t1 t2
+        ITETerm _ _ _ _ t1 t2 t3 -> serializeTernary tmId iteTermTag t1 t2 t3
+        AddNumTerm _ _ _ _ t1 t2 -> serializeBinary tmId addNumTermTag t1 t2
+        NegNumTerm _ _ _ _ t -> serializeUnary tmId negNumTermTag t
+        MulNumTerm _ _ _ _ t1 t2 -> serializeBinary tmId mulNumTermTag t1 t2
+        AbsNumTerm _ _ _ _ t -> serializeUnary tmId absNumTermTag t
+        SignumNumTerm _ _ _ _ t -> serializeUnary tmId signumNumTermTag t
+        LtOrdTerm _ _ _ _ t1 t2 -> serializeBinary tmId ltOrdTermTag t1 t2
+        LeOrdTerm _ _ _ _ t1 t2 -> serializeBinary tmId leOrdTermTag t1 t2
+        AndBitsTerm _ _ _ _ t1 t2 -> serializeBinary tmId andBitsTermTag t1 t2
+        OrBitsTerm _ _ _ _ t1 t2 -> serializeBinary tmId orBitsTermTag t1 t2
+        XorBitsTerm _ _ _ _ t1 t2 -> serializeBinary tmId xorBitsTermTag t1 t2
+        ComplementBitsTerm _ _ _ _ t ->
+          serializeUnary tmId complementBitsTermTag t
+        ShiftLeftTerm _ _ _ _ t1 t2 ->
+          serializeBinary tmId shiftLeftTermTag t1 t2
+        ShiftRightTerm _ _ _ _ t1 t2 ->
+          serializeBinary tmId shiftRightTermTag t1 t2
+        RotateLeftTerm _ _ _ _ t1 t2 ->
+          serializeBinary tmId rotateLeftTermTag t1 t2
+        RotateRightTerm _ _ _ _ t1 t2 ->
+          serializeBinary tmId rotateRightTermTag t1 t2
+        _ -> error "serializeSomeTerm: unsupported term"
   State.put $ HS.insert (termId tm) st
   where
-    putQuantified ::
+    serializeQuantified ::
+      (MonadPut m) =>
       Id ->
       Word8 ->
       TypedConstantSymbol v ->
       Term b ->
-      StateT (HS.HashSet Id) PutM ()
-    putQuantified tmId tag v t = do
-      putSingleSomeTerm $ someTerm t
-      lift $ do
-        put tmId
-        put tag
-        put $ someTypedSymbol v
-        put $ termId t
-    putUnary tmId tag t1 = do
-      putSingleSomeTerm $ someTerm t1
-      lift $ do
-        put tmId
-        put tag
-        put $ termId t1
-    putBinary tmId tag t1 t2 = do
-      putSingleSomeTerm $ someTerm t1
-      putSingleSomeTerm $ someTerm t2
-      lift $ do
-        put tmId
-        put tag
-        put $ termId t1
-        put $ termId t2
-    putTernary tmId tag t1 t2 t3 = do
-      putSingleSomeTerm $ someTerm t1
-      putSingleSomeTerm $ someTerm t2
-      putSingleSomeTerm $ someTerm t3
-      lift $ do
-        put tmId
-        put tag
-        put $ termId t1
-        put $ termId t2
-        put $ termId t3
+      StateT (HS.HashSet Id) m ()
+    serializeQuantified tmId tag v t = do
+      serializeSingleSomeTerm $ someTerm t
+      serialize tmId
+      serialize tag
+      serialize $ someTypedSymbol v
+      serialize $ termId t
+    serializeUnary tmId tag t1 = do
+      serializeSingleSomeTerm $ someTerm t1
+      serialize tmId
+      serialize tag
+      serialize $ termId t1
+    serializeBinary tmId tag t1 t2 = do
+      serializeSingleSomeTerm $ someTerm t1
+      serializeSingleSomeTerm $ someTerm t2
+      serialize tmId
+      serialize tag
+      serialize $ termId t1
+      serialize $ termId t2
+    serializeTernary tmId tag t1 t2 t3 = do
+      serializeSingleSomeTerm $ someTerm t1
+      serializeSingleSomeTerm $ someTerm t2
+      serializeSingleSomeTerm $ someTerm t3
+      serialize tmId
+      serialize tag
+      serialize $ termId t1
+      serialize $ termId t2
+      serialize $ termId t3
 
-putSomeTerm :: Putter SomeTerm
-putSomeTerm t = do
-  flip evalStateT HS.empty $ putSingleSomeTerm t
-  put (0 :: Id)
+serializeSomeTerm :: (MonadPut m) => SomeTerm -> m ()
+serializeSomeTerm t = do
+  flip evalStateT HS.empty $ serializeSingleSomeTerm t
+  serialize (0 :: Id)
   putWord8 terminalTag
 
-instance Serialize SomeTerm where
-  put = putSomeTerm
-  get = getSomeTerm
+instance Serial SomeTerm where
+  serialize = serializeSomeTerm
+  deserialize = deserializeSomeTerm
 
-instance (SupportedPrim a) => Serialize (Term a) where
-  put = putSomeTerm . someTerm
-  get = do
-    SomeTerm tm <- get
+instance Cereal.Serialize SomeTerm where
+  put = serializeSomeTerm
+  get = deserializeSomeTerm
+
+instance Binary.Binary SomeTerm where
+  put = serializeSomeTerm
+  get = deserializeSomeTerm
+
+instance (SupportedPrim a) => Serial (Term a) where
+  serialize = serializeSomeTerm . someTerm
+  deserialize = do
+    SomeTerm tm <- deserialize
     withSupportedPrimTypeable @a $ case castTerm tm of
       Just r -> return r
-      Nothing -> fail "get Term: type mismatch"
+      Nothing -> fail "deserialize Term: type mismatch"
 
-instance
-  (GeneralFunArg a, GeneralFunArg b) =>
-  Serialize (a --> b)
-  where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+instance (SupportedPrim a) => Cereal.Serialize (Term a) where
+  put = serialize
+  get = deserialize
+
+instance (SupportedPrim a) => Binary.Binary (Term a) where
+  put = serialize
+  get = deserialize
+
+instance (GeneralFunArg a, GeneralFunArg b) => Serial (a --> b) where
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance (GeneralFunArg a, GeneralFunArg b) => Cereal.Serialize (a --> b) where
+  put = serialize
+  get = deserialize
+
+instance (GeneralFunArg a, GeneralFunArg b) => Binary.Binary (a --> b) where
+  put = serialize
+  get = deserialize
 
 type GeneralFunArg t = (SupportedNonFuncPrim t, Typeable t, Show t, Hashable t)
 
 instance
   {-# OVERLAPPING #-}
   (GeneralFunArg a, GeneralFunArg b, GeneralFunArg c) =>
-  Serialize (a --> b --> c)
+  Serial (a --> b --> c)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  (GeneralFunArg a, GeneralFunArg b, GeneralFunArg c) =>
+  Cereal.Serialize (a --> b --> c)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  (GeneralFunArg a, GeneralFunArg b, GeneralFunArg c) =>
+  Binary.Binary (a --> b --> c)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   {-# OVERLAPPING #-}
   (GeneralFunArg a, GeneralFunArg b, GeneralFunArg c, GeneralFunArg d) =>
-  Serialize (a --> b --> c --> d)
+  Serial (a --> b --> c --> d)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  (GeneralFunArg a, GeneralFunArg b, GeneralFunArg c, GeneralFunArg d) =>
+  Cereal.Serialize (a --> b --> c --> d)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  (GeneralFunArg a, GeneralFunArg b, GeneralFunArg c, GeneralFunArg d) =>
+  Binary.Binary (a --> b --> c --> d)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   {-# OVERLAPPING #-}
@@ -1120,10 +1204,36 @@ instance
     GeneralFunArg d,
     GeneralFunArg e
   ) =>
-  Serialize (a --> b --> c --> d --> e)
+  Serial (a --> b --> c --> d --> e)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e
+  ) =>
+  Cereal.Serialize (a --> b --> c --> d --> e)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e
+  ) =>
+  Binary.Binary (a --> b --> c --> d --> e)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   {-# OVERLAPPING #-}
@@ -1134,10 +1244,38 @@ instance
     GeneralFunArg e,
     GeneralFunArg f
   ) =>
-  Serialize (a --> b --> c --> d --> e --> f)
+  Serial (a --> b --> c --> d --> e --> f)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f
+  ) =>
+  Cereal.Serialize (a --> b --> c --> d --> e --> f)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f
+  ) =>
+  Binary.Binary (a --> b --> c --> d --> e --> f)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   {-# OVERLAPPING #-}
@@ -1149,10 +1287,40 @@ instance
     GeneralFunArg f,
     GeneralFunArg g
   ) =>
-  Serialize (a --> b --> c --> d --> e --> f --> g)
+  Serial (a --> b --> c --> d --> e --> f --> g)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f,
+    GeneralFunArg g
+  ) =>
+  Cereal.Serialize (a --> b --> c --> d --> e --> f --> g)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f,
+    GeneralFunArg g
+  ) =>
+  Binary.Binary (a --> b --> c --> d --> e --> f --> g)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   {-# OVERLAPPING #-}
@@ -1165,10 +1333,42 @@ instance
     GeneralFunArg g,
     GeneralFunArg h
   ) =>
-  Serialize (a --> b --> c --> d --> e --> f --> g --> h)
+  Serial (a --> b --> c --> d --> e --> f --> g --> h)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f,
+    GeneralFunArg g,
+    GeneralFunArg h
+  ) =>
+  Cereal.Serialize (a --> b --> c --> d --> e --> f --> g --> h)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f,
+    GeneralFunArg g,
+    GeneralFunArg h
+  ) =>
+  Binary.Binary (a --> b --> c --> d --> e --> f --> g --> h)
+  where
+  put = serialize
+  get = deserialize
 
 instance
   {-# OVERLAPPING #-}
@@ -1182,7 +1382,41 @@ instance
     GeneralFunArg h,
     GeneralFunArg i
   ) =>
-  Serialize (a --> b --> c --> d --> e --> f --> g --> h --> i)
+  Serial (a --> b --> c --> d --> e --> f --> g --> h --> i)
   where
-  put (GeneralFun ts tm) = put ts >> put tm
-  get = GeneralFun <$> get <*> get
+  serialize (GeneralFun ts tm) = serialize ts >> serialize tm
+  deserialize = GeneralFun <$> deserialize <*> deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f,
+    GeneralFunArg g,
+    GeneralFunArg h,
+    GeneralFunArg i
+  ) =>
+  Cereal.Serialize (a --> b --> c --> d --> e --> f --> g --> h --> i)
+  where
+  put = serialize
+  get = deserialize
+
+instance
+  {-# OVERLAPPING #-}
+  ( GeneralFunArg a,
+    GeneralFunArg b,
+    GeneralFunArg c,
+    GeneralFunArg d,
+    GeneralFunArg e,
+    GeneralFunArg f,
+    GeneralFunArg g,
+    GeneralFunArg h,
+    GeneralFunArg i
+  ) =>
+  Binary.Binary (a --> b --> c --> d --> e --> f --> g --> h --> i)
+  where
+  put = serialize
+  get = deserialize

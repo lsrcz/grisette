@@ -228,6 +228,27 @@ packages:
       size: 641
   original:
     hackage: cereal-0.5.8.1
+- completed:
+    hackage: cereal-text-0.1.0.2@sha256:dc10e00d9e5047d16a129682aac42c95da188d22e9f85856add051b9ace539c3,1349
+    pantry-tree:
+      sha256: 6550c7b0a17f1f1c2e0f01d9c179f30475e82983c622a4bc0643d1ce7c53f8e2
+      size: 265
+  original:
+    hackage: cereal-text-0.1.0.2
+- completed:
+    hackage: bytes-0.17.1@sha256:7a1faa5f4fa825986b073d05bbbc6a481edca37b8cdce7573b5431a585984fd1,2503
+    pantry-tree:
+      sha256: 4f93e5e9032cec737f77154618628f3167edaa865dd4a7c7039edb1f6e4bccbb
+      size: 844
+  original:
+    hackage: bytes-0.17.1
+- completed:
+    hackage: binary-0.8.8.0@sha256:505b80fef6cbff8418313cabd1856e230be12e1e145bf3f3cf740a410b0807b4,6279
+    pantry-tree:
+      sha256: 428c608cb6e7ee0da0c6d05c921dd49945800f1a235d2e2a04e217aa457c4ab9
+      size: 1976
+  original:
+    hackage: binary-0.8.8.0
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

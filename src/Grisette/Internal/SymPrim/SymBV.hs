@@ -41,6 +41,7 @@ module Grisette.Internal.SymPrim.SymBV
 where
 
 import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
 import Data.Bits
   ( Bits
       ( bit,
@@ -58,9 +59,10 @@ import Data.Bits
       ),
     FiniteBits (finiteBitSize),
   )
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Proxy (Proxy (Proxy))
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeNats
@@ -594,10 +596,26 @@ instance BitCast SymBool (SymIntN 1) where
 instance BitCast SymBool (SymWordN 1) where
   bitCast (SymBool v) = SymWordN $ pevalBitCastTerm v
 
-instance (KnownNat n, 1 <= n) => Serialize (SymWordN n) where
-  put = put . underlyingWordNTerm
-  get = SymWordN <$> get
+instance (KnownNat n, 1 <= n) => Serial (SymWordN n) where
+  serialize = serialize . underlyingWordNTerm
+  deserialize = SymWordN <$> deserialize
 
-instance (KnownNat n, 1 <= n) => Serialize (SymIntN n) where
-  put = put . underlyingIntNTerm
-  get = SymIntN <$> get
+instance (KnownNat n, 1 <= n) => Serial (SymIntN n) where
+  serialize = serialize . underlyingIntNTerm
+  deserialize = SymIntN <$> deserialize
+
+instance (KnownNat n, 1 <= n) => Cereal.Serialize (SymWordN n) where
+  put = serialize
+  get = deserialize
+
+instance (KnownNat n, 1 <= n) => Binary.Binary (SymWordN n) where
+  put = serialize
+  get = deserialize
+
+instance (KnownNat n, 1 <= n) => Cereal.Serialize (SymIntN n) where
+  put = serialize
+  get = deserialize
+
+instance (KnownNat n, 1 <= n) => Binary.Binary (SymIntN n) where
+  put = serialize
+  get = deserialize

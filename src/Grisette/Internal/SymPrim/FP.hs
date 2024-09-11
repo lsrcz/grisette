@@ -54,7 +54,9 @@ where
 
 import Control.DeepSeq (NFData (rnf))
 import Control.Exception (Exception, throw)
+import qualified Data.Binary as Binary
 import Data.Bits (Bits (complement, shiftL, shiftR, xor, (.&.)))
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Int (Int16, Int32, Int64)
 import Data.Maybe (fromJust)
@@ -78,16 +80,16 @@ import Data.SBV
 import Data.SBV.Float (fpEncodeFloat)
 import qualified Data.SBV.Float as SBVF
 import qualified Data.SBV.Internals as SBVI
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.Type.Bool (type (&&), type (||))
 import Data.Type.Equality (type (:~:) (Refl), type (==))
 import GHC.Exception (Exception (displayException))
 import GHC.Generics (Generic)
+import GHC.Natural (Natural)
 import GHC.TypeNats
   ( CmpNat,
     KnownNat,
     Nat,
-    Natural,
     natVal,
     type (+),
     type (<=),
@@ -397,7 +399,7 @@ data FPRoundingMode
   | -- | Round towards zero.
     RTZ
   deriving (Eq, Ord, Generic, Lift)
-  deriving anyclass (Hashable, NFData, Serialize)
+  deriving anyclass (Hashable, NFData, Serial)
 
 instance Show FPRoundingMode where
   show RNE = "rne"
@@ -948,10 +950,18 @@ instance Apply FPRoundingMode where
   type FunType FPRoundingMode = FPRoundingMode
   apply = id
 
-instance (ValidFP eb sb) => Serialize (FP eb sb) where
-  put x =
+instance (ValidFP eb sb) => Serial (FP eb sb) where
+  serialize x =
     withValidFPProofs @eb @sb $
-      put (bitCastOrCanonical x :: WordN (eb + sb))
-  get = do
-    w :: WordN (eb + sb) <- withValidFPProofs @eb @sb get
+      serialize (bitCastOrCanonical x :: WordN (eb + sb))
+  deserialize = do
+    w :: WordN (eb + sb) <- withValidFPProofs @eb @sb deserialize
     return $ withValidFPProofs @eb @sb $ bitCast w
+
+instance (ValidFP eb sb) => Cereal.Serialize (FP eb sb) where
+  put = serialize
+  get = deserialize
+
+instance (ValidFP eb sb) => Binary.Binary (FP eb sb) where
+  put = serialize
+  get = deserialize

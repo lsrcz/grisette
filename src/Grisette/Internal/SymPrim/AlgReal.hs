@@ -26,10 +26,12 @@ where
 
 import Control.DeepSeq (NFData)
 import Control.Exception (Exception, throw)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable)
 import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBV
-import Data.Serialize (Serialize)
+import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Language.Haskell.TH.Syntax (Lift)
@@ -42,7 +44,16 @@ import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 -- @v'AlgRealPoly' [(5, 3), (2, 1), (-5, 0)]@.
 newtype AlgRealPoly = AlgRealPoly [(Integer, Integer)]
   deriving (Eq, Generic, Lift)
-  deriving newtype (Hashable, NFData, Serialize)
+  deriving newtype (Hashable, NFData)
+  deriving anyclass (Serial)
+
+instance Cereal.Serialize AlgRealPoly where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary AlgRealPoly where
+  put = serialize
+  get = deserialize
 
 -- | Boundary point for real intervals.
 data RealPoint
@@ -51,7 +62,15 @@ data RealPoint
   | -- | Closed point.
     ClosedPoint Rational
   deriving (Eq, Generic, Lift)
-  deriving anyclass (Hashable, NFData, Serialize)
+  deriving anyclass (Hashable, NFData, Serial)
+
+instance Cereal.Serialize RealPoint where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary RealPoint where
+  put = serialize
+  get = deserialize
 
 toSBVRealPoint :: RealPoint -> SBV.RealPoint Rational
 toSBVRealPoint (OpenPoint r) = SBV.OpenPoint r
@@ -85,7 +104,15 @@ data AlgReal where
     RealPoint ->
     AlgReal
   deriving (Generic, Lift)
-  deriving anyclass (Hashable, NFData, Serialize)
+  deriving anyclass (Hashable, NFData, Serial)
+
+instance Cereal.Serialize AlgReal where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary AlgReal where
+  put = serialize
+  get = deserialize
 
 -- | Convert algebraic real numbers to SBV's algebraic real numbers.
 toSBVAlgReal :: AlgReal -> SBV.AlgReal

@@ -29,9 +29,11 @@ module Grisette.Internal.SymPrim.SymFP
 where
 
 import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Proxy (Proxy (Proxy))
-import Data.Serialize (Serialize (get, put))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
@@ -487,6 +489,14 @@ instance
     SymFP $ pevalFromFPOrTerm d mode fp
   toFP (SymFPRoundingMode mode) (SymFP v) = SymFP $ pevalToFPTerm mode v
 
-instance (ValidFP eb sb) => Serialize (SymFP eb sb) where
-  put = put . underlyingFPTerm
-  get = SymFP <$> get
+instance (ValidFP eb sb) => Serial (SymFP eb sb) where
+  serialize = serialize . underlyingFPTerm
+  deserialize = SymFP <$> deserialize
+
+instance (ValidFP eb sb) => Cereal.Serialize (SymFP eb sb) where
+  put = serialize
+  get = deserialize
+
+instance (ValidFP eb sb) => Binary.Binary (SymFP eb sb) where
+  put = serialize
+  get = deserialize
