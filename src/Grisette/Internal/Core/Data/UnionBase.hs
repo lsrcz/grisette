@@ -31,8 +31,18 @@ module Grisette.Internal.Core.Data.UnionBase
   )
 where
 
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter (align, group, nest, vsep)
+#else
+import Data.Text.Prettyprint.Doc (align, group, nest, vsep)
+#endif
+
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
 import Control.Monad (ap)
+import qualified Data.Binary as Binary
+import Data.Bytes.Get (MonadGet (getWord8))
+import Data.Bytes.Put (MonadPut (putWord8))
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Functor.Classes
   ( Eq1 (liftEq),
     Show1 (liftShowsPrec),
@@ -40,6 +50,7 @@ import Data.Functor.Classes
     showsUnaryWith,
   )
 import Data.Hashable (Hashable (hashWithSalt))
+import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
@@ -76,12 +87,6 @@ import Grisette.Internal.SymPrim.AllSyms
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Language.Haskell.TH.Syntax (Lift)
-
-#if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter (align, group, nest, vsep)
-#else
-import Data.Text.Prettyprint.Doc (align, group, nest, vsep)
-#endif
 
 -- | The base union implementation, which is an if-then-else tree structure.
 data UnionBase a where
@@ -161,6 +166,29 @@ leftMost (UnionIf a _ _ _ _) = a
 instance (Mergeable a) => Mergeable (UnionBase a) where
   rootStrategy = SimpleStrategy $ ifWithStrategy rootStrategy
   {-# INLINE rootStrategy #-}
+
+instance (Mergeable a, Serial a) => Serial (UnionBase a) where
+  serialize (UnionSingle a) = putWord8 0 >> serialize a
+  serialize (UnionIf _ _ c a b) =
+    putWord8 1 >> serialize c >> serialize a >> serialize b
+  deserialize = do
+    tag <- getWord8
+    case tag of
+      0 -> UnionSingle <$> deserialize
+      1 ->
+        ifWithStrategy rootStrategy
+          <$> deserialize
+          <*> deserialize
+          <*> deserialize
+      _ -> fail "Invalid tag"
+
+instance (Mergeable a, Serial a) => Cereal.Serialize (UnionBase a) where
+  put = serialize
+  get = deserialize
+
+instance (Mergeable a, Serial a) => Binary.Binary (UnionBase a) where
+  put = serialize
+  get = deserialize
 
 instance Mergeable1 UnionBase where
   liftRootStrategy ms = SimpleStrategy $ ifWithStrategy ms
