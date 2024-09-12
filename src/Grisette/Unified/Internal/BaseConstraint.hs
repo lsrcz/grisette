@@ -15,6 +15,7 @@ module Grisette.Unified.Internal.BaseConstraint
 where
 
 import Control.DeepSeq (NFData)
+import Data.Bytes.Serial (Serial)
 import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
@@ -42,6 +43,7 @@ type BasicGrisetteType t =
     SymEq t,
     Show t,
     SymOrd t,
+    Serial t,
     SubstSym t
   )
 
