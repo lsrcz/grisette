@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -54,11 +55,15 @@ module Grisette.Internal.Core.Data.Class.Solver
 where
 
 import Control.DeepSeq (NFData)
-import Control.Exception (SomeException, mask, onException)
+import Control.Exception (mask, onException)
 import Control.Monad.Except (ExceptT, runExceptT)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
 import Data.Maybe (fromJust)
+import qualified Data.Serialize as Cereal
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
@@ -100,10 +105,19 @@ data SolvingFailure
   | -- | The solver has reached the maximum number of models to return.
     ResultNumLimitReached
   | -- | The solver has encountered an error.
-    SolvingError SomeException
+    SolvingError T.Text
   | -- | The solver has been terminated.
     Terminated
-  deriving (Show)
+  deriving (Show, Eq, Generic, Lift)
+  deriving anyclass (NFData, Hashable, Serial)
+
+instance Cereal.Serialize SolvingFailure where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary SolvingFailure where
+  put = serialize
+  get = deserialize
 
 -- | A monadic solver interface.
 --

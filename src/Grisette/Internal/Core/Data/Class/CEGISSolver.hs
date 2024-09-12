@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -65,7 +67,12 @@ module Grisette.Internal.Core.Data.Class.CEGISSolver
   )
 where
 
+import Control.DeepSeq (NFData)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
+import Data.Hashable (Hashable)
 import Data.List (foldl', partition)
+import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))
 import Grisette.Internal.Core.Control.Exception
@@ -101,6 +108,7 @@ import Grisette.Internal.Core.Data.Class.Solver
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq)
 import Grisette.Internal.SymPrim.Prim.Model (Model)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -113,6 +121,8 @@ data VerifierResult cex exception
   = CEGISVerifierFoundCex cex
   | CEGISVerifierNoCex
   | CEGISVerifierException exception
+  deriving (Show, Eq, Generic, Lift)
+  deriving anyclass (Hashable, NFData)
 
 -- | Build the synthesizer constraint from the verfication result. The first
 -- argument will be guaranteed to be distinct during each invocation of the
@@ -130,7 +140,16 @@ data CEGISResult exception
   = CEGISSuccess Model
   | CEGISVerifierFailure exception
   | CEGISSolverFailure SolvingFailure
-  deriving (Show)
+  deriving (Show, Eq, Generic, Lift)
+  deriving anyclass (NFData, Hashable, Serial)
+
+instance (Serial exception) => Cereal.Serialize (CEGISResult exception) where
+  put = serialize
+  get = deserialize
+
+instance (Serial exception) => Binary.Binary (CEGISResult exception) where
+  put = serialize
+  get = deserialize
 
 -- | Generic CEGIS procedure. See 'genericCEGIS' for more details.
 --
