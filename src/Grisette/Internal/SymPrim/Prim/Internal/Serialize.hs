@@ -64,7 +64,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
-  ( IsSymbolKind (decideSymbolKind),
+  ( FPBinaryOp,
+    FPRoundingBinaryOp,
+    FPRoundingUnaryOp,
+    FPTrait,
+    FPUnaryOp,
+    IsSymbolKind (decideSymbolKind),
     ModelValue (ModelValue),
     PEvalBitCastTerm,
     PEvalBitwiseTerm,
@@ -1116,7 +1121,7 @@ constructBitCastTerm (SomeTerm (t1 :: Term a)) retType =
       ( forall n. (KnownNat n, 1 <= n) => PEvalBitCastTerm (bv n) (bv2 n),
         PEvalBitCastTerm (bv 1) Bool,
         forall n eb sb.
-        (KnownNat n, 1 <= n, ValidFP eb sb, eb + sb ~ n) =>
+        (KnownNat n, 1 <= n, ValidFP eb sb, (eb + sb) ~ n) =>
         PEvalBitCastTerm (bv n) (FP eb sb),
         KnownNat n,
         1 <= n,
@@ -1437,7 +1442,7 @@ statefulDeserializeSomeTerm = do
           deserializeIntegralBinary ktTmId remIntegralTerm
       | tag == terminalTag -> return Nothing
       | tag == fpTraitTermTag -> do
-          trait <- deserialize
+          trait <- deserialize @FPTrait
           t <- deserializeTerm
           asFPTypeTerm t $ \t' ->
             return $ Just (someTerm $ fpTraitTerm trait t', ktTmId)
@@ -1461,25 +1466,25 @@ statefulDeserializeSomeTerm = do
           asFloatingFractionalTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
             return $ Just (someTerm $ powerTerm t1' t2', ktTmId)
       | tag == fpUnaryTermTag -> do
-          op <- deserialize
+          op <- deserialize @FPUnaryOp
           t <- deserializeTerm
           asFPTypeTerm t $ \t' ->
             return $ Just (someTerm $ fpUnaryTerm op t', ktTmId)
       | tag == fpBinaryTermTag -> do
-          op <- deserialize
+          op <- deserialize @FPBinaryOp
           t1 <- deserializeTerm
           t2 <- deserializeTerm
           asFPTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
             return $ Just (someTerm $ fpBinaryTerm op t1' t2', ktTmId)
       | tag == fpRoundingUnaryTermTag -> do
-          op <- deserialize
+          op <- deserialize @FPRoundingUnaryOp
           trd <- deserializeTerm
           t <- deserializeTerm
           asFPRoundingTerm trd $ \trd' ->
             asFPTypeTerm t $ \t' ->
               return $ Just (someTerm $ fpRoundingUnaryTerm op trd' t', ktTmId)
       | tag == fpRoundingBinaryTermTag -> do
-          op <- deserialize
+          op <- deserialize @FPRoundingBinaryOp
           trd <- deserializeTerm
           t1 <- deserializeTerm
           t2 <- deserializeTerm

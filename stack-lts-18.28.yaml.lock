@@ -18,6 +18,13 @@ packages:
       size: 7975
   original:
     hackage: doctest-0.18.2
+- completed:
+    hackage: unordered-containers-0.2.17.0@sha256:50d72c7945df6389d0bb683dea1c7529b28b26f8c632de186437d1e866af8cf8,3302
+    pantry-tree:
+      sha256: b556ac42b7294152a7a6854689310ba70ad7fb1462f5cb0051a188b83433f45c
+      size: 1517
+  original:
+    hackage: unordered-containers-0.2.17.0
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
