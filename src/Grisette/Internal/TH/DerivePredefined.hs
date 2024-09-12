@@ -31,6 +31,7 @@ import Language.Haskell.TH (Type (PromotedInfixT, PromotedUInfixT))
 #endif
 
 import Control.DeepSeq (NFData, NFData1)
+import Data.Bytes.Serial (Serial)
 import Data.Functor.Classes (Eq1, Ord1, Show1)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1)
@@ -108,7 +109,6 @@ import Language.Haskell.TH.Datatype
     reifyDatatype,
   )
 import Language.Haskell.TH.Syntax (Lift)
-import Data.Bytes.Serial (Serial)
 
 newtypeDefaultStrategy :: Name -> Q Strategy
 newtypeDefaultStrategy nm
