@@ -42,6 +42,8 @@ where
 
 import Control.Applicative (Alternative ((<|>)))
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Functor.Classes
   ( Eq1 (liftEq),
     Show1 (liftShowsPrec),
@@ -49,6 +51,7 @@ import Data.Functor.Classes
   )
 import qualified Data.HashMap.Lazy as HML
 import Data.Hashable (Hashable (hashWithSalt))
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
@@ -272,6 +275,18 @@ data Union a where
     -- | Merged 'UnionBase'
     UnionBase a ->
     Union a
+
+instance (Mergeable a, Serial a) => Serial (Union a) where
+  serialize = serialize . unionBase
+  deserialize = UMrg rootStrategy <$> deserialize
+
+instance (Mergeable a, Serial a) => Cereal.Serialize (Union a) where
+  put = serialize
+  get = deserialize
+
+instance (Mergeable a, Serial a) => Binary.Binary (Union a) where
+  put = serialize
+  get = deserialize
 
 -- | Get the (possibly empty) cached merging strategy.
 unionMergingStrategy :: Union a -> Maybe (MergingStrategy a)
