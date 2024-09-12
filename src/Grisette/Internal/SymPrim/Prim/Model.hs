@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -32,6 +33,7 @@ module Grisette.Internal.SymPrim.Prim.Model
   )
 where
 
+import Control.DeepSeq (NFData)
 import qualified Data.Binary as Binary
 import Data.Bytes.Serial (Serial (deserialize, serialize))
 import qualified Data.HashMap.Strict as M
@@ -90,6 +92,7 @@ import Grisette.Internal.SymPrim.Prim.Term
     unsafeFromModelValue,
     withSymbolSupported,
   )
+import Language.Haskell.TH.Syntax (Lift)
 
 -- $setup
 -- >>> import Grisette.Core
@@ -144,8 +147,8 @@ instance Show (SymbolSet knd) where
 newtype Model = Model
   { unModel :: M.HashMap SomeTypedAnySymbol ModelValue
   }
-  deriving stock (Eq, Generic)
-  deriving newtype (Hashable)
+  deriving stock (Eq, Generic, Lift)
+  deriving newtype (Hashable, NFData)
   deriving anyclass (Serial)
 
 instance Cereal.Serialize Model where

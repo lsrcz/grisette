@@ -500,6 +500,12 @@ defaultValueDynamic _ = toModelValue (defaultValue @t)
 data ModelValue where
   ModelValue :: forall v. (SupportedPrim v) => v -> ModelValue
 
+instance NFData ModelValue where
+  rnf (ModelValue v) = rnf v
+
+instance Lift ModelValue where
+  liftTyped (ModelValue v) = [||ModelValue v||]
+
 instance Show ModelValue where
   show (ModelValue (v :: v)) = pformatCon v ++ " :: " ++ show (primTypeRep @v)
 
@@ -1025,6 +1031,9 @@ type SomeTypedAnySymbol = SomeTypedSymbol 'AnyKind
 instance NFData (SomeTypedSymbol knd) where
   rnf (SomeTypedSymbol s) = rnf s
   {-# INLINE rnf #-}
+
+instance Lift (SomeTypedSymbol knd) where
+  liftTyped (SomeTypedSymbol s) = [||SomeTypedSymbol s||]
 
 instance Eq (SomeTypedSymbol knd) where
   (SomeTypedSymbol (s1 :: TypedSymbol knd a))

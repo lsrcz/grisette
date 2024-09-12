@@ -67,7 +67,12 @@ import Control.Concurrent.STM
     tryTakeTMVar,
   )
 import Control.Concurrent.STM.TChan (TChan, newTChan, readTChan, writeTChan)
-import Control.Exception (handle, throwTo)
+import Control.Exception
+  ( Exception (displayException),
+    SomeException,
+    handle,
+    throwTo,
+  )
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader
   ( MonadReader (ask),
@@ -92,6 +97,7 @@ import qualified Data.SBV.Dynamic as SBVD
 import qualified Data.SBV.Internals as SBVI
 import qualified Data.SBV.Trans as SBVT
 import qualified Data.SBV.Trans.Control as SBVTC
+import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (ExitSuccess))
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.Backend.QuantifiedStack
@@ -419,11 +425,13 @@ instance ConfigurableSolver GrisetteSMTConfig SBVSolverHandle where
     sbvSolverHandleOutChan <- atomically newTChan
     sbvSolverHandleStatus <- newTMVarIO SBVSolverNormal
     sbvSolverHandleMonad <- async $ do
-      let handler e =
+      let handler (e :: SomeException) =
             liftIO $
               atomically $ do
                 setTerminated sbvSolverHandleStatus
-                writeTChan sbvSolverHandleOutChan (Left (SolvingError e))
+                writeTChan
+                  sbvSolverHandleOutChan
+                  (Left (SolvingError $ T.pack $ displayException e))
       handle handler $ runSBVIncremental config $ do
         let loop = do
               nextFormula <-
