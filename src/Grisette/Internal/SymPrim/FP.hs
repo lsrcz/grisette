@@ -234,8 +234,7 @@ withUnsafeValidFP r =
                   )
            ) of
           Refl -> r
-        else
-          error invalidFPMessage
+        else error invalidFPMessage
 
 -- | IEEE 754 floating-point number with @eb@ exponent bits and @sb@ significand
 -- bits.

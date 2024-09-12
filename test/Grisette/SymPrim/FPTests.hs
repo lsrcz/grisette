@@ -1153,8 +1153,7 @@ fpTests =
             then case (decode . encode) x of
               Right (v :: FP 8 24) -> assertBool "Should be NaN" $ fpIsNaN v
               Left err -> fail err
-            else
-              Right x @?= (decode . encode) x
+            else Right x @?= (decode . encode) x
     ]
 
 newtype SameFPObj = SameFPObj FP32 deriving newtype (Show, Num, IEEEFPConstants)
