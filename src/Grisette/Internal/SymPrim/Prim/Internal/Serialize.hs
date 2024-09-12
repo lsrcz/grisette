@@ -33,7 +33,6 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Serialize as Cereal
 import Data.Word (Word8)
-import Debug.Trace (traceShow)
 import GHC.Generics (Generic)
 import GHC.Natural (Natural)
 import GHC.Stack (HasCallStack)
@@ -1516,20 +1515,19 @@ statefulDeserializeSomeTerm = do
           sb <- deserialize @Natural
           trd <- deserializeTerm
           tt <- deserializeTerm
-          traceShow (eb, sb, trd, tt) $
-            if checkDynamicValidFP eb sb
-              then case (mkNatRepr eb, mkNatRepr sb) of
-                ( SomeNatRepr (_ :: NatRepr eb),
-                  SomeNatRepr (_ :: NatRepr sb)
-                  ) ->
-                    withUnsafeValidFP @eb @sb $
-                      asFPRoundingTerm trd $ \trd' -> asNumTypeTerm tt $ \tt' ->
-                        return $
-                          Just
-                            ( someTerm (toFPTerm trd' tt' :: Term (FP eb sb)),
-                              ktTmId
-                            )
-              else error "statefulDeserializeSomeTerm: invalid FP type"
+          if checkDynamicValidFP eb sb
+            then case (mkNatRepr eb, mkNatRepr sb) of
+              ( SomeNatRepr (_ :: NatRepr eb),
+                SomeNatRepr (_ :: NatRepr sb)
+                ) ->
+                  withUnsafeValidFP @eb @sb $
+                    asFPRoundingTerm trd $ \trd' -> asNumTypeTerm tt $ \tt' ->
+                      return $
+                        Just
+                          ( someTerm (toFPTerm trd' tt' :: Term (FP eb sb)),
+                            ktTmId
+                          )
+            else error "statefulDeserializeSomeTerm: invalid FP type"
       | otherwise ->
           error $ "statefulDeserializeSomeTerm: unknown tag: " <> show tag
   case r of
