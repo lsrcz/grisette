@@ -108,6 +108,7 @@ import Language.Haskell.TH.Datatype
     reifyDatatype,
   )
 import Language.Haskell.TH.Syntax (Lift)
+import Data.Bytes.Serial (Serial)
 
 newtypeDefaultStrategy :: Name -> Q Strategy
 newtypeDefaultStrategy nm
@@ -126,6 +127,7 @@ dataDefaultStrategy nm
   | nm == ''Lift = return $ Stock nm
   | nm == ''NFData = return $ Anyclass nm
   | nm == ''Hashable = return $ Anyclass nm
+  | nm == ''Serial = return $ Anyclass nm
   | nm == ''ToCon = return $ ViaDefault nm
   | nm == ''ToSym = return $ ViaDefault nm
   | nm == ''AllSyms = return $ ViaDefault nm
@@ -146,6 +148,7 @@ allNeededConstraints nm
   | nm == ''Lift = [''Lift]
   | nm == ''NFData = [''NFData, ''NFData1]
   | nm == ''Hashable = [''Hashable, ''Hashable1]
+  | nm == ''Serial = [''Serial]
   | nm == ''AllSyms = [''AllSyms, ''AllSyms1]
   | nm == ''EvalSym =
       [''EvalSym, ''EvalSym1, ''Mergeable, ''Mergeable1]
@@ -272,6 +275,7 @@ allGrisetteClasses =
     ''Lift,
     ''NFData,
     ''Hashable,
+    ''Serial,
     ''AllSyms,
     ''EvalSym,
     ''ExtractSym,
@@ -303,6 +307,7 @@ derive = flip derivePredefinedMultipleClasses
 -- * 'Lift'
 -- * 'NFData'
 -- * 'Hashable'
+-- * 'Serial'
 -- * 'AllSyms'
 -- * 'EvalSym'
 -- * 'ExtractSym'
