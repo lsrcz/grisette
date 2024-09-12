@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -30,11 +32,14 @@ module Grisette.Internal.SymPrim.Prim.Model
   )
 where
 
+import qualified Data.Binary as Binary
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
 import Data.Hashable (Hashable)
 import Data.List (sort, sortOn)
 import Data.Proxy (Proxy (Proxy))
+import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic)
 import Grisette.Internal.Core.Data.Class.ModelOps
   ( ModelOps
@@ -70,7 +75,8 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     TypedAnySymbol,
   )
 import Grisette.Internal.SymPrim.Prim.Term
-  ( ModelValue,
+  ( IsSymbolKind,
+    ModelValue,
     SomeTypedSymbol (SomeTypedSymbol),
     SupportedPrim (defaultValue),
     TypedSymbol,
@@ -96,7 +102,17 @@ import Grisette.Internal.SymPrim.Prim.Term
 newtype SymbolSet knd = SymbolSet
   { unSymbolSet :: S.HashSet (SomeTypedSymbol knd)
   }
-  deriving (Eq, Generic, Hashable)
+  deriving (Eq, Generic)
+  deriving newtype (Hashable)
+  deriving anyclass (Serial)
+
+instance (IsSymbolKind knd) => Cereal.Serialize (SymbolSet knd) where
+  put = serialize
+  get = deserialize
+
+instance (IsSymbolKind knd) => Binary.Binary (SymbolSet knd) where
+  put = serialize
+  get = deserialize
 
 -- | Set of constant symbols. Excluding unintepreted functions.
 type ConstantSymbolSet = SymbolSet 'ConstantKind
@@ -128,7 +144,17 @@ instance Show (SymbolSet knd) where
 newtype Model = Model
   { unModel :: M.HashMap SomeTypedAnySymbol ModelValue
   }
-  deriving (Eq, Generic, Hashable)
+  deriving stock (Eq, Generic)
+  deriving newtype (Hashable)
+  deriving anyclass (Serial)
+
+instance Cereal.Serialize Model where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary Model where
+  put = serialize
+  get = deserialize
 
 instance Semigroup Model where
   Model m1 <> Model m2 = Model $ M.union m1 m2

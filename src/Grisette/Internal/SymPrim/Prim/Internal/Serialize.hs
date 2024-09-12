@@ -65,6 +65,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (decideSymbolKind),
+    ModelValue (ModelValue),
     PEvalBitCastTerm,
     PEvalBitwiseTerm,
     PEvalDivModIntegralTerm,
@@ -1876,6 +1877,32 @@ instance (SupportedPrim a) => Cereal.Serialize (Term a) where
   get = deserialize
 
 instance (SupportedPrim a) => Binary.Binary (Term a) where
+  put = serialize
+  get = deserialize
+
+instance Serial ModelValue where
+  serialize (ModelValue (v :: v)) = do
+    let kt = knownType (Proxy @v)
+    serializeKnownType kt
+    case witnessKnownType kt of
+      KnownTypeWitness (Proxy :: Proxy v1) ->
+        case eqTypeRep (primTypeRep @v) (typeRep @v1) of
+          Just HRefl -> serialize v
+          Nothing ->
+            error
+              "serialize ModelValue: should not happen: type mismatch"
+  deserialize = do
+    kt <- deserializeKnownType
+    case witnessKnownType kt of
+      KnownTypeWitness (Proxy :: Proxy v) -> do
+        v <- deserialize @v
+        return $ ModelValue v
+
+instance Cereal.Serialize ModelValue where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary ModelValue where
   put = serialize
   get = deserialize
 
