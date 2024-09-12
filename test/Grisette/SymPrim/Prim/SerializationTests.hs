@@ -1,9 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Grisette.SymPrim.Prim.SerializationTests (serializationTests) where
 
+import Data.Data (Proxy (Proxy))
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Serialize (Serialize, decode, encode)
 import Grisette
   ( AlgReal,
@@ -19,31 +22,61 @@ import Grisette
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP)
 import Grisette.Internal.SymPrim.Prim.Term
-  ( FPTrait (FPIsNaN),
+  ( FPBinaryOp (FPMinimum),
+    FPRoundingBinaryOp (FPAdd),
+    FPRoundingUnaryOp (FPSqrt),
+    FPTrait (FPIsNaN, FPIsNegativeInfinite),
+    FPUnaryOp (FPAbs),
+    FloatingUnaryOp (FloatingSin),
     Term,
     absNumTerm,
     addNumTerm,
     andBitsTerm,
     andTerm,
+    applyTerm,
+    bitCastOrTerm,
+    bitCastTerm,
+    bvConcatTerm,
+    bvSelectTerm,
+    bvsignExtendTerm,
+    bvzeroExtendTerm,
     complementBitsTerm,
     conTerm,
+    distinctTerm,
+    divIntegralTerm,
     eqTerm,
     existsTerm,
+    fdivTerm,
+    floatingUnaryTerm,
     forallTerm,
+    fpBinaryTerm,
+    fpFMATerm,
+    fpRoundingBinaryTerm,
+    fpRoundingUnaryTerm,
+    fpTraitTerm,
+    fpUnaryTerm,
+    fromFPOrTerm,
+    fromIntegralTerm,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
+    modIntegralTerm,
     negNumTerm,
     notTerm,
     orBitsTerm,
     orTerm,
     pevalFPTraitTerm,
+    powerTerm,
+    quotIntegralTerm,
+    recipTerm,
+    remIntegralTerm,
     rotateLeftTerm,
     rotateRightTerm,
     shiftLeftTerm,
     shiftRightTerm,
     signumNumTerm,
     ssymTerm,
+    toFPTerm,
     xorBitsTerm,
   )
 import Test.Framework (Test, testGroup)
@@ -117,6 +150,10 @@ serializationTests =
       testCase "EqTerm" $
         assertSerialization $
           eqTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "DistinctTerm" $
+        assertSerialization $
+          distinctTerm $
+            (ssymTerm "a" :: Term Integer) :| [ssymTerm "b", ssymTerm "c"],
       testCase "ITETerm" $
         assertSerialization $
           iteTerm (ssymTerm "a") (ssymTerm "b" :: Term Integer) (ssymTerm "c"),
@@ -164,7 +201,204 @@ serializationTests =
           rotateLeftTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
       testCase "rotateRightTerm" $
         assertSerialization $
-          rotateRightTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b")
+          rotateRightTerm (ssymTerm "a" :: Term (WordN 8)) (ssymTerm "b"),
+      testCase "bitCastTerm" $ do
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term Bool) :: Term (WordN 1))
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term Bool) :: Term (IntN 1))
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term (WordN 1)) :: Term Bool)
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term (IntN 1)) :: Term Bool)
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term (WordN 8)) :: Term (FP 2 6))
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term (WordN 8)) :: Term (IntN 8))
+        assertSerialization
+          (bitCastTerm (ssymTerm "a" :: Term (IntN 8)) :: Term (FP 2 6)),
+      testCase "bitCastOrTerm" $ do
+        assertSerialization
+          ( bitCastOrTerm
+              (ssymTerm "d" :: Term (WordN 8))
+              (ssymTerm "a" :: Term (FP 2 6))
+          )
+        assertSerialization
+          ( bitCastOrTerm
+              (ssymTerm "d" :: Term (IntN 8))
+              (ssymTerm "a" :: Term (FP 2 6))
+          ),
+      testCase "bvConcatTerm" $
+        assertSerialization $
+          bvConcatTerm
+            (ssymTerm "d" :: Term (WordN 8))
+            (ssymTerm "a" :: Term (WordN 8)),
+      testCase "bvSelectTerm" $
+        assertSerialization $
+          bvSelectTerm
+            (Proxy @2)
+            (Proxy @3)
+            (ssymTerm "b" :: Term (WordN 8)),
+      testCase "bvExtendTerm" $ do
+        assertSerialization $
+          bvsignExtendTerm
+            (Proxy @16)
+            (ssymTerm "b" :: Term (WordN 8))
+        assertSerialization $
+          bvzeroExtendTerm
+            (Proxy @16)
+            (ssymTerm "b" :: Term (WordN 8)),
+      testCase "applyTerm" $ do
+        assertSerialization $
+          applyTerm (ssymTerm "a" :: Term (Integer =-> Integer)) (ssymTerm "b")
+        assertSerialization $
+          applyTerm (ssymTerm "a" :: Term (Integer --> Integer)) (ssymTerm "b"),
+      testCase "divIntegralTerm" $
+        assertSerialization $
+          divIntegralTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "modIntegralTerm" $
+        assertSerialization $
+          modIntegralTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "quotIntegralTerm" $
+        assertSerialization $
+          quotIntegralTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "remIntegralTerm" $
+        assertSerialization $
+          remIntegralTerm (ssymTerm "a" :: Term Integer) (ssymTerm "b"),
+      testCase "fpTraitTerm" $
+        assertSerialization $
+          fpTraitTerm FPIsNegativeInfinite (ssymTerm "a" :: Term (FP 2 6)),
+      testCase "fdivTerm" $
+        assertSerialization $
+          fdivTerm (ssymTerm "a" :: Term (FP 2 6)) (ssymTerm "b"),
+      testCase "recipTerm" $
+        assertSerialization $
+          recipTerm (ssymTerm "a" :: Term (FP 2 6)),
+      testCase "floatingUnaryTerm" $
+        assertSerialization $
+          floatingUnaryTerm FloatingSin (ssymTerm "a" :: Term (FP 2 6)),
+      testCase "powerTerm" $
+        assertSerialization $
+          powerTerm (ssymTerm "a" :: Term (FP 2 6)) (ssymTerm "b"),
+      testCase "fpUnaryTerm" $
+        assertSerialization $
+          fpUnaryTerm FPAbs (ssymTerm "a" :: Term (FP 2 6)),
+      testCase "fpBinaryTerm" $
+        assertSerialization $
+          fpBinaryTerm FPMinimum (ssymTerm "a" :: Term (FP 2 6)) (ssymTerm "b"),
+      testCase "fpRoundingUnaryTerm" $
+        assertSerialization $
+          fpRoundingUnaryTerm
+            FPSqrt
+            (ssymTerm "a")
+            (ssymTerm "b" :: Term (FP 2 6)),
+      testCase "fpRoundingBinaryTerm" $
+        assertSerialization $
+          fpRoundingBinaryTerm
+            FPAdd
+            (ssymTerm "a")
+            (ssymTerm "b" :: Term (FP 2 6))
+            (ssymTerm "c"),
+      testCase "fpFMATerm" $
+        assertSerialization $
+          fpFMATerm
+            (ssymTerm "a")
+            (ssymTerm "b" :: Term (FP 2 6))
+            (ssymTerm "c")
+            (ssymTerm "d"),
+      testCase "fromIntegralTerm" $ do
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term Integer) :: Term Integer)
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term Integer) :: Term AlgReal)
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term Integer) :: Term (WordN 8))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term Integer) :: Term (IntN 8))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term Integer) :: Term (FP 8 24))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (WordN 8)) :: Term Integer)
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (WordN 8)) :: Term AlgReal)
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (WordN 8)) :: Term (WordN 8))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (WordN 8)) :: Term (IntN 8))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (WordN 8)) :: Term (FP 8 24))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (IntN 8)) :: Term Integer)
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (IntN 8)) :: Term AlgReal)
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (IntN 8)) :: Term (WordN 8))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (IntN 8)) :: Term (IntN 8))
+        assertSerialization
+          (fromIntegralTerm (ssymTerm "a" :: Term (IntN 8)) :: Term (FP 8 24)),
+      testCase "fromFPOrTerm" $ do
+        assertSerialization
+          ( fromFPOrTerm
+              (ssymTerm "a" :: Term Integer)
+              (ssymTerm "r")
+              (ssymTerm "b" :: Term (FP 8 24))
+          )
+        assertSerialization
+          ( fromFPOrTerm
+              (ssymTerm "a" :: Term AlgReal)
+              (ssymTerm "r")
+              (ssymTerm "b" :: Term (FP 8 24))
+          )
+        assertSerialization
+          ( fromFPOrTerm
+              (ssymTerm "a" :: Term (WordN 8))
+              (ssymTerm "r")
+              (ssymTerm "b" :: Term (FP 8 24))
+          )
+        assertSerialization
+          ( fromFPOrTerm
+              (ssymTerm "a" :: Term (IntN 8))
+              (ssymTerm "r")
+              (ssymTerm "b" :: Term (FP 8 24))
+          )
+        assertSerialization
+          ( fromFPOrTerm
+              (ssymTerm "a" :: Term (FP 11 53))
+              (ssymTerm "r")
+              (ssymTerm "b" :: Term (FP 8 24))
+          ),
+      testCase "toFPTerm" $ do
+        assertSerialization
+          ( toFPTerm
+              (ssymTerm "r")
+              (ssymTerm "a" :: Term Integer) ::
+              Term (FP 8 24)
+          )
+        assertSerialization
+          ( toFPTerm
+              (ssymTerm "r")
+              (ssymTerm "a" :: Term AlgReal) ::
+              Term (FP 8 24)
+          )
+        assertSerialization
+          ( toFPTerm
+              (ssymTerm "r")
+              (ssymTerm "a" :: Term (WordN 8)) ::
+              Term (FP 8 24)
+          )
+        assertSerialization
+          ( toFPTerm
+              (ssymTerm "r")
+              (ssymTerm "a" :: Term (IntN 8)) ::
+              Term (FP 8 24)
+          )
+        assertSerialization
+          ( toFPTerm
+              (ssymTerm "r")
+              (ssymTerm "a" :: Term (FP 11 53)) ::
+              Term (FP 8 24)
+          )
     ]
 
 t1 :: Integer =-> Integer

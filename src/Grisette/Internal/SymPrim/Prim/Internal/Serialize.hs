@@ -1,14 +1,19 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Internal.SymPrim.Prim.Internal.Serialize () where
 
@@ -22,15 +27,17 @@ import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Foldable (traverse_)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashSet as HS
-import Data.Hashable (Hashable)
+import Data.Hashable (Hashable (hashWithSalt))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Serialize as Cereal
 import Data.Word (Word8)
+import Debug.Trace (traceShow)
+import GHC.Generics (Generic)
 import GHC.Natural (Natural)
 import GHC.Stack (HasCallStack)
-import GHC.TypeNats (KnownNat, natVal, type (<=))
+import GHC.TypeNats (KnownNat, natVal, type (+), type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
@@ -43,7 +50,14 @@ import Grisette.Internal.SymPrim.FP
   )
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Caches (Id)
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.BVPEval ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitCastTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalBitwiseTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalDivModIntegralTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFloatingTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFractionalTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFromIntegralTerm ()
+import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalIEEEFPConvertibleTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalNumTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalRotateTerm ()
@@ -51,7 +65,13 @@ import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalShiftTerm ()
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.SupportedPrim ()
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (decideSymbolKind),
+    PEvalBitCastTerm,
     PEvalBitwiseTerm,
+    PEvalDivModIntegralTerm,
+    PEvalFloatingTerm,
+    PEvalFractionalTerm,
+    PEvalFromIntegralTerm,
+    PEvalIEEEFPConvertibleTerm,
     PEvalNumTerm,
     PEvalOrdTerm,
     PEvalRotateTerm,
@@ -65,25 +85,49 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         AddNumTerm,
         AndBitsTerm,
         AndTerm,
+        ApplyTerm,
+        BVConcatTerm,
+        BVExtendTerm,
+        BVSelectTerm,
+        BitCastOrTerm,
+        BitCastTerm,
         ComplementBitsTerm,
         ConTerm,
+        DistinctTerm,
+        DivIntegralTerm,
         EqTerm,
         ExistsTerm,
+        FPBinaryTerm,
+        FPFMATerm,
+        FPRoundingBinaryTerm,
+        FPRoundingUnaryTerm,
+        FPTraitTerm,
+        FPUnaryTerm,
+        FdivTerm,
+        FloatingUnaryTerm,
         ForallTerm,
+        FromFPOrTerm,
+        FromIntegralTerm,
         ITETerm,
         LeOrdTerm,
         LtOrdTerm,
+        ModIntegralTerm,
         MulNumTerm,
         NegNumTerm,
         NotTerm,
         OrBitsTerm,
         OrTerm,
+        PowerTerm,
+        QuotIntegralTerm,
+        RecipTerm,
+        RemIntegralTerm,
         RotateLeftTerm,
         RotateRightTerm,
         ShiftLeftTerm,
         ShiftRightTerm,
         SignumNumTerm,
         SymTerm,
+        ToFPTerm,
         XorBitsTerm
       ),
     TypedAnySymbol,
@@ -93,21 +137,43 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     addNumTerm,
     andBitsTerm,
     andTerm,
+    applyTerm,
+    bitCastOrTerm,
+    bitCastTerm,
+    bvConcatTerm,
+    bvExtendTerm,
+    bvSelectTerm,
     complementBitsTerm,
     conTerm,
     distinctTerm,
+    divIntegralTerm,
     eqTerm,
     existsTerm,
+    fdivTerm,
+    floatingUnaryTerm,
     forallTerm,
+    fpBinaryTerm,
+    fpFMATerm,
+    fpRoundingBinaryTerm,
+    fpRoundingUnaryTerm,
+    fpTraitTerm,
+    fpUnaryTerm,
+    fromFPOrTerm,
+    fromIntegralTerm,
     introSupportedPrimConstraint,
     iteTerm,
     leOrdTerm,
     ltOrdTerm,
+    modIntegralTerm,
     mulNumTerm,
     negNumTerm,
     notTerm,
     orBitsTerm,
     orTerm,
+    powerTerm,
+    quotIntegralTerm,
+    recipTerm,
+    remIntegralTerm,
     rotateLeftTerm,
     rotateRightTerm,
     shiftLeftTerm,
@@ -116,6 +182,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
     someTypedSymbol,
     symTerm,
     termId,
+    toFPTerm,
     withSupportedPrimTypeable,
     xorBitsTerm,
   )
@@ -126,9 +193,16 @@ import Grisette.Internal.SymPrim.Prim.SomeTerm
 import Grisette.Internal.SymPrim.Prim.TermUtils (castTerm)
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
 import Grisette.Internal.Utils.Parameterized
-  ( NatRepr,
+  ( KnownProof (KnownProof),
+    LeqProof (LeqProof),
+    NatRepr,
+    SomeNatRepr (SomeNatRepr),
     SomePositiveNatRepr (SomePositiveNatRepr),
+    mkNatRepr,
     mkPositiveNatRepr,
+    unsafeAxiom,
+    unsafeKnownProof,
+    unsafeLeqProof,
   )
 import Type.Reflection
   ( SomeTypeRep (SomeTypeRep),
@@ -139,6 +213,7 @@ import Type.Reflection
     typeRep,
     pattern App,
     pattern Con,
+    type (:~:) (Refl),
     type (:~~:) (HRefl),
   )
 
@@ -150,6 +225,28 @@ data KnownNonFuncType where
   FPType :: (ValidFP eb sb) => Proxy eb -> Proxy sb -> KnownNonFuncType
   FPRoundingModeType :: KnownNonFuncType
   AlgRealType :: KnownNonFuncType
+
+instance Eq KnownNonFuncType where
+  BoolType == BoolType = True
+  IntegerType == IntegerType = True
+  WordNType p == WordNType q = natVal p == natVal q
+  IntNType p == IntNType q = natVal p == natVal q
+  FPType p q == FPType r s = natVal p == natVal r && natVal q == natVal s
+  FPRoundingModeType == FPRoundingModeType = True
+  AlgRealType == AlgRealType = True
+  _ == _ = False
+
+instance Hashable KnownNonFuncType where
+  hashWithSalt s BoolType = s `hashWithSalt` (0 :: Int)
+  hashWithSalt s IntegerType = s `hashWithSalt` (1 :: Int)
+  hashWithSalt s (WordNType p) =
+    s `hashWithSalt` (2 :: Int) `hashWithSalt` natVal p
+  hashWithSalt s (IntNType p) =
+    s `hashWithSalt` (3 :: Int) `hashWithSalt` natVal p
+  hashWithSalt s (FPType p q) =
+    s `hashWithSalt` (4 :: Int) `hashWithSalt` natVal p `hashWithSalt` natVal q
+  hashWithSalt s FPRoundingModeType = s `hashWithSalt` (5 :: Int)
+  hashWithSalt s AlgRealType = s `hashWithSalt` (6 :: Int)
 
 data KnownNonFuncTypeWitness where
   KnownNonFuncTypeWitness ::
@@ -180,6 +277,7 @@ data KnownType where
   NonFuncType :: KnownNonFuncType -> KnownType
   TabularFunType :: [KnownNonFuncType] -> KnownType
   GeneralFunType :: [KnownNonFuncType] -> KnownType
+  deriving (Eq, Generic, Hashable)
 
 data KnownTypeWitness where
   KnownTypeWitness ::
@@ -514,12 +612,12 @@ deserializeKnownNonFuncType = do
     1 -> return IntegerType
     2 -> do
       n <- deserialize @Natural
-      when (n == 0) $ fail "WordN 0 is not allowed"
+      when (n == 0) $ fail "deserializeKnownNonFuncType: WordN 0 is not allowed"
       case mkPositiveNatRepr n of
         SomePositiveNatRepr (_ :: NatRepr n) -> return $ WordNType (Proxy @n)
     3 -> do
       n <- deserialize @Natural
-      when (n == 0) $ fail "IntN 0 is not allowed"
+      when (n == 0) $ fail "deserializeKnownNonFuncType: IntN 0 is not allowed"
       case mkPositiveNatRepr n of
         SomePositiveNatRepr (_ :: NatRepr n) -> return $ IntNType (Proxy @n)
     4 -> do
@@ -533,7 +631,7 @@ deserializeKnownNonFuncType = do
             withUnsafeValidFP @eb @sb $ return $ FPType (Proxy @eb) (Proxy @sb)
     5 -> return FPRoundingModeType
     6 -> return AlgRealType
-    _ -> fail "Unknown type tag"
+    _ -> fail "deserializeKnownNonFuncType: Unknown type tag"
 
 deserializeKnownType :: (MonadGet m) => m KnownType
 deserializeKnownType = do
@@ -548,7 +646,31 @@ deserializeKnownType = do
       n <- getWord8
       nfs <- replicateM (fromIntegral n) deserializeKnownNonFuncType
       return $ GeneralFunType nfs
-    _ -> fail "Unknown type tag"
+    _ -> fail "deserializeKnownType: Unknown type tag"
+
+instance Serial KnownType where
+  serialize = serializeKnownType
+  deserialize = deserializeKnownType
+
+instance Cereal.Serialize KnownType where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary KnownType where
+  put = serialize
+  get = deserialize
+
+instance Serial KnownNonFuncType where
+  serialize = serializeKnownNonFuncType
+  deserialize = deserializeKnownNonFuncType
+
+instance Cereal.Serialize KnownNonFuncType where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary KnownNonFuncType where
+  put = serialize
+  get = deserialize
 
 instance (IsSymbolKind knd) => Serial (SomeTypedSymbol knd) where
   serialize (SomeTypedSymbol tsb@(TypedSymbol sb)) =
@@ -678,6 +800,75 @@ rotateLeftTermTag = 23
 rotateRightTermTag :: Word8
 rotateRightTermTag = 24
 
+bitCastTermTag :: Word8
+bitCastTermTag = 25
+
+bitCastOrTermTag :: Word8
+bitCastOrTermTag = 26
+
+bvConcatTermTag :: Word8
+bvConcatTermTag = 27
+
+bvSelectTermTag :: Word8
+bvSelectTermTag = 28
+
+bvExtendTermTag :: Word8
+bvExtendTermTag = 29
+
+applyTermTag :: Word8
+applyTermTag = 30
+
+divIntegralTermTag :: Word8
+divIntegralTermTag = 31
+
+modIntegralTermTag :: Word8
+modIntegralTermTag = 32
+
+quotIntegralTermTag :: Word8
+quotIntegralTermTag = 33
+
+remIntegralTermTag :: Word8
+remIntegralTermTag = 34
+
+fpTraitTermTag :: Word8
+fpTraitTermTag = 35
+
+fdivTermTag :: Word8
+fdivTermTag = 36
+
+recipTermTag :: Word8
+recipTermTag = 37
+
+floatingUnaryTermTag :: Word8
+floatingUnaryTermTag = 38
+
+powerTermTag :: Word8
+powerTermTag = 39
+
+fpUnaryTermTag :: Word8
+fpUnaryTermTag = 40
+
+fpBinaryTermTag :: Word8
+fpBinaryTermTag = 41
+
+fpRoundingUnaryTermTag :: Word8
+fpRoundingUnaryTermTag = 42
+
+fpRoundingBinaryTermTag :: Word8
+fpRoundingBinaryTermTag = 43
+
+fpFMATermTag :: Word8
+fpFMATermTag = 44
+
+fromIntegralTermTag :: Word8
+fromIntegralTermTag = 45
+
+fromFPOrTermTag :: Word8
+fromFPOrTermTag = 46
+
+toFPTermTag :: Word8
+toFPTermTag = 47
+
 terminalTag :: Word8
 terminalTag = 255
 
@@ -702,21 +893,10 @@ asSameTypeNonEmptyTermList (SomeTerm (t :: Term a) :| ts) f =
           Just r -> r
           Nothing -> error "asSameTypeNonEmptyTermList: type mismatch"
 
-asSameTypeTermPair ::
-  (HasCallStack) =>
-  SomeTerm ->
-  SomeTerm ->
-  (forall b. Term b -> Term b -> r) ->
-  r
-asSameTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
-  case eqTypeRep (primTypeRep @a) (primTypeRep @b) of
-    Just HRefl -> f t1 t2
-    Nothing -> error "asSameTypeTermPair: type mismatch"
-
 asNumTypeTerm ::
   (HasCallStack) =>
   SomeTerm ->
-  (forall n. (PEvalNumTerm n) => Term n -> r) ->
+  (forall n. (PEvalNumTerm n, PEvalIEEEFPConvertibleTerm n) => Term n -> r) ->
   r
 asNumTypeTerm (SomeTerm (t1 :: Term a)) f =
   case ( eqTypeRep ta (typeRep @Integer),
@@ -793,72 +973,384 @@ asBitsTypeTerm (SomeTerm (t1 :: Term a)) f =
     _ -> err
   where
     ta = primTypeRep @a
+    err = error $ "asBitsTypeTerm: unsupported type: " <> show ta
+
+asIntegralTypeTerm ::
+  (HasCallStack) =>
+  SomeTerm ->
+  (forall n. (PEvalDivModIntegralTerm n) => Term n -> r) ->
+  r
+asIntegralTypeTerm (SomeTerm (t1 :: Term a)) f =
+  case eqTypeRep ta (typeRep @Integer) of
+    Just HRefl -> f t1
+    _ -> case ta of
+      App (ta@(Con _) :: TypeRep w) (_ :: TypeRep n) ->
+        case (eqTypeRep ta (typeRep @WordN), eqTypeRep ta (typeRep @IntN)) of
+          (Just HRefl, _) -> withPrim @a $ f t1
+          (_, Just HRefl) -> withPrim @a $ f t1
+          _ -> err
+      _ -> err
+  where
+    ta = primTypeRep @a
     err = error $ "asOrdTypeTerm: unsupported type: " <> show ta
 
-asNumTypeTermPair ::
+asFloatingFractionalTypeTerm ::
   (HasCallStack) =>
   SomeTerm ->
-  SomeTerm ->
-  (forall n. (PEvalNumTerm n) => Term n -> Term n -> r) ->
+  (forall n. (PEvalFloatingTerm n, PEvalFractionalTerm n) => Term n -> r) ->
   r
-asNumTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
-  asNumTypeTerm (SomeTerm t1) $ \(t1' :: Term a1) ->
-    introSupportedPrimConstraint t1' $
-      case (eqTypeRep (primTypeRep @a1) tb) of
-        Just HRefl ->
-          f t1' t2
-        _ -> err
+asFloatingFractionalTypeTerm (SomeTerm (t1 :: Term a)) f =
+  case eqTypeRep ta (typeRep @AlgReal) of
+    Just HRefl -> f t1
+    _ -> case ta of
+      App (App (tf :: TypeRep f) (_ :: TypeRep a0)) (_ :: TypeRep a1) ->
+        case eqTypeRep tf (typeRep @FP) of
+          Just HRefl -> withPrim @a $ f t1
+          _ -> err
+      _ -> err
   where
     ta = primTypeRep @a
-    tb = primTypeRep @b
-    err = error $ "asNumTypeTermPair: unsupported type: " <> show ta <> show tb
+    err = error $ "asFloatingFractionalTypeTerm: unsupported type: " <> show ta
 
-asOrdTypeTermPair ::
+asFPTypeTerm ::
   (HasCallStack) =>
   SomeTerm ->
-  SomeTerm ->
-  (forall n. (PEvalOrdTerm n) => Term n -> Term n -> r) ->
+  (forall eb sb. (ValidFP eb sb) => Term (FP eb sb) -> r) ->
   r
-asOrdTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
-  asOrdTypeTerm (SomeTerm t1) $ \(t1' :: Term a1) ->
-    introSupportedPrimConstraint t1' $
-      case (eqTypeRep (primTypeRep @a1) tb) of
-        Just HRefl ->
-          f t1' t2
+asFPTypeTerm (SomeTerm (t1 :: Term a)) f =
+  case ta of
+    App (App (tf :: TypeRep f) (_ :: TypeRep a0)) (_ :: TypeRep a1) ->
+      case eqTypeRep tf (typeRep @FP) of
+        Just HRefl -> withPrim @a $ f t1
         _ -> err
+    _ -> err
   where
     ta = primTypeRep @a
-    tb = primTypeRep @b
-    err = error $ "asOrdTypeTermPair: unsupported type: " <> show ta <> show tb
+    err = error $ "asFPTypeTerm: unsupported type: " <> show ta
 
-asBitsTypeTermPair ::
-  (HasCallStack) =>
-  SomeTerm ->
-  SomeTerm ->
-  ( forall n.
-    (PEvalBitwiseTerm n, PEvalShiftTerm n, PEvalRotateTerm n) =>
-    Term n ->
-    Term n ->
-    r
-  ) ->
-  r
-asBitsTypeTermPair (SomeTerm (t1 :: Term a)) (SomeTerm (t2 :: Term b)) f =
-  asBitsTypeTerm (SomeTerm t1) $ \(t1' :: Term a1) ->
-    introSupportedPrimConstraint t1' $
-      case (eqTypeRep (primTypeRep @a1) tb) of
-        Just HRefl ->
-          f t1' t2
+asSameType ::
+  (HasCallStack) => Term a -> SomeTerm -> (Term a -> r) -> r
+asSameType (t1 :: Term a) (SomeTerm (t2 :: Term b)) f =
+  introSupportedPrimConstraint t1 $
+    case eqTypeRep (primTypeRep @a) (primTypeRep @b) of
+      Just HRefl -> f t2
+      Nothing -> error "asSameType: type mismatch"
+
+asFPRoundingTerm ::
+  (HasCallStack) => SomeTerm -> (Term FPRoundingMode -> r) -> r
+asFPRoundingTerm (SomeTerm (t1 :: Term a)) f =
+  case eqTypeRep ta (typeRep @FPRoundingMode) of
+    Just HRefl -> f t1
+    _ -> err
+  where
+    ta = primTypeRep @a
+    err = error $ "asFPRoundingTerm: unsupported type: " <> show ta
+
+constructBitCastOrTerm :: (HasCallStack) => SomeTerm -> SomeTerm -> SomeTerm
+constructBitCastOrTerm (SomeTerm (td :: Term d)) (SomeTerm (tv :: Term v)) =
+  withPrim @d $
+    withPrim @v $
+      case (trv, trd) of
+        ( App
+            (App (trfp@(Con _) :: TypeRep fp) (treb :: TypeRep eb))
+            (trsb :: TypeRep sb),
+          App (trbv@(Con _) :: TypeRep bv) (trn :: TypeRep n)
+          ) ->
+            case ( eqTypeRep trfp (typeRep @FP),
+                   eqTypeRep trbv (typeRep @WordN),
+                   eqTypeRep trbv (typeRep @IntN)
+                 ) of
+              (Just HRefl, Just HRefl, _) ->
+                if natVal treb + natVal trsb == natVal trn
+                  then case unsafeAxiom @n @(eb + sb) of
+                    Refl -> someTerm (bitCastOrTerm td tv :: Term d)
+                  else err
+              (Just HRefl, _, Just HRefl) ->
+                if natVal treb + natVal trsb == natVal trn
+                  then case unsafeAxiom @n @(eb + sb) of
+                    Refl -> someTerm (bitCastOrTerm td tv :: Term d)
+                  else err
+              _ -> err
+        _ -> err
+  where
+    trd = primTypeRep @d
+    trv = primTypeRep @v
+    err :: r
+    err =
+      error $
+        "constructBitCastOrTerm: unsupported type: " <> show trd <> show trv
+
+constructBitCastTerm :: (HasCallStack) => SomeTerm -> KnownType -> SomeTerm
+constructBitCastTerm (SomeTerm (t1 :: Term a)) retType =
+  case witnessKnownType retType of
+    KnownTypeWitness (_ :: Proxy b) -> do
+      let tb = primTypeRep @b
+      withPrim @a $ withPrim @b $ case (eqTypeRep ta (typeRep @Bool), ta) of
+        (Just HRefl, _) -> case tb of
+          App (tw@(Con _) :: TypeRep w) (tn :: TypeRep n) ->
+            case ( eqTypeRep tw (typeRep @WordN),
+                   eqTypeRep tw (typeRep @IntN),
+                   eqTypeRep tn (typeRep @1)
+                 ) of
+              (Just HRefl, _, Just HRefl) -> someTerm (bitCastTerm t1 :: Term b)
+              (_, Just HRefl, Just HRefl) -> someTerm (bitCastTerm t1 :: Term b)
+              _ -> err
+          _ -> err
+        (_, App (tw@(Con _) :: TypeRep w) (tn :: TypeRep n)) ->
+          case (eqTypeRep tw (typeRep @WordN), eqTypeRep tw (typeRep @IntN)) of
+            (Just HRefl, _) -> fromBV t1 tn tb (typeRep @IntN)
+            (_, Just HRefl) -> fromBV t1 tn tb (typeRep @WordN)
+            _ -> err
         _ -> err
   where
     ta = primTypeRep @a
-    tb = primTypeRep @b
-    err = error $ "asOrdTypeTermPair: unsupported type: " <> show ta <> show tb
+    err :: r
+    err =
+      error $
+        "constructBitCastTerm: unsupported type: "
+          <> show ta
+          <> show retType
+    fromBV ::
+      forall bv n b bv2.
+      ( forall n. (KnownNat n, 1 <= n) => PEvalBitCastTerm (bv n) (bv2 n),
+        PEvalBitCastTerm (bv 1) Bool,
+        forall n eb sb.
+        (KnownNat n, 1 <= n, ValidFP eb sb, eb + sb ~ n) =>
+        PEvalBitCastTerm (bv n) (FP eb sb),
+        KnownNat n,
+        1 <= n,
+        SupportedPrim b,
+        forall n. (KnownNat n, 1 <= n) => SupportedPrim (bv2 n)
+      ) =>
+      Term (bv n) ->
+      TypeRep n ->
+      TypeRep b ->
+      TypeRep bv2 ->
+      SomeTerm
+    fromBV t1 tn tb tbv2 =
+      case (eqTypeRep tn (typeRep @1), eqTypeRep tb (typeRep @Bool)) of
+        (Just HRefl, Just HRefl) -> someTerm (bitCastTerm t1 :: Term b)
+        _ -> case tb of
+          (App (tw'@(Con _) :: TypeRep w') (tn' :: TypeRep n')) ->
+            case ( eqTypeRep tw' tbv2,
+                   eqTypeRep tn tn'
+                 ) of
+              (Just HRefl, Just HRefl) ->
+                someTerm (bitCastTerm t1 :: Term b)
+              _ -> err
+          ( App
+              (App (tw' :: TypeRep f) (teb :: TypeRep eb))
+              (tsb :: TypeRep sb)
+            ) ->
+              withPrim @b $
+                case (eqTypeRep tw' (typeRep @FP)) of
+                  Just HRefl ->
+                    if natVal teb + natVal tsb == natVal tn
+                      then case unsafeAxiom @n @(eb + sb) of
+                        Refl -> someTerm (bitCastTerm t1 :: Term b)
+                      else err
+                  _ -> err
+          _ -> err
+
+constructBVConcatTerm :: (HasCallStack) => SomeTerm -> SomeTerm -> SomeTerm
+constructBVConcatTerm (SomeTerm (ta :: Term a)) (SomeTerm (tb :: Term b)) =
+  withPrim @a $
+    withPrim @b $
+      case (tra, trb) of
+        ( App (trbv0@(Con _) :: TypeRep bv0) (trn0 :: TypeRep n0),
+          App (trbv1@(Con _) :: TypeRep bv1) (trn1 :: TypeRep n1)
+          ) ->
+            case ( eqTypeRep trbv0 trbv1,
+                   eqTypeRep trbv0 (typeRep @WordN),
+                   eqTypeRep trbv0 (typeRep @IntN)
+                 ) of
+              (Just HRefl, Just HRefl, _) ->
+                case ( unsafeLeqProof @1 @(n0 + n1),
+                       unsafeKnownProof @(n0 + n1) (natVal trn0 + natVal trn1)
+                     ) of
+                  (LeqProof, KnownProof) -> someTerm $ bvConcatTerm ta tb
+              (Just HRefl, _, Just HRefl) ->
+                case ( unsafeLeqProof @1 @(n0 + n1),
+                       unsafeKnownProof @(n0 + n1) (natVal trn0 + natVal trn1)
+                     ) of
+                  (LeqProof, KnownProof) -> someTerm $ bvConcatTerm ta tb
+              _ -> err
+        _ -> err
+  where
+    tra = primTypeRep @a
+    trb = primTypeRep @b
+    err :: SomeTerm
+    err =
+      error $
+        "constructBVConcatTerm: unsupported type: "
+          <> show (primTypeRep @a)
+
+constructBVSelectTerm ::
+  (HasCallStack) => Natural -> Natural -> SomeTerm -> SomeTerm
+constructBVSelectTerm ix w (SomeTerm (ta :: Term a)) =
+  withPrim @a $
+    case tra of
+      (App (trbv@(Con _) :: TypeRep bv) (trn :: TypeRep n)) ->
+        case ( eqTypeRep trbv (typeRep @WordN),
+               eqTypeRep trbv (typeRep @IntN)
+             ) of
+          (Just HRefl, _) -> case (mkNatRepr ix, mkPositiveNatRepr w) of
+            ( SomeNatRepr (nix :: NatRepr ix),
+              SomePositiveNatRepr (nw :: NatRepr w)
+              ) ->
+                if ix + w <= natVal trn
+                  then case unsafeLeqProof @(ix + w) @n of
+                    LeqProof -> someTerm $ bvSelectTerm nix nw ta
+                  else err
+          (_, Just HRefl) -> case (mkNatRepr ix, mkPositiveNatRepr w) of
+            ( SomeNatRepr (nix :: NatRepr ix),
+              SomePositiveNatRepr (nw :: NatRepr w)
+              ) ->
+                if ix + w <= natVal trn
+                  then case unsafeLeqProof @(ix + w) @n of
+                    LeqProof -> someTerm $ bvSelectTerm nix nw ta
+                  else err
+          _ -> err
+      _ -> err
+  where
+    tra = primTypeRep @a
+    err :: SomeTerm
+    err =
+      error $
+        "constructBVSelectTerm: unsupported type: "
+          <> show (primTypeRep @a)
+
+constructBVExtendTerm ::
+  (HasCallStack) => Bool -> Natural -> SomeTerm -> SomeTerm
+constructBVExtendTerm signed r (SomeTerm (ta :: Term a)) =
+  withPrim @a $
+    case tra of
+      (App (trbv@(Con _) :: TypeRep bv) (trn :: TypeRep n)) ->
+        case ( eqTypeRep trbv (typeRep @WordN),
+               eqTypeRep trbv (typeRep @IntN)
+             ) of
+          (Just HRefl, _) -> case (mkPositiveNatRepr r) of
+            (SomePositiveNatRepr (nr :: NatRepr r)) ->
+              if natVal trn <= r
+                then case unsafeLeqProof @n @r of
+                  LeqProof -> someTerm $ bvExtendTerm signed nr ta
+                else err
+          (_, Just HRefl) -> case (mkPositiveNatRepr r) of
+            (SomePositiveNatRepr (nr :: NatRepr r)) ->
+              if natVal trn <= r
+                then case unsafeLeqProof @n @r of
+                  LeqProof -> someTerm $ bvExtendTerm signed nr ta
+                else err
+          _ -> err
+      _ -> err
+  where
+    tra = primTypeRep @a
+    err :: SomeTerm
+    err =
+      error $
+        "constructBVExtendTerm: unsupported type: "
+          <> show (primTypeRep @a)
+
+constructApplyTerm ::
+  (HasCallStack) => SomeTerm -> SomeTerm -> SomeTerm
+constructApplyTerm (SomeTerm (tf :: Term f)) (SomeTerm (ta :: Term a)) =
+  withPrim @f $
+    withPrim @a $
+      case trf of
+        (App (App (trft :: TypeRep ft) (trarg :: TypeRep arg)) _) ->
+          case ( eqTypeRep trft (typeRep @(=->)),
+                 eqTypeRep trft (typeRep @(-->))
+               ) of
+            (Just HRefl, _) -> case eqTypeRep trarg tra of
+              Just HRefl -> someTerm $ applyTerm tf ta
+              Nothing -> err
+            (_, Just HRefl) -> case eqTypeRep trarg tra of
+              Just HRefl -> someTerm $ applyTerm tf ta
+              Nothing -> err
+            _ -> err
+        _ -> err
+  where
+    trf = primTypeRep @f
+    tra = primTypeRep @a
+    err :: SomeTerm
+    err =
+      error $
+        "constructApplyTerm: unsupported type: " <> show trf <> show tra
+
+constructFromIntegralTerm' ::
+  forall a.
+  ( HasCallStack,
+    PEvalFromIntegralTerm a Integer,
+    PEvalFromIntegralTerm a AlgReal,
+    forall n. (KnownNat n, 1 <= n) => PEvalFromIntegralTerm a (WordN n),
+    forall n. (KnownNat n, 1 <= n) => PEvalFromIntegralTerm a (IntN n),
+    forall eb sb. (ValidFP eb sb) => PEvalFromIntegralTerm a (FP eb sb)
+  ) =>
+  Term a ->
+  KnownType ->
+  SomeTerm
+constructFromIntegralTerm' ta retType =
+  case witnessKnownType retType of
+    KnownTypeWitness (_ :: Proxy b) -> do
+      let tb = primTypeRep @b
+      introSupportedPrimConstraint ta $
+        withPrim @a $
+          withPrim @b $
+            case ( eqTypeRep tb (typeRep @Integer),
+                   eqTypeRep tb (typeRep @AlgReal),
+                   tb
+                 ) of
+              (Just HRefl, _, _) -> someTerm (fromIntegralTerm ta :: Term b)
+              (_, Just HRefl, _) -> someTerm (fromIntegralTerm ta :: Term b)
+              (_, _, App tw@Con {} _) ->
+                case ( eqTypeRep tw (typeRep @WordN),
+                       eqTypeRep tw (typeRep @IntN)
+                     ) of
+                  (Just HRefl, _) -> someTerm (fromIntegralTerm ta :: Term b)
+                  (_, Just HRefl) -> someTerm (fromIntegralTerm ta :: Term b)
+                  _ -> err
+              (_, _, App (App tw@Con {} _) _) ->
+                case eqTypeRep tw (typeRep @FP) of
+                  Just HRefl -> someTerm (fromIntegralTerm ta :: Term b)
+                  _ -> err
+              _ -> err
+  where
+    err :: SomeTerm
+    err =
+      introSupportedPrimConstraint ta $
+        error $
+          "constructFromIntegralTerm: unsupported type: "
+            <> show (primTypeRep @a)
+            <> show retType
+
+constructFromIntegralTerm ::
+  (HasCallStack) => SomeTerm -> KnownType -> SomeTerm
+constructFromIntegralTerm (SomeTerm (t1 :: Term a)) retType =
+  withPrim @a $
+    case (eqTypeRep tra (typeRep @Integer), tra) of
+      (Just HRefl, _) -> constructFromIntegralTerm' t1 retType
+      (_, App (trbv :: TypeRep bv) _) ->
+        case ( eqTypeRep trbv (typeRep @WordN),
+               eqTypeRep trbv (typeRep @IntN)
+             ) of
+          (Just HRefl, _) -> constructFromIntegralTerm' t1 retType
+          (_, Just HRefl) -> constructFromIntegralTerm' t1 retType
+          _ -> err
+      _ -> err
+  where
+    tra = primTypeRep @a
+    err :: SomeTerm
+    err = error $ "constructFromIntegralTerm: unsupported type: " <> show tra
+
+knownTypeTermId :: Term a -> (KnownType, Id)
+knownTypeTermId t = introSupportedPrimConstraint t (knownType t, termId t)
 
 statefulDeserializeSomeTerm ::
-  (MonadGet m) => StateT (HM.HashMap Id SomeTerm, SomeTerm) m SomeTerm
+  (MonadGet m) =>
+  StateT (HM.HashMap (KnownType, Id) SomeTerm, SomeTerm) m SomeTerm
 statefulDeserializeSomeTerm = do
   r <- do
-    tmId <- deserialize
+    ktTmId <- deserialize
     tag <- getWord8
     if
       | tag == conTermTag -> do
@@ -866,62 +1358,188 @@ statefulDeserializeSomeTerm = do
           case witnessKnownType knownType of
             KnownTypeWitness (Proxy :: Proxy a) -> do
               tm <- someTerm . conTerm <$> deserialize @a
-              return $ Just (tm, tmId)
+              return $ Just (tm, ktTmId)
       | tag == symTermTag -> do
           SomeTypedSymbol sb <- deserialize @SomeTypedAnySymbol
-          return $ Just (someTerm $ symTerm sb, tmId)
-      | tag == forallTermTag -> deserializeQuantified tmId forallTerm
-      | tag == existsTermTag -> deserializeQuantified tmId existsTerm
+          return $ Just (someTerm $ symTerm sb, ktTmId)
+      | tag == forallTermTag -> deserializeQuantified ktTmId forallTerm
+      | tag == existsTermTag -> deserializeQuantified ktTmId existsTerm
       | tag == notTermTag -> do
           t <- deserializeTerm
-          return $ Just (someTerm $ notTerm $ asBoolTerm t, tmId)
-      | tag == orTermTag -> deserializeBoolBinary tmId orTerm
-      | tag == andTermTag -> deserializeBoolBinary tmId andTerm
+          return $ Just (someTerm $ notTerm $ asBoolTerm t, ktTmId)
+      | tag == orTermTag -> deserializeBoolBinary ktTmId orTerm
+      | tag == andTermTag -> deserializeBoolBinary ktTmId andTerm
       | tag == eqTermTag -> do
-          t1 <- deserializeTerm
+          SomeTerm t1' <- deserializeTerm
           t2 <- deserializeTerm
-          asSameTypeTermPair t1 t2 $ \t1' t2' ->
-            return $ Just (someTerm $ eqTerm t1' t2', tmId)
+          asSameType t1' t2 $ \t2' ->
+            return $ Just (someTerm $ eqTerm t1' t2', ktTmId)
       | tag == distinctTermTag -> do
           ts <- deserializeNonEmptyTermList
           asSameTypeNonEmptyTermList ts $ \ts' ->
-            return $ Just (someTerm $ distinctTerm ts', tmId)
+            return $ Just (someTerm $ distinctTerm ts', ktTmId)
       | tag == iteTermTag -> do
+          t1 <- deserializeTerm
+          SomeTerm t2' <- deserializeTerm
+          t3 <- deserializeTerm
+          asSameType t2' t3 $ \t3' ->
+            return $ Just (someTerm $ iteTerm (asBoolTerm t1) t2' t3', ktTmId)
+      | tag == addNumTermTag -> deserializeNumBinary ktTmId addNumTerm
+      | tag == negNumTermTag -> deserializeNumUnary ktTmId negNumTerm
+      | tag == mulNumTermTag -> deserializeNumBinary ktTmId mulNumTerm
+      | tag == absNumTermTag -> deserializeNumUnary ktTmId absNumTerm
+      | tag == signumNumTermTag -> deserializeNumUnary ktTmId signumNumTerm
+      | tag == ltOrdTermTag -> deserializeOrdBinary ktTmId ltOrdTerm
+      | tag == leOrdTermTag -> deserializeOrdBinary ktTmId leOrdTerm
+      | tag == andBitsTermTag -> deserializeBitsBinary ktTmId andBitsTerm
+      | tag == orBitsTermTag -> deserializeBitsBinary ktTmId orBitsTerm
+      | tag == xorBitsTermTag -> deserializeBitsBinary ktTmId xorBitsTerm
+      | tag == complementBitsTermTag ->
+          deserializeBitsUnary ktTmId complementBitsTerm
+      | tag == shiftLeftTermTag -> deserializeBitsBinary ktTmId shiftLeftTerm
+      | tag == shiftRightTermTag -> deserializeBitsBinary ktTmId shiftRightTerm
+      | tag == rotateLeftTermTag -> deserializeBitsBinary ktTmId rotateLeftTerm
+      | tag == rotateRightTermTag -> deserializeBitsBinary ktTmId rotateRightTerm
+      | tag == bitCastTermTag -> do
+          kt <- deserializeKnownType
+          t1 <- deserializeTerm
+          return $ Just (constructBitCastTerm t1 kt, ktTmId)
+      | tag == bitCastOrTermTag -> do
+          td <- deserializeTerm
+          tv <- deserializeTerm
+          return $ Just (constructBitCastOrTerm td tv, ktTmId)
+      | tag == bvConcatTermTag -> do
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
+          return $ Just (constructBVConcatTerm t1 t2, ktTmId)
+      | tag == bvSelectTermTag -> do
+          ix <- deserialize @Natural
+          w <- deserialize @Natural
+          t1 <- deserializeTerm
+          return $ Just (constructBVSelectTerm ix w t1, ktTmId)
+      | tag == bvExtendTermTag -> do
+          signed <- deserialize @Bool
+          r <- deserialize @Natural
+          t1 <- deserializeTerm
+          return $ Just (constructBVExtendTerm signed r t1, ktTmId)
+      | tag == applyTermTag -> do
+          tf <- deserializeTerm
+          ta <- deserializeTerm
+          return $ Just (constructApplyTerm tf ta, ktTmId)
+      | tag == divIntegralTermTag ->
+          deserializeIntegralBinary ktTmId divIntegralTerm
+      | tag == modIntegralTermTag ->
+          deserializeIntegralBinary ktTmId modIntegralTerm
+      | tag == quotIntegralTermTag ->
+          deserializeIntegralBinary ktTmId quotIntegralTerm
+      | tag == remIntegralTermTag ->
+          deserializeIntegralBinary ktTmId remIntegralTerm
+      | tag == terminalTag -> return Nothing
+      | tag == fpTraitTermTag -> do
+          trait <- deserialize
+          t <- deserializeTerm
+          asFPTypeTerm t $ \t' ->
+            return $ Just (someTerm $ fpTraitTerm trait t', ktTmId)
+      | tag == fdivTermTag -> do
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
+          asFloatingFractionalTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+            return $ Just (someTerm $ fdivTerm t1' t2', ktTmId)
+      | tag == recipTermTag -> do
+          t <- deserializeTerm
+          asFloatingFractionalTypeTerm t $ \t' ->
+            return $ Just (someTerm $ recipTerm t', ktTmId)
+      | tag == floatingUnaryTermTag -> do
+          op <- deserialize
+          t <- deserializeTerm
+          asFloatingFractionalTypeTerm t $ \t' ->
+            return $ Just (someTerm $ floatingUnaryTerm op t', ktTmId)
+      | tag == powerTermTag -> do
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
+          asFloatingFractionalTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+            return $ Just (someTerm $ powerTerm t1' t2', ktTmId)
+      | tag == fpUnaryTermTag -> do
+          op <- deserialize
+          t <- deserializeTerm
+          asFPTypeTerm t $ \t' ->
+            return $ Just (someTerm $ fpUnaryTerm op t', ktTmId)
+      | tag == fpBinaryTermTag -> do
+          op <- deserialize
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
+          asFPTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+            return $ Just (someTerm $ fpBinaryTerm op t1' t2', ktTmId)
+      | tag == fpRoundingUnaryTermTag -> do
+          op <- deserialize
+          trd <- deserializeTerm
+          t <- deserializeTerm
+          asFPRoundingTerm trd $ \trd' ->
+            asFPTypeTerm t $ \t' ->
+              return $ Just (someTerm $ fpRoundingUnaryTerm op trd' t', ktTmId)
+      | tag == fpRoundingBinaryTermTag -> do
+          op <- deserialize
+          trd <- deserializeTerm
+          t1 <- deserializeTerm
+          t2 <- deserializeTerm
+          asFPRoundingTerm trd $ \trd' ->
+            asFPTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+              return $
+                Just (someTerm $ fpRoundingBinaryTerm op trd' t1' t2', ktTmId)
+      | tag == fpFMATermTag -> do
+          trd <- deserializeTerm
           t1 <- deserializeTerm
           t2 <- deserializeTerm
           t3 <- deserializeTerm
-          asSameTypeTermPair t2 t3 $ \t2' t3' ->
-            return $ Just (someTerm $ iteTerm (asBoolTerm t1) t2' t3', tmId)
-      | tag == addNumTermTag -> deserializeNumBinary tmId addNumTerm
-      | tag == negNumTermTag -> deserializeNumUnary tmId negNumTerm
-      | tag == mulNumTermTag -> deserializeNumBinary tmId mulNumTerm
-      | tag == absNumTermTag -> deserializeNumUnary tmId absNumTerm
-      | tag == signumNumTermTag -> deserializeNumUnary tmId signumNumTerm
-      | tag == ltOrdTermTag -> deserializeOrdBinary tmId ltOrdTerm
-      | tag == leOrdTermTag -> deserializeOrdBinary tmId leOrdTerm
-      | tag == andBitsTermTag -> deserializeBitsBinary tmId andBitsTerm
-      | tag == orBitsTermTag -> deserializeBitsBinary tmId orBitsTerm
-      | tag == xorBitsTermTag -> deserializeBitsBinary tmId xorBitsTerm
-      | tag == complementBitsTermTag ->
-          deserializeBitsUnary tmId complementBitsTerm
-      | tag == shiftLeftTermTag -> deserializeBitsBinary tmId shiftLeftTerm
-      | tag == shiftRightTermTag -> deserializeBitsBinary tmId shiftRightTerm
-      | tag == rotateLeftTermTag -> deserializeBitsBinary tmId rotateLeftTerm
-      | tag == rotateRightTermTag -> deserializeBitsBinary tmId rotateRightTerm
-      | tag == terminalTag -> return Nothing
+          asFPRoundingTerm trd $ \trd' -> asFPTypeTerm t1 $ \t1' ->
+            asSameType t1' t2 $ \t2' -> asSameType t1' t3 $ \t3' ->
+              return $ Just (someTerm $ fpFMATerm trd' t1' t2' t3', ktTmId)
+      | tag == fromIntegralTermTag -> do
+          kt <- deserializeKnownType
+          t <- deserializeTerm
+          return $ Just (constructFromIntegralTerm t kt, ktTmId)
+      | tag == fromFPOrTermTag -> do
+          td <- deserializeTerm
+          trd <- deserializeTerm
+          tt <- deserializeTerm
+          asNumTypeTerm td $ \td' -> asFPRoundingTerm trd $ \trd' ->
+            asFPTypeTerm tt $ \tt' ->
+              return $ Just (someTerm $ fromFPOrTerm td' trd' tt', ktTmId)
+      | tag == toFPTermTag -> do
+          eb <- deserialize @Natural
+          sb <- deserialize @Natural
+          trd <- deserializeTerm
+          tt <- deserializeTerm
+          traceShow (eb, sb, trd, tt) $
+            if checkDynamicValidFP eb sb
+              then case (mkNatRepr eb, mkNatRepr sb) of
+                ( SomeNatRepr (_ :: NatRepr eb),
+                  SomeNatRepr (_ :: NatRepr sb)
+                  ) ->
+                    withUnsafeValidFP @eb @sb $
+                      asFPRoundingTerm trd $ \trd' -> asNumTypeTerm tt $ \tt' ->
+                        return $
+                          Just
+                            ( someTerm (toFPTerm trd' tt' :: Term (FP eb sb)),
+                              ktTmId
+                            )
+              else error "statefulDeserializeSomeTerm: invalid FP type"
       | otherwise ->
           error $ "statefulDeserializeSomeTerm: unknown tag: " <> show tag
   case r of
-    Just (tm, tmId) -> do
-      State.modify' $ \(m, _) -> (HM.insert tmId tm m, tm)
+    Just (tm, ktTmId) -> do
+      State.modify' $ \(m, _) -> (HM.insert ktTmId tm m, tm)
       statefulDeserializeSomeTerm
     Nothing -> State.gets snd
   where
     deserializeNonEmptyTermList ::
       (MonadGet m) =>
-      StateT (HM.HashMap Id SomeTerm, SomeTerm) m (NonEmpty SomeTerm)
+      StateT
+        (HM.HashMap (KnownType, Id) SomeTerm, SomeTerm)
+        m
+        (NonEmpty SomeTerm)
     deserializeNonEmptyTermList = do
-      ids <- deserialize @[Id]
+      ids <- deserialize @[(KnownType, Id)]
       case ids of
         [] -> fail "statefulDeserializeSomeTerm: empty list"
         (x : xs) -> do
@@ -929,14 +1547,17 @@ statefulDeserializeSomeTerm = do
           xs' <- traverse queryTerm xs
           return $ x' :| xs'
     deserializeTerm ::
-      (MonadGet m) => StateT (HM.HashMap Id SomeTerm, SomeTerm) m SomeTerm
+      (MonadGet m) =>
+      StateT (HM.HashMap (KnownType, Id) SomeTerm, SomeTerm) m SomeTerm
     deserializeTerm = do
-      tmId <- deserialize
-      queryTerm tmId
+      ktTmId <- deserialize
+      queryTerm ktTmId
     queryTerm ::
-      (MonadGet m) => Id -> StateT (HM.HashMap Id SomeTerm, SomeTerm) m SomeTerm
-    queryTerm termId = do
-      tm <- State.gets $ HM.lookup termId . fst
+      (MonadGet m) =>
+      (KnownType, Id) ->
+      StateT (HM.HashMap (KnownType, Id) SomeTerm, SomeTerm) m SomeTerm
+    queryTerm ktTmId = do
+      tm <- State.gets $ HM.lookup ktTmId . fst
       case tm of
         Nothing -> fail "statefulDeserializeSomeTerm: unknown term id"
         Just tm' -> return tm'
@@ -966,17 +1587,15 @@ statefulDeserializeSomeTerm = do
       (f :: forall t. (PEvalNumTerm t) => Term t -> Term t -> Term t) = do
         t1 <- deserializeTerm
         t2 <- deserializeTerm
-        asNumTypeTermPair t1 t2 $ \t1' t2' ->
-          return $
-            Just (someTerm $ f t1' t2', tmId)
+        asNumTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+          return $ Just (someTerm $ f t1' t2', tmId)
     deserializeOrdBinary
       tmId
       (f :: forall t. (PEvalOrdTerm t) => Term t -> Term t -> Term Bool) = do
         t1 <- deserializeTerm
         t2 <- deserializeTerm
-        asOrdTypeTermPair t1 t2 $ \t1' t2' ->
-          return $
-            Just (someTerm $ f t1' t2', tmId)
+        asOrdTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+          return $ Just (someTerm $ f t1' t2', tmId)
     deserializeBitsBinary
       tmId
       ( f ::
@@ -991,9 +1610,21 @@ statefulDeserializeSomeTerm = do
         ) = do
         t1 <- deserializeTerm
         t2 <- deserializeTerm
-        asBitsTypeTermPair t1 t2 $ \t1' t2' ->
-          return $
-            Just (someTerm $ f t1' t2', tmId)
+        asBitsTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+          return $ Just (someTerm $ f t1' t2', tmId)
+    deserializeIntegralBinary
+      tmId
+      ( f ::
+          forall t.
+          (PEvalDivModIntegralTerm t) =>
+          Term t ->
+          Term t ->
+          Term t
+        ) = do
+        t1 <- deserializeTerm
+        t2 <- deserializeTerm
+        asIntegralTypeTerm t1 $ \t1' -> asSameType t1' t2 $ \t2' ->
+          return $ Just (someTerm $ f t1' t2', tmId)
 
 deserializeSomeTerm :: (MonadGet m) => m SomeTerm
 deserializeSomeTerm =
@@ -1006,16 +1637,18 @@ deserializeSomeTerm =
     )
 
 serializeSingleSomeTerm ::
-  (MonadPut m) => SomeTerm -> StateT (HS.HashSet Id) m ()
-serializeSingleSomeTerm (SomeTerm tm) = do
+  (MonadPut m) => SomeTerm -> StateT (HS.HashSet (KnownType, Id)) m ()
+serializeSingleSomeTerm (SomeTerm (tm :: Term t)) = do
   st <- State.get
+  let kt = knownType tm
   let tmId = termId tm
-  if HS.member tmId st
+  let ktTmId = (kt, tmId)
+  if HS.member ktTmId st
     then return ()
     else do
       case tm of
         ConTerm _ _ _ _ (v :: v) -> do
-          serialize tmId
+          serialize ktTmId
           putWord8 conTermTag
           let kt = knownType (Proxy @v)
           case witnessKnownType kt of
@@ -1025,85 +1658,197 @@ serializeSingleSomeTerm (SomeTerm tm) = do
                   serializeKnownType kt
                   serialize v
                 Nothing ->
-                  error "serializeSomeTerm: should not happen: type mismatch"
+                  error
+                    "serializeSingleSomeTerm: should not happen: type mismatch"
         SymTerm _ _ _ _ (v :: TypedAnySymbol v) -> do
-          serialize tmId
+          serialize ktTmId
           putWord8 symTermTag
           serialize $ someTypedSymbol v
-        ForallTerm _ _ _ _ ts t -> serializeQuantified tmId forallTermTag ts t
-        ExistsTerm _ _ _ _ ts t -> serializeQuantified tmId existsTermTag ts t
+        ForallTerm _ _ _ _ ts t -> serializeQuantified ktTmId forallTermTag ts t
+        ExistsTerm _ _ _ _ ts t -> serializeQuantified ktTmId existsTermTag ts t
         NotTerm _ _ _ _ t -> do
           serializeSingleSomeTerm $ someTerm t
-          do
-            serialize tmId
-            putWord8 notTermTag
-            serialize $ termId t
-        OrTerm _ _ _ _ t1 t2 -> serializeBinary tmId orTermTag t1 t2
-        AndTerm _ _ _ _ t1 t2 -> serializeBinary tmId andTermTag t1 t2
-        EqTerm _ _ _ _ t1 t2 -> serializeBinary tmId eqTermTag t1 t2
-        ITETerm _ _ _ _ t1 t2 t3 -> serializeTernary tmId iteTermTag t1 t2 t3
-        AddNumTerm _ _ _ _ t1 t2 -> serializeBinary tmId addNumTermTag t1 t2
-        NegNumTerm _ _ _ _ t -> serializeUnary tmId negNumTermTag t
-        MulNumTerm _ _ _ _ t1 t2 -> serializeBinary tmId mulNumTermTag t1 t2
-        AbsNumTerm _ _ _ _ t -> serializeUnary tmId absNumTermTag t
-        SignumNumTerm _ _ _ _ t -> serializeUnary tmId signumNumTermTag t
-        LtOrdTerm _ _ _ _ t1 t2 -> serializeBinary tmId ltOrdTermTag t1 t2
-        LeOrdTerm _ _ _ _ t1 t2 -> serializeBinary tmId leOrdTermTag t1 t2
-        AndBitsTerm _ _ _ _ t1 t2 -> serializeBinary tmId andBitsTermTag t1 t2
-        OrBitsTerm _ _ _ _ t1 t2 -> serializeBinary tmId orBitsTermTag t1 t2
-        XorBitsTerm _ _ _ _ t1 t2 -> serializeBinary tmId xorBitsTermTag t1 t2
+          serialize ktTmId
+          putWord8 notTermTag
+          serialize $ knownTypeTermId t
+        OrTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId orTermTag t1 t2
+        AndTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId andTermTag t1 t2
+        EqTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId eqTermTag t1 t2
+        DistinctTerm _ _ _ _ ts -> do
+          traverse_ (serializeSingleSomeTerm . someTerm) ts
+          serialize ktTmId
+          putWord8 distinctTermTag
+          serialize $ fmap knownTypeTermId ts
+        ITETerm _ _ _ _ t1 t2 t3 -> serializeTernary ktTmId iteTermTag t1 t2 t3
+        AddNumTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId addNumTermTag t1 t2
+        NegNumTerm _ _ _ _ t -> serializeUnary ktTmId negNumTermTag t
+        MulNumTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId mulNumTermTag t1 t2
+        AbsNumTerm _ _ _ _ t -> serializeUnary ktTmId absNumTermTag t
+        SignumNumTerm _ _ _ _ t -> serializeUnary ktTmId signumNumTermTag t
+        LtOrdTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId ltOrdTermTag t1 t2
+        LeOrdTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId leOrdTermTag t1 t2
+        AndBitsTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId andBitsTermTag t1 t2
+        OrBitsTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId orBitsTermTag t1 t2
+        XorBitsTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId xorBitsTermTag t1 t2
         ComplementBitsTerm _ _ _ _ t ->
-          serializeUnary tmId complementBitsTermTag t
+          serializeUnary ktTmId complementBitsTermTag t
         ShiftLeftTerm _ _ _ _ t1 t2 ->
-          serializeBinary tmId shiftLeftTermTag t1 t2
+          serializeBinary ktTmId shiftLeftTermTag t1 t2
         ShiftRightTerm _ _ _ _ t1 t2 ->
-          serializeBinary tmId shiftRightTermTag t1 t2
+          serializeBinary ktTmId shiftRightTermTag t1 t2
         RotateLeftTerm _ _ _ _ t1 t2 ->
-          serializeBinary tmId rotateLeftTermTag t1 t2
+          serializeBinary ktTmId rotateLeftTermTag t1 t2
         RotateRightTerm _ _ _ _ t1 t2 ->
-          serializeBinary tmId rotateRightTermTag t1 t2
-        _ -> error "serializeSomeTerm: unsupported term"
-  State.put $ HS.insert (termId tm) st
+          serializeBinary ktTmId rotateRightTermTag t1 t2
+        BitCastTerm _ _ _ _ t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize bitCastTermTag
+          let kt = knownType (Proxy @t)
+          serializeKnownType kt
+          serialize $ knownTypeTermId t
+        BitCastOrTerm _ _ _ _ d t -> serializeBinary ktTmId bitCastOrTermTag d t
+        BVConcatTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId bvConcatTermTag t1 t2
+        BVSelectTerm _ _ _ _ ix w t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize bvSelectTermTag
+          serialize $ natVal ix
+          serialize $ natVal w
+          serialize $ knownTypeTermId t
+        BVExtendTerm _ _ _ _ signed r t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize bvExtendTermTag
+          serialize signed
+          serialize $ natVal r
+          serialize $ knownTypeTermId t
+        ApplyTerm _ _ _ _ f ts -> serializeBinary ktTmId applyTermTag f ts
+        DivIntegralTerm _ _ _ _ t1 t2 ->
+          serializeBinary ktTmId divIntegralTermTag t1 t2
+        ModIntegralTerm _ _ _ _ t1 t2 ->
+          serializeBinary ktTmId modIntegralTermTag t1 t2
+        QuotIntegralTerm _ _ _ _ t1 t2 ->
+          serializeBinary ktTmId quotIntegralTermTag t1 t2
+        RemIntegralTerm _ _ _ _ t1 t2 ->
+          serializeBinary ktTmId remIntegralTermTag t1 t2
+        FPTraitTerm _ _ _ _ trait t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize fpTraitTermTag
+          serialize trait
+          serialize $ knownTypeTermId t
+        FdivTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId fdivTermTag t1 t2
+        RecipTerm _ _ _ _ t -> serializeUnary ktTmId recipTermTag t
+        FloatingUnaryTerm _ _ _ _ op t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize floatingUnaryTermTag
+          serialize op
+          serialize $ knownTypeTermId t
+        PowerTerm _ _ _ _ t1 t2 -> serializeBinary ktTmId powerTermTag t1 t2
+        FPUnaryTerm _ _ _ _ op t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize fpUnaryTermTag
+          serialize op
+          serialize $ knownTypeTermId t
+        FPBinaryTerm _ _ _ _ op t1 t2 -> do
+          serializeSingleSomeTerm $ someTerm t1
+          serializeSingleSomeTerm $ someTerm t2
+          serialize ktTmId
+          serialize fpBinaryTermTag
+          serialize op
+          serialize $ knownTypeTermId t1
+          serialize $ knownTypeTermId t2
+        FPRoundingUnaryTerm _ _ _ _ op rd t -> do
+          serializeSingleSomeTerm $ someTerm rd
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize fpRoundingUnaryTermTag
+          serialize op
+          serialize $ knownTypeTermId rd
+          serialize $ knownTypeTermId t
+        FPRoundingBinaryTerm _ _ _ _ op rd t1 t2 -> do
+          serializeSingleSomeTerm $ someTerm rd
+          serializeSingleSomeTerm $ someTerm t1
+          serializeSingleSomeTerm $ someTerm t2
+          serialize ktTmId
+          serialize fpRoundingBinaryTermTag
+          serialize op
+          serialize $ knownTypeTermId rd
+          serialize $ knownTypeTermId t1
+          serialize $ knownTypeTermId t2
+        FPFMATerm _ _ _ _ rd t1 t2 t3 -> do
+          serializeSingleSomeTerm $ someTerm rd
+          serializeSingleSomeTerm $ someTerm t1
+          serializeSingleSomeTerm $ someTerm t2
+          serializeSingleSomeTerm $ someTerm t3
+          serialize ktTmId
+          serialize fpFMATermTag
+          serialize $ knownTypeTermId rd
+          serialize $ knownTypeTermId t1
+          serialize $ knownTypeTermId t2
+          serialize $ knownTypeTermId t3
+        FromIntegralTerm _ _ _ _ t -> do
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize fromIntegralTermTag
+          let kt = knownType (Proxy @t)
+          serializeKnownType kt
+          serialize $ knownTypeTermId t
+        FromFPOrTerm _ _ _ _ d rd t ->
+          serializeTernary ktTmId fromFPOrTermTag d rd t
+        ToFPTerm _ _ _ _ rd t eb sb -> do
+          serializeSingleSomeTerm $ someTerm rd
+          serializeSingleSomeTerm $ someTerm t
+          serialize ktTmId
+          serialize toFPTermTag
+          serialize $ natVal eb
+          serialize $ natVal sb
+          serialize $ knownTypeTermId rd
+          serialize $ knownTypeTermId t
+  State.put $ HS.insert ktTmId st
   where
     serializeQuantified ::
       (MonadPut m) =>
-      Id ->
+      (KnownType, Id) ->
       Word8 ->
       TypedConstantSymbol v ->
       Term b ->
-      StateT (HS.HashSet Id) m ()
-    serializeQuantified tmId tag v t = do
+      StateT (HS.HashSet (KnownType, Id)) m ()
+    serializeQuantified ktTmId tag v t = do
       serializeSingleSomeTerm $ someTerm t
-      serialize tmId
+      serialize ktTmId
       serialize tag
       serialize $ someTypedSymbol v
-      serialize $ termId t
-    serializeUnary tmId tag t1 = do
+      serialize $ knownTypeTermId t
+    serializeUnary ktTmId tag t1 = do
       serializeSingleSomeTerm $ someTerm t1
-      serialize tmId
+      serialize ktTmId
       serialize tag
-      serialize $ termId t1
-    serializeBinary tmId tag t1 t2 = do
+      serialize $ knownTypeTermId t1
+    serializeBinary ktTmId tag t1 t2 = do
       serializeSingleSomeTerm $ someTerm t1
       serializeSingleSomeTerm $ someTerm t2
-      serialize tmId
+      serialize ktTmId
       serialize tag
-      serialize $ termId t1
-      serialize $ termId t2
-    serializeTernary tmId tag t1 t2 t3 = do
+      serialize $ knownTypeTermId t1
+      serialize $ knownTypeTermId t2
+    serializeTernary ktTmId tag t1 t2 t3 = do
       serializeSingleSomeTerm $ someTerm t1
       serializeSingleSomeTerm $ someTerm t2
       serializeSingleSomeTerm $ someTerm t3
-      serialize tmId
+      serialize ktTmId
       serialize tag
-      serialize $ termId t1
-      serialize $ termId t2
-      serialize $ termId t3
+      serialize $ knownTypeTermId t1
+      serialize $ knownTypeTermId t2
+      serialize $ knownTypeTermId t3
 
 serializeSomeTerm :: (MonadPut m) => SomeTerm -> m ()
 serializeSomeTerm t = do
   flip evalStateT HS.empty $ serializeSingleSomeTerm t
-  serialize (0 :: Id)
+  serialize (NonFuncType BoolType, 0 :: Id)
   putWord8 terminalTag
 
 instance Serial SomeTerm where
