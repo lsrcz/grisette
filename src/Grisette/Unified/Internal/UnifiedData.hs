@@ -30,6 +30,7 @@ where
 
 import Control.DeepSeq (NFData)
 import Control.Monad.Identity (Identity (Identity, runIdentity))
+import Data.Bytes.Serial (Serial)
 import Data.Hashable (Hashable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
@@ -75,6 +76,7 @@ class
     (Show v) => Show u,
     (SymOrd v) => SymOrd u,
     (SubstSym v) => SubstSym u,
+    (Serial v) => Serial u,
     (UnifiedITEOp mode v) => UnifiedITEOp mode u,
     (UnifiedSimpleMergeable mode v) => UnifiedSimpleMergeable mode u,
     (UnifiedSymEq mode v) => UnifiedSymEq mode u,
