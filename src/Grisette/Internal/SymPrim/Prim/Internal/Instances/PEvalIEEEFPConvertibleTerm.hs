@@ -27,7 +27,13 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Internals as SBVI
 import GHC.TypeLits (KnownNat, Nat, type (<=))
 import Grisette.Internal.Core.Data.Class.IEEEFP
-  ( IEEEFPConstants (fpNaN, fpNegativeInfinite, fpNegativeZero, fpPositiveInfinite, fpPositiveZero),
+  ( IEEEFPConstants
+      ( fpNaN,
+        fpNegativeInfinite,
+        fpNegativeZero,
+        fpPositiveInfinite,
+        fpPositiveZero
+      ),
     IEEEFPConvertible (fromFPOr, toFP),
     fpIsInfinite,
     fpIsNaN,

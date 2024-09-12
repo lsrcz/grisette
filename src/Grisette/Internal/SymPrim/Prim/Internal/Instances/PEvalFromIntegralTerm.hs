@@ -45,6 +45,10 @@ pevalFromIntegralTermGeneric =
     doPEvalFromIntegralTerm (ConTerm _ _ _ _ a) = Just $ conTerm $ fromIntegral a
     doPEvalFromIntegralTerm _ = Nothing
 
+instance PEvalFromIntegralTerm Integer Integer where
+  pevalFromIntegralTerm = id
+  sbvFromIntegralTerm = id
+
 instance PEvalFromIntegralTerm Integer AlgReal where
   pevalFromIntegralTerm = pevalFromIntegralTermGeneric
   sbvFromIntegralTerm l = withNonFuncPrim @Integer $ SBV.sFromIntegral l

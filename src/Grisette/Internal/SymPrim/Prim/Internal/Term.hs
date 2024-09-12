@@ -225,7 +225,9 @@ import qualified Control.Monad.State.Strict as Strict
 import qualified Control.Monad.Writer.Lazy as Lazy
 import qualified Control.Monad.Writer.Strict as Strict
 import Data.Atomics (atomicModifyIORefCAS_)
+import qualified Data.Binary as Binary
 import Data.Bits (Bits)
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import qualified Data.HashMap.Strict as HM
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.IORef (IORef, newIORef, readIORef)
@@ -236,6 +238,7 @@ import qualified Data.SBV as SBV
 import qualified Data.SBV.Dynamic as SBVD
 import qualified Data.SBV.Trans as SBVT
 import qualified Data.SBV.Trans.Control as SBVTC
+import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import Data.Typeable (Proxy (Proxy), cast, typeRepFingerprint)
 import GHC.Exts (Any, sortWith)
@@ -794,7 +797,15 @@ data FloatingUnaryOp
   | FloatingAsinh
   | FloatingAcosh
   | FloatingAtanh
-  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData, Serial)
+
+instance Cereal.Serialize FloatingUnaryOp where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary FloatingUnaryOp where
+  put = serialize
+  get = deserialize
 
 instance Show FloatingUnaryOp where
   show FloatingExp = "exp"
@@ -1066,7 +1077,15 @@ data FPTrait
   | FPIsNormal
   | FPIsSubnormal
   | FPIsPoint
-  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData, Serial)
+
+instance Cereal.Serialize FPTrait where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary FPTrait where
+  put = serialize
+  get = deserialize
 
 instance Show FPTrait where
   show FPIsNaN = "is_nan"
@@ -1084,7 +1103,15 @@ instance Show FPTrait where
 
 -- | Unary floating point operations.
 data FPUnaryOp = FPAbs | FPNeg
-  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData, Serial)
+
+instance Cereal.Serialize FPUnaryOp where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary FPUnaryOp where
+  put = serialize
+  get = deserialize
 
 instance Show FPUnaryOp where
   show FPAbs = "fp.abs"
@@ -1097,7 +1124,15 @@ data FPBinaryOp
   | FPMinimumNumber
   | FPMaximum
   | FPMaximumNumber
-  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData, Serial)
+
+instance Cereal.Serialize FPBinaryOp where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary FPBinaryOp where
+  put = serialize
+  get = deserialize
 
 instance Show FPBinaryOp where
   show FPRem = "fp.rem"
@@ -1108,7 +1143,15 @@ instance Show FPBinaryOp where
 
 -- | Unary floating point operations with rounding modes.
 data FPRoundingUnaryOp = FPSqrt | FPRoundToIntegral
-  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData, Serial)
+
+instance Cereal.Serialize FPRoundingUnaryOp where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary FPRoundingUnaryOp where
+  put = serialize
+  get = deserialize
 
 instance Show FPRoundingUnaryOp where
   show FPSqrt = "fp.sqrt"
@@ -1116,7 +1159,15 @@ instance Show FPRoundingUnaryOp where
 
 -- | Binary floating point operations with rounding modes.
 data FPRoundingBinaryOp = FPAdd | FPSub | FPMul | FPDiv
-  deriving (Eq, Ord, Generic, Hashable, Lift, NFData)
+  deriving (Eq, Ord, Generic, Hashable, Lift, NFData, Serial)
+
+instance Cereal.Serialize FPRoundingBinaryOp where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary FPRoundingBinaryOp where
+  put = serialize
+  get = deserialize
 
 instance Show FPRoundingBinaryOp where
   show FPAdd = "fp.add"
