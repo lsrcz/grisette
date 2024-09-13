@@ -4,7 +4,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -65,10 +65,12 @@ import Data.Maybe (fromJust)
 import qualified Data.Serialize as Cereal
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import Generics.Deriving (Default (Default))
 import Grisette.Internal.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSym),
   )
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp (symNot, (.||)))
+import Grisette.Internal.Core.Data.Class.PPrint (PPrint)
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion,
     simpleMerge,
@@ -110,6 +112,7 @@ data SolvingFailure
     Terminated
   deriving (Show, Eq, Generic, Lift)
   deriving anyclass (NFData, Hashable, Serial)
+  deriving (PPrint) via (Default SolvingFailure)
 
 instance Cereal.Serialize SolvingFailure where
   put = serialize
