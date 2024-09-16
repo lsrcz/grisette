@@ -205,10 +205,12 @@ bvIsNonZeroFromGEq1 _ r1 = case unsafeAxiom :: w :~: 1 of
 -- number.
 type ValidFP (eb :: Nat) (sb :: Nat) = ValidFloat eb sb
 
+-- | Check if the given floating-point type is valid.
 checkDynamicValidFP :: Natural -> Natural -> Bool
 checkDynamicValidFP eb sb =
   eb >= 2 && eb <= 61 && sb >= 2 && sb <= 4611686018427387902
 
+-- | A message thrown when the floating-point type is invalid.
 invalidFPMessage :: String
 invalidFPMessage =
   "Invalid floating point type `SFloatingPoint eb sb'\n`n"
@@ -217,6 +219,8 @@ invalidFPMessage =
     <> "        sb `elem` [2 .. 4611686018427387902]\n\n"
     <> "  Given type falls outside of this range, or the sizes are not known naturals."
 
+-- | Provide an (unsafe) type-level proof that the given floating-point type is
+-- valid.
 withUnsafeValidFP ::
   forall eb sb r. (KnownNat eb, KnownNat sb) => ((ValidFP eb sb) => r) -> r
 withUnsafeValidFP r =

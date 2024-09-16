@@ -71,8 +71,7 @@ module Grisette.Internal.SymPrim.Prim.Internal.Term
 
     -- * Typed symbols
     SymbolKind (..),
-    TypedSymbol (unTypedSymbol),
-    pattern TypedSymbol,
+    TypedSymbol (TypedSymbol, unTypedSymbol),
     typedConstantSymbol,
     typedAnySymbol,
     TypedConstantSymbol,
