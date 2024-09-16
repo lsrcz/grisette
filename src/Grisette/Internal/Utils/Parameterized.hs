@@ -274,6 +274,7 @@ unsafeCmpNatProof :: forall m n o. CmpNatProof m n o
 unsafeCmpNatProof = unsafeCoerce (CmpNatProof @0 @0 @'EQ)
 {-# INLINE unsafeCmpNatProof #-}
 
+-- | Introduces the @t'CmpNat' m n o@ constraint when it's proven.
 withCmpNatProof :: CmpNatProof m n o -> (((CmpNat m n == o) ~ 'True) => r) -> r
 withCmpNatProof p r = case p of CmpNatProof -> r
 {-# INLINE withCmpNatProof #-}

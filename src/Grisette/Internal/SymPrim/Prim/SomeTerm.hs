@@ -54,6 +54,7 @@ someTerm :: Term a -> SomeTerm
 someTerm v = introSupportedPrimConstraint v $ SomeTerm v
 {-# INLINE someTerm #-}
 
+-- | Get the unique identifier of a symbolic term.
 someTermId :: SomeTerm -> Id
 someTermId (SomeTerm t) = termId t
 {-# INLINE someTermId #-}
