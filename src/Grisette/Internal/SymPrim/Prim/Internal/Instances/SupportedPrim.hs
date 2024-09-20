@@ -108,12 +108,27 @@ pairwiseHasConcreteEqual (x : xs) =
     go _ [] = False
     go x (y : ys) = x == y || go x ys
 
+getAllConcrete :: [Term a] -> Maybe [a]
+getAllConcrete [] = return []
+getAllConcrete (ConTerm _ _ _ _ x : xs) = (x :) <$> getAllConcrete xs
+getAllConcrete _ = Nothing
+
+checkConcreteDistinct :: (Eq t) => [t] -> Bool
+checkConcreteDistinct [] = True
+checkConcreteDistinct (x : xs) = check0 x xs && checkConcreteDistinct xs
+  where
+    check0 _ [] = True
+    check0 x (y : ys) = x /= y && check0 x ys
+
 pevalGeneralDistinct ::
   (SupportedNonFuncPrim a) => NonEmpty (Term a) -> Term Bool
 pevalGeneralDistinct (_ :| []) = conTerm True
 pevalGeneralDistinct (a :| [b]) = pevalNotTerm $ pevalEqTerm a b
 pevalGeneralDistinct l | pairwiseHasConcreteEqual $ toList l = conTerm False
-pevalGeneralDistinct l = distinctTerm l
+pevalGeneralDistinct l =
+  case getAllConcrete (toList l) of
+    Nothing -> distinctTerm l
+    Just xs -> conTerm $ checkConcreteDistinct xs
 
 instance SupportedPrim Integer where
   pformatCon = show
@@ -257,7 +272,13 @@ instance (ValidFP eb sb) => SupportedPrim (FP eb sb) where
   pevalEqTerm (ConTerm _ _ _ _ l) (ConTerm _ _ _ _ r) = conTerm $ l == r
   pevalEqTerm l@ConTerm {} r = pevalEqTerm r l
   pevalEqTerm l r = eqTerm l r
-  pevalDistinctTerm = distinctTerm
+  pevalDistinctTerm (_ :| []) = conTerm True
+  pevalDistinctTerm (a :| [b]) = pevalNotTerm $ pevalEqTerm a b
+  pevalDistinctTerm l =
+    case getAllConcrete (toList l) of
+      Nothing -> distinctTerm l
+      Just xs | any isNaN xs -> distinctTerm l
+      Just xs -> conTerm $ checkConcreteDistinct xs
   conSBVTerm (FP fp) = SBV.literal fp
   symSBVName symbol _ = show symbol
   symSBVTerm name = sbvFresh name
