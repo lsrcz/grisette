@@ -137,6 +137,13 @@ The example has three parts:
   the solver. If a solution exists, the solver returns a concrete tree that
   agrees with the input-output example.
 
+### Running the example 
+
+The code of this example is the repository [Grisette examples](https://github.com/lsrcz/grisette-examples). To run the example, check out the repository and run:
+```bash
+stack run arith-synth
+```
+
 ### Defining the Arithmetic Language
 
 We will synthesize a single-input program `\x -> E` in this example. Here the
