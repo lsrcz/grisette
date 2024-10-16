@@ -1896,9 +1896,10 @@ pformatTerm (RotateRightTerm _ _ _ _ arg n) = "(rotr " ++ pformatTerm arg ++ " "
 pformatTerm (BitCastTerm _ _ _ _ arg) = "(bitcast " ++ pformatTerm arg ++ ")"
 pformatTerm (BitCastOrTerm _ _ _ _ d arg) = "(bitcast_or " ++ pformatTerm d ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (BVConcatTerm _ _ _ _ arg1 arg2) = "(bvconcat " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
-pformatTerm (BVSelectTerm _ _ _ _ ix w arg) = "(bvselect " ++ show ix ++ " " ++ show w ++ " " ++ pformatTerm arg ++ ")"
-pformatTerm (BVExtendTerm _ _ _ _ signed n arg) =
-  (if signed then "(bvsext " else "(bvzext ") ++ show n ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (BVSelectTerm _ _ _ _ (_ :: Proxy ix) (_ :: Proxy w) arg) =
+  "(bvselect " ++ show (typeRep @ix) ++ " " ++ show (typeRep @w) ++ " " ++ pformatTerm arg ++ ")"
+pformatTerm (BVExtendTerm _ _ _ _ signed (_ :: Proxy n) arg) =
+  (if signed then "(bvsext " else "(bvzext ") ++ show (typeRep @n) ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (ApplyTerm _ _ _ _ func arg) = "(apply " ++ pformatTerm func ++ " " ++ pformatTerm arg ++ ")"
 pformatTerm (DivIntegralTerm _ _ _ _ arg1 arg2) = "(div " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
 pformatTerm (ModIntegralTerm _ _ _ _ arg1 arg2) = "(mod " ++ pformatTerm arg1 ++ " " ++ pformatTerm arg2 ++ ")"
