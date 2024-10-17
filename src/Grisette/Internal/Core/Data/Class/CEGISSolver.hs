@@ -181,7 +181,7 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
         CEGISVerifierFoundCex cex -> do
           newResult <- solverSolve solver =<< synthConstr cex
           case newResult of
-            Left err -> return ([], CEGISSolverFailure err)
+            Left err -> return ([cex], CEGISSolverFailure err)
             Right model -> do
               (cexes, result) <-
                 go model (needRerun || rerun) $
