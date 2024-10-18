@@ -188,9 +188,11 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
   firstResult <- solverSolve solver initConstr
   case firstResult of
     Left err -> return ([], CEGISSolverFailure err)
-    Right model -> go model False verifiers
+    Right model -> go model False numAllVerifiers 0 verifiers
   where
-    go prevModel needRerun (verifier : remainingVerifiers) = do
+    numAllVerifiers = length verifiers
+    go prevModel _ 0 _ (_ : _) = return ([], CEGISSuccess prevModel)
+    go prevModel needRerun runBound nextBound (verifier : remainingVerifiers) = do
       verifierResult <- verifier prevModel
       case verifierResult of
         CEGISVerifierFoundCex cex -> do
@@ -199,14 +201,20 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
             Left err -> return ([cex], CEGISSolverFailure err)
             Right model -> do
               (cexes, result) <-
-                go model (needRerun || rerun) $
-                  verifier : remainingVerifiers
+                go
+                  model
+                  (needRerun || rerun)
+                  (length remainingVerifiers + 1)
+                  (numAllVerifiers - length remainingVerifiers - 1)
+                  $ verifier : remainingVerifiers
               return (cex : cexes, result)
-        CEGISVerifierNoCex {} -> go prevModel needRerun remainingVerifiers
+        CEGISVerifierNoCex {} ->
+          go prevModel needRerun (runBound - 1) nextBound remainingVerifiers
         CEGISVerifierException exception ->
           return ([], CEGISVerifierFailure exception)
-    go prevModel False [] = return ([], CEGISSuccess prevModel)
-    go prevModel True [] = go prevModel False verifiers
+    go prevModel False _ _ [] = return ([], CEGISSuccess prevModel)
+    go prevModel True _runBound nextBound [] =
+      go prevModel False nextBound 0 verifiers
 
 -- | Generic CEGIS procedure with refinement. See 'genericCEGISWithRefinement'
 -- for more details.

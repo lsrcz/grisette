@@ -9,6 +9,7 @@
 module Grisette.Backend.CEGISTests (cegisTests) where
 
 import Control.Monad.Except (ExceptT)
+import Data.IORef (atomicModifyIORef', modifyIORef', newIORef, readIORef)
 import Data.Proxy (Proxy (Proxy))
 import Data.String (IsString (fromString))
 import GHC.Stack (HasCallStack)
@@ -20,7 +21,7 @@ import Grisette
     Function ((#)),
     GrisetteSMTConfig,
     ITEOp (symIte),
-    LogicalOp (symNot, symXor, (.&&), (.||)),
+    LogicalOp (symNot, symXor, true, (.&&), (.||)),
     ModelRep (buildModel),
     ModelValuePair ((::=)),
     SizedBV (sizedBVConcat, sizedBVSelect, sizedBVSext, sizedBVZext),
@@ -29,6 +30,7 @@ import Grisette
     SymOrd ((.<), (.>=)),
     Union,
     VerificationConditions,
+    VerifierResult (CEGISVerifierFoundCex, CEGISVerifierNoCex),
     cegis,
     cegisExceptVC,
     cegisForAll,
@@ -37,8 +39,10 @@ import Grisette
     cegisPostCond,
     mrgIf,
     solve,
+    solverGenericCEGIS,
     symAssert,
     symAssume,
+    withSolver,
     z3,
   )
 import Grisette.SymPrim
@@ -471,5 +475,45 @@ cegisTests =
                         )
                 m @?= expectedModel
               CEGISVerifierFailure _ -> fail "Verifier failed"
-              CEGISSolverFailure failure -> fail $ show failure
+              CEGISSolverFailure failure -> fail $ show failure,
+          testGroup "rerun" $ do
+            let verifier n trace retsIORef _ = do
+                  modifyIORef' trace (n :)
+                  ret <- atomicModifyIORef' retsIORef (\(x : xs) -> (xs, x))
+                  if ret
+                    then return $ CEGISVerifierFoundCex "Found"
+                    else return $ CEGISVerifierNoCex True
+            let createTestCase :: String -> Bool -> [[Bool]] -> [Int] -> Test
+                createTestCase name rerun rets expected = testCase name $ do
+                  trace <- newIORef []
+                  retsIORefs <- traverse newIORef rets
+                  withSolver unboundedConfig $ \handle ->
+                    solverGenericCEGIS
+                      handle
+                      rerun
+                      true
+                      (const $ return true)
+                      (zipWith (`verifier` trace) [0 ..] retsIORefs)
+                  tracev <- readIORef trace
+                  tracev @?= expected
+            [ createTestCase
+                "no rerun"
+                False
+                [[False], [True, False], [False]]
+                [2, 1, 1, 0],
+              createTestCase
+                "do rerun"
+                True
+                [[False, False], [True, False], [False]]
+                [0, 2, 1, 1, 0],
+              createTestCase
+                "do rerun complex"
+                True
+                [ [False, False, False],
+                  [True, False, True, False],
+                  [True, False, False],
+                  [False, False]
+                ]
+                [0, 3, 2, 1, 1, 0, 3, 2, 2, 1, 1, 0]
+              ]
         ]
