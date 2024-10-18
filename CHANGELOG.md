@@ -19,6 +19,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#251](https://github.com/lsrcz/grisette/pull/251))
 - Added serialization for the core constructs.
   ([#253](https://github.com/lsrcz/grisette/pull/253))
+- Added partial evaluation for distinct.
+  ([#254](https://github.com/lsrcz/grisette/pull/254))
 
 ### Changed
 - [Breaking] Moved the constraints for the general and tabular functions and
@@ -34,10 +36,17 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - [Breaking] Changed the solving/cegis results from maintaining the exception
   themselves to maintaining a textual representation of them.
   ([#253](https://github.com/lsrcz/grisette/pull/253))
+- [Breaking] Changed the 'VerifierResult' type for CEGIS to allow it report that
+  the verifier cannot find a counter example.
+  ([#257](https://github.com/lsrcz/grisette/pull/257))
 
 ### Fixed
 - Fixed memory leak within the term cache.
   ([#252](https://github.com/lsrcz/grisette/pull/252))
+- Fixed printing of bv terms.
+  ([#255](https://github.com/lsrcz/grisette/pull/255))
+- Fixed solverGenericCEGIS and make it also return the last failing cex.
+  ([#256](https://github.com/lsrcz/grisette/pull/256))
 
 ## [0.8.0.0] - 2024-08-13
 
