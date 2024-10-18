@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -89,6 +90,7 @@ import Grisette.Internal.Core.Data.Class.ModelOps
   ( ModelOps (exact, exceptFor),
     SymbolSetOps (isEmptySet),
   )
+import Grisette.Internal.Core.Data.Class.PPrint (PPrint (pformat), (<+>))
 import Grisette.Internal.Core.Data.Class.PlainUnion
   ( PlainUnion,
     simpleMerge,
@@ -120,9 +122,23 @@ import Language.Haskell.TH.Syntax (Lift)
 data VerifierResult cex exception
   = CEGISVerifierFoundCex cex
   | CEGISVerifierNoCex
+      -- | True indicates that the verifier is sure that there is no
+      -- counter-example, while False indicates that the verifier is not sure,
+      -- but it cannot find a counter-example.
+      Bool
   | CEGISVerifierException exception
   deriving (Show, Eq, Generic, Lift)
   deriving anyclass (Hashable, NFData)
+
+instance
+  (PPrint cex, PPrint exception) =>
+  PPrint (VerifierResult cex exception)
+  where
+  pformat = \case
+    CEGISVerifierFoundCex cex -> "Found cex:" <+> pformat cex
+    CEGISVerifierNoCex True -> "No cex"
+    CEGISVerifierNoCex False -> "Maybe no cex"
+    CEGISVerifierException e -> "Exception:" <+> pformat e
 
 -- | Build the synthesizer constraint from the verfication result. The first
 -- argument will be guaranteed to be distinct during each invocation of the
@@ -187,7 +203,7 @@ solverGenericCEGIS solver rerun initConstr synthConstr verifiers = do
                 go model (needRerun || rerun) $
                   verifier : remainingVerifiers
               return (cex : cexes, result)
-        CEGISVerifierNoCex -> go prevModel needRerun remainingVerifiers
+        CEGISVerifierNoCex {} -> go prevModel needRerun remainingVerifiers
         CEGISVerifierException exception ->
           return ([], CEGISVerifierFailure exception)
     go prevModel False [] = return ([], CEGISSuccess prevModel)
@@ -384,7 +400,7 @@ solverCegisMultiInputs
         solverResetAssertions verifierSolver
         r <- solverSolve verifierSolver evaluated
         case r of
-          Left Unsat -> return CEGISVerifierNoCex
+          Left Unsat -> return $ CEGISVerifierNoCex True
           Left err -> return $ CEGISVerifierException err
           Right model -> do
             let newCexInput =
@@ -671,7 +687,7 @@ solverCegisForAll
         solverResetAssertions verifierSolver
         r <- solverSolve verifierSolver evaluated
         case r of
-          Left Unsat -> return CEGISVerifierNoCex
+          Left Unsat -> return $ CEGISVerifierNoCex True
           Left err -> return $ CEGISVerifierException err
           Right model ->
             return $ CEGISVerifierFoundCex (exact forallSymbols model)
