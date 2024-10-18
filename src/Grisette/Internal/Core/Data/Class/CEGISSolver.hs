@@ -121,11 +121,10 @@ import Language.Haskell.TH.Syntax (Lift)
 -- | The response from a verifier.
 data VerifierResult cex exception
   = CEGISVerifierFoundCex cex
-  | CEGISVerifierNoCex
-      -- | True indicates that the verifier is sure that there is no
-      -- counter-example, while False indicates that the verifier is not sure,
-      -- but it cannot find a counter-example.
-      Bool
+  | -- | True indicates that the verifier is sure that there is no
+    -- counter-example, while False indicates that the verifier is not sure,
+    -- but it cannot find a counter-example.
+    CEGISVerifierNoCex Bool
   | CEGISVerifierException exception
   deriving (Show, Eq, Generic, Lift)
   deriving anyclass (Hashable, NFData)
