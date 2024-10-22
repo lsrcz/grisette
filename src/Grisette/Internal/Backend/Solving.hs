@@ -148,6 +148,7 @@ import Grisette.Internal.Core.Data.Class.Solver
       ),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
+import Grisette.Internal.Core.Data.MemoUtils (stableMemo)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   ( sbvFPBinaryTerm,
@@ -533,12 +534,7 @@ lowerSinglePrimCached t' m' = do
       goCached qs t = introSupportedPrimConstraint t $ do
         mp <- liftIO $ readIORef mapState
         case lookupTerm (SomeTerm t) mp of
-          Just x ->
-            return
-              ( \qst ->
-                  withPrim @x $
-                    fromDyn (x qst) undefined
-              )
+          Just x -> return (\qst -> withPrim @x $ fromDyn (x qst) undefined)
           Nothing -> goCachedImpl qs t
       goCachedImpl ::
         forall a.
@@ -608,10 +604,11 @@ lowerSinglePrimCached t' m' = do
       goCachedImpl qs t =
         withPrim @a $ do
           r <- goCachedIntermediate qs t
+          let memoed = stableMemo r
           liftIO $
             modifyIORef' mapState $
-              addBiMapIntermediate (SomeTerm t) (toDyn . r)
-          return r
+              addBiMapIntermediate (SomeTerm t) (toDyn . memoed)
+          return memoed
       goCachedIntermediate ::
         forall a.
         (SupportedPrim a) =>
