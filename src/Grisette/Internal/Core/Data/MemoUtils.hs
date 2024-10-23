@@ -35,14 +35,11 @@ module Grisette.Internal.Core.Data.MemoUtils
 where
 
 import Control.Applicative (Const (Const, getConst))
-import qualified Control.Concurrent.RLock as RLock
 import Control.Monad.Fix (fix)
 import Data.Atomics (atomicModifyIORefCAS_)
 import qualified Data.HashMap.Strict as HM
-import Data.HashTable.IO (BasicHashTable)
-import qualified Data.HashTable.IO as HashTable
 import Data.Hashable (Hashable)
-import Data.IORef (newIORef, readIORef)
+import Data.IORef (IORef, newIORef, readIORef)
 import Data.Proxy (Proxy (Proxy))
 import GHC.Base (Any, Type)
 import System.IO.Unsafe (unsafePerformIO)
@@ -55,7 +52,7 @@ newtype (f <<< g) a = O {unO :: f (g a)}
 
 -- Invariant: The type parameters for a key and its corresponding
 -- value are the same.
-type SNMap f g = BasicHashTable (StableName (f Any)) (g Any)
+type SNMap f g = IORef (HM.HashMap (StableName (f Any)) (g Any))
 
 type MemoTable ref f g = SNMap f (ref <<< g)
 
@@ -64,7 +61,7 @@ class Ref ref where
   deRef :: ref a -> IO (Maybe a)
   finalize :: ref a -> IO ()
   tableFinalizer :: MemoTable ref f g -> IO ()
-  tableFinalizer = HashTable.mapM_ $ finalize . unO . snd
+  tableFinalizer t = readIORef t >>= mapM_ (finalize . unO)
 
 instance Ref Weak where
   mkRef x y = Weak.mkWeak x y . Just
@@ -74,22 +71,18 @@ instance Ref Weak where
 newtype Strong a = Strong a
 
 instance Ref Strong where
-  mkRef _ y _ = do
-    return $ Strong y
+  mkRef _ y _ = return $ Strong y
   deRef (Strong x) = return $ Just x
   finalize (Strong _) = return ()
   tableFinalizer _ = return ()
 
-finalizer ::
-  StableName (f Any) -> RLock.RLock -> Weak (MemoTable ref f g) -> IO ()
-finalizer sn lock weakTbl = do
+finalizer :: StableName (f Any) -> Weak (MemoTable ref f g) -> IO ()
+finalizer sn weakTbl = do
   r <- Weak.deRefWeak weakTbl
   case r of
     Nothing -> return ()
     Just tbl -> do
-      RLock.acquire lock
-      HashTable.delete tbl sn
-      RLock.release lock
+      atomicModifyIORefCAS_ tbl $ HM.delete sn
 
 unsafeToAny :: f a -> f Any
 unsafeToAny = unsafeCoerce
@@ -103,14 +96,12 @@ memo' ::
   Proxy ref ->
   (forall a. f a -> g a) ->
   MemoTable ref f g ->
-  RLock.RLock ->
   Weak (MemoTable ref f g) ->
   f b ->
   g b
-memo' _ f tbl lock weakTbl !x = unsafePerformIO $ do
+memo' _ f tbl weakTbl !x = unsafePerformIO $ do
   sn <- makeStableName $ unsafeToAny x
-  RLock.acquire lock
-  lkp <- HashTable.lookup tbl sn
+  lkp <- HM.lookup sn <$> readIORef tbl
   case lkp of
     Nothing -> notFound sn
     Just (O w) -> do
@@ -118,16 +109,12 @@ memo' _ f tbl lock weakTbl !x = unsafePerformIO $ do
       case maybeVal of
         Nothing -> notFound sn
         Just val -> do
-          RLock.release lock
           return $ unsafeFromAny val
   where
     notFound sn = do
-      RLock.release lock
       let !y = f x
-      RLock.acquire lock
-      weak <- mkRef x (unsafeToAny y) $ finalizer sn lock weakTbl
-      HashTable.insert tbl sn $ O weak
-      RLock.release lock
+      weak <- mkRef x (unsafeToAny y) $ finalizer sn weakTbl
+      atomicModifyIORefCAS_ tbl $ HM.insert sn $ O weak
       return y
 
 {-# NOINLINE memo0 #-}
@@ -138,12 +125,11 @@ memo0 ::
   f b ->
   g b
 memo0 p f =
-  let (tbl, lock, weak) = unsafePerformIO $ do
-        tbl' <- HashTable.new
-        lock' <- RLock.new
+  let (tbl, weak) = unsafePerformIO $ do
+        tbl' <- newIORef HM.empty
         weak' <- Weak.mkWeakPtr tbl . Just $ tableFinalizer tbl
-        return (tbl', lock', weak')
-   in memo' p f tbl lock weak
+        return (tbl', weak')
+   in memo' p f tbl weak
 
 -- | Memoize a unary function.
 stableMemo :: (a -> b) -> (a -> b)
