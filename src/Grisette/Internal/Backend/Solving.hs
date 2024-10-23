@@ -605,6 +605,7 @@ lowerSinglePrimCached t' m' = do
         withPrim @a $ do
           r <- goCachedIntermediate qs t
           let memoed = stableMemo r
+              {-# NOINLINE memoed #-}
           liftIO $
             modifyIORef' mapState $
               addBiMapIntermediate (SomeTerm t) (toDyn . memoed)
