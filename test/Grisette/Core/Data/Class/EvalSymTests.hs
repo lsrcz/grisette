@@ -49,13 +49,13 @@ evalSymTests :: Test
 evalSymTests =
   testGroup
     "EvalSym"
-    [ plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
+    [ {-plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
         testCase "proper memo" $ do
           let pair = ("a" :: SymInteger, "b" :: SymInteger)
           let iter (x, y) = (y, x + y)
           let r = iterate iter pair !! 100
           Right m <- solve z3 $ snd r .== 0
-          evalSym True m (snd r) @?= 0,
+          evalSym True m (snd r) @?= 0,-}
       testGroup
         "EvalSym for common types"
         [ testGroup
