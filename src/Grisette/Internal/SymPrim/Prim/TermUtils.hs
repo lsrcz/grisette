@@ -35,7 +35,7 @@ import Control.Monad.State
 import Data.Data (cast)
 import Data.Foldable (Foldable (toList), traverse_)
 import qualified Data.HashSet as HS
-import Grisette.Internal.Core.Data.MemoUtils (stableMemo2)
+import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.SymPrim.GeneralFun (type (-->) (GeneralFun))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind (SymbolKindConstraint),
@@ -116,28 +116,24 @@ extractSymSomeTerm ::
   HS.HashSet (SomeTypedConstantSymbol) ->
   SomeTerm ->
   Maybe (HS.HashSet (SomeTypedSymbol knd))
-extractSymSomeTerm = go initialMemo
+extractSymSomeTerm initialBounded = go initialMemo initialBounded
   where
     gotyped ::
-      ( HS.HashSet (SomeTypedConstantSymbol) ->
-        SomeTerm ->
+      ( SomeTerm ->
         Maybe (HS.HashSet (SomeTypedSymbol knd))
       ) ->
-      HS.HashSet (SomeTypedConstantSymbol) ->
       Term a ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    gotyped memo boundedSymbols a =
-      introSupportedPrimConstraint a $ memo boundedSymbols (SomeTerm a)
+    gotyped memo a =
+      introSupportedPrimConstraint a $ memo (SomeTerm a)
     initialMemo ::
-      HS.HashSet (SomeTypedConstantSymbol) ->
       SomeTerm ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    initialMemo = stableMemo2 (go initialMemo)
+    initialMemo = htmemo (go initialMemo initialBounded)
     {-# NOINLINE initialMemo #-}
 
     go ::
-      ( HS.HashSet (SomeTypedConstantSymbol) ->
-        SomeTerm ->
+      ( SomeTerm ->
         Maybe (HS.HashSet (SomeTypedSymbol knd))
       ) ->
       HS.HashSet (SomeTypedConstantSymbol) ->
@@ -155,108 +151,105 @@ extractSymSomeTerm = go initialMemo
           case eqTypeRep (typeRep @(-->)) gf of
             Just HRefl -> case cv of
               GeneralFun sym (tm :: Term r) ->
-                let newmemo = stableMemo2 (go newmemo)
+                let newBounded = HS.union (HS.singleton (someTypedSymbol sym)) bs
+                    newmemo = htmemo (go newmemo newBounded)
                     {-# NOINLINE newmemo #-}
-                 in gotyped
-                      newmemo
-                      (HS.union (HS.singleton (someTypedSymbol sym)) bs)
-                      tm
+                 in gotyped newmemo tm
             Nothing -> return HS.empty
         _ -> return HS.empty
     go _ bs (SomeTerm (ForallTerm _ _ _ _ sym arg)) =
-      let newmemo = stableMemo2 (go newmemo)
+      let newBounded = HS.insert (someTypedSymbol sym) bs
+          newmemo = htmemo (go newmemo newBounded)
           {-# NOINLINE newmemo #-}
-       in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
+       in goUnary newmemo arg
     go _ bs (SomeTerm (ExistsTerm _ _ _ _ sym arg)) =
-      let newmemo = stableMemo2 (go newmemo)
+      let newBounded = HS.insert (someTypedSymbol sym) bs
+          newmemo = htmemo (go newmemo newBounded)
           {-# NOINLINE newmemo #-}
-       in goUnary newmemo (HS.insert (someTypedSymbol sym) bs) arg
-    go memo bs (SomeTerm (NotTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (OrTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (AndTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (EqTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (DistinctTerm _ _ _ _ args)) =
-      combineAllSets $ map (gotyped memo bs) $ toList args
-    go memo bs (SomeTerm (ITETerm _ _ _ _ cond arg1 arg2)) =
-      goTernary memo bs cond arg1 arg2
-    go memo bs (SomeTerm (AddNumTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (NegNumTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (MulNumTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (AbsNumTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (SignumNumTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (LtOrdTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (LeOrdTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (AndBitsTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (OrBitsTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (XorBitsTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (ComplementBitsTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (ShiftLeftTerm _ _ _ _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (ShiftRightTerm _ _ _ _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (RotateLeftTerm _ _ _ _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (RotateRightTerm _ _ _ _ arg n1)) = goBinary memo bs arg n1
-    go memo bs (SomeTerm (BitCastTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BitCastOrTerm _ _ _ _ d arg)) = goBinary memo bs d arg
-    go memo bs (SomeTerm (BVConcatTerm _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (BVSelectTerm _ _ _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (BVExtendTerm _ _ _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (ApplyTerm _ _ _ _ func arg)) = goBinary memo bs func arg
-    go memo bs (SomeTerm (DivIntegralTerm _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (ModIntegralTerm _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (QuotIntegralTerm _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (RemIntegralTerm _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPTraitTerm _ _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FdivTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (RecipTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FloatingUnaryTerm _ _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (PowerTerm _ _ _ _ arg1 arg2)) = goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPUnaryTerm _ _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FPBinaryTerm _ _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPRoundingUnaryTerm _ _ _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FPRoundingBinaryTerm _ _ _ _ _ _ arg1 arg2)) =
-      goBinary memo bs arg1 arg2
-    go memo bs (SomeTerm (FPFMATerm _ _ _ _ mode arg1 arg2 arg3)) =
+       in goUnary newmemo arg
+    go memo _ (SomeTerm (NotTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (OrTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (AndTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (EqTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (DistinctTerm _ _ _ _ args)) =
+      combineAllSets $ map (gotyped memo) $ toList args
+    go memo _ (SomeTerm (ITETerm _ _ _ _ cond arg1 arg2)) =
+      goTernary memo cond arg1 arg2
+    go memo _ (SomeTerm (AddNumTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (NegNumTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (MulNumTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (AbsNumTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (SignumNumTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (LtOrdTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (LeOrdTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (AndBitsTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (OrBitsTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (XorBitsTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (ComplementBitsTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (ShiftLeftTerm _ _ _ _ arg n1)) = goBinary memo arg n1
+    go memo _ (SomeTerm (ShiftRightTerm _ _ _ _ arg n1)) = goBinary memo arg n1
+    go memo _ (SomeTerm (RotateLeftTerm _ _ _ _ arg n1)) = goBinary memo arg n1
+    go memo _ (SomeTerm (RotateRightTerm _ _ _ _ arg n1)) = goBinary memo arg n1
+    go memo _ (SomeTerm (BitCastTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (BitCastOrTerm _ _ _ _ d arg)) = goBinary memo d arg
+    go memo _ (SomeTerm (BVConcatTerm _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (BVSelectTerm _ _ _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (BVExtendTerm _ _ _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (ApplyTerm _ _ _ _ func arg)) = goBinary memo func arg
+    go memo _ (SomeTerm (DivIntegralTerm _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (ModIntegralTerm _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (QuotIntegralTerm _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (RemIntegralTerm _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (FPTraitTerm _ _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (FdivTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (RecipTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (FloatingUnaryTerm _ _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (PowerTerm _ _ _ _ arg1 arg2)) = goBinary memo arg1 arg2
+    go memo _ (SomeTerm (FPUnaryTerm _ _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (FPBinaryTerm _ _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (FPRoundingUnaryTerm _ _ _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (FPRoundingBinaryTerm _ _ _ _ _ _ arg1 arg2)) =
+      goBinary memo arg1 arg2
+    go memo _ (SomeTerm (FPFMATerm _ _ _ _ mode arg1 arg2 arg3)) =
       combineAllSets
-        [ gotyped memo bs mode,
-          gotyped memo bs arg1,
-          gotyped memo bs arg2,
-          gotyped memo bs arg3
+        [ gotyped memo mode,
+          gotyped memo arg1,
+          gotyped memo arg2,
+          gotyped memo arg3
         ]
-    go memo bs (SomeTerm (FromIntegralTerm _ _ _ _ arg)) = goUnary memo bs arg
-    go memo bs (SomeTerm (FromFPOrTerm _ _ _ _ d mode arg)) =
-      goTernary memo bs d mode arg
-    go memo bs (SomeTerm (ToFPTerm _ _ _ _ mode arg _ _)) = goBinary memo bs mode arg
+    go memo _ (SomeTerm (FromIntegralTerm _ _ _ _ arg)) = goUnary memo arg
+    go memo _ (SomeTerm (FromFPOrTerm _ _ _ _ d mode arg)) =
+      goTernary memo d mode arg
+    go memo _ (SomeTerm (ToFPTerm _ _ _ _ mode arg _ _)) = goBinary memo mode arg
     goUnary ::
-      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
-      HS.HashSet (SomeTypedConstantSymbol) ->
+      (SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
       Term a ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
     goUnary = gotyped
     goBinary ::
-      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
-      HS.HashSet (SomeTypedConstantSymbol) ->
+      (SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
       Term a ->
       Term b ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    goBinary memo bs arg1 arg2 =
-      combineSet (gotyped memo bs arg1) (gotyped memo bs arg2)
+    goBinary memo arg1 arg2 =
+      combineSet (gotyped memo arg1) (gotyped memo arg2)
     goTernary ::
-      (HS.HashSet (SomeTypedConstantSymbol) -> SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
-      HS.HashSet (SomeTypedConstantSymbol) ->
+      (SomeTerm -> Maybe (HS.HashSet (SomeTypedSymbol knd))) ->
       Term a ->
       Term b ->
       Term c ->
       Maybe (HS.HashSet (SomeTypedSymbol knd))
-    goTernary memo bs arg1 arg2 arg3 =
+    goTernary memo arg1 arg2 arg3 =
       combineAllSets
-        [ gotyped memo bs arg1,
-          gotyped memo bs arg2,
-          gotyped memo bs arg3
+        [ gotyped memo arg1,
+          gotyped memo arg2,
+          gotyped memo arg3
         ]
     combineSet (Just a) (Just b) = Just $ HS.union a b
     combineSet _ _ = Nothing
