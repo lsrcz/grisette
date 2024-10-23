@@ -37,10 +37,9 @@ where
 import Control.Applicative (Const (Const, getConst))
 import qualified Control.Concurrent.RLock as RLock
 import Control.Monad.Fix (fix)
-import Data.Atomics (atomicModifyIORefCAS, atomicModifyIORefCAS_)
+import Data.Atomics (atomicModifyIORefCAS_)
 import qualified Data.HashMap.Strict as HM
 import Data.HashTable.IO (BasicHashTable)
-import qualified Data.HashTable.IO as H
 import qualified Data.HashTable.IO as HashTable
 import Data.Hashable (Hashable)
 import Data.IORef (newIORef, readIORef)
