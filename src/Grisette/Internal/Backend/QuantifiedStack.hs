@@ -1,4 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
 -- |
@@ -24,6 +29,7 @@ where
 import Data.Dynamic (Dynamic)
 import qualified Data.HashMap.Strict as M
 import qualified Data.HashSet as S
+import Data.Hashable (Hashable (hashWithSalt))
 import GHC.Stack (HasCallStack)
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( IsSymbolKind,
@@ -66,6 +72,12 @@ isQuantifiedSymbol s (QuantifiedSymbols t) =
 -- | A stack of quantified symbols.
 newtype QuantifiedStack = QuantifiedStack
   {_stack :: M.HashMap SomeTypedConstantSymbol Dynamic}
+
+instance Eq QuantifiedStack where
+  QuantifiedStack s1 == QuantifiedStack s2 = M.keysSet s1 == M.keysSet s2
+
+instance Hashable QuantifiedStack where
+  hashWithSalt s (QuantifiedStack t) = hashWithSalt s (M.keys t)
 
 -- | An empty stack of quantified symbols.
 emptyQuantifiedStack :: QuantifiedStack

@@ -148,7 +148,7 @@ import Grisette.Internal.Core.Data.Class.Solver
       ),
     SolvingFailure (SolvingError, Terminated, Unk, Unsat),
   )
-import Grisette.Internal.Core.Data.MemoUtils (stableMemo)
+import Grisette.Internal.Core.Data.MemoUtils (htmemo)
 import Grisette.Internal.SymPrim.GeneralFun (substTerm)
 import Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalFP
   ( sbvFPBinaryTerm,
@@ -604,7 +604,7 @@ lowerSinglePrimCached t' m' = do
       goCachedImpl qs t =
         withPrim @a $ do
           r <- goCachedIntermediate qs t
-          let memoed = stableMemo r
+          let memoed = htmemo r
               {-# NOINLINE memoed #-}
           liftIO $
             modifyIORef' mapState $
