@@ -61,13 +61,6 @@ packages:
   original:
     hackage: deepseq-1.4.4.0
 - completed:
-    hackage: hashtables-1.2.3.4@sha256:510be063ee0833868f170172af3c80ca72c307f7764353e16a27ca6c1ef5cf72,8486
-    pantry-tree:
-      sha256: 04f8651d97bd392ff0bfd8858e80ae23db312af6789f0129295a93f525378f47
-      size: 3027
-  original:
-    hackage: hashtables-1.2.3.4
-- completed:
     hackage: loch-th-0.2.2@sha256:262a1f2190decd5e24c9368008a6fc87d83515f5f3a8488e384bd8acc0a5529c,805
     pantry-tree:
       sha256: eb29d168e827411d0fd6c93b9efefc95b02cc252e4c7bb47094e9d52ea955cc9
@@ -214,13 +207,6 @@ packages:
       size: 1245
   original:
     hackage: atomic-primops-0.8.3
-- completed:
-    hackage: concurrent-extra-0.7.0.12@sha256:f9a9c09770dbe32eeb3c741ef6c4e0b3389a203cd46eeb4c696b11ee66f01423,3386
-    pantry-tree:
-      sha256: 1e06b9e225a107ebcb7b1f441f0591140e63c18256fae4a2ef396c298fe44e4a
-      size: 1393
-  original:
-    hackage: concurrent-extra-0.7.0.12
 - completed:
     hackage: cereal-0.5.8.1@sha256:a08b65dd8beb3159b4a9a42c4d98ec5363cb551e78c9e9ffb7e810a676b4610b,2863
     pantry-tree:

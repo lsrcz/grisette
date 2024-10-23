@@ -176,7 +176,6 @@ weakStableMemoFix h = fix (weakStableMemo . h)
 htmemo :: (Eq k, Hashable k) => (k -> a) -> k -> a
 htmemo f = unsafePerformIO $ do
   cache <- newIORef HM.empty
-  -- cache <- H.new :: IO (HashTable k v)
   return $ \(!x) -> unsafePerformIO $ do
     tryV <- HM.lookup x <$> readIORef cache
     case tryV of

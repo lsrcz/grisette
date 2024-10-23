@@ -240,12 +240,10 @@ library
     , bytestring >=0.10.12 && <0.13
     , cereal >=0.5.8.1 && <0.6
     , cereal-text >=0.1.0.2 && <0.2
-    , concurrent-extra >=0.7.0.12 && <0.8
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
     , hashable >=1.2.3 && <1.6
-    , hashtables >=1.2.3.4 && <1.4
     , libBF >=0.6.3 && <0.7
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
@@ -287,14 +285,12 @@ test-suite doctest
     , bytestring >=0.10.12 && <0.13
     , cereal >=0.5.8.1 && <0.6
     , cereal-text >=0.1.0.2 && <0.2
-    , concurrent-extra >=0.7.0.12 && <0.8
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , doctest >=0.18.2 && <0.23
     , generic-deriving >=1.14.1 && <1.15
     , grisette
     , hashable >=1.2.3 && <1.6
-    , hashtables >=1.2.3.4 && <1.4
     , libBF >=0.6.3 && <0.7
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
@@ -405,13 +401,11 @@ test-suite spec
     , bytestring >=0.10.12 && <0.13
     , cereal >=0.5.8.1 && <0.6
     , cereal-text >=0.1.0.2 && <0.2
-    , concurrent-extra >=0.7.0.12 && <0.8
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
     , grisette
     , hashable >=1.2.3 && <1.6
-    , hashtables >=1.2.3.4 && <1.4
     , libBF >=0.6.3 && <0.7
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4

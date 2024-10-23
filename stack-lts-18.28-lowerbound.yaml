@@ -52,7 +52,6 @@ extra-deps:
   - unordered-containers-0.2.17.0
   - template-haskell-2.16.0.0
   - deepseq-1.4.4.0
-  - hashtables-1.2.3.4
   - loch-th-0.2.2
   - th-compat-0.1.2
   - QuickCheck-2.14
@@ -74,7 +73,6 @@ extra-deps:
   - sbv-8.17
   - th-abstraction-0.4.0.0
   - atomic-primops-0.8.3
-  - concurrent-extra-0.7.0.12
   - cereal-0.5.8.1
   - cereal-text-0.1.0.2
   - bytes-0.17.1
