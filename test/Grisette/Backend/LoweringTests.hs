@@ -34,7 +34,6 @@ import Grisette
     SymEq ((.==)),
     SymInteger,
     SymRep (SymType),
-    SymWordN (SymWordN),
     WordN,
     solve,
     type (-~>),
@@ -386,9 +385,9 @@ loweringTests =
         "Lowering"
         [ plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
             testCase "proper memo" $ do
-              let pair = ("a" :: SymWordN 1, "b" :: SymWordN 1)
+              let pair = ("a" :: SymInteger, "b" :: SymInteger)
               let iter (x, y) = (y, x + y)
-              let r = iterate iter pair !! 30
+              let r = iterate iter pair !! 100
               m <- solve z3 $ snd r .== 0
               assertBool "should success" $ isRight m,
           testGroup
