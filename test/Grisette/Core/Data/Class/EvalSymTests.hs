@@ -29,10 +29,13 @@ import Grisette
     Solvable (con, isym, ssym),
     SymBool,
     SymEq ((.==)),
+    SymInteger,
     Symbol (IndexedSymbol),
+    solve,
     typedAnySymbol,
+    z3,
   )
-import Test.Framework (Test, testGroup)
+import Test.Framework (Test, TestOptions' (topt_timeout), plusTestOptions, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
@@ -46,7 +49,14 @@ evalSymTests :: Test
 evalSymTests =
   testGroup
     "EvalSym"
-    [ testGroup
+    [ plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
+        testCase "proper memo" $ do
+          let pair = ("a" :: SymInteger, "b" :: SymInteger)
+          let iter (x, y) = (y, x + y)
+          let r = iterate iter pair !! 100
+          Right m <- solve z3 $ snd r .== 0
+          evalSym True m (snd r) @?= 0,
+      testGroup
         "EvalSym for common types"
         [ testGroup
             "SymBool"

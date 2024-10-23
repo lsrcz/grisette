@@ -40,7 +40,8 @@ import Grisette.Core.Data.Class.TestValues
     ssymbolBool,
     symTrue,
   )
-import Test.Framework (Test, testGroup)
+import Grisette.Internal.SymPrim.SymInteger (SymInteger)
+import Test.Framework (Test, TestOptions' (topt_timeout), plusTestOptions, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
@@ -58,7 +59,13 @@ extractSymTests :: Test
 extractSymTests =
   testGroup
     "ExtractSym"
-    [ testGroup
+    [ plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
+        testCase "proper memo" $ do
+          let pair = ("a" :: SymInteger, "b" :: SymInteger)
+          let iter (x, y) = (y, x + y)
+          let r = iterate iter pair !! 100
+          extractSym r @?= extractSym pair,
+      testGroup
         "Common types"
         [ testGroup
             "SymBool"
