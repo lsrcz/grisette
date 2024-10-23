@@ -16,6 +16,7 @@ import Data.Bits
   ( Bits (complement, xor, (.&.), (.|.)),
   )
 import Data.Dynamic (Typeable, fromDynamic)
+import Data.Either (isRight)
 import qualified Data.HashMap.Strict as M
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.SBV as SBV
@@ -127,10 +128,10 @@ import Grisette.Internal.SymPrim.Prim.Term
     ssymTerm,
     xorBitsTerm,
   )
-import Test.Framework (Test, testGroup)
+import Test.Framework (Test, TestOptions' (topt_timeout), plusTestOptions, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit (Assertion, assertFailure, (@?=))
+import Test.HUnit (Assertion, assertBool, assertFailure, (@?=))
 import Test.QuickCheck (Arbitrary, ioProperty)
 import Type.Reflection (typeRep)
 
@@ -382,7 +383,14 @@ loweringTests =
   let unboundedConfig = z3 {sbvConfig = SBV.z3 {SBV.solverSetOptions = [SBV.SetLogic SBV.Logic_ALL]}}
    in testGroup
         "Lowering"
-        [ testGroup
+        [ plusTestOptions (mempty {topt_timeout = Just (Just 1000000)}) $
+            testCase "proper memo" $ do
+              let pair = ("a" :: SymInteger, "b" :: SymInteger)
+              let iter (x, y) = (y, x + y)
+              let r = iterate iter pair !! 100
+              m <- solve z3 $ snd r .== 0
+              assertBool "should success" $ isRight m,
+          testGroup
             "Bool Lowering"
             [ testModelParse @Bool,
               testCase "Not" $ do
