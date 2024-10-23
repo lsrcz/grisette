@@ -196,7 +196,9 @@ htmemo f = unsafePerformIO $ do
     tryV <- H.lookup cache x
     case tryV of
       Nothing -> do
-        let v = f x
+        RLock.release rlock
+        let !v = f x
+        RLock.acquire rlock
         H.insert cache x v
         RLock.release rlock
         return v
