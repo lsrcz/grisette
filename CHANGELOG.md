@@ -47,6 +47,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#255](https://github.com/lsrcz/grisette/pull/255))
 - Fixed solverGenericCEGIS and make it also return the last failing cex.
   ([#256](https://github.com/lsrcz/grisette/pull/256))
+- `solverGenericCEGIS` will only rerun possible verifiers now. This will improve
+  overall verification performance.
+  ([#258](https://github.com/lsrcz/grisette/pull/258))
+- Fixed a **critical** bug in the lowering/evalSym/extractSym where the
+  intermediate states are not properly memoized.
+  ([#259](https://github.com/lsrcz/grisette/pull/259))
 
 ## [0.8.0.0] - 2024-08-13
 
