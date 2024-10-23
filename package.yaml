@@ -48,7 +48,6 @@ dependencies:
   - unordered-containers >= 0.2.17 && < 0.3
   - template-haskell >= 2.16 && < 2.23
   - deepseq >= 1.4.4 && < 1.6
-  - hashtables >= 1.2.3.4 && < 1.4
   - loch-th >= 0.2.2 && < 0.3
   - th-compat >= 0.1.2 && < 0.2
   - th-abstraction >= 0.4 && < 0.8
@@ -64,7 +63,6 @@ dependencies:
   - th-lift-instances >= 0.1.16 && < 0.2
   - vector >= 0.12.1.2 && < 0.14
   - atomic-primops >= 0.8.3 && < 0.9
-  - concurrent-extra >= 0.7.0.12 && < 0.8
   - cereal >= 0.5.8.1 && < 0.6
   - cereal-text >= 0.1.0.2 && < 0.2
   - binary >= 0.8.8.0 && < 0.9
