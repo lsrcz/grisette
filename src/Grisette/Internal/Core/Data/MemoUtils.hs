@@ -37,10 +37,13 @@ where
 import Control.Applicative (Const (Const, getConst))
 import qualified Control.Concurrent.RLock as RLock
 import Control.Monad.Fix (fix)
+import Data.Atomics (atomicModifyIORefCAS, atomicModifyIORefCAS_)
+import qualified Data.HashMap.Strict as HM
 import Data.HashTable.IO (BasicHashTable)
 import qualified Data.HashTable.IO as H
 import qualified Data.HashTable.IO as HashTable
 import Data.Hashable (Hashable)
+import Data.IORef (newIORef, readIORef)
 import Data.Proxy (Proxy (Proxy))
 import GHC.Base (Any, Type)
 import System.IO.Unsafe (unsafePerformIO)
@@ -183,28 +186,20 @@ weakStableMemo3 = weakStableMup weakStableMemo2
 weakStableMemoFix :: ((a -> b) -> (a -> b)) -> a -> b
 weakStableMemoFix h = fix (weakStableMemo . h)
 
-type HashTable k v = H.BasicHashTable k v
-
 -- | Function memoizer with mutable hash table.
 {-# NOINLINE htmemo #-}
 htmemo :: (Eq k, Hashable k) => (k -> a) -> k -> a
 htmemo f = unsafePerformIO $ do
-  cache <- H.new :: IO (HashTable k v)
-  rlock <- RLock.new
-  return $ \x -> unsafePerformIO $ do
-    RLock.acquire rlock
-    tryV <- H.lookup cache x
+  cache <- newIORef HM.empty
+  -- cache <- H.new :: IO (HashTable k v)
+  return $ \(!x) -> unsafePerformIO $ do
+    tryV <- HM.lookup x <$> readIORef cache
     case tryV of
       Nothing -> do
-        RLock.release rlock
         let !v = f x
-        RLock.acquire rlock
-        H.insert cache x v
-        RLock.release rlock
+        atomicModifyIORefCAS_ cache $ \old -> HM.insert x v old
         return v
-      Just v -> do
-        RLock.release rlock
-        return v
+      Just v -> return v
 
 -- | Lift a memoizer to work with one more argument.
 htmup :: (Eq k, Hashable k) => (b -> c) -> (k -> b) -> (k -> c)
