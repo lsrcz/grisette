@@ -66,10 +66,12 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         pevalITETerm,
         pformatCon,
         sameCon,
+        sbvDistinct,
+        sbvEq,
         sbvIte,
         symSBVName,
         symSBVTerm,
-        withPrim, sbvDistinct, sbvEq
+        withPrim
       ),
     SupportedPrimConstraint
       ( PrimConstraint
