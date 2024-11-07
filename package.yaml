@@ -52,7 +52,7 @@ dependencies:
   - th-compat >= 0.1.2 && < 0.2
   - th-abstraction >= 0.4 && < 0.8
   - array >= 0.5.4 && < 0.6
-  - sbv >= 8.17 && < 11
+  - sbv >= 8.17 && < 12
   - parallel >= 3.2.2.0 && < 3.3
   - text >= 1.2.4.1 && < 2.2
   - QuickCheck >= 2.14 && < 2.16

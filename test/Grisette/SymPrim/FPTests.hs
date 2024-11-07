@@ -552,6 +552,7 @@ fpTests =
                         ( ConvertibleBound bv,
                           Num (bv n),
                           SBV.HasKind (sbvbv n),
+                          SBV.SymVal (sbvbv n),
                           Num (SBV.SBV (sbvbv n)),
                           Typeable bv
                         ) =>

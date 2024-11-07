@@ -213,6 +213,10 @@ import Data.Text.Prettyprint.Doc
 #define SMTDefinable Uninterpreted
 #endif
 
+#if MIN_VERSION_sbv(11,0,0)
+import qualified Data.SBV as SBVTC
+#endif
+
 import Control.DeepSeq (NFData (rnf))
 import Control.Monad (msum)
 import Control.Monad.IO.Class (MonadIO)

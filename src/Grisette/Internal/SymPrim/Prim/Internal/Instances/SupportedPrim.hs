@@ -69,7 +69,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Term
         sbvIte,
         symSBVName,
         symSBVTerm,
-        withPrim
+        withPrim, sbvDistinct, sbvEq
       ),
     SupportedPrimConstraint
       ( PrimConstraint
@@ -167,6 +167,8 @@ instance (KnownNat w, 1 <= w) => SBVRep (IntN w) where
   type SBVType (IntN w) = SBV.SBV (SBV.IntN w)
 
 instance (KnownNat w, 1 <= w) => SupportedPrim (IntN w) where
+  sbvDistinct = withPrim @(IntN w) $ SBV.distinct . toList
+  sbvEq = withPrim @(IntN w) (SBV..==)
   pformatCon = show
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
@@ -219,6 +221,8 @@ instance (KnownNat w, 1 <= w) => SBVRep (WordN w) where
   type SBVType (WordN w) = SBV.SBV (SBV.WordN w)
 
 instance (KnownNat w, 1 <= w) => SupportedPrim (WordN w) where
+  sbvDistinct = withPrim @(WordN w) $ SBV.distinct . toList
+  sbvEq = withPrim @(WordN w) (SBV..==)
   pformatCon = show
   defaultValue = 0
   pevalITETerm = pevalITEBasicTerm
