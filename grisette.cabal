@@ -249,7 +249,7 @@ library
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <11
+    , sbv >=8.17 && <12
     , stm ==2.5.*
     , template-haskell >=2.16 && <2.23
     , text >=1.2.4.1 && <2.2
@@ -296,7 +296,7 @@ test-suite doctest
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <11
+    , sbv >=8.17 && <12
     , stm ==2.5.*
     , template-haskell >=2.16 && <2.23
     , text >=1.2.4.1 && <2.2
@@ -411,7 +411,7 @@ test-suite spec
     , mtl >=2.2.2 && <2.4
     , parallel >=3.2.2.0 && <3.3
     , prettyprinter >=1.5.0 && <1.8
-    , sbv >=8.17 && <11
+    , sbv >=8.17 && <12
     , stm ==2.5.*
     , template-haskell >=2.16 && <2.23
     , test-framework >=0.8.2 && <0.9

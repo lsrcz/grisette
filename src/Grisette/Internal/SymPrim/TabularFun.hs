@@ -155,7 +155,7 @@ lowerTFunCon ::
   ( SBV.SBV (NonFuncSBVBaseType a) ->
     SBVType b
   )
-lowerTFunCon (TabularFun l d) = go l d
+lowerTFunCon (TabularFun l d) = withNonFuncPrim @a $ go l d
   where
     go [] d _ = conSBVTerm d
     go ((x, r) : xs) d v =
