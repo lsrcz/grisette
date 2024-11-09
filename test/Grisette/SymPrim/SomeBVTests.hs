@@ -301,22 +301,26 @@ someBVTests =
                 5
                 2
                 7,
-              testSymFuncMatch "SomeBV/SomeBV"
-                (binSomeBV (\l r -> SomeBV $ l + r) undefined )
+              testSymFuncMatch
+                "SomeBV/SomeBV"
+                (binSomeBV (\l r -> SomeBV $ l + r) undefined)
                 (ssymBV 4 "a")
                 (ssymBV 4 "b")
                 ((ssymBV 4 "a") + (ssymBV 4 "b")),
-              testSymFuncMatch "SomeBV/SomeBVCondLit"
-                (binSomeBV (\l r -> SomeBV $ l + r) undefined )
+              testSymFuncMatch
+                "SomeBV/SomeBVCondLit"
+                (binSomeBV (\l r -> SomeBV $ l + r) undefined)
                 (ssymBV 4 "a")
                 (symIte "b" 5 6)
                 ((ssymBV 4 "a") + symIte "b" (bv 4 5) (bv 4 6)),
-              testSymFuncMatchLit "SomeBVCondLit/SomeBVCondLit"
+              testSymFuncMatchLit
+                "SomeBVCondLit/SomeBVCondLit"
                 (binSomeBV undefined (\l r -> SomeBVLit $ l + r))
                 (symIte "a" 5 6)
                 (symIte "b" 5 6)
                 (symIte "a" (symIte "b" 10 11) (symIte "b" 11 12)),
-              testSymFuncMatchLit "SomeBVLit/SomeBVCondLit"
+              testSymFuncMatchLit
+                "SomeBVLit/SomeBVCondLit"
                 (binSomeBV undefined (\l r -> SomeBVLit $ l + r))
                 5
                 (symIte "b" 5 6)
