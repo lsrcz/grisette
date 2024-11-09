@@ -130,43 +130,43 @@ symMsb a =
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symPopCount`.
 symPopCount ::
-  forall mode a b.
-  (Typeable mode, UnifiedFiniteBits mode a, Num b, UnifiedITEOp mode b) =>
+  forall mode a.
+  (Typeable mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
   a ->
-  b
+  a
 symPopCount a =
   withMode @mode
     (withBaseFiniteBits @mode @a (fromIntegral $ popCount a))
     ( withBaseFiniteBits @mode @a $
-        withBaseITEOp @mode @b (SymFiniteBits.symPopCount a)
+        withBaseITEOp @mode @a (SymFiniteBits.symPopCount a)
     )
 
 -- | Unified
 -- `Grisette.Internal.Core.Data.Class.SymFiniteBits.symCountLeadingZeros`.
 symCountLeadingZeros ::
-  forall mode a b.
-  (Typeable mode, UnifiedFiniteBits mode a, Num b, UnifiedITEOp mode b) =>
+  forall mode a.
+  (Typeable mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
   a ->
-  b
+  a
 symCountLeadingZeros a =
   withMode @mode
     (withBaseFiniteBits @mode @a (fromIntegral $ countLeadingZeros a))
     ( withBaseFiniteBits @mode @a $
-        withBaseITEOp @mode @b (SymFiniteBits.symCountLeadingZeros a)
+        withBaseITEOp @mode @a (SymFiniteBits.symCountLeadingZeros a)
     )
 
 -- | Unified
 -- `Grisette.Internal.Core.Data.Class.SymFiniteBits.symCountTrailingZeros`.
 symCountTrailingZeros ::
-  forall mode a b.
-  (Typeable mode, UnifiedFiniteBits mode a, Num b, UnifiedITEOp mode b) =>
+  forall mode a.
+  (Typeable mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
   a ->
-  b
+  a
 symCountTrailingZeros a =
   withMode @mode
     (withBaseFiniteBits @mode @a (fromIntegral $ countTrailingZeros a))
     ( withBaseFiniteBits @mode @a $
-        withBaseITEOp @mode @b (SymFiniteBits.symCountTrailingZeros a)
+        withBaseITEOp @mode @a (SymFiniteBits.symCountTrailingZeros a)
     )
 
 -- | A class that provides unified equality comparison.
