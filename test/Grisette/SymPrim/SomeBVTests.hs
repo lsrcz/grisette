@@ -114,6 +114,30 @@ testFuncMatchLit name f a b r = testCase name $ do
   let SomeBVLit expected = r
   actual @?= expected
 
+testSymFuncMatch ::
+  String ->
+  (SomeSymIntN -> SomeSymIntN -> SomeSymIntN) ->
+  SomeSymIntN ->
+  SomeSymIntN ->
+  SomeSymIntN ->
+  Test
+testSymFuncMatch name f a b r = testCase name $ do
+  let actual = f a b
+  let expected = r
+  actual @?= expected
+
+testSymFuncMatchLit ::
+  String ->
+  (SomeSymIntN -> SomeSymIntN -> SomeSymIntN) ->
+  SomeSymIntN ->
+  SomeSymIntN ->
+  SomeSymIntN ->
+  Test
+testSymFuncMatchLit name f a b r = testCase name $ do
+  let SomeBVLit actual = f a b
+  let SomeBVLit expected = r
+  actual @?= expected
+
 testFuncMisMatch ::
   (NFData r, Show r, Eq r) =>
   (SomeIntN -> SomeIntN -> r) ->
@@ -277,6 +301,26 @@ someBVTests =
                 5
                 2
                 7,
+              testSymFuncMatch "SomeBV/SomeBV"
+                (binSomeBV (\l r -> SomeBV $ l + r) undefined )
+                (ssymBV 4 "a")
+                (ssymBV 4 "b")
+                ((ssymBV 4 "a") + (ssymBV 4 "b")),
+              testSymFuncMatch "SomeBV/SomeBVCondLit"
+                (binSomeBV (\l r -> SomeBV $ l + r) undefined )
+                (ssymBV 4 "a")
+                (symIte "b" 5 6)
+                ((ssymBV 4 "a") + symIte "b" (bv 4 5) (bv 4 6)),
+              testSymFuncMatchLit "SomeBVCondLit/SomeBVCondLit"
+                (binSomeBV undefined (\l r -> SomeBVLit $ l + r))
+                (symIte "a" 5 6)
+                (symIte "b" 5 6)
+                (symIte "a" (symIte "b" 10 11) (symIte "b" 11 12)),
+              testSymFuncMatchLit "SomeBVLit/SomeBVCondLit"
+                (binSomeBV undefined (\l r -> SomeBVLit $ l + r))
+                5
+                (symIte "b" 5 6)
+                (symIte "b" 10 11),
               testFuncMisMatch @SomeIntN
                 (binSomeBV (\l r -> SomeIntN $ l + r) undefined)
                 (bv 4 5)
