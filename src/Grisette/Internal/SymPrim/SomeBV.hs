@@ -1,12 +1,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -142,12 +144,13 @@ import Grisette.Internal.Core.Data.Class.GenSym
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
-    MergingStrategy (SortedStrategy),
+    MergingStrategy (SimpleStrategy, SortedStrategy),
     wrapStrategy,
   )
 import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformat),
   )
+import Grisette.Internal.Core.Data.Class.PlainUnion (simpleMerge)
 import Grisette.Internal.Core.Data.Class.SafeDiv
   ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
     SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
@@ -169,6 +172,7 @@ import Grisette.Internal.Core.Data.Class.SafeSymShift
 import Grisette.Internal.Core.Data.Class.SignConversion
   ( SignConversion (toSigned, toUnsigned),
   )
+import Grisette.Internal.Core.Data.Class.SimpleMergeable (mrgIf)
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, isym, ssym, sym),
   )
@@ -189,7 +193,7 @@ import Grisette.Internal.Core.Data.Class.SymShift
   )
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, tryMerge)
+import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge, mrgSingle, tryMerge)
 import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSyms, allSymsS))
 import Grisette.Internal.SymPrim.BV
@@ -239,9 +243,36 @@ instance Exception SomeBVException where
   displayException (UndeterminedBitwidth msg) =
     "Cannot determine bit-width for literals: " <> T.unpack msg
 
+class MaySomeBV bv where
+  assignLitBitWidth :: (KnownNat n, 1 <= n) => SomeBVLit -> bv n
+
+instance MaySomeBV IntN where
+  assignLitBitWidth = \case
+    SomeBVIntLit i -> fromInteger i
+    SomeBVCondLit _ -> error "Should not happen"
+
+instance MaySomeBV WordN where
+  assignLitBitWidth = \case
+    SomeBVIntLit i -> fromInteger i
+    SomeBVCondLit _ -> error "Should not happen"
+
+instance MaySomeBV SymIntN where
+  assignLitBitWidth = \case
+    SomeBVIntLit i -> fromInteger i
+    SomeBVCondLit u -> simpleMerge $ do
+      i <- u
+      mrgSingle $ fromInteger i
+
+instance MaySomeBV SymWordN where
+  assignLitBitWidth = \case
+    SomeBVIntLit i -> fromInteger i
+    SomeBVCondLit u -> simpleMerge $ do
+      i <- u
+      mrgSingle $ fromInteger i
+
 assignBitWidthList ::
   forall bv.
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   T.Text ->
   [SomeBV bv] ->
   Either SomeBVException [SomeBV bv]
@@ -263,13 +294,13 @@ assignBitWidthList msg bvs = case allNonMaybeBitWidth of
     assignSingleBitWidth ::
       forall i. (KnownNat i, 1 <= i) => bv i -> SomeBV bv -> SomeBV bv
     assignSingleBitWidth _ s@(SomeBV _) = s
-    assignSingleBitWidth _ (SomeBVLit i) = SomeBV (fromIntegral i :: bv i)
+    assignSingleBitWidth _ (SomeBVLit i) = SomeBV (assignLitBitWidth i :: bv i)
 
 class AssignBitWidth a where
   assignBitWidth :: T.Text -> a -> Either SomeBVException a
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   AssignBitWidth (SomeBV bv, SomeBV bv)
   where
   assignBitWidth msg (a, b) = do
@@ -279,7 +310,7 @@ instance
       _ -> error "Should not happen"
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   AssignBitWidth (SomeBV bv, SomeBV bv, SomeBV bv)
   where
   assignBitWidth msg (a, b, c) = do
@@ -289,7 +320,7 @@ instance
       _ -> error "Should not happen"
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   AssignBitWidth (SomeBV bv, SomeBV bv, SomeBV bv, SomeBV bv)
   where
   assignBitWidth msg (a, b, c, d) = do
@@ -351,7 +382,109 @@ instance
 -- bvlit(6)
 data SomeBV bv where
   SomeBV :: (KnownNat n, 1 <= n) => bv n -> SomeBV bv
-  SomeBVLit :: Integer -> SomeBV bv
+  SomeBVLit :: SomeBVLit -> SomeBV bv
+
+data SomeBVLit where
+  SomeBVIntLit :: Integer -> SomeBVLit
+  SomeBVCondLit :: Union Integer -> SomeBVLit
+  deriving (Eq, Generic, Lift)
+  deriving anyclass (Hashable, NFData)
+  deriving (Mergeable, ExtractSym, AllSyms) via (Default SomeBVLit)
+
+instance PPrint SomeBVLit where
+  pformat (SomeBVIntLit i) = pformat i
+  pformat (SomeBVCondLit u) = pformat u
+
+toUnionInteger :: SomeBVLit -> Union Integer
+toUnionInteger (SomeBVIntLit i) = mrgSingle i
+toUnionInteger (SomeBVCondLit u) = u
+
+instance Num SomeBVLit where
+  SomeBVIntLit a + SomeBVIntLit b = SomeBVIntLit $ a + b
+  l + r = SomeBVCondLit $ toUnionInteger l + toUnionInteger r
+  SomeBVIntLit a - SomeBVIntLit b = SomeBVIntLit $ a - b
+  l - r = SomeBVCondLit $ toUnionInteger l - toUnionInteger r
+  SomeBVIntLit a * SomeBVIntLit b = SomeBVIntLit $ a * b
+  l * r = SomeBVCondLit $ toUnionInteger l * toUnionInteger r
+  negate (SomeBVIntLit a) = SomeBVIntLit $ negate a
+  negate l = SomeBVCondLit $ negate $ toUnionInteger l
+  abs (SomeBVIntLit a) = SomeBVIntLit $ abs a
+  abs l = SomeBVCondLit $ abs $ toUnionInteger l
+  signum (SomeBVIntLit a) = SomeBVIntLit $ signum a
+  signum l = SomeBVCondLit $ signum $ toUnionInteger l
+  fromInteger = SomeBVIntLit
+
+instance Bits SomeBVLit where
+  SomeBVIntLit l .&. SomeBVIntLit r = SomeBVIntLit $ l .&. r
+  l .&. r = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    r <- toUnionInteger r
+    mrgSingle $ l .&. r
+  SomeBVIntLit l .|. SomeBVIntLit r = SomeBVIntLit $ l .|. r
+  l .|. r = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    r <- toUnionInteger r
+    mrgSingle $ l .|. r
+  SomeBVIntLit l `xor` SomeBVIntLit r = SomeBVIntLit $ l `xor` r
+  l `xor` r = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    r <- toUnionInteger r
+    mrgSingle $ l `xor` r
+  complement (SomeBVIntLit l) = SomeBVIntLit $ complement l
+  complement l = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    mrgSingle $ complement l
+  setBit (SomeBVIntLit l) i = SomeBVIntLit $ setBit l i
+  setBit l i = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    mrgSingle $ setBit l i
+  clearBit (SomeBVIntLit l) i = SomeBVIntLit $ clearBit l i
+  clearBit l i = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    mrgSingle $ clearBit l i
+  complementBit (SomeBVIntLit l) i = SomeBVIntLit $ complementBit l i
+  complementBit l i = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    mrgSingle $ complementBit l i
+  shiftL (SomeBVIntLit a) i = SomeBVIntLit $ shiftL a i
+  shiftL l i = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    mrgSingle $ shiftL l i
+  unsafeShiftL (SomeBVIntLit a) i = SomeBVIntLit $ unsafeShiftL a i
+  unsafeShiftL l i = SomeBVCondLit $ do
+    l <- toUnionInteger l
+    mrgSingle $ unsafeShiftL l i
+  shift = throw $ UndeterminedBitwidth "shift"
+  rotate = throw $ UndeterminedBitwidth "rotate"
+  bitSize = throw $ UndeterminedBitwidth "bitSize"
+  bitSizeMaybe = throw $ UndeterminedBitwidth "bitSizeMaybe"
+  isSigned = error "isSigned is not defined for SomeBVLit"
+  testBit = throw $ UndeterminedBitwidth "testBit"
+  bit = throw $ UndeterminedBitwidth "bit"
+  popCount = throw $ UndeterminedBitwidth "popCount"
+
+instance Show SomeBVLit where
+  show (SomeBVIntLit i) = show i
+  show (SomeBVCondLit u) = show u
+
+instance Serial SomeBVLit where
+  serialize (SomeBVIntLit i) = putWord8 0 >> serialize i
+  serialize (SomeBVCondLit u) =
+    putWord8 1 >> serialize u
+  deserialize = do
+    tag <- getWord8
+    case tag of
+      0 -> SomeBVIntLit <$> deserialize
+      1 -> SomeBVCondLit <$> deserialize
+      _ -> fail "Invalid tag"
+
+instance Cereal.Serialize SomeBVLit where
+  put = serialize
+  get = deserialize
+
+instance Binary.Binary SomeBVLit where
+  put = serialize
+  get = deserialize
 
 instance
   (forall n. (KnownNat n, 1 <= n) => Serial (bv n)) =>
@@ -389,7 +522,8 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Hashable (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   Hashable (SomeBV bv)
   where
@@ -414,6 +548,8 @@ instance
   show (SomeBVLit i) = "bvlit(" <> show i <> ")"
   {-# INLINE show #-}
 
+-- , MaySomeBV bv
+
 instance
   (forall n. (KnownNat n, 1 <= n) => NFData (bv n)) =>
   NFData (SomeBV bv)
@@ -424,7 +560,8 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Eq (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   Eq (SomeBV bv)
   where
@@ -432,22 +569,23 @@ instance
     case sameNat (Proxy @l) (Proxy @r) of
       Just Refl -> l == r
       Nothing -> False
-  SomeBV (l :: bv l) == SomeBVLit r = l == fromIntegral r
-  SomeBVLit l == SomeBV r = fromIntegral l == r
-  SomeBVLit _ == SomeBVLit _ = throw $ UndeterminedBitwidth "=="
+  SomeBV (l :: bv l) == SomeBVLit r = l == assignLitBitWidth r
+  l == r@SomeBV {} = r == l
+  _ == _ = throw $ UndeterminedBitwidth "=="
   {-# INLINE (==) #-}
   SomeBV (l :: bv l) /= SomeBV (r :: bv r) =
     case sameNat (Proxy @l) (Proxy @r) of
       Just Refl -> l /= r
       Nothing -> True
-  SomeBV (l :: bv l) /= SomeBVLit r = l /= fromIntegral r
-  SomeBVLit l /= SomeBV r = fromIntegral l /= r
-  SomeBVLit _ /= SomeBVLit _ = throw $ UndeterminedBitwidth "/="
+  SomeBV (l :: bv l) /= SomeBVLit r = l /= assignLitBitWidth r
+  l /= r@SomeBV {} = r /= l
+  _ /= _ = throw $ UndeterminedBitwidth "/="
   {-# INLINE (/=) #-}
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Ord (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   Ord (SomeBV bv)
   where
@@ -467,7 +605,7 @@ instance
     binSomeBV compare (const $ const $ throw $ UndeterminedBitwidth "compare")
   {-# INLINE compare #-}
 
-instance (forall n. (KnownNat n, 1 <= n) => Num (bv n)) => Num (SomeBV bv) where
+instance (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) => Num (SomeBV bv) where
   (+) = binSomeBVR1 (+) (+)
   {-# INLINE (+) #-}
   (-) = binSomeBVR1 (-) (-)
@@ -480,12 +618,13 @@ instance (forall n. (KnownNat n, 1 <= n) => Num (bv n)) => Num (SomeBV bv) where
   {-# INLINE abs #-}
   signum = unarySomeBVR1 signum (const $ throw $ UndeterminedBitwidth "signum")
   {-# INLINE signum #-}
-  fromInteger = SomeBVLit
+  fromInteger = SomeBVLit . SomeBVIntLit
   {-# INLINE fromInteger #-}
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => Bits (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   Bits (SomeBV bv)
   where
@@ -519,7 +658,7 @@ instance
       . unarySomeBV
         bitSizeMaybe
         (const $ throw $ UndeterminedBitwidth "bitSize")
-  isSigned _ = False
+  isSigned _ = isSigned (undefined :: bv 1)
   shiftL s i = unarySomeBVR1 (`shiftL` i) (`shiftL` i) s
   unsafeShiftL s i = unarySomeBVR1 (`unsafeShiftL` i) (`unsafeShiftL` i) s
   shiftR s i =
@@ -544,7 +683,8 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => FiniteBits (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   FiniteBits (SomeBV bv)
   where
@@ -578,7 +718,7 @@ instance
   {-# INLINE fromEnum #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => Real (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Real (bv n), MaySomeBV bv) =>
   Real (SomeBV bv)
   where
   toRational =
@@ -586,7 +726,7 @@ instance
   {-# INLINE toRational #-}
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => Integral (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Integral (bv n), MaySomeBV bv) =>
   Integral (SomeBV bv)
   where
   toInteger =
@@ -728,13 +868,22 @@ instance
   Mergeable (SomeBV bv)
   where
   rootStrategy =
-    SortedStrategy @CompileTimeNat
-      (\(SomeBV (_ :: bv n)) -> CompileTimeNat (Proxy @n))
-      ( \(CompileTimeNat (_ :: proxy n)) ->
-          wrapStrategy
-            (rootStrategy @(bv n))
-            SomeBV
-            (\(SomeBV x) -> unsafeCoerce x)
+    SortedStrategy @(Maybe CompileTimeNat)
+      ( \case
+          (SomeBVLit _) -> Nothing
+          (SomeBV (_ :: bv n)) -> Just (CompileTimeNat (Proxy @n))
+      )
+      ( \case
+          Nothing -> SimpleStrategy $
+            \c (SomeBVLit l) (SomeBVLit r) ->
+              SomeBVLit $
+                SomeBVCondLit $
+                  mrgIf c (toUnionInteger l) (toUnionInteger r)
+          Just (CompileTimeNat (_ :: proxy n)) ->
+            wrapStrategy
+              (rootStrategy @(bv n))
+              SomeBV
+              (\(SomeBV x) -> unsafeCoerce x)
       )
 
 -- | The 'symDistinct' instance for t'SomeBV' will have the following behavior:
@@ -749,7 +898,8 @@ instance
 --   formula using @distinct@.
 instance
   ( forall n. (KnownNat n, 1 <= n) => SymEq (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SymEq (SomeBV bv)
   where
@@ -757,16 +907,16 @@ instance
     case sameNat (Proxy @l) (Proxy @r) of
       Just Refl -> l .== r
       Nothing -> con False
-  SomeBV (l :: bv l) .== SomeBVLit r = l .== fromIntegral r
-  SomeBVLit l .== SomeBV (r :: bv r) = fromIntegral l .== r
+  SomeBV (l :: bv l) .== SomeBVLit r = l .== assignLitBitWidth r
+  SomeBVLit l .== SomeBV (r :: bv r) = assignLitBitWidth l .== r
   SomeBVLit _ .== SomeBVLit _ = throw $ UndeterminedBitwidth ".=="
   {-# INLINE (.==) #-}
   SomeBV (l :: bv l) ./= SomeBV (r :: bv r) =
     case sameNat (Proxy @l) (Proxy @r) of
       Just Refl -> l ./= r
       Nothing -> con True
-  SomeBV (l :: bv l) ./= SomeBVLit r = l ./= fromIntegral r
-  SomeBVLit l ./= SomeBV (r :: bv r) = fromIntegral l ./= r
+  SomeBV (l :: bv l) ./= SomeBVLit r = l ./= assignLitBitWidth r
+  SomeBVLit l ./= SomeBV (r :: bv r) = assignLitBitWidth l ./= r
   SomeBVLit _ ./= SomeBVLit _ = throw $ UndeterminedBitwidth "./="
   symDistinct l = case l of
     [] -> con True
@@ -787,7 +937,8 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => SymOrd (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SymOrd (SomeBV bv)
   where
@@ -936,7 +1087,7 @@ divRemOrBase0 _ _ _ _ = error "Should not happen"
 {-# INLINE divRemOrBase0 #-}
 
 divRemOrBase ::
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   ( forall n.
     (KnownNat n, 1 <= n) =>
     (bv n, bv n) ->
@@ -955,7 +1106,8 @@ divRemOrBase f (a, b) c d =
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => DivOr (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   DivOr (SomeBV bv)
   where
@@ -979,7 +1131,8 @@ instance
     MonadError (Either SomeBVException e) m,
     TryMerge m,
     Mergeable e,
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SafeDiv (Either SomeBVException e) (SomeBV bv) m
   where
@@ -1021,7 +1174,8 @@ instance
     MonadError (Either SomeBVException e) m,
     TryMerge m,
     Mergeable e,
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SafeLinearArith (Either SomeBVException e) (SomeBV bv) m
   where
@@ -1046,7 +1200,8 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => SymShift (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SymShift (SomeBV bv)
   where
@@ -1063,7 +1218,8 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => SymRotate (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SymRotate (SomeBV bv)
   where
@@ -1085,7 +1241,8 @@ instance
     MonadError (Either SomeBVException e) m,
     TryMerge m,
     Mergeable e,
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SafeSymShift (Either SomeBVException e) (SomeBV bv) m
   where
@@ -1117,7 +1274,8 @@ instance
     MonadError (Either SomeBVException e) m,
     TryMerge m,
     Mergeable e,
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   SafeSymRotate (Either SomeBVException e) (SomeBV bv) m
   where
@@ -1134,17 +1292,20 @@ instance
 
 instance
   ( forall n. (KnownNat n, 1 <= n) => ITEOp (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   ITEOp (SomeBV bv)
   where
   symIte cond =
     binSomeBVR1
       (symIte cond)
-      (const $ const $ throw $ UndeterminedBitwidth "symIte")
+      (\l r -> SomeBVCondLit $ mrgIf cond (toUnionInteger l) (toUnionInteger r))
 
 instance
-  (forall n. (KnownNat n, 1 <= n) => AllSyms (bv n)) =>
+  ( forall n. (KnownNat n, 1 <= n) => AllSyms (bv n),
+    MaySomeBV bv
+  ) =>
   AllSyms (SomeBV bv)
   where
   allSyms = unarySomeBV allSyms allSyms
@@ -1315,7 +1476,7 @@ arbitraryBV n
 unarySomeBV ::
   forall bv r.
   (forall n. (KnownNat n, 1 <= n) => bv n -> r) ->
-  (Integer -> r) ->
+  (SomeBVLit -> r) ->
   SomeBV bv ->
   r
 unarySomeBV f _ (SomeBV bv) = f bv
@@ -1326,7 +1487,7 @@ unarySomeBV _ g (SomeBVLit i) = g i
 -- t'SomeBV'. The result will also be wrapped with t'SomeBV'.
 unarySomeBVR1 ::
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n) ->
-  (Integer -> Integer) ->
+  (SomeBVLit -> SomeBVLit) ->
   SomeBV bv ->
   SomeBV bv
 unarySomeBVR1 f g = unarySomeBV (SomeBV . f) (SomeBVLit . g)
@@ -1335,9 +1496,9 @@ unarySomeBVR1 f g = unarySomeBV (SomeBV . f) (SomeBVLit . g)
 -- | Lift a binary operation on sized bitvectors that returns anything to
 -- t'SomeBV'. Crash if the bitwidths do not match.
 binSomeBV ::
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> r) ->
-  (Integer -> Integer -> r) ->
+  (SomeBVLit -> SomeBVLit -> r) ->
   SomeBV bv ->
   SomeBV bv ->
   r
@@ -1345,15 +1506,15 @@ binSomeBV f _ (SomeBV (l :: bv l)) (SomeBV (r :: bv r)) =
   case sameNat (Proxy @l) (Proxy @r) of
     Just Refl -> f l r
     Nothing -> throw BitwidthMismatch
-binSomeBV f _ (SomeBV (l :: bv l)) (SomeBVLit r) = f l $ fromIntegral r
-binSomeBV f _ (SomeBVLit l) (SomeBV (r :: bv r)) = f (fromIntegral l) r
+binSomeBV f _ (SomeBV (l :: bv l)) (SomeBVLit r) = f l $ assignLitBitWidth r
+binSomeBV f _ (SomeBVLit l) (SomeBV (r :: bv r)) = f (assignLitBitWidth l) r
 binSomeBV _ g (SomeBVLit l) (SomeBVLit r) = g l r
 {-# INLINE binSomeBV #-}
 
 -- | Lift a ternary operation on sized bitvectors that returns anything to
 -- t'SomeBV'. Crash if the bitwidths do not match.
 ternSomeBV ::
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n -> r) ->
   SomeBV bv ->
   SomeBV bv ->
@@ -1373,9 +1534,9 @@ ternSomeBV f a b c =
 -- t'SomeBV'. The result will also be wrapped with t'SomeBV'. Crash if the
 -- bitwidths do not match.
 binSomeBVR1 ::
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n) ->
-  (Integer -> Integer -> Integer) ->
+  (SomeBVLit -> SomeBVLit -> SomeBVLit) ->
   SomeBV bv ->
   SomeBV bv ->
   SomeBV bv
@@ -1386,9 +1547,9 @@ binSomeBVR1 f g = binSomeBV (\a b -> SomeBV $ f a b) (\a b -> SomeBVLit $ g a b)
 -- t'SomeBV'. The results will also be wrapped with t'SomeBV'. Crash if the
 -- bitwidths do not match.
 binSomeBVR2 ::
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> (bv n, bv n)) ->
-  (Integer -> Integer -> (Integer, Integer)) ->
+  (SomeBVLit -> SomeBVLit -> (SomeBVLit, SomeBVLit)) ->
   SomeBV bv ->
   SomeBV bv ->
   (SomeBV bv, SomeBV bv)
@@ -1402,7 +1563,7 @@ binSomeBVR2 f g =
 -- t'SomeBV'. The result will also be wrapped with t'SomeBV'. Crash if the
 -- bitwidths do not match.
 ternSomeBVR1 ::
-  (forall n. (KnownNat n, 1 <= n) => Num (bv n)) =>
+  (forall n. (KnownNat n, 1 <= n) => Num (bv n), MaySomeBV bv) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> bv n -> bv n) ->
   SomeBV bv ->
   SomeBV bv ->
@@ -1419,10 +1580,11 @@ binSomeBVSafe ::
     TryMerge m,
     Mergeable e,
     Mergeable r,
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> ExceptT e m r) ->
-  (Integer -> Integer -> ExceptT (Either SomeBVException e) m r) ->
+  (SomeBVLit -> SomeBVLit -> ExceptT (Either SomeBVException e) m r) ->
   SomeBV bv ->
   SomeBV bv ->
   m r
@@ -1450,10 +1612,11 @@ binSomeBVSafeR1 ::
     TryMerge m,
     Mergeable e,
     forall n. (KnownNat n, 1 <= n) => Mergeable (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   (forall n. (KnownNat n, 1 <= n) => bv n -> bv n -> ExceptT e m (bv n)) ->
-  (Integer -> Integer -> ExceptT (Either SomeBVException e) m Integer) ->
+  (SomeBVLit -> SomeBVLit -> ExceptT (Either SomeBVException e) m SomeBVLit) ->
   SomeBV bv ->
   SomeBV bv ->
   m (SomeBV bv)
@@ -1474,7 +1637,8 @@ binSomeBVSafeR2 ::
     TryMerge m,
     Mergeable e,
     forall n. (KnownNat n, 1 <= n) => Mergeable (bv n),
-    forall n. (KnownNat n, 1 <= n) => Num (bv n)
+    forall n. (KnownNat n, 1 <= n) => Num (bv n),
+    MaySomeBV bv
   ) =>
   ( forall n.
     (KnownNat n, 1 <= n) =>
@@ -1482,9 +1646,9 @@ binSomeBVSafeR2 ::
     bv n ->
     ExceptT e m (bv n, bv n)
   ) ->
-  ( Integer ->
-    Integer ->
-    ExceptT (Either SomeBVException e) m (Integer, Integer)
+  ( SomeBVLit ->
+    SomeBVLit ->
+    ExceptT (Either SomeBVException e) m (SomeBVLit, SomeBVLit)
   ) ->
   SomeBV bv ->
   SomeBV bv ->
