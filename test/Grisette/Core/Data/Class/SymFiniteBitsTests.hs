@@ -16,7 +16,6 @@ import Grisette
     SomeSymWordN,
     SymEq,
     SymIntN,
-    SymInteger,
     SymWordN,
   )
 import Grisette.Internal.Core.Data.Class.SymFiniteBits
@@ -41,6 +40,7 @@ someBVSymFiniteBitsTest ::
     SymFiniteBits bv,
     Show bv,
     SymEq bv,
+    Num bv,
     EvalSym bv
   ) =>
   p bv ->
@@ -75,20 +75,20 @@ someBVSymFiniteBitsTest _ =
         symMsb (bv 4 0b0101 :: bv) @?= false
         symMsb (bv 4 0b1101 :: bv) @?= true,
       testCase "symPopCount" $ do
-        symPopCount (bv 4 0 :: bv) @?= (0 :: SymInteger)
-        symPopCount (bv 4 0b0101 :: bv) @?= (2 :: SymInteger)
-        symPopCount (bv 4 0b1101 :: bv) @?= (3 :: SymInteger)
-        symPopCount (bv 4 0b1111 :: bv) @?= (4 :: SymInteger),
+        symPopCount (bv 4 0 :: bv) @?= 0
+        symPopCount (bv 4 0b0101 :: bv) @?= 2
+        symPopCount (bv 4 0b1101 :: bv) @?= 3
+        symPopCount (bv 4 0b1111 :: bv) @?= 4,
       testCase "symCountLeadingZeros" $ do
-        symCountLeadingZeros (bv 4 0 :: bv) @?= (4 :: SymInteger)
-        symCountLeadingZeros (bv 4 0b0101 :: bv) @?= (1 :: SymInteger)
-        symCountLeadingZeros (bv 4 0b1101 :: bv) @?= (0 :: SymInteger)
-        symCountLeadingZeros (bv 4 0b0011 :: bv) @?= (2 :: SymInteger),
+        symCountLeadingZeros (bv 4 0 :: bv) @?= 4
+        symCountLeadingZeros (bv 4 0b0101 :: bv) @?= 1
+        symCountLeadingZeros (bv 4 0b1101 :: bv) @?= 0
+        symCountLeadingZeros (bv 4 0b0011 :: bv) @?= 2,
       testCase "symCountTrailingZeros" $ do
-        symCountTrailingZeros (bv 4 0 :: bv) @?= (4 :: SymInteger)
-        symCountTrailingZeros (bv 4 0b1010 :: bv) @?= (1 :: SymInteger)
-        symCountTrailingZeros (bv 4 0b1011 :: bv) @?= (0 :: SymInteger)
-        symCountTrailingZeros (bv 4 0b1100 :: bv) @?= (2 :: SymInteger)
+        symCountTrailingZeros (bv 4 0 :: bv) @?= 4
+        symCountTrailingZeros (bv 4 0b1010 :: bv) @?= 1
+        symCountTrailingZeros (bv 4 0b1011 :: bv) @?= 0
+        symCountTrailingZeros (bv 4 0b1100 :: bv) @?= 2
     ]
 
 bvSymFiniteBitsTest ::
@@ -132,20 +132,20 @@ bvSymFiniteBitsTest _ =
         symMsb (0b0101 :: bv 4) @?= false
         symMsb (0b1101 :: bv 4) @?= true,
       testCase "symPopCount" $ do
-        symPopCount (0 :: bv 4) @?= (0 :: SymInteger)
-        symPopCount (0b0101 :: bv 4) @?= (2 :: SymInteger)
-        symPopCount (0b1101 :: bv 4) @?= (3 :: SymInteger)
-        symPopCount (0b1111 :: bv 4) @?= (4 :: SymInteger),
+        symPopCount (0 :: bv 4) @?= 0
+        symPopCount (0b0101 :: bv 4) @?= 2
+        symPopCount (0b1101 :: bv 4) @?= 3
+        symPopCount (0b1111 :: bv 4) @?= 4,
       testCase "symCountLeadingZeros" $ do
-        symCountLeadingZeros (0 :: bv 4) @?= (4 :: SymInteger)
-        symCountLeadingZeros (0b0101 :: bv 4) @?= (1 :: SymInteger)
-        symCountLeadingZeros (0b1101 :: bv 4) @?= (0 :: SymInteger)
-        symCountLeadingZeros (0b0011 :: bv 4) @?= (2 :: SymInteger),
+        symCountLeadingZeros (0 :: bv 4) @?= 4
+        symCountLeadingZeros (0b0101 :: bv 4) @?= 1
+        symCountLeadingZeros (0b1101 :: bv 4) @?= 0
+        symCountLeadingZeros (0b0011 :: bv 4) @?= 2,
       testCase "symCountTrailingZeros" $ do
-        symCountTrailingZeros (0 :: bv 4) @?= (4 :: SymInteger)
-        symCountTrailingZeros (0b1010 :: bv 4) @?= (1 :: SymInteger)
-        symCountTrailingZeros (0b1011 :: bv 4) @?= (0 :: SymInteger)
-        symCountTrailingZeros (0b1100 :: bv 4) @?= (2 :: SymInteger)
+        symCountTrailingZeros (0 :: bv 4) @?= 4
+        symCountTrailingZeros (0b1010 :: bv 4) @?= 1
+        symCountTrailingZeros (0b1011 :: bv 4) @?= 0
+        symCountTrailingZeros (0b1100 :: bv 4) @?= 2
     ]
 
 symFiniteBitsTests :: Test

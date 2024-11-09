@@ -358,6 +358,18 @@ module Grisette.Core
     SymRotate (..),
     SafeSymRotate (..),
     SignConversion (..),
+    lsb,
+    msb,
+    setBitTo,
+    bitBlast,
+    FromBits (..),
+    SymFiniteBits (..),
+    symBitBlast,
+    symLsb,
+    symMsb,
+    symPopCount,
+    symCountLeadingZeros,
+    symCountTrailingZeros,
 
     -- ** Safe operation for Numbers
     DivOr (..),
@@ -1724,6 +1736,20 @@ import Grisette.Internal.Core.Data.Class.SymEq
     genericSymEq,
     symEq1,
     symEq2,
+  )
+import Grisette.Internal.Core.Data.Class.SymFiniteBits
+  ( FromBits (..),
+    SymFiniteBits (..),
+    bitBlast,
+    lsb,
+    msb,
+    setBitTo,
+    symBitBlast,
+    symCountLeadingZeros,
+    symCountTrailingZeros,
+    symLsb,
+    symMsb,
+    symPopCount,
   )
 import Grisette.Internal.Core.Data.Class.SymFromIntegral
   ( SymFromIntegral (..),

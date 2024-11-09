@@ -182,12 +182,14 @@ symMsb :: (SymFiniteBits a) => a -> SymBool
 symMsb x = symTestBit x (finiteBitSize x - 1)
 
 -- | Count the number of set bits in a symbolic value.
-symPopCount :: (Num b, ITEOp b, SymFiniteBits a) => a -> b
-symPopCount v = sum $ (\b -> symIte b 1 0) <$> symBitBlast v
+symPopCount :: (Num a, ITEOp a, SymFiniteBits a) => a -> a
+-- Node: v - v + is a trick to assign the correct bit-width to the result.
+symPopCount v = v - v + sum ((\b -> symIte b 1 0) <$> symBitBlast v)
 
 -- | Count the number of leading zeros in a symbolic value.
-symCountLeadingZeros :: (Num b, ITEOp b, SymFiniteBits a) => a -> b
-symCountLeadingZeros v = go bits rs
+symCountLeadingZeros :: (Num a, ITEOp a, SymFiniteBits a) => a -> a
+-- Node: v - v + is a trick to assign the correct bit-width to the result.
+symCountLeadingZeros v = v - v + go bits rs
   where
     bits = reverse $ symBitBlast v
     rs = fromIntegral <$> [0 ..]
@@ -196,8 +198,9 @@ symCountLeadingZeros v = go bits rs
     go _ [] = error "Should not happen"
 
 -- | Count the number of trailing zeros in a symbolic value.
-symCountTrailingZeros :: (Num b, ITEOp b, SymFiniteBits a) => a -> b
-symCountTrailingZeros v = go bits rs
+symCountTrailingZeros :: (Num a, ITEOp a, SymFiniteBits a) => a -> a
+-- Node: v - v + is a trick to assign the correct bit-width to the result.
+symCountTrailingZeros v = v - v + go bits rs
   where
     bits = symBitBlast v
     rs = fromIntegral <$> [0 ..]
