@@ -39,7 +39,7 @@ import Grisette.Unified.Internal.BVBVConversion (AllUnifiedBVBVConversion)
 import Grisette.Unified.Internal.BVFPConversion (AllUnifiedBVFPConversion)
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.FPFPConversion (AllUnifiedFPFPConversion)
 import Grisette.Unified.Internal.Theories
   ( TheoryToUnify (UAlgReal, UFP, UFun, UIntN, UInteger, UWordN),
@@ -86,9 +86,9 @@ class
   ) =>
   EvalModeBase mode
 
-instance EvalModeBase 'Con
+instance EvalModeBase 'C
 
-instance EvalModeBase 'Sym
+instance EvalModeBase 'S
 
 -- | Provide the support for 'Grisette.Unified.GetIntN',
 -- 'Grisette.Unified.GetWordN', 'Grisette.Unified.GetSomeIntN', and
@@ -97,9 +97,9 @@ instance EvalModeBase 'Sym
 -- For compilers prior to GHC 9.2.1, see the notes for 'EvalModeAll'.
 class (AllUnifiedBV mode, AllUnifiedBVBVConversion mode) => EvalModeBV mode
 
-instance EvalModeBV 'Con
+instance EvalModeBV 'C
 
-instance EvalModeBV 'Sym
+instance EvalModeBV 'S
 
 -- | Provide the support for 'Grisette.Unified.GetInteger'.
 --
@@ -117,9 +117,9 @@ class
   ) =>
   EvalModeFP mode
 
-instance EvalModeFP 'Con
+instance EvalModeFP 'C
 
-instance EvalModeFP 'Sym
+instance EvalModeFP 'S
 
 -- | Provide the support for 'Grisette.Unified.GetAlgReal'.
 --
@@ -172,9 +172,9 @@ class
   ) =>
   EvalModeAll mode
 
-instance EvalModeAll 'Con
+instance EvalModeAll 'C
 
-instance EvalModeAll 'Sym
+instance EvalModeAll 'S
 
 -- | A constraint that specifies that the mode is valid, and provide all the
 -- corresponding constraints for the operations for the types.
@@ -262,8 +262,8 @@ genEvalMode nm theories = do
       [kindedTV modeName (ConT ''EvalModeTag)]
       []
       []
-  rc <- instanceD (return []) (appT (conT $ mkName nm) (promotedT 'Con)) []
-  rs <- instanceD (return []) (appT (conT $ mkName nm) (promotedT 'Sym)) []
+  rc <- instanceD (return []) (appT (conT $ mkName nm) (promotedT 'C)) []
+  rs <- instanceD (return []) (appT (conT $ mkName nm) (promotedT 'S)) []
   m <- newName "m"
   let mType = varT m
   monad <-

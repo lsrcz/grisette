@@ -48,7 +48,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
 import Grisette.Unified.Internal.EvalModeTag
-  ( EvalModeTag (Sym),
+  ( EvalModeTag (S),
   )
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -155,10 +155,10 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  (MonadError ArithException m, UnifiedBranching 'Sym m, KnownNat n, 1 <= n) =>
-  UnifiedSafeSymShift 'Sym ArithException (SymIntN n) m
+  (MonadError ArithException m, UnifiedBranching 'S m, KnownNat n, 1 <= n) =>
+  UnifiedSafeSymShift 'S ArithException (SymIntN n) m
   where
-  withBaseSafeSymShift r = withBaseBranching @'Sym @m r
+  withBaseSafeSymShift r = withBaseBranching @'S @m r
 
 instance
   (MonadError ArithException m, UnifiedBranching mode m, KnownNat n, 1 <= n) =>
@@ -168,10 +168,10 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  (MonadError ArithException m, UnifiedBranching 'Sym m, KnownNat n, 1 <= n) =>
-  UnifiedSafeSymShift 'Sym ArithException (SymWordN n) m
+  (MonadError ArithException m, UnifiedBranching 'S m, KnownNat n, 1 <= n) =>
+  UnifiedSafeSymShift 'S ArithException (SymWordN n) m
   where
-  withBaseSafeSymShift r = withBaseBranching @'Sym @m r
+  withBaseSafeSymShift r = withBaseBranching @'S @m r
 
 instance
   ( MonadError (Either SomeBVException ArithException) m,
@@ -188,15 +188,15 @@ instance
 
 instance
   ( MonadError (Either SomeBVException ArithException) m,
-    UnifiedBranching 'Sym m
+    UnifiedBranching 'S m
   ) =>
   UnifiedSafeSymShift
-    'Sym
+    'S
     (Either SomeBVException ArithException)
     SomeSymIntN
     m
   where
-  withBaseSafeSymShift r = withBaseBranching @'Sym @m r
+  withBaseSafeSymShift r = withBaseBranching @'S @m r
 
 instance
   ( MonadError (Either SomeBVException ArithException) m,
@@ -213,12 +213,12 @@ instance
 
 instance
   ( MonadError (Either SomeBVException ArithException) m,
-    UnifiedBranching 'Sym m
+    UnifiedBranching 'S m
   ) =>
   UnifiedSafeSymShift
-    'Sym
+    'S
     (Either SomeBVException ArithException)
     SomeSymWordN
     m
   where
-  withBaseSafeSymShift r = withBaseBranching @'Sym @m r
+  withBaseSafeSymShift r = withBaseBranching @'S @m r

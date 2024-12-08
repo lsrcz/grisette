@@ -3,6 +3,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Unified.Internal.Class.UnifiedRep
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Unified.Internal.Class.UnifiedRep
   ( UnifiedConRep (..),
     UnifiedSymRep (..),
@@ -19,9 +27,11 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 
+-- | A class that gives the concrete type of a unified primitive type.
 class UnifiedConRep a where
   type ConType a
 
+-- | A class that gives the symbolic type of a unified primitive type.
 class UnifiedSymRep a where
   type SymType a
 

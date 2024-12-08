@@ -36,7 +36,7 @@ import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SafeFdiv.safeFdiv` operation.
@@ -77,7 +77,7 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  (MonadError ArithException m, UnifiedBranching 'Sym m) =>
-  UnifiedSafeFdiv 'Sym ArithException SymAlgReal m
+  (MonadError ArithException m, UnifiedBranching 'S m) =>
+  UnifiedSafeFdiv 'S ArithException SymAlgReal m
   where
-  withBaseUnifiedSafeFdiv r = withBaseBranching @'Sym @m r
+  withBaseUnifiedSafeFdiv r = withBaseBranching @'S @m r

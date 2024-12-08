@@ -74,7 +74,7 @@ import Grisette.Unified
     EvalModeBase,
     EvalModeFP,
     EvalModeInteger,
-    EvalModeTag (Con, Sym),
+    EvalModeTag (C, S),
     GetBool,
     GetData,
     GetFP,
@@ -455,8 +455,8 @@ evalModeTest =
     "EvalMode"
     [ testGroup
         "GetBool"
-        [ testCase "Con" $ fbool True False @?= False,
-          testCase "Sym" $ do
+        [ testCase "C" $ fbool True False @?= False,
+          testCase "S" $ do
             let l = "l" :: SymBool
             let r = "r" :: SymBool
             fbool l r
@@ -467,8 +467,8 @@ evalModeTest =
         ],
       testGroup
         "GetInteger"
-        [ testCase "Con" $ finteger (1 :: Integer) 2 @?= 1,
-          testCase "Sym" $ do
+        [ testCase "C" $ finteger (1 :: Integer) 2 @?= 1,
+          testCase "S" $ do
             let l = "l" :: SymInteger
             let r = "r" :: SymInteger
             finteger l r
@@ -479,11 +479,11 @@ evalModeTest =
         ],
       testGroup
         "GetIntN"
-        [ testCase "Con" $ do
+        [ testCase "C" $ do
             fbv (1 :: IntN 8) 2 @?= Right 1
             fbv' (1 :: IntN 8) 2 @?= ExceptT (Identity (Right 1))
             fbvEvalMode (1 :: IntN 8) 2 @?= ExceptT (Identity (Right 1)),
-          testCase "Sym" $ do
+          testCase "S" $ do
             let l = "l" :: SymIntN 8
             let r = "r" :: SymIntN 8
             let expected = do
@@ -503,11 +503,11 @@ evalModeTest =
         ],
       testGroup
         "GetSomeIntN"
-        [ testCase "Con" $ do
+        [ testCase "C" $ do
             fsomebv (bv 8 1 :: SomeIntN) (bv 8 2) @?= Right (bv 8 1)
             fsomebv' (bv 8 1 :: SomeIntN) (bv 8 2)
               @?= ExceptT (Identity (Right (bv 8 1))),
-          testCase "Sym" $ do
+          testCase "S" $ do
             let l = ssymBV 8 "l" :: SomeSymIntN
             let r = ssymBV 8 "r" :: SomeSymIntN
             let expected = do
@@ -526,10 +526,10 @@ evalModeTest =
         ],
       testGroup
         "GetData"
-        [ testCase "Con" $ do
-            fdata @'Con (Identity $ A 2) @?= Right 2
-            fdata @'Con (Identity $ A 1) @?= Left DivideByZero,
-          testCase "Sym" $ do
+        [ testCase "C" $ do
+            fdata @'C (Identity $ A 2) @?= Right 2
+            fdata @'C (Identity $ A 1) @?= Left DivideByZero,
+          testCase "S" $ do
             let a = "a" :: SymIntN 8
             fdata (mrgReturn $ A a)
               @?= ( Grisette.safeDiv a (a - 1) ::
@@ -540,47 +540,47 @@ evalModeTest =
         "Conversion"
         [ testGroup
             "FP/BV"
-            [ testCase "Con" $ do
-                bvToFPBitCast @'Con 0x22 @?= 0.15625
-                fpToBVBitCast @'Con 0.15625 @?= 0x22
-                fpToBVBitCast @'Con fpNaN @?= 0x7c
-                safeFPToBVBitCast @'Con 0.15625 @?= Right 0x22
-                safeFPToBVBitCast @'Con fpNaN @?= Left NaNError,
-              testCase "Sym" $ do
-                bvToFPBitCast @'Sym 0x22 @?= 0.15625
+            [ testCase "C" $ do
+                bvToFPBitCast @'C 0x22 @?= 0.15625
+                fpToBVBitCast @'C 0.15625 @?= 0x22
+                fpToBVBitCast @'C fpNaN @?= 0x7c
+                safeFPToBVBitCast @'C 0.15625 @?= Right 0x22
+                safeFPToBVBitCast @'C fpNaN @?= Left NaNError,
+              testCase "S" $ do
+                bvToFPBitCast @'S 0x22 @?= 0.15625
                 let a = "a" :: SymIntN 8
-                bvToFPBitCast @'Sym a @?= bitCast a
-                fpToBVBitCast @'Sym 0.15625 @?= 0x22
-                fpToBVBitCast @'Sym fpNaN @?= 0x7c
+                bvToFPBitCast @'S a @?= bitCast a
+                fpToBVBitCast @'S 0.15625 @?= 0x22
+                fpToBVBitCast @'S fpNaN @?= 0x7c
                 let b = "b" :: SymFP 4 4
-                fpToBVBitCast @'Sym b @?= bitCastOrCanonical b
-                safeFPToBVBitCast @'Sym b
+                fpToBVBitCast @'S b @?= bitCastOrCanonical b
+                safeFPToBVBitCast @'S b
                   @?= ( Grisette.safeBitCast b ::
                           ExceptT NotRepresentableFPError Union (SymIntN 8)
                       )
             ],
           testGroup
             "FP/FP"
-            [ testCase "Con" $ do
-                fpToFPConvert @'Con rne 1 @?= 1,
-              testCase "Sym" $ do
-                fpToFPConvert @'Sym rne 1 @?= 1
+            [ testCase "C" $ do
+                fpToFPConvert @'C rne 1 @?= 1,
+              testCase "S" $ do
+                fpToFPConvert @'S rne 1 @?= 1
             ],
           testGroup
             "BV/BV"
-            [ testCase "Con" $ do
-                bvToBVFromIntegral @'Con 0xa @?= 0xa,
-              testCase "Sym" $ do
-                bvToBVFromIntegral @'Sym 0xa @?= 0xa
+            [ testCase "C" $ do
+                bvToBVFromIntegral @'C 0xa @?= 0xa,
+              testCase "S" $ do
+                bvToBVFromIntegral @'S 0xa @?= 0xa
             ]
         ],
       testGroup
         "GetFun"
-        [ testCase "Con" $ do
-            ufuncTest @'Con 1 @?= 0
-            ufuncTest @'Con 2 @?= 2,
-          testCase "Sym" $ do
+        [ testCase "C" $ do
+            ufuncTest @'C 1 @?= 0
+            ufuncTest @'C 2 @?= 2,
+          testCase "S" $ do
             let a = "a"
-            ufuncTest @'Sym a @?= symIte (a Grisette..== 1) 0 2
+            ufuncTest @'S a @?= symIte (a Grisette..== 1) 0 2
         ]
     ]

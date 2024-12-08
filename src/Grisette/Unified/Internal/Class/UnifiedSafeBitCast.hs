@@ -40,7 +40,7 @@ import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SafeLinearArith.safeSub`
@@ -105,24 +105,24 @@ instance
 
 instance
   ( MonadError NotRepresentableFPError m,
-    UnifiedBranching 'Sym m,
+    UnifiedBranching 'S m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
     n ~ (eb + sb)
   ) =>
-  UnifiedSafeBitCast 'Sym NotRepresentableFPError (SymFP eb sb) (SymWordN n) m
+  UnifiedSafeBitCast 'S NotRepresentableFPError (SymFP eb sb) (SymWordN n) m
   where
-  withBaseSafeBitCast r = withBaseBranching @'Sym @m r
+  withBaseSafeBitCast r = withBaseBranching @'S @m r
 
 instance
   ( MonadError NotRepresentableFPError m,
-    UnifiedBranching 'Sym m,
+    UnifiedBranching 'S m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n,
     n ~ (eb + sb)
   ) =>
-  UnifiedSafeBitCast 'Sym NotRepresentableFPError (SymFP eb sb) (SymIntN n) m
+  UnifiedSafeBitCast 'S NotRepresentableFPError (SymFP eb sb) (SymIntN n) m
   where
-  withBaseSafeBitCast r = withBaseBranching @'Sym @m r
+  withBaseSafeBitCast r = withBaseBranching @'S @m r

@@ -25,10 +25,14 @@ import Grisette.Internal.SymPrim.SymPrim (Prim)
 import Grisette.Unified.Internal.Class.UnifiedITEOp
   ( UnifiedITEOp,
   )
-import Grisette.Unified.Internal.Class.UnifiedRep (UnifiedConRep (ConType), UnifiedSymRep (SymType))
+import Grisette.Unified.Internal.Class.UnifiedRep
+  ( UnifiedConRep (ConType),
+    UnifiedSymRep (SymType),
+  )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedSimpleMergeable,
   )
+import Grisette.Unified.Internal.Class.UnifiedSolvable (UnifiedSolvable)
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 
@@ -50,6 +54,7 @@ type BasicUnifiedPrim mode a =
     UnifiedSimpleMergeable mode a,
     UnifiedConRep a,
     UnifiedSymRep a,
+    UnifiedSolvable mode a (ConType a),
     ToCon a (ConType a),
     ToSym a (SymType a),
     ToCon (SymType a) a,

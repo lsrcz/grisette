@@ -47,7 +47,7 @@ import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (UnifiedSafeBitCast)
 import Grisette.Unified.Internal.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedBV (UnifiedBVImpl (GetIntN, GetWordN))
 import Grisette.Unified.Internal.UnifiedFP
   ( UnifiedFPImpl (GetFP, GetFPRoundingMode),
@@ -83,7 +83,7 @@ class
 instance
   (ValidFP eb sb, KnownNat n, 1 <= n, n ~ (eb + sb)) =>
   UnifiedBVFPConversionImpl
-    'Con
+    'C
     WordN
     IntN
     FP
@@ -98,7 +98,7 @@ instance
 instance
   (ValidFP eb sb, KnownNat n, 1 <= n, n ~ (eb + sb)) =>
   UnifiedBVFPConversionImpl
-    'Sym
+    'S
     SymWordN
     SymIntN
     SymFP

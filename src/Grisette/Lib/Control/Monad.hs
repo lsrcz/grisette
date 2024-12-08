@@ -106,7 +106,7 @@ import Grisette.Lib.Data.Traversable
     mrgMapM,
     mrgSequence,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import qualified Grisette.Unified.Lib.Control.Monad as Unified
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.
@@ -318,7 +318,7 @@ symReplicateM ::
   int ->
   m a ->
   m [a]
-symReplicateM = Unified.symReplicateM @'Sym
+symReplicateM = Unified.symReplicateM @'S
 {-# INLINE symReplicateM #-}
 
 -- | 'Control.Monad.replicateM_' with 'MergingStrategy' knowledge propagation.
@@ -338,7 +338,7 @@ symReplicateM_ ::
   int ->
   m a ->
   m ()
-symReplicateM_ = Unified.symReplicateM_ @'Sym
+symReplicateM_ = Unified.symReplicateM_ @'S
 {-# INLINE symReplicateM_ #-}
 
 -- | 'Control.Monad.guard' with 'MergingStrategy' knowledge propagation.

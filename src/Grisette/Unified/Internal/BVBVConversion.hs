@@ -28,7 +28,7 @@ import GHC.TypeNats (KnownNat, Nat, type (<=))
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedBV (UnifiedBVImpl (GetIntN, GetWordN))
 
 class
@@ -54,12 +54,12 @@ class
 #define CONINSTANCE(ty0, ty1) \
 instance \
   (KnownNat n0, 1 <= n0, KnownNat n1, 1 <= n1) => \
-  UnifiedBVBVConversionImpl QUOTE()Con ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
+  UnifiedBVBVConversionImpl QUOTE()C ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
 
 #define SYMINSTANCE(ty0, ty1) \
 instance \
   (KnownNat n0, 1 <= n0, KnownNat n1, 1 <= n1) => \
-  UnifiedBVBVConversionImpl QUOTE()Sym ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
+  UnifiedBVBVConversionImpl QUOTE()S ty0 ty1 n0 n1 (ty0 n0) (ty1 n1)
 
 #if 1
 CONINSTANCE(WordN, WordN)

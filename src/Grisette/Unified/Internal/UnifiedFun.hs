@@ -60,7 +60,7 @@ import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.Theories
   ( TheoryToUnify (UAlgReal, UBool, UFP, UFun, UIntN, UInteger, UWordN),
   )
@@ -109,11 +109,11 @@ class UnifiedFun (mode :: EvalModeTag) where
     GetFun mode =
       (fun :: Data.Kind.Type -> Data.Kind.Type -> Data.Kind.Type) | fun -> mode
 
-instance UnifiedFun 'Con where
-  type GetFun 'Con = (=->)
+instance UnifiedFun 'C where
+  type GetFun 'C = (=->)
 
-instance UnifiedFun 'Sym where
-  type GetFun 'Sym = (=~>)
+instance UnifiedFun 'S where
+  type GetFun 'S = (=~>)
 
 -- | The unified function type with 2 arguments.
 type GetFun2 mode a b = GetFun mode a b
@@ -194,12 +194,12 @@ genInnerUnifiedFunInstance nm mode preds bndrs tys = do
   dc <-
     instanceD
       (return preds)
-      (applyTypeList (promotedT 'Con : additionalTypes))
+      (applyTypeList (promotedT 'C : additionalTypes))
       []
   ds <-
     instanceD
       (return preds)
-      (applyTypeList (promotedT 'Sym : additionalTypes))
+      (applyTypeList (promotedT 'S : additionalTypes))
       []
   return [x, dc, ds]
   where
@@ -254,12 +254,12 @@ genOuterUnifiedFunInstance nm innerName mode preds bndrs = do
   dc <-
     instanceD
       (return [])
-      (appT (conT $ mkName nm) (promotedT 'Con))
+      (appT (conT $ mkName nm) (promotedT 'C))
       []
   ds <-
     instanceD
       (return [])
-      (appT (conT $ mkName nm) (promotedT 'Sym))
+      (appT (conT $ mkName nm) (promotedT 'S))
       []
   return [x, dc, ds]
 

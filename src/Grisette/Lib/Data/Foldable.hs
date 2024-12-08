@@ -66,7 +66,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Lib.Control.Applicative (mrgAsum)
-import Grisette.Unified (EvalModeTag (Sym))
+import Grisette.Unified (EvalModeTag (S))
 import qualified Grisette.Unified.Lib.Data.Foldable as Unified
 
 -- | 'Data.Foldable.elem' with symbolic equality.
@@ -81,7 +81,7 @@ mrgMaximum ::
   (Foldable t, MonadUnion m, Mergeable a, SymOrd a) =>
   t a ->
   m a
-mrgMaximum = Unified.mrgMaximum @'Sym
+mrgMaximum = Unified.mrgMaximum @'S
 {-# INLINE mrgMaximum #-}
 
 -- | 'Data.Foldable.maximum' with result merged with 'ITEOp'.
@@ -90,7 +90,7 @@ symMaximum ::
   (Foldable t, Mergeable a, SymOrd a, ITEOp a) =>
   t a ->
   a
-symMaximum = Unified.symMaximum @'Sym
+symMaximum = Unified.symMaximum @'S
 {-# INLINE symMaximum #-}
 
 -- | 'Data.Foldable.minimum' with 'Grisette.Core.MergingStrategy' knowledge
@@ -100,7 +100,7 @@ mrgMinimum ::
   (Foldable t, MonadUnion m, Mergeable a, SymOrd a) =>
   t a ->
   m a
-mrgMinimum = Unified.mrgMinimum @'Sym
+mrgMinimum = Unified.mrgMinimum @'S
 {-# INLINE mrgMinimum #-}
 
 -- | 'Data.Foldable.minimum' with result merged with 'ITEOp'.
@@ -109,7 +109,7 @@ symMinimum ::
   (Foldable t, Mergeable a, SymOrd a, ITEOp a) =>
   t a ->
   a
-symMinimum = Unified.symMinimum @'Sym
+symMinimum = Unified.symMinimum @'S
 {-# INLINE symMinimum #-}
 
 -- | 'Data.Foldable.foldrM' with 'Grisette.Core.MergingStrategy' knowledge

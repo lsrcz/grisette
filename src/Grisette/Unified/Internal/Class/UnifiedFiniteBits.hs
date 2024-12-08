@@ -55,7 +55,7 @@ import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Unified.Internal.Class.UnifiedITEOp
   ( UnifiedITEOp (withBaseITEOp),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym), IsConMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -178,26 +178,26 @@ class UnifiedFiniteBits mode a where
     ((If (IsConMode mode) (FiniteBits a, FromBits a) (SymFiniteBits a)) => r) ->
     r
 
-instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'Con (WordN n) where
+instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'C (WordN n) where
   withBaseFiniteBits r = r
 
-instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'Con (IntN n) where
+instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'C (IntN n) where
   withBaseFiniteBits r = r
 
-instance UnifiedFiniteBits 'Con SomeWordN where
+instance UnifiedFiniteBits 'C SomeWordN where
   withBaseFiniteBits r = r
 
-instance UnifiedFiniteBits 'Con SomeIntN where
+instance UnifiedFiniteBits 'C SomeIntN where
   withBaseFiniteBits r = r
 
-instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'Sym (SymWordN n) where
+instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'S (SymWordN n) where
   withBaseFiniteBits r = r
 
-instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'Sym (SymIntN n) where
+instance (KnownNat n, 1 <= n) => UnifiedFiniteBits 'S (SymIntN n) where
   withBaseFiniteBits r = r
 
-instance UnifiedFiniteBits 'Sym SomeSymWordN where
+instance UnifiedFiniteBits 'S SomeSymWordN where
   withBaseFiniteBits r = r
 
-instance UnifiedFiniteBits 'Sym SomeSymIntN where
+instance UnifiedFiniteBits 'S SomeSymIntN where
   withBaseFiniteBits r = r

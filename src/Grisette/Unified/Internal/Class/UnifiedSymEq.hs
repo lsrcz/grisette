@@ -65,7 +65,7 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   ( deriveFunctorArgUnifiedInterfaces,
     deriveUnifiedInterface1s,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym), IsConMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Unified.Internal.Util (withMode)
 
@@ -246,8 +246,8 @@ instance
   withBaseSymEq2 r = r
   {-# INLINE withBaseSymEq2 #-}
 
-instance (UnifiedSymEq 'Sym v) => UnifiedSymEq 'Sym (Union v) where
-  withBaseSymEq r = withBaseSymEq @'Sym @v r
+instance (UnifiedSymEq 'S v) => UnifiedSymEq 'S (Union v) where
+  withBaseSymEq r = withBaseSymEq @'S @v r
   {-# INLINE withBaseSymEq #-}
 
 instance
