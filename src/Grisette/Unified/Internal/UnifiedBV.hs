@@ -56,13 +56,15 @@ import Grisette.Internal.SymPrim.SomeBV
     SomeWordN,
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
-import Grisette.Internal.SymPrim.SymPrim (Prim)
 import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFiniteBits
   ( UnifiedFiniteBits,
   )
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
-import Grisette.Unified.Internal.Class.UnifiedITEOp (UnifiedITEOp)
+import Grisette.Unified.Internal.Class.UnifiedRep
+  ( UnifiedConRep (ConType),
+    UnifiedSymRep (SymType),
+  )
 import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
@@ -73,18 +75,14 @@ import Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
 import Grisette.Unified.Internal.Class.UnifiedSafeSymShift (UnifiedSafeSymShift)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching,
-    UnifiedSimpleMergeable,
   )
-import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
-import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
+import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim, UnifiedPrim)
 
 type BVConstraint mode word int =
-  ( Prim word,
-    Prim int,
-    Num word,
+  ( Num word,
     Num int,
     Bits word,
     Bits int,
@@ -94,12 +92,6 @@ type BVConstraint mode word int =
     SymShift int,
     SymRotate word,
     SymRotate int,
-    UnifiedSymEq mode word,
-    UnifiedSymEq mode int,
-    UnifiedSymOrd mode word,
-    UnifiedSymOrd mode int,
-    UnifiedITEOp mode word,
-    UnifiedITEOp mode int,
     SignConversion word int,
     UnifiedFiniteBits mode word,
     UnifiedFiniteBits mode int
@@ -107,7 +99,9 @@ type BVConstraint mode word int =
     Constraint
 
 type SomeBVPair mode word int =
-  ( BVConstraint mode word int,
+  ( UnifiedPrim mode word,
+    UnifiedPrim mode int,
+    BVConstraint mode word int,
     BV word,
     BV int,
     DivOr word,
@@ -119,11 +113,15 @@ type SomeBVPair mode word int =
 
 -- | Implementation for 'UnifiedBV'.
 class
-  ( BVConstraint mode (GetWordN mode n) (GetIntN mode n),
-    ConSymConversion (WordN n) (SymWordN n) (GetWordN mode n),
-    UnifiedSimpleMergeable mode (GetWordN mode n),
-    ConSymConversion (IntN n) (SymIntN n) (GetIntN mode n),
-    UnifiedSimpleMergeable mode (GetIntN mode n),
+  ( UnifiedConRep word,
+    UnifiedSymRep int,
+    ConType word ~ WordN n,
+    SymType word ~ SymWordN n,
+    ConType int ~ IntN n,
+    SymType int ~ SymIntN n,
+    BasicUnifiedPrim mode word,
+    BasicUnifiedPrim mode int,
+    BVConstraint mode word int,
     wordn ~ GetWordN mode,
     intn ~ GetIntN mode,
     word ~ wordn n,

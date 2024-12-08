@@ -29,24 +29,32 @@ import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymPrim (Prim)
 import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
+import Grisette.Unified.Internal.Class.UnifiedRep
+  ( UnifiedConRep (ConType),
+    UnifiedSymRep (SymType),
+  )
 import Grisette.Unified.Internal.Class.UnifiedSafeFdiv (UnifiedSafeFdiv)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
-import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
+import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
 
 class
-  ( Prim (GetAlgReal mode),
-    ConSymConversion AlgReal SymAlgReal (GetAlgReal mode),
-    Num (GetAlgReal mode),
-    Fractional (GetAlgReal mode),
-    UnifiedPrimitive mode (GetAlgReal mode),
-    FdivOr (GetAlgReal mode),
+  ( r ~ GetAlgReal mode,
+    UnifiedConRep r,
+    UnifiedSymRep r,
+    ConType r ~ AlgReal,
+    SymType r ~ SymAlgReal,
+    BasicUnifiedPrim mode r,
+    Prim r,
+    ConSymConversion AlgReal SymAlgReal r,
+    Num r,
+    Fractional r,
+    FdivOr r,
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
     UnifiedSafeFdiv mode ArithException r m,
-    UnifiedFromIntegral mode (GetInteger mode) r,
-    r ~ GetAlgReal mode
+    UnifiedFromIntegral mode (GetInteger mode) r
   ) =>
   UnifiedAlgRealImpl (mode :: EvalModeTag) r
     | mode -> r

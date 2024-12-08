@@ -39,21 +39,22 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
 import Grisette.Internal.Core.Data.Class.SymIEEEFP (SymIEEEFPTraits)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
-import Grisette.Internal.SymPrim.SymPrim (Prim)
-import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
+import Grisette.Unified.Internal.Class.UnifiedRep (UnifiedConRep (ConType), UnifiedSymRep (SymType))
 import Grisette.Unified.Internal.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
-import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
+import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
 
 -- | Implementation for 'UnifiedFP'.
 class
-  ( Prim fp,
-    ConSymConversion (FP eb sb) (SymFP eb sb) fp,
-    UnifiedPrimitive mode fp,
+  ( UnifiedConRep fp,
+    UnifiedSymRep fp,
+    ConType fp ~ FP eb sb,
+    SymType fp ~ SymFP eb sb,
+    BasicUnifiedPrim mode fp,
     Floating fp,
     SymIEEEFPTraits fp,
     IEEEFPConstants fp,
