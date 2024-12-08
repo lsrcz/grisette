@@ -197,6 +197,7 @@ library
       Grisette.Unified.Internal.Class.UnifiedFiniteBits
       Grisette.Unified.Internal.Class.UnifiedFromIntegral
       Grisette.Unified.Internal.Class.UnifiedITEOp
+      Grisette.Unified.Internal.Class.UnifiedRep
       Grisette.Unified.Internal.Class.UnifiedSafeBitCast
       Grisette.Unified.Internal.Class.UnifiedSafeDiv
       Grisette.Unified.Internal.Class.UnifiedSafeFdiv

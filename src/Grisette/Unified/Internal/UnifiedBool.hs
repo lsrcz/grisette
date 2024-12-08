@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- |
 -- Module      :   Grisette.Unified.Internal.UnifiedBool
@@ -18,11 +19,19 @@ import Grisette.Internal.SymPrim.SymPrim (Prim)
 import Grisette.Unified.Internal.BaseConstraint
   ( ConSymConversion,
   )
+import Grisette.Unified.Internal.Class.UnifiedRep
+  ( UnifiedConRep (ConType),
+    UnifiedSymRep (SymType),
+  )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
 -- | Evaluation mode with unified 'Bool' type.
 class
   ( Prim (GetBool mode),
+    UnifiedConRep (GetBool mode),
+    UnifiedSymRep (GetBool mode),
+    ConType (GetBool mode) ~ Bool,
+    SymType (GetBool mode) ~ SymBool,
     ConSymConversion Bool SymBool (GetBool mode),
     LogicalOp (GetBool mode)
   ) =>

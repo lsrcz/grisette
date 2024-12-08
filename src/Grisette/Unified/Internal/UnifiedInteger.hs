@@ -27,32 +27,34 @@ where
 import Control.Exception (ArithException)
 import Control.Monad.Except (MonadError)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Internal.SymPrim.SymPrim (Prim)
-import Grisette.Unified.Internal.BaseConstraint
-  ( ConSymConversion,
-  )
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
+import Grisette.Unified.Internal.Class.UnifiedRep
+  ( UnifiedConRep (ConType),
+    UnifiedSymRep (SymType),
+  )
 import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
 import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
   )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
-import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
+import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
 
 class
-  ( Prim (GetInteger mode),
-    ConSymConversion Integer SymInteger (GetInteger mode),
-    Num (GetInteger mode),
-    UnifiedPrimitive mode (GetInteger mode),
+  ( i ~ GetInteger mode,
+    UnifiedConRep i,
+    UnifiedSymRep i,
+    ConType i ~ Integer,
+    SymType i ~ SymInteger,
+    BasicUnifiedPrim mode i,
+    Num i,
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
     UnifiedSafeDiv mode ArithException i m,
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
     UnifiedSafeLinearArith mode ArithException i m,
-    UnifiedFromIntegral mode i i,
-    i ~ GetInteger mode
+    UnifiedFromIntegral mode i i
   ) =>
   UnifiedIntegerImpl (mode :: EvalModeTag) i
     | mode -> i
