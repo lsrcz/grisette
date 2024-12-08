@@ -1,11 +1,7 @@
 --  For explanation the code in this example, please refer to the README.md.
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -16,9 +12,6 @@
 module Main (main) where
 
 import Grisette
-import Grisette.Internal.TH.GADT.DeriveEvalSym (deriveGADTEvalSym)
-import Grisette.Internal.TH.GADT.DeriveExtractSym (deriveGADTExtractSym)
-import Grisette.Internal.TH.GADT.DeriveMergeable
 
 type IntExpr = Expr SymInteger
 
@@ -41,9 +34,7 @@ data Expr a where
 
 deriving instance Show (Expr a)
 
-deriveGADTMergeable ''Expr
-deriveGADTEvalSym ''Expr
-deriveGADTExtractSym ''Expr
+deriveGADTAll ''Expr
 makeSmartCtor ''Expr
 
 eval :: Expr a -> a

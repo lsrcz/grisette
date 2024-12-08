@@ -3,6 +3,14 @@
 
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.DeriveExtractSym
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.DeriveExtractSym
   ( deriveGADTExtractSym,
     deriveGADTExtractSym1,
@@ -54,11 +62,14 @@ genExtractSym' n typName = do
     n
     typName
 
+-- | Derive 'ExtractSym' instance for a GADT.
 deriveGADTExtractSym :: Name -> Q [Dec]
 deriveGADTExtractSym = genExtractSym' 0
 
+-- | Derive 'ExtractSym1' instance for a GADT.
 deriveGADTExtractSym1 :: Name -> Q [Dec]
 deriveGADTExtractSym1 = genExtractSym' 1
 
+-- | Derive 'ExtractSym2' instance for a GADT.
 deriveGADTExtractSym2 :: Name -> Q [Dec]
 deriveGADTExtractSym2 = genExtractSym' 2
