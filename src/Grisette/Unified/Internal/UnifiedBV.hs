@@ -79,7 +79,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
-import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim, UnifiedPrim)
+import Grisette.Unified.Internal.UnifiedPrim (UnifiedBasicPrim, UnifiedPrim)
 
 type BVConstraint mode word int =
   ( Num word,
@@ -119,8 +119,8 @@ class
     SymType word ~ SymWordN n,
     ConType int ~ IntN n,
     SymType int ~ SymIntN n,
-    BasicUnifiedPrim mode word,
-    BasicUnifiedPrim mode int,
+    UnifiedBasicPrim mode word,
+    UnifiedBasicPrim mode int,
     BVConstraint mode word int,
     wordn ~ GetWordN mode,
     intn ~ GetIntN mode,

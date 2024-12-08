@@ -48,7 +48,6 @@ import Grisette.Unified.Internal.Theories
 import Grisette.Unified.Internal.UnifiedAlgReal (UnifiedAlgReal)
 import Grisette.Unified.Internal.UnifiedBV (AllUnifiedBV)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedData (AllUnifiedData)
 import Grisette.Unified.Internal.UnifiedFP (AllUnifiedFP)
 import Grisette.Unified.Internal.UnifiedFun
@@ -56,6 +55,7 @@ import Grisette.Unified.Internal.UnifiedFun
     unifiedFunInstanceName,
   )
 import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
+import Grisette.Unified.Internal.UnifiedPrim (UnifiedBasicPrim)
 import Language.Haskell.TH
   ( DecsQ,
     Type (AppT, ArrowT, ConT, StarT, VarT),
@@ -78,7 +78,7 @@ import Language.Haskell.TH
 class
   ( Typeable mode,
     UnifiedBool mode,
-    UnifiedPrimitive mode (GetBool mode),
+    UnifiedBasicPrim mode (GetBool mode),
     Monad (BaseMonad mode),
     TryMerge (BaseMonad mode),
     UnifiedBranching mode (BaseMonad mode),
