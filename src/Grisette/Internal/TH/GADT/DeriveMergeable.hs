@@ -20,7 +20,7 @@ module Grisette.Internal.TH.GADT.DeriveMergeable
   )
 where
 
-import Control.Monad (foldM, replicateM, when, zipWithM)
+import Control.Monad (foldM, replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy (Proxy))
@@ -34,6 +34,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     product2Strategy,
     wrapStrategy,
   )
+import Grisette.Internal.TH.GADT.Common (checkArgs)
 import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Bang (Bang),
@@ -76,6 +77,7 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
   ( TyVarBndrUnit,
+    mapTVFlag,
     plainTVFlag,
     specifiedSpec,
   )
@@ -429,36 +431,10 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
 
 genMergeable' :: Name -> [Name] -> [S.Set Int] -> Name -> Int -> Q (Name, [Dec])
 genMergeable' infoName conInfoNames pos typName n = do
-  when (n < 0) $
-    fail $
-      unlines
-        [ "Cannot derive Mergeable instance with negative type parameters",
-          "Requested: " ++ show n,
-          "Hint: Use a non-negative number of type parameters"
-        ]
-  d <- reifyDatatype typName
-  let dvars = datatypeVars d
-  when (length dvars < n) $
-    fail $
-      "Requesting Mergeable"
-        <> show n
-        <> " instance, while the type "
-        <> show typName
-        <> " has only "
-        <> show (length dvars)
-        <> " type variables."
-  let keptVars = take (length dvars - n) dvars
-  keptNewNames <- traverse (newName . occName . tvName) keptVars
-  let keptNewVars = (`plainTVFlag` specifiedSpec) <$> keptNewNames
-  let argVars = drop (length dvars - n) dvars
-  argNewNames <- traverse (newName . occName . tvName) argVars
-  let argNewVars = (`plainTVFlag` specifiedSpec) <$> argNewNames
-  let substMap =
-        M.fromList $
-          zip
-            (tvName <$> dvars)
-            (VarT <$> keptNewNames ++ argNewNames)
+  (constructors, keptNewNames, keptNewVars, argNewNames, argNewVars) <-
+    checkArgs "Mergeable" 3 typName n
 
+  d <- reifyDatatype typName
   let mergeableContexts =
         fmap (AppT (ConT ''Mergeable) . VarT . tvName) keptNewVars
 
@@ -478,7 +454,7 @@ genMergeable' infoName conInfoNames pos typName n = do
 
   let mergingInfoFunType =
         ForallT
-          (keptNewVars ++ argNewVars)
+          (mapTVFlag (const specifiedSpec) <$> keptNewVars ++ argNewVars)
           mergeableContexts
           mergingInfoFunTypeWithoutCtx
   let mergingInfoFunName =
@@ -487,14 +463,12 @@ genMergeable' infoName conInfoNames pos typName n = do
             <> (if n /= 0 then show n else "")
             <> occName (datatypeName d)
   let mergingInfoFunSigD = SigD mergingInfoFunName mergingInfoFunType
-  let constructors = datatypeCons d
   clauses <-
     traverse
       ( \(conInfoName, pos, con) ->
           genMergingInfoFunClause' (tvName <$> argNewVars) conInfoName pos con
       )
-      $ zip3 conInfoNames pos
-      $ applySubstitution substMap constructors
+      $ zip3 conInfoNames pos constructors
   let mergingInfoFunDec = FunD mergingInfoFunName clauses
 
   let mergeFunType =
@@ -505,9 +479,7 @@ genMergeable' infoName conInfoNames pos typName n = do
             <> (if n /= 0 then show n else "")
             <> occName (datatypeName d)
   let mergeFunSigD = SigD mergeFunName mergeFunType
-  mergeFunClauses <-
-    zipWithM genMergeFunClause' conInfoNames $
-      applySubstitution substMap constructors
+  mergeFunClauses <- zipWithM genMergeFunClause' conInfoNames constructors
   let mergeFunDec = FunD mergeFunName mergeFunClauses
 
   let instanceHead = case n of
@@ -554,7 +526,7 @@ genMergeable' infoName conInfoNames pos typName n = do
         InstanceD
           Nothing
           mergeableContexts
-          (instanceType)
+          instanceType
           [FunD mergeInstanceFunName [mergeInstanceFunClause]]
       ]
     )
