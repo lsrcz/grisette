@@ -62,7 +62,7 @@ jobs:
             }
           - {
               build: stack,
-              arg: "--stack-yaml stack-lts-22.33.yaml",
+              arg: "--stack-yaml stack-lts-22.43.yaml",
               ismain: false,
               experimental: false,
               ghc: "966",
@@ -73,7 +73,7 @@ jobs:
               arg: "",
               ismain: true,
               experimental: false,
-              ghc: "982",
+              ghc: "983",
               cachekey: "stack-98",
             }
           - {
@@ -92,7 +92,7 @@ jobs:
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "982",
+                ghc: "983",
                 cachekey: "stack-98",
               }
 

@@ -13,7 +13,7 @@ packages:
     hackage: sbv-11.0
 snapshots:
 - completed:
-    sha256: 3e2ebb6e538654269973faf683d0068b123a6ee9462a48ac2c3f3281a7bf3f8b
-    size: 658094
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/8/13.yaml
-  original: nightly-2024-08-13
+    sha256: 3096172337b6138d0c4cb5303c4e9c58100230ee8d89aacf7d940a684d22e687
+    size: 678646
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/12/4.yaml
+  original: nightly-2024-12-04
