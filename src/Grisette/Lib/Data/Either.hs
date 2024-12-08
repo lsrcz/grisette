@@ -13,9 +13,8 @@
 -- Portability :   GHC only
 module Grisette.Lib.Data.Either (mrgLeft, mrgRight) where
 
-import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Internal.TH.MergeConstructor
-  ( mkMergeConstructor,
+import Grisette.Internal.TH.Ctor.SmartConstructor
+  ( makePrefixedSmartCtor,
   )
 
-mkMergeConstructor "mrg" ''Either
+makePrefixedSmartCtor "mrg" ''Either

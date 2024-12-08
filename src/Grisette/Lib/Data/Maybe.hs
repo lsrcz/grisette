@@ -13,9 +13,8 @@
 -- Portability :   GHC only
 module Grisette.Lib.Data.Maybe (mrgNothing, mrgJust) where
 
-import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Internal.TH.MergeConstructor
-  ( mkMergeConstructor,
+import Grisette.Internal.TH.Ctor.SmartConstructor
+  ( makePrefixedSmartCtor,
   )
 
-mkMergeConstructor "mrg" ''Maybe
+makePrefixedSmartCtor "mrg" ''Maybe

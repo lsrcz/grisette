@@ -1,21 +1,28 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 -- |
--- Module      :   Grisette.Internal.TH.UnifiedConstructor
+-- Module      :   Grisette.Internal.TH.Ctor.UnifiedConstructor
 -- Copyright   :   (c) Sirui Lu 2024
 -- License     :   BSD-3-Clause (see the LICENSE file)
 --
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Internal.TH.UnifiedConstructor
-  ( mkUnifiedConstructor,
-    mkUnifiedConstructor',
+module Grisette.Internal.TH.Ctor.UnifiedConstructor
+  ( makeUnifiedCtorWith,
+    makePrefixedUnifiedCtor,
+    makeNamedUnifiedCtor,
+    makeUnifiedCtor,
   )
 where
 
 import Control.Monad (join, replicateM, when, zipWithM)
-import Grisette.Internal.TH.Util (constructorInfoToType, occName, putHaddock)
+import Grisette.Internal.TH.Ctor.Common
+  ( decapitalizeTransformer,
+    prefixTransformer,
+    withNameTransformer,
+  )
+import Grisette.Internal.TH.Util (constructorInfoToType, putHaddock)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.UnifiedData
   ( GetData,
@@ -45,6 +52,19 @@ import Language.Haskell.TH.Syntax
     newName,
   )
 
+-- | Generate smart constructors to create unified values with provided name
+-- transformer.
+--
+-- For a type @T mode a b c@ with constructors @T1@, @T2@, etc., this function
+-- will generate smart constructors with the name transformed, e.g., given the
+-- name transformer @(\name -> "mk" ++ name)@, it will generate @mkT1@, @mkT2@,
+-- @mkT2@, etc.
+--
+-- The generated smart constructors will contruct values of type
+-- @GetData mode (T mode a b c)@.
+makeUnifiedCtorWith :: (String -> String) -> Name -> Q [Dec]
+makeUnifiedCtorWith = withNameTransformer makeNamedUnifiedCtor
+
 -- | Generate smart constructors to create unified values.
 --
 -- For a type @T mode a b c@ with constructors @T1@, @T2@, etc., this function
@@ -53,16 +73,27 @@ import Language.Haskell.TH.Syntax
 --
 -- The generated smart constructors will contruct values of type
 -- @GetData mode (T mode a b c)@.
-mkUnifiedConstructor ::
+makePrefixedUnifiedCtor ::
   -- | Prefix for generated wrappers
   String ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-mkUnifiedConstructor prefix typName = do
-  d <- reifyDatatype typName
-  let constructorNames = occName . constructorName <$> datatypeCons d
-  mkUnifiedConstructor' ((prefix ++) <$> constructorNames) typName
+makePrefixedUnifiedCtor = makeUnifiedCtorWith . prefixTransformer
+
+-- | Generate smart constructors to create unified values.
+--
+-- For a type @T mode a b c@ with constructors @T1@, @T2@, etc., this function
+-- will generate smart constructors with the names decapitalized, e.g.,
+-- @t1@, @t2@, etc.
+--
+-- The generated smart constructors will contruct values of type
+-- @GetData mode (T mode a b c)@.
+makeUnifiedCtor ::
+  -- | The type to generate the wrappers for
+  Name ->
+  Q [Dec]
+makeUnifiedCtor = makeUnifiedCtorWith decapitalizeTransformer
 
 -- | Generate smart constructors to create unified values.
 --
@@ -71,13 +102,13 @@ mkUnifiedConstructor prefix typName = do
 --
 -- The generated smart constructors will contruct values of type
 -- @GetData mode (T mode a b c)@.
-mkUnifiedConstructor' ::
+makeNamedUnifiedCtor ::
   -- | Names for generated wrappers
   [String] ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-mkUnifiedConstructor' names typName = do
+makeNamedUnifiedCtor names typName = do
   d <- reifyDatatype typName
   let constructors = datatypeCons d
   when (length names /= length constructors) $

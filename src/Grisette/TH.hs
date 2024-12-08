@@ -15,12 +15,16 @@ module Grisette.TH
     deriveAllExcept,
 
     -- * Smart constructors that merges in a monad
-    mkMergeConstructor,
-    mkMergeConstructor',
+    makePrefixedSmartCtor,
+    makeNamedSmartCtor,
+    makeSmartCtor,
+    makeSmartCtorWith,
 
     -- * Smart constructors that are polymorphic in evaluation modes
-    mkUnifiedConstructor,
-    mkUnifiedConstructor',
+    makePrefixedUnifiedCtor,
+    makeNamedUnifiedCtor,
+    makeUnifiedCtor,
+    makeUnifiedCtorWith,
 
     -- * Tools for building more derivation procedures
 
@@ -51,6 +55,18 @@ module Grisette.TH
   )
 where
 
+import Grisette.Internal.TH.Ctor.SmartConstructor
+  ( makeNamedSmartCtor,
+    makePrefixedSmartCtor,
+    makeSmartCtor,
+    makeSmartCtorWith,
+  )
+import Grisette.Internal.TH.Ctor.UnifiedConstructor
+  ( makeNamedUnifiedCtor,
+    makePrefixedUnifiedCtor,
+    makeUnifiedCtor,
+    makeUnifiedCtorWith,
+  )
 import Grisette.Internal.TH.DeriveBuiltin
   ( deriveBuiltinExtra,
   )
@@ -81,11 +97,3 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterfaceExtra,
   )
 import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
-import Grisette.Internal.TH.MergeConstructor
-  ( mkMergeConstructor,
-    mkMergeConstructor',
-  )
-import Grisette.Internal.TH.UnifiedConstructor
-  ( mkUnifiedConstructor,
-    mkUnifiedConstructor',
-  )

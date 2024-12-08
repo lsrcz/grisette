@@ -29,7 +29,7 @@ import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
 import Control.Monad.Identity (Identity (Identity))
 import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), Union, mrgReturn)
-import Grisette.TH (deriveAll, mkUnifiedConstructor, mkUnifiedConstructor')
+import Grisette.TH (deriveAll, makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
 import Grisette.Unified.Internal.EvalMode (EvalModeBase)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
@@ -42,7 +42,7 @@ data T mode a
   | T1
 
 deriveAll ''T
-mkUnifiedConstructor "mk" ''T
+makePrefixedUnifiedCtor "mk" ''T
 
 #if MIN_VERSION_base(4,16,0)
 type FConstraint mode = (EvalModeBase mode)
@@ -57,12 +57,12 @@ f = mkT (toSym True) 10 mkT1
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
 deriveAll ''TNoMode
-mkUnifiedConstructor' ["tNoMode0", "tNoMode1"] ''TNoMode
+makeNamedUnifiedCtor ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
 deriveAll ''TNoArg
-mkUnifiedConstructor "mk" ''TNoArg
+makePrefixedUnifiedCtor "mk" ''TNoArg
 
 unifiedConstructorTest :: Test
 unifiedConstructorTest =
