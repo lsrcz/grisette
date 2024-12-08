@@ -11,10 +11,10 @@
         };
 
         stableHPkgs = pkgs.haskell.packages."ghc983";
-        hPkgs = pkgs.haskell.packages."ghc966".extend (hself: hsuper: rec {
-          # ihaskell = pkgs.haskell.lib.dontCheck (hself.callHackage "ihaskell" "0.11.0.0" { });
-          # ghc-syntax-highlighter =
-          #   hself.callHackage "ghc-syntax-highlighter" "0.0.11.0" { };
+        hPkgs = pkgs.haskell.packages."ghc983".extend (hself: hsuper: rec {
+          ihaskell = pkgs.haskell.lib.dontCheck (hself.callHackage "ihaskell" "0.11.0.0" { });
+          ghc-syntax-highlighter =
+            hself.callHackage "ghc-syntax-highlighter" "0.0.11.0" { };
         });
 
         basicDevTools = [
@@ -46,7 +46,7 @@
           })
         ];
 
-        devTools = basicDevTools; # ++ additionalDevTools;
+        devTools = basicDevTools ++ additionalDevTools;
         # Wrap Stack to work with our Nix integration. We don't want to modify
         # stack.yaml so non-Nix users don't notice anything.
         # - no-nix: We don't want Stack's way of integrating Nix.
