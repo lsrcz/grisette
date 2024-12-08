@@ -14,9 +14,8 @@
 module Grisette.Lib.Data.Functor.Sum (mrgInR, mrgInL) where
 
 import Data.Functor.Sum (Sum)
-import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Internal.TH.MergeConstructor
-  ( mkMergeConstructor,
+import Grisette.Internal.TH.Ctor.SmartConstructor
+  ( makePrefixedSmartCtor,
   )
 
-mkMergeConstructor "mrg" ''Sum
+makePrefixedSmartCtor "mrg" ''Sum

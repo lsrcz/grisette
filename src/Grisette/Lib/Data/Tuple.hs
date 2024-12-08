@@ -24,16 +24,15 @@ module Grisette.Lib.Data.Tuple
   )
 where
 
-import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
-import Grisette.Internal.TH.MergeConstructor
-  ( mkMergeConstructor',
+import Grisette.Internal.TH.Ctor.SmartConstructor
+  ( makeNamedSmartCtor,
   )
 
-mkMergeConstructor' ["mrgUnit"] ''()
-mkMergeConstructor' ["mrgTuple2"] ''(,)
-mkMergeConstructor' ["mrgTuple3"] ''(,,)
-mkMergeConstructor' ["mrgTuple4"] ''(,,,)
-mkMergeConstructor' ["mrgTuple5"] ''(,,,,)
-mkMergeConstructor' ["mrgTuple6"] ''(,,,,,)
-mkMergeConstructor' ["mrgTuple7"] ''(,,,,,,)
-mkMergeConstructor' ["mrgTuple8"] ''(,,,,,,,)
+makeNamedSmartCtor ["mrgUnit"] ''()
+makeNamedSmartCtor ["mrgTuple2"] ''(,)
+makeNamedSmartCtor ["mrgTuple3"] ''(,,)
+makeNamedSmartCtor ["mrgTuple4"] ''(,,,)
+makeNamedSmartCtor ["mrgTuple5"] ''(,,,,)
+makeNamedSmartCtor ["mrgTuple6"] ''(,,,,,)
+makeNamedSmartCtor ["mrgTuple7"] ''(,,,,,,)
+makeNamedSmartCtor ["mrgTuple8"] ''(,,,,,,,)
