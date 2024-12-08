@@ -14,15 +14,15 @@ module Grisette.Unified.Internal.UnifiedBool (UnifiedBool (..)) where
 
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp)
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.SymPrim.SymPrim (Prim)
 import Grisette.Unified.Internal.BaseConstraint
-  ( BasicGrisetteType,
-    ConSymConversion,
+  ( ConSymConversion,
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 
 -- | Evaluation mode with unified 'Bool' type.
 class
-  ( BasicGrisetteType (GetBool mode),
+  ( Prim (GetBool mode),
     ConSymConversion Bool SymBool (GetBool mode),
     LogicalOp (GetBool mode)
   ) =>

@@ -26,10 +26,8 @@ import Control.Monad.Error.Class (MonadError)
 import Grisette.Internal.Core.Data.Class.SafeFdiv (FdivOr)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
-import Grisette.Unified.Internal.BaseConstraint
-  ( BasicGrisetteType,
-    ConSymConversion,
-  )
+import Grisette.Internal.SymPrim.SymPrim (Prim)
+import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeFdiv (UnifiedSafeFdiv)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
@@ -38,7 +36,7 @@ import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 
 class
-  ( BasicGrisetteType (GetAlgReal mode),
+  ( Prim (GetAlgReal mode),
     ConSymConversion AlgReal SymAlgReal (GetAlgReal mode),
     Num (GetAlgReal mode),
     Fractional (GetAlgReal mode),

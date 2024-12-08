@@ -39,10 +39,8 @@ import Grisette.Internal.Core.Data.Class.IEEEFP
 import Grisette.Internal.Core.Data.Class.SymIEEEFP (SymIEEEFPTraits)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, NotRepresentableFPError, ValidFP)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
-import Grisette.Unified.Internal.BaseConstraint
-  ( BasicGrisetteType,
-    ConSymConversion,
-  )
+import Grisette.Internal.SymPrim.SymPrim (Prim)
+import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
@@ -53,7 +51,7 @@ import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 
 -- | Implementation for 'UnifiedFP'.
 class
-  ( BasicGrisetteType fp,
+  ( Prim fp,
     ConSymConversion (FP eb sb) (SymFP eb sb) fp,
     UnifiedPrimitive mode fp,
     Floating fp,
