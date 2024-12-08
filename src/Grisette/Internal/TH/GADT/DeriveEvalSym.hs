@@ -7,6 +7,14 @@
 
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.DeriveEvalSym
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.DeriveEvalSym
   ( deriveGADTEvalSym,
     deriveGADTEvalSym1,
@@ -57,11 +65,13 @@ genEvalSym' n typName = do
     n
     typName
 
+-- | Derive 'EvalSym' instance for a GADT.
 deriveGADTEvalSym :: Name -> Q [Dec]
 deriveGADTEvalSym = genEvalSym' 0
 
-deriveGADTEvalSym1 :: Name -> Q [Dec]
+-- | Derive 'EvalSym1' instance for a GADT.
 deriveGADTEvalSym1 = genEvalSym' 1
 
+-- | Derive 'EvalSym2' instance for a GADT.
 deriveGADTEvalSym2 :: Name -> Q [Dec]
 deriveGADTEvalSym2 = genEvalSym' 2
