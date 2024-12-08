@@ -16,6 +16,8 @@
 module Main (main) where
 
 import Grisette
+import Grisette.Internal.TH.GADT.DeriveEvalSym (deriveGADTEvalSym)
+import Grisette.Internal.TH.GADT.DeriveExtractSym (deriveGADTExtractSym)
 import Grisette.Internal.TH.GADT.DeriveMergeable
 
 type IntExpr = Expr SymInteger
@@ -40,25 +42,9 @@ data Expr a where
 deriving instance Show (Expr a)
 
 deriveGADTMergeable ''Expr
+deriveGADTEvalSym ''Expr
+deriveGADTExtractSym ''Expr
 makeSmartCtor ''Expr
-
-instance (EvalSym a) => EvalSym (Expr a) where
-  evalSym fillDefault m (IntVal a) = IntVal $ evalSym fillDefault m a
-  evalSym fillDefault m (BoolVal a) = BoolVal $ evalSym fillDefault m a
-  evalSym fillDefault m (Add a b) = Add (evalSym fillDefault m a) (evalSym fillDefault m b)
-  evalSym fillDefault m (Mul a b) = Mul (evalSym fillDefault m a) (evalSym fillDefault m b)
-  evalSym fillDefault m (BAnd a b) = BAnd (evalSym fillDefault m a) (evalSym fillDefault m b)
-  evalSym fillDefault m (BOr a b) = BOr (evalSym fillDefault m a) (evalSym fillDefault m b)
-  evalSym fillDefault m (Eq a b) = Eq (evalSym fillDefault m a) (evalSym fillDefault m b)
-
-instance (ExtractSym a) => ExtractSym (Expr a) where
-  extractSymMaybe (IntVal a) = extractSymMaybe a
-  extractSymMaybe (BoolVal a) = extractSymMaybe a
-  extractSymMaybe (Add a b) = extractSymMaybe a <> extractSymMaybe b
-  extractSymMaybe (Mul a b) = extractSymMaybe a <> extractSymMaybe b
-  extractSymMaybe (BAnd a b) = extractSymMaybe a <> extractSymMaybe b
-  extractSymMaybe (BOr a b) = extractSymMaybe a <> extractSymMaybe b
-  extractSymMaybe (Eq a b) = extractSymMaybe a <> extractSymMaybe b
 
 eval :: Expr a -> a
 eval (IntVal a) = a
