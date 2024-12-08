@@ -36,7 +36,7 @@ import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym), IsConMode)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S), IsConMode)
 import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFromIntegral.symFromIntegral`
@@ -69,158 +69,158 @@ instance
   where
   withBaseFromIntegral r = r
 
-instance UnifiedFromIntegral 'Con Integer AlgReal where
+instance UnifiedFromIntegral 'C Integer AlgReal where
   withBaseFromIntegral r = r
 
-instance UnifiedFromIntegral 'Con Integer Integer where
+instance UnifiedFromIntegral 'C Integer Integer where
   withBaseFromIntegral r = r
 
-instance (KnownNat n, 1 <= n) => UnifiedFromIntegral 'Con Integer (IntN n) where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Con Integer (WordN n)
-  where
-  withBaseFromIntegral r = r
-
-instance (ValidFP eb sb) => UnifiedFromIntegral 'Con Integer (FP eb sb) where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Con (IntN n') AlgReal
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Con (IntN n') Integer
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Con (IntN n') (IntN n)
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Con (IntN n') (WordN n)
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n', ValidFP eb sb) =>
-  UnifiedFromIntegral 'Con (IntN n') (FP eb sb)
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Con (WordN n') AlgReal
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Con (WordN n') Integer
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Con (WordN n') (IntN n)
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Con (WordN n') (WordN n)
-  where
-  withBaseFromIntegral r = r
-
-instance
-  (KnownNat n', 1 <= n', ValidFP eb sb) =>
-  UnifiedFromIntegral 'Con (WordN n') (FP eb sb)
-  where
-  withBaseFromIntegral r = r
-
-instance UnifiedFromIntegral 'Sym SymInteger SymAlgReal where
-  withBaseFromIntegral r = r
-
-instance UnifiedFromIntegral 'Sym SymInteger SymInteger where
-  withBaseFromIntegral r = r
-
-instance (KnownNat n, 1 <= n) => UnifiedFromIntegral 'Sym SymInteger (SymIntN n) where
+instance (KnownNat n, 1 <= n) => UnifiedFromIntegral 'C Integer (IntN n) where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Sym SymInteger (SymWordN n)
+  UnifiedFromIntegral 'C Integer (WordN n)
   where
   withBaseFromIntegral r = r
 
-instance (ValidFP eb sb) => UnifiedFromIntegral 'Sym SymInteger (SymFP eb sb) where
+instance (ValidFP eb sb) => UnifiedFromIntegral 'C Integer (FP eb sb) where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Sym (SymIntN n') SymAlgReal
+  UnifiedFromIntegral 'C (IntN n') AlgReal
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Sym (SymIntN n') SymInteger
+  UnifiedFromIntegral 'C (IntN n') Integer
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Sym (SymIntN n') (SymIntN n)
+  UnifiedFromIntegral 'C (IntN n') (IntN n)
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Sym (SymIntN n') (SymWordN n)
+  UnifiedFromIntegral 'C (IntN n') (WordN n)
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n', ValidFP eb sb) =>
-  UnifiedFromIntegral 'Sym (SymIntN n') (SymFP eb sb)
+  UnifiedFromIntegral 'C (IntN n') (FP eb sb)
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Sym (SymWordN n') SymAlgReal
+  UnifiedFromIntegral 'C (WordN n') AlgReal
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n') =>
-  UnifiedFromIntegral 'Sym (SymWordN n') SymInteger
+  UnifiedFromIntegral 'C (WordN n') Integer
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Sym (SymWordN n') (SymIntN n)
+  UnifiedFromIntegral 'C (WordN n') (IntN n)
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
-  UnifiedFromIntegral 'Sym (SymWordN n') (SymWordN n)
+  UnifiedFromIntegral 'C (WordN n') (WordN n)
   where
   withBaseFromIntegral r = r
 
 instance
   (KnownNat n', 1 <= n', ValidFP eb sb) =>
-  UnifiedFromIntegral 'Sym (SymWordN n') (SymFP eb sb)
+  UnifiedFromIntegral 'C (WordN n') (FP eb sb)
+  where
+  withBaseFromIntegral r = r
+
+instance UnifiedFromIntegral 'S SymInteger SymAlgReal where
+  withBaseFromIntegral r = r
+
+instance UnifiedFromIntegral 'S SymInteger SymInteger where
+  withBaseFromIntegral r = r
+
+instance (KnownNat n, 1 <= n) => UnifiedFromIntegral 'S SymInteger (SymIntN n) where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n, 1 <= n) =>
+  UnifiedFromIntegral 'S SymInteger (SymWordN n)
+  where
+  withBaseFromIntegral r = r
+
+instance (ValidFP eb sb) => UnifiedFromIntegral 'S SymInteger (SymFP eb sb) where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n') =>
+  UnifiedFromIntegral 'S (SymIntN n') SymAlgReal
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n') =>
+  UnifiedFromIntegral 'S (SymIntN n') SymInteger
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
+  UnifiedFromIntegral 'S (SymIntN n') (SymIntN n)
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
+  UnifiedFromIntegral 'S (SymIntN n') (SymWordN n)
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n', ValidFP eb sb) =>
+  UnifiedFromIntegral 'S (SymIntN n') (SymFP eb sb)
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n') =>
+  UnifiedFromIntegral 'S (SymWordN n') SymAlgReal
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n') =>
+  UnifiedFromIntegral 'S (SymWordN n') SymInteger
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
+  UnifiedFromIntegral 'S (SymWordN n') (SymIntN n)
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n', KnownNat n, 1 <= n) =>
+  UnifiedFromIntegral 'S (SymWordN n') (SymWordN n)
+  where
+  withBaseFromIntegral r = r
+
+instance
+  (KnownNat n', 1 <= n', ValidFP eb sb) =>
+  UnifiedFromIntegral 'S (SymWordN n') (SymFP eb sb)
   where
   withBaseFromIntegral r = r

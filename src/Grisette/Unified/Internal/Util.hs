@@ -17,16 +17,16 @@
 module Grisette.Unified.Internal.Util (withMode) where
 
 import Data.Typeable (Typeable, eqT, type (:~:) (Refl))
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 
 -- | Case analysis on the mode.
 withMode ::
   forall mode r.
   (Typeable mode) =>
-  ((mode ~ 'Con) => r) ->
-  ((mode ~ 'Sym) => r) ->
+  ((mode ~ 'C) => r) ->
+  ((mode ~ 'S) => r) ->
   r
-withMode con sym = case (eqT @mode @'Con, eqT @mode @'Sym) of
+withMode con sym = case (eqT @mode @'C, eqT @mode @'S) of
   (Just Refl, _) -> con
   (_, Just Refl) -> sym
   _ -> error "impossible"

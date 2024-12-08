@@ -31,7 +31,7 @@ import Generics.Deriving (Default (Default))
 import Grisette (Solvable (con), SymInteger, ToSym (toSym), Union, mrgReturn)
 import Grisette.TH (deriveAll, makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
 import Grisette.Unified.Internal.EvalMode (EvalModeBase)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -72,7 +72,7 @@ unifiedConstructorTest =
         f @?= Identity (T True 10 (Identity T1))
         f
           @?= ( mrgReturn (T (con True) 10 (mrgReturn T1)) ::
-                  Union (T 'Sym SymInteger)
+                  Union (T 'S SymInteger)
               ),
       testCase "NoMode" $ do
         tNoMode0 True (10 :: Int) TNoMode1

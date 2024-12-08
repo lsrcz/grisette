@@ -47,7 +47,7 @@ import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SafeFromFP.safeFromFP`
@@ -150,64 +150,64 @@ instance
 
 instance
   ( MonadError NotRepresentableFPError m,
-    UnifiedBranching 'Sym m,
+    UnifiedBranching 'S m,
     ValidFP eb sb
   ) =>
   UnifiedSafeFromFP
-    'Sym
+    'S
     NotRepresentableFPError
     SymInteger
     (SymFP eb sb)
     SymFPRoundingMode
     m
   where
-  withBaseSafeFromFP r = withBaseBranching @'Sym @m r
+  withBaseSafeFromFP r = withBaseBranching @'S @m r
 
 instance
   ( MonadError NotRepresentableFPError m,
-    UnifiedBranching 'Sym m,
+    UnifiedBranching 'S m,
     ValidFP eb sb
   ) =>
   UnifiedSafeFromFP
-    'Sym
+    'S
     NotRepresentableFPError
     SymAlgReal
     (SymFP eb sb)
     SymFPRoundingMode
     m
   where
-  withBaseSafeFromFP r = withBaseBranching @'Sym @m r
+  withBaseSafeFromFP r = withBaseBranching @'S @m r
 
 instance
   ( MonadError NotRepresentableFPError m,
-    UnifiedBranching 'Sym m,
+    UnifiedBranching 'S m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n
   ) =>
   UnifiedSafeFromFP
-    'Sym
+    'S
     NotRepresentableFPError
     (SymIntN n)
     (SymFP eb sb)
     SymFPRoundingMode
     m
   where
-  withBaseSafeFromFP r = withBaseBranching @'Sym @m r
+  withBaseSafeFromFP r = withBaseBranching @'S @m r
 
 instance
   ( MonadError NotRepresentableFPError m,
-    UnifiedBranching 'Sym m,
+    UnifiedBranching 'S m,
     ValidFP eb sb,
     KnownNat n,
     1 <= n
   ) =>
   UnifiedSafeFromFP
-    'Sym
+    'S
     NotRepresentableFPError
     (SymWordN n)
     (SymFP eb sb)
     SymFPRoundingMode
     m
   where
-  withBaseSafeFromFP r = withBaseBranching @'Sym @m r
+  withBaseSafeFromFP r = withBaseBranching @'S @m r

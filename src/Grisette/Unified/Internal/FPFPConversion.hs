@@ -25,7 +25,7 @@ where
 import Grisette.Internal.Core.Data.Class.IEEEFP (IEEEFPConvertible)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.SymPrim.SymFP (SymFP, SymFPRoundingMode)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedFP (UnifiedFPImpl (GetFP, GetFPRoundingMode))
 
 class
@@ -47,7 +47,7 @@ class
 instance
   (ValidFP eb0 sb0, ValidFP eb1 sb1) =>
   UnifiedFPFPConversionImpl
-    'Con
+    'C
     FP
     eb0
     sb0
@@ -60,7 +60,7 @@ instance
 instance
   (ValidFP eb0 sb0, ValidFP eb1 sb1) =>
   UnifiedFPFPConversionImpl
-    'Sym
+    'S
     SymFP
     eb0
     sb0

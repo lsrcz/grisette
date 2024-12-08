@@ -35,7 +35,7 @@ import Grisette.Unified.Internal.Class.UnifiedRep
   )
 import Grisette.Unified.Internal.Class.UnifiedSafeFdiv (UnifiedSafeFdiv)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
 
@@ -66,17 +66,17 @@ class
   -- 'SymAlgReal' are not provided as they are not available for 'AlgReal'.
   type GetAlgReal mode = real | real -> mode
 
-instance UnifiedAlgRealImpl 'Con AlgReal where
-  type GetAlgReal 'Con = AlgReal
+instance UnifiedAlgRealImpl 'C AlgReal where
+  type GetAlgReal 'C = AlgReal
 
-instance UnifiedAlgRealImpl 'Sym SymAlgReal where
-  type GetAlgReal 'Sym = SymAlgReal
+instance UnifiedAlgRealImpl 'S SymAlgReal where
+  type GetAlgReal 'S = SymAlgReal
 
 -- | Evaluation mode with unified 'AlgReal' type.
 class
   (UnifiedAlgRealImpl mode (GetAlgReal mode)) =>
   UnifiedAlgReal (mode :: EvalModeTag)
 
-instance UnifiedAlgReal 'Con
+instance UnifiedAlgReal 'C
 
-instance UnifiedAlgReal 'Sym
+instance UnifiedAlgReal 'S

@@ -19,11 +19,11 @@ where
 
 import Language.Haskell.TH.Syntax (Lift)
 
--- | Evaluation mode for unified types. 'Con' means concrete evaluation, 'Sym'
+-- | Evaluation mode for unified types. 'C' means concrete evaluation, 'S'
 -- means symbolic evaluation.
-data EvalModeTag = Con | Sym deriving (Lift)
+data EvalModeTag = C | S deriving (Lift)
 
--- | Type family to check if a mode is 'Con'.
+-- | Type family to check if a mode is 'C'.
 type family IsConMode (mode :: EvalModeTag) = (r :: Bool) | r -> mode where
-  IsConMode 'Con = 'True
-  IsConMode 'Sym = 'False
+  IsConMode 'C = 'True
+  IsConMode 'S = 'False

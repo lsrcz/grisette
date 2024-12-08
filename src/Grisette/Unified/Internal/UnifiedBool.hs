@@ -23,7 +23,7 @@ import Grisette.Unified.Internal.Class.UnifiedRep
   ( UnifiedConRep (ConType),
     UnifiedSymRep (SymType),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 
 -- | Evaluation mode with unified 'Bool' type.
 class
@@ -41,8 +41,8 @@ class
   -- 'SymBool' in 'Sym' mode.
   type GetBool mode = bool | bool -> mode
 
-instance UnifiedBool 'Con where
-  type GetBool 'Con = Bool
+instance UnifiedBool 'C where
+  type GetBool 'C = Bool
 
-instance UnifiedBool 'Sym where
-  type GetBool 'Sym = SymBool
+instance UnifiedBool 'S where
+  type GetBool 'S = SymBool

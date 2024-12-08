@@ -26,7 +26,7 @@ import Grisette
     ToSym (toSym),
   )
 import Grisette.TH (deriveAll)
-import Grisette.Unified (EvalModeTag (Con, Sym), GetBool, GetData, GetWordN)
+import Grisette.Unified (EvalModeTag (C, S), GetBool, GetData, GetWordN)
 
 data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
@@ -34,12 +34,12 @@ data T mode n a
 
 deriveAll ''T
 
-concreteT :: T 'Con 10 Integer
+concreteT :: T 'C 10 Integer
 concreteT =
-  toSym (T True [10] [10 :: Integer] (Identity TNil) :: T 'Con 10 Integer)
+  toSym (T True [10] [10 :: Integer] (Identity TNil) :: T 'C 10 Integer)
 
-symbolicT :: T 'Sym 10 SymInteger
-symbolicT = fromJust $ toCon (toSym concreteT :: T 'Sym 10 SymInteger)
+symbolicT :: T 'S 10 SymInteger
+symbolicT = fromJust $ toCon (toSym concreteT :: T 'S 10 SymInteger)
 
 newtype X mode = X [GetBool mode]
 

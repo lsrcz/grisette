@@ -54,7 +54,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   )
 import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq)
 import Grisette.Unified.Internal.Class.UnifiedSymOrd (UnifiedSymOrd)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift)
 
@@ -97,18 +97,18 @@ class
   -- | Extracts a value from the unified data type.
   extractData :: (Monad m, UnifiedBranching mode m) => u -> m v
 
-instance (Mergeable v) => UnifiedDataImpl 'Con v (Identity v) where
-  type GetData 'Con v = Identity v
+instance (Mergeable v) => UnifiedDataImpl 'C v (Identity v) where
+  type GetData 'C v = Identity v
   wrapData = Identity
   extractData ::
-    forall m. (Mergeable v, Monad m, UnifiedBranching Con m) => Identity v -> m v
-  extractData = withBaseBranching @'Con @m $ mrgSingle . runIdentity
+    forall m. (Mergeable v, Monad m, UnifiedBranching C m) => Identity v -> m v
+  extractData = withBaseBranching @'C @m $ mrgSingle . runIdentity
 
-instance (Mergeable v) => UnifiedDataImpl 'Sym v (Union v) where
-  type GetData 'Sym v = Union v
+instance (Mergeable v) => UnifiedDataImpl 'S v (Union v) where
+  type GetData 'S v = Union v
   wrapData = mrgSingle
   extractData ::
-    forall m. (Mergeable v, Monad m, UnifiedBranching Sym m) => Union v -> m v
+    forall m. (Mergeable v, Monad m, UnifiedBranching S m) => Union v -> m v
   extractData = liftBaseMonad
 
 -- | This class is needed as constraint in user code prior to GHC 9.2.1.
@@ -118,7 +118,7 @@ class (UnifiedDataImpl mode v (GetData mode v)) => UnifiedData mode v
 instance (UnifiedDataImpl bool v (GetData bool v)) => UnifiedData bool v
 
 class
-  (UnifiedSimpleMergeable 'Sym (GetData 'Sym v)) =>
+  (UnifiedSimpleMergeable 'S (GetData 'S v)) =>
   UnifiedDataSimpleMergeable v
 
 instance (Mergeable v) => UnifiedDataSimpleMergeable v

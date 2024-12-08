@@ -37,7 +37,7 @@ import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith,
   )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
 
 class
@@ -63,17 +63,17 @@ class
   -- 'SymInteger' in 'Sym' mode.
   type GetInteger mode = int | int -> mode
 
-instance UnifiedIntegerImpl 'Con Integer where
-  type GetInteger 'Con = Integer
+instance UnifiedIntegerImpl 'C Integer where
+  type GetInteger 'C = Integer
 
-instance UnifiedIntegerImpl 'Sym SymInteger where
-  type GetInteger 'Sym = SymInteger
+instance UnifiedIntegerImpl 'S SymInteger where
+  type GetInteger 'S = SymInteger
 
 -- | Evaluation mode with unified 'Integer' type.
 class
   (UnifiedIntegerImpl mode (GetInteger mode)) =>
   UnifiedInteger (mode :: EvalModeTag)
 
-instance UnifiedInteger 'Con
+instance UnifiedInteger 'C
 
-instance UnifiedInteger 'Sym
+instance UnifiedInteger 'S

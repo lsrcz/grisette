@@ -86,7 +86,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
   )
 import Grisette.Unified.Internal.EvalModeTag
-  ( EvalModeTag (Sym),
+  ( EvalModeTag (S),
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
@@ -375,8 +375,8 @@ instance
   withBaseSymOrd2 r = r
   {-# INLINE withBaseSymOrd2 #-}
 
-instance (UnifiedSymOrd 'Sym v) => UnifiedSymOrd 'Sym (Union v) where
-  withBaseSymOrd r = withBaseSymOrd @'Sym @v r
+instance (UnifiedSymOrd 'S v) => UnifiedSymOrd 'S (Union v) where
+  withBaseSymOrd r = withBaseSymOrd @'S @v r
   {-# INLINE withBaseSymOrd #-}
 
 instance

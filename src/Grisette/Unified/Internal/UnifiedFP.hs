@@ -43,7 +43,7 @@ import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedRep (UnifiedConRep (ConType), UnifiedSymRep (SymType))
 import Grisette.Unified.Internal.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
@@ -83,17 +83,17 @@ class
 
 instance
   (ValidFP eb sb) =>
-  UnifiedFPImpl 'Con FP eb sb (FP eb sb) FPRoundingMode
+  UnifiedFPImpl 'C FP eb sb (FP eb sb) FPRoundingMode
   where
-  type GetFP 'Con = FP
-  type GetFPRoundingMode 'Con = FPRoundingMode
+  type GetFP 'C = FP
+  type GetFPRoundingMode 'C = FPRoundingMode
 
 instance
   (ValidFP eb sb) =>
-  UnifiedFPImpl 'Sym SymFP eb sb (SymFP eb sb) SymFPRoundingMode
+  UnifiedFPImpl 'S SymFP eb sb (SymFP eb sb) SymFPRoundingMode
   where
-  type GetFP 'Sym = SymFP
-  type GetFPRoundingMode 'Sym = SymFPRoundingMode
+  type GetFP 'S = SymFP
+  type GetFPRoundingMode 'S = SymFPRoundingMode
 
 -- | Evaluation mode with unified 'FP' type.
 class

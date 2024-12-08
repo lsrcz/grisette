@@ -76,7 +76,7 @@ import Grisette.Unified.Internal.Class.UnifiedSafeSymShift (UnifiedSafeSymShift)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
   ( UnifiedBranching,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim, UnifiedPrim)
@@ -155,17 +155,17 @@ class
 
 instance
   (KnownNat n, 1 <= n) =>
-  UnifiedBVImpl 'Con WordN IntN n (WordN n) (IntN n)
+  UnifiedBVImpl 'C WordN IntN n (WordN n) (IntN n)
   where
-  type GetWordN 'Con = WordN
-  type GetIntN 'Con = IntN
+  type GetWordN 'C = WordN
+  type GetIntN 'C = IntN
 
 instance
   (KnownNat n, 1 <= n) =>
-  UnifiedBVImpl 'Sym SymWordN SymIntN n (SymWordN n) (SymIntN n)
+  UnifiedBVImpl 'S SymWordN SymIntN n (SymWordN n) (SymIntN n)
   where
-  type GetWordN 'Sym = SymWordN
-  type GetIntN 'Sym = SymIntN
+  type GetWordN 'S = SymWordN
+  type GetIntN 'S = SymIntN
 
 -- | Get a unified unsigned dynamic bit width bit vector type. Resolves to
 -- 'SomeWordN' in 'Con' mode, and 'SomeSymWordN' in 'Sym' mode.
