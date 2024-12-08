@@ -383,8 +383,7 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
             then do
               pname <- newName "p"
               return (nm, Just pname)
-            else
-              return (nm, Nothing)
+            else return (nm, Nothing)
       )
       argTypes
   let argToStrategyPat =
