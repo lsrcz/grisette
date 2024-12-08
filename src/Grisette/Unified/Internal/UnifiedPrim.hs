@@ -15,13 +15,12 @@
 -- Portability :   GHC only
 module Grisette.Unified.Internal.UnifiedPrim
   ( UnifiedPrim,
-    BasicUnifiedPrim,
+    UnifiedBasicPrim,
   )
 where
 
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon)
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym)
 import Grisette.Internal.SymPrim.SymPrim (Prim)
+import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedITEOp
   ( UnifiedITEOp,
   )
@@ -49,14 +48,11 @@ type UnifiedPrim mode a =
 -- types in Grisette.
 --
 -- 'GetSomeWordN' is not considered as a basic (unified) primitive type.
-type BasicUnifiedPrim mode a =
+type UnifiedBasicPrim mode a =
   ( UnifiedPrim mode a,
     UnifiedSimpleMergeable mode a,
     UnifiedConRep a,
     UnifiedSymRep a,
     UnifiedSolvable mode a (ConType a),
-    ToCon a (ConType a),
-    ToSym a (SymType a),
-    ToCon (SymType a) a,
-    ToSym (ConType a) a
+    ConSymConversion (ConType a) (SymType a) a
   )

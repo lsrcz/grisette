@@ -117,7 +117,7 @@ module Grisette.Unified
 
     -- ** Shared constraints
     UnifiedPrim,
-    BasicUnifiedPrim,
+    UnifiedBasicPrim,
 
     -- * Unified types
 
@@ -346,6 +346,6 @@ import Grisette.Unified.Internal.UnifiedInteger
     UnifiedInteger,
   )
 import Grisette.Unified.Internal.UnifiedPrim
-  ( BasicUnifiedPrim,
+  ( UnifiedBasicPrim,
     UnifiedPrim,
   )

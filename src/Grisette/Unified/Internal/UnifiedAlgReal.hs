@@ -27,7 +27,6 @@ import Grisette.Internal.Core.Data.Class.SafeFdiv (FdivOr)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.SymAlgReal (SymAlgReal)
 import Grisette.Internal.SymPrim.SymPrim (Prim)
-import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedRep
   ( UnifiedConRep (ConType),
@@ -37,7 +36,7 @@ import Grisette.Unified.Internal.Class.UnifiedSafeFdiv (UnifiedSafeFdiv)
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
-import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
+import Grisette.Unified.Internal.UnifiedPrim (UnifiedBasicPrim)
 
 class
   ( r ~ GetAlgReal mode,
@@ -45,9 +44,8 @@ class
     UnifiedSymRep r,
     ConType r ~ AlgReal,
     SymType r ~ SymAlgReal,
-    BasicUnifiedPrim mode r,
+    UnifiedBasicPrim mode r,
     Prim r,
-    ConSymConversion AlgReal SymAlgReal r,
     Num r,
     Fractional r,
     FdivOr r,

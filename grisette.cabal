@@ -216,7 +216,6 @@ library
       Grisette.Unified.Internal.UnifiedAlgReal
       Grisette.Unified.Internal.UnifiedBool
       Grisette.Unified.Internal.UnifiedBV
-      Grisette.Unified.Internal.UnifiedConstraint
       Grisette.Unified.Internal.UnifiedData
       Grisette.Unified.Internal.UnifiedFP
       Grisette.Unified.Internal.UnifiedFun

@@ -46,7 +46,7 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
-import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
+import Grisette.Unified.Internal.UnifiedPrim (UnifiedBasicPrim)
 
 -- | Implementation for 'UnifiedFP'.
 class
@@ -54,7 +54,7 @@ class
     UnifiedSymRep fp,
     ConType fp ~ FP eb sb,
     SymType fp ~ SymFP eb sb,
-    BasicUnifiedPrim mode fp,
+    UnifiedBasicPrim mode fp,
     Floating fp,
     SymIEEEFPTraits fp,
     IEEEFPConstants fp,

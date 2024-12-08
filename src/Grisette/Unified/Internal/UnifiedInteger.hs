@@ -38,7 +38,7 @@ import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
   )
 import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
-import Grisette.Unified.Internal.UnifiedPrim (BasicUnifiedPrim)
+import Grisette.Unified.Internal.UnifiedPrim (UnifiedBasicPrim)
 
 class
   ( i ~ GetInteger mode,
@@ -46,7 +46,7 @@ class
     UnifiedSymRep i,
     ConType i ~ Integer,
     SymType i ~ SymInteger,
-    BasicUnifiedPrim mode i,
+    UnifiedBasicPrim mode i,
     Num i,
     forall m.
     (UnifiedBranching mode m, MonadError ArithException m) =>
