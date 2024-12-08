@@ -151,6 +151,7 @@ library
       Grisette.Internal.SymPrim.SymFP
       Grisette.Internal.SymPrim.SymGeneralFun
       Grisette.Internal.SymPrim.SymInteger
+      Grisette.Internal.SymPrim.SymPrim
       Grisette.Internal.SymPrim.SymTabularFun
       Grisette.Internal.SymPrim.TabularFun
       Grisette.Internal.TH.Ctor.Common
@@ -218,6 +219,7 @@ library
       Grisette.Unified.Internal.UnifiedFP
       Grisette.Unified.Internal.UnifiedFun
       Grisette.Unified.Internal.UnifiedInteger
+      Grisette.Unified.Internal.UnifiedPrim
       Grisette.Unified.Internal.Util
       Grisette.Unified.Lib.Control.Applicative
       Grisette.Unified.Lib.Control.Monad

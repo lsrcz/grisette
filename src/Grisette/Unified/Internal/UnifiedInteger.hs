@@ -27,9 +27,9 @@ where
 import Control.Exception (ArithException)
 import Control.Monad.Except (MonadError)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
+import Grisette.Internal.SymPrim.SymPrim (Prim)
 import Grisette.Unified.Internal.BaseConstraint
-  ( BasicGrisetteType,
-    ConSymConversion,
+  ( ConSymConversion,
   )
 import Grisette.Unified.Internal.Class.UnifiedFromIntegral (UnifiedFromIntegral)
 import Grisette.Unified.Internal.Class.UnifiedSafeDiv (UnifiedSafeDiv)
@@ -41,7 +41,7 @@ import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (Con, Sym))
 import Grisette.Unified.Internal.UnifiedConstraint (UnifiedPrimitive)
 
 class
-  ( BasicGrisetteType (GetInteger mode),
+  ( Prim (GetInteger mode),
     ConSymConversion Integer SymInteger (GetInteger mode),
     Num (GetInteger mode),
     UnifiedPrimitive mode (GetInteger mode),

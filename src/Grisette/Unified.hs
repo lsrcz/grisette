@@ -115,6 +115,10 @@ module Grisette.Unified
     UnifiedSafeFdiv (..),
     safeFdiv,
 
+    -- ** Shared constraints
+    UnifiedPrim,
+    BasicUnifiedPrim,
+
     -- * Unified types
 
     -- ** Boolean
@@ -340,4 +344,8 @@ import Grisette.Unified.Internal.UnifiedFun
 import Grisette.Unified.Internal.UnifiedInteger
   ( GetInteger,
     UnifiedInteger,
+  )
+import Grisette.Unified.Internal.UnifiedPrim
+  ( BasicUnifiedPrim,
+    UnifiedPrim,
   )

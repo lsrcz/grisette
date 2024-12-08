@@ -56,10 +56,8 @@ import Grisette.Internal.SymPrim.SomeBV
     SomeWordN,
   )
 import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
-import Grisette.Unified.Internal.BaseConstraint
-  ( BasicGrisetteType,
-    ConSymConversion,
-  )
+import Grisette.Internal.SymPrim.SymPrim (Prim)
+import Grisette.Unified.Internal.BaseConstraint (ConSymConversion)
 import Grisette.Unified.Internal.Class.UnifiedFiniteBits
   ( UnifiedFiniteBits,
   )
@@ -84,8 +82,8 @@ import Grisette.Unified.Internal.UnifiedAlgReal (GetAlgReal)
 import Grisette.Unified.Internal.UnifiedInteger (GetInteger)
 
 type BVConstraint mode word int =
-  ( BasicGrisetteType word,
-    BasicGrisetteType int,
+  ( Prim word,
+    Prim int,
     Num word,
     Num int,
     Bits word,

@@ -155,6 +155,11 @@ module Grisette.SymPrim
     type (=~>) (..),
     type (-~>) (..),
 
+    -- ** Shared constraints
+    Prim,
+    SymPrim,
+    BasicSymPrim,
+
     -- ** Quantifiers
     forallSet,
     forallSym,
@@ -336,6 +341,11 @@ import Grisette.Internal.SymPrim.SymFP
 import Grisette.Internal.SymPrim.SymGeneralFun ((-->), type (-~>) (..))
 import Grisette.Internal.SymPrim.SymInteger
   ( SymInteger (..),
+  )
+import Grisette.Internal.SymPrim.SymPrim
+  ( BasicSymPrim,
+    Prim,
+    SymPrim,
   )
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (..))
 import Grisette.Internal.SymPrim.TabularFun (type (=->) (..))
