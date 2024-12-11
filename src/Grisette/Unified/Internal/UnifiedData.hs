@@ -87,8 +87,8 @@ class
   UnifiedDataImpl (mode :: EvalModeTag) v u
     | u -> mode v
   where
-  -- | Get a unified data type. Resolves to @v@ in 'Con' mode, and @'Union' v@
-  -- in 'Sym' mode.
+  -- | Get a unified data type. Resolves to @v@ in 'C' mode, and @'Union' v@
+  -- in 'S' mode.
   type GetData mode v = r | r -> mode v
 
   -- | Wraps a value into the unified data type.

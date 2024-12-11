@@ -72,7 +72,8 @@ type SymPrim a =
 -- | A type that is used as a constraint for all the basic symbolic primitive
 -- types in Grisette.
 --
--- 'SomeSymWordN' is not considered as a basic symbolic primitive type.
+-- 'Grisette.SymPrim.SomeSymWordN' is not considered as a basic symbolic
+-- primitive type.
 type BasicSymPrim a =
   ( SymPrim a,
     SimpleMergeable a,

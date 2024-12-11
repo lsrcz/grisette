@@ -73,12 +73,12 @@ class
       rd -> fpn,
       rd eb sb -> fp
   where
-  -- | Get a unified floating point type. Resolves to 'FP' in 'Con' mode, and
-  -- 'SymFP' in 'Sym' mode.
+  -- | Get a unified floating point type. Resolves to 'FP' in 'C' mode, and
+  -- 'SymFP' in 'S' mode.
   type GetFP mode = (f :: Nat -> Nat -> Type) | f -> mode
 
   -- | Get a unified floating point rounding mode type. Resolves to
-  -- 'FPRoundingMode' in 'Con' mode, and 'SymFPRoundingMode' in 'Sym' mode.
+  -- 'FPRoundingMode' in 'C' mode, and 'SymFPRoundingMode' in 'S' mode.
   type GetFPRoundingMode mode = r | r -> mode
 
 instance

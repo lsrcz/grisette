@@ -3,12 +3,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.UnaryOpCommon
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig (..),
     UnaryOpFieldConfig (..),
     genUnaryOpClause,
     genUnaryOpClass,
-    fieldExp,
   )
 where
 
@@ -16,7 +23,17 @@ import Control.Monad (replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
-import Grisette.Internal.TH.GADT.Common (CheckArgsResult (CheckArgsResult, argNewNames, constructors, isVarUsedInFields, keptNewNames, keptNewVars), checkArgs)
+import Grisette.Internal.TH.GADT.Common
+  ( CheckArgsResult
+      ( CheckArgsResult,
+        argNewNames,
+        constructors,
+        isVarUsedInFields,
+        keptNewNames,
+        keptNewVars
+      ),
+    checkArgs,
+  )
 import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Body (NormalB),
@@ -100,11 +117,13 @@ patAndExps fieldFunExpGen argTypes fields = do
   fieldEvalSymFunExps <- traverse (fieldFunExpGen argToFunPat) fields
   return (funPats, fieldEvalSymFunExps)
 
+-- | Configuration for a unary function field expression generation on a GADT.
 data UnaryOpFieldConfig = UnaryOpFieldConfig
   { extraPatNames :: [String],
     fieldCombineFun :: Exp -> [Exp] -> Q Exp
   }
 
+-- | Generate a clause for a unary function on a GADT.
 genUnaryOpClause ::
   [Name] ->
   UnaryOpFieldConfig ->
@@ -141,12 +160,14 @@ genUnaryOpClause
     resExp <- fieldCombineFun (ConE (constructorName conInfo)) fieldExps
     return $ Clause (funPats ++ extraPats ++ [fieldPats]) (NormalB resExp) []
 
+-- | Configuration for a unary operation type class generation on a GADT.
 data UnaryOpClassConfig = UnaryOpClassConfig
   { unaryOpFieldConfig :: UnaryOpFieldConfig,
     unaryOpInstanceNames :: [Name],
     unaryOpFunNames :: [Name]
   }
 
+-- | Generate a unary operation type class instance for a GADT.
 genUnaryOpClass ::
   UnaryOpClassConfig ->
   Int ->
