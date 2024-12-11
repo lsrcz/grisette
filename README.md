@@ -4,30 +4,31 @@
 [![Hackage Version](https://img.shields.io/hackage/v/grisette)](https://hackage.haskell.org/package/grisette)
 [![Hackage Dependencies](https://img.shields.io/hackage-deps/v/grisette)](https://packdeps.haskellers.com/feed?needle=grisette)
 
-Grisette is a symbolic evaluation library for Haskell. By translating
-programs into constraints, Grisette can help the development of program
-reasoning tools, including verification and synthesis.
+Grisette is a symbolic evaluation library for Haskell.
+By translating programs into SMT constraints, Grisette can help the development
+of program reasoning tools, including verification and synthesis.
 
 For a detailed description of the system, please refer to our POPL'23 paper
 [Grisette: Symbolic Compilation as a Functional Programming Library](https://lsrcz.github.io/files/POPL23.pdf).
 
-## Features
-
-- **Multi-path** symbolic evaluation with efficient (customizable) state merging.
-- Symbolic evaluation is **purely functional**. The propagated symbolic value includes the assertion / error state of the execution, yet it is just a data structure. As a result, Grisette is a library that does not modify the Haskell compiler.
-- The separation of symbolic and concrete values is enforced with **static types**. These types help discover opportunities for partial evaluation as well as safe use of Haskell libraries.
-
 ## Design and Benefits
 
-- Modular purely functional design, with a focus on composability.
+- **Separate the concern** of problem modeling and symbolic compilation. Users
+  only need to focus on modeling the problem as data structures and write an
+  interpreter, and the symbolic compilation algorithms are provided by Grisette.
+- **Supports rich theories** including booleans, uninterpreted functions,
+  bitvectors, integers, real numbers, and floating points.
+- **Multi-path symbolic evaluation** with efficient state merging, suitable for
+  whole program verification, program synthesis, and other symbolic reasoning
+  tasks.
+- **Modular purely functional design**, with a focus on composability.
+  - Use our familiar Haskell facilities like `Either` to maintain exceptions
+    (e.g., assertions and assumptions).
   - Allows for symbolic evaluation of user-defined data structures / data
     structures from third-party libraries.
-  - Allows for symbolic evaluation of error-handling code with user-defined
-    error types.
-  - Allows for memoization (tested and benchmarked) / parallelization (not
-    tested and benchmarked yet) of symbolic evaluation.
-- Core multi-path symbolic evaluation semantics modeled as a monad, allowing for
-  easy integration with other monadic effects, for example:
+  - Allows for memoization / parallelization of symbolic evaluation.
+- **Core multi-path symbolic evaluation semantics modeled as a monad**, allowing
+  for easy integration with other monadic effects, for example:
   - error handling via `ExceptT`,
   - stateful computation via `StateT`,
   - unstructured control flow via `ContT`, etc.
@@ -36,15 +37,14 @@ For a detailed description of the system, please refer to our POPL'23 paper
 
 ### Install Grisette
 
-Grisette is available via
-[Hackage](https://hackage.haskell.org/package/grisette). You can add it to your
-project with `cabal`, and we also provided a stack template for quickly starting a
-new project with Grisette.
+Grisette is available on [Hackage](https://hackage.haskell.org/package/grisette)
+and Stackage. You can add it to your project with `cabal`, and we also provided
+a stack template for quickly starting a new project with Grisette.
 
 #### Manually writing cabal file
 
-Grisette is a library and is usually used as a dependency of other
-packages. You can add it to your project's `.cabal` file:
+Grisette is a library and is usually used as a dependency of other packages. You
+can add it to your project's `.cabal` file:
 
 ```cabal
 library
@@ -58,12 +58,6 @@ You can quickly start an stack-based Grisette project with `stack new`:
 
 ```bash
 $ stack new <projectname> github:lsrcz/grisette
-```
-
-You can specify the resolver version with the parameters:
-
-```bash
-$ stack new a-new-project github:lsrcz/grisette -p "resolver:lts-22.27"
 ```
 
 For more details, please see the
@@ -116,148 +110,160 @@ instructions.
 
 ## Example
 
-The following example uses Grisette to build a synthesizer of arithmetic
-programs. Given the input-output pair (2,5), the synthesizer can tell us that
-the program `\x -> x+3` has the desired behavior. The example is adapted from
-[this blog
-post](https://www.cs.utexas.edu/~bornholt/post/building-synthesizer.html) by
-James Bornholt.
+The following example uses Grisette to build a symbolic domain-specific language
+for boolean and integer expressions.
 
-The example has three parts:
+We will
+- define the *syntax* and *semantics* of an arithmetic language, and
+- build a verifier to check if a given arithmetic expression is equivalent to
+  another, and
+- build a synthesizer to find an arithmetic expression that is equivalent to
+  a given expression.
 
-- We define the arithmetic language. The language is _symbolic_:
-  - its syntax tree represents a set of concrete syntax trees (i.e.,
-    representing a program space), and
-  - its interpreter accepts such symbolic syntax trees (program spaces), and
-    interpret all represented concrete syntax trees to symbolic formulas.
-- We define the candidate program space of the synthesizer by creating a
-  particular symbolic syntax tree. The synthesizer will search the space of
-  concrete trees for a solution.
-- We interpret the symbolic syntax tree and pass the resulting constraints to
-  the solver. If a solution exists, the solver returns a concrete tree that
-  agrees with the input-output example.
+### Defining the Syntax
 
-### Defining the Arithmetic Language
-
-We will synthesize a single-input program `\x -> E` in this example. Here the
-`E` is an expression type, and is defined by the following grammar.
-
-```
-E -> c      -- constant
-   | x      -- value for input variable
-   | E + E  -- addition
-   | E * E  -- multiplication
-```
-
-The syntax defines how a concrete expression is represented. To synthesize a
-program, we need to define ***symbolic*** program spaces. We do this with the
-`Union` container provided by Grisette to represent choices within multiple ASTs
-compactly in a single value.
+Our language is a simple boolean and integer expression language, following the
+grammar:
 
 ```haskell
-data SymExpr
-  -- `SymConst` represents a constant in the syntax tree.
-  --
-  -- `SymConst 1` is the constant 1, while `SymConst "c1"` is a symbolic
-  -- constant, representing a hole in the expression. The solver can be used to
-  -- find out what the concrete value for a symbolic constant should be.
-  = SymConst SymInteger
-  -- `SymInput` is exactly the same as `SymConst`, but is for inputs. We
-  -- separate them just for clarity.
-  | SymInput SymInteger
-  -- `SymAdd` and `SymMul` represent the addition and multiplication operators.
-  --
-  -- The children are **choices** from some symbolic expressions, which is
-  -- represented by the `Union` monadic container.
-  --
-  -- The solver will try to pick one choice from them.
-  | SymAdd (Union SymExpr) (Union SymExpr)
-  | SymMul (Union SymExpr) (Union SymExpr)
-  -- `Generic` helps us derive other type class instances for `SymExpr`.
-  deriving stock (Generic, Show)
-  -- Some type classes provided by Grisette for building symbolic evaluation
-  -- tools. See the documentation for more details.
-  deriving (Mergeable, EvalSym) via (Default SymExpr)
-
--- The following template haskell procedures can also derive the instances we
--- need.
--- derive ''SymExpr [''Generic, ''Show, ''Mergeable, ''EvalSym]
--- deriveAllExcept ''SymExpr [''Ord]
+Expr -> IntExpr | BoolExpr
+IntExpr -> IntVal int
+         | Add IntExpr IntExpr
+         | Mul IntExpr IntExpr
+BoolExpr -> BoolVal bool
+          | BAnd BoolExpr BoolExpr
+          | BOr BoolExpr BoolExpr
+          | Eq Expr Expr
 ```
 
-Some smart constructors help us build program spaces.
+A symbolic expression can be represented in Grisette as a GADT as follows. In
+the GADT,
+
+- `SymInteger` and `SymBool` are symbolic (primitive) types, and they represent
+  SMT terms of integer and boolean theories, respectively.
+- `Union` represents choices of symbolic expressions, and we introduce it to
+  represent program spaces for the synthesizer. We will see more of it later.
+- `BasicSymPrim` is a constraint that contains all the symbolic primitive types
+  that Grisette supports, including `SymInteger` and `SymBool`.
 
 ```haskell
--- A template haskell procedure generates smart constructors for
--- `Union SymExpr`.
---
--- >>> SymConst 1 :: SymExpr
--- SymConst 1
--- >>> mrgSymConst 1 :: Union SymExpr
--- {SymConst 1}
-mkMergeConstructor "mrg" ''SymExpr
+data Expr a where
+  IntVal :: SymInteger -> IntExpr
+  BoolVal :: SymBool -> BoolExpr
+  Add :: UIntExpr -> UIntExpr -> IntExpr
+  Mul :: UIntExpr -> UIntExpr -> IntExpr
+  BAnd :: UBoolExpr -> UBoolExpr -> BoolExpr
+  BOr :: UBoolExpr -> UBoolExpr -> BoolExpr
+  Eq :: (BasicSymPrim a) => UExpr a -> UExpr a -> BoolExpr
+
+type IntExpr = Expr SymInteger
+type BoolExpr = Expr SymBool
+type UExpr a = Union (Expr a)
+type UIntExpr = UExpr SymInteger
+type UBoolExpr = UExpr SymBool
 ```
 
-Then, the following code defines a program space `\x -> x + {x, c}`. Some
-example programs in this space are `\x -> x + x`, `\x -> x + 1`, and `\x -> x +
-2`. The solver will be used to choose the right hand side of the addition. It
-may choose to use the input variable `x`, or synthesize a constant `c`.
+To make this GADT works well with Grisette, we need to derive some instances and
+get some smart constructors:
+
+- `deriveGADTAll` derives all the instances related to Grisette, and
+- `makeSmartCtor` generates smart constructors for the GADT.
 
 ```haskell
-progSpace :: SymInteger -> SymExpr
-progSpace x =
-  SymAdd
-    (mrgSymInput x)
-    (mrgIf "choice" (mrgSymInput x) (mrgSymConst "c"))
+deriving instance Show (Expr a)
+deriveGADTAll ''Expr
+makeSmartCtor ''Expr
+
+> intVal 1 :: UIntExpr -- smart constructor for IntVal in Unions
+{IntVal 1}
+-- Add takes two UIntExprs, use the smart constructors
+> Add (intVal "a") (intVal 1)
+Add {IntVal a} {IntVal 1}
 ```
 
-We can then convert this program space to its logical encoding and reason about
-it. This is done simply writing an interpreter to interpret all the expressions
-represented by an `SymExpr` all at once.
-
-The interpreter is similar to a concrete interpreter, except that the `onUnion`
-combinator is used to lift the interpreter to work on `Union` values (a space of
-expressions).
+The introduction of `Union` allows us to represent choices of expressions, and
+the following code chooses between $a+2$ or $a*2$. A synthesizer can then pick
+true or false for the `choice` variable to decide which expression to pick. If
+the synthesizer picks true, the result is $a+2$; otherwise, it is $a*2$.
 
 ```haskell
-interpret :: SymExpr -> SymInteger
-interpret (SymConst x) = x
-interpret (SymInput x) = x
-interpret (SymAdd x y) = interpretSpace x + interpretSpace y
-interpret (SymMul x y) = interpretSpace x * interpretSpace y
-
--- interpret a program space
-interpretSpace :: Union SymExpr -> SymInteger
-interpretSpace = onUnion interpret
+add2 = add (intVal "a") (intVal 2)
+mul2 = mul (intVal "a") (intVal 2)
+> mrgIf "choice" add2 mul2 :: UIntExpr
+{If choice {Add {IntVal a} {IntVal 2}} {Mul {IntVal a} {IntVal 2}}}
 ```
 
-We can then compose the interpreter with the program space to make it
-executable.
+### Defining the Semantics
+The semantics of the expressions can be defined by the following interpreter.
+Grisette provides various combinators for working with symbolic values. In the
+interpreter, the `.#` operator is very important. It conceptually
+
+- extracts all the choices from the `Union` container,
+- apply the `eval` function to each choice, and
+- merge the results into a single value.
 
 ```haskell
-executableSpace :: Integer -> SymInteger
-executableSpace = interpret . space . toSym
+eval :: Expr a -> a
+eval (IntVal a) = a
+eval (BoolVal a) = a
+eval (Add a b) = eval .# a + eval .# b
+eval (Mul a b) = eval .# a * eval .# b
+eval (BAnd a b) = eval .# a .&& eval .# b
+eval (BOr a b) = eval .# a .|| eval .# b
+eval (Eq a b) = eval .# a .== eval .# b
 ```
 
-Then we can do synthesis. We call the program space on the input 2, and
-construct the constraint that the result is equal to 5. We then call the solver
-with the `solve` function. The solver finds a solution such that the condition
-evaluates to true. It returns the solution as a *model*, which contains an
-assignment to the symbolic constants (holes).
+There are other operators like `.==`, `.&&`, `.||`, etc. These operators are
+provided by Grisette and have symbolic semantics. They construct constraints
+instead of evaluating to a concrete value.
 
-We can then get the synthesized program by evaluating the program space with the
-model.
+We may also write `eval` with do-notations as `Union` is a monad. Please refer
+to the [tutorials](tutorials) for more details.
+
+### Get a verifier
+With the syntax and semantics defined, we can build a verifier to check if two
+expressions are equivalent. This can be done by checking if there exists a
+counter-example that falsifies the equivalence of the two expressions.
+
+In the following code, we verify that $a+b$ and $b+a$ are equivalent, as there
+does not exist a counter-example that makes the two expressions evaluate to
+different values.
 
 ```haskell
-example :: IO ()
-example = do
-  Right model <- solve z3 $ executableSpace 2 .== 5
-  -- result: SymPlus {SymInput x} {SymConst 3}
-  print $ evalSym False model (progSpace "x")
-  let synthesizedProgram :: Integer -> Integer =
-        evalSymToCon model . executableSpace
-  -- result: 13
-  print $ synthesizedProgram 10
+lhs = Add (intVal "a") (intVal "b")
+rhs = Add (intVal "b") (intVal "a")
+rhs2 = Add (intVal "a") (intVal "a")
+
+> solve z3 $ eval lhs ./= eval rhs
+Left Unsat
+```
+
+In the following code, we verify that $a+b$ and $a+a$ are not equivalent, as
+there exists a counter-example that makes the two expressions evaluate to
+different values. The counter-example is $a=0$, $b=1$, such that $a+b=1$ and
+$a+a=0$.
+
+``` haskell
+> solve z3 $ eval lhs ./= eval rhs2
+Right (Model {a -> 0 :: Integer, b -> 1 :: Integer})
+```
+
+### Get a synthesizer
+We can also build a synthesizer using the built-in CEGIS algorithm in Grisette.
+Given a target expression, we can synthesize an expression using a sketch with
+"symbolic holes" that is equivalent to the target expression.
+
+In the following code, we synthesize an expression that is equivalent to $a+a$
+using a sketch with a "symbolic hole" $c$. The `cegisForAll` function treats all
+the variables in the sketch but not in the target expression as holes to fill
+in.
+
+```haskell
+target = Add (intVal "a") (intVal "a")
+sketch = Mul (intVal "a") (intVal "c")
+
+> cegisForAll z3 target $ cegisPostCond $ eval target .== eval sketch
+([],CEGISSuccess (Model {c -> 2 :: Integer}))
 ```
 
 The complete code is at [examples/basic/Main.hs](examples/basic/Main.hs). More
