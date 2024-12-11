@@ -9,8 +9,8 @@ import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Name,
     Q,
-    Quote (newName),
     Type (VarT),
+    newName,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo,

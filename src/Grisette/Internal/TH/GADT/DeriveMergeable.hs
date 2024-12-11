@@ -42,12 +42,10 @@ import Language.Haskell.TH
     Clause (Clause),
     Con (ForallC, GadtC),
     Dec (DataD, FunD, InstanceD, SigD),
-    Exp (AppE, ConE, LamE, LitE, VarE),
-    Lit (StringL),
+    Exp (AppE, ConE, VarE),
     Name,
-    Pat (ConP, SigP, VarP, WildP),
+    Pat (SigP, VarP, WildP),
     Q,
-    Quote (newName),
     SourceStrictness (NoSourceStrictness),
     SourceUnpackedness (NoSourceUnpackedness),
     Type (AppT, ArrowT, ConT, ForallT, VarT),
@@ -57,11 +55,13 @@ import Language.Haskell.TH
     lamE,
     lookupTypeName,
     mkName,
+    newName,
     normalB,
     tupP,
     varE,
     varP,
     varT,
+    wildP,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo
@@ -81,7 +81,7 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     plainTVFlag,
     specifiedSpec,
   )
-import Language.Haskell.TH.Lib (conP)
+import Language.Haskell.TH.Lib (clause, conP, litE, stringL)
 import Type.Reflection (SomeTypeRep (SomeTypeRep), TypeRep, typeRep)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -96,37 +96,37 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
   let newConName = mkName $ conName <> "MergingInfo"
   if null (constructorFields con) && null dataTypeVars
     then do
-      let eqClause =
-            Clause
-              [ConP newConName [] [], ConP newConName [] []]
-              (NormalB $ ConE 'True)
-              []
-      let cmpClause0 =
-            Clause
-              [ConP newConName [] [], ConP newConName [] []]
-              (NormalB $ ConE 'EQ)
-              []
-      let cmpClause1 =
-            Clause
-              [ConP newConName [] [], WildP]
-              (NormalB $ ConE 'LT)
-              []
-      let cmpClause2 =
-            Clause
-              [WildP, ConP newConName [] []]
-              (NormalB $ ConE 'GT)
-              []
+      eqClause <-
+        clause
+          [conP newConName [], conP newConName []]
+          (normalB $ conE 'True)
+          []
+      cmpClause0 <-
+        clause
+          [conP newConName [], conP newConName []]
+          (normalB $ conE 'EQ)
+          []
+      cmpClause1 <-
+        clause
+          [conP newConName [], wildP]
+          (normalB $ conE 'LT)
+          []
+      cmpClause2 <-
+        clause
+          [wildP, conP newConName []]
+          (normalB $ conE 'GT)
+          []
       let cmpClauses =
             if isLast
               then [cmpClause0]
               else [cmpClause0, cmpClause1, cmpClause2]
-      let nameLit = LitE $ StringL conName
-      showExp <- [|$(return nameLit) <> " " <> show (Proxy @($(conT tyName)))|]
-      let showClause =
-            Clause
-              [ConP newConName [] []]
-              (NormalB showExp)
-              []
+      let nameLit = litE $ stringL conName
+      let showExp = [|$nameLit <> " " <> show (Proxy @($(conT tyName)))|]
+      showClause <-
+        clause
+          [conP newConName []]
+          (normalB showExp)
+          []
       return
         ( GadtC [newConName] [] (ConT tyName),
           newConName,
@@ -152,63 +152,63 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
       let strategyFields = fmap (AppT (ConT ''MergingStrategy) . snd) fields
       tyFieldNamesL <- traverse (const $ newName "p") tyFields
       tyFieldNamesR <- traverse (const $ newName "p") tyFields
-      let tyFieldPatsL = fmap VarP tyFieldNamesL
-      let tyFieldPatsR = fmap VarP tyFieldNamesR
-      let tyFieldVarsL = fmap VarE tyFieldNamesL
-      let tyFieldVarsR = fmap VarE tyFieldNamesR
-      let strategyFieldPats = replicate (length strategyFields) WildP
+      let tyFieldPatsL = fmap varP tyFieldNamesL
+      let tyFieldPatsR = fmap varP tyFieldNamesR
+      let tyFieldVarsL = fmap varE tyFieldNamesL
+      let tyFieldVarsR = fmap varE tyFieldNamesR
+      let strategyFieldPats = replicate (length strategyFields) wildP
       let patsL = tyFieldPatsL ++ strategyFieldPats
       let patsR = tyFieldPatsR ++ strategyFieldPats
-      let allWildcards = fmap (const WildP) $ tyFieldPatsL ++ strategyFieldPats
+      let allWildcards = fmap (const wildP) $ tyFieldPatsL ++ strategyFieldPats
       let eqCont l r cont =
             [|
-              SomeTypeRep $(return l) == SomeTypeRep $(return r)
-                && $(return cont)
+              SomeTypeRep $l == SomeTypeRep $r
+                && $cont
               |]
-      eqExp <-
-        foldM (\cont (l, r) -> eqCont l r cont) (ConE 'True) $
-          zip tyFieldVarsL tyFieldVarsR
-      let eqClause =
-            Clause
-              [ConP newConName [] patsL, ConP newConName [] patsR]
-              (NormalB eqExp)
-              []
+      let eqExp =
+            foldl (\cont (l, r) -> eqCont l r cont) (conE 'True) $
+              zip tyFieldVarsL tyFieldVarsR
+      eqClause <-
+        clause
+          [conP newConName patsL, conP newConName patsR]
+          (normalB eqExp)
+          []
       let cmpCont l r cont =
             [|
-              case SomeTypeRep $(return l) `compare` SomeTypeRep $(return r) of
-                EQ -> $(return cont)
+              case SomeTypeRep $l `compare` SomeTypeRep $r of
+                EQ -> $cont
                 x -> x
               |]
-      cmpExp <-
-        foldM (\cont (l, r) -> cmpCont l r cont) (ConE 'EQ) $
-          zip tyFieldVarsL tyFieldVarsR
-      let cmpClause0 =
-            Clause
-              [ConP newConName [] patsL, ConP newConName [] patsR]
-              (NormalB cmpExp)
-              []
-      let cmpClause1 =
-            Clause
-              [ConP newConName [] allWildcards, WildP]
-              (NormalB $ ConE 'LT)
-              []
-      let cmpClause2 =
-            Clause
-              [WildP, ConP newConName [] allWildcards]
-              (NormalB $ ConE 'GT)
-              []
+      let cmpExp =
+            foldl (\cont (l, r) -> cmpCont l r cont) (conE 'EQ) $
+              zip tyFieldVarsL tyFieldVarsR
+      cmpClause0 <-
+        clause
+          [conP newConName patsL, conP newConName patsR]
+          (normalB cmpExp)
+          []
+      cmpClause1 <-
+        clause
+          [conP newConName allWildcards, wildP]
+          (normalB $ conE 'LT)
+          []
+      cmpClause2 <-
+        clause
+          [wildP, conP newConName patsR]
+          (normalB $ conE 'GT)
+          []
       let cmpClauses =
             if isLast
               then [cmpClause0]
               else [cmpClause0, cmpClause1, cmpClause2]
       let showCont t cont =
-            [|$(return cont) <> " " <> show $(return t)|]
-      showExp <- foldM (flip showCont) (LitE $ StringL conName) tyFieldVarsL
-      let showClause =
-            Clause
-              [ConP newConName [] patsL]
-              (NormalB showExp)
-              []
+            [|$cont <> " " <> show $t|]
+      let showExp = foldl (flip showCont) (litE $ stringL conName) tyFieldVarsL
+      showClause <-
+        clause
+          [conP newConName patsL]
+          (normalB showExp)
+          []
       return
         ( ForallC
             ((`plainTVFlag` specifiedSpec) <$> newNames)
@@ -290,27 +290,30 @@ genMergeFunClause' :: Name -> ConstructorInfo -> Q Clause
 genMergeFunClause' conInfoName con = do
   let numExistential = length $ constructorVars con
   let numFields = length $ constructorFields con
-  let argWildCards = replicate numExistential WildP
+  let argWildCards = replicate numExistential wildP
   case numFields of
     0 -> do
-      let pat = ConP conInfoName [] []
-      body <- normalB [|SimpleStrategy $ \_ t _ -> t|]
-      return $ Clause (argWildCards ++ [pat]) body []
+      let pat = conP conInfoName []
+      clause
+        (argWildCards ++ [pat])
+        (normalB [|SimpleStrategy $ \_ t _ -> t|])
+        []
     1 -> do
       pname <- newName "s"
-      let pat = ConP conInfoName [] $ argWildCards ++ [VarP pname]
       upname <- newName "a"
-      let unwrapPat = ConP (constructorName con) [] [VarP upname]
-      let unwrapFun = LamE [unwrapPat] $ AppE (VarE 'unsafeCoerce) (VarE upname)
-      body <-
-        normalB
-          [|
-            wrapStrategy
-              $(varE pname)
-              (unsafeCoerce . $(conE $ constructorName con))
-              $(return unwrapFun)
-            |]
-      return $ Clause [pat] body []
+      let unwrapPat = conP (constructorName con) [varP upname]
+      let unwrapFun = lamE [unwrapPat] $ appE (varE 'unsafeCoerce) (varE upname)
+      clause
+        [conP conInfoName $ argWildCards ++ [varP pname]]
+        ( normalB
+            [|
+              wrapStrategy
+                $(varE pname)
+                (unsafeCoerce . $(conE $ constructorName con))
+                $unwrapFun
+              |]
+        )
+        []
     _ -> do
       -- fail $ show (argWildCards, conInfoName)
       pnames <- replicateM numFields $ newName "s"
@@ -340,19 +343,18 @@ genMergeFunClause' conInfoName con = do
                 $(varE x)
                 $(strategy1 xs)
               |]
-      body <-
-        [|
-          product2Strategy
-            $wrapFun
-            $unwrapFun
-            $(varE $ head pnames)
-            $(strategy1 $ tail pnames)
-          |]
-      return $
-        Clause
-          ([ConP conInfoName [] $ argWildCards ++ fmap VarP pnames])
-          (NormalB body)
-          []
+      clause
+        ([conP conInfoName $ argWildCards ++ fmap varP pnames])
+        ( normalB
+            [|
+              product2Strategy
+                $wrapFun
+                $unwrapFun
+                $(varE $ head pnames)
+                $(strategy1 $ tail pnames)
+              |]
+        )
+        []
 
 genMergingInfoFunClause' ::
   [Name] -> Name -> S.Set Int -> ConstructorInfo -> Q Clause
@@ -369,10 +371,9 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
           then do
             return (SigP WildP $ fields !! n)
           else return (WildP)
-  capturedPats <- traverse capture [0 .. length (constructorFields con) - 1]
   capturedVarTyReps <-
     traverse (\bndr -> [|typeRep @($(varT $ tvName bndr))|]) conVars
-  let varPat = ConP conName [] capturedPats
+  varPat <- conP conName $ capture <$> [0 .. length (constructorFields con) - 1]
   let infoExpWithTypeReps = foldl AppE (ConE conInfoName) capturedVarTyReps
 
   let fields = constructorFields con
