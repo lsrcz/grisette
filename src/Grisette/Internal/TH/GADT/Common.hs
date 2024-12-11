@@ -1,5 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.Common
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult (..),
     checkArgs,
@@ -25,6 +33,7 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_, mapTVName)
 
+-- | Result of 'checkArgs' for a GADT.
 data CheckArgsResult = CheckArgsResult
   { constructors :: [ConstructorInfo],
     keptNewNames :: [Name],
@@ -34,6 +43,8 @@ data CheckArgsResult = CheckArgsResult
     isVarUsedInFields :: Name -> Bool
   }
 
+-- | Check if the number of type parameters is valid for a GADT, and return
+-- new names for the type variables, split into kept and arg parts.
 checkArgs ::
   String ->
   Int ->

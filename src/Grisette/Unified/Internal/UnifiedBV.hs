@@ -146,11 +146,11 @@ class
       int -> intn n
   where
   -- | Get a unified unsigned size-tagged bit vector type. Resolves to 'WordN'
-  -- in 'Con' mode, and 'SymWordN' in 'Sym' mode.
+  -- in 'C' mode, and 'SymWordN' in 'S' mode.
   type GetWordN mode = (w :: Nat -> Type) | w -> mode
 
   -- | Get a unified signed size-tagged bit vector type. Resolves to 'IntN'
-  -- in 'Con' mode, and 'SymIntN' in 'Sym' mode.
+  -- in 'C' mode, and 'SymIntN' in 'S' mode.
   type GetIntN mode = (i :: Nat -> Type) | i -> mode
 
 instance
@@ -168,12 +168,12 @@ instance
   type GetIntN 'S = SymIntN
 
 -- | Get a unified unsigned dynamic bit width bit vector type. Resolves to
--- 'SomeWordN' in 'Con' mode, and 'SomeSymWordN' in 'Sym' mode.
+-- 'SomeWordN' in 'C' mode, and 'SomeSymWordN' in 'S' mode.
 type family GetSomeWordN mode = sw | sw -> mode where
   GetSomeWordN mode = SomeBV (GetWordN mode)
 
 -- | Get a unified signed dynamic bit width bit vector type. Resolves to
--- 'SomeIntN' in 'Con' mode, and 'SomeSymIntN' in 'Sym' mode.
+-- 'SomeIntN' in 'C' mode, and 'SomeSymIntN' in 'S' mode.
 type family GetSomeIntN mode = sw | sw -> mode where
   GetSomeIntN mode = SomeBV (GetIntN mode)
 

@@ -59,8 +59,8 @@ class
   UnifiedIntegerImpl (mode :: EvalModeTag) i
     | mode -> i
   where
-  -- | Get a unified Integer type. Resolves to 'Integer' in 'Con' mode, and
-  -- 'SymInteger' in 'Sym' mode.
+  -- | Get a unified Integer type. Resolves to 'Integer' in 'C' mode, and
+  -- 'SymInteger' in 'S' mode.
   type GetInteger mode = int | int -> mode
 
 instance UnifiedIntegerImpl 'C Integer where

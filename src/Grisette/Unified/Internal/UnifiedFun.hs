@@ -103,8 +103,8 @@ type TyVarBndrVis = Language.Haskell.TH.TyVarBndr
 
 -- | Provide unified function types.
 class UnifiedFun (mode :: EvalModeTag) where
-  -- | Get a unified function type. Resolves to t'Grisette.SymPrim.=->' in 'Con'
-  -- mode, and t'Grisette.SymPrim.=~>' in 'Sym' mode.
+  -- | Get a unified function type. Resolves to t'Grisette.SymPrim.=->' in 'C'
+  -- mode, and t'Grisette.SymPrim.=~>' in 'S' mode.
   type
     GetFun mode =
       (fun :: Data.Kind.Type -> Data.Kind.Type -> Data.Kind.Type) | fun -> mode

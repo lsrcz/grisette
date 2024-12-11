@@ -22,7 +22,7 @@ import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 
 -- | A type family that specifies the base monad for the evaluation mode.
 --
--- Resolves to 'Identity' for `Con` mode, and 'Union' for `Sym` mode.
+-- Resolves to 'Identity' for `C` mode, and 'Union' for `S` mode.
 type family
   BaseMonad (mode :: EvalModeTag) =
     (r :: Type -> Type) | r -> mode

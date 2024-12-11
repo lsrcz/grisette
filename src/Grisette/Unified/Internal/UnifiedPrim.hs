@@ -47,7 +47,8 @@ type UnifiedPrim mode a =
 -- | A type that is used as a constraint for all the basic (unified) primitive
 -- types in Grisette.
 --
--- 'GetSomeWordN' is not considered as a basic (unified) primitive type.
+-- 'Grisette.Unified.GetSomeWordN' is not considered as a basic (unified)
+-- primitive type.
 type UnifiedBasicPrim mode a =
   ( UnifiedPrim mode a,
     UnifiedSimpleMergeable mode a,

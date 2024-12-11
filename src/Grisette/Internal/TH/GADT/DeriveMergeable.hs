@@ -313,6 +313,7 @@ genMergingInfo typName = do
           ]
     )
 
+-- | Generate 'Mergeable' instance and merging information for a GADT.
 genMergeableAndGetMergingInfoResult ::
   Name -> Int -> Q (MergingInfoResult, [Dec])
 genMergeableAndGetMergingInfoResult typName n = do
@@ -320,6 +321,7 @@ genMergeableAndGetMergingInfoResult typName n = do
   (_, decs) <- genMergeable' infoResult typName n
   return (infoResult, infoDec ++ decs)
 
+-- | Generate 'Mergeable' instance for a GADT.
 genMergeable :: Name -> Int -> Q [Dec]
 genMergeable typName n = do
   (infoResult, infoDec) <- genMergingInfo typName
@@ -480,6 +482,8 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
   -- fail $ show infoExp
   return $ Clause (strategyPats ++ [varPat]) (NormalB infoExp) []
 
+-- | Generate 'Mergeable' instance for a GADT, using a given merging info
+-- result.
 genMergeable' :: MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
 genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
   CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName n

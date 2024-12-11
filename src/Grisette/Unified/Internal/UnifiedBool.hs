@@ -37,8 +37,8 @@ class
   ) =>
   UnifiedBool (mode :: EvalModeTag)
   where
-  -- | Get a unified Boolean type. Resolves to 'Bool' in 'Con' mode, and
-  -- 'SymBool' in 'Sym' mode.
+  -- | Get a unified Boolean type. Resolves to 'Bool' in 'C' mode, and
+  -- 'SymBool' in 'S' mode.
   type GetBool mode = bool | bool -> mode
 
 instance UnifiedBool 'C where
