@@ -48,26 +48,30 @@ fieldExp unaryOpFunNames argToFunPat ty = do
   let notContains =
         M.null $
           M.restrictKeys argToFunPat (S.fromList $ freeVariables [ty])
+  let allArgNames = M.keysSet argToFunPat
+  let typeHasNoArg ty =
+        S.fromList (freeVariables [ty]) `S.intersection` allArgNames == S.empty
   if notContains
     then varE $ head unaryOpFunNames
     else case ty of
-      AppT (AppT (AppT (ConT _) a) b) c -> do
+      _ | typeHasNoArg ty -> [|$(varE $ head unaryOpFunNames)|]
+      AppT a b | typeHasNoArg a -> do
         [|
-          $(varE $ unaryOpFunNames !! 3)
-            $(fieldExp unaryOpFunNames argToFunPat a)
+          $(varE $ unaryOpFunNames !! 1)
+            $(fieldExp unaryOpFunNames argToFunPat b)
+          |]
+      AppT (AppT a b) c | typeHasNoArg a ->
+        [|
+          $(varE $ unaryOpFunNames !! 2)
             $(fieldExp unaryOpFunNames argToFunPat b)
             $(fieldExp unaryOpFunNames argToFunPat c)
           |]
-      AppT (AppT (ConT _) a) b -> do
+      AppT (AppT (AppT a b) c) d | typeHasNoArg a ->
         [|
-          $(varE $ unaryOpFunNames !! 2)
-            $(fieldExp unaryOpFunNames argToFunPat a)
+          $(varE $ unaryOpFunNames !! 3)
             $(fieldExp unaryOpFunNames argToFunPat b)
-          |]
-      AppT (ConT _) a -> do
-        [|
-          $(varE $ unaryOpFunNames !! 1)
-            $(fieldExp unaryOpFunNames argToFunPat a)
+            $(fieldExp unaryOpFunNames argToFunPat c)
+            $(fieldExp unaryOpFunNames argToFunPat d)
           |]
       VarT nm -> do
         case M.lookup nm argToFunPat of

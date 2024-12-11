@@ -17,12 +17,15 @@ module Grisette.Internal.TH.GADT.DeriveMergeable
     deriveGADTMergeable1,
     deriveGADTMergeable2,
     deriveGADTMergeable3,
+    genMergeableAndGetMergingInfoResult,
+    genMergeable,
+    genMergeable',
   )
 where
 
 import Control.Monad (foldM, replicateM, zipWithM)
 import qualified Data.Map as M
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (catMaybes, isJust, mapMaybe)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as S
 import Grisette.Internal.Core.Data.Class.Mergeable
@@ -45,10 +48,11 @@ import Language.Haskell.TH
     Exp (AppE, ConE, VarE),
     Name,
     Pat (SigP, VarP, WildP),
+    Pred,
     Q,
     SourceStrictness (NoSourceStrictness),
     SourceUnpackedness (NoSourceUnpackedness),
-    Type (AppT, ArrowT, ConT, ForallT, VarT),
+    Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),
     appE,
     conE,
     conT,
@@ -77,9 +81,11 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
   ( TyVarBndrUnit,
+    TyVarBndr_,
     mapTVFlag,
     plainTVFlag,
     specifiedSpec,
+    tvKind,
   )
 import Language.Haskell.TH.Lib (clause, conP, litE, stringL)
 import Type.Reflection (SomeTypeRep (SomeTypeRep), TypeRep, typeRep)
@@ -227,7 +233,13 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
           [showClause]
         )
 
-genMergingInfo :: Name -> Q (Name, [Dec], [Name], [S.Set Int])
+data MergingInfoResult = MergingInfoResult
+  { _infoName :: Name,
+    _conInfoNames :: [Name],
+    _pos :: [S.Set Int]
+  }
+
+genMergingInfo :: Name -> Q (MergingInfoResult, [Dec])
 genMergingInfo typName = do
   d <- reifyDatatype typName
   let originalName = occName $ datatypeName d
@@ -255,7 +267,10 @@ genMergingInfo typName = do
   let cmpClauses = concatMap (\(_, _, _, _, a, _) -> a) r
   let showClauses = concatMap (\(_, _, _, _, _, a) -> a) r
   return
-    ( name,
+    ( MergingInfoResult
+        name
+        (fmap (\(_, a, _, _, _, _) -> a) r)
+        (fmap (\(_, _, a, _, _, _) -> a) r),
       if isJust found
         then []
         else
@@ -275,16 +290,21 @@ genMergingInfo typName = do
               []
               (ConT ''Show `AppT` ConT name)
               [FunD 'show showClauses]
-          ],
-      fmap (\(_, a, _, _, _, _) -> a) r,
-      fmap (\(_, _, a, _, _, _) -> a) r
+          ]
     )
+
+genMergeableAndGetMergingInfoResult ::
+  Name -> Int -> Q (MergingInfoResult, [Dec])
+genMergeableAndGetMergingInfoResult typName n = do
+  (infoResult, infoDec) <- genMergingInfo typName
+  (_, decs) <- genMergeable' infoResult typName n
+  return (infoResult, infoDec ++ decs)
 
 genMergeable :: Name -> Int -> Q [Dec]
 genMergeable typName n = do
-  (infoName, info, conInfoNames, pos) <- genMergingInfo typName
-  (_, decs) <- genMergeable' infoName conInfoNames pos typName n
-  return $ info ++ decs
+  (infoResult, infoDec) <- genMergingInfo typName
+  (_, decs) <- genMergeable' infoResult typName n
+  return $ infoDec ++ decs
 
 genMergeFunClause' :: Name -> ConstructorInfo -> Q Clause
 genMergeFunClause' conInfoName con = do
@@ -397,29 +417,39 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
   let containsArg :: Type -> Bool
       containsArg ty =
         S.intersection argTypeSet (S.fromList (freeVariables [ty])) /= S.empty
+  let typeHasNoArg = not . containsArg
 
   let fieldStrategyExp ty =
         if not (containsArg ty)
           then [|rootStrategy :: MergingStrategy $(return ty)|]
           else case ty of
-            AppT (AppT (AppT (ConT _) a) b) c -> do
-              [|
-                liftRootStrategy3
-                  $(fieldStrategyExp a)
-                  $(fieldStrategyExp b)
-                  $(fieldStrategyExp c) ::
-                  MergingStrategy $(return ty)
-                |]
-            AppT (AppT (ConT _) a) b -> do
-              [|
-                liftRootStrategy2 $(fieldStrategyExp a) $(fieldStrategyExp b) ::
-                  MergingStrategy $(return ty)
-                |]
-            AppT (ConT _) a -> do
-              [|
-                liftRootStrategy $(fieldStrategyExp a) ::
-                  MergingStrategy $(return ty)
-                |]
+            _
+              | typeHasNoArg ty ->
+                  [|rootStrategy :: MergingStrategy $(return ty)|]
+            AppT a b
+              | typeHasNoArg a ->
+                  [|
+                    liftRootStrategy
+                      $(fieldStrategyExp b) ::
+                      MergingStrategy $(return ty)
+                    |]
+            AppT (AppT a b) c
+              | typeHasNoArg a ->
+                  [|
+                    liftRootStrategy2
+                      $(fieldStrategyExp b)
+                      $(fieldStrategyExp c) ::
+                      MergingStrategy $(return ty)
+                    |]
+            AppT (AppT (AppT a b) c) d
+              | typeHasNoArg a ->
+                  [|
+                    liftRootStrategy3
+                      $(fieldStrategyExp b)
+                      $(fieldStrategyExp c)
+                      $(fieldStrategyExp d) ::
+                      MergingStrategy $(return ty)
+                    |]
             VarT nm -> do
               case lookup nm argToStrategyPat of
                 Just pname -> varE pname
@@ -430,14 +460,26 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
   -- fail $ show infoExp
   return $ Clause (strategyPats ++ [varPat]) (NormalB infoExp) []
 
-genMergeable' :: Name -> [Name] -> [S.Set Int] -> Name -> Int -> Q (Name, [Dec])
-genMergeable' infoName conInfoNames pos typName n = do
+genMergeable' :: MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
+genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
   (constructors, keptNewNames, keptNewVars, argNewNames, argNewVars) <-
     checkArgs "Mergeable" 3 typName n
 
   d <- reifyDatatype typName
-  let mergeableContexts =
-        fmap (AppT (ConT ''Mergeable) . VarT . tvName) keptNewVars
+  let ctxForVar :: TyVarBndr_ flag -> Q (Maybe Pred)
+      ctxForVar var = case tvKind var of
+        StarT -> Just <$> [t|Mergeable $(varT $ tvName var)|]
+        AppT (AppT ArrowT StarT) StarT ->
+          Just <$> [t|Mergeable1 $(varT $ tvName var)|]
+        AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
+          Just <$> [t|Mergeable2 $(varT $ tvName var)|]
+        AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) StarT ->
+          Just <$> [t|Mergeable3 $(varT $ tvName var)|]
+        AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
+          fail $ "Unsupported kind: " <> show (tvKind var)
+        _ -> return Nothing
+  mergeableContexts <-
+    traverse ctxForVar keptNewVars
 
   let targetType =
         foldl
@@ -456,7 +498,7 @@ genMergeable' infoName conInfoNames pos typName n = do
   let mergingInfoFunType =
         ForallT
           (mapTVFlag (const specifiedSpec) <$> keptNewVars ++ argNewVars)
-          mergeableContexts
+          (catMaybes mergeableContexts)
           mergingInfoFunTypeWithoutCtx
   let mergingInfoFunName =
         mkName $
@@ -526,7 +568,7 @@ genMergeable' infoName conInfoNames pos typName n = do
         mergeFunDec,
         InstanceD
           Nothing
-          mergeableContexts
+          (catMaybes mergeableContexts)
           instanceType
           [FunD mergeInstanceFunName [mergeInstanceFunClause]]
       ]

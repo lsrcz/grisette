@@ -1,7 +1,7 @@
+{-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.DeriveGADT
@@ -46,21 +46,16 @@ import Grisette.Internal.TH.GADT.DeriveExtractSym
     deriveGADTExtractSym1,
     deriveGADTExtractSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveMergeable
-  ( deriveGADTMergeable,
-    deriveGADTMergeable1,
-    deriveGADTMergeable2,
-    deriveGADTMergeable3,
-  )
+import Grisette.Internal.TH.GADT.DeriveMergeable (genMergeable, genMergeable', genMergeableAndGetMergingInfoResult)
 import Language.Haskell.TH (Dec, Name, Q)
 
 deriveProcedureMap :: M.Map Name (Name -> Q [Dec])
 deriveProcedureMap =
   M.fromList
-    [ (''Mergeable, deriveGADTMergeable),
-      (''Mergeable1, deriveGADTMergeable1),
-      (''Mergeable2, deriveGADTMergeable2),
-      (''Mergeable3, deriveGADTMergeable3),
+    [ -- (''Mergeable, deriveGADTMergeable),
+      -- (''Mergeable1, deriveGADTMergeable1),
+      -- (''Mergeable2, deriveGADTMergeable2),
+      -- (''Mergeable3, deriveGADTMergeable3),
       (''EvalSym, deriveGADTEvalSym),
       (''EvalSym1, deriveGADTEvalSym1),
       (''EvalSym2, deriveGADTEvalSym2),
@@ -92,8 +87,29 @@ deriveSingleGADT typName className = do
 -- * 'ExtractSym2'
 deriveGADT :: Name -> [Name] -> Q [Dec]
 deriveGADT typName classNames = do
-  decs <- mapM (deriveSingleGADT typName) classNames
-  return $ concat decs
+  let allClassNames = S.toList $ S.fromList classNames
+  let (ns, ms) = splitMergeable allClassNames
+  decs <- mapM (deriveSingleGADT typName) ns
+  decMergeables <- deriveMergeables ms
+  return $ concat decs ++ decMergeables
+  where
+    deriveMergeables :: [Int] -> Q [Dec]
+    deriveMergeables [] = return []
+    deriveMergeables [n] = genMergeable typName n
+    deriveMergeables (n : ns) = do
+      (info, dn) <- genMergeableAndGetMergingInfoResult typName n
+      dns <- traverse (genMergeable' info typName) ns
+      return $ dn ++ concatMap snd dns
+    splitMergeable :: [Name] -> ([Name], [Int])
+    splitMergeable [] = ([], [])
+    splitMergeable (x : xs) =
+      let (ns, is) = splitMergeable xs
+       in if
+            | x == ''Mergeable -> (ns, 0 : is)
+            | x == ''Mergeable1 -> (ns, 1 : is)
+            | x == ''Mergeable2 -> (ns, 2 : is)
+            | x == ''Mergeable3 -> (ns, 3 : is)
+            | otherwise -> (x : ns, is)
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name.
@@ -107,19 +123,14 @@ deriveGADT typName classNames = do
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
 deriveGADTAll :: Name -> Q [Dec]
-deriveGADTAll typName = do
-  decs <- mapM (deriveSingleGADT typName) [''Mergeable, ''EvalSym, ''ExtractSym]
-  return $ concat decs
+deriveGADTAll typName =
+  deriveGADT typName [''Mergeable, ''EvalSym, ''ExtractSym]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name except the specified classes.
 deriveGADTAllExcept :: Name -> [Name] -> Q [Dec]
 deriveGADTAllExcept typName classNames = do
-  decs <-
-    mapM
-      (deriveSingleGADT typName)
-      ( S.toList $
-          S.fromList [''Mergeable, ''EvalSym, ''ExtractSym]
-            S.\\ S.fromList classNames
-      )
-  return $ concat decs
+  deriveGADT typName $
+    S.toList $
+      S.fromList [''Mergeable, ''EvalSym, ''ExtractSym]
+        S.\\ S.fromList classNames
