@@ -1,10 +1,14 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Grisette.Internal.TH.GADT.Common
-  ( checkArgs,
+  ( CheckArgsResult (..),
+    checkArgs,
   )
 where
 
 import Control.Monad (when)
 import qualified Data.Map as M
+import qualified Data.Set as S
 import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Name,
@@ -13,26 +17,29 @@ import Language.Haskell.TH
     newName,
   )
 import Language.Haskell.TH.Datatype
-  ( ConstructorInfo,
+  ( ConstructorInfo (constructorFields),
     DatatypeInfo (datatypeCons, datatypeVars),
-    TypeSubstitution (applySubstitution),
+    TypeSubstitution (applySubstitution, freeVariables),
     reifyDatatype,
     tvName,
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_, mapTVName)
+
+data CheckArgsResult = CheckArgsResult
+  { constructors :: [ConstructorInfo],
+    keptNewNames :: [Name],
+    keptNewVars :: [TyVarBndr_ ()],
+    argNewNames :: [Name],
+    argNewVars :: [TyVarBndr_ ()],
+    isVarUsedInFields :: Name -> Bool
+  }
 
 checkArgs ::
   String ->
   Int ->
   Name ->
   Int ->
-  Q
-    ( [ConstructorInfo],
-      [Name],
-      [TyVarBndr_ ()],
-      [Name],
-      [TyVarBndr_ ()]
-    )
+  Q CheckArgsResult
 checkArgs clsName maxArgNum typName n = do
   when (n < 0) $
     fail $
@@ -74,11 +81,8 @@ checkArgs clsName maxArgNum typName n = do
           zip
             (tvName <$> dvars)
             (VarT <$> keptNewNames ++ argNewNames)
-  let constructors = datatypeCons d
-  return
-    ( applySubstitution substMap constructors,
-      keptNewNames,
-      keptNewVars,
-      argNewNames,
-      argNewVars
-    )
+  let constructors = applySubstitution substMap $ datatypeCons d
+  let allFields = concatMap constructorFields constructors
+  let allFieldsFreeVars = S.fromList $ freeVariables allFields
+  let isVarUsedInFields var = S.member var allFieldsFreeVars
+  return $ CheckArgsResult {..}
