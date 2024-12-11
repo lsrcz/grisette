@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
@@ -37,7 +38,18 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     product2Strategy,
     wrapStrategy,
   )
-import Grisette.Internal.TH.GADT.Common (checkArgs)
+import Grisette.Internal.TH.GADT.Common
+  ( CheckArgsResult
+      ( CheckArgsResult,
+        argNewNames,
+        argNewVars,
+        constructors,
+        isVarUsedInFields,
+        keptNewNames,
+        keptNewVars
+      ),
+    checkArgs,
+  )
 import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Bang (Bang),
@@ -200,7 +212,7 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
           []
       cmpClause2 <-
         clause
-          [wildP, conP newConName patsR]
+          [wildP, conP newConName allWildcards]
           (normalB $ conE 'GT)
           []
       let cmpClauses =
@@ -215,10 +227,18 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
           [conP newConName patsL]
           (normalB showExp)
           []
+      let ctx = applySubstitution substMap $ constructorContext con
+      let ctxAndGadtUsedVars =
+            S.fromList (freeVariables ctx)
+              <> S.fromList (freeVariables tyFields)
+              <> S.fromList (freeVariables strategyFields)
+      let isCtxAndGadtUsedVar nm = S.member nm ctxAndGadtUsedVars
       return
         ( ForallC
-            ((`plainTVFlag` specifiedSpec) <$> newNames)
-            (applySubstitution substMap $ constructorContext con)
+            ( (`plainTVFlag` specifiedSpec)
+                <$> filter isCtxAndGadtUsedVar newNames
+            )
+            ctx
             $ GadtC
               [newConName]
               ( (Bang NoSourceUnpackedness NoSourceStrictness,)
@@ -462,8 +482,7 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
 
 genMergeable' :: MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
 genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
-  (constructors, keptNewNames, keptNewVars, argNewNames, argNewVars) <-
-    checkArgs "Mergeable" 3 typName n
+  CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName n
 
   d <- reifyDatatype typName
   let ctxForVar :: TyVarBndr_ flag -> Q (Maybe Pred)
@@ -479,7 +498,7 @@ genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
           fail $ "Unsupported kind: " <> show (tvKind var)
         _ -> return Nothing
   mergeableContexts <-
-    traverse ctxForVar keptNewVars
+    traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
 
   let targetType =
         foldl

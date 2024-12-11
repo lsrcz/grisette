@@ -16,7 +16,7 @@ import Control.Monad (replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
-import Grisette.Internal.TH.GADT.Common (checkArgs)
+import Grisette.Internal.TH.GADT.Common (CheckArgsResult (CheckArgsResult, argNewNames, constructors, isVarUsedInFields, keptNewNames, keptNewVars), checkArgs)
 import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Body (NormalB),
@@ -60,19 +60,21 @@ fieldExp unaryOpFunNames argToFunPat ty = do
           $(varE $ unaryOpFunNames !! 1)
             $(fieldExp unaryOpFunNames argToFunPat b)
           |]
-      AppT (AppT a b) c | typeHasNoArg a ->
-        [|
-          $(varE $ unaryOpFunNames !! 2)
-            $(fieldExp unaryOpFunNames argToFunPat b)
-            $(fieldExp unaryOpFunNames argToFunPat c)
-          |]
-      AppT (AppT (AppT a b) c) d | typeHasNoArg a ->
-        [|
-          $(varE $ unaryOpFunNames !! 3)
-            $(fieldExp unaryOpFunNames argToFunPat b)
-            $(fieldExp unaryOpFunNames argToFunPat c)
-            $(fieldExp unaryOpFunNames argToFunPat d)
-          |]
+      AppT (AppT a b) c
+        | typeHasNoArg a ->
+            [|
+              $(varE $ unaryOpFunNames !! 2)
+                $(fieldExp unaryOpFunNames argToFunPat b)
+                $(fieldExp unaryOpFunNames argToFunPat c)
+              |]
+      AppT (AppT (AppT a b) c) d
+        | typeHasNoArg a ->
+            [|
+              $(varE $ unaryOpFunNames !! 3)
+                $(fieldExp unaryOpFunNames argToFunPat b)
+                $(fieldExp unaryOpFunNames argToFunPat c)
+                $(fieldExp unaryOpFunNames argToFunPat d)
+              |]
       VarT nm -> do
         case M.lookup nm argToFunPat of
           Just pname -> varE pname
@@ -151,7 +153,7 @@ genUnaryOpClass ::
   Name ->
   Q [Dec]
 genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
-  (constructors, keptNewNames, keptNewVars, argNewNames, _) <-
+  CheckArgsResult {..} <-
     checkArgs
       (occName $ head unaryOpInstanceNames)
       (length unaryOpInstanceNames - 1)
@@ -169,7 +171,7 @@ genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
         AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
           fail $ "Unsupported kind: " <> show (tvKind var)
         _ -> return Nothing
-  ctxs <- traverse ctxForVar keptNewVars
+  ctxs <- traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
   clauses <-
     traverse
       (genUnaryOpClause unaryOpFunNames unaryOpFieldConfig argNewNames)

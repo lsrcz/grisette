@@ -108,3 +108,4 @@ deriveGADT
     ''ExtractSym1,
     ''ExtractSym2
   ]
+
