@@ -24,14 +24,16 @@ import Language.Haskell.TH
     Dec (FunD, InstanceD),
     Exp (ConE),
     Name,
-    Pat (ConP, VarP, WildP),
+    Pat (VarP, WildP),
     Pred,
     Q,
-    Quote (newName),
     Type (AppT, ArrowT, ConT, StarT, VarT),
     appE,
+    conP,
     conT,
+    newName,
     varE,
+    varP,
     varT,
   )
 import Language.Haskell.TH.Datatype
@@ -114,7 +116,7 @@ genUnaryOpClause
     extraPatNames <- traverse newName extraPatNames
     fieldsPatNames <- replicateM (length fields) $ newName "field"
     let extraPats = fmap VarP extraPatNames
-    let fieldPats = ConP (constructorName conInfo) [] (fmap VarP fieldsPatNames)
+    fieldPats <- conP (constructorName conInfo) (fmap varP fieldsPatNames)
 
     fieldExps <-
       zipWithM
