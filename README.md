@@ -2,7 +2,6 @@
 
 [![Haskell Tests](https://github.com/lsrcz/grisette/actions/workflows/test.yml/badge.svg)](https://github.com/lsrcz/grisette/actions/workflows/test.yml)
 [![Hackage Version](https://img.shields.io/hackage/v/grisette)](https://hackage.haskell.org/package/grisette)
-[![Hackage Dependencies](https://img.shields.io/hackage-deps/v/grisette)](https://packdeps.haskellers.com/feed?needle=grisette)
 
 Grisette is a symbolic evaluation library for Haskell.
 By translating programs into SMT constraints, Grisette can help the development
@@ -14,8 +13,8 @@ For a detailed description of the system, please refer to our POPL'23 paper
 ## Design and Benefits
 
 - **Separate the concern** of problem modeling and symbolic compilation. Users
-  only need to focus on modeling the problem as data structures and write an
-  interpreter, and the symbolic compilation algorithms are provided by Grisette.
+  only need to focus on modeling the problem and write interpreters, and the
+  symbolic compilation algorithms are provided by Grisette.
 - **Supports rich theories** including booleans, uninterpreted functions,
   bitvectors, integers, real numbers, and floating points.
 - **Multi-path symbolic evaluation** with efficient state merging, suitable for
@@ -115,9 +114,9 @@ for boolean and integer expressions.
 
 We will
 - define the *syntax* and *semantics* of an arithmetic language, and
-- build a verifier to check if a given arithmetic expression is equivalent to
+- build a *verifier* to check if a given arithmetic expression is equivalent to
   another, and
-- build a synthesizer to find an arithmetic expression that is equivalent to
+- build a *synthesizer* to find an arithmetic expression that is equivalent to
   a given expression.
 
 ### Defining the Syntax
@@ -142,7 +141,8 @@ the GADT,
 - `SymInteger` and `SymBool` are symbolic (primitive) types, and they represent
   SMT terms of integer and boolean theories, respectively.
 - `Union` represents choices of symbolic expressions, and we introduce it to
-  represent program spaces for the synthesizer. We will see more of it later.
+  represent program spaces and allow the synthesizer to choose operands from
+  different symbolic expressions.
 - `BasicSymPrim` is a constraint that contains all the symbolic primitive types
   that Grisette supports, including `SymInteger` and `SymBool`.
 
@@ -182,9 +182,9 @@ Add {IntVal a} {IntVal 1}
 ```
 
 The introduction of `Union` allows us to represent choices of expressions, and
-the following code chooses between $a+2$ or $a*2$. A synthesizer can then pick
+the following code chooses between `a + 2` or `a * 2`. A synthesizer can then pick
 true or false for the `choice` variable to decide which expression to pick. If
-the synthesizer picks true, the result is $a+2$; otherwise, it is $a*2$.
+the synthesizer picks true, the result is `a + 2`; otherwise, it is `a * 2`.
 
 ```haskell
 add2 = add (intVal "a") (intVal 2)
