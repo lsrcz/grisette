@@ -228,7 +228,7 @@ verifyEquivalent e1 e2 = do
 --
 -- We solve this using Counter-Example Guided Inductive Synthesis (CEGIS),
 -- which:
--- 
+--
 -- 1. Proposes candidate values for holes
 -- 2. Checks if the resulting expression matches the target for all inputs
 -- 3. If not, uses counter-examples to refine the candidates
