@@ -12,6 +12,22 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `SomeBV` now allows being used under conditionals even if no bit-width is
   specified. ([#261](https://github.com/lsrcz/grisette/pull/261))
+- Added interface to smart constructor generation with decapitalized names.
+  ([#263](https://github.com/lsrcz/grisette/pull/263))
+- Added `SymPrim` constraints for symbolic primitive types.
+  ([#264](https://github.com/lsrcz/grisette/pull/264))
+- Added initial support for type class derivation for GADTs.
+  ([#265](https://github.com/lsrcz/grisette/pull/265))
+
+### Changed
+- [Breaking] Improved the `SymFiniteBits` interface.
+  ([#262](https://github.com/lsrcz/grisette/pull/262))
+- [Breaking] Changed the smart constructor generation Template Haskell procedure
+  name to `makeSmartCtorWith`, `makePrefixedSmartCtorWith`,
+  `makeNamedSmartCtor`, and `makeSmartCtor`.
+  ([#263](https://github.com/lsrcz/grisette/pull/263))
+- [Breaking] Renamed the evaluation mode tags `Con` and `Sym` to `C` and `S`.
+  ([#264](https://github.com/lsrcz/grisette/pull/264))
 
 ## [0.9.0.0] - 2024-11-07
 
