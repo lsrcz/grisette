@@ -37,6 +37,11 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable2,
     Mergeable3,
   )
+import Grisette.Internal.Core.Data.Class.SubstSym
+  ( SubstSym,
+    SubstSym1,
+    SubstSym2,
+  )
 import Grisette.Internal.TH.GADT.DeriveEvalSym
   ( deriveGADTEvalSym,
     deriveGADTEvalSym1,
@@ -57,6 +62,11 @@ import Grisette.Internal.TH.GADT.DeriveNFData
     deriveGADTNFData1,
     deriveGADTNFData2,
   )
+import Grisette.Internal.TH.GADT.DeriveSubstSym
+  ( deriveGADTSubstSym,
+    deriveGADTSubstSym1,
+    deriveGADTSubstSym2,
+  )
 import Language.Haskell.TH (Dec, Name, Q)
 
 deriveProcedureMap :: M.Map Name (Name -> Q [Dec])
@@ -68,6 +78,9 @@ deriveProcedureMap =
       (''ExtractSym, deriveGADTExtractSym),
       (''ExtractSym1, deriveGADTExtractSym1),
       (''ExtractSym2, deriveGADTExtractSym2),
+      (''SubstSym, deriveGADTSubstSym),
+      (''SubstSym1, deriveGADTSubstSym1),
+      (''SubstSym2, deriveGADTSubstSym2),
       (''NFData, deriveGADTNFData),
       (''NFData1, deriveGADTNFData1),
       (''NFData2, deriveGADTNFData2)
@@ -94,6 +107,9 @@ deriveSingleGADT typName className = do
 -- * 'ExtractSym'
 -- * 'ExtractSym1'
 -- * 'ExtractSym2'
+-- * 'SubstSym'
+-- * 'SubstSym1'
+-- * 'SubstSym2'
 -- * 'NFData'
 -- * 'NFData1'
 -- * 'NFData2'
@@ -131,13 +147,16 @@ deriveGADT typName classNames = do
 -- * 'Mergeable'
 -- * 'EvalSym'
 -- * 'ExtractSym'
+-- * 'SubstSym'
 -- * 'NFData'
 --
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
 deriveGADTAll :: Name -> Q [Dec]
 deriveGADTAll typName =
-  deriveGADT typName [''Mergeable, ''EvalSym, ''ExtractSym]
+  deriveGADT
+    typName
+    [''Mergeable, ''EvalSym, ''ExtractSym, ''SubstSym, ''NFData]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name except the specified classes.
@@ -145,5 +164,5 @@ deriveGADTAllExcept :: Name -> [Name] -> Q [Dec]
 deriveGADTAllExcept typName classNames = do
   deriveGADT typName $
     S.toList $
-      S.fromList [''Mergeable, ''EvalSym, ''ExtractSym]
+      S.fromList [''Mergeable, ''EvalSym, ''ExtractSym, ''SubstSym, ''NFData]
         S.\\ S.fromList classNames
