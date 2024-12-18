@@ -16,8 +16,7 @@ where
 import Control.Monad (unless)
 import Data.Char (isAlphaNum, toLower)
 import Data.Foldable (traverse_)
-import Grisette.Internal.TH.Util (occName)
-import Language.Haskell.TH (Dec, Name, Q)
+import Language.Haskell.TH (Dec, Name, Q, nameBase)
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorName),
     DatatypeInfo (datatypeCons),
@@ -46,7 +45,7 @@ withNameTransformer ::
   Q [Dec]
 withNameTransformer namedGen nameTransformer typName = do
   d <- reifyDatatype typName
-  let constructorNames = occName . constructorName <$> datatypeCons d
+  let constructorNames = nameBase . constructorName <$> datatypeCons d
   let transformedNames = nameTransformer <$> constructorNames
   traverse_ checkName transformedNames
   namedGen transformedNames typName

@@ -17,12 +17,11 @@ where
 import Control.Monad (when)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Name,
     Q,
     Type (VarT),
-    newName,
+    newName, nameBase,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields),
@@ -80,11 +79,11 @@ checkArgs clsName maxArgNum typName n = do
         <> show (length dvars)
         <> " type variables."
   let keptVars = take (length dvars - n) dvars
-  keptNewNames <- traverse (newName . occName . tvName) keptVars
+  keptNewNames <- traverse (newName . nameBase . tvName) keptVars
   let keptNewVars =
         zipWith (mapTVName . const) keptNewNames keptVars
   let argVars = drop (length dvars - n) dvars
-  argNewNames <- traverse (newName . occName . tvName) argVars
+  argNewNames <- traverse (newName . nameBase . tvName) argVars
   let argNewVars =
         zipWith (mapTVName . const) argNewNames argVars
   let substMap =
