@@ -18,6 +18,7 @@
 
 module Grisette.Core.TH.DerivationTest (concreteT, symbolicT) where
 
+import Control.DeepSeq (NFData, NFData1, NFData2)
 import Control.Monad.Identity (Identity (Identity))
 import Data.Maybe (fromJust)
 import Data.Typeable (Typeable)
@@ -33,6 +34,8 @@ import Grisette
     Mergeable,
     Mergeable1,
     Mergeable2,
+    SubstSym,
+    SubstSym1,
     SymBool,
     SymInteger,
     ToCon (toCon),
@@ -42,7 +45,6 @@ import Grisette
     deriveGADT,
   )
 import Grisette.Unified (EvalModeTag (C, S), GetBool, GetData, GetWordN)
-import Control.DeepSeq (NFData, NFData1, NFData2)
 
 data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
@@ -94,7 +96,9 @@ deriveGADT
     ''ExtractSym,
     ''ExtractSym1,
     ''NFData,
-    ''NFData1
+    ''NFData1,
+    ''SubstSym,
+    ''SubstSym1
   ]
 
 data P a b = P a | Q Int
