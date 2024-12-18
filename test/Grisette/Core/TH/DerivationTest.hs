@@ -42,6 +42,7 @@ import Grisette
     deriveGADT,
   )
 import Grisette.Unified (EvalModeTag (C, S), GetBool, GetData, GetWordN)
+import Control.DeepSeq (NFData, NFData1, NFData2)
 
 data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
@@ -91,7 +92,9 @@ deriveGADT
     ''EvalSym,
     ''EvalSym1,
     ''ExtractSym,
-    ''ExtractSym1
+    ''ExtractSym1,
+    ''NFData,
+    ''NFData1
   ]
 
 data P a b = P a | Q Int
@@ -106,5 +109,8 @@ deriveGADT
     ''EvalSym2,
     ''ExtractSym,
     ''ExtractSym1,
-    ''ExtractSym2
+    ''ExtractSym2,
+    ''NFData,
+    ''NFData1,
+    ''NFData2
   ]

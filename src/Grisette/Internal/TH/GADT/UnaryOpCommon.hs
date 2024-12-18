@@ -114,8 +114,8 @@ patAndExps fieldFunExpGen argTypes fields = do
       argTypes
   let argToFunPat = M.fromList $ mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) args
   let funPats = fmap (maybe WildP VarP . snd) args
-  fieldEvalSymFunExps <- traverse (fieldFunExpGen argToFunPat) fields
-  return (funPats, fieldEvalSymFunExps)
+  fieldExps <- traverse (fieldFunExpGen argToFunPat) fields
+  return (funPats, fieldExps)
 
 -- | Configuration for a unary function field expression generation on a GADT.
 data UnaryOpFieldConfig = UnaryOpFieldConfig
