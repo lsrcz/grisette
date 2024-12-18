@@ -50,7 +50,6 @@ import Grisette.Internal.TH.GADT.Common
       ),
     checkArgs,
   )
-import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Bang (Bang),
     Body (NormalB),
@@ -71,6 +70,7 @@ import Language.Haskell.TH
     lamE,
     lookupTypeName,
     mkName,
+    nameBase,
     newName,
     normalB,
     tupP,
@@ -110,7 +110,7 @@ genMergingInfoCon ::
   ConstructorInfo ->
   Q (Con, Name, S.Set Int, [Clause], [Clause], [Clause])
 genMergingInfoCon dataTypeVars tyName isLast con = do
-  let conName = occName $ constructorName con
+  let conName = nameBase $ constructorName con
   let newConName = mkName $ conName <> "MergingInfo"
   if null (constructorFields con) && null dataTypeVars
     then do
@@ -155,7 +155,7 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
         )
     else do
       let oriVars = dataTypeVars ++ constructorVars con
-      newNames <- traverse (newName . occName . tvName) oriVars
+      newNames <- traverse (newName . nameBase . tvName) oriVars
       let newVars = fmap VarT newNames
       let substMap = M.fromList $ zip (tvName <$> oriVars) newVars
       let fields =
@@ -262,7 +262,7 @@ data MergingInfoResult = MergingInfoResult
 genMergingInfo :: Name -> Q (MergingInfoResult, [Dec])
 genMergingInfo typName = do
   d <- reifyDatatype typName
-  let originalName = occName $ datatypeName d
+  let originalName = nameBase $ datatypeName d
   let newName = originalName <> "MergingInfo"
   found <- lookupTypeName newName
   let constructors = datatypeCons d
@@ -403,7 +403,7 @@ genMergingInfoFunClause' ::
 genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
   let conName = constructorName oldCon
   let oldConVars = constructorVars oldCon
-  newNames <- traverse (newName . occName . tvName) oldConVars
+  newNames <- traverse (newName . nameBase . tvName) oldConVars
   let substMap = M.fromList $ zip (tvName <$> oldConVars) (VarT <$> newNames)
   let con = applySubstitution substMap oldCon
   let conVars = constructorVars con
@@ -527,7 +527,7 @@ genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
         mkName $
           "mergingInfo"
             <> (if n /= 0 then show n else "")
-            <> occName (datatypeName d)
+            <> nameBase (datatypeName d)
   let mergingInfoFunSigD = SigD mergingInfoFunName mergingInfoFunType
   clauses <-
     traverse
@@ -543,7 +543,7 @@ genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
         mkName $
           "merge"
             <> (if n /= 0 then show n else "")
-            <> occName (datatypeName d)
+            <> nameBase (datatypeName d)
   let mergeFunSigD = SigD mergeFunName mergeFunType
   mergeFunClauses <- zipWithM genMergeFunClause' conInfoNames constructors
   let mergeFunDec = FunD mergeFunName mergeFunClauses

@@ -35,7 +35,6 @@ import Grisette.Internal.TH.GADT.Common
       ),
     checkArgs,
   )
-import Grisette.Internal.TH.Util (occName)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
@@ -52,7 +51,7 @@ import Language.Haskell.TH
     newName,
     varE,
     varP,
-    varT,
+    varT, nameBase,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName),
@@ -189,7 +188,7 @@ genUnaryOpClass ::
 genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
   CheckArgsResult {..} <-
     checkArgs
-      (occName $ head unaryOpInstanceNames)
+      (nameBase $ head unaryOpInstanceNames)
       (length unaryOpInstanceNames - 1)
       typName
       n

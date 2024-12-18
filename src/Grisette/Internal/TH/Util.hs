@@ -13,8 +13,7 @@
 -- Stability   :   Experimental
 -- Portability :   GHC only
 module Grisette.Internal.TH.Util
-  ( occName,
-    constructorInfoToType,
+  ( constructorInfoToType,
     tvIsMode,
     tvIsNat,
     tvIsStar,
@@ -72,11 +71,6 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     mapTVName,
     tvKind,
   )
-import Language.Haskell.TH.Syntax (Name (Name), OccName (OccName))
-
--- | Get the unqualified name of a t'Name'.
-occName :: Name -> String
-occName (Name (OccName name) _) = name
 
 -- | Convert a 'ConstructorInfo' to a 'Type' of the constructor.
 constructorInfoToType :: DatatypeInfo -> ConstructorInfo -> Q Type
