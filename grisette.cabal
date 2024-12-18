@@ -167,6 +167,7 @@ library
       Grisette.Internal.TH.GADT.DeriveEvalSym
       Grisette.Internal.TH.GADT.DeriveExtractSym
       Grisette.Internal.TH.GADT.DeriveGADT
+      Grisette.Internal.TH.GADT.DeriveHashable
       Grisette.Internal.TH.GADT.DeriveMergeable
       Grisette.Internal.TH.GADT.DeriveNFData
       Grisette.Internal.TH.GADT.DeriveSubstSym
@@ -255,7 +256,7 @@ library
     , containers >=0.4 && <0.8
     , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
-    , hashable >=1.2.3 && <1.6
+    , hashable >=1.2.5 && <1.6
     , libBF >=0.6.3 && <0.7
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
@@ -302,7 +303,7 @@ test-suite doctest
     , doctest >=0.18.2 && <0.23
     , generic-deriving >=1.14.1 && <1.15
     , grisette
-    , hashable >=1.2.3 && <1.6
+    , hashable >=1.2.5 && <1.6
     , libBF >=0.6.3 && <0.7
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4
@@ -417,7 +418,7 @@ test-suite spec
     , deepseq >=1.4.4 && <1.6
     , generic-deriving >=1.14.1 && <1.15
     , grisette
-    , hashable >=1.2.3 && <1.6
+    , hashable >=1.2.5 && <1.6
     , libBF >=0.6.3 && <0.7
     , loch-th >=0.2.2 && <0.3
     , mtl >=2.2.2 && <2.4

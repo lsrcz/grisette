@@ -50,6 +50,7 @@ import Data.Functor.Classes
     showsUnaryWith,
   )
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt), hashWithSalt1)
 import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic, Generic1)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
@@ -246,14 +247,13 @@ instance PPrint1 UnionBase where
               ]
 
 instance (Hashable a) => Hashable (UnionBase a) where
-  s `hashWithSalt` (UnionSingle a) =
-    s `hashWithSalt` (0 :: Int) `hashWithSalt` a
-  s `hashWithSalt` (UnionIf _ _ c l r) =
-    s
-      `hashWithSalt` (1 :: Int)
-      `hashWithSalt` c
-      `hashWithSalt` l
-      `hashWithSalt` r
+  hashWithSalt = hashWithSalt1
+
+instance Hashable1 UnionBase where
+  liftHashWithSalt f s (UnionSingle a) = s `hashWithSalt` (0 :: Int) `f` a
+  liftHashWithSalt f s (UnionIf _ _ c l r) =
+    let p = liftHashWithSalt f
+     in (s `hashWithSalt` (1 :: Int) `hashWithSalt` c) `p` l `p` r
 
 instance (AllSyms a) => AllSyms (UnionBase a) where
   allSymsS (UnionSingle v) = allSymsS v

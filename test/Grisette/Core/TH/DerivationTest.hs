@@ -20,6 +20,9 @@ module Grisette.Core.TH.DerivationTest (concreteT, symbolicT) where
 
 import Control.DeepSeq (NFData, NFData1, NFData2)
 import Control.Monad.Identity (Identity (Identity))
+import Data.Functor.Classes (Eq1 (liftEq), Eq2 (liftEq2))
+import Data.Hashable (Hashable)
+import Data.Hashable.Lifted (Hashable1, Hashable2)
 import Data.Maybe (fromJust)
 import Data.Typeable (Typeable)
 import Grisette
@@ -87,6 +90,12 @@ data Expr f a where
     Expr f b
   XExpr :: f a -> Expr f a
 
+instance (Eq1 f, Eq a) => Eq (Expr f a) where
+  (==) = undefined
+
+instance (Eq1 f) => Eq1 (Expr f) where
+  liftEq = undefined
+
 deriveGADT
   ''Expr
   [ ''Mergeable,
@@ -98,10 +107,21 @@ deriveGADT
     ''NFData,
     ''NFData1,
     ''SubstSym,
-    ''SubstSym1
+    ''SubstSym1,
+    ''Hashable,
+    ''Hashable1
   ]
 
 data P a b = P a | Q Int
+
+instance (Eq a) => Eq (P a b) where
+  (==) = undefined
+
+instance (Eq a) => Eq1 (P a) where
+  liftEq = undefined
+
+instance Eq2 P where
+  liftEq2 = undefined
 
 deriveGADT
   ''P
@@ -116,5 +136,8 @@ deriveGADT
     ''ExtractSym2,
     ''NFData,
     ''NFData1,
-    ''NFData2
+    ''NFData2,
+    ''Hashable,
+    ''Hashable1,
+    ''Hashable2
   ]

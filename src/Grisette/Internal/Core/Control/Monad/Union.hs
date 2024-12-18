@@ -51,6 +51,7 @@ import Data.Functor.Classes
   )
 import qualified Data.HashMap.Lazy as HML
 import Data.Hashable (Hashable (hashWithSalt))
+import Data.Hashable.Lifted (Hashable1 (liftHashWithSalt), hashWithSalt1)
 import qualified Data.Serialize as Cereal
 import Data.String (IsString (fromString))
 import GHC.TypeNats (KnownNat, type (<=))
@@ -577,8 +578,13 @@ instance ExtractSym1 Union where
       go (UnionIf _ _ cond t f) = extractSymMaybe cond <> go t <> go f
 
 instance (Hashable a) => Hashable (Union a) where
-  s `hashWithSalt` (UAny u) = s `hashWithSalt` (0 :: Int) `hashWithSalt` u
-  s `hashWithSalt` (UMrg _ u) = s `hashWithSalt` (1 :: Int) `hashWithSalt` u
+  hashWithSalt = hashWithSalt1
+
+instance Hashable1 Union where
+  liftHashWithSalt f s (UAny u) =
+    liftHashWithSalt f (s `hashWithSalt` (0 :: Int)) u
+  liftHashWithSalt f s (UMrg _ u) =
+    liftHashWithSalt f (s `hashWithSalt` (1 :: Int)) u
 
 instance (Eq a) => Eq (Union a) where
   UAny l == UAny r = l == r
