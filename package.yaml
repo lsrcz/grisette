@@ -39,7 +39,7 @@ tested-with:
 
 dependencies:
   - base >= 4.14 && < 5
-  - hashable >= 1.2.3 && < 1.6
+  - hashable >= 1.2.5 && < 1.6
   - mtl >= 2.2.2 && < 2.4
   - transformers >= 0.5.6 && < 0.7
   - generic-deriving >= 1.14.1 && < 1.15

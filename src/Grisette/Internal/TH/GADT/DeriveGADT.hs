@@ -19,6 +19,8 @@ module Grisette.Internal.TH.GADT.DeriveGADT
 where
 
 import Control.DeepSeq (NFData, NFData1, NFData2)
+import Data.Hashable (Hashable)
+import Data.Hashable.Lifted (Hashable1, Hashable2)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Grisette.Internal.Core.Data.Class.EvalSym
@@ -52,6 +54,7 @@ import Grisette.Internal.TH.GADT.DeriveExtractSym
     deriveGADTExtractSym1,
     deriveGADTExtractSym2,
   )
+import Grisette.Internal.TH.GADT.DeriveHashable (deriveGADTHashable, deriveGADTHashable1, deriveGADTHashable2)
 import Grisette.Internal.TH.GADT.DeriveMergeable
   ( genMergeable,
     genMergeable',
@@ -83,7 +86,10 @@ deriveProcedureMap =
       (''SubstSym2, deriveGADTSubstSym2),
       (''NFData, deriveGADTNFData),
       (''NFData1, deriveGADTNFData1),
-      (''NFData2, deriveGADTNFData2)
+      (''NFData2, deriveGADTNFData2),
+      (''Hashable, deriveGADTHashable),
+      (''Hashable1, deriveGADTHashable1),
+      (''Hashable2, deriveGADTHashable2)
     ]
 
 deriveSingleGADT :: Name -> Name -> Q [Dec]
@@ -113,6 +119,9 @@ deriveSingleGADT typName className = do
 -- * 'NFData'
 -- * 'NFData1'
 -- * 'NFData2'
+-- * 'Hashable'
+-- * 'Hashable1'
+-- * 'Hashable2'
 deriveGADT :: Name -> [Name] -> Q [Dec]
 deriveGADT typName classNames = do
   let allClassNames = S.toList $ S.fromList classNames
@@ -149,6 +158,7 @@ deriveGADT typName classNames = do
 -- * 'ExtractSym'
 -- * 'SubstSym'
 -- * 'NFData'
+-- * 'Hashable'
 --
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
@@ -156,13 +166,21 @@ deriveGADTAll :: Name -> Q [Dec]
 deriveGADTAll typName =
   deriveGADT
     typName
-    [''Mergeable, ''EvalSym, ''ExtractSym, ''SubstSym, ''NFData]
+    [''Mergeable, ''EvalSym, ''ExtractSym, ''SubstSym, ''NFData, ''Hashable]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name except the specified classes.
 deriveGADTAllExcept :: Name -> [Name] -> Q [Dec]
 deriveGADTAllExcept typName classNames = do
-  deriveGADT typName $
-    S.toList $
-      S.fromList [''Mergeable, ''EvalSym, ''ExtractSym, ''SubstSym, ''NFData]
-        S.\\ S.fromList classNames
+  deriveGADT
+    typName
+    $ S.toList
+    $ S.fromList
+      [ ''Mergeable,
+        ''EvalSym,
+        ''ExtractSym,
+        ''SubstSym,
+        ''NFData,
+        ''Hashable
+      ]
+      S.\\ S.fromList classNames

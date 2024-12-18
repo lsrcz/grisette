@@ -23,7 +23,13 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpFunNames,
         unaryOpInstanceNames
       ),
-    UnaryOpFieldConfig (UnaryOpFieldConfig, extraPatNames, fieldCombineFun),
+    UnaryOpFieldConfig
+      ( UnaryOpFieldConfig,
+        extraPatNames,
+        fieldCombineFun,
+        fieldResFun
+      ),
+    defaultFieldResFun,
     genUnaryOpClass,
   )
 import Language.Haskell.TH (Dec, Name)
@@ -36,11 +42,12 @@ genNFData' n typName = do
       { unaryOpFieldConfig =
           UnaryOpFieldConfig
             { extraPatNames = [],
-              fieldCombineFun = \_ exps ->
+              fieldCombineFun = \_ _ exps ->
                 foldl
                   (\acc exp -> [|$acc `seq` $(return exp)|])
                   ([|()|])
-                  exps
+                  exps,
+              fieldResFun = defaultFieldResFun
             },
         unaryOpInstanceNames =
           [''NFData, ''NFData1, ''NFData2],
