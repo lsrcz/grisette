@@ -18,6 +18,7 @@ module Grisette.Internal.TH.GADT.DeriveGADT
   )
 where
 
+import Control.DeepSeq (NFData, NFData1, NFData2)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Grisette.Internal.Core.Data.Class.EvalSym
@@ -46,22 +47,30 @@ import Grisette.Internal.TH.GADT.DeriveExtractSym
     deriveGADTExtractSym1,
     deriveGADTExtractSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveMergeable (genMergeable, genMergeable', genMergeableAndGetMergingInfoResult)
+import Grisette.Internal.TH.GADT.DeriveMergeable
+  ( genMergeable,
+    genMergeable',
+    genMergeableAndGetMergingInfoResult,
+  )
+import Grisette.Internal.TH.GADT.DeriveNFData
+  ( deriveGADTNFData,
+    deriveGADTNFData1,
+    deriveGADTNFData2,
+  )
 import Language.Haskell.TH (Dec, Name, Q)
 
 deriveProcedureMap :: M.Map Name (Name -> Q [Dec])
 deriveProcedureMap =
   M.fromList
-    [ -- (''Mergeable, deriveGADTMergeable),
-      -- (''Mergeable1, deriveGADTMergeable1),
-      -- (''Mergeable2, deriveGADTMergeable2),
-      -- (''Mergeable3, deriveGADTMergeable3),
-      (''EvalSym, deriveGADTEvalSym),
+    [ (''EvalSym, deriveGADTEvalSym),
       (''EvalSym1, deriveGADTEvalSym1),
       (''EvalSym2, deriveGADTEvalSym2),
       (''ExtractSym, deriveGADTExtractSym),
       (''ExtractSym1, deriveGADTExtractSym1),
-      (''ExtractSym2, deriveGADTExtractSym2)
+      (''ExtractSym2, deriveGADTExtractSym2),
+      (''NFData, deriveGADTNFData),
+      (''NFData1, deriveGADTNFData1),
+      (''NFData2, deriveGADTNFData2)
     ]
 
 deriveSingleGADT :: Name -> Name -> Q [Dec]
@@ -85,6 +94,9 @@ deriveSingleGADT typName className = do
 -- * 'ExtractSym'
 -- * 'ExtractSym1'
 -- * 'ExtractSym2'
+-- * 'NFData'
+-- * 'NFData1'
+-- * 'NFData2'
 deriveGADT :: Name -> [Name] -> Q [Dec]
 deriveGADT typName classNames = do
   let allClassNames = S.toList $ S.fromList classNames
@@ -119,6 +131,7 @@ deriveGADT typName classNames = do
 -- * 'Mergeable'
 -- * 'EvalSym'
 -- * 'ExtractSym'
+-- * 'NFData'
 --
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
