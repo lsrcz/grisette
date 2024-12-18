@@ -15,6 +15,7 @@ module Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig (..),
     UnaryOpFieldConfig (..),
     genUnaryOpClause,
+    genUnaryOpClass',
     genUnaryOpClass,
   )
 where
@@ -60,8 +61,8 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_, tvKind)
 
-fieldExp :: [Name] -> M.Map Name Name -> Type -> Q Exp
-fieldExp unaryOpFunNames argToFunPat ty = do
+fieldFunExp :: [Name] -> M.Map Name Name -> Type -> Q Exp
+fieldFunExp unaryOpFunNames argToFunPat ty = do
   let notContains =
         M.null $
           M.restrictKeys argToFunPat (S.fromList $ freeVariables [ty])
@@ -75,32 +76,32 @@ fieldExp unaryOpFunNames argToFunPat ty = do
       AppT a b | typeHasNoArg a -> do
         [|
           $(varE $ unaryOpFunNames !! 1)
-            $(fieldExp unaryOpFunNames argToFunPat b)
+            $(fieldFunExp unaryOpFunNames argToFunPat b)
           |]
       AppT (AppT a b) c
         | typeHasNoArg a ->
             [|
               $(varE $ unaryOpFunNames !! 2)
-                $(fieldExp unaryOpFunNames argToFunPat b)
-                $(fieldExp unaryOpFunNames argToFunPat c)
+                $(fieldFunExp unaryOpFunNames argToFunPat b)
+                $(fieldFunExp unaryOpFunNames argToFunPat c)
               |]
       AppT (AppT (AppT a b) c) d
         | typeHasNoArg a ->
             [|
               $(varE $ unaryOpFunNames !! 3)
-                $(fieldExp unaryOpFunNames argToFunPat b)
-                $(fieldExp unaryOpFunNames argToFunPat c)
-                $(fieldExp unaryOpFunNames argToFunPat d)
+                $(fieldFunExp unaryOpFunNames argToFunPat b)
+                $(fieldFunExp unaryOpFunNames argToFunPat c)
+                $(fieldFunExp unaryOpFunNames argToFunPat d)
               |]
       VarT nm -> do
         case M.lookup nm argToFunPat of
           Just pname -> varE pname
-          _ -> fail $ "fieldExp: unsupported type: " <> show ty
-      _ -> fail $ "fieldExp: unsupported type: " <> show ty
+          _ -> fail $ "fieldFunExp: unsupported type: " <> show ty
+      _ -> fail $ "fieldFunExp: unsupported type: " <> show ty
 
-patAndExps ::
+funPatAndExps ::
   (M.Map Name Name -> Type -> Q Exp) -> [Name] -> [Type] -> Q ([Pat], [Exp])
-patAndExps fieldFunExpGen argTypes fields = do
+funPatAndExps fieldFunExpGen argTypes fields = do
   let usedArgs = S.fromList $ freeVariables fields
   args <-
     traverse
@@ -114,8 +115,8 @@ patAndExps fieldFunExpGen argTypes fields = do
       argTypes
   let argToFunPat = M.fromList $ mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) args
   let funPats = fmap (maybe WildP VarP . snd) args
-  fieldExps <- traverse (fieldFunExpGen argToFunPat) fields
-  return (funPats, fieldExps)
+  fieldFunExps <- traverse (fieldFunExpGen argToFunPat) fields
+  return (funPats, fieldFunExps)
 
 -- | Configuration for a unary function field expression generation on a GADT.
 data UnaryOpFieldConfig = UnaryOpFieldConfig
@@ -137,13 +138,13 @@ genUnaryOpClause
   conInfo = do
     let fields = constructorFields conInfo
     (funPats, fieldFunExps) <-
-      patAndExps (fieldExp unaryOpFunNames) argTypes fields
+      funPatAndExps (fieldFunExp unaryOpFunNames) argTypes fields
     extraPatNames <- traverse newName extraPatNames
     fieldsPatNames <- replicateM (length fields) $ newName "field"
     let extraPats = fmap VarP extraPatNames
     fieldPats <- conP (constructorName conInfo) (fmap varP fieldsPatNames)
 
-    fieldExps <-
+    fieldResExps <-
       zipWithM
         ( \nm fun ->
             appE
@@ -157,7 +158,7 @@ genUnaryOpClause
         fieldsPatNames
         fieldFunExps
 
-    resExp <- fieldCombineFun (ConE (constructorName conInfo)) fieldExps
+    resExp <- fieldCombineFun (ConE (constructorName conInfo)) fieldResExps
     return $ Clause (funPats ++ extraPats ++ [fieldPats]) (NormalB resExp) []
 
 -- | Configuration for a unary operation type class generation on a GADT.
@@ -167,13 +168,18 @@ data UnaryOpClassConfig = UnaryOpClassConfig
     unaryOpFunNames :: [Name]
   }
 
--- | Generate a unary operation type class instance for a GADT.
-genUnaryOpClass ::
+genUnaryOpClass' ::
+  ( [Name] ->
+    UnaryOpFieldConfig ->
+    [Name] ->
+    ConstructorInfo ->
+    Q Clause
+  ) ->
   UnaryOpClassConfig ->
   Int ->
   Name ->
   Q [Dec]
-genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
+genUnaryOpClass' genUnaryOpClauseFun (UnaryOpClassConfig {..}) n typName = do
   CheckArgsResult {..} <-
     checkArgs
       (occName $ head unaryOpInstanceNames)
@@ -195,7 +201,7 @@ genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
   ctxs <- traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
   clauses <-
     traverse
-      (genUnaryOpClause unaryOpFunNames unaryOpFieldConfig argNewNames)
+      (genUnaryOpClauseFun unaryOpFunNames unaryOpFieldConfig argNewNames)
       constructors
   let instanceType =
         AppT (ConT $ unaryOpInstanceNames !! n) $
@@ -210,3 +216,11 @@ genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
         instanceType
         [instanceFun]
     ]
+
+-- | Generate a unary operation type class instance for a GADT.
+genUnaryOpClass ::
+  UnaryOpClassConfig ->
+  Int ->
+  Name ->
+  Q [Dec]
+genUnaryOpClass = genUnaryOpClass' genUnaryOpClause
