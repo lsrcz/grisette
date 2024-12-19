@@ -26,9 +26,8 @@ import Grisette.Internal.Core.Data.Class.SubstSym
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfig,
-        unaryOpFunNames,
-        unaryOpInstanceNames
+        unaryOpFieldConfigs,
+        unaryOpInstanceNames, unaryOpAllowExistential
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -36,6 +35,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
+        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
@@ -49,21 +49,23 @@ genSubstSym' :: Int -> Name -> Q [Dec]
 genSubstSym' n typName = do
   genUnaryOpClass
     UnaryOpClassConfig
-      { unaryOpFieldConfig =
-          UnaryOpFieldConfig
-            { extraPatNames = ["symbol", "newVal"],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ con extraPat exp ->
-                return (foldl AppE (ConE con) exp, False <$ extraPat),
-              fieldFunExp =
-                defaultFieldFunExp
+      { unaryOpFieldConfigs =
+          [ UnaryOpFieldConfig
+              { extraPatNames = ["symbol", "newVal"],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ con extraPat exp ->
+                  return (foldl AppE (ConE con) exp, False <$ extraPat),
+                fieldFunExp =
+                  defaultFieldFunExp
+                    ['substSym, 'liftSubstSym, 'liftSubstSym2],
+                fieldFunNames =
                   ['substSym, 'liftSubstSym, 'liftSubstSym2]
-            },
+              }
+          ],
         unaryOpInstanceNames =
           [''SubstSym, ''SubstSym1, ''SubstSym2],
-        unaryOpFunNames =
-          ['substSym, 'liftSubstSym, 'liftSubstSym2]
+        unaryOpAllowExistential = True
       }
     n
     typName

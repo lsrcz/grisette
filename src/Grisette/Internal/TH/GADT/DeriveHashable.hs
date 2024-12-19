@@ -23,9 +23,8 @@ import Data.Hashable.Lifted
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfig,
-        unaryOpFunNames,
-        unaryOpInstanceNames
+        unaryOpFieldConfigs,
+        unaryOpInstanceNames, unaryOpAllowExistential
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -33,6 +32,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
+        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
@@ -43,27 +43,31 @@ import Language.Haskell.TH (Dec, Name, Q)
 hashableConfig :: UnaryOpClassConfig
 hashableConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfig =
-        UnaryOpFieldConfig
-          { extraPatNames = ["salt"],
-            extraLiftedPatNames = const [],
-            fieldCombineFun =
-              \_ _ [salt] exp -> do
-                r <-
-                  foldl
-                    (\salt exp -> [|$(return exp) $salt|])
-                    (return salt)
-                    exp
-                return (r, [True]),
-            fieldResFun = \_ _ _ _ fieldPat fieldFun -> do
-              r <- [|\salt -> $(return fieldFun) salt $(return fieldPat)|]
-              return (r, [False]),
-            fieldFunExp =
-              defaultFieldFunExp
+    { unaryOpFieldConfigs =
+        [ UnaryOpFieldConfig
+            { extraPatNames = ["salt"],
+              extraLiftedPatNames = const [],
+              fieldCombineFun =
+                \_ _ _ [salt] exp -> do
+                  r <-
+                    foldl
+                      (\salt exp -> [|$(return exp) $salt|])
+                      (return salt)
+                      exp
+                  return (r, [True]),
+              fieldResFun = \_ _ _ _ fieldPat fieldFun -> do
+                r <- [|\salt -> $(return fieldFun) salt $(return fieldPat)|]
+                return (r, [False]),
+              fieldFunExp =
+                defaultFieldFunExp
+                  ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2],
+              fieldFunNames =
                 ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2]
-          },
-      unaryOpInstanceNames = [''Hashable, ''Hashable1, ''Hashable2],
-      unaryOpFunNames = ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2]
+            }
+        ],
+      unaryOpInstanceNames =
+        [''Hashable, ''Hashable1, ''Hashable2],
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'Hashable' instance for a GADT.

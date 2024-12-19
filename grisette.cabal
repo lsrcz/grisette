@@ -164,6 +164,7 @@ library
       Grisette.Internal.TH.DeriveUnifiedInterface
       Grisette.Internal.TH.DeriveWithHandlers
       Grisette.Internal.TH.GADT.Common
+      Grisette.Internal.TH.GADT.DeriveAllSyms
       Grisette.Internal.TH.GADT.DeriveEvalSym
       Grisette.Internal.TH.GADT.DeriveExtractSym
       Grisette.Internal.TH.GADT.DeriveGADT

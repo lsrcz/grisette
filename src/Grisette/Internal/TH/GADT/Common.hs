@@ -14,17 +14,18 @@ module Grisette.Internal.TH.GADT.Common
   )
 where
 
-import Control.Monad (when)
+import Control.Monad (unless, when)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Language.Haskell.TH
   ( Name,
     Q,
     Type (VarT),
-    newName, nameBase,
+    nameBase,
+    newName,
   )
 import Language.Haskell.TH.Datatype
-  ( ConstructorInfo (constructorFields),
+  ( ConstructorInfo (constructorFields, constructorName, constructorVars),
     DatatypeInfo (datatypeCons, datatypeVars),
     TypeSubstitution (applySubstitution, freeVariables),
     reifyDatatype,
@@ -48,9 +49,10 @@ checkArgs ::
   String ->
   Int ->
   Name ->
+  Bool ->
   Int ->
   Q CheckArgsResult
-checkArgs clsName maxArgNum typName n = do
+checkArgs clsName maxArgNum typName allowExistential n = do
   when (n < 0) $
     fail $
       unlines
@@ -92,6 +94,16 @@ checkArgs clsName maxArgNum typName n = do
             (tvName <$> dvars)
             (VarT <$> keptNewNames ++ argNewNames)
   let constructors = applySubstitution substMap $ datatypeCons d
+  unless allowExistential $
+    mapM_
+      ( \c ->
+          when (constructorVars c /= []) $
+            fail $
+              "Constructor "
+                <> show (nameBase $ constructorName c)
+                <> " has existential variables"
+      )
+      constructors
   let allFields = concatMap constructorFields constructors
   let allFieldsFreeVars = S.fromList $ freeVariables allFields
   let isVarUsedInFields var = S.member var allFieldsFreeVars

@@ -46,6 +46,12 @@ import Grisette.Internal.Core.Data.Class.SubstSym
     SubstSym1,
     SubstSym2,
   )
+import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
+import Grisette.Internal.TH.GADT.DeriveAllSyms
+  ( deriveGADTAllSyms,
+    deriveGADTAllSyms1,
+    deriveGADTAllSyms2,
+  )
 import Grisette.Internal.TH.GADT.DeriveEvalSym
   ( deriveGADTEvalSym,
     deriveGADTEvalSym1,
@@ -56,7 +62,11 @@ import Grisette.Internal.TH.GADT.DeriveExtractSym
     deriveGADTExtractSym1,
     deriveGADTExtractSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveHashable (deriveGADTHashable, deriveGADTHashable1, deriveGADTHashable2)
+import Grisette.Internal.TH.GADT.DeriveHashable
+  ( deriveGADTHashable,
+    deriveGADTHashable1,
+    deriveGADTHashable2,
+  )
 import Grisette.Internal.TH.GADT.DeriveMergeable
   ( genMergeable,
     genMergeable',
@@ -67,8 +77,16 @@ import Grisette.Internal.TH.GADT.DeriveNFData
     deriveGADTNFData1,
     deriveGADTNFData2,
   )
-import Grisette.Internal.TH.GADT.DerivePPrint (deriveGADTPPrint, deriveGADTPPrint1, deriveGADTPPrint2)
-import Grisette.Internal.TH.GADT.DeriveShow (deriveGADTShow, deriveGADTShow1, deriveGADTShow2)
+import Grisette.Internal.TH.GADT.DerivePPrint
+  ( deriveGADTPPrint,
+    deriveGADTPPrint1,
+    deriveGADTPPrint2,
+  )
+import Grisette.Internal.TH.GADT.DeriveShow
+  ( deriveGADTShow,
+    deriveGADTShow1,
+    deriveGADTShow2,
+  )
 import Grisette.Internal.TH.GADT.DeriveSubstSym
   ( deriveGADTSubstSym,
     deriveGADTSubstSym1,
@@ -99,7 +117,10 @@ deriveProcedureMap =
       (''Show2, deriveGADTShow2),
       (''PPrint, deriveGADTPPrint),
       (''PPrint1, deriveGADTPPrint1),
-      (''PPrint2, deriveGADTPPrint2)
+      (''PPrint2, deriveGADTPPrint2),
+      (''AllSyms, deriveGADTAllSyms),
+      (''AllSyms1, deriveGADTAllSyms1),
+      (''AllSyms2, deriveGADTAllSyms2)
     ]
 
 deriveSingleGADT :: Name -> Name -> Q [Dec]
@@ -138,6 +159,9 @@ deriveSingleGADT typName className = do
 -- * 'PPrint'
 -- * 'PPrint1'
 -- * 'PPrint2'
+-- * 'AllSyms'
+-- * 'AllSyms1'
+-- * 'AllSyms2'
 deriveGADT :: Name -> [Name] -> Q [Dec]
 deriveGADT typName classNames = do
   let allClassNames = S.toList $ S.fromList classNames
@@ -177,6 +201,8 @@ deriveGADT typName classNames = do
 -- * 'Hashable'
 -- * 'Show'
 -- * 'PPrint'
+-- * 'AllSyms'
+--
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
 deriveGADTAll :: Name -> Q [Dec]
@@ -190,7 +216,8 @@ deriveGADTAll typName =
       ''NFData,
       ''Hashable,
       ''Show,
-      ''PPrint
+      ''PPrint,
+      ''AllSyms
     ]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
@@ -208,6 +235,7 @@ deriveGADTAllExcept typName classNames = do
         ''NFData,
         ''Hashable,
         ''Show,
-        ''PPrint
+        ''PPrint,
+        ''AllSyms
       ]
       S.\\ S.fromList classNames

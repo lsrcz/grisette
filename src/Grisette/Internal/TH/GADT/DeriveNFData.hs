@@ -19,9 +19,8 @@ import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), NFData2 (liftRnf2))
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfig,
-        unaryOpFunNames,
-        unaryOpInstanceNames
+        unaryOpFieldConfigs,
+        unaryOpInstanceNames, unaryOpAllowExistential
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -29,6 +28,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
+        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
@@ -42,26 +42,25 @@ genNFData' :: Int -> Name -> Q [Dec]
 genNFData' n typName = do
   genUnaryOpClass
     UnaryOpClassConfig
-      { unaryOpFieldConfig =
-          UnaryOpFieldConfig
-            { extraPatNames = [],
-              extraLiftedPatNames = const [],
-              fieldCombineFun = \_ _ _ exps -> do
-                r <-
-                  foldl
-                    (\acc exp -> [|$acc `seq` $(return exp)|])
-                    ([|()|])
-                    exps
-                return (r, []),
-              fieldResFun = defaultFieldResFun,
-              fieldFunExp =
-                defaultFieldFunExp
-                  ['rnf, 'liftRnf, 'liftRnf2]
-            },
+      { unaryOpFieldConfigs =
+          [ UnaryOpFieldConfig
+              { extraPatNames = [],
+                extraLiftedPatNames = const [],
+                fieldCombineFun = \_ _ _ _ exps -> do
+                  r <-
+                    foldl
+                      (\acc exp -> [|$acc `seq` $(return exp)|])
+                      ([|()|])
+                      exps
+                  return (r, []),
+                fieldResFun = defaultFieldResFun,
+                fieldFunExp = defaultFieldFunExp ['rnf, 'liftRnf, 'liftRnf2],
+                fieldFunNames = ['rnf, 'liftRnf, 'liftRnf2]
+              }
+          ],
         unaryOpInstanceNames =
           [''NFData, ''NFData1, ''NFData2],
-        unaryOpFunNames =
-          ['rnf, 'liftRnf, 'liftRnf2]
+        unaryOpAllowExistential = True
       }
     n
     typName
