@@ -32,6 +32,7 @@ import Grisette.Core.Data.Class.ToConTests (toConTests)
 import Grisette.Core.Data.Class.ToSymTests (toSymTests)
 import Grisette.Core.Data.Class.TryMergeTests (tryMergeTests)
 import Grisette.Core.Data.UnionBaseTests (unionBaseTests)
+import Grisette.Core.TH.DerivationTest (derivationTest)
 import Grisette.Lib.Control.ApplicativeTest (applicativeFunctionTests)
 import Grisette.Lib.Control.Monad.ExceptTests
   ( monadExceptFunctionTests,
@@ -127,7 +128,8 @@ coreTests =
               tryMergeTests
             ],
           unionBaseTests
-        ]
+        ],
+      testGroup "TH" [derivationTest]
     ]
 
 libTests :: Test

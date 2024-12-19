@@ -32,10 +32,13 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
+        extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
+        fieldFunExp,
         fieldResFun
       ),
+    defaultFieldFunExp,
     defaultFieldResFun,
     genUnaryOpClass,
   )
@@ -53,9 +56,13 @@ genExtractSym' n typName = do
       { unaryOpFieldConfig =
           UnaryOpFieldConfig
             { extraPatNames = [],
+              extraLiftedPatNames = const [],
               fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ _ exp ->
-                return $ AppE (VarE 'mconcat) $ ListE exp
+              fieldCombineFun = \_ _ _ exp -> do
+                return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+              fieldFunExp =
+                defaultFieldFunExp
+                  ['extractSymMaybe, 'liftExtractSymMaybe, 'liftExtractSymMaybe2]
             },
         unaryOpInstanceNames =
           [''ExtractSym, ''ExtractSym1, ''ExtractSym2],

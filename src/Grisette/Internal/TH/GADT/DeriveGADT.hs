@@ -19,6 +19,7 @@ module Grisette.Internal.TH.GADT.DeriveGADT
 where
 
 import Control.DeepSeq (NFData, NFData1, NFData2)
+import Data.Functor.Classes (Show1, Show2)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import qualified Data.Map as M
@@ -65,6 +66,7 @@ import Grisette.Internal.TH.GADT.DeriveNFData
     deriveGADTNFData1,
     deriveGADTNFData2,
   )
+import Grisette.Internal.TH.GADT.DeriveShow (deriveGADTShow, deriveGADTShow1, deriveGADTShow2)
 import Grisette.Internal.TH.GADT.DeriveSubstSym
   ( deriveGADTSubstSym,
     deriveGADTSubstSym1,
@@ -89,7 +91,10 @@ deriveProcedureMap =
       (''NFData2, deriveGADTNFData2),
       (''Hashable, deriveGADTHashable),
       (''Hashable1, deriveGADTHashable1),
-      (''Hashable2, deriveGADTHashable2)
+      (''Hashable2, deriveGADTHashable2),
+      (''Show, deriveGADTShow),
+      (''Show1, deriveGADTShow1),
+      (''Show2, deriveGADTShow2)
     ]
 
 deriveSingleGADT :: Name -> Name -> Q [Dec]
@@ -159,6 +164,7 @@ deriveGADT typName classNames = do
 -- * 'SubstSym'
 -- * 'NFData'
 -- * 'Hashable'
+-- * 'Show'
 --
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
@@ -166,7 +172,14 @@ deriveGADTAll :: Name -> Q [Dec]
 deriveGADTAll typName =
   deriveGADT
     typName
-    [''Mergeable, ''EvalSym, ''ExtractSym, ''SubstSym, ''NFData, ''Hashable]
+    [ ''Mergeable,
+      ''EvalSym,
+      ''ExtractSym,
+      ''SubstSym,
+      ''NFData,
+      ''Hashable,
+      ''Show
+    ]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name except the specified classes.
@@ -181,6 +194,7 @@ deriveGADTAllExcept typName classNames = do
         ''ExtractSym,
         ''SubstSym,
         ''NFData,
-        ''Hashable
+        ''Hashable,
+        ''Show
       ]
       S.\\ S.fromList classNames

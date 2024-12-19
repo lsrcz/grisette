@@ -31,6 +31,11 @@ module Grisette.Internal.TH.Util
     kindNumParam,
     concatPreds,
     putHaddock,
+    allUsedNamesMaybe,
+    allUsedNames,
+    isNonUnitTupleString,
+    isNonUnitTuple,
+    integerE,
   )
 where
 
@@ -40,16 +45,34 @@ import Language.Haskell.TH.Syntax (addModFinalizer, putDoc, DocLoc(DeclDoc))
 
 import Control.Monad (when)
 import qualified Data.Map as M
+import qualified Data.Set as S
 import GHC.TypeNats (Nat)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH
   ( Dec (ClassD),
+    Exp
+      ( AppE,
+        AppTypeE,
+        ConE,
+        CondE,
+        InfixE,
+        LamE,
+        ListE,
+        LitE,
+        ParensE,
+        TupE,
+        UInfixE,
+        VarE
+      ),
     Info (ClassI),
     Kind,
     Name,
     Pred,
     Q,
     Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),
+    integerL,
+    litE,
+    nameBase,
     newName,
     pprint,
     reify,
@@ -234,3 +257,41 @@ putHaddock name = addModFinalizer . putDoc (DeclDoc name)
 putHaddock :: Name -> String -> Q ()
 putHaddock _ _ = return ()
 #endif
+
+-- | Get the names used in an expression.
+allUsedNamesMaybe :: Maybe Exp -> S.Set Name
+allUsedNamesMaybe Nothing = S.empty
+allUsedNamesMaybe (Just exp) = allUsedNames exp
+
+-- | Get the names used in an expression.
+allUsedNames :: Exp -> S.Set Name
+allUsedNames (VarE nm) = S.singleton nm
+allUsedNames (ConE n) = S.singleton n
+allUsedNames (LitE _) = S.empty
+allUsedNames (AppE e1 e2) = allUsedNames e1 `S.union` allUsedNames e2
+allUsedNames (AppTypeE e1 _) = allUsedNames e1
+allUsedNames (InfixE l e r) =
+  allUsedNamesMaybe l `S.union` allUsedNames e `S.union` allUsedNamesMaybe r
+allUsedNames (UInfixE l e r) =
+  allUsedNames l `S.union` allUsedNames e `S.union` allUsedNames r
+allUsedNames (ParensE e) = allUsedNames e
+allUsedNames (LamE _ e) = allUsedNames e
+allUsedNames (TupE es) = mconcat $ allUsedNamesMaybe <$> es
+allUsedNames (CondE e1 e2 e3) =
+  allUsedNames e1 `S.union` allUsedNames e2 `S.union` allUsedNames e3
+allUsedNames (ListE es) = mconcat $ allUsedNames <$> es
+allUsedNames exp = error $ "allUsedNames: unsupported expression: " <> show exp
+
+-- | Check if a string is the data constructor name of a non-unit tuple.
+isNonUnitTupleString :: String -> Bool
+isNonUnitTupleString ('(' : ',' : _) = True
+isNonUnitTupleString _ = False
+
+-- | Check if a 'Name' is the data constructor name of a non-unit tuple.
+isNonUnitTuple :: Name -> Bool
+isNonUnitTuple nm =
+  isNonUnitTupleString $ nameBase nm
+
+-- | Convert an integer to an 'Exp'.
+integerE :: (Integral a) => a -> Q Exp
+integerE = litE . integerL . fromIntegral
