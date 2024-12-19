@@ -16,15 +16,16 @@ module Grisette.Internal.TH.GADT.DeriveShow
   )
 where
 
-import Data.Functor.Classes (Show1 (liftShowsPrec), Show2 (liftShowsPrec2))
+import Data.Functor.Classes
+  ( Show1 (liftShowList, liftShowsPrec),
+    Show2 (liftShowList2, liftShowsPrec2),
+  )
 import qualified Data.List as List
-import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as S
 import GHC.Show (appPrec, appPrec1)
+import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
-  ( FieldFunExp,
-    UnaryOpClassConfig
+  ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpFieldConfig,
         unaryOpFunNames,
@@ -38,7 +39,6 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         fieldFunExp,
         fieldResFun
       ),
-    defaultFieldFunExp,
     genUnaryOpClass,
   )
 import Grisette.Internal.TH.Util (integerE, isNonUnitTuple)
@@ -47,57 +47,17 @@ import Language.Haskell.TH
     Fixity (Fixity),
     Name,
     Q,
-    Type (AppT, VarT),
     defaultFixity,
     integerL,
     listE,
     litE,
     nameBase,
     stringE,
-    varE,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorVariant (InfixConstructor, NormalConstructor, RecordConstructor),
-    TypeSubstitution (freeVariables),
     reifyFixityCompat,
   )
-
-showFieldFunExp :: FieldFunExp
-showFieldFunExp argToFunPat liftedExps = go
-  where
-    allArgNames = M.keysSet argToFunPat
-    typeHasNoArg ty =
-      S.fromList (freeVariables [ty])
-        `S.intersection` allArgNames
-        == S.empty
-    goLst ty = do
-      let fun0 = [|showList|]
-          fun1 b = [|liftShowList $(go b) $(goLst b)|]
-          fun2 b c = [|liftShowList $(go b) $(goLst b) $(go c) $(goLst c)|]
-      case ty of
-        AppT (AppT (VarT _) b) c -> fun2 b c
-        AppT (VarT _) b -> fun1 b
-        _ | typeHasNoArg ty -> fun0
-        AppT a b | typeHasNoArg a -> fun1 b
-        AppT (AppT a b) c | typeHasNoArg a -> fun2 b c
-        VarT nm -> case M.lookup nm liftedExps of
-          Just [p] -> varE p
-          _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
-        _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
-    go ty = do
-      let fun0 = [|showsPrec|]
-          fun1 b = [|liftShowsPrec $(go b) $(goLst b)|]
-          fun2 b c = [|liftShowsPrec2 $(go b) $(goLst b) $(go c) $(goLst c)|]
-      case ty of
-        AppT (AppT (VarT _) b) c -> fun2 b c
-        AppT (VarT _) b -> fun1 b
-        _ | typeHasNoArg ty -> fun0
-        AppT a b | typeHasNoArg a -> fun1 b
-        AppT (AppT a b) c | typeHasNoArg a -> fun2 b c
-        VarT nm -> case M.lookup nm argToFunPat of
-          Just pname -> varE pname
-          _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
-        _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
 
 showConfig :: UnaryOpClassConfig
 showConfig =
@@ -203,10 +163,9 @@ showConfig =
                   let conPrec = case fi of Fixity prec _ -> prec
                   attachUsedInfo $ makeShowField (conPrec + 1),
             fieldFunExp =
-              \argToFunPat liftedExps ty ->
-                if M.null argToFunPat
-                  then defaultFieldFunExp ['showsPrec] argToFunPat liftedExps ty
-                  else showFieldFunExp argToFunPat liftedExps ty
+              showPrintFieldFunExp
+                ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
+                ['showList, 'liftShowList, 'liftShowList2]
           },
       unaryOpInstanceNames = [''Show, ''Show1, ''Show2],
       unaryOpFunNames = ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
