@@ -170,8 +170,10 @@ library
       Grisette.Internal.TH.GADT.DeriveHashable
       Grisette.Internal.TH.GADT.DeriveMergeable
       Grisette.Internal.TH.GADT.DeriveNFData
+      Grisette.Internal.TH.GADT.DerivePPrint
       Grisette.Internal.TH.GADT.DeriveShow
       Grisette.Internal.TH.GADT.DeriveSubstSym
+      Grisette.Internal.TH.GADT.ShowPPrintCommon
       Grisette.Internal.TH.GADT.UnaryOpCommon
       Grisette.Internal.TH.Util
       Grisette.Internal.Utils.Derive
