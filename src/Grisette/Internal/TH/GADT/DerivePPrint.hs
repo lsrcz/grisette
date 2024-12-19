@@ -39,9 +39,8 @@ import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfig,
-        unaryOpFunNames,
-        unaryOpInstanceNames
+        unaryOpFieldConfigs,
+        unaryOpInstanceNames, unaryOpAllowExistential
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -49,6 +48,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
+        fieldFunNames,
         fieldResFun
       ),
     genUnaryOpClass,
@@ -73,102 +73,106 @@ import Language.Haskell.TH.Syntax (Q)
 pprintConfig :: UnaryOpClassConfig
 pprintConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfig =
-        UnaryOpFieldConfig
-          { extraPatNames = ["prec"],
-            extraLiftedPatNames = \i -> (["pl" | i /= 0]),
-            fieldCombineFun = \variant conName [prec] exps -> do
-              let initExps =
-                    (\e -> [|$(return e) <> "," <> flatAlt "" " "|])
-                      <$> init exps
-                  lastExp = [|$(return $ last exps)|]
-                  commaSeped = initExps ++ [lastExp]
-              case (variant, exps) of
-                (NormalConstructor, []) -> do
-                  r <- [|fromString $(stringE $ nameBase conName)|]
-                  return (r, [False])
-                (NormalConstructor, [exp]) -> do
-                  r <-
-                    [|
-                      pformatWithConstructorNoAlign
-                        $(return prec)
-                        $(stringE $ nameBase conName)
-                        [$(return exp)]
-                      |]
-                  return (r, [True])
-                (NormalConstructor, _) | isNonUnitTuple conName -> do
-                  r <- [|groupedEnclose "(" ")" $ vcat $ $(listE commaSeped)|]
-                  return (r, [False])
-                (NormalConstructor, _) -> do
-                  r <-
-                    [|
-                      pformatWithConstructorNoAlign
-                        $(return prec)
-                        $(stringE $ nameBase conName)
-                        [vsep $(return $ ListE exps)]
-                      |]
-                  return (r, [True])
-                (RecordConstructor _, _) -> do
-                  r <-
-                    [|
-                      pformatWithConstructorNoAlign
-                        $(return prec)
-                        $(stringE $ nameBase conName)
-                        [groupedEnclose "{" "}" $ vcat $ $(listE commaSeped)]
-                      |]
-                  return (r, [True])
-                (InfixConstructor, [l, r]) -> do
-                  fi <-
-                    fromMaybe defaultFixity `fmap` reifyFixityCompat conName
-                  let conPrec = case fi of Fixity prec _ -> prec
-                  r <-
-                    [|
-                      group
-                        $ condEnclose
-                          ($(return prec) > $(integerE conPrec))
-                          "("
-                          ")"
-                        $ nest 2
-                        $ vsep
-                          [ align $ $(return l),
-                            fromString $(stringE $ nameBase conName)
-                              <+> $(return r)
-                          ]
-                      |]
-                  return (r, [True])
-                _ ->
-                  fail "deriveGADTPPrint: unexpected constructor variant",
-            fieldResFun = \variant conName _ pos fieldPat fieldFun -> do
-              let makePPrintField p =
-                    [|
-                      $(return fieldFun)
-                        $(integerE p)
-                        $(return fieldPat)
-                      |]
-              let attachUsedInfo = ((,[False]) <$>)
-              case variant of
-                NormalConstructor
-                  | isNonUnitTuple conName ->
-                      attachUsedInfo $ makePPrintField 0
-                NormalConstructor ->
-                  attachUsedInfo $ makePPrintField appPrec1
-                RecordConstructor names ->
-                  attachUsedInfo
-                    [|
-                      pretty $(stringE $ nameBase (names !! pos) ++ " = ")
-                        <> $(makePPrintField 0)
-                      |]
-                InfixConstructor -> do
-                  fi <- fromMaybe defaultFixity `fmap` reifyFixityCompat conName
-                  let conPrec = case fi of Fixity prec _ -> prec
-                  attachUsedInfo $ makePPrintField (conPrec + 1),
-            fieldFunExp =
-              showPrintFieldFunExp
+    { unaryOpFieldConfigs =
+        [ UnaryOpFieldConfig
+            { extraPatNames = ["prec"],
+              extraLiftedPatNames = \i -> (["pl" | i /= 0]),
+              fieldCombineFun = \_ variant conName [prec] exps -> do
+                let initExps =
+                      (\e -> [|$(return e) <> "," <> flatAlt "" " "|])
+                        <$> init exps
+                    lastExp = [|$(return $ last exps)|]
+                    commaSeped = initExps ++ [lastExp]
+                case (variant, exps) of
+                  (NormalConstructor, []) -> do
+                    r <- [|fromString $(stringE $ nameBase conName)|]
+                    return (r, [False])
+                  (NormalConstructor, [exp]) -> do
+                    r <-
+                      [|
+                        pformatWithConstructorNoAlign
+                          $(return prec)
+                          $(stringE $ nameBase conName)
+                          [$(return exp)]
+                        |]
+                    return (r, [True])
+                  (NormalConstructor, _) | isNonUnitTuple conName -> do
+                    r <- [|groupedEnclose "(" ")" $ vcat $ $(listE commaSeped)|]
+                    return (r, [False])
+                  (NormalConstructor, _) -> do
+                    r <-
+                      [|
+                        pformatWithConstructorNoAlign
+                          $(return prec)
+                          $(stringE $ nameBase conName)
+                          [vsep $(return $ ListE exps)]
+                        |]
+                    return (r, [True])
+                  (RecordConstructor _, _) -> do
+                    r <-
+                      [|
+                        pformatWithConstructorNoAlign
+                          $(return prec)
+                          $(stringE $ nameBase conName)
+                          [groupedEnclose "{" "}" $ vcat $ $(listE commaSeped)]
+                        |]
+                    return (r, [True])
+                  (InfixConstructor, [l, r]) -> do
+                    fi <-
+                      fromMaybe defaultFixity `fmap` reifyFixityCompat conName
+                    let conPrec = case fi of Fixity prec _ -> prec
+                    r <-
+                      [|
+                        group
+                          $ condEnclose
+                            ($(return prec) > $(integerE conPrec))
+                            "("
+                            ")"
+                          $ nest 2
+                          $ vsep
+                            [ align $ $(return l),
+                              fromString $(stringE $ nameBase conName)
+                                <+> $(return r)
+                            ]
+                        |]
+                    return (r, [True])
+                  _ ->
+                    fail "deriveGADTPPrint: unexpected constructor variant",
+              fieldResFun = \variant conName _ pos fieldPat fieldFun -> do
+                let makePPrintField p =
+                      [|
+                        $(return fieldFun)
+                          $(integerE p)
+                          $(return fieldPat)
+                        |]
+                let attachUsedInfo = ((,[False]) <$>)
+                case variant of
+                  NormalConstructor
+                    | isNonUnitTuple conName ->
+                        attachUsedInfo $ makePPrintField 0
+                  NormalConstructor ->
+                    attachUsedInfo $ makePPrintField appPrec1
+                  RecordConstructor names ->
+                    attachUsedInfo
+                      [|
+                        pretty $(stringE $ nameBase (names !! pos) ++ " = ")
+                          <> $(makePPrintField 0)
+                        |]
+                  InfixConstructor -> do
+                    fi <-
+                      fromMaybe defaultFixity `fmap` reifyFixityCompat conName
+                    let conPrec = case fi of Fixity prec _ -> prec
+                    attachUsedInfo $ makePPrintField (conPrec + 1),
+              fieldFunExp =
+                showPrintFieldFunExp
+                  ['pformatPrec, 'liftPFormatPrec, 'liftPFormatPrec2]
+                  ['pformatList, 'liftPFormatList, 'liftPFormatList2],
+              fieldFunNames =
                 ['pformatPrec, 'liftPFormatPrec, 'liftPFormatPrec2]
-                ['pformatList, 'liftPFormatList, 'liftPFormatList2]
-          },
+            }
+        ],
       unaryOpInstanceNames = [''PPrint, ''PPrint1, ''PPrint2],
-      unaryOpFunNames = ['pformatPrec, 'liftPFormatPrec, 'liftPFormatPrec2]
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'PPrint' instance for a GADT.

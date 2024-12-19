@@ -486,7 +486,7 @@ genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
 -- result.
 genMergeable' :: MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
 genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
-  CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName n
+  CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName True n
 
   d <- reifyDatatype typName
   let ctxForVar :: TyVarBndr_ flag -> Q (Maybe Pred)

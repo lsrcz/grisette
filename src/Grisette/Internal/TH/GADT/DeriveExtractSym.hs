@@ -26,8 +26,8 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfig,
-        unaryOpFunNames,
+        unaryOpAllowExistential,
+        unaryOpFieldConfigs,
         unaryOpInstanceNames
       ),
     UnaryOpFieldConfig
@@ -36,6 +36,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
+        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
@@ -53,21 +54,29 @@ genExtractSym' :: Int -> Name -> Q [Dec]
 genExtractSym' n typName = do
   genUnaryOpClass
     UnaryOpClassConfig
-      { unaryOpFieldConfig =
-          UnaryOpFieldConfig
-            { extraPatNames = [],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ _ _ exp -> do
-                return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
-              fieldFunExp =
-                defaultFieldFunExp
-                  ['extractSymMaybe, 'liftExtractSymMaybe, 'liftExtractSymMaybe2]
-            },
+      { unaryOpFieldConfigs =
+          [ UnaryOpFieldConfig
+              { extraPatNames = [],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ _ _ exp -> do
+                  return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+                fieldFunExp =
+                  defaultFieldFunExp
+                    [ 'extractSymMaybe,
+                      'liftExtractSymMaybe,
+                      'liftExtractSymMaybe2
+                    ],
+                fieldFunNames =
+                  [ 'extractSymMaybe,
+                    'liftExtractSymMaybe,
+                    'liftExtractSymMaybe2
+                  ]
+              }
+          ],
         unaryOpInstanceNames =
           [''ExtractSym, ''ExtractSym1, ''ExtractSym2],
-        unaryOpFunNames =
-          ['extractSymMaybe, 'liftExtractSymMaybe, 'liftExtractSymMaybe2]
+        unaryOpAllowExistential = True
       }
     n
     typName

@@ -44,7 +44,10 @@ import qualified Data.Text as T
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import Grisette
-  ( BasicSymPrim,
+  ( AllSyms,
+    AllSyms1,
+    AllSyms2,
+    BasicSymPrim,
     Default (Default),
     EvalSym,
     EvalSym1,
@@ -143,7 +146,9 @@ deriveGADT
     ''Show,
     ''Show1,
     ''PPrint,
-    ''PPrint1
+    ''PPrint1,
+    ''AllSyms,
+    ''AllSyms1
   ]
 
 data P a b = P a | Q Int
@@ -182,7 +187,10 @@ deriveGADT
     ''Show2,
     ''PPrint,
     ''PPrint1,
-    ''PPrint2
+    ''PPrint2,
+    ''AllSyms,
+    ''AllSyms1,
+    ''AllSyms2
   ]
 
 data GGG a b where

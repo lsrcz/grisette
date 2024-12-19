@@ -30,8 +30,8 @@ import Grisette.Internal.Core.Data.Class.EvalSym
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfig,
-        unaryOpFunNames,
+        unaryOpAllowExistential,
+        unaryOpFieldConfigs,
         unaryOpInstanceNames
       ),
     UnaryOpFieldConfig
@@ -40,6 +40,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
+        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
@@ -57,20 +58,21 @@ genEvalSym' :: Int -> Name -> Q [Dec]
 genEvalSym' n typName = do
   genUnaryOpClass
     UnaryOpClassConfig
-      { unaryOpFieldConfig =
-          UnaryOpFieldConfig
-            { extraPatNames = ["fillDefault", "model"],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ con extraPat exp -> do
-                return (foldl AppE (ConE con) exp, False <$ extraPat),
-              fieldFunExp =
-                defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2]
-            },
+      { unaryOpFieldConfigs =
+          [ UnaryOpFieldConfig
+              { extraPatNames = ["fillDefault", "model"],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ con extraPat exp -> do
+                  return (foldl AppE (ConE con) exp, False <$ extraPat),
+                fieldFunExp =
+                  defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2],
+                fieldFunNames = ['evalSym, 'liftEvalSym, 'liftEvalSym2]
+              }
+          ],
         unaryOpInstanceNames =
           [''EvalSym, ''EvalSym1, ''EvalSym2],
-        unaryOpFunNames =
-          ['evalSym, 'liftEvalSym, 'liftEvalSym2]
+        unaryOpAllowExistential = True
       }
     n
     typName
