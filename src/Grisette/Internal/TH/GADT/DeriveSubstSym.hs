@@ -32,14 +32,17 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
+        extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
+        fieldFunExp,
         fieldResFun
       ),
+    defaultFieldFunExp,
     defaultFieldResFun,
     genUnaryOpClass,
   )
-import Language.Haskell.TH (Dec, Exp (AppE), Name)
+import Language.Haskell.TH (Dec, Exp (AppE, ConE), Name)
 import Language.Haskell.TH.Syntax (Q)
 
 genSubstSym' :: Int -> Name -> Q [Dec]
@@ -49,8 +52,13 @@ genSubstSym' n typName = do
       { unaryOpFieldConfig =
           UnaryOpFieldConfig
             { extraPatNames = ["symbol", "newVal"],
+              extraLiftedPatNames = const [],
               fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \con _ exp -> return $ foldl AppE con exp
+              fieldCombineFun = \_ con extraPat exp ->
+                return (foldl AppE (ConE con) exp, False <$ extraPat),
+              fieldFunExp =
+                defaultFieldFunExp
+                  ['substSym, 'liftSubstSym, 'liftSubstSym2]
             },
         unaryOpInstanceNames =
           [''SubstSym, ''SubstSym1, ''SubstSym2],

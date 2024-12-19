@@ -14,13 +14,16 @@
 module Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig (..),
     UnaryOpFieldConfig (..),
+    FieldFunExp,
     defaultFieldResFun,
+    defaultFieldFunExp,
     genUnaryOpClause,
     genUnaryOpClass,
   )
 where
 
-import Control.Monad (replicateM, zipWithM)
+import Control.Monad (replicateM)
+import qualified Data.List as List
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
@@ -35,11 +38,14 @@ import Grisette.Internal.TH.GADT.Common
       ),
     checkArgs,
   )
+import Grisette.Internal.TH.Util (allUsedNames)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
     Dec (FunD, InstanceD),
-    Exp (ConE, VarE),
+    Exp
+      ( VarE
+      ),
     Name,
     Pat (VarP, WildP),
     Pred,
@@ -48,114 +54,139 @@ import Language.Haskell.TH
     appE,
     conP,
     conT,
+    nameBase,
     newName,
     varE,
     varP,
-    varT, nameBase,
+    varT,
   )
 import Language.Haskell.TH.Datatype
-  ( ConstructorInfo (constructorFields, constructorName),
+  ( ConstructorInfo (constructorFields, constructorName, constructorVariant),
+    ConstructorVariant,
     TypeSubstitution (freeVariables),
+    resolveTypeSynonyms,
     tvName,
   )
 import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_, tvKind)
 
-fieldFunExp :: [Name] -> Type -> M.Map Name Name -> Type -> Q Exp
-fieldFunExp unaryOpFunNames keptType argToFunPat ty = do
-  let allArgNames = M.keysSet argToFunPat
-  let typeHasNoArg ty =
-        S.fromList (freeVariables [ty]) `S.intersection` allArgNames == S.empty
-  let fun0 = varE $ head unaryOpFunNames
-  let fun1 b =
-        [|
-          $(varE $ unaryOpFunNames !! 1)
-            $(fieldFunExp unaryOpFunNames keptType argToFunPat b)
-          |]
-  let fun2 b c =
-        [|
-          $(varE $ unaryOpFunNames !! 2)
-            $(fieldFunExp unaryOpFunNames keptType argToFunPat b)
-            $(fieldFunExp unaryOpFunNames keptType argToFunPat c)
-          |]
-  let fun3 b c d =
-        [|
-          $(varE $ unaryOpFunNames !! 3)
-            $(fieldFunExp unaryOpFunNames keptType argToFunPat b)
-            $(fieldFunExp unaryOpFunNames keptType argToFunPat c)
-            $(fieldFunExp unaryOpFunNames keptType argToFunPat d)
-          |]
-  case ty of
-    AppT (AppT (AppT (VarT _) b) c) d -> fun3 b c d
-    AppT (AppT (VarT _) b) c -> fun2 b c
-    AppT (VarT _) b -> fun1 b
-    _ | typeHasNoArg ty -> fun0
-    AppT a b | typeHasNoArg a -> fun1 b
-    AppT (AppT a b) c | typeHasNoArg a -> fun2 b c
-    AppT (AppT (AppT a b) c) d | typeHasNoArg a -> fun3 b c d
-    VarT nm -> case M.lookup nm argToFunPat of
-      Just pname -> varE pname
-      _ -> fail $ "fieldFunExp: unsupported type: " <> show ty
-    _ -> fail $ "fieldFunExp: unsupported type: " <> show ty
+-- | Type of field function expression generator.
+type FieldFunExp = M.Map Name Name -> M.Map Name [Name] -> Type -> Q Exp
+
+-- | Default field function expression generator.
+defaultFieldFunExp :: [Name] -> FieldFunExp
+defaultFieldFunExp unaryOpFunNames argToFunPat _ = go
+  where
+    go ty = do
+      let allArgNames = M.keysSet argToFunPat
+      let typeHasNoArg ty =
+            S.fromList (freeVariables [ty])
+              `S.intersection` allArgNames
+              == S.empty
+      let fun0 = varE $ head unaryOpFunNames
+          fun1 b = [|$(varE $ unaryOpFunNames !! 1) $(go b)|]
+          fun2 b c = [|$(varE $ unaryOpFunNames !! 2) $(go b) $(go c)|]
+          fun3 b c d =
+            [|$(varE $ unaryOpFunNames !! 3) $(go b) $(go c) $(go d)|]
+      case ty of
+        AppT (AppT (AppT (VarT _) b) c) d -> fun3 b c d
+        AppT (AppT (VarT _) b) c -> fun2 b c
+        AppT (VarT _) b -> fun1 b
+        _ | typeHasNoArg ty -> fun0
+        AppT a b | typeHasNoArg a -> fun1 b
+        AppT (AppT a b) c | typeHasNoArg a -> fun2 b c
+        AppT (AppT (AppT a b) c) d | typeHasNoArg a -> fun3 b c d
+        VarT nm -> case M.lookup nm argToFunPat of
+          Just pname -> varE pname
+          _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
+        _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
+
+-- | Configuration for a unary function field expression generation on a GADT.
+data UnaryOpFieldConfig = UnaryOpFieldConfig
+  { extraPatNames :: [String],
+    extraLiftedPatNames :: Int -> [String],
+    fieldResFun ::
+      ConstructorVariant ->
+      Name ->
+      [Exp] ->
+      Int ->
+      Exp ->
+      Exp ->
+      Q (Exp, [Bool]),
+    fieldCombineFun ::
+      ConstructorVariant ->
+      Name ->
+      [Exp] ->
+      [Exp] ->
+      Q (Exp, [Bool]),
+    fieldFunExp :: FieldFunExp
+  }
+
+-- | Default field result function.
+defaultFieldResFun ::
+  ConstructorVariant -> Name -> [Exp] -> Int -> Exp -> Exp -> Q (Exp, [Bool])
+defaultFieldResFun _ _ extraPatExps _ fieldPatExp defaultFieldFunExp = do
+  res <-
+    appE
+      ( foldl
+          (\exp name -> appE exp (return name))
+          (return defaultFieldFunExp)
+          extraPatExps
+      )
+      (return fieldPatExp)
+  return (res, (True <$ extraPatExps))
 
 funPatAndExps ::
-  (M.Map Name Name -> Type -> Q Exp) -> [Name] -> [Type] -> Q ([Pat], [Exp])
-funPatAndExps fieldFunExpGen argTypes fields = do
+  FieldFunExp ->
+  (Int -> [String]) ->
+  [Name] ->
+  [Type] ->
+  Q ([Pat], [[Pat]], [Exp])
+funPatAndExps fieldFunExpGen extraLiftedPatNames argTypes fields = do
   let usedArgs = S.fromList $ freeVariables fields
+  let liftedNames = extraLiftedPatNames (length argTypes)
   args <-
     traverse
       ( \nm ->
           if S.member nm usedArgs
             then do
               pname <- newName "p"
-              return (nm, Just pname)
+              epname <- traverse newName liftedNames
+              return (nm, Just (pname, epname))
             else return (nm, Nothing)
       )
       argTypes
-  let argToFunPat = M.fromList $ mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) args
-  let funPats = fmap (maybe WildP VarP . snd) args
-  fieldFunExps <- traverse (fieldFunExpGen argToFunPat) fields
-  return (funPats, fieldFunExps)
-
--- | Configuration for a unary function field expression generation on a GADT.
-data UnaryOpFieldConfig = UnaryOpFieldConfig
-  { extraPatNames :: [String],
-    fieldResFun :: [Exp] -> [Exp] -> [Exp] -> Q [Exp],
-    fieldCombineFun :: Exp -> [Exp] -> [Exp] -> Q Exp
-  }
-
--- | Default field result function.
-defaultFieldResFun :: [Exp] -> [Exp] -> [Exp] -> Q [Exp]
-defaultFieldResFun extraPatExps fieldFunExps fieldPatExps =
-  zipWithM
-    ( \field fun ->
-        appE
-          ( foldl
-              (\exp name -> appE exp (return name))
-              (return fun)
-              extraPatExps
+  let argToFunPat =
+        M.fromList $ mapMaybe (\(nm, mpat) -> fmap ((nm,) . fst) mpat) args
+  let argToLiftedPat =
+        M.fromList $ mapMaybe (\(nm, mpat) -> fmap ((nm,) . snd) mpat) args
+  let funPats = fmap (maybe WildP (VarP . fst) . snd) args
+  let extraLiftedPats =
+        fmap
+          ( maybe
+              (replicate (length liftedNames) WildP)
+              (fmap VarP . snd)
+              . snd
           )
-          (return field)
-    )
-    fieldPatExps
-    fieldFunExps
+          args
+  defaultFieldFunExps <-
+    traverse
+      (fieldFunExpGen argToFunPat argToLiftedPat)
+      fields
+  return (funPats, extraLiftedPats, defaultFieldFunExps)
 
 -- | Generate a clause for a unary function on a GADT.
 genUnaryOpClause ::
-  [Name] ->
   UnaryOpFieldConfig ->
-  Type ->
   [Name] ->
   ConstructorInfo ->
   Q Clause
 genUnaryOpClause
-  unaryOpFunNames
   (UnaryOpFieldConfig {..})
-  keptType
   argTypes
   conInfo = do
-    let fields = constructorFields conInfo
-    (funPats, fieldFunExps) <-
-      funPatAndExps (fieldFunExp unaryOpFunNames keptType) argTypes fields
+    fields <- mapM resolveTypeSynonyms $ constructorFields conInfo
+    (funPats, funLiftedPats, defaultFieldFunExps) <-
+      funPatAndExps fieldFunExp extraLiftedPatNames argTypes fields
     extraPatNames <- traverse newName extraPatNames
     let extraPatExps = fmap VarE extraPatNames
     fieldsPatNames <- replicateM (length fields) $ newName "field"
@@ -163,14 +194,48 @@ genUnaryOpClause
     fieldPats <- conP (constructorName conInfo) (fmap varP fieldsPatNames)
     let fieldPatExps = fmap VarE fieldsPatNames
 
-    fieldResExps <- fieldResFun extraPatExps fieldFunExps fieldPatExps
+    fieldResExpsAndArgsUsed <-
+      sequence $
+        zipWith3
+          ( fieldResFun
+              (constructorVariant conInfo)
+              (constructorName conInfo)
+              extraPatExps
+          )
+          [0 ..]
+          fieldPatExps
+          defaultFieldFunExps
+    let fieldResExps = fst <$> fieldResExpsAndArgsUsed
+    let extraArgsUsedByFields = snd <$> fieldResExpsAndArgsUsed
 
-    resExp <-
+    (resExp, extraArgsUsedByResult) <-
       fieldCombineFun
-        (ConE (constructorName conInfo))
+        (constructorVariant conInfo)
+        (constructorName conInfo)
         (VarE <$> extraPatNames)
         fieldResExps
-    return $ Clause (funPats ++ extraPats ++ [fieldPats]) (NormalB resExp) []
+    let resUsedNames = allUsedNames resExp
+    let extraArgsUsed =
+          fmap or $
+            List.transpose $
+              extraArgsUsedByResult : extraArgsUsedByFields
+    let extraArgsPats =
+          zipWith
+            (\pat used -> if used then pat else WildP)
+            extraPats
+            extraArgsUsed
+    let transformPat (VarP nm) =
+          if S.member nm resUsedNames then VarP nm else WildP
+        transformPat p = p
+    return $
+      Clause
+        ( fmap transformPat $
+            concat (zipWith (:) funPats funLiftedPats)
+              ++ extraArgsPats
+              ++ [fieldPats]
+        )
+        (NormalB resExp)
+        []
 
 -- | Configuration for a unary operation type class generation on a GADT.
 data UnaryOpClassConfig = UnaryOpClassConfig
@@ -179,13 +244,43 @@ data UnaryOpClassConfig = UnaryOpClassConfig
     unaryOpFunNames :: [Name]
   }
 
+genUnaryOpFun ::
+  [Name] ->
+  UnaryOpFieldConfig ->
+  Int ->
+  [Name] ->
+  [ConstructorInfo] ->
+  Q Dec
+genUnaryOpFun
+  unaryOpFunNames
+  unaryOpFieldConfig
+  n
+  argNewNames
+  constructors = do
+    clauses <-
+      traverse
+        ( genUnaryOpClause
+            unaryOpFieldConfig
+            argNewNames
+        )
+        constructors
+    let instanceFunName = unaryOpFunNames !! n
+    return $ FunD instanceFunName clauses
+
 -- | Generate a unary operation type class instance for a GADT.
-genUnaryOpClass ::
+genUnaryOpClass' ::
+  ( [Name] ->
+    UnaryOpFieldConfig ->
+    Int ->
+    [Name] ->
+    [ConstructorInfo] ->
+    Q Dec
+  ) ->
   UnaryOpClassConfig ->
   Int ->
   Name ->
   Q [Dec]
-genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
+genUnaryOpClass' genUnaryOpFunFun (UnaryOpClassConfig {..}) n typName = do
   CheckArgsResult {..} <-
     checkArgs
       (nameBase $ head unaryOpInstanceNames)
@@ -207,13 +302,14 @@ genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
         _ -> return Nothing
   ctxs <- traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
   let keptType = foldl AppT (ConT typName) $ fmap VarT keptNewNames
-  clauses <-
-    traverse
-      (genUnaryOpClause unaryOpFunNames unaryOpFieldConfig keptType argNewNames)
+  instanceFun <-
+    genUnaryOpFunFun
+      unaryOpFunNames
+      unaryOpFieldConfig
+      n
+      argNewNames
       constructors
   let instanceType = AppT (ConT $ unaryOpInstanceNames !! n) keptType
-  let instanceFunName = unaryOpFunNames !! n
-  let instanceFun = FunD instanceFunName clauses
   return
     [ InstanceD
         Nothing
@@ -221,3 +317,7 @@ genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
         instanceType
         [instanceFun]
     ]
+
+-- | Generate a unary operation type class instance for a GADT.
+genUnaryOpClass :: UnaryOpClassConfig -> Int -> Name -> Q [Dec]
+genUnaryOpClass = genUnaryOpClass' genUnaryOpFun

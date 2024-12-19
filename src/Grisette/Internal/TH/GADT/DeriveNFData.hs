@@ -25,10 +25,13 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
+        extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
+        fieldFunExp,
         fieldResFun
       ),
+    defaultFieldFunExp,
     defaultFieldResFun,
     genUnaryOpClass,
   )
@@ -42,12 +45,18 @@ genNFData' n typName = do
       { unaryOpFieldConfig =
           UnaryOpFieldConfig
             { extraPatNames = [],
-              fieldCombineFun = \_ _ exps ->
-                foldl
-                  (\acc exp -> [|$acc `seq` $(return exp)|])
-                  ([|()|])
-                  exps,
-              fieldResFun = defaultFieldResFun
+              extraLiftedPatNames = const [],
+              fieldCombineFun = \_ _ _ exps -> do
+                r <-
+                  foldl
+                    (\acc exp -> [|$acc `seq` $(return exp)|])
+                    ([|()|])
+                    exps
+                return (r, []),
+              fieldResFun = defaultFieldResFun,
+              fieldFunExp =
+                defaultFieldFunExp
+                  ['rnf, 'liftRnf, 'liftRnf2]
             },
         unaryOpInstanceNames =
           [''NFData, ''NFData1, ''NFData2],

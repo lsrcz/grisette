@@ -36,16 +36,19 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
+        extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
+        fieldFunExp,
         fieldResFun
       ),
+    defaultFieldFunExp,
     defaultFieldResFun,
     genUnaryOpClass,
   )
 import Language.Haskell.TH
   ( Dec,
-    Exp (AppE),
+    Exp (AppE, ConE),
     Name,
     Q,
   )
@@ -57,8 +60,12 @@ genEvalSym' n typName = do
       { unaryOpFieldConfig =
           UnaryOpFieldConfig
             { extraPatNames = ["fillDefault", "model"],
+              extraLiftedPatNames = const [],
               fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \con _ exp -> return $ foldl AppE con exp
+              fieldCombineFun = \_ con extraPat exp -> do
+                return (foldl AppE (ConE con) exp, False <$ extraPat),
+              fieldFunExp =
+                defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2]
             },
         unaryOpInstanceNames =
           [''EvalSym, ''EvalSym1, ''EvalSym2],
