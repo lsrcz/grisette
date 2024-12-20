@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -24,10 +25,14 @@ module Grisette.Internal.TH.GADT.DeriveMergeable
   )
 where
 
+#if MIN_VERSION_template_haskell(2,18,0)
 import Control.Monad (foldM, replicateM, zipWithM)
+#else
+import Control.Monad (foldM, replicateM, unless, zipWithM)
+#endif
+
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, mapMaybe)
-import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as S
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
@@ -58,7 +63,7 @@ import Language.Haskell.TH
     Dec (DataD, FunD, InstanceD, SigD),
     Exp (AppE, ConE, VarE),
     Name,
-    Pat (SigP, VarP, WildP),
+    Pat (ConP, SigP, VarP, WildP),
     Pred,
     Q,
     SourceStrictness (NoSourceStrictness),
@@ -66,7 +71,6 @@ import Language.Haskell.TH
     Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),
     appE,
     conE,
-    conT,
     lamE,
     lookupTypeName,
     mkName,
@@ -112,146 +116,108 @@ genMergingInfoCon ::
 genMergingInfoCon dataTypeVars tyName isLast con = do
   let conName = nameBase $ constructorName con
   let newConName = mkName $ conName <> "MergingInfo"
-  if null (constructorFields con) && null dataTypeVars
-    then do
-      eqClause <-
-        clause
-          [conP newConName [], conP newConName []]
-          (normalB $ conE 'True)
-          []
-      cmpClause0 <-
-        clause
-          [conP newConName [], conP newConName []]
-          (normalB $ conE 'EQ)
-          []
-      cmpClause1 <-
-        clause
-          [conP newConName [], wildP]
-          (normalB $ conE 'LT)
-          []
-      cmpClause2 <-
-        clause
-          [wildP, conP newConName []]
-          (normalB $ conE 'GT)
-          []
-      let cmpClauses =
-            if isLast
-              then [cmpClause0]
-              else [cmpClause0, cmpClause1, cmpClause2]
-      let nameLit = litE $ stringL conName
-      let showExp = [|$nameLit <> " " <> show (Proxy @($(conT tyName)))|]
-      showClause <-
-        clause
-          [conP newConName []]
-          (normalB showExp)
-          []
-      return
-        ( GadtC [newConName] [] (ConT tyName),
-          newConName,
-          S.fromList [],
-          [eqClause],
-          cmpClauses,
-          [showClause]
+  let oriVars = dataTypeVars ++ constructorVars con
+  newDataTypeVars <- traverse (newName . nameBase . tvName) dataTypeVars
+  newConstructorVars <-
+    traverse (newName . nameBase . tvName) $ constructorVars con
+  let newNames = newDataTypeVars ++ newConstructorVars
+  -- newNames <- traverse (newName . nameBase . tvName) oriVars
+  let newVars = fmap VarT newNames
+  let substMap = M.fromList $ zip (tvName <$> oriVars) newVars
+  let fields =
+        zip [0 ..] $
+          applySubstitution substMap $
+            constructorFields con
+  let tyFields =
+        AppT (ConT ''TypeRep)
+          <$> applySubstitution
+            substMap
+            ((VarT . tvName) <$> constructorVars con)
+  let strategyFields = fmap (AppT (ConT ''MergingStrategy) . snd) fields
+  tyFieldNamesL <- traverse (const $ newName "p") tyFields
+  tyFieldNamesR <- traverse (const $ newName "p") tyFields
+  let tyFieldPatsL = fmap varP tyFieldNamesL
+  let tyFieldPatsR = fmap varP tyFieldNamesR
+  let tyFieldVarsL = fmap varE tyFieldNamesL
+  let tyFieldVarsR = fmap varE tyFieldNamesR
+  let strategyFieldPats = replicate (length strategyFields) wildP
+  let patsL = tyFieldPatsL ++ strategyFieldPats
+  let patsR = tyFieldPatsR ++ strategyFieldPats
+  let allWildcards = fmap (const wildP) $ tyFieldPatsL ++ strategyFieldPats
+  let eqCont l r cont =
+        [|
+          SomeTypeRep $l == SomeTypeRep $r
+            && $cont
+          |]
+  let eqExp =
+        foldl (\cont (l, r) -> eqCont l r cont) (conE 'True) $
+          zip tyFieldVarsL tyFieldVarsR
+  eqClause <-
+    clause
+      [conP newConName patsL, conP newConName patsR]
+      (normalB eqExp)
+      []
+  let cmpCont l r cont =
+        [|
+          case SomeTypeRep $l `compare` SomeTypeRep $r of
+            EQ -> $cont
+            x -> x
+          |]
+  let cmpExp =
+        foldl (\cont (l, r) -> cmpCont l r cont) (conE 'EQ) $
+          zip tyFieldVarsL tyFieldVarsR
+  cmpClause0 <-
+    clause
+      [conP newConName patsL, conP newConName patsR]
+      (normalB cmpExp)
+      []
+  cmpClause1 <-
+    clause
+      [conP newConName allWildcards, wildP]
+      (normalB $ conE 'LT)
+      []
+  cmpClause2 <-
+    clause
+      [wildP, conP newConName allWildcards]
+      (normalB $ conE 'GT)
+      []
+  let cmpClauses =
+        if isLast
+          then [cmpClause0]
+          else [cmpClause0, cmpClause1, cmpClause2]
+  let showCont t cont =
+        [|$cont <> " " <> show $t|]
+  let showExp = foldl (flip showCont) (litE $ stringL conName) tyFieldVarsL
+  showClause <-
+    clause
+      [conP newConName patsL]
+      (normalB showExp)
+      []
+  let ctx = applySubstitution substMap $ constructorContext con
+  let ctxAndGadtUsedVars =
+        S.fromList (freeVariables ctx)
+          <> S.fromList (freeVariables tyFields)
+          <> S.fromList (freeVariables strategyFields)
+  let isCtxAndGadtUsedVar nm = S.member nm ctxAndGadtUsedVars
+  return
+    ( ForallC
+        ( (`plainTVFlag` specifiedSpec)
+            <$> filter isCtxAndGadtUsedVar newDataTypeVars ++ newConstructorVars
         )
-    else do
-      let oriVars = dataTypeVars ++ constructorVars con
-      newNames <- traverse (newName . nameBase . tvName) oriVars
-      let newVars = fmap VarT newNames
-      let substMap = M.fromList $ zip (tvName <$> oriVars) newVars
-      let fields =
-            zip [0 ..] $
-              applySubstitution substMap $
-                constructorFields con
-      let tyFields =
-            AppT (ConT ''TypeRep)
-              <$> applySubstitution
-                substMap
-                ((VarT . tvName) <$> constructorVars con)
-      let strategyFields = fmap (AppT (ConT ''MergingStrategy) . snd) fields
-      tyFieldNamesL <- traverse (const $ newName "p") tyFields
-      tyFieldNamesR <- traverse (const $ newName "p") tyFields
-      let tyFieldPatsL = fmap varP tyFieldNamesL
-      let tyFieldPatsR = fmap varP tyFieldNamesR
-      let tyFieldVarsL = fmap varE tyFieldNamesL
-      let tyFieldVarsR = fmap varE tyFieldNamesR
-      let strategyFieldPats = replicate (length strategyFields) wildP
-      let patsL = tyFieldPatsL ++ strategyFieldPats
-      let patsR = tyFieldPatsR ++ strategyFieldPats
-      let allWildcards = fmap (const wildP) $ tyFieldPatsL ++ strategyFieldPats
-      let eqCont l r cont =
-            [|
-              SomeTypeRep $l == SomeTypeRep $r
-                && $cont
-              |]
-      let eqExp =
-            foldl (\cont (l, r) -> eqCont l r cont) (conE 'True) $
-              zip tyFieldVarsL tyFieldVarsR
-      eqClause <-
-        clause
-          [conP newConName patsL, conP newConName patsR]
-          (normalB eqExp)
-          []
-      let cmpCont l r cont =
-            [|
-              case SomeTypeRep $l `compare` SomeTypeRep $r of
-                EQ -> $cont
-                x -> x
-              |]
-      let cmpExp =
-            foldl (\cont (l, r) -> cmpCont l r cont) (conE 'EQ) $
-              zip tyFieldVarsL tyFieldVarsR
-      cmpClause0 <-
-        clause
-          [conP newConName patsL, conP newConName patsR]
-          (normalB cmpExp)
-          []
-      cmpClause1 <-
-        clause
-          [conP newConName allWildcards, wildP]
-          (normalB $ conE 'LT)
-          []
-      cmpClause2 <-
-        clause
-          [wildP, conP newConName allWildcards]
-          (normalB $ conE 'GT)
-          []
-      let cmpClauses =
-            if isLast
-              then [cmpClause0]
-              else [cmpClause0, cmpClause1, cmpClause2]
-      let showCont t cont =
-            [|$cont <> " " <> show $t|]
-      let showExp = foldl (flip showCont) (litE $ stringL conName) tyFieldVarsL
-      showClause <-
-        clause
-          [conP newConName patsL]
-          (normalB showExp)
-          []
-      let ctx = applySubstitution substMap $ constructorContext con
-      let ctxAndGadtUsedVars =
-            S.fromList (freeVariables ctx)
-              <> S.fromList (freeVariables tyFields)
-              <> S.fromList (freeVariables strategyFields)
-      let isCtxAndGadtUsedVar nm = S.member nm ctxAndGadtUsedVars
-      return
-        ( ForallC
-            ( (`plainTVFlag` specifiedSpec)
-                <$> filter isCtxAndGadtUsedVar newNames
-            )
-            ctx
-            $ GadtC
-              [newConName]
-              ( (Bang NoSourceUnpackedness NoSourceStrictness,)
-                  <$> tyFields ++ strategyFields
-              )
-              (ConT tyName),
-          newConName,
-          S.fromList [0 .. length tyFields - 1],
-          -- S.fromList $ fst <$> dedupedFields,
-          [eqClause],
-          cmpClauses,
-          [showClause]
-        )
+        ctx
+        $ GadtC
+          [newConName]
+          ( (Bang NoSourceUnpackedness NoSourceStrictness,)
+              <$> tyFields ++ strategyFields
+          )
+          (ConT tyName),
+      newConName,
+      S.fromList [0 .. length tyFields - 1],
+      -- S.fromList $ fst <$> dedupedFields,
+      [eqClause],
+      cmpClauses,
+      [showClause]
+    )
 
 data MergingInfoResult = MergingInfoResult
   { _infoName :: Name,
@@ -332,12 +298,11 @@ genMergeFunClause' :: Name -> ConstructorInfo -> Q Clause
 genMergeFunClause' conInfoName con = do
   let numExistential = length $ constructorVars con
   let numFields = length $ constructorFields con
-  let argWildCards = replicate numExistential wildP
+  let argWildCards = replicate numExistential wildP :: [Q Pat]
   case numFields of
     0 -> do
-      let pat = conP conInfoName []
       clause
-        (argWildCards ++ [pat])
+        [conP conInfoName argWildCards]
         (normalB [|SimpleStrategy $ \_ t _ -> t|])
         []
     1 -> do
@@ -398,24 +363,52 @@ genMergeFunClause' conInfoName con = do
         )
         []
 
+#if MIN_VERSION_template_haskell(2,18,0)
+constructVarPats :: S.Set Int -> ConstructorInfo -> Q Pat
+constructVarPats pos conInfo = do
+  let fields = constructorFields conInfo
+      capture n =
+        if S.member n pos
+          then do
+            SigP WildP $ fields !! n
+          else WildP
+  let existentialVars = tvName <$> constructorVars conInfo
+  return $
+    ConP (constructorName conInfo) (VarT <$> existentialVars) $
+      capture <$> [0 .. length fields - 1]
+#else
+constructVarPats pos conInfo = do
+  let fields = constructorFields conInfo
+      capture n =
+        if S.member n pos
+          then do
+            SigP WildP $ fields !! n
+          else WildP
+  let existentialVars = tvName <$> constructorVars conInfo
+  let fieldReferencedVars = freeVariables fields
+  let notReferencedVars =
+        S.fromList existentialVars S.\\ S.fromList fieldReferencedVars
+  unless (null notReferencedVars) $
+    fail $
+      "Ambiguous existential variable in the constructor: "
+        <> show (constructorName conInfo)
+        <> ", this is supported only with GHC >= 9.2."
+  return $
+    ConP (constructorName conInfo) $
+      capture <$> [0 .. length fields - 1]
+#endif
+
 genMergingInfoFunClause' ::
   [Name] -> Name -> S.Set Int -> ConstructorInfo -> Q Clause
 genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
-  let conName = constructorName oldCon
   let oldConVars = constructorVars oldCon
   newNames <- traverse (newName . nameBase . tvName) oldConVars
   let substMap = M.fromList $ zip (tvName <$> oldConVars) (VarT <$> newNames)
   let con = applySubstitution substMap oldCon
   let conVars = constructorVars con
-  let fields = constructorFields con
-  let capture n =
-        if S.member n pos
-          then do
-            return (SigP WildP $ fields !! n)
-          else return (WildP)
   capturedVarTyReps <-
     traverse (\bndr -> [|typeRep @($(varT $ tvName bndr))|]) conVars
-  varPat <- conP conName $ capture <$> [0 .. length (constructorFields con) - 1]
+  varPat <- constructVarPats pos con
   let infoExpWithTypeReps = foldl AppE (ConE conInfoName) capturedVarTyReps
 
   let fields = constructorFields con
