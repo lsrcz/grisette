@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -17,6 +19,11 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -ddump-splices #-}
+
+#if MIN_VERSION_base(4,17,0)
+{-# LANGUAGE TypeAbstractions #-}
+#endif
 
 module Grisette.Core.TH.DerivationTest
   ( concreteT,
@@ -61,6 +68,7 @@ import Grisette
     PPrint (pformat, pformatPrec),
     PPrint1,
     PPrint2,
+    PlainUnion (toGuardedList),
     SubstSym,
     SubstSym1,
     SubstSym2,
@@ -73,12 +81,15 @@ import Grisette
     deriveAll,
     deriveGADT,
     docToTextWithWidth,
+    mrgIf,
     pformatPrec1,
     pformatPrec2,
   )
 import Grisette.Unified (EvalModeTag (C, S), GetBool, GetData, GetWordN)
 import Test.Framework (Test, testGroup)
+import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.HUnit ((@?=))
 import Test.QuickCheck (Arbitrary, oneof, (.&.), (===))
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
@@ -107,6 +118,10 @@ data IdenticalFields mode n = IdenticalFields
   }
 
 deriveAll ''IdenticalFields
+
+data Basic = Basic0 | Basic1 Int | Basic2 String [Int]
+
+deriveGADT ''Basic [''Mergeable]
 
 data Expr f a where
   I :: SymInteger -> Expr f SymInteger
@@ -252,48 +267,72 @@ replaceVVVShown =
 
 deriving instance (Show a, Show b) => Show (VVV a b)
 
+#if MIN_VERSION_base(4,17,0)
+data Ambiguous where
+  Ambiguous :: forall a. (BasicSymPrim a) => Ambiguous
+
+deriveGADT ''Ambiguous [''Mergeable, ''Show, ''PPrint]
+
+extraTest :: [Test]
+extraTest =
+  [ testCase "Ambiguous existential variable" $ do
+      let a = Ambiguous @SymInteger :: Ambiguous
+      let b = Ambiguous @SymBool :: Ambiguous
+      let different =
+            toGuardedList (mrgIf "a" (return a) (return b) :: Union Ambiguous)
+      let same =
+            toGuardedList (mrgIf "a" (return a) (return a) :: Union Ambiguous)
+      length different @?= 2
+      length same @?= 1
+  ]
+#else
+extraTest :: [Test]
+extraTest = []
+#endif
+
 derivationTest :: Test
 derivationTest =
   testGroup
     "Derivation"
-    [ testProperty "GADT Show instance for regular types" $
-        \(g :: GGG (GGG Int String) [Int]) ->
-          let v = gggToVVV g
-           in replaceVVVShown (T.pack (show g))
-                === replaceVVVShown (T.pack (show v)),
-      testProperty "GADT Show and Show1 are consistent" $
-        \(g :: GGG (GGG Char String) [Int]) ->
-          T.pack (show g) === T.pack (showsPrec1 0 g "")
-            .&. T.pack (showsPrec 11 g "") === T.pack (showsPrec1 11 g ""),
-      testProperty "GADT Show and Show2 are consistent" $
-        \(g :: GGG (GGG Char String) [Int]) ->
-          T.pack (show g) === T.pack (showsPrec2 0 g "")
-            .&. T.pack (showsPrec 11 g "") === T.pack (showsPrec2 11 g ""),
-      testProperty "GADT PPrint instance for regular types" $
-        \(g :: GGG (GGG Int String) [Int]) ->
-          let v = gggToVVV g
-           in replaceVVVShown (docToTextWithWidth 1000 (pformat g))
-                === replaceVVVShown (docToTextWithWidth 1000 (pformat v))
-                .&. replaceVVVShown (docToTextWithWidth 0 (pformat g))
-                  === replaceVVVShown (docToTextWithWidth 0 (pformat v)),
-      testProperty "GADT PPrint and PPrint1 are consistent" $
-        \(g :: GGG (GGG Char String) [Int]) ->
-          docToTextWithWidth 1000 (pformatPrec 0 g)
-            === docToTextWithWidth 1000 (pformatPrec1 0 g)
-            .&. docToTextWithWidth 1000 (pformatPrec 11 g)
-              === docToTextWithWidth 1000 (pformatPrec1 11 g)
-            .&. docToTextWithWidth 0 (pformatPrec 0 g)
-              === docToTextWithWidth 0 (pformatPrec1 0 g)
-            .&. docToTextWithWidth 0 (pformatPrec 11 g)
-              === docToTextWithWidth 0 (pformatPrec1 11 g),
-      testProperty "GADT PPrint and PPrint2 are consistent" $
-        \(g :: GGG (GGG Char String) [Int]) ->
-          docToTextWithWidth 1000 (pformatPrec 0 g)
-            === docToTextWithWidth 1000 (pformatPrec2 0 g)
-            .&. docToTextWithWidth 1000 (pformatPrec 11 g)
-              === docToTextWithWidth 1000 (pformatPrec2 11 g)
-            .&. docToTextWithWidth 0 (pformatPrec 0 g)
-              === docToTextWithWidth 0 (pformatPrec2 0 g)
-            .&. docToTextWithWidth 0 (pformatPrec 11 g)
-              === docToTextWithWidth 0 (pformatPrec2 11 g)
-    ]
+    $ [ testProperty "GADT Show instance for regular types" $
+          \(g :: GGG (GGG Int String) [Int]) ->
+            let v = gggToVVV g
+             in replaceVVVShown (T.pack (show g))
+                  === replaceVVVShown (T.pack (show v)),
+        testProperty "GADT Show and Show1 are consistent" $
+          \(g :: GGG (GGG Char String) [Int]) ->
+            T.pack (show g) === T.pack (showsPrec1 0 g "")
+              .&. T.pack (showsPrec 11 g "") === T.pack (showsPrec1 11 g ""),
+        testProperty "GADT Show and Show2 are consistent" $
+          \(g :: GGG (GGG Char String) [Int]) ->
+            T.pack (show g) === T.pack (showsPrec2 0 g "")
+              .&. T.pack (showsPrec 11 g "") === T.pack (showsPrec2 11 g ""),
+        testProperty "GADT PPrint instance for regular types" $
+          \(g :: GGG (GGG Int String) [Int]) ->
+            let v = gggToVVV g
+             in replaceVVVShown (docToTextWithWidth 1000 (pformat g))
+                  === replaceVVVShown (docToTextWithWidth 1000 (pformat v))
+                  .&. replaceVVVShown (docToTextWithWidth 0 (pformat g))
+                    === replaceVVVShown (docToTextWithWidth 0 (pformat v)),
+        testProperty "GADT PPrint and PPrint1 are consistent" $
+          \(g :: GGG (GGG Char String) [Int]) ->
+            docToTextWithWidth 1000 (pformatPrec 0 g)
+              === docToTextWithWidth 1000 (pformatPrec1 0 g)
+              .&. docToTextWithWidth 1000 (pformatPrec 11 g)
+                === docToTextWithWidth 1000 (pformatPrec1 11 g)
+              .&. docToTextWithWidth 0 (pformatPrec 0 g)
+                === docToTextWithWidth 0 (pformatPrec1 0 g)
+              .&. docToTextWithWidth 0 (pformatPrec 11 g)
+                === docToTextWithWidth 0 (pformatPrec1 11 g),
+        testProperty "GADT PPrint and PPrint2 are consistent" $
+          \(g :: GGG (GGG Char String) [Int]) ->
+            docToTextWithWidth 1000 (pformatPrec 0 g)
+              === docToTextWithWidth 1000 (pformatPrec2 0 g)
+              .&. docToTextWithWidth 1000 (pformatPrec 11 g)
+                === docToTextWithWidth 1000 (pformatPrec2 11 g)
+              .&. docToTextWithWidth 0 (pformatPrec 0 g)
+                === docToTextWithWidth 0 (pformatPrec2 0 g)
+              .&. docToTextWithWidth 0 (pformatPrec 11 g)
+                === docToTextWithWidth 0 (pformatPrec2 11 g)
+      ]
+      ++ extraTest
