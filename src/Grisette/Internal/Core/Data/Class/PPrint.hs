@@ -95,6 +95,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Proxy (Proxy)
 import Data.Ratio (Ratio, denominator, numerator)
 import Data.String (IsString (fromString))
 import qualified Data.Text as T
@@ -571,6 +572,14 @@ FORMAT_SIMPLE(Monoid.Any)
 FORMAT_SIMPLE(Ordering)
 FORMAT_SIMPLE(AlgReal)
 #endif
+
+instance PPrint (Proxy a) where
+  pformatPrec _ _ = "Proxy"
+  {-# INLINE pformatPrec #-}
+
+instance PPrint1 Proxy where
+  liftPFormatPrec _ _ _ _ = "Proxy"
+  {-# INLINE liftPFormatPrec #-}
 
 instance (PPrint a) => PPrint (Ratio a) where
   pformatPrec p r =

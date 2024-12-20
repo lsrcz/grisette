@@ -61,6 +61,7 @@ import Data.Kind (Type)
 import Data.Maybe (fromJust)
 import Data.Monoid (Alt, Ap)
 import Data.Ord (Down)
+import Data.Proxy (Proxy)
 import Data.Ratio (Ratio, denominator, numerator, (%))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -356,6 +357,14 @@ CONCRETE_EVALUATESYM_BV(IntN)
 CONCRETE_EVALUATESYM_BV(WordN)
 CONCRETE_EVALUATESYM(AlgReal)
 #endif
+
+instance EvalSym (Proxy a) where
+  evalSym _ _ = id
+  {-# INLINE evalSym #-}
+
+instance EvalSym1 Proxy where
+  liftEvalSym _ _ _ = id
+  {-# INLINE liftEvalSym #-}
 
 instance (Integral a, EvalSym a) => EvalSym (Ratio a) where
   evalSym fillDefault model r =

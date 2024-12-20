@@ -57,6 +57,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Proxy (Proxy)
 import Data.Ratio (Ratio, denominator, numerator, (%))
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -335,6 +336,14 @@ CONCRETE_SUBSTITUTESYM_BV(IntN)
 CONCRETE_SUBSTITUTESYM(FPRoundingMode)
 CONCRETE_SUBSTITUTESYM(AlgReal)
 #endif
+
+instance SubstSym (Proxy a) where
+  substSym _ _ = id
+  {-# INLINE substSym #-}
+
+instance SubstSym1 Proxy where
+  liftSubstSym _ _ _ = id
+  {-# INLINE liftSubstSym #-}
 
 instance (Integral a, SubstSym a) => SubstSym (Ratio a) where
   substSym sym val a =

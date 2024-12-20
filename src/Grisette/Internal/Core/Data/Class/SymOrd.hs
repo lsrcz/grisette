@@ -63,6 +63,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap)
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down (Down))
+import Data.Proxy (Proxy)
 import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
 import Data.Word (Word16, Word32, Word64, Word8)
@@ -429,6 +430,22 @@ CONCRETE_SORD_BV(WordN)
 CONCRETE_SORD_BV(IntN)
 CONCRETE_SORD(AlgReal)
 #endif
+
+instance SymOrd (Proxy a) where
+  _ .<= _ = con True
+  {-# INLINE (.<=) #-}
+  _ .< _ = con False
+  {-# INLINE (.<) #-}
+  _ .>= _ = con True
+  {-# INLINE (.>=) #-}
+  _ .> _ = con False
+  {-# INLINE (.>) #-}
+  symCompare _ _ = mrgSingle EQ
+  {-# INLINE symCompare #-}
+
+instance SymOrd1 Proxy where
+  liftSymCompare _ _ _ = mrgSingle EQ
+  {-# INLINE liftSymCompare #-}
 
 instance (SymOrd a, Integral a) => SymOrd (Ratio a) where
   a .<= b = numerator a * denominator b .<= numerator b * denominator a

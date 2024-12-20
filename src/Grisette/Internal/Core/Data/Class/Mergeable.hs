@@ -102,7 +102,8 @@ import Data.Ord (Down)
 import Data.Ratio (Ratio)
 import qualified Data.Text as T
 import Data.Typeable
-  ( Typeable,
+  ( Proxy,
+    Typeable,
     eqT,
     type (:~:) (Refl),
   )
@@ -591,6 +592,13 @@ CONCRETE_ORD_MERGEABLE(Ordering)
 CONCRETE_ORD_MERGEABLE_BV(WordN)
 CONCRETE_ORD_MERGEABLE_BV(IntN)
 #endif
+
+instance Mergeable (Proxy a) where
+  rootStrategy = SimpleStrategy $ \_ t _ -> t
+
+instance Mergeable1 Proxy where
+  liftRootStrategy _ = SimpleStrategy $ \_ t _ -> t
+  {-# INLINE liftRootStrategy #-}
 
 instance (Integral a, Typeable a, Show a) => Mergeable (Ratio a) where
   rootStrategy =

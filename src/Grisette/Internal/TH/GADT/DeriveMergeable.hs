@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -25,12 +24,7 @@ module Grisette.Internal.TH.GADT.DeriveMergeable
   )
 where
 
-#if MIN_VERSION_template_haskell(2,18,0)
 import Control.Monad (foldM, replicateM, zipWithM)
-#else
-import Control.Monad (foldM, replicateM, unless, zipWithM)
-#endif
-
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, mapMaybe)
 import qualified Data.Set as S
@@ -63,7 +57,7 @@ import Language.Haskell.TH
     Dec (DataD, FunD, InstanceD, SigD),
     Exp (AppE, ConE, VarE),
     Name,
-    Pat (ConP, SigP, VarP, WildP),
+    Pat (SigP, VarP, WildP),
     Pred,
     Q,
     SourceStrictness (NoSourceStrictness),
@@ -363,48 +357,19 @@ genMergeFunClause' conInfoName con = do
         )
         []
 
-#if MIN_VERSION_template_haskell(2,18,0)
 constructVarPats :: S.Set Int -> ConstructorInfo -> Q Pat
 constructVarPats pos conInfo = do
   let fields = constructorFields conInfo
       capture n =
         if S.member n pos
           then do
-            SigP WildP $ fields !! n
-          else WildP
-  let existentialVars = tvName <$> constructorVars conInfo
-  return $
-    ConP (constructorName conInfo) (VarT <$> existentialVars) $
-      capture <$> [0 .. length fields - 1]
-#else
-constructVarPats pos conInfo = do
-  let fields = constructorFields conInfo
-      capture n =
-        if S.member n pos
-          then do
-            SigP WildP $ fields !! n
-          else WildP
-  let existentialVars = tvName <$> constructorVars conInfo
-  let fieldReferencedVars = freeVariables fields
-  let notReferencedVars =
-        S.fromList existentialVars S.\\ S.fromList fieldReferencedVars
-  unless (null notReferencedVars) $
-    fail $
-      "Ambiguous existential variable in the constructor: "
-        <> show (constructorName conInfo)
-        <> ", this is supported only with GHC >= 9.2."
-  return $
-    ConP (constructorName conInfo) $
-      capture <$> [0 .. length fields - 1]
-#endif
+            return $ SigP WildP $ fields !! n
+          else wildP
+  conP (constructorName conInfo) $ capture <$> [0 .. length fields - 1]
 
 genMergingInfoFunClause' ::
   [Name] -> Name -> S.Set Int -> ConstructorInfo -> Q Clause
-genMergingInfoFunClause' argTypes conInfoName pos oldCon = do
-  let oldConVars = constructorVars oldCon
-  newNames <- traverse (newName . nameBase . tvName) oldConVars
-  let substMap = M.fromList $ zip (tvName <$> oldConVars) (VarT <$> newNames)
-  let con = applySubstitution substMap oldCon
+genMergingInfoFunClause' argTypes conInfoName pos con = do
   let conVars = constructorVars con
   capturedVarTyReps <-
     traverse (\bndr -> [|typeRep @($(varT $ tvName bndr))|]) conVars

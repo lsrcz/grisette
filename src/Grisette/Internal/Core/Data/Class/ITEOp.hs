@@ -21,9 +21,14 @@ where
 
 import Control.Monad.Identity (Identity (Identity))
 import qualified Data.HashSet as HS
+import Data.Proxy (Proxy)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.FP (ValidFP)
-import Grisette.Internal.SymPrim.GeneralFun (freshArgSymbol, substTerm, type (-->) (GeneralFun))
+import Grisette.Internal.SymPrim.GeneralFun
+  ( freshArgSymbol,
+    substTerm,
+    type (-->) (GeneralFun),
+  )
 import Grisette.Internal.SymPrim.Prim.SomeTerm (SomeTerm (SomeTerm))
 import Grisette.Internal.SymPrim.Prim.Term
   ( SupportedPrim (pevalITETerm),
@@ -108,4 +113,8 @@ instance (ValidFP eb sb) => ITEOp (SymFP eb sb) where
 
 instance (ITEOp v) => ITEOp (Identity v) where
   symIte c (Identity t) (Identity f) = Identity $ symIte c t f
+  {-# INLINE symIte #-}
+
+instance ITEOp (Proxy a) where
+  symIte _ l _ = l
   {-# INLINE symIte #-}
