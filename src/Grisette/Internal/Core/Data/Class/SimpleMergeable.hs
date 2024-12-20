@@ -66,6 +66,7 @@ import Data.Kind (Type)
 import Data.Monoid (Alt, Ap, Endo (Endo))
 import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
+import Data.Proxy (Proxy)
 import GHC.Generics
   ( Generic (Rep, from, to),
     Generic1 (Rep1, from1, to1),
@@ -389,6 +390,14 @@ deriveBuiltins
     ''Monoid.Product,
     ''Down
   ]
+
+instance SimpleMergeable (Proxy a) where
+  mrgIte _ l _ = l
+  {-# INLINE mrgIte #-}
+
+instance SimpleMergeable1 Proxy where
+  liftMrgIte _ _ l _ = l
+  {-# INLINE liftMrgIte #-}
 
 instance SimpleMergeable2 (,) where
   liftMrgIte2 ma mb cond (a1, b1) (a2, b2) = (ma cond a1 a2, mb cond b1 b2)

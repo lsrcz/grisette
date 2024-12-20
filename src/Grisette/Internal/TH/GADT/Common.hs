@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- |
@@ -104,6 +105,22 @@ checkArgs clsName maxArgNum typName allowExistential n = do
                 <> " has existential variables"
       )
       constructors
+  mapM_
+    ( \c -> do
+        let fields = constructorFields c
+        let existentialVars = tvName <$> constructorVars c
+        let fieldReferencedVars = freeVariables fields
+        let notReferencedVars =
+              S.fromList existentialVars S.\\ S.fromList fieldReferencedVars
+        unless (null notReferencedVars) $
+          fail $
+            "Ambiguous existential variable in the constructor: "
+              <> show (constructorName c)
+              <> ", this is not supported. Please consider binding the "
+              <> "existential variable to a field. You can use Proxy type to "
+              <> "do this."
+    )
+    constructors
   let allFields = concatMap constructorFields constructors
   let allFieldsFreeVars = S.fromList $ freeVariables allFields
   let isVarUsedInFields var = S.member var allFieldsFreeVars

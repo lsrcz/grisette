@@ -64,7 +64,7 @@ import qualified Data.Monoid as Monoid
 import Data.Ord (Down)
 import Data.Ratio (Ratio, denominator, numerator)
 import qualified Data.Text as T
-import Data.Typeable (type (:~~:) (HRefl))
+import Data.Typeable (Proxy, type (:~~:) (HRefl))
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Generics.Deriving
@@ -341,6 +341,14 @@ CONCRETE_EXTRACT_SYMBOLICS_BV(WordN)
 CONCRETE_EXTRACT_SYMBOLICS_BV(IntN)
 CONCRETE_EXTRACT_SYMBOLICS(AlgReal)
 #endif
+
+instance ExtractSym (Proxy a) where
+  extractSymMaybe _ = return mempty
+  {-# INLINE extractSymMaybe #-}
+
+instance ExtractSym1 Proxy where
+  liftExtractSymMaybe _ _ = return mempty
+  {-# INLINE liftExtractSymMaybe #-}
 
 instance (ExtractSym a) => ExtractSym (Ratio a) where
   extractSymMaybe a =
