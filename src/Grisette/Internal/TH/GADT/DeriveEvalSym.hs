@@ -30,7 +30,6 @@ import Grisette.Internal.Core.Data.Class.EvalSym
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpAllowExistential,
         unaryOpFieldConfigs,
         unaryOpInstanceNames
       ),
@@ -71,8 +70,7 @@ genEvalSym' n typName = do
               }
           ],
         unaryOpInstanceNames =
-          [''EvalSym, ''EvalSym1, ''EvalSym2],
-        unaryOpAllowExistential = True
+          [''EvalSym, ''EvalSym1, ''EvalSym2]
       }
     n
     typName

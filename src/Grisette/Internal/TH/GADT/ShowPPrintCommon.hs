@@ -1,5 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.ShowPPrintCommon
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp) where
 
 import qualified Data.Map as M
@@ -8,6 +16,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon (FieldFunExp)
 import Language.Haskell.TH (Name, Type (AppT, VarT), varE)
 import Language.Haskell.TH.Datatype (TypeSubstitution (freeVariables))
 
+-- | Common 'FieldFunExp' for 'Show' and 'Grisette.Core.PPrint' on a GADT.
 showPrintFieldFunExp :: [Name] -> [Name] -> FieldFunExp
 showPrintFieldFunExp precNames listNames argToFunPat liftedExps = go
   where

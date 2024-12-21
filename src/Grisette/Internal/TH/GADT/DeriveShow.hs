@@ -28,7 +28,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpFieldConfigs,
-        unaryOpInstanceNames, unaryOpAllowExistential
+        unaryOpInstanceNames
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -171,8 +171,7 @@ showConfig =
                 ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
             }
         ],
-      unaryOpInstanceNames = [''Show, ''Show1, ''Show2],
-      unaryOpAllowExistential = True
+      unaryOpInstanceNames = [''Show, ''Show1, ''Show2]
     }
 
 -- | Derive 'Show' instance for a GADT.

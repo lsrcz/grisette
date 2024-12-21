@@ -94,8 +94,6 @@ type IntUExpr = UExpr SymInteger
 
 type BoolUExpr = UExpr SymBool
 
-deriving instance Show (Expr a)
-
 -- The `deriveGADTAll` and `makeSmartCtor` functions are provided by Grisette
 -- to automatically derive some instances and construct some smart constructors
 -- for the GADT.

@@ -32,7 +32,9 @@ import Control.DeepSeq (NFData, NFData1, NFData2)
 import Control.Monad.Identity (Identity (Identity))
 import Data.Functor.Classes
   ( Eq1 (liftEq),
-    Eq2 (liftEq2),
+    Eq2,
+    Ord1,
+    Ord2,
     Show1,
     Show2,
     showsPrec1,
@@ -62,11 +64,18 @@ import Grisette
     PPrint (pformat, pformatPrec),
     PPrint1,
     PPrint2,
+    Solvable (con),
     SubstSym,
     SubstSym1,
     SubstSym2,
     SymBool,
+    SymEq ((.==)),
+    SymEq1,
+    SymEq2,
     SymInteger,
+    SymOrd (symCompare),
+    SymOrd1,
+    SymOrd2,
     ToCon (toCon),
     ToSym (toSym),
     Union,
@@ -74,8 +83,13 @@ import Grisette
     deriveAll,
     deriveGADT,
     docToTextWithWidth,
+    mrgSingle,
     pformatPrec1,
     pformatPrec2,
+    symCompare1,
+    symCompare2,
+    symEq1,
+    symEq2,
   )
 import Grisette.Unified (EvalModeTag (C, S), GetBool, GetData, GetWordN)
 import Test.Framework (Test, testGroup)
@@ -118,21 +132,41 @@ data Expr f a where
   B :: SymBool -> Expr f SymBool
   Add :: Union (Expr f SymInteger) -> Union (Expr f SymInteger) -> Expr f SymInteger
   Mul :: Union (Expr f SymInteger) -> Union (Expr f SymInteger) -> Expr f SymInteger
-  Eq :: (BasicSymPrim a, Typeable a) => Union (Expr f a) -> Union (Expr f a) -> Expr f SymBool
+  Eq :: (BasicSymPrim a) => Union (Expr f a) -> Union (Expr f a) -> Expr f SymBool
   Eq3 ::
-    (BasicSymPrim a, Typeable b) =>
+    (BasicSymPrim a) =>
     Union (Expr f a) ->
     Union (Expr f a) ->
     Union (Expr f b) ->
     Union (Expr f b) ->
     Expr f b
+  WExpr ::
+    (BasicSymPrim a, BasicSymPrim b, BasicSymPrim c) =>
+    a ->
+    b ->
+    c ->
+    d ->
+    Expr f d
   XExpr :: f a -> Expr f a
-
-instance (Eq1 f, Eq a) => Eq (Expr f a) where
-  (==) = undefined
-
-instance (Eq1 f) => Eq1 (Expr f) where
-  liftEq = undefined
+  YExpr :: (BasicSymPrim a) => f a -> Expr f (f a)
+  ZExpr ::
+    ( AllSyms1 f,
+      Mergeable1 f,
+      Eq1 f,
+      EvalSym1 f,
+      ExtractSym1 f,
+      SubstSym1 f,
+      NFData1 f,
+      PPrint1 f,
+      Show1 f,
+      Typeable f,
+      Hashable1 f,
+      BasicSymPrim a,
+      SymEq1 f,
+      SymOrd1 f
+    ) =>
+    f a ->
+    Expr g b
 
 deriveGADT
   ''Expr
@@ -146,26 +180,23 @@ deriveGADT
     ''SubstSym1,
     ''NFData,
     ''NFData1,
-    ''Hashable,
-    ''Hashable1,
     ''Show,
     ''Show1,
     ''PPrint,
     ''PPrint1,
     ''AllSyms,
-    ''AllSyms1
+    ''AllSyms1,
+    ''Eq,
+    ''SymEq,
+    ''SymOrd
   ]
 
-data P a b = P a | Q Int
-
-instance (Eq a) => Eq (P a b) where
-  (==) = undefined
-
-instance (Eq a) => Eq1 (P a) where
+instance (Eq1 f) => Eq1 (Expr f) where
   liftEq = undefined
 
-instance Eq2 P where
-  liftEq2 = undefined
+deriveGADT ''Expr [''Hashable, ''Hashable1]
+
+data P a b = P a | Q Int
 
 deriveGADT
   ''P
@@ -195,7 +226,19 @@ deriveGADT
     ''PPrint2,
     ''AllSyms,
     ''AllSyms1,
-    ''AllSyms2
+    ''AllSyms2,
+    ''Eq,
+    ''Eq1,
+    ''Eq2,
+    ''SymEq,
+    ''SymEq1,
+    ''SymEq2,
+    ''Ord,
+    ''Ord1,
+    ''Ord2,
+    ''SymOrd,
+    ''SymOrd1,
+    ''SymOrd2
   ]
 
 data GGG a b where
@@ -208,7 +251,27 @@ data GGG a b where
 
 infixr 5 :|
 
-deriveGADT ''GGG [''Show, ''Show1, ''Show2, ''PPrint, ''PPrint1, ''PPrint2]
+deriveGADT
+  ''GGG
+  [ ''Show,
+    ''Show1,
+    ''Show2,
+    ''PPrint,
+    ''PPrint1,
+    ''PPrint2,
+    ''Eq,
+    ''Eq1,
+    ''Eq2,
+    ''Ord,
+    ''Ord1,
+    ''Ord2,
+    ''SymEq,
+    ''SymEq1,
+    ''SymEq2,
+    ''SymOrd,
+    ''SymOrd1,
+    ''SymOrd2
+  ]
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (GGG a b) where
   arbitrary =
@@ -239,7 +302,15 @@ data VVV a b where
 
 infixr 5 :.
 
-derive ''VVV [''Generic, ''PPrint]
+derive
+  ''VVV
+  [ ''Generic,
+    ''PPrint,
+    ''Eq,
+    ''Ord,
+    ''SymEq,
+    ''SymOrd
+  ]
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (VVV a b) where
   arbitrary =
@@ -317,5 +388,27 @@ derivationTest =
             .&. docToTextWithWidth 0 (pformatPrec 0 g)
               === docToTextWithWidth 0 (pformatPrec2 0 g)
             .&. docToTextWithWidth 0 (pformatPrec 11 g)
-              === docToTextWithWidth 0 (pformatPrec2 11 g)
+              === docToTextWithWidth 0 (pformatPrec2 11 g),
+      testProperty "GADT SymEq and Eq are consistent" $
+        \(g1 :: GGG (GGG Int String) [Int]) g2 ->
+          let v1 = gggToVVV g1
+              v2 = gggToVVV g2
+           in con (g1 == g2) === (v1 .== v2),
+      testProperty "GADT SymEq1 and SymEq are consistent" $
+        \(g1 :: GGG (GGG Int String) [Int]) g2 ->
+          symEq1 g1 g2 === (g1 .== g2),
+      testProperty "GADT SymEq2 and SymEq are consistent" $
+        \(g1 :: GGG (GGG Int String) [Int]) g2 ->
+          symEq2 g1 g2 === (g1 .== g2),
+      testProperty "GADT SymOrd and Ord are consistent" $
+        \(g1 :: GGG (GGG Int String) [Int]) g2 ->
+          let v1 = gggToVVV g1
+              v2 = gggToVVV g2
+           in mrgSingle (g1 `compare` g2) === (v1 `symCompare` v2),
+      testProperty "GADT SymOrd1 and SymOrd are consistent" $
+        \(g1 :: GGG (GGG Int String) [Int]) g2 ->
+          symCompare1 g1 g2 === (g1 `symCompare` g2),
+      testProperty "GADT SymOrd2 and SymOrd are consistent" $
+        \(g1 :: GGG (GGG Int String) [Int]) g2 ->
+          symCompare2 g1 g2 === (g1 `symCompare` g2)
     ]

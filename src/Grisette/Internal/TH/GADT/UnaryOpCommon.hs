@@ -37,6 +37,7 @@ import Grisette.Internal.TH.GADT.Common
         keptNewVars
       ),
     checkArgs,
+    ctxForVar,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
 import Language.Haskell.TH
@@ -48,17 +49,14 @@ import Language.Haskell.TH
       ),
     Name,
     Pat (VarP, WildP),
-    Pred,
     Q,
-    Type (AppT, ArrowT, ConT, StarT, VarT),
+    Type (AppT, ConT, VarT),
     appE,
     conP,
-    conT,
     nameBase,
     newName,
     varE,
     varP,
-    varT,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName, constructorVariant),
@@ -67,7 +65,6 @@ import Language.Haskell.TH.Datatype
     resolveTypeSynonyms,
     tvName,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_, tvKind)
 
 -- | Type of field function expression generator.
 type FieldFunExp = M.Map Name Name -> M.Map Name [Name] -> Type -> Q Exp
@@ -245,8 +242,7 @@ genUnaryOpClause
 -- | Configuration for a unary operation type class generation on a GADT.
 data UnaryOpClassConfig = UnaryOpClassConfig
   { unaryOpFieldConfigs :: [UnaryOpFieldConfig],
-    unaryOpInstanceNames :: [Name],
-    unaryOpAllowExistential :: Bool
+    unaryOpInstanceNames :: [Name]
   }
 
 genUnaryOpFun ::
@@ -271,54 +267,33 @@ genUnaryOpClass ::
   Int ->
   Name ->
   Q [Dec]
-genUnaryOpClass
-  ( UnaryOpClassConfig
-      { ..
-      }
-    )
-  n
-  typName = do
-    CheckArgsResult {..} <-
-      checkArgs
-        (nameBase $ head unaryOpInstanceNames)
-        (length unaryOpInstanceNames - 1)
-        typName
-        unaryOpAllowExistential
-        n
-    let ctxForVar :: TyVarBndr_ flag -> Q (Maybe Pred)
-        ctxForVar var = case tvKind var of
-          StarT ->
-            Just
-              <$> [t|$(conT $ head unaryOpInstanceNames) $(varT $ tvName var)|]
-          AppT (AppT ArrowT StarT) StarT ->
-            Just
-              <$> [t|$(conT $ unaryOpInstanceNames !! 1) $(varT $ tvName var)|]
-          AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
-            Just
-              <$> [t|$(conT $ unaryOpInstanceNames !! 2) $(varT $ tvName var)|]
-          AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) StarT ->
-            Just
-              <$> [t|$(conT $ unaryOpInstanceNames !! 3) $(varT $ tvName var)|]
-          AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
-            fail $ "Unsupported kind: " <> show (tvKind var)
-          _ -> return Nothing
-    ctxs <- traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
-    let keptType = foldl AppT (ConT typName) $ fmap VarT keptNewNames
-    instanceFuns <-
-      traverse
-        ( \config ->
-            genUnaryOpFun
-              config
-              n
-              argNewNames
-              constructors
-        )
-        unaryOpFieldConfigs
-    let instanceType = AppT (ConT $ unaryOpInstanceNames !! n) keptType
-    return
-      [ InstanceD
-          Nothing
-          (catMaybes ctxs)
-          instanceType
-          instanceFuns
-      ]
+genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
+  CheckArgsResult {..} <-
+    checkArgs
+      (nameBase $ head unaryOpInstanceNames)
+      (length unaryOpInstanceNames - 1)
+      typName
+      True
+      n
+  ctxs <-
+    traverse (ctxForVar unaryOpInstanceNames) $
+      filter (isVarUsedInFields . tvName) keptNewVars
+  let keptType = foldl AppT (ConT typName) $ fmap VarT keptNewNames
+  instanceFuns <-
+    traverse
+      ( \config ->
+          genUnaryOpFun
+            config
+            n
+            argNewNames
+            constructors
+      )
+      unaryOpFieldConfigs
+  let instanceType = AppT (ConT $ unaryOpInstanceNames !! n) keptType
+  return
+    [ InstanceD
+        Nothing
+        (catMaybes ctxs)
+        instanceType
+        instanceFuns
+    ]

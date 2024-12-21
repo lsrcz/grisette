@@ -20,7 +20,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpFieldConfigs,
-        unaryOpInstanceNames, unaryOpAllowExistential
+        unaryOpInstanceNames
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -58,9 +58,7 @@ genNFData' n typName = do
                 fieldFunNames = ['rnf, 'liftRnf, 'liftRnf2]
               }
           ],
-        unaryOpInstanceNames =
-          [''NFData, ''NFData1, ''NFData2],
-        unaryOpAllowExistential = True
+        unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2]
       }
     n
     typName

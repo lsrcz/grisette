@@ -27,7 +27,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpFieldConfigs,
-        unaryOpInstanceNames, unaryOpAllowExistential
+        unaryOpInstanceNames
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -64,17 +64,19 @@ genSubstSym' n typName = do
               }
           ],
         unaryOpInstanceNames =
-          [''SubstSym, ''SubstSym1, ''SubstSym2],
-        unaryOpAllowExistential = True
+          [''SubstSym, ''SubstSym1, ''SubstSym2]
       }
     n
     typName
 
+-- | Derive 'SubstSym' instance for a GADT.
 deriveGADTSubstSym :: Name -> Q [Dec]
 deriveGADTSubstSym = genSubstSym' 0
 
+-- | Derive 'SubstSym1' instance for a GADT.
 deriveGADTSubstSym1 :: Name -> Q [Dec]
 deriveGADTSubstSym1 = genSubstSym' 1
 
+-- | Derive 'SubstSym2' instance for a GADT.
 deriveGADTSubstSym2 :: Name -> Q [Dec]
 deriveGADTSubstSym2 = genSubstSym' 2
