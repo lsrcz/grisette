@@ -31,7 +31,6 @@ where
 import Control.Monad.Identity (Identity (runIdentity))
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
@@ -40,7 +39,7 @@ import qualified Grisette.Internal.Core.Data.Class.PlainUnion
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.ITEOp.symIte` operation.
 --
@@ -52,7 +51,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- > symIte (a .== b :: GetBool mode) ...
 symIte ::
   forall mode v.
-  (Typeable mode, UnifiedITEOp mode v) =>
+  (DecideEvalMode mode, UnifiedITEOp mode v) =>
   GetBool mode ->
   v ->
   v ->
@@ -74,7 +73,7 @@ symIte c a b =
 -- > symIteMerge (... :: BaseMonad mode v) ...
 symIteMerge ::
   forall mode v.
-  (Typeable mode, UnifiedITEOp mode v, Mergeable v) =>
+  (DecideEvalMode mode, UnifiedITEOp mode v, Mergeable v) =>
   BaseMonad mode v ->
   v
 symIteMerge m =
@@ -93,7 +92,7 @@ class UnifiedITEOp mode v where
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (() :: Constraint) (ITEOp a)
   ) =>
   UnifiedITEOp mode a

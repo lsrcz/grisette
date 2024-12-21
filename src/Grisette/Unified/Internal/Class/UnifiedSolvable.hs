@@ -28,7 +28,6 @@ module Grisette.Unified.Internal.Class.UnifiedSolvable
 where
 
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable)
 import qualified Grisette.Internal.Core.Data.Class.Solvable as Grisette
@@ -41,7 +40,7 @@ import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S), IsConMode)
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- $setup
 -- >>> import Grisette.Core (ssym)
@@ -54,7 +53,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- >>> con True :: SymBool
 -- true
 con ::
-  forall mode a con. (Typeable mode, UnifiedSolvable mode a con) => con -> a
+  forall mode a con. (DecideEvalMode mode, UnifiedSolvable mode a con) => con -> a
 con v =
   withMode @mode
     (withBaseSolvable @mode @a @con v)
@@ -72,7 +71,7 @@ con v =
 -- Just True
 conView ::
   forall mode a con.
-  (Typeable mode, UnifiedSolvable mode a con) =>
+  (DecideEvalMode mode, UnifiedSolvable mode a con) =>
   a ->
   Maybe con
 conView v =
@@ -87,7 +86,7 @@ conView v =
 --
 -- >>> case ssym "a" :: SymBool of Con v -> Just v; _ -> Nothing
 -- Nothing
-pattern Con :: (Typeable mode, UnifiedSolvable mode a con) => con -> a
+pattern Con :: (DecideEvalMode mode, UnifiedSolvable mode a con) => con -> a
 pattern Con v <-
   (conView -> Just v)
   where

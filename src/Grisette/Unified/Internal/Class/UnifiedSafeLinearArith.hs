@@ -30,7 +30,6 @@ module Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
 where
 
 import Control.Monad.Error.Class (MonadError)
-import Data.Typeable (Typeable)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SafeLinearArith
   ( ArithException,
@@ -128,7 +127,7 @@ instance
   withBaseSafeLinearArith r = r
 
 instance
-  (Typeable mode, MonadError ArithException m, UnifiedBranching mode m) =>
+  (MonadError ArithException m, UnifiedBranching mode m) =>
   UnifiedSafeLinearArith mode ArithException Integer m
   where
   withBaseSafeLinearArith r =

@@ -29,7 +29,6 @@ module Grisette.Unified.Internal.Class.UnifiedSafeBitCast
 where
 
 import Control.Monad.Error.Class (MonadError)
-import Data.Typeable (Typeable)
 import GHC.TypeLits (KnownNat, type (+), type (<=))
 import Grisette.Internal.Core.Data.Class.SafeBitCast (SafeBitCast)
 import qualified Grisette.Internal.Core.Data.Class.SafeBitCast
@@ -76,8 +75,7 @@ instance
   withBaseSafeBitCast r = r
 
 instance
-  ( Typeable mode,
-    MonadError NotRepresentableFPError m,
+  ( MonadError NotRepresentableFPError m,
     UnifiedBranching mode m,
     ValidFP eb sb,
     KnownNat n,
@@ -90,8 +88,7 @@ instance
     withMode @mode (withBaseBranching @mode @m r) (withBaseBranching @mode @m r)
 
 instance
-  ( Typeable mode,
-    MonadError NotRepresentableFPError m,
+  ( MonadError NotRepresentableFPError m,
     UnifiedBranching mode m,
     ValidFP eb sb,
     KnownNat n,

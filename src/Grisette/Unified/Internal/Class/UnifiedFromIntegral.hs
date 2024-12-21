@@ -25,7 +25,6 @@ module Grisette.Unified.Internal.Class.UnifiedFromIntegral
 where
 
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SymFromIntegral (SymFromIntegral)
 import qualified Grisette.Internal.Core.Data.Class.SymFromIntegral as SymFromIntegral
@@ -37,7 +36,7 @@ import Grisette.Internal.SymPrim.SymBV (SymIntN, SymWordN)
 import Grisette.Internal.SymPrim.SymFP (SymFP)
 import Grisette.Internal.SymPrim.SymInteger (SymInteger)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S), IsConMode)
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFromIntegral.symFromIntegral`
 -- operation.
@@ -47,7 +46,7 @@ import Grisette.Unified.Internal.Util (withMode)
 --
 -- > symFromIntegral @mode a
 symFromIntegral ::
-  forall mode a b. (Typeable mode, UnifiedFromIntegral mode a b) => a -> b
+  forall mode a b. (DecideEvalMode mode, UnifiedFromIntegral mode a b) => a -> b
 symFromIntegral a =
   withMode @mode
     (withBaseFromIntegral @mode @a @b $ fromIntegral a)
@@ -62,7 +61,7 @@ class UnifiedFromIntegral (mode :: EvalModeTag) a b where
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     (If (IsConMode mode) (Integral a, Num b) (SymFromIntegral a b))
   ) =>
   UnifiedFromIntegral mode a b
