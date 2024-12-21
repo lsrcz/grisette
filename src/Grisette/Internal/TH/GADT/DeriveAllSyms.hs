@@ -3,6 +3,14 @@
 
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.DeriveAllSyms
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.DeriveAllSyms
   ( deriveGADTAllSyms,
     deriveGADTAllSyms1,
@@ -18,7 +26,6 @@ import Grisette.Internal.SymPrim.AllSyms
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpAllowExistential,
         unaryOpFieldConfigs,
         unaryOpInstanceNames
       ),
@@ -56,15 +63,17 @@ allSymsConfig =
               fieldFunNames = ['allSymsS, 'liftAllSymsS, 'liftAllSymsS2]
             }
         ],
-      unaryOpInstanceNames = [''AllSyms, ''AllSyms1, ''AllSyms2],
-      unaryOpAllowExistential = True
+      unaryOpInstanceNames = [''AllSyms, ''AllSyms1, ''AllSyms2]
     }
 
+-- | Derive 'AllSyms' instance for a GADT.
 deriveGADTAllSyms :: Name -> Q [Dec]
 deriveGADTAllSyms = genUnaryOpClass allSymsConfig 0
 
+-- | Derive 'AllSyms1' instance for a GADT.
 deriveGADTAllSyms1 :: Name -> Q [Dec]
 deriveGADTAllSyms1 = genUnaryOpClass allSymsConfig 1
 
+-- | Derive 'AllSyms2' instance for a GADT.
 deriveGADTAllSyms2 :: Name -> Q [Dec]
 deriveGADTAllSyms2 = genUnaryOpClass allSymsConfig 2

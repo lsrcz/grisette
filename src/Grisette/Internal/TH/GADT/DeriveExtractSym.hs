@@ -26,7 +26,6 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpAllowExistential,
         unaryOpFieldConfigs,
         unaryOpInstanceNames
       ),
@@ -75,8 +74,7 @@ genExtractSym' n typName = do
               }
           ],
         unaryOpInstanceNames =
-          [''ExtractSym, ''ExtractSym1, ''ExtractSym2],
-        unaryOpAllowExistential = True
+          [''ExtractSym, ''ExtractSym1, ''ExtractSym2]
       }
     n
     typName

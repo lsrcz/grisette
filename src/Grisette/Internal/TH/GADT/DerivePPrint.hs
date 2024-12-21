@@ -40,7 +40,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
         unaryOpFieldConfigs,
-        unaryOpInstanceNames, unaryOpAllowExistential
+        unaryOpInstanceNames
       ),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
@@ -171,8 +171,7 @@ pprintConfig =
                 ['pformatPrec, 'liftPFormatPrec, 'liftPFormatPrec2]
             }
         ],
-      unaryOpInstanceNames = [''PPrint, ''PPrint1, ''PPrint2],
-      unaryOpAllowExistential = True
+      unaryOpInstanceNames = [''PPrint, ''PPrint1, ''PPrint2]
     }
 
 -- | Derive 'PPrint' instance for a GADT.

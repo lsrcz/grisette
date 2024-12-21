@@ -163,17 +163,22 @@ library
       Grisette.Internal.TH.DeriveTypeParamHandler
       Grisette.Internal.TH.DeriveUnifiedInterface
       Grisette.Internal.TH.DeriveWithHandlers
+      Grisette.Internal.TH.GADT.BinaryOpCommon
       Grisette.Internal.TH.GADT.Common
       Grisette.Internal.TH.GADT.DeriveAllSyms
+      Grisette.Internal.TH.GADT.DeriveEq
       Grisette.Internal.TH.GADT.DeriveEvalSym
       Grisette.Internal.TH.GADT.DeriveExtractSym
       Grisette.Internal.TH.GADT.DeriveGADT
       Grisette.Internal.TH.GADT.DeriveHashable
       Grisette.Internal.TH.GADT.DeriveMergeable
       Grisette.Internal.TH.GADT.DeriveNFData
+      Grisette.Internal.TH.GADT.DeriveOrd
       Grisette.Internal.TH.GADT.DerivePPrint
       Grisette.Internal.TH.GADT.DeriveShow
       Grisette.Internal.TH.GADT.DeriveSubstSym
+      Grisette.Internal.TH.GADT.DeriveSymEq
+      Grisette.Internal.TH.GADT.DeriveSymOrd
       Grisette.Internal.TH.GADT.ShowPPrintCommon
       Grisette.Internal.TH.GADT.UnaryOpCommon
       Grisette.Internal.TH.Util

@@ -106,7 +106,7 @@ genMergingInfoCon ::
   Name ->
   Bool ->
   ConstructorInfo ->
-  Q (Con, Name, S.Set Int, [Clause], [Clause], [Clause])
+  Q (Con, Name, [Clause], [Clause], [Clause])
 genMergingInfoCon dataTypeVars tyName isLast con = do
   let conName = nameBase $ constructorName con
   let newConName = mkName $ conName <> "MergingInfo"
@@ -206,8 +206,6 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
           )
           (ConT tyName),
       newConName,
-      S.fromList [0 .. length tyFields - 1],
-      -- S.fromList $ fst <$> dedupedFields,
       [eqClause],
       cmpClauses,
       [showClause]
@@ -215,8 +213,7 @@ genMergingInfoCon dataTypeVars tyName isLast con = do
 
 data MergingInfoResult = MergingInfoResult
   { _infoName :: Name,
-    _conInfoNames :: [Name],
-    _pos :: [S.Set Int]
+    _conInfoNames :: [Name]
   }
 
 genMergingInfo :: Name -> Q (MergingInfoResult, [Dec])
@@ -238,19 +235,18 @@ genMergingInfo typName = do
           genMergingInfoCon (datatypeVars d) name True $
             last constructors
         return $ cons0 ++ [consLast]
-  let cons = fmap (\(a, _, _, _, _, _) -> a) r
+  let cons = fmap (\(a, _, _, _, _) -> a) r
   let eqClauses =
-        concatMap (\(_, _, _, a, _, _) -> a) r
+        concatMap (\(_, _, a, _, _) -> a) r
           ++ [ Clause [WildP, WildP] (NormalB $ ConE 'False) []
                | length constructors > 1
              ]
-  let cmpClauses = concatMap (\(_, _, _, _, a, _) -> a) r
-  let showClauses = concatMap (\(_, _, _, _, _, a) -> a) r
+  let cmpClauses = concatMap (\(_, _, _, a, _) -> a) r
+  let showClauses = concatMap (\(_, _, _, _, a) -> a) r
   return
     ( MergingInfoResult
         name
-        (fmap (\(_, a, _, _, _, _) -> a) r)
-        (fmap (\(_, _, a, _, _, _) -> a) r),
+        (fmap (\(_, a, _, _, _) -> a) r),
       if isJust found
         then []
         else
@@ -357,23 +353,19 @@ genMergeFunClause' conInfoName con = do
         )
         []
 
-constructVarPats :: S.Set Int -> ConstructorInfo -> Q Pat
-constructVarPats pos conInfo = do
+constructVarPats :: ConstructorInfo -> Q Pat
+constructVarPats conInfo = do
   let fields = constructorFields conInfo
-      capture n =
-        if S.member n pos
-          then do
-            return $ SigP WildP $ fields !! n
-          else wildP
+      capture n = return $ SigP WildP $ fields !! n
   conP (constructorName conInfo) $ capture <$> [0 .. length fields - 1]
 
 genMergingInfoFunClause' ::
-  [Name] -> Name -> S.Set Int -> ConstructorInfo -> Q Clause
-genMergingInfoFunClause' argTypes conInfoName pos con = do
+  [Name] -> Name -> ConstructorInfo -> Q Clause
+genMergingInfoFunClause' argTypes conInfoName con = do
   let conVars = constructorVars con
   capturedVarTyReps <-
     traverse (\bndr -> [|typeRep @($(varT $ tvName bndr))|]) conVars
-  varPat <- constructVarPats pos con
+  varPat <- constructVarPats con
   let infoExpWithTypeReps = foldl AppE (ConE conInfoName) capturedVarTyReps
 
   let fields = constructorFields con
@@ -443,7 +435,7 @@ genMergingInfoFunClause' argTypes conInfoName pos con = do
 -- | Generate 'Mergeable' instance for a GADT, using a given merging info
 -- result.
 genMergeable' :: MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
-genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
+genMergeable' (MergingInfoResult infoName conInfoNames) typName n = do
   CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName True n
 
   d <- reifyDatatype typName
@@ -488,11 +480,8 @@ genMergeable' (MergingInfoResult infoName conInfoNames pos) typName n = do
             <> nameBase (datatypeName d)
   let mergingInfoFunSigD = SigD mergingInfoFunName mergingInfoFunType
   clauses <-
-    traverse
-      ( \(conInfoName, pos, con) ->
-          genMergingInfoFunClause' (tvName <$> argNewVars) conInfoName pos con
-      )
-      $ zip3 conInfoNames pos constructors
+    traverse (uncurry (genMergingInfoFunClause' (tvName <$> argNewVars))) $
+      zip conInfoNames constructors
   let mergingInfoFunDec = FunD mergingInfoFunName clauses
 
   let mergeFunType =

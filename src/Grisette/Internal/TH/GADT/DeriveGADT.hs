@@ -19,7 +19,7 @@ module Grisette.Internal.TH.GADT.DeriveGADT
 where
 
 import Control.DeepSeq (NFData, NFData1, NFData2)
-import Data.Functor.Classes (Show1, Show2)
+import Data.Functor.Classes (Eq1, Eq2, Ord1, Ord2, Show1, Show2)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import qualified Data.Map as M
@@ -46,11 +46,18 @@ import Grisette.Internal.Core.Data.Class.SubstSym
     SubstSym1,
     SubstSym2,
   )
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1, SymEq2)
+import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1, SymOrd2)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
 import Grisette.Internal.TH.GADT.DeriveAllSyms
   ( deriveGADTAllSyms,
     deriveGADTAllSyms1,
     deriveGADTAllSyms2,
+  )
+import Grisette.Internal.TH.GADT.DeriveEq
+  ( deriveGADTEq,
+    deriveGADTEq1,
+    deriveGADTEq2,
   )
 import Grisette.Internal.TH.GADT.DeriveEvalSym
   ( deriveGADTEvalSym,
@@ -77,6 +84,11 @@ import Grisette.Internal.TH.GADT.DeriveNFData
     deriveGADTNFData1,
     deriveGADTNFData2,
   )
+import Grisette.Internal.TH.GADT.DeriveOrd
+  ( deriveGADTOrd,
+    deriveGADTOrd1,
+    deriveGADTOrd2,
+  )
 import Grisette.Internal.TH.GADT.DerivePPrint
   ( deriveGADTPPrint,
     deriveGADTPPrint1,
@@ -91,6 +103,16 @@ import Grisette.Internal.TH.GADT.DeriveSubstSym
   ( deriveGADTSubstSym,
     deriveGADTSubstSym1,
     deriveGADTSubstSym2,
+  )
+import Grisette.Internal.TH.GADT.DeriveSymEq
+  ( deriveGADTSymEq,
+    deriveGADTSymEq1,
+    deriveGADTSymEq2,
+  )
+import Grisette.Internal.TH.GADT.DeriveSymOrd
+  ( deriveGADTSymOrd,
+    deriveGADTSymOrd1,
+    deriveGADTSymOrd2,
   )
 import Language.Haskell.TH (Dec, Name, Q)
 
@@ -120,7 +142,19 @@ deriveProcedureMap =
       (''PPrint2, deriveGADTPPrint2),
       (''AllSyms, deriveGADTAllSyms),
       (''AllSyms1, deriveGADTAllSyms1),
-      (''AllSyms2, deriveGADTAllSyms2)
+      (''AllSyms2, deriveGADTAllSyms2),
+      (''Eq, deriveGADTEq),
+      (''Eq1, deriveGADTEq1),
+      (''Eq2, deriveGADTEq2),
+      (''Ord, deriveGADTOrd),
+      (''Ord1, deriveGADTOrd1),
+      (''Ord2, deriveGADTOrd2),
+      (''SymOrd, deriveGADTSymOrd),
+      (''SymOrd1, deriveGADTSymOrd1),
+      (''SymOrd2, deriveGADTSymOrd2),
+      (''SymEq, deriveGADTSymEq),
+      (''SymEq1, deriveGADTSymEq1),
+      (''SymEq2, deriveGADTSymEq2)
     ]
 
 deriveSingleGADT :: Name -> Name -> Q [Dec]
@@ -162,6 +196,30 @@ deriveSingleGADT typName className = do
 -- * 'AllSyms'
 -- * 'AllSyms1'
 -- * 'AllSyms2'
+-- * 'Eq'
+-- * 'Eq1'
+-- * 'Eq2'
+-- * 'Ord'
+-- * 'Ord1'
+-- * 'Ord2'
+-- * 'SymOrd'
+-- * 'SymOrd1'
+-- * 'SymOrd2'
+-- * 'SymEq'
+-- * 'SymEq1'
+-- * 'SymEq2'
+--
+-- Note that the following type classes cannot be derived for GADTs with
+-- existential type variables.
+--
+-- * 'Eq1'
+-- * 'Eq2'
+-- * 'SymEq1'
+-- * 'SymEq2'
+-- * 'Ord1'
+-- * 'Ord2'
+-- * 'SymOrd1'
+-- * 'SymOrd2'
 deriveGADT :: Name -> [Name] -> Q [Dec]
 deriveGADT typName classNames = do
   let allClassNames = S.toList $ S.fromList classNames
@@ -202,6 +260,9 @@ deriveGADT typName classNames = do
 -- * 'Show'
 -- * 'PPrint'
 -- * 'AllSyms'
+-- * 'Eq'
+-- * 'SymEq'
+-- * 'SymOrd'
 --
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
@@ -217,7 +278,10 @@ deriveGADTAll typName =
       ''Hashable,
       ''Show,
       ''PPrint,
-      ''AllSyms
+      ''AllSyms,
+      ''Eq,
+      ''SymEq,
+      ''SymOrd
     ]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
@@ -236,6 +300,9 @@ deriveGADTAllExcept typName classNames = do
         ''Hashable,
         ''Show,
         ''PPrint,
-        ''AllSyms
+        ''AllSyms,
+        ''Eq,
+        ''SymEq,
+        ''SymOrd
       ]
       S.\\ S.fromList classNames
