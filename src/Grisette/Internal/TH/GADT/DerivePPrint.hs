@@ -24,9 +24,9 @@ import Grisette.Internal.Core.Data.Class.PPrint
   ( PPrint (pformatList, pformatPrec),
     PPrint1 (liftPFormatList, liftPFormatPrec),
     PPrint2 (liftPFormatList2, liftPFormatPrec2),
-    Pretty (pretty),
     align,
     condEnclose,
+    flatAlt,
     group,
     groupedEnclose,
     nest,
@@ -155,7 +155,7 @@ pprintConfig =
                   RecordConstructor names ->
                     attachUsedInfo
                       [|
-                        pretty $(stringE $ nameBase (names !! pos) ++ " = ")
+                        fromString $(stringE $ nameBase (names !! pos) ++ " = ")
                           <> $(makePPrintField 0)
                         |]
                   InfixConstructor -> do
