@@ -36,8 +36,10 @@ import Grisette.Internal.TH.GADT.Common
         keptNewNames,
         keptNewVars
       ),
+    ExtraConstraint,
     checkArgs,
     ctxForVar,
+    extraConstraint,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
 import Language.Haskell.TH
@@ -263,11 +265,12 @@ genUnaryOpFun
 
 -- | Generate a unary operation type class instance for a GADT.
 genUnaryOpClass ::
+  ExtraConstraint ->
   UnaryOpClassConfig ->
   Int ->
   Name ->
   Q [Dec]
-genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
+genUnaryOpClass extra (UnaryOpClassConfig {..}) n typName = do
   CheckArgsResult {..} <-
     checkArgs
       (nameBase $ head unaryOpInstanceNames)
@@ -289,11 +292,13 @@ genUnaryOpClass (UnaryOpClassConfig {..}) n typName = do
             constructors
       )
       unaryOpFieldConfigs
-  let instanceType = AppT (ConT $ unaryOpInstanceNames !! n) keptType
+  let instanceName = unaryOpInstanceNames !! n
+  let instanceType = AppT (ConT instanceName) keptType
+  extraPreds <- extraConstraint extra typName instanceName keptNewVars
   return
     [ InstanceD
         Nothing
-        (catMaybes ctxs)
+        (extraPreds ++ catMaybes ctxs)
         instanceType
         instanceFuns
     ]

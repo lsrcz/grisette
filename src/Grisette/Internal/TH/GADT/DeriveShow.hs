@@ -23,6 +23,7 @@ import Data.Functor.Classes
 import qualified Data.List as List
 import Data.Maybe (fromMaybe)
 import GHC.Show (appPrec, appPrec1)
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
@@ -175,13 +176,13 @@ showConfig =
     }
 
 -- | Derive 'Show' instance for a GADT.
-deriveGADTShow :: Name -> Q [Dec]
-deriveGADTShow = genUnaryOpClass showConfig 0
+deriveGADTShow :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTShow extra = genUnaryOpClass extra showConfig 0
 
 -- | Derive 'Show1' instance for a GADT.
-deriveGADTShow1 :: Name -> Q [Dec]
-deriveGADTShow1 = genUnaryOpClass showConfig 1
+deriveGADTShow1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTShow1 extra = genUnaryOpClass extra showConfig 1
 
 -- | Derive 'Show2' instance for a GADT.
-deriveGADTShow2 :: Name -> Q [Dec]
-deriveGADTShow2 = genUnaryOpClass showConfig 2
+deriveGADTShow2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTShow2 extra = genUnaryOpClass extra showConfig 2

@@ -23,6 +23,7 @@ import Grisette.Internal.SymPrim.AllSyms
     AllSyms1 (liftAllSymsS),
     AllSyms2 (liftAllSymsS2),
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -67,13 +68,13 @@ allSymsConfig =
     }
 
 -- | Derive 'AllSyms' instance for a GADT.
-deriveGADTAllSyms :: Name -> Q [Dec]
-deriveGADTAllSyms = genUnaryOpClass allSymsConfig 0
+deriveGADTAllSyms :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTAllSyms extra = genUnaryOpClass extra allSymsConfig 0
 
 -- | Derive 'AllSyms1' instance for a GADT.
-deriveGADTAllSyms1 :: Name -> Q [Dec]
-deriveGADTAllSyms1 = genUnaryOpClass allSymsConfig 1
+deriveGADTAllSyms1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTAllSyms1 extra = genUnaryOpClass extra allSymsConfig 1
 
 -- | Derive 'AllSyms2' instance for a GADT.
-deriveGADTAllSyms2 :: Name -> Q [Dec]
-deriveGADTAllSyms2 = genUnaryOpClass allSymsConfig 2
+deriveGADTAllSyms2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTAllSyms2 extra = genUnaryOpClass extra allSymsConfig 2

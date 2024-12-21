@@ -15,9 +15,13 @@ module Grisette.Internal.TH.GADT.DeriveGADT
   ( deriveGADT,
     deriveGADTAll,
     deriveGADTAllExcept,
+    deriveGADTWith,
+    deriveGADTAllWith,
+    deriveGADTAllExceptWith,
   )
 where
 
+import Control.Arrow (Arrow (second))
 import Control.DeepSeq (NFData, NFData1, NFData2)
 import Data.Functor.Classes (Eq1, Eq2, Ord1, Ord2, Show1, Show2)
 import Data.Hashable (Hashable)
@@ -49,6 +53,7 @@ import Grisette.Internal.Core.Data.Class.SubstSym
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1, SymEq2)
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1, SymOrd2)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint (evalModeConstraint, evalModeSpecificConstraint, needExtraMergeable))
 import Grisette.Internal.TH.GADT.DeriveAllSyms
   ( deriveGADTAllSyms,
     deriveGADTAllSyms1,
@@ -114,9 +119,10 @@ import Grisette.Internal.TH.GADT.DeriveSymOrd
     deriveGADTSymOrd1,
     deriveGADTSymOrd2,
   )
+import Grisette.Unified (EvalModeTag (C))
 import Language.Haskell.TH (Dec, Name, Q)
 
-deriveProcedureMap :: M.Map Name (Name -> Q [Dec])
+deriveProcedureMap :: M.Map Name (ExtraConstraint -> Name -> Q [Dec])
 deriveProcedureMap =
   M.fromList
     [ (''EvalSym, deriveGADTEvalSym),
@@ -157,10 +163,22 @@ deriveProcedureMap =
       (''SymEq2, deriveGADTSymEq2)
     ]
 
-deriveSingleGADT :: Name -> Name -> Q [Dec]
-deriveSingleGADT typName className = do
+deriveSingleGADT :: ExtraConstraint -> Name -> Name -> Q [Dec]
+deriveSingleGADT extra typName className = do
+  let newExtra =
+        if className `elem` [''Ord, ''Ord1, ''Ord2]
+          then
+            extra
+              { evalModeConstraint = [],
+                evalModeSpecificConstraint =
+                  evalModeSpecificConstraint extra
+                    ++ map
+                      (second (const C))
+                      (evalModeConstraint extra)
+              }
+          else extra
   case M.lookup className deriveProcedureMap of
-    Just procedure -> procedure typName
+    Just procedure -> procedure newExtra typName
     Nothing ->
       fail $ "No derivation available for class " ++ show className
 
@@ -220,20 +238,23 @@ deriveSingleGADT typName className = do
 -- * 'Ord2'
 -- * 'SymOrd1'
 -- * 'SymOrd2'
-deriveGADT :: Name -> [Name] -> Q [Dec]
-deriveGADT typName classNames = do
+deriveGADTWith :: ExtraConstraint -> Name -> [Name] -> Q [Dec]
+deriveGADTWith extra typName classNames = do
   let allClassNames = S.toList $ S.fromList classNames
   let (ns, ms) = splitMergeable allClassNames
-  decs <- mapM (deriveSingleGADT typName) ns
+  decs <- mapM (deriveSingleGADT extra typName) ns
   decMergeables <- deriveMergeables ms
   return $ concat decs ++ decMergeables
   where
+    extraWithOutExtraMergeable :: ExtraConstraint
+    extraWithOutExtraMergeable = extra {needExtraMergeable = False}
     deriveMergeables :: [Int] -> Q [Dec]
     deriveMergeables [] = return []
-    deriveMergeables [n] = genMergeable typName n
+    deriveMergeables [n] = genMergeable extraWithOutExtraMergeable typName n
     deriveMergeables (n : ns) = do
-      (info, dn) <- genMergeableAndGetMergingInfoResult typName n
-      dns <- traverse (genMergeable' info typName) ns
+      (info, dn) <-
+        genMergeableAndGetMergingInfoResult extraWithOutExtraMergeable typName n
+      dns <- traverse (genMergeable' extraWithOutExtraMergeable info typName) ns
       return $ dn ++ concatMap snd dns
     splitMergeable :: [Name] -> ([Name], [Int])
     splitMergeable [] = ([], [])
@@ -245,6 +266,12 @@ deriveGADT typName classNames = do
             | x == ''Mergeable2 -> (ns, 2 : is)
             | x == ''Mergeable3 -> (ns, 3 : is)
             | otherwise -> (x : ns, is)
+
+-- | Derive the specified classes for a GADT with the given name.
+--
+-- See 'deriveGADTWith' for more details.
+deriveGADT :: Name -> [Name] -> Q [Dec]
+deriveGADT = deriveGADTWith mempty
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name.
@@ -266,9 +293,10 @@ deriveGADT typName classNames = do
 --
 -- Note that it is okay to derive for non-GADT types using this procedure, and
 -- it will be slightly more efficient.
-deriveGADTAll :: Name -> Q [Dec]
-deriveGADTAll typName =
-  deriveGADT
+deriveGADTAllWith :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTAllWith extra typName =
+  deriveGADTWith
+    extra
     typName
     [ ''Mergeable,
       ''EvalSym,
@@ -285,10 +313,18 @@ deriveGADTAll typName =
     ]
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
+-- given name.
+--
+-- See 'deriveGADTAllWith' for more details.
+deriveGADTAll :: Name -> Q [Dec]
+deriveGADTAll = deriveGADTAllWith mempty
+
+-- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name except the specified classes.
-deriveGADTAllExcept :: Name -> [Name] -> Q [Dec]
-deriveGADTAllExcept typName classNames = do
-  deriveGADT
+deriveGADTAllExceptWith :: ExtraConstraint -> Name -> [Name] -> Q [Dec]
+deriveGADTAllExceptWith extra typName classNames = do
+  deriveGADTWith
+    extra
     typName
     $ S.toList
     $ S.fromList
@@ -306,3 +342,10 @@ deriveGADTAllExcept typName classNames = do
         ''SymOrd
       ]
       S.\\ S.fromList classNames
+
+-- | Derive all (non-functor) classes related to Grisette for a GADT with the
+-- given name except the specified classes.
+--
+-- See 'deriveGADTAllExceptWith' for more details.
+deriveGADTAllExcept :: Name -> [Name] -> Q [Dec]
+deriveGADTAllExcept = deriveGADTAllExceptWith mempty

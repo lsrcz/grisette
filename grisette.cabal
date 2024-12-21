@@ -368,7 +368,9 @@ test-suite spec
       Grisette.Core.Data.Class.ToSymTests
       Grisette.Core.Data.Class.TryMergeTests
       Grisette.Core.Data.UnionBaseTests
+      Grisette.Core.TH.DerivationData
       Grisette.Core.TH.DerivationTest
+      Grisette.Core.TH.PartialEvalMode
       Grisette.Lib.Control.ApplicativeTest
       Grisette.Lib.Control.Monad.ExceptTests
       Grisette.Lib.Control.Monad.State.ClassTests

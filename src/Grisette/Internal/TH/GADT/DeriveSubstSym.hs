@@ -23,6 +23,7 @@ import Grisette.Internal.Core.Data.Class.SubstSym
     SubstSym1 (liftSubstSym),
     SubstSym2 (liftSubstSym2),
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -45,38 +46,35 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
 import Language.Haskell.TH (Dec, Exp (AppE, ConE), Name)
 import Language.Haskell.TH.Syntax (Q)
 
-genSubstSym' :: Int -> Name -> Q [Dec]
-genSubstSym' n typName = do
-  genUnaryOpClass
-    UnaryOpClassConfig
-      { unaryOpFieldConfigs =
-          [ UnaryOpFieldConfig
-              { extraPatNames = ["symbol", "newVal"],
-                extraLiftedPatNames = const [],
-                fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ con extraPat exp ->
-                  return (foldl AppE (ConE con) exp, False <$ extraPat),
-                fieldFunExp =
-                  defaultFieldFunExp
-                    ['substSym, 'liftSubstSym, 'liftSubstSym2],
-                fieldFunNames =
-                  ['substSym, 'liftSubstSym, 'liftSubstSym2]
-              }
-          ],
-        unaryOpInstanceNames =
-          [''SubstSym, ''SubstSym1, ''SubstSym2]
-      }
-    n
-    typName
+substSymConfig :: UnaryOpClassConfig
+substSymConfig =
+  UnaryOpClassConfig
+    { unaryOpFieldConfigs =
+        [ UnaryOpFieldConfig
+            { extraPatNames = ["symbol", "newVal"],
+              extraLiftedPatNames = const [],
+              fieldResFun = defaultFieldResFun,
+              fieldCombineFun = \_ _ con extraPat exp ->
+                return (foldl AppE (ConE con) exp, False <$ extraPat),
+              fieldFunExp =
+                defaultFieldFunExp
+                  ['substSym, 'liftSubstSym, 'liftSubstSym2],
+              fieldFunNames =
+                ['substSym, 'liftSubstSym, 'liftSubstSym2]
+            }
+        ],
+      unaryOpInstanceNames =
+        [''SubstSym, ''SubstSym1, ''SubstSym2]
+    }
 
 -- | Derive 'SubstSym' instance for a GADT.
-deriveGADTSubstSym :: Name -> Q [Dec]
-deriveGADTSubstSym = genSubstSym' 0
+deriveGADTSubstSym :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTSubstSym extra = genUnaryOpClass extra substSymConfig 0
 
 -- | Derive 'SubstSym1' instance for a GADT.
-deriveGADTSubstSym1 :: Name -> Q [Dec]
-deriveGADTSubstSym1 = genSubstSym' 1
+deriveGADTSubstSym1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTSubstSym1 extra = genUnaryOpClass extra substSymConfig 1
 
 -- | Derive 'SubstSym2' instance for a GADT.
-deriveGADTSubstSym2 :: Name -> Q [Dec]
-deriveGADTSubstSym2 = genSubstSym' 2
+deriveGADTSubstSym2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTSubstSym2 extra = genUnaryOpClass extra substSymConfig 2
