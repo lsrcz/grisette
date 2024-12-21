@@ -47,7 +47,9 @@ import Grisette.Internal.TH.GADT.Common
         keptNewNames,
         keptNewVars
       ),
+    ExtraConstraint,
     checkArgs,
+    extraConstraint,
   )
 import Language.Haskell.TH
   ( Bang (Bang),
@@ -271,17 +273,17 @@ genMergingInfo typName = do
 
 -- | Generate 'Mergeable' instance and merging information for a GADT.
 genMergeableAndGetMergingInfoResult ::
-  Name -> Int -> Q (MergingInfoResult, [Dec])
-genMergeableAndGetMergingInfoResult typName n = do
+  ExtraConstraint -> Name -> Int -> Q (MergingInfoResult, [Dec])
+genMergeableAndGetMergingInfoResult extra typName n = do
   (infoResult, infoDec) <- genMergingInfo typName
-  (_, decs) <- genMergeable' infoResult typName n
+  (_, decs) <- genMergeable' extra infoResult typName n
   return (infoResult, infoDec ++ decs)
 
 -- | Generate 'Mergeable' instance for a GADT.
-genMergeable :: Name -> Int -> Q [Dec]
-genMergeable typName n = do
+genMergeable :: ExtraConstraint -> Name -> Int -> Q [Dec]
+genMergeable extra typName n = do
   (infoResult, infoDec) <- genMergingInfo typName
-  (_, decs) <- genMergeable' infoResult typName n
+  (_, decs) <- genMergeable' extra infoResult typName n
   return $ infoDec ++ decs
 
 genMergeFunClause' :: Name -> ConstructorInfo -> Q Clause
@@ -434,8 +436,9 @@ genMergingInfoFunClause' argTypes conInfoName con = do
 
 -- | Generate 'Mergeable' instance for a GADT, using a given merging info
 -- result.
-genMergeable' :: MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
-genMergeable' (MergingInfoResult infoName conInfoNames) typName n = do
+genMergeable' ::
+  ExtraConstraint -> MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
+genMergeable' extra (MergingInfoResult infoName conInfoNames) typName n = do
   CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName True n
 
   d <- reifyDatatype typName
@@ -454,6 +457,17 @@ genMergeable' (MergingInfoResult infoName conInfoNames) typName n = do
   mergeableContexts <-
     traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
 
+  let instanceName =
+        case n of
+          0 -> ''Mergeable
+          1 -> ''Mergeable1
+          2 -> ''Mergeable2
+          3 -> ''Mergeable3
+          _ -> error "Unsupported n"
+
+  let instanceHead = ConT instanceName
+  extraPreds <- extraConstraint extra typName instanceName keptNewVars
+
   let targetType =
         foldl
           (\ty nm -> AppT ty (VarT nm))
@@ -471,7 +485,7 @@ genMergeable' (MergingInfoResult infoName conInfoNames) typName n = do
   let mergingInfoFunType =
         ForallT
           (mapTVFlag (const specifiedSpec) <$> keptNewVars ++ argNewVars)
-          (catMaybes mergeableContexts)
+          (extraPreds ++ catMaybes mergeableContexts)
           mergingInfoFunTypeWithoutCtx
   let mergingInfoFunName =
         mkName $
@@ -494,13 +508,6 @@ genMergeable' (MergingInfoResult infoName conInfoNames) typName n = do
   let mergeFunSigD = SigD mergeFunName mergeFunType
   mergeFunClauses <- zipWithM genMergeFunClause' conInfoNames constructors
   let mergeFunDec = FunD mergeFunName mergeFunClauses
-
-  let instanceHead = case n of
-        0 -> ConT ''Mergeable
-        1 -> ConT ''Mergeable1
-        2 -> ConT ''Mergeable2
-        3 -> ConT ''Mergeable3
-        _ -> error "Unsupported n"
 
   let instanceType =
         AppT
@@ -538,24 +545,24 @@ genMergeable' (MergingInfoResult infoName conInfoNames) typName n = do
         mergeFunDec,
         InstanceD
           Nothing
-          (catMaybes mergeableContexts)
+          (extraPreds ++ catMaybes mergeableContexts)
           instanceType
           [FunD mergeInstanceFunName [mergeInstanceFunClause]]
       ]
     )
 
 -- | Derive 'Mergeable' instance for GADT.
-deriveGADTMergeable :: Name -> Q [Dec]
-deriveGADTMergeable nm = genMergeable nm 0
+deriveGADTMergeable :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTMergeable extra nm = genMergeable extra nm 0
 
 -- | Derive 'Mergeable1' instance for GADT.
-deriveGADTMergeable1 :: Name -> Q [Dec]
-deriveGADTMergeable1 nm = genMergeable nm 1
+deriveGADTMergeable1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTMergeable1 extra nm = genMergeable extra nm 1
 
 -- | Derive 'Mergeable2' instance for GADT.
-deriveGADTMergeable2 :: Name -> Q [Dec]
-deriveGADTMergeable2 nm = genMergeable nm 2
+deriveGADTMergeable2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTMergeable2 extra nm = genMergeable extra nm 2
 
 -- | Derive 'Mergeable3' instance for GADT.
-deriveGADTMergeable3 :: Name -> Q [Dec]
-deriveGADTMergeable3 nm = genMergeable nm 3
+deriveGADTMergeable3 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTMergeable3 extra nm = genMergeable extra nm 3

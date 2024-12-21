@@ -40,6 +40,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     defaultFieldFunExp,
     genBinaryOpClass,
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Language.Haskell.TH (Dec, Name, Q)
 
 symOrdConfig :: BinaryOpClassConfig
@@ -76,13 +77,13 @@ symOrdConfig =
     }
 
 -- | Derive 'SymOrd' instance for a GADT.
-deriveGADTSymOrd :: Name -> Q [Dec]
-deriveGADTSymOrd = genBinaryOpClass symOrdConfig 0
+deriveGADTSymOrd :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTSymOrd extra = genBinaryOpClass extra symOrdConfig 0
 
 -- | Derive 'SymOrd1' instance for a GADT.
-deriveGADTSymOrd1 :: Name -> Q [Dec]
-deriveGADTSymOrd1 = genBinaryOpClass symOrdConfig 1
+deriveGADTSymOrd1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTSymOrd1 extra = genBinaryOpClass extra symOrdConfig 1
 
 -- | Derive 'SymOrd2' instance for a GADT.
-deriveGADTSymOrd2 :: Name -> Q [Dec]
-deriveGADTSymOrd2 = genBinaryOpClass symOrdConfig 2
+deriveGADTSymOrd2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTSymOrd2 extra = genBinaryOpClass extra symOrdConfig 2

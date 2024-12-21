@@ -36,6 +36,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     defaultFieldFunExp,
     genBinaryOpClass,
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Language.Haskell.TH (Dec, Exp (ListE), Q)
 import Language.Haskell.TH.Syntax (Name)
 
@@ -58,13 +59,13 @@ eqConfig =
     }
 
 -- | Derive 'Eq' instance for a GADT.
-deriveGADTEq :: Name -> Q [Dec]
-deriveGADTEq = genBinaryOpClass eqConfig 0
+deriveGADTEq :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTEq extra = genBinaryOpClass extra eqConfig 0
 
 -- | Derive 'Eq1' instance for a GADT.
-deriveGADTEq1 :: Name -> Q [Dec]
-deriveGADTEq1 = genBinaryOpClass eqConfig 1
+deriveGADTEq1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTEq1 extra = genBinaryOpClass extra eqConfig 1
 
 -- | Derive 'Eq2' instance for a GADT.
-deriveGADTEq2 :: Name -> Q [Dec]
-deriveGADTEq2 = genBinaryOpClass eqConfig 2
+deriveGADTEq2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTEq2 extra = genBinaryOpClass extra eqConfig 2

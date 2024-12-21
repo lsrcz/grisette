@@ -16,6 +16,7 @@ module Grisette.Internal.TH.GADT.DeriveNFData
 where
 
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), NFData2 (liftRnf2))
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -38,39 +39,36 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
 import Language.Haskell.TH (Dec, Name)
 import Language.Haskell.TH.Syntax (Q)
 
-genNFData' :: Int -> Name -> Q [Dec]
-genNFData' n typName = do
-  genUnaryOpClass
-    UnaryOpClassConfig
-      { unaryOpFieldConfigs =
-          [ UnaryOpFieldConfig
-              { extraPatNames = [],
-                extraLiftedPatNames = const [],
-                fieldCombineFun = \_ _ _ _ exps -> do
-                  r <-
-                    foldl
-                      (\acc exp -> [|$acc `seq` $(return exp)|])
-                      ([|()|])
-                      exps
-                  return (r, []),
-                fieldResFun = defaultFieldResFun,
-                fieldFunExp = defaultFieldFunExp ['rnf, 'liftRnf, 'liftRnf2],
-                fieldFunNames = ['rnf, 'liftRnf, 'liftRnf2]
-              }
-          ],
-        unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2]
-      }
-    n
-    typName
+nfdataConfig :: UnaryOpClassConfig
+nfdataConfig =
+  UnaryOpClassConfig
+    { unaryOpFieldConfigs =
+        [ UnaryOpFieldConfig
+            { extraPatNames = [],
+              extraLiftedPatNames = const [],
+              fieldCombineFun = \_ _ _ _ exps -> do
+                r <-
+                  foldl
+                    (\acc exp -> [|$acc `seq` $(return exp)|])
+                    ([|()|])
+                    exps
+                return (r, []),
+              fieldResFun = defaultFieldResFun,
+              fieldFunExp = defaultFieldFunExp ['rnf, 'liftRnf, 'liftRnf2],
+              fieldFunNames = ['rnf, 'liftRnf, 'liftRnf2]
+            }
+        ],
+      unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2]
+    }
 
 -- | Derive 'NFData' instance for a GADT.
-deriveGADTNFData :: Name -> Q [Dec]
-deriveGADTNFData = genNFData' 0
+deriveGADTNFData :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTNFData extra = genUnaryOpClass extra nfdataConfig 0
 
 -- | Derive 'NFData1' instance for a GADT.
-deriveGADTNFData1 :: Name -> Q [Dec]
-deriveGADTNFData1 = genNFData' 1
+deriveGADTNFData1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTNFData1 extra = genUnaryOpClass extra nfdataConfig 1
 
 -- | Derive 'NFData2' instance for a GADT.
-deriveGADTNFData2 :: Name -> Q [Dec]
-deriveGADTNFData2 = genNFData' 2
+deriveGADTNFData2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTNFData2 extra = genUnaryOpClass extra nfdataConfig 2

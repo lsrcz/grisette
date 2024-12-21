@@ -27,6 +27,7 @@ import Grisette.Internal.Core.Data.Class.EvalSym
     EvalSym1 (liftEvalSym),
     EvalSym2 (liftEvalSym2),
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -53,36 +54,33 @@ import Language.Haskell.TH
     Q,
   )
 
-genEvalSym' :: Int -> Name -> Q [Dec]
-genEvalSym' n typName = do
-  genUnaryOpClass
-    UnaryOpClassConfig
-      { unaryOpFieldConfigs =
-          [ UnaryOpFieldConfig
-              { extraPatNames = ["fillDefault", "model"],
-                extraLiftedPatNames = const [],
-                fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ con extraPat exp -> do
-                  return (foldl AppE (ConE con) exp, False <$ extraPat),
-                fieldFunExp =
-                  defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2],
-                fieldFunNames = ['evalSym, 'liftEvalSym, 'liftEvalSym2]
-              }
-          ],
-        unaryOpInstanceNames =
-          [''EvalSym, ''EvalSym1, ''EvalSym2]
-      }
-    n
-    typName
+evalSymConfig :: UnaryOpClassConfig
+evalSymConfig =
+  UnaryOpClassConfig
+    { unaryOpFieldConfigs =
+        [ UnaryOpFieldConfig
+            { extraPatNames = ["fillDefault", "model"],
+              extraLiftedPatNames = const [],
+              fieldResFun = defaultFieldResFun,
+              fieldCombineFun = \_ _ con extraPat exp -> do
+                return (foldl AppE (ConE con) exp, False <$ extraPat),
+              fieldFunExp =
+                defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2],
+              fieldFunNames = ['evalSym, 'liftEvalSym, 'liftEvalSym2]
+            }
+        ],
+      unaryOpInstanceNames =
+        [''EvalSym, ''EvalSym1, ''EvalSym2]
+    }
 
 -- | Derive 'EvalSym' instance for a GADT.
-deriveGADTEvalSym :: Name -> Q [Dec]
-deriveGADTEvalSym = genEvalSym' 0
+deriveGADTEvalSym :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTEvalSym extra = genUnaryOpClass extra evalSymConfig 0
 
 -- | Derive 'EvalSym1' instance for a GADT.
-deriveGADTEvalSym1 :: Name -> Q [Dec]
-deriveGADTEvalSym1 = genEvalSym' 1
+deriveGADTEvalSym1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTEvalSym1 extra = genUnaryOpClass extra evalSymConfig 1
 
 -- | Derive 'EvalSym2' instance for a GADT.
-deriveGADTEvalSym2 :: Name -> Q [Dec]
-deriveGADTEvalSym2 = genEvalSym' 2
+deriveGADTEvalSym2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTEvalSym2 extra = genUnaryOpClass extra evalSymConfig 2

@@ -23,6 +23,7 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     ExtractSym1 (liftExtractSymMaybe),
     ExtractSym2 (liftExtractSymMaybe2),
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -49,44 +50,41 @@ import Language.Haskell.TH
     Q,
   )
 
-genExtractSym' :: Int -> Name -> Q [Dec]
-genExtractSym' n typName = do
-  genUnaryOpClass
-    UnaryOpClassConfig
-      { unaryOpFieldConfigs =
-          [ UnaryOpFieldConfig
-              { extraPatNames = [],
-                extraLiftedPatNames = const [],
-                fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ _ _ exp -> do
-                  return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
-                fieldFunExp =
-                  defaultFieldFunExp
-                    [ 'extractSymMaybe,
-                      'liftExtractSymMaybe,
-                      'liftExtractSymMaybe2
-                    ],
-                fieldFunNames =
+extractSymConfig :: UnaryOpClassConfig
+extractSymConfig =
+  UnaryOpClassConfig
+    { unaryOpFieldConfigs =
+        [ UnaryOpFieldConfig
+            { extraPatNames = [],
+              extraLiftedPatNames = const [],
+              fieldResFun = defaultFieldResFun,
+              fieldCombineFun = \_ _ _ _ exp -> do
+                return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+              fieldFunExp =
+                defaultFieldFunExp
                   [ 'extractSymMaybe,
                     'liftExtractSymMaybe,
                     'liftExtractSymMaybe2
-                  ]
-              }
-          ],
-        unaryOpInstanceNames =
-          [''ExtractSym, ''ExtractSym1, ''ExtractSym2]
-      }
-    n
-    typName
+                  ],
+              fieldFunNames =
+                [ 'extractSymMaybe,
+                  'liftExtractSymMaybe,
+                  'liftExtractSymMaybe2
+                ]
+            }
+        ],
+      unaryOpInstanceNames =
+        [''ExtractSym, ''ExtractSym1, ''ExtractSym2]
+    }
 
 -- | Derive 'ExtractSym' instance for a GADT.
-deriveGADTExtractSym :: Name -> Q [Dec]
-deriveGADTExtractSym = genExtractSym' 0
+deriveGADTExtractSym :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTExtractSym extra = genUnaryOpClass extra extractSymConfig 0
 
 -- | Derive 'ExtractSym1' instance for a GADT.
-deriveGADTExtractSym1 :: Name -> Q [Dec]
-deriveGADTExtractSym1 = genExtractSym' 1
+deriveGADTExtractSym1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTExtractSym1 extra = genUnaryOpClass extra extractSymConfig 1
 
 -- | Derive 'ExtractSym2' instance for a GADT.
-deriveGADTExtractSym2 :: Name -> Q [Dec]
-deriveGADTExtractSym2 = genExtractSym' 2
+deriveGADTExtractSym2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTExtractSym2 extra = genUnaryOpClass extra extractSymConfig 2

@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.Common
@@ -14,17 +16,25 @@ module Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult (..),
     checkArgs,
     ctxForVar,
+    extraConstraint,
+    ExtraConstraint (..),
   )
 where
 
 import Control.Monad (unless, when)
+import Data.Foldable (traverse_)
 import qualified Data.Map as M
+import Data.Maybe (catMaybes)
 import qualified Data.Set as S
+import GHC.TypeLits (KnownNat, Nat, type (<=))
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.SymPrim.FP (ValidFP)
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH
   ( Name,
     Pred,
     Q,
-    Type (AppT, ArrowT, StarT, VarT),
+    Type (AppT, ArrowT, ConT, StarT, VarT),
     conT,
     nameBase,
     newName,
@@ -182,3 +192,171 @@ ctxForVar instanceNames var = case tvKind var of
   AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
     fail $ "Unsupported kind: " <> show (tvKind var)
   _ -> return Nothing
+
+-- | Extra constraints for a GADT.
+data ExtraConstraint = ExtraConstraint
+  { evalModeConstraint :: [(Int, Name)],
+    evalModeSpecificConstraint :: [(Int, EvalModeTag)],
+    bitSizeConstraint :: [Int],
+    fpBitSizeConstraint :: [(Int, Int)],
+    needExtraMergeable :: Bool
+  }
+
+instance Semigroup ExtraConstraint where
+  (<>) = (<>)
+
+instance Monoid ExtraConstraint where
+  mempty = ExtraConstraint [] [] [] [] False
+  mappend = (<>)
+
+checkValidExtraConstraintPosition ::
+  Name -> Name -> [TyVarBndr_ ()] -> Int -> Q ()
+checkValidExtraConstraintPosition tyName instanceName args n = do
+  when (n >= length args) $
+    fail $
+      "Cannot introduce extra constraint for the "
+        <> show n
+        <> "th argument of "
+        <> show tyName
+        <> " when deriving the "
+        <> show instanceName
+        <> " instance because there are only "
+        <> show (length args)
+        <> " arguments."
+
+checkAllValidExtraConstraintPosition ::
+  ExtraConstraint -> Name -> Name -> [TyVarBndr_ ()] -> Q ()
+checkAllValidExtraConstraintPosition
+  ExtraConstraint {..}
+  tyName
+  instanceName
+  args = do
+    traverse_
+      (checkValidExtraConstraintPosition tyName instanceName args . fst)
+      evalModeConstraint
+    traverse_
+      (checkValidExtraConstraintPosition tyName instanceName args . fst)
+      evalModeSpecificConstraint
+    traverse_
+      (checkValidExtraConstraintPosition tyName instanceName args)
+      bitSizeConstraint
+    traverse_
+      (checkValidExtraConstraintPosition tyName instanceName args . fst)
+      fpBitSizeConstraint
+    traverse_
+      (checkValidExtraConstraintPosition tyName instanceName args . snd)
+      fpBitSizeConstraint
+
+extraEvalModeConstraint ::
+  Name -> Name -> [TyVarBndr_ ()] -> (Int, Name) -> Q [Pred]
+extraEvalModeConstraint tyName instanceName args (n, nm) = do
+  let arg = args !! n
+  let argKind = tvKind arg
+  when (argKind /= ConT ''EvalModeTag) $
+    fail $
+      "Cannot introduce EvalMode constraint for the "
+        <> show n
+        <> "th argument of "
+        <> show tyName
+        <> " when deriving the "
+        <> show instanceName
+        <> " instance because it is not an EvalModeTag."
+  pred <- [t|$(conT nm) $(varT $ tvName arg)|]
+  return [pred]
+
+extraEvalModeSpecificConstraint ::
+  Name -> Name -> [TyVarBndr_ ()] -> (Int, EvalModeTag) -> Q [Pred]
+extraEvalModeSpecificConstraint tyName instanceName args (n, tag) = do
+  let arg = args !! n
+  let argKind = tvKind arg
+  when (argKind /= ConT ''EvalModeTag) $
+    fail $
+      "Cannot introduce EvalMode constraint for the "
+        <> show n
+        <> "th argument of "
+        <> show tyName
+        <> " when deriving the "
+        <> show instanceName
+        <> " instance because it is not an EvalModeTag."
+  pred <-
+    case tag of
+      S -> [t|$(varT $ tvName arg) ~ 'S|]
+      C -> [t|$(varT $ tvName arg) ~ 'C|]
+  return [pred]
+
+extraBitSizeConstraint :: Name -> Name -> [TyVarBndr_ ()] -> Int -> Q [Pred]
+extraBitSizeConstraint tyName instanceName args n = do
+  let arg = args !! n
+  let argKind = tvKind arg
+  when (argKind /= ConT ''Nat) $
+    fail $
+      "Cannot introduce BitSize constraint for the "
+        <> show n
+        <> "th argument of "
+        <> show tyName
+        <> " when deriving the "
+        <> show instanceName
+        <> " instance because it is not a Nat."
+  predKnown <- [t|KnownNat $(varT $ tvName arg)|]
+  predPositive <- [t|1 <= $(varT $ tvName arg)|]
+  return [predKnown, predPositive]
+
+extraFpBitSizeConstraint :: Name -> Name -> [TyVarBndr_ ()] -> (Int, Int) -> Q [Pred]
+extraFpBitSizeConstraint tyName instanceName args (eb, sb) = do
+  let argEb = args !! eb
+  let argEbKind = tvKind argEb
+  let argSb = args !! sb
+  let argSbKind = tvKind argSb
+  when (argEbKind /= ConT ''Nat || argSbKind /= ConT ''Nat) $
+    fail $
+      "Cannot introduce ValidFP constraint for the "
+        <> show eb
+        <> "th and "
+        <> show sb
+        <> "th arguments of "
+        <> show tyName
+        <> " when deriving the "
+        <> show instanceName
+        <> " instance because they are not Nats."
+  pred <- [t|ValidFP $(varT $ tvName argEb) $(varT $ tvName argSb)|]
+  return [pred]
+
+extraExtraMergeableConstraint :: [TyVarBndr_ ()] -> Q [Pred]
+extraExtraMergeableConstraint args = do
+  catMaybes <$> traverse (ctxForVar [''Mergeable]) args
+
+-- | Generate extra constraints for a GADT.
+extraConstraint ::
+  ExtraConstraint -> Name -> Name -> [TyVarBndr_ ()] -> Q [Pred]
+extraConstraint extra@ExtraConstraint {..} tyName instanceName args = do
+  checkAllValidExtraConstraintPosition
+    extra
+    tyName
+    instanceName
+    args
+  evalModePreds <-
+    traverse
+      (extraEvalModeConstraint tyName instanceName args)
+      evalModeConstraint
+  evalModeSpecificPreds <-
+    traverse
+      (extraEvalModeSpecificConstraint tyName instanceName args)
+      evalModeSpecificConstraint
+  bitSizePreds <-
+    traverse (extraBitSizeConstraint tyName instanceName args) bitSizeConstraint
+  fpBitSizePreds <-
+    traverse
+      (extraFpBitSizeConstraint tyName instanceName args)
+      fpBitSizeConstraint
+  extraMergeablePreds <-
+    if needExtraMergeable
+      then extraExtraMergeableConstraint args
+      else return []
+  return $
+    extraMergeablePreds
+      ++ concat
+        ( evalModePreds
+            ++ evalModeSpecificPreds
+            ++ bitSizePreds
+            ++ fpBitSizePreds
+        )

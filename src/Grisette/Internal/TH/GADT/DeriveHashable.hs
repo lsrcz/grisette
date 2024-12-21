@@ -20,6 +20,7 @@ import Data.Hashable.Lifted
   ( Hashable1 (liftHashWithSalt),
     Hashable2 (liftHashWithSalt2),
   )
+import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -70,13 +71,13 @@ hashableConfig =
     }
 
 -- | Derive 'Hashable' instance for a GADT.
-deriveGADTHashable :: Name -> Q [Dec]
-deriveGADTHashable = genUnaryOpClass hashableConfig 0
+deriveGADTHashable :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTHashable extra = genUnaryOpClass extra hashableConfig 0
 
 -- | Derive 'Hashable1' instance for a GADT.
-deriveGADTHashable1 :: Name -> Q [Dec]
-deriveGADTHashable1 = genUnaryOpClass hashableConfig 1
+deriveGADTHashable1 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTHashable1 extra = genUnaryOpClass extra hashableConfig 1
 
 -- | Derive 'Hashable2' instance for a GADT.
-deriveGADTHashable2 :: Name -> Q [Dec]
-deriveGADTHashable2 = genUnaryOpClass hashableConfig 2
+deriveGADTHashable2 :: ExtraConstraint -> Name -> Q [Dec]
+deriveGADTHashable2 extra = genUnaryOpClass extra hashableConfig 2
