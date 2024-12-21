@@ -50,7 +50,6 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Ratio (Ratio)
 import qualified Data.Text as T
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
@@ -67,7 +66,7 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymEq..==)`.
 --
@@ -79,7 +78,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- One example when it isn't clear is when this is used in unified
 -- `Grisette.Unified.Internal.Class.UnifiedBranching.mrgIf`.
 (.==) ::
-  forall mode a. (Typeable mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
 (.==) a b =
   withMode @mode
     (withBaseSymEq @mode @a $ a == b)
@@ -95,7 +94,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- One example when it isn't clear is when this is used in unified
 -- `Grisette.Unified.Internal.Class.UnifiedBranching.mrgIf`.
 (./=) ::
-  forall mode a. (Typeable mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymEq mode a) => a -> a -> GetBool mode
 (./=) a b =
   withMode @mode
     (withBaseSymEq @mode @a $ a /= b)
@@ -111,7 +110,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- One example when it isn't clear is when this is used in unified
 -- `Grisette.Unified.Internal.Class.UnifiedBranching.mrgIf`.
 symDistinct ::
-  forall mode a. (Typeable mode, UnifiedSymEq mode a) => [a] -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymEq mode a) => [a] -> GetBool mode
 symDistinct l =
   withMode @mode
     ( withBaseSymEq @mode @a $
@@ -124,7 +123,7 @@ symDistinct l =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.liftSymEq`.
 liftSymEq ::
   forall mode f a b.
-  (Typeable mode, UnifiedSymEq1 mode f) =>
+  (DecideEvalMode mode, UnifiedSymEq1 mode f) =>
   (a -> b -> GetBool mode) ->
   f a ->
   f b ->
@@ -139,7 +138,7 @@ liftSymEq f a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.symEq1`.
 symEq1 ::
   forall mode f a.
-  (Typeable mode, UnifiedSymEq mode a, UnifiedSymEq1 mode f) =>
+  (DecideEvalMode mode, UnifiedSymEq mode a, UnifiedSymEq1 mode f) =>
   f a ->
   f a ->
   GetBool mode
@@ -154,7 +153,7 @@ symEq1 a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.liftSymEq2`.
 liftSymEq2 ::
   forall mode f a b c d.
-  (Typeable mode, UnifiedSymEq2 mode f) =>
+  (DecideEvalMode mode, UnifiedSymEq2 mode f) =>
   (a -> b -> GetBool mode) ->
   (c -> d -> GetBool mode) ->
   f a c ->
@@ -170,7 +169,7 @@ liftSymEq2 f a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymEq.symEq2`.
 symEq2 ::
   forall mode f a b.
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSymEq mode a,
     UnifiedSymEq mode b,
     UnifiedSymEq2 mode f
@@ -218,7 +217,7 @@ class
 
 instance
   {-# INCOHERENT #-}
-  (Typeable mode, If (IsConMode mode) (Eq a) (SymEq a)) =>
+  (DecideEvalMode mode, If (IsConMode mode) (Eq a) (SymEq a)) =>
   UnifiedSymEq mode a
   where
   withBaseSymEq r = r
@@ -226,7 +225,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (Eq1 f) (SymEq1 f),
     forall a. (UnifiedSymEq mode a) => UnifiedSymEq mode (f a)
   ) =>
@@ -237,7 +236,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (Eq2 f) (SymEq2 f),
     forall a. (UnifiedSymEq mode a) => UnifiedSymEq1 mode (f a)
   ) =>
@@ -251,7 +250,7 @@ instance (UnifiedSymEq 'S v) => UnifiedSymEq 'S (Union v) where
   {-# INLINE withBaseSymEq #-}
 
 instance
-  (Typeable mode, UnifiedSymEq mode a) =>
+  (DecideEvalMode mode, UnifiedSymEq mode a) =>
   UnifiedSymEq mode (Ratio a)
   where
   withBaseSymEq r =
@@ -328,7 +327,7 @@ deriveUnifiedInterface1s
 
 -- Sum
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSymEq1 mode f,
     UnifiedSymEq1 mode g,
     UnifiedSymEq mode a
@@ -348,7 +347,7 @@ instance
   {-# INLINE withBaseSymEq #-}
 
 instance
-  (Typeable mode, UnifiedSymEq1 mode f, UnifiedSymEq1 mode g) =>
+  (DecideEvalMode mode, UnifiedSymEq1 mode f, UnifiedSymEq1 mode g) =>
   UnifiedSymEq1 mode (Sum f g)
   where
   withBaseSymEq1 r =
@@ -359,7 +358,7 @@ instance
 
 -- IdentityT
 instance
-  (Typeable mode, UnifiedSymEq1 mode m, UnifiedSymEq mode a) =>
+  (DecideEvalMode mode, UnifiedSymEq1 mode m, UnifiedSymEq mode a) =>
   UnifiedSymEq mode (IdentityT m a)
   where
   withBaseSymEq r =
@@ -369,22 +368,22 @@ instance
   {-# INLINE withBaseSymEq #-}
 
 instance
-  (Typeable mode, UnifiedSymEq1 mode m) =>
+  (DecideEvalMode mode, UnifiedSymEq1 mode m) =>
   UnifiedSymEq1 mode (IdentityT m)
   where
   withBaseSymEq1 r =
     withMode @mode (withBaseSymEq1 @mode @m r) (withBaseSymEq1 @mode @m r)
   {-# INLINE withBaseSymEq1 #-}
 
-instance (Typeable mode, ValidFP eb sb) => UnifiedSymEq mode (FP eb sb) where
+instance (DecideEvalMode mode, ValidFP eb sb) => UnifiedSymEq mode (FP eb sb) where
   withBaseSymEq r = withMode @mode r r
   {-# INLINE withBaseSymEq #-}
 
-instance (Typeable mode) => UnifiedSymEq2 mode Either where
+instance (DecideEvalMode mode) => UnifiedSymEq2 mode Either where
   withBaseSymEq2 r = withMode @mode r r
   {-# INLINE withBaseSymEq2 #-}
 
-instance (Typeable mode) => UnifiedSymEq2 mode (,) where
+instance (DecideEvalMode mode) => UnifiedSymEq2 mode (,) where
   withBaseSymEq2 r = withMode @mode r r
   {-# INLINE withBaseSymEq2 #-}
 
@@ -398,14 +397,14 @@ deriveUnifiedInterface1s
     ''(,,,)
   ]
 
-instance (Typeable mode, UnifiedSymEq mode a) =>
+instance (DecideEvalMode mode, UnifiedSymEq mode a) =>
   UnifiedSymEq2 mode ((,,) a) where
   withBaseSymEq2 r =
     withMode @mode (withBaseSymEq @mode @a r) (withBaseSymEq @mode @a r)
   {-# INLINE withBaseSymEq2 #-}
 
 instance
-  (Typeable mode, UnifiedSymEq mode a, UnifiedSymEq mode b) =>
+  (DecideEvalMode mode, UnifiedSymEq mode a, UnifiedSymEq mode b) =>
   UnifiedSymEq2 mode ((,,,) a b)
   where
   withBaseSymEq2 r =

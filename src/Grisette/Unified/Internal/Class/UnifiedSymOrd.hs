@@ -61,7 +61,6 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Ratio (Ratio)
 import qualified Data.Text as T
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32, Word64, Word8)
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
@@ -90,7 +89,7 @@ import Grisette.Unified.Internal.EvalModeTag
     IsConMode,
   )
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..<=)`.
 --
@@ -102,7 +101,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- One example when it isn't clear is when this is used in unified
 -- `Grisette.Unified.Internal.Class.UnifiedBranching.mrgIf`.
 (.<=) ::
-  forall mode a. (Typeable mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
 (.<=) a b =
   withMode @mode
     (withBaseSymOrd @mode @a $ a <= b)
@@ -111,7 +110,7 @@ import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..<)`.
 (.<) ::
-  forall mode a. (Typeable mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
 (.<) a b =
   withMode @mode
     (withBaseSymOrd @mode @a $ a < b)
@@ -120,7 +119,7 @@ import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..>=)`.
 (.>=) ::
-  forall mode a. (Typeable mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
 (.>=) a b =
   withMode @mode
     (withBaseSymOrd @mode @a $ a >= b)
@@ -129,7 +128,7 @@ import Grisette.Unified.Internal.Util (withMode)
 
 -- | Unified `(Grisette.Internal.Core.Data.Class.SymOrd..>)`.
 (.>) ::
-  forall mode a. (Typeable mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
+  forall mode a. (DecideEvalMode mode, UnifiedSymOrd mode a) => a -> a -> GetBool mode
 (.>) a b =
   withMode @mode
     (withBaseSymOrd @mode @a $ a > b)
@@ -139,7 +138,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symCompare`.
 symCompare ::
   forall mode a ctx.
-  (Typeable mode, UnifiedSymOrd mode a, Monad ctx) =>
+  (DecideEvalMode mode, UnifiedSymOrd mode a, Monad ctx) =>
   a ->
   a ->
   BaseMonad mode Ordering
@@ -154,7 +153,7 @@ symCompare x y =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.liftSymCompare`.
 liftSymCompare ::
   forall mode f a b.
-  (Typeable mode, UnifiedSymOrd1 mode f) =>
+  (DecideEvalMode mode, UnifiedSymOrd1 mode f) =>
   (a -> b -> BaseMonad mode Ordering) ->
   f a ->
   f b ->
@@ -173,7 +172,7 @@ liftSymCompare f a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symCompare1`.
 symCompare1 ::
   forall mode f a.
-  (Typeable mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) =>
+  (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd1 mode f) =>
   f a ->
   f a ->
   BaseMonad mode Ordering
@@ -189,7 +188,7 @@ symCompare1 a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.liftSymCompare2`.
 liftSymCompare2 ::
   forall mode f a b c d.
-  (Typeable mode, UnifiedSymOrd2 mode f) =>
+  (DecideEvalMode mode, UnifiedSymOrd2 mode f) =>
   (a -> b -> BaseMonad mode Ordering) ->
   (c -> d -> BaseMonad mode Ordering) ->
   f a c ->
@@ -213,7 +212,7 @@ liftSymCompare2 f g a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symCompare2`.
 symCompare2 ::
   forall mode f a b.
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSymOrd mode a,
     UnifiedSymOrd mode b,
     UnifiedSymOrd2 mode f
@@ -239,7 +238,7 @@ symCompare2 a b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symMax`.
 symMax ::
   forall mode a.
-  (UnifiedSymOrd mode a, UnifiedITEOp mode a, Typeable mode) =>
+  (UnifiedSymOrd mode a, UnifiedITEOp mode a, DecideEvalMode mode) =>
   a ->
   a ->
   a
@@ -257,7 +256,7 @@ symMax x y =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymOrd.symMin`.
 symMin ::
   forall mode a.
-  (UnifiedSymOrd mode a, UnifiedITEOp mode a, Typeable mode) =>
+  (UnifiedSymOrd mode a, UnifiedITEOp mode a, DecideEvalMode mode) =>
   a ->
   a ->
   a
@@ -277,7 +276,7 @@ mrgMax ::
   forall mode a m.
   ( UnifiedSymOrd mode a,
     UnifiedBranching mode m,
-    Typeable mode,
+    DecideEvalMode mode,
     Applicative m,
     Mergeable a
   ) =>
@@ -303,7 +302,7 @@ mrgMin ::
   forall mode a m.
   ( UnifiedSymOrd mode a,
     UnifiedBranching mode m,
-    Typeable mode,
+    DecideEvalMode mode,
     Applicative m,
     Mergeable a
   ) =>
@@ -347,7 +346,7 @@ class UnifiedSymOrd2 mode f where
 
 instance
   {-# INCOHERENT #-}
-  (Typeable mode, If (IsConMode mode) (Ord a) (SymOrd a)) =>
+  (DecideEvalMode mode, If (IsConMode mode) (Ord a) (SymOrd a)) =>
   UnifiedSymOrd mode a
   where
   withBaseSymOrd r = r
@@ -355,7 +354,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (Ord1 f) (SymOrd1 f),
     forall a. (UnifiedSymOrd mode a) => UnifiedSymOrd mode (f a)
   ) =>
@@ -366,7 +365,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (Ord2 f) (SymOrd2 f),
     forall a. (UnifiedSymOrd mode a) => UnifiedSymOrd1 mode (f a)
   ) =>
@@ -380,7 +379,7 @@ instance (UnifiedSymOrd 'S v) => UnifiedSymOrd 'S (Union v) where
   {-# INLINE withBaseSymOrd #-}
 
 instance
-  (Typeable mode, UnifiedSymOrd mode a, Integral a) =>
+  (DecideEvalMode mode, UnifiedSymOrd mode a, Integral a) =>
   UnifiedSymOrd mode (Ratio a)
   where
   withBaseSymOrd r =
@@ -457,7 +456,7 @@ deriveUnifiedInterface1s
 
 -- Sum
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSymOrd1 mode f,
     UnifiedSymOrd1 mode g,
     UnifiedSymOrd mode a
@@ -477,7 +476,7 @@ instance
   {-# INLINE withBaseSymOrd #-}
 
 instance
-  (Typeable mode, UnifiedSymOrd1 mode f, UnifiedSymOrd1 mode g) =>
+  (DecideEvalMode mode, UnifiedSymOrd1 mode f, UnifiedSymOrd1 mode g) =>
   UnifiedSymOrd1 mode (Sum f g)
   where
   withBaseSymOrd1 r =
@@ -488,7 +487,7 @@ instance
 
 -- IdentityT
 instance
-  (Typeable mode, UnifiedSymOrd1 mode m, UnifiedSymOrd mode a) =>
+  (DecideEvalMode mode, UnifiedSymOrd1 mode m, UnifiedSymOrd mode a) =>
   UnifiedSymOrd mode (IdentityT m a)
   where
   withBaseSymOrd r =
@@ -498,22 +497,22 @@ instance
   {-# INLINE withBaseSymOrd #-}
 
 instance
-  (Typeable mode, UnifiedSymOrd1 mode m) =>
+  (DecideEvalMode mode, UnifiedSymOrd1 mode m) =>
   UnifiedSymOrd1 mode (IdentityT m)
   where
   withBaseSymOrd1 r =
     withMode @mode (withBaseSymOrd1 @mode @m r) (withBaseSymOrd1 @mode @m r)
   {-# INLINE withBaseSymOrd1 #-}
 
-instance (Typeable mode, ValidFP eb sb) => UnifiedSymOrd mode (FP eb sb) where
+instance (DecideEvalMode mode, ValidFP eb sb) => UnifiedSymOrd mode (FP eb sb) where
   withBaseSymOrd r = withMode @mode r r
   {-# INLINE withBaseSymOrd #-}
 
-instance (Typeable mode) => UnifiedSymOrd2 mode Either where
+instance (DecideEvalMode mode) => UnifiedSymOrd2 mode Either where
   withBaseSymOrd2 r = withMode @mode r r
   {-# INLINE withBaseSymOrd2 #-}
 
-instance (Typeable mode) => UnifiedSymOrd2 mode (,) where
+instance (DecideEvalMode mode) => UnifiedSymOrd2 mode (,) where
   withBaseSymOrd2 r = withMode @mode r r
   {-# INLINE withBaseSymOrd2 #-}
 
@@ -527,14 +526,14 @@ deriveUnifiedInterface1s
     ''(,,,)
   ]
 
-instance (Typeable mode, UnifiedSymOrd mode a) => 
+instance (DecideEvalMode mode, UnifiedSymOrd mode a) => 
   UnifiedSymOrd2 mode ((,,) a) where
   withBaseSymOrd2 r =
     withMode @mode (withBaseSymOrd @mode @a r) (withBaseSymOrd @mode @a r)
   {-# INLINE withBaseSymOrd2 #-}
 
 instance
-  (Typeable mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b) =>
+  (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b) =>
   UnifiedSymOrd2 mode ((,,,) a b)
   where
   withBaseSymOrd2 r =

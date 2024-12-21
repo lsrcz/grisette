@@ -29,7 +29,6 @@ module Grisette.Internal.TH.DeriveUnifiedInterface
 where
 
 import Control.Monad (unless)
-import Data.Typeable (Typeable)
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( DeriveInstanceProvider (instanceDeclaration),
   )
@@ -49,7 +48,7 @@ import Grisette.Internal.TH.Util
     tvIsStarToStar,
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 import Language.Haskell.TH
   ( Dec,
     Exp,
@@ -104,7 +103,7 @@ instance DeriveTypeParamHandler TypeableMode where
         Maybe [Pred] ->
         Q ([(TyVarBndrUnit, Maybe Type)], Maybe [Pred])
       handleMode [(tv, substTy)] preds | tvIsMode tv = do
-        typeable <- [t|Typeable $(getTypeWithMaybeSubst tv substTy)|]
+        typeable <- [t|DecideEvalMode $(getTypeWithMaybeSubst tv substTy)|]
         return ([(tv, substTy)], concatPreds (Just [typeable]) preds)
       handleMode tys preds = return (tys, preds)
   handleBody _ _ = return []

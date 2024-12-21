@@ -33,7 +33,6 @@ where
 
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
-import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge)
 import Grisette.Unified.Internal.BVBVConversion (AllUnifiedBVBVConversion)
 import Grisette.Unified.Internal.BVFPConversion (AllUnifiedBVFPConversion)
@@ -56,6 +55,7 @@ import Grisette.Unified.Internal.UnifiedFun
   )
 import Grisette.Unified.Internal.UnifiedInteger (UnifiedInteger)
 import Grisette.Unified.Internal.UnifiedPrim (UnifiedBasicPrim)
+import Grisette.Unified.Internal.Util (DecideEvalMode)
 import Language.Haskell.TH
   ( DecsQ,
     Type (AppT, ArrowT, ConT, StarT, VarT),
@@ -76,7 +76,7 @@ import Language.Haskell.TH
 --
 -- For compilers prior to GHC 9.2.1, see the notes for 'EvalModeAll'.
 class
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBool mode,
     UnifiedBasicPrim mode (GetBool mode),
     Monad (BaseMonad mode),

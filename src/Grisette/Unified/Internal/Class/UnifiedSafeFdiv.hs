@@ -28,7 +28,6 @@ where
 
 import Control.Exception (ArithException)
 import Control.Monad.Error.Class (MonadError)
-import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Data.Class.SafeFdiv (SafeFdiv)
 import qualified Grisette.Internal.Core.Data.Class.SafeFdiv
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
@@ -70,7 +69,7 @@ instance
   withBaseUnifiedSafeFdiv r = r
 
 instance
-  (Typeable mode, MonadError ArithException m, UnifiedBranching mode m) =>
+  (MonadError ArithException m, UnifiedBranching mode m) =>
   UnifiedSafeFdiv mode ArithException AlgReal m
   where
   withBaseUnifiedSafeFdiv r =

@@ -2,7 +2,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-
 {-# OPTIONS_GHC -ddump-simpl -dsuppress-module-prefixes -dsuppress-uniques #-}
 {-# OPTIONS_GHC -ddump-timings #-}
 
@@ -68,15 +67,14 @@ ftst c t f =
     (extractData t)
     (extractData f)
 
---   {-# NOINLINE ftst #-}
-
 derivationTest :: Test
 derivationTest =
   testGroup
     "Derivation"
     [ testCase "ftst" $ do
         let x = Extra True [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
-        let a = ftst @'C True (return x) (return x)
+        let y = Extra False [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
+        let a = ftst @'C True (return x) (return y)
         a @?= return x,
       testProperty "GADT Show instance for regular types" $
         \(g :: GGG (GGG Int String) [Int]) ->

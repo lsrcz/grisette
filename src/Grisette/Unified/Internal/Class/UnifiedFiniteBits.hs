@@ -35,7 +35,6 @@ import Data.Bits
   ( Bits (popCount, testBit),
     FiniteBits (countLeadingZeros, countTrailingZeros),
   )
-import Data.Data (Typeable)
 import Data.Type.Bool (If)
 import GHC.TypeLits (KnownNat, type (<=))
 import Grisette.Internal.Core.Data.Class.SymFiniteBits
@@ -57,12 +56,12 @@ import Grisette.Unified.Internal.Class.UnifiedITEOp
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S), IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symTestBit`.
 symTestBit ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a) =>
   a ->
   Int ->
   GetBool mode
@@ -74,7 +73,7 @@ symTestBit a i =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symSetBitTo`.
 symSetBitTo ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a) =>
   a ->
   Int ->
   GetBool mode ->
@@ -87,7 +86,7 @@ symSetBitTo a i b =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symFromBits`.
 symFromBits ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a) =>
   [GetBool mode] ->
   a
 symFromBits bits =
@@ -98,7 +97,7 @@ symFromBits bits =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symBitBlast`.
 symBitBlast ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a) =>
   a ->
   [GetBool mode]
 symBitBlast a =
@@ -109,7 +108,7 @@ symBitBlast a =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symLsb`.
 symLsb ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a) =>
   a ->
   GetBool mode
 symLsb a =
@@ -120,7 +119,7 @@ symLsb a =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symMsb`.
 symMsb ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a) =>
   a ->
   GetBool mode
 symMsb a =
@@ -131,7 +130,7 @@ symMsb a =
 -- | Unified `Grisette.Internal.Core.Data.Class.SymFiniteBits.symPopCount`.
 symPopCount ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
   a ->
   a
 symPopCount a =
@@ -145,7 +144,7 @@ symPopCount a =
 -- `Grisette.Internal.Core.Data.Class.SymFiniteBits.symCountLeadingZeros`.
 symCountLeadingZeros ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
   a ->
   a
 symCountLeadingZeros a =
@@ -159,7 +158,7 @@ symCountLeadingZeros a =
 -- `Grisette.Internal.Core.Data.Class.SymFiniteBits.symCountTrailingZeros`.
 symCountTrailingZeros ::
   forall mode a.
-  (Typeable mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
+  (DecideEvalMode mode, UnifiedFiniteBits mode a, Num a, UnifiedITEOp mode a) =>
   a ->
   a
 symCountTrailingZeros a =

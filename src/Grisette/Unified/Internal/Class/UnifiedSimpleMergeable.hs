@@ -50,7 +50,6 @@ import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Trans.Writer.Strict as WriterStrict
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
-import Data.Typeable (Typeable)
 import Grisette.Internal.Core.Control.Exception (AssertionError)
 import Grisette.Internal.Core.Control.Monad.Union (liftUnion)
 import Grisette.Internal.Core.Data.Class.GenSym (FreshT)
@@ -73,12 +72,9 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterface1s,
   )
 import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.EvalModeTag
-  ( EvalModeTag,
-    IsConMode,
-  )
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag, IsConMode)
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
 
 -- | Unified `Grisette.mrgIf`.
 --
@@ -90,7 +86,7 @@ import Grisette.Unified.Internal.Util (withMode)
 -- > mrgIf (a .== b :: GetBool mode) ...
 mrgIf ::
   forall mode a m.
-  (Typeable mode, Mergeable a, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, Mergeable a, UnifiedBranching mode m) =>
   GetBool mode ->
   m a ->
   m a ->
@@ -119,7 +115,7 @@ liftBaseMonad b =
 -- | Unified merge of simply mergeable values in the base monad.
 simpleMerge ::
   forall mode a.
-  (Typeable mode, UnifiedSimpleMergeable mode a) =>
+  (DecideEvalMode mode, UnifiedSimpleMergeable mode a) =>
   BaseMonad mode a ->
   a
 simpleMerge =
@@ -130,7 +126,7 @@ simpleMerge =
 -- | Unified `Grisette.mrgIte`.
 mrgIte ::
   forall mode a.
-  (Typeable mode, UnifiedSimpleMergeable mode a) =>
+  (DecideEvalMode mode, UnifiedSimpleMergeable mode a) =>
   GetBool mode ->
   a ->
   a ->
@@ -145,7 +141,7 @@ mrgIte c t e =
 -- | Unified `Grisette.mrgIte1`.
 mrgIte1 ::
   forall mode f a.
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSimpleMergeable1 mode f,
     UnifiedSimpleMergeable mode a
   ) =>
@@ -164,7 +160,7 @@ mrgIte1 c t e =
 -- | Unified `Grisette.liftMrgIte`.
 liftMrgIte ::
   forall mode f a.
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSimpleMergeable1 mode f
   ) =>
   (GetBool mode -> a -> a -> a) ->
@@ -182,7 +178,7 @@ liftMrgIte f c t e =
 -- | Unified `Grisette.mrgIte2`.
 mrgIte2 ::
   forall mode f a b.
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSimpleMergeable2 mode f,
     UnifiedSimpleMergeable mode a,
     UnifiedSimpleMergeable mode b
@@ -203,7 +199,7 @@ mrgIte2 c t e =
 -- | Unified `Grisette.liftMrgIte2`.
 liftMrgIte2 ::
   forall mode f a b.
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSimpleMergeable2 mode f
   ) =>
   (GetBool mode -> a -> a -> a) ->
@@ -247,7 +243,7 @@ class UnifiedSimpleMergeable2 mode f where
 -- We use this type class to help resolve the constraints for
 -- `SymBranching`.
 class
-  (Typeable mode) =>
+  (DecideEvalMode mode) =>
   UnifiedBranching (mode :: EvalModeTag) m
   where
   withBaseBranching ::
@@ -255,7 +251,7 @@ class
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) ((TryMerge m) :: Constraint) (SymBranching m)
   ) =>
   UnifiedBranching mode m
@@ -265,7 +261,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (() :: Constraint) (SimpleMergeable m)
   ) =>
   UnifiedSimpleMergeable mode m
@@ -275,7 +271,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (() :: Constraint) (SimpleMergeable1 m)
   ) =>
   UnifiedSimpleMergeable1 mode m
@@ -285,7 +281,7 @@ instance
 
 instance
   {-# INCOHERENT #-}
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     If (IsConMode mode) (() :: Constraint) (SimpleMergeable2 m)
   ) =>
   UnifiedSimpleMergeable2 mode m
@@ -339,12 +335,12 @@ deriveUnifiedInterface1s
     ''Identity
   ]
 
-instance (Typeable mode) => UnifiedSimpleMergeable2 mode (,) where
+instance (DecideEvalMode mode) => UnifiedSimpleMergeable2 mode (,) where
   withBaseSimpleMergeable2 r = withMode @mode r r
   {-# INLINE withBaseSimpleMergeable2 #-}
 
 instance
-  (Typeable mode, UnifiedSimpleMergeable mode a) =>
+  (DecideEvalMode mode, UnifiedSimpleMergeable mode a) =>
   UnifiedSimpleMergeable2 mode ((,,) a)
   where
   withBaseSimpleMergeable2 r =
@@ -354,7 +350,7 @@ instance
   {-# INLINE withBaseSimpleMergeable2 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedSimpleMergeable mode a,
     UnifiedSimpleMergeable mode b
   ) =>
@@ -367,7 +363,7 @@ instance
   {-# INLINE withBaseSimpleMergeable2 #-}
 
 instance
-  (Typeable mode, UnifiedSimpleMergeable mode b) =>
+  (DecideEvalMode mode, UnifiedSimpleMergeable mode b) =>
   UnifiedSimpleMergeable mode (a -> b)
   where
   withBaseSimpleMergeable r =
@@ -376,16 +372,16 @@ instance
       (withBaseSimpleMergeable @mode @b r)
   {-# INLINE withBaseSimpleMergeable #-}
 
-instance (Typeable mode) => UnifiedSimpleMergeable1 mode ((->) a) where
+instance (DecideEvalMode mode) => UnifiedSimpleMergeable1 mode ((->) a) where
   withBaseSimpleMergeable1 r = withMode @mode r r
   {-# INLINE withBaseSimpleMergeable1 #-}
 
-instance (Typeable mode) => UnifiedSimpleMergeable2 mode (->) where
+instance (DecideEvalMode mode) => UnifiedSimpleMergeable2 mode (->) where
   withBaseSimpleMergeable2 r = withMode @mode r r
   {-# INLINE withBaseSimpleMergeable2 #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable a) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable a) =>
   UnifiedSimpleMergeable mode (FreshT m a)
   where
   withBaseSimpleMergeable r =
@@ -395,7 +391,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedSimpleMergeable1 mode (FreshT m)
   where
   withBaseSimpleMergeable1 r =
@@ -405,7 +401,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (FreshT m)
   where
   withBaseBranching r =
@@ -415,7 +411,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable a) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable a) =>
   UnifiedSimpleMergeable mode (MaybeT m a)
   where
   withBaseSimpleMergeable r =
@@ -425,7 +421,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedSimpleMergeable1 mode (MaybeT m)
   where
   withBaseSimpleMergeable1 r =
@@ -435,7 +431,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (MaybeT m)
   where
   withBaseBranching r =
@@ -445,7 +441,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable a) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable a) =>
   UnifiedSimpleMergeable mode (IdentityT m a)
   where
   withBaseSimpleMergeable r =
@@ -455,7 +451,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedSimpleMergeable1 mode (IdentityT m)
   where
   withBaseSimpleMergeable1 r =
@@ -465,7 +461,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (IdentityT m)
   where
   withBaseBranching r =
@@ -475,7 +471,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable a) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable a) =>
   UnifiedSimpleMergeable mode (ReaderT r m a)
   where
   withBaseSimpleMergeable r =
@@ -485,7 +481,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedSimpleMergeable1 mode (ReaderT r m)
   where
   withBaseSimpleMergeable1 r =
@@ -495,7 +491,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, UnifiedBranching mode m) =>
   UnifiedBranching mode (ReaderT r m)
   where
   withBaseBranching r =
@@ -505,7 +501,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable s, Mergeable a) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable s, Mergeable a) =>
   UnifiedSimpleMergeable mode (StateLazy.StateT s m a)
   where
   withBaseSimpleMergeable r =
@@ -515,7 +511,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable s) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable s) =>
   UnifiedSimpleMergeable1 mode (StateLazy.StateT s m)
   where
   withBaseSimpleMergeable1 r =
@@ -525,7 +521,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable s
   ) =>
@@ -538,7 +534,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable s, Mergeable a) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable s, Mergeable a) =>
   UnifiedSimpleMergeable mode (StateStrict.StateT s m a)
   where
   withBaseSimpleMergeable r =
@@ -548,7 +544,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable s) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable s) =>
   UnifiedSimpleMergeable1 mode (StateStrict.StateT s m)
   where
   withBaseSimpleMergeable1 r =
@@ -558,7 +554,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable s
   ) =>
@@ -571,7 +567,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable w,
     Mergeable a,
@@ -586,7 +582,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable w, Monoid w) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable w, Monoid w) =>
   UnifiedSimpleMergeable1 mode (WriterLazy.WriterT w m)
   where
   withBaseSimpleMergeable1 r =
@@ -596,7 +592,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Monoid w,
     Mergeable w
@@ -610,7 +606,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable w,
     Mergeable a,
@@ -625,7 +621,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable w, Monoid w) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable w, Monoid w) =>
   UnifiedSimpleMergeable1 mode (WriterStrict.WriterT w m)
   where
   withBaseSimpleMergeable1 r =
@@ -635,7 +631,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Monoid w,
     Mergeable w
@@ -649,7 +645,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable e,
     Mergeable a
@@ -663,7 +659,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable e) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable e) =>
   UnifiedSimpleMergeable1 mode (ExceptT e m)
   where
   withBaseSimpleMergeable1 r =
@@ -673,7 +669,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  (Typeable mode, Mergeable e, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, Mergeable e, UnifiedBranching mode m) =>
   UnifiedBranching mode (ExceptT e m)
   where
   withBaseBranching r =
@@ -683,7 +679,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable r,
     Mergeable a
@@ -697,7 +693,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  (Typeable mode, UnifiedBranching mode m, Mergeable r) =>
+  (DecideEvalMode mode, UnifiedBranching mode m, Mergeable r) =>
   UnifiedSimpleMergeable1 mode (ContT r m)
   where
   withBaseSimpleMergeable1 r =
@@ -707,7 +703,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  (Typeable mode, Mergeable r, UnifiedBranching mode m) =>
+  (DecideEvalMode mode, Mergeable r, UnifiedBranching mode m) =>
   UnifiedBranching mode (ContT r m)
   where
   withBaseBranching r =
@@ -717,7 +713,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable w,
     Monoid w,
@@ -733,7 +729,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable w,
     Monoid w,
@@ -748,7 +744,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable s,
     Monoid w,
@@ -763,7 +759,7 @@ instance
   {-# INLINE withBaseBranching #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable w,
     Monoid w,
@@ -779,7 +775,7 @@ instance
   {-# INLINE withBaseSimpleMergeable #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable w,
     Monoid w,
@@ -794,7 +790,7 @@ instance
   {-# INLINE withBaseSimpleMergeable1 #-}
 
 instance
-  ( Typeable mode,
+  ( DecideEvalMode mode,
     UnifiedBranching mode m,
     Mergeable s,
     Monoid w,
