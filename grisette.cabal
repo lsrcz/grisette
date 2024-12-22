@@ -179,6 +179,8 @@ library
       Grisette.Internal.TH.GADT.DeriveSubstSym
       Grisette.Internal.TH.GADT.DeriveSymEq
       Grisette.Internal.TH.GADT.DeriveSymOrd
+      Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
+      Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
       Grisette.Internal.TH.GADT.ShowPPrintCommon
       Grisette.Internal.TH.GADT.UnaryOpCommon
       Grisette.Internal.TH.Util

@@ -27,20 +27,23 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
     defaultFieldResFun,
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Language.Haskell.TH (Dec, Exp (AppE, ConE), Name)
@@ -49,22 +52,24 @@ import Language.Haskell.TH.Syntax (Q)
 substSymConfig :: UnaryOpClassConfig
 substSymConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = ["symbol", "newVal"],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ _ con extraPat exp ->
-                return (foldl AppE (ConE con) exp, False <$ extraPat),
-              fieldFunExp =
-                defaultFieldFunExp
-                  ['substSym, 'liftSubstSym, 'liftSubstSym2],
-              fieldFunNames =
-                ['substSym, 'liftSubstSym, 'liftSubstSym2]
-            }
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = ["symbol", "newVal"],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ con extraPat exp ->
+                  return (foldl AppE (ConE con) exp, False <$ extraPat),
+                fieldFunExp =
+                  defaultFieldFunExp
+                    ['substSym, 'liftSubstSym, 'liftSubstSym2]
+              }
+            ['substSym, 'liftSubstSym, 'liftSubstSym2]
         ],
       unaryOpInstanceNames =
-        [''SubstSym, ''SubstSym1, ''SubstSym2]
+        [''SubstSym, ''SubstSym1, ''SubstSym2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'SubstSym' instance for a GADT.

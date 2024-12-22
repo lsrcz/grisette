@@ -14,11 +14,13 @@ module Grisette.TH
     deriveAll,
     deriveAllExcept,
     deriveGADT,
-    deriveGADTAll,
-    deriveGADTAllExcept,
     deriveGADTWith,
-    deriveGADTAllWith,
-    deriveGADTAllExceptWith,
+    allClasses0,
+    allClasses0WithOrd,
+    allClasses1,
+    allClasses1WithOrd,
+    allClasses2,
+    allClasses2WithOrd,
 
     -- * Smart constructors that merges in a monad
     makePrefixedSmartCtor,
@@ -104,10 +106,12 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   )
 import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
 import Grisette.Internal.TH.GADT.DeriveGADT
-  ( deriveGADT,
-    deriveGADTAll,
-    deriveGADTAllExcept,
-    deriveGADTAllExceptWith,
-    deriveGADTAllWith,
+  ( allClasses0,
+    allClasses0WithOrd,
+    allClasses1,
+    allClasses1WithOrd,
+    allClasses2,
+    allClasses2WithOrd,
+    deriveGADT,
     deriveGADTWith,
   )

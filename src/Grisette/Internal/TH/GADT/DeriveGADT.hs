@@ -14,11 +14,13 @@
 -- Portability :   GHC only
 module Grisette.Internal.TH.GADT.DeriveGADT
   ( deriveGADT,
-    deriveGADTAll,
-    deriveGADTAllExcept,
     deriveGADTWith,
-    deriveGADTAllWith,
-    deriveGADTAllExceptWith,
+    allClasses0,
+    allClasses0WithOrd,
+    allClasses1,
+    allClasses1WithOrd,
+    allClasses2,
+    allClasses2WithOrd,
   )
 where
 
@@ -126,7 +128,27 @@ import Grisette.Internal.TH.GADT.DeriveSymOrd
     deriveGADTSymOrd1,
     deriveGADTSymOrd2,
   )
-import Grisette.Unified (EvalModeTag (C))
+import Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
+  ( deriveGADTUnifiedSymEq,
+    deriveGADTUnifiedSymEq1,
+    deriveGADTUnifiedSymEq2,
+  )
+import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
+  ( deriveGADTUnifiedSymOrd,
+    deriveGADTUnifiedSymOrd1,
+    deriveGADTUnifiedSymOrd2,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSymEq
+  ( UnifiedSymEq,
+    UnifiedSymEq1,
+    UnifiedSymEq2,
+  )
+import Grisette.Unified.Internal.Class.UnifiedSymOrd
+  ( UnifiedSymOrd,
+    UnifiedSymOrd1,
+    UnifiedSymOrd2,
+  )
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C))
 import Language.Haskell.TH (Dec, Name, Q)
 
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])
@@ -167,7 +189,13 @@ deriveProcedureMap =
       (''SymOrd2, deriveGADTSymOrd2),
       (''SymEq, deriveGADTSymEq),
       (''SymEq1, deriveGADTSymEq1),
-      (''SymEq2, deriveGADTSymEq2)
+      (''SymEq2, deriveGADTSymEq2),
+      (''UnifiedSymEq, deriveGADTUnifiedSymEq),
+      (''UnifiedSymEq1, deriveGADTUnifiedSymEq1),
+      (''UnifiedSymEq2, deriveGADTUnifiedSymEq2),
+      (''UnifiedSymOrd, deriveGADTUnifiedSymOrd),
+      (''UnifiedSymOrd1, deriveGADTUnifiedSymOrd1),
+      (''UnifiedSymOrd2, deriveGADTUnifiedSymOrd2)
     ]
 
 deriveSingleGADT :: DeriveConfig -> Name -> Name -> Q [Dec]
@@ -234,6 +262,12 @@ deriveSingleGADT deriveConfig typName className = do
 -- * 'SymEq'
 -- * 'SymEq1'
 -- * 'SymEq2'
+-- * 'UnifiedSymEq'
+-- * 'UnifiedSymEq1'
+-- * 'UnifiedSymEq2'
+-- * 'UnifiedSymOrd'
+-- * 'UnifiedSymOrd1'
+-- * 'UnifiedSymOrd2'
 --
 -- Note that the following type classes cannot be derived for GADTs with
 -- existential type variables.
@@ -246,10 +280,9 @@ deriveSingleGADT deriveConfig typName className = do
 -- * 'Ord2'
 -- * 'SymOrd1'
 -- * 'SymOrd2'
-deriveGADTWith :: DeriveConfig -> Name -> [Name] -> Q [Dec]
+deriveGADTWith :: DeriveConfig -> Name -> S.Set Name -> Q [Dec]
 deriveGADTWith deriveConfig typName classNames = do
-  let allClassNames = S.toList $ S.fromList classNames
-  let (ns, ms) = splitMergeable allClassNames
+  let (ns, ms) = splitMergeable $ S.toList classNames
   decs <- mapM (deriveSingleGADT deriveConfig typName) ns
   decMergeables <- deriveMergeables ms
   return $ concat decs ++ decMergeables
@@ -278,8 +311,123 @@ deriveGADTWith deriveConfig typName classNames = do
 -- | Derive the specified classes for a GADT with the given name.
 --
 -- See 'deriveGADTWith' for more details.
-deriveGADT :: Name -> [Name] -> Q [Dec]
+deriveGADT :: Name -> S.Set Name -> Q [Dec]
 deriveGADT = deriveGADTWith mempty
+
+-- | The set of all classes (excluding concrete 'Ord') that can be derived by
+-- 'deriveGADT'.
+allClasses0 :: S.Set Name
+allClasses0 =
+  S.fromList
+    [ ''Mergeable,
+      ''EvalSym,
+      ''ExtractSym,
+      ''SubstSym,
+      ''NFData,
+      ''Hashable,
+      ''Show,
+      ''PPrint,
+      ''AllSyms,
+      ''Eq,
+      ''SymEq,
+      ''SymOrd,
+      ''UnifiedSymEq
+    ]
+
+allOrdClasses0 :: S.Set Name
+allOrdClasses0 = S.fromList [''Ord, ''UnifiedSymOrd]
+
+-- | The set of all classes (including concrete 'Ord') that can be derived by
+-- 'deriveGADT'.
+allClasses0WithOrd :: S.Set Name
+allClasses0WithOrd = S.union allOrdClasses0 allClasses0
+
+-- | The set of all classes for functors (excluding concrete 'Ord') that can be
+-- derived by 'deriveGADT'.
+allClasses1 :: S.Set Name
+allClasses1 =
+  S.union allClasses0 $
+    S.fromList
+      [ ''Mergeable1,
+        ''EvalSym1,
+        ''ExtractSym1,
+        ''SubstSym1,
+        ''NFData1,
+        ''Hashable1,
+        ''Show1,
+        ''PPrint1,
+        ''AllSyms1,
+        ''Eq1,
+        ''SymEq1,
+        ''SymOrd1
+      ]
+
+allOrdClasses1 :: S.Set Name
+allOrdClasses1 = S.union allOrdClasses0 $ S.fromList [''Ord1, ''UnifiedSymOrd1]
+
+-- | The set of all classes for functors (including concrete 'Ord') that can be
+-- derived by 'deriveGADT'.
+allClasses1WithOrd :: S.Set Name
+allClasses1WithOrd = S.union allClasses1 allOrdClasses1
+
+-- | The set of all classes for bifunctors (excluding concrete 'Ord') that can
+-- be derived by 'deriveGADT'.
+allClasses2 :: S.Set Name
+allClasses2 =
+  S.union allClasses1 $
+    S.fromList
+      [ ''Mergeable2,
+        ''EvalSym2,
+        ''ExtractSym2,
+        ''SubstSym2,
+        ''NFData2,
+        ''Hashable2,
+        ''Show2,
+        ''PPrint2,
+        ''AllSyms2,
+        ''Eq2,
+        ''SymEq2,
+        ''SymOrd2
+      ]
+
+allOrdClasses2 :: S.Set Name
+allOrdClasses2 = S.union allOrdClasses1 $ S.fromList [''Ord2, ''UnifiedSymOrd2]
+
+-- | The set of all classes for bifunctors (including concrete 'Ord') that can
+-- be derived by 'deriveGADT'.
+allClasses2WithOrd :: S.Set Name
+allClasses2WithOrd = S.union allClasses2 allOrdClasses2
+
+{-
+-- | Derive all (non-functor) classes related to Grisette for a GADT with the
+-- given name.
+--
+-- Extra classes are derived in addition to the classes derived by
+-- 'deriveGADTAllWith'.
+deriveGADTAllExtraWith :: DeriveConfig -> Name -> [Name] -> Q [Dec]
+deriveGADTAllExtraWith deriveConfig typName extraClassNames = do
+  deriveGADTWith deriveConfig typName $
+    extraClassNames
+      ++ [ ''Mergeable,
+           ''EvalSym,
+           ''ExtractSym,
+           ''SubstSym,
+           ''NFData,
+           ''Hashable,
+           ''Show,
+           ''PPrint,
+           ''AllSyms,
+           ''Eq,
+           ''SymEq,
+           ''SymOrd
+         ]
+
+-- | Derive all (non-functor) classes related to Grisette for a GADT with the
+-- given name.
+--
+-- See 'deriveGADTAllExtraWith' for more details.
+deriveGADTAllExtra :: Name -> [Name] -> Q [Dec]
+deriveGADTAllExtra = deriveGADTAllExtraWith mempty
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name.
@@ -303,22 +451,7 @@ deriveGADT = deriveGADTWith mempty
 -- it will be slightly more efficient.
 deriveGADTAllWith :: DeriveConfig -> Name -> Q [Dec]
 deriveGADTAllWith deriveConfig typName =
-  deriveGADTWith
-    deriveConfig
-    typName
-    [ ''Mergeable,
-      ''EvalSym,
-      ''ExtractSym,
-      ''SubstSym,
-      ''NFData,
-      ''Hashable,
-      ''Show,
-      ''PPrint,
-      ''AllSyms,
-      ''Eq,
-      ''SymEq,
-      ''SymOrd
-    ]
+  deriveGADTAllExtraWith deriveConfig typName []
 
 -- | Derive all (non-functor) classes related to Grisette for a GADT with the
 -- given name.
@@ -357,3 +490,4 @@ deriveGADTAllExceptWith deriveConfig typName classNames = do
 -- See 'deriveGADTAllExceptWith' for more details.
 deriveGADTAllExcept :: Name -> [Name] -> Q [Dec]
 deriveGADTAllExcept = deriveGADTAllExceptWith mempty
+-}

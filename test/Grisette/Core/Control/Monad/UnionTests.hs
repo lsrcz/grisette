@@ -39,7 +39,9 @@ import Grisette
     mrgIf,
     mrgIte1,
     mrgSingle,
+    toUnionSym,
     tryMerge,
+    unionToCon,
   )
 import Grisette.Internal.Core.Control.Monad.Union
   ( Union (UAny, UMrg),
@@ -242,13 +244,13 @@ unionTests =
                 )
                 "u1c"
         actual .@?= expected,
-      testCase "ToSym a (Union b)" $ do
-        let actual = toSym True :: Union SymBool
+      testCase "ToSym a (Union b) should be done with toUnionSym" $ do
+        let actual = toUnionSym True :: Union SymBool
         let expected = mrgSingle (con True)
         actual @?= expected,
       testCase "ToSym (Identity a) (Union b)" $ do
         let actual = toSym $ Identity True :: Union SymBool
-        let expected = mrgSingle (con True)
+        let expected = return (con True)
         actual @?= expected,
       testCase "ToSym (Union a) (Union b)" $ do
         let actual = toSym (mrgSingle True :: Union Bool) :: Union SymBool
@@ -259,15 +261,15 @@ unionTests =
         let expected = symIte "a" 1 2 :: SymInteger
         actual @?= expected,
       testGroup
-        "ToCon (Union a) b"
+        "ToCon (Union a) b should be done with unionToCon"
         [ testCase "Const" $ do
             let actual = mrgSingle (con True) :: Union SymBool
             let expected = Just True :: Maybe Bool
-            toCon actual @?= expected,
+            unionToCon actual @?= expected,
           testCase "Not const" $ do
             let actual = mrgSingle "a" :: Union SymBool
             let expected = Nothing :: Maybe Bool
-            toCon actual @?= expected
+            unionToCon actual @?= expected
         ],
       testGroup
         "ToCon (Union a) (Identity b)"

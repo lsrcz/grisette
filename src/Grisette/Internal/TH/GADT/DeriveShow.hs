@@ -28,18 +28,21 @@ import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Grisette.Internal.TH.Util (integerE, isNonUnitTuple)
@@ -63,116 +66,118 @@ import Language.Haskell.TH.Datatype
 showConfig :: UnaryOpClassConfig
 showConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = ["prec"],
-              extraLiftedPatNames = \i -> (["sl" | i /= 0]),
-              fieldCombineFun =
-                \_ variant conName [prec] exps -> do
-                  case (variant, exps) of
-                    (NormalConstructor, []) -> do
-                      r <- [|showString $(stringE $ nameBase conName)|]
-                      return (r, [False])
-                    (NormalConstructor, [exp]) -> do
-                      r <-
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = ["prec"],
+                extraLiftedPatNames = \i -> (["sl" | i /= 0]),
+                fieldCombineFun =
+                  \_ variant conName [prec] exps -> do
+                    case (variant, exps) of
+                      (NormalConstructor, []) -> do
+                        r <- [|showString $(stringE $ nameBase conName)|]
+                        return (r, [False])
+                      (NormalConstructor, [exp]) -> do
+                        r <-
+                          [|
+                            showParen
+                              ($(return prec) > $(integerE appPrec))
+                              ( showString $(stringE $ nameBase conName)
+                                  . showChar ' '
+                                  . $(return exp)
+                              )
+                            |]
+                        return (r, [True])
+                      (NormalConstructor, _) | isNonUnitTuple conName -> do
+                        let commaSeped =
+                              List.intersperse [|showChar ','|] $
+                                return <$> exps
+                        r <-
+                          [|
+                            showChar '('
+                              . foldr1 (.) $(listE commaSeped)
+                              . showChar ')'
+                            |]
+                        return (r, [False])
+                      (NormalConstructor, _) -> do
+                        let spaceSeped =
+                              List.intersperse [|showChar ' '|] $
+                                return <$> exps
+                        r <-
+                          [|
+                            showParen
+                              ($(return prec) > $(integerE appPrec))
+                              ( showString $(stringE $ nameBase conName)
+                                  . showChar ' '
+                                  . (foldr1 (.) $(listE spaceSeped))
+                              )
+                            |]
+                        return (r, [True])
+                      (RecordConstructor _, _) -> do
+                        let commaSpaceSeped =
+                              List.intersperse [|showString ", "|] $
+                                return <$> exps
+                        r <-
+                          [|
+                            showString $(stringE $ nameBase conName)
+                              . showString " {"
+                              . foldr1 (.) $(listE commaSpaceSeped)
+                              . showString "}"
+                            |]
+                        return (r, [False])
+                      (InfixConstructor, [l, r]) -> do
+                        fi <-
+                          fromMaybe defaultFixity `fmap` reifyFixityCompat conName
+                        let conPrec = case fi of Fixity prec _ -> prec
+                        r <-
+                          [|
+                            showParen
+                              ($(return prec) > $(integerE conPrec))
+                              ( $(return l)
+                                  . showChar ' '
+                                  . showString $(stringE $ nameBase conName)
+                                  . showChar ' '
+                                  . $(return r)
+                              )
+                            |]
+                        return (r, [True])
+                      _ ->
+                        fail "deriveGADTShow: unexpected constructor variant",
+                fieldResFun = \variant conName _ pos fieldPat fieldFun -> do
+                  let makeShowField p =
                         [|
-                          showParen
-                            ($(return prec) > $(integerE appPrec))
-                            ( showString $(stringE $ nameBase conName)
-                                . showChar ' '
-                                . $(return exp)
-                            )
+                          $(return fieldFun)
+                            $(litE $ integerL $ fromIntegral p)
+                            $(return fieldPat)
                           |]
-                      return (r, [True])
-                    (NormalConstructor, _) | isNonUnitTuple conName -> do
-                      let commaSeped =
-                            List.intersperse [|showChar ','|] $
-                              return <$> exps
-                      r <-
+                  let attachUsedInfo = ((,[False]) <$>)
+                  case variant of
+                    NormalConstructor
+                      | isNonUnitTuple conName ->
+                          attachUsedInfo $ makeShowField 0
+                    NormalConstructor ->
+                      attachUsedInfo $ makeShowField appPrec1
+                    RecordConstructor names ->
+                      attachUsedInfo
                         [|
-                          showChar '('
-                            . foldr1 (.) $(listE commaSeped)
-                            . showChar ')'
+                          showString $(stringE $ nameBase (names !! pos) ++ " = ")
+                            . $(makeShowField 0)
                           |]
-                      return (r, [False])
-                    (NormalConstructor, _) -> do
-                      let spaceSeped =
-                            List.intersperse [|showChar ' '|] $
-                              return <$> exps
-                      r <-
-                        [|
-                          showParen
-                            ($(return prec) > $(integerE appPrec))
-                            ( showString $(stringE $ nameBase conName)
-                                . showChar ' '
-                                . (foldr1 (.) $(listE spaceSeped))
-                            )
-                          |]
-                      return (r, [True])
-                    (RecordConstructor _, _) -> do
-                      let commaSpaceSeped =
-                            List.intersperse [|showString ", "|] $
-                              return <$> exps
-                      r <-
-                        [|
-                          showString $(stringE $ nameBase conName)
-                            . showString " {"
-                            . foldr1 (.) $(listE commaSpaceSeped)
-                            . showString "}"
-                          |]
-                      return (r, [False])
-                    (InfixConstructor, [l, r]) -> do
+                    InfixConstructor -> do
                       fi <-
                         fromMaybe defaultFixity `fmap` reifyFixityCompat conName
                       let conPrec = case fi of Fixity prec _ -> prec
-                      r <-
-                        [|
-                          showParen
-                            ($(return prec) > $(integerE conPrec))
-                            ( $(return l)
-                                . showChar ' '
-                                . showString $(stringE $ nameBase conName)
-                                . showChar ' '
-                                . $(return r)
-                            )
-                          |]
-                      return (r, [True])
-                    _ ->
-                      fail "deriveGADTShow: unexpected constructor variant",
-              fieldResFun = \variant conName _ pos fieldPat fieldFun -> do
-                let makeShowField p =
-                      [|
-                        $(return fieldFun)
-                          $(litE $ integerL $ fromIntegral p)
-                          $(return fieldPat)
-                        |]
-                let attachUsedInfo = ((,[False]) <$>)
-                case variant of
-                  NormalConstructor
-                    | isNonUnitTuple conName ->
-                        attachUsedInfo $ makeShowField 0
-                  NormalConstructor ->
-                    attachUsedInfo $ makeShowField appPrec1
-                  RecordConstructor names ->
-                    attachUsedInfo
-                      [|
-                        showString $(stringE $ nameBase (names !! pos) ++ " = ")
-                          . $(makeShowField 0)
-                        |]
-                  InfixConstructor -> do
-                    fi <-
-                      fromMaybe defaultFixity `fmap` reifyFixityCompat conName
-                    let conPrec = case fi of Fixity prec _ -> prec
-                    attachUsedInfo $ makeShowField (conPrec + 1),
-              fieldFunExp =
-                showPrintFieldFunExp
-                  ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
-                  ['showList, 'liftShowList, 'liftShowList2],
-              fieldFunNames =
-                ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
-            }
+                      attachUsedInfo $ makeShowField (conPrec + 1),
+                fieldFunExp =
+                  showPrintFieldFunExp
+                    ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
+                    ['showList, 'liftShowList, 'liftShowList2]
+              }
+            ['showsPrec, 'liftShowsPrec, 'liftShowsPrec2]
         ],
-      unaryOpInstanceNames = [''Show, ''Show1, ''Show2]
+      unaryOpInstanceNames = [''Show, ''Show1, ''Show2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'Show' instance for a GADT.

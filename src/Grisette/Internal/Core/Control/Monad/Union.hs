@@ -37,11 +37,14 @@ module Grisette.Internal.Core.Control.Monad.Union
     isMerged,
     unionSize,
     IsConcrete,
+    toUnionSym,
+    unionToCon,
   )
 where
 
 import Control.Applicative (Alternative ((<|>)))
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), rnf1)
+import Control.Monad.Identity (Identity (Identity, runIdentity))
 import qualified Data.Binary as Binary
 import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Functor.Classes
@@ -478,14 +481,21 @@ liftUnion u = go (unionBase u)
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
 liftToMonadUnion = liftUnion
 
-instance {-# INCOHERENT #-} (ToSym a b, Mergeable b) => ToSym a (Union b) where
-  toSym = mrgSingle . toSym
+toUnionSym :: (ToSym a b) => a -> Union b
+toUnionSym = mrgSingle . toSym
+{-# INLINE toUnionSym #-}
 
 instance (ToSym a b) => ToSym (Union a) (Union b) where
   toSym = toSym1
 
 instance ToSym1 Union Union where
   liftToSym f = tryMerge . fmap f
+
+instance (ToSym a b) => ToSym (Identity a) (Union b) where
+  toSym = toSym1
+
+instance ToSym1 Identity Union where
+  liftToSym f v = return $ runIdentity $ fmap f v
 
 instance ToSym (Union Bool) SymBool where
   toSym = simpleMerge . fmap con
@@ -519,11 +529,22 @@ instance
   where
   toSym = simpleMerge . fmap con
 
-instance {-# INCOHERENT #-} (ToCon a b, Mergeable a) => ToCon (Union a) b where
-  toCon v = go $ unionBase $ tryMerge v
+unionToCon :: (ToCon a b) => Union a -> Maybe b
+unionToCon = fmap runIdentity . toCon
+{-# INLINE unionToCon #-}
+
+instance (ToCon a b) => ToCon (Union a) (Identity b) where
+  toCon = toCon1
+
+instance ToCon1 Union Identity where
+  liftToCon f v = go $ unionBase v
     where
-      go (UnionSingle x) = toCon x
-      go _ = Nothing
+      go (UnionSingle x) = Identity <$> f x
+      go (UnionIf _ _ c t f) =
+        case toCon c of
+          Nothing -> Nothing
+          Just True -> go t
+          Just False -> go f
 
 instance (ToCon a b) => ToCon (Union a) (Union b) where
   toCon = toCon1

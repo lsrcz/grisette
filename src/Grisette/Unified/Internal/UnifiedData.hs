@@ -81,8 +81,11 @@ class
     (UnifiedSimpleMergeable mode v) => UnifiedSimpleMergeable mode u,
     (UnifiedSymEq mode v) => UnifiedSymEq mode u,
     (UnifiedSymOrd mode v) => UnifiedSymOrd mode u,
-    forall b. (ToCon v b) => ToCon u b,
-    forall a. (ToSym a v) => ToSym a u
+    forall a. (ToSym a v) => ToSym (Identity a) u,
+    forall a. (ToSym v a) => ToSym u (Union a),
+    forall a. (ToCon v a) => ToCon u (Identity a),
+    forall a. (ToCon a v) => ToCon (Union a) u{-,
+    forall a. (ToSym a v) => ToSym a u-}
   ) =>
   UnifiedDataImpl (mode :: EvalModeTag) v u
     | u -> mode v

@@ -24,19 +24,22 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Language.Haskell.TH (Dec, Name, Q)
@@ -44,30 +47,32 @@ import Language.Haskell.TH (Dec, Name, Q)
 hashableConfig :: UnaryOpClassConfig
 hashableConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = ["salt"],
-              extraLiftedPatNames = const [],
-              fieldCombineFun =
-                \_ _ _ [salt] exp -> do
-                  r <-
-                    foldl
-                      (\salt exp -> [|$(return exp) $salt|])
-                      (return salt)
-                      exp
-                  return (r, [True]),
-              fieldResFun = \_ _ _ _ fieldPat fieldFun -> do
-                r <- [|\salt -> $(return fieldFun) salt $(return fieldPat)|]
-                return (r, [False]),
-              fieldFunExp =
-                defaultFieldFunExp
-                  ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2],
-              fieldFunNames =
-                ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2]
-            }
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = ["salt"],
+                extraLiftedPatNames = const [],
+                fieldCombineFun =
+                  \_ _ _ [salt] exp -> do
+                    r <-
+                      foldl
+                        (\salt exp -> [|$(return exp) $salt|])
+                        (return salt)
+                        exp
+                    return (r, [True]),
+                fieldResFun = \_ _ _ _ fieldPat fieldFun -> do
+                  r <- [|\salt -> $(return fieldFun) salt $(return fieldPat)|]
+                  return (r, [False]),
+                fieldFunExp =
+                  defaultFieldFunExp
+                    ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2]
+              }
+            ['hashWithSalt, 'liftHashWithSalt, 'liftHashWithSalt2]
         ],
       unaryOpInstanceNames =
-        [''Hashable, ''Hashable1, ''Hashable2]
+        [''Hashable, ''Hashable1, ''Hashable2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'Hashable' instance for a GADT.
