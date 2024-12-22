@@ -309,9 +309,10 @@ genUnaryOpFun ::
   [TyVarBndr_ ()] ->
   [TyVarBndr_ ()] ->
   [TyVarBndr_ ()] ->
+  (Name -> Bool) ->
   [ConstructorInfo] ->
   Q Dec
-genUnaryOpFun _ (UnaryOpField config funNames) n _ _ argTypes constructors = do
+genUnaryOpFun _ (UnaryOpField config funNames) n _ _ argTypes _ constructors = do
   clauses <-
     zipWithM
       ( genUnaryOpFieldClause
@@ -329,12 +330,15 @@ genUnaryOpFun
   extraVars
   keptTypes
   _
+  isVarUsedInFields
   _ = do
     modeTy <- case evalModeConfig deriveConfig of
       [] -> varT $ tvName $ head extraVars
       [(i, _)] -> varT $ tvName $ keptTypes !! i
       _ -> fail "Unified classes does not support multiple evaluation modes"
-    exprs <- traverse (unifiedFun modeTy) keptTypes
+    exprs <-
+      traverse (unifiedFun modeTy) $
+        filter (isVarUsedInFields . tvName) keptTypes
     rVar <- newName "r"
     let rf =
           foldl
@@ -391,6 +395,7 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
             extraVars
             keptNewVars
             argNewVars
+            isVarUsedInFields
             constructors
       )
       unaryOpConfigs

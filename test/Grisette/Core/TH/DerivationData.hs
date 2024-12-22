@@ -87,6 +87,7 @@ import Grisette
     ToSym (toSym),
     Union,
     allClasses0WithOrd,
+    allClasses2WithOrd,
     deriveGADT,
     deriveGADTWith,
   )
@@ -239,7 +240,7 @@ deriveGADTWith
   ''X
   allClasses0WithOrd
 
-data IdenticalFields (mode :: EvalModeTag) a = IdenticalFields
+data IdenticalFields (mode :: EvalModeTag) a b = IdenticalFields
   { a :: a,
     b :: a,
     c :: Maybe Int,
@@ -248,15 +249,13 @@ data IdenticalFields (mode :: EvalModeTag) a = IdenticalFields
 
 deriveGADTWith
   ( mempty
-      { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])]
-      }
   )
   ''IdenticalFields
-  allClasses0WithOrd
+  allClasses2WithOrd
 
 data Basic = Basic0 | Basic1 Int | Basic2 String [Int]
 
-deriveGADT ''Basic (S.fromList []) -- allClasses0WithOrd
+deriveGADT ''Basic allClasses0WithOrd
 
 data Extra mode n eb sb a where
   Extra ::
