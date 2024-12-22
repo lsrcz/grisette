@@ -60,32 +60,32 @@ import Language.Haskell.TH.Syntax (Lift)
 
 class
   ( u ~ GetData mode v,
-    Mergeable u,
+    (Mergeable v) => Mergeable u,
     (AllSyms v) => AllSyms u,
     (Eq v) => Eq u,
     (EvalSym v) => EvalSym u,
     (ExtractSym v) => ExtractSym u,
-    (ITEOp v) => ITEOp u,
+    (ITEOp v, Mergeable v) => ITEOp u,
     (PPrint v) => PPrint u,
     (Hashable v) => Hashable u,
     (Lift v) => Lift u,
-    (LogicalOp v) => LogicalOp u,
+    (LogicalOp v, Mergeable v) => LogicalOp u,
     (NFData v) => NFData u,
-    (Num v) => Num u,
+    (Num v, Mergeable v) => Num u,
     (SymEq v) => SymEq u,
     (Show v) => Show u,
     (SymOrd v) => SymOrd u,
     (SubstSym v) => SubstSym u,
-    (Serial v) => Serial u,
-    (UnifiedITEOp mode v) => UnifiedITEOp mode u,
-    (UnifiedSimpleMergeable mode v) => UnifiedSimpleMergeable mode u,
+    (Serial v, Mergeable v) => Serial u,
+    (UnifiedITEOp mode v, Mergeable v) => UnifiedITEOp mode u,
+    (UnifiedSimpleMergeable mode v, Mergeable v) =>
+    UnifiedSimpleMergeable mode u,
     (UnifiedSymEq mode v) => UnifiedSymEq mode u,
     (UnifiedSymOrd mode v) => UnifiedSymOrd mode u,
     forall a. (ToSym a v) => ToSym (Identity a) u,
     forall a. (ToSym v a) => ToSym u (Union a),
     forall a. (ToCon v a) => ToCon u (Identity a),
-    forall a. (ToCon a v) => ToCon (Union a) u{-,
-    forall a. (ToSym a v) => ToSym a u-}
+    forall a. (ToCon a v) => ToCon (Union a) u
   ) =>
   UnifiedDataImpl (mode :: EvalModeTag) v u
     | u -> mode v
@@ -95,19 +95,19 @@ class
   type GetData mode v = r | r -> mode v
 
   -- | Wraps a value into the unified data type.
-  wrapData :: v -> u
+  wrapData :: (Mergeable v) => v -> u
 
   -- | Extracts a value from the unified data type.
-  extractData :: (Monad m, UnifiedBranching mode m) => u -> m v
+  extractData :: (Mergeable v, Monad m, UnifiedBranching mode m) => u -> m v
 
-instance (Mergeable v) => UnifiedDataImpl 'C v (Identity v) where
+instance UnifiedDataImpl 'C v (Identity v) where
   type GetData 'C v = Identity v
   wrapData = Identity
   extractData ::
     forall m. (Mergeable v, Monad m, UnifiedBranching C m) => Identity v -> m v
-  extractData = withBaseBranching @'C @m $ mrgSingle . runIdentity
+  extractData = withBaseBranching @'C @m $ return . runIdentity
 
-instance (Mergeable v) => UnifiedDataImpl 'S v (Union v) where
+instance UnifiedDataImpl 'S v (Union v) where
   type GetData 'S v = Union v
   wrapData = mrgSingle
   extractData ::

@@ -100,6 +100,6 @@ instance
   withBaseITEOp r = withMode @mode r r
   {-# INLINE withBaseITEOp #-}
 
-instance (Mergeable v, UnifiedITEOp 'S v) => UnifiedITEOp 'S (Union v) where
+instance (UnifiedITEOp 'S v, Mergeable v) => UnifiedITEOp 'S (Union v) where
   withBaseITEOp r = withBaseITEOp @'S @v r
   {-# INLINE withBaseITEOp #-}

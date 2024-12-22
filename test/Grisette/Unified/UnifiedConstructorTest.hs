@@ -65,7 +65,7 @@ deriveGADTWith
   ''T
   allClasses0WithOrd
 
-makePrefixedUnifiedCtor "mk" ''T
+makePrefixedUnifiedCtor [''EvalModeBase] "mk" ''T
 
 #if MIN_VERSION_base(4,16,0)
 type FConstraint mode = (EvalModeBase mode)
@@ -80,12 +80,12 @@ f = mkT (toSym True) 10 mkT1
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
 deriveGADT ''TNoMode allClasses1WithOrd
-makeNamedUnifiedCtor ["tNoMode0", "tNoMode1"] ''TNoMode
+makeNamedUnifiedCtor [] ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
 deriveGADT ''TNoArg allClasses0WithOrd
-makePrefixedUnifiedCtor "mk" ''TNoArg
+makePrefixedUnifiedCtor [] "mk" ''TNoArg
 
 unifiedConstructorTest :: Test
 unifiedConstructorTest =
