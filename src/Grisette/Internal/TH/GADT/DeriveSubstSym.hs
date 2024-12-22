@@ -23,7 +23,7 @@ import Grisette.Internal.Core.Data.Class.SubstSym
     SubstSym1 (liftSubstSym),
     SubstSym2 (liftSubstSym2),
   )
-import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
+import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -68,13 +68,13 @@ substSymConfig =
     }
 
 -- | Derive 'SubstSym' instance for a GADT.
-deriveGADTSubstSym :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTSubstSym extra = genUnaryOpClass extra substSymConfig 0
+deriveGADTSubstSym :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTSubstSym deriveConfig = genUnaryOpClass deriveConfig substSymConfig 0
 
 -- | Derive 'SubstSym1' instance for a GADT.
-deriveGADTSubstSym1 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTSubstSym1 extra = genUnaryOpClass extra substSymConfig 1
+deriveGADTSubstSym1 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTSubstSym1 deriveConfig = genUnaryOpClass deriveConfig substSymConfig 1
 
 -- | Derive 'SubstSym2' instance for a GADT.
-deriveGADTSubstSym2 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTSubstSym2 extra = genUnaryOpClass extra substSymConfig 2
+deriveGADTSubstSym2 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTSubstSym2 deriveConfig = genUnaryOpClass deriveConfig substSymConfig 2

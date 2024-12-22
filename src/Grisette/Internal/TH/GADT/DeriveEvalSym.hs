@@ -27,7 +27,7 @@ import Grisette.Internal.Core.Data.Class.EvalSym
     EvalSym1 (liftEvalSym),
     EvalSym2 (liftEvalSym2),
   )
-import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
+import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -74,13 +74,13 @@ evalSymConfig =
     }
 
 -- | Derive 'EvalSym' instance for a GADT.
-deriveGADTEvalSym :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTEvalSym extra = genUnaryOpClass extra evalSymConfig 0
+deriveGADTEvalSym :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTEvalSym deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 0
 
 -- | Derive 'EvalSym1' instance for a GADT.
-deriveGADTEvalSym1 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTEvalSym1 extra = genUnaryOpClass extra evalSymConfig 1
+deriveGADTEvalSym1 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTEvalSym1 deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 1
 
 -- | Derive 'EvalSym2' instance for a GADT.
-deriveGADTEvalSym2 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTEvalSym2 extra = genUnaryOpClass extra evalSymConfig 2
+deriveGADTEvalSym2 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTEvalSym2 deriveConfig = genUnaryOpClass deriveConfig evalSymConfig 2

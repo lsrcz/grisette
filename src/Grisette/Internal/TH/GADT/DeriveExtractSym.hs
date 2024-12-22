@@ -23,7 +23,7 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     ExtractSym1 (liftExtractSymMaybe),
     ExtractSym2 (liftExtractSymMaybe2),
   )
-import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
+import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -78,13 +78,13 @@ extractSymConfig =
     }
 
 -- | Derive 'ExtractSym' instance for a GADT.
-deriveGADTExtractSym :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTExtractSym extra = genUnaryOpClass extra extractSymConfig 0
+deriveGADTExtractSym :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTExtractSym deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 0
 
 -- | Derive 'ExtractSym1' instance for a GADT.
-deriveGADTExtractSym1 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTExtractSym1 extra = genUnaryOpClass extra extractSymConfig 1
+deriveGADTExtractSym1 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTExtractSym1 deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 1
 
 -- | Derive 'ExtractSym2' instance for a GADT.
-deriveGADTExtractSym2 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTExtractSym2 extra = genUnaryOpClass extra extractSymConfig 2
+deriveGADTExtractSym2 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTExtractSym2 deriveConfig = genUnaryOpClass deriveConfig extractSymConfig 2

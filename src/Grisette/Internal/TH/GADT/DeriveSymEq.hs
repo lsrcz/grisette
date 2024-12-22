@@ -43,7 +43,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
     genBinaryOpClass,
   )
 import Language.Haskell.TH (Dec, Exp (ListE), Name, Q)
-import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
+import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 
 symEqConfig :: BinaryOpClassConfig
 symEqConfig =
@@ -66,13 +66,13 @@ symEqConfig =
     }
 
 -- | Derive 'SymEq' instance for a GADT.
-deriveGADTSymEq :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTSymEq extra = genBinaryOpClass extra symEqConfig 0
+deriveGADTSymEq :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTSymEq deriveConfig = genBinaryOpClass deriveConfig symEqConfig 0
 
 -- | Derive 'SymEq1' instance for a GADT.
-deriveGADTSymEq1 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTSymEq1 extra = genBinaryOpClass extra symEqConfig 1
+deriveGADTSymEq1 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTSymEq1 deriveConfig = genBinaryOpClass deriveConfig symEqConfig 1
 
 -- | Derive 'SymEq2' instance for a GADT.
-deriveGADTSymEq2 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTSymEq2 extra = genBinaryOpClass extra symEqConfig 2
+deriveGADTSymEq2 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTSymEq2 deriveConfig = genBinaryOpClass deriveConfig symEqConfig 2

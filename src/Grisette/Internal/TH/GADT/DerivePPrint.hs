@@ -35,7 +35,7 @@ import Grisette.Internal.Core.Data.Class.PPrint
     vsep,
     (<+>),
   )
-import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
+import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
@@ -176,13 +176,13 @@ pprintConfig =
     }
 
 -- | Derive 'PPrint' instance for a GADT.
-deriveGADTPPrint :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTPPrint extra = genUnaryOpClass extra pprintConfig 0
+deriveGADTPPrint :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTPPrint deriveConfig = genUnaryOpClass deriveConfig pprintConfig 0
 
 -- | Derive 'PPrint1' instance for a GADT.
-deriveGADTPPrint1 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTPPrint1 extra = genUnaryOpClass extra pprintConfig 1
+deriveGADTPPrint1 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTPPrint1 deriveConfig = genUnaryOpClass deriveConfig pprintConfig 1
 
 -- | Derive 'PPrint2' instance for a GADT.
-deriveGADTPPrint2 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTPPrint2 extra = genUnaryOpClass extra pprintConfig 2
+deriveGADTPPrint2 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTPPrint2 deriveConfig = genUnaryOpClass deriveConfig pprintConfig 2

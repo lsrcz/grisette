@@ -2,8 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -ddump-simpl -dsuppress-module-prefixes -dsuppress-uniques #-}
-{-# OPTIONS_GHC -ddump-timings #-}
+-- {-# OPTIONS_GHC -ddump-simpl -dsuppress-module-prefixes -dsuppress-uniques #-}
+-- {-# OPTIONS_GHC -ddump-timings #-}
 
 module Grisette.Core.TH.DerivationTest (ftst, derivationTest) where
 

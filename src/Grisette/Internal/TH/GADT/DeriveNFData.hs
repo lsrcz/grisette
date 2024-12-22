@@ -16,7 +16,7 @@ module Grisette.Internal.TH.GADT.DeriveNFData
 where
 
 import Control.DeepSeq (NFData (rnf), NFData1 (liftRnf), NFData2 (liftRnf2))
-import Grisette.Internal.TH.GADT.Common (ExtraConstraint)
+import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
@@ -62,13 +62,13 @@ nfdataConfig =
     }
 
 -- | Derive 'NFData' instance for a GADT.
-deriveGADTNFData :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTNFData extra = genUnaryOpClass extra nfdataConfig 0
+deriveGADTNFData :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTNFData deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 0
 
 -- | Derive 'NFData1' instance for a GADT.
-deriveGADTNFData1 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTNFData1 extra = genUnaryOpClass extra nfdataConfig 1
+deriveGADTNFData1 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTNFData1 deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 1
 
 -- | Derive 'NFData2' instance for a GADT.
-deriveGADTNFData2 :: ExtraConstraint -> Name -> Q [Dec]
-deriveGADTNFData2 extra = genUnaryOpClass extra nfdataConfig 2
+deriveGADTNFData2 :: DeriveConfig -> Name -> Q [Dec]
+deriveGADTNFData2 deriveConfig = genUnaryOpClass deriveConfig nfdataConfig 2

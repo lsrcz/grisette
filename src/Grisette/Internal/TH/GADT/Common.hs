@@ -16,8 +16,9 @@ module Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult (..),
     checkArgs,
     ctxForVar,
+    EvalModeConfig (..),
+    DeriveConfig (..),
     extraConstraint,
-    ExtraConstraint (..),
   )
 where
 
@@ -193,20 +194,23 @@ ctxForVar instanceNames var = case tvKind var of
     fail $ "Unsupported kind: " <> show (tvKind var)
   _ -> return Nothing
 
+data EvalModeConfig
+  = EvalModeConstraints [Name]
+  | EvalModeSpecified EvalModeTag
+
 -- | Extra constraints for a GADT.
-data ExtraConstraint = ExtraConstraint
-  { evalModeConstraint :: [(Int, Name)],
-    evalModeSpecificConstraint :: [(Int, EvalModeTag)],
-    bitSizeConstraint :: [Int],
-    fpBitSizeConstraint :: [(Int, Int)],
+data DeriveConfig = DeriveConfig
+  { evalModeConfig :: [(Int, EvalModeConfig)],
+    bitSizePositions :: [Int],
+    fpBitSizePositions :: [(Int, Int)],
     needExtraMergeable :: Bool
   }
 
-instance Semigroup ExtraConstraint where
+instance Semigroup DeriveConfig where
   (<>) = (<>)
 
-instance Monoid ExtraConstraint where
-  mempty = ExtraConstraint [] [] [] [] False
+instance Monoid DeriveConfig where
+  mempty = DeriveConfig [] [] [] False
   mappend = (<>)
 
 checkValidExtraConstraintPosition ::
@@ -225,48 +229,45 @@ checkValidExtraConstraintPosition tyName instanceName args n = do
         <> " arguments."
 
 checkAllValidExtraConstraintPosition ::
-  ExtraConstraint -> Name -> Name -> [TyVarBndr_ ()] -> Q ()
+  DeriveConfig -> Name -> Name -> [TyVarBndr_ ()] -> Q ()
 checkAllValidExtraConstraintPosition
-  ExtraConstraint {..}
+  DeriveConfig {..}
   tyName
   instanceName
   args = do
     traverse_
       (checkValidExtraConstraintPosition tyName instanceName args . fst)
-      evalModeConstraint
-    traverse_
-      (checkValidExtraConstraintPosition tyName instanceName args . fst)
-      evalModeSpecificConstraint
+      evalModeConfig
     traverse_
       (checkValidExtraConstraintPosition tyName instanceName args)
-      bitSizeConstraint
+      bitSizePositions
     traverse_
       (checkValidExtraConstraintPosition tyName instanceName args . fst)
-      fpBitSizeConstraint
+      fpBitSizePositions
     traverse_
       (checkValidExtraConstraintPosition tyName instanceName args . snd)
-      fpBitSizeConstraint
+      fpBitSizePositions
 
 extraEvalModeConstraint ::
-  Name -> Name -> [TyVarBndr_ ()] -> (Int, Name) -> Q [Pred]
-extraEvalModeConstraint tyName instanceName args (n, nm) = do
-  let arg = args !! n
-  let argKind = tvKind arg
-  when (argKind /= ConT ''EvalModeTag) $
-    fail $
-      "Cannot introduce EvalMode constraint for the "
-        <> show n
-        <> "th argument of "
-        <> show tyName
-        <> " when deriving the "
-        <> show instanceName
-        <> " instance because it is not an EvalModeTag."
-  pred <- [t|$(conT nm) $(varT $ tvName arg)|]
-  return [pred]
-
-extraEvalModeSpecificConstraint ::
-  Name -> Name -> [TyVarBndr_ ()] -> (Int, EvalModeTag) -> Q [Pred]
-extraEvalModeSpecificConstraint tyName instanceName args (n, tag) = do
+  Name -> Name -> [TyVarBndr_ ()] -> (Int, EvalModeConfig) -> Q [Pred]
+extraEvalModeConstraint
+  tyName
+  instanceName
+  args
+  (n, EvalModeConstraints names) = do
+    let arg = args !! n
+    let argKind = tvKind arg
+    when (argKind /= ConT ''EvalModeTag) $
+      fail $
+        "Cannot introduce EvalMode constraint for the "
+          <> show n
+          <> "th argument of "
+          <> show tyName
+          <> " when deriving the "
+          <> show instanceName
+          <> " instance because it is not an EvalModeTag."
+    traverse (\nm -> [t|$(conT nm) $(varT $ tvName arg)|]) names
+extraEvalModeConstraint tyName instanceName args (n, EvalModeSpecified tag) = do
   let arg = args !! n
   let argKind = tvKind arg
   when (argKind /= ConT ''EvalModeTag) $
@@ -327,27 +328,23 @@ extraExtraMergeableConstraint args = do
 
 -- | Generate extra constraints for a GADT.
 extraConstraint ::
-  ExtraConstraint -> Name -> Name -> [TyVarBndr_ ()] -> Q [Pred]
-extraConstraint extra@ExtraConstraint {..} tyName instanceName args = do
+  DeriveConfig -> Name -> Name -> [TyVarBndr_ ()] -> Q [Pred]
+extraConstraint deriveConfig@DeriveConfig {..} tyName instanceName args = do
   checkAllValidExtraConstraintPosition
-    extra
+    deriveConfig
     tyName
     instanceName
     args
   evalModePreds <-
     traverse
       (extraEvalModeConstraint tyName instanceName args)
-      evalModeConstraint
-  evalModeSpecificPreds <-
-    traverse
-      (extraEvalModeSpecificConstraint tyName instanceName args)
-      evalModeSpecificConstraint
+      evalModeConfig
   bitSizePreds <-
-    traverse (extraBitSizeConstraint tyName instanceName args) bitSizeConstraint
+    traverse (extraBitSizeConstraint tyName instanceName args) bitSizePositions
   fpBitSizePreds <-
     traverse
       (extraFpBitSizeConstraint tyName instanceName args)
-      fpBitSizeConstraint
+      fpBitSizePositions
   extraMergeablePreds <-
     if needExtraMergeable
       then extraExtraMergeableConstraint args
@@ -356,7 +353,6 @@ extraConstraint extra@ExtraConstraint {..} tyName instanceName args = do
     extraMergeablePreds
       ++ concat
         ( evalModePreds
-            ++ evalModeSpecificPreds
             ++ bitSizePreds
             ++ fpBitSizePreds
         )
