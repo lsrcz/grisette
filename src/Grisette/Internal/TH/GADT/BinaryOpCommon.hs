@@ -27,10 +27,17 @@ import Data.Maybe (catMaybes, mapMaybe)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as S
 import Grisette.Internal.TH.GADT.Common
-  ( CheckArgsResult (argNewNames, constructors, isVarUsedInFields, keptNewNames, keptNewVars),
-    ExtraConstraint,
+  ( CheckArgsResult
+      ( argNewNames,
+        constructors,
+        isVarUsedInFields,
+        keptNewNames,
+        keptNewVars
+      ),
+    DeriveConfig,
     checkArgs,
-    ctxForVar, extraConstraint,
+    ctxForVar,
+    extraConstraint,
   )
 import Language.Haskell.TH
   ( Clause,
@@ -272,8 +279,8 @@ genBinaryOpFun
 
 -- | Generate a type class instance for a binary operation on a GADT.
 genBinaryOpClass ::
-  ExtraConstraint -> BinaryOpClassConfig -> Int -> Name -> Q [Dec]
-genBinaryOpClass extra (BinaryOpClassConfig {..}) n typName = do
+  DeriveConfig -> BinaryOpClassConfig -> Int -> Name -> Q [Dec]
+genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
   lhsResult <-
     checkArgs
       (nameBase $ head binaryOpInstanceNames)
@@ -309,7 +316,7 @@ genBinaryOpClass extra (BinaryOpClassConfig {..}) n typName = do
       binaryOpFieldConfigs
   let instanceName = binaryOpInstanceNames !! n
   let instanceType = AppT (ConT instanceName) keptType
-  extraPreds <- extraConstraint extra typName instanceName keptNewVars'
+  extraPreds <- extraConstraint deriveConfig typName instanceName keptNewVars'
   return
     [ InstanceD
         Nothing

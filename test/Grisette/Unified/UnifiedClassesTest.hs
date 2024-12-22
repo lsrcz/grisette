@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,18 +23,25 @@ import Control.Monad.Identity (Identity (Identity))
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
-  ( Default (Default),
-    SymBool,
+  ( SymBool,
     SymInteger,
     SymWordN,
     Union,
     WordN,
+    deriveGADTAllWith,
     mrgReturn,
   )
 import qualified Grisette
-import Grisette.TH (deriveAll)
+import Grisette.Internal.TH.GADT.Common
+  ( DeriveConfig
+      ( bitSizePositions,
+        evalModeConfig
+      ),
+    EvalModeConfig (EvalModeConstraints),
+  )
 import Grisette.Unified
   ( BaseMonad,
+    EvalModeBV,
     EvalModeBase,
     EvalModeInteger,
     GetBool,
@@ -41,9 +49,11 @@ import Grisette.Unified
     GetInteger,
     GetWordN,
     UnifiedBranching,
+    UnifiedSymEq (withBaseSymEq),
     mrgIf,
     (.==),
   )
+import Grisette.Unified.Internal.Util (withMode)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -78,11 +88,24 @@ data X mode n
       [GetData mode (X mode n)]
   | XNil
 
-deriveAll ''X
+deriveGADTAllWith
+  ( mempty
+      { evalModeConfig =
+          [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
+        bitSizePositions = [1]
+      }
+  )
+  ''X
+
+instance
+  (EvalModeBase mode, EvalModeBV mode, 1 <= n, KnownNat n) =>
+  UnifiedSymEq mode (X mode n)
+  where
+  withBaseSymEq r = withMode @mode r r
 
 testSEq ::
   forall mode n.
-  (EvalModeBase mode, 1 <= n, KnownNat n) =>
+  (EvalModeBase mode, EvalModeBV mode, 1 <= n, KnownNat n) =>
   X mode n ->
   X mode n ->
   GetBool mode

@@ -17,7 +17,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -ddump-timings #-}
+
+-- {-# OPTIONS_GHC -ddump-timings #-}
 
 module Grisette.Core.TH.DerivationData
   ( T (..),
@@ -89,14 +90,14 @@ import Grisette
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
 import Grisette.Internal.TH.GADT.Common
-  ( ExtraConstraint
-      ( ExtraConstraint,
-        bitSizeConstraint,
-        evalModeConstraint,
-        evalModeSpecificConstraint,
-        fpBitSizeConstraint,
+  ( DeriveConfig
+      ( DeriveConfig,
+        bitSizePositions,
+        evalModeConfig,
+        fpBitSizePositions,
         needExtraMergeable
       ),
+    EvalModeConfig (EvalModeConstraints),
   )
 import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADTWith)
 import Grisette.Unified
@@ -151,11 +152,10 @@ data Extra mode n eb sb a where
     Extra mode n eb sb a
 
 deriveGADTWith
-  ( ExtraConstraint
-      { evalModeConstraint = [(0, ''PartialEvalMode)],
-        evalModeSpecificConstraint = [],
-        bitSizeConstraint = [1],
-        fpBitSizeConstraint = [(2, 3)],
+  ( mempty
+      { evalModeConfig = [(0, EvalModeConstraints [''PartialEvalMode])],
+        bitSizePositions = [1],
+        fpBitSizePositions = [(2, 3)],
         needExtraMergeable = True
       }
   )

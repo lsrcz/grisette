@@ -11,6 +11,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -27,9 +28,20 @@ import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
 #endif
 
 import Control.Monad.Identity (Identity (Identity))
-import Generics.Deriving (Default (Default))
-import Grisette (Solvable (con), SymInteger, ToSym (toSym), Union, mrgReturn)
-import Grisette.TH (deriveAll, makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
+import Grisette
+  ( Solvable (con),
+    SymInteger,
+    ToSym (toSym),
+    Union,
+    deriveGADTAll,
+    deriveGADTAllWith,
+    mrgReturn,
+  )
+import Grisette.Internal.TH.GADT.Common
+  ( DeriveConfig (evalModeConfig, needExtraMergeable),
+    EvalModeConfig (EvalModeConstraints),
+  )
+import Grisette.TH (makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
 import Grisette.Unified.Internal.EvalMode (EvalModeBase)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
@@ -41,7 +53,13 @@ data T mode a
   = T (GetBool mode) a (GetData mode (T mode a))
   | T1
 
-deriveAll ''T
+deriveGADTAllWith
+  ( mempty
+      { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])],
+        needExtraMergeable = True
+      }
+  )
+  ''T
 makePrefixedUnifiedCtor "mk" ''T
 
 #if MIN_VERSION_base(4,16,0)
@@ -56,12 +74,12 @@ f = mkT (toSym True) 10 mkT1
 
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
-deriveAll ''TNoMode
+deriveGADTAll ''TNoMode
 makeNamedUnifiedCtor ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
-deriveAll ''TNoArg
+deriveGADTAll ''TNoArg
 makePrefixedUnifiedCtor "mk" ''TNoArg
 
 unifiedConstructorTest :: Test
