@@ -17,19 +17,22 @@ module Grisette.Internal.TH.Ctor.UnifiedConstructor
 where
 
 import Control.Monad (join, replicateM, when, zipWithM)
+import Data.Maybe (catMaybes)
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable, Mergeable1, Mergeable2)
 import Grisette.Internal.TH.Ctor.Common
   ( decapitalizeTransformer,
     prefixTransformer,
     withNameTransformer,
   )
-import Grisette.Internal.TH.Util (constructorInfoToType, putHaddock)
+import Grisette.Internal.TH.GADT.Common (ctxForVar)
+import Grisette.Internal.TH.Util (constructorInfoToType, putHaddock, tvIsMode)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
 import Grisette.Unified.Internal.UnifiedData
   ( GetData,
     UnifiedData,
     wrapData,
   )
-import Language.Haskell.TH (pprint)
+import Language.Haskell.TH (conT, pprint, varT)
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName),
     DatatypeInfo (datatypeCons, datatypeVars),
@@ -62,8 +65,8 @@ import Language.Haskell.TH.Syntax
 --
 -- The generated smart constructors will contruct values of type
 -- @GetData mode (T mode a b c)@.
-makeUnifiedCtorWith :: (String -> String) -> Name -> Q [Dec]
-makeUnifiedCtorWith = withNameTransformer makeNamedUnifiedCtor
+makeUnifiedCtorWith :: [Name] -> (String -> String) -> Name -> Q [Dec]
+makeUnifiedCtorWith = withNameTransformer . makeNamedUnifiedCtor
 
 -- | Generate smart constructors to create unified values.
 --
@@ -74,12 +77,14 @@ makeUnifiedCtorWith = withNameTransformer makeNamedUnifiedCtor
 -- The generated smart constructors will contruct values of type
 -- @GetData mode (T mode a b c)@.
 makePrefixedUnifiedCtor ::
+  [Name] ->
   -- | Prefix for generated wrappers
   String ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makePrefixedUnifiedCtor = makeUnifiedCtorWith . prefixTransformer
+makePrefixedUnifiedCtor modeCtx =
+  makeUnifiedCtorWith modeCtx . prefixTransformer
 
 -- | Generate smart constructors to create unified values.
 --
@@ -90,10 +95,11 @@ makePrefixedUnifiedCtor = makeUnifiedCtorWith . prefixTransformer
 -- The generated smart constructors will contruct values of type
 -- @GetData mode (T mode a b c)@.
 makeUnifiedCtor ::
+  [Name] ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makeUnifiedCtor = makeUnifiedCtorWith decapitalizeTransformer
+makeUnifiedCtor modeCtx = makeUnifiedCtorWith modeCtx decapitalizeTransformer
 
 -- | Generate smart constructors to create unified values.
 --
@@ -103,12 +109,13 @@ makeUnifiedCtor = makeUnifiedCtorWith decapitalizeTransformer
 -- The generated smart constructors will contruct values of type
 -- @GetData mode (T mode a b c)@.
 makeNamedUnifiedCtor ::
+  [Name] ->
   -- | Names for generated wrappers
   [String] ->
   -- | The type to generate the wrappers for
   Name ->
   Q [Dec]
-makeNamedUnifiedCtor names typName = do
+makeNamedUnifiedCtor modeCtx names typName = do
   d <- reifyDatatype typName
   let constructors = datatypeCons d
   when (length names /= length constructors) $
@@ -120,7 +127,7 @@ makeNamedUnifiedCtor names typName = do
     [mode] -> do
       ds <-
         zipWithM
-          (mkSingleWrapper d Nothing $ VarT $ tvName mode)
+          (mkSingleWrapper modeCtx d Nothing $ VarT $ tvName mode)
           names
           constructors
       return $ join ds
@@ -129,7 +136,7 @@ makeNamedUnifiedCtor names typName = do
       let newBndr = kindedTVSpecified n (ConT ''EvalModeTag)
       ds <-
         zipWithM
-          (mkSingleWrapper d (Just newBndr) (VarT n))
+          (mkSingleWrapper modeCtx d (Just newBndr) (VarT n))
           names
           constructors
       return $ join ds
@@ -144,16 +151,44 @@ augmentFinalType mode t = do
   predu <- [t|UnifiedData $(return mode) $(return t)|]
   return ([predu], r)
 
-augmentConstructorType :: Maybe TyVarBndrSpec -> Type -> Type -> Q Type
-augmentConstructorType modeBndr mode (ForallT tybinders ctx ty1) = do
-  (preds, augmentedTyp) <- augmentFinalType mode ty1
-  case modeBndr of
-    Just bndr -> return $ ForallT (bndr : tybinders) (preds ++ ctx) augmentedTyp
-    Nothing -> return $ ForallT tybinders (preds ++ ctx) augmentedTyp
-augmentConstructorType modeBndr mode ty = do
+augmentConstructorType ::
+  [Name] -> Maybe TyVarBndrSpec -> Type -> Type -> Q Type
+augmentConstructorType
+  modeCtx
+  freshModeBndr
+  mode
+  (ForallT tybinders ctx ty1) = do
+    (preds, augmentedTyp) <- augmentFinalType mode ty1
+    let modeBndrsInForall = filter tvIsMode tybinders
+    mergeablePreds <-
+      catMaybes
+        <$> traverse
+          (ctxForVar $ ConT <$> [''Mergeable, ''Mergeable1, ''Mergeable2])
+          tybinders
+    modePred <-
+      case (modeBndrsInForall, freshModeBndr) of
+        ([bndr], Nothing) ->
+          traverse (\nm -> [t|$(conT nm) $(varT $ tvName bndr)|]) modeCtx
+        ([], Just bndr) ->
+          traverse (\nm -> [t|$(conT nm) $(varT $ tvName bndr)|]) modeCtx
+        _ -> fail "Unsupported constructor type."
+    case freshModeBndr of
+      Just bndr -> do
+        return $
+          ForallT
+            (bndr : tybinders)
+            (modePred ++ mergeablePreds ++ preds ++ ctx)
+            augmentedTyp
+      Nothing ->
+        return $
+          ForallT
+            tybinders
+            (modePred ++ mergeablePreds ++ preds ++ ctx)
+            augmentedTyp
+augmentConstructorType _ freshModeBndr mode ty = do
   (preds, augmentedTyp) <- augmentFinalType mode ty
-  case modeBndr of
-    Just bndr -> return $ ForallT [bndr] preds augmentedTyp
+  case freshModeBndr of
+    Just bndr -> return $ ForallT [bndr] (preds) augmentedTyp
     Nothing ->
       fail $
         "augmentConstructorType: unsupported constructor type: " ++ pprint ty
@@ -170,10 +205,18 @@ augmentExpr mode n f = do
       )
     )
 
-mkSingleWrapper :: DatatypeInfo -> Maybe TyVarBndrSpec -> Type -> String -> ConstructorInfo -> Q [Dec]
-mkSingleWrapper dataType modeBndr mode name info = do
+mkSingleWrapper ::
+  [Name] ->
+  DatatypeInfo ->
+  Maybe TyVarBndrSpec ->
+  Type ->
+  String ->
+  ConstructorInfo ->
+  Q [Dec]
+mkSingleWrapper modeCtx dataType freshModeBndr mode name info = do
   constructorTyp <- constructorInfoToType dataType info
-  augmentedTyp <- augmentConstructorType modeBndr mode constructorTyp
+  augmentedTyp <-
+    augmentConstructorType modeCtx freshModeBndr mode constructorTyp
   let oriName = constructorName info
   let retName = mkName name
   expr <- augmentExpr mode (length $ constructorFields info) (ConE oriName)

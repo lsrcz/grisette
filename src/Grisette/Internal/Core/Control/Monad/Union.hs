@@ -617,12 +617,12 @@ instance Eq1 Union where
 
 instance (Num a, Mergeable a) => Num (Union a) where
   fromInteger = mrgSingle . fromInteger
-  negate = unionUnaryOp negate
-  (+) = unionBinOp (+)
-  (*) = unionBinOp (*)
-  (-) = unionBinOp (-)
-  abs = unionUnaryOp abs
-  signum = unionUnaryOp signum
+  negate = tryMerge . unionUnaryOp negate
+  l + r = tryMerge $ unionBinOp (+) l r
+  l * r = tryMerge $ unionBinOp (*) l r
+  l - r = tryMerge $ unionBinOp (-) l r
+  abs = tryMerge . unionUnaryOp abs
+  signum = tryMerge . unionUnaryOp signum
 
 instance (ITEOp a, Mergeable a) => ITEOp (Union a) where
   symIte = mrgIf
@@ -630,11 +630,11 @@ instance (ITEOp a, Mergeable a) => ITEOp (Union a) where
 instance (LogicalOp a, Mergeable a) => LogicalOp (Union a) where
   true = mrgSingle true
   false = mrgSingle false
-  (.||) = unionBinOp (.||)
-  (.&&) = unionBinOp (.&&)
-  symNot = unionUnaryOp symNot
-  symXor = unionBinOp symXor
-  symImplies = unionBinOp symImplies
+  l .|| r = tryMerge $ unionBinOp (.||) l r
+  l .&& r = tryMerge $ unionBinOp (.&&) l r
+  symNot = tryMerge . unionUnaryOp symNot
+  symXor l r = tryMerge $ unionBinOp symXor l r
+  symImplies l r = tryMerge $ unionBinOp symImplies l r
 
 instance (Solvable c t, Mergeable t) => Solvable c (Union t) where
   con = mrgSingle . con
