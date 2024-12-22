@@ -466,7 +466,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
           _ -> error "Unsupported n"
 
   let instanceHead = ConT instanceName
-  extraPreds <- extraConstraint deriveConfig typName instanceName keptNewVars
+  extraPreds <- extraConstraint deriveConfig typName instanceName [] keptNewVars
 
   let targetType =
         foldl

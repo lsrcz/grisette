@@ -135,7 +135,9 @@ class
     UnifiedFromIntegral mode word (GetInteger mode),
     UnifiedFromIntegral mode word (GetAlgReal mode),
     UnifiedFromIntegral mode int (GetInteger mode),
-    UnifiedFromIntegral mode int (GetAlgReal mode)
+    UnifiedFromIntegral mode int (GetAlgReal mode),
+    ConSymConversion (WordN n) (SymWordN n) word,
+    ConSymConversion (IntN n) (SymIntN n) int
   ) =>
   UnifiedBVImpl (mode :: EvalModeTag) wordn intn n word int
     | wordn -> intn,

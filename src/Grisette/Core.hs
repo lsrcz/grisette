@@ -835,6 +835,8 @@ module Grisette.Core
     unionMergingStrategy,
     liftToMonadUnion,
     unionSize,
+    toUnionSym,
+    unionToCon,
 
     -- ** Mergeable
     Mergeable (..),
@@ -1441,9 +1443,11 @@ import Grisette.Internal.Core.Control.Monad.Union
     Union,
     liftToMonadUnion,
     liftUnion,
+    toUnionSym,
     unionBinOp,
     unionMergingStrategy,
     unionSize,
+    unionToCon,
     unionUnaryOp,
   )
 import Grisette.Internal.Core.Data.Class.BitCast

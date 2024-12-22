@@ -27,20 +27,23 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
     defaultFieldResFun,
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Language.Haskell.TH
@@ -53,28 +56,30 @@ import Language.Haskell.TH
 extractSymConfig :: UnaryOpClassConfig
 extractSymConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = [],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ _ _ _ exp -> do
-                return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
-              fieldFunExp =
-                defaultFieldFunExp
-                  [ 'extractSymMaybe,
-                    'liftExtractSymMaybe,
-                    'liftExtractSymMaybe2
-                  ],
-              fieldFunNames =
-                [ 'extractSymMaybe,
-                  'liftExtractSymMaybe,
-                  'liftExtractSymMaybe2
-                ]
-            }
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = [],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ _ _ exp -> do
+                  return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+                fieldFunExp =
+                  defaultFieldFunExp
+                    [ 'extractSymMaybe,
+                      'liftExtractSymMaybe,
+                      'liftExtractSymMaybe2
+                    ]
+              }
+            [ 'extractSymMaybe,
+              'liftExtractSymMaybe,
+              'liftExtractSymMaybe2
+            ]
         ],
       unaryOpInstanceNames =
-        [''ExtractSym, ''ExtractSym1, ''ExtractSym2]
+        [''ExtractSym, ''ExtractSym1, ''ExtractSym2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'ExtractSym' instance for a GADT.

@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.UnaryOpCommon
@@ -14,11 +15,14 @@
 module Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig (..),
     UnaryOpFieldConfig (..),
+    UnaryOpUnifiedConfig (..),
+    UnaryOpConfig (..),
     FieldFunExp,
     defaultFieldResFun,
     defaultFieldFunExp,
-    genUnaryOpClause,
     genUnaryOpClass,
+    defaultUnaryOpInstanceTypeFromConfig,
+    defaultUnaryOpUnifiedFun,
   )
 where
 
@@ -31,17 +35,19 @@ import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult
       ( CheckArgsResult,
         argNewNames,
+        argNewVars,
         constructors,
         isVarUsedInFields,
         keptNewNames,
         keptNewVars
       ),
-    DeriveConfig,
+    DeriveConfig (evalModeConfig),
     checkArgs,
     ctxForVar,
     extraConstraint,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
+import Grisette.Unified.Internal.Util (withMode)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
@@ -52,21 +58,28 @@ import Language.Haskell.TH
     Name,
     Pat (VarP, WildP),
     Q,
-    Type (AppT, ConT, VarT),
+    Type (AppT, ArrowT, ConT, StarT, VarT),
     appE,
+    clause,
     conP,
+    conT,
+    funD,
     nameBase,
     newName,
+    normalB,
     varE,
     varP,
+    varT,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName, constructorVariant),
     ConstructorVariant,
     TypeSubstitution (freeVariables),
     resolveTypeSynonyms,
+    tvKind,
     tvName,
   )
+import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_)
 
 -- | Type of field function expression generator.
 type FieldFunExp = M.Map Name Name -> M.Map Name [Name] -> Type -> Q Exp
@@ -99,7 +112,6 @@ defaultFieldFunExp unaryOpFunNames argToFunPat _ = go
           _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
         _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
 
--- | Configuration for a unary function field expression generation on a GADT.
 data UnaryOpFieldConfig = UnaryOpFieldConfig
   { extraPatNames :: [String],
     extraLiftedPatNames :: Int -> [String],
@@ -118,9 +130,39 @@ data UnaryOpFieldConfig = UnaryOpFieldConfig
       [Exp] ->
       [Exp] ->
       Q (Exp, [Bool]),
-    fieldFunExp :: FieldFunExp,
-    fieldFunNames :: [Name]
+    fieldFunExp :: FieldFunExp
   }
+
+newtype UnaryOpUnifiedConfig = UnaryOpUnifiedConfig
+  {unifiedFun :: Type -> TyVarBndr_ () -> Q (Maybe Exp)}
+
+defaultUnaryOpUnifiedFun :: [Name] -> Type -> TyVarBndr_ () -> Q (Maybe Exp)
+defaultUnaryOpUnifiedFun funNames modeTy ty =
+  case tvKind ty of
+    StarT ->
+      Just
+        <$> [|
+          $(varE $ head funNames) @($(return modeTy))
+            @($(varT $ tvName ty))
+          |]
+    AppT (AppT ArrowT StarT) StarT ->
+      Just
+        <$> [|
+          $(varE $ funNames !! 1) @($(return modeTy))
+            @($(varT $ tvName ty))
+          |]
+    AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
+      Just
+        <$> [|
+          $(varE $ funNames !! 2) @($(return modeTy))
+            @($(varT $ tvName ty))
+          |]
+    _ -> return Nothing
+
+-- | Configuration for a unary function field expression generation on a GADT.
+data UnaryOpConfig
+  = UnaryOpField {_fieldConfig :: UnaryOpFieldConfig, funNames :: [Name]}
+  | UnaryOpUnified {_unifiedConfig :: UnaryOpUnifiedConfig, funNames :: [Name]}
 
 -- | Default field result function.
 defaultFieldResFun ::
@@ -139,7 +181,7 @@ defaultFieldResFun _ _ extraPatExps _ fieldPatExp defaultFieldFunExp = do
 funPatAndExps ::
   FieldFunExp ->
   (Int -> [String]) ->
-  [Name] ->
+  [TyVarBndr_ ()] ->
   [Type] ->
   Q ([Pat], [[Pat]], [Exp])
 funPatAndExps fieldFunExpGen extraLiftedPatNames argTypes fields = do
@@ -147,7 +189,8 @@ funPatAndExps fieldFunExpGen extraLiftedPatNames argTypes fields = do
   let liftedNames = extraLiftedPatNames (length argTypes)
   args <-
     traverse
-      ( \nm ->
+      ( \bndr -> do
+          let nm = tvName bndr
           if S.member nm usedArgs
             then do
               pname <- newName "p"
@@ -176,13 +219,13 @@ funPatAndExps fieldFunExpGen extraLiftedPatNames argTypes fields = do
   return (funPats, extraLiftedPats, defaultFieldFunExps)
 
 -- | Generate a clause for a unary function on a GADT.
-genUnaryOpClause ::
+genUnaryOpFieldClause ::
   UnaryOpFieldConfig ->
-  [Name] ->
+  [TyVarBndr_ ()] ->
   Int ->
   ConstructorInfo ->
   Q Clause
-genUnaryOpClause
+genUnaryOpFieldClause
   (UnaryOpFieldConfig {..})
   argTypes
   conIdx
@@ -243,25 +286,76 @@ genUnaryOpClause
 
 -- | Configuration for a unary operation type class generation on a GADT.
 data UnaryOpClassConfig = UnaryOpClassConfig
-  { unaryOpFieldConfigs :: [UnaryOpFieldConfig],
-    unaryOpInstanceNames :: [Name]
+  { unaryOpConfigs :: [UnaryOpConfig],
+    unaryOpInstanceNames :: [Name],
+    unaryOpExtraVars :: DeriveConfig -> Q [TyVarBndr_ ()],
+    unaryOpInstanceTypeFromConfig ::
+      DeriveConfig ->
+      [TyVarBndr_ ()] ->
+      [TyVarBndr_ ()] ->
+      Name ->
+      Q Type
   }
 
+-- | Default unary operation instance type generator.
+defaultUnaryOpInstanceTypeFromConfig ::
+  DeriveConfig -> [TyVarBndr_ ()] -> [TyVarBndr_ ()] -> Name -> Q Type
+defaultUnaryOpInstanceTypeFromConfig _ _ _ = conT
+
 genUnaryOpFun ::
-  UnaryOpFieldConfig ->
+  DeriveConfig ->
+  UnaryOpConfig ->
   Int ->
-  [Name] ->
+  [TyVarBndr_ ()] ->
+  [TyVarBndr_ ()] ->
+  [TyVarBndr_ ()] ->
   [ConstructorInfo] ->
   Q Dec
+genUnaryOpFun _ (UnaryOpField config funNames) n _ _ argTypes constructors = do
+  clauses <-
+    zipWithM
+      ( genUnaryOpFieldClause
+          config
+          argTypes
+      )
+      [0 ..]
+      constructors
+  let instanceFunName = funNames !! n
+  return $ FunD instanceFunName clauses
 genUnaryOpFun
-  config
+  deriveConfig
+  (UnaryOpUnified (UnaryOpUnifiedConfig {..}) funNames)
   n
-  argNewNames
-  constructors = do
-    clauses <-
-      zipWithM (genUnaryOpClause config argNewNames) [0 ..] constructors
-    let instanceFunName = (fieldFunNames config) !! n
-    return $ FunD instanceFunName clauses
+  extraVars
+  keptTypes
+  _
+  _ = do
+    modeTy <- case evalModeConfig deriveConfig of
+      [] -> varT $ tvName $ head extraVars
+      [(i, _)] -> varT $ tvName $ keptTypes !! i
+      _ -> fail "Unified classes does not support multiple evaluation modes"
+    exprs <- traverse (unifiedFun modeTy) keptTypes
+    rVar <- newName "r"
+    let rf =
+          foldl
+            ( \exp nextFun -> case nextFun of
+                Nothing -> exp
+                Just fun -> appE (return fun) exp
+            )
+            (return $ VarE rVar)
+            exprs
+    let instanceFunName = funNames !! n
+    funD
+      instanceFunName
+      [ clause
+          [varP rVar]
+          ( normalB
+              [|
+                withMode @($(return modeTy)) $(rf) $(rf)
+                |]
+          )
+          []
+      ]
 
 -- | Generate a unary operation type class instance for a GADT.
 genUnaryOpClass ::
@@ -278,23 +372,37 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
       typName
       True
       n
+  extraVars <- unaryOpExtraVars deriveConfig
+  instanceTypes <-
+    traverse
+      (unaryOpInstanceTypeFromConfig deriveConfig extraVars keptNewVars)
+      unaryOpInstanceNames
   ctxs <-
-    traverse (ctxForVar unaryOpInstanceNames) $
+    traverse (ctxForVar instanceTypes) $
       filter (isVarUsedInFields . tvName) keptNewVars
   let keptType = foldl AppT (ConT typName) $ fmap VarT keptNewNames
   instanceFuns <-
     traverse
       ( \config ->
           genUnaryOpFun
+            deriveConfig
             config
             n
-            argNewNames
+            extraVars
+            keptNewVars
+            argNewVars
             constructors
       )
-      unaryOpFieldConfigs
+      unaryOpConfigs
   let instanceName = unaryOpInstanceNames !! n
-  let instanceType = AppT (ConT instanceName) keptType
-  extraPreds <- extraConstraint deriveConfig typName instanceName keptNewVars
+  let instanceType = AppT (instanceTypes !! n) keptType
+  extraPreds <-
+    extraConstraint
+      deriveConfig
+      typName
+      instanceName
+      extraVars
+      keptNewVars
   return
     [ InstanceD
         Nothing

@@ -27,20 +27,23 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
     defaultFieldResFun,
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Language.Haskell.TH (Dec, Exp (AppE, ListE, VarE), Name, Q)
@@ -48,23 +51,26 @@ import Language.Haskell.TH (Dec, Exp (AppE, ListE, VarE), Name, Q)
 allSymsConfig :: UnaryOpClassConfig
 allSymsConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = [],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ _ _ _ exp ->
-                return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
-              fieldFunExp =
-                defaultFieldFunExp
-                  [ 'allSymsS,
-                    'liftAllSymsS,
-                    'liftAllSymsS2
-                  ],
-              fieldFunNames = ['allSymsS, 'liftAllSymsS, 'liftAllSymsS2]
-            }
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = [],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ _ _ exp ->
+                  return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+                fieldFunExp =
+                  defaultFieldFunExp
+                    [ 'allSymsS,
+                      'liftAllSymsS,
+                      'liftAllSymsS2
+                    ]
+              }
+            ['allSymsS, 'liftAllSymsS, 'liftAllSymsS2]
         ],
-      unaryOpInstanceNames = [''AllSyms, ''AllSyms1, ''AllSyms2]
+      unaryOpInstanceNames = [''AllSyms, ''AllSyms1, ''AllSyms2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'AllSyms' instance for a GADT.

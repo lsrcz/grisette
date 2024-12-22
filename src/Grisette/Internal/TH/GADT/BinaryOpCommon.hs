@@ -299,7 +299,7 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
   let keptNewNames' = keptNewNames lhsResult
   let isVarUsedInFields' = isVarUsedInFields lhsResult
   ctxs <-
-    traverse (ctxForVar binaryOpInstanceNames) $
+    traverse (ctxForVar $ fmap ConT binaryOpInstanceNames) $
       filter (isVarUsedInFields' . tvName) keptNewVars'
   let keptType = foldl AppT (ConT typName) $ fmap VarT keptNewNames'
   instanceFuns <-
@@ -316,7 +316,7 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
       binaryOpFieldConfigs
   let instanceName = binaryOpInstanceNames !! n
   let instanceType = AppT (ConT instanceName) keptType
-  extraPreds <- extraConstraint deriveConfig typName instanceName keptNewVars'
+  extraPreds <- extraConstraint deriveConfig typName instanceName [] keptNewVars'
   return
     [ InstanceD
         Nothing

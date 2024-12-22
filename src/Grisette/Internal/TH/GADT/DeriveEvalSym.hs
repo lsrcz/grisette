@@ -31,20 +31,23 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
     defaultFieldResFun,
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Language.Haskell.TH
@@ -57,20 +60,23 @@ import Language.Haskell.TH
 evalSymConfig :: UnaryOpClassConfig
 evalSymConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = ["fillDefault", "model"],
-              extraLiftedPatNames = const [],
-              fieldResFun = defaultFieldResFun,
-              fieldCombineFun = \_ _ con extraPat exp -> do
-                return (foldl AppE (ConE con) exp, False <$ extraPat),
-              fieldFunExp =
-                defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2],
-              fieldFunNames = ['evalSym, 'liftEvalSym, 'liftEvalSym2]
-            }
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = ["fillDefault", "model"],
+                extraLiftedPatNames = const [],
+                fieldResFun = defaultFieldResFun,
+                fieldCombineFun = \_ _ con extraPat exp -> do
+                  return (foldl AppE (ConE con) exp, False <$ extraPat),
+                fieldFunExp =
+                  defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2]
+              }
+            ['evalSym, 'liftEvalSym, 'liftEvalSym2]
         ],
       unaryOpInstanceNames =
-        [''EvalSym, ''EvalSym1, ''EvalSym2]
+        [''EvalSym, ''EvalSym1, ''EvalSym2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'EvalSym' instance for a GADT.

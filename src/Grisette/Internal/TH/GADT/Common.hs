@@ -28,9 +28,14 @@ import qualified Data.Map as M
 import Data.Maybe (catMaybes)
 import qualified Data.Set as S
 import GHC.TypeLits (KnownNat, Nat, type (<=))
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.Mergeable
+  ( Mergeable,
+    Mergeable1,
+    Mergeable2,
+  )
 import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
+import Grisette.Unified.Internal.Util (DecideEvalMode)
 import Language.Haskell.TH
   ( Name,
     Pred,
@@ -176,20 +181,20 @@ checkArgs clsName maxArgNum typName allowExistential n = do
   return $ CheckArgsResult {..}
 
 -- | Generate a context for a variable in a GADT.
-ctxForVar :: [Name] -> TyVarBndr_ flag -> Q (Maybe Pred)
-ctxForVar instanceNames var = case tvKind var of
+ctxForVar :: [Type] -> TyVarBndr_ flag -> Q (Maybe Pred)
+ctxForVar instanceExps var = case tvKind var of
   StarT ->
     Just
-      <$> [t|$(conT $ head instanceNames) $(varT $ tvName var)|]
+      <$> [t|$(return $ head instanceExps) $(varT $ tvName var)|]
   AppT (AppT ArrowT StarT) StarT ->
     Just
-      <$> [t|$(conT $ instanceNames !! 1) $(varT $ tvName var)|]
+      <$> [t|$(return $ instanceExps !! 1) $(varT $ tvName var)|]
   AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
     Just
-      <$> [t|$(conT $ instanceNames !! 2) $(varT $ tvName var)|]
+      <$> [t|$(return $ instanceExps !! 2) $(varT $ tvName var)|]
   AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) StarT ->
     Just
-      <$> [t|$(conT $ instanceNames !! 3) $(varT $ tvName var)|]
+      <$> [t|$(return $ instanceExps !! 3) $(varT $ tvName var)|]
   AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
     fail $ "Unsupported kind: " <> show (tvKind var)
   _ -> return Nothing
@@ -324,35 +329,62 @@ extraFpBitSizeConstraint tyName instanceName args (eb, sb) = do
 
 extraExtraMergeableConstraint :: [TyVarBndr_ ()] -> Q [Pred]
 extraExtraMergeableConstraint args = do
-  catMaybes <$> traverse (ctxForVar [''Mergeable]) args
+  catMaybes
+    <$> traverse
+      ( ctxForVar
+          [ ConT ''Mergeable,
+            ConT ''Mergeable1,
+            ConT ''Mergeable2
+          ]
+      )
+      args
 
 -- | Generate extra constraints for a GADT.
 extraConstraint ::
-  DeriveConfig -> Name -> Name -> [TyVarBndr_ ()] -> Q [Pred]
-extraConstraint deriveConfig@DeriveConfig {..} tyName instanceName args = do
-  checkAllValidExtraConstraintPosition
-    deriveConfig
-    tyName
-    instanceName
-    args
-  evalModePreds <-
-    traverse
-      (extraEvalModeConstraint tyName instanceName args)
-      evalModeConfig
-  bitSizePreds <-
-    traverse (extraBitSizeConstraint tyName instanceName args) bitSizePositions
-  fpBitSizePreds <-
-    traverse
-      (extraFpBitSizeConstraint tyName instanceName args)
-      fpBitSizePositions
-  extraMergeablePreds <-
-    if needExtraMergeable
-      then extraExtraMergeableConstraint args
-      else return []
-  return $
-    extraMergeablePreds
-      ++ concat
-        ( evalModePreds
-            ++ bitSizePreds
-            ++ fpBitSizePreds
-        )
+  DeriveConfig -> Name -> Name -> [TyVarBndr_ ()] -> [TyVarBndr_ ()] -> Q [Pred]
+extraConstraint
+  deriveConfig@DeriveConfig {..}
+  tyName
+  instanceName
+  extraArgs
+  keptArgs = do
+    checkAllValidExtraConstraintPosition
+      deriveConfig
+      tyName
+      instanceName
+      keptArgs
+    evalModePreds <-
+      traverse
+        (extraEvalModeConstraint tyName instanceName keptArgs)
+        evalModeConfig
+    extraArgEvalModePreds <-
+      if null evalModeConfig
+        then
+          traverse
+            ( \arg ->
+                if tvKind arg == ConT ''EvalModeTag
+                  then (: []) <$> [t|DecideEvalMode $(varT $ tvName arg)|]
+                  else return []
+            )
+            extraArgs
+        else return []
+    bitSizePreds <-
+      traverse
+        (extraBitSizeConstraint tyName instanceName keptArgs)
+        bitSizePositions
+    fpBitSizePreds <-
+      traverse
+        (extraFpBitSizeConstraint tyName instanceName keptArgs)
+        fpBitSizePositions
+    extraMergeablePreds <-
+      if needExtraMergeable
+        then extraExtraMergeableConstraint keptArgs
+        else return []
+    return $
+      extraMergeablePreds
+        ++ concat
+          ( extraArgEvalModePreds
+              ++ evalModePreds
+              ++ bitSizePreds
+              ++ fpBitSizePreds
+          )

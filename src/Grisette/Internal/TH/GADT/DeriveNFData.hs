@@ -20,20 +20,23 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
-        unaryOpFieldConfigs,
-        unaryOpInstanceNames
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
       ),
+    UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
         extraPatNames,
         fieldCombineFun,
         fieldFunExp,
-        fieldFunNames,
         fieldResFun
       ),
     defaultFieldFunExp,
     defaultFieldResFun,
+    defaultUnaryOpInstanceTypeFromConfig,
     genUnaryOpClass,
   )
 import Language.Haskell.TH (Dec, Name)
@@ -42,23 +45,26 @@ import Language.Haskell.TH.Syntax (Q)
 nfdataConfig :: UnaryOpClassConfig
 nfdataConfig =
   UnaryOpClassConfig
-    { unaryOpFieldConfigs =
-        [ UnaryOpFieldConfig
-            { extraPatNames = [],
-              extraLiftedPatNames = const [],
-              fieldCombineFun = \_ _ _ _ exps -> do
-                r <-
-                  foldl
-                    (\acc exp -> [|$acc `seq` $(return exp)|])
-                    ([|()|])
-                    exps
-                return (r, []),
-              fieldResFun = defaultFieldResFun,
-              fieldFunExp = defaultFieldFunExp ['rnf, 'liftRnf, 'liftRnf2],
-              fieldFunNames = ['rnf, 'liftRnf, 'liftRnf2]
-            }
+    { unaryOpConfigs =
+        [ UnaryOpField
+            UnaryOpFieldConfig
+              { extraPatNames = [],
+                extraLiftedPatNames = const [],
+                fieldCombineFun = \_ _ _ _ exps -> do
+                  r <-
+                    foldl
+                      (\acc exp -> [|$acc `seq` $(return exp)|])
+                      ([|()|])
+                      exps
+                  return (r, []),
+                fieldResFun = defaultFieldResFun,
+                fieldFunExp = defaultFieldFunExp ['rnf, 'liftRnf, 'liftRnf2]
+              }
+            ['rnf, 'liftRnf, 'liftRnf2]
         ],
-      unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2]
+      unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
     }
 
 -- | Derive 'NFData' instance for a GADT.

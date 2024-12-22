@@ -17,6 +17,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
@@ -33,8 +34,10 @@ import Grisette
     SymInteger,
     ToSym (toSym),
     Union,
-    deriveGADTAll,
-    deriveGADTAllWith,
+    allClasses0WithOrd,
+    allClasses1WithOrd,
+    deriveGADT,
+    deriveGADTWith,
     mrgReturn,
   )
 import Grisette.Internal.TH.GADT.Common
@@ -53,13 +56,15 @@ data T mode a
   = T (GetBool mode) a (GetData mode (T mode a))
   | T1
 
-deriveGADTAllWith
+deriveGADTWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])],
         needExtraMergeable = True
       }
   )
   ''T
+  allClasses0WithOrd
+
 makePrefixedUnifiedCtor "mk" ''T
 
 #if MIN_VERSION_base(4,16,0)
@@ -74,12 +79,12 @@ f = mkT (toSym True) 10 mkT1
 
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
-deriveGADTAll ''TNoMode
+deriveGADT ''TNoMode allClasses1WithOrd
 makeNamedUnifiedCtor ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
-deriveGADTAll ''TNoArg
+deriveGADT ''TNoArg allClasses0WithOrd
 makePrefixedUnifiedCtor "mk" ''TNoArg
 
 unifiedConstructorTest :: Test

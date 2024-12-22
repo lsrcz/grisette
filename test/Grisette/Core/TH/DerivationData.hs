@@ -25,6 +25,7 @@ module Grisette.Core.TH.DerivationData
     concreteT,
     symbolicT,
     IdenticalFields (..),
+    Basic (..),
     GGG (..),
     VVV (..),
     Extra (..),
@@ -48,9 +49,11 @@ import Data.Functor.Classes
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import Data.Maybe (fromJust)
+import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Typeable (Proxy, Typeable)
 import GHC.Generics (Generic)
+import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
   ( AllSyms,
     AllSyms1,
@@ -83,25 +86,24 @@ import Grisette
     ToCon (toCon),
     ToSym (toSym),
     Union,
-    derive,
-    deriveAll,
+    allClasses0WithOrd,
     deriveGADT,
-    deriveGADTAll,
+    deriveGADTWith,
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
 import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig
-      ( DeriveConfig,
-        bitSizePositions,
+      ( bitSizePositions,
         evalModeConfig,
         fpBitSizePositions,
         needExtraMergeable
       ),
     EvalModeConfig (EvalModeConstraints),
   )
-import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADTWith)
 import Grisette.Unified
-  ( EvalModeTag (C, S),
+  ( EvalModeBV,
+    EvalModeBase,
+    EvalModeTag (C, S),
     GetBool,
     GetData,
     GetFP,
@@ -114,7 +116,111 @@ data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
   | TNil
 
-deriveAll ''T
+deriveGADTWith
+  ( mempty
+      { evalModeConfig =
+          [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
+        bitSizePositions = [1],
+        needExtraMergeable = True
+      }
+  )
+  ''T
+  allClasses0WithOrd
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( ToCon symA conA,
+    Mergeable symA,
+    1 <= n,
+    KnownNat n,
+    EvalModeBV mode,
+    EvalModeBase mode
+  ) =>
+  ToCon (T mode n symA) (T 'C n conA)
+  where
+  toCon (T b w a d) = do
+    b' <- toCon b
+    w' <- toCon w
+    a' <- toCon a
+    d' <- toCon d
+    return $ T b' w' a' d'
+  toCon TNil = return TNil
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( ToCon symA conA,
+    Mergeable conA,
+    1 <= n,
+    KnownNat n,
+    EvalModeBV mode,
+    EvalModeBase mode
+  ) =>
+  ToCon (T 'S n symA) (T mode n conA)
+  where
+  toCon (T b w a d) = do
+    b' <- toCon b
+    w' <- toCon w
+    a' <- toCon a
+    d' <- toCon d
+    return $ T b' w' a' d'
+  toCon TNil = return TNil
+
+instance
+  {-# OVERLAPPING #-}
+  ( ToCon symA conA,
+    Mergeable conA,
+    1 <= n,
+    KnownNat n
+  ) =>
+  ToCon (T 'S n symA) (T 'C n conA)
+  where
+  toCon (T b w a d) = do
+    b' <- toCon b
+    w' <- toCon w
+    a' <- toCon a
+    d' <- toCon d
+    return $ T b' w' a' d'
+  toCon TNil = return TNil
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( ToSym conA symA,
+    Mergeable symA,
+    1 <= n,
+    KnownNat n,
+    EvalModeBV mode,
+    EvalModeBase mode
+  ) =>
+  ToSym (T 'C n conA) (T mode n symA)
+  where
+  toSym (T b w a d) = T (toSym b) (toSym w) (toSym a) (toSym d)
+  toSym TNil = TNil
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( ToSym conA symA,
+    Mergeable conA,
+    1 <= n,
+    KnownNat n,
+    EvalModeBV mode,
+    EvalModeBase mode
+  ) =>
+  ToSym (T mode n conA) (T 'S n symA)
+  where
+  toSym (T b w a d) = T (toSym b) (toSym w) (toSym a) (toSym d)
+  toSym TNil = TNil
+
+instance
+  {-# OVERLAPPING #-}
+  ( ToSym conA symA,
+    Mergeable conA,
+    1 <= n,
+    KnownNat n
+  ) =>
+  ToSym (T 'C n conA) (T 'S n symA)
+  where
+  toSym (T b w a d) = T (toSym b) (toSym w) (toSym a) (toSym d)
+  toSym TNil = TNil
 
 concreteT :: T 'C 10 Integer
 concreteT =
@@ -125,20 +231,32 @@ symbolicT = fromJust $ toCon (toSym concreteT :: T 'S 10 SymInteger)
 
 newtype X mode = X [GetBool mode]
 
-deriveAll ''X
+deriveGADTWith
+  ( mempty
+      { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])]
+      }
+  )
+  ''X
+  allClasses0WithOrd
 
-data IdenticalFields mode n = IdenticalFields
-  { a :: n,
-    b :: n,
+data IdenticalFields (mode :: EvalModeTag) a = IdenticalFields
+  { a :: a,
+    b :: a,
     c :: Maybe Int,
     d :: Maybe Int
   }
 
-deriveGADTAll ''IdenticalFields
+deriveGADTWith
+  ( mempty
+      { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])]
+      }
+  )
+  ''IdenticalFields
+  allClasses0WithOrd
 
 data Basic = Basic0 | Basic1 Int | Basic2 String [Int]
 
-deriveGADT ''Basic [''Mergeable]
+deriveGADT ''Basic (S.fromList []) -- allClasses0WithOrd
 
 data Extra mode n eb sb a where
   Extra ::
@@ -160,19 +278,7 @@ deriveGADTWith
       }
   )
   ''Extra
-  [ ''Show,
-    ''PPrint,
-    ''Mergeable,
-    ''EvalSym,
-    ''ExtractSym,
-    ''SubstSym,
-    ''NFData,
-    ''AllSyms,
-    ''Eq,
-    ''Ord,
-    ''SymEq,
-    ''SymOrd
-  ]
+  allClasses0WithOrd
 
 data Expr f a where
   I :: SymInteger -> Expr f SymInteger
@@ -217,76 +323,80 @@ data Expr f a where
 
 deriveGADT
   ''Expr
-  [ ''Mergeable,
-    ''Mergeable1,
-    ''EvalSym,
-    ''EvalSym1,
-    ''ExtractSym,
-    ''ExtractSym1,
-    ''SubstSym,
-    ''SubstSym1,
-    ''NFData,
-    ''NFData1,
-    ''Show,
-    ''Show1,
-    ''PPrint,
-    ''PPrint1,
-    ''AllSyms,
-    ''AllSyms1,
-    ''Eq,
-    ''SymEq,
-    ''SymOrd
-  ]
+  ( S.fromList
+      [ ''Mergeable,
+        ''Mergeable1,
+        ''EvalSym,
+        ''EvalSym1,
+        ''ExtractSym,
+        ''ExtractSym1,
+        ''SubstSym,
+        ''SubstSym1,
+        ''NFData,
+        ''NFData1,
+        ''Show,
+        ''Show1,
+        ''PPrint,
+        ''PPrint1,
+        ''AllSyms,
+        ''AllSyms1,
+        ''Eq,
+        ''SymEq,
+        ''SymOrd
+      ]
+  )
 
 instance (Eq1 f) => Eq1 (Expr f) where
   liftEq = undefined
 
-deriveGADT ''Expr [''Hashable, ''Hashable1]
+deriveGADT ''Expr (S.fromList [''Hashable, ''Hashable1])
 
 data P a b = P a | Q Int
 
 deriveGADT
   ''P
-  [ ''Mergeable,
-    ''Mergeable1,
-    ''Mergeable2,
-    ''EvalSym,
-    ''EvalSym1,
-    ''EvalSym2,
-    ''ExtractSym,
-    ''ExtractSym1,
-    ''ExtractSym2,
-    ''SubstSym,
-    ''SubstSym1,
-    ''SubstSym2,
-    ''NFData,
-    ''NFData1,
-    ''NFData2,
-    ''Hashable,
-    ''Hashable1,
-    ''Hashable2,
-    ''Show,
-    ''Show1,
-    ''Show2,
-    ''PPrint,
-    ''PPrint1,
-    ''PPrint2,
-    ''AllSyms,
-    ''AllSyms1,
-    ''AllSyms2,
-    ''Eq,
-    ''Eq1,
-    ''Eq2,
-    ''SymEq,
-    ''SymEq1,
-    ''SymEq2,
-    ''Ord,
-    ''Ord1,
-    ''Ord2,
-    ''SymOrd,
-    ''SymOrd1,
-    ''SymOrd2
-  ]
+  ( S.fromList
+      [ ''Mergeable,
+        ''Mergeable1,
+        ''Mergeable2,
+        ''EvalSym,
+        ''EvalSym1,
+        ''EvalSym2,
+        ''ExtractSym,
+        ''ExtractSym1,
+        ''ExtractSym2,
+        ''SubstSym,
+        ''SubstSym1,
+        ''SubstSym2,
+        ''NFData,
+        ''NFData1,
+        ''NFData2,
+        ''Hashable,
+        ''Hashable1,
+        ''Hashable2,
+        ''Show,
+        ''Show1,
+        ''Show2,
+        ''PPrint,
+        ''PPrint1,
+        ''PPrint2,
+        ''AllSyms,
+        ''AllSyms1,
+        ''AllSyms2,
+        ''Eq,
+        ''Eq1,
+        ''Eq2,
+        ''SymEq,
+        ''SymEq1,
+        ''SymEq2,
+        ''Ord,
+        ''Ord1,
+        ''Ord2,
+        ''SymOrd,
+        ''SymOrd1,
+        ''SymOrd2
+      ]
+  )
 
 data GGG a b where
   GGG2 :: a -> b -> GGG a b
@@ -300,25 +410,27 @@ infixr 5 :|
 
 deriveGADT
   ''GGG
-  [ ''Show,
-    ''Show1,
-    ''Show2,
-    ''PPrint,
-    ''PPrint1,
-    ''PPrint2,
-    ''Eq,
-    ''Eq1,
-    ''Eq2,
-    ''Ord,
-    ''Ord1,
-    ''Ord2,
-    ''SymEq,
-    ''SymEq1,
-    ''SymEq2,
-    ''SymOrd,
-    ''SymOrd1,
-    ''SymOrd2
-  ]
+  ( S.fromList
+      [ ''Show,
+        ''Show1,
+        ''Show2,
+        ''PPrint,
+        ''PPrint1,
+        ''PPrint2,
+        ''Eq,
+        ''Eq1,
+        ''Eq2,
+        ''Ord,
+        ''Ord1,
+        ''Ord2,
+        ''SymEq,
+        ''SymEq1,
+        ''SymEq2,
+        ''SymOrd,
+        ''SymOrd1,
+        ''SymOrd2
+      ]
+  )
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (GGG a b) where
   arbitrary =
@@ -346,18 +458,10 @@ data VVV a b where
   VVVRec :: a -> b -> VVV a b
   (:.) :: a -> b -> VVV a b
   VVVLst :: [a] -> [b] -> VVV a b
+  deriving (Generic, Eq, Ord)
+  deriving (PPrint, SymEq, SymOrd) via (Default (VVV a b))
 
 infixr 5 :.
-
-derive
-  ''VVV
-  [ ''Generic,
-    ''PPrint,
-    ''Eq,
-    ''Ord,
-    ''SymEq,
-    ''SymOrd
-  ]
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (VVV a b) where
   arbitrary =
@@ -383,11 +487,13 @@ instance Eq (Ambiguous x) where
 
 deriveGADT
   ''Ambiguous
-  [ ''AllSyms,
-    ''Mergeable,
-    ''ExtractSym,
-    ''NFData,
-    ''PPrint,
-    ''Show,
-    ''Hashable
-  ]
+  ( S.fromList
+      [ ''AllSyms,
+        ''Mergeable,
+        ''ExtractSym,
+        ''NFData,
+        ''PPrint,
+        ''Show,
+        ''Hashable
+      ]
+  )

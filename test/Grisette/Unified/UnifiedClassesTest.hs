@@ -16,26 +16,34 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- {-# OPTIONS_GHC -ddump-splices #-}
+
 module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 
 import Control.Monad.Except (ExceptT, MonadError (throwError))
 import Control.Monad.Identity (Identity (Identity))
+import qualified Data.Set as S
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
-  ( SymBool,
+  ( Mergeable,
+    Mergeable1,
+    SymBool,
+    SymEq,
     SymInteger,
     SymWordN,
     Union,
     WordN,
-    deriveGADTAllWith,
+    deriveGADTWith,
     mrgReturn,
+    symAnd,
   )
 import qualified Grisette
 import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig
       ( bitSizePositions,
-        evalModeConfig
+        evalModeConfig,
+        needExtraMergeable
       ),
     EvalModeConfig (EvalModeConstraints),
   )
@@ -49,11 +57,13 @@ import Grisette.Unified
     GetInteger,
     GetWordN,
     UnifiedBranching,
-    UnifiedSymEq (withBaseSymEq),
+    UnifiedSymEq,
     mrgIf,
     (.==),
   )
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Unified.Internal.Class.UnifiedSymEq
+  ( UnifiedSymEq1,
+  )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))
@@ -80,34 +90,46 @@ testBranchingBase ::
 testBranchingBase x =
   mrgIf (x .== 1 :: GetBool mode) (return x) (throwError "err")
 
-data X mode n
+data X mode n f a
   = X
       (GetBool mode)
       [GetWordN mode n]
-      (GetData mode (X mode n))
-      [GetData mode (X mode n)]
+      (GetData mode (X mode n f a))
+      [GetData mode (X mode n f a)]
+      a
+      (f a)
   | XNil
 
-deriveGADTAllWith
+deriveGADTWith
   ( mempty
       { evalModeConfig =
           [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
-        bitSizePositions = [1]
+        bitSizePositions = [1],
+        needExtraMergeable = True
       }
   )
   ''X
-
-instance
-  (EvalModeBase mode, EvalModeBV mode, 1 <= n, KnownNat n) =>
-  UnifiedSymEq mode (X mode n)
-  where
-  withBaseSymEq r = withMode @mode r r
+  ( S.fromList
+      [ ''Mergeable,
+        ''Eq,
+        ''SymEq,
+        ''UnifiedSymEq
+      ]
+  )
 
 testSEq ::
-  forall mode n.
-  (EvalModeBase mode, EvalModeBV mode, 1 <= n, KnownNat n) =>
-  X mode n ->
-  X mode n ->
+  forall mode n f a.
+  ( EvalModeBase mode,
+    EvalModeBV mode,
+    1 <= n,
+    KnownNat n,
+    Mergeable1 f,
+    Mergeable a,
+    UnifiedSymEq1 mode f,
+    UnifiedSymEq mode a
+  ) =>
+  X mode n f a ->
+  X mode n f a ->
   GetBool mode
 testSEq = (.==)
 
@@ -135,13 +157,32 @@ unifiedClassesTest =
       testGroup
         "UnifiedSEq"
         [ testCase "testSEq 'Con" $ do
-            let x1 = X True [1 :: WordN 8] (Identity XNil) [Identity XNil]
-            let x2 = X False [1 :: WordN 8] (Identity XNil) [Identity XNil]
+            let x1 = X True [1 :: WordN 8] (Identity XNil) [Identity XNil] (1 :: Integer) [1]
+            let x2 = X False [1 :: WordN 8] (Identity XNil) [Identity XNil] (1 :: Integer) [2]
             testSEq x1 x1 @?= True
             testSEq x1 x2 @?= False,
           testCase "testSEq 'Sym" $ do
-            let x1 = X "a" [1 :: SymWordN 8] (mrgReturn XNil) [mrgReturn XNil]
-            let x2 = X "b" [1 :: SymWordN 8] (mrgReturn XNil) [mrgReturn XNil]
-            testSEq x1 x2 @?= ("a" :: SymBool) .== "b"
+            let x1 =
+                  X
+                    "a"
+                    [1 :: SymWordN 8]
+                    (mrgReturn XNil)
+                    [mrgReturn XNil]
+                    ("x" :: SymInteger)
+                    ["w"]
+            let x2 =
+                  X
+                    "b"
+                    [1 :: SymWordN 8]
+                    (mrgReturn XNil)
+                    [mrgReturn XNil]
+                    ("y" :: SymInteger)
+                    ["z"]
+            testSEq x1 x2
+              @?= symAnd
+                [ (("a" :: SymBool) .== "b"),
+                  (("x" :: SymInteger) .== "y"),
+                  (("w" :: SymInteger) .== "z")
+                ]
         ]
     ]
