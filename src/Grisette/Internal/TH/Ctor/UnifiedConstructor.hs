@@ -163,7 +163,12 @@ augmentConstructorType
     mergeablePreds <-
       catMaybes
         <$> traverse
-          (ctxForVar $ ConT <$> [''Mergeable, ''Mergeable1, ''Mergeable2])
+          ( \bndr ->
+              ctxForVar
+                (ConT <$> [''Mergeable, ''Mergeable1, ''Mergeable2])
+                (VarT $ tvName bndr)
+                (tvKind bndr)
+          )
           tybinders
     modePred <-
       case (modeBndrsInForall, freshModeBndr) of

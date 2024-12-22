@@ -21,7 +21,7 @@ import Language.Haskell.TH.Syntax (Lift)
 
 -- | Evaluation mode for unified types. 'C' means concrete evaluation, 'S'
 -- means symbolic evaluation.
-data EvalModeTag = C | S deriving (Lift)
+data EvalModeTag = C | S deriving (Lift, Show)
 
 -- | Type family to check if a mode is 'C'.
 type family IsConMode (mode :: EvalModeTag) = (r :: Bool) | r -> mode where

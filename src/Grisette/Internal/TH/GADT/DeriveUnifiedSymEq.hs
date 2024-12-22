@@ -34,14 +34,11 @@ import Language.Haskell.TH
   ( Dec,
     Name,
     Q,
-    Type (ConT),
+    Type (ConT, VarT),
     appT,
     conT,
-    kindedTV,
     newName,
-    varT,
   )
-import Language.Haskell.TH.Datatype (tvName)
 
 unifiedSymEqConfig :: UnaryOpClassConfig
 unifiedSymEqConfig =
@@ -61,7 +58,7 @@ unifiedSymEqConfig =
         case modeConfigs of
           [] -> do
             nm <- newName "mode"
-            return [kindedTV nm (ConT ''EvalModeTag)]
+            return [(VarT nm, ConT ''EvalModeTag)]
           [_] -> return []
           _ -> fail "UnifiedSymEq does not support multiple evaluation modes",
       unaryOpInstanceTypeFromConfig =
@@ -75,7 +72,7 @@ unifiedSymEqConfig =
                   fail "UnifiedSymEq reference to a non-existent mode variable"
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSymEq does not support multiple evaluation modes"
-          appT (conT con) (varT $ tvName modeVar)
+          appT (conT con) (return $ fst modeVar)
     }
 
 -- | Derive 'UnifiedSymEq' instance for a GADT.

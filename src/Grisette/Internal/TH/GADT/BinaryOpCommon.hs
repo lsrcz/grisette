@@ -1,4 +1,5 @@
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
@@ -28,21 +29,23 @@ import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as S
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult
-      ( argNewNames,
+      ( argNewVars,
         constructors,
         isVarUsedInFields,
-        keptNewNames,
         keptNewVars
       ),
     DeriveConfig,
     checkArgs,
     ctxForVar,
+    evalModeSpecializeList,
     extraConstraint,
+    specializeResult,
   )
 import Language.Haskell.TH
   ( Clause,
     Dec (FunD, InstanceD),
     Exp (VarE),
+    Kind,
     Name,
     Pat (VarP, WildP),
     Q,
@@ -106,23 +109,26 @@ defaultFieldFunExp binaryOpFunNames argToFunPat = go
 
 funPatAndExps ::
   FieldFunExp ->
-  [Name] ->
+  [(Type, Kind)] ->
   [Type] ->
   Q ([Pat], [Exp])
 funPatAndExps fieldFunExpGen argTypes fields = do
   let usedArgs = S.fromList $ freeVariables fields
   args <-
     traverse
-      ( \nm ->
-          if S.member nm usedArgs
-            then do
-              pname <- newName "p"
-              return (nm, Just pname)
-            else return (nm, Nothing)
+      ( \(ty, _) ->
+          case ty of
+            VarT nm ->
+              if S.member nm usedArgs
+                then do
+                  pname <- newName "p"
+                  return (nm, Just pname)
+                else return ('undefined, Nothing)
+            _ -> return ('undefined, Nothing)
       )
       argTypes
   let argToFunPat =
-        M.fromList $ mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) args
+        M.fromList $ mapMaybe (\(ty, mpat) -> fmap (ty,) mpat) args
   let funPats = fmap (maybe WildP VarP . snd) args
   defaultFieldFunExps <- traverse (fieldFunExpGen argToFunPat) fields
   return (funPats, defaultFieldFunExps)
@@ -141,16 +147,16 @@ data BinaryOpFieldConfig = BinaryOpFieldConfig
 -- | Generate a clause for a binary operation on a GADT.
 genBinaryOpClause ::
   BinaryOpFieldConfig ->
-  [Name] ->
-  [Name] ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
   Bool ->
   ConstructorInfo ->
   ConstructorInfo ->
   Q [Clause]
 genBinaryOpClause
   (BinaryOpFieldConfig {..})
-  lhsArgNewNames
-  _rhsArgNewNames
+  lhsArgNewVars
+  _rhsArgNewVars
   isLast
   lhsConstructors
   rhsConstructors =
@@ -158,7 +164,7 @@ genBinaryOpClause
       lhsFields <- mapM resolveTypeSynonyms $ constructorFields lhsConstructors
       rhsFields <- mapM resolveTypeSynonyms $ constructorFields rhsConstructors
       (funPats, defaultFieldFunExps) <-
-        funPatAndExps fieldFunExp lhsArgNewNames lhsFields
+        funPatAndExps fieldFunExp lhsArgNewVars lhsFields
       lhsFieldsPatNames <- replicateM (length lhsFields) $ newName "lhsField"
       rhsFieldsPatNames <- replicateM (length rhsFields) $ newName "rhsField"
       let lhsFieldPats =
@@ -249,28 +255,28 @@ data BinaryOpClassConfig = BinaryOpClassConfig
 genBinaryOpFun ::
   BinaryOpFieldConfig ->
   Int ->
-  [Name] ->
-  [Name] ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
   [ConstructorInfo] ->
   [ConstructorInfo] ->
   Q Dec
 genBinaryOpFun
   config
   n
-  lhsArgNewNames
-  rhsArgNewNames
+  lhsArgNewVars
+  rhsArgNewVars
   lhsConstructors
   rhsConstructors = do
     clauses <-
       zipWithM
-        (genBinaryOpClause config lhsArgNewNames rhsArgNewNames False)
+        (genBinaryOpClause config lhsArgNewVars rhsArgNewVars False)
         (init lhsConstructors)
         (init rhsConstructors)
     lastClause <-
       genBinaryOpClause
         config
-        lhsArgNewNames
-        rhsArgNewNames
+        lhsArgNewVars
+        rhsArgNewVars
         True
         (last lhsConstructors)
         (last rhsConstructors)
@@ -282,34 +288,36 @@ genBinaryOpClass ::
   DeriveConfig -> BinaryOpClassConfig -> Int -> Name -> Q [Dec]
 genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
   lhsResult <-
-    checkArgs
-      (nameBase $ head binaryOpInstanceNames)
-      (length binaryOpInstanceNames - 1)
-      typName
-      (n == 0)
-      n
+    specializeResult (evalModeSpecializeList deriveConfig)
+      =<< checkArgs
+        (nameBase $ head binaryOpInstanceNames)
+        (length binaryOpInstanceNames - 1)
+        typName
+        (n == 0)
+        n
   rhsResult <-
-    checkArgs
-      (nameBase $ head binaryOpInstanceNames)
-      (length binaryOpInstanceNames - 1)
-      typName
-      (n == 0)
-      n
+    specializeResult (evalModeSpecializeList deriveConfig)
+      =<< checkArgs
+        (nameBase $ head binaryOpInstanceNames)
+        (length binaryOpInstanceNames - 1)
+        typName
+        (n == 0)
+        n
   let keptNewVars' = keptNewVars lhsResult
-  let keptNewNames' = keptNewNames lhsResult
-  let isVarUsedInFields' = isVarUsedInFields lhsResult
+  let isTypeUsedInFields' (VarT nm) = isVarUsedInFields lhsResult nm
+      isTypeUsedInFields' _ = False
   ctxs <-
-    traverse (ctxForVar $ fmap ConT binaryOpInstanceNames) $
-      filter (isVarUsedInFields' . tvName) keptNewVars'
-  let keptType = foldl AppT (ConT typName) $ fmap VarT keptNewNames'
+    traverse (uncurry $ ctxForVar (fmap ConT binaryOpInstanceNames)) $
+      filter (isTypeUsedInFields' . fst) keptNewVars'
+  let keptType = foldl AppT (ConT typName) $ fmap fst keptNewVars'
   instanceFuns <-
     traverse
       ( \config ->
           genBinaryOpFun
             config
             n
-            (argNewNames lhsResult)
-            (argNewNames rhsResult)
+            (argNewVars lhsResult)
+            (argNewVars rhsResult)
             (constructors lhsResult)
             (constructors rhsResult)
       )

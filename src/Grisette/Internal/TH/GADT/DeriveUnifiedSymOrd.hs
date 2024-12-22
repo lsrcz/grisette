@@ -34,14 +34,11 @@ import Language.Haskell.TH
   ( Dec,
     Name,
     Q,
-    Type (ConT),
+    Type (ConT, VarT),
     appT,
     conT,
-    kindedTV,
     newName,
-    varT,
   )
-import Language.Haskell.TH.Datatype (tvName)
 
 unifiedSymOrdConfig :: UnaryOpClassConfig
 unifiedSymOrdConfig =
@@ -61,7 +58,7 @@ unifiedSymOrdConfig =
         case modeConfigs of
           [] -> do
             nm <- newName "mode"
-            return [kindedTV nm (ConT ''EvalModeTag)]
+            return [(VarT nm, ConT ''EvalModeTag)]
           [_] -> return []
           _ -> fail "UnifiedSymOrd does not support multiple evaluation modes",
       unaryOpInstanceTypeFromConfig =
@@ -75,7 +72,7 @@ unifiedSymOrdConfig =
                   fail "UnifiedSymOrd reference to a non-existent mode variable"
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSymOrd does not support multiple evaluation modes"
-          appT (conT con) (varT $ tvName modeVar)
+          appT (conT con) (return $ fst modeVar)
     }
 
 -- | Derive 'UnifiedSymOrd' instance for a GADT.
