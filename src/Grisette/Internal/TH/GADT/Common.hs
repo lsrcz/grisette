@@ -19,13 +19,15 @@ module Grisette.Internal.TH.GADT.Common
     EvalModeConfig (..),
     DeriveConfig (..),
     extraConstraint,
+    specializeResult,
+    evalModeSpecializeList,
   )
 where
 
-import Control.Monad (unless, when)
+import Control.Monad (foldM, unless, when)
 import Data.Foldable (traverse_)
 import qualified Data.Map as M
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
 import GHC.TypeLits (KnownNat, Nat, type (<=))
 import Grisette.Internal.Core.Data.Class.Mergeable
@@ -37,14 +39,14 @@ import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Grisette.Unified.Internal.Util (DecideEvalMode)
 import Language.Haskell.TH
-  ( Name,
+  ( Kind,
+    Name,
     Pred,
     Q,
-    Type (AppT, ArrowT, ConT, StarT, VarT),
+    Type (AppT, ArrowT, ConT, PromotedT, StarT, VarT),
     conT,
     nameBase,
     newName,
-    varT,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName, constructorVars),
@@ -53,17 +55,32 @@ import Language.Haskell.TH.Datatype
     reifyDatatype,
     tvName,
   )
-import Language.Haskell.TH.Datatype.TyVarBndr (TyVarBndr_, mapTVName, tvKind)
+import Language.Haskell.TH.Datatype.TyVarBndr (mapTVName, tvKind)
 
 -- | Result of 'checkArgs' for a GADT.
 data CheckArgsResult = CheckArgsResult
   { constructors :: [ConstructorInfo],
-    keptNewNames :: [Name],
-    keptNewVars :: [TyVarBndr_ ()],
-    argNewNames :: [Name],
-    argNewVars :: [TyVarBndr_ ()],
+    keptNewVars :: [(Type, Kind)],
+    argNewVars :: [(Type, Kind)],
     isVarUsedInFields :: Name -> Bool
   }
+
+specializeResult :: [(Int, EvalModeTag)] -> CheckArgsResult -> Q CheckArgsResult
+specializeResult evalModeConfigs result = do
+  let modeToName C = 'C
+      modeToName S = 'S
+  map <-
+    foldM
+      ( \lst (n, tag) -> do
+          let (_, knd) = lst !! n
+          return $
+            take n lst
+              ++ [(PromotedT $ modeToName tag, knd)]
+              ++ drop (n + 1) lst
+      )
+      (keptNewVars result)
+      evalModeConfigs
+  return $ result {keptNewVars = map}
 
 freshenConstructorInfo :: ConstructorInfo -> Q ConstructorInfo
 freshenConstructorInfo conInfo = do
@@ -121,11 +138,11 @@ checkArgs clsName maxArgNum typName allowExistential n = do
   let keptVars = take (length dvars - n) dvars
   keptNewNames <- traverse (newName . nameBase . tvName) keptVars
   let keptNewVars =
-        zipWith (mapTVName . const) keptNewNames keptVars
+        zipWith (\nm tv -> (VarT nm, tvKind tv)) keptNewNames keptVars
   let argVars = drop (length dvars - n) dvars
   argNewNames <- traverse (newName . nameBase . tvName) argVars
   let argNewVars =
-        zipWith (mapTVName . const) argNewNames argVars
+        zipWith (\nm tv -> (VarT nm, tvKind tv)) argNewNames argVars
   let substMap =
         M.fromList $
           zip
@@ -181,22 +198,22 @@ checkArgs clsName maxArgNum typName allowExistential n = do
   return $ CheckArgsResult {..}
 
 -- | Generate a context for a variable in a GADT.
-ctxForVar :: [Type] -> TyVarBndr_ flag -> Q (Maybe Pred)
-ctxForVar instanceExps var = case tvKind var of
+ctxForVar :: [Type] -> Type -> Kind -> Q (Maybe Pred)
+ctxForVar instanceExps ty knd = case knd of
   StarT ->
     Just
-      <$> [t|$(return $ head instanceExps) $(varT $ tvName var)|]
+      <$> [t|$(return $ head instanceExps) $(return ty)|]
   AppT (AppT ArrowT StarT) StarT ->
     Just
-      <$> [t|$(return $ instanceExps !! 1) $(varT $ tvName var)|]
+      <$> [t|$(return $ instanceExps !! 1) $(return ty)|]
   AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
     Just
-      <$> [t|$(return $ instanceExps !! 2) $(varT $ tvName var)|]
+      <$> [t|$(return $ instanceExps !! 2) $(return ty)|]
   AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) StarT ->
     Just
-      <$> [t|$(return $ instanceExps !! 3) $(varT $ tvName var)|]
+      <$> [t|$(return $ instanceExps !! 3) $(return ty)|]
   AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
-    fail $ "Unsupported kind: " <> show (tvKind var)
+    fail $ "Unsupported kind: " <> show knd
   _ -> return Nothing
 
 data EvalModeConfig
@@ -211,6 +228,16 @@ data DeriveConfig = DeriveConfig
     needExtraMergeable :: Bool
   }
 
+evalModeSpecializeList :: DeriveConfig -> [(Int, EvalModeTag)]
+evalModeSpecializeList DeriveConfig {..} =
+  mapMaybe
+    ( \(n, cfg) ->
+        case cfg of
+          EvalModeConstraints _ -> Nothing
+          EvalModeSpecified tag -> Just (n, tag)
+    )
+    evalModeConfig
+
 instance Semigroup DeriveConfig where
   (<>) = (<>)
 
@@ -219,7 +246,7 @@ instance Monoid DeriveConfig where
   mappend = (<>)
 
 checkValidExtraConstraintPosition ::
-  Name -> Name -> [TyVarBndr_ ()] -> Int -> Q ()
+  Name -> Name -> [(Type, Kind)] -> Int -> Q ()
 checkValidExtraConstraintPosition tyName instanceName args n = do
   when (n >= length args) $
     fail $
@@ -234,7 +261,7 @@ checkValidExtraConstraintPosition tyName instanceName args n = do
         <> " arguments."
 
 checkAllValidExtraConstraintPosition ::
-  DeriveConfig -> Name -> Name -> [TyVarBndr_ ()] -> Q ()
+  DeriveConfig -> Name -> Name -> [(Type, Kind)] -> Q ()
 checkAllValidExtraConstraintPosition
   DeriveConfig {..}
   tyName
@@ -254,14 +281,13 @@ checkAllValidExtraConstraintPosition
       fpBitSizePositions
 
 extraEvalModeConstraint ::
-  Name -> Name -> [TyVarBndr_ ()] -> (Int, EvalModeConfig) -> Q [Pred]
+  Name -> Name -> [(Type, Kind)] -> (Int, EvalModeConfig) -> Q [Pred]
 extraEvalModeConstraint
   tyName
   instanceName
   args
   (n, EvalModeConstraints names) = do
-    let arg = args !! n
-    let argKind = tvKind arg
+    let (arg, argKind) = args !! n
     when (argKind /= ConT ''EvalModeTag) $
       fail $
         "Cannot introduce EvalMode constraint for the "
@@ -271,29 +297,12 @@ extraEvalModeConstraint
           <> " when deriving the "
           <> show instanceName
           <> " instance because it is not an EvalModeTag."
-    traverse (\nm -> [t|$(conT nm) $(varT $ tvName arg)|]) names
-extraEvalModeConstraint tyName instanceName args (n, EvalModeSpecified tag) = do
-  let arg = args !! n
-  let argKind = tvKind arg
-  when (argKind /= ConT ''EvalModeTag) $
-    fail $
-      "Cannot introduce EvalMode constraint for the "
-        <> show n
-        <> "th argument of "
-        <> show tyName
-        <> " when deriving the "
-        <> show instanceName
-        <> " instance because it is not an EvalModeTag."
-  pred <-
-    case tag of
-      S -> [t|$(varT $ tvName arg) ~ 'S|]
-      C -> [t|$(varT $ tvName arg) ~ 'C|]
-  return [pred]
+    traverse (\nm -> [t|$(conT nm) $(return arg)|]) names
+extraEvalModeConstraint _ _ _ (_, EvalModeSpecified _) = return []
 
-extraBitSizeConstraint :: Name -> Name -> [TyVarBndr_ ()] -> Int -> Q [Pred]
+extraBitSizeConstraint :: Name -> Name -> [(Type, Kind)] -> Int -> Q [Pred]
 extraBitSizeConstraint tyName instanceName args n = do
-  let arg = args !! n
-  let argKind = tvKind arg
+  let (arg, argKind) = args !! n
   when (argKind /= ConT ''Nat) $
     fail $
       "Cannot introduce BitSize constraint for the "
@@ -303,16 +312,14 @@ extraBitSizeConstraint tyName instanceName args n = do
         <> " when deriving the "
         <> show instanceName
         <> " instance because it is not a Nat."
-  predKnown <- [t|KnownNat $(varT $ tvName arg)|]
-  predPositive <- [t|1 <= $(varT $ tvName arg)|]
+  predKnown <- [t|KnownNat $(return arg)|]
+  predPositive <- [t|1 <= $(return arg)|]
   return [predKnown, predPositive]
 
-extraFpBitSizeConstraint :: Name -> Name -> [TyVarBndr_ ()] -> (Int, Int) -> Q [Pred]
+extraFpBitSizeConstraint :: Name -> Name -> [(Type, Kind)] -> (Int, Int) -> Q [Pred]
 extraFpBitSizeConstraint tyName instanceName args (eb, sb) = do
-  let argEb = args !! eb
-  let argEbKind = tvKind argEb
-  let argSb = args !! sb
-  let argSbKind = tvKind argSb
+  let (argEb, argEbKind) = args !! eb
+  let (argSb, argSbKind) = args !! sb
   when (argEbKind /= ConT ''Nat || argSbKind /= ConT ''Nat) $
     fail $
       "Cannot introduce ValidFP constraint for the "
@@ -324,24 +331,25 @@ extraFpBitSizeConstraint tyName instanceName args (eb, sb) = do
         <> " when deriving the "
         <> show instanceName
         <> " instance because they are not Nats."
-  pred <- [t|ValidFP $(varT $ tvName argEb) $(varT $ tvName argSb)|]
+  pred <- [t|ValidFP $(return argEb) $(return argSb)|]
   return [pred]
 
-extraExtraMergeableConstraint :: [TyVarBndr_ ()] -> Q [Pred]
+extraExtraMergeableConstraint :: [(Type, Kind)] -> Q [Pred]
 extraExtraMergeableConstraint args = do
   catMaybes
     <$> traverse
-      ( ctxForVar
-          [ ConT ''Mergeable,
-            ConT ''Mergeable1,
-            ConT ''Mergeable2
-          ]
+      ( uncurry $
+          ctxForVar
+            [ ConT ''Mergeable,
+              ConT ''Mergeable1,
+              ConT ''Mergeable2
+            ]
       )
       args
 
 -- | Generate extra constraints for a GADT.
 extraConstraint ::
-  DeriveConfig -> Name -> Name -> [TyVarBndr_ ()] -> [TyVarBndr_ ()] -> Q [Pred]
+  DeriveConfig -> Name -> Name -> [(Type, Kind)] -> [(Type, Kind)] -> Q [Pred]
 extraConstraint
   deriveConfig@DeriveConfig {..}
   tyName
@@ -361,9 +369,9 @@ extraConstraint
       if null evalModeConfig
         then
           traverse
-            ( \arg ->
-                if tvKind arg == ConT ''EvalModeTag
-                  then (: []) <$> [t|DecideEvalMode $(varT $ tvName arg)|]
+            ( \(arg, kind) ->
+                if kind == ConT ''EvalModeTag
+                  then (: []) <$> [t|DecideEvalMode $(return arg)|]
                   else return []
             )
             extraArgs

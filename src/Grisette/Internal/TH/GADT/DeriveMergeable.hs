@@ -40,16 +40,16 @@ import Grisette.Internal.Core.Data.Class.Mergeable
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult
       ( CheckArgsResult,
-        argNewNames,
         argNewVars,
         constructors,
         isVarUsedInFields,
-        keptNewNames,
         keptNewVars
       ),
     DeriveConfig,
     checkArgs,
+    evalModeSpecializeList,
     extraConstraint,
+    specializeResult,
   )
 import Language.Haskell.TH
   ( Bang (Bang),
@@ -58,6 +58,7 @@ import Language.Haskell.TH
     Con (ForallC, GadtC),
     Dec (DataD, FunD, InstanceD, SigD),
     Exp (AppE, ConE, VarE),
+    Kind,
     Name,
     Pat (SigP, VarP, WildP),
     Pred,
@@ -93,11 +94,9 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
   ( TyVarBndrUnit,
-    TyVarBndr_,
-    mapTVFlag,
+    kindedTV,
     plainTVFlag,
     specifiedSpec,
-    tvKind,
   )
 import Language.Haskell.TH.Lib (clause, conP, litE, stringL)
 import Type.Reflection (SomeTypeRep (SomeTypeRep), TypeRep, typeRep)
@@ -362,7 +361,7 @@ constructVarPats conInfo = do
   conP (constructorName conInfo) $ capture <$> [0 .. length fields - 1]
 
 genMergingInfoFunClause' ::
-  [Name] -> Name -> ConstructorInfo -> Q Clause
+  [(Type, Kind)] -> Name -> ConstructorInfo -> Q Clause
 genMergingInfoFunClause' argTypes conInfoName con = do
   let conVars = constructorVars con
   capturedVarTyReps <-
@@ -375,22 +374,32 @@ genMergingInfoFunClause' argTypes conInfoName con = do
 
   strategyNames <-
     traverse
-      ( \nm ->
-          if S.member nm usedArgs
-            then do
-              pname <- newName "p"
-              return (nm, Just pname)
-            else return (nm, Nothing)
+      ( \(ty, _) ->
+          case ty of
+            VarT nm ->
+              if S.member nm usedArgs
+                then do
+                  pname <- newName "p"
+                  return (nm, Just pname)
+                else return ('undefined, Nothing)
+            _ -> return ('undefined, Nothing)
       )
       argTypes
   let argToStrategyPat =
         mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) strategyNames
   let strategyPats = fmap (maybe WildP VarP . snd) strategyNames
 
-  let argTypeSet = S.fromList argTypes
+  let argNameSet =
+        S.fromList $
+          mapMaybe
+            ( \(ty, _) -> case ty of
+                VarT nm -> Just nm
+                _ -> Nothing
+            )
+            argTypes
   let containsArg :: Type -> Bool
       containsArg ty =
-        S.intersection argTypeSet (S.fromList (freeVariables [ty])) /= S.empty
+        S.intersection argNameSet (S.fromList (freeVariables [ty])) /= S.empty
   let typeHasNoArg = not . containsArg
 
   let fieldStrategyExp ty =
@@ -439,23 +448,27 @@ genMergingInfoFunClause' argTypes conInfoName con = do
 genMergeable' ::
   DeriveConfig -> MergingInfoResult -> Name -> Int -> Q (Name, [Dec])
 genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n = do
-  CheckArgsResult {..} <- checkArgs "Mergeable" 3 typName True n
+  CheckArgsResult {..} <-
+    specializeResult (evalModeSpecializeList deriveConfig)
+      =<< checkArgs "Mergeable" 3 typName True n
 
   d <- reifyDatatype typName
-  let ctxForVar :: TyVarBndr_ flag -> Q (Maybe Pred)
-      ctxForVar var = case tvKind var of
-        StarT -> Just <$> [t|Mergeable $(varT $ tvName var)|]
+  let ctxForVar :: (Type, Kind) -> Q (Maybe Pred)
+      ctxForVar (ty, kind) = case kind of
+        StarT -> Just <$> [t|Mergeable $(return ty)|]
         AppT (AppT ArrowT StarT) StarT ->
-          Just <$> [t|Mergeable1 $(varT $ tvName var)|]
+          Just <$> [t|Mergeable1 $(return ty)|]
         AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
-          Just <$> [t|Mergeable2 $(varT $ tvName var)|]
+          Just <$> [t|Mergeable2 $(return ty)|]
         AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) StarT ->
-          Just <$> [t|Mergeable3 $(varT $ tvName var)|]
+          Just <$> [t|Mergeable3 $(return ty)|]
         AppT (AppT (AppT (AppT ArrowT StarT) StarT) StarT) _ ->
-          fail $ "Unsupported kind: " <> show (tvKind var)
+          fail $ "Unsupported kind: " <> show kind
         _ -> return Nothing
+  let isTypeUsedInFields (VarT nm) = isVarUsedInFields nm
+      isTypeUsedInFields _ = False
   mergeableContexts <-
-    traverse ctxForVar $ filter (isVarUsedInFields . tvName) keptNewVars
+    traverse ctxForVar $ filter (isTypeUsedInFields . fst) keptNewVars
 
   let instanceName =
         case n of
@@ -470,21 +483,27 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
 
   let targetType =
         foldl
-          (\ty nm -> AppT ty (VarT nm))
+          (\ty (var, _) -> AppT ty var)
           (ConT typName)
-          (keptNewNames ++ argNewNames)
+          (keptNewVars ++ argNewVars)
   let infoType = ConT infoName
   let mergingInfoFunFinalType = AppT (AppT ArrowT targetType) infoType
 
   let mergingInfoFunTypeWithoutCtx =
         foldr
-          ((AppT . AppT ArrowT) . AppT (ConT ''MergingStrategy) . VarT)
+          (((AppT . AppT ArrowT) . AppT (ConT ''MergingStrategy)) . fst)
           mergingInfoFunFinalType
-          argNewNames
+          argNewVars
 
   let mergingInfoFunType =
         ForallT
-          (mapTVFlag (const specifiedSpec) <$> keptNewVars ++ argNewVars)
+          ( mapMaybe
+              ( \(ty, knd) -> case ty of
+                  VarT nm -> Just $ kindedTV nm knd
+                  _ -> Nothing
+              )
+              $ keptNewVars ++ argNewVars
+          )
           (extraPreds ++ catMaybes mergeableContexts)
           mergingInfoFunTypeWithoutCtx
   let mergingInfoFunName =
@@ -494,7 +513,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
             <> nameBase (datatypeName d)
   let mergingInfoFunSigD = SigD mergingInfoFunName mergingInfoFunType
   clauses <-
-    traverse (uncurry (genMergingInfoFunClause' (tvName <$> argNewVars))) $
+    traverse (uncurry (genMergingInfoFunClause' argNewVars)) $
       zip conInfoNames constructors
   let mergingInfoFunDec = FunD mergingInfoFunName clauses
 
@@ -512,7 +531,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
   let instanceType =
         AppT
           instanceHead
-          (foldl AppT (ConT typName) $ fmap VarT keptNewNames)
+          (foldl AppT (ConT typName) $ fmap fst keptNewVars)
 
   let mergeInstanceFunName = case n of
         0 -> 'rootStrategy
