@@ -16,16 +16,12 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.ConvertOpCommon
   ( ConvertOpClassConfig
       ( ConvertOpClassConfig,
-        convertOpFieldConfigs,
+        convertFieldCombineFun,
+        convertFieldFunExp,
+        convertFieldResFun,
         convertOpFunNames,
         convertOpInstanceNames,
         convertOpTarget
-      ),
-    ConvertOpFieldConfig
-      ( ConvertOpFieldConfig,
-        fieldCombineFun,
-        fieldFunExp,
-        fieldResFun
       ),
     defaultFieldFunExp,
     genConvertOpClass,
@@ -36,16 +32,13 @@ import Language.Haskell.TH (Dec, Name, Q, conE)
 toConClassConfig :: ConvertOpClassConfig
 toConClassConfig =
   ConvertOpClassConfig
-    { convertOpFieldConfigs =
-        ConvertOpFieldConfig
-          { fieldResFun = \v f -> [|$(return f) $(return v)|],
-            fieldCombineFun = \f args ->
-              foldl
-                (\acc arg -> [|$(acc) <*> $arg|])
-                [|return $(conE f)|]
-                $ fmap return args,
-            fieldFunExp = defaultFieldFunExp ['toCon, 'liftToCon, 'liftToCon2]
-          },
+    { convertFieldResFun = \v f -> [|$(return f) $(return v)|],
+      convertFieldCombineFun = \f args ->
+        foldl
+          (\acc arg -> [|$(acc) <*> $arg|])
+          [|return $(conE f)|]
+          $ fmap return args,
+      convertFieldFunExp = defaultFieldFunExp ['toCon, 'liftToCon, 'liftToCon2],
       convertOpTarget = C,
       convertOpInstanceNames = [''ToCon, ''ToCon1, ''ToCon2],
       convertOpFunNames = ['toCon, 'liftToCon, 'liftToCon2]

@@ -18,7 +18,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
--- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
+{-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
 
 module Grisette.Core.TH.DerivationData
   ( T (..),

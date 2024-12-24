@@ -1,20 +1,20 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Grisette.Internal.TH.GADT.ConvertOpCommon
   ( genConvertOpClass,
     ConvertOpClassConfig (..),
-    ConvertOpFieldConfig (..),
     defaultFieldFunExp,
   )
 where
 
-import Control.Monad (replicateM, zipWithM)
+import Control.Monad (foldM, replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
-import Data.Traversable (for)
 import Grisette.Internal.Core.Control.Monad.Union
   ( Union,
     toUnionSym,
@@ -23,20 +23,27 @@ import Grisette.Internal.Core.Control.Monad.Union
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult (argVars, constructors, keptVars),
     DeriveConfig
-      ( evalModeConfig,
+      ( DeriveConfig,
+        bitSizePositions,
+        evalModeConfig,
+        fpBitSizePositions,
         needExtraMergeableUnderEvalMode,
         needExtraMergeableWithConcretizedEvalMode
       ),
     EvalModeConfig (EvalModeConstraints, EvalModeSpecified),
     checkArgs,
-    evalModeSpecializeList,
-    extraConstraint,
+    extraBitSizeConstraint,
+    extraEvalModeConstraint,
+    extraExtraMergeableConstraint,
+    extraFpBitSizeConstraint,
     freshenCheckArgsResult,
     isVarUsedInFields,
-    specializeResult,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
+import Grisette.Unified.Internal.Util
+  ( EvalModeConvertible (withModeConvertible'),
+  )
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
@@ -120,56 +127,106 @@ funPatAndExps fieldFunExpGen argTypes fields = do
   return (funPats, defaultFieldFunExps)
 
 genConvertOpFieldClause ::
-  ConvertOpFieldConfig ->
+  DeriveConfig ->
+  ConvertOpClassConfig ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
   [(Type, Kind)] ->
   ConstructorInfo ->
   Q Clause
-genConvertOpFieldClause ConvertOpFieldConfig {..} argTypes conInfo = do
-  fields <- mapM resolveTypeSynonyms $ constructorFields conInfo
-  (funPats, defaultFieldFunExps) <- funPatAndExps fieldFunExp argTypes fields
-  fieldsPatNames <- replicateM (length fields) $ newName "field"
-  fieldPats <- conP (constructorName conInfo) (fmap varP fieldsPatNames)
-  let fieldPatExps = fmap VarE fieldsPatNames
-  fieldResExps <- zipWithM fieldResFun fieldPatExps defaultFieldFunExps
-  resExp <- fieldCombineFun (constructorName conInfo) fieldResExps
-  let resUsedNames = allUsedNames resExp
-  let transformPat (VarP nm) =
-        if S.member nm resUsedNames then VarP nm else WildP
-      transformPat p = p
-  return $
-    Clause
-      (fmap transformPat $ funPats ++ [fieldPats])
-      (NormalB resExp)
-      []
+genConvertOpFieldClause
+  DeriveConfig {..}
+  ConvertOpClassConfig {..}
+  lhsKeptTypes
+  rhsKeptTypes
+  lhsArgTypes
+  _rhsArgTypes
+  lhsConInfo = do
+    fields <- mapM resolveTypeSynonyms $ constructorFields lhsConInfo
+    (funPats, defaultFieldFunExps) <- funPatAndExps convertFieldFunExp lhsArgTypes fields
+    fieldsPatNames <- replicateM (length fields) $ newName "field"
+    fieldPats <- conP (constructorName lhsConInfo) (fmap varP fieldsPatNames)
+    let fieldPatExps = fmap VarE fieldsPatNames
+    fieldResExps <- zipWithM convertFieldResFun fieldPatExps defaultFieldFunExps
+    resExp <- convertFieldCombineFun (constructorName lhsConInfo) fieldResExps
+    let resUsedNames = allUsedNames resExp
+    let transformPat (VarP nm) =
+          if S.member nm resUsedNames then VarP nm else WildP
+        transformPat p = p
+    let conKeptVars =
+          if convertOpTarget == S then lhsKeptTypes else rhsKeptTypes
+    let symKeptVars =
+          if convertOpTarget == S then rhsKeptTypes else lhsKeptTypes
+    let tags =
+          mapMaybe
+            ( \case
+                (n, EvalModeConstraints _)
+                  | n < length conKeptVars && n >= 0 ->
+                      Just (fst $ conKeptVars !! n, fst $ symKeptVars !! n)
+                _ -> Nothing
+            )
+            evalModeConfig
+    resExpWithTags <-
+      foldM
+        ( \exp (lty, rty) ->
+            [|
+              withModeConvertible'
+                @($(return lty))
+                @($(return rty))
+                $(return exp)
+                $(return exp)
+                $(return exp)
+              |]
+        )
+        resExp
+        tags
+    return $
+      Clause
+        (fmap transformPat $ funPats ++ [fieldPats])
+        (NormalB resExpWithTags)
+        []
 
 genConvertOpFun ::
+  DeriveConfig ->
   ConvertOpClassConfig ->
   Int ->
   [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
   [ConstructorInfo] ->
   Q Dec
-genConvertOpFun (ConvertOpClassConfig {..}) n argTypes constructors = do
-  clauses <-
-    traverse
-      ( genConvertOpFieldClause
-          convertOpFieldConfigs
-          argTypes
-      )
-      constructors
-  let instanceFunName = convertOpFunNames !! n
-  return $ FunD instanceFunName clauses
-
-data ConvertOpFieldConfig = ConvertOpFieldConfig
-  { fieldResFun :: Exp -> Exp -> Q Exp,
-    fieldCombineFun :: Name -> [Exp] -> Q Exp,
-    fieldFunExp :: FieldFunExp
-  }
+genConvertOpFun
+  deriveConfig
+  convertOpClassConfig
+  n
+  lhsKeptTypes
+  rhsKeptTypes
+  lhsArgTypes
+  rhsArgTypes
+  lhsConstructors = do
+    clauses <-
+      traverse
+        ( genConvertOpFieldClause
+            deriveConfig
+            convertOpClassConfig
+            lhsKeptTypes
+            rhsKeptTypes
+            lhsArgTypes
+            rhsArgTypes
+        )
+        lhsConstructors
+    let instanceFunName = (convertOpFunNames convertOpClassConfig) !! n
+    return $ FunD instanceFunName clauses
 
 data ConvertOpClassConfig = ConvertOpClassConfig
-  { convertOpFieldConfigs :: ConvertOpFieldConfig,
-    convertOpTarget :: EvalModeTag,
+  { convertOpTarget :: EvalModeTag,
     convertOpInstanceNames :: [Name],
-    convertOpFunNames :: [Name]
+    convertOpFunNames :: [Name],
+    convertFieldResFun :: Exp -> Exp -> Q Exp,
+    convertFieldCombineFun :: Name -> [Exp] -> Q Exp,
+    convertFieldFunExp :: FieldFunExp
   }
 
 convertCtxForVar :: [Type] -> Type -> Type -> Kind -> Q (Maybe Pred)
@@ -187,6 +244,78 @@ convertCtxForVar instanceExps lty rty knd = case knd of
     fail $ "Unsupported kind: " <> show knd
   _ -> return Nothing
 
+-- | Generate extra constraints for a GADT.
+extraConstraintConvert ::
+  DeriveConfig ->
+  EvalModeTag ->
+  Name ->
+  Name ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  [ConstructorInfo] ->
+  Q [Pred]
+extraConstraintConvert
+  DeriveConfig {..}
+  convertOpTarget
+  tyName
+  instanceName
+  lhsKeptArgs
+  rhsKeptArgs
+  rhsConstructors = do
+    let conKeptVars = if convertOpTarget == S then lhsKeptArgs else rhsKeptArgs
+    let symKeptVars = if convertOpTarget == S then rhsKeptArgs else lhsKeptArgs
+
+    rhsEvalModePreds <-
+      if convertOpTarget == S && needExtraMergeableWithConcretizedEvalMode
+        then
+          traverse
+            (extraEvalModeConstraint tyName instanceName rhsKeptArgs)
+            evalModeConfig
+        else return []
+    extraArgEvalModePreds <-
+      traverse
+        ( \case
+            (n, EvalModeConstraints _)
+              | n < length lhsKeptArgs && n >= 0 ->
+                  (: [])
+                    <$> [t|
+                      EvalModeConvertible
+                        $(return $ fst $ conKeptVars !! n)
+                        $(return $ fst $ symKeptVars !! n)
+                      |]
+            _ -> return []
+        )
+        evalModeConfig
+    bitSizePreds <-
+      traverse
+        (extraBitSizeConstraint tyName instanceName lhsKeptArgs)
+        bitSizePositions
+    fpBitSizePreds <-
+      traverse
+        (extraFpBitSizeConstraint tyName instanceName lhsKeptArgs)
+        fpBitSizePositions
+    extraMergeablePreds <-
+      if convertOpTarget == S
+        && ( any
+               ( \case
+                   (_, EvalModeConstraints _) -> True
+                   (_, EvalModeSpecified _) -> False
+               )
+               evalModeConfig
+               || needExtraMergeableWithConcretizedEvalMode
+           )
+        then
+          extraExtraMergeableConstraint rhsConstructors rhsKeptArgs
+        else return []
+    return $
+      concat
+        ( rhsEvalModePreds
+            ++ extraArgEvalModePreds
+            ++ bitSizePreds
+            ++ fpBitSizePreds
+            ++ [extraMergeablePreds]
+        )
+
 genConvertOpClass ::
   DeriveConfig -> ConvertOpClassConfig -> Int -> Name -> Q [Dec]
 genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
@@ -200,115 +329,96 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
         n
   oldRhsResult <- freshenCheckArgsResult False oldLhsResult
   -- let baseSpecializeList = evalModeSpecializeList deriveConfig
-  let convertOpSource = case convertOpTarget of
-        S -> C
-        C -> S
-  let constructSpecializeList ::
-        [(Int, EvalModeConfig)] ->
-        [([(Int, EvalModeConfig)], [(Int, EvalModeConfig)])]
-      constructSpecializeList [] = [([], [])]
-      constructSpecializeList ((n, cfg) : xs) =
-        case cfg of
-          EvalModeConstraints _ -> do
-            (l, r) <-
-              [ ([(n, cfg)], [(n, EvalModeSpecified convertOpTarget)]),
-                ([(n, EvalModeSpecified convertOpSource)], [(n, cfg)]),
-                ( [(n, EvalModeSpecified convertOpSource)],
-                  [(n, EvalModeSpecified convertOpTarget)]
-                )
-                ]
-            (ol, or) <- constructSpecializeList xs
-            return (l ++ ol, r ++ or)
-          EvalModeSpecified _ -> do
-            (ol, or) <- constructSpecializeList xs
-            return ((n, cfg) : ol, (n, cfg) : or)
-  fmap concat
-    . for
-      ( constructSpecializeList
-          (evalModeConfig deriveConfig)
+  -- let convertOpSource = case convertOpTarget of
+  --       S -> C
+  --       C -> S
+  let lResult = oldLhsResult
+  let rResult = oldRhsResult
+  -- let lConfig = deriveConfig {evalModeConfig = l}
+  -- let rConfig = deriveConfig {evalModeConfig = r}
+  -- lResult <- specializeResult (evalModeSpecializeList lConfig) oldLhsResult
+  -- rResult <- specializeResult (evalModeSpecializeList rConfig) oldRhsResult
+
+  let instanceName = convertOpInstanceNames !! n
+  let lKeptVars = keptVars lResult
+  let rKeptVars = keptVars rResult
+  let lConstructors = constructors lResult
+  let rConstructors = constructors rResult
+  let lKeptType = foldl AppT (ConT typName) $ fmap fst lKeptVars
+  let rKeptType = foldl AppT (ConT typName) $ fmap fst rKeptVars
+  extraPreds <-
+    extraConstraintConvert
+      deriveConfig
+      convertOpTarget
+      typName
+      instanceName
+      lKeptVars
+      rKeptVars
+      rConstructors
+  unionExtraPreds <-
+    extraConstraintConvert
+      deriveConfig {needExtraMergeableWithConcretizedEvalMode = True}
+      convertOpTarget
+      typName
+      instanceName
+      lKeptVars
+      rKeptVars
+      rConstructors
+
+  let instanceType = AppT (AppT (ConT instanceName) lKeptType) rKeptType
+  let isTypeUsedInFields (VarT nm) = isVarUsedInFields lResult nm
+      isTypeUsedInFields _ = False
+  ctxs <-
+    traverse
+      ( \((lty, knd), (rty, _)) ->
+          convertCtxForVar (ConT <$> convertOpInstanceNames) lty rty knd
       )
-    $ \(l, r) -> do
-      let lConfig = deriveConfig {evalModeConfig = l}
-      let rConfig =
-            mempty
-              { evalModeConfig = r,
-                needExtraMergeableUnderEvalMode =
-                  needExtraMergeableUnderEvalMode deriveConfig
-              }
-      lResult <- specializeResult (evalModeSpecializeList lConfig) oldLhsResult
-      rResult <- specializeResult (evalModeSpecializeList rConfig) oldRhsResult
+      $ filter (isTypeUsedInFields . fst . fst)
+      $ zip lKeptVars rKeptVars
 
-      let instanceName = convertOpInstanceNames !! n
-      let lKeptVars = keptVars lResult
-      let rKeptVars = keptVars rResult
-      let lConstructors = constructors lResult
-      let rConstructors = constructors rResult
-      let lKeptType = foldl AppT (ConT typName) $ fmap fst lKeptVars
-      let rKeptType = foldl AppT (ConT typName) $ fmap fst rKeptVars
-      lExtraPreds <-
-        extraConstraint lConfig typName instanceName [] lKeptVars lConstructors
-      rExtraPreds <-
-        extraConstraint rConfig typName instanceName [] rKeptVars rConstructors
-      let instanceType = AppT (AppT (ConT instanceName) lKeptType) rKeptType
-      let isTypeUsedInFields (VarT nm) = isVarUsedInFields lResult nm
-          isTypeUsedInFields _ = False
-      ctxs <-
-        traverse
-          ( \((lty, knd), (rty, _)) ->
-              convertCtxForVar (ConT <$> convertOpInstanceNames) lty rty knd
-          )
-          $ filter (isTypeUsedInFields . fst . fst)
-          $ zip lKeptVars rKeptVars
-      instanceFun <-
-        genConvertOpFun
-          (ConvertOpClassConfig {..})
-          n
-          (argVars lResult)
-          (constructors lResult)
+  instanceFun <-
+    genConvertOpFun
+      deriveConfig
+      (ConvertOpClassConfig {..})
+      n
+      (keptVars lResult)
+      (keptVars rResult)
+      (argVars lResult)
+      (argVars rResult)
+      lConstructors
 
-      let instanceUnionType =
-            case convertOpTarget of
-              S ->
-                AppT
-                  (AppT (ConT instanceName) lKeptType)
-                  (AppT (ConT ''Union) rKeptType)
-              C ->
-                AppT
-                  (AppT (ConT instanceName) (AppT (ConT ''Union) lKeptType))
-                  rKeptType
-      instanceUnionFun <-
+  let instanceUnionType =
         case convertOpTarget of
           S ->
-            funD
-              (head convertOpFunNames)
-              [clause [] (normalB [|toUnionSym|]) []]
+            AppT
+              (AppT (ConT instanceName) lKeptType)
+              (AppT (ConT ''Union) rKeptType)
           C ->
-            funD
-              (head convertOpFunNames)
-              [clause [] (normalB [|unionToCon|]) []]
-      rUnionExtraPreds <-
-        extraConstraint
-          rConfig
-            { needExtraMergeableWithConcretizedEvalMode =
-                convertOpTarget == S,
-              needExtraMergeableUnderEvalMode = True
-            }
-          typName
-          instanceName
-          []
-          rKeptVars
-          rConstructors
-      return $
-        InstanceD
-          (Just Incoherent)
-          (lExtraPreds ++ rExtraPreds ++ catMaybes ctxs)
-          instanceType
-          [instanceFun]
-          : ( [ InstanceD
-                  (Just Incoherent)
-                  (lExtraPreds ++ rUnionExtraPreds ++ catMaybes ctxs)
-                  instanceUnionType
-                  [instanceUnionFun]
-                | n == 0
-              ]
-            )
+            AppT
+              (AppT (ConT instanceName) (AppT (ConT ''Union) lKeptType))
+              rKeptType
+  instanceUnionFun <-
+    case convertOpTarget of
+      S ->
+        funD
+          (head convertOpFunNames)
+          [clause [] (normalB [|toUnionSym|]) []]
+      C ->
+        funD
+          (head convertOpFunNames)
+          [clause [] (normalB [|unionToCon|]) []]
+
+  return $
+    InstanceD
+      (Just Incoherent)
+      (extraPreds ++ catMaybes ctxs)
+      instanceType
+      [instanceFun]
+      : ( [ InstanceD
+              (Just Incoherent)
+              (unionExtraPreds ++ catMaybes ctxs)
+              instanceUnionType
+              [instanceUnionFun]
+            | n == 0
+          ]
+        )
