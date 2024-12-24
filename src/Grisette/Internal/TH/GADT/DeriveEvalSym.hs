@@ -31,6 +31,7 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
@@ -76,7 +77,8 @@ evalSymConfig =
       unaryOpInstanceNames =
         [''EvalSym, ''EvalSym1, ''EvalSym2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'EvalSym' instance for a GADT.

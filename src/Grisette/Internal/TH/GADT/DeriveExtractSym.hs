@@ -27,6 +27,7 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
@@ -79,7 +80,8 @@ extractSymConfig =
       unaryOpInstanceNames =
         [''ExtractSym, ''ExtractSym1, ''ExtractSym2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'ExtractSym' instance for a GADT.

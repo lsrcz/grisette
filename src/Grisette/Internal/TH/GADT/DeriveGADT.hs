@@ -163,6 +163,8 @@ import Grisette.Unified.Internal.Class.UnifiedSymOrd
   )
 import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C))
 import Language.Haskell.TH (Dec, Name, Q)
+import Data.Bytes.Serial (Serial, Serial1, Serial2)
+import Grisette.Internal.TH.GADT.DeriveSerial (deriveGADTSerial, deriveGADTSerial1, deriveGADTSerial2)
 
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])
 deriveProcedureMap =
@@ -214,7 +216,10 @@ deriveProcedureMap =
       (''ToSym2, deriveGADTToSym2),
       (''ToCon, deriveGADTToCon),
       (''ToCon1, deriveGADTToCon1),
-      (''ToCon2, deriveGADTToCon2)
+      (''ToCon2, deriveGADTToCon2),
+      (''Serial, deriveGADTSerial),
+      (''Serial1, deriveGADTSerial1),
+      (''Serial2, deriveGADTSerial2)
     ]
 
 deriveSingleGADT :: DeriveConfig -> Name -> Name -> Q [Dec]
@@ -315,6 +320,9 @@ deriveSingleGADT deriveConfig typName className = do
 -- * 'ToCon'
 -- * 'ToCon1'
 -- * 'ToCon2'
+-- * 'Serial'
+-- * 'Serial1'
+-- * 'Serial2'
 --
 -- Note that the following type classes cannot be derived for GADTs with
 -- existential type variables.
@@ -385,7 +393,8 @@ allClasses0 =
       ''SymOrd,
       ''UnifiedSymEq,
       ''ToCon,
-      ''ToSym
+      ''ToSym,
+      ''Serial
     ]
 
 allOrdClasses0 :: S.Set Name
@@ -415,7 +424,8 @@ allClasses1 =
         ''SymEq1,
         ''SymOrd1,
         ''ToCon1,
-        ''ToSym1
+        ''ToSym1,
+        ''Serial1
       ]
 
 allOrdClasses1 :: S.Set Name
@@ -445,7 +455,8 @@ allClasses2 =
         ''SymEq2,
         ''SymOrd2,
         ''ToCon2,
-        ''ToSym2
+        ''ToSym2,
+        ''Serial2
       ]
 
 allOrdClasses2 :: S.Set Name

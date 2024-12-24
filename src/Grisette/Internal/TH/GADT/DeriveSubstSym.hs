@@ -30,7 +30,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpAllowExistential
       ),
     UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
@@ -69,7 +69,8 @@ substSymConfig =
       unaryOpInstanceNames =
         [''SubstSym, ''SubstSym1, ''SubstSym2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'SubstSym' instance for a GADT.
