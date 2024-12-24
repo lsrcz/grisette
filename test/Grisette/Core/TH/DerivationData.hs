@@ -7,16 +7,19 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+-- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
 
 -- {-# OPTIONS_GHC -ddump-timings #-}
 
@@ -53,7 +56,6 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Typeable (Proxy, Typeable)
 import GHC.Generics (Generic)
-import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
   ( AllSyms,
     AllSyms1,
@@ -97,7 +99,7 @@ import Grisette.Internal.TH.GADT.Common
       ( bitSizePositions,
         evalModeConfig,
         fpBitSizePositions,
-        needExtraMergeable
+        needExtraMergeableUnderEvalMode
       ),
     EvalModeConfig (EvalModeConstraints),
   )
@@ -122,106 +124,11 @@ deriveGADTWith
       { evalModeConfig =
           [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
         bitSizePositions = [1],
-        needExtraMergeable = True
+        needExtraMergeableUnderEvalMode = True
       }
   )
   ''T
   allClasses0WithOrd
-
-instance
-  {-# OVERLAPPABLE #-}
-  ( ToCon symA conA,
-    Mergeable symA,
-    1 <= n,
-    KnownNat n,
-    EvalModeBV mode,
-    EvalModeBase mode
-  ) =>
-  ToCon (T mode n symA) (T 'C n conA)
-  where
-  toCon (T b w a d) = do
-    b' <- toCon b
-    w' <- toCon w
-    a' <- toCon a
-    d' <- toCon d
-    return $ T b' w' a' d'
-  toCon TNil = return TNil
-
-instance
-  {-# OVERLAPPABLE #-}
-  ( ToCon symA conA,
-    Mergeable conA,
-    1 <= n,
-    KnownNat n,
-    EvalModeBV mode,
-    EvalModeBase mode
-  ) =>
-  ToCon (T 'S n symA) (T mode n conA)
-  where
-  toCon (T b w a d) = do
-    b' <- toCon b
-    w' <- toCon w
-    a' <- toCon a
-    d' <- toCon d
-    return $ T b' w' a' d'
-  toCon TNil = return TNil
-
-instance
-  {-# OVERLAPPING #-}
-  ( ToCon symA conA,
-    Mergeable conA,
-    1 <= n,
-    KnownNat n
-  ) =>
-  ToCon (T 'S n symA) (T 'C n conA)
-  where
-  toCon (T b w a d) = do
-    b' <- toCon b
-    w' <- toCon w
-    a' <- toCon a
-    d' <- toCon d
-    return $ T b' w' a' d'
-  toCon TNil = return TNil
-
-instance
-  {-# OVERLAPPABLE #-}
-  ( ToSym conA symA,
-    Mergeable symA,
-    1 <= n,
-    KnownNat n,
-    EvalModeBV mode,
-    EvalModeBase mode
-  ) =>
-  ToSym (T 'C n conA) (T mode n symA)
-  where
-  toSym (T b w a d) = T (toSym b) (toSym w) (toSym a) (toSym d)
-  toSym TNil = TNil
-
-instance
-  {-# OVERLAPPABLE #-}
-  ( ToSym conA symA,
-    Mergeable conA,
-    1 <= n,
-    KnownNat n,
-    EvalModeBV mode,
-    EvalModeBase mode
-  ) =>
-  ToSym (T mode n conA) (T 'S n symA)
-  where
-  toSym (T b w a d) = T (toSym b) (toSym w) (toSym a) (toSym d)
-  toSym TNil = TNil
-
-instance
-  {-# OVERLAPPING #-}
-  ( ToSym conA symA,
-    Mergeable conA,
-    1 <= n,
-    KnownNat n
-  ) =>
-  ToSym (T 'C n conA) (T 'S n symA)
-  where
-  toSym (T b w a d) = T (toSym b) (toSym w) (toSym a) (toSym d)
-  toSym TNil = TNil
 
 concreteT :: T 'C 10 Integer
 concreteT =
@@ -249,6 +156,8 @@ data IdenticalFields (mode :: EvalModeTag) a b = IdenticalFields
 
 deriveGADTWith
   ( mempty
+      { needExtraMergeableUnderEvalMode = True
+      }
   )
   ''IdenticalFields
   allClasses2WithOrd
@@ -273,7 +182,7 @@ deriveGADTWith
       { evalModeConfig = [(0, EvalModeConstraints [''PartialEvalMode])],
         bitSizePositions = [1],
         fpBitSizePositions = [(2, 3)],
-        needExtraMergeable = True
+        needExtraMergeableUnderEvalMode = True
       }
   )
   ''Extra

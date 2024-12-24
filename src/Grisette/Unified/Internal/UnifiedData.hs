@@ -128,13 +128,13 @@ instance (Mergeable v) => UnifiedDataSimpleMergeable v
 
 -- | Evaluation mode with unified data types.
 class
-  ( forall v. (Mergeable v) => UnifiedData bool v,
+  ( forall v. UnifiedData bool v,
     forall v. (Mergeable v) => UnifiedDataSimpleMergeable v
   ) =>
   AllUnifiedData bool
 
 instance
-  ( forall v. (Mergeable v) => UnifiedData bool v,
+  ( forall v. UnifiedData bool v,
     forall v. (Mergeable v) => UnifiedDataSimpleMergeable v
   ) =>
   AllUnifiedData bool

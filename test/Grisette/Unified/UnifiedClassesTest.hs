@@ -27,7 +27,6 @@ import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
   ( Mergeable,
-    Mergeable1,
     SymBool,
     SymEq,
     SymInteger,
@@ -43,7 +42,7 @@ import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig
       ( bitSizePositions,
         evalModeConfig,
-        needExtraMergeable
+        needExtraMergeableUnderEvalMode
       ),
     EvalModeConfig (EvalModeConstraints),
   )
@@ -105,7 +104,7 @@ deriveGADTWith
       { evalModeConfig =
           [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
         bitSizePositions = [1],
-        needExtraMergeable = True
+        needExtraMergeableUnderEvalMode = True
       }
   )
   ''X
@@ -123,8 +122,6 @@ testSEq ::
     EvalModeBV mode,
     1 <= n,
     KnownNat n,
-    Mergeable1 f,
-    Mergeable a,
     UnifiedSymEq1 mode f,
     UnifiedSymEq mode a
   ) =>

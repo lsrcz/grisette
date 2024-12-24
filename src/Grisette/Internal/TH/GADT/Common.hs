@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -21,11 +23,13 @@ module Grisette.Internal.TH.GADT.Common
     extraConstraint,
     specializeResult,
     evalModeSpecializeList,
+    isVarUsedInFields,
+    freshenCheckArgsResult,
   )
 where
 
 import Control.Monad (foldM, unless, when)
-import Data.Foldable (traverse_)
+import Data.Bifunctor (first)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
@@ -60,9 +64,8 @@ import Language.Haskell.TH.Datatype.TyVarBndr (mapTVName, tvKind)
 -- | Result of 'checkArgs' for a GADT.
 data CheckArgsResult = CheckArgsResult
   { constructors :: [ConstructorInfo],
-    keptNewVars :: [(Type, Kind)],
-    argNewVars :: [(Type, Kind)],
-    isVarUsedInFields :: Name -> Bool
+    keptVars :: [(Type, Kind)],
+    argVars :: [(Type, Kind)]
   }
 
 specializeResult :: [(Int, EvalModeTag)] -> CheckArgsResult -> Q CheckArgsResult
@@ -78,9 +81,9 @@ specializeResult evalModeConfigs result = do
               ++ [(PromotedT $ modeToName tag, knd)]
               ++ drop (n + 1) lst
       )
-      (keptNewVars result)
+      (keptVars result)
       evalModeConfigs
-  return $ result {keptNewVars = map}
+  return $ result {keptVars = map}
 
 freshenConstructorInfo :: ConstructorInfo -> Q ConstructorInfo
 freshenConstructorInfo conInfo = do
@@ -89,6 +92,42 @@ freshenConstructorInfo conInfo = do
   let newVars = zipWith (mapTVName . const) newNames vars
   let substMap = M.fromList $ zip (tvName <$> vars) $ VarT <$> newNames
   return $ applySubstitution substMap conInfo {constructorVars = newVars}
+
+freshenCheckArgsResult :: Bool -> CheckArgsResult -> Q CheckArgsResult
+freshenCheckArgsResult freshenNats result = do
+  let genNewName :: (Type, Kind) -> Q (Maybe Name)
+      genNewName (VarT _, knd) =
+        if not freshenNats && knd == ConT ''Nat
+          then return Nothing
+          else Just <$> newName "a"
+      genNewName _ = return Nothing
+  keptNewNames <- traverse genNewName (keptVars result)
+  argNewNames <- traverse genNewName (argVars result)
+
+  let substMap =
+        M.fromList
+          $ mapMaybe
+            ( \(newName, oldVar) ->
+                case (newName, oldVar) of
+                  (Just newName, (VarT oldName, _)) ->
+                    Just (oldName, VarT newName)
+                  _ -> Nothing
+            )
+          $ zip
+            (keptNewNames ++ argNewNames)
+            (keptVars result ++ argVars result)
+  constructors <-
+    mapM freshenConstructorInfo $
+      applySubstitution substMap $
+        constructors result
+  let newKeptVars = first (applySubstitution substMap) <$> (keptVars result)
+  let newArgVars = first (applySubstitution substMap) <$> (argVars result)
+  return $
+    result
+      { constructors = constructors,
+        keptVars = newKeptVars,
+        argVars = newArgVars
+      }
 
 -- | Check if the number of type parameters is valid for a GADT, and return
 -- new names for the type variables, split into kept and arg parts.
@@ -135,23 +174,13 @@ checkArgs clsName maxArgNum typName allowExistential n = do
             <> show (length dvars)
             <> " type variables."
         ]
-  let keptVars = take (length dvars - n) dvars
-  keptNewNames <- traverse (newName . nameBase . tvName) keptVars
-  let keptNewVars =
-        zipWith (\nm tv -> (VarT nm, tvKind tv)) keptNewNames keptVars
-  let argVars = drop (length dvars - n) dvars
-  argNewNames <- traverse (newName . nameBase . tvName) argVars
-  let argNewVars =
-        zipWith (\nm tv -> (VarT nm, tvKind tv)) argNewNames argVars
-  let substMap =
-        M.fromList $
-          zip
-            (tvName <$> dvars)
-            (VarT <$> keptNewNames ++ argNewNames)
-  constructors <-
-    mapM freshenConstructorInfo $
-      applySubstitution substMap $
-        datatypeCons d
+  let keptVars =
+        (\bndr -> (VarT $ tvName bndr, tvKind bndr))
+          <$> take (length dvars - n) dvars
+  let argVars =
+        (\bndr -> (VarT $ tvName bndr, tvKind bndr))
+          <$> drop (length dvars - n) dvars
+  let constructors = datatypeCons d
   unless allowExistential $
     mapM_
       ( \c ->
@@ -192,10 +221,17 @@ checkArgs clsName maxArgNum typName allowExistential n = do
               ]
     )
     constructors
-  let allFields = concatMap constructorFields constructors
-  let allFieldsFreeVars = S.fromList $ freeVariables allFields
-  let isVarUsedInFields var = S.member var allFieldsFreeVars
   return $ CheckArgsResult {..}
+
+isVarUsedInConstructorFields :: [ConstructorInfo] -> Name -> Bool
+isVarUsedInConstructorFields constructors var =
+  let allFields = concatMap constructorFields constructors
+      allFieldsFreeVars = S.fromList $ freeVariables allFields
+   in S.member var allFieldsFreeVars
+
+isVarUsedInFields :: CheckArgsResult -> Name -> Bool
+isVarUsedInFields CheckArgsResult {..} =
+  isVarUsedInConstructorFields constructors
 
 -- | Generate a context for a variable in a GADT.
 ctxForVar :: [Type] -> Type -> Kind -> Q (Maybe Pred)
@@ -225,7 +261,8 @@ data DeriveConfig = DeriveConfig
   { evalModeConfig :: [(Int, EvalModeConfig)],
     bitSizePositions :: [Int],
     fpBitSizePositions :: [(Int, Int)],
-    needExtraMergeable :: Bool
+    needExtraMergeableUnderEvalMode :: Bool,
+    needExtraMergeableWithConcretizedEvalMode :: Bool
   }
 
 evalModeSpecializeList :: DeriveConfig -> [(Int, EvalModeTag)]
@@ -242,43 +279,43 @@ instance Semigroup DeriveConfig where
   (<>) = (<>)
 
 instance Monoid DeriveConfig where
-  mempty = DeriveConfig [] [] [] False
+  mempty = DeriveConfig [] [] [] False False
   mappend = (<>)
 
-checkValidExtraConstraintPosition ::
-  Name -> Name -> [(Type, Kind)] -> Int -> Q ()
-checkValidExtraConstraintPosition tyName instanceName args n = do
-  when (n >= length args) $
-    fail $
-      "Cannot introduce extra constraint for the "
-        <> show n
-        <> "th argument of "
-        <> show tyName
-        <> " when deriving the "
-        <> show instanceName
-        <> " instance because there are only "
-        <> show (length args)
-        <> " arguments."
-
-checkAllValidExtraConstraintPosition ::
-  DeriveConfig -> Name -> Name -> [(Type, Kind)] -> Q ()
-checkAllValidExtraConstraintPosition
-  DeriveConfig {..}
-  tyName
-  instanceName
-  args = do
-    traverse_
-      (checkValidExtraConstraintPosition tyName instanceName args . fst)
-      evalModeConfig
-    traverse_
-      (checkValidExtraConstraintPosition tyName instanceName args)
-      bitSizePositions
-    traverse_
-      (checkValidExtraConstraintPosition tyName instanceName args . fst)
-      fpBitSizePositions
-    traverse_
-      (checkValidExtraConstraintPosition tyName instanceName args . snd)
-      fpBitSizePositions
+-- checkValidExtraConstraintPosition ::
+--   Name -> Name -> [(Type, Kind)] -> Int -> Q ()
+-- checkValidExtraConstraintPosition tyName instanceName args n = do
+--   when (n >= length args) $
+--     fail $
+--       "Cannot introduce extra constraint for the "
+--         <> show n
+--         <> "th argument of "
+--         <> show tyName
+--         <> " when deriving the "
+--         <> show instanceName
+--         <> " instance because there are only "
+--         <> show (length args)
+--         <> " arguments."
+--
+-- checkAllValidExtraConstraintPosition ::
+--   DeriveConfig -> Name -> Name -> [(Type, Kind)] -> Q ()
+-- checkAllValidExtraConstraintPosition
+--   DeriveConfig {..}
+--   tyName
+--   instanceName
+--   args = do
+--     traverse_
+--       (checkValidExtraConstraintPosition tyName instanceName args . fst)
+--       evalModeConfig
+--     traverse_
+--       (checkValidExtraConstraintPosition tyName instanceName args)
+--       bitSizePositions
+--     traverse_
+--       (checkValidExtraConstraintPosition tyName instanceName args . fst)
+--       fpBitSizePositions
+--     traverse_
+--       (checkValidExtraConstraintPosition tyName instanceName args . snd)
+--       fpBitSizePositions
 
 extraEvalModeConstraint ::
   Name -> Name -> [(Type, Kind)] -> (Int, EvalModeConfig) -> Q [Pred]
@@ -286,81 +323,103 @@ extraEvalModeConstraint
   tyName
   instanceName
   args
-  (n, EvalModeConstraints names) = do
-    let (arg, argKind) = args !! n
-    when (argKind /= ConT ''EvalModeTag) $
-      fail $
-        "Cannot introduce EvalMode constraint for the "
-          <> show n
-          <> "th argument of "
-          <> show tyName
-          <> " when deriving the "
-          <> show instanceName
-          <> " instance because it is not an EvalModeTag."
-    traverse (\nm -> [t|$(conT nm) $(return arg)|]) names
+  (n, EvalModeConstraints names)
+    | n >= length args = return []
+    | otherwise = do
+        let (arg, argKind) = args !! n
+        when (argKind /= ConT ''EvalModeTag) $
+          fail $
+            "Cannot introduce EvalMode constraint for the "
+              <> show n
+              <> "th argument of "
+              <> show tyName
+              <> " when deriving the "
+              <> show instanceName
+              <> " instance because it is not an EvalModeTag."
+        traverse (\nm -> [t|$(conT nm) $(return arg)|]) names
 extraEvalModeConstraint _ _ _ (_, EvalModeSpecified _) = return []
 
 extraBitSizeConstraint :: Name -> Name -> [(Type, Kind)] -> Int -> Q [Pred]
-extraBitSizeConstraint tyName instanceName args n = do
-  let (arg, argKind) = args !! n
-  when (argKind /= ConT ''Nat) $
-    fail $
-      "Cannot introduce BitSize constraint for the "
-        <> show n
-        <> "th argument of "
-        <> show tyName
-        <> " when deriving the "
-        <> show instanceName
-        <> " instance because it is not a Nat."
-  predKnown <- [t|KnownNat $(return arg)|]
-  predPositive <- [t|1 <= $(return arg)|]
-  return [predKnown, predPositive]
+extraBitSizeConstraint tyName instanceName args n
+  | n >= length args = return []
+  | otherwise = do
+      let (arg, argKind) = args !! n
+      when (argKind /= ConT ''Nat) $
+        fail $
+          "Cannot introduce BitSize constraint for the "
+            <> show n
+            <> "th argument of "
+            <> show tyName
+            <> " when deriving the "
+            <> show instanceName
+            <> " instance because it is not a Nat."
+      predKnown <- [t|KnownNat $(return arg)|]
+      predPositive <- [t|1 <= $(return arg)|]
+      return [predKnown, predPositive]
 
-extraFpBitSizeConstraint :: Name -> Name -> [(Type, Kind)] -> (Int, Int) -> Q [Pred]
-extraFpBitSizeConstraint tyName instanceName args (eb, sb) = do
-  let (argEb, argEbKind) = args !! eb
-  let (argSb, argSbKind) = args !! sb
-  when (argEbKind /= ConT ''Nat || argSbKind /= ConT ''Nat) $
-    fail $
-      "Cannot introduce ValidFP constraint for the "
-        <> show eb
-        <> "th and "
-        <> show sb
-        <> "th arguments of "
-        <> show tyName
-        <> " when deriving the "
-        <> show instanceName
-        <> " instance because they are not Nats."
-  pred <- [t|ValidFP $(return argEb) $(return argSb)|]
-  return [pred]
+extraFpBitSizeConstraint ::
+  Name -> Name -> [(Type, Kind)] -> (Int, Int) -> Q [Pred]
+extraFpBitSizeConstraint tyName instanceName args (eb, sb)
+  | eb >= length args || sb >= length args = return []
+  | otherwise = do
+      let (argEb, argEbKind) = args !! eb
+      let (argSb, argSbKind) = args !! sb
+      when (argEbKind /= ConT ''Nat || argSbKind /= ConT ''Nat) $
+        fail $
+          "Cannot introduce ValidFP constraint for the "
+            <> show eb
+            <> "th and "
+            <> show sb
+            <> "th arguments of "
+            <> show tyName
+            <> " when deriving the "
+            <> show instanceName
+            <> " instance because they are not Nats."
+      pred <- [t|ValidFP $(return argEb) $(return argSb)|]
+      return [pred]
 
-extraExtraMergeableConstraint :: [(Type, Kind)] -> Q [Pred]
-extraExtraMergeableConstraint args = do
+extraExtraMergeableConstraint :: [ConstructorInfo] -> [(Type, Kind)] -> Q [Pred]
+extraExtraMergeableConstraint constructors args = do
+  let isTypeUsedInFields' (VarT nm) =
+        isVarUsedInConstructorFields constructors nm
+      isTypeUsedInFields' _ = False
   catMaybes
     <$> traverse
-      ( uncurry $
-          ctxForVar
-            [ ConT ''Mergeable,
-              ConT ''Mergeable1,
-              ConT ''Mergeable2
-            ]
+      ( \(arg, knd) ->
+          if isTypeUsedInFields' arg
+            then
+              ctxForVar
+                [ ConT ''Mergeable,
+                  ConT ''Mergeable1,
+                  ConT ''Mergeable2
+                ]
+                arg
+                knd
+            else return Nothing
       )
       args
 
 -- | Generate extra constraints for a GADT.
 extraConstraint ::
-  DeriveConfig -> Name -> Name -> [(Type, Kind)] -> [(Type, Kind)] -> Q [Pred]
+  DeriveConfig ->
+  Name ->
+  Name ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  [ConstructorInfo] ->
+  Q [Pred]
 extraConstraint
-  deriveConfig@DeriveConfig {..}
+  DeriveConfig {..}
   tyName
   instanceName
   extraArgs
-  keptArgs = do
-    checkAllValidExtraConstraintPosition
-      deriveConfig
-      tyName
-      instanceName
-      keptArgs
+  keptArgs
+  constructors = do
+    -- checkAllValidExtraConstraintPosition
+    --   deriveConfig
+    --   tyName
+    --   instanceName
+    --   keptArgs
     evalModePreds <-
       traverse
         (extraEvalModeConstraint tyName instanceName keptArgs)
@@ -385,8 +444,17 @@ extraConstraint
         (extraFpBitSizeConstraint tyName instanceName keptArgs)
         fpBitSizePositions
     extraMergeablePreds <-
-      if needExtraMergeable
-        then extraExtraMergeableConstraint keptArgs
+      if needExtraMergeableUnderEvalMode
+        && ( any
+               ( \case
+                   (_, EvalModeConstraints _) -> True
+                   (_, EvalModeSpecified _) -> False
+               )
+               evalModeConfig
+               || needExtraMergeableWithConcretizedEvalMode
+           )
+        then
+          extraExtraMergeableConstraint constructors keptArgs
         else return []
     return $
       extraMergeablePreds
