@@ -19,15 +19,11 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.ConvertOpCommon
   ( ConvertOpClassConfig
       ( ConvertOpClassConfig,
-        convertOpFieldConfigs,
+        convertFieldCombineFun,
+        convertFieldFunExp,
+        convertFieldResFun,
         convertOpInstanceNames,
         convertOpTarget
-      ),
-    ConvertOpFieldConfig
-      ( ConvertOpFieldConfig,
-        fieldCombineFun,
-        fieldFunExp,
-        fieldResFun
       ),
     convertOpFunNames,
     defaultFieldFunExp,
@@ -39,12 +35,10 @@ import Language.Haskell.TH (Dec, Name, Q, appE, conE)
 toSymClassConfig :: ConvertOpClassConfig
 toSymClassConfig =
   ConvertOpClassConfig
-    { convertOpFieldConfigs =
-        ConvertOpFieldConfig
-          { fieldResFun = \v f -> [|$(return f) $(return v)|],
-            fieldCombineFun = \f args -> foldl appE (conE f) $ fmap return args,
-            fieldFunExp = defaultFieldFunExp ['toSym, 'liftToSym, 'liftToSym2]
-          },
+    { convertFieldResFun = \v f -> [|$(return f) $(return v)|],
+      convertFieldCombineFun =
+        \f args -> foldl appE (conE f) $ fmap return args,
+      convertFieldFunExp = defaultFieldFunExp ['toSym, 'liftToSym, 'liftToSym2],
       convertOpTarget = S,
       convertOpInstanceNames = [''ToSym, ''ToSym1, ''ToSym2],
       convertOpFunNames = ['toSym, 'liftToSym, 'liftToSym2]

@@ -24,6 +24,9 @@ module Grisette.Unified
     EvalModeAlgReal,
     EvalModeAll,
     MonadEvalModeAll,
+    DecideEvalMode (..),
+    withMode,
+    EvalModeConvertible (..),
 
     -- * Unified operations
 
@@ -348,4 +351,9 @@ import Grisette.Unified.Internal.UnifiedInteger
 import Grisette.Unified.Internal.UnifiedPrim
   ( UnifiedBasicPrim,
     UnifiedPrim,
+  )
+import Grisette.Unified.Internal.Util
+  ( DecideEvalMode (..),
+    EvalModeConvertible (..),
+    withMode,
   )

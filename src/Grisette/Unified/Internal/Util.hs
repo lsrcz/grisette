@@ -1,12 +1,17 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 -- |
 -- Module      :   Grisette.Unified.Internal.Util
@@ -16,7 +21,12 @@
 -- Maintainer  :   siruilu@cs.washington.edu
 -- Stability   :   Experimental
 -- Portability :   GHC only
-module Grisette.Unified.Internal.Util (DecideEvalMode (..), withMode) where
+module Grisette.Unified.Internal.Util
+  ( DecideEvalMode (..),
+    withMode,
+    EvalModeConvertible (..),
+  )
+where
 
 import Data.Typeable (type (:~:) (Refl))
 import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
@@ -48,3 +58,29 @@ withMode con sym =
     S -> case unsafeAxiom @mode @'S of
       Refl -> sym
 {-# INLINE withMode #-}
+
+class
+  (DecideEvalMode c, DecideEvalMode s) =>
+  EvalModeConvertible (c :: EvalModeTag) (s :: EvalModeTag)
+  where
+  withModeConvertible ::
+    ((c ~ 'C) => r) ->
+    ((s ~ 'S) => r) ->
+    r
+  withModeConvertible' ::
+    ((c ~ 'C, s ~ 'C) => r) ->
+    ((c ~ 'C, s ~ 'S) => r) ->
+    ((c ~ 'S, s ~ 'S) => r) ->
+    r
+
+instance {-# INCOHERENT #-} (DecideEvalMode s) => EvalModeConvertible 'C s where
+  withModeConvertible con _ = con
+  {-# INLINE withModeConvertible #-}
+  withModeConvertible' con0 con1 _ = withMode @s con0 con1
+  {-# INLINE withModeConvertible' #-}
+
+instance {-# INCOHERENT #-} (DecideEvalMode c) => EvalModeConvertible c 'S where
+  withModeConvertible _ sym = sym
+  {-# INLINE withModeConvertible #-}
+  withModeConvertible' _ sym0 sym1 = withMode @c sym0 sym1
+  {-# INLINE withModeConvertible' #-}
