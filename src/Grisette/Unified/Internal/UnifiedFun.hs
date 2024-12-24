@@ -38,9 +38,13 @@ module Grisette.Unified.Internal.UnifiedFun
 where
 
 import Control.DeepSeq (NFData)
+import Data.Binary (Binary)
+import Data.Bytes.Serial (Serial)
 import Data.Foldable (Foldable (foldl'))
 import Data.Hashable (Hashable)
 import qualified Data.Kind
+import Data.Serialize (Serialize)
+import Data.Typeable (Typeable)
 import GHC.TypeLits (KnownNat, Nat, type (<=))
 import Grisette.Internal.Core.Data.Class.EvalSym (EvalSym)
 import Grisette.Internal.Core.Data.Class.ExtractSym (ExtractSym)
@@ -163,16 +167,20 @@ type GetFun8 mode a b c d e f g h =
 
 -- | The constraint for a unified function.
 type UnifiedFunConstraint mode a b ca cb sa sb =
-  ( Eq (GetFun mode a b),
+  ( Show (GetFun mode a b),
+    Binary (GetFun mode a b),
+    Serial (GetFun mode a b),
+    Serialize (GetFun mode a b),
+    NFData (GetFun mode a b),
+    Eq (GetFun mode a b),
     EvalSym (GetFun mode a b),
     ExtractSym (GetFun mode a b),
+    Mergeable (GetFun mode a b),
     PPrint (GetFun mode a b),
+    SubstSym (GetFun mode a b),
     Hashable (GetFun mode a b),
     Lift (GetFun mode a b),
-    Mergeable (GetFun mode a b),
-    NFData (GetFun mode a b),
-    Show (GetFun mode a b),
-    SubstSym (GetFun mode a b),
+    Typeable (GetFun mode a b),
     ToCon (GetFun mode a b) (ca =-> cb),
     ToCon (sa =~> sb) (GetFun mode a b),
     ToSym (GetFun mode a b) (sa =~> sb),
