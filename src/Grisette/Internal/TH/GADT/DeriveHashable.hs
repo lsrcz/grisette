@@ -27,7 +27,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpAllowExistential
       ),
     UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
@@ -72,7 +72,8 @@ hashableConfig =
       unaryOpInstanceNames =
         [''Hashable, ''Hashable1, ''Hashable2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'Hashable' instance for a GADT.

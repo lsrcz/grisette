@@ -176,6 +176,7 @@ library
       Grisette.Internal.TH.GADT.DeriveNFData
       Grisette.Internal.TH.GADT.DeriveOrd
       Grisette.Internal.TH.GADT.DerivePPrint
+      Grisette.Internal.TH.GADT.DeriveSerial
       Grisette.Internal.TH.GADT.DeriveShow
       Grisette.Internal.TH.GADT.DeriveSubstSym
       Grisette.Internal.TH.GADT.DeriveSymEq

@@ -60,6 +60,7 @@ import Language.Haskell.TH
         ListE,
         LitE,
         ParensE,
+        SigE,
         TupE,
         UInfixE,
         VarE
@@ -280,6 +281,7 @@ allUsedNames (TupE es) = mconcat $ allUsedNamesMaybe <$> es
 allUsedNames (CondE e1 e2 e3) =
   allUsedNames e1 `S.union` allUsedNames e2 `S.union` allUsedNames e3
 allUsedNames (ListE es) = mconcat $ allUsedNames <$> es
+allUsedNames (SigE e _) = allUsedNames e
 allUsedNames exp = error $ "allUsedNames: unsupported expression: " <> show exp
 
 -- | Check if a string is the data constructor name of a non-unit tuple.

@@ -28,6 +28,7 @@ import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
@@ -177,7 +178,8 @@ showConfig =
         ],
       unaryOpInstanceNames = [''Show, ''Show1, ''Show2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'Show' instance for a GADT.

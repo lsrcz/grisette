@@ -18,10 +18,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 -- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
-
--- {-# OPTIONS_GHC -ddump-timings #-}
 
 module Grisette.Core.TH.DerivationData
   ( T (..),
@@ -32,7 +29,6 @@ module Grisette.Core.TH.DerivationData
     GGG (..),
     VVV (..),
     Extra (..),
-    -- Extra0 (..),
     Ambiguous (..),
     replaceVVVShown,
     gggToVVV,

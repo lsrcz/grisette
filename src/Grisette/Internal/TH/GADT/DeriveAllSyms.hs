@@ -27,6 +27,7 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
@@ -70,7 +71,8 @@ allSymsConfig =
         ],
       unaryOpInstanceNames = [''AllSyms, ''AllSyms1, ''AllSyms2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'AllSyms' instance for a GADT.

@@ -23,7 +23,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpAllowExistential
       ),
     UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
@@ -64,7 +64,8 @@ nfdataConfig =
         ],
       unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2],
       unaryOpExtraVars = const $ return [],
-      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = True
     }
 
 -- | Derive 'NFData' instance for a GADT.
