@@ -481,7 +481,7 @@ liftUnion u = go (unionBase u)
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
 liftToMonadUnion = liftUnion
 
-toUnionSym :: (ToSym a b) => a -> Union b
+toUnionSym :: (ToSym a b, Mergeable b) => a -> Union b
 toUnionSym = mrgSingle . toSym
 {-# INLINE toUnionSym #-}
 
@@ -489,7 +489,7 @@ instance (ToSym a b) => ToSym (Union a) (Union b) where
   toSym = toSym1
 
 instance ToSym1 Union Union where
-  liftToSym f = tryMerge . fmap f
+  liftToSym = fmap
 
 instance (ToSym a b) => ToSym (Identity a) (Union b) where
   toSym = toSym1

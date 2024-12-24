@@ -87,13 +87,6 @@ import Grisette.Internal.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Internal.Core.Data.Class.BitCast (BitCast (bitCast))
-import Grisette.Internal.Core.Data.Class.Mergeable
-  ( GMergeable,
-    Mergeable,
-    Mergeable1,
-    Mergeable2,
-    resolveMergeable1,
-  )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV
@@ -139,7 +132,7 @@ import Grisette.Internal.Utils.Derive (Arity0, Arity1)
 -- >>> import Grisette.SymPrim
 
 -- | Convert a concrete value to symbolic value.
-class (Mergeable b) => ToSym a b where
+class ToSym a b where
   -- | Convert a concrete value to symbolic value.
   --
   -- >>> toSym False :: SymBool
@@ -149,17 +142,17 @@ class (Mergeable b) => ToSym a b where
   -- [false,true]
   toSym :: a -> b
 
-instance {-# INCOHERENT #-} (Mergeable a) => ToSym a a where
+instance {-# INCOHERENT #-} ToSym a a where
   toSym = id
   {-# INLINE toSym #-}
 
 -- | Lifting of 'ToSym' to unary type constructors.
 class
-  (forall a b. (ToSym a b) => ToSym (f1 a) (f2 b), Mergeable1 f2) =>
+  (forall a b. (ToSym a b) => ToSym (f1 a) (f2 b)) =>
   ToSym1 f1 f2
   where
   -- | Lift a conversion to symbolic function to unary type constructors.
-  liftToSym :: (Mergeable b) => (a -> b) -> f1 a -> f2 b
+  liftToSym :: (a -> b) -> f1 a -> f2 b
 
 -- | Lift the standard 'toSym' to unary type constructors.
 toSym1 :: (ToSym1 f1 f2, ToSym a b) => f1 a -> f2 b
@@ -168,7 +161,7 @@ toSym1 = liftToSym toSym
 
 -- | Lifting of 'ToSym' to binary type constructors.
 class
-  (forall a b. (ToSym a b) => ToSym1 (f1 a) (f2 b), Mergeable2 f2) =>
+  (forall a b. (ToSym a b) => ToSym1 (f1 a) (f2 b)) =>
   ToSym2 f1 f2
   where
   -- | Lift conversion to symbolic functions to binary type constructors.
@@ -187,7 +180,7 @@ data family ToSymArgs arity a b :: Type
 data instance ToSymArgs Arity0 _ _ = ToSymArgs0
 
 data instance ToSymArgs Arity1 _ _ where
-  ToSymArgs1 :: (Mergeable b) => (a -> b) -> ToSymArgs Arity1 a b
+  ToSymArgs1 :: (a -> b) -> ToSymArgs Arity1 a b
 
 -- | The class of types that can be generically converted to symbolic values.
 class GToSym arity f1 f2 where
@@ -233,7 +226,7 @@ instance (ToSym1 f1 f2) => GToSym Arity1 (Rec1 f1) (Rec1 f2) where
   {-# INLINE gtoSym #-}
 
 instance
-  (ToSym1 f1 f2, GToSym Arity1 g1 g2, Mergeable1 g2) =>
+  (ToSym1 f1 f2, GToSym Arity1 g1 g2) =>
   GToSym Arity1 (f1 :.: g1) (f2 :.: g2)
   where
   gtoSym targs@ToSymArgs1 {} (Comp1 a) = Comp1 $ liftToSym (gtoSym targs) a
@@ -249,7 +242,7 @@ genericToSym = to . gtoSym ToSymArgs0 . from
 
 -- | Generic 'liftToSym' function.
 genericLiftToSym ::
-  (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2), Mergeable b) =>
+  (Generic1 f1, Generic1 f2, GToSym Arity1 (Rep1 f1) (Rep1 f2)) =>
   (a -> b) ->
   f1 a ->
   f2 b
@@ -259,8 +252,7 @@ genericLiftToSym f = to1 . gtoSym (ToSymArgs1 f) . from1
 instance
   ( Generic a,
     Generic b,
-    GToSym Arity0 (Rep a) (Rep b),
-    GMergeable Arity0 (Rep b)
+    GToSym Arity0 (Rep a) (Rep b)
   ) =>
   ToSym a (Default b)
   where
@@ -271,8 +263,7 @@ instance
   ( Generic1 f1,
     Generic1 f2,
     GToSym Arity1 (Rep1 f1) (Rep1 f2),
-    ToSym a b,
-    GMergeable Arity1 (Rep1 f2)
+    ToSym a b
   ) =>
   ToSym (f1 a) (Default1 f2 b)
   where
@@ -281,8 +272,7 @@ instance
 instance
   ( Generic1 f1,
     Generic1 f2,
-    GToSym Arity1 (Rep1 f1) (Rep1 f2),
-    GMergeable Arity1 (Rep1 f2)
+    GToSym Arity1 (Rep1 f1) (Rep1 f2)
   ) =>
   ToSym1 f1 (Default1 f2)
   where
@@ -544,14 +534,14 @@ instance
 
 -- StateT
 instance
-  (ToSym1 m1 m2, ToSym a1 a2, Mergeable s) =>
+  (ToSym1 m1 m2, ToSym a1 a2) =>
   ToSym (StateLazy.StateT s m1 a1) (StateLazy.StateT s m2 a2)
   where
   toSym = toSym1
   {-# INLINE toSym #-}
 
 instance
-  (ToSym1 m1 m2, Mergeable s) =>
+  (ToSym1 m1 m2) =>
   ToSym1 (StateLazy.StateT s m1) (StateLazy.StateT s m2)
   where
   liftToSym f (StateLazy.StateT f1) =
@@ -559,14 +549,14 @@ instance
   {-# INLINE liftToSym #-}
 
 instance
-  (ToSym1 m1 m2, ToSym a1 a2, Mergeable s) =>
+  (ToSym1 m1 m2, ToSym a1 a2) =>
   ToSym (StateStrict.StateT s m1 a1) (StateStrict.StateT s m2 a2)
   where
   toSym = toSym1
   {-# INLINE toSym #-}
 
 instance
-  (ToSym1 m1 m2, Mergeable s) =>
+  (ToSym1 m1 m2) =>
   ToSym1 (StateStrict.StateT s m1) (StateStrict.StateT s m2)
   where
   liftToSym f (StateStrict.StateT f1) =
@@ -582,19 +572,18 @@ instance
   {-# INLINE toSym #-}
 
 instance
-  (ToSym s2 s1, ToSym1 m1 m2, Mergeable1 m2) =>
+  (ToSym s2 s1, ToSym1 m1 m2) =>
   ToSym1 (ReaderT s1 m1) (ReaderT s2 m2)
   where
   liftToSym ::
     forall a b.
-    (ToSym s2 s1, ToSym1 m1 m2, Mergeable1 m2, Mergeable b) =>
+    (ToSym s2 s1, ToSym1 m1 m2) =>
     (a -> b) ->
     ReaderT s1 m1 a ->
     ReaderT s2 m2 b
   liftToSym f (ReaderT f1) =
-    resolveMergeable1 @m2 @b $
-      ReaderT $
-        liftToSym (liftToSym f) f1
+    ReaderT $
+      liftToSym (liftToSym f) f1
   {-# INLINE liftToSym #-}
 
 -- IdentityT
@@ -668,12 +657,11 @@ instance
   where
   liftToSym ::
     forall a b.
-    (ToSym1 f0 f, ToSym1 g0 g, Mergeable b) =>
+    (ToSym1 f0 f, ToSym1 g0 g) =>
     (a -> b) ->
     Compose f0 g0 a ->
     Compose f g b
-  liftToSym f (Compose v) =
-    resolveMergeable1 @g @b $ Compose $ liftToSym (liftToSym f) v
+  liftToSym f (Compose v) = Compose $ liftToSym (liftToSym f) v
   {-# INLINE liftToSym #-}
 
 -- Const

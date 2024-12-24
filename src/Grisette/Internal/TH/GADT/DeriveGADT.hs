@@ -55,11 +55,14 @@ import Grisette.Internal.Core.Data.Class.SubstSym
   )
 import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1, SymEq2)
 import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1, SymOrd2)
+import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1, ToCon2)
+import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1, ToSym2)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
 import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig
       ( evalModeConfig,
-        needExtraMergeable
+        needExtraMergeableUnderEvalMode,
+        needExtraMergeableWithConcretizedEvalMode
       ),
     EvalModeConfig (EvalModeConstraints, EvalModeSpecified),
   )
@@ -128,6 +131,16 @@ import Grisette.Internal.TH.GADT.DeriveSymOrd
     deriveGADTSymOrd1,
     deriveGADTSymOrd2,
   )
+import Grisette.Internal.TH.GADT.DeriveToCon
+  ( deriveGADTToCon,
+    deriveGADTToCon1,
+    deriveGADTToCon2,
+  )
+import Grisette.Internal.TH.GADT.DeriveToSym
+  ( deriveGADTToSym,
+    deriveGADTToSym1,
+    deriveGADTToSym2,
+  )
 import Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
   ( deriveGADTUnifiedSymEq,
     deriveGADTUnifiedSymEq1,
@@ -195,14 +208,40 @@ deriveProcedureMap =
       (''UnifiedSymEq2, deriveGADTUnifiedSymEq2),
       (''UnifiedSymOrd, deriveGADTUnifiedSymOrd),
       (''UnifiedSymOrd1, deriveGADTUnifiedSymOrd1),
-      (''UnifiedSymOrd2, deriveGADTUnifiedSymOrd2)
+      (''UnifiedSymOrd2, deriveGADTUnifiedSymOrd2),
+      (''ToSym, deriveGADTToSym),
+      (''ToSym1, deriveGADTToSym1),
+      (''ToSym2, deriveGADTToSym2),
+      (''ToCon, deriveGADTToCon),
+      (''ToCon1, deriveGADTToCon1),
+      (''ToCon2, deriveGADTToCon2)
     ]
 
 deriveSingleGADT :: DeriveConfig -> Name -> Name -> Q [Dec]
 deriveSingleGADT deriveConfig typName className = do
-  let newExtra =
-        if className `elem` [''Ord, ''Ord1, ''Ord2]
-          then
+  let newExtra
+        | className
+            `elem` [ ''Eq,
+                     ''Eq1,
+                     ''Eq2,
+                     ''SymEq,
+                     ''SymEq1,
+                     ''SymEq2,
+                     ''SymOrd,
+                     ''SymOrd1,
+                     ''SymOrd2,
+                     ''UnifiedSymEq,
+                     ''UnifiedSymEq1,
+                     ''UnifiedSymEq2,
+                     ''UnifiedSymOrd,
+                     ''UnifiedSymOrd1,
+                     ''UnifiedSymOrd2
+                   ] =
+            deriveConfig
+              { needExtraMergeableUnderEvalMode = False,
+                needExtraMergeableWithConcretizedEvalMode = False
+              }
+        | className `elem` [''Ord, ''Ord1, ''Ord2] =
             deriveConfig
               { evalModeConfig =
                   second
@@ -210,9 +249,11 @@ deriveSingleGADT deriveConfig typName className = do
                         EvalModeConstraints _ -> EvalModeSpecified C
                         EvalModeSpecified tag -> EvalModeSpecified tag
                     )
-                    <$> evalModeConfig deriveConfig
+                    <$> evalModeConfig deriveConfig,
+                needExtraMergeableUnderEvalMode = False,
+                needExtraMergeableWithConcretizedEvalMode = False
               }
-          else deriveConfig
+        | otherwise = deriveConfig
   case M.lookup className deriveProcedureMap of
     Just procedure -> procedure newExtra typName
     Nothing ->
@@ -268,6 +309,12 @@ deriveSingleGADT deriveConfig typName className = do
 -- * 'UnifiedSymOrd'
 -- * 'UnifiedSymOrd1'
 -- * 'UnifiedSymOrd2'
+-- * 'ToSym'
+-- * 'ToSym1'
+-- * 'ToSym2'
+-- * 'ToCon'
+-- * 'ToCon1'
+-- * 'ToCon2'
 --
 -- Note that the following type classes cannot be derived for GADTs with
 -- existential type variables.
@@ -288,14 +335,19 @@ deriveGADTWith deriveConfig typName classNames = do
   return $ concat decs ++ decMergeables
   where
     configWithOutExtraMergeable :: DeriveConfig
-    configWithOutExtraMergeable = deriveConfig {needExtraMergeable = False}
+    configWithOutExtraMergeable =
+      deriveConfig {needExtraMergeableUnderEvalMode = False}
     deriveMergeables :: [Int] -> Q [Dec]
     deriveMergeables [] = return []
     deriveMergeables [n] = genMergeable configWithOutExtraMergeable typName n
     deriveMergeables (n : ns) = do
       (info, dn) <-
-        genMergeableAndGetMergingInfoResult configWithOutExtraMergeable typName n
-      dns <- traverse (genMergeable' configWithOutExtraMergeable info typName) ns
+        genMergeableAndGetMergingInfoResult
+          configWithOutExtraMergeable
+          typName
+          n
+      dns <-
+        traverse (genMergeable' configWithOutExtraMergeable info typName) ns
       return $ dn ++ concatMap snd dns
     splitMergeable :: [Name] -> ([Name], [Int])
     splitMergeable [] = ([], [])
@@ -331,7 +383,9 @@ allClasses0 =
       ''Eq,
       ''SymEq,
       ''SymOrd,
-      ''UnifiedSymEq
+      ''UnifiedSymEq,
+      ''ToCon,
+      ''ToSym
     ]
 
 allOrdClasses0 :: S.Set Name
@@ -359,7 +413,9 @@ allClasses1 =
         ''AllSyms1,
         ''Eq1,
         ''SymEq1,
-        ''SymOrd1
+        ''SymOrd1,
+        ''ToCon1,
+        ''ToSym1
       ]
 
 allOrdClasses1 :: S.Set Name
@@ -387,7 +443,9 @@ allClasses2 =
         ''AllSyms2,
         ''Eq2,
         ''SymEq2,
-        ''SymOrd2
+        ''SymOrd2,
+        ''ToCon2,
+        ''ToSym2
       ]
 
 allOrdClasses2 :: S.Set Name

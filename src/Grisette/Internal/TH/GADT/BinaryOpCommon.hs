@@ -29,16 +29,17 @@ import Data.Proxy (Proxy (Proxy))
 import qualified Data.Set as S
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult
-      ( argNewVars,
+      ( argVars,
         constructors,
-        isVarUsedInFields,
-        keptNewVars
+        keptVars
       ),
     DeriveConfig,
     checkArgs,
     ctxForVar,
     evalModeSpecializeList,
     extraConstraint,
+    freshenCheckArgsResult,
+    isVarUsedInFields,
     specializeResult,
   )
 import Language.Haskell.TH
@@ -289,6 +290,7 @@ genBinaryOpClass ::
 genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
   lhsResult <-
     specializeResult (evalModeSpecializeList deriveConfig)
+      =<< freshenCheckArgsResult True
       =<< checkArgs
         (nameBase $ head binaryOpInstanceNames)
         (length binaryOpInstanceNames - 1)
@@ -303,28 +305,35 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
         typName
         (n == 0)
         n
-  let keptNewVars' = keptNewVars lhsResult
+  let keptVars' = keptVars lhsResult
   let isTypeUsedInFields' (VarT nm) = isVarUsedInFields lhsResult nm
       isTypeUsedInFields' _ = False
   ctxs <-
     traverse (uncurry $ ctxForVar (fmap ConT binaryOpInstanceNames)) $
-      filter (isTypeUsedInFields' . fst) keptNewVars'
-  let keptType = foldl AppT (ConT typName) $ fmap fst keptNewVars'
+      filter (isTypeUsedInFields' . fst) keptVars'
+  let keptType = foldl AppT (ConT typName) $ fmap fst keptVars'
   instanceFuns <-
     traverse
       ( \config ->
           genBinaryOpFun
             config
             n
-            (argNewVars lhsResult)
-            (argNewVars rhsResult)
+            (argVars lhsResult)
+            (argVars rhsResult)
             (constructors lhsResult)
             (constructors rhsResult)
       )
       binaryOpFieldConfigs
   let instanceName = binaryOpInstanceNames !! n
   let instanceType = AppT (ConT instanceName) keptType
-  extraPreds <- extraConstraint deriveConfig typName instanceName [] keptNewVars'
+  extraPreds <-
+    extraConstraint
+      deriveConfig
+      typName
+      instanceName
+      []
+      keptVars'
+      (constructors lhsResult)
   return
     [ InstanceD
         Nothing

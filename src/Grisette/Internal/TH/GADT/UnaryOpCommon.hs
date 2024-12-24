@@ -34,16 +34,17 @@ import qualified Data.Set as S
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult
       ( CheckArgsResult,
-        argNewVars,
+        argVars,
         constructors,
-        isVarUsedInFields,
-        keptNewVars
+        keptVars
       ),
     DeriveConfig (evalModeConfig),
     checkArgs,
     ctxForVar,
+    evalModeSpecializeList,
     extraConstraint,
-    specializeResult, evalModeSpecializeList,
+    isVarUsedInFields,
+    specializeResult, freshenCheckArgsResult,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
 import Grisette.Unified.Internal.Util (withMode)
@@ -369,8 +370,9 @@ genUnaryOpClass ::
   Name ->
   Q [Dec]
 genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
-  CheckArgsResult {..} <-
+  result@CheckArgsResult {..} <-
     specializeResult (evalModeSpecializeList deriveConfig)
+      =<< freshenCheckArgsResult True
       =<< checkArgs
         (nameBase $ head unaryOpInstanceNames)
         (length unaryOpInstanceNames - 1)
@@ -380,14 +382,14 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
   extraVars <- unaryOpExtraVars deriveConfig
   instanceTypes <-
     traverse
-      (unaryOpInstanceTypeFromConfig deriveConfig extraVars keptNewVars)
+      (unaryOpInstanceTypeFromConfig deriveConfig extraVars keptVars)
       unaryOpInstanceNames
-  let isTypeUsedInFields (VarT nm) = isVarUsedInFields nm
+  let isTypeUsedInFields (VarT nm) = isVarUsedInFields result nm
       isTypeUsedInFields _ = False
   ctxs <-
     traverse (uncurry $ ctxForVar instanceTypes) $
-      filter (isTypeUsedInFields . fst) keptNewVars
-  let keptType = foldl AppT (ConT typName) $ fmap fst keptNewVars
+      filter (isTypeUsedInFields . fst) keptVars
+  let keptType = foldl AppT (ConT typName) $ fmap fst keptVars
   instanceFuns <-
     traverse
       ( \config ->
@@ -396,9 +398,9 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
             config
             n
             extraVars
-            keptNewVars
-            argNewVars
-            isVarUsedInFields
+            keptVars
+            argVars
+            (isVarUsedInFields result)
             constructors
       )
       unaryOpConfigs
@@ -410,7 +412,8 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
       typName
       instanceName
       extraVars
-      keptNewVars
+      keptVars
+      constructors
   return
     [ InstanceD
         Nothing

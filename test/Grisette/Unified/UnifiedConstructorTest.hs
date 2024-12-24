@@ -41,7 +41,7 @@ import Grisette
     mrgReturn,
   )
 import Grisette.Internal.TH.GADT.Common
-  ( DeriveConfig (evalModeConfig, needExtraMergeable),
+  ( DeriveConfig (evalModeConfig, needExtraMergeableUnderEvalMode),
     EvalModeConfig (EvalModeConstraints),
   )
 import Grisette.TH (makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
@@ -59,7 +59,7 @@ data T mode a
 deriveGADTWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])],
-        needExtraMergeable = True
+        needExtraMergeableUnderEvalMode = True
       }
   )
   ''T
