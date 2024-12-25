@@ -248,13 +248,21 @@ unionTests =
         let actual = toUnionSym True :: Union SymBool
         let expected = mrgSingle (con True)
         actual @?= expected,
+      testCase "toUnionSym (Identity a) (Union b)" $ do
+        let actual = toUnionSym $ Identity True :: Union SymBool
+        let expected = mrgSingle (con True)
+        actual @?= expected,
+      testCase "toUnionSym (Union a) (Union b)" $ do
+        let actual = toUnionSym (mrgSingle True :: Union Bool) :: Union SymBool
+        let expected = mrgSingle (con True)
+        actual @?= expected,
       testCase "ToSym (Identity a) (Union b)" $ do
         let actual = toSym $ Identity True :: Union SymBool
         let expected = return (con True)
         actual @?= expected,
       testCase "ToSym (Union a) (Union b)" $ do
         let actual = toSym (mrgSingle True :: Union Bool) :: Union SymBool
-        let expected = mrgSingle (con True)
+        let expected = return (con True)
         actual @?= expected,
       testCase "ToSym (Union Integer) SymInteger" $ do
         let actual = toSym (mrgIf "a" 1 2 :: Union Integer)

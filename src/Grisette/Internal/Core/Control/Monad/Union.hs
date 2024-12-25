@@ -38,6 +38,7 @@ module Grisette.Internal.Core.Control.Monad.Union
     unionSize,
     IsConcrete,
     toUnionSym,
+    mrgToSym,
     unionToCon,
   )
 where
@@ -481,8 +482,24 @@ liftUnion u = go (unionBase u)
 liftToMonadUnion :: (Mergeable a, MonadUnion u) => Union a -> u a
 liftToMonadUnion = liftUnion
 
-toUnionSym :: (ToSym a b, Mergeable b) => a -> Union b
-toUnionSym = mrgSingle . toSym
+-- | Convert a value to symbolic value and wrap it with a mergeable container.
+--
+-- This is a synonym for 'toUnionSym'.
+mrgToSym ::
+  (ToSym a b, Mergeable b, Mergeable1 m, TryMerge m, Applicative m) =>
+  a ->
+  m b
+mrgToSym = toUnionSym
+{-# INLINE mrgToSym #-}
+
+-- | Convert a value to symbolic value and wrap it with a mergeable container.
+--
+-- This is a synonym for 'toUnionSym'.
+toUnionSym ::
+  (ToSym a b, Mergeable b, Mergeable1 m, TryMerge m, Applicative m) =>
+  a ->
+  m b
+toUnionSym = tryMerge . pure . toSym
 {-# INLINE toUnionSym #-}
 
 instance (ToSym a b) => ToSym (Union a) (Union b) where
