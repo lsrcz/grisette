@@ -24,7 +24,6 @@ import GHC.Stack (HasCallStack)
 import Grisette
   ( ITEOp (symIte),
     LogicalOp (symNot, (.&&), (.||)),
-    Mergeable,
     Solvable (con, isym, ssym),
     SymBool,
     SymEq ((.==)),
@@ -36,8 +35,7 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit (Assertion, (@?=))
 import Test.QuickCheck (ioProperty)
 
-toSymForConcreteOkProp ::
-  (HasCallStack, Show v, Eq v, Mergeable v) => v -> Assertion
+toSymForConcreteOkProp :: (HasCallStack, Show v, Eq v) => v -> Assertion
 toSymForConcreteOkProp v = toSym v @?= v
 
 toSymTests :: Test
