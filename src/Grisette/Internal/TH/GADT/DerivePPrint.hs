@@ -20,7 +20,7 @@ where
 import Data.Maybe (fromMaybe)
 import Data.String (IsString (fromString))
 import GHC.Show (appPrec1)
-import Grisette.Internal.Core.Data.Class.PPrint
+import Grisette.Internal.Core.Data.Class.Internal.PPrint
   ( PPrint (pformatList, pformatPrec),
     PPrint1 (liftPFormatList, liftPFormatPrec),
     PPrint2 (liftPFormatList2, liftPFormatPrec2),
@@ -40,10 +40,11 @@ import Grisette.Internal.TH.GADT.ShowPPrintCommon (showPrintFieldFunExp)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig, unaryOpAllowExistential
+        unaryOpInstanceTypeFromConfig
       ),
     UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig
