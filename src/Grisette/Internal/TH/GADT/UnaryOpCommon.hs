@@ -277,7 +277,7 @@ genUnaryOpFieldClause
         conIdx
         (constructorVariant conInfo)
         (constructorName conInfo)
-        (VarE <$> extraPatNames)
+        extraPatExps
         fieldResExps
     let resUsedNames = allUsedNames resExp
     let extraArgsUsed =

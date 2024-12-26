@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.DeriveSymOrd
@@ -24,11 +25,13 @@ import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.TH.GADT.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
+        binaryOpAllowSumType,
         binaryOpFieldConfigs,
         binaryOpInstanceNames
       ),
     BinaryOpFieldConfig
       ( BinaryOpFieldConfig,
+        extraPatNames,
         fieldCombineFun,
         fieldDifferentExistentialFun,
         fieldFunExp,
@@ -37,6 +40,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
         fieldRMatchResult,
         fieldResFun
       ),
+    binaryOpAllowExistential,
     defaultFieldFunExp,
     genBinaryOpClass,
   )
@@ -48,10 +52,12 @@ symOrdConfig =
   BinaryOpClassConfig
     { binaryOpFieldConfigs =
         [ BinaryOpFieldConfig
-            { fieldResFun =
-                \(lhs, rhs) f -> [|$(return f) $(return lhs) $(return rhs)|],
+            { extraPatNames = [],
+              fieldResFun =
+                \_ (lhs, rhs) f ->
+                  (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
               fieldCombineFun =
-                \lst -> do
+                \_ lst -> do
                   let go [] = [|mrgSingle EQ|]
                       go [x] = [|$(return x)|]
                       go (x : xs) =
@@ -73,7 +79,9 @@ symOrdConfig =
               fieldRMatchResult = [|mrgSingle GT|]
             }
         ],
-      binaryOpInstanceNames = [''SymOrd, ''SymOrd1, ''SymOrd2]
+      binaryOpInstanceNames = [''SymOrd, ''SymOrd1, ''SymOrd2],
+      binaryOpAllowSumType = True,
+      binaryOpAllowExistential = True
     }
 
 -- | Derive 'SymOrd' instance for a GADT.

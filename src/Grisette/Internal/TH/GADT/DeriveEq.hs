@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.DeriveEq
@@ -20,11 +21,13 @@ import Data.Functor.Classes (Eq1 (liftEq), Eq2 (liftEq2))
 import Grisette.Internal.TH.GADT.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
+        binaryOpAllowSumType,
         binaryOpFieldConfigs,
         binaryOpInstanceNames
       ),
     BinaryOpFieldConfig
       ( BinaryOpFieldConfig,
+        extraPatNames,
         fieldCombineFun,
         fieldDifferentExistentialFun,
         fieldFunExp,
@@ -33,6 +36,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
         fieldRMatchResult,
         fieldResFun
       ),
+    binaryOpAllowExistential,
     defaultFieldFunExp,
     genBinaryOpClass,
   )
@@ -45,9 +49,10 @@ eqConfig =
   BinaryOpClassConfig
     { binaryOpFieldConfigs =
         [ BinaryOpFieldConfig
-            { fieldResFun = \(lhs, rhs) f ->
-                [|$(return f) $(return lhs) $(return rhs)|],
-              fieldCombineFun = \lst -> [|and $(return $ ListE lst)|],
+            { extraPatNames = [],
+              fieldResFun = \_ (lhs, rhs) f ->
+                (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
+              fieldCombineFun = \_ lst -> [|and $(return $ ListE lst)|],
               fieldDifferentExistentialFun = const [|False|],
               fieldFunExp = defaultFieldFunExp ['(==), 'liftEq, 'liftEq2],
               fieldFunNames = ['(==), 'liftEq, 'liftEq2],
@@ -55,7 +60,9 @@ eqConfig =
               fieldRMatchResult = [|False|]
             }
         ],
-      binaryOpInstanceNames = [''Eq, ''Eq1, ''Eq2]
+      binaryOpInstanceNames = [''Eq, ''Eq1, ''Eq2],
+      binaryOpAllowSumType = True,
+      binaryOpAllowExistential = True
     }
 
 -- | Derive 'Eq' instance for a GADT.
