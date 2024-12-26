@@ -22,7 +22,6 @@ module Grisette.Unified.UnifiedClassesTest (unifiedClassesTest) where
 
 import Control.Monad.Except (ExceptT, MonadError (throwError))
 import Control.Monad.Identity (Identity (Identity))
-import qualified Data.Set as S
 import qualified Data.Text as T
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette
@@ -107,14 +106,12 @@ deriveGADTWith
         needExtraMergeableUnderEvalMode = True
       }
   )
-  ''X
-  ( S.fromList
-      [ ''Mergeable,
-        ''Eq,
-        ''SymEq,
-        ''UnifiedSymEq
-      ]
-  )
+  [''X]
+  [ ''Mergeable,
+    ''Eq,
+    ''SymEq,
+    ''UnifiedSymEq
+  ]
 
 testSEq ::
   forall mode n f a.

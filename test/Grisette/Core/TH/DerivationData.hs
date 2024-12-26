@@ -125,7 +125,7 @@ deriveGADTWith
         needExtraMergeableUnderEvalMode = True
       }
   )
-  ''T
+  [''T]
   allClasses0WithOrd
 
 concreteT :: T 'C 10 Integer
@@ -142,7 +142,7 @@ deriveGADTWith
       { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])]
       }
   )
-  ''X
+  [''X]
   allClasses0WithOrd
 
 data IdenticalFields (mode :: EvalModeTag) a b = IdenticalFields
@@ -157,12 +157,12 @@ deriveGADTWith
       { needExtraMergeableUnderEvalMode = True
       }
   )
-  ''IdenticalFields
+  [''IdenticalFields]
   allClasses2WithOrd
 
 data Basic = Basic0 | Basic1 Int | Basic2 String [Int]
 
-deriveGADT ''Basic allClasses0WithOrd
+deriveGADT [''Basic] allClasses0WithOrd
 
 data Extra mode n eb sb a where
   Extra ::
@@ -183,7 +183,7 @@ deriveGADTWith
         needExtraMergeableUnderEvalMode = True
       }
   )
-  ''Extra
+  [''Extra]
   allClasses0WithOrd
 
 data Expr f a where
@@ -228,81 +228,77 @@ data Expr f a where
     Expr g b
 
 deriveGADT
-  ''Expr
-  ( S.fromList
-      [ ''Mergeable,
-        ''Mergeable1,
-        ''EvalSym,
-        ''EvalSym1,
-        ''ExtractSym,
-        ''ExtractSym1,
-        ''SubstSym,
-        ''SubstSym1,
-        ''NFData,
-        ''NFData1,
-        ''Show,
-        ''Show1,
-        ''PPrint,
-        ''PPrint1,
-        ''AllSyms,
-        ''AllSyms1,
-        ''Eq,
-        ''SymEq,
-        ''SymOrd
-      ]
-  )
+  [''Expr]
+  [ ''Mergeable,
+    ''Mergeable1,
+    ''EvalSym,
+    ''EvalSym1,
+    ''ExtractSym,
+    ''ExtractSym1,
+    ''SubstSym,
+    ''SubstSym1,
+    ''NFData,
+    ''NFData1,
+    ''Show,
+    ''Show1,
+    ''PPrint,
+    ''PPrint1,
+    ''AllSyms,
+    ''AllSyms1,
+    ''Eq,
+    ''SymEq,
+    ''SymOrd
+  ]
 
 instance (Eq1 f) => Eq1 (Expr f) where
   liftEq = undefined
 
-deriveGADT ''Expr (S.fromList [''Hashable, ''Hashable1])
+deriveGADT [''Expr] [''Hashable, ''Hashable1]
 
 data P a b = P a | Q Int
 
 deriveGADT
-  ''P
-  ( S.fromList
-      [ ''Mergeable,
-        ''Mergeable1,
-        ''Mergeable2,
-        ''EvalSym,
-        ''EvalSym1,
-        ''EvalSym2,
-        ''ExtractSym,
-        ''ExtractSym1,
-        ''ExtractSym2,
-        ''SubstSym,
-        ''SubstSym1,
-        ''SubstSym2,
-        ''NFData,
-        ''NFData1,
-        ''NFData2,
-        ''Hashable,
-        ''Hashable1,
-        ''Hashable2,
-        ''Show,
-        ''Show1,
-        ''Show2,
-        ''PPrint,
-        ''PPrint1,
-        ''PPrint2,
-        ''AllSyms,
-        ''AllSyms1,
-        ''AllSyms2,
-        ''Eq,
-        ''Eq1,
-        ''Eq2,
-        ''SymEq,
-        ''SymEq1,
-        ''SymEq2,
-        ''Ord,
-        ''Ord1,
-        ''Ord2,
-        ''SymOrd,
-        ''SymOrd1,
-        ''SymOrd2
-      ]
-  )
+  [''P]
+  [ ''Mergeable,
+    ''Mergeable1,
+    ''Mergeable2,
+    ''EvalSym,
+    ''EvalSym1,
+    ''EvalSym2,
+    ''ExtractSym,
+    ''ExtractSym1,
+    ''ExtractSym2,
+    ''SubstSym,
+    ''SubstSym1,
+    ''SubstSym2,
+    ''NFData,
+    ''NFData1,
+    ''NFData2,
+    ''Hashable,
+    ''Hashable1,
+    ''Hashable2,
+    ''Show,
+    ''Show1,
+    ''Show2,
+    ''PPrint,
+    ''PPrint1,
+    ''PPrint2,
+    ''AllSyms,
+    ''AllSyms1,
+    ''AllSyms2,
+    ''Eq,
+    ''Eq1,
+    ''Eq2,
+    ''SymEq,
+    ''SymEq1,
+    ''SymEq2,
+    ''Ord,
+    ''Ord1,
+    ''Ord2,
+    ''SymOrd,
+    ''SymOrd1,
+    ''SymOrd2
+  ]
 
 data GGG a b where
   GGG2 :: a -> b -> GGG a b
@@ -315,28 +311,26 @@ data GGG a b where
 infixr 5 :|
 
 deriveGADT
-  ''GGG
-  ( S.fromList
-      [ ''Show,
-        ''Show1,
-        ''Show2,
-        ''PPrint,
-        ''PPrint1,
-        ''PPrint2,
-        ''Eq,
-        ''Eq1,
-        ''Eq2,
-        ''Ord,
-        ''Ord1,
-        ''Ord2,
-        ''SymEq,
-        ''SymEq1,
-        ''SymEq2,
-        ''SymOrd,
-        ''SymOrd1,
-        ''SymOrd2
-      ]
-  )
+  [''GGG]
+  [ ''Show,
+    ''Show1,
+    ''Show2,
+    ''PPrint,
+    ''PPrint1,
+    ''PPrint2,
+    ''Eq,
+    ''Eq1,
+    ''Eq2,
+    ''Ord,
+    ''Ord1,
+    ''Ord2,
+    ''SymEq,
+    ''SymEq1,
+    ''SymEq2,
+    ''SymOrd,
+    ''SymOrd1,
+    ''SymOrd2
+  ]
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (GGG a b) where
   arbitrary =
@@ -392,17 +386,15 @@ instance Eq (Ambiguous x) where
   (==) = undefined
 
 deriveGADT
-  ''Ambiguous
-  ( S.fromList
-      [ ''AllSyms,
-        ''Mergeable,
-        ''ExtractSym,
-        ''NFData,
-        ''PPrint,
-        ''Show,
-        ''Hashable
-      ]
-  )
+  [''Ambiguous]
+  [ ''AllSyms,
+    ''Mergeable,
+    ''ExtractSym,
+    ''NFData,
+    ''PPrint,
+    ''Show,
+    ''Hashable
+  ]
 
 data SimpleMergeableType mode n x
   = SimpleMergeableType
@@ -419,8 +411,5 @@ deriveGADTWith
         needExtraMergeableUnderEvalMode = True
       }
   )
-  ''SimpleMergeableType
-  ( S.union
-      (S.fromList [''SimpleMergeable, ''UnifiedSimpleMergeable])
-      allClasses0WithOrd
-  )
+  [''SimpleMergeableType]
+  ([''SimpleMergeable, ''UnifiedSimpleMergeable] ++ allClasses0WithOrd)

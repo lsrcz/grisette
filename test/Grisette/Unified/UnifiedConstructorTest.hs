@@ -62,7 +62,7 @@ deriveGADTWith
         needExtraMergeableUnderEvalMode = True
       }
   )
-  ''T
+  [''T]
   allClasses0WithOrd
 
 makePrefixedUnifiedCtor [''EvalModeBase] "mk" ''T
@@ -79,12 +79,12 @@ f = mkT (toSym True) 10 mkT1
 
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
-deriveGADT ''TNoMode allClasses1WithOrd
+deriveGADT [''TNoMode] allClasses1WithOrd
 makeNamedUnifiedCtor [] ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
-deriveGADT ''TNoArg allClasses0WithOrd
+deriveGADT [''TNoArg] allClasses0WithOrd
 makePrefixedUnifiedCtor [] "mk" ''TNoArg
 
 unifiedConstructorTest :: Test
