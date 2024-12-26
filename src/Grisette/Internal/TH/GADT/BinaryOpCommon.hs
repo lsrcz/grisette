@@ -22,7 +22,8 @@ module Grisette.Internal.TH.GADT.BinaryOpCommon
   )
 where
 
-import Control.Monad (replicateM, zipWithM)
+import Control.Monad (replicateM, unless, when, zipWithM)
+import qualified Data.List as List
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import Data.Proxy (Proxy (Proxy))
@@ -136,8 +137,9 @@ funPatAndExps fieldFunExpGen argTypes fields = do
 
 -- | Configuration for a binary operation field generation on a GADT.
 data BinaryOpFieldConfig = BinaryOpFieldConfig
-  { fieldResFun :: (Exp, Exp) -> Exp -> Q Exp,
-    fieldCombineFun :: [Exp] -> Q Exp,
+  { extraPatNames :: [String],
+    fieldResFun :: [Exp] -> (Exp, Exp) -> Exp -> Q (Exp, [Bool]),
+    fieldCombineFun :: Name -> [Exp] -> Q Exp,
     fieldDifferentExistentialFun :: Exp -> Q Exp,
     fieldLMatchResult :: Q Exp,
     fieldRMatchResult :: Q Exp,
@@ -166,6 +168,12 @@ genBinaryOpClause
       rhsFields <- mapM resolveTypeSynonyms $ constructorFields rhsConstructors
       (funPats, defaultFieldFunExps) <-
         funPatAndExps fieldFunExp lhsArgNewVars lhsFields
+      unless (null extraPatNames) $
+        unless isLast $
+          fail "Should not happen"
+      extraPatNames <- traverse newName extraPatNames
+      let extraPats = fmap VarP extraPatNames
+      let extraPatExps = fmap VarE extraPatNames
       lhsFieldsPatNames <- replicateM (length lhsFields) $ newName "lhsField"
       rhsFieldsPatNames <- replicateM (length rhsFields) $ newName "rhsField"
       let lhsFieldPats =
@@ -191,12 +199,17 @@ genBinaryOpClause
       let lhsFieldPatExps = fmap VarE lhsFieldsPatNames
       let rhsFieldPatExps = fmap VarE rhsFieldsPatNames
 
-      fieldResExps <-
+      fieldResExpsAndArgsUsed <-
         zipWithM
-          fieldResFun
+          (fieldResFun extraPatExps)
           (zip lhsFieldPatExps rhsFieldPatExps)
           defaultFieldFunExps
-      let resExp = fieldCombineFun fieldResExps
+      let fieldResExps = fst <$> fieldResExpsAndArgsUsed
+      let extraArgsUsedByFields = snd <$> fieldResExpsAndArgsUsed
+      resExp <-
+        fieldCombineFun
+          (constructorName lhsConstructors)
+          fieldResExps
 
       let eqt l r =
             [|
@@ -217,11 +230,19 @@ genBinaryOpClause
                 _ ->
                   $(fieldDifferentExistentialFun cmp)
               |]
-      let construct [] = resExp
+      let construct [] = return resExp
           construct ((l, r) : xs) = [|$(eqx (construct xs) l r)|]
+
+      let extraArgsUsed =
+            or <$> List.transpose extraArgsUsedByFields
+      let extraArgsPats =
+            zipWith
+              (\pat used -> if used then pat else WildP)
+              extraPats
+              extraArgsUsed
       bothMatched <-
         clause
-          ((return <$> funPats) ++ [lhsFieldPats, rhsFieldPats])
+          ((return <$> funPats ++ extraArgsPats) ++ [lhsFieldPats, rhsFieldPats])
           ( normalB
               [|
                 $( construct $
@@ -249,7 +270,9 @@ genBinaryOpClause
 -- | Configuration for a binary operation type class generation on a GADT.
 data BinaryOpClassConfig = BinaryOpClassConfig
   { binaryOpFieldConfigs :: [BinaryOpFieldConfig],
-    binaryOpInstanceNames :: [Name]
+    binaryOpInstanceNames :: [Name],
+    binaryOpAllowSumType :: Bool,
+    binaryOpAllowExistential :: Bool
   }
 
 -- | Generate a function for a binary operation on a GADT.
@@ -295,8 +318,13 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
         (nameBase $ head binaryOpInstanceNames)
         (length binaryOpInstanceNames - 1)
         typName
-        (n == 0)
+        (n == 0 && binaryOpAllowExistential)
         n
+  when (not binaryOpAllowSumType && length (constructors lhsResult) > 1) $
+    fail $
+      "Cannot derive "
+        <> nameBase (binaryOpInstanceNames !! n)
+        <> " for sum type"
   rhsResult <-
     specializeResult (evalModeSpecializeList deriveConfig)
       =<< checkArgs

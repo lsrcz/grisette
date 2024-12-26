@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.DeriveOrd
@@ -19,11 +20,13 @@ import Data.Functor.Classes (Ord1 (liftCompare), Ord2 (liftCompare2))
 import Grisette.Internal.TH.GADT.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
+        binaryOpAllowSumType,
         binaryOpFieldConfigs,
         binaryOpInstanceNames
       ),
     BinaryOpFieldConfig
       ( BinaryOpFieldConfig,
+        extraPatNames,
         fieldCombineFun,
         fieldDifferentExistentialFun,
         fieldFunExp,
@@ -32,6 +35,7 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
         fieldRMatchResult,
         fieldResFun
       ),
+    binaryOpAllowExistential,
     defaultFieldFunExp,
     genBinaryOpClass,
   )
@@ -43,9 +47,10 @@ ordConfig =
   BinaryOpClassConfig
     { binaryOpFieldConfigs =
         [ BinaryOpFieldConfig
-            { fieldResFun = \(lhs, rhs) f ->
-                [|$(return f) $(return lhs) $(return rhs)|],
-              fieldCombineFun = \lst -> [|mconcat $(return $ ListE lst)|],
+            { extraPatNames = [],
+              fieldResFun = \_ (lhs, rhs) f ->
+                (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
+              fieldCombineFun = \_ lst -> [|mconcat $(return $ ListE lst)|],
               fieldDifferentExistentialFun = return,
               fieldFunExp =
                 defaultFieldFunExp ['compare, 'liftCompare, 'liftCompare2],
@@ -54,7 +59,9 @@ ordConfig =
               fieldRMatchResult = [|GT|]
             }
         ],
-      binaryOpInstanceNames = [''Ord, ''Ord1, ''Ord2]
+      binaryOpInstanceNames = [''Ord, ''Ord1, ''Ord2],
+      binaryOpAllowSumType = True,
+      binaryOpAllowExistential = True
     }
 
 -- | Derive 'Ord' instance for a GADT.

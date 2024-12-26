@@ -178,11 +178,13 @@ library
       Grisette.Internal.TH.GADT.DerivePPrint
       Grisette.Internal.TH.GADT.DeriveSerial
       Grisette.Internal.TH.GADT.DeriveShow
+      Grisette.Internal.TH.GADT.DeriveSimpleMergeable
       Grisette.Internal.TH.GADT.DeriveSubstSym
       Grisette.Internal.TH.GADT.DeriveSymEq
       Grisette.Internal.TH.GADT.DeriveSymOrd
       Grisette.Internal.TH.GADT.DeriveToCon
       Grisette.Internal.TH.GADT.DeriveToSym
+      Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
       Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
       Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
       Grisette.Internal.TH.GADT.ShowPPrintCommon

@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.DeriveSymEq
@@ -26,11 +27,13 @@ import Grisette.Internal.Core.Data.Class.SymEq
 import Grisette.Internal.TH.GADT.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,
+        binaryOpAllowSumType,
         binaryOpFieldConfigs,
         binaryOpInstanceNames
       ),
     BinaryOpFieldConfig
       ( BinaryOpFieldConfig,
+        extraPatNames,
         fieldCombineFun,
         fieldDifferentExistentialFun,
         fieldFunExp,
@@ -39,21 +42,23 @@ import Grisette.Internal.TH.GADT.BinaryOpCommon
         fieldRMatchResult,
         fieldResFun
       ),
+    binaryOpAllowExistential,
     defaultFieldFunExp,
     genBinaryOpClass,
   )
-import Language.Haskell.TH (Dec, Exp (ListE), Name, Q)
 import Grisette.Internal.TH.GADT.Common (DeriveConfig)
+import Language.Haskell.TH (Dec, Exp (ListE), Name, Q)
 
 symEqConfig :: BinaryOpClassConfig
 symEqConfig =
   BinaryOpClassConfig
     { binaryOpFieldConfigs =
         [ BinaryOpFieldConfig
-            { fieldResFun = \(lhs, rhs) f ->
-                [|$(return f) $(return lhs) $(return rhs)|],
+            { extraPatNames = [],
+              fieldResFun = \_ (lhs, rhs) f ->
+                (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
               fieldCombineFun =
-                \lst -> [|foldl (.&&) true $(return $ ListE lst)|],
+                \_ lst -> [|foldl (.&&) true $(return $ ListE lst)|],
               fieldDifferentExistentialFun = const [|false|],
               fieldFunExp =
                 defaultFieldFunExp ['(.==), 'liftSymEq, 'liftSymEq2],
@@ -62,7 +67,9 @@ symEqConfig =
               fieldRMatchResult = [|false|]
             }
         ],
-      binaryOpInstanceNames = [''SymEq, ''SymEq1, ''SymEq2]
+      binaryOpInstanceNames = [''SymEq, ''SymEq1, ''SymEq2],
+      binaryOpAllowSumType = True,
+      binaryOpAllowExistential = True
     }
 
 -- | Derive 'SymEq' instance for a GADT.

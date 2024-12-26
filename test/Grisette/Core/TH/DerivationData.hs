@@ -70,6 +70,7 @@ import Grisette
     PPrint,
     PPrint1,
     PPrint2,
+    SimpleMergeable,
     SubstSym,
     SubstSym1,
     SubstSym2,
@@ -107,6 +108,7 @@ import Grisette.Unified
     GetData,
     GetFP,
     GetWordN,
+    UnifiedSimpleMergeable,
   )
 import Test.QuickCheck (Arbitrary, oneof)
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
@@ -400,4 +402,25 @@ deriveGADT
         ''Show,
         ''Hashable
       ]
+  )
+
+data SimpleMergeableType mode n x
+  = SimpleMergeableType
+      (GetBool mode)
+      (GetWordN mode n)
+      x
+      (GetData mode (SimpleMergeableType mode n x))
+
+deriveGADTWith
+  ( mempty
+      { evalModeConfig =
+          [(0, EvalModeConstraints [''EvalModeBV, ''EvalModeBase])],
+        bitSizePositions = [1],
+        needExtraMergeableUnderEvalMode = True
+      }
+  )
+  ''SimpleMergeableType
+  ( S.union
+      (S.fromList [''SimpleMergeable, ''UnifiedSimpleMergeable])
+      allClasses0WithOrd
   )

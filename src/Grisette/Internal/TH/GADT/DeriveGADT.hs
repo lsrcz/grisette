@@ -26,6 +26,7 @@ where
 
 import Control.Arrow (Arrow (second))
 import Control.DeepSeq (NFData, NFData1, NFData2)
+import Data.Bytes.Serial (Serial, Serial1, Serial2)
 import Data.Functor.Classes (Eq1, Eq2, Ord1, Ord2, Show1, Show2)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
@@ -48,6 +49,11 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable3,
   )
 import Grisette.Internal.Core.Data.Class.PPrint (PPrint, PPrint1, PPrint2)
+import Grisette.Internal.Core.Data.Class.SimpleMergeable
+  ( SimpleMergeable,
+    SimpleMergeable1,
+    SimpleMergeable2,
+  )
 import Grisette.Internal.Core.Data.Class.SubstSym
   ( SubstSym,
     SubstSym1,
@@ -111,10 +117,20 @@ import Grisette.Internal.TH.GADT.DerivePPrint
     deriveGADTPPrint1,
     deriveGADTPPrint2,
   )
+import Grisette.Internal.TH.GADT.DeriveSerial
+  ( deriveGADTSerial,
+    deriveGADTSerial1,
+    deriveGADTSerial2,
+  )
 import Grisette.Internal.TH.GADT.DeriveShow
   ( deriveGADTShow,
     deriveGADTShow1,
     deriveGADTShow2,
+  )
+import Grisette.Internal.TH.GADT.DeriveSimpleMergeable
+  ( deriveGADTSimpleMergeable,
+    deriveGADTSimpleMergeable1,
+    deriveGADTSimpleMergeable2,
   )
 import Grisette.Internal.TH.GADT.DeriveSubstSym
   ( deriveGADTSubstSym,
@@ -141,6 +157,7 @@ import Grisette.Internal.TH.GADT.DeriveToSym
     deriveGADTToSym1,
     deriveGADTToSym2,
   )
+import Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable (deriveGADTUnifiedSimpleMergeable, deriveGADTUnifiedSimpleMergeable1, deriveGADTUnifiedSimpleMergeable2)
 import Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
   ( deriveGADTUnifiedSymEq,
     deriveGADTUnifiedSymEq1,
@@ -151,6 +168,7 @@ import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
     deriveGADTUnifiedSymOrd1,
     deriveGADTUnifiedSymOrd2,
   )
+import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedSimpleMergeable, UnifiedSimpleMergeable1, UnifiedSimpleMergeable2)
 import Grisette.Unified.Internal.Class.UnifiedSymEq
   ( UnifiedSymEq,
     UnifiedSymEq1,
@@ -161,10 +179,8 @@ import Grisette.Unified.Internal.Class.UnifiedSymOrd
     UnifiedSymOrd1,
     UnifiedSymOrd2,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C))
+import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)
-import Data.Bytes.Serial (Serial, Serial1, Serial2)
-import Grisette.Internal.TH.GADT.DeriveSerial (deriveGADTSerial, deriveGADTSerial1, deriveGADTSerial2)
 
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])
 deriveProcedureMap =
@@ -219,7 +235,13 @@ deriveProcedureMap =
       (''ToCon2, deriveGADTToCon2),
       (''Serial, deriveGADTSerial),
       (''Serial1, deriveGADTSerial1),
-      (''Serial2, deriveGADTSerial2)
+      (''Serial2, deriveGADTSerial2),
+      (''SimpleMergeable, deriveGADTSimpleMergeable),
+      (''SimpleMergeable1, deriveGADTSimpleMergeable1),
+      (''SimpleMergeable2, deriveGADTSimpleMergeable2),
+      (''UnifiedSimpleMergeable, deriveGADTUnifiedSimpleMergeable),
+      (''UnifiedSimpleMergeable1, deriveGADTUnifiedSimpleMergeable1),
+      (''UnifiedSimpleMergeable2, deriveGADTUnifiedSimpleMergeable2)
     ]
 
 deriveSingleGADT :: DeriveConfig -> Name -> Name -> Q [Dec]
@@ -240,10 +262,26 @@ deriveSingleGADT deriveConfig typName className = do
                      ''UnifiedSymEq2,
                      ''UnifiedSymOrd,
                      ''UnifiedSymOrd1,
-                     ''UnifiedSymOrd2
+                     ''UnifiedSymOrd2,
+                     ''UnifiedSimpleMergeable,
+                     ''UnifiedSimpleMergeable1,
+                     ''UnifiedSimpleMergeable2
                    ] =
             deriveConfig
               { needExtraMergeableUnderEvalMode = False,
+                needExtraMergeableWithConcretizedEvalMode = False
+              }
+        | className
+            `elem` [''SimpleMergeable, ''SimpleMergeable1, ''SimpleMergeable2] =
+            deriveConfig
+              { evalModeConfig =
+                  second
+                    ( \case
+                        EvalModeConstraints _ -> EvalModeSpecified S
+                        EvalModeSpecified tag -> EvalModeSpecified tag
+                    )
+                    <$> evalModeConfig deriveConfig,
+                needExtraMergeableUnderEvalMode = False,
                 needExtraMergeableWithConcretizedEvalMode = False
               }
         | className `elem` [''Ord, ''Ord1, ''Ord2] =
@@ -323,6 +361,9 @@ deriveSingleGADT deriveConfig typName className = do
 -- * 'Serial'
 -- * 'Serial1'
 -- * 'Serial2'
+-- * 'SimpleMergeable'
+-- * 'SimpleMergeable1'
+-- * 'SimpleMergeable2'
 --
 -- Note that the following type classes cannot be derived for GADTs with
 -- existential type variables.
