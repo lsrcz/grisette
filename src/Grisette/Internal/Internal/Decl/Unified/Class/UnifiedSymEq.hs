@@ -13,7 +13,7 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
-module Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
+module Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
   ( UnifiedSymEq (..),
     UnifiedSymEq1 (..),
     UnifiedSymEq2 (..),

@@ -13,7 +13,7 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
-module Grisette.Internal.Unified.Class.Internal.Instances.UnifiedITEOp
+module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
   ( symIte,
     symIteMerge,
   )
@@ -27,10 +27,10 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
 import qualified Grisette.Internal.Core.Data.Class.ITEOp
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import qualified Grisette.Internal.Core.Data.Class.PlainUnion
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
-import Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
   ( UnifiedITEOp (withBaseITEOp),
   )
+import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)

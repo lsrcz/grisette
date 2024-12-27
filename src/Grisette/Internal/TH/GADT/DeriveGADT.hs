@@ -75,6 +75,21 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
     SymOrd1,
     SymOrd2,
   )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
+  ( UnifiedSimpleMergeable,
+    UnifiedSimpleMergeable1,
+    UnifiedSimpleMergeable2,
+  )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+  ( UnifiedSymEq,
+    UnifiedSymEq1,
+    UnifiedSymEq2,
+  )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+  ( UnifiedSymOrd,
+    UnifiedSymOrd1,
+    UnifiedSymOrd2,
+  )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
 import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig
@@ -183,21 +198,6 @@ import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
   ( deriveGADTUnifiedSymOrd,
     deriveGADTUnifiedSymOrd1,
     deriveGADTUnifiedSymOrd2,
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
-  ( UnifiedSimpleMergeable,
-    UnifiedSimpleMergeable1,
-    UnifiedSimpleMergeable2,
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
-  ( UnifiedSymEq,
-    UnifiedSymEq1,
-    UnifiedSymEq2,
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
-  ( UnifiedSymOrd,
-    UnifiedSymOrd1,
-    UnifiedSymOrd2,
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)

@@ -28,5 +28,5 @@ module Grisette.Internal.Unified.Class.UnifiedSymOrd
   )
 where
 
-import Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSymOrd
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd

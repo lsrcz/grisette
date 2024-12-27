@@ -16,7 +16,7 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
-module Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSymOrd
+module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
   ( (.<=),
     (.<),
     (.>=),
@@ -64,6 +64,17 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
     SymOrd2,
   )
 import qualified Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd as SymOrd
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+  ( UnifiedITEOp (withBaseITEOp),
+  )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
+  ( UnifiedBranching (withBaseBranching),
+  )
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+  ( UnifiedSymOrd (withBaseSymOrd),
+    UnifiedSymOrd1 (withBaseSymOrd1),
+    UnifiedSymOrd2 (withBaseSymOrd2),
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.TH.DeriveUnifiedInterface
@@ -71,17 +82,6 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterface1s,
   )
 import Grisette.Internal.Unified.BaseMonad (BaseMonad)
-import Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
-  ( UnifiedITEOp (withBaseITEOp),
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
-  ( UnifiedBranching (withBaseBranching),
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
-  ( UnifiedSymOrd (withBaseSymOrd),
-    UnifiedSymOrd1 (withBaseSymOrd1),
-    UnifiedSymOrd2 (withBaseSymOrd2),
-  )
 import Grisette.Internal.Unified.EvalModeTag
   ( EvalModeTag (S),
     IsConMode,

@@ -15,5 +15,5 @@ module Grisette.Internal.Unified.Class.UnifiedITEOp
   )
 where
 
-import Grisette.Internal.Unified.Class.Internal.Instances.UnifiedITEOp
-import Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp

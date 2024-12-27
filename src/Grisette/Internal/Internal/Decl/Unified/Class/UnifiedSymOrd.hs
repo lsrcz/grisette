@@ -14,7 +14,7 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
-module Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
+module Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
   ( UnifiedSymOrd (..),
     UnifiedSymOrd1 (..),
     UnifiedSymOrd2 (..),

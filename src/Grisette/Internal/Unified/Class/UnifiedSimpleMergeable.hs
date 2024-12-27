@@ -24,5 +24,5 @@ module Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
   )
 where
 
-import Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSimpleMergeable
-import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
