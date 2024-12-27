@@ -22,5 +22,5 @@ module Grisette.Internal.Unified.Class.UnifiedSymEq
   )
 where
 
-import Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSymEq
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+import Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq

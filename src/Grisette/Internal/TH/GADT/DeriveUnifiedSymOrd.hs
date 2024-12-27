@@ -10,6 +10,11 @@ module Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
   )
 where
 
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+  ( UnifiedSymOrd (withBaseSymOrd),
+    UnifiedSymOrd1 (withBaseSymOrd1),
+    UnifiedSymOrd2 (withBaseSymOrd2),
+  )
 import Grisette.Internal.TH.GADT.Common (DeriveConfig (evalModeConfig))
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
@@ -24,11 +29,6 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
     UnaryOpUnifiedConfig (UnaryOpUnifiedConfig, unifiedFun),
     defaultUnaryOpUnifiedFun,
     genUnaryOpClass,
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
-  ( UnifiedSymOrd (withBaseSymOrd),
-    UnifiedSymOrd1 (withBaseSymOrd1),
-    UnifiedSymOrd2 (withBaseSymOrd2),
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH

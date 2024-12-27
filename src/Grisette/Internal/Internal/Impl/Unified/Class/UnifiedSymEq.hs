@@ -16,7 +16,7 @@
 
 {-# HLINT ignore "Eta reduce" #-}
 
-module Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSymEq
+module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq
   ( (.==),
     (./=),
     symDistinct,
@@ -51,16 +51,16 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
     SymEq2,
   )
 import qualified Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq as SymEq
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+  ( UnifiedSymEq (withBaseSymEq),
+    UnifiedSymEq1 (withBaseSymEq1),
+    UnifiedSymEq2 (withBaseSymEq2),
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.TH.DeriveUnifiedInterface
   ( deriveFunctorArgUnifiedInterfaces,
     deriveUnifiedInterface1s,
-  )
-import Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
-  ( UnifiedSymEq (withBaseSymEq),
-    UnifiedSymEq1 (withBaseSymEq1),
-    UnifiedSymEq2 (withBaseSymEq2),
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))

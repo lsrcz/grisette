@@ -13,7 +13,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSimpleMergeable
+module Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
   ( mrgIf,
     liftBaseMonad,
     mrgIte,
@@ -55,17 +55,17 @@ import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
   )
-import Grisette.Internal.TH.DeriveUnifiedInterface
-  ( deriveFunctorArgUnifiedInterfaces,
-    deriveUnifiedInterface1s,
-  )
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
-import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
+import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (withBaseBranching),
     UnifiedSimpleMergeable (withBaseSimpleMergeable),
     UnifiedSimpleMergeable1 (withBaseSimpleMergeable1),
     UnifiedSimpleMergeable2 (withBaseSimpleMergeable2),
   )
+import Grisette.Internal.TH.DeriveUnifiedInterface
+  ( deriveFunctorArgUnifiedInterfaces,
+    deriveUnifiedInterface1s,
+  )
+import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.EvalModeTag (IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)

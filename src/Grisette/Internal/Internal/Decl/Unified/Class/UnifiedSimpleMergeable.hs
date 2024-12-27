@@ -10,7 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
+module Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (..),
     UnifiedSimpleMergeable (..),
     UnifiedSimpleMergeable1 (..),

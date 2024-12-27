@@ -9,7 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
+module Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
   ( UnifiedITEOp (..),
   )
 where
