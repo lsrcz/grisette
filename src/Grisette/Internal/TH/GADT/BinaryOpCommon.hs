@@ -77,6 +77,7 @@ import Type.Reflection
     typeRep,
     type (:~~:) (HRefl),
   )
+import Control.Monad.Identity (IdentityT)
 
 -- | Type of field function expression generator.
 type FieldFunExp = M.Map Name Name -> Type -> Q Exp
@@ -334,6 +335,8 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
         (n == 0)
         n
   let keptVars' = keptVars lhsResult
+  when (typName == ''IdentityT) $
+    fail $ show keptVars'
   let isTypeUsedInFields' (VarT nm) = isVarUsedInFields lhsResult nm
       isTypeUsedInFields' _ = False
   ctxs <-

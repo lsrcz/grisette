@@ -65,11 +65,11 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
   )
 import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
 import Grisette.Internal.TH.Util (classParamKinds)
-import Grisette.Unified.Internal.Class.UnifiedSymEq
+import Grisette.Internal.Unified.Class.UnifiedSymEq
   ( UnifiedSymEq (withBaseSymEq),
     UnifiedSymEq1 (withBaseSymEq1),
   )
-import Grisette.Unified.Internal.Class.UnifiedSymOrd
+import Grisette.Internal.Unified.Class.UnifiedSymOrd
   ( UnifiedSymOrd (withBaseSymOrd),
     UnifiedSymOrd1 (withBaseSymOrd1),
   )

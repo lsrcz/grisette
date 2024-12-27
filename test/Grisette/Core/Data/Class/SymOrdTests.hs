@@ -71,7 +71,7 @@ symbolicProdOrdOkProp l r ll lr rl rr = do
   l .> r .@?= ((ll .> rl) .|| ((ll .== rl) .&& (lr .> rr)))
   l
     `symCompare` r
-    @?= ( ( do
+    .@?= ( ( do
               lc <- symCompare ll rl
               case lc of
                 EQ -> symCompare lr rr

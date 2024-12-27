@@ -26,7 +26,7 @@ import Grisette.Internal.TH.GADT.ConvertOpCommon
     defaultFieldFunExp,
     genConvertOpClass,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C))
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C))
 import Language.Haskell.TH (Dec, Name, Q, conE)
 
 toConClassConfig :: ConvertOpClassConfig

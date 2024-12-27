@@ -85,17 +85,17 @@ import Grisette.Unified
     GetWordN,
     TheoryToUnify (UFun, UIntN, UWordN),
     UnifiedBranching,
+    UnifiedFun (GetFun),
     extractData,
     genEvalMode,
     mrgIte,
+    safeBitCast,
     safeDiv,
     symFromIntegral,
     symIte,
     (.<),
     (.==),
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeBitCast (safeBitCast)
-import Grisette.Unified.Internal.UnifiedFun (UnifiedFun (GetFun))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

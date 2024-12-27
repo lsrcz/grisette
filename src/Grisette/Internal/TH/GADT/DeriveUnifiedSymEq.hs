@@ -25,12 +25,12 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
     defaultUnaryOpUnifiedFun,
     genUnaryOpClass,
   )
-import Grisette.Unified.Internal.Class.UnifiedSymEq
+import Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
   ( UnifiedSymEq (withBaseSymEq),
     UnifiedSymEq1 (withBaseSymEq1),
     UnifiedSymEq2 (withBaseSymEq2),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH
   ( Dec,
     Name,

@@ -47,8 +47,8 @@ import Grisette.Internal.TH.Util
     tvIsStar,
     tvIsStarToStar,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
-import Grisette.Unified.Internal.Util (DecideEvalMode, withMode)
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
+import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
 import Language.Haskell.TH
   ( Dec,
     Exp,

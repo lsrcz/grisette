@@ -42,7 +42,21 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     ExtractSym1,
     ExtractSym2,
   )
-import Grisette.Internal.Core.Data.Class.Internal.PPrint (PPrint, PPrint1, PPrint2)
+import Grisette.Internal.Core.Data.Class.Internal.PPrint
+  ( PPrint,
+    PPrint1,
+    PPrint2,
+  )
+import Grisette.Internal.Core.Data.Class.Internal.SymEq
+  ( SymEq,
+    SymEq1,
+    SymEq2,
+  )
+import Grisette.Internal.Core.Data.Class.Internal.SymOrd
+  ( SymOrd,
+    SymOrd1,
+    SymOrd2,
+  )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable,
     Mergeable1,
@@ -59,8 +73,6 @@ import Grisette.Internal.Core.Data.Class.SubstSym
     SubstSym1,
     SubstSym2,
   )
-import Grisette.Internal.Core.Data.Class.SymEq (SymEq, SymEq1, SymEq2)
-import Grisette.Internal.Core.Data.Class.SymOrd (SymOrd, SymOrd1, SymOrd2)
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1, ToCon2)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1, ToSym2)
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
@@ -157,7 +169,11 @@ import Grisette.Internal.TH.GADT.DeriveToSym
     deriveGADTToSym1,
     deriveGADTToSym2,
   )
-import Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable (deriveGADTUnifiedSimpleMergeable, deriveGADTUnifiedSimpleMergeable1, deriveGADTUnifiedSimpleMergeable2)
+import Grisette.Internal.TH.GADT.DeriveUnifiedSimpleMergeable
+  ( deriveGADTUnifiedSimpleMergeable,
+    deriveGADTUnifiedSimpleMergeable1,
+    deriveGADTUnifiedSimpleMergeable2,
+  )
 import Grisette.Internal.TH.GADT.DeriveUnifiedSymEq
   ( deriveGADTUnifiedSymEq,
     deriveGADTUnifiedSymEq1,
@@ -168,18 +184,22 @@ import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
     deriveGADTUnifiedSymOrd1,
     deriveGADTUnifiedSymOrd2,
   )
-import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable (UnifiedSimpleMergeable, UnifiedSimpleMergeable1, UnifiedSimpleMergeable2)
-import Grisette.Unified.Internal.Class.UnifiedSymEq
+import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
+  ( UnifiedSimpleMergeable,
+    UnifiedSimpleMergeable1,
+    UnifiedSimpleMergeable2,
+  )
+import Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
   ( UnifiedSymEq,
     UnifiedSymEq1,
     UnifiedSymEq2,
   )
-import Grisette.Unified.Internal.Class.UnifiedSymOrd
+import Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
   ( UnifiedSymOrd,
     UnifiedSymOrd1,
     UnifiedSymOrd2,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)
 
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])

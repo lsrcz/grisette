@@ -40,8 +40,8 @@ import Grisette.Internal.TH.GADT.Common
     isVarUsedInFields,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
-import Grisette.Unified.Internal.Util
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
+import Grisette.Internal.Unified.Util
   ( EvalModeConvertible (withModeConvertible'),
   )
 import Language.Haskell.TH

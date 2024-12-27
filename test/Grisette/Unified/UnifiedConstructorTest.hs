@@ -23,9 +23,15 @@
 module Grisette.Unified.UnifiedConstructorTest (unifiedConstructorTest) where
 
 #if MIN_VERSION_base(4,16,0)
-import Grisette.Unified.Internal.UnifiedData (GetData)
+import Grisette.Unified (EvalModeBase, EvalModeTag (S), GetBool, GetData)
 #else
-import Grisette.Unified.Internal.UnifiedData (GetData, UnifiedData)
+import Grisette.Unified
+  ( EvalModeBase,
+    EvalModeTag (S),
+    GetBool,
+    GetData,
+    UnifiedData,
+  )
 #endif
 
 import Control.Monad.Identity (Identity (Identity))
@@ -45,9 +51,6 @@ import Grisette.Internal.TH.GADT.Common
     EvalModeConfig (EvalModeConstraints),
   )
 import Grisette.TH (makeNamedUnifiedCtor, makePrefixedUnifiedCtor)
-import Grisette.Unified.Internal.EvalMode (EvalModeBase)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
-import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (GetBool))
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.HUnit ((@?=))

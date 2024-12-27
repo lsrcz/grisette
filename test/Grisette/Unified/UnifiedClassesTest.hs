@@ -56,11 +56,9 @@ import Grisette.Unified
     GetWordN,
     UnifiedBranching,
     UnifiedSymEq,
+    UnifiedSymEq1,
     mrgIf,
     (.==),
-  )
-import Grisette.Unified.Internal.Class.UnifiedSymEq
-  ( UnifiedSymEq1,
   )
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
