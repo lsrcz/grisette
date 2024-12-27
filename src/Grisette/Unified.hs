@@ -51,6 +51,8 @@ module Grisette.Unified
 
     -- ** Unified SymEq
     UnifiedSymEq (..),
+    UnifiedSymEq1 (..),
+    UnifiedSymEq2 (..),
     (.==),
     (./=),
     symDistinct,
@@ -61,6 +63,8 @@ module Grisette.Unified
 
     -- ** Unified SymOrd
     UnifiedSymOrd (..),
+    UnifiedSymOrd1 (..),
+    UnifiedSymOrd2 (..),
     (.<=),
     (.<),
     (.>=),
@@ -178,15 +182,15 @@ module Grisette.Unified
   )
 where
 
-import Grisette.Unified.Internal.BVBVConversion
+import Grisette.Internal.Unified.BVBVConversion
   ( UnifiedBVBVConversion,
   )
-import Grisette.Unified.Internal.BVFPConversion
+import Grisette.Internal.Unified.BVFPConversion
   ( SafeUnifiedBVFPConversion,
     UnifiedBVFPConversion,
   )
-import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.Class.UnifiedFiniteBits
+import Grisette.Internal.Unified.BaseMonad (BaseMonad)
+import Grisette.Internal.Unified.Class.UnifiedFiniteBits
   ( UnifiedFiniteBits (..),
     symBitBlast,
     symCountLeadingZeros,
@@ -198,20 +202,20 @@ import Grisette.Unified.Internal.Class.UnifiedFiniteBits
     symSetBitTo,
     symTestBit,
   )
-import Grisette.Unified.Internal.Class.UnifiedFromIntegral
+import Grisette.Internal.Unified.Class.UnifiedFromIntegral
   ( UnifiedFromIntegral (..),
     symFromIntegral,
   )
-import Grisette.Unified.Internal.Class.UnifiedITEOp
+import Grisette.Internal.Unified.Class.UnifiedITEOp
   ( UnifiedITEOp (..),
     symIte,
     symIteMerge,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeBitCast
+import Grisette.Internal.Unified.Class.UnifiedSafeBitCast
   ( UnifiedSafeBitCast (..),
     safeBitCast,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeDiv
+import Grisette.Internal.Unified.Class.UnifiedSafeDiv
   ( UnifiedSafeDiv (..),
     safeDiv,
     safeDivMod,
@@ -220,33 +224,33 @@ import Grisette.Unified.Internal.Class.UnifiedSafeDiv
     safeQuotRem,
     safeRem,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeFdiv
+import Grisette.Internal.Unified.Class.UnifiedSafeFdiv
   ( UnifiedSafeFdiv (..),
     safeFdiv,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeFromFP
+import Grisette.Internal.Unified.Class.UnifiedSafeFromFP
   ( UnifiedSafeFromFP (..),
     safeFromFP,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeLinearArith
+import Grisette.Internal.Unified.Class.UnifiedSafeLinearArith
   ( UnifiedSafeLinearArith (..),
     safeAdd,
     safeNeg,
     safeSub,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeSymRotate
+import Grisette.Internal.Unified.Class.UnifiedSafeSymRotate
   ( UnifiedSafeSymRotate (..),
     safeSymRotateL,
     safeSymRotateR,
   )
-import Grisette.Unified.Internal.Class.UnifiedSafeSymShift
+import Grisette.Internal.Unified.Class.UnifiedSafeSymShift
   ( UnifiedSafeSymShift (..),
     safeSymShiftL,
     safeSymShiftR,
     safeSymStrictShiftL,
     safeSymStrictShiftR,
   )
-import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
+import Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedBranching (..),
     UnifiedSimpleMergeable (..),
     UnifiedSimpleMergeable1 (..),
@@ -260,8 +264,10 @@ import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
     mrgIte2,
     simpleMerge,
   )
-import Grisette.Unified.Internal.Class.UnifiedSymEq
+import Grisette.Internal.Unified.Class.UnifiedSymEq
   ( UnifiedSymEq (..),
+    UnifiedSymEq1 (..),
+    UnifiedSymEq2 (..),
     liftSymEq,
     liftSymEq2,
     symDistinct,
@@ -270,8 +276,10 @@ import Grisette.Unified.Internal.Class.UnifiedSymEq
     (./=),
     (.==),
   )
-import Grisette.Unified.Internal.Class.UnifiedSymOrd
+import Grisette.Internal.Unified.Class.UnifiedSymOrd
   ( UnifiedSymOrd (..),
+    UnifiedSymOrd1 (..),
+    UnifiedSymOrd2 (..),
     liftSymCompare,
     liftSymCompare2,
     mrgMax,
@@ -286,7 +294,7 @@ import Grisette.Unified.Internal.Class.UnifiedSymOrd
     (.>),
     (.>=),
   )
-import Grisette.Unified.Internal.EvalMode
+import Grisette.Internal.Unified.EvalMode
   ( EvalModeAlgReal,
     EvalModeAll,
     EvalModeBV,
@@ -296,19 +304,19 @@ import Grisette.Unified.Internal.EvalMode
     MonadEvalModeAll,
     genEvalMode,
   )
-import Grisette.Unified.Internal.EvalModeTag
+import Grisette.Internal.Unified.EvalModeTag
   ( EvalModeTag (..),
     IsConMode,
   )
-import Grisette.Unified.Internal.FPFPConversion
+import Grisette.Internal.Unified.FPFPConversion
   ( UnifiedFPFPConversion,
   )
-import Grisette.Unified.Internal.Theories (TheoryToUnify (..))
-import Grisette.Unified.Internal.UnifiedAlgReal
+import Grisette.Internal.Unified.Theories (TheoryToUnify (..))
+import Grisette.Internal.Unified.UnifiedAlgReal
   ( GetAlgReal,
     UnifiedAlgReal,
   )
-import Grisette.Unified.Internal.UnifiedBV
+import Grisette.Internal.Unified.UnifiedBV
   ( GetIntN,
     GetSomeIntN,
     GetSomeWordN,
@@ -317,20 +325,20 @@ import Grisette.Unified.Internal.UnifiedBV
     SafeUnifiedSomeBV,
     UnifiedBV,
   )
-import Grisette.Unified.Internal.UnifiedBool (UnifiedBool (..))
-import Grisette.Unified.Internal.UnifiedData
+import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (..))
+import Grisette.Internal.Unified.UnifiedData
   ( GetData,
     UnifiedData,
     extractData,
     wrapData,
   )
-import Grisette.Unified.Internal.UnifiedFP
+import Grisette.Internal.Unified.UnifiedFP
   ( GetFP,
     GetFPRoundingMode,
     SafeUnifiedFP,
     UnifiedFP,
   )
-import Grisette.Unified.Internal.UnifiedFun
+import Grisette.Internal.Unified.UnifiedFun
   ( GetFun,
     GetFun2,
     GetFun3,
@@ -344,15 +352,15 @@ import Grisette.Unified.Internal.UnifiedFun
     genUnifiedFunInstance,
     unifiedFunInstanceName,
   )
-import Grisette.Unified.Internal.UnifiedInteger
+import Grisette.Internal.Unified.UnifiedInteger
   ( GetInteger,
     UnifiedInteger,
   )
-import Grisette.Unified.Internal.UnifiedPrim
+import Grisette.Internal.Unified.UnifiedPrim
   ( UnifiedBasicPrim,
     UnifiedPrim,
   )
-import Grisette.Unified.Internal.Util
+import Grisette.Internal.Unified.Util
   ( DecideEvalMode (..),
     EvalModeConvertible (..),
     withMode,

@@ -94,6 +94,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     TryMerge,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S))
 import Grisette.Lib.Data.Foldable
   ( mrgForM_,
     mrgMapM_,
@@ -106,7 +107,6 @@ import Grisette.Lib.Data.Traversable
     mrgMapM,
     mrgSequence,
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (S))
 import qualified Grisette.Unified.Lib.Control.Monad as Unified
 
 -- | 'return' with 'MergingStrategy' knowledge propagation.

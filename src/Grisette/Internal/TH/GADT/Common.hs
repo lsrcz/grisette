@@ -44,8 +44,8 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable2,
   )
 import Grisette.Internal.SymPrim.FP (ValidFP)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag (C, S))
-import Grisette.Unified.Internal.Util (DecideEvalMode)
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
+import Grisette.Internal.Unified.Util (DecideEvalMode)
 import Language.Haskell.TH
   ( Kind,
     Name,

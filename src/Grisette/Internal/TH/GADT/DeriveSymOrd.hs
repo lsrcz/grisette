@@ -16,7 +16,7 @@ module Grisette.Internal.TH.GADT.DeriveSymOrd
   )
 where
 
-import Grisette.Internal.Core.Data.Class.SymOrd
+import Grisette.Internal.Core.Data.Class.Internal.SymOrd
   ( SymOrd (symCompare),
     SymOrd1 (liftSymCompare),
     SymOrd2 (liftSymCompare2),

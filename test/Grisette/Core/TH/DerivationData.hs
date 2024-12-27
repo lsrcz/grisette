@@ -48,7 +48,6 @@ import Data.Functor.Classes
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import Data.Maybe (fromJust)
-import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Typeable (Proxy, Typeable)
 import GHC.Generics (Generic)

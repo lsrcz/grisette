@@ -47,7 +47,7 @@ import Control.Monad (when)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import GHC.TypeNats (Nat)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH
   ( Dec (ClassD),
     Exp

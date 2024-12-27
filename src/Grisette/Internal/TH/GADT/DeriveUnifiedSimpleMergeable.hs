@@ -25,12 +25,12 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
     defaultUnaryOpUnifiedFun,
     genUnaryOpClass,
   )
-import Grisette.Unified.Internal.Class.UnifiedSimpleMergeable
+import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
   ( UnifiedSimpleMergeable (withBaseSimpleMergeable),
     UnifiedSimpleMergeable1 (withBaseSimpleMergeable1),
     UnifiedSimpleMergeable2 (withBaseSimpleMergeable2),
   )
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH
   ( Dec,
     Name,

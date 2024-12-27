@@ -29,3 +29,4 @@ cabal.project.local~
 .DS_Store
 *.smt2
 *.eventlog.html
+*.dump-splices

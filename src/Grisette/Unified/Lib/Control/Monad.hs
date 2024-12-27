@@ -555,7 +555,7 @@ infixl 4 .<$!>
 
 -- | 'Control.Monad.<$!>' with 'Grisette.Core.MergingStrategy' knowledge
 -- propagation. Merging is always strict so we can directly use
--- 'Grisette.Unified.Lib.Data.Functor..<$>'.
+-- 'Grisette.Internal.Unified.Lib.Data.Functor..<$>'.
 (.<$!>) ::
   (MonadTryMerge m, Mergeable a, Mergeable b) => (a -> b) -> m a -> m b
 f .<$!> a = f .<$> a

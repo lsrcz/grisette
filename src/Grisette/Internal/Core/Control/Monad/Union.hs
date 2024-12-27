@@ -72,6 +72,11 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
   )
 import Grisette.Internal.Core.Data.Class.Function (Function ((#)))
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
+import Grisette.Internal.Core.Data.Class.Internal.SymEq
+  ( SymEq ((.==)),
+    SymEq1 (liftSymEq),
+    symEq1,
+  )
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (false, symImplies, symNot, symXor, true, (.&&), (.||)),
   )
@@ -108,11 +113,6 @@ import Grisette.Internal.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
     SubstSym1 (liftSubstSym),
     substSym1,
-  )
-import Grisette.Internal.Core.Data.Class.SymEq
-  ( SymEq ((.==)),
-    SymEq1 (liftSymEq),
-    symEq1,
   )
 import Grisette.Internal.Core.Data.Class.ToCon
   ( ToCon (toCon),

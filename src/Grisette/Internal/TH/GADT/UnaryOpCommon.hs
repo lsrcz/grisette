@@ -50,7 +50,7 @@ import Grisette.Internal.TH.GADT.Common
     specializeResult,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
-import Grisette.Unified.Internal.Util (withMode)
+import Grisette.Internal.Unified.Util (withMode)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),

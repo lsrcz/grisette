@@ -26,8 +26,8 @@ import Grisette.Internal.TH.Ctor.Common
   )
 import Grisette.Internal.TH.GADT.Common (ctxForVar)
 import Grisette.Internal.TH.Util (constructorInfoToType, putHaddock, tvIsMode)
-import Grisette.Unified.Internal.EvalModeTag (EvalModeTag)
-import Grisette.Unified.Internal.UnifiedData
+import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
+import Grisette.Internal.Unified.UnifiedData
   ( GetData,
     UnifiedData,
     wrapData,

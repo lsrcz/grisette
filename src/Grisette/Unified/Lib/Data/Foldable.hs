@@ -67,6 +67,17 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     mrgSingle,
     tryMerge,
   )
+import Grisette.Internal.Unified.BaseMonad (BaseMonad)
+import Grisette.Internal.Unified.Class.UnifiedSymEq (UnifiedSymEq, (.==))
+import Grisette.Internal.Unified.Class.UnifiedSymOrd (mrgMax, mrgMin)
+import Grisette.Internal.Unified.UnifiedBool (GetBool)
+import Grisette.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
+import {-# SOURCE #-} Grisette.Lib.Control.Monad
+  ( mrgMplus,
+    mrgMzero,
+    (.>>),
+  )
+import Grisette.Lib.Data.Functor (mrgFmap, mrgVoid)
 import Grisette.Unified
   ( EvalModeBase,
     UnifiedBranching,
@@ -76,17 +87,6 @@ import Grisette.Unified
     mrgIf,
     symIteMerge,
   )
-import Grisette.Unified.Internal.BaseMonad (BaseMonad)
-import Grisette.Unified.Internal.Class.UnifiedSymEq (UnifiedSymEq, (.==))
-import Grisette.Unified.Internal.Class.UnifiedSymOrd (mrgMax, mrgMin)
-import Grisette.Unified.Internal.UnifiedBool (GetBool)
-import Grisette.Unified.Lib.Control.Applicative (mrgAsum, mrgPure, (.*>))
-import {-# SOURCE #-} Grisette.Unified.Lib.Control.Monad
-  ( mrgMplus,
-    mrgMzero,
-    (.>>),
-  )
-import Grisette.Unified.Lib.Data.Functor (mrgFmap, mrgVoid)
 
 -- | 'Data.Foldable.elem' with symbolic equality.
 symElem ::
