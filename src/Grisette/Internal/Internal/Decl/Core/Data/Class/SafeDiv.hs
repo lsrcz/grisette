@@ -10,7 +10,7 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.SafeDiv
+module Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
   ( ArithException (..),
     SafeDiv (..),
     DivOr (..),

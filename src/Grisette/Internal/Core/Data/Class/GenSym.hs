@@ -132,7 +132,7 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     tryMerge,
   )
 import Grisette.Internal.Core.Data.Symbol (Identifier)
-import Grisette.Internal.Core.Data.UnionBase
+import Grisette.Internal.Internal.Decl.Core.Data.UnionBase
   ( UnionBase (UnionIf, UnionSingle),
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)

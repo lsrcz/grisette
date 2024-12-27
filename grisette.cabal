@@ -78,14 +78,6 @@ library
       Grisette.Internal.Core.Data.Class.Function
       Grisette.Internal.Core.Data.Class.GenSym
       Grisette.Internal.Core.Data.Class.IEEEFP
-      Grisette.Internal.Core.Data.Class.Internal.Instances.PPrint
-      Grisette.Internal.Core.Data.Class.Internal.Instances.SafeDiv
-      Grisette.Internal.Core.Data.Class.Internal.Instances.SymEq
-      Grisette.Internal.Core.Data.Class.Internal.Instances.SymOrd
-      Grisette.Internal.Core.Data.Class.Internal.PPrint
-      Grisette.Internal.Core.Data.Class.Internal.SafeDiv
-      Grisette.Internal.Core.Data.Class.Internal.SymEq
-      Grisette.Internal.Core.Data.Class.Internal.SymOrd
       Grisette.Internal.Core.Data.Class.ITEOp
       Grisette.Internal.Core.Data.Class.LogicalOp
       Grisette.Internal.Core.Data.Class.Mergeable
@@ -119,12 +111,26 @@ library
       Grisette.Internal.Core.Data.SExpr
       Grisette.Internal.Core.Data.Symbol
       Grisette.Internal.Core.Data.UnionBase
+      Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
+      Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
+      Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Decl.Core.Data.UnionBase
       Grisette.Internal.Internal.Decl.Unified.BVFPConversion
       Grisette.Internal.Internal.Decl.Unified.EvalMode
       Grisette.Internal.Internal.Decl.Unified.FPFPConversion
       Grisette.Internal.Internal.Decl.Unified.UnifiedBool
       Grisette.Internal.Internal.Decl.Unified.UnifiedBV
       Grisette.Internal.Internal.Decl.Unified.UnifiedFP
+      Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
+      Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
+      Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Impl.Core.Data.UnionBase
       Grisette.Internal.Internal.Impl.Unified.BVFPConversion
       Grisette.Internal.Internal.Impl.Unified.EvalMode
       Grisette.Internal.Internal.Impl.Unified.FPFPConversion

@@ -4,10 +4,10 @@
 
 module Grisette.Internal.Internal.Impl.Unified.UnifiedBool () where
 
-import Grisette.Internal.Core.Data.Class.Internal.Instances.SymOrd ()
 import Grisette.Internal.Internal.Decl.Unified.UnifiedBool
   ( UnifiedBool (GetBool),
   )
+import Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd ()
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 

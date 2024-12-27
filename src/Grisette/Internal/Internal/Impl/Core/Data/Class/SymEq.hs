@@ -8,7 +8,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=symeq #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.Instances.SymEq () where
+module Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq () where
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity
@@ -50,14 +50,14 @@ import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
+import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( SymEq (symDistinct, (./=), (.==)),
     SymEq1 (liftSymEq),
     SymEq2,
     symEq1,
   )
-import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP

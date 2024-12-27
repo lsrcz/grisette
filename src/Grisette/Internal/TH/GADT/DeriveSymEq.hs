@@ -16,13 +16,13 @@ module Grisette.Internal.TH.GADT.DeriveSymEq
   )
 where
 
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
+import Grisette.Internal.Core.Data.Class.LogicalOp
+  ( LogicalOp (false, true, (.&&)),
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( SymEq ((.==)),
     SymEq1 (liftSymEq),
     SymEq2 (liftSymEq2),
-  )
-import Grisette.Internal.Core.Data.Class.LogicalOp
-  ( LogicalOp (false, true, (.&&)),
   )
 import Grisette.Internal.TH.GADT.BinaryOpCommon
   ( BinaryOpClassConfig

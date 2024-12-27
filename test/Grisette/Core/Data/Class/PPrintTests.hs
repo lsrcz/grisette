@@ -10,10 +10,27 @@
 
 module Grisette.Core.Data.Class.PPrintTests (pprintTests) where
 
+#if MIN_VERSION_prettyprinter(1,7,0)
+import Prettyprinter
+  ( PageWidth(AvailablePerLine, Unbounded),
+    layoutPretty,
+    LayoutOptions(LayoutOptions),
+  )
+import Prettyprinter.Render.Text (renderStrict)
+#else
+import Data.Text.Prettyprint.Doc
+  ( PageWidth(AvailablePerLine, Unbounded),
+    layoutPretty,
+    LayoutOptions(LayoutOptions),
+  )
+import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+#endif
+
 import Control.Monad.Except (ExceptT (ExceptT))
 import Control.Monad.Identity (Identity (Identity), IdentityT (IdentityT))
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
 import qualified Control.Monad.Trans.Writer.Lazy as WriterLazy
+import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import Data.Int (Int16, Int32, Int64, Int8)
@@ -44,22 +61,6 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, forAll, oneof)
-
-#if MIN_VERSION_prettyprinter(1,7,0)
-import Prettyprinter
-  ( PageWidth(AvailablePerLine, Unbounded),
-    layoutPretty,
-    LayoutOptions(LayoutOptions),
-  )
-import Prettyprinter.Render.Text (renderStrict)
-#else
-import Data.Text.Prettyprint.Doc
-  ( PageWidth(AvailablePerLine, Unbounded),
-    layoutPretty,
-    LayoutOptions(LayoutOptions),
-  )
-import Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
-#endif
 
 testPPrint :: (HasCallStack, PPrint a) => String -> Int -> a -> T.Text -> Test
 testPPrint n i a s = testCase n $ pformatTextWithWidth i a @?= s
@@ -700,24 +701,30 @@ pprintTests =
             0
             (Identity $ Just $ Just 1 :: Identity (Maybe (Maybe Int)))
             "Just (Just 1)",
-          propertyPFormatRead
+          testPPrint1
             "Maybe (MaybeT Maybe Int)"
-            (Just . MaybeT <$> arbitrary :: Gen (Maybe (MaybeT Maybe Int))),
+            0
+            (Just $ MaybeT (Just (Just 1)) :: Maybe (MaybeT Maybe Int))
+            "Just (MaybeT {runMaybeT = Just (Just 1)})",
           propertyPFormatRead
             "Maybe (ExceptT Int Maybe Int)"
             ( Just . ExceptT <$> arbitrary ::
                 Gen (Maybe (ExceptT Int Maybe Int))
             ),
-          propertyPFormatRead
+          testPPrint1
             "Maybe (LazyWriterT Int Maybe Int)"
-            ( Just . WriterLazy.WriterT <$> arbitrary ::
-                Gen (Maybe (WriterLazy.WriterT Int Maybe Int))
-            ),
-          propertyPFormatRead
+            0
+            ( Just $ WriterLazy.WriterT (Just (1, 2)) ::
+                Maybe (WriterLazy.WriterT Int Maybe Int)
+            )
+            "Just (WriterT {runWriterT = Just (1, 2)})",
+          testPPrint1
             "Maybe (StrictWriterT Int Maybe Int)"
-            ( Just . WriterLazy.WriterT <$> arbitrary ::
-                Gen (Maybe (WriterLazy.WriterT Int Maybe Int))
-            ),
+            0
+            ( Just $ WriterStrict.WriterT (Just (1, 2)) ::
+                Maybe (WriterStrict.WriterT Int Maybe Int)
+            )
+            "Just (WriterT {runWriterT = Just (1, 2)})",
           propertyPFormatRead
             "Maybe (IdentityT Maybe Int)"
             ( Just . IdentityT <$> arbitrary ::

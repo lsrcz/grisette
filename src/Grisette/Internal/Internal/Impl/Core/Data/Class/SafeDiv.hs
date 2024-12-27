@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.Instances.SafeDiv () where
+module Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv () where
 
 import Control.Exception (ArithException (DivideByZero, Overflow))
 import Control.Monad.Except (MonadError (throwError))
@@ -20,21 +20,21 @@ import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.Core.Control.Monad.Class.Union (MonadUnion)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
-import Grisette.Internal.Core.Data.Class.Internal.SafeDiv
-  ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
-    SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
-  )
-import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
 import Grisette.Internal.Core.Data.Class.LogicalOp (LogicalOp ((.&&)))
 import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
 import Grisette.Internal.Core.Data.Class.SimpleMergeable
   ( mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.SymEq (SymEq ((.==)))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( TryMerge,
     mrgSingle,
     tryMerge,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
+  ( DivOr (divModOr, divOr, modOr, quotOr, quotRemOr, remOr),
+    SafeDiv (safeDiv, safeDivMod, safeMod, safeQuot, safeQuotRem, safeRem),
   )
 import Grisette.Internal.SymPrim.BV
   ( IntN,

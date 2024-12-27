@@ -23,7 +23,7 @@ where
 
 import Data.Functor.Classes (Ord1, Ord2)
 import Data.Type.Bool (If)
-import Grisette.Internal.Core.Data.Class.Internal.SymOrd
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
   ( SymOrd,
     SymOrd1,
     SymOrd2,

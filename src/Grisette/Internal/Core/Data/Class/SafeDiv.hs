@@ -21,5 +21,5 @@ module Grisette.Internal.Core.Data.Class.SafeDiv
   )
 where
 
-import Grisette.Internal.Core.Data.Class.Internal.Instances.SafeDiv ()
-import Grisette.Internal.Core.Data.Class.Internal.SafeDiv
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
+import Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
