@@ -32,16 +32,6 @@ import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Grisette.Internal.Core.Data.Class.EvalSym
-  ( EvalSym,
-    EvalSym1,
-    EvalSym2,
-  )
-import Grisette.Internal.Core.Data.Class.ExtractSym
-  ( ExtractSym,
-    ExtractSym1,
-    ExtractSym2,
-  )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable,
     Mergeable1,
@@ -53,17 +43,27 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
     SimpleMergeable1,
     SimpleMergeable2,
   )
-import Grisette.Internal.Core.Data.Class.SubstSym
-  ( SubstSym,
-    SubstSym1,
-    SubstSym2,
-  )
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1, ToCon2)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1, ToSym2)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
+  ( EvalSym,
+    EvalSym1,
+    EvalSym2,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
+  ( ExtractSym,
+    ExtractSym1,
+    ExtractSym2,
+  )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
   ( PPrint,
     PPrint1,
     PPrint2,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
+  ( SubstSym,
+    SubstSym1,
+    SubstSym2,
   )
 import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( SymEq,

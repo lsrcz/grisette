@@ -112,26 +112,40 @@ library
       Grisette.Internal.Core.Data.Symbol
       Grisette.Internal.Core.Data.UnionBase
       Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
+      Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
+      Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
       Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
       Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
       Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
       Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
       Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
       Grisette.Internal.Internal.Decl.Core.Data.UnionBase
       Grisette.Internal.Internal.Decl.Unified.BVFPConversion
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
       Grisette.Internal.Internal.Decl.Unified.EvalMode
       Grisette.Internal.Internal.Decl.Unified.FPFPConversion
       Grisette.Internal.Internal.Decl.Unified.UnifiedBool
       Grisette.Internal.Internal.Decl.Unified.UnifiedBV
       Grisette.Internal.Internal.Decl.Unified.UnifiedFP
       Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
+      Grisette.Internal.Internal.Impl.Core.Data.Class.EvalSym
+      Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym
       Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
       Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
       Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
       Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
       Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
       Grisette.Internal.Internal.Impl.Core.Data.UnionBase
       Grisette.Internal.Internal.Impl.Unified.BVFPConversion
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
       Grisette.Internal.Internal.Impl.Unified.EvalMode
       Grisette.Internal.Internal.Impl.Unified.FPFPConversion
       Grisette.Internal.Internal.Impl.Unified.UnifiedBool
@@ -220,14 +234,6 @@ library
       Grisette.Internal.Unified.BaseMonad
       Grisette.Internal.Unified.BVBVConversion
       Grisette.Internal.Unified.BVFPConversion
-      Grisette.Internal.Unified.Class.Internal.Instances.UnifiedITEOp
-      Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSimpleMergeable
-      Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSymEq
-      Grisette.Internal.Unified.Class.Internal.Instances.UnifiedSymOrd
-      Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
-      Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
-      Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
-      Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
       Grisette.Internal.Unified.Class.UnifiedFiniteBits
       Grisette.Internal.Unified.Class.UnifiedFromIntegral
       Grisette.Internal.Unified.Class.UnifiedITEOp

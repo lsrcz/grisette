@@ -18,7 +18,7 @@ module Grisette.Internal.TH.GADT.DeriveSubstSym
   )
 where
 
-import Grisette.Internal.Core.Data.Class.SubstSym
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
   ( SubstSym (substSym),
     SubstSym1 (liftSubstSym),
     SubstSym2 (liftSubstSym2),
@@ -27,10 +27,11 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig, unaryOpAllowExistential
+        unaryOpInstanceTypeFromConfig
       ),
     UnaryOpConfig (UnaryOpField),
     UnaryOpFieldConfig

@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
+{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- |
 -- Module      :   Grisette.Internal.TH.GADT.DeriveExtractSym
@@ -18,7 +18,7 @@ module Grisette.Internal.TH.GADT.DeriveExtractSym
   )
 where
 
-import Grisette.Internal.Core.Data.Class.ExtractSym
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
   ( ExtractSym (extractSymMaybe),
     ExtractSym1 (liftExtractSymMaybe),
     ExtractSym2 (liftExtractSymMaybe2),
@@ -63,8 +63,11 @@ extractSymConfig =
               { extraPatNames = [],
                 extraLiftedPatNames = const [],
                 fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ _ _ exp -> do
-                  return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+                fieldCombineFun = \_ _ _ _ exp ->
+                  if null exp
+                    then (,[]) <$> [|return mempty|]
+                    else
+                      return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
                 fieldFunExp =
                   defaultFieldFunExp
                     [ 'extractSymMaybe,
