@@ -14,18 +14,10 @@ module Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
   )
 where
 
-import Control.Monad.Identity (Identity (runIdentity))
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
-import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp)
-import qualified Grisette.Internal.Core.Data.Class.ITEOp
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import qualified Grisette.Internal.Core.Data.Class.PlainUnion
-import Grisette.Internal.Unified.BaseMonad (BaseMonad)
-import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S), IsConMode)
-import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
-import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
+import Grisette.Internal.Unified.EvalModeTag (IsConMode)
 
 -- | A class that provides unified equality comparison.
 --

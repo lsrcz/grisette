@@ -27,6 +27,7 @@ module Grisette.Internal.Core.Data.Class.PlainUnion
     onUnion2,
     onUnion3,
     onUnion4,
+    unionToCon,
   )
 where
 
@@ -44,6 +45,7 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
     mrgIf,
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
@@ -223,3 +225,13 @@ onUnion4 ::
 onUnion4 f ua ub uc ud =
   simpleMerge $
     f <$> tryMerge ua <*> tryMerge ub <*> tryMerge uc <*> tryMerge ud
+
+unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
+unionToCon u = 
+  case (singleView u, ifView u) of
+    (Just x, _) -> toCon x
+    (_, Just (c, l, r)) -> do
+      cl <- toCon c
+      if cl then unionToCon l else unionToCon r
+    _ -> Nothing
+{-# INLINE unionToCon #-}

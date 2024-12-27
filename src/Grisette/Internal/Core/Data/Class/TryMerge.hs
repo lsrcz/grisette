@@ -15,6 +15,8 @@ module Grisette.Internal.Core.Data.Class.TryMerge
     MonadTryMerge,
     mrgSingle,
     mrgSingleWithStrategy,
+    mrgToSym,
+    toUnionSym,
   )
 where
 
@@ -41,6 +43,7 @@ import Grisette.Internal.Core.Data.Class.Mergeable
     Mergeable3 (liftRootStrategy3),
     MergingStrategy,
   )
+import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
 
 -- $setup
 -- >>> import Grisette.Core
@@ -209,3 +212,24 @@ instance (TryMerge f, TryMerge g) => TryMerge (Sum f g) where
 instance TryMerge Monoid.Sum where
   tryMergeWithStrategy _ = id
   {-# INLINE tryMergeWithStrategy #-}
+
+-- | Convert a value to symbolic value and wrap it with a mergeable container.
+--
+-- This is a synonym for 'toUnionSym'.
+mrgToSym ::
+  (ToSym a b, Mergeable b, TryMerge m, Applicative m) =>
+  a ->
+  m b
+mrgToSym = toUnionSym
+{-# INLINE mrgToSym #-}
+
+-- | Convert a value to symbolic value and wrap it with a mergeable container.
+--
+-- This is a synonym for 'toUnionSym'.
+toUnionSym ::
+  (ToSym a b, Mergeable b, TryMerge m, Applicative m) =>
+  a ->
+  m b
+toUnionSym = tryMerge . pure . toSym
+{-# INLINE toUnionSym #-}
+

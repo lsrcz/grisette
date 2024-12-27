@@ -21,32 +21,14 @@ module Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
   )
 where
 
--- import Control.Monad.Identity (Identity (runIdentity))
-import Data.Functor.Classes
-  ( Ord1 (liftCompare),
-    Ord2 (liftCompare2),
-    compare1,
-    compare2,
-  )
+import Data.Functor.Classes (Ord1, Ord2)
 import Data.Type.Bool (If)
 import Grisette.Internal.Core.Data.Class.Internal.SymOrd
   ( SymOrd,
     SymOrd1,
     SymOrd2,
   )
--- import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
--- import Grisette.Internal.Core.Data.Class.TryMerge (tryMerge)
--- import Grisette.Internal.Unified.BaseMonad (BaseMonad)
--- import Grisette.Internal.Unified.Class.UnifiedITEOp
---   ( UnifiedITEOp (withBaseITEOp),
---   )
--- import Grisette.Internal.Unified.Class.UnifiedSimpleMergeable
---   ( UnifiedBranching (withBaseBranching),
---   )
 import Grisette.Internal.Unified.EvalModeTag (IsConMode)
-
--- import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
--- import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
 
 -- | A class that provides unified comparison.
 --

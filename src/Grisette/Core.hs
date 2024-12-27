@@ -835,8 +835,6 @@ module Grisette.Core
     unionMergingStrategy,
     liftToMonadUnion,
     unionSize,
-    toUnionSym,
-    unionToCon,
 
     -- ** Mergeable
     Mergeable (..),
@@ -1383,12 +1381,15 @@ module Grisette.Core
     GToCon (..),
     genericToCon,
     genericLiftToCon,
+    unionToCon,
 
     -- *** 'ToSym'
     ToSymArgs (..),
     GToSym (..),
     genericToSym,
     genericLiftToSym,
+    mrgToSym,
+    toUnionSym,
 
     -- *** 'EvalSym'
     EvalSymArgs (..),
@@ -1443,11 +1444,9 @@ import Grisette.Internal.Core.Control.Monad.Union
     Union,
     liftToMonadUnion,
     liftUnion,
-    toUnionSym,
     unionBinOp,
     unionMergingStrategy,
     unionSize,
-    unionToCon,
     unionUnaryOp,
   )
 import Grisette.Internal.Core.Data.Class.BitCast
@@ -1649,6 +1648,7 @@ import Grisette.Internal.Core.Data.Class.PlainUnion
     onUnion3,
     onUnion4,
     simpleMerge,
+    unionToCon,
     (.#),
     pattern If,
     pattern Single,
@@ -1805,6 +1805,8 @@ import Grisette.Internal.Core.Data.Class.TryMerge
     TryMerge (..),
     mrgSingle,
     mrgSingleWithStrategy,
+    mrgToSym,
+    toUnionSym,
     tryMerge,
   )
 import Grisette.Internal.Core.Data.MemoUtils
