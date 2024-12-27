@@ -22,4 +22,4 @@ module Grisette.Internal.Core.Data.Class.SafeDiv
 where
 
 import Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
-import Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
+import Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv ()

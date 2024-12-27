@@ -22,7 +22,7 @@ module Grisette.Internal.TH.GADT.DeriveEvalSym
   )
 where
 
-import Grisette.Internal.Core.Data.Class.EvalSym
+import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
   ( EvalSym (evalSym),
     EvalSym1 (liftEvalSym),
     EvalSym2 (liftEvalSym2),
