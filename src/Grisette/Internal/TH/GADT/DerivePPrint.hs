@@ -20,7 +20,7 @@ where
 import Data.Maybe (fromMaybe)
 import Data.String (IsString (fromString))
 import GHC.Show (appPrec1)
-import Grisette.Internal.Core.Data.Class.Internal.PPrint
+import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
   ( PPrint (pformatList, pformatPrec),
     PPrint1 (liftPFormatList, liftPFormatPrec),
     PPrint2 (liftPFormatList2, liftPFormatPrec2),

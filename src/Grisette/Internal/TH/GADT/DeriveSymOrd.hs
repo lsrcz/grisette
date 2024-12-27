@@ -16,12 +16,12 @@ module Grisette.Internal.TH.GADT.DeriveSymOrd
   )
 where
 
-import Grisette.Internal.Core.Data.Class.Internal.SymOrd
+import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
   ( SymOrd (symCompare),
     SymOrd1 (liftSymCompare),
     SymOrd2 (liftSymCompare2),
   )
-import Grisette.Internal.Core.Data.Class.TryMerge (mrgSingle)
 import Grisette.Internal.TH.GADT.BinaryOpCommon
   ( BinaryOpClassConfig
       ( BinaryOpClassConfig,

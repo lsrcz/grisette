@@ -16,7 +16,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.PPrint
+module Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
   ( -- * Pretty printing
     PPrint (..),
     docToTextWith,

@@ -30,5 +30,5 @@ module Grisette.Internal.Core.Data.Class.SymOrd
   )
 where
 
-import Grisette.Internal.Core.Data.Class.Internal.Instances.SymOrd ()
-import Grisette.Internal.Core.Data.Class.Internal.SymOrd
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+import Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd ()

@@ -15,7 +15,7 @@ import Control.Monad (foldM, replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
-import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Internal.Decl.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.PlainUnion (unionToCon)
 import Grisette.Internal.Core.Data.Class.TryMerge (toUnionSym)
 import Grisette.Internal.TH.GADT.Common

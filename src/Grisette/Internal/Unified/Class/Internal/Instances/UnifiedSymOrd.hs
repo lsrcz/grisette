@@ -39,7 +39,12 @@ import Control.Monad.Trans.Maybe (MaybeT)
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
-import Data.Functor.Classes (Ord1 (liftCompare), Ord2 (liftCompare2), compare1, compare2)
+import Data.Functor.Classes
+  ( Ord1 (liftCompare),
+    Ord2 (liftCompare2),
+    compare1,
+    compare2,
+  )
 import Data.Functor.Sum (Sum)
 import Data.Int (Int16, Int32, Int64, Int8)
 import Data.Ratio (Ratio)
@@ -51,14 +56,14 @@ import Grisette.Internal.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Internal.Core.Control.Monad.Union (Union)
-import Grisette.Internal.Core.Data.Class.Internal.SymOrd
+import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
+import Grisette.Internal.Core.Data.Class.TryMerge (tryMerge)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
   ( SymOrd,
     SymOrd1,
     SymOrd2,
   )
-import qualified Grisette.Internal.Core.Data.Class.Internal.SymOrd as SymOrd
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.TryMerge (tryMerge)
+import qualified Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd as SymOrd
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.TH.DeriveUnifiedInterface
@@ -66,8 +71,12 @@ import Grisette.Internal.TH.DeriveUnifiedInterface
     deriveUnifiedInterface1s,
   )
 import Grisette.Internal.Unified.BaseMonad (BaseMonad)
-import Grisette.Internal.Unified.Class.Internal.UnifiedITEOp (UnifiedITEOp (withBaseITEOp))
-import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable (UnifiedBranching (withBaseBranching))
+import Grisette.Internal.Unified.Class.Internal.UnifiedITEOp
+  ( UnifiedITEOp (withBaseITEOp),
+  )
+import Grisette.Internal.Unified.Class.Internal.UnifiedSimpleMergeable
+  ( UnifiedBranching (withBaseBranching),
+  )
 import Grisette.Internal.Unified.Class.Internal.UnifiedSymOrd
   ( UnifiedSymOrd (withBaseSymOrd),
     UnifiedSymOrd1 (withBaseSymOrd1),

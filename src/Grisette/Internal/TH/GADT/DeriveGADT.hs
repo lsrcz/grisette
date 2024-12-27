@@ -42,21 +42,6 @@ import Grisette.Internal.Core.Data.Class.ExtractSym
     ExtractSym1,
     ExtractSym2,
   )
-import Grisette.Internal.Core.Data.Class.Internal.PPrint
-  ( PPrint,
-    PPrint1,
-    PPrint2,
-  )
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
-  ( SymEq,
-    SymEq1,
-    SymEq2,
-  )
-import Grisette.Internal.Core.Data.Class.Internal.SymOrd
-  ( SymOrd,
-    SymOrd1,
-    SymOrd2,
-  )
 import Grisette.Internal.Core.Data.Class.Mergeable
   ( Mergeable,
     Mergeable1,
@@ -75,6 +60,21 @@ import Grisette.Internal.Core.Data.Class.SubstSym
   )
 import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1, ToCon2)
 import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1, ToSym2)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+  ( PPrint,
+    PPrint1,
+    PPrint2,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+  ( SymEq,
+    SymEq1,
+    SymEq2,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+  ( SymOrd,
+    SymOrd1,
+    SymOrd2,
+  )
 import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
 import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig

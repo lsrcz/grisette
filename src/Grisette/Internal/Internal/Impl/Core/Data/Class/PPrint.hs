@@ -7,14 +7,14 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.Instances.PPrint () where
+module Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint () where
 
-import Control.Monad.Except (ExceptT (ExceptT))
+import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity
   ( Identity (Identity),
     IdentityT (IdentityT),
   )
-import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
+import Control.Monad.Trans.Maybe (MaybeT)
 import qualified Control.Monad.Writer.Lazy as WriterLazy
 import qualified Control.Monad.Writer.Strict as WriterStrict
 import qualified Data.ByteString as B
@@ -47,13 +47,15 @@ import GHC.TypeLits (KnownNat, type (<=))
 import Generics.Deriving
   ( Default (Default),
     Default1 (Default1),
-    U1, (:+:),
+    U1,
+    (:+:),
   )
 import Grisette.Internal.Core.Control.Exception
   ( AssertionError,
     VerificationConditions,
   )
-import Grisette.Internal.Core.Data.Class.Internal.PPrint
+import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
   ( Doc,
     PPrint (pformat, pformatList, pformatPrec),
     PPrint1 (liftPFormatList, liftPFormatPrec),
@@ -63,11 +65,9 @@ import Grisette.Internal.Core.Data.Class.Internal.PPrint
     pformatListLike,
     pformatPrec1,
     pformatWithConstructor,
-    prettyPrintTuple,
     viaShow,
     viaShowsPrec,
   )
-import Grisette.Internal.Core.Data.Symbol (Identifier, Symbol)
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
@@ -102,10 +102,7 @@ import Grisette.Internal.SymPrim.SymGeneralFun (type (-~>) (SymGeneralFun))
 import Grisette.Internal.SymPrim.SymInteger (SymInteger (SymInteger))
 import Grisette.Internal.SymPrim.SymTabularFun (type (=~>) (SymTabularFun))
 import Grisette.Internal.SymPrim.TabularFun (type (=->))
-import Grisette.Internal.TH.DeriveBuiltin (deriveBuiltins)
-import Grisette.Internal.TH.DeriveInstanceProvider
-  ( Strategy (ViaDefault, ViaDefault1),
-  )
+import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
 
 #define FORMAT_SIMPLE(type) \
 instance PPrint type where pformatPrec = viaShowsPrec showsPrec
@@ -195,45 +192,16 @@ FORMAT_SYM_FUN(-~>, SymGeneralFun)
 instance (ValidFP eb sb) => PPrint (SymFP eb sb) where
   pformat (SymFP t) = prettyPrintTerm t
 
-
-
--- Instance
-deriveBuiltins
-  (ViaDefault ''PPrint)
-  [''PPrint]
-  [ ''Maybe,
-    ''Either,
-    ''(),
-    ''(,),
-    ''(,,),
-    ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
+deriveGADT
+  [ ''(),
     ''AssertionError,
     ''VerificationConditions,
-    ''NotRepresentableFPError,
-    ''Monoid.Dual,
-    ''Monoid.Sum,
-    ''Monoid.Product,
-    ''Monoid.First,
-    ''Monoid.Last,
-    ''Down
+    ''NotRepresentableFPError
   ]
+  [''PPrint]
 
-deriveBuiltins
-  (ViaDefault1 ''PPrint1)
-  [''PPrint, ''PPrint1]
-  [ ''Maybe,
-    ''Either,
+deriveGADT
+  [ ''Either,
     ''(,),
     ''(,,),
     ''(,,,),
@@ -247,14 +215,24 @@ deriveBuiltins
     ''(,,,,,,,,,,,),
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
+    ''(,,,,,,,,,,,,,,)
+  ]
+  [''PPrint, ''PPrint1, ''PPrint2]
+
+deriveGADT
+  [ ''Maybe,
     ''Monoid.Dual,
-    ''Monoid.Sum,
-    ''Monoid.Product,
     ''Monoid.First,
     ''Monoid.Last,
-    ''Down
+    ''Monoid.Sum,
+    ''Monoid.Product,
+    ''Down,
+    ''MaybeT,
+    ''ExceptT,
+    ''WriterLazy.WriterT,
+    ''WriterStrict.WriterT
   ]
+  [''PPrint, ''PPrint1]
 
 -- Identity
 instance (PPrint a) => PPrint (Identity a) where
@@ -262,83 +240,6 @@ instance (PPrint a) => PPrint (Identity a) where
 
 instance PPrint1 Identity where
   liftPFormatPrec f _ n (Identity a) = f n a
-
--- MaybeT
-instance
-  (PPrint1 m, PPrint a) =>
-  PPrint (MaybeT m a)
-  where
-  pformatPrec = pformatPrec1
-
-instance
-  (PPrint1 m) =>
-  PPrint1 (MaybeT m)
-  where
-  liftPFormatPrec f l n (MaybeT a) =
-    pformatWithConstructor
-      n
-      "MaybeT"
-      [liftPFormatPrec (liftPFormatPrec f l) (liftPFormatList f l) 11 a]
-
--- ExceptT
-instance
-  (PPrint1 m, PPrint e, PPrint a) =>
-  PPrint (ExceptT e m a)
-  where
-  pformatPrec = pformatPrec1
-
-instance
-  (PPrint1 m, PPrint e) =>
-  PPrint1 (ExceptT e m)
-  where
-  liftPFormatPrec f l n (ExceptT a) =
-    pformatWithConstructor
-      n
-      "ExceptT"
-      [liftPFormatPrec (liftPFormatPrec f l) (liftPFormatList f l) 11 a]
-
--- WriterT
-instance
-  (PPrint1 m, PPrint a, PPrint w) =>
-  PPrint (WriterLazy.WriterT w m a)
-  where
-  pformatPrec = pformatPrec1
-
-instance
-  (PPrint1 m, PPrint w) =>
-  PPrint1 (WriterLazy.WriterT w m)
-  where
-  liftPFormatPrec f l n (WriterLazy.WriterT a) =
-    pformatWithConstructor
-      n
-      "WriterT"
-      [ liftPFormatPrec
-          (liftPFormatPrec2 f l pformatPrec pformatList)
-          (liftPFormatList2 f l pformatPrec pformatList)
-          11
-          a
-      ]
-
-instance
-  (PPrint1 m, PPrint a, PPrint w) =>
-  PPrint (WriterStrict.WriterT w m a)
-  where
-  pformatPrec = pformatPrec1
-
-instance
-  (PPrint1 m, PPrint w) =>
-  PPrint1 (WriterStrict.WriterT w m)
-  where
-  liftPFormatPrec f l n (WriterStrict.WriterT a) =
-    pformatWithConstructor
-      n
-      "WriterT"
-      [ liftPFormatPrec
-          (liftPFormatPrec2 f l pformatPrec pformatList)
-          (liftPFormatList2 f l pformatPrec pformatList)
-          11
-          a
-      ]
 
 -- IdentityT
 instance (PPrint1 m, PPrint a) => PPrint (IdentityT m a) where
@@ -436,25 +337,6 @@ deriving via
   (Default ((f :.: g) p))
   instance
     (PPrint (f (g p))) => PPrint ((f :.: g) p)
-
--- PPrint2
-instance PPrint2 Either where
-  liftPFormatPrec2 fe _ _ _ n (Left e) =
-    pformatWithConstructor n "Left" [fe 11 e]
-  liftPFormatPrec2 _ _ fa _ n (Right a) =
-    pformatWithConstructor n "Right" [fa 11 a]
-
-instance PPrint2 (,) where
-  liftPFormatPrec2 fa _ fb _ _ (a, b) =
-    prettyPrintTuple [fa 0 a, fb 0 b]
-
-instance (PPrint a) => PPrint2 ((,,) a) where
-  liftPFormatPrec2 fb _ fc _ _ (a, b, c) =
-    prettyPrintTuple [pformat a, fb 0 b, fc 0 c]
-
-instance (PPrint a, PPrint b) => PPrint2 ((,,,) a b) where
-  liftPFormatPrec2 fc _ fd _ _ (a, b, c, d) =
-    prettyPrintTuple [pformat a, pformat b, fc 0 c, fd 0 d]
 
 instance (PPrint a) => PPrint (HS.HashSet a) where
   pformatPrec = pformatPrec1

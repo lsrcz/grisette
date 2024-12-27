@@ -45,12 +45,12 @@ import Grisette.Internal.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Internal.Core.Control.Monad.Union (Union)
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( SymEq,
     SymEq1,
     SymEq2,
   )
-import qualified Grisette.Internal.Core.Data.Class.Internal.SymEq as SymEq
+import qualified Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq as SymEq
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
 import Grisette.Internal.TH.DeriveUnifiedInterface

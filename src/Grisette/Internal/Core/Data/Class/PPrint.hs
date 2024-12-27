@@ -53,5 +53,5 @@ import Prettyprinter
 import Data.Text.Prettyprint.Doc as Prettyprinter
 #endif
 
-import Grisette.Internal.Core.Data.Class.Internal.PPrint
-import Grisette.Internal.Core.Data.Class.Internal.Instances.PPrint ()
+import Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+import Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint

@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.SymEq
+module Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( -- * Symbolic equality
     SymEq (..),
     SymEq1 (..),

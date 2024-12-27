@@ -28,5 +28,5 @@ module Grisette.Internal.Core.Data.Class.SymEq
   )
 where
 
-import Grisette.Internal.Core.Data.Class.Internal.Instances.SymEq ()
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+import Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq ()

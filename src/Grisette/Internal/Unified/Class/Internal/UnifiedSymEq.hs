@@ -20,19 +20,14 @@ module Grisette.Internal.Unified.Class.Internal.UnifiedSymEq
   )
 where
 
-import Data.Functor.Classes (Eq1 (liftEq), Eq2 (liftEq2), eq1, eq2)
+import Data.Functor.Classes (Eq1, Eq2)
 import Data.Type.Bool (If)
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
   ( SymEq,
     SymEq1,
     SymEq2,
   )
-import qualified Grisette.Internal.Core.Data.Class.Internal.SymEq as SymEq
-import Grisette.Internal.Internal.Decl.Unified.UnifiedBool
-  ( UnifiedBool (GetBool),
-  )
 import Grisette.Internal.Unified.EvalModeTag (IsConMode)
-import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
 
 -- | A class that provides unified equality comparison.
 --

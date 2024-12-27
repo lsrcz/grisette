@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.Instances.SymOrd () where
+module Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd () where
 
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity
@@ -49,12 +49,6 @@ import Grisette.Internal.Core.Control.Exception
     VerificationConditions,
   )
 import Grisette.Internal.Core.Control.Monad.Union (Union)
-import Grisette.Internal.Core.Data.Class.Internal.SymOrd
-  ( SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
-    SymOrd1 (liftSymCompare),
-    SymOrd2,
-    symCompare1,
-  )
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
   )
@@ -71,6 +65,12 @@ import Grisette.Internal.Core.Data.Class.SymEq
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+  ( SymOrd (symCompare, (.<), (.<=), (.>), (.>=)),
+    SymOrd1 (liftSymCompare),
+    SymOrd2,
+    symCompare1,
   )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
 import Grisette.Internal.SymPrim.BV (IntN, WordN)

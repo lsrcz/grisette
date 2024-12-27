@@ -13,7 +13,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Grisette.Internal.Core.Data.Class.Internal.SymOrd
+module Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
   ( -- * Symbolic total order relation
     SymOrd (..),
     SymOrd1 (..),
@@ -51,14 +51,7 @@ import Generics.Deriving
     type (:*:) ((:*:)),
     type (:+:) (L1, R1),
   )
-import Grisette.Internal.Core.Control.Monad.Union (Union)
 import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp, symIte)
-import Grisette.Internal.Core.Data.Class.Internal.SymEq
-  ( GSymEq,
-    SymEq ((.==)),
-    SymEq1,
-    SymEq2,
-  )
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot),
   )
@@ -73,6 +66,13 @@ import Grisette.Internal.Core.Data.Class.SimpleMergeable
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
 import Grisette.Internal.Core.Data.Class.TryMerge
   ( mrgSingle,
+  )
+import Grisette.Internal.Internal.Decl.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+  ( GSymEq,
+    SymEq ((.==)),
+    SymEq1,
+    SymEq2,
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
 import Grisette.Internal.Utils.Derive (Arity0, Arity1)
