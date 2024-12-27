@@ -15,11 +15,9 @@ import Control.Monad (foldM, replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
-import Grisette.Internal.Core.Control.Monad.Union
-  ( Union,
-    toUnionSym,
-    unionToCon,
-  )
+import Grisette.Internal.Core.Control.Monad.Union (Union)
+import Grisette.Internal.Core.Data.Class.PlainUnion (unionToCon)
+import Grisette.Internal.Core.Data.Class.TryMerge (toUnionSym)
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult (argVars, constructors, keptVars),
     DeriveConfig
@@ -126,6 +124,49 @@ funPatAndExps fieldFunExpGen argTypes fields = do
   defaultFieldFunExps <- traverse (fieldFunExpGen argToFunPat) fields
   return (funPats, defaultFieldFunExps)
 
+tagPair ::
+  DeriveConfig ->
+  EvalModeTag ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  [(Type, Type)]
+tagPair deriveConfig convertOpTarget lhsKeptVars rhsKeptVars =
+  let conKeptVars =
+        if convertOpTarget == S then lhsKeptVars else rhsKeptVars
+      symKeptVars =
+        if convertOpTarget == S then rhsKeptVars else lhsKeptVars
+   in mapMaybe
+        ( \case
+            (n, EvalModeConstraints _)
+              | n < length conKeptVars && n >= 0 ->
+                  Just (fst $ conKeptVars !! n, fst $ symKeptVars !! n)
+            _ -> Nothing
+        )
+        (evalModeConfig deriveConfig)
+
+caseSplitTagPairs ::
+  DeriveConfig ->
+  EvalModeTag ->
+  [(Type, Kind)] ->
+  [(Type, Kind)] ->
+  Exp ->
+  Q Exp
+caseSplitTagPairs deriveConfig convertOpTarget lhsKeptVars rhsKeptVars exp = do
+  let tags = tagPair deriveConfig convertOpTarget lhsKeptVars rhsKeptVars
+  foldM
+    ( \exp (lty, rty) ->
+        [|
+          withModeConvertible'
+            @($(return lty))
+            @($(return rty))
+            $(return exp)
+            $(return exp)
+            $(return exp)
+          |]
+    )
+    exp
+    tags
+
 genConvertOpFieldClause ::
   DeriveConfig ->
   ConvertOpClassConfig ->
@@ -136,7 +177,7 @@ genConvertOpFieldClause ::
   ConstructorInfo ->
   Q Clause
 genConvertOpFieldClause
-  DeriveConfig {..}
+  deriveConfig@DeriveConfig {..}
   ConvertOpClassConfig {..}
   lhsKeptTypes
   rhsKeptTypes
@@ -154,33 +195,40 @@ genConvertOpFieldClause
     let transformPat (VarP nm) =
           if S.member nm resUsedNames then VarP nm else WildP
         transformPat p = p
-    let conKeptVars =
-          if convertOpTarget == S then lhsKeptTypes else rhsKeptTypes
-    let symKeptVars =
-          if convertOpTarget == S then rhsKeptTypes else lhsKeptTypes
-    let tags =
-          mapMaybe
-            ( \case
-                (n, EvalModeConstraints _)
-                  | n < length conKeptVars && n >= 0 ->
-                      Just (fst $ conKeptVars !! n, fst $ symKeptVars !! n)
-                _ -> Nothing
-            )
-            evalModeConfig
     resExpWithTags <-
-      foldM
-        ( \exp (lty, rty) ->
-            [|
-              withModeConvertible'
-                @($(return lty))
-                @($(return rty))
-                $(return exp)
-                $(return exp)
-                $(return exp)
-              |]
-        )
+      caseSplitTagPairs
+        deriveConfig
+        convertOpTarget
+        lhsKeptTypes
+        rhsKeptTypes
         resExp
-        tags
+    -- let conKeptVars =
+    --       if convertOpTarget == S then lhsKeptTypes else rhsKeptTypes
+    -- let symKeptVars =
+    --       if convertOpTarget == S then rhsKeptTypes else lhsKeptTypes
+    -- let tags =
+    --       mapMaybe
+    --         ( \case
+    --             (n, EvalModeConstraints _)
+    --               | n < length conKeptVars && n >= 0 ->
+    --                   Just (fst $ conKeptVars !! n, fst $ symKeptVars !! n)
+    --             _ -> Nothing
+    --         )
+    --         evalModeConfig
+    -- resExpWithTags <-
+    --   foldM
+    --     ( \exp (lty, rty) ->
+    --         [|
+    --           withModeConvertible'
+    --             @($(return lty))
+    --             @($(return rty))
+    --             $(return exp)
+    --             $(return exp)
+    --             $(return exp)
+    --           |]
+    --     )
+    --     resExp
+    --     tags
     return $
       Clause
         (fmap transformPat $ funPats ++ [fieldPats])
@@ -397,16 +445,12 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
             AppT
               (AppT (ConT instanceName) (AppT (ConT ''Union) lKeptType))
               rKeptType
-  instanceUnionFun <-
-    case convertOpTarget of
-      S ->
-        funD
-          (head convertOpFunNames)
-          [clause [] (normalB [|toUnionSym|]) []]
-      C ->
-        funD
-          (head convertOpFunNames)
-          [clause [] (normalB [|unionToCon|]) []]
+  instanceUnionFun <- do
+    resExp <-
+      if convertOpTarget == S
+        then varE 'toUnionSym
+        else varE 'unionToCon
+    funD (head convertOpFunNames) [clause [] (normalB $ return resExp) []]
 
   return $
     InstanceD
