@@ -98,7 +98,10 @@ import Grisette.Internal.Core.Data.Class.SymRotate
 import Grisette.Internal.Core.Data.Class.SymShift
   ( SymShift (symShift, symShiftNegated),
   )
-import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+  ( AllSyms (allSymsS),
+    SomeSym (SomeSym),
+  )
 import Grisette.Internal.SymPrim.BV
   ( IntN,
     WordN,

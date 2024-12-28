@@ -122,8 +122,11 @@ library
       Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
       Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
       Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
+      Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
       Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
       Grisette.Internal.Internal.Decl.Core.Data.UnionBase
+      Grisette.Internal.Internal.Decl.SymPrim.AllSyms
       Grisette.Internal.Internal.Decl.Unified.BVFPConversion
       Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
       Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
@@ -145,8 +148,11 @@ library
       Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
       Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
       Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Impl.Core.Data.Class.ToCon
+      Grisette.Internal.Internal.Impl.Core.Data.Class.ToSym
       Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge
       Grisette.Internal.Internal.Impl.Core.Data.UnionBase
+      Grisette.Internal.Internal.Impl.SymPrim.AllSyms
       Grisette.Internal.Internal.Impl.Unified.BVFPConversion
       Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
       Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable

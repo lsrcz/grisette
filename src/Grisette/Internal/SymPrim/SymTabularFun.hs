@@ -36,7 +36,10 @@ import Grisette.Internal.Core.Data.Class.Function
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
-import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+  ( AllSyms (allSymsS),
+    SomeSym (SomeSym),
+  )
 import Grisette.Internal.SymPrim.Prim.Term
   ( ConRep (ConType),
     LinkedRep (underlyingTerm, wrapTerm),

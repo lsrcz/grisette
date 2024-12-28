@@ -32,8 +32,6 @@ import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon, ToCon1, ToCon2)
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym, ToSym1, ToSym2)
 import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
   ( EvalSym,
     EvalSym1,
@@ -75,6 +73,21 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
     SymOrd1,
     SymOrd2,
   )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
+  ( ToCon,
+    ToCon1,
+    ToCon2,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
+  ( ToSym,
+    ToSym1,
+    ToSym2,
+  )
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+  ( AllSyms,
+    AllSyms1,
+    AllSyms2,
+  )
 import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
   ( UnifiedSimpleMergeable,
     UnifiedSimpleMergeable1,
@@ -90,7 +103,6 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
     UnifiedSymOrd1,
     UnifiedSymOrd2,
   )
-import Grisette.Internal.SymPrim.AllSyms (AllSyms, AllSyms1, AllSyms2)
 import Grisette.Internal.TH.GADT.Common
   ( DeriveConfig
       ( evalModeConfig,
