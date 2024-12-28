@@ -18,7 +18,7 @@ module Grisette.Internal.TH.GADT.DeriveAllSyms
   )
 where
 
-import Grisette.Internal.SymPrim.AllSyms
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
   ( AllSyms (allSymsS),
     AllSyms1 (liftAllSymsS),
     AllSyms2 (liftAllSymsS2),

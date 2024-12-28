@@ -96,7 +96,10 @@ import Grisette.Internal.Core.Data.Class.SymIEEEFP
         symFpIsZero
       ),
   )
-import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+  ( AllSyms (allSymsS),
+    SomeSym (SomeSym),
+  )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
 import Grisette.Internal.SymPrim.FP
   ( FP,

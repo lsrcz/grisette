@@ -58,7 +58,7 @@ import Generics.Deriving
     type (:+:) (L1, R1),
   )
 import Generics.Deriving.Instances ()
-import Grisette.Internal.Core.Data.Class.ToCon
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
   ( ToCon (toCon),
     ToCon1,
     ToCon2,

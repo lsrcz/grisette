@@ -26,8 +26,11 @@ import Grisette.Internal.Core.Data.Class.Function (Apply (FunType, apply))
 import Grisette.Internal.Core.Data.Class.Solvable
   ( Solvable (con, conView, ssym, sym),
   )
+import Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+  ( AllSyms (allSymsS),
+    SomeSym (SomeSym),
+  )
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
-import Grisette.Internal.SymPrim.AllSyms (AllSyms (allSymsS), SomeSym (SomeSym))
 import Grisette.Internal.SymPrim.Prim.Internal.Term
   ( FloatingUnaryOp
       ( FloatingAcos,

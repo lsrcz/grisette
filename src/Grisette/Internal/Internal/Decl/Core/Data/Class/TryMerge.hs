@@ -20,11 +20,11 @@ module Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   )
 where
 
-import Grisette.Internal.Core.Data.Class.ToSym (ToSym (toSym))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     MergingStrategy,
   )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym (ToSym (toSym))
 
 -- $setup
 -- >>> import Grisette.Core

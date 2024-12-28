@@ -10,7 +10,7 @@ module Grisette.Internal.TH.GADT.DeriveToSym
   )
 where
 
-import Grisette.Internal.Core.Data.Class.ToSym
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
   ( ToSym (toSym),
     ToSym1 (liftToSym),
     ToSym2 (liftToSym2),
