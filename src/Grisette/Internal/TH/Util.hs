@@ -42,7 +42,14 @@ module Grisette.Internal.TH.Util
 where
 
 #if MIN_VERSION_template_haskell(2,18,0)
-import Language.Haskell.TH.Syntax (addModFinalizer, putDoc, DocLoc(DeclDoc), NameFlavour (NameS, NameQ, NameG), Name (Name), OccName (OccName), ModName (ModName))
+import Language.Haskell.TH.Syntax
+  ( DocLoc (DeclDoc),
+    ModName (ModName),
+    Name (Name),
+    NameFlavour (NameG, NameQ, NameS),
+    addModFinalizer,
+    putDoc,
+  )
 #endif
 
 import Control.Monad (when)
@@ -70,7 +77,6 @@ import Language.Haskell.TH
       ),
     Info (ClassI),
     Kind,
-    Name,
     Pred,
     Q,
     Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),

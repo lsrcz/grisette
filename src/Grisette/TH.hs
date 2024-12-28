@@ -10,9 +10,6 @@
 -- Portability :   GHC only
 module Grisette.TH
   ( -- * Convenient derivation of all instances relating to Grisette
-    derive,
-    deriveAll,
-    deriveAllExcept,
     deriveGADT,
     deriveGADTWith,
     allClasses0,
@@ -54,9 +51,6 @@ module Grisette.TH
 
     -- ** Other helpers
     deriveWithHandlers,
-    derivePredefined,
-    derivePredefinedMultipleClasses,
-    deriveBuiltinExtra,
     deriveUnifiedInterfaceExtra,
     deriveUnifiedInterface1Extra,
     deriveFunctorArgUnifiedInterfaceExtra,
@@ -75,19 +69,9 @@ import Grisette.Internal.TH.Ctor.UnifiedConstructor
     makeUnifiedCtor,
     makeUnifiedCtorWith,
   )
-import Grisette.Internal.TH.DeriveBuiltin
-  ( deriveBuiltinExtra,
-  )
 import Grisette.Internal.TH.DeriveInstanceProvider
   ( DeriveInstanceProvider (..),
     Strategy (..),
-  )
-import Grisette.Internal.TH.DerivePredefined
-  ( derive,
-    deriveAll,
-    deriveAllExcept,
-    derivePredefined,
-    derivePredefinedMultipleClasses,
   )
 import Grisette.Internal.TH.DeriveTypeParamHandler
   ( DeriveTypeParamHandler (..),
