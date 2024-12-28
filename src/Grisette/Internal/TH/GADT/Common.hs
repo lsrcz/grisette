@@ -38,7 +38,7 @@ import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Set as S
 import GHC.TypeLits (KnownNat, Nat, type (<=))
-import Grisette.Internal.Core.Data.Class.Mergeable
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable,
     Mergeable1,
     Mergeable2,

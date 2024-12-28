@@ -25,10 +25,12 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpInstanceNames,
         unaryOpInstanceTypeFromConfig
       ),
-    UnaryOpConfig (UnaryOpUnified),
-    UnaryOpUnifiedConfig (UnaryOpUnifiedConfig, unifiedFun),
-    defaultUnaryOpUnifiedFun,
+    UnaryOpConfig (UnaryOpConfig),
     genUnaryOpClass,
+  )
+import Grisette.Internal.TH.GADT.UnifiedOpCommon
+  ( UnaryOpUnifiedConfig (UnaryOpUnifiedConfig, unifiedFun),
+    defaultUnaryOpUnifiedFun,
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 import Language.Haskell.TH
@@ -45,7 +47,7 @@ unifiedSimpleMergeableConfig :: UnaryOpClassConfig
 unifiedSimpleMergeableConfig =
   UnaryOpClassConfig
     { unaryOpConfigs =
-        [ UnaryOpUnified
+        [ UnaryOpConfig
             UnaryOpUnifiedConfig
               { unifiedFun =
                   defaultUnaryOpUnifiedFun

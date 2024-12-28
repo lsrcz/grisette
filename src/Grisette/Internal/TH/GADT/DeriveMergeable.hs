@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -21,6 +22,7 @@ module Grisette.Internal.TH.GADT.DeriveMergeable
     genMergeableAndGetMergingInfoResult,
     genMergeable,
     genMergeable',
+    genMergeableNoExistential,
   )
 where
 
@@ -28,7 +30,8 @@ import Control.Monad (foldM, replicateM, zipWithM)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, isJust, mapMaybe)
 import qualified Data.Set as S
-import Grisette.Internal.Core.Data.Class.Mergeable
+import Data.Word (Word16, Word32, Word64, Word8)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
     Mergeable2 (liftRootStrategy2),
@@ -51,29 +54,41 @@ import Grisette.Internal.TH.GADT.Common
     isVarUsedInFields,
     specializeResult,
   )
+import Grisette.Internal.TH.GADT.UnaryOpCommon (FieldFunExp, UnaryOpClassConfig (UnaryOpClassConfig, unaryOpAllowExistential, unaryOpConfigs, unaryOpExtraVars, unaryOpInstanceNames, unaryOpInstanceTypeFromConfig), UnaryOpConfig (UnaryOpConfig), UnaryOpFunConfig (genUnaryOpFun), defaultUnaryOpInstanceTypeFromConfig, genUnaryOpClass)
+import Grisette.Internal.TH.Util (dataTypeHasExistential, integerE, mangleName)
 import Language.Haskell.TH
   ( Bang (Bang),
     Body (NormalB),
     Clause (Clause),
     Con (ForallC, GadtC),
-    Dec (DataD, FunD, InstanceD, SigD),
+    Dec (DataD, FunD, InstanceD, PragmaD, SigD),
     Exp (AppE, ConE, VarE),
+    Inline (Inline),
     Kind,
     Name,
     Pat (SigP, VarP, WildP),
+    Phases (AllPhases),
+    Pragma (InlineP),
     Pred,
     Q,
+    RuleMatch (FunLike),
     SourceStrictness (NoSourceStrictness),
     SourceUnpackedness (NoSourceUnpackedness),
     Type (AppT, ArrowT, ConT, ForallT, StarT, VarT),
     appE,
+    caseE,
     conE,
+    conT,
+    integerL,
     lamE,
+    litP,
     lookupTypeName,
     mkName,
     nameBase,
     newName,
     normalB,
+    recP,
+    sigP,
     tupP,
     varE,
     varP,
@@ -90,6 +105,7 @@ import Language.Haskell.TH.Datatype
     DatatypeInfo (datatypeCons, datatypeName, datatypeVars),
     TypeSubstitution (applySubstitution, freeVariables),
     reifyDatatype,
+    resolveTypeSynonyms,
     tvName,
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
@@ -98,7 +114,7 @@ import Language.Haskell.TH.Datatype.TyVarBndr
     plainTVFlag,
     specifiedSpec,
   )
-import Language.Haskell.TH.Lib (clause, conP, litE, stringL)
+import Language.Haskell.TH.Lib (clause, conP, litE, match, stringL)
 import Type.Reflection (SomeTypeRep (SomeTypeRep), TypeRep, typeRep)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -109,7 +125,7 @@ genMergingInfoCon ::
   ConstructorInfo ->
   Q (Con, Name, [Clause], [Clause], [Clause])
 genMergingInfoCon dataTypeVars tyName isLast con = do
-  let conName = nameBase $ constructorName con
+  let conName = mangleName $ constructorName con
   let newConName = mkName $ conName <> "MergingInfo"
   let oriVars = dataTypeVars ++ constructorVars con
   newDataTypeVars <- traverse (newName . nameBase . tvName) dataTypeVars
@@ -220,7 +236,7 @@ data MergingInfoResult = MergingInfoResult
 genMergingInfo :: Name -> Q (MergingInfoResult, [Dec])
 genMergingInfo typName = do
   d <- reifyDatatype typName
-  let originalName = nameBase $ datatypeName d
+  let originalName = mangleName $ datatypeName d
   let newName = originalName <> "MergingInfo"
   found <- lookupTypeName newName
   let constructors = datatypeCons d
@@ -278,81 +294,64 @@ genMergeableAndGetMergingInfoResult deriveConfig typName n = do
   (_, decs) <- genMergeable' deriveConfig infoResult typName n
   return (infoResult, infoDec ++ decs)
 
--- | Generate 'Mergeable' instance for a GADT.
-genMergeable :: DeriveConfig -> Name -> Int -> Q [Dec]
-genMergeable deriveConfig typName n = do
-  (infoResult, infoDec) <- genMergingInfo typName
-  (_, decs) <- genMergeable' deriveConfig infoResult typName n
-  return $ infoDec ++ decs
+constructMergingStrategyExp :: ConstructorInfo -> [Exp] -> Q Exp
+constructMergingStrategyExp _ [] = [|SimpleStrategy $ \_ t _ -> t|]
+constructMergingStrategyExp conInfo [x] = do
+  upname <- newName "a"
+  let unwrapPat = conP (constructorName conInfo) [varP upname]
+  let unwrapFun = lamE [unwrapPat] $ appE (varE 'unsafeCoerce) (varE upname)
+  [|
+    wrapStrategy
+      $(return x)
+      (unsafeCoerce . $(conE $ constructorName conInfo))
+      $unwrapFun
+    |]
+constructMergingStrategyExp conInfo (x : xs) = do
+  upnames <- replicateM (length xs + 1) $ newName "a"
+  let wrapPat1 [] = error "Should not happen"
+      wrapPat1 [x] = varP x
+      wrapPat1 (x : xs) = tupP [varP x, wrapPat1 xs]
+  let wrapped = foldl AppE (ConE $ constructorName conInfo) $ fmap VarE upnames
+  let wrapFun =
+        lamE
+          [varP $ head upnames, wrapPat1 $ tail upnames]
+          [|unsafeCoerce ($(return wrapped))|]
+  let unwrapPat = conP (constructorName conInfo) $ fmap varP upnames
+  let unwrapExp1 [] = error "Should not happen"
+      unwrapExp1 [_] = error "Should not happen"
+      unwrapExp1 [x, y] =
+        [|(unsafeCoerce $(varE x), unsafeCoerce $(varE y))|]
+      unwrapExp1 (x : xs) = [|(unsafeCoerce $(varE x), $(unwrapExp1 xs))|]
+  let unwrapFun = lamE [unwrapPat] (unwrapExp1 upnames)
+  let strategy1 [] = error "Should not happen"
+      strategy1 [x] = return x
+      strategy1 (x : xs) =
+        [|
+          product2Strategy
+            ((,))
+            (\(x, y) -> (x, y))
+            $(return x)
+            $(strategy1 xs)
+          |]
+  [|
+    product2Strategy
+      $wrapFun
+      $unwrapFun
+      $(return x)
+      $(strategy1 xs)
+    |]
 
 genMergeFunClause' :: Name -> ConstructorInfo -> Q Clause
 genMergeFunClause' conInfoName con = do
   let numExistential = length $ constructorVars con
   let numFields = length $ constructorFields con
   let argWildCards = replicate numExistential wildP :: [Q Pat]
-  case numFields of
-    0 -> do
-      clause
-        [conP conInfoName argWildCards]
-        (normalB [|SimpleStrategy $ \_ t _ -> t|])
-        []
-    1 -> do
-      pname <- newName "s"
-      upname <- newName "a"
-      let unwrapPat = conP (constructorName con) [varP upname]
-      let unwrapFun = lamE [unwrapPat] $ appE (varE 'unsafeCoerce) (varE upname)
-      clause
-        [conP conInfoName $ argWildCards ++ [varP pname]]
-        ( normalB
-            [|
-              wrapStrategy
-                $(varE pname)
-                (unsafeCoerce . $(conE $ constructorName con))
-                $unwrapFun
-              |]
-        )
-        []
-    _ -> do
-      -- fail $ show (argWildCards, conInfoName)
-      pnames <- replicateM numFields $ newName "s"
-      upnames <- replicateM numFields $ newName "a"
-      let wrapPat1 [] = error "Should not happen"
-          wrapPat1 [x] = varP x
-          wrapPat1 (x : xs) = tupP [varP x, wrapPat1 xs]
-      let wrapped = foldl AppE (ConE $ constructorName con) $ fmap VarE upnames
-      let wrapFun =
-            lamE
-              [varP $ head upnames, wrapPat1 $ tail upnames]
-              [|unsafeCoerce ($(return wrapped))|]
-      let unwrapPat = conP (constructorName con) $ fmap varP upnames
-      let unwrapExp1 [] = error "Should not happen"
-          unwrapExp1 [_] = error "Should not happen"
-          unwrapExp1 [x, y] =
-            [|(unsafeCoerce $(varE x), unsafeCoerce $(varE y))|]
-          unwrapExp1 (x : xs) = [|(unsafeCoerce $(varE x), $(unwrapExp1 xs))|]
-      let unwrapFun = lamE [unwrapPat] (unwrapExp1 upnames)
-      let strategy1 [] = error "Should not happen"
-          strategy1 [x] = varE x
-          strategy1 (x : xs) =
-            [|
-              product2Strategy
-                ((,))
-                (\(x, y) -> (x, y))
-                $(varE x)
-                $(strategy1 xs)
-              |]
-      clause
-        ([conP conInfoName $ argWildCards ++ fmap varP pnames])
-        ( normalB
-            [|
-              product2Strategy
-                $wrapFun
-                $unwrapFun
-                $(varE $ head pnames)
-                $(strategy1 $ tail pnames)
-              |]
-        )
-        []
+
+  pnames <- replicateM numFields $ newName "s"
+  clause
+    ([conP conInfoName $ argWildCards ++ fmap varP pnames])
+    (normalB (constructMergingStrategyExp con (map VarE pnames)))
+    []
 
 constructVarPats :: ConstructorInfo -> Q Pat
 constructVarPats conInfo = do
@@ -443,6 +442,187 @@ genMergingInfoFunClause' argTypes conInfoName con = do
   -- fail $ show infoExp
   return $ Clause (strategyPats ++ [varPat]) (NormalB infoExp) []
 
+mergeableFieldFunExp :: [Name] -> FieldFunExp
+mergeableFieldFunExp unaryOpFunNames argToFunPat _ = go
+  where
+    go ty = do
+      let allArgNames = M.keysSet argToFunPat
+      let typeHasNoArg ty =
+            S.fromList (freeVariables [ty])
+              `S.intersection` allArgNames
+              == S.empty
+      let fun0a a = [|$(varE $ head unaryOpFunNames) @($(return a))|]
+          fun1a a b = [|$(varE $ unaryOpFunNames !! 1) @($(return a)) $(go b)|]
+          fun2a a b c =
+            [|
+              $(varE $ unaryOpFunNames !! 2)
+                @($(return a))
+                $(go b)
+                $(go c)
+              |]
+          fun3a a b c d =
+            [|
+              $(varE $ unaryOpFunNames !! 3)
+                @($(return a))
+                $(go b)
+                $(go c)
+                $(go d)
+              |]
+
+      case ty of
+        AppT (AppT (AppT a@(VarT _) b) c) d -> fun3a a b c d
+        AppT (AppT a@(VarT _) b) c -> fun2a a b c
+        AppT a@(VarT _) b -> fun1a a b
+        _ | typeHasNoArg ty -> fun0a ty
+        AppT a b | typeHasNoArg a -> fun1a a b
+        AppT (AppT a b) c | typeHasNoArg a -> fun2a a b c
+        AppT (AppT (AppT a b) c) d | typeHasNoArg a -> fun3a a b c d
+        VarT nm -> case M.lookup nm argToFunPat of
+          Just pname -> varE pname
+          _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
+        _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
+
+mergeableNoExistentialConfig :: UnaryOpClassConfig
+mergeableNoExistentialConfig =
+  UnaryOpClassConfig
+    { unaryOpConfigs =
+        [ UnaryOpConfig
+            MergeableNoExistentialConfig
+              { mergeableNoExistentialFun =
+                  mergeableFieldFunExp
+                    [ 'rootStrategy,
+                      'liftRootStrategy,
+                      'liftRootStrategy2,
+                      'liftRootStrategy3
+                    ]
+              }
+            [ 'rootStrategy,
+              'liftRootStrategy,
+              'liftRootStrategy2,
+              'liftRootStrategy3
+            ]
+        ],
+      unaryOpInstanceNames =
+        [''Mergeable, ''Mergeable1, ''Mergeable2, ''Mergeable3],
+      unaryOpExtraVars = const $ return [],
+      unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
+      unaryOpAllowExistential = False
+    }
+
+newtype MergeableNoExistentialConfig = MergeableNoExistentialConfig
+  { mergeableNoExistentialFun :: FieldFunExp
+  }
+
+instance UnaryOpFunConfig MergeableNoExistentialConfig where
+  genUnaryOpFun
+    _
+    MergeableNoExistentialConfig {..}
+    funNames
+    n
+    _
+    _
+    argTypes
+    _
+    constructors = do
+      allFields <-
+        mapM resolveTypeSynonyms $
+          concatMap constructorFields constructors
+      let usedArgs = S.fromList $ freeVariables allFields
+      args <-
+        traverse
+          ( \(ty, _) -> do
+              case ty of
+                VarT nm ->
+                  if S.member nm usedArgs
+                    then do
+                      pname <- newName "p"
+                      return (nm, Just pname)
+                    else return ('undefined, Nothing)
+                _ -> return ('undefined, Nothing)
+          )
+          argTypes
+      let argToFunPat =
+            M.fromList $ mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) args
+      let funPats = fmap (maybe WildP VarP . snd) args
+      let genAuxFunExp conInfo = do
+            fields <- mapM resolveTypeSynonyms $ constructorFields conInfo
+            defaultFieldFunExps <-
+              traverse
+                (mergeableNoExistentialFun argToFunPat M.empty)
+                fields
+            constructMergingStrategyExp conInfo defaultFieldFunExps
+      auxExps <- mapM genAuxFunExp constructors
+      funExp <- case auxExps of
+        [] -> [|NoStrategy|]
+        [singleExp] -> return singleExp
+        _ -> do
+          p <- newName "p"
+          let numConstructors = length constructors
+          let getIdx i =
+                if numConstructors <= 2
+                  then if i == 0 then [|False|] else [|True|]
+                  else integerE i
+          let getIdxPat i =
+                if numConstructors <= 2
+                  then
+                    conP (if i == 0 then 'False else 'True) []
+                  else do
+                    let w8Bound = fromIntegral (maxBound @Word8)
+                    let w16Bound = fromIntegral (maxBound @Word16)
+                    let w32Bound = fromIntegral (maxBound @Word32)
+                    let w64Bound = fromIntegral (maxBound @Word64)
+                    sigP
+                      (litP (integerL i))
+                      ( conT $
+                          if
+                            | numConstructors <= w8Bound + 1 -> ''Word8
+                            | numConstructors <= w16Bound + 1 -> ''Word16
+                            | numConstructors <= w32Bound + 1 -> ''Word32
+                            | numConstructors <= w64Bound + 1 -> ''Word64
+                            | otherwise -> ''Integer
+                      )
+          let idxFun =
+                lamE [varP p] $
+                  caseE
+                    (varE p)
+                    ( zipWith
+                        ( \conIdx conInfo -> do
+                            match
+                              (recP (constructorName conInfo) [])
+                              (normalB (getIdx conIdx))
+                              []
+                        )
+                        [0 ..]
+                        constructors
+                    )
+          let auxFun =
+                lamE [varP p] $
+                  caseE
+                    (varE p)
+                    ( zipWith
+                        ( \conIdx exp -> do
+                            match
+                              (getIdxPat conIdx)
+                              (normalB (return exp))
+                              []
+                        )
+                        [0 ..]
+                        auxExps
+                        ++ [match wildP (normalB [|undefined|]) []]
+                    )
+          [|
+            SortedStrategy $idxFun $auxFun
+            |]
+      let instanceFunName = funNames !! n
+      return $
+        FunD
+          instanceFunName
+          [ Clause
+              funPats
+              (NormalB funExp)
+              []
+          ]
+
 -- | Generate 'Mergeable' instance for a GADT, using a given merging info
 -- result.
 genMergeable' ::
@@ -513,11 +693,12 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
           )
           (extraPreds ++ catMaybes mergeableContexts)
           mergingInfoFunTypeWithoutCtx
+  let mangledName = mangleName (datatypeName d)
   let mergingInfoFunName =
         mkName $
           "mergingInfo"
             <> (if n /= 0 then show n else "")
-            <> nameBase (datatypeName d)
+            <> mangledName
   let mergingInfoFunSigD = SigD mergingInfoFunName mergingInfoFunType
   clauses <-
     traverse (uncurry (genMergingInfoFunClause' argVars)) $
@@ -530,7 +711,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
         mkName $
           "merge"
             <> (if n /= 0 then show n else "")
-            <> nameBase (datatypeName d)
+            <> mangledName
   let mergeFunSigD = SigD mergeFunName mergeFunType
   mergeFunClauses <- zipWithM genMergeFunClause' conInfoNames constructors
   let mergeFunDec = FunD mergeFunName mergeFunClauses
@@ -565,8 +746,10 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
 
   return
     ( mergingInfoFunName,
-      [ mergingInfoFunSigD,
+      [ PragmaD (InlineP mergingInfoFunName Inline FunLike AllPhases),
+        mergingInfoFunSigD,
         mergingInfoFunDec,
+        PragmaD (InlineP mergeFunName Inline FunLike AllPhases),
         mergeFunSigD,
         mergeFunDec,
         InstanceD
@@ -576,6 +759,22 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
           [FunD mergeInstanceFunName [mergeInstanceFunClause]]
       ]
     )
+
+-- | Generate 'Mergeable' instance for a GADT without existential variables.
+genMergeableNoExistential :: DeriveConfig -> Name -> Int -> Q [Dec]
+genMergeableNoExistential deriveConfig typName n = do
+  genUnaryOpClass deriveConfig mergeableNoExistentialConfig n typName
+
+-- | Generate 'Mergeable' instance for a GADT.
+genMergeable :: DeriveConfig -> Name -> Int -> Q [Dec]
+genMergeable deriveConfig typName n = do
+  hasExistential <- dataTypeHasExistential typName
+  if hasExistential
+    then do
+      (infoResult, infoDec) <- genMergingInfo typName
+      (_, decs) <- genMergeable' deriveConfig infoResult typName n
+      return $ infoDec ++ decs
+    else genMergeableNoExistential deriveConfig typName n
 
 -- | Derive 'Mergeable' instance for GADT.
 deriveGADTMergeable :: DeriveConfig -> Name -> Q [Dec]

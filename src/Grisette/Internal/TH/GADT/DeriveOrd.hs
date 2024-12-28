@@ -50,7 +50,8 @@ ordConfig =
             { extraPatNames = [],
               fieldResFun = \_ (lhs, rhs) f ->
                 (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
-              fieldCombineFun = \_ lst -> [|mconcat $(return $ ListE lst)|],
+              fieldCombineFun = \_ lst ->
+                (,[]) <$> [|mconcat $(return $ ListE lst)|],
               fieldDifferentExistentialFun = return,
               fieldFunExp =
                 defaultFieldFunExp ['compare, 'liftCompare, 'liftCompare2],

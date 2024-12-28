@@ -8,7 +8,7 @@ module Grisette.Internal.TH.GADT.DeriveSimpleMergeable
   )
 where
 
-import Grisette.Internal.Core.Data.Class.SimpleMergeable
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
     SimpleMergeable2 (liftMrgIte2),
@@ -47,7 +47,8 @@ simpleMergeableConfig =
               fieldResFun = \[c] (lhs, rhs) f ->
                 (,[True])
                   <$> [|$(return f) $(return c) $(return lhs) $(return rhs)|],
-              fieldCombineFun = \con lst -> return $ foldl AppE (ConE con) lst,
+              fieldCombineFun =
+                \con lst -> return (foldl AppE (ConE con) lst, [False]),
               fieldDifferentExistentialFun = const [|undefined|],
               fieldFunExp =
                 defaultFieldFunExp ['mrgIte, 'liftMrgIte, 'liftMrgIte2],

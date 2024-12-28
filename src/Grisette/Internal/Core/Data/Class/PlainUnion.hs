@@ -38,15 +38,17 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&)),
   )
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SimpleMergeable
+import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
+import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
+  ( Mergeable,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
     SymBranching,
     mrgIf,
   )
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Internal.Core.Data.Class.ToCon (ToCon (toCon))
-import Grisette.Internal.Core.Data.Class.TryMerge
+import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,
   )
@@ -227,7 +229,7 @@ onUnion4 f ua ub uc ud =
     f <$> tryMerge ua <*> tryMerge ub <*> tryMerge uc <*> tryMerge ud
 
 unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
-unionToCon u = 
+unionToCon u =
   case (singleView u, ifView u) of
     (Just x, _) -> toCon x
     (_, Just (c, l, r)) -> do

@@ -20,14 +20,16 @@ where
 
 import Data.Kind (Constraint)
 import Data.Type.Bool (If)
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable)
-import Grisette.Internal.Core.Data.Class.SimpleMergeable
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
+  ( Mergeable,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable,
     SimpleMergeable1,
     SimpleMergeable2,
     SymBranching,
   )
-import Grisette.Internal.Core.Data.Class.TryMerge
+import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   ( TryMerge,
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag, IsConMode)

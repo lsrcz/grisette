@@ -36,14 +36,17 @@ module Grisette.Internal.TH.Util
     isNonUnitTupleString,
     isNonUnitTuple,
     integerE,
+    mangleName,
+    dataTypeHasExistential,
   )
 where
 
 #if MIN_VERSION_template_haskell(2,18,0)
-import Language.Haskell.TH.Syntax (addModFinalizer, putDoc, DocLoc(DeclDoc))
+import Language.Haskell.TH.Syntax (addModFinalizer, putDoc, DocLoc(DeclDoc), NameFlavour (NameS, NameQ, NameG), Name (Name), OccName (OccName), ModName (ModName))
 #endif
 
 import Control.Monad (when)
+import Data.Char (isAlphaNum, ord)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import GHC.TypeNats (Nat)
@@ -297,3 +300,26 @@ isNonUnitTuple nm =
 -- | Convert an integer to an 'Exp'.
 integerE :: (Integral a) => a -> Q Exp
 integerE = litE . integerL . fromIntegral
+
+-- | Mangle a name string to contain only alphanumeric characters and
+-- underscores.
+mangleName :: Name -> String
+mangleName nm@(Name _ flavor) =
+  case flavor of
+    NameS -> mangleBaseName $ nameBase nm
+    NameQ mod -> mangleModName mod <> "_" <> mangleBaseName (nameBase nm)
+    NameG _ _ mod -> mangleModName mod <> "_" <> mangleBaseName (nameBase nm)
+    _ -> error $ "mangleName: unsupported name flavor: " <> show flavor
+  where
+    mangleModName (ModName m) = mangleBaseName m
+    mangleBaseName l = "Mangled" ++ go l
+    go [] = []
+    go (c : cs)
+      | isAlphaNum c || c == '_' = c : go cs
+      | otherwise = "_" <> show (ord c) <> go cs
+
+-- | Check if a data type has existential variables in constructors.
+dataTypeHasExistential :: Name -> Q Bool
+dataTypeHasExistential typName = do
+  d <- reifyDatatype typName
+  return $ not $ all (null . constructorVars) $ datatypeCons d

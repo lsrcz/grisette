@@ -52,7 +52,8 @@ eqConfig =
             { extraPatNames = [],
               fieldResFun = \_ (lhs, rhs) f ->
                 (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
-              fieldCombineFun = \_ lst -> [|and $(return $ ListE lst)|],
+              fieldCombineFun = \_ lst ->
+                (,[]) <$> [|and $(return $ ListE lst)|],
               fieldDifferentExistentialFun = const [|False|],
               fieldFunExp = defaultFieldFunExp ['(==), 'liftEq, 'liftEq2],
               fieldFunNames = ['(==), 'liftEq, 'liftEq2],

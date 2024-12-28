@@ -20,12 +20,13 @@ import Grisette.Internal.TH.GADT.Common (DeriveConfig)
 import Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig
       ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig, unaryOpAllowExistential
+        unaryOpInstanceTypeFromConfig
       ),
-    UnaryOpConfig (UnaryOpField),
+    UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
@@ -46,7 +47,7 @@ nfdataConfig :: UnaryOpClassConfig
 nfdataConfig =
   UnaryOpClassConfig
     { unaryOpConfigs =
-        [ UnaryOpField
+        [ UnaryOpConfig
             UnaryOpFieldConfig
               { extraPatNames = [],
                 extraLiftedPatNames = const [],
