@@ -23,6 +23,7 @@ module Grisette.Internal.TH.GADT.BinaryOpCommon
 where
 
 import Control.Monad (replicateM, unless, when, zipWithM)
+import Control.Monad.Identity (IdentityT)
 import qualified Data.List as List
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
@@ -77,7 +78,6 @@ import Type.Reflection
     typeRep,
     type (:~~:) (HRefl),
   )
-import Control.Monad.Identity (IdentityT)
 
 -- | Type of field function expression generator.
 type FieldFunExp = M.Map Name Name -> Type -> Q Exp
@@ -140,7 +140,7 @@ funPatAndExps fieldFunExpGen argTypes fields = do
 data BinaryOpFieldConfig = BinaryOpFieldConfig
   { extraPatNames :: [String],
     fieldResFun :: [Exp] -> (Exp, Exp) -> Exp -> Q (Exp, [Bool]),
-    fieldCombineFun :: Name -> [Exp] -> Q Exp,
+    fieldCombineFun :: Name -> [Exp] -> Q (Exp, [Bool]),
     fieldDifferentExistentialFun :: Exp -> Q Exp,
     fieldLMatchResult :: Q Exp,
     fieldRMatchResult :: Q Exp,
@@ -207,7 +207,7 @@ genBinaryOpClause
           defaultFieldFunExps
       let fieldResExps = fst <$> fieldResExpsAndArgsUsed
       let extraArgsUsedByFields = snd <$> fieldResExpsAndArgsUsed
-      resExp <-
+      (resExp, extraArgsUsedByResult) <-
         fieldCombineFun
           (constructorName lhsConstructors)
           fieldResExps
@@ -235,7 +235,9 @@ genBinaryOpClause
           construct ((l, r) : xs) = [|$(eqx (construct xs) l r)|]
 
       let extraArgsUsed =
-            or <$> List.transpose extraArgsUsedByFields
+            fmap or $
+              List.transpose $
+                extraArgsUsedByResult : extraArgsUsedByFields
       let extraArgsPats =
             zipWith
               (\pat used -> if used then pat else WildP)
@@ -336,7 +338,8 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
         n
   let keptVars' = keptVars lhsResult
   when (typName == ''IdentityT) $
-    fail $ show keptVars'
+    fail $
+      show keptVars'
   let isTypeUsedInFields' (VarT nm) = isVarUsedInFields lhsResult nm
       isTypeUsedInFields' _ = False
   ctxs <-

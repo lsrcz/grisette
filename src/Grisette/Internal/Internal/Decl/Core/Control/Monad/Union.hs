@@ -24,17 +24,39 @@
 module Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
   ( -- * Union and helpers
     Union (..),
-    unionBase
+    unionBase,
   )
 where
 
 import Data.String (IsString (fromString))
-import Grisette.Internal.Core.Data.Class.Mergeable (Mergeable (rootStrategy), Mergeable1 (liftRootStrategy), MergingStrategy (SimpleStrategy), rootStrategy1)
-import Grisette.Internal.Core.Data.Class.PlainUnion (PlainUnion (singleView, ifView))
-import Grisette.Internal.Core.Data.Class.SimpleMergeable (SimpleMergeable (mrgIte), SimpleMergeable1 (liftMrgIte), SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy), mrgIf)
-import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con, conView, sym), pattern Con)
-import Grisette.Internal.Core.Data.Class.TryMerge (TryMerge (tryMergeWithStrategy), mrgSingle, tryMerge)
-import Grisette.Internal.Internal.Decl.Core.Data.UnionBase (UnionBase (UnionIf, UnionSingle), ifWithLeftMost)
+import Grisette.Internal.Core.Data.Class.PlainUnion
+  ( PlainUnion (ifView, singleView),
+  )
+import Grisette.Internal.Core.Data.Class.Solvable
+  ( Solvable (con, conView, sym),
+    pattern Con,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
+  ( Mergeable (rootStrategy),
+    Mergeable1 (liftRootStrategy),
+    MergingStrategy (SimpleStrategy),
+    rootStrategy1,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
+  ( SimpleMergeable (mrgIte),
+    SimpleMergeable1 (liftMrgIte),
+    SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
+    mrgIf,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
+  ( TryMerge (tryMergeWithStrategy),
+    mrgSingle,
+    tryMerge,
+  )
+import Grisette.Internal.Internal.Decl.Core.Data.UnionBase
+  ( UnionBase (UnionIf, UnionSingle),
+    ifWithLeftMost,
+  )
 
 -- $setup
 -- >>> import Grisette.Core
@@ -247,4 +269,3 @@ instance PlainUnion Union where
     Just (c, t, f) -> Just (c, UMrg m t, UMrg m f)
     Nothing -> Nothing
   {-# INLINE ifView #-}
-

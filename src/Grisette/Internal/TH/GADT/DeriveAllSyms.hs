@@ -33,7 +33,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpInstanceNames,
         unaryOpInstanceTypeFromConfig
       ),
-    UnaryOpConfig (UnaryOpField),
+    UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
       ( UnaryOpFieldConfig,
         extraLiftedPatNames,
@@ -53,7 +53,7 @@ allSymsConfig :: UnaryOpClassConfig
 allSymsConfig =
   UnaryOpClassConfig
     { unaryOpConfigs =
-        [ UnaryOpField
+        [ UnaryOpConfig
             UnaryOpFieldConfig
               { extraPatNames = [],
                 extraLiftedPatNames = const [],

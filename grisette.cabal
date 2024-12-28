@@ -114,12 +114,15 @@ library
       Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
       Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
       Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
+      Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
       Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
       Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
       Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
       Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
       Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
       Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
       Grisette.Internal.Internal.Decl.Core.Data.UnionBase
       Grisette.Internal.Internal.Decl.Unified.BVFPConversion
       Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
@@ -134,12 +137,15 @@ library
       Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
       Grisette.Internal.Internal.Impl.Core.Data.Class.EvalSym
       Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym
+      Grisette.Internal.Internal.Impl.Core.Data.Class.Mergeable
       Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
       Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SimpleMergeable
       Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
       Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
       Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
       Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge
       Grisette.Internal.Internal.Impl.Core.Data.UnionBase
       Grisette.Internal.Internal.Impl.Unified.BVFPConversion
       Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
@@ -229,6 +235,7 @@ library
       Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
       Grisette.Internal.TH.GADT.ShowPPrintCommon
       Grisette.Internal.TH.GADT.UnaryOpCommon
+      Grisette.Internal.TH.GADT.UnifiedOpCommon
       Grisette.Internal.TH.Util
       Grisette.Internal.Unified.BaseConstraint
       Grisette.Internal.Unified.BaseMonad

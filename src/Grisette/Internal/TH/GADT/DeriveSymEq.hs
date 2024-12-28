@@ -58,7 +58,7 @@ symEqConfig =
               fieldResFun = \_ (lhs, rhs) f ->
                 (,[]) <$> [|$(return f) $(return lhs) $(return rhs)|],
               fieldCombineFun =
-                \_ lst -> [|foldl (.&&) true $(return $ ListE lst)|],
+                \_ lst -> (,[]) <$> [|foldl (.&&) true $(return $ ListE lst)|],
               fieldDifferentExistentialFun = const [|false|],
               fieldFunExp =
                 defaultFieldFunExp ['(.==), 'liftSymEq, 'liftSymEq2],

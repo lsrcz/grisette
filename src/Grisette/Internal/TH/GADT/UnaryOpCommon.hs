@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -15,20 +16,17 @@
 module Grisette.Internal.TH.GADT.UnaryOpCommon
   ( UnaryOpClassConfig (..),
     UnaryOpFieldConfig (..),
-    UnaryOpDeserializeConfig (..),
-    UnaryOpUnifiedConfig (..),
     UnaryOpConfig (..),
+    UnaryOpFunConfig (..),
     FieldFunExp,
     defaultFieldResFun,
     defaultFieldFunExp,
     genUnaryOpClass,
     defaultUnaryOpInstanceTypeFromConfig,
-    defaultUnaryOpUnifiedFun,
   )
 where
 
 import Control.Monad (replicateM, zipWithM)
-import Data.Bytes.Serial (Serial (deserialize))
 import qualified Data.List as List
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
@@ -40,7 +38,7 @@ import Grisette.Internal.TH.GADT.Common
         constructors,
         keptVars
       ),
-    DeriveConfig (evalModeConfig),
+    DeriveConfig,
     checkArgs,
     ctxForVar,
     evalModeSpecializeList,
@@ -50,38 +48,23 @@ import Grisette.Internal.TH.GADT.Common
     specializeResult,
   )
 import Grisette.Internal.TH.Util (allUsedNames)
-import Grisette.Internal.Unified.Util (withMode)
 import Language.Haskell.TH
   ( Body (NormalB),
     Clause (Clause),
     Dec (FunD, InstanceD),
     Exp (VarE),
     Kind,
-    Lit (IntegerL),
-    Match (Match),
     Name,
-    Pat (LitP, VarP, WildP),
+    Pat (VarP, WildP),
     Q,
-    Type (AppT, ArrowT, ConT, StarT, VarT),
+    Type (AppT, ConT, VarT),
     appE,
-    bindS,
-    caseE,
-    clause,
-    conE,
     conP,
     conT,
-    doE,
-    funD,
-    match,
-    mkName,
     nameBase,
     newName,
-    noBindS,
-    normalB,
-    sigP,
     varE,
     varP,
-    wildP,
   )
 import Language.Haskell.TH.Datatype
   ( ConstructorInfo (constructorFields, constructorName, constructorVariant),
@@ -121,64 +104,10 @@ defaultFieldFunExp unaryOpFunNames argToFunPat _ = go
           _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
         _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
 
-data UnaryOpFieldConfig = UnaryOpFieldConfig
-  { extraPatNames :: [String],
-    extraLiftedPatNames :: Int -> [String],
-    fieldResFun ::
-      ConstructorVariant ->
-      Name ->
-      [Exp] ->
-      Int ->
-      Exp ->
-      Exp ->
-      Q (Exp, [Bool]),
-    fieldCombineFun ::
-      Int ->
-      ConstructorVariant ->
-      Name ->
-      [Exp] ->
-      [Exp] ->
-      Q (Exp, [Bool]),
-    fieldFunExp :: FieldFunExp
-  }
-
-newtype UnaryOpUnifiedConfig = UnaryOpUnifiedConfig
-  {unifiedFun :: Type -> (Type, Kind) -> Q (Maybe Exp)}
-
-newtype UnaryOpDeserializeConfig = UnaryOpDeserializeConfig
-  {fieldDeserializeFun :: FieldFunExp}
-
-defaultUnaryOpUnifiedFun :: [Name] -> Type -> (Type, Kind) -> Q (Maybe Exp)
-defaultUnaryOpUnifiedFun funNames modeTy (ty, kind) =
-  case kind of
-    StarT ->
-      Just
-        <$> [|
-          $(varE $ head funNames) @($(return modeTy))
-            @($(return ty))
-          |]
-    AppT (AppT ArrowT StarT) StarT ->
-      Just
-        <$> [|
-          $(varE $ funNames !! 1) @($(return modeTy))
-            @($(return ty))
-          |]
-    AppT (AppT (AppT ArrowT StarT) StarT) StarT ->
-      Just
-        <$> [|
-          $(varE $ funNames !! 2) @($(return modeTy))
-            @($(return ty))
-          |]
-    _ -> return Nothing
-
 -- | Configuration for a unary function field expression generation on a GADT.
-data UnaryOpConfig
-  = UnaryOpField {_fieldConfig :: UnaryOpFieldConfig, funNames :: [Name]}
-  | UnaryOpUnified {_unifiedConfig :: UnaryOpUnifiedConfig, funNames :: [Name]}
-  | UnaryOpDeserialize
-      { _deserializeConfig :: UnaryOpDeserializeConfig,
-        funNames :: [Name]
-      }
+data UnaryOpConfig where
+  UnaryOpConfig ::
+    (UnaryOpFunConfig config) => config -> [Name] -> UnaryOpConfig
 
 -- | Default field result function.
 defaultFieldResFun ::
@@ -321,130 +250,61 @@ defaultUnaryOpInstanceTypeFromConfig ::
   DeriveConfig -> [(Type, Kind)] -> [(Type, Kind)] -> Name -> Q Type
 defaultUnaryOpInstanceTypeFromConfig _ _ _ = conT
 
-genUnaryOpFun ::
-  DeriveConfig ->
-  UnaryOpConfig ->
-  Int ->
-  [(Type, Kind)] ->
-  [(Type, Kind)] ->
-  [(Type, Kind)] ->
-  (Name -> Bool) ->
-  [ConstructorInfo] ->
-  Q Dec
-genUnaryOpFun _ (UnaryOpField config funNames) n _ _ argTypes _ constructors = do
-  clauses <-
-    zipWithM
-      ( genUnaryOpFieldClause
-          config
-          argTypes
-      )
-      [0 ..]
-      constructors
-  let instanceFunName = funNames !! n
-  return $ FunD instanceFunName clauses
-genUnaryOpFun
-  deriveConfig
-  (UnaryOpUnified (UnaryOpUnifiedConfig {..}) funNames)
-  n
-  extraVars
-  keptTypes
-  _
-  isVarUsedInFields
-  _ = do
-    modeTy <- case evalModeConfig deriveConfig of
-      [] -> return $ fst $ head extraVars
-      [(i, _)] -> return $ fst $ keptTypes !! i
-      _ -> fail "Unified classes does not support multiple evaluation modes"
-    let isTypeUsedInFields (VarT nm) = isVarUsedInFields nm
-        isTypeUsedInFields _ = False
-    exprs <-
-      traverse (unifiedFun modeTy) $
-        filter (isTypeUsedInFields . fst) keptTypes
-    rVar <- newName "r"
-    let rf =
-          foldl
-            ( \exp nextFun -> case nextFun of
-                Nothing -> exp
-                Just fun -> appE (return fun) exp
-            )
-            (return $ VarE rVar)
-            exprs
-    let instanceFunName = funNames !! n
-    funD
-      instanceFunName
-      [ clause
-          [varP rVar]
-          ( normalB
-              [|
-                withMode @($(return modeTy)) $(rf) $(rf)
-                |]
-          )
-          []
-      ]
-genUnaryOpFun
-  _
-  (UnaryOpDeserialize UnaryOpDeserializeConfig {..} funNames)
-  n
-  _
-  _
-  argTypes
-  _
-  constructors = do
-    allFields <-
-      mapM resolveTypeSynonyms $
-        concatMap constructorFields constructors
-    let usedArgs = S.fromList $ freeVariables allFields
-    args <-
-      traverse
-        ( \(ty, _) -> do
-            case ty of
-              VarT nm ->
-                if S.member nm usedArgs
-                  then do
-                    pname <- newName "p"
-                    return (nm, Just pname)
-                  else return ('undefined, Nothing)
-              _ -> return ('undefined, Nothing)
+data UnaryOpFieldConfig = UnaryOpFieldConfig
+  { extraPatNames :: [String],
+    extraLiftedPatNames :: Int -> [String],
+    fieldResFun ::
+      ConstructorVariant ->
+      Name ->
+      [Exp] ->
+      Int ->
+      Exp ->
+      Exp ->
+      Q (Exp, [Bool]),
+    fieldCombineFun ::
+      Int ->
+      ConstructorVariant ->
+      Name ->
+      [Exp] ->
+      [Exp] ->
+      Q (Exp, [Bool]),
+    fieldFunExp :: FieldFunExp
+  }
+
+class UnaryOpFunConfig config where
+  genUnaryOpFun ::
+    -- | Derive configuration
+    DeriveConfig ->
+    -- | Configuration
+    config ->
+    -- | Function names
+    [Name] ->
+    -- | Number of functor arguments to the class
+    Int ->
+    -- | Extra variables
+    [(Type, Kind)] ->
+    -- | Kept variables
+    [(Type, Kind)] ->
+    -- | Argument variables
+    [(Type, Kind)] ->
+    -- | Whether the variable is used in fields
+    (Name -> Bool) ->
+    -- | Constructor infos
+    [ConstructorInfo] ->
+    Q Dec
+
+instance UnaryOpFunConfig UnaryOpFieldConfig where
+  genUnaryOpFun _ config funNames n _ _ argTypes _ constructors = do
+    clauses <-
+      zipWithM
+        ( genUnaryOpFieldClause
+            config
+            argTypes
         )
-        argTypes
-    let argToFunPat =
-          M.fromList $ mapMaybe (\(nm, mpat) -> fmap (nm,) mpat) args
-    let funPats = fmap (maybe WildP VarP . snd) args
-    let genAuxFunMatch conIdx conInfo = do
-          fields <- mapM resolveTypeSynonyms $ constructorFields conInfo
-          defaultFieldFunExps <-
-            traverse
-              (fieldDeserializeFun argToFunPat M.empty)
-              fields
-          let conName = constructorName conInfo
-          exp <-
-            foldl
-              (\exp fieldFun -> [|$exp <*> $(return fieldFun)|])
-              [|return $(conE conName)|]
-              defaultFieldFunExps
-          return $ Match (LitP (IntegerL conIdx)) (NormalB exp) []
-    auxMatches <- zipWithM genAuxFunMatch [0 ..] constructors
-    auxFallbackMatch <- match wildP (normalB [|undefined|]) []
+        [0 ..]
+        constructors
     let instanceFunName = funNames !! n
-    -- let auxFunName = mkName "go"
-    let selName = mkName "sel"
-    exp <-
-      doE
-        [ bindS
-            (sigP (varP selName) (conT ''Int))
-            [|deserialize|],
-          noBindS $
-            caseE (varE selName) $
-              return <$> auxMatches ++ [auxFallbackMatch]
-        ]
-    return $
-      FunD
-        instanceFunName
-        [ Clause
-            funPats
-            (NormalB exp)
-            []
-        ]
+    return $ FunD instanceFunName clauses
 
 -- | Generate a unary operation type class instance for a GADT.
 genUnaryOpClass ::
@@ -476,10 +336,11 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
   let keptType = foldl AppT (ConT typName) $ fmap fst keptVars
   instanceFuns <-
     traverse
-      ( \config ->
+      ( \(UnaryOpConfig config funNames) ->
           genUnaryOpFun
             deriveConfig
             config
+            funNames
             n
             extraVars
             keptVars

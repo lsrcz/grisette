@@ -35,22 +35,22 @@ import Grisette.Internal.Core.Data.Class.ITEOp (ITEOp (symIte))
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
   )
-import Grisette.Internal.Core.Data.Class.Mergeable
+import Grisette.Internal.Core.Data.Class.PlainUnion
+  ( PlainUnion (ifView, singleView),
+  )
+import Grisette.Internal.Core.Data.Class.Solvable (pattern Con)
+import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable (rootStrategy),
     Mergeable1 (liftRootStrategy),
     MergingStrategy (NoStrategy, SimpleStrategy, SortedStrategy),
   )
-import Grisette.Internal.Core.Data.Class.PlainUnion
-  ( PlainUnion (ifView, singleView),
-  )
-import Grisette.Internal.Core.Data.Class.SimpleMergeable
+import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
   ( SimpleMergeable (mrgIte),
     SimpleMergeable1 (liftMrgIte),
     SymBranching (mrgIfPropagatedStrategy, mrgIfWithStrategy),
     mrgIf,
   )
-import Grisette.Internal.Core.Data.Class.Solvable (pattern Con)
-import Grisette.Internal.Core.Data.Class.TryMerge
+import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   ( TryMerge (tryMergeWithStrategy),
   )
 import Grisette.Internal.SymPrim.SymBool (SymBool)
