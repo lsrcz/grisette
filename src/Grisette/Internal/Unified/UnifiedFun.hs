@@ -37,10 +37,14 @@ module Grisette.Internal.Unified.UnifiedFun
   )
 where
 
+#if MIN_VERSION_base(4,20,0)
+#else
+import Data.Foldable (Foldable (foldl'))
+#endif
+
 import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
 import Data.Bytes.Serial (Serial)
-import Data.Foldable (Foldable (foldl'))
 import Data.Hashable (Hashable)
 import qualified Data.Kind
 import Data.Serialize (Serialize)

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
@@ -68,11 +69,16 @@ module Grisette.Internal.Core.Data.Class.CEGISSolver
   )
 where
 
+#if MIN_VERSION_base(4,20,0)
+import Data.List (partition)
+#else
+import Data.List (foldl', partition)
+#endif
+
 import Control.DeepSeq (NFData)
 import qualified Data.Binary as Binary
 import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Hashable (Hashable)
-import Data.List (foldl', partition)
 import qualified Data.Serialize as Cereal
 import GHC.Generics (Generic)
 import Generics.Deriving (Default (Default))

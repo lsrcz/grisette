@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -54,8 +55,12 @@ module Grisette.Unified.Lib.Data.Foldable
   )
 where
 
-import Control.Monad (MonadPlus)
+#if MIN_VERSION_base(4,20,0)
+#else
 import Data.Foldable (Foldable (foldl'))
+#endif
+
+import Control.Monad (MonadPlus)
 import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&), (.||)),
   )

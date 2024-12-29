@@ -23,7 +23,6 @@ module Grisette.Internal.SymPrim.Prim.Internal.Instances.PEvalOrdTerm
 where
 
 import Control.Monad (msum)
-import Data.Foldable (Foldable (foldl'))
 import qualified Data.SBV as SBV
 import GHC.TypeNats (KnownNat, type (<=))
 import Grisette.Internal.SymPrim.AlgReal (AlgReal)
@@ -158,7 +157,7 @@ sbvTableLookup ::
   SBV.SRoundingMode ->
   SBV.SBV Bool
 sbvTableLookup tbl lhs rhs =
-  foldl'
+  foldl
     (\acc (a, b) -> acc SBV..|| ((lhs SBV..== a) SBV..&& (rhs SBV..== b)))
     SBV.sFalse
     tbl
