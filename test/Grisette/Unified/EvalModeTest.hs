@@ -258,7 +258,8 @@ type DataConstraint mode =
   ( EvalModeBase mode,
     EvalModeBV mode,
     UnifiedData mode (A mode),
-    UnifiedBV mode 8
+    UnifiedBV mode 8,
+    Mergeable (GetData mode (A mode))
   )
 #endif
 
@@ -282,7 +283,8 @@ type FDataConstraint mode m =
     MonadError ArithException m,
     UnifiedBranching mode m,
     UnifiedData mode (A mode),
-    SafeUnifiedBV mode 8 m
+    SafeUnifiedBV mode 8 m,
+    Mergeable (GetData mode (A mode))
   )
 #endif
 

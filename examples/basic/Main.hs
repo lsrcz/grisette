@@ -28,7 +28,6 @@
 -- Prerequisites: Basic Haskell, familiarity with GADTs
 module Main (main) where
 
-import qualified Data.Set as S
 import Grisette
 
 -- * The expression language
@@ -102,8 +101,8 @@ type BoolUExpr = UExpr SymBool
 -- The GADT will then be fully compatible with Grisette library. And we will see
 -- their usage in the following code.
 deriveGADT
-  ''Expr
-  (S.fromList [''Show, ''Mergeable, ''EvalSym, ''ExtractSym, ''PPrint])
+  [''Expr]
+  [''Show, ''Mergeable, ''EvalSym, ''ExtractSym, ''PPrint]
 makeSmartCtor ''Expr
 
 -- Here we construct some symbolic expressions.

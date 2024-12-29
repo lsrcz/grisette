@@ -59,6 +59,7 @@ data T mode a
   = T (GetBool mode) a (GetData mode (T mode a))
   | T1
 
+#if MIN_VERSION_base(4,16,0)
 deriveGADTWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''EvalModeBase])],
@@ -69,6 +70,7 @@ deriveGADTWith
   allClasses0WithOrd
 
 makePrefixedUnifiedCtor [''EvalModeBase] "mk" ''T
+#endif
 
 #if MIN_VERSION_base(4,16,0)
 type FConstraint mode = (EvalModeBase mode)
@@ -77,8 +79,10 @@ type FConstraint mode =
   (EvalModeBase mode, UnifiedData mode (T mode SymInteger))
 #endif
 
+#if MIN_VERSION_base(4,16,0)
 f :: forall mode. (FConstraint mode) => GetData mode (T mode SymInteger)
 f = mkT (toSym True) 10 mkT1
+#endif
 
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
@@ -90,17 +94,25 @@ data TNoArg = TNoArg
 deriveGADT [''TNoArg] allClasses0WithOrd
 makePrefixedUnifiedCtor [] "mk" ''TNoArg
 
+#if MIN_VERSION_base(4,16,0)
+unifiedConstructorExtraTest :: [Test]
+unifiedConstructorExtraTest =
+  [ testCase "mkUnifiedConstructor" $ do
+      f @?= Identity (T True 10 (Identity T1))
+      f
+        @?= ( mrgReturn (T (con True) 10 (mrgReturn T1)) ::
+                Union (T 'S SymInteger)
+            )
+  ]
+#else
+unifiedConstructorExtraTest :: [Test]
+unifiedConstructorExtraTest = []
+#endif
+
 unifiedConstructorTest :: Test
 unifiedConstructorTest =
-  testGroup
-    "UnifiedConstructor"
-    [ testCase "mkUnifiedConstructor" $ do
-        f @?= Identity (T True 10 (Identity T1))
-        f
-          @?= ( mrgReturn (T (con True) 10 (mrgReturn T1)) ::
-                  Union (T 'S SymInteger)
-              ),
-      testCase "NoMode" $ do
+  testGroup "UnifiedConstructor" $
+    [ testCase "NoMode" $ do
         tNoMode0 True (10 :: Int) TNoMode1
           @?= Identity (TNoMode0 True 10 TNoMode1)
         tNoMode1 @?= (mrgReturn TNoMode1 :: Union (TNoMode Int)),
@@ -108,3 +120,4 @@ unifiedConstructorTest =
         mkTNoArg @?= Identity TNoArg
         mkTNoArg @?= (mrgReturn TNoArg :: Union TNoArg)
     ]
+      ++ unifiedConstructorExtraTest

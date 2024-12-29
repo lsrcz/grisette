@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -96,6 +97,7 @@ data X mode n f a
       (f a)
   | XNil
 
+#if MIN_VERSION_base(4,16,0)
 deriveGADTWith
   ( mempty
       { evalModeConfig =
@@ -178,3 +180,8 @@ unifiedClassesTest =
                 ]
         ]
     ]
+
+#else
+unifiedClassesTest :: Test
+unifiedClassesTest = testGroup "UnifiedClasses" []
+#endif

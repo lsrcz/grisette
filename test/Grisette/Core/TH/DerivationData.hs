@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -18,7 +19,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
+
+-- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
 
 module Grisette.Core.TH.DerivationData
   ( T (..),
@@ -116,6 +118,7 @@ data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
   | TNil
 
+#if MIN_VERSION_base(4,16,0)
 deriveGADTWith
   ( mempty
       { evalModeConfig =
@@ -133,6 +136,13 @@ concreteT =
 
 symbolicT :: T 'S 10 SymInteger
 symbolicT = fromJust $ toCon (toSym concreteT :: T 'S 10 SymInteger)
+#else
+concreteT :: T 'C 10 Integer
+concreteT = undefined
+
+symbolicT :: T 'S 10 SymInteger
+symbolicT = undefined
+#endif
 
 newtype X mode = X [GetBool mode]
 
@@ -174,6 +184,7 @@ data Extra mode n eb sb a where
     a ->
     Extra mode n eb sb a
 
+#if MIN_VERSION_base(4,16,0)
 deriveGADTWith
   ( mempty
       { evalModeConfig = [(0, EvalModeConstraints [''PartialEvalMode])],
@@ -184,6 +195,7 @@ deriveGADTWith
   )
   [''Extra]
   allClasses0WithOrd
+#endif
 
 data Expr f a where
   I :: SymInteger -> Expr f SymInteger
@@ -402,6 +414,7 @@ data SimpleMergeableType mode n x
       x
       (GetData mode (SimpleMergeableType mode n x))
 
+#if MIN_VERSION_base(4,16,0)
 deriveGADTWith
   ( mempty
       { evalModeConfig =
@@ -412,3 +425,4 @@ deriveGADTWith
   )
   [''SimpleMergeableType]
   ([''SimpleMergeable, ''UnifiedSimpleMergeable] ++ allClasses0WithOrd)
+#endif

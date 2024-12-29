@@ -556,16 +556,13 @@ module Grisette.Core
     --     deriving (Mergeable) via (Default X)
     -- :}
     --
-    -- Grisette also provide 'Grisette.deriveAll' template haskell procedure to
+    -- Grisette also provide 'Grisette.deriveGADT' template haskell procedure to
     -- derive all the instances for the classes that are relevant. This include
-    -- 'GHC.Generics.Generic', 'Show', 'Mergeable', etc. If you only want to
-    -- derive some of them, you can also use 'Grisette.deriveAllExcept' or
-    -- 'Grisette.derive'.
+    -- 'Show', 'Mergeable', 'Mergeable1', etc.
     --
     -- >>> :{
     -- data X = X SymInteger Integer
-    -- deriveAllExcept ''X [''Ord]
-    -- -- Ord is excluded because it is a symbolic type
+    -- deriveGADT [''X] [''Show, ''Mergeable]
     -- :}
     --
     -- Having the 'Mergeable' instance allows you to use the 'Union' type to
@@ -596,7 +593,7 @@ module Grisette.Core
     -- >>> import Control.Monad.Except
     -- >>> :{
     --   data Error = Fail
-    --   deriveAll ''Error
+    --   deriveGADT [''Error] allClasses0
     -- :}
     --
     -- >>> mrgIf "a" (throwError Fail) (return "x") :: ExceptT Error Union SymInteger

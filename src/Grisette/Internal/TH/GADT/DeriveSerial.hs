@@ -44,8 +44,36 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
     genUnaryOpClass,
   )
 import Grisette.Internal.TH.Util (integerE)
-import Language.Haskell.TH (Body (NormalB), Clause (Clause), Dec (FunD), Lit (IntegerL), Match (Match), Name, Pat (LitP, VarP, WildP), Q, Quote (newName), Type (VarT), bindS, caseE, conE, conT, doE, match, mkName, noBindS, normalB, sigP, varE, varP, wildP)
-import Language.Haskell.TH.Datatype (ConstructorInfo (constructorFields, constructorName), TypeSubstitution (freeVariables), resolveTypeSynonyms)
+import Language.Haskell.TH
+  ( Body (NormalB),
+    Clause (Clause),
+    Dec (FunD),
+    Lit (IntegerL),
+    Match (Match),
+    Name,
+    Pat (LitP, VarP, WildP),
+    Q,
+    Type (VarT),
+    bindS,
+    caseE,
+    conE,
+    conT,
+    doE,
+    match,
+    mkName,
+    newName,
+    noBindS,
+    normalB,
+    sigP,
+    varE,
+    varP,
+    wildP,
+  )
+import Language.Haskell.TH.Datatype
+  ( ConstructorInfo (constructorFields, constructorName),
+    TypeSubstitution (freeVariables),
+    resolveTypeSynonyms,
+  )
 
 newtype UnaryOpDeserializeConfig = UnaryOpDeserializeConfig
   {fieldDeserializeFun :: FieldFunExp}

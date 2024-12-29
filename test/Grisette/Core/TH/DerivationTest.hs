@@ -1,11 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+
 -- {-# OPTIONS_GHC -ddump-simpl -dsuppress-module-prefixes -dsuppress-uniques #-}
 -- {-# OPTIONS_GHC -ddump-timings #-}
 
-module Grisette.Core.TH.DerivationTest (ftst, derivationTest) where
+module Grisette.Core.TH.DerivationTest (derivationTest) where
 
 import Data.Functor.Classes (showsPrec1, showsPrec2)
 import qualified Data.Text as T
@@ -49,6 +52,7 @@ import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
 import Test.QuickCheck.Property ((.&.), (===))
 
+#if MIN_VERSION_base(4,16,0)
 ftst ::
   forall mode n eb sb a.
   ( PartialEvalMode mode,
@@ -67,16 +71,23 @@ ftst c t f =
     (extractData t)
     (extractData f)
 
+derivationExtraTest :: [Test]
+derivationExtraTest =
+  [ testCase "ftst" $ do
+      let x = Extra True [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
+      let y = Extra False [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
+      let a = ftst @'C True (return x) (return y)
+      a @?= return x
+  ]
+#else
+derivationExtraTest :: [Test]
+derivationExtraTest = []
+#endif
+
 derivationTest :: Test
 derivationTest =
-  testGroup
-    "Derivation"
-    [ testCase "ftst" $ do
-        let x = Extra True [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
-        let y = Extra False [1 :: WordN32] [] (0 :: FP32) 0 0 (0 :: Int)
-        let a = ftst @'C True (return x) (return y)
-        a @?= return x,
-      testProperty "GADT Show instance for regular types" $
+  testGroup "Derivation" $
+    [ testProperty "GADT Show instance for regular types" $
         \(g :: GGG (GGG Int String) [Int]) ->
           let v = gggToVVV g
            in replaceVVVShown (T.pack (show g))
@@ -143,3 +154,4 @@ derivationTest =
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
           symCompare2 g1 g2 === (g1 `symCompare` g2)
     ]
+      ++ derivationExtraTest
