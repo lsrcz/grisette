@@ -92,8 +92,8 @@ jobs:
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "983",
-                cachekey: "stack-98",
+                ghc: "983-macOS",
+                cachekey: "stack-98-macOS",
               }
 
     runs-on: ${{ matrix.os }}
