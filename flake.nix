@@ -6,7 +6,7 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        z3_overlay = (self: super: {
+        z3Overlay = (self: super: {
           z3 = super.z3.overrideAttrs (oldAttrs: rec {
             version = "4.13.4";
             src = pkgs.fetchFromGitHub {
@@ -18,22 +18,54 @@
           });
         });
 
+        hlintSrcOverlay = (self: super: {
+          hlintSrc = pkgs.fetchFromGitHub {
+            owner = "ndmitchell";
+            repo = "hlint";
+            rev = "7dfba720eaf6fa9bd0b23ae269334559aa722847";
+            sha256 = "sha256-niGBdSrkatr+TZCcLYXo4MDg5FyXTYiKQ5K+ZIWSWBs=";
+          };
+        });
+
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ z3_overlay ];
+          overlays = [ z3Overlay hlintSrcOverlay ];
         };
 
-        stableHPkgs = pkgs.haskell.packages."ghc983";
+        stableHPkgs = pkgs.haskell.packages."ghc984";
         hPkgsWithVersion = version:
-          pkgs.haskell.packages."ghc${version}".extend (hself: hsuper: rec {
-            ihaskell = pkgs.haskell.lib.dontCheck (
-              hself.callHackage "ihaskell" "0.11.0.0" { }
-            );
+          (pkgs.haskell.packages."ghc${version}".override {
+            all-cabal-hashes = pkgs.fetchFromGitHub {
+              owner = "commercialhaskell";
+              repo = "all-cabal-hashes";
+              rev = "a63037340f628c7e210046265dc23bbcac50c450";
+              sha256 = "sha256-KiuSmyUdDkriGxFVElCwFsrIlHsljQTS+EqqG0COy20=";
+            };
+          }).extend (hself: hsuper: rec {
+            ihaskell =
+              if version == "9101" then
+                pkgs.haskell.lib.dontCheck (
+                  hself.callHackage "ihaskell" "0.12.0.0" { }
+                )
+              else hsuper.ihaskell;
             ghc-syntax-highlighter =
-              hself.callHackage "ghc-syntax-highlighter" "0.0.11.0" { };
+              if version == "9101" then
+                hself.callHackage "ghc-syntax-highlighter" "0.0.12.0" { }
+              else hsuper.ghc-syntax-highlighter;
+            hlint = hself.callCabal2nix "hlint" pkgs.hlintSrc { };
+            uuid =
+              if version == "9101" then
+                hself.callHackage "uuid" "1.3.16" { }
+              else hsuper.uuid;
+            ghc-parser =
+              hself.callHackage "ghc-parser" "0.2.7.0" { };
+            ghc-lib-parser =
+              if version == "984" then
+                hself.callHackage "ghc-lib-parser" "9.8.4.20241130" { }
+              else hsuper.ghc-lib-parser;
           });
 
-        basicDevTools = {version}:
+        basicDevTools = { version }:
           let hPkgs = hPkgsWithVersion version; in [
             hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
             stack-wrapped
@@ -119,23 +151,23 @@
         formatter.x86_64-linux = pkgs.nixpkgs-fmt;
 
         devShells = {
-          "8107-ci" = devShellsWithVersion { version = "8107"; cabal = true; additional = false; bitwuzla = false; };
-          "902-ci" = devShellsWithVersion { version = "902"; cabal = true; additional = false; bitwuzla = false; };
-          "928-ci" = devShellsWithVersion { version = "928"; cabal = true; additional = false; bitwuzla = false; };
-          "948-ci" = devShellsWithVersion { version = "948"; cabal = true; additional = false; bitwuzla = false; };
-          "966-ci" = devShellsWithVersion { version = "966"; cabal = true; additional = false; bitwuzla = false; };
-          "983-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; bitwuzla = true; };
-          "983-macOS-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; bitwuzla = false; };
-          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; bitwuzla = false; };
+          "8107-ci" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; bitwuzla = false; };
+          "902-ci" = devShellsWithVersion { version = "902"; cabal = false; additional = false; bitwuzla = false; };
+          "928-ci" = devShellsWithVersion { version = "928"; cabal = false; additional = false; bitwuzla = false; };
+          "948-ci" = devShellsWithVersion { version = "948"; cabal = false; additional = false; bitwuzla = false; };
+          "966-ci" = devShellsWithVersion { version = "966"; cabal = false; additional = false; bitwuzla = false; };
+          "984-ci" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = true; };
+          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = false; };
+          "9101-macOS-ci" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = false; };
 
           "8107" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; bitwuzla = false; };
           "902" = devShellsWithVersion { version = "902"; cabal = false; additional = false; bitwuzla = false; };
           "928" = devShellsWithVersion { version = "928"; cabal = false; additional = false; bitwuzla = false; };
           "948" = devShellsWithVersion { version = "948"; cabal = false; additional = false; bitwuzla = false; };
           "966" = devShellsWithVersion { version = "966"; cabal = false; additional = false; bitwuzla = false; };
-          "983" = devShellsWithVersion { version = "983"; cabal = true; additional = true; bitwuzla = true; };
-          "9101" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; bitwuzla = false; };
-          default = devShellsWithVersion { version = "983"; cabal = true; additional = true; bitwuzla = true; };
+          "984" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = false; };
+          "9101" = devShellsWithVersion { version = "9101"; cabal = true; additional = true; bitwuzla = true; };
+          default = devShellsWithVersion { version = "9101"; cabal = true; additional = true; bitwuzla = true; };
         };
       });
 }

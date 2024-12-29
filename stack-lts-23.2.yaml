@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: nightly-2024-12-29
+resolver: lts-23.2
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,6 +40,8 @@ packages:
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
+# extra-deps: []
+
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
@@ -63,4 +65,3 @@ packages:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
-allow-newer: true
