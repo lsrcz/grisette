@@ -1967,7 +1967,7 @@ instance Lift (Term t) where
      in [||bvSelectTerm $$pix $$pw t3||]
   liftTyped (BVExtendTerm _ _ _ _ b (_ :: p r) t2) =
     let pr = [||Proxy||] :: (Quote m) => Code m (Proxy r)
-    in [||bvExtendTerm b $$pr t2||]
+     in [||bvExtendTerm b $$pr t2||]
   liftTyped (ApplyTerm _ _ _ _ t1 t2) = [||applyTerm t1 t2||]
   liftTyped (DivIntegralTerm _ _ _ _ t1 t2) = [||divIntegralTerm t1 t2||]
   liftTyped (ModIntegralTerm _ _ _ _ t1 t2) = [||modIntegralTerm t1 t2||]
