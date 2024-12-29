@@ -23,7 +23,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE Strict #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -209,12 +209,18 @@ import Data.Text.Prettyprint.Doc
   )
 #endif
 
-#if !MIN_VERSION_sbv(10, 0, 0)
+#if !MIN_VERSION_sbv(10,0,0)
 #define SMTDefinable Uninterpreted
 #endif
 
 #if MIN_VERSION_sbv(11,0,0)
 import qualified Data.SBV as SBVTC
+#endif
+
+#if MIN_VERSION_base(4,15,0)
+import Language.Haskell.TH (Code, Quote)
+#else
+import Language.Haskell.TH (TExpQ)
 #endif
 
 import Control.DeepSeq (NFData (rnf))
@@ -278,7 +284,6 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
     myWeakThreadId,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
-import Language.Haskell.TH.Syntax.Compat (Code, Quote)
 import Type.Reflection
   ( SomeTypeRep (SomeTypeRep),
     TypeRep,
@@ -1932,6 +1937,12 @@ instance NFData (Term a) where
   rnf i = rnf (termId i) `seq` rnf (termIdent i)
   {-# INLINE rnf #-}
 
+#if MIN_VERSION_base(4,15,0)
+type CODE x = forall qq. Quote qq => Code qq (x)
+#else
+type CODE x = TExpQ x
+#endif
+
 instance Lift (Term t) where
   liftTyped (ConTerm _ _ _ _ v) = [||conTerm v||]
   liftTyped (SymTerm _ _ _ _ t) = [||symTerm t||]
@@ -1962,11 +1973,11 @@ instance Lift (Term t) where
   liftTyped (BitCastOrTerm _ _ _ _ t1 t2) = [||bitCastOrTerm t1 t2||]
   liftTyped (BVConcatTerm _ _ _ _ t1 t2) = [||bvConcatTerm t1 t2||]
   liftTyped (BVSelectTerm _ _ _ _ (_ :: p ix) (_ :: q w) t3) =
-    let pix = [||Proxy||] :: (Quote m) => Code m (Proxy ix)
-        pw = [||Proxy||] :: (Quote m) => Code m (Proxy w)
+    let pix = [||Proxy||] :: CODE (Proxy ix)
+        pw = [||Proxy||] :: CODE (Proxy w)
      in [||bvSelectTerm $$pix $$pw t3||]
   liftTyped (BVExtendTerm _ _ _ _ b (_ :: p r) t2) =
-    let pr = [||Proxy||] :: (Quote m) => Code m (Proxy r)
+    let pr = [||Proxy||] :: CODE (Proxy r)
      in [||bvExtendTerm b $$pr t2||]
   liftTyped (ApplyTerm _ _ _ _ t1 t2) = [||applyTerm t1 t2||]
   liftTyped (DivIntegralTerm _ _ _ _ t1 t2) = [||divIntegralTerm t1 t2||]

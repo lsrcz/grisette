@@ -129,7 +129,11 @@ weakThreadId :: ThreadId -> Word64
 #if MIN_VERSION_base(4,19,0)
 weakThreadId = fromThreadId
 #else
+#if __GLASGOW_HASKELL__ >= 904
+weakThreadId (ThreadId t#) = rts_getThreadId (threadIdToAddr# t#)
+#else
 weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
+#endif
 
 foreign import ccall unsafe "rts_getThreadId"
 #if __GLASGOW_HASKELL__ >= 904
