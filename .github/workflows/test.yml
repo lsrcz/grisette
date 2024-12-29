@@ -84,6 +84,14 @@ jobs:
               ghc: "9101",
               cachekey: "stack-910",
             }
+          - {
+              build: cabal,
+              arg: "",
+              ismain: false,
+              experimental: false,
+              ghc: "9121",
+              cachekey: "stack-912",
+            }
         include:
           - os: macOS-latest
             plan:

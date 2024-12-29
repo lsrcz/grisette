@@ -156,9 +156,10 @@
           "928-ci" = devShellsWithVersion { version = "928"; cabal = false; additional = false; bitwuzla = false; };
           "948-ci" = devShellsWithVersion { version = "948"; cabal = false; additional = false; bitwuzla = false; };
           "966-ci" = devShellsWithVersion { version = "966"; cabal = false; additional = false; bitwuzla = false; };
-          "984-ci" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = true; };
-          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = false; };
-          "9101-macOS-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = false; };
+          "984-ci" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = false; };
+          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = true; };
+          "9101-macOS-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = true; };
+          "9121-ci" = devShellsWithVersion { version = "9121"; cabal = true; additional = false; bitwuzla = true; };
 
           "8107" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; bitwuzla = false; };
           "902" = devShellsWithVersion { version = "902"; cabal = false; additional = false; bitwuzla = false; };
@@ -168,6 +169,7 @@
           "984" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = false; };
           "9101" = devShellsWithVersion { version = "9101"; cabal = true; additional = true; bitwuzla = true; };
           default = devShellsWithVersion { version = "9101"; cabal = true; additional = true; bitwuzla = true; };
+          "9121" = devShellsWithVersion { version = "9121"; cabal = true; additional = false; bitwuzla = false; };
         };
       });
 }
