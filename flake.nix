@@ -158,7 +158,7 @@
           "966-ci" = devShellsWithVersion { version = "966"; cabal = false; additional = false; bitwuzla = false; };
           "984-ci" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = true; };
           "9101-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = false; };
-          "9101-macOS-ci" = devShellsWithVersion { version = "984"; cabal = false; additional = false; bitwuzla = false; };
+          "9101-macOS-ci" = devShellsWithVersion { version = "9101"; cabal = false; additional = false; bitwuzla = false; };
 
           "8107" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; bitwuzla = false; };
           "902" = devShellsWithVersion { version = "902"; cabal = false; additional = false; bitwuzla = false; };
