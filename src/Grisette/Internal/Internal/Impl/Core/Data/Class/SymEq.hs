@@ -10,6 +10,14 @@
 
 -- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=symeq #-}
 
+-- |
+-- Module      :   Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
+-- Copyright   :   (c) Sirui Lu 2021-2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq () where
 
 import Control.Monad.Except (ExceptT)

@@ -30,6 +30,7 @@ import Grisette.Internal.Internal.Decl.Unified.UnifiedFP
 import Grisette.Internal.SymPrim.FP (ValidFP)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 
+-- | Implementation for 'UnifiedFPFPConversion'.
 class
   ( UnifiedFPImpl mode fpn eb0 sb0 fp0 fprd,
     UnifiedFPImpl mode fpn eb1 sb1 fp1 fprd,

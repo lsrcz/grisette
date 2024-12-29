@@ -77,12 +77,13 @@ class
       rd -> fpn,
       rd eb sb -> fp
   where
-  -- | Get a unified floating point type. Resolves to 'FP' in 'C' mode, and
-  -- 'SymFP' in 'S' mode.
+  -- | Get a unified floating point type. Resolves to 'FP' in
+  -- 'Grisette.Unified.C' mode, and 'SymFP' in 'Grisette.Unified.S' mode.
   type GetFP mode = (f :: Nat -> Nat -> Type) | f -> mode
 
   -- | Get a unified floating point rounding mode type. Resolves to
-  -- 'FPRoundingMode' in 'C' mode, and 'SymFPRoundingMode' in 'S' mode.
+  -- 'Grisette.FPRoundingMode' in 'Grisette.Unified.C' mode, and
+  -- 'Grisette.SymFPRoundingMode' in 'Grisette.Unified.S' mode.
   type GetFPRoundingMode mode = r | r -> mode
 
 -- | Evaluation mode with unified 'FP' type.
@@ -97,6 +98,7 @@ class
   ) =>
   UnifiedFP mode eb sb
 
+-- | Implementation for 'SafeUnifiedFP'.
 class
   (UnifiedFPImpl mode fpn eb sb fp rd) =>
   SafeUnifiedFPImpl mode fpn eb sb fp rd (m :: Type -> Type)

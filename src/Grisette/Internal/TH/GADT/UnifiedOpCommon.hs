@@ -2,6 +2,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.UnifiedOpCommon
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.UnifiedOpCommon
   ( UnaryOpUnifiedConfig (..),
     defaultUnaryOpUnifiedFun,
@@ -28,6 +36,7 @@ import Language.Haskell.TH
     varP,
   )
 
+-- | Default implementation for the derivation rules for a unified operation.
 defaultUnaryOpUnifiedFun :: [Name] -> Type -> (Type, Kind) -> Q (Maybe Exp)
 defaultUnaryOpUnifiedFun funNames modeTy (ty, kind) =
   case kind of
@@ -51,6 +60,7 @@ defaultUnaryOpUnifiedFun funNames modeTy (ty, kind) =
           |]
     _ -> return Nothing
 
+-- | Configuration for the derivation rules for a unified operation.
 newtype UnaryOpUnifiedConfig = UnaryOpUnifiedConfig
   {unifiedFun :: Type -> (Type, Kind) -> Q (Maybe Exp)}
 

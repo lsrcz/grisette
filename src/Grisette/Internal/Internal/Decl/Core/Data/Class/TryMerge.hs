@@ -61,8 +61,8 @@ tryMerge = tryMergeWithStrategy rootStrategy
 --
 -- This function is to be called when the 'Mergeable' constraint can not be
 -- resolved, e.g., the merge strategy for the contained type is given with
--- 'Mergeable1'. In other cases, 'Grisette.Lib.Control.Applicative.mrgPure'
--- is usually a better alternative.
+-- 'Grisette.Mergeable1'. In other cases,
+-- 'Grisette.Lib.Control.Applicative.mrgPure' is usually a better alternative.
 mrgSingleWithStrategy ::
   (TryMerge m, Applicative m) =>
   MergingStrategy a ->

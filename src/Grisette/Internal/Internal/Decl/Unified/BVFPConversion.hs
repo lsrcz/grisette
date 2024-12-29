@@ -52,6 +52,7 @@ import Grisette.Internal.Unified.Class.UnifiedSafeFromFP (UnifiedSafeFromFP)
 import Grisette.Internal.Unified.Class.UnifiedSimpleMergeable (UnifiedBranching)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag)
 
+-- | Implementation for 'UnifiedBVFPConversion'.
 class
   ( UnifiedBVImpl mode wordn intn n word int,
     UnifiedFPImpl mode fpn eb sb fp fprd,
@@ -79,6 +80,7 @@ class
     fp
     fprd
 
+-- | Implementation for 'SafeUnifiedBVFPConversion'.
 class
   ( UnifiedBVFPConversionImpl mode wordn intn fpn n eb sb word int fp fprd,
     UnifiedSafeBitCast mode NotRepresentableFPError fp int m,

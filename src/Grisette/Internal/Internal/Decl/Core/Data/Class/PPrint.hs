@@ -16,6 +16,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
+-- |
+-- Module      :   Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+-- Copyright   :   (c) Sirui Lu 2021-2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
   ( -- * Pretty printing
     PPrint (..),
@@ -116,6 +124,7 @@ class PPrint a where
 
   {-# MINIMAL pformat | pformatPrec #-}
 
+-- | Pretty print a list of documents with left and right delimiters.
 pformatListLike :: Doc ann -> Doc ann -> [Doc ann] -> Doc ann
 pformatListLike ldelim rdelim l
   | null l = ldelim <> rdelim
@@ -128,6 +137,7 @@ pformatListLike ldelim rdelim l
 prettyPrintList :: [Doc ann] -> Doc ann
 prettyPrintList = pformatListLike "[" "]"
 
+-- | Pretty print a tuple.
 prettyPrintTuple :: [Doc ann] -> Doc ann
 prettyPrintTuple l
   | length l >= 2 =
