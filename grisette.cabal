@@ -112,58 +112,6 @@ library
       Grisette.Internal.Core.Data.SExpr
       Grisette.Internal.Core.Data.Symbol
       Grisette.Internal.Core.Data.UnionBase
-      Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
-      Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
-      Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
-      Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
-      Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
-      Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
-      Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
-      Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
-      Grisette.Internal.Internal.Decl.Core.Data.UnionBase
-      Grisette.Internal.Internal.Decl.SymPrim.AllSyms
-      Grisette.Internal.Internal.Decl.Unified.BVFPConversion
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
-      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
-      Grisette.Internal.Internal.Decl.Unified.EvalMode
-      Grisette.Internal.Internal.Decl.Unified.FPFPConversion
-      Grisette.Internal.Internal.Decl.Unified.UnifiedBool
-      Grisette.Internal.Internal.Decl.Unified.UnifiedBV
-      Grisette.Internal.Internal.Decl.Unified.UnifiedFP
-      Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
-      Grisette.Internal.Internal.Impl.Core.Data.Class.EvalSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.Mergeable
-      Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SimpleMergeable
-      Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
-      Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
-      Grisette.Internal.Internal.Impl.Core.Data.Class.ToCon
-      Grisette.Internal.Internal.Impl.Core.Data.Class.ToSym
-      Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge
-      Grisette.Internal.Internal.Impl.Core.Data.UnionBase
-      Grisette.Internal.Internal.Impl.SymPrim.AllSyms
-      Grisette.Internal.Internal.Impl.Unified.BVFPConversion
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq
-      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
-      Grisette.Internal.Internal.Impl.Unified.EvalMode
-      Grisette.Internal.Internal.Impl.Unified.FPFPConversion
-      Grisette.Internal.Internal.Impl.Unified.UnifiedBool
-      Grisette.Internal.Internal.Impl.Unified.UnifiedBV
-      Grisette.Internal.Internal.Impl.Unified.UnifiedFP
       Grisette.Internal.SymPrim.AlgReal
       Grisette.Internal.SymPrim.AllSyms
       Grisette.Internal.SymPrim.BV
@@ -302,7 +250,58 @@ library
       Grisette.Unified.Lib.Data.Functor
       Grisette.Utils
   other-modules:
-      Paths_grisette
+      Grisette.Internal.Internal.Decl.Core.Data.Class.ExtractSym
+      Grisette.Internal.Internal.Decl.Core.Data.Class.PPrint
+      Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SafeDiv
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SubstSym
+      Grisette.Internal.Internal.Decl.Core.Data.Class.ToSym
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SymEq
+      Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Decl.Core.Data.Class.Solver
+      Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
+      Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
+      Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
+      Grisette.Internal.Internal.Decl.Core.Data.UnionBase
+      Grisette.Internal.Internal.Decl.Core.Control.Monad.Union
+      Grisette.Internal.Internal.Decl.SymPrim.AllSyms
+      Grisette.Internal.Internal.Decl.Unified.UnifiedBV
+      Grisette.Internal.Internal.Decl.Unified.UnifiedBool
+      Grisette.Internal.Internal.Decl.Unified.BVFPConversion
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
+      Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+      Grisette.Internal.Internal.Decl.Unified.UnifiedFP
+      Grisette.Internal.Internal.Decl.Unified.EvalMode
+      Grisette.Internal.Internal.Decl.Unified.FPFPConversion
+      Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym
+      Grisette.Internal.Internal.Impl.Core.Data.Class.PPrint
+      Grisette.Internal.Internal.Impl.Core.Data.Class.ToCon
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SafeDiv
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SubstSym
+      Grisette.Internal.Internal.Impl.Core.Data.Class.ToSym
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq
+      Grisette.Internal.Internal.Impl.Core.Data.Class.TryMerge
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SymOrd
+      Grisette.Internal.Internal.Impl.Core.Data.Class.Solver
+      Grisette.Internal.Internal.Impl.Core.Data.Class.SimpleMergeable
+      Grisette.Internal.Internal.Impl.Core.Data.Class.Mergeable
+      Grisette.Internal.Internal.Impl.Core.Data.Class.EvalSym
+      Grisette.Internal.Internal.Impl.Core.Data.UnionBase
+      Grisette.Internal.Internal.Impl.Core.Control.Monad.Union
+      Grisette.Internal.Internal.Impl.SymPrim.AllSyms
+      Grisette.Internal.Internal.Impl.Unified.UnifiedBV
+      Grisette.Internal.Internal.Impl.Unified.UnifiedBool
+      Grisette.Internal.Internal.Impl.Unified.BVFPConversion
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymEq
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSymOrd
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedSimpleMergeable
+      Grisette.Internal.Internal.Impl.Unified.Class.UnifiedITEOp
+      Grisette.Internal.Internal.Impl.Unified.UnifiedFP
+      Grisette.Internal.Internal.Impl.Unified.EvalMode
+      Grisette.Internal.Internal.Impl.Unified.FPFPConversion
   hs-source-dirs:
       src
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags
