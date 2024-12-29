@@ -457,8 +457,7 @@ extraConstraint
                evalModeConfig
                || needExtraMergeableWithConcretizedEvalMode
            )
-        then
-          extraExtraMergeableConstraint constructors keptArgs
+        then extraExtraMergeableConstraint constructors keptArgs
         else return []
     return $
       extraMergeablePreds

@@ -66,8 +66,7 @@ extractSymConfig =
                 fieldCombineFun = \_ _ _ _ exp ->
                   if null exp
                     then (,[]) <$> [|return mempty|]
-                    else
-                      return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
+                    else return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
                 fieldFunExp =
                   defaultFieldFunExp
                     [ 'extractSymMaybe,

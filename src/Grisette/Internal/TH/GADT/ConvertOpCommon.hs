@@ -352,8 +352,7 @@ extraConstraintConvert
                evalModeConfig
                || needExtraMergeableWithConcretizedEvalMode
            )
-        then
-          extraExtraMergeableConstraint rhsConstructors rhsKeptArgs
+        then extraExtraMergeableConstraint rhsConstructors rhsKeptArgs
         else return []
     return $
       concat

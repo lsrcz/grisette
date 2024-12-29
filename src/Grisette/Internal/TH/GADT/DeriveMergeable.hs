@@ -564,8 +564,7 @@ instance UnaryOpFunConfig MergeableNoExistentialConfig where
                   else integerE i
           let getIdxPat i =
                 if numConstructors <= 2
-                  then
-                    conP (if i == 0 then 'False else 'True) []
+                  then conP (if i == 0 then 'False else 'True) []
                   else do
                     let w8Bound = fromIntegral (maxBound @Word8)
                     let w16Bound = fromIntegral (maxBound @Word16)

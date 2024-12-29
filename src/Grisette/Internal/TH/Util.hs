@@ -58,8 +58,6 @@ import Language.Haskell.TH.Syntax
   )
 #endif
 
-
-
 import Control.Monad (when)
 import Data.Char (isAlphaNum, ord)
 import qualified Data.Map as M
