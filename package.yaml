@@ -36,6 +36,7 @@ tested-with:
   - GHC == 9.6.6
   - GHC == 9.8.4
   - GHC == 9.10.1
+  - GHC == 9.12.1
 
 dependencies:
   - base >= 4.14 && < 5
@@ -46,7 +47,7 @@ dependencies:
   - bytestring >= 0.10.12 && < 0.13
   - containers >= 0.4 && < 0.8
   - unordered-containers >= 0.2.17 && < 0.3
-  - template-haskell >= 2.16 && < 2.23
+  - template-haskell >= 2.16 && < 2.24
   - deepseq >= 1.4.4 && < 1.6
   - loch-th >= 0.2.2 && < 0.3
   - th-compat >= 0.1.2 && < 0.2
@@ -126,7 +127,7 @@ tests:
     source-dirs: doctest
     dependencies:
       - grisette
-      - doctest >= 0.18.2 && < 0.23
+      - doctest >= 0.18.2 && < 0.24
     ghc-options:
       - -threaded
       - -rtsopts

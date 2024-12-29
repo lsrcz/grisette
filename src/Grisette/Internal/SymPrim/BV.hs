@@ -36,6 +36,7 @@ module Grisette.Internal.SymPrim.BV
     WordN16,
     WordN32,
     WordN64,
+    readBinary,
   )
 where
 
@@ -194,6 +195,7 @@ convertInt (L.Number n)
   | Just i <- L.numberToInteger n = return (fromInteger i)
 convertInt _ = pfail
 
+-- | Read a binary number.
 readBinary :: (Num a) => ReadPrec a
 readBinary = parens $ do
   r0 <- look
@@ -212,8 +214,16 @@ readBinary = parens $ do
       _ <- Text.Read.lift $ string "0b"
       fromInteger <$> Text.Read.lift (L.readIntP 2 isDigit valDigit)
 
+#if MIN_VERSION_base(4,21,0)
+readBV :: Num a => ReadPrec a
+readBV = readNumber convertInt
+#else
+readBV :: Num a => ReadPrec a
+readBV = readNumber convertInt <|> readBinary
+#endif
+
 instance (KnownNat n, 1 <= n) => Read (WordN n) where
-  readPrec = readNumber convertInt <|> readBinary
+  readPrec = readBV
   readListPrec = readListPrecDefault
   readList = readListDefault
 
@@ -269,7 +279,7 @@ instance (KnownNat n, 1 <= n) => Binary.Binary (IntN n) where
   get = deserialize
 
 instance (KnownNat n, 1 <= n) => Read (IntN n) where
-  readPrec = readNumber convertInt <|> readBinary
+  readPrec = readBV
   readListPrec = readListPrecDefault
   readList = readListDefault
 
