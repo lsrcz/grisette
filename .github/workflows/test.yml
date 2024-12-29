@@ -116,27 +116,27 @@ jobs:
           echo "stack=$(shasum stack.yaml | awk '{print $1}')" >> $GITHUB_OUTPUT
           echo "package=$(shasum package.yaml | awk '{print $1}')" >> $GITHUB_OUTPUT
 
-      - name: Use minimal flake
-        run: |
-          cp .github/workflows/flake-ci.nix flake.nix
-          case ${{ matrix.os }} in
-            macOS-latest)
-              sed -i '' "s/pkgs.haskell.packages.\"xxx\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
-              case ${{ matrix.plan.build }} in
-                stack)
-                  sed -i '' "s/stableHPkgs.cabal-install//" flake.nix
-                  ;;
-              esac
-              ;;
-            ubuntu-latest)
-              sed -i "s/pkgs.haskell.packages.\"xxx\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
-              case ${{ matrix.plan.build }} in
-                stack)
-                  sed -i "s/stableHPkgs.cabal-install//" flake.nix
-                  ;;
-              esac
-              ;;
-          esac
+      # - name: Use minimal flake
+      #   run: |
+      #     cp .github/workflows/flake-ci.nix flake.nix
+      #     case ${{ matrix.os }} in
+      #       macOS-latest)
+      #         sed -i '' "s/pkgs.haskell.packages.\"xxx\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
+      #         case ${{ matrix.plan.build }} in
+      #           stack)
+      #             sed -i '' "s/stableHPkgs.cabal-install//" flake.nix
+      #             ;;
+      #         esac
+      #         ;;
+      #       ubuntu-latest)
+      #         sed -i "s/pkgs.haskell.packages.\"xxx\"/pkgs.haskell.packages.\"ghc${{ matrix.plan.ghc }}\"/" flake.nix
+      #         case ${{ matrix.plan.build }} in
+      #           stack)
+      #             sed -i "s/stableHPkgs.cabal-install//" flake.nix
+      #             ;;
+      #         esac
+      #         ;;
+      #     esac
 
       - name: Cache dependencies
         id: cache
@@ -157,11 +157,11 @@ jobs:
           set -ex
           case "$BUILD" in
             stack)
-              nix develop --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-optimize --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
+              nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-optimize --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
               ;;
             cabal)
-              nix develop --allow-dirty --no-warn-dirty -c cabal update
-              nix develop --allow-dirty --no-warn-dirty -c cabal run --enable-tests --minimize-conflict-set --disable-optimization --flags=-optimize spec $ARGS -- --jxml=test-report.xml
+              nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c cabal update
+              nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c cabal run --enable-tests --minimize-conflict-set --disable-optimization --flags=-optimize spec $ARGS -- --jxml=test-report.xml
               ;;
           esac
           set +ex
