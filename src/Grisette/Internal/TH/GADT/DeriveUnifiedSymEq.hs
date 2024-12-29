@@ -71,8 +71,7 @@ unifiedSymEqConfig =
             [] -> return $ head newModeVars
             [(i, _)] -> do
               if i >= length keptNewVars
-                then
-                  fail "UnifiedSymEq reference to a non-existent mode variable"
+                then fail "UnifiedSymEq reference to a non-existent mode variable"
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSymEq does not support multiple evaluation modes"
           appT (conT con) (return $ fst modeVar),

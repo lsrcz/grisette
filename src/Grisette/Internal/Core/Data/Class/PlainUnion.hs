@@ -39,7 +39,6 @@ import Grisette.Internal.Core.Data.Class.LogicalOp
   ( LogicalOp (symNot, (.&&)),
   )
 import Grisette.Internal.Core.Data.Class.Solvable (Solvable (con))
-import Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
   ( Mergeable,
   )
@@ -48,6 +47,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.SimpleMergeable
     SymBranching,
     mrgIf,
   )
+import Grisette.Internal.Internal.Decl.Core.Data.Class.ToCon (ToCon (toCon))
 import Grisette.Internal.Internal.Decl.Core.Data.Class.TryMerge
   ( mrgSingle,
     tryMerge,

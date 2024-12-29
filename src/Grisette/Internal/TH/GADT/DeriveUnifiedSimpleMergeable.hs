@@ -81,8 +81,7 @@ unifiedSimpleMergeableConfig =
             [] -> return $ head newModeVars
             [(i, _)] -> do
               if i >= length keptNewVars
-                then
-                  fail "UnifiedSimpleMergeable reference to a non-existent mode variable"
+                then fail "UnifiedSimpleMergeable reference to a non-existent mode variable"
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSimpleMergeable does not support multiple evaluation modes"
           appT (conT con) (return $ fst modeVar),

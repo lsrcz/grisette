@@ -71,8 +71,7 @@ unifiedSymOrdConfig =
             [] -> return $ head newModeVars
             [(i, _)] -> do
               if i >= length keptNewVars
-                then
-                  fail "UnifiedSymOrd reference to a non-existent mode variable"
+                then fail "UnifiedSymOrd reference to a non-existent mode variable"
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSymOrd does not support multiple evaluation modes"
           appT (conT con) (return $ fst modeVar),

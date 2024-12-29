@@ -72,13 +72,13 @@ symbolicProdOrdOkProp l r ll lr rl rr = do
   l
     `symCompare` r
     .@?= ( ( do
-              lc <- symCompare ll rl
-              case lc of
-                EQ -> symCompare lr rr
-                _ -> mrgReturn lc
-          ) ::
-            Union Ordering
-        )
+               lc <- symCompare ll rl
+               case lc of
+                 EQ -> symCompare lr rr
+                 _ -> mrgReturn lc
+           ) ::
+             Union Ordering
+         )
 
 sordTests :: Test
 sordTests =
