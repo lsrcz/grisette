@@ -53,6 +53,7 @@ import Grisette.Internal.TH.Ctor.UnifiedConstructor
     makeUnifiedCtor,
     makeUnifiedCtorWith,
   )
+import Grisette.Internal.TH.GADT.Common (DeriveConfig (..), EvalModeConfig (..))
 import Grisette.Internal.TH.GADT.DeriveGADT
   ( allClasses0,
     allClasses01,
@@ -69,4 +70,3 @@ import Grisette.Internal.TH.GADT.DeriveGADT
     ordClasses1,
     ordClasses2,
   )
-import Grisette.Internal.TH.GADT.Common (EvalModeConfig (..), DeriveConfig (..))
