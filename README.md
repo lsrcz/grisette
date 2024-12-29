@@ -48,7 +48,7 @@ can add it to your project's `.cabal` file:
 ```cabal
 library
   ...
-  build-depends: grisette >= 0.10 < 0.11
+  build-depends: grisette >= 0.11 < 0.12
 ```
 
 #### Using stack
@@ -59,14 +59,14 @@ Note: Grisette on Stackage is currently outdated. Please make sure to use
 
 ```yaml
 extra-deps:
-  - grisette-0.10.0.0
+  - grisette-0.11.0.0
 ```
 
 and in your `package.yaml` file:
 
 ```yaml
 dependencies:
-  - grisette >= 0.10 < 0.11
+  - grisette >= 0.11 < 0.12
 ```
 
 #### Quick start template with `stack new`
@@ -168,33 +168,36 @@ the GADT,
 data Expr a where
   IntVal :: SymInteger -> IntExpr
   BoolVal :: SymBool -> BoolExpr
-  Add :: UIntExpr -> UIntExpr -> IntExpr
-  Mul :: UIntExpr -> UIntExpr -> IntExpr
-  BAnd :: UBoolExpr -> UBoolExpr -> BoolExpr
-  BOr :: UBoolExpr -> UBoolExpr -> BoolExpr
+  Add :: IntUExpr -> IntUExpr -> IntExpr
+  Mul :: IntUExpr -> IntUExpr -> IntExpr
+  BAnd :: BoolUExpr -> BoolUExpr -> BoolExpr
+  BOr :: BoolUExpr -> BoolUExpr -> BoolExpr
   Eq :: (BasicSymPrim a) => UExpr a -> UExpr a -> BoolExpr
 
 type IntExpr = Expr SymInteger
 type BoolExpr = Expr SymBool
 type UExpr a = Union (Expr a)
-type UIntExpr = UExpr SymInteger
-type UBoolExpr = UExpr SymBool
+type IntUExpr = UExpr SymInteger
+type BoolUExpr = UExpr SymBool
 ```
 
 To make this GADT works well with Grisette, we need to derive some instances and
 get some smart constructors:
 
-- `deriveGADTAll` derives all the instances related to Grisette, and
+- `deriveGADT` provides instances for data types that are frequently used with
+  or provided by Grisette. See the
+  [documentation](https://hackage.haskell.org/package/grisette/docs/Grisette-TH.html)
+  for the details on what instances are provided.
 - `makeSmartCtor` generates smart constructors for the GADT.
 
 ```haskell
 deriving instance Show (Expr a)
-deriveGADTAll ''Expr
+deriveGADT [''Expr] basicClasses0
 makeSmartCtor ''Expr
 
-> intVal 1 :: UIntExpr -- smart constructor for IntVal in Unions
+> intVal 1 :: IntUExpr -- smart constructor for IntVal in Unions
 {IntVal 1}
--- Add takes two UIntExprs, use the smart constructors
+-- Add takes two IntUExprs, use the smart constructors
 > Add (intVal "a") (intVal 1)
 Add {IntVal a} {IntVal 1}
 ```
@@ -207,7 +210,7 @@ the synthesizer picks true, the result is `a + 2`; otherwise, it is `a * 2`.
 ```haskell
 add2 = add (intVal "a") (intVal 2)
 mul2 = mul (intVal "a") (intVal 2)
-> mrgIf "choice" add2 mul2 :: UIntExpr
+> mrgIf "choice" add2 mul2 :: IntUExpr
 {If choice {Add {IntVal a} {IntVal 2}} {Mul {IntVal a} {IntVal 2}}}
 ```
 
@@ -248,11 +251,11 @@ does not exist a counter-example that makes the two expressions evaluate to
 different values.
 
 ```haskell
-lhs = Add (intVal "a") (intVal "b")
-rhs = Add (intVal "b") (intVal "a")
-rhs2 = Add (intVal "a") (intVal "a")
+aPlusB = Add (intVal "a") (intVal "b")
+bPlusA = Add (intVal "b") (intVal "a")
+aPlusA = Add (intVal "a") (intVal "a")
 
-> solve z3 $ eval lhs ./= eval rhs
+> solve z3 $ eval aPlusB ./= eval bPlusA
 Left Unsat
 ```
 
@@ -262,7 +265,7 @@ different values. The counter-example is $a=0$, $b=1$, such that $a+b=1$ and
 $a+a=0$.
 
 ``` haskell
-> solve z3 $ eval lhs ./= eval rhs2
+> solve z3 $ eval aPlusB ./= eval aPlusA
 Right (Model {a -> 0 :: Integer, b -> 1 :: Integer})
 ```
 
