@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -35,9 +36,14 @@ module Grisette.Internal.SymPrim.GeneralFun
   )
 where
 
+#if MIN_VERSION_base(4,20,0)
+import Data.Foldable (Foldable (toList))
+#else
+import Data.Foldable (Foldable (foldl', toList))
+#endif
+
 import Control.DeepSeq (NFData (rnf))
 import Data.Bifunctor (Bifunctor (second))
-import Data.Foldable (Foldable (foldl', toList))
 import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.List.NonEmpty (NonEmpty ((:|)))
