@@ -7,6 +7,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 -- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=symeq #-}
 
 module Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq () where

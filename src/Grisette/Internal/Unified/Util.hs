@@ -29,8 +29,8 @@ module Grisette.Internal.Unified.Util
 where
 
 import Data.Typeable (type (:~:) (Refl))
-import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
+import Grisette.Internal.Utils.Parameterized (unsafeAxiom)
 
 -- | A class that provides the mode tag at runtime.
 class DecideEvalMode (mode :: EvalModeTag) where
