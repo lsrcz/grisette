@@ -256,20 +256,31 @@ synthesisRewriteTarget expr sketch = do
       putStrLn $ "Synthesis failed with error: " ++ show failure
       putStrLn $ "Counter example list: " ++ show cex
 
-productOfSum :: Expr SymInteger
+-- * Verification and synthesis examples
+
+aPlusB :: IntExpr
+aPlusB = Add (intVal "a") (intVal "b")
+
+bPlusA :: IntExpr
+bPlusA = Add (intVal "b") (intVal "a")
+
+aPlusA :: IntExpr
+aPlusA = Add (intVal "a") (intVal "a")
+
+productOfSum :: IntExpr
 productOfSum = Mul (intVal "a") (add (intVal "b") (intVal "c"))
 
-sumOfProduct :: Expr SymInteger
+sumOfProduct :: IntExpr
 sumOfProduct =
   Add (mul (intVal "a") (intVal "b")) (mul (intVal "a") (intVal "c"))
 
-allSum :: Expr SymInteger
+allSum :: IntExpr
 allSum = Add (intVal "a") (add (intVal "b") (intVal "c"))
 
-xPlusX :: Expr SymInteger
+xPlusX :: IntExpr
 xPlusX = Add (intVal "x") (intVal "x")
 
-xTimesC :: UExpr SymInteger
+xTimesC :: IntUExpr
 xTimesC = mul (intVal "x") (intVal "c")
 
 -- | We can use the `Fresh` monad to build sketches in a modular way.
@@ -291,7 +302,7 @@ xTimesC = mul (intVal "x") (intVal "c")
 -- `Fresh` monad. The solver can then determine the values of these boolean
 -- variables to select the desired expressions. Each call to `chooseUnionFresh`
 -- generates new variables, ensuring no overlap between different choices.
-nextLevel :: [UExpr SymInteger] -> Fresh (UExpr SymInteger)
+nextLevel :: [IntUExpr] -> Fresh IntUExpr
 nextLevel exprs = do
   lhs <- chooseUnionFresh exprs
   rhs <- chooseUnionFresh exprs
@@ -307,18 +318,23 @@ nextLevel exprs = do
 --
 -- This creates a rich space of possible expressions by composing
 -- additions, multiplications and variable selections at multiple levels.
-getSketch :: Fresh (UExpr SymInteger)
+getSketch :: Fresh IntUExpr
 getSketch = do
   let atom = [intVal "a", intVal "b", intVal "c"]
   l2 <- nextLevel atom
   r2 <- nextLevel atom
   nextLevel [l2, r2]
 
-sketch :: UExpr SymInteger
+sketch :: IntUExpr
 sketch = runFresh getSketch "sketch"
 
 main :: IO ()
 main = do
+  putStrLn "---- verifying a + b and b + a are equivalent ----"
+  verifyEquivalent aPlusB bPlusA
+  putStrLn "---- verifying a + a and a + b are not equivalent (should fail) ----"
+  verifyEquivalent aPlusA aPlusB
+
   putStrLn "---- verifying productOfSum and sumOfProduct are equivalent ----"
   verifyEquivalent productOfSum sumOfProduct
   putStrLn "---- verifying productOfSum and allSum are equivalent (should fail) ----"
