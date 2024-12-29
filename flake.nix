@@ -6,8 +6,21 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
+        z3_overlay = (self: super: {
+          z3 = super.z3.overrideAttrs (oldAttrs: rec {
+            version = "4.13.4";
+            src = pkgs.fetchFromGitHub {
+              owner = "Z3Prover";
+              repo = "z3";
+              rev = "z3-4.13.4";
+              sha256 = "sha256-8hWXCr6IuNVKkOegEmWooo5jkdmln9nU7wI8T882BSE=";
+            };
+          });
+        });
+
         pkgs = import nixpkgs {
           inherit system;
+          overlays = [ z3_overlay ];
         };
 
         stableHPkgs = pkgs.haskell.packages."ghc983";
@@ -20,16 +33,12 @@
               hself.callHackage "ghc-syntax-highlighter" "0.0.11.0" { };
           });
 
-        z3 = version: if version == "4_12" then pkgs.z3_4_12 else
-          if version == "4_11" then pkgs.z3_4_11 else
-          pkgs.z3;
-
-        basicDevTools = {version, z3_version}:
+        basicDevTools = {version}:
           let hPkgs = hPkgsWithVersion version; in [
             hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
             stack-wrapped
             pkgs.zlib # External C library needed by some Haskell packages
-            (z3 z3_version)
+            pkgs.z3
           ];
 
         bitwuzlaDevTools = [
@@ -61,8 +70,8 @@
             }))
           ];
 
-        devTools = { version, cabal, additional, bitwuzla, z3_version }:
-          basicDevTools { inherit version z3_version; } ++
+        devTools = { version, cabal, additional, bitwuzla }:
+          basicDevTools { inherit version; } ++
           (if cabal
           then cabalDevTools
           else [ ]) ++
@@ -91,17 +100,17 @@
               "
           '';
         };
-        devShellsWithVersion = { version, cabal, additional, bitwuzla, z3_version }:
+        devShellsWithVersion = { version, cabal, additional, bitwuzla }:
           pkgs.mkShell {
             buildInputs = devTools {
-              inherit version cabal additional bitwuzla z3_version;
+              inherit version cabal additional bitwuzla;
             };
 
             # Make external Nix c libraries like zlib known to GHC, like
             # pkgs.haskell.lib.buildStackProject does
             # https://github.com/NixOS/nixpkgs/blob/d64780ea0e22b5f61cd6012a456869c702a72f20/pkgs/development/haskell-modules/generic-stack-builder.nix#L38
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (devTools {
-              inherit version cabal additional bitwuzla z3_version;
+              inherit version cabal additional bitwuzla;
             });
           };
 
@@ -110,23 +119,23 @@
         formatter.x86_64-linux = pkgs.nixpkgs-fmt;
 
         devShells = {
-          "8107-ci" = devShellsWithVersion { version = "8107"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "902-ci" = devShellsWithVersion { version = "902"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "928-ci" = devShellsWithVersion { version = "928"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "948-ci" = devShellsWithVersion { version = "948"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "966-ci" = devShellsWithVersion { version = "966"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "983-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; bitwuzla = true; z3_version = "4_12"; };
-          "983-macOS-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_11"; };
-          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
+          "8107-ci" = devShellsWithVersion { version = "8107"; cabal = true; additional = false; bitwuzla = false; };
+          "902-ci" = devShellsWithVersion { version = "902"; cabal = true; additional = false; bitwuzla = false; };
+          "928-ci" = devShellsWithVersion { version = "928"; cabal = true; additional = false; bitwuzla = false; };
+          "948-ci" = devShellsWithVersion { version = "948"; cabal = true; additional = false; bitwuzla = false; };
+          "966-ci" = devShellsWithVersion { version = "966"; cabal = true; additional = false; bitwuzla = false; };
+          "983-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; bitwuzla = true; };
+          "983-macOS-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; bitwuzla = false; };
+          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; bitwuzla = false; };
 
-          "8107" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "902" = devShellsWithVersion { version = "902"; cabal = false; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "928" = devShellsWithVersion { version = "928"; cabal = false; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "948" = devShellsWithVersion { version = "948"; cabal = false; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "966" = devShellsWithVersion { version = "966"; cabal = false; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          "983" = devShellsWithVersion { version = "983"; cabal = true; additional = true; bitwuzla = true; z3_version = "4_12"; };
-          "9101" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; bitwuzla = false; z3_version = "4_12"; };
-          default = devShellsWithVersion { version = "983"; cabal = true; additional = true; bitwuzla = true; z3_version = "4_12"; };
+          "8107" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; bitwuzla = false; };
+          "902" = devShellsWithVersion { version = "902"; cabal = false; additional = false; bitwuzla = false; };
+          "928" = devShellsWithVersion { version = "928"; cabal = false; additional = false; bitwuzla = false; };
+          "948" = devShellsWithVersion { version = "948"; cabal = false; additional = false; bitwuzla = false; };
+          "966" = devShellsWithVersion { version = "966"; cabal = false; additional = false; bitwuzla = false; };
+          "983" = devShellsWithVersion { version = "983"; cabal = true; additional = true; bitwuzla = true; };
+          "9101" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; bitwuzla = false; };
+          default = devShellsWithVersion { version = "983"; cabal = true; additional = true; bitwuzla = true; };
         };
       });
 }
