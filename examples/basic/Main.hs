@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -94,15 +96,13 @@ type IntUExpr = UExpr SymInteger
 
 type BoolUExpr = UExpr SymBool
 
--- The `deriveGADTAll` and `makeSmartCtor` functions are provided by Grisette
+-- The `deriveGADT` and `makeSmartCtor` functions are provided by Grisette
 -- to automatically derive some instances and construct some smart constructors
 -- for the GADT.
 --
 -- The GADT will then be fully compatible with Grisette library. And we will see
 -- their usage in the following code.
-deriveGADT
-  [''Expr]
-  [''Show, ''Mergeable, ''EvalSym, ''ExtractSym, ''PPrint]
+deriveGADT [''Expr] basicClasses0
 makeSmartCtor ''Expr
 
 -- Here we construct some symbolic expressions.

@@ -16,11 +16,17 @@ module Grisette.Internal.TH.GADT.DeriveGADT
   ( deriveGADT,
     deriveGADTWith,
     allClasses0,
-    allClasses0WithOrd,
-    allClasses1,
-    allClasses1WithOrd,
-    allClasses2,
-    allClasses2WithOrd,
+    allClasses01,
+    allClasses012,
+    basicClasses0,
+    noExistentialClasses0,
+    ordClasses0,
+    basicClasses1,
+    noExistentialClasses1,
+    ordClasses1,
+    basicClasses2,
+    noExistentialClasses2,
+    ordClasses2,
   )
 where
 
@@ -467,10 +473,115 @@ deriveGADTWith deriveConfig typeNameList classNameList = do
 deriveGADT :: [Name] -> [Name] -> Q [Dec]
 deriveGADT = deriveGADTWith mempty
 
--- | The set of all classes (excluding concrete 'Ord') that can be derived by
--- 'deriveGADT'.
+-- | All the classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Mergeable'
+-- * 'EvalSym'
+-- * 'ExtractSym'
+-- * 'SubstSym'
+-- * 'NFData'
+-- * 'Hashable'
+-- * 'Show'
+-- * 'PPrint'
+-- * 'AllSyms'
+-- * 'Eq'
+-- * 'SymEq'
+-- * 'SymOrd'
+-- * 'UnifiedSymEq'
+-- * 'Ord'
+-- * 'UnifiedSymOrd'
+-- * 'Serial'
+-- * 'ToCon'
+-- * 'ToSym'
 allClasses0 :: [Name]
-allClasses0 =
+allClasses0 = basicClasses0 ++ ordClasses0 ++ noExistentialClasses0
+
+-- | All the @*1@ classes that can be derived for GADT functors.
+--
+-- This includes:
+--
+-- * 'Mergeable1'
+-- * 'EvalSym1'
+-- * 'ExtractSym1'
+-- * 'SubstSym1'
+-- * 'NFData1'
+-- * 'Hashable1'
+-- * 'Show1'
+-- * 'PPrint1'
+-- * 'AllSyms1'
+-- * 'Eq1'
+-- * 'SymEq1'
+-- * 'SymOrd1'
+-- * 'UnifiedSymEq1'
+-- * 'Ord1'
+-- * 'UnifiedSymOrd1'
+-- * 'Serial1'
+-- * 'ToCon1'
+-- * 'ToSym1'
+allClasses1 :: [Name]
+allClasses1 = basicClasses1 ++ ordClasses1 ++ noExistentialClasses1
+
+-- | All the classes that can be derived for GADT functors.
+--
+-- This includes all the classes in 'allClasses0' and 'allClasses1'.
+allClasses01 :: [Name]
+allClasses01 = allClasses0 ++ allClasses1
+
+-- | All the @*2@ classes that can be derived for GADT functors.
+--
+-- This includes:
+--
+-- * 'Mergeable2'
+-- * 'EvalSym2'
+-- * 'ExtractSym2'
+-- * 'SubstSym2'
+-- * 'NFData2'
+-- * 'Hashable2'
+-- * 'Show2'
+-- * 'PPrint2'
+-- * 'AllSyms2'
+-- * 'Eq2'
+-- * 'SymEq2'
+-- * 'SymOrd2'
+-- * 'UnifiedSymEq2'
+-- * 'Ord2'
+-- * 'UnifiedSymOrd2'
+-- * 'Serial2'
+-- * 'ToCon2'
+-- * 'ToSym2'
+allClasses2 :: [Name]
+allClasses2 = basicClasses2 ++ ordClasses2 ++ noExistentialClasses2
+
+-- | All the classes that can be derived for GADTfunctors.
+--
+-- This includes all the classes in 'allClasses0', 'allClasses1',
+-- and 'allClasses2'.
+allClasses012 :: [Name]
+allClasses012 = allClasses0 ++ allClasses1 ++ allClasses2
+
+-- | Basic classes for GADTs.
+--
+-- This includes:
+--
+-- * 'Mergeable'
+-- * 'EvalSym'
+-- * 'ExtractSym'
+-- * 'SubstSym'
+-- * 'NFData'
+-- * 'Hashable'
+-- * 'Show'
+-- * 'PPrint'
+-- * 'AllSyms'
+-- * 'Eq'
+-- * 'SymEq'
+-- * 'SymOrd'
+-- * 'UnifiedSymEq'
+--
+-- These classes can be derived for most GADTs.
+basicClasses0 :: [Name]
+basicClasses0 =
   [ ''Mergeable,
     ''EvalSym,
     ''ExtractSym,
@@ -483,76 +594,142 @@ allClasses0 =
     ''Eq,
     ''SymEq,
     ''SymOrd,
-    ''UnifiedSymEq,
-    ''ToCon,
-    ''ToSym,
-    ''Serial
+    ''UnifiedSymEq
   ]
 
-allOrdClasses0 :: [Name]
-allOrdClasses0 = [''Ord, ''UnifiedSymOrd]
+-- | Classes that can only be derived for GADTs without existential type
+-- variables.
+--
+-- This includes:
+--
+-- * 'Serial'
+-- * 'ToCon'
+-- * 'ToSym'
+noExistentialClasses0 :: [Name]
+noExistentialClasses0 = [''Serial, ''ToCon, ''ToSym]
 
--- | The set of all classes (including concrete 'Ord') that can be derived by
--- 'deriveGADT'.
-allClasses0WithOrd :: [Name]
-allClasses0WithOrd = allOrdClasses0 ++ allClasses0
+-- | Concrete ordered classes that can be derived for GADTs that
+--
+-- * uses unified evaluation mode, or
+-- * does not contain any symbolic variables.
+--
+-- This includes:
+--
+-- * 'Ord'
+-- * 'UnifiedSymOrd'
+ordClasses0 :: [Name]
+ordClasses0 = [''Ord, ''UnifiedSymOrd]
 
--- | The set of all classes for functors (excluding concrete 'Ord') that can be
--- derived by 'deriveGADT'.
-allClasses1 :: [Name]
-allClasses1 =
-  allClasses0
-    ++ [ ''Mergeable1,
-         ''EvalSym1,
-         ''ExtractSym1,
-         ''SubstSym1,
-         ''NFData1,
-         ''Hashable1,
-         ''Show1,
-         ''PPrint1,
-         ''AllSyms1,
-         ''Eq1,
-         ''SymEq1,
-         ''SymOrd1,
-         ''ToCon1,
-         ''ToSym1,
-         ''Serial1
-       ]
+-- | Basic classes for GADT functors.
+--
+-- This includes:
+--
+-- * 'Mergeable1'
+-- * 'EvalSym1'
+-- * 'ExtractSym1'
+-- * 'SubstSym1'
+-- * 'NFData1'
+-- * 'Hashable1'
+-- * 'Show1'
+-- * 'PPrint1'
+-- * 'AllSyms1'
+-- * 'Eq1'
+-- * 'SymEq1'
+-- * 'SymOrd1'
+-- * 'UnifiedSymEq1'
+basicClasses1 :: [Name]
+basicClasses1 =
+  [ ''Mergeable1,
+    ''EvalSym1,
+    ''ExtractSym1,
+    ''SubstSym1,
+    ''NFData1,
+    ''Hashable1,
+    ''Show1,
+    ''PPrint1,
+    ''AllSyms1,
+    ''Eq1,
+    ''SymEq1,
+    ''SymOrd1,
+    ''UnifiedSymEq1
+  ]
 
-allOrdClasses1 :: [Name]
-allOrdClasses1 = allOrdClasses0 ++ [''Ord1, ''UnifiedSymOrd1]
+-- | @*1@ classes that can only be derived for GADT functors without existential
+-- type variables.
+--
+-- This includes:
+--
+-- * 'Serial1'
+-- * 'ToCon1'
+-- * 'ToSym1'
+noExistentialClasses1 :: [Name]
+noExistentialClasses1 = [''Serial1, ''ToCon1, ''ToSym1]
 
--- | The set of all classes for functors (including concrete 'Ord') that can be
--- derived by 'deriveGADT'.
-allClasses1WithOrd :: [Name]
-allClasses1WithOrd = allClasses1 ++ allOrdClasses1
+-- | @*1@ concrete ordered classes that can be derived for GADT functors that
+--
+-- * uses unified evaluation mode, or
+-- * does not contain any symbolic variables.
+--
+-- This includes:
+--
+-- * 'Ord1'
+-- * 'UnifiedSymOrd1'
+ordClasses1 :: [Name]
+ordClasses1 = [''Ord1, ''UnifiedSymOrd1]
 
--- | The set of all classes for bifunctors (excluding concrete 'Ord') that can
--- be derived by 'deriveGADT'.
-allClasses2 :: [Name]
-allClasses2 =
-  allClasses1
-    ++ [ ''Mergeable2,
-         ''EvalSym2,
-         ''ExtractSym2,
-         ''SubstSym2,
-         ''NFData2,
-         ''Hashable2,
-         ''Show2,
-         ''PPrint2,
-         ''AllSyms2,
-         ''Eq2,
-         ''SymEq2,
-         ''SymOrd2,
-         ''ToCon2,
-         ''ToSym2,
-         ''Serial2
-       ]
+-- | Basic classes for GADT functors.
+--
+-- This includes:
+--
+-- * 'Mergeable2'
+-- * 'EvalSym2'
+-- * 'ExtractSym2'
+-- * 'SubstSym2'
+-- * 'NFData2'
+-- * 'Hashable2'
+-- * 'Show2'
+-- * 'PPrint2'
+-- * 'AllSyms2'
+-- * 'Eq2'
+-- * 'SymEq2'
+-- * 'SymOrd2'
+-- * 'UnifiedSymEq2'
+basicClasses2 :: [Name]
+basicClasses2 =
+  [ ''Mergeable2,
+    ''EvalSym2,
+    ''ExtractSym2,
+    ''SubstSym2,
+    ''NFData2,
+    ''Hashable2,
+    ''Show2,
+    ''PPrint2,
+    ''AllSyms2,
+    ''Eq2,
+    ''SymEq2,
+    ''SymOrd2,
+    ''UnifiedSymEq2
+  ]
 
-allOrdClasses2 :: [Name]
-allOrdClasses2 = allOrdClasses1 ++ [''Ord2, ''UnifiedSymOrd2]
+-- | @*2@ classes that can only be derived for GADT functors without existential
+-- type variables.
+--
+-- This includes:
+--
+-- * 'Serial2'
+-- * 'ToCon2'
+-- * 'ToSym2'
+noExistentialClasses2 :: [Name]
+noExistentialClasses2 = [''Serial2, ''ToCon2, ''ToSym2]
 
--- | The set of all classes for bifunctors (including concrete 'Ord') that can
--- be derived by 'deriveGADT'.
-allClasses2WithOrd :: [Name]
-allClasses2WithOrd = allClasses2 ++ allOrdClasses2
+-- | @*2@ concrete ordered classes that can be derived for GADT functors that
+--
+-- * uses unified evaluation mode, or
+-- * does not contain any symbolic variables.
+--
+-- This includes:
+--
+-- * 'Ord2'
+-- * 'UnifiedSymOrd2'
+ordClasses2 :: [Name]
+ordClasses2 = [''Ord2, ''UnifiedSymOrd2]
