@@ -86,8 +86,8 @@ import Grisette
     ToCon (toCon),
     ToSym (toSym),
     Union,
-    allClasses0WithOrd,
-    allClasses2WithOrd,
+    allClasses0,
+    allClasses012,
     deriveGADT,
     deriveGADTWith,
   )
@@ -128,7 +128,7 @@ deriveGADTWith
       }
   )
   [''T]
-  allClasses0WithOrd
+  allClasses0
 
 concreteT :: T 'C 10 Integer
 concreteT =
@@ -152,7 +152,7 @@ deriveGADTWith
       }
   )
   [''X]
-  allClasses0WithOrd
+  allClasses0
 
 data IdenticalFields (mode :: EvalModeTag) a b = IdenticalFields
   { a :: a,
@@ -167,11 +167,11 @@ deriveGADTWith
       }
   )
   [''IdenticalFields]
-  allClasses2WithOrd
+  allClasses012
 
 data Basic = Basic0 | Basic1 Int | Basic2 String [Int]
 
-deriveGADT [''Basic] allClasses0WithOrd
+deriveGADT [''Basic] allClasses0
 
 data Extra mode n eb sb a where
   Extra ::
@@ -194,7 +194,7 @@ deriveGADTWith
       }
   )
   [''Extra]
-  allClasses0WithOrd
+  allClasses0
 #endif
 
 data Expr f a where
@@ -424,5 +424,5 @@ deriveGADTWith
       }
   )
   [''SimpleMergeableType]
-  ([''SimpleMergeable, ''UnifiedSimpleMergeable] ++ allClasses0WithOrd)
+  ([''SimpleMergeable, ''UnifiedSimpleMergeable] ++ allClasses0)
 #endif
