@@ -85,7 +85,13 @@ pprintConfig =
                 extraLiftedPatNames = \i -> (["pl" | i /= 0]),
                 fieldCombineFun = \_ variant conName [prec] exps -> do
                   let initExps =
-                        (\e -> [|$(return e) <> "," <> flatAlt "" " "|])
+                        ( \e ->
+                            [|
+                              $(return e)
+                                <> (fromString ",")
+                                <> flatAlt (fromString "") (fromString " ")
+                              |]
+                        )
                           <$> init exps
                       lastExp = [|$(return $ last exps)|]
                       commaSeped = initExps ++ [lastExp]
@@ -98,19 +104,24 @@ pprintConfig =
                         [|
                           pformatWithConstructorNoAlign
                             $(return prec)
-                            $(stringE $ nameBase conName)
+                            (fromString $(stringE $ nameBase conName))
                             [$(return exp)]
                           |]
                       return (r, [True])
                     (NormalConstructor, _) | isNonUnitTuple conName -> do
-                      r <- [|groupedEnclose "(" ")" $ vcat $ $(listE commaSeped)|]
+                      r <-
+                        [|
+                          groupedEnclose (fromString "(") (fromString ")") $
+                            vcat $
+                              $(listE commaSeped)
+                          |]
                       return (r, [False])
                     (NormalConstructor, _) -> do
                       r <-
                         [|
                           pformatWithConstructorNoAlign
                             $(return prec)
-                            $(stringE $ nameBase conName)
+                            (fromString $(stringE $ nameBase conName))
                             [vsep $(return $ ListE exps)]
                           |]
                       return (r, [True])
@@ -119,8 +130,11 @@ pprintConfig =
                         [|
                           pformatWithConstructorNoAlign
                             $(return prec)
-                            $(stringE $ nameBase conName)
-                            [groupedEnclose "{" "}" $ vcat $ $(listE commaSeped)]
+                            (fromString $(stringE $ nameBase conName))
+                            [ groupedEnclose (fromString "{") (fromString "}") $
+                                vcat $
+                                  $(listE commaSeped)
+                            ]
                           |]
                       return (r, [True])
                     (InfixConstructor, [l, r]) -> do
@@ -132,8 +146,8 @@ pprintConfig =
                           group
                             $ condEnclose
                               ($(return prec) > $(integerE conPrec))
-                              "("
-                              ")"
+                              (fromString "(")
+                              (fromString ")")
                             $ nest 2
                             $ vsep
                               [ align $ $(return l),
