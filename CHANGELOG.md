@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0.0] - UNRELEASED
+
+### Added
+- Added `deriveGADT` for deriving all relevant instances for GADTs.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+- Added `EvalModeConvertible` for a unified constraint for the evaluation modes
+  that can be converted to each other with `ToCon` and `ToSym`.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+
+### Changed
+- [Breaking] We no longer support direct `toCon` from a union to a single value
+  or `toSym` from a single value to a union. These should now be done through
+  `mrgToSym`, `toUnionSym`, and `unionToCon`.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+
+### Fixed
+- Fixed some missing constraints for unified interfaces.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+- Fixed badly staged types in the lifting of terms.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+- Fixed the `Read` instance for bit-vectors on GHC 9.12.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+
+### Removed
+- Removed old template-haskell-based derivation mechanism.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
+
 ## [0.10.0.0] - 2024-12-11
 
 ### Added
@@ -520,7 +547,7 @@ No user-facing changes.
 
 - Initial release for Grisette.
 
-[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.10.0.0...HEAD
+[0.11.0.0]: https://github.com/lsrcz/grisette/compare/v0.10.0.0...HEAD
 [0.10.0.0]: https://github.com/lsrcz/grisette/compare/v0.9.0.0...v0.10.0.0
 [0.9.0.0]: https://github.com/lsrcz/grisette/compare/v0.8.0.0...v0.9.0.0
 [0.8.0.0]: https://github.com/lsrcz/grisette/compare/v0.7.0.0...v0.8.0.0
