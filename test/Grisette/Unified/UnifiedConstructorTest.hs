@@ -40,8 +40,8 @@ import Grisette
     SymInteger,
     ToSym (toSym),
     Union,
-    allClasses0WithOrd,
-    allClasses1WithOrd,
+    allClasses0,
+    allClasses01,
     deriveGADT,
     deriveGADTWith,
     mrgReturn,
@@ -67,7 +67,7 @@ deriveGADTWith
       }
   )
   [''T]
-  allClasses0WithOrd
+  allClasses0
 
 makePrefixedUnifiedCtor [''EvalModeBase] "mk" ''T
 #endif
@@ -86,12 +86,12 @@ f = mkT (toSym True) 10 mkT1
 
 data TNoMode a = TNoMode0 Bool a (TNoMode a) | TNoMode1
 
-deriveGADT [''TNoMode] allClasses1WithOrd
+deriveGADT [''TNoMode] allClasses01
 makeNamedUnifiedCtor [] ["tNoMode0", "tNoMode1"] ''TNoMode
 
 data TNoArg = TNoArg
 
-deriveGADT [''TNoArg] allClasses0WithOrd
+deriveGADT [''TNoArg] allClasses0
 makePrefixedUnifiedCtor [] "mk" ''TNoArg
 
 #if MIN_VERSION_base(4,16,0)
