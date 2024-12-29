@@ -10,6 +10,8 @@
 -- Portability :   GHC only
 module Grisette.TH
   ( -- * Convenient derivation of all instances relating to Grisette
+    EvalModeConfig (..),
+    DeriveConfig (..),
     deriveGADT,
     deriveGADTWith,
     allClasses0,
@@ -67,3 +69,4 @@ import Grisette.Internal.TH.GADT.DeriveGADT
     ordClasses1,
     ordClasses2,
   )
+import Grisette.Internal.TH.GADT.Common (EvalModeConfig (..), DeriveConfig (..))
