@@ -20,6 +20,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   or `toSym` from a single value to a union. These should now be done through
   `mrgToSym`, `toUnionSym`, and `unionToCon`.
   ([#267](https://github.com/lsrcz/grisette/pull/267))
+- [Breaking] Changed the `EvalMode` tag for `Con` to `C` and `Sym` to `S`.
+  ([#267](https://github.com/lsrcz/grisette/pull/267))
 
 ### Fixed
 - Fixed some missing constraints for unified interfaces.
