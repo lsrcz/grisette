@@ -250,6 +250,8 @@ defaultUnaryOpInstanceTypeFromConfig ::
   DeriveConfig -> [(Type, Kind)] -> [(Type, Kind)] -> Name -> Q Type
 defaultUnaryOpInstanceTypeFromConfig _ _ _ = conT
 
+-- | Configuration for the derivation rules for a unary operation that can be
+-- derived by transforming each field and then combining the results.
 data UnaryOpFieldConfig = UnaryOpFieldConfig
   { extraPatNames :: [String],
     extraLiftedPatNames :: Int -> [String],
@@ -271,6 +273,7 @@ data UnaryOpFieldConfig = UnaryOpFieldConfig
     fieldFunExp :: FieldFunExp
   }
 
+-- | Configuration for the derivation rules for a unary operation.
 class UnaryOpFunConfig config where
   genUnaryOpFun ::
     -- | Derive configuration

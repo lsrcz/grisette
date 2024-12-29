@@ -40,6 +40,6 @@ class
   ) =>
   UnifiedBool (mode :: EvalModeTag)
   where
-  -- | Get a unified Boolean type. Resolves to 'Bool' in 'C' mode, and
-  -- 'SymBool' in 'S' mode.
+  -- | Get a unified Boolean type. Resolves to 'Bool' in 'Grisette.Unified.C'
+  -- mode, and 'SymBool' in 'Grisette.Unified.S' mode.
   type GetBool mode = bool | bool -> mode

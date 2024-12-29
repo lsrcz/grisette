@@ -228,6 +228,14 @@ onUnion4 f ua ub uc ud =
   simpleMerge $
     f <$> tryMerge ua <*> tryMerge ub <*> tryMerge uc <*> tryMerge ud
 
+-- | Convert a plain union to concrete values.
+--
+-- >>> unionToCon (return 1 :: Union SymInteger)
+-- Just 1
+-- >>> unionToCon (mrgIf "a" (return 1) (return 2) :: Union SymInteger)
+-- Nothing
+-- >>> unionToCon (return "a" :: Union SymInteger)
+-- Nothing
 unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
 unionToCon u =
   case (singleView u, ifView u) of

@@ -304,7 +304,7 @@ isNonUnitTupleString :: String -> Bool
 isNonUnitTupleString ('(' : ',' : _) = True
 isNonUnitTupleString _ = False
 
--- | Check if a 'Name' is the data constructor name of a non-unit tuple.
+-- | Check if a name is the data constructor name of a non-unit tuple.
 isNonUnitTuple :: Name -> Bool
 isNonUnitTuple nm =
   isNonUnitTupleString $ nameBase nm

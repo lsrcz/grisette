@@ -99,6 +99,7 @@ type BVConstraint mode word int =
   ) ::
     Constraint
 
+-- | Constraints for a pair of non-sized-tagged bit vector types.
 type SomeBVPair mode word int =
   ( UnifiedPrim mode word,
     UnifiedPrim mode int,
@@ -149,20 +150,22 @@ class
       int -> intn n
   where
   -- | Get a unified unsigned size-tagged bit vector type. Resolves to 'WordN'
-  -- in 'C' mode, and 'SymWordN' in 'S' mode.
+  -- in 'Grisette.Unified.C' mode, and 'SymWordN' in 'Grisette.Unified.S' mode.
   type GetWordN mode = (w :: Nat -> Type) | w -> mode
 
   -- | Get a unified signed size-tagged bit vector type. Resolves to 'IntN'
-  -- in 'C' mode, and 'SymIntN' in 'S' mode.
+  -- in 'Grisette.Unified.C' mode, and 'SymIntN' in 'Grisette.Unified.S' mode.
   type GetIntN mode = (i :: Nat -> Type) | i -> mode
 
 -- | Get a unified unsigned dynamic bit width bit vector type. Resolves to
--- 'SomeWordN' in 'C' mode, and 'SomeSymWordN' in 'S' mode.
+-- 'SomeWordN' in 'Grisette.Unified.C' mode, and 'SomeSymWordN' in
+-- 'Grisette.Unified.S' mode.
 type family GetSomeWordN mode = sw | sw -> mode where
   GetSomeWordN mode = SomeBV (GetWordN mode)
 
 -- | Get a unified signed dynamic bit width bit vector type. Resolves to
--- 'SomeIntN' in 'C' mode, and 'SomeSymIntN' in 'S' mode.
+-- 'SomeIntN' in 'Grisette.Unified.C' mode, and 'SomeSymIntN' in
+-- 'Grisette.Unified.S' mode.
 type family GetSomeIntN mode = sw | sw -> mode where
   GetSomeIntN mode = SomeBV (GetIntN mode)
 
@@ -179,6 +182,7 @@ class
   ) =>
   UnifiedBV mode n
 
+-- | Implementation for 'SafeUnifiedBV'.
 class
   ( UnifiedSafeDiv mode ArithException word m,
     UnifiedSafeLinearArith mode ArithException word m,
@@ -206,6 +210,7 @@ class
   ) =>
   SafeUnifiedBV mode n m
 
+-- | Implementation for 'SafeUnifiedSomeBV'.
 class
   ( SomeBVPair mode word int,
     UnifiedSafeDiv mode (Either SomeBVException ArithException) word m,

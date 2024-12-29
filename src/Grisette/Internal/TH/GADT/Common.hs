@@ -72,6 +72,7 @@ data CheckArgsResult = CheckArgsResult
     argVars :: [(Type, Kind)]
   }
 
+-- | Specialize the evaluation mode tags for the t'CheckArgsResult'.
 specializeResult :: [(Int, EvalModeTag)] -> CheckArgsResult -> Q CheckArgsResult
 specializeResult evalModeConfigs result = do
   let modeToName C = 'C
@@ -97,6 +98,7 @@ freshenConstructorInfo conInfo = do
   let substMap = M.fromList $ zip (tvName <$> vars) $ VarT <$> newNames
   return $ applySubstitution substMap conInfo {constructorVars = newVars}
 
+-- | Freshen the type variables in the t'CheckArgsResult'.
 freshenCheckArgsResult :: Bool -> CheckArgsResult -> Q CheckArgsResult
 freshenCheckArgsResult freshenNats result = do
   let genNewName :: (Type, Kind) -> Q (Maybe Name)
@@ -233,6 +235,7 @@ isVarUsedInConstructorFields constructors var =
       allFieldsFreeVars = S.fromList $ freeVariables allFields
    in S.member var allFieldsFreeVars
 
+-- | Check if a variable is used in the fields of a constructor.
 isVarUsedInFields :: CheckArgsResult -> Name -> Bool
 isVarUsedInFields CheckArgsResult {..} =
   isVarUsedInConstructorFields constructors
@@ -256,11 +259,21 @@ ctxForVar instanceExps ty knd = case knd of
     fail $ "Unsupported kind: " <> show knd
   _ -> return Nothing
 
+-- | Configuration for constraints for evaluation modes tag.
+--
+-- * 'EvalModeConstraints' specifies a list of constraints for the tag, for
+--   example, we may use 'Grisette.Unified.EvalModeBase' and
+--   'Grisette.Unified.EvalModeBV' to specify that the evaluation mode must
+--   support both base (boolean and data types) and bit vectors. This should be
+--   used when the data type uses bit vectors.
+--
+-- * 'EvalModeSpecified' specifies a that an evaluation mode tag should be
+--   specialized to a specific tag for all the instances.
 data EvalModeConfig
   = EvalModeConstraints [Name]
   | EvalModeSpecified EvalModeTag
 
--- | Extra constraints for a GADT.
+-- | Configuration for deriving instances for a GADT.
 data DeriveConfig = DeriveConfig
   { evalModeConfig :: [(Int, EvalModeConfig)],
     bitSizePositions :: [Int],
@@ -269,6 +282,7 @@ data DeriveConfig = DeriveConfig
     needExtraMergeableWithConcretizedEvalMode :: Bool
   }
 
+-- | Get all the evaluation modes to specialize in the t'DeriveConfig'.
 evalModeSpecializeList :: DeriveConfig -> [(Int, EvalModeTag)]
 evalModeSpecializeList DeriveConfig {..} =
   mapMaybe
@@ -286,41 +300,7 @@ instance Monoid DeriveConfig where
   mempty = DeriveConfig [] [] [] False False
   mappend = (<>)
 
--- checkValidExtraConstraintPosition ::
---   Name -> Name -> [(Type, Kind)] -> Int -> Q ()
--- checkValidExtraConstraintPosition tyName instanceName args n = do
---   when (n >= length args) $
---     fail $
---       "Cannot introduce extra constraint for the "
---         <> show n
---         <> "th argument of "
---         <> show tyName
---         <> " when deriving the "
---         <> show instanceName
---         <> " instance because there are only "
---         <> show (length args)
---         <> " arguments."
---
--- checkAllValidExtraConstraintPosition ::
---   DeriveConfig -> Name -> Name -> [(Type, Kind)] -> Q ()
--- checkAllValidExtraConstraintPosition
---   DeriveConfig {..}
---   tyName
---   instanceName
---   args = do
---     traverse_
---       (checkValidExtraConstraintPosition tyName instanceName args . fst)
---       evalModeConfig
---     traverse_
---       (checkValidExtraConstraintPosition tyName instanceName args)
---       bitSizePositions
---     traverse_
---       (checkValidExtraConstraintPosition tyName instanceName args . fst)
---       fpBitSizePositions
---     traverse_
---       (checkValidExtraConstraintPosition tyName instanceName args . snd)
---       fpBitSizePositions
-
+-- | Generate extra constraints for evaluation modes.
 extraEvalModeConstraint ::
   Name -> Name -> [(Type, Kind)] -> (Int, EvalModeConfig) -> Q [Pred]
 extraEvalModeConstraint
@@ -343,6 +323,7 @@ extraEvalModeConstraint
         traverse (\nm -> [t|$(conT nm) $(return arg)|]) names
 extraEvalModeConstraint _ _ _ (_, EvalModeSpecified _) = return []
 
+-- | Generate extra constraints for bit vectors.
 extraBitSizeConstraint :: Name -> Name -> [(Type, Kind)] -> Int -> Q [Pred]
 extraBitSizeConstraint tyName instanceName args n
   | n >= length args = return []
@@ -361,6 +342,7 @@ extraBitSizeConstraint tyName instanceName args n
       predPositive <- [t|1 <= $(return arg)|]
       return [predKnown, predPositive]
 
+-- | Generate extra constraints for floating point exponents and significands.
 extraFpBitSizeConstraint ::
   Name -> Name -> [(Type, Kind)] -> (Int, Int) -> Q [Pred]
 extraFpBitSizeConstraint tyName instanceName args (eb, sb)
@@ -382,6 +364,7 @@ extraFpBitSizeConstraint tyName instanceName args (eb, sb)
       pred <- [t|ValidFP $(return argEb) $(return argSb)|]
       return [pred]
 
+-- | Generate extra constraints for 'Mergeable' instances.
 extraExtraMergeableConstraint :: [ConstructorInfo] -> [(Type, Kind)] -> Q [Pred]
 extraExtraMergeableConstraint constructors args = do
   let isTypeUsedInFields' (VarT nm) =

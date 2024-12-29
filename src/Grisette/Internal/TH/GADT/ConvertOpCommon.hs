@@ -4,6 +4,14 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.ConvertOpCommon
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.ConvertOpCommon
   ( genConvertOpClass,
     ConvertOpClassConfig (..),
@@ -71,6 +79,7 @@ import Language.Haskell.TH.Datatype
 
 type FieldFunExp = M.Map Name Name -> Type -> Q Exp
 
+-- | Default field transformation function.
 defaultFieldFunExp :: [Name] -> FieldFunExp
 defaultFieldFunExp binaryOpFunNames argToFunPat = go
   where
@@ -268,6 +277,7 @@ genConvertOpFun
     let instanceFunName = (convertOpFunNames convertOpClassConfig) !! n
     return $ FunD instanceFunName clauses
 
+-- | Configuration for a convert operation class.
 data ConvertOpClassConfig = ConvertOpClassConfig
   { convertOpTarget :: EvalModeTag,
     convertOpInstanceNames :: [Name],
@@ -363,6 +373,7 @@ extraConstraintConvert
             ++ [extraMergeablePreds]
         )
 
+-- | Generate a convert operation class instance.
 genConvertOpClass ::
   DeriveConfig -> ConvertOpClassConfig -> Int -> Name -> Q [Dec]
 genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
@@ -375,17 +386,8 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
         False
         n
   oldRhsResult <- freshenCheckArgsResult False oldLhsResult
-  -- let baseSpecializeList = evalModeSpecializeList deriveConfig
-  -- let convertOpSource = case convertOpTarget of
-  --       S -> C
-  --       C -> S
   let lResult = oldLhsResult
   let rResult = oldRhsResult
-  -- let lConfig = deriveConfig {evalModeConfig = l}
-  -- let rConfig = deriveConfig {evalModeConfig = r}
-  -- lResult <- specializeResult (evalModeSpecializeList lConfig) oldLhsResult
-  -- rResult <- specializeResult (evalModeSpecializeList rConfig) oldRhsResult
-
   let instanceName = convertOpInstanceNames !! n
   let lKeptVars = keptVars lResult
   let rKeptVars = keptVars rResult

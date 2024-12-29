@@ -59,6 +59,16 @@ withMode con sym =
       Refl -> sym
 {-# INLINE withMode #-}
 
+-- | A class saying that we can convert a value with one mode to another mode.
+--
+-- Allowed conversions:
+--
+-- - 'C' <-> 'C'
+-- - 'S' <-> 'S'
+-- - 'C' <-> 'S'
+--
+-- Conversion from left to right uses 'Grisette.ToSym' class, and conversion
+-- from right to left uses 'Grisette.ToCon' class.
 class
   (DecideEvalMode c, DecideEvalMode s) =>
   EvalModeConvertible (c :: EvalModeTag) (s :: EvalModeTag)

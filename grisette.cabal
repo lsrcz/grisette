@@ -209,10 +209,6 @@ library
       Grisette.Internal.TH.Ctor.Common
       Grisette.Internal.TH.Ctor.SmartConstructor
       Grisette.Internal.TH.Ctor.UnifiedConstructor
-      Grisette.Internal.TH.DeriveInstanceProvider
-      Grisette.Internal.TH.DeriveTypeParamHandler
-      Grisette.Internal.TH.DeriveUnifiedInterface
-      Grisette.Internal.TH.DeriveWithHandlers
       Grisette.Internal.TH.GADT.BinaryOpCommon
       Grisette.Internal.TH.GADT.Common
       Grisette.Internal.TH.GADT.ConvertOpCommon

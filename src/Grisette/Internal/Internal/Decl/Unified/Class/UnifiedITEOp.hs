@@ -9,6 +9,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- |
+-- Module      :   Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
+-- Copyright   :   (c) Sirui Lu 2021-2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.Internal.Decl.Unified.Class.UnifiedITEOp
   ( UnifiedITEOp (..),
   )
