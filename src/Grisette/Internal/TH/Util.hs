@@ -50,7 +50,15 @@ import Language.Haskell.TH.Syntax
     addModFinalizer,
     putDoc,
   )
+#else
+import Language.Haskell.TH.Syntax
+  ( ModName (ModName),
+    Name (Name),
+    NameFlavour (NameG, NameQ, NameS),
+  )
 #endif
+
+
 
 import Control.Monad (when)
 import Data.Char (isAlphaNum, ord)

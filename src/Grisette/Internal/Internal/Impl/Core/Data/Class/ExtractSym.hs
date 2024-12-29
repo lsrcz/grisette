@@ -15,7 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=extractsym #-}
+-- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=extractsym #-}
 
 -- |
 -- Module      :   Grisette.Internal.Internal.Impl.Core.Data.Class.ExtractSym

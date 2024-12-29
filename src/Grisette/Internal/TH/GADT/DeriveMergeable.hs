@@ -110,7 +110,7 @@ import Language.Haskell.TH.Datatype
   )
 import Language.Haskell.TH.Datatype.TyVarBndr
   ( TyVarBndrUnit,
-    kindedTV,
+    kindedTVSpecified,
     plainTVFlag,
     specifiedSpec,
   )
@@ -686,7 +686,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
         ForallT
           ( mapMaybe
               ( \(ty, knd) -> case ty of
-                  VarT nm -> Just $ kindedTV nm knd
+                  VarT nm -> Just $ kindedTVSpecified nm knd
                   _ -> Nothing
               )
               $ keptVars ++ argVars

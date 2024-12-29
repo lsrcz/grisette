@@ -1,12 +1,13 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=symeq #-}
+-- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=symeq #-}
 
 module Grisette.Internal.Internal.Impl.Core.Data.Class.SymEq () where
 
