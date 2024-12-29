@@ -1,0 +1,5 @@
+packages: grisette.cabal
+allow-newer: base
+
+package grisette
+  tests: True
