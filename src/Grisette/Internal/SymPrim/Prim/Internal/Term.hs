@@ -278,6 +278,7 @@ import Grisette.Internal.SymPrim.Prim.Internal.Utils
     myWeakThreadId,
   )
 import Language.Haskell.TH.Syntax (Lift (liftTyped))
+import Language.Haskell.TH.Syntax.Compat (Code, Quote)
 import Type.Reflection
   ( SomeTypeRep (SomeTypeRep),
     TypeRep,
@@ -1961,9 +1962,12 @@ instance Lift (Term t) where
   liftTyped (BitCastOrTerm _ _ _ _ t1 t2) = [||bitCastOrTerm t1 t2||]
   liftTyped (BVConcatTerm _ _ _ _ t1 t2) = [||bvConcatTerm t1 t2||]
   liftTyped (BVSelectTerm _ _ _ _ (_ :: p ix) (_ :: q w) t3) =
-    [||bvSelectTerm (Proxy @ix) (Proxy @w) t3||]
+    let pix = [||Proxy||] :: (Quote m) => Code m (Proxy ix)
+        pw = [||Proxy||] :: (Quote m) => Code m (Proxy w)
+     in [||bvSelectTerm $$pix $$pw t3||]
   liftTyped (BVExtendTerm _ _ _ _ b (_ :: p r) t2) =
-    [||bvExtendTerm b (Proxy @r) t2||]
+    let pr = [||Proxy||] :: (Quote m) => Code m (Proxy r)
+    in [||bvExtendTerm b $$pr t2||]
   liftTyped (ApplyTerm _ _ _ _ t1 t2) = [||applyTerm t1 t2||]
   liftTyped (DivIntegralTerm _ _ _ _ t1 t2) = [||divIntegralTerm t1 t2||]
   liftTyped (ModIntegralTerm _ _ _ _ t1 t2) = [||modIntegralTerm t1 t2||]
