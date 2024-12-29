@@ -76,11 +76,11 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymOrd
     UnifiedSymOrd2 (withBaseSymOrd2),
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
-import Grisette.Internal.TH.DeriveUnifiedInterface
-  ( deriveFunctorArgUnifiedInterfaces,
-    deriveUnifiedInterface1s,
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode)
+import Grisette.Internal.TH.GADT.Common
+  ( DeriveConfig (bitSizePositions, fpBitSizePositions),
   )
+import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT, deriveGADTWith)
 import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.EvalModeTag
   ( EvalModeTag (S),
@@ -355,19 +355,24 @@ instance (UnifiedSymOrd 'S v) => UnifiedSymOrd 'S (Union v) where
   withBaseSymOrd r = withBaseSymOrd @'S @v r
   {-# INLINE withBaseSymOrd #-}
 
-instance
-  (DecideEvalMode mode, UnifiedSymOrd mode a, Integral a) =>
-  UnifiedSymOrd mode (Ratio a)
-  where
-  withBaseSymOrd r =
-    withMode @mode (withBaseSymOrd @mode @a r) (withBaseSymOrd @mode @a r)
-  {-# INLINE withBaseSymOrd #-}
+deriveGADT
+  [ ''Either,
+    ''(,)
+  ]
+  [''UnifiedSymOrd, ''UnifiedSymOrd1, ''UnifiedSymOrd2]
 
-deriveFunctorArgUnifiedInterfaces
-  ''UnifiedSymOrd
-  'withBaseSymOrd
-  ''UnifiedSymOrd1
-  'withBaseSymOrd1
+deriveGADT
+  [ ''[],
+    ''Maybe,
+    ''Identity,
+    ''ExceptT,
+    ''MaybeT,
+    ''WriterLazy.WriterT,
+    ''WriterStrict.WriterT
+  ]
+  [''UnifiedSymOrd, ''UnifiedSymOrd1]
+
+deriveGADT
   [ ''Bool,
     ''Integer,
     ''Char,
@@ -386,15 +391,7 @@ deriveFunctorArgUnifiedInterfaces
     ''B.ByteString,
     ''T.Text,
     ''FPRoundingMode,
-    ''WordN,
-    ''IntN,
-    ''[],
-    ''Maybe,
-    ''Either,
     ''(),
-    ''(,),
-    ''(,,),
-    ''(,,,),
     ''(,,,,),
     ''(,,,,,),
     ''(,,,,,,),
@@ -407,29 +404,41 @@ deriveFunctorArgUnifiedInterfaces
     ''(,,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
-    ''VerificationConditions,
-    ''ExceptT,
-    ''MaybeT,
-    ''WriterLazy.WriterT,
-    ''WriterStrict.WriterT,
-    ''Identity
+    ''VerificationConditions
   ]
+  [''UnifiedSymOrd]
 
-deriveUnifiedInterface1s
-  ''UnifiedSymOrd
-  'withBaseSymOrd
-  ''UnifiedSymOrd1
-  'withBaseSymOrd1
-  [ ''[],
-    ''Maybe,
-    ''Either,
-    ''(,),
-    ''ExceptT,
-    ''MaybeT,
-    ''WriterLazy.WriterT,
-    ''WriterStrict.WriterT,
-    ''Identity
+#if MIN_VERSION_base(4,16,0)
+deriveGADT
+  [ ''(,,),
+    ''(,,,)
   ]
+  [''UnifiedSymOrd, ''UnifiedSymOrd1, ''UnifiedSymOrd2]
+#else
+deriveGADT
+  [ ''(,,),
+    ''(,,,)
+  ]
+  [''UnifiedSymOrd]
+#endif
+
+deriveGADTWith
+  (mempty {bitSizePositions = [0]})
+  [''WordN, ''IntN]
+  [''UnifiedSymOrd]
+
+deriveGADTWith
+  (mempty {fpBitSizePositions = [(0, 1)]})
+  [''FP]
+  [''UnifiedSymOrd]
+
+instance
+  (DecideEvalMode mode, UnifiedSymOrd mode a, Integral a) =>
+  UnifiedSymOrd mode (Ratio a)
+  where
+  withBaseSymOrd r =
+    withMode @mode (withBaseSymOrd @mode @a r) (withBaseSymOrd @mode @a r)
+  {-# INLINE withBaseSymOrd #-}
 
 -- Sum
 instance
@@ -480,42 +489,3 @@ instance
   withBaseSymOrd1 r =
     withMode @mode (withBaseSymOrd1 @mode @m r) (withBaseSymOrd1 @mode @m r)
   {-# INLINE withBaseSymOrd1 #-}
-
-instance (DecideEvalMode mode, ValidFP eb sb) => UnifiedSymOrd mode (FP eb sb) where
-  withBaseSymOrd r = withMode @mode r r
-  {-# INLINE withBaseSymOrd #-}
-
-instance (DecideEvalMode mode) => UnifiedSymOrd2 mode Either where
-  withBaseSymOrd2 r = withMode @mode r r
-  {-# INLINE withBaseSymOrd2 #-}
-
-instance (DecideEvalMode mode) => UnifiedSymOrd2 mode (,) where
-  withBaseSymOrd2 r = withMode @mode r r
-  {-# INLINE withBaseSymOrd2 #-}
-
-#if MIN_VERSION_base(4,16,0)
-deriveUnifiedInterface1s
-  ''UnifiedSymOrd
-  'withBaseSymOrd
-  ''UnifiedSymOrd1
-  'withBaseSymOrd1
-  [ ''(,,),
-    ''(,,,)
-  ]
-
-instance (DecideEvalMode mode, UnifiedSymOrd mode a) => 
-  UnifiedSymOrd2 mode ((,,) a) where
-  withBaseSymOrd2 r =
-    withMode @mode (withBaseSymOrd @mode @a r) (withBaseSymOrd @mode @a r)
-  {-# INLINE withBaseSymOrd2 #-}
-
-instance
-  (DecideEvalMode mode, UnifiedSymOrd mode a, UnifiedSymOrd mode b) =>
-  UnifiedSymOrd2 mode ((,,,) a b)
-  where
-  withBaseSymOrd2 r =
-    withMode @mode
-      (withBaseSymOrd @mode @a $ withBaseSymOrd @mode @b r)
-      (withBaseSymOrd @mode @a $ withBaseSymOrd @mode @b r)
-  {-# INLINE withBaseSymOrd2 #-}
-#endif

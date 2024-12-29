@@ -61,10 +61,7 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSimpleMergeable
     UnifiedSimpleMergeable1 (withBaseSimpleMergeable1),
     UnifiedSimpleMergeable2 (withBaseSimpleMergeable2),
   )
-import Grisette.Internal.TH.DeriveUnifiedInterface
-  ( deriveFunctorArgUnifiedInterfaces,
-    deriveUnifiedInterface1s,
-  )
+import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT)
 import Grisette.Internal.Unified.BaseMonad (BaseMonad)
 import Grisette.Internal.Unified.EvalModeTag (IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
@@ -251,35 +248,7 @@ instance
   withBaseSimpleMergeable2 r = r
   {-# INLINE withBaseSimpleMergeable2 #-}
 
-deriveFunctorArgUnifiedInterfaces
-  ''UnifiedSimpleMergeable
-  'withBaseSimpleMergeable
-  ''UnifiedSimpleMergeable1
-  'withBaseSimpleMergeable1
-  [ ''(),
-    ''(,),
-    ''(,,),
-    ''(,,,),
-    ''(,,,,),
-    ''(,,,,,),
-    ''(,,,,,,),
-    ''(,,,,,,,),
-    ''(,,,,,,,,),
-    ''(,,,,,,,,,),
-    ''(,,,,,,,,,,),
-    ''(,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''AssertionError,
-    ''Identity
-  ]
-
-deriveUnifiedInterface1s
-  ''UnifiedSimpleMergeable
-  'withBaseSimpleMergeable
-  ''UnifiedSimpleMergeable1
-  'withBaseSimpleMergeable1
+deriveGADT
   [ ''(,),
     ''(,,),
     ''(,,,),
@@ -293,36 +262,20 @@ deriveUnifiedInterface1s
     ''(,,,,,,,,,,,),
     ''(,,,,,,,,,,,,),
     ''(,,,,,,,,,,,,,),
-    ''(,,,,,,,,,,,,,,),
-    ''Identity
+    ''(,,,,,,,,,,,,,,)
+  ]
+  [ ''UnifiedSimpleMergeable,
+    ''UnifiedSimpleMergeable1,
+    ''UnifiedSimpleMergeable2
   ]
 
-instance (DecideEvalMode mode) => UnifiedSimpleMergeable2 mode (,) where
-  withBaseSimpleMergeable2 r = withMode @mode r r
-  {-# INLINE withBaseSimpleMergeable2 #-}
+deriveGADT
+  [''Identity]
+  [''UnifiedSimpleMergeable, ''UnifiedSimpleMergeable1]
 
-instance
-  (DecideEvalMode mode, UnifiedSimpleMergeable mode a) =>
-  UnifiedSimpleMergeable2 mode ((,,) a)
-  where
-  withBaseSimpleMergeable2 r =
-    withMode @mode
-      (withBaseSimpleMergeable @mode @a r)
-      (withBaseSimpleMergeable @mode @a r)
-  {-# INLINE withBaseSimpleMergeable2 #-}
-
-instance
-  ( DecideEvalMode mode,
-    UnifiedSimpleMergeable mode a,
-    UnifiedSimpleMergeable mode b
-  ) =>
-  UnifiedSimpleMergeable2 mode ((,,,) a b)
-  where
-  withBaseSimpleMergeable2 r =
-    withMode @mode
-      (withBaseSimpleMergeable @mode @a $ withBaseSimpleMergeable @mode @b r)
-      (withBaseSimpleMergeable @mode @a $ withBaseSimpleMergeable @mode @b r)
-  {-# INLINE withBaseSimpleMergeable2 #-}
+deriveGADT
+  [''(), ''AssertionError]
+  [''UnifiedSimpleMergeable]
 
 instance
   (DecideEvalMode mode, UnifiedSimpleMergeable mode b) =>

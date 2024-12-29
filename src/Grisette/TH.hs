@@ -30,30 +30,6 @@ module Grisette.TH
     makeNamedUnifiedCtor,
     makeUnifiedCtor,
     makeUnifiedCtorWith,
-
-    -- * Tools for building more derivation procedures
-
-    -- ** Type parameter handlers
-    DeriveTypeParamHandler (..),
-    IsFPBits (..),
-    NatShouldBePositive (..),
-    PrimaryConstraint (..),
-    SomeDeriveTypeParamHandler (..),
-
-    -- ** Instance providers
-    DeriveInstanceProvider (..),
-    Strategy (..),
-
-    -- ** For unified interfaces
-    TypeableMode (..),
-    PrimaryUnifiedConstraint (..),
-    UnifiedInstance (..),
-
-    -- ** Other helpers
-    deriveWithHandlers,
-    deriveUnifiedInterfaceExtra,
-    deriveUnifiedInterface1Extra,
-    deriveFunctorArgUnifiedInterfaceExtra,
   )
 where
 
@@ -69,26 +45,6 @@ import Grisette.Internal.TH.Ctor.UnifiedConstructor
     makeUnifiedCtor,
     makeUnifiedCtorWith,
   )
-import Grisette.Internal.TH.DeriveInstanceProvider
-  ( DeriveInstanceProvider (..),
-    Strategy (..),
-  )
-import Grisette.Internal.TH.DeriveTypeParamHandler
-  ( DeriveTypeParamHandler (..),
-    IsFPBits (..),
-    NatShouldBePositive (..),
-    PrimaryConstraint (..),
-    SomeDeriveTypeParamHandler (..),
-  )
-import Grisette.Internal.TH.DeriveUnifiedInterface
-  ( PrimaryUnifiedConstraint (..),
-    TypeableMode (..),
-    UnifiedInstance (..),
-    deriveFunctorArgUnifiedInterfaceExtra,
-    deriveUnifiedInterface1Extra,
-    deriveUnifiedInterfaceExtra,
-  )
-import Grisette.Internal.TH.DeriveWithHandlers (deriveWithHandlers)
 import Grisette.Internal.TH.GADT.DeriveGADT
   ( allClasses0,
     allClasses0WithOrd,

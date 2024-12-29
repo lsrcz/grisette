@@ -57,11 +57,11 @@ import Grisette.Internal.Internal.Decl.Unified.Class.UnifiedSymEq
     UnifiedSymEq2 (withBaseSymEq2),
   )
 import Grisette.Internal.SymPrim.BV (IntN, WordN)
-import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode, ValidFP)
-import Grisette.Internal.TH.DeriveUnifiedInterface
-  ( deriveFunctorArgUnifiedInterfaces,
-    deriveUnifiedInterface1s,
+import Grisette.Internal.SymPrim.FP (FP, FPRoundingMode)
+import Grisette.Internal.TH.GADT.Common
+  ( DeriveConfig (bitSizePositions, fpBitSizePositions),
   )
+import Grisette.Internal.TH.GADT.DeriveGADT (deriveGADT, deriveGADTWith)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (S), IsConMode)
 import Grisette.Internal.Unified.UnifiedBool (UnifiedBool (GetBool))
 import Grisette.Internal.Unified.Util (DecideEvalMode, withMode)
@@ -221,19 +221,24 @@ instance (UnifiedSymEq 'S v) => UnifiedSymEq 'S (Union v) where
   withBaseSymEq r = withBaseSymEq @'S @v r
   {-# INLINE withBaseSymEq #-}
 
-instance
-  (DecideEvalMode mode, UnifiedSymEq mode a) =>
-  UnifiedSymEq mode (Ratio a)
-  where
-  withBaseSymEq r =
-    withMode @mode (withBaseSymEq @mode @a r) (withBaseSymEq @mode @a r)
-  {-# INLINE withBaseSymEq #-}
+deriveGADT
+  [ ''Either,
+    ''(,)
+  ]
+  [''UnifiedSymEq, ''UnifiedSymEq1, ''UnifiedSymEq2]
 
-deriveFunctorArgUnifiedInterfaces
-  ''UnifiedSymEq
-  'withBaseSymEq
-  ''UnifiedSymEq1
-  'withBaseSymEq1
+deriveGADT
+  [ ''[],
+    ''Maybe,
+    ''Identity,
+    ''ExceptT,
+    ''MaybeT,
+    ''WriterLazy.WriterT,
+    ''WriterStrict.WriterT
+  ]
+  [''UnifiedSymEq, ''UnifiedSymEq1]
+
+deriveGADT
   [ ''Bool,
     ''Integer,
     ''Char,
@@ -252,15 +257,7 @@ deriveFunctorArgUnifiedInterfaces
     ''B.ByteString,
     ''T.Text,
     ''FPRoundingMode,
-    ''WordN,
-    ''IntN,
-    ''[],
-    ''Maybe,
-    ''Either,
     ''(),
-    ''(,),
-    ''(,,),
-    ''(,,,),
     ''(,,,,),
     ''(,,,,,),
     ''(,,,,,,),
@@ -274,28 +271,33 @@ deriveFunctorArgUnifiedInterfaces
     ''(,,,,,,,,,,,,,,),
     ''AssertionError,
     ''VerificationConditions,
-    ''ExceptT,
-    ''MaybeT,
-    ''WriterLazy.WriterT,
-    ''WriterStrict.WriterT,
-    ''Identity
+    ''Ratio
   ]
+  [''UnifiedSymEq]
 
-deriveUnifiedInterface1s
-  ''UnifiedSymEq
-  'withBaseSymEq
-  ''UnifiedSymEq1
-  'withBaseSymEq1
-  [ ''[],
-    ''Maybe,
-    ''Either,
-    ''(,),
-    ''ExceptT,
-    ''MaybeT,
-    ''WriterLazy.WriterT,
-    ''WriterStrict.WriterT,
-    ''Identity
+#if MIN_VERSION_base(4,16,0)
+deriveGADT
+  [ ''(,,),
+    ''(,,,)
   ]
+  [''UnifiedSymEq, ''UnifiedSymEq1, ''UnifiedSymEq2]
+#else
+deriveGADT
+  [ ''(,,),
+    ''(,,,)
+  ]
+  [''UnifiedSymEq]
+#endif
+
+deriveGADTWith
+  (mempty {bitSizePositions = [0]})
+  [''WordN, ''IntN]
+  [''UnifiedSymEq]
+
+deriveGADTWith
+  (mempty {fpBitSizePositions = [(0, 1)]})
+  [''FP]
+  [''UnifiedSymEq]
 
 -- Sum
 instance
@@ -346,42 +348,3 @@ instance
   withBaseSymEq1 r =
     withMode @mode (withBaseSymEq1 @mode @m r) (withBaseSymEq1 @mode @m r)
   {-# INLINE withBaseSymEq1 #-}
-
-instance (DecideEvalMode mode, ValidFP eb sb) => UnifiedSymEq mode (FP eb sb) where
-  withBaseSymEq r = withMode @mode r r
-  {-# INLINE withBaseSymEq #-}
-
-instance (DecideEvalMode mode) => UnifiedSymEq2 mode Either where
-  withBaseSymEq2 r = withMode @mode r r
-  {-# INLINE withBaseSymEq2 #-}
-
-instance (DecideEvalMode mode) => UnifiedSymEq2 mode (,) where
-  withBaseSymEq2 r = withMode @mode r r
-  {-# INLINE withBaseSymEq2 #-}
-
-#if MIN_VERSION_base(4,16,0)
-deriveUnifiedInterface1s
-  ''UnifiedSymEq
-  'withBaseSymEq
-  ''UnifiedSymEq1
-  'withBaseSymEq1
-  [ ''(,,),
-    ''(,,,)
-  ]
-
-instance (DecideEvalMode mode, UnifiedSymEq mode a) =>
-  UnifiedSymEq2 mode ((,,) a) where
-  withBaseSymEq2 r =
-    withMode @mode (withBaseSymEq @mode @a r) (withBaseSymEq @mode @a r)
-  {-# INLINE withBaseSymEq2 #-}
-
-instance
-  (DecideEvalMode mode, UnifiedSymEq mode a, UnifiedSymEq mode b) =>
-  UnifiedSymEq2 mode ((,,,) a b)
-  where
-  withBaseSymEq2 r =
-    withMode @mode
-      (withBaseSymEq @mode @a $ withBaseSymEq @mode @b r)
-      (withBaseSymEq @mode @a $ withBaseSymEq @mode @b r)
-  {-# INLINE withBaseSymEq2 #-}
-#endif
