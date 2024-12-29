@@ -313,24 +313,3 @@ deriving via
   (Default ((f :.: g) p))
   instance
     (SymEq (f (g p))) => SymEq ((f :.: g) p)
-
--- instance SymEq2 Either where
---   liftSymEq2 f _ (Left l) (Left r) = f l r
---   liftSymEq2 _ g (Right l) (Right r) = g l r
---   liftSymEq2 _ _ _ _ = con False
---   {-# INLINE liftSymEq2 #-}
-
-{-
-instance SymEq2 (,) where
-  liftSymEq2 f g (l1, l2) (r1, r2) = f l1 r1 .&& g l2 r2
-  {-# INLINE liftSymEq2 #-}
-
-instance (SymEq a) => SymEq2 ((,,) a) where
-  liftSymEq2 f g (l1, l2, l3) (r1, r2, r3) = l1 .== r1 .&& f l2 r2 .&& g l3 r3
-  {-# INLINE liftSymEq2 #-}
-
-instance (SymEq a, SymEq b) => SymEq2 ((,,,) a b) where
-  liftSymEq2 f g (l1, l2, l3, l4) (r1, r2, r3, r4) =
-    l1 .== r1 .&& l2 .== r2 .&& f l3 r3 .&& g l4 r4
-  {-# INLINE liftSymEq2 #-}
--}
