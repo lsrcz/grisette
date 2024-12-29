@@ -10,8 +10,6 @@
           inherit system;
         };
 
-        developmentVersions = [ "983" ];
-
         stableHPkgs = pkgs.haskell.packages."ghc983";
         hPkgsWithVersion = version: pkgs.haskell.packages."ghc${version}".extend (hself: hsuper: rec {
           ihaskell = pkgs.haskell.lib.dontCheck (hself.callHackage "ihaskell" "0.11.0.0" { });
@@ -24,10 +22,25 @@
             hPkgs.ghc # GHC compiler in the desired version (will be available on PATH)
             stack-wrapped
             pkgs.zlib # External C library needed by some Haskell packages
-            pkgs.boolector
             pkgs.z3_4_12
-            pkgs.nixpkgs-fmt
             pkgs.bitwuzla
+          ];
+
+        cabalDevTools = [
+          stableHPkgs.cabal-install
+        ];
+
+        additionalDevTools = version:
+          let hPkgs = hPkgsWithVersion version; in [
+            # hPkgs.ghcid # Continuous terminal Haskell compile checker
+            # hPkgs.ormolu # Haskell formatter
+            hPkgs.hlint # Haskell codestyle checker
+            hPkgs.haskell-language-server # LSP server for editor
+            (pkgs.ihaskell.override {
+              ghcWithPackages = hPkgs.ghcWithPackages;
+            })
+            pkgs.nixpkgs-fmt
+            pkgs.boolector
             (pkgs.cvc5.overrideAttrs (oldAttrs: rec {
               cmakeFlags = oldAttrs.cmakeFlags ++ [
                 "-DUSE_POLY=ON"
@@ -38,22 +51,14 @@
             }))
           ];
 
-        additionalDevTools = version:
-          let hPkgs = hPkgsWithVersion version; in [
-            # hPkgs.ghcid # Continuous terminal Haskell compile checker
-            # hPkgs.ormolu # Haskell formatter
-            hPkgs.hlint # Haskell codestyle checker
-            hPkgs.haskell-language-server # LSP server for editor
-            stableHPkgs.cabal-install
-            (pkgs.ihaskell.override {
-              ghcWithPackages = hPkgs.ghcWithPackages;
-            })
-          ];
-
-        devTools = version:
-          if builtins.elem version developmentVersions
-          then basicDevTools version ++ additionalDevTools version
-          else basicDevTools version;
+        devTools = { version, cabal, additional }:
+          basicDevTools version ++
+          (if cabal
+          then cabalDevTools
+          else [ ]) ++
+          (if additional
+          then additionalDevTools version
+          else [ ]);
 
         # Wrap Stack to work with our Nix integration. We don't want to modify
         # stack.yaml so non-Nix users don't notice anything.
@@ -73,13 +78,13 @@
               "
           '';
         };
-      devShellsWithVersion = version: pkgs.mkShell {
-          buildInputs = devTools version;
+        devShellsWithVersion = { version, cabal, additional }: pkgs.mkShell {
+          buildInputs = devTools { inherit version cabal additional; };
 
           # Make external Nix c libraries like zlib known to GHC, like
           # pkgs.haskell.lib.buildStackProject does
           # https://github.com/NixOS/nixpkgs/blob/d64780ea0e22b5f61cd6012a456869c702a72f20/pkgs/development/haskell-modules/generic-stack-builder.nix#L38
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (devTools version);
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (devTools { inherit version cabal additional; });
         };
 
       in
@@ -87,14 +92,22 @@
         formatter.x86_64-linux = pkgs.nixpkgs-fmt;
 
         devShells = {
-          "8107" = devShellsWithVersion "8107";
-          "902" = devShellsWithVersion "902";
-          "928" = devShellsWithVersion "928";
-          "948" = devShellsWithVersion "948";
-          "966" = devShellsWithVersion "966";
-          "983" = devShellsWithVersion "983";
-          "9101" = devShellsWithVersion "9101";
-          default = devShellsWithVersion "983";
+          "8107-ci" = devShellsWithVersion { version = "8107"; cabal = true; additional = false; };
+          "902-ci" = devShellsWithVersion { version = "902"; cabal = true; additional = false; };
+          "928-ci" = devShellsWithVersion { version = "928"; cabal = true; additional = false; };
+          "948-ci" = devShellsWithVersion { version = "948"; cabal = true; additional = false; };
+          "966-ci" = devShellsWithVersion { version = "966"; cabal = true; additional = false; };
+          "983-ci" = devShellsWithVersion { version = "983"; cabal = true; additional = false; };
+          "9101-ci" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; };
+
+          "8107" = devShellsWithVersion { version = "8107"; cabal = false; additional = false; };
+          "902" = devShellsWithVersion { version = "902"; cabal = false; additional = false; };
+          "928" = devShellsWithVersion { version = "928"; cabal = false; additional = false; };
+          "948" = devShellsWithVersion { version = "948"; cabal = false; additional = false; };
+          "966" = devShellsWithVersion { version = "966"; cabal = false; additional = false; };
+          "983" = devShellsWithVersion { version = "983"; cabal = true; additional = true; };
+          "9101" = devShellsWithVersion { version = "9101"; cabal = true; additional = false; };
+          default = devShellsWithVersion { version = "983"; cabal = true; additional = true; };
         };
       });
 }
