@@ -230,11 +230,11 @@ onUnion4 f ua ub uc ud =
 
 -- | Convert a plain union to concrete values.
 --
--- >>> unionToCon (return 1 :: Union SymInteger)
+-- >>> unionToCon (return 1 :: Union SymInteger) :: Maybe Integer
 -- Just 1
--- >>> unionToCon (mrgIf "a" (return 1) (return 2) :: Union SymInteger)
+-- >>> unionToCon (mrgIf "a" (return 1) (return 2) :: Union SymInteger) :: Maybe Integer
 -- Nothing
--- >>> unionToCon (return "a" :: Union SymInteger)
+-- >>> unionToCon (return "a" :: Union SymInteger) :: Maybe Integer
 -- Nothing
 unionToCon :: (ToCon a b, PlainUnion u) => u a -> Maybe b
 unionToCon u =
