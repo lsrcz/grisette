@@ -13,6 +13,9 @@
 
 module Grisette.Core.TH.DerivationTest (derivationTest) where
 
+import Data.Bytes.Get (runGetS)
+import Data.Bytes.Put (runPutS)
+import Data.Bytes.Serial (Serial (deserialize, serialize))
 import Data.Functor.Classes (showsPrec1, showsPrec2)
 import qualified Data.Text as T
 import GHC.TypeLits (KnownNat, type (<=))
@@ -37,8 +40,9 @@ import Grisette
 import Grisette.Core.TH.DerivationData
   ( Extra (Extra),
     GGG,
+    Serializable,
     gggToVVV,
-    replaceVVVShown, Serializable,
+    replaceVVVShown,
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
 import Grisette.Unified
@@ -54,9 +58,6 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
 import Test.QuickCheck.Property ((.&.), (===))
-import Data.Bytes.Serial (Serial(deserialize, serialize))
-import Data.Bytes.Put (runPutS)
-import Data.Bytes.Get (runGetS)
 
 #if MIN_VERSION_base(4,16,0)
 ftst ::
