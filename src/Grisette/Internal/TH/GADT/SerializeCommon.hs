@@ -3,9 +3,16 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      :   Grisette.Internal.TH.GADT.SerializeCommon
+-- Copyright   :   (c) Sirui Lu 2024
+-- License     :   BSD-3-Clause (see the LICENSE file)
+--
+-- Maintainer  :   siruilu@cs.washington.edu
+-- Stability   :   Experimental
+-- Portability :   GHC only
 module Grisette.Internal.TH.GADT.SerializeCommon
-  ( UnaryOpDeserializeConfig (..),
-    serializeConfig,
+  ( serializeConfig,
     serializeWithSerialConfig,
   )
 where
@@ -84,6 +91,8 @@ instance UnaryOpFunConfig UnaryOpDeserializeWithSerialConfig where
   genUnaryOpFun _ UnaryOpDeserializeWithSerialConfig funNames n _ _ _ _ _ =
     funD (funNames !! n) [clause [] (normalB [|deserialize|]) []]
 
+-- | Configuration for deserialization function, generate the function from
+-- scratch.
 data UnaryOpDeserializeConfig = UnaryOpDeserializeConfig
 
 getSerializedType :: Int -> Name
@@ -169,6 +178,8 @@ instance UnaryOpFunConfig UnaryOpDeserializeConfig where
               []
           ]
 
+-- | Configuration for serialization function, generate the function from
+-- scratch.
 serializeConfig :: [Name] -> [Name] -> [Name] -> UnaryOpClassConfig
 serializeConfig instanceNames serializeFunNames deserializeFunNames =
   UnaryOpClassConfig
@@ -206,6 +217,7 @@ serializeConfig instanceNames serializeFunNames deserializeFunNames =
       unaryOpContextNames = Nothing
     }
 
+-- | Configuration for serialization function, reuse the 'Serial' instance.
 serializeWithSerialConfig :: [Name] -> [Name] -> [Name] -> UnaryOpClassConfig
 serializeWithSerialConfig instanceNames serializeFunNames deserializeFunNames =
   UnaryOpClassConfig
