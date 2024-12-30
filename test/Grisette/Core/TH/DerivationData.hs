@@ -120,6 +120,14 @@ import Grisette.Unified
 import Test.QuickCheck (Arbitrary, oneof, sized)
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
+data Empty a b c
+
+deriveGADT [''Empty] allClasses012
+
+data EmptyWithMode mode a b c
+
+deriveGADT [''EmptyWithMode] allClasses012
+
 data T mode n a
   = T (GetBool mode) [GetWordN mode n] [a] (GetData mode (T mode n a))
   | TNil

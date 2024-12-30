@@ -59,10 +59,13 @@ import Language.Haskell.TH
     Q,
     Type (AppT, ConT, VarT),
     appE,
+    clause,
     conP,
     conT,
+    funD,
     nameBase,
     newName,
+    normalB,
     varE,
     varP,
   )
@@ -308,6 +311,8 @@ class UnaryOpFunConfig config where
     Q Dec
 
 instance UnaryOpFunConfig UnaryOpFieldConfig where
+  genUnaryOpFun _ _ funNames n _ _ _ _ [] =
+    funD (funNames !! n) [clause [] (normalB [|error "impossible"|]) []]
   genUnaryOpFun _ config funNames n _ _ argTypes _ constructors = do
     clauses <-
       zipWithM
@@ -382,7 +387,11 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
   return
     [ InstanceD
         Nothing
-        (extraPreds ++ catMaybes ctxs)
+        ( extraPreds
+            ++ if null constructors
+              then []
+              else catMaybes ctxs
+        )
         instanceType
         instanceFuns
     ]

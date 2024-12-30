@@ -459,10 +459,7 @@ extraConstraint
         then extraExtraMergeableConstraint constructors keptArgs
         else return []
     return $
-      extraMergeablePreds
-        ++ concat
-          ( extraArgEvalModePreds
-              ++ evalModePreds
-              ++ bitSizePreds
-              ++ fpBitSizePreds
-          )
+      concat (extraArgEvalModePreds ++ evalModePreds)
+        ++ if null constructors
+          then []
+          else extraMergeablePreds ++ concat (bitSizePreds ++ fpBitSizePreds)

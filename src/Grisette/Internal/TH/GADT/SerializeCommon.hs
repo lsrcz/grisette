@@ -105,6 +105,15 @@ getSerializedType numConstructors =
     | otherwise -> ''Integer
 
 instance UnaryOpFunConfig UnaryOpDeserializeConfig where
+  genUnaryOpFun _ UnaryOpDeserializeConfig funNames n _ _ _ _ [] = do
+    let instanceFunName = funNames !! n
+    funD
+      instanceFunName
+      [ clause
+          []
+          (normalB [|error "deserializing a type without constructors"|])
+          []
+      ]
   genUnaryOpFun
     _
     UnaryOpDeserializeConfig
