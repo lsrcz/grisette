@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -76,13 +75,13 @@ import Language.Haskell.TH.Datatype
 data UnaryOpSerializeWithSerialConfig = UnaryOpSerializeWithSerialConfig
 
 instance UnaryOpFunConfig UnaryOpSerializeWithSerialConfig where
-  genUnaryOpFun _ UnaryOpSerializeWithSerialConfig {..} funNames n _ _ _ _ _ =
+  genUnaryOpFun _ UnaryOpSerializeWithSerialConfig funNames n _ _ _ _ _ =
     funD (funNames !! n) [clause [] (normalB [|serialize|]) []]
 
 data UnaryOpDeserializeWithSerialConfig = UnaryOpDeserializeWithSerialConfig
 
 instance UnaryOpFunConfig UnaryOpDeserializeWithSerialConfig where
-  genUnaryOpFun _ UnaryOpDeserializeWithSerialConfig {..} funNames n _ _ _ _ _ =
+  genUnaryOpFun _ UnaryOpDeserializeWithSerialConfig funNames n _ _ _ _ _ =
     funD (funNames !! n) [clause [] (normalB [|deserialize|]) []]
 
 data UnaryOpDeserializeConfig = UnaryOpDeserializeConfig
@@ -99,7 +98,7 @@ getSerializedType numConstructors =
 instance UnaryOpFunConfig UnaryOpDeserializeConfig where
   genUnaryOpFun
     _
-    UnaryOpDeserializeConfig {..}
+    UnaryOpDeserializeConfig
     funNames
     n
     _
