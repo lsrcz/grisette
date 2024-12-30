@@ -142,12 +142,7 @@ import Grisette.Internal.TH.GADT.DeriveHashable
     deriveGADTHashable1,
     deriveGADTHashable2,
   )
-import Grisette.Internal.TH.GADT.DeriveMergeable
-  ( genMergeable,
-    genMergeable',
-    genMergeableAndGetMergingInfoResult,
-    genMergeableNoExistential,
-  )
+import Grisette.Internal.TH.GADT.DeriveMergeable (genMergeableList)
 import Grisette.Internal.TH.GADT.DeriveNFData
   ( deriveGADTNFData,
     deriveGADTNFData1,
@@ -218,7 +213,6 @@ import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
     deriveGADTUnifiedSymOrd1,
     deriveGADTUnifiedSymOrd2,
   )
-import Grisette.Internal.TH.Util (dataTypeHasExistential)
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)
 
@@ -354,26 +348,7 @@ deriveGADTWith' deriveConfig typName classNameList = do
     configWithOutExtraMergeable =
       deriveConfig {needExtraMergeableUnderEvalMode = False}
     deriveMergeables :: [Int] -> Q [Dec]
-    deriveMergeables [] = return []
-    deriveMergeables [n] = genMergeable configWithOutExtraMergeable typName n
-    deriveMergeables (n : ns) = do
-      hasExistential <- dataTypeHasExistential typName
-      if hasExistential
-        then do
-          (info, dn) <-
-            genMergeableAndGetMergingInfoResult
-              configWithOutExtraMergeable
-              typName
-              n
-          dns <-
-            traverse (genMergeable' configWithOutExtraMergeable info typName) ns
-          return $ dn ++ concatMap snd dns
-        else do
-          dns <-
-            traverse
-              (genMergeableNoExistential configWithOutExtraMergeable typName)
-              (n : ns)
-          return $ concat dns
+    deriveMergeables = genMergeableList configWithOutExtraMergeable typName
     splitMergeable :: [Name] -> ([Name], [Int])
     splitMergeable [] = ([], [])
     splitMergeable (x : xs) =

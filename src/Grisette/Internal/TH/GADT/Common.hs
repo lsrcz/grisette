@@ -279,7 +279,8 @@ data DeriveConfig = DeriveConfig
     bitSizePositions :: [Int],
     fpBitSizePositions :: [(Int, Int)],
     needExtraMergeableUnderEvalMode :: Bool,
-    needExtraMergeableWithConcretizedEvalMode :: Bool
+    needExtraMergeableWithConcretizedEvalMode :: Bool,
+    useNoStrategy :: Bool
   }
 
 -- | Get all the evaluation modes to specialize in the t'DeriveConfig'.
@@ -297,7 +298,7 @@ instance Semigroup DeriveConfig where
   (<>) = (<>)
 
 instance Monoid DeriveConfig where
-  mempty = DeriveConfig [] [] [] False False
+  mempty = DeriveConfig [] [] [] False False False
   mappend = (<>)
 
 -- | Generate extra constraints for evaluation modes.
