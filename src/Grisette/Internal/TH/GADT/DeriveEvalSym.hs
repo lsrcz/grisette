@@ -33,6 +33,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
         unaryOpConfigs,
+        unaryOpContextNames,
         unaryOpExtraVars,
         unaryOpInstanceNames,
         unaryOpInstanceTypeFromConfig
@@ -67,7 +68,7 @@ evalSymConfig =
               { extraPatNames = ["fillDefault", "model"],
                 extraLiftedPatNames = const [],
                 fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ con extraPat exp -> do
+                fieldCombineFun = \_ _ _ con extraPat exp -> do
                   return (foldl AppE (ConE con) exp, False <$ extraPat),
                 fieldFunExp =
                   defaultFieldFunExp ['evalSym, 'liftEvalSym, 'liftEvalSym2]
@@ -78,7 +79,8 @@ evalSymConfig =
         [''EvalSym, ''EvalSym1, ''EvalSym2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'EvalSym' instance for a GADT.

@@ -237,6 +237,10 @@ import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)
+import Data.Binary (Binary)
+import Data.Serialize (Serialize)
+import Grisette.Internal.TH.GADT.DeriveBinary (deriveGADTBinary)
+import Grisette.Internal.TH.GADT.DeriveCereal (deriveGADTCereal)
 
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])
 deriveProcedureMap =
@@ -297,7 +301,9 @@ deriveProcedureMap =
       (''SimpleMergeable2, deriveGADTSimpleMergeable2),
       (''UnifiedSimpleMergeable, deriveGADTUnifiedSimpleMergeable),
       (''UnifiedSimpleMergeable1, deriveGADTUnifiedSimpleMergeable1),
-      (''UnifiedSimpleMergeable2, deriveGADTUnifiedSimpleMergeable2)
+      (''UnifiedSimpleMergeable2, deriveGADTUnifiedSimpleMergeable2),
+      (''Binary, deriveGADTBinary),
+      (''Serialize, deriveGADTCereal)
     ]
 
 deriveSingleGADT :: DeriveConfig -> Name -> Name -> Q [Dec]
@@ -444,18 +450,23 @@ deriveGADTWith' deriveConfig typName classNameList = do
 -- * 'SimpleMergeable'
 -- * 'SimpleMergeable1'
 -- * 'SimpleMergeable2'
+-- * 'Binary'
+-- * 'Serialize'
 --
 -- Note that the following type classes cannot be derived for GADTs with
 -- existential type variables.
 --
--- * 'Eq1'
--- * 'Eq2'
--- * 'SymEq1'
--- * 'SymEq2'
--- * 'Ord1'
--- * 'Ord2'
--- * 'SymOrd1'
--- * 'SymOrd2'
+-- * 'ToCon'
+-- * 'ToCon1'
+-- * 'ToCon2'
+-- * 'ToSym'
+-- * 'ToSym1'
+-- * 'ToSym2'
+-- * 'Serial'
+-- * 'Serial1'
+-- * 'Serial2'
+-- * 'Binary'
+-- * 'Serialize'
 deriveGADTWith :: DeriveConfig -> [Name] -> [Name] -> Q [Dec]
 deriveGADTWith deriveConfig typeNameList classNameList = do
   let typeNames = S.toList $ S.fromList typeNameList
@@ -600,10 +611,12 @@ basicClasses0 =
 -- This includes:
 --
 -- * 'Serial'
+-- * 'Serialize'
+-- * 'Binary'
 -- * 'ToCon'
 -- * 'ToSym'
 noExistentialClasses0 :: [Name]
-noExistentialClasses0 = [''Serial, ''ToCon, ''ToSym]
+noExistentialClasses0 = [''Serial, ''ToCon, ''ToSym, ''Serialize, ''Binary]
 
 -- | Concrete ordered classes that can be derived for GADTs that
 --

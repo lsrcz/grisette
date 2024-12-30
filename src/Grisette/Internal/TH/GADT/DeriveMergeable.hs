@@ -64,7 +64,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFunConfig (genUnaryOpFun),
@@ -535,7 +535,8 @@ mergeableNoExistentialConfig =
         [''Mergeable, ''Mergeable1, ''Mergeable2, ''Mergeable3],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = False
+      unaryOpAllowExistential = False,
+      unaryOpContextNames = Nothing
     }
 
 newtype MergeableNoExistentialConfig = MergeableNoExistentialConfig

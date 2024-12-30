@@ -31,7 +31,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     genUnaryOpClass,
@@ -93,7 +93,8 @@ unifiedSimpleMergeableConfig =
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSimpleMergeable does not support multiple evaluation modes"
           appT (conT con) (return $ fst modeVar),
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'UnifiedSimpleMergeable' instance for a GADT.

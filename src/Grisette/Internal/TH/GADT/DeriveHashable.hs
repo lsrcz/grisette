@@ -26,6 +26,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
         unaryOpConfigs,
+        unaryOpContextNames,
         unaryOpExtraVars,
         unaryOpInstanceNames,
         unaryOpInstanceTypeFromConfig
@@ -54,7 +55,7 @@ hashableConfig =
               { extraPatNames = ["salt"],
                 extraLiftedPatNames = const [],
                 fieldCombineFun =
-                  \_ _ _ [salt] exp -> do
+                  \_ _ _ _ [salt] exp -> do
                     r <-
                       foldl
                         (\salt exp -> [|$(return exp) $salt|])
@@ -74,7 +75,8 @@ hashableConfig =
         [''Hashable, ''Hashable1, ''Hashable2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'Hashable' instance for a GADT.

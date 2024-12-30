@@ -44,7 +44,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
@@ -83,7 +83,7 @@ pprintConfig =
             UnaryOpFieldConfig
               { extraPatNames = ["prec"],
                 extraLiftedPatNames = \i -> (["pl" | i /= 0]),
-                fieldCombineFun = \_ variant conName [prec] exps -> do
+                fieldCombineFun = \_ _ variant conName [prec] exps -> do
                   let initExps =
                         ( \e ->
                             [|
@@ -193,7 +193,8 @@ pprintConfig =
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceNames = [''PPrint, ''PPrint1, ''PPrint2],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'PPrint' instance for a GADT.

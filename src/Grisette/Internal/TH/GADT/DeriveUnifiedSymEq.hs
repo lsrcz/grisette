@@ -31,7 +31,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     genUnaryOpClass,
@@ -83,7 +83,8 @@ unifiedSymEqConfig =
                 else return $ keptNewVars !! i
             _ -> fail "UnifiedSymEq does not support multiple evaluation modes"
           appT (conT con) (return $ fst modeVar),
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'UnifiedSymEq' instance for a GADT.

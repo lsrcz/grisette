@@ -29,7 +29,7 @@ where
 import Control.Monad (replicateM, zipWithM)
 import qualified Data.List as List
 import qualified Data.Map as M
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
 import qualified Data.Set as S
 import Grisette.Internal.TH.GADT.Common
   ( CheckArgsResult
@@ -170,11 +170,13 @@ genUnaryOpFieldClause ::
   UnaryOpFieldConfig ->
   [(Type, Kind)] ->
   Int ->
+  Int ->
   ConstructorInfo ->
   Q Clause
 genUnaryOpFieldClause
   (UnaryOpFieldConfig {..})
   argTypes
+  totalConNumber
   conIdx
   conInfo = do
     fields <- mapM resolveTypeSynonyms $ constructorFields conInfo
@@ -203,6 +205,7 @@ genUnaryOpFieldClause
 
     (resExp, extraArgsUsedByResult) <-
       fieldCombineFun
+        totalConNumber
         conIdx
         (constructorVariant conInfo)
         (constructorName conInfo)
@@ -235,6 +238,7 @@ genUnaryOpFieldClause
 data UnaryOpClassConfig = UnaryOpClassConfig
   { unaryOpConfigs :: [UnaryOpConfig],
     unaryOpInstanceNames :: [Name],
+    unaryOpContextNames :: Maybe [Name],
     unaryOpExtraVars :: DeriveConfig -> Q [(Type, Kind)],
     unaryOpInstanceTypeFromConfig ::
       DeriveConfig ->
@@ -264,10 +268,17 @@ data UnaryOpFieldConfig = UnaryOpFieldConfig
       Exp ->
       Q (Exp, [Bool]),
     fieldCombineFun ::
+      -- \| Total number of constructors
       Int ->
+      -- \| Constructor index
+      Int ->
+      -- \| Constructor variant
       ConstructorVariant ->
+      -- \| Constructor name
       Name ->
+      -- \| Extra pattern expressions
       [Exp] ->
+      -- \| Field result expressions
       [Exp] ->
       Q (Exp, [Bool]),
     fieldFunExp :: FieldFunExp
@@ -303,6 +314,7 @@ instance UnaryOpFunConfig UnaryOpFieldConfig where
         ( genUnaryOpFieldClause
             config
             argTypes
+            (length constructors)
         )
         [0 ..]
         constructors
@@ -327,14 +339,15 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
         unaryOpAllowExistential
         n
   extraVars <- unaryOpExtraVars deriveConfig
-  instanceTypes <-
-    traverse
-      (unaryOpInstanceTypeFromConfig deriveConfig extraVars keptVars)
-      unaryOpInstanceNames
+
   let isTypeUsedInFields (VarT nm) = isVarUsedInFields result nm
       isTypeUsedInFields _ = False
+  contextInstanceTypes <-
+    traverse
+      (unaryOpInstanceTypeFromConfig deriveConfig extraVars keptVars)
+      (fromMaybe unaryOpInstanceNames unaryOpContextNames)
   ctxs <-
-    traverse (uncurry $ ctxForVar instanceTypes) $
+    traverse (uncurry $ ctxForVar contextInstanceTypes) $
       filter (isTypeUsedInFields . fst) keptVars
   let keptType = foldl AppT (ConT typName) $ fmap fst keptVars
   instanceFuns <-
@@ -353,6 +366,10 @@ genUnaryOpClass deriveConfig (UnaryOpClassConfig {..}) n typName = do
       )
       unaryOpConfigs
   let instanceName = unaryOpInstanceNames !! n
+  instanceTypes <-
+    traverse
+      (unaryOpInstanceTypeFromConfig deriveConfig extraVars keptVars)
+      unaryOpInstanceNames
   let instanceType = AppT (instanceTypes !! n) keptType
   extraPreds <-
     extraConstraint
