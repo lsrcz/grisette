@@ -31,7 +31,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
@@ -58,7 +58,7 @@ allSymsConfig =
               { extraPatNames = [],
                 extraLiftedPatNames = const [],
                 fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ _ _ exp ->
+                fieldCombineFun = \_ _ _ _ _ exp ->
                   return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
                 fieldFunExp =
                   defaultFieldFunExp
@@ -72,7 +72,8 @@ allSymsConfig =
       unaryOpInstanceNames = [''AllSyms, ''AllSyms1, ''AllSyms2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'AllSyms' instance for a GADT.

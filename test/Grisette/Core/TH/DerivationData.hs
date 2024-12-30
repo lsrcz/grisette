@@ -19,8 +19,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
--- {-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
+{-# OPTIONS_GHC -ddump-splices -ddump-to-file -ddump-file-prefix=derivation #-}
 
 module Grisette.Core.TH.DerivationData
   ( T (..),
@@ -34,11 +33,14 @@ module Grisette.Core.TH.DerivationData
     Ambiguous (..),
     replaceVVVShown,
     gggToVVV,
+    Serializable (..),
   )
 where
 
 import Control.DeepSeq (NFData, NFData1, NFData2)
 import Control.Monad.Identity (Identity (Identity))
+import Data.Binary (Binary)
+import Data.Bytes.Serial (Serial)
 import Data.Functor.Classes
   ( Eq1 (liftEq),
     Eq2,
@@ -50,6 +52,7 @@ import Data.Functor.Classes
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import Data.Maybe (fromJust)
+import Data.Serialize (Serialize)
 import qualified Data.Text as T
 import Data.Typeable (Proxy, Typeable)
 import GHC.Generics (Generic)
@@ -72,6 +75,7 @@ import Grisette
     PPrint1,
     PPrint2,
     SimpleMergeable,
+    Solvable (con),
     SubstSym,
     SubstSym1,
     SubstSym2,
@@ -90,6 +94,8 @@ import Grisette
     allClasses012,
     deriveGADT,
     deriveGADTWith,
+    (.&&),
+    (.||),
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
 import Grisette.Internal.TH.GADT.Common
@@ -111,7 +117,7 @@ import Grisette.Unified
     GetWordN,
     UnifiedSimpleMergeable,
   )
-import Test.QuickCheck (Arbitrary, oneof)
+import Test.QuickCheck (Arbitrary, oneof, sized)
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
 data T mode n a
@@ -426,3 +432,21 @@ deriveGADTWith
   [''SimpleMergeableType]
   ([''SimpleMergeable, ''UnifiedSimpleMergeable] ++ allClasses0)
 #endif
+
+data Serializable a
+  = Se1 a
+  | Se2 SymBool
+  deriving (Show, Eq)
+
+instance (Arbitrary a) => Arbitrary (Serializable a) where
+  arbitrary = oneof [Se1 <$> arbitrary, Se2 <$> sized bool]
+    where
+      bool n | n <= 0 = do
+        b <- arbitrary
+        oneof [return (con b), return "a", return "b"]
+      bool n = do
+        l <- bool (n `div` 2)
+        r <- bool (n `div` 2)
+        oneof [return (l .|| r), return (l .&& r), return l]
+
+deriveGADT [''Serializable] [''Serial, ''Serialize, ''Binary]

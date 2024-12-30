@@ -31,7 +31,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
@@ -59,7 +59,7 @@ substSymConfig =
               { extraPatNames = ["symbol", "newVal"],
                 extraLiftedPatNames = const [],
                 fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ con extraPat exp ->
+                fieldCombineFun = \_ _ _ con extraPat exp ->
                   return (foldl AppE (ConE con) exp, False <$ extraPat),
                 fieldFunExp =
                   defaultFieldFunExp
@@ -71,7 +71,8 @@ substSymConfig =
         [''SubstSym, ''SubstSym1, ''SubstSym2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'SubstSym' instance for a GADT.

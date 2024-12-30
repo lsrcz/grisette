@@ -32,7 +32,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
@@ -73,7 +73,7 @@ showConfig =
               { extraPatNames = ["prec"],
                 extraLiftedPatNames = \i -> (["sl" | i /= 0]),
                 fieldCombineFun =
-                  \_ variant conName [prec] exps -> do
+                  \_ _ variant conName [prec] exps -> do
                     case (variant, exps) of
                       (NormalConstructor, []) -> do
                         r <- [|showString $(stringE $ nameBase conName)|]
@@ -179,7 +179,8 @@ showConfig =
       unaryOpInstanceNames = [''Show, ''Show1, ''Show2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'Show' instance for a GADT.

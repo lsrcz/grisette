@@ -38,7 +38,7 @@ import Grisette.Core.TH.DerivationData
   ( Extra (Extra),
     GGG,
     gggToVVV,
-    replaceVVVShown,
+    replaceVVVShown, Serializable,
   )
 import Grisette.Core.TH.PartialEvalMode (PartialEvalMode)
 import Grisette.Unified
@@ -54,6 +54,9 @@ import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.HUnit ((@?=))
 import Test.QuickCheck.Property ((.&.), (===))
+import Data.Bytes.Serial (Serial(deserialize, serialize))
+import Data.Bytes.Put (runPutS)
+import Data.Bytes.Get (runGetS)
 
 #if MIN_VERSION_base(4,16,0)
 ftst ::
@@ -155,6 +158,11 @@ derivationTest =
           symCompare1 g1 g2 === (g1 `symCompare` g2),
       testProperty "GADT SymOrd2 and SymOrd are consistent" $
         \(g1 :: GGG (GGG Int String) [Int]) g2 ->
-          symCompare2 g1 g2 === (g1 `symCompare` g2)
+          symCompare2 g1 g2 === (g1 `symCompare` g2),
+      testProperty "Serialize" $ do
+        \(s :: Serializable Int) ->
+          let bs = runPutS (serialize s)
+              s' = runGetS deserialize bs
+           in Right s === s'
     ]
       ++ derivationExtraTest

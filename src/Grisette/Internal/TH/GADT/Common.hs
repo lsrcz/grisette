@@ -280,7 +280,8 @@ data DeriveConfig = DeriveConfig
     fpBitSizePositions :: [(Int, Int)],
     needExtraMergeableUnderEvalMode :: Bool,
     needExtraMergeableWithConcretizedEvalMode :: Bool,
-    useNoStrategy :: Bool
+    useNoStrategy :: Bool,
+    useSerialForCerealAndBinary :: Bool
   }
 
 -- | Get all the evaluation modes to specialize in the t'DeriveConfig'.
@@ -295,10 +296,24 @@ evalModeSpecializeList DeriveConfig {..} =
     evalModeConfig
 
 instance Semigroup DeriveConfig where
-  (<>) = (<>)
+  l <> r =
+    DeriveConfig
+      { evalModeConfig = evalModeConfig l <> evalModeConfig r,
+        bitSizePositions = bitSizePositions l <> bitSizePositions r,
+        fpBitSizePositions = fpBitSizePositions l <> fpBitSizePositions r,
+        needExtraMergeableUnderEvalMode =
+          needExtraMergeableUnderEvalMode l
+            || needExtraMergeableUnderEvalMode r,
+        needExtraMergeableWithConcretizedEvalMode =
+          needExtraMergeableWithConcretizedEvalMode l
+            || needExtraMergeableWithConcretizedEvalMode r,
+        useNoStrategy = useNoStrategy l || useNoStrategy r,
+        useSerialForCerealAndBinary =
+          useSerialForCerealAndBinary l && useSerialForCerealAndBinary r
+      }
 
 instance Monoid DeriveConfig where
-  mempty = DeriveConfig [] [] [] False False False
+  mempty = DeriveConfig [] [] [] False False False True
   mappend = (<>)
 
 -- | Generate extra constraints for evaluation modes.

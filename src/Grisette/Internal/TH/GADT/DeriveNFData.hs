@@ -24,7 +24,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
         unaryOpConfigs,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig
+        unaryOpInstanceTypeFromConfig, unaryOpContextNames
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
@@ -51,7 +51,7 @@ nfdataConfig =
             UnaryOpFieldConfig
               { extraPatNames = [],
                 extraLiftedPatNames = const [],
-                fieldCombineFun = \_ _ _ _ exps -> do
+                fieldCombineFun = \_ _ _ _ _ exps -> do
                   r <-
                     foldl
                       (\acc exp -> [|$acc `seq` $(return exp)|])
@@ -66,7 +66,8 @@ nfdataConfig =
       unaryOpInstanceNames = [''NFData, ''NFData1, ''NFData2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'NFData' instance for a GADT.

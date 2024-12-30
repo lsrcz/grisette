@@ -29,6 +29,7 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
         unaryOpConfigs,
+        unaryOpContextNames,
         unaryOpExtraVars,
         unaryOpInstanceNames,
         unaryOpInstanceTypeFromConfig
@@ -63,7 +64,7 @@ extractSymConfig =
               { extraPatNames = [],
                 extraLiftedPatNames = const [],
                 fieldResFun = defaultFieldResFun,
-                fieldCombineFun = \_ _ _ _ exp ->
+                fieldCombineFun = \_ _ _ _ _ exp ->
                   if null exp
                     then (,[]) <$> [|return mempty|]
                     else return (AppE (VarE 'mconcat) $ ListE exp, False <$ exp),
@@ -83,7 +84,8 @@ extractSymConfig =
         [''ExtractSym, ''ExtractSym1, ''ExtractSym2],
       unaryOpExtraVars = const $ return [],
       unaryOpInstanceTypeFromConfig = defaultUnaryOpInstanceTypeFromConfig,
-      unaryOpAllowExistential = True
+      unaryOpAllowExistential = True,
+      unaryOpContextNames = Nothing
     }
 
 -- | Derive 'ExtractSym' instance for a GADT.
