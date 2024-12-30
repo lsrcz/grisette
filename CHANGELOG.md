@@ -19,6 +19,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   ([#270](https://github.com/lsrcz/grisette/pull/270))
 - Added derivation for cereal and binary serializations.
   ([#271](https://github.com/lsrcz/grisette/pull/271))
+- Added unconstrained positions for derivation.
+  ([#273](https://github.com/lsrcz/grisette/pull/273))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
