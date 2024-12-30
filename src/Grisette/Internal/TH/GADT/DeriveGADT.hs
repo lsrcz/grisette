@@ -20,13 +20,35 @@ module Grisette.Internal.TH.GADT.DeriveGADT
     allClasses012,
     basicClasses0,
     noExistentialClasses0,
-    ordClasses0,
+    concreteOrdClasses0,
     basicClasses1,
     noExistentialClasses1,
-    ordClasses1,
+    concreteOrdClasses1,
     basicClasses2,
     noExistentialClasses2,
-    ordClasses2,
+    concreteOrdClasses2,
+    showClasses,
+    pprintClasses,
+    evalSymClasses,
+    extractSymClasses,
+    substSymClasses,
+    allSymsClasses,
+    eqClasses,
+    ordClasses,
+    symOrdClasses,
+    symEqClasses,
+    unifiedSymOrdClasses,
+    unifiedSymEqClasses,
+    mergeableClasses,
+    nfDataClasses,
+    hashableClasses,
+    toSymClasses,
+    toConClasses,
+    serialClasses,
+    simpleMergeableClasses,
+    unifiedSimpleMergeableClasses,
+    filterExactNumArgs,
+    filterLeqNumArgs,
   )
 where
 
@@ -471,7 +493,7 @@ deriveGADT = deriveGADTWith mempty
 -- * 'ToCon'
 -- * 'ToSym'
 allClasses0 :: [Name]
-allClasses0 = basicClasses0 ++ ordClasses0 ++ noExistentialClasses0
+allClasses0 = basicClasses0 ++ concreteOrdClasses0 ++ noExistentialClasses0
 
 -- | All the @*1@ classes that can be derived for GADT functors.
 --
@@ -496,7 +518,7 @@ allClasses0 = basicClasses0 ++ ordClasses0 ++ noExistentialClasses0
 -- * 'ToCon1'
 -- * 'ToSym1'
 allClasses1 :: [Name]
-allClasses1 = basicClasses1 ++ ordClasses1 ++ noExistentialClasses1
+allClasses1 = basicClasses1 ++ concreteOrdClasses1 ++ noExistentialClasses1
 
 -- | All the classes that can be derived for GADT functors.
 --
@@ -527,7 +549,7 @@ allClasses01 = allClasses0 ++ allClasses1
 -- * 'ToCon2'
 -- * 'ToSym2'
 allClasses2 :: [Name]
-allClasses2 = basicClasses2 ++ ordClasses2 ++ noExistentialClasses2
+allClasses2 = basicClasses2 ++ concreteOrdClasses2 ++ noExistentialClasses2
 
 -- | All the classes that can be derived for GADTfunctors.
 --
@@ -592,8 +614,8 @@ noExistentialClasses0 = [''Serial, ''ToCon, ''ToSym]
 --
 -- * 'Ord'
 -- * 'UnifiedSymOrd'
-ordClasses0 :: [Name]
-ordClasses0 = [''Ord, ''UnifiedSymOrd]
+concreteOrdClasses0 :: [Name]
+concreteOrdClasses0 = [''Ord, ''UnifiedSymOrd]
 
 -- | Basic classes for GADT functors.
 --
@@ -649,8 +671,8 @@ noExistentialClasses1 = [''Serial1, ''ToCon1, ''ToSym1]
 --
 -- * 'Ord1'
 -- * 'UnifiedSymOrd1'
-ordClasses1 :: [Name]
-ordClasses1 = [''Ord1, ''UnifiedSymOrd1]
+concreteOrdClasses1 :: [Name]
+concreteOrdClasses1 = [''Ord1, ''UnifiedSymOrd1]
 
 -- | Basic classes for GADT functors.
 --
@@ -706,5 +728,228 @@ noExistentialClasses2 = [''Serial2, ''ToCon2, ''ToSym2]
 --
 -- * 'Ord2'
 -- * 'UnifiedSymOrd2'
-ordClasses2 :: [Name]
-ordClasses2 = [''Ord2, ''UnifiedSymOrd2]
+concreteOrdClasses2 :: [Name]
+concreteOrdClasses2 = [''Ord2, ''UnifiedSymOrd2]
+
+-- | 'Show' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Show'
+-- * 'Show1'
+-- * 'Show2'
+showClasses :: [Name]
+showClasses = [''Show, ''Show1, ''Show2]
+
+-- | 'PPrint' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'PPrint'
+-- * 'PPrint1'
+-- * 'PPrint2'
+pprintClasses :: [Name]
+pprintClasses = [''PPrint, ''PPrint1, ''PPrint2]
+
+-- | 'EvalSym' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'EvalSym'
+-- * 'EvalSym1'
+-- * 'EvalSym2'
+evalSymClasses :: [Name]
+evalSymClasses = [''EvalSym, ''EvalSym1, ''EvalSym2]
+
+-- | 'ExtractSym' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'ExtractSym'
+-- * 'ExtractSym1'
+-- * 'ExtractSym2'
+extractSymClasses :: [Name]
+extractSymClasses = [''ExtractSym, ''ExtractSym1, ''ExtractSym2]
+
+-- | 'SubstSym' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'SubstSym'
+-- * 'SubstSym1'
+-- * 'SubstSym2'
+substSymClasses :: [Name]
+substSymClasses = [''SubstSym, ''SubstSym1, ''SubstSym2]
+
+-- | 'AllSyms' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'AllSyms'
+-- * 'AllSyms1'
+-- * 'AllSyms2'
+allSymsClasses :: [Name]
+allSymsClasses = [''AllSyms, ''AllSyms1, ''AllSyms2]
+
+-- | 'Eq' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Eq'
+-- * 'Eq1'
+-- * 'Eq2'
+eqClasses :: [Name]
+eqClasses = [''Eq, ''Eq1, ''Eq2]
+
+-- | 'SymEq' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'SymEq'
+-- * 'SymEq1'
+-- * 'SymEq2'
+symEqClasses :: [Name]
+symEqClasses = [''SymEq, ''SymEq1, ''SymEq2]
+
+-- | 'UnifiedSymEq' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'UnifiedSymEq'
+-- * 'UnifiedSymEq1'
+-- * 'UnifiedSymEq2'
+unifiedSymEqClasses :: [Name]
+unifiedSymEqClasses = [''UnifiedSymEq, ''UnifiedSymEq1, ''UnifiedSymEq2]
+
+-- | 'Ord' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Ord'
+-- * 'Ord1'
+-- * 'Ord2'
+ordClasses :: [Name]
+ordClasses = [''Ord, ''Ord1, ''Ord2]
+
+-- | 'SymOrd' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'SymOrd'
+-- * 'SymOrd1'
+-- * 'SymOrd2'
+symOrdClasses :: [Name]
+symOrdClasses = [''SymOrd, ''SymOrd1, ''SymOrd2]
+
+-- | 'UnifiedSymOrd' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'UnifiedSymOrd'
+-- * 'UnifiedSymOrd1'
+-- * 'UnifiedSymOrd2'
+unifiedSymOrdClasses :: [Name]
+unifiedSymOrdClasses = [''UnifiedSymOrd, ''UnifiedSymOrd1, ''UnifiedSymOrd2]
+
+-- | 'Mergeable' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Mergeable'
+-- * 'Mergeable1'
+-- * 'Mergeable2'
+-- * 'Mergeable3'
+mergeableClasses :: [Name]
+mergeableClasses = [''Mergeable, ''Mergeable1, ''Mergeable2, ''Mergeable3]
+
+-- | 'NFData' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'NFData'
+-- * 'NFData1'
+-- * 'NFData2'
+nfDataClasses :: [Name]
+nfDataClasses = [''NFData, ''NFData1, ''NFData2]
+
+-- | 'Hashable' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Hashable'
+-- * 'Hashable1'
+-- * 'Hashable2'
+hashableClasses :: [Name]
+hashableClasses = [''Hashable, ''Hashable1, ''Hashable2]
+
+-- | 'ToSym' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'ToSym'
+-- * 'ToSym1'
+-- * 'ToSym2'
+toSymClasses :: [Name]
+toSymClasses = [''ToSym, ''ToSym1, ''ToSym2]
+
+-- | 'ToCon' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'ToCon'
+-- * 'ToCon1'
+-- * 'ToCon2'
+toConClasses :: [Name]
+toConClasses = [''ToCon, ''ToCon1, ''ToCon2]
+
+-- | 'Serial' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'Serial'
+-- * 'Serial1'
+-- * 'Serial2'
+serialClasses :: [Name]
+serialClasses = [''Serial, ''Serial1, ''Serial2]
+
+-- | 'SimpleMergeable' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'SimpleMergeable'
+-- * 'SimpleMergeable1'
+-- * 'SimpleMergeable2'
+simpleMergeableClasses :: [Name]
+simpleMergeableClasses =
+  [''SimpleMergeable, ''SimpleMergeable1, ''SimpleMergeable2]
+
+-- | 'UnifiedSimpleMergeable' classes that can be derived for GADTs.
+--
+-- This includes:
+--
+-- * 'UnifiedSimpleMergeable'
+-- * 'UnifiedSimpleMergeable1'
+-- * 'UnifiedSimpleMergeable2'
+unifiedSimpleMergeableClasses :: [Name]
+unifiedSimpleMergeableClasses =
+  [ ''UnifiedSimpleMergeable,
+    ''UnifiedSimpleMergeable1,
+    ''UnifiedSimpleMergeable2
+  ]
+
+clsArgNumArgs :: Name -> Int
+clsArgNumArgs cls =
+  if
+    | cls `elem` allClasses0 -> 0
+    | cls `elem` allClasses1 -> 1
+    | cls `elem` allClasses2 -> 2
+    | cls == ''Mergeable3 -> 3
+    | otherwise -> error $ "clsArgNumArgs: unknown class: " ++ show cls
+
+-- | Filter classes that accepts type constructors with exactly @n@ arguments.
+filterExactNumArgs :: Int -> [Name] -> [Name]
+filterExactNumArgs n = filter (\cls -> clsArgNumArgs cls == n)
+
+-- | Filter classes that accepts type constructors with at most @n@ arguments.
+filterLeqNumArgs :: Int -> [Name] -> [Name]
+filterLeqNumArgs n = filter (\cls -> clsArgNumArgs cls <= n)

@@ -11,6 +11,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - Added derivation of `Mergeable` instances using `NoStrategy`.
   ([#269](https://github.com/lsrcz/grisette/pull/269))
+- Added `filterExactNumArgs` and `filterLeqNumArgs` for filtering classes
+  that accepts type constructors with exactly or at most @n@ arguments. Added
+  more list of classes.
+  ([#269](https://github.com/lsrcz/grisette/pull/269))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
