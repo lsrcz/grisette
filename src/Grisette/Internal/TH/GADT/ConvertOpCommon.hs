@@ -211,33 +211,6 @@ genConvertOpFieldClause
         lhsKeptTypes
         rhsKeptTypes
         resExp
-    -- let conKeptVars =
-    --       if convertOpTarget == S then lhsKeptTypes else rhsKeptTypes
-    -- let symKeptVars =
-    --       if convertOpTarget == S then rhsKeptTypes else lhsKeptTypes
-    -- let tags =
-    --       mapMaybe
-    --         ( \case
-    --             (n, EvalModeConstraints _)
-    --               | n < length conKeptVars && n >= 0 ->
-    --                   Just (fst $ conKeptVars !! n, fst $ symKeptVars !! n)
-    --             _ -> Nothing
-    --         )
-    --         evalModeConfig
-    -- resExpWithTags <-
-    --   foldM
-    --     ( \exp (lty, rty) ->
-    --         [|
-    --           withModeConvertible'
-    --             @($(return lty))
-    --             @($(return rty))
-    --             $(return exp)
-    --             $(return exp)
-    --             $(return exp)
-    --           |]
-    --     )
-    --     resExp
-    --     tags
     return $
       Clause
         (fmap transformPat $ funPats ++ [fieldPats])
@@ -254,6 +227,9 @@ genConvertOpFun ::
   [(Type, Kind)] ->
   [ConstructorInfo] ->
   Q Dec
+genConvertOpFun _ convertOpClassConfig n _ _ _ _ [] = do
+  let instanceFunName = (convertOpFunNames convertOpClassConfig) !! n
+  funD instanceFunName [clause [] (normalB [|error "impossible"|]) []]
 genConvertOpFun
   deriveConfig
   convertOpClassConfig
@@ -456,14 +432,18 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
   return $
     InstanceD
       (Just Incoherent)
-      (extraPreds ++ catMaybes ctxs)
+      (extraPreds ++ if null (constructors lResult) then [] else catMaybes ctxs)
       instanceType
       [instanceFun]
       : ( [ InstanceD
               (Just Incoherent)
-              (unionExtraPreds ++ catMaybes ctxs)
+              ( unionExtraPreds
+                  ++ if null (constructors lResult)
+                    then []
+                    else catMaybes ctxs
+              )
               instanceUnionType
               [instanceUnionFun]
-            | n == 0
+          | n == 0
           ]
         )

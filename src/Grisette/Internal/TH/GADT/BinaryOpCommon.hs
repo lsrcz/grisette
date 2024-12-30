@@ -55,6 +55,7 @@ import Language.Haskell.TH
     Type (AppT, ConT, VarT),
     clause,
     conP,
+    funD,
     nameBase,
     newName,
     normalB,
@@ -287,6 +288,10 @@ genBinaryOpFun ::
   [ConstructorInfo] ->
   [ConstructorInfo] ->
   Q Dec
+genBinaryOpFun config n _ _ [] [] =
+  funD
+    (fieldFunNames config !! n)
+    [clause [] (normalB [|error "impossible"|]) []]
 genBinaryOpFun
   config
   n
@@ -371,7 +376,11 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
   return
     [ InstanceD
         Nothing
-        (extraPreds ++ catMaybes ctxs)
+        ( extraPreds
+            ++ if null (constructors lhsResult)
+              then []
+              else catMaybes ctxs
+        )
         instanceType
         instanceFuns
     ]
