@@ -393,7 +393,7 @@ extraExtraMergeableConstraint deriveConfig constructors args = do
     <$> zipWithM
       ( \position (arg, knd) ->
           if isTypeUsedInFields' arg
-            && not (position `elem` unconstrainedPositions deriveConfig)
+            && notElem position (unconstrainedPositions deriveConfig)
             then
               ctxForVar
                 [ ConT ''Mergeable,

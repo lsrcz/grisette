@@ -121,7 +121,7 @@ import Grisette.Unified
 import Test.QuickCheck (Arbitrary, oneof, sized)
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
-data Skipped a b c = Skipped b
+newtype Skipped a b c = Skipped b
 
 deriveGADTWith
   (mempty {unconstrainedPositions = [0, 2]})
