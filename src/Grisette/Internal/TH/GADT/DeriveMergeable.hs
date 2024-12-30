@@ -49,7 +49,7 @@ import Grisette.Internal.TH.GADT.Common
         constructors,
         keptVars
       ),
-    DeriveConfig (useNoStrategy, unconstrainedPositions),
+    DeriveConfig (unconstrainedPositions, useNoStrategy),
     checkArgs,
     evalModeSpecializeList,
     extraConstraint,
