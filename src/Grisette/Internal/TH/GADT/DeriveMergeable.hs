@@ -272,7 +272,7 @@ genMergingInfo typName = do
   let eqClauses =
         concatMap (\(_, _, a, _, _) -> a) r
           ++ [ Clause [WildP, WildP] (NormalB $ ConE 'False) []
-             | length constructors > 1
+               | length constructors > 1
              ]
   let cmpClauses = concatMap (\(_, _, _, a, _) -> a) r
   let showClauses = concatMap (\(_, _, _, _, a) -> a) r
