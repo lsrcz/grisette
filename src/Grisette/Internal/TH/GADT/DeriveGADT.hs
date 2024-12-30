@@ -54,11 +54,13 @@ where
 
 import Control.Arrow (Arrow (second))
 import Control.DeepSeq (NFData, NFData1, NFData2)
+import Data.Binary (Binary)
 import Data.Bytes.Serial (Serial, Serial1, Serial2)
 import Data.Functor.Classes (Eq1, Eq2, Ord1, Ord2, Show1, Show2)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1, Hashable2)
 import qualified Data.Map as M
+import Data.Serialize (Serialize)
 import qualified Data.Set as S
 import Grisette.Internal.Internal.Decl.Core.Data.Class.EvalSym
   ( EvalSym,
@@ -144,6 +146,8 @@ import Grisette.Internal.TH.GADT.DeriveAllSyms
     deriveGADTAllSyms1,
     deriveGADTAllSyms2,
   )
+import Grisette.Internal.TH.GADT.DeriveBinary (deriveGADTBinary)
+import Grisette.Internal.TH.GADT.DeriveCereal (deriveGADTCereal)
 import Grisette.Internal.TH.GADT.DeriveEq
   ( deriveGADTEq,
     deriveGADTEq1,
@@ -237,10 +241,6 @@ import Grisette.Internal.TH.GADT.DeriveUnifiedSymOrd
   )
 import Grisette.Internal.Unified.EvalModeTag (EvalModeTag (C, S))
 import Language.Haskell.TH (Dec, Name, Q)
-import Data.Binary (Binary)
-import Data.Serialize (Serialize)
-import Grisette.Internal.TH.GADT.DeriveBinary (deriveGADTBinary)
-import Grisette.Internal.TH.GADT.DeriveCereal (deriveGADTCereal)
 
 deriveProcedureMap :: M.Map Name (DeriveConfig -> Name -> Q [Dec])
 deriveProcedureMap =

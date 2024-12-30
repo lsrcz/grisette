@@ -42,9 +42,10 @@ import Grisette.Internal.TH.GADT.UnaryOpCommon
       ( UnaryOpClassConfig,
         unaryOpAllowExistential,
         unaryOpConfigs,
+        unaryOpContextNames,
         unaryOpExtraVars,
         unaryOpInstanceNames,
-        unaryOpInstanceTypeFromConfig, unaryOpContextNames
+        unaryOpInstanceTypeFromConfig
       ),
     UnaryOpConfig (UnaryOpConfig),
     UnaryOpFieldConfig
