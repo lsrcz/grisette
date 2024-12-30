@@ -34,7 +34,8 @@ import Grisette.Internal.TH.GADT.Common
         evalModeConfig,
         fpBitSizePositions,
         needExtraMergeableUnderEvalMode,
-        needExtraMergeableWithConcretizedEvalMode
+        needExtraMergeableWithConcretizedEvalMode,
+        unconstrainedPositions
       ),
     EvalModeConfig (EvalModeConstraints, EvalModeSpecified),
     checkArgs,
@@ -289,7 +290,7 @@ extraConstraintConvert ::
   [ConstructorInfo] ->
   Q [Pred]
 extraConstraintConvert
-  DeriveConfig {..}
+  deriveConfig@DeriveConfig {..}
   convertOpTarget
   tyName
   instanceName
@@ -338,7 +339,7 @@ extraConstraintConvert
                evalModeConfig
                || needExtraMergeableWithConcretizedEvalMode
            )
-        then extraExtraMergeableConstraint rhsConstructors rhsKeptArgs
+        then extraExtraMergeableConstraint deriveConfig rhsConstructors rhsKeptArgs
         else return []
     return $
       concat
@@ -395,10 +396,13 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
       isTypeUsedInFields _ = False
   ctxs <-
     traverse
-      ( \((lty, knd), (rty, _)) ->
-          convertCtxForVar (ConT <$> convertOpInstanceNames) lty rty knd
+      ( \(position, ((lty, knd), (rty, _))) ->
+          if position `elem` unconstrainedPositions deriveConfig
+            then return Nothing
+            else convertCtxForVar (ConT <$> convertOpInstanceNames) lty rty knd
       )
-      $ filter (isTypeUsedInFields . fst . fst)
+      $ filter (isTypeUsedInFields . fst . fst . snd)
+      $ zip [0 ..]
       $ zip lKeptVars rKeptVars
 
   instanceFun <-
@@ -444,6 +448,6 @@ genConvertOpClass deriveConfig (ConvertOpClassConfig {..}) n typName = do
               )
               instanceUnionType
               [instanceUnionFun]
-            | n == 0
+          | n == 0
           ]
         )

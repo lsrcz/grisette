@@ -62,6 +62,7 @@ import Grisette
     AllSyms2,
     BasicSymPrim,
     Default (Default),
+    DeriveConfig (unconstrainedPositions),
     EvalSym,
     EvalSym1,
     EvalSym2,
@@ -120,11 +121,18 @@ import Grisette.Unified
 import Test.QuickCheck (Arbitrary, oneof, sized)
 import Test.QuickCheck.Arbitrary (Arbitrary (arbitrary))
 
+data Skipped a b c = Skipped b
+
+deriveGADTWith
+  (mempty {unconstrainedPositions = [0, 2]})
+  [''Skipped]
+  allClasses012
+
 data Empty a b c
 
 deriveGADT [''Empty] allClasses012
 
-data EmptyWithMode mode a b c
+data EmptyWithMode (mode :: EvalModeTag) a b c
 
 deriveGADT [''EmptyWithMode] allClasses012
 
