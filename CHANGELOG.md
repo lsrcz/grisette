@@ -15,10 +15,18 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   that accepts type constructors with exactly or at most @n@ arguments. Added
   more list of classes.
   ([#269](https://github.com/lsrcz/grisette/pull/269))
+- Added derivation for `Mergeable` using `NoStrategy`.
+  ([#270](https://github.com/lsrcz/grisette/pull/270))
+- Added derivation for cereal and binary serializations.
+  ([#271](https://github.com/lsrcz/grisette/pull/271))
 
 ### Changed
 - Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
   ([#268](https://github.com/lsrcz/grisette/pull/268))
+
+### Fixed
+- Fixed the derivation for empty data types.
+  ([#272](https://github.com/lsrcz/grisette/pull/272))
 
 ## [0.11.0.0] - 2024-12-29
 
