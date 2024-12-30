@@ -32,7 +32,7 @@ module Grisette.Internal.TH.GADT.Common
   )
 where
 
-import Control.Monad (foldM, unless, when)
+import Control.Monad (foldM, unless, when, zipWithM)
 import Data.Bifunctor (first)
 import qualified Data.Map as M
 import Data.Maybe (catMaybes, mapMaybe)
@@ -278,6 +278,7 @@ data DeriveConfig = DeriveConfig
   { evalModeConfig :: [(Int, EvalModeConfig)],
     bitSizePositions :: [Int],
     fpBitSizePositions :: [(Int, Int)],
+    unconstrainedPositions :: [Int],
     needExtraMergeableUnderEvalMode :: Bool,
     needExtraMergeableWithConcretizedEvalMode :: Bool,
     useNoStrategy :: Bool,
@@ -301,6 +302,7 @@ instance Semigroup DeriveConfig where
       { evalModeConfig = evalModeConfig l <> evalModeConfig r,
         bitSizePositions = bitSizePositions l <> bitSizePositions r,
         fpBitSizePositions = fpBitSizePositions l <> fpBitSizePositions r,
+        unconstrainedPositions = unconstrainedPositions l <> unconstrainedPositions r,
         needExtraMergeableUnderEvalMode =
           needExtraMergeableUnderEvalMode l
             || needExtraMergeableUnderEvalMode r,
@@ -313,7 +315,7 @@ instance Semigroup DeriveConfig where
       }
 
 instance Monoid DeriveConfig where
-  mempty = DeriveConfig [] [] [] False False False True
+  mempty = DeriveConfig [] [] [] [] False False False True
   mappend = (<>)
 
 -- | Generate extra constraints for evaluation modes.
@@ -381,15 +383,17 @@ extraFpBitSizeConstraint tyName instanceName args (eb, sb)
       return [pred]
 
 -- | Generate extra constraints for 'Mergeable' instances.
-extraExtraMergeableConstraint :: [ConstructorInfo] -> [(Type, Kind)] -> Q [Pred]
-extraExtraMergeableConstraint constructors args = do
+extraExtraMergeableConstraint ::
+  DeriveConfig -> [ConstructorInfo] -> [(Type, Kind)] -> Q [Pred]
+extraExtraMergeableConstraint deriveConfig constructors args = do
   let isTypeUsedInFields' (VarT nm) =
         isVarUsedInConstructorFields constructors nm
       isTypeUsedInFields' _ = False
   catMaybes
-    <$> traverse
-      ( \(arg, knd) ->
+    <$> zipWithM
+      ( \position (arg, knd) ->
           if isTypeUsedInFields' arg
+            && not (position `elem` unconstrainedPositions deriveConfig)
             then
               ctxForVar
                 [ ConT ''Mergeable,
@@ -400,6 +404,7 @@ extraExtraMergeableConstraint constructors args = do
                 knd
             else return Nothing
       )
+      [0 ..]
       args
 
 -- | Generate extra constraints for a GADT.
@@ -412,17 +417,12 @@ extraConstraint ::
   [ConstructorInfo] ->
   Q [Pred]
 extraConstraint
-  DeriveConfig {..}
+  deriveConfig@DeriveConfig {..}
   tyName
   instanceName
   extraArgs
   keptArgs
   constructors = do
-    -- checkAllValidExtraConstraintPosition
-    --   deriveConfig
-    --   tyName
-    --   instanceName
-    --   keptArgs
     evalModePreds <-
       traverse
         (extraEvalModeConstraint tyName instanceName keptArgs)
@@ -456,7 +456,7 @@ extraConstraint
                evalModeConfig
                || needExtraMergeableWithConcretizedEvalMode
            )
-        then extraExtraMergeableConstraint constructors keptArgs
+        then extraExtraMergeableConstraint deriveConfig constructors keptArgs
         else return []
     return $
       concat (extraArgEvalModePreds ++ evalModePreds)

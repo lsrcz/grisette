@@ -49,7 +49,7 @@ import Grisette.Internal.TH.GADT.Common
         constructors,
         keptVars
       ),
-    DeriveConfig (useNoStrategy),
+    DeriveConfig (useNoStrategy, unconstrainedPositions),
     checkArgs,
     evalModeSpecializeList,
     extraConstraint,
@@ -678,7 +678,11 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
   let isTypeUsedInFields (VarT nm) = isVarUsedInFields result nm
       isTypeUsedInFields _ = False
   mergeableContexts <-
-    traverse ctxForVar $ filter (isTypeUsedInFields . fst) keptVars
+    traverse ctxForVar $
+      filter (isTypeUsedInFields . fst) $
+        fmap snd $
+          filter (not . (`elem` unconstrainedPositions deriveConfig) . fst) $
+            zip [0 ..] keptVars
 
   let instanceName = getMergeableInstanceName n
   let instanceHead = ConT instanceName

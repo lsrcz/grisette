@@ -35,7 +35,7 @@ import Grisette.Internal.TH.GADT.Common
         constructors,
         keptVars
       ),
-    DeriveConfig,
+    DeriveConfig (unconstrainedPositions),
     checkArgs,
     ctxForVar,
     evalModeSpecializeList,
@@ -349,7 +349,10 @@ genBinaryOpClass deriveConfig (BinaryOpClassConfig {..}) n typName = do
       isTypeUsedInFields' _ = False
   ctxs <-
     traverse (uncurry $ ctxForVar (fmap ConT binaryOpInstanceNames)) $
-      filter (isTypeUsedInFields' . fst) keptVars'
+      filter (isTypeUsedInFields' . fst) $
+        fmap snd $
+          filter (not . (`elem` unconstrainedPositions deriveConfig) . fst) $
+            zip [0 ..] keptVars'
   let keptType = foldl AppT (ConT typName) $ fmap fst keptVars'
   instanceFuns <-
     traverse
