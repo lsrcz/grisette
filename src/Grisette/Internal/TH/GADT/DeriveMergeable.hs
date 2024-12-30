@@ -23,6 +23,8 @@ module Grisette.Internal.TH.GADT.DeriveMergeable
     genMergeable,
     genMergeable',
     genMergeableNoExistential,
+    genMergeableNoStrategy,
+    genMergeableList,
   )
 where
 
@@ -36,7 +38,7 @@ import Grisette.Internal.Internal.Decl.Core.Data.Class.Mergeable
     Mergeable1 (liftRootStrategy),
     Mergeable2 (liftRootStrategy2),
     Mergeable3 (liftRootStrategy3),
-    MergingStrategy (SimpleStrategy, SortedStrategy),
+    MergingStrategy (NoStrategy, SimpleStrategy, SortedStrategy),
     product2Strategy,
     wrapStrategy,
   )
@@ -47,14 +49,28 @@ import Grisette.Internal.TH.GADT.Common
         constructors,
         keptVars
       ),
-    DeriveConfig,
+    DeriveConfig (useNoStrategy),
     checkArgs,
     evalModeSpecializeList,
     extraConstraint,
     isVarUsedInFields,
     specializeResult,
   )
-import Grisette.Internal.TH.GADT.UnaryOpCommon (FieldFunExp, UnaryOpClassConfig (UnaryOpClassConfig, unaryOpAllowExistential, unaryOpConfigs, unaryOpExtraVars, unaryOpInstanceNames, unaryOpInstanceTypeFromConfig), UnaryOpConfig (UnaryOpConfig), UnaryOpFunConfig (genUnaryOpFun), defaultUnaryOpInstanceTypeFromConfig, genUnaryOpClass)
+import Grisette.Internal.TH.GADT.UnaryOpCommon
+  ( FieldFunExp,
+    UnaryOpClassConfig
+      ( UnaryOpClassConfig,
+        unaryOpAllowExistential,
+        unaryOpConfigs,
+        unaryOpExtraVars,
+        unaryOpInstanceNames,
+        unaryOpInstanceTypeFromConfig
+      ),
+    UnaryOpConfig (UnaryOpConfig),
+    UnaryOpFunConfig (genUnaryOpFun),
+    defaultUnaryOpInstanceTypeFromConfig,
+    genUnaryOpClass,
+  )
 import Grisette.Internal.TH.Util (dataTypeHasExistential, integerE, mangleName)
 import Language.Haskell.TH
   ( Bang (Bang),
@@ -256,7 +272,7 @@ genMergingInfo typName = do
   let eqClauses =
         concatMap (\(_, _, a, _, _) -> a) r
           ++ [ Clause [WildP, WildP] (NormalB $ ConE 'False) []
-               | length constructors > 1
+             | length constructors > 1
              ]
   let cmpClauses = concatMap (\(_, _, _, a, _) -> a) r
   let showClauses = concatMap (\(_, _, _, _, a) -> a) r
@@ -482,6 +498,28 @@ mergeableFieldFunExp unaryOpFunNames argToFunPat _ = go
           _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
         _ -> fail $ "defaultFieldFunExp: unsupported type: " <> show ty
 
+mergeableInstanceNames :: [Name]
+mergeableInstanceNames =
+  [ ''Mergeable,
+    ''Mergeable1,
+    ''Mergeable2,
+    ''Mergeable3
+  ]
+
+getMergeableInstanceName :: Int -> Name
+getMergeableInstanceName n = mergeableInstanceNames !! n
+
+rootStrategyFunNames :: [Name]
+rootStrategyFunNames =
+  [ 'rootStrategy,
+    'liftRootStrategy,
+    'liftRootStrategy2,
+    'liftRootStrategy3
+  ]
+
+getMergeableFunName :: Int -> Name
+getMergeableFunName n = rootStrategyFunNames !! n
+
 mergeableNoExistentialConfig :: UnaryOpClassConfig
 mergeableNoExistentialConfig =
   UnaryOpClassConfig
@@ -489,18 +527,9 @@ mergeableNoExistentialConfig =
         [ UnaryOpConfig
             MergeableNoExistentialConfig
               { mergeableNoExistentialFun =
-                  mergeableFieldFunExp
-                    [ 'rootStrategy,
-                      'liftRootStrategy,
-                      'liftRootStrategy2,
-                      'liftRootStrategy3
-                    ]
+                  mergeableFieldFunExp rootStrategyFunNames
               }
-            [ 'rootStrategy,
-              'liftRootStrategy,
-              'liftRootStrategy2,
-              'liftRootStrategy3
-            ]
+            rootStrategyFunNames
         ],
       unaryOpInstanceNames =
         [''Mergeable, ''Mergeable1, ''Mergeable2, ''Mergeable3],
@@ -649,14 +678,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
   mergeableContexts <-
     traverse ctxForVar $ filter (isTypeUsedInFields . fst) keptVars
 
-  let instanceName =
-        case n of
-          0 -> ''Mergeable
-          1 -> ''Mergeable1
-          2 -> ''Mergeable2
-          3 -> ''Mergeable3
-          _ -> error "Unsupported n"
-
+  let instanceName = getMergeableInstanceName n
   let instanceHead = ConT instanceName
   extraPreds <-
     extraConstraint
@@ -720,12 +742,7 @@ genMergeable' deriveConfig (MergingInfoResult infoName conInfoNames) typName n =
           instanceHead
           (foldl AppT (ConT typName) $ fmap fst keptVars)
 
-  let mergeInstanceFunName = case n of
-        0 -> 'rootStrategy
-        1 -> 'liftRootStrategy
-        2 -> 'liftRootStrategy2
-        3 -> 'liftRootStrategy3
-        _ -> error "Unsupported n"
+  let mergeInstanceFunName = getMergeableFunName n
   mergeInstanceFunPatNames <- replicateM n $ newName "rootStrategy"
   let mergeInstanceFunPats = VarP <$> mergeInstanceFunPatNames
 
@@ -764,16 +781,63 @@ genMergeableNoExistential :: DeriveConfig -> Name -> Int -> Q [Dec]
 genMergeableNoExistential deriveConfig typName n = do
   genUnaryOpClass deriveConfig mergeableNoExistentialConfig n typName
 
+-- | Generate 'Mergeable' instance for a GADT, using 'NoStrategy'.
+genMergeableNoStrategy :: DeriveConfig -> Name -> Int -> Q [Dec]
+genMergeableNoStrategy deriveConfig typName n = do
+  CheckArgsResult {..} <-
+    specializeResult (evalModeSpecializeList deriveConfig)
+      =<< checkArgs "Mergeable" 3 typName True n
+  let instanceName = getMergeableInstanceName n
+  let instanceHead = ConT instanceName
+  let instanceType =
+        AppT
+          instanceHead
+          (foldl AppT (ConT typName) $ fmap fst keptVars)
+  let mergeInstanceFunName = getMergeableFunName n
+
+  let mergeInstanceFunClause =
+        Clause (replicate n WildP) (NormalB (ConE 'NoStrategy)) []
+  return
+    [ InstanceD
+        Nothing
+        []
+        instanceType
+        [FunD mergeInstanceFunName [mergeInstanceFunClause]]
+    ]
+
 -- | Generate 'Mergeable' instance for a GADT.
 genMergeable :: DeriveConfig -> Name -> Int -> Q [Dec]
 genMergeable deriveConfig typName n = do
   hasExistential <- dataTypeHasExistential typName
-  if hasExistential
-    then do
-      (infoResult, infoDec) <- genMergingInfo typName
-      (_, decs) <- genMergeable' deriveConfig infoResult typName n
-      return $ infoDec ++ decs
-    else genMergeableNoExistential deriveConfig typName n
+  if
+    | useNoStrategy deriveConfig ->
+        genMergeableNoStrategy deriveConfig typName n
+    | hasExistential -> do
+        (infoResult, infoDec) <- genMergingInfo typName
+        (_, decs) <- genMergeable' deriveConfig infoResult typName n
+        return $ infoDec ++ decs
+    | otherwise -> genMergeableNoExistential deriveConfig typName n
+
+-- | Generate multiple 'Mergeable' instances for a GADT.
+genMergeableList :: DeriveConfig -> Name -> [Int] -> Q [Dec]
+genMergeableList _ _ [] = return []
+genMergeableList deriveConfig typName [n] = genMergeable deriveConfig typName n
+genMergeableList deriveConfig typName l@(n : ns) = do
+  hasExistential <- dataTypeHasExistential typName
+  if
+    | useNoStrategy deriveConfig ->
+        concat <$> traverse (genMergeableNoStrategy deriveConfig typName) l
+    | hasExistential -> do
+        (info, dn) <-
+          genMergeableAndGetMergingInfoResult
+            deriveConfig
+            typName
+            n
+        dns <-
+          traverse (genMergeable' deriveConfig info typName) ns
+        return $ dn ++ concatMap snd dns
+    | otherwise ->
+        concat <$> traverse (genMergeableNoExistential deriveConfig typName) l
 
 -- | Derive 'Mergeable' instance for GADT.
 deriveGADTMergeable :: DeriveConfig -> Name -> Q [Dec]

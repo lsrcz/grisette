@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Added derivation of `Mergeable` instances using `NoStrategy`.
+  ([#269](https://github.com/lsrcz/grisette/pull/269))
+
+### Changed
+- Derivation of `PPrint` no longer relies on `OverloadedStrings` extension.
+  ([#268](https://github.com/lsrcz/grisette/pull/268))
+
 ## [0.11.0.0] - 2024-12-29
 
 ### Added
@@ -549,7 +559,8 @@ No user-facing changes.
 
 - Initial release for Grisette.
 
-[0.11.0.0]: https://github.com/lsrcz/grisette/compare/v0.10.0.0...HEAD
+[Unreleased]: https://github.com/lsrcz/grisette/compare/v0.11.0.0...HEAD
+[0.11.0.0]: https://github.com/lsrcz/grisette/compare/v0.10.0.0...v0.11.0.0
 [0.10.0.0]: https://github.com/lsrcz/grisette/compare/v0.9.0.0...v0.10.0.0
 [0.9.0.0]: https://github.com/lsrcz/grisette/compare/v0.8.0.0...v0.9.0.0
 [0.8.0.0]: https://github.com/lsrcz/grisette/compare/v0.7.0.0...v0.8.0.0
