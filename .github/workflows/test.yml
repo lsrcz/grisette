@@ -166,10 +166,15 @@ jobs:
           reporter: java-junit
         if: matrix.os == 'ubuntu-latest' && (success() || failure ())
 
+      - name: Tix files
+        id: tix
+        run: |
+          echo "tix=$(find result/hpc/vanilla/tix -name '*.tix')" >> $GITHUB_OUTPUT
+
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v2
         with:
-          target: result/hpc/vanilla/tix
+          target: ${{ steps.tix.outputs.tix }}
           mix: result/hpc/vanilla/mix
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
 
