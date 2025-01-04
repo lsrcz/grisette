@@ -292,7 +292,8 @@ examples are available in Grisette's [tutorials](tutorials).
 
 ## Documentation
 
-- Haddock documentation at [grisette](https://hackage.haskell.org/package/grisette).
+- Haddock documentation: [HEAD version](https://lsrcz.github.io/grisette),
+  [release version on Hackage](https://hackage.haskell.org/package/grisette).
 - A tutorial to Grisette is in the [tutorials](tutorials) directory. They are
   provided as jupyter notebooks with the [IHaskell](https://github.com/IHaskell/IHaskell) kernel.
 
