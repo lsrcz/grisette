@@ -46,8 +46,15 @@
                   postCheck = ''
                     mkdir -p $out/test-report
                     cp test-report.xml $out/test-report/test-report.xml
-                    cp dist/hpc $out/hpc -r
-                  '';
+                  '' + (if ghcVersion == "9101" then ''
+                    mkdir -p $out/mix
+                    cp dist/ $out/dist -r
+                    cp dist/build/extra-compilation-artifacts/hpc/vanilla/mix/* $out/mix -r
+                    cp dist/build/spec/spec-tmp/extra-compilation-artifacts/hpc/vanilla/mix/* $out/mix -r
+                    cp dist/build/doctest/doctest-tmp/extra-compilation-artifacts/hpc/vanilla/mix/* $out/mix -r
+                    mkdir -p $out/tix
+                    find dist/hpc/vanilla/tix -name '*.tix' | xargs -I {} cp {} $out/tix -r
+                  '' else "");
                   haddockFlags = [
                     "--html-location='https://hackage.haskell.org/package/\$pkg-\$version/docs'"
                   ];
