@@ -86,6 +86,13 @@ when:
         - -O2
     else:
       ghc-options: -O0
+  - condition: impl(ghc >= 9.2)
+    then:
+      ghc-prof-options:
+        - -finfo-table-map
+        - -fdistinct-constructor-tables
+    else:
+      ghc-prof-options: []
 
 ghc-options:
   - -Wextra
@@ -99,10 +106,6 @@ ghc-options:
   - -Wunused-type-patterns
   - -Wno-x-partial
   - -Wno-unrecognised-warning-flags
-
-ghc-prof-options:
-  - -finfo-table-map
-  - -fdistinct-constructor-tables
 
 library:
   source-dirs: src
