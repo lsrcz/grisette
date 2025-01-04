@@ -191,4 +191,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./result/haddock/html/grisette
-        if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
+        if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain && github.ref == 'refs/heads/main'
