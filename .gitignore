@@ -30,3 +30,4 @@ cabal.project.local~
 *.smt2
 *.eventlog.html
 *.dump-splices
+result
