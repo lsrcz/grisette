@@ -18,41 +18,21 @@
         haskell = pkgs.haskell;
         stableHPkgs = haskell.packages."ghc9101";
 
+        patchedHPkgs = { ghcVersion }: import ./nix/hpkgs.nix {
+          inherit pkgs;
+          ghcVersion = ghcVersion;
+        };
+
         hPkgs = { ghcVersion, ci }:
-          (haskell.packages."ghc${ghcVersion}".override (prev: {
-            all-cabal-hashes = pkgs.fetchFromGitHub {
-              owner = "commercialhaskell";
-              repo = "all-cabal-hashes";
-              rev = "eb6641d2dfddf269c90c2cfdec94b3f1145418f3";
-              sha256 = "sha256-hiL/IIoCISoPXq9OviWR7UMQF7RK4WukGRNP+ht4gpw=";
-            };
-          })).extend (hfinal: hprev:
-            let
-              h = import ./nix/hpkgs-extend-helpers.nix {
-                inherit pkgs hfinal hprev ghcVersion;
-              };
-            in
-            rec {
-              ihaskell = h.noCheckSimpleOverwrittenHPkg "ihaskell" {
-                "9101" = "0.12.0.0";
-              };
-              ghc-syntax-highlighter =
-                h.simpleOverwrittenHPkg "ghc-syntax-highlighter" {
-                  "9101" = "0.0.12.0";
-                };
-              hlint = hfinal.callCabal2nix "hlint" pkgs.hlintSrc { };
-              uuid = h.simpleOverwrittenHPkg "uuid" {
-                "9101" = "1.3.16";
-              };
-              ghc-parser =
-                hfinal.callHackage "ghc-parser" "0.2.7.0" { };
-              ghc-lib-parser = h.simpleOverwrittenHPkg "ghc-lib-parser" {
-                "984" = "9.8.4.20241130";
-              };
+          (patchedHPkgs { inherit ghcVersion; }).extend (hfinal: hprev:
+            with (import ./nix/hpkgs-extend-helpers.nix {
+              inherit pkgs hfinal hprev ghcVersion;
+            });
+            {
               grisette = (haskell.lib.overrideCabal
                 (hfinal.callCabal2nix "grisette" ./. { })
                 (drv: {
-                  testToolDepends = h.byGhcVersion {
+                  testToolDepends = byGhcVersion {
                     "8107" = [ pkgs.z3 ];
                     "902" = [ pkgs.z3 ];
                     default = [ pkgs.z3 pkgs.bitwuzla ];
@@ -80,14 +60,6 @@
                   "--test-options=--jxml=test-report.xml"
                 ];
               } else { });
-              sbv = h.noCheckSimpleOverwrittenHPkg "sbv" {
-                "8107" = "9.2";
-                "902" = "9.2";
-                "928" = "10.10";
-                "948" = "10.10";
-                "966" = "10.12";
-                default = "11.0";
-              };
             });
 
         basicDevTools = { ghcVersion, ci }:

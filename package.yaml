@@ -40,12 +40,12 @@ tested-with:
 
 dependencies:
   - base >= 4.14 && < 5
-  - hashable >= 1.2.5 && < 1.6
+  - hashable >= 1.3 && < 1.6
   - mtl >= 2.2.2 && < 2.4
-  - transformers >= 0.5.6 && < 0.7
+  - transformers >= 0.5.6.2 && < 0.7
   - generic-deriving >= 1.14.1 && < 1.15
   - bytestring >= 0.10.12 && < 0.13
-  - containers >= 0.4 && < 0.8
+  - containers >= 0.5.7 && < 0.8
   - unordered-containers >= 0.2.17 && < 0.3
   - template-haskell >= 2.16 && < 2.24
   - deepseq >= 1.4.4 && < 1.6
@@ -54,12 +54,12 @@ dependencies:
   - th-abstraction >= 0.4 && < 0.8
   - array >= 0.5.4 && < 0.6
   - sbv >= 8.17 && < 12
-  - parallel >= 3.2.2.0 && < 3.3
+  - parallel >= 3.2.2 && < 3.3
   - text >= 1.2.4.1 && < 2.2
   - QuickCheck >= 2.14 && < 2.16
   - prettyprinter >= 1.5.0 && < 1.8
   - async >= 2.2.2 && < 2.3
-  - stm >= 2.5 && < 2.6
+  - stm >= 2.5.0.1 && < 2.6
   - libBF >= 0.6.3 && < 0.7
   - th-lift-instances >= 0.1.16 && < 0.2
   - vector >= 0.12.1.2 && < 0.14
