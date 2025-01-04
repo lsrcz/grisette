@@ -21,8 +21,8 @@ jobs:
         os: [ubuntu-latest]
         plan:
           - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-18.28.yaml",
+              build: nix,
+              arg: "",
               ismain: false,
               experimental: false,
               ghc: "8107",
@@ -37,47 +37,47 @@ jobs:
               cachekey: "stack-810-l",
             }
           - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-19.33.yaml",
+              build: nix,
+              arg: "",
               ismain: false,
               experimental: false,
               ghc: "902",
               cachekey: "stack-90",
             }
           - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-20.26.yaml",
+              build: nix,
+              arg: "",
               ismain: false,
               experimental: false,
               ghc: "928",
               cachekey: "stack-92",
             }
           - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-21.25.yaml",
+              build: nix,
+              arg: "",
               ismain: false,
               experimental: false,
               ghc: "948",
               cachekey: "stack-94",
             }
           - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-22.43.yaml",
+              build: nix,
+              arg: "",
               ismain: false,
               experimental: false,
               ghc: "966",
               cachekey: "stack-96",
             }
           - {
-              build: stack,
-              arg: "--stack-yaml stack-lts-23.2.yaml",
+              build: nix,
+              arg: "",
               ismain: false,
               experimental: false,
               ghc: "984",
               cachekey: "stack-98",
             }
           - {
-              build: stack,
+              build: nix,
               arg: "",
               ismain: true,
               experimental: false,
@@ -96,12 +96,12 @@ jobs:
           - os: macOS-latest
             plan:
               {
-                build: stack,
+                build: nix,
                 arg: "",
                 ismain: true,
                 experimental: false,
-                ghc: "9101-macOS",
-                cachekey: "stack-910-macOS",
+                ghc: "9101",
+                cachekey: "stack-910",
               }
 
     runs-on: ${{ matrix.os }}
@@ -146,6 +146,9 @@ jobs:
             stack)
               nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c stack --no-terminal $ARGS test --fast --flag grisette:-optimize --bench --no-run-benchmarks --coverage --haddock --no-haddock-deps --test-arguments "--jxml=test-report.xml"
               ;;
+            nix)
+              NIX_DEBUG=7 nix build --show-trace -L .#grisette.${{ matrix.plan.ghc }}-ci
+              ;;
             cabal)
               nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c cabal update
               nix develop .#${{ matrix.plan.ghc }}-ci --allow-dirty --no-warn-dirty -c cabal run --enable-tests --minimize-conflict-set --disable-optimization --flags=-optimize spec $ARGS -- --jxml=test-report.xml
@@ -166,7 +169,7 @@ jobs:
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v2
         with:
-          target: stack:all
+          target: result/hpc/vanilla/tix/spec.tix
         if: matrix.os == 'ubuntu-latest' && matrix.plan.ismain
 
       - name: Send coverage report
